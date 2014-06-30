@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378AbaF3Mgq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:36:46 -0400
+	id S1755858AbaF3MhZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:37:25 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755206AbaF3Mbo (ORCPT
+	by vger.kernel.org with ESMTP id S1752192AbaF3Mbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:31:44 -0400
+	Mon, 30 Jun 2014 08:31:43 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 118/181] mm: vmscan: clear kswapd's special reclaim powers before exiting
-Date: Mon, 30 Jun 2014 13:52:19 +0200
-Message-Id: <9e88c3ebabe6683dd3d4269060ce977059cf924b.1404128998.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 138/181] USB: serial: fix potential runtime pm imbalance at device remove
+Date: Mon, 30 Jun 2014 13:52:39 +0200
+Message-Id: <b66a52fd34a39404eccbf8048cb137167767f859.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -27,98 +23,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Johan Hovold <jhovold@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 71abdc15adf8c702a1dd535f8e30df50758848d2 upstream.
+commit c14829fad88dbeda57253590695b85ba51270621 upstream.
 
-When kswapd exits, it can end up taking locks that were previously held
-by allocating tasks while they waited for reclaim.  Lockdep currently
-warns about this:
+Only call usb_autopm_put_interface() if the corresponding
+usb_autopm_get_interface() was successful.
 
-On Wed, May 28, 2014 at 06:06:34PM +0800, Gu Zheng wrote:
->  inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
->  kswapd2/1151 [HC0[0]:SC0[0]:HE1:SE1] takes:
->   (&sig->group_rwsem){+++++?}, at: exit_signals+0x24/0x130
->  {RECLAIM_FS-ON-W} state was registered at:
->     mark_held_locks+0xb9/0x140
->     lockdep_trace_alloc+0x7a/0xe0
->     kmem_cache_alloc_trace+0x37/0x240
->     flex_array_alloc+0x99/0x1a0
->     cgroup_attach_task+0x63/0x430
->     attach_task_by_pid+0x210/0x280
->     cgroup_procs_write+0x16/0x20
->     cgroup_file_write+0x120/0x2c0
->     vfs_write+0xc0/0x1f0
->     SyS_write+0x4c/0xa0
->     tracesys+0xdd/0xe2
->  irq event stamp: 49
->  hardirqs last  enabled at (49):  _raw_spin_unlock_irqrestore+0x36/0x70
->  hardirqs last disabled at (48):  _raw_spin_lock_irqsave+0x2b/0xa0
->  softirqs last  enabled at (0):  copy_process.part.24+0x627/0x15f0
->  softirqs last disabled at (0):            (null)
->
->  other info that might help us debug this:
->   Possible unsafe locking scenario:
->
->         CPU0
->         ----
->    lock(&sig->group_rwsem);
->    <Interrupt>
->      lock(&sig->group_rwsem);
->
->   *** DEADLOCK ***
->
->  no locks held by kswapd2/1151.
->
->  stack backtrace:
->  CPU: 30 PID: 1151 Comm: kswapd2 Not tainted 3.10.39+ #4
->  Call Trace:
->    dump_stack+0x19/0x1b
->    print_usage_bug+0x1f7/0x208
->    mark_lock+0x21d/0x2a0
->    __lock_acquire+0x52a/0xb60
->    lock_acquire+0xa2/0x140
->    down_read+0x51/0xa0
->    exit_signals+0x24/0x130
->    do_exit+0xb5/0xa50
->    kthread+0xdb/0x100
->    ret_from_fork+0x7c/0xb0
+This prevents a potential runtime PM counter imbalance should
+usb_autopm_get_interface() fail. Note that the USB PM usage counter is
+reset when the interface is unbound, but that the runtime PM counter may
+be left unbalanced.
 
-This is because the kswapd thread is still marked as a reclaimer at the
-time of exit.  But because it is exiting, nobody is actually waiting on
-it to make reclaim progress anymore, and it's nothing but a regular
-thread at this point.  Be tidy and strip it of all its powers
-(PF_MEMALLOC, PF_SWAPWRITE, PF_KSWAPD, and the lockdep reclaim state)
-before returning from the thread function.
+Also add comment on why we don't need to worry about racing
+resume/suspend on autopm_get failures.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reported-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: d5fd650cfc7f ("usb: serial: prevent suspend/resume from racing
+against probe/remove")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- mm/vmscan.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/bus.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index d873137bf503..1d891f49587b 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3298,7 +3298,10 @@ static int kswapd(void *p)
- 		}
- 	}
+diff --git a/drivers/usb/serial/bus.c b/drivers/usb/serial/bus.c
+index 6335490d5760..74fc63b2e7fc 100644
+--- a/drivers/usb/serial/bus.c
++++ b/drivers/usb/serial/bus.c
+@@ -97,13 +97,19 @@ static int usb_serial_device_remove(struct device *dev)
+ 	struct usb_serial_port *port;
+ 	int retval = 0;
+ 	int minor;
++	int autopm_err;
  
-+	tsk->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD);
- 	current->reclaim_state = NULL;
-+	lockdep_clear_current_reclaim_state();
+ 	port = to_usb_serial_port(dev);
+ 	if (!port)
+ 		return -ENODEV;
+ 
+-	/* make sure suspend/resume doesn't race against port_remove */
+-	usb_autopm_get_interface(port->serial->interface);
++	/*
++	 * Make sure suspend/resume doesn't race against port_remove.
++	 *
++	 * Note that no further runtime PM callbacks will be made if
++	 * autopm_get fails.
++	 */
++	autopm_err = usb_autopm_get_interface(port->serial->interface);
+ 
+ 	minor = port->minor;
+ 	tty_unregister_device(usb_serial_tty_driver, minor);
+@@ -117,7 +123,9 @@ static int usb_serial_device_remove(struct device *dev)
+ 	dev_info(dev, "%s converter now disconnected from ttyUSB%d\n",
+ 		 driver->description, minor);
+ 
+-	usb_autopm_put_interface(port->serial->interface);
++	if (!autopm_err)
++		usb_autopm_put_interface(port->serial->interface);
 +
- 	return 0;
+ 	return retval;
  }
  
 -- 
