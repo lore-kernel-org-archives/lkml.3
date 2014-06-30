@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898AbaF3REQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 13:04:16 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:57618 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643AbaF3REP (ORCPT
+	id S1756225AbaF3RFE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 13:05:04 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:34005 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752917AbaF3RFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 13:04:15 -0400
-Date: Mon, 30 Jun 2014 22:34:09 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] tracing/uprobes: Fix the usage of
- uprobe_buffer_enable() in probe_event_enable()
-Message-ID: <20140630170409.GD5619@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20140627170116.GA18298@redhat.com>
- <20140627170146.GA18332@redhat.com>
+	Mon, 30 Jun 2014 13:05:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20140627170146.GA18332@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14063017-8878-0000-0000-00000D4100B9
+In-Reply-To: <20140628140726.GD5691@localhost>
+References: <53aeb8bc.DsBnC5jOuuC6IST2%fengguang.wu@intel.com>
+	<20140628140726.GD5691@localhost>
+Date: Mon, 30 Jun 2014 10:05:01 -0700
+Message-ID: <CAGXu5j++FFJ2=2Q07kcY9_Fk2dnvA+BR8kKRCe27cgusbbpjrw@mail.gmail.com>
+Subject: Re: net/netfilter/xt_LOG.c:43: error: format not a string literal and
+ no format arguments
+From: Kees Cook <keescook@google.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The usage of uprobe_buffer_enable() added by dcad1a20 is very wrong,
-> 
-> 1. uprobe_buffer_enable() and uprobe_buffer_disable() are not balanced,
->    _enable() should be called only if !enabled.
-> 
-> 2. If uprobe_buffer_enable() fails probe_event_enable() should clear
->    tp.flags and free event_file_link.
-> 
-> 3. If uprobe_register() fails it should do uprobe_buffer_disable().
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+On Sat, Jun 28, 2014 at 7:07 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> tree:   git://internal_merge_and_test_tree devel-ant-um-201406281943
+> head:   fbb9065499371b760e0543f2ff66fde4778b46ae
+> commit: 2af37708d3ce0ae78898051ea76bc7c5f683171c [30/31] Merge 'nftables/master' into devel-ant-um-201406281943
+> config: make ARCH=avr32 atngw100_defconfig
+>
+> All error/warnings:
+>
+>    net/netfilter/xt_LOG.c: In function 'log_tg':
+>>> net/netfilter/xt_LOG.c:43: error: format not a string literal and no format arguments
+>
+> vim +43 net/netfilter/xt_LOG.c
+>
+> 6939c33a Richard Weinberger 2012-02-10  27  #include <linux/netfilter/xt_LOG.h>
+> 6939c33a Richard Weinberger 2012-02-10  28  #include <linux/netfilter_ipv6/ip6_tables.h>
+> 6939c33a Richard Weinberger 2012-02-10  29  #include <net/netfilter/nf_log.h>
+> 6939c33a Richard Weinberger 2012-02-10  30
+> 6939c33a Richard Weinberger 2012-02-10  31  static unsigned int
+> 6939c33a Richard Weinberger 2012-02-10  32  log_tg(struct sk_buff *skb, const struct xt_action_param *par)
+> 6939c33a Richard Weinberger 2012-02-10  33  {
+> 6939c33a Richard Weinberger 2012-02-10  34      const struct xt_log_info *loginfo = par->targinfo;
+> 6939c33a Richard Weinberger 2012-02-10  35      struct nf_loginfo li;
+> 8cdb46da Hans Schillstrom   2013-05-15  36      struct net *net = dev_net(par->in ? par->in : par->out);
+> 6939c33a Richard Weinberger 2012-02-10  37
+> 6939c33a Richard Weinberger 2012-02-10  38      li.type = NF_LOG_TYPE_LOG;
+> 6939c33a Richard Weinberger 2012-02-10  39      li.u.log.level = loginfo->level;
+> 6939c33a Richard Weinberger 2012-02-10  40      li.u.log.logflags = loginfo->logflags;
+> 6939c33a Richard Weinberger 2012-02-10  41
+> fab4085f Pablo Neira Ayuso  2014-06-18  42      nf_log_packet(net, par->family, par->hooknum, skb, par->in, par->out,
+> fab4085f Pablo Neira Ayuso  2014-06-18 @43                    &li, loginfo->prefix);
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-(one nit .. )
+This needs to be:
 
-> +	ret = uprobe_buffer_enable();
-> +	if (ret)
-> +		goto err_flags;
-> +
->  	tu->consumer.filter = filter;
->  	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
-> -	if (ret) {
-> -		if (file) {
-> -			list_del(&link->list);
-> -			kfree(link);
-> -			tu->tp.flags &= ~TP_FLAG_TRACE;
-> -		} else
-> -			tu->tp.flags &= ~TP_FLAG_PROFILE;
-> -	}
-> +	if (ret)
-> +		goto err_buffer;
-> 
-> +	return 0;
-> +
-> + err_buffer:
-> +	uprobe_buffer_disable();
-> +
+nf_log_packet(net, par->family, par->hooknum, skb, par->in, par->out,
+                     &li, "%s", loginfo->prefix);
 
-How about avoiding err_buffer label?
-+	if (!ret)
-+		return 0;
+Without this, any format strings contained by "prefix" can get
+processed and leak kernel contents.
 
-+	uprobe_buffer_disable();
-+
+-Kees
+
+> 6939c33a Richard Weinberger 2012-02-10  44      return XT_CONTINUE;
+> 6939c33a Richard Weinberger 2012-02-10  45  }
+> 6939c33a Richard Weinberger 2012-02-10  46
+> 6939c33a Richard Weinberger 2012-02-10  47  static int log_tg_check(const struct xt_tgchk_param *par)
+> 6939c33a Richard Weinberger 2012-02-10  48  {
+> 6939c33a Richard Weinberger 2012-02-10  49      const struct xt_log_info *loginfo = par->targinfo;
+> 6939c33a Richard Weinberger 2012-02-10  50
+> 6939c33a Richard Weinberger 2012-02-10  51      if (par->family != NFPROTO_IPV4 && par->family != NFPROTO_IPV6)
+>
+> ---
+> 0-DAY kernel build testing backend              Open Source Technology Center
+> http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
 
 
-> + err_flags:
-> +	if (file) {
-> +		list_del(&link->list);
-> 
-> -- 
-> 1.5.5.1
-> 
 
 -- 
-Thanks and Regards
-Srikar Dronamraju
-
+Kees Cook
+Chrome OS Security
