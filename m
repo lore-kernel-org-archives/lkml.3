@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132AbaF3MmU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:42:20 -0400
+	id S1756136AbaF3Mmk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:42:40 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932101AbaF3MbP (ORCPT
+	by vger.kernel.org with ESMTP id S1755065AbaF3MbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:31:15 -0400
+	Mon, 30 Jun 2014 08:31:14 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Paul Bolle <pebolle@tiscali.nl>,
-        Tony Lindgren <tony@atomide.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 107/181] ARM: OMAP: replace checks for CONFIG_USB_GADGET_OMAP
-Date: Mon, 30 Jun 2014 13:52:08 +0200
-Message-Id: <c4f66fb853955e8a620eb1e7d84e4585f4f32b9c.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 140/181] media: stk1160: Avoid stack-allocated buffer for control URBs
+Date: Mon, 30 Jun 2014 13:52:41 +0200
+Message-Id: <66d2fd610dac2c69c2128b2e10880652767c63bd.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,100 +27,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 77c2f02edbeda9409a7cf3fd66233015820c213a upstream.
+commit 85ac1a1772bb41da895bad83a81f6a62c8f293f6 upstream.
 
-Commit 193ab2a60700 ("usb: gadget: allow multiple gadgets to be built")
-apparently required that checks for CONFIG_USB_GADGET_OMAP would be
-replaced with checks for CONFIG_USB_OMAP. Do so now for the remaining
-checks for CONFIG_USB_GADGET_OMAP, even though these checks have
-basically been broken since v3.1.
+Currently stk1160_read_reg() uses a stack-allocated char to get the
+read control value. This is wrong because usb_control_msg() requires
+a kmalloc-ed buffer.
 
-And, since we're touching this code, use the IS_ENABLED() macro, so
-things will now (hopefully) also work if USB_OMAP is modular.
+This commit fixes such issue by kmalloc'ating a 1-byte buffer to receive
+the read value.
 
-Fixes: 193ab2a60700 ("usb: gadget: allow multiple gadgets to be built")
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+While here, let's remove the urb_buf array which was meant for a similar
+purpose, but never really used.
+
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
+Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/arm/mach-omap1/board-h2.c        | 2 +-
- arch/arm/mach-omap1/board-h3.c        | 2 +-
- arch/arm/mach-omap1/board-innovator.c | 2 +-
- arch/arm/mach-omap1/board-osk.c       | 2 +-
- drivers/usb/phy/phy-isp1301-omap.c    | 2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/media/usb/stk1160/stk1160-core.c | 10 +++++++++-
+ drivers/media/usb/stk1160/stk1160.h      |  1 -
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-omap1/board-h2.c b/arch/arm/mach-omap1/board-h2.c
-index fd90cafc2e36..db57072aeed3 100644
---- a/arch/arm/mach-omap1/board-h2.c
-+++ b/arch/arm/mach-omap1/board-h2.c
-@@ -343,7 +343,7 @@ static struct omap_usb_config h2_usb_config __initdata = {
- 	/* usb1 has a Mini-AB port and external isp1301 transceiver */
- 	.otg		= 2,
+diff --git a/drivers/media/usb/stk1160/stk1160-core.c b/drivers/media/usb/stk1160/stk1160-core.c
+index 34a26e0cfe77..03504dcf3c52 100644
+--- a/drivers/media/usb/stk1160/stk1160-core.c
++++ b/drivers/media/usb/stk1160/stk1160-core.c
+@@ -67,17 +67,25 @@ int stk1160_read_reg(struct stk1160 *dev, u16 reg, u8 *value)
+ {
+ 	int ret;
+ 	int pipe = usb_rcvctrlpipe(dev->udev, 0);
++	u8 *buf;
  
--#ifdef	CONFIG_USB_GADGET_OMAP
-+#if IS_ENABLED(CONFIG_USB_OMAP)
- 	.hmc_mode	= 19,	/* 0:host(off) 1:dev|otg 2:disabled */
- 	/* .hmc_mode	= 21,*/	/* 0:host(off) 1:dev(loopback) 2:host(loopback) */
- #elif	defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
-diff --git a/arch/arm/mach-omap1/board-h3.c b/arch/arm/mach-omap1/board-h3.c
-index 816ecd13f81e..bfed4f928663 100644
---- a/arch/arm/mach-omap1/board-h3.c
-+++ b/arch/arm/mach-omap1/board-h3.c
-@@ -366,7 +366,7 @@ static struct omap_usb_config h3_usb_config __initdata = {
- 	/* usb1 has a Mini-AB port and external isp1301 transceiver */
- 	.otg	    = 2,
+ 	*value = 0;
++
++	buf = kmalloc(sizeof(u8), GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
+ 	ret = usb_control_msg(dev->udev, pipe, 0x00,
+ 			USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+-			0x00, reg, value, sizeof(u8), HZ);
++			0x00, reg, buf, sizeof(u8), HZ);
+ 	if (ret < 0) {
+ 		stk1160_err("read failed on reg 0x%x (%d)\n",
+ 			reg, ret);
++		kfree(buf);
+ 		return ret;
+ 	}
  
--#ifdef CONFIG_USB_GADGET_OMAP
-+#if IS_ENABLED(CONFIG_USB_OMAP)
- 	.hmc_mode       = 19,   /* 0:host(off) 1:dev|otg 2:disabled */
- #elif  defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
- 	/* NONSTANDARD CABLE NEEDED (B-to-Mini-B) */
-diff --git a/arch/arm/mach-omap1/board-innovator.c b/arch/arm/mach-omap1/board-innovator.c
-index bd5f02e9c354..c49ce83cc1eb 100644
---- a/arch/arm/mach-omap1/board-innovator.c
-+++ b/arch/arm/mach-omap1/board-innovator.c
-@@ -312,7 +312,7 @@ static struct omap_usb_config h2_usb_config __initdata = {
- 	/* usb1 has a Mini-AB port and external isp1301 transceiver */
- 	.otg		= 2,
- 
--#ifdef	CONFIG_USB_GADGET_OMAP
-+#if IS_ENABLED(CONFIG_USB_OMAP)
- 	.hmc_mode	= 19,	/* 0:host(off) 1:dev|otg 2:disabled */
- 	/* .hmc_mode	= 21,*/	/* 0:host(off) 1:dev(loopback) 2:host(loopback) */
- #elif	defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
-diff --git a/arch/arm/mach-omap1/board-osk.c b/arch/arm/mach-omap1/board-osk.c
-index a7ce69286688..006fbb5f9654 100644
---- a/arch/arm/mach-omap1/board-osk.c
-+++ b/arch/arm/mach-omap1/board-osk.c
-@@ -280,7 +280,7 @@ static struct omap_usb_config osk_usb_config __initdata = {
- 	 * be used, with a NONSTANDARD gender-bending cable/dongle, as
- 	 * a peripheral.
- 	 */
--#ifdef	CONFIG_USB_GADGET_OMAP
-+#if IS_ENABLED(CONFIG_USB_OMAP)
- 	.register_dev	= 1,
- 	.hmc_mode	= 0,
- #else
-diff --git a/drivers/usb/phy/phy-isp1301-omap.c b/drivers/usb/phy/phy-isp1301-omap.c
-index d3a5160e4cc7..4a2ced057b40 100644
---- a/drivers/usb/phy/phy-isp1301-omap.c
-+++ b/drivers/usb/phy/phy-isp1301-omap.c
-@@ -1295,7 +1295,7 @@ isp1301_set_host(struct usb_otg *otg, struct usb_bus *host)
- 		return isp1301_otg_enable(isp);
++	*value = *buf;
++	kfree(buf);
  	return 0;
+ }
  
--#elif	!defined(CONFIG_USB_GADGET_OMAP)
-+#elif !IS_ENABLED(CONFIG_USB_OMAP)
- 	// FIXME update its refcount
- 	otg->host = host;
+diff --git a/drivers/media/usb/stk1160/stk1160.h b/drivers/media/usb/stk1160/stk1160.h
+index 05b05b160e1e..abdea484c998 100644
+--- a/drivers/media/usb/stk1160/stk1160.h
++++ b/drivers/media/usb/stk1160/stk1160.h
+@@ -143,7 +143,6 @@ struct stk1160 {
+ 	int num_alt;
  
+ 	struct stk1160_isoc_ctl isoc_ctl;
+-	char urb_buf[255];	 /* urb control msg buffer */
+ 
+ 	/* frame properties */
+ 	int width;		  /* current frame width */
 -- 
 2.0.0
 
