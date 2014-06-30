@@ -1,27 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757131AbaF3VwY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 17:52:24 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:13588 "EHLO
+	id S1756972AbaF3VwX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 17:52:23 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:5061 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751917AbaF3Vvq (ORCPT
+	by vger.kernel.org with ESMTP id S1752266AbaF3Vvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 17:51:46 -0400
-Message-Id: <20140630215144.888924115@goodmis.org>
+Message-Id: <20140630215144.416698132@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Mon, 30 Jun 2014 17:50:41 -0400
+Date: Mon, 30 Jun 2014 17:50:39 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: [for-next][PATCH 3/4] tracing/uprobes: Kill the bogus UPROBE_HANDLER_REMOVE code in
- uprobe_dispatcher()
+        Oleg Nesterov <oleg@redhat.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [for-next][PATCH 1/4] tracing/uprobes: Revert "Support mix of ftrace and perf"
 References: <20140630215038.852406012@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0003-tracing-uprobes-Kill-the-bogus-UPROBE_HANDLER_REMOVE.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0001-tracing-uprobes-Revert-Support-mix-of-ftrace-and-per.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,44 +32,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Oleg Nesterov <oleg@redhat.com>
 
-I do not know why dd9fa555d7bb "tracing/uprobes: Move argument fetching
-to uprobe_dispatcher()" added the UPROBE_HANDLER_REMOVE, but it looks
-wrong.
+This reverts commit 43fe98913c9f67e3b523615ee3316f9520a623e0.
 
-OK, perhaps it makes sense to avoid store_trace_args() if the tracee is
-nacked by uprobe_perf_filter(). But then we should kill the same code
-in uprobe_perf_func() and unify the TRACE/PROFILE filtering (we need to
-do this anyway to mix perf/ftrace). Until then this code actually adds
-the pessimization because uprobe_perf_filter() will be called twice and
-return T in likely case.
+This patch is very wrong. Firstly, this change leads to unbalanced
+uprobe_unregister(). Just for example,
 
-Link: http://lkml.kernel.org/p/20140627170143.GA18329@redhat.com
+	# perf probe -x /lib/libc.so.6 syscall
+	# echo 1 >> /sys/kernel/debug/tracing/events/probe_libc/enable
+	# perf record -e probe_libc:syscall whatever
 
+after that uprobe is dead (unregistered) but the user of ftrace/perf
+can't know this, and it looks as if nobody hits this probe.
+
+This would be easy to fix, but there are other reasons why it is not
+simple to mix ftrace and perf. If nothing else, they can't share the
+same ->consumer.filter. This is fixable too, but probably we need to
+fix the poorly designed uprobe_register() interface first. At least
+"register" and "apply" should be clearly separated.
+
+Link: http://lkml.kernel.org/p/20140627170136.GA18319@redhat.com
+
+Cc: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: stable@vger.kernel.org # v3.14
 Acked-by: Namhyung Kim <namhyung@kernel.org>
 Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_uprobe.c | 6 ------
- 1 file changed, 6 deletions(-)
+ kernel/trace/trace_uprobe.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 08e7970bf3f9..c4cf0abd60ba 100644
+index 04fdb5de823c..08e7970bf3f9 100644
 --- a/kernel/trace/trace_uprobe.c
 +++ b/kernel/trace/trace_uprobe.c
-@@ -1208,12 +1208,6 @@ static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
+@@ -893,6 +893,9 @@ probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
+ 	int ret;
  
- 	current->utask->vaddr = (unsigned long) &udd;
+ 	if (file) {
++		if (tu->tp.flags & TP_FLAG_PROFILE)
++			return -EINTR;
++
+ 		link = kmalloc(sizeof(*link), GFP_KERNEL);
+ 		if (!link)
+ 			return -ENOMEM;
+@@ -901,8 +904,12 @@ probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
+ 		list_add_tail_rcu(&link->list, &tu->tp.files);
  
--#ifdef CONFIG_PERF_EVENTS
--	if ((tu->tp.flags & TP_FLAG_TRACE) == 0 &&
--	    !uprobe_perf_filter(&tu->consumer, 0, current->mm))
--		return UPROBE_HANDLER_REMOVE;
--#endif
--
- 	if (WARN_ON_ONCE(!uprobe_cpu_buffer))
- 		return 0;
+ 		tu->tp.flags |= TP_FLAG_TRACE;
+-	} else
++	} else {
++		if (tu->tp.flags & TP_FLAG_TRACE)
++			return -EINTR;
++
+ 		tu->tp.flags |= TP_FLAG_PROFILE;
++	}
  
+ 	ret = uprobe_buffer_enable();
+ 	if (ret < 0)
 -- 
 2.0.0
 
