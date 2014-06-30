@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453AbaF3LWI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 07:22:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41177 "EHLO mx2.suse.de"
+	id S1751857AbaF3LXc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 07:23:32 -0400
+Received: from mail1.skidata.com ([91.230.2.99]:31552 "EHLO mail1.skidata.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750913AbaF3LWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 07:22:07 -0400
-Date: Mon, 30 Jun 2014 13:22:05 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jiri Slaby <jslaby@suse.cz>
-cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        jirislaby@gmail.com,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>
-Subject: Re: [PATCH 1/1] hid: sensor-hub, fix potential memory leak
-In-Reply-To: <1404120888-10692-1-git-send-email-jslaby@suse.cz>
-Message-ID: <alpine.LNX.2.00.1406301322000.28307@pobox.suse.cz>
-References: <1404120888-10692-1-git-send-email-jslaby@suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1750969AbaF3LXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 07:23:30 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqEEAGRIsVOsEApK/2dsb2JhbABahDnFVwGBHXWEAwEBBAEnEz8QCw0IDCUPSAYOBYg6DccTF48HB4RDAQSaXYcwkBKCLg
+X-IPAS-Result: AqEEAGRIsVOsEApK/2dsb2JhbABahDnFVwGBHXWEAwEBBAEnEz8QCw0IDCUPSAYOBYg6DccTF48HB4RDAQSaXYcwkBKCLg
+Date: Mon, 30 Jun 2014 13:23:27 +0200
+From: Richard Leitner <richard.leitner@skidata.com>
+To: David Laight <David.Laight@ACULAB.COM>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2] usb: gadget: serial: replace hardcoded ttyGS with
+ PREFIX
+Message-ID: <20140630132327.39b9d4d2@lxbuild.skidata.net>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1726935E@AcuExch.aculab.com>
+References: <20140627133721.10ca6cab@lxbuild.skidata.net>
+	<20140627174628.GA1449@kroah.com>
+	<20140630083205.596557f1@lxbuild.skidata.net>
+	<20140630103616.620a13a2@lxbuild.skidata.net>
+	<063D6719AE5E284EB5DD2968C1650D6D1726930B@AcuExch.aculab.com>
+	<20140630105609.66d4be83@lxbuild.skidata.net>
+	<063D6719AE5E284EB5DD2968C1650D6D1726935E@AcuExch.aculab.com>
+Organization: SKIDATA AG
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.16.60.30]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jun 2014, Jiri Slaby wrote:
+Hi,
 
-> hsdev is not freed in sensor_hub_probe when kasprintf inside the for
-> loop fails. This is because hsdev is not set to platform_data yet (to
-> be freed by the code in the err_no_mem label). So free the memory
-> explicitly in the 'if' branch, as this is the only place where this is
-> (and will) be needed.
+On Mon, 30 Jun 2014 09:08:01 +0000
+David Laight <David.Laight@ACULAB.COM> wrote:
+
+> > > From: Of Richard Leitner
+> > > > Replaces all hardcoded ttyGS strings with the PREFIX macro.
+> > > > Due to the fact the strings are spread over different source files the
+> > > > PREFIX definition is moved to u_serial.h
+> > >
+> > > Lots of changes like:
+> > > > -		DBG(cdev, "acm ttyGS%d completion, err %d\n",
+> > > > -				acm->port_num, req->status);
+> > > > +		DBG(cdev, "acm %s%d completion, err %d\n",
+> > > > +				PREFIX, acm->port_num, req->status);
+> > >
+> > > I'm not sure this improves the code.
+> > 
+> > Maybe you're right, the readability of the code wouldn't be better afterwards,
+
+but as I already mentioned IMHO if there is such a macro it should be used everywhere or nowhere...
+	
 > 
-> Reported-by: coverity
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: srinivas pandruvada <srinivas.pandruvada@intel.com>
-> Cc: Jiri Kosina <jkosina@suse.cz>
-> ---
->  drivers/hid/hid-sensor-hub.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
-> index a8d5c8faf8cf..584e17ce80e4 100644
-> --- a/drivers/hid/hid-sensor-hub.c
-> +++ b/drivers/hid/hid-sensor-hub.c
-> @@ -632,6 +632,7 @@ static int sensor_hub_probe(struct hid_device *hdev,
->  			if (name == NULL) {
->  				hid_err(hdev, "Failed MFD device name\n");
->  					ret = -ENOMEM;
-> +					kfree(hsdev);
->  					goto err_no_mem;
->  			}
->  			sd->hid_sensor_hub_client_devs[
+> Indeed it will make most attempts to grep for the error message fail.
 
-Applied, thanks.
+So your thought is to carve it out completely?
 
--- 
-Jiri Kosina
-SUSE Labs
+Are there any other opinions/ideas on that?
+
+regards,
+richard
