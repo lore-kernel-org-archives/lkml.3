@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932235AbaF3MbV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:31:21 -0400
+	id S1755034AbaF3MbK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:31:10 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932199AbaF3MbS (ORCPT
+	by vger.kernel.org with ESMTP id S1754867AbaF3MbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:31:18 -0400
+	Mon, 30 Jun 2014 08:31:03 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 124/181] ext4: fix zeroing of page during writeback
-Date: Mon, 30 Jun 2014 13:52:25 +0200
-Message-Id: <a694330c522038db4534ecbf71d9e6854f28c984.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Nicholas Bellinger <nab@linux-iscsi.org>,
+        Thomas Glanzmann <thomas@glanzmann.de>,
+        Charalampos Pournaris <charpour@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 153/181] target: Use complete_all for se_cmd->t_transport_stop_comp
+Date: Mon, 30 Jun 2014 13:52:54 +0200
+Message-Id: <bc213cd17c41a7566af0910e101bc7e1b616def3.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,76 +25,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit eeece469dedadf3918bad50ad80f4616a0064e90 upstream.
+commit a95d6511303b848da45ee27b35018bb58087bdc6 upstream.
 
-Tail of a page straddling inode size must be zeroed when being written
-out due to POSIX requirement that modifications of mmaped page beyond
-inode size must not be written to the file. ext4_bio_write_page() did
-this only for blocks fully beyond inode size but didn't properly zero
-blocks partially beyond inode size. Fix this.
+This patch fixes a bug where multiple waiters on ->t_transport_stop_comp
+occurs due to a concurrent ABORT_TASK and session reset both invoking
+transport_wait_for_tasks(), while waiting for the associated se_cmd
+descriptor backend processing to complete.
 
-The problem has been uncovered by mmap_11-4 test in openposix test suite
-(part of LTP).
+For this case, complete_all() should be invoked in order to wake up
+both waiters in core_tmr_abort_task() + transport_generic_free_cmd()
+process contexts.
 
-Reported-by: Xiaoguang Wang <wangxg.fnst@cn.fujitsu.com>
-Fixes: 5a0dc7365c240
-Fixes: bd2d0210cf22f
-CC: stable@vger.kernel.org
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Cc: Thomas Glanzmann <thomas@glanzmann.de>
+Cc: Charalampos Pournaris <charpour@gmail.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/ext4/page-io.c | 24 +++++++++++-------------
- 1 file changed, 11 insertions(+), 13 deletions(-)
+ drivers/target/target_core_transport.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ext4/page-io.c b/fs/ext4/page-io.c
-index 0881ede35baa..f1ecd138d3ee 100644
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -421,6 +421,17 @@ int ext4_bio_write_page(struct ext4_io_submit *io,
- 	ClearPageError(page);
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 7756d069dcee..66c0541ee910 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -552,7 +552,7 @@ static int transport_cmd_check_stop(struct se_cmd *cmd, bool remove_from_lists,
  
- 	/*
-+	 * Comments copied from block_write_full_page_endio:
-+	 *
-+	 * The page straddles i_size.  It must be zeroed out on each and every
-+	 * writepage invocation because it may be mmapped.  "A file is mapped
-+	 * in multiples of the page size.  For a file that is not a multiple of
-+	 * the page size, the remaining memory is zeroed when mapped, and
-+	 * writes to that region are not written out to the file."
-+	 */
-+	if (len < PAGE_CACHE_SIZE)
-+		zero_user_segment(page, len, PAGE_CACHE_SIZE);
-+	/*
- 	 * In the first loop we prepare and mark buffers to submit. We have to
- 	 * mark all buffers in the page before submitting so that
- 	 * end_page_writeback() cannot be called from ext4_bio_end_io() when IO
-@@ -431,19 +442,6 @@ int ext4_bio_write_page(struct ext4_io_submit *io,
- 	do {
- 		block_start = bh_offset(bh);
- 		if (block_start >= len) {
--			/*
--			 * Comments copied from block_write_full_page_endio:
--			 *
--			 * The page straddles i_size.  It must be zeroed out on
--			 * each and every writepage invocation because it may
--			 * be mmapped.  "A file is mapped in multiples of the
--			 * page size.  For a file that is not a multiple of
--			 * the  page size, the remaining memory is zeroed when
--			 * mapped, and writes to that region are not written
--			 * out to the file."
--			 */
--			zero_user_segment(page, block_start,
--					  block_start + blocksize);
- 			clear_buffer_dirty(bh);
- 			set_buffer_uptodate(bh);
- 			continue;
+ 		spin_unlock_irqrestore(&cmd->t_state_lock, flags);
+ 
+-		complete(&cmd->t_transport_stop_comp);
++		complete_all(&cmd->t_transport_stop_comp);
+ 		return 1;
+ 	}
+ 
+@@ -674,7 +674,7 @@ void target_complete_cmd(struct se_cmd *cmd, u8 scsi_status)
+ 	if (cmd->transport_state & CMD_T_ABORTED &&
+ 	    cmd->transport_state & CMD_T_STOP) {
+ 		spin_unlock_irqrestore(&cmd->t_state_lock, flags);
+-		complete(&cmd->t_transport_stop_comp);
++		complete_all(&cmd->t_transport_stop_comp);
+ 		return;
+ 	} else if (cmd->transport_state & CMD_T_FAILED) {
+ 		INIT_WORK(&cmd->work, target_complete_failure_work);
+@@ -1749,7 +1749,7 @@ void target_execute_cmd(struct se_cmd *cmd)
+ 			cmd->se_tfo->get_task_tag(cmd));
+ 
+ 		spin_unlock_irq(&cmd->t_state_lock);
+-		complete(&cmd->t_transport_stop_comp);
++		complete_all(&cmd->t_transport_stop_comp);
+ 		return;
+ 	}
+ 
 -- 
 2.0.0
 
