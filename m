@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803AbaF3MFs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:05:48 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52026 "EHLO
+	id S1755392AbaF3MFp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:05:45 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52014 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753700AbaF3LxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753618AbaF3LxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Geyslan G. Bem" <geyslan@gmail.com>,
-        Ben Myers <bpm@sgi.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 041/181] xfs: fix possible NULL dereference in xlog_verify_iclog
-Date: Mon, 30 Jun 2014 13:51:02 +0200
-Message-Id: <8ceeb85cd8b2aa2141c21dcc2b830cac14b8cfbe.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Takashi Iwai <tiwai@suse.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 079/181] ALSA: control: Don't access controls outside of protected regions
+Date: Mon, 30 Jun 2014 13:51:40 +0200
+Message-Id: <3d6a96f651026c5e46266c7857b7322608f764ae.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,46 +23,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Geyslan G. Bem" <geyslan@gmail.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 643f7c4e5656bd18c769211f933190f7bb738245 upstream.
+commit fd9f26e4eca5d08a27d12c0933fceef76ed9663d upstream.
 
-In xlog_verify_iclog a debug check of the incore log buffers prints an
-error if icptr is null and then goes on to dereference the pointer
-regardless.  Convert this to an assert so that the intention is clear.
-This was reported by Coverty.
+A control that is visible on the card->controls list can be freed at any time.
+This means we must not access any of its memory while not holding the
+controls_rw_lock. Otherwise we risk a use after free access.
 
-Signed-off-by: Ben Myers <bpm@sgi.com>
-Reviewed-by: Eric Sandeen <sandeen@redhat.com>
-
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Jaroslav Kysela <perex@perex.cz>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/xfs/xfs_log.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ sound/core/control.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/fs/xfs/xfs_log.c b/fs/xfs/xfs_log.c
-index 613ed9414e70..3c4ddc1c79a4 100644
---- a/fs/xfs/xfs_log.c
-+++ b/fs/xfs/xfs_log.c
-@@ -3712,11 +3712,9 @@ xlog_verify_iclog(
- 	/* check validity of iclog pointers */
- 	spin_lock(&log->l_icloglock);
- 	icptr = log->l_iclog;
--	for (i=0; i < log->l_iclog_bufs; i++) {
--		if (icptr == NULL)
--			xfs_emerg(log->l_mp, "%s: invalid ptr", __func__);
--		icptr = icptr->ic_next;
--	}
-+	for (i = 0; i < log->l_iclog_bufs; i++, icptr = icptr->ic_next)
-+		ASSERT(icptr);
-+
- 	if (icptr != log->l_iclog)
- 		xfs_emerg(log->l_mp, "%s: corrupt iclog ring", __func__);
- 	spin_unlock(&log->l_icloglock);
+diff --git a/sound/core/control.c b/sound/core/control.c
+index 15bc84492746..d4a597fe86e4 100644
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -331,6 +331,7 @@ int snd_ctl_add(struct snd_card *card, struct snd_kcontrol *kcontrol)
+ {
+ 	struct snd_ctl_elem_id id;
+ 	unsigned int idx;
++	unsigned int count;
+ 	int err = -EINVAL;
+ 
+ 	if (! kcontrol)
+@@ -359,8 +360,9 @@ int snd_ctl_add(struct snd_card *card, struct snd_kcontrol *kcontrol)
+ 	card->controls_count += kcontrol->count;
+ 	kcontrol->id.numid = card->last_numid + 1;
+ 	card->last_numid += kcontrol->count;
++	count = kcontrol->count;
+ 	up_write(&card->controls_rwsem);
+-	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
++	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
+ 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
+ 	return 0;
+ 
+@@ -389,6 +391,7 @@ int snd_ctl_replace(struct snd_card *card, struct snd_kcontrol *kcontrol,
+ 		    bool add_on_replace)
+ {
+ 	struct snd_ctl_elem_id id;
++	unsigned int count;
+ 	unsigned int idx;
+ 	struct snd_kcontrol *old;
+ 	int ret;
+@@ -424,8 +427,9 @@ add:
+ 	card->controls_count += kcontrol->count;
+ 	kcontrol->id.numid = card->last_numid + 1;
+ 	card->last_numid += kcontrol->count;
++	count = kcontrol->count;
+ 	up_write(&card->controls_rwsem);
+-	for (idx = 0; idx < kcontrol->count; idx++, id.index++, id.numid++)
++	for (idx = 0; idx < count; idx++, id.index++, id.numid++)
+ 		snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_ADD, &id);
+ 	return 0;
+ 
+@@ -898,9 +902,9 @@ static int snd_ctl_elem_write(struct snd_card *card, struct snd_ctl_file *file,
+ 			result = kctl->put(kctl, control);
+ 		}
+ 		if (result > 0) {
++			struct snd_ctl_elem_id id = control->id;
+ 			up_read(&card->controls_rwsem);
+-			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE,
+-				       &control->id);
++			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE, &id);
+ 			return 0;
+ 		}
+ 	}
+@@ -1334,8 +1338,9 @@ static int snd_ctl_tlv_ioctl(struct snd_ctl_file *file,
+ 		}
+ 		err = kctl->tlv.c(kctl, op_flag, tlv.length, _tlv->tlv);
+ 		if (err > 0) {
++			struct snd_ctl_elem_id id = kctl->id;
+ 			up_read(&card->controls_rwsem);
+-			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &kctl->id);
++			snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_TLV, &id);
+ 			return 0;
+ 		}
+ 	} else {
 -- 
 2.0.0
 
