@@ -1,111 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704AbaF3Id0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 04:33:26 -0400
-Received: from mga11.intel.com ([192.55.52.93]:30189 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754224AbaF3IdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 04:33:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,573,1400050800"; 
-   d="scan'208";a="562894285"
-Message-ID: <1404117165.5102.3.camel@smile.fi.intel.com>
-Subject: Re: [PATCH v2 2/2] lib.c: skip --param parameters
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Christopher Li <sparse@chrisli.org>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-Sparse <linux-sparse@vger.kernel.org>
-Date: Mon, 30 Jun 2014 11:32:45 +0300
-In-Reply-To: <CANeU7QnLad1f4KkLpTGSWB8eD8_La-tACim6rR7DLQ=hggwhOQ@mail.gmail.com>
-References: <1402996306-6811-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1402996306-6811-3-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <CANeU7QnLad1f4KkLpTGSWB8eD8_La-tACim6rR7DLQ=hggwhOQ@mail.gmail.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754749AbaF3If4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 04:35:56 -0400
+Received: from mailgw12.technion.ac.il ([132.68.225.12]:6509 "EHLO
+	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752592AbaF3Ify (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 04:35:54 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: As0BAMQgsVOERCABjGdsb2JhbABar1YBAQaDbY8Dh0WBDhYPAQEBJzyEMVKBUYhCwFeFexeFZIkjHYQtBYpBp18
+X-IPAS-Result: As0BAMQgsVOERCABjGdsb2JhbABar1YBAQaDbY8Dh0WBDhYPAQEBJzyEMVKBUYhCwFeFexeFZIkjHYQtBYpBp18
+X-IronPort-AV: E=Sophos;i="5.01,573,1400014800"; 
+   d="scan'208";a="113714347"
+From: Nadav Amit <namit@cs.technion.ac.il>
+To: pbonzini@redhat.com
+Cc: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nadav Amit <namit@cs.technion.ac.il>
+Subject: [PATCH] KVM: x86: Pending interrupt may be delivered after INIT
+Date: Mon, 30 Jun 2014 11:35:27 +0300
+Message-Id: <1404117327-20976-1-git-send-email-namit@cs.technion.ac.il>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-06-28 at 09:59 -0700, Christopher Li wrote:
-> Oops, I just click send before I type up the reply. Here we go again.
-> 
-> On Tue, Jun 17, 2014 at 2:11 AM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
-> > Very dumb patch to just skip --param allow-store-data-races=0 introduced in
-> > newer GCC versions.
-> >
-> > +static char **handle_param(char *arg, char **next)
-> > +{
-> > +       const char *value = NULL;
-> > +
-> > +       /* For now just skip any '--param=*' or '--param *' */
-> > +       value = split_value_from_arg(arg, value);
-> > +       if (!value)
-> > +               ++next;
-> > +
-> > +       return ++next;
-> > +}
-> 
-> I think this is problematic.There are three possible input
-> from args:
-> 1) "--parm", you need to ++next skip to next arg, which is the value for parm.
-> 2) "--parm=x",  you don't need to skip to next arg.
-> 3) "--parm-with-crap", invalid argument. You don't need to skip next arg.
-> 
-> I think the patch is wrong on case 2) and case 3).
-> In case 2), the patch skip two arguments and make next point
-> points to out of bound memory.
+We encountered a scenario in which after an INIT is delivered, a pending
+interrupt is delivered, although it was sent before the INIT.  As the SDM
+states in section 10.4.7.1, the ISR and the IRR should be cleared after INIT as
+KVM does.  This also means that pending interrupts should be cleared.  This
+patch clears upon reset (and INIT) the pending interrupts; and at the same
+occassion clears the pending exceptions, since they may cause a similar issue.
 
-Hmm... I'd just added test printf to the handle_param() and see if I
-print *next, it is either --param or --param=*. So, using return (next +
-2) helps, otherwise we end up with the same situation as before patch.
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+---
+ arch/x86/kvm/x86.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-What did I miss?
-
-> 
-> The split_value_from_arg function is not a good abstraction for this job.
-> Its return value can only indicate 2 possible out come.
-> Also, returning the default value force the test against the input
-> default value. That make the logic a bit complicate.
-> 
-> >  struct switches {
-> >         const char *name;
-> >         char **(*fn)(char *, char **);
-> > @@ -686,13 +698,14 @@ struct switches {
-> >  static char **handle_long_options(char *arg, char **next)
-> >  {
-> >         static struct switches cmd[] = {
-> > +               { "param", handle_param },
-> >                 { "version", handle_version },
-> >                 { NULL, NULL }
-> >         };
-> >         struct switches *s = cmd;
-> >
-> >         while (s->name) {
-> > -               if (!strcmp(s->name, arg))
-> > +               if (!strncmp(arg, s->name, strlen(s->name)))
-> 
-> This will allow "--version-with-crap" as valid arguments.
-
-Which was explicitly mentioned in the commit message.
-
-> 
-> I think we can have one extra member in "struct switch"
-> to indicate this option is a prefix rather than a whole word.
-> For "parm", it need to set that prefix member to non zero.
-
-No objections about this approach.
-
-> Please let me know if there is a V3 coming.
-
-Apparently you did this on weekend.
-
-
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index f32a025..863ac07 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -6835,6 +6835,8 @@ void kvm_vcpu_reset(struct kvm_vcpu *vcpu)
+ 	atomic_set(&vcpu->arch.nmi_queued, 0);
+ 	vcpu->arch.nmi_pending = 0;
+ 	vcpu->arch.nmi_injected = false;
++	vcpu->arch.interrupt.pending = false;
++	vcpu->arch.exception.pending = false;
+ 
+ 	memset(vcpu->arch.db, 0, sizeof(vcpu->arch.db));
+ 	vcpu->arch.dr6 = DR6_FIXED_1;
 -- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
+1.9.1
 
