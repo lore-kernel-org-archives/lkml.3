@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755837AbaF3UjT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 16:39:19 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:34272 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755476AbaF3UjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 16:39:17 -0400
-Date: Mon, 30 Jun 2014 13:39:11 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [RESEND][PATCH] bsr: avoid format string leaking into device name
-Message-ID: <20140630203911.GA4803@www.outflux.net>
+	id S1756679AbaF3Ujg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 16:39:36 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:53489 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755904AbaF3Ujc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 16:39:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+In-Reply-To: <CALCETrUs8mmVK70rwkQz=Dzu2ZjPYU_TMuydnXsJM8jAxTv0WQ@mail.gmail.com>
+References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
+	<1403913966-4927-8-git-send-email-ast@plumgrid.com>
+	<CALCETrXDR1LVmbigTicBiddgvcucM1dGk1R7rxdJyBCvGEBQMw@mail.gmail.com>
+	<CAMEtUuywNHVcZ__296NzXK7RPXUBOf7gNQY9JFx0a9PV0Se+wA@mail.gmail.com>
+	<CALCETrXQ60J+UqafHRKPbgQ37zhstW+E8xAponWs7AQ-DCgaWA@mail.gmail.com>
+	<CAMEtUuwmxgrGMigmh1vZ7qCh9qB9ph9uFbPmVmmbqZvC5N9WyA@mail.gmail.com>
+	<20140628152104.GB29548@kroah.com>
+	<CALCETrUs8mmVK70rwkQz=Dzu2ZjPYU_TMuydnXsJM8jAxTv0WQ@mail.gmail.com>
+Date: Mon, 30 Jun 2014 13:39:31 -0700
+Message-ID: <CAMEtUuxSdw+9WiB2ps0aYE5hdH9NTnq48VdELLEg17tz1B96WQ@mail.gmail.com>
+Subject: Re: [PATCH RFC net-next 07/14] bpf: expand BPF syscall with program load/unload
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>,
+        David Laight <David.Laight@aculab.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes sure a format string cannot accidentally leak into a device name.
+On Sat, Jun 28, 2014 at 8:35 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Sat, Jun 28, 2014 at 8:21 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> On Sat, Jun 28, 2014 at 12:26:14AM -0700, Alexei Starovoitov wrote:
+>>> On Fri, Jun 27, 2014 at 11:28 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> > On Fri, Jun 27, 2014 at 11:12 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>> > If you want to add GPL-only functions in the future, that would be one
+>>> > thing.  But if someone writes a nice eBPF compiler, and someone else
+>>> > writes a little program that filters on network packets, I see no
+>>> > reason to claim that the little program is a derivative work of the
+>>> > kernel and therefore must be GPL.
+>>>
+>>> I think we have to draw a line somewhere. Say, tomorrow I want
+>>> to modify libpcap to emit eBPF based on existing tcpdump syntax.
+>>> Would it mean that tcpdump filter strings are GPLed? Definitely not,
+>>> since they existed before and can function without new libpcap.
+>>> But if I write a new packet filtering program in C, compile it
+>>> using LLVM->eBPF and call into in-kernel helper functions
+>>> (like bpf_map_lookup_elem()),  I think it's exactly the derivative work.
+>>> It's analogous to kernel modules. If module wants to call
+>>> export_symbol_gpl() functions, it needs to be GPLed. Here all helper
+>>> functions are GPL. So we just have a blank check for eBPF program.
+>>
+>> I agree, these eBFP programs should be GPL-compatible licensed as well.
+>
+> I think I'd be happy with an export_symbol_gpl analogue.  I might
+> argue that bpf_map_lookup_elem shouldn't be gpl-only, though.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- drivers/char/bsr.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/char/bsr.c b/drivers/char/bsr.c
-index 8fedbc250414..a6cef548e01e 100644
---- a/drivers/char/bsr.c
-+++ b/drivers/char/bsr.c
-@@ -259,7 +259,7 @@ static int bsr_add_node(struct device_node *bn)
- 		}
- 
- 		cur->bsr_device = device_create(bsr_class, NULL, cur->bsr_dev,
--						cur, cur->bsr_name);
-+						cur, "%s", cur->bsr_name);
- 		if (IS_ERR(cur->bsr_device)) {
- 			printk(KERN_ERR "device_create failed for %s\n",
- 			       cur->bsr_name);
--- 
-1.7.9.5
-
-
--- 
-Kees Cook
-Chrome OS Security
+ok. sounds like module-like approach will be more acceptable to potential
+user base. Will change it. Last thing I want to do is to scary users away.
