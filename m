@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091AbaF3MGq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:06:46 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52037 "EHLO
+	id S1756108AbaF3MGr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:06:47 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52028 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753717AbaF3LxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753684AbaF3LxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Aaron Lu <aaron.lu@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Tomas Winkler <tomas.winkler@intel.com>,
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 084/181] ACPI / video: clean up DMI table for initial black screen problem
-Date: Mon, 30 Jun 2014 13:51:45 +0200
-Message-Id: <594d724ed36a435885cd599e78f2f917a7171eef.1404128998.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 088/181] mei: me: fix hw ready reset flow
+Date: Mon, 30 Jun 2014 13:51:49 +0200
+Message-Id: <0308bc5118c452dbc16ea5c8e7c1c5d8cacd5391.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -24,153 +25,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aaron Lu <aaron.lu@intel.com>
+From: Tomas Winkler <tomas.winkler@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 545ef368e08fda654b6e63ce522c66339aa29156 upstream.
+commit b04ada92ffaabb868497a1fce8e4f6bf74e5488f upstream
 
-With commit 2c62333a408f "ACPI / video: Quirk initial backlight level 0"
-we do not need to have the following systems in DMI table, so remove them.
-HP Pavilion m4, HP 1000 Notebook PC, HP Pavilion g6 Notebook PC,
-HP Pavilion dm4, Fujitsu E753, HP Folio 13-2000.
+We cleared H_RST for H_CSR on spurious interrupt generated when ME_RDY
+while cleared and not while  ME_RDY is set. The spurious interrupt
+is not delivered on all platforms in this case the
+driver may fail to initialize.
 
-With this change, the use_bios_initial_backlight module parameter is no
-longer needed and thus removed.
-
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Tested-by: Alex Hung <alex.hung@canonical.com> # for HP 1000 Notebook PC
-Tested-by: Gustavo Maciel Dias Vieira <gustavo@sagui.org> # for HP Pavilion dm4
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: stable@vger.kernel.org #3.12
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-
-Conflicts:
-	drivers/acpi/video.c
 ---
- drivers/acpi/video.c | 87 ++++++++--------------------------------------------
- 1 file changed, 12 insertions(+), 75 deletions(-)
+ drivers/misc/mei/hw-me.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index d2e069044a0f..47e4deb9dfcd 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -81,13 +81,6 @@ module_param(brightness_switch_enabled, bool, 0644);
- static bool allow_duplicates;
- module_param(allow_duplicates, bool, 0644);
- 
--/*
-- * Some BIOSes claim they use minimum backlight at boot,
-- * and this may bring dimming screen after boot
-- */
--static bool use_bios_initial_backlight = 1;
--module_param(use_bios_initial_backlight, bool, 0644);
--
- static int register_count;
- static int acpi_video_bus_add(struct acpi_device *device);
- static int acpi_video_bus_remove(struct acpi_device *device);
-@@ -388,12 +381,6 @@ static int __init video_set_bqc_offset(const struct dmi_system_id *d)
- 	return 0;
+diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
+index aef6ec137acd..e513354f20a7 100644
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -164,6 +164,9 @@ static void mei_me_hw_reset_release(struct mei_device *dev)
+ 	hcsr |= H_IG;
+ 	hcsr &= ~H_RST;
+ 	mei_hcsr_set(hw, hcsr);
++
++	/* complete this write before we set host ready on another CPU */
++	mmiowb();
  }
+ /**
+  * mei_me_hw_reset - resets fw via mei csr register.
+@@ -214,6 +217,7 @@ static int mei_me_hw_reset(struct mei_device *dev, bool intr_enable)
+ static void mei_me_host_set_ready(struct mei_device *dev)
+ {
+ 	struct mei_me_hw *hw = to_me_hw(dev);
++	hw->host_hw_state = mei_hcsr_read(hw);
+ 	hw->host_hw_state |= H_IE | H_IG | H_RDY;
+ 	mei_hcsr_set(hw, hw->host_hw_state);
+ }
+@@ -506,19 +510,15 @@ irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id)
+ 	/*  check if we need to start the dev */
+ 	if (!mei_host_is_ready(dev)) {
+ 		if (mei_hw_is_ready(dev)) {
++			mei_me_hw_reset_release(dev);
+ 			dev_dbg(&dev->pdev->dev, "we need to start the dev.\n");
  
--static int video_ignore_initial_backlight(const struct dmi_system_id *d)
--{
--	use_bios_initial_backlight = 0;
--	return 0;
--}
+ 			dev->recvd_hw_ready = true;
+ 			wake_up_interruptible(&dev->wait_hw_ready);
 -
- static struct dmi_system_id video_dmi_table[] __initdata = {
- 	/*
- 	 * Broken _BQC workaround http://bugzilla.kernel.org/show_bug.cgi?id=13121
-@@ -438,54 +425,6 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
- 		DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 7720"),
- 		},
- 	},
--	{
--	 .callback = video_ignore_initial_backlight,
--	 .ident = "HP Folio 13-2000",
--	 .matches = {
--		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13 - 2000 Notebook PC"),
--		},
--	},
--	{
--	 .callback = video_ignore_initial_backlight,
--	 .ident = "Fujitsu E753",
--	 .matches = {
--		DMI_MATCH(DMI_BOARD_VENDOR, "FUJITSU"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK E753"),
--		},
--	},
--	{
--	 .callback = video_ignore_initial_backlight,
--	 .ident = "HP Pavilion dm4",
--	 .matches = {
--		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dm4 Notebook PC"),
--		},
--	},
--	{
--	 .callback = video_ignore_initial_backlight,
--	 .ident = "HP Pavilion g6 Notebook PC",
--	 .matches = {
--		 DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
--		 DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion g6 Notebook PC"),
--		},
--	},
--	{
--	 .callback = video_ignore_initial_backlight,
--	 .ident = "HP 1000 Notebook PC",
--	 .matches = {
--		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "HP 1000 Notebook PC"),
--		},
--	},
--	{
--	 .callback = video_ignore_initial_backlight,
--	 .ident = "HP Pavilion m4",
--	 .matches = {
--		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion m4 Notebook PC"),
--		},
--	},
- 	{}
- };
- 
-@@ -827,20 +766,18 @@ acpi_video_init_brightness(struct acpi_video_device *device)
- 	if (!device->cap._BQC)
- 		goto set_level;
- 
--	if (use_bios_initial_backlight) {
--		level = acpi_video_bqc_value_to_level(device, level_old);
--		/*
--		 * On some buggy laptops, _BQC returns an uninitialized
--		 * value when invoked for the first time, i.e.
--		 * level_old is invalid (no matter whether it's a level
--		 * or an index). Set the backlight to max_level in this case.
--		 */
--		for (i = 2; i < br->count; i++)
--			if (level == br->levels[i])
--				break;
--		if (i == br->count || !level)
--			level = max_level;
--	}
-+	level = acpi_video_bqc_value_to_level(device, level_old);
-+	/*
-+	 * On some buggy laptops, _BQC returns an uninitialized
-+	 * value when invoked for the first time, i.e.
-+	 * level_old is invalid (no matter whether it's a level
-+	 * or an index). Set the backlight to max_level in this case.
-+	 */
-+	for (i = 2; i < br->count; i++)
-+		if (level == br->levels[i])
-+			break;
-+	if (i == br->count || !level)
-+		level = max_level;
- 
- set_level:
- 	result = acpi_video_device_lcd_set_level(device, level);
+-			mutex_unlock(&dev->device_lock);
+-			return IRQ_HANDLED;
+ 		} else {
+-			dev_dbg(&dev->pdev->dev, "Reset Completed.\n");
+-			mei_me_hw_reset_release(dev);
+-			mutex_unlock(&dev->device_lock);
+-			return IRQ_HANDLED;
++			dev_dbg(&dev->pdev->dev, "Spurious Interrupt\n");
+ 		}
++		goto end;
+ 	}
+ 	/* check slots available for reading */
+ 	slots = mei_count_full_read_slots(dev);
 -- 
 2.0.0
 
