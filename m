@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929AbaF3R2B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 13:28:01 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:33268 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754752AbaF3R16 (ORCPT
+	id S1755820AbaF3R2T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 13:28:19 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:59345 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755245AbaF3R2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 13:27:58 -0400
-X-Auth-Info: w7zUiNjkHI09yRSn1+neSzpkq8zxskXFSKEVOgI9mZ4=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: geert@linux-m68k.org, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fixes q40_irq_startup to return -ENXIO
-References: <1404097610-5739-1-git-send-email-xerofoify@gmail.com>
-X-Yow: Yow!!  It's LIBERACE and TUESDAY WELD!!  High on a HILL... driving a
- LITTLE CAR...  I wanna be in that LITTLE CAR, too!!  I wanna drive off
- with LIBBY and TUESDAY!
-Date: Mon, 30 Jun 2014 19:27:55 +0200
-In-Reply-To: <1404097610-5739-1-git-send-email-xerofoify@gmail.com> (Nicholas
-	Krause's message of "Sun, 29 Jun 2014 23:06:50 -0400")
-Message-ID: <871tu6ux2c.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.92 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 30 Jun 2014 13:28:17 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhgJAO2dsVNbtAo1/2dsb2JhbABagw2sQQUBAQEBAQEFAW4BmUaBERd1hGAjgRo3iEYByDEXhWSIP2QdhC0Fml6LP4g+g0Q7gTE
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org
+Subject: [PATCH 1/1] Bluetooth: constify seq_operations
+Date: Mon, 30 Jun 2014 19:26:23 +0200
+Message-Id: <1404149183-7059-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicholas Krause <xerofoify@gmail.com> writes:
+bt_seq_ops is only used with __seq_open_private as
+const struct seq_operations *
 
-> Fixes q40_irq_startup to return -ENXIO for cases 11-13 in the switch
-> statement of this function to handle these failure cases.
->
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->  arch/m68k/q40/q40ints.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/m68k/q40/q40ints.c b/arch/m68k/q40/q40ints.c
-> index 513f9bb..9dfa1ea 100644
-> --- a/arch/m68k/q40/q40ints.c
-> +++ b/arch/m68k/q40/q40ints.c
-> @@ -49,7 +49,7 @@ static unsigned int q40_irq_startup(struct irq_data *data)
->  	case 1: case 2: case 8: case 9:
->  	case 11: case 12: case 13:
->  		printk("%s: ISA IRQ %d not implemented by HW\n", __func__, irq);
-> -		/* FIXME return -ENXIO; */
-> +		return -ENXIO;
+Cc: Marcel Holtmann <marcel@holtmann.org>
+Cc: Gustavo Padovan <gustavo@padovan.org>
+Cc: linux-bluetooth@vger.kernel.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ net/bluetooth/af_bluetooth.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-There must be more to it, given the FIXME.
-
-Andreas.
-
+diff --git a/net/bluetooth/af_bluetooth.c b/net/bluetooth/af_bluetooth.c
+index 2021c48..4dca029 100644
+--- a/net/bluetooth/af_bluetooth.c
++++ b/net/bluetooth/af_bluetooth.c
+@@ -639,7 +639,7 @@ static int bt_seq_show(struct seq_file *seq, void *v)
+ 	return 0;
+ }
+ 
+-static struct seq_operations bt_seq_ops = {
++static const struct seq_operations bt_seq_ops = {
+ 	.start = bt_seq_start,
+ 	.next  = bt_seq_next,
+ 	.stop  = bt_seq_stop,
 -- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+1.8.4.5
+
