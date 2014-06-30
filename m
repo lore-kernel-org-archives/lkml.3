@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157AbaF3JJE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 05:09:04 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:51612 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932102AbaF3JJB convert rfc822-to-8bit (ORCPT
+	id S1754997AbaF3JOd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 05:14:33 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:12840 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751716AbaF3JOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 05:09:01 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Richard Leitner'" <richard.leitner@skidata.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCHv2] usb: gadget: serial: replace hardcoded ttyGS with
- PREFIX
-Thread-Topic: [PATCHv2] usb: gadget: serial: replace hardcoded ttyGS with
- PREFIX
-Thread-Index: AQHPlD5SSygGtgUtdESncUl0Nvmcr5uJVOuQ///0GYCAABPTwA==
-Date: Mon, 30 Jun 2014 09:08:01 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1726935E@AcuExch.aculab.com>
-References: <20140627133721.10ca6cab@lxbuild.skidata.net>
-	<20140627174628.GA1449@kroah.com>
-	<20140630083205.596557f1@lxbuild.skidata.net>
-	<20140630103616.620a13a2@lxbuild.skidata.net>
-	<063D6719AE5E284EB5DD2968C1650D6D1726930B@AcuExch.aculab.com>
- <20140630105609.66d4be83@lxbuild.skidata.net>
-In-Reply-To: <20140630105609.66d4be83@lxbuild.skidata.net>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Mon, 30 Jun 2014 05:14:31 -0400
+Message-ID: <53B12A6A.5050105@arm.com>
+Date: Mon, 30 Jun 2014 10:14:18 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: Christoffer Dall <christoffer.dall@linaro.org>
+CC: Will Deacon <Will.Deacon@arm.com>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Eric Auger <eric.auger@linaro.org>,
+        Kim Phillips <kim.phillips@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2 v2] ARM: KVM: user_mem_abort: support stage 2 MMIO
+ page mapping
+References: <1395785294-2545-1-git-send-email-kim.phillips@linaro.org> <1395785294-2545-2-git-send-email-kim.phillips@linaro.org> <20140506180448.GH3066@lvm> <87bnvaotei.fsf@approximate.cambridge.arm.com> <20140507145557.GJ3066@lvm> <20140624102327.GA9121@arm.com> <53A9556D.3000003@arm.com> <20140625194551.a6443252bf913023159d25fd@freescale.com> <20140626084625.GA376@arm.com> <20140630090843.GB9233@cbox>
+In-Reply-To: <20140630090843.GB9233@cbox>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Leitner 
-> On Mon, 30 Jun 2014 08:41:18 +0000
-> David Laight <David.Laight@ACULAB.COM> wrote:
+On 30/06/14 10:08, Christoffer Dall wrote:
+> On Thu, Jun 26, 2014 at 09:46:26AM +0100, Will Deacon wrote:
+>> On Thu, Jun 26, 2014 at 01:45:51AM +0100, Kim Phillips wrote:
+>>> From: Kim Phillips <kim.phillips@linaro.org>
+>>>
+>>> A userspace process can map device MMIO memory via VFIO or /dev/mem,
+>>> e.g., for platform device passthrough support in QEMU.
+>>>
+>>> During early development, we found the PAGE_S2 memory type being used
+>>> for MMIO mappings.  This patch corrects that by using the more strongly
+>>> ordered memory type for device MMIO mappings: PAGE_S2_DEVICE.
+>>>
+>>> Signed-off-by: Kim Phillips <kim.phillips@linaro.org>
+>>> Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
+>>> ---
+>>> Hi, here's a v2, upon request:
+>>>
+>>> - rebased onto today's mainline ToT
+>>> - mmu.o-build tested only (ToT build doesn't complete)
+>>> - made commit text less terse
+>>> - added Christoffer's ack
+>>
+>> Thanks for reposting this so quickly!
+>>
+>>   Acked-by: Will Deacon <will.deacon@arm.com>
+>>
+> Thanks,
 > 
-> > From: Of Richard Leitner
-> > > Replaces all hardcoded ttyGS strings with the PREFIX macro.
-> > > Due to the fact the strings are spread over different source files the
-> > > PREFIX definition is moved to u_serial.h
-> >
-> > Lots of changes like:
-> > > -		DBG(cdev, "acm ttyGS%d completion, err %d\n",
-> > > -				acm->port_num, req->status);
-> > > +		DBG(cdev, "acm %s%d completion, err %d\n",
-> > > +				PREFIX, acm->port_num, req->status);
-> >
-> > I'm not sure this improves the code.
-> 
-> Maybe you're right, the readability of the code wouldn't be better afterwards,
-...
+> Marc, will you apply this one to kvmarm/queue [and kvmarm/next]?
 
-Indeed it will make most attempts to grep for the error message fail.
+Yup, adding it.
 
-	David
-
-
-
+	M.
+-- 
+Jazz is not dead. It just smells funny...
