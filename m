@@ -1,120 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339AbaF3DvO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 23:51:14 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:19980 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754292AbaF3DvM (ORCPT
+	id S1754028AbaF3D6Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 23:58:24 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:4403 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286AbaF3D6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 23:51:12 -0400
-Message-ID: <53B0DEA3.80807@huawei.com>
-Date: Mon, 30 Jun 2014 11:50:59 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Sun, 29 Jun 2014 23:58:23 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sun, 29 Jun 2014 20:48:13 -0700
+Date: Sun, 29 Jun 2014 20:58:17 -0700
+From: John Hubbard <jhubbard@nvidia.com>
+To: =?ISO-8859-15?Q?J=E9r=F4me_Glisse?= <j.glisse@gmail.com>
+CC: <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <mgorman@suse.de>, <hpa@zytor.com>,
+        <peterz@infraread.org>, <aarcange@redhat.com>, <riel@redhat.com>,
+        <jweiner@redhat.com>, <torvalds@linux-foundation.org>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Jatin Kumar <jakumar@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Sherry Cheung <SCheung@nvidia.com>, Duncan Poole <dpoole@nvidia.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        =?ISO-8859-15?Q?J=E9r=F4me_Glisse?= <jglisse@redhat.com>
+Subject: Re: [PATCH 2/6] mm: differentiate unmap for vmscan from other
+ unmap.
+In-Reply-To: <1403920822-14488-3-git-send-email-j.glisse@gmail.com>
+Message-ID: <alpine.DEB.2.10.1406292054080.21595@blueforge.nvidia.com>
+References: <1403920822-14488-1-git-send-email-j.glisse@gmail.com> <1403920822-14488-3-git-send-email-j.glisse@gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v3 3/3] cgroup: fix a race between cgroup_mount() and cgroup_kill_sb()
-References: <53B0DE66.5080100@huawei.com>
-In-Reply-To: <53B0DE66.5080100@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Type: multipart/mixed;
+	boundary="279739828-1357833611-1404100702=:21595"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've converted cgroup to kernfs so cgroup won't be intertwined with
-vfs objects and locking, but there are dark areas.
+--279739828-1357833611-1404100702=:21595
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 
-Run two instances of this script concurrently:
+On Fri, 27 Jun 2014, Jérôme Glisse wrote:
 
-    for ((; ;))
-    {
-    	mount -t cgroup -o cpuacct xxx /cgroup
-    	umount /cgroup
-    }
+> From: Jérôme Glisse <jglisse@redhat.com>
+> 
+> New code will need to be able to differentiate between a regular unmap and
+> an unmap trigger by vmscan in which case we want to be as quick as possible.
+> 
+> Signed-off-by: Jérôme Glisse <jglisse@redhat.com>
+> ---
+>  include/linux/rmap.h | 15 ++++++++-------
+>  mm/memory-failure.c  |  2 +-
+>  mm/vmscan.c          |  4 ++--
+>  3 files changed, 11 insertions(+), 10 deletions(-)
+> 
+> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+> index be57450..eddbc07 100644
+> --- a/include/linux/rmap.h
+> +++ b/include/linux/rmap.h
+> @@ -72,13 +72,14 @@ struct anon_vma_chain {
+>  };
+>  
+>  enum ttu_flags {
+> -	TTU_UNMAP = 1,			/* unmap mode */
+> -	TTU_MIGRATION = 2,		/* migration mode */
+> -	TTU_MUNLOCK = 4,		/* munlock mode */
+> -
+> -	TTU_IGNORE_MLOCK = (1 << 8),	/* ignore mlock */
+> -	TTU_IGNORE_ACCESS = (1 << 9),	/* don't age */
+> -	TTU_IGNORE_HWPOISON = (1 << 10),/* corrupted page is recoverable */
+> +	TTU_VMSCAN = 1,			/* unmap for vmscan */
+> +	TTU_POISON = 2,			/* unmap for poison */
+> +	TTU_MIGRATION = 4,		/* migration mode */
+> +	TTU_MUNLOCK = 8,		/* munlock mode */
+> +
+> +	TTU_IGNORE_MLOCK = (1 << 9),	/* ignore mlock */
+> +	TTU_IGNORE_ACCESS = (1 << 10),	/* don't age */
+> +	TTU_IGNORE_HWPOISON = (1 << 11),/* corrupted page is recoverable */
 
-After a while, I saw two mount processes were stuck at retrying, because
-they were waiting for a subsystem to become free, but the root associated
-with this subsystem never got freed.
+Unless there is a deeper purpose that I am overlooking, I think it would 
+be better to leave the _MLOCK, _ACCESS, and _HWPOISON at their original 
+values. I just can't quite see why they would need to start at bit 9 
+instead of bit 8...
 
-This can happen, if thread A is in the process of killing superblock but
-hasn't called percpu_ref_kill(), and at this time thread B is mounting
-the same cgroup root and finds the root in the root list and performs
-percpu_ref_try_get().
+>  };
+>  
+>  #ifdef CONFIG_MMU
+> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+> index a7a89eb..ba176c4 100644
+> --- a/mm/memory-failure.c
+> +++ b/mm/memory-failure.c
+> @@ -887,7 +887,7 @@ static int page_action(struct page_state *ps, struct page *p,
+>  static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+>  				  int trapno, int flags, struct page **hpagep)
+>  {
+> -	enum ttu_flags ttu = TTU_UNMAP | TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS;
+> +	enum ttu_flags ttu = TTU_POISON | TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS;
+>  	struct address_space *mapping;
+>  	LIST_HEAD(tokill);
+>  	int ret;
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 6d24fd6..5a7d286 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1163,7 +1163,7 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+>  	}
+>  
+>  	ret = shrink_page_list(&clean_pages, zone, &sc,
+> -			TTU_UNMAP|TTU_IGNORE_ACCESS,
+> +			TTU_VMSCAN|TTU_IGNORE_ACCESS,
+>  			&dummy1, &dummy2, &dummy3, &dummy4, &dummy5, true);
+>  	list_splice(&clean_pages, page_list);
+>  	mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
+> @@ -1518,7 +1518,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+>  	if (nr_taken == 0)
+>  		return 0;
+>  
+> -	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
+> +	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_VMSCAN,
+>  				&nr_dirty, &nr_unqueued_dirty, &nr_congested,
+>  				&nr_writeback, &nr_immediate,
+>  				false);
+> -- 
+> 1.9.0
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
-To fix this, we try to increase both the refcnt of the superblock and the
-percpu refcnt of cgroup root.
+Other than that, looks good.
 
-v2:
-- we should try to get both the superblock refcnt and cgroup_root refcnt,
-  because cgroup_root may have no superblock assosiated with it.
-- adjust/add comments.
+Reviewed-by: John Hubbard <jhubbard@nvidia.com>
 
-Cc: <stable@vger.kernel.org> # 3.15
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cgroup.c | 28 ++++++++++++++++++++++------
- 1 file changed, 22 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index d3662ac..11e40cf 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1655,6 +1655,7 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 	int ret;
- 	int i;
- 	bool new_sb;
-+	struct super_block *sb = NULL;
- 
- 	/*
- 	 * The first time anyone tries to mount a cgroup, enable the list
-@@ -1739,14 +1740,18 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 
- 		/*
- 		 * A root's lifetime is governed by its root cgroup.
--		 * tryget_live failure indicate that the root is being
--		 * destroyed.  Wait for destruction to complete so that the
--		 * subsystems are free.  We can use wait_queue for the wait
--		 * but this path is super cold.  Let's just sleep for a bit
--		 * and retry.
-+		 * pin_sb and tryget_live failure indicate that the root is
-+		 * being destroyed.  Wait for destruction to complete so that
-+		 * the subsystems are free.  We can use wait_queue for the
-+		 * wait but this path is super cold.  Let's just sleep for
-+		 * a bit and retry.
- 		 */
--		if (!percpu_ref_tryget_live(&root->cgrp.self.refcnt)) {
-+		sb = kernfs_pin_sb(root->kf_root, NULL);
-+		if (IS_ERR(sb) ||
-+		    !percpu_ref_tryget_live(&root->cgrp.self.refcnt)) {
- 			mutex_unlock(&cgroup_mutex);
-+			if (!IS_ERR_OR_NULL(sb))
-+				deactivate_super(sb);
- 			msleep(10);
- 			ret = restart_syscall();
- 			goto out_free;
-@@ -1790,6 +1795,17 @@ out_free:
- 	dentry = kernfs_mount(fs_type, flags, root->kf_root, &new_sb);
- 	if (IS_ERR(dentry) || !new_sb)
- 		cgroup_put(&root->cgrp);
-+
-+	if (sb) {
-+		/*
-+		 * On success kernfs_mount() returns with sb->s_umount held,
-+		 * but kernfs_mount() also increases the superblock's refcnt,
-+		 * so calling deactivate_super() to drop the refcnt we got when
-+		 * looking up cgroup root won't acquire sb->s_umount again.
-+		 */
-+		WARN_ON(new_sb);
-+		deactivate_super(sb);
-+	}
- 	return dentry;
- }
- 
--- 
-1.8.0.2
-
+thanks,
+John H.
+--279739828-1357833611-1404100702=:21595--
