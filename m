@@ -1,67 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751316AbaF3LNd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 07:13:33 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:62456 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017AbaF3LNc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 07:13:32 -0400
-Subject: Re: [PATCH 3/3] perf tools: Add ui.show-headers config file option
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <1403886418-5556-4-git-send-email-jolsa@kernel.org>
-References: <1403886418-5556-1-git-send-email-jolsa@kernel.org>
-	 <1403886418-5556-4-git-send-email-jolsa@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 30 Jun 2014 20:13:24 +0900
-Message-ID: <1404126804.1648.12.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1751502AbaF3LQv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 07:16:51 -0400
+Received: from mga01.intel.com ([192.55.52.88]:12776 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750815AbaF3LQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 07:16:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,574,1400050800"; 
+   d="scan'208";a="555214105"
+Date: Mon, 30 Jun 2014 16:46:40 +0530
+From: Jenny Tc <jenny.tc@intel.com>
+To: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Pavel Machek <pavel@ucw.cz>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Power Supply Subsystem Maintainer
+Message-ID: <20140630111640.GA13774@jenny-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+Hi all,
 
-2014-06-27 (금), 18:26 +0200, Jiri Olsa:
-> Adding report.show-headers config file option to setup
-> the appearance of the columns headers.
-> 
-> Currently columns headers are displayed by default, following
-> lines in ~/.perfconfig file will disable that:
-> 
->   [ui]
->         show-headers = true
+I have few pending patches on power supply subsystem. So far I haven't seen any response from the power supply maintainers. As per the MAINTAINERS entry, the susbsystem is owned by "Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>". But not sure he still maintains the susbsystem, as I don't see any response from him. Also the last commit I could see on git://git.infradead.org/battery-2.6 is on Feb this year.  I would appreciate if anyone could clarify who really maintains the power supply subsystem.
 
-s/true/false/  :)
-
-I'm afraid that we might need to add some code to show/hide column
-headers for stdio and GTK too..
-
-
-> 
-> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-
-Anyway, with above typo fixed, patches look good!
-
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-
-Thanks,
-Namhyung
-
+Thanks
+Jenny
 
