@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755156AbaF3Je4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 05:34:56 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51224 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754976AbaF3Jez (ORCPT
+	id S1755044AbaF3Jjl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 05:39:41 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:50299 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaF3Jjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 05:34:55 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: jkosina@suse.cz
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        jirislaby@gmail.com, Jiri Slaby <jslaby@suse.cz>,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>
-Subject: [PATCH 1/1] hid: sensor-hub, fix potential memory leak
-Date: Mon, 30 Jun 2014 11:34:48 +0200
-Message-Id: <1404120888-10692-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
+	Mon, 30 Jun 2014 05:39:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140630070755.GA4766@pd.tnic>
+References: <20140630070755.GA4766@pd.tnic>
+Date: Mon, 30 Jun 2014 11:39:39 +0200
+Message-ID: <CAFrcx1=ri4MO3SUn85KqRDc-OBdbRumM44-OsxbU6CckszhH=g@mail.gmail.com>
+Subject: Re: crazy idea (was: Re: [PATCH] perf tool: Carve out ctype.h et al)
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Borislav Petkov <bp@alien8.de>, Fu Wei <fu.wei@linaro.org>
+Cc: Robert Richter <rric@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hsdev is not freed in sensor_hub_probe when kasprintf inside the for
-loop fails. This is because hsdev is not set to platform_data yet (to
-be freed by the code in the err_no_mem label). So free the memory
-explicitly in the 'if' branch, as this is the only place where this is
-(and will) be needed.
+Hi Boris,
 
-Reported-by: coverity
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: srinivas pandruvada <srinivas.pandruvada@intel.com>
-Cc: Jiri Kosina <jkosina@suse.cz>
----
- drivers/hid/hid-sensor-hub.c | 1 +
- 1 file changed, 1 insertion(+)
+-- added Fu Wei in the loop --
 
-diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
-index a8d5c8faf8cf..584e17ce80e4 100644
---- a/drivers/hid/hid-sensor-hub.c
-+++ b/drivers/hid/hid-sensor-hub.c
-@@ -632,6 +632,7 @@ static int sensor_hub_probe(struct hid_device *hdev,
- 			if (name == NULL) {
- 				hid_err(hdev, "Failed MFD device name\n");
- 					ret = -ENOMEM;
-+					kfree(hsdev);
- 					goto err_no_mem;
- 			}
- 			sd->hid_sensor_hub_client_devs[
--- 
-2.0.0
+On 30 June 2014 09:07, Borislav Petkov <bp@alien8.de> wrote:
+> On Sat, Jun 28, 2014 at 01:28:19AM +0200, Borislav Petkov wrote:
+>> Ok, cool. So guys, can we apply this one so that I can continue with the
+>> next round?
+>
+> Ok, I had this crazy idea recently:
+>
+> How about we copy the perf tool code we need for the RAS daemon and
+> start hacking on it in a separate repo, somewhere else?
+>
+> This way we can start adding features and stuff and finally do some real
+> work on it. The code which deals with opening a tracepoint and reading
+> from it should be pretty stable by now so we won't have to sync back
+> with perf too often. And if we do, we'll copy the changed bits.
+>
+> In the meantime, we can still work on the splitting of the kernel code
+> if it is desired.
+>
+> In any case, I would definitely like to parallelize the work because
+> if we wait for the split to happen, we won't have a RAS daemon with
+> persistent events by Christmas 2050 and by then who knows whether we're
+> even alive.</sarcastic joke>
+>
+> So what do you guys think, makes some sense at least?
 
+That makes perfect sense since:
+- we need the RAS daemon implementation soon (not just before the
+final blackdown ;-),
+- for other tools to exist (like RAS daemon) we need to split out the
+perf code in small units. This will take a significant amount of work
+and time to happen,
+- the RAS daemon basically is a shrink-down perf with persistent events support.
+
+How do we start the RAS daemon? As of today we have a prototype
+implementation in C.
+
+Fu Wei, can you confirm about the initial RAS daemon prototype?
+
+Thx, regards,
+Jean
+
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
