@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901AbaF3Ma1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:30:27 -0400
+	id S1754186AbaF3Mai (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:30:38 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751802AbaF3MaY (ORCPT
+	by vger.kernel.org with ESMTP id S1753907AbaF3Maf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:30:24 -0400
+	Mon, 30 Jun 2014 08:30:35 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 180/181] Bluetooth: Fix redundant encryption request for reauthentication
-Date: Mon, 30 Jun 2014 13:53:21 +0200
-Message-Id: <4962c812d88f2a7355095b0bf9b832b0272d2a02.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Fathi Boudra <fathi.boudra@linaro.org>,
+        Michal Marek <mmarek@suse.cz>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 177/181] builddeb: use $OBJCOPY variable instead of objcopy
+Date: Mon, 30 Jun 2014 13:53:18 +0200
+Message-Id: <56044e30eaf5fd87562183b0b7c5e6697e61caf8.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,55 +23,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Fathi Boudra <fathi.boudra@linaro.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 09da1f3463eb81d59685df723b1c5950b7570340 upstream.
+commit 6b4a144a92ab81a1f45fb9b12aebaaaee0d08120 upstream.
 
-When we're performing reauthentication (in order to elevate the
-security level from an unauthenticated key to an authenticated one) we
-do not need to issue any encryption command once authentication
-completes. Since the trigger for the encryption HCI command is the
-ENCRYPT_PEND flag this flag should not be set in this scenario.
-Instead, the REAUTH_PEND flag takes care of all necessary steps for
-reauthentication.
+In cross-build environment, we expect to use the cross-compiler objcopy
+instead of the host objcopy.
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
-Cc: stable@vger.kernel.org
+It fixes following build failures:
+objcopy --only-keep-debug lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko /srv/build/linux/debian/dbgtmp/usr/lib/debug/lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko
+objcopy: Unable to recognise the format of the input file `lib/modules/3.14/kernel/net/ipv6/xfrm6_mode_tunnel.ko'
+
+Signed-off-by: Fathi Boudra <fathi.boudra@linaro.org>
+Fixes: 810e843746b7 ('deb-pkg: split debug symbols in their own package')
+Reviewed-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/bluetooth/hci_conn.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ scripts/package/builddeb | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
-index f0817121ec5e..312915c23930 100644
---- a/net/bluetooth/hci_conn.c
-+++ b/net/bluetooth/hci_conn.c
-@@ -690,14 +690,17 @@ static int hci_conn_auth(struct hci_conn *conn, __u8 sec_level, __u8 auth_type)
- 	if (!test_and_set_bit(HCI_CONN_AUTH_PEND, &conn->flags)) {
- 		struct hci_cp_auth_requested cp;
- 
--		/* encrypt must be pending if auth is also pending */
--		set_bit(HCI_CONN_ENCRYPT_PEND, &conn->flags);
--
- 		cp.handle = cpu_to_le16(conn->handle);
- 		hci_send_cmd(conn->hdev, HCI_OP_AUTH_REQUESTED,
- 			     sizeof(cp), &cp);
-+
-+		/* If we're already encrypted set the REAUTH_PEND flag,
-+		 * otherwise set the ENCRYPT_PEND.
-+		 */
- 		if (conn->key_type != 0xff)
- 			set_bit(HCI_CONN_REAUTH_PEND, &conn->flags);
-+		else
-+			set_bit(HCI_CONN_ENCRYPT_PEND, &conn->flags);
- 	}
- 
- 	return 0;
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index c1bb9be00fa0..6d02fd5d59bd 100644
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -155,11 +155,11 @@ if grep -q '^CONFIG_MODULES=y' $KCONFIG_CONFIG ; then
+ 			for module in $(find lib/modules/ -name *.ko); do
+ 				mkdir -p $(dirname $dbg_dir/usr/lib/debug/$module)
+ 				# only keep debug symbols in the debug file
+-				objcopy --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
++				$OBJCOPY --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
+ 				# strip original module from debug symbols
+-				objcopy --strip-debug $module
++				$OBJCOPY --strip-debug $module
+ 				# then add a link to those
+-				objcopy --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
++				$OBJCOPY --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
+ 			done
+ 		)
+ 	fi
 -- 
 2.0.0
 
