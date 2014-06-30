@@ -1,106 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754611AbaF3HAQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 03:00:16 -0400
-Received: from mail.fireflyinternet.com ([87.106.93.118]:54984 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754554AbaF3HAO (ORCPT
+	id S1754661AbaF3HAu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 03:00:50 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:35266 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754554AbaF3HAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 03:00:14 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
-Date: Mon, 30 Jun 2014 07:59:55 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Ed Tomlinson <edt@aei.ca>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Dave Airlie <airlied@linux.ie>
-Subject: Re: [PATCH 5/5] drm/i915: Kick out vga console
-Message-ID: <20140630065955.GD7687@nuc-i3427.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Ed Tomlinson <edt@aei.ca>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	David Herrmann <dh.herrmann@gmail.com>,
-	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-	Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	Dave Airlie <airlied@linux.ie>
-References: <1401980308-5116-1-git-send-email-daniel.vetter@ffwll.ch>
- <1401980308-5116-5-git-send-email-daniel.vetter@ffwll.ch>
- <1602327.OGkKxHtt2b@grover>
- <3945293.Jtp4nyZMfX@grover>
+	Mon, 30 Jun 2014 03:00:49 -0400
+Date: Mon, 30 Jun 2014 15:59:39 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: himangi774@gmail.com, sachin.kamat@linaro.org, fempsci@gmail.com,
+        weo@weo1.de, sima.baymani@gmail.com, shaun@XResource.ca,
+        lisa@xenapiadmin.com, eu@opreamatei.ro, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3 V2] staging: cxt1e1: remove OS_mem_token_xxxx interfaces
+ in sbecom_inline_linux.h
+Message-ID: <20140630065938.GA28973@devel.8.8.4.4>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3945293.Jtp4nyZMfX@grover>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 28, 2014 at 11:55:19PM -0400, Ed Tomlinson wrote:
-> On Saturday 28 June 2014 15:28:22 Ed Tomlinson wrote:
-> 
-> Resend without html krud which causes list to bounce the message.
-> 
-> > Hi
-> > 
-> > This commit ( a4de05268e674e8ed31df6348269e22d6c6a1803 ) hangs my boot with 3.16-git.  Reverting it lets the boot proceed. 
-> > 
-> > I have an i7 with a built-in i915 and an pcie r7 260x.  The R7 is the primary console.  The i915 is initialized
-> > but does not have a physical display attached.
-> > 
-> > With the patch applied the boot stops at the messages:
-> > 
-> > [drm] Memory usable by graphics device = 2048M
-> > [drm] Replacing VGA console driver
+OS_mem_token_xxxx interfaces are useless, so just replaced with
+sk_buff related fuctions.
 
-The issue looks like that we are ripping out the radeon fb_con whilst it
-is active and that upsets everyone. In which case, I think the
-compromise is:
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+V2: rebased on changes in the first one.
 
+ drivers/staging/cxt1e1/musycc.c              |   45 +++++++++---------
+ drivers/staging/cxt1e1/pmcc4_drv.c           |   10 ++--
+ drivers/staging/cxt1e1/pmcc4_private.h       |    2 +-
+ drivers/staging/cxt1e1/sbecom_inline_linux.h |   65 --------------------------
+ 4 files changed, 27 insertions(+), 95 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index 5f44581..4915f1d 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1439,18 +1439,20 @@ static int i915_kick_out_vgacon(struct drm_i915_private *dev_priv)
- #else
- static int i915_kick_out_vgacon(struct drm_i915_private *dev_priv)
+diff --git a/drivers/staging/cxt1e1/musycc.c b/drivers/staging/cxt1e1/musycc.c
+index 5ddab02..d658f0d 100644
+--- a/drivers/staging/cxt1e1/musycc.c
++++ b/drivers/staging/cxt1e1/musycc.c
+@@ -935,16 +935,15 @@ musycc_bh_tx_eom(mpi_t *pi, int gchan)
+ 		md->data = 0;
+ 		if (md->mem_token) {
+ 			/* upcount channel */
+-			atomic_sub(OS_mem_token_tlen(md->mem_token),
+-				   &ch->tx_pending);
++			unsigned int total_len = md->mem_token->len;
++			atomic_sub(total_len, &ch->tx_pending);
+ 			/* upcount card */
+-			atomic_sub(OS_mem_token_tlen(md->mem_token),
+-				   &pi->up->tx_pending);
++			atomic_sub(total_len, &pi->up->tx_pending);
+ #ifdef SBE_WAN256T3_ENABLE
+ 			if (!atomic_read(&pi->up->tx_pending))
+ 				wan256t3_led(pi->up, LED_TX, 0);
+ #endif
+-			OS_mem_token_free_irq(md->mem_token);
++			dev_kfree_skb_irq(md->mem_token);
+ 			md->mem_token = NULL;
+ 		}
+ 		md->status = 0;
+@@ -1016,7 +1015,7 @@ static void
+ musycc_bh_rx_eom(mpi_t *pi, int gchan)
  {
--       int ret;
-+       int ret = 0;
+ 	mch_t      *ch;
+-	void       *m, *m2;
++	struct sk_buff *m, *m2;
+ 	struct mdesc *md;
+ 	volatile u_int32_t status;
+ 	u_int32_t   error;
+@@ -1041,12 +1040,12 @@ musycc_bh_rx_eom(mpi_t *pi, int gchan)
+ 		error = (status >> 16) & 0xf;
+ 		if (error == 0) {
+ 			{
+-				m2 = OS_mem_token_alloc(cxt1e1_max_mru);
++				m2 = dev_alloc_skb(cxt1e1_max_mru);
+ 				if (m2) {
+ 					/* substitute the mbuf+cluster */
+ 					md->mem_token = m2;
+ 					md->data = cpu_to_le32(virt_to_phys(
+-							       OS_mem_token_data(m2)));
++							       m2->data));
  
-        DRM_INFO("Replacing VGA console driver\n");
+ 					/* pass the received mbuf upward */
+ 					sd_recv_consume(m, status & LENGTH_MASK,
+@@ -1552,11 +1551,11 @@ musycc_chan_down(ci_t *dummy, int channum)
+ 	FLUSH_MEM_WRITE();
+ 	for (i = 0; i < ch->txd_num; i++)
+ 		if (ch->mdt[i].mem_token)
+-			OS_mem_token_free(ch->mdt[i].mem_token);
++			dev_kfree_skb_any(ch->mdt[i].mem_token);
  
-        console_lock();
--       ret = do_take_over_console(&dummy_con, 0, MAX_NR_CONSOLES - 1, 1);
--       if (ret == 0) {
--               ret = do_unregister_con_driver(&vga_con);
+ 	for (i = 0; i < ch->rxd_num; i++)
+ 		if (ch->mdr[i].mem_token)
+-			OS_mem_token_free(ch->mdr[i].mem_token);
++			dev_kfree_skb_any(ch->mdr[i].mem_token);
+ 
+ 	kfree(ch->mdr);
+ 	ch->mdr = NULL;
+@@ -1574,11 +1573,11 @@ musycc_chan_down(ci_t *dummy, int channum)
+ #endif
+ 
+ int
+-musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
++musycc_start_xmit(ci_t *ci, int channum, struct sk_buff *mem_token)
+ {
+ 	mch_t      *ch;
+ 	struct mdesc *md;
+-	void       *m2;
++	struct sk_buff *m2;
+ 	int         txd_need_cnt = 0;
+ 	u_int32_t   len, data_len;
+ 
+@@ -1611,23 +1610,23 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 	/** Determine total amount of data to be sent **/
+ 	/***********************************************/
+ 	m2 = mem_token;
+-	len = OS_mem_token_tlen(m2);
++	len = m2->len;
+ 
+ 	while (m2 && len > 0) {
+-		data_len = OS_mem_token_len(m2);
++		data_len = m2->data_len;
+ 		if (data_len) {
+ 			len -= data_len;
+ 			txd_need_cnt++;
+ 		}
+ 
+-		m2 = OS_mem_token_next(m2);
++		m2 = m2->next;
+ 	}
+ 
+ 	if (txd_need_cnt == 0) {
+ 		if (cxt1e1_log_level >= LOG_MONITOR2)
+ 			pr_info("%s channel %d: no TX data in User buffer\n",
+ 				ci->devname, channum);
+-		OS_mem_token_free(mem_token);
++		dev_kfree_skb_any(mem_token);
+ 		return 0;                   /* no data to send */
+ 	}
+ 	/*************************************************/
+@@ -1639,7 +1638,7 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 			pr_info("start_xmit: discarding buffer, insufficient descriptor cnt %d, need %d.\n",
+ 				ch->txd_num, txd_need_cnt + 1);
+ 		ch->s.tx_dropped++;
+-		OS_mem_token_free(mem_token);
++		dev_kfree_skb_any(mem_token);
+ 		return 0;
+ 	}
+ 
+@@ -1661,14 +1660,14 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 	/**************************************************/
+ 	m2 = mem_token;
+ 	md = ch->txd_usr_add;           /* get current available descriptor */
+-	len = OS_mem_token_tlen(m2);
++	len = m2->len;
+ 
+ 	while (m2 && len > 0) {
+-		u_int32_t data_len = OS_mem_token_len(m2);
++		u_int32_t data_len = m2->data_len;
+ 		u_int32_t status = 0;
+ 
+ 		if (!data_len) {
+-			m2 = OS_mem_token_next(m2);
++			m2 = m2->next;
+ 			continue;
+ 		}
+ 
+@@ -1705,13 +1704,13 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 		 */
+ 		md->mem_token = len ? NULL : mem_token;
+ 
+-		md->data = cpu_to_le32(virt_to_phys(OS_mem_token_data(m2)));
++		md->data = cpu_to_le32(virt_to_phys(m2->data));
+ 		FLUSH_MEM_WRITE();
+ 		md->status = cpu_to_le32(status);
+ 		--ch->txd_free;
+ 		md = md->snext;
+ 
+-		m2 = OS_mem_token_next(m2);
++		m2 = m2->next;
+ 	}
+ 	FLUSH_MEM_WRITE();
+ 
+@@ -1723,7 +1722,7 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 	FLUSH_MEM_WRITE();
+ 	ch->txd_usr_add = md;
+ 
+-	len = OS_mem_token_tlen(mem_token);
++	len = mem_token->len;
+ 	atomic_add(len, &ch->tx_pending);
+ 	atomic_add(len, &ci->tx_pending);
+ 	ch->s.tx_packets++;
+diff --git a/drivers/staging/cxt1e1/pmcc4_drv.c b/drivers/staging/cxt1e1/pmcc4_drv.c
+index 02f6770..3c4404d 100644
+--- a/drivers/staging/cxt1e1/pmcc4_drv.c
++++ b/drivers/staging/cxt1e1/pmcc4_drv.c
+@@ -1216,7 +1216,6 @@ c4_chan_up (ci_t *ci, int channum)
+ {
+     mpi_t      *pi;
+     mch_t      *ch;
+-    struct mbuf *m;
+     struct mdesc *md;
+     int         nts, nbuf, txnum, rxnum;
+     int         addr, i, j, gchan;
+@@ -1357,16 +1356,15 @@ c4_chan_up (ci_t *ci, int channum)
+         }
+         md->next = cpu_to_le32 (virt_to_phys(md->snext));
+ 
+-	m = OS_mem_token_alloc(cxt1e1_max_mru);
+-	if (!m) {
++	md->mem_token = dev_alloc_skb(cxt1e1_max_mru);
++	if (!md->mem_token) {
+ 		if (cxt1e1_log_level >= LOG_MONITOR)
+ 			pr_info(
+ 			"%s: c4_chan_up[%d] - token alloc failure, size = %d.\n",
+ 			ci->devname, channum, cxt1e1_max_mru);
+ 		goto errfree;
+         }
+-        md->mem_token = m;
+-        md->data = cpu_to_le32 (virt_to_phys(OS_mem_token_data (m)));
++        md->data = cpu_to_le32 (virt_to_phys(md->mem_token->data));
+         md->status = tmp | MUSYCC_RX_OWNED;     /* MUSYCC owns RX descriptor **
+                                                  * CODING NOTE:
+                                                  * MUSYCC_RX_OWNED = 0 so no
+@@ -1431,7 +1429,7 @@ errfree:
+     {
+         /* Don't leak all the previously allocated mbufs in this loop */
+         i--;
+-        OS_mem_token_free (ch->mdr[i].mem_token);
++        dev_kfree_skb_any(ch->mdr[i].mem_token);
+     }
+     kfree(ch->mdt);
+     ch->mdt = NULL;
+diff --git a/drivers/staging/cxt1e1/pmcc4_private.h b/drivers/staging/cxt1e1/pmcc4_private.h
+index 451f12f..0edb9f7 100644
+--- a/drivers/staging/cxt1e1/pmcc4_private.h
++++ b/drivers/staging/cxt1e1/pmcc4_private.h
+@@ -50,7 +50,7 @@ struct mdesc
+     volatile u_int32_t status;  /* Buffer Descriptor */
+     u_int32_t   data;           /* Data Pointer */
+     u_int32_t   next;           /* MUSYCC view of Next Pointer */
+-    void       *mem_token;      /* Data */
++    struct sk_buff *mem_token;      /* Data */
+     struct mdesc *snext;
+ };
+ 
+diff --git a/drivers/staging/cxt1e1/sbecom_inline_linux.h b/drivers/staging/cxt1e1/sbecom_inline_linux.h
+index a99073b..5470142 100644
+--- a/drivers/staging/cxt1e1/sbecom_inline_linux.h
++++ b/drivers/staging/cxt1e1/sbecom_inline_linux.h
+@@ -34,71 +34,6 @@
+ u_int32_t   pci_read_32 (u_int32_t *p);
+ void        pci_write_32 (u_int32_t *p, u_int32_t v);
+ 
 -
--               /* Ignore "already unregistered". */
--               if (ret == -ENODEV)
--                       ret = 0;
-+       if (con_is_bound(&vga_con)) {
-+               ret = do_take_over_console(&dummy_con, 0, MAX_NR_CONSOLES - 1, 1);
-+               if (ret == 0) {
-+                       ret = do_unregister_con_driver(&vga_con);
-+
-+                       /* Ignore "already unregistered". */
-+                       if (ret == -ENODEV)
-+                               ret = 0;
-+               }
-        }
-        console_unlock();
-
--Chris
-
+-/*
+- * system dependent callbacks
+- */
+-
+-/****************/
+-/* memory token */
+-/****************/
+-
+-static inline void *
+-OS_mem_token_alloc (size_t size)
+-{
+-    struct sk_buff *skb;
+-
+-    skb = dev_alloc_skb (size);
+-    if (!skb)
+-    {
+-        //pr_warning("no mem in OS_mem_token_alloc !\n");
+-        return NULL;
+-    }
+-    return skb;
+-}
+-
+-
+-static inline void
+-OS_mem_token_free (void *token)
+-{
+-    dev_kfree_skb_any (token);
+-}
+-
+-
+-static inline void
+-OS_mem_token_free_irq (void *token)
+-{
+-    dev_kfree_skb_irq (token);
+-}
+-
+-
+-static inline void *
+-OS_mem_token_data (void *token)
+-{
+-    return ((struct sk_buff *) token)->data;
+-}
+-
+-
+-static inline void *
+-OS_mem_token_next (void *token)
+-{
+-    return ((struct sk_buff*)token)->next;
+-}
+-
+-
+-static inline int
+-OS_mem_token_len (void *token)
+-{
+-    return ((struct sk_buff *) token)->data_len;
+-}
+-
+-
+-static inline int
+-OS_mem_token_tlen (void *token)
+-{
+-    return ((struct sk_buff *) token)->len;
+-}
+-
+ /**********/
+ /* semops */
+ /**********/
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.7.1
+
