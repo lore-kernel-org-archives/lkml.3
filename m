@@ -1,136 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176AbaF3Mno (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:43:44 -0400
+	id S1754971AbaF3MbI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:31:08 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752830AbaF3MbI (ORCPT
+	by vger.kernel.org with ESMTP id S1752830AbaF3MbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:31:08 -0400
+	Mon, 30 Jun 2014 08:31:05 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jianguo Wu <wujianguo@huawei.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 145/181] ARM: 8037/1: mm: support big-endian page tables
-Date: Mon, 30 Jun 2014 13:52:46 +0200
-Message-Id: <68459e49862c1b4ccee4298eafc6f1b9b5d581b1.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jukka Taimisto <jtt@codenomicon.com>,
+        Johan Hedberg <johan.hedberg@intel.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 147/181] Bluetooth: Fix L2CAP deadlock
+Date: Mon, 30 Jun 2014 13:52:48 +0200
+Message-Id: <1fb469d54d67cbcb5323f918e9901cc2ac125806.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 In-Reply-To: <cover.1404128997.git.jslaby@suse.cz>
 References: <cover.1404128997.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jianguo Wu <wujianguo@huawei.com>
+From: Jukka Taimisto <jtt@codenomicon.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 86f40622af7329375e38f282f6c0aab95f3e5f72 upstream.
+commit 8a96f3cd22878fc0bb564a8478a6e17c0b8dca73 upstream.
 
-When enable LPAE and big-endian in a hisilicon board, while specify
-mem=384M mem=512M@7680M, will get bad page state:
+-[0x01 Introduction
 
-Freeing unused kernel memory: 180K (c0466000 - c0493000)
-BUG: Bad page state in process init  pfn:fa442
-page:c7749840 count:0 mapcount:-1 mapping:  (null) index:0x0
-page flags: 0x40000400(reserved)
-Modules linked in:
-CPU: 0 PID: 1 Comm: init Not tainted 3.10.27+ #66
-[<c000f5f0>] (unwind_backtrace+0x0/0x11c) from [<c000cbc4>] (show_stack+0x10/0x14)
-[<c000cbc4>] (show_stack+0x10/0x14) from [<c009e448>] (bad_page+0xd4/0x104)
-[<c009e448>] (bad_page+0xd4/0x104) from [<c009e520>] (free_pages_prepare+0xa8/0x14c)
-[<c009e520>] (free_pages_prepare+0xa8/0x14c) from [<c009f8ec>] (free_hot_cold_page+0x18/0xf0)
-[<c009f8ec>] (free_hot_cold_page+0x18/0xf0) from [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8)
-[<c00b5444>] (handle_pte_fault+0xcf4/0xdc8) from [<c00b6458>] (handle_mm_fault+0xf4/0x120)
-[<c00b6458>] (handle_mm_fault+0xf4/0x120) from [<c0013754>] (do_page_fault+0xfc/0x354)
-[<c0013754>] (do_page_fault+0xfc/0x354) from [<c0008400>] (do_DataAbort+0x2c/0x90)
-[<c0008400>] (do_DataAbort+0x2c/0x90) from [<c0008fb4>] (__dabt_usr+0x34/0x40)
+We have found a programming error causing a deadlock in Bluetooth subsystem
+of Linux kernel. The problem is caused by missing release_sock() call when
+L2CAP connection creation fails due full accept queue.
 
-The bad pfn:fa442 is not system memory(mem=384M mem=512M@7680M), after debugging,
-I find in page fault handler, will get wrong pfn from pte just after set pte,
-as follow:
-do_anonymous_page()
-{
-	...
-	set_pte_at(mm, address, page_table, entry);
+The issue can be reproduced with 3.15-rc5 kernel and is also present in
+earlier kernels.
 
-	//debug code
-	pfn = pte_pfn(entry);
-	pr_info("pfn:0x%lx, pte:0x%llxn", pfn, pte_val(entry));
+-[0x02 Details
 
-	//read out the pte just set
-	new_pte = pte_offset_map(pmd, address);
-	new_pfn = pte_pfn(*new_pte);
-	pr_info("new pfn:0x%lx, new pte:0x%llxn", pfn, pte_val(entry));
-	...
-}
+The problem occurs when multiple L2CAP connections are created to a PSM which
+contains listening socket (like SDP) and left pending, for example,
+configuration (the underlying ACL link is not disconnected between
+connections).
 
-pfn:   0x1fa4f5,     pte:0xc00001fa4f575f
-new_pfn:0xfa4f5, new_pte:0xc00000fa4f5f5f	//new pfn/pte is wrong.
+When L2CAP connection request is received and listening socket is found the
+l2cap_sock_new_connection_cb() function (net/bluetooth/l2cap_sock.c) is called.
+This function locks the 'parent' socket and then checks if the accept queue
+is full.
 
-The bug is happened in cpu_v7_set_pte_ext(ptep, pte):
-An LPAE PTE is a 64bit quantity, passed to cpu_v7_set_pte_ext in the r2 and r3 registers.
-On an LE kernel, r2 contains the LSB of the PTE, and r3 the MSB.
-On a BE kernel, the assignment is reversed.
+1178         lock_sock(parent);
+1179
+1180         /* Check for backlog size */
+1181         if (sk_acceptq_is_full(parent)) {
+1182                 BT_DBG("backlog full %d", parent->sk_ack_backlog);
+1183                 return NULL;
+1184         }
 
-Unfortunately, the current code always assumes the LE case,
-leading to corruption of the PTE when clearing/setting bits.
+If case the accept queue is full NULL is returned, but the 'parent' socket
+is not released. Thus when next L2CAP connection request is received the code
+blocks on lock_sock() since the parent is still locked.
 
-This patch fixes this issue much like it has been done already in the
-cpu_v7_switch_mm case.
+Also note that for connections already established and waiting for
+configuration to complete a timeout will occur and l2cap_chan_timeout()
+(net/bluetooth/l2cap_core.c) will be called. All threads calling this
+function will also be blocked waiting for the channel mutex since the thread
+which is waiting on lock_sock() alread holds the channel mutex.
 
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Acked-by: Marc Zyngier <marc.zyngier@arm.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+We were able to reproduce this by sending continuously L2CAP connection
+request followed by disconnection request containing invalid CID. This left
+the created connections pending configuration.
+
+After the deadlock occurs it is impossible to kill bluetoothd, btmon will not
+get any more data etc. requiring reboot to recover.
+
+-[0x03 Fix
+
+Releasing the 'parent' socket when l2cap_sock_new_connection_cb() returns NULL
+seems to fix the issue.
+
+Signed-off-by: Jukka Taimisto <jtt@codenomicon.com>
+Reported-by: Tommi Mäkilä <tmakila@codenomicon.com>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/arm/mm/proc-v7-3level.S | 18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ net/bluetooth/l2cap_sock.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
-index 01a719e18bb0..22e3ad63500c 100644
---- a/arch/arm/mm/proc-v7-3level.S
-+++ b/arch/arm/mm/proc-v7-3level.S
-@@ -64,6 +64,14 @@ ENTRY(cpu_v7_switch_mm)
- 	mov	pc, lr
- ENDPROC(cpu_v7_switch_mm)
+diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
+index 0098af80b213..07c9aea21244 100644
+--- a/net/bluetooth/l2cap_sock.c
++++ b/net/bluetooth/l2cap_sock.c
+@@ -949,13 +949,16 @@ static struct l2cap_chan *l2cap_sock_new_connection_cb(struct l2cap_chan *chan)
+ 	/* Check for backlog size */
+ 	if (sk_acceptq_is_full(parent)) {
+ 		BT_DBG("backlog full %d", parent->sk_ack_backlog);
++		release_sock(parent);
+ 		return NULL;
+ 	}
  
-+#ifdef __ARMEB__
-+#define rl r3
-+#define rh r2
-+#else
-+#define rl r2
-+#define rh r3
-+#endif
-+
- /*
-  * cpu_v7_set_pte_ext(ptep, pte)
-  *
-@@ -73,13 +81,13 @@ ENDPROC(cpu_v7_switch_mm)
-  */
- ENTRY(cpu_v7_set_pte_ext)
- #ifdef CONFIG_MMU
--	tst	r2, #L_PTE_VALID
-+	tst	rl, #L_PTE_VALID
- 	beq	1f
--	tst	r3, #1 << (57 - 32)		@ L_PTE_NONE
--	bicne	r2, #L_PTE_VALID
-+	tst	rh, #1 << (57 - 32)		@ L_PTE_NONE
-+	bicne	rl, #L_PTE_VALID
- 	bne	1f
--	tst	r3, #1 << (55 - 32)		@ L_PTE_DIRTY
--	orreq	r2, #L_PTE_RDONLY
-+	tst	rh, #1 << (55 - 32)		@ L_PTE_DIRTY
-+	orreq	rl, #L_PTE_RDONLY
- 1:	strd	r2, r3, [r0]
- 	ALT_SMP(W(nop))
- 	ALT_UP (mcr	p15, 0, r0, c7, c10, 1)		@ flush_pte
+ 	sk = l2cap_sock_alloc(sock_net(parent), NULL, BTPROTO_L2CAP,
+ 			      GFP_ATOMIC);
+-	if (!sk)
++	if (!sk) {
++		release_sock(parent);
+ 		return NULL;
++        }
+ 
+ 	bt_sock_reclassify_lock(sk, BTPROTO_L2CAP);
+ 
 -- 
 2.0.0
 
