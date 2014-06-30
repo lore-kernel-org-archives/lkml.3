@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564AbaF3QHA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 12:07:00 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:53800 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754530AbaF3QG5 (ORCPT
+	id S1756427AbaF3QGz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 12:06:55 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:57086 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754530AbaF3QGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 12:06:57 -0400
+	Mon, 30 Jun 2014 12:06:50 -0400
 From: Vincent Guittot <vincent.guittot@linaro.org>
 To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
         linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org
@@ -14,9 +14,9 @@ Cc: preeti@linux.vnet.ibm.com, Morten.Rasmussen@arm.com, efault@gmx.de,
         nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
         daniel.lezcano@linaro.org, dietmar.eggemann@arm.com,
         Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v3 06/12] sched: add per rq cpu_power_orig
-Date: Mon, 30 Jun 2014 18:05:37 +0200
-Message-Id: <1404144343-18720-7-git-send-email-vincent.guittot@linaro.org>
+Subject: [PATCH v3 03/12] sched: fix avg_load computation
+Date: Mon, 30 Jun 2014 18:05:34 +0200
+Message-Id: <1404144343-18720-4-git-send-email-vincent.guittot@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
 References: <1404144343-18720-1-git-send-email-vincent.guittot@linaro.org>
@@ -24,54 +24,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This new field cpu_power_orig reflects the available capacity of a CPUs unlike
-the cpu_power which reflects the current capacity that can be altered by
-frequency and rt tasks.
+The computation of avg_load and avg_load_per_task should only takes into
+account the number of cfs tasks. The non cfs task are already taken into
+account by decreasing the cpu's capacity (cpu_power) and they will be tracked
+in the CPU's utilization (group_utilization) of the next patches
 
 Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
 ---
- kernel/sched/core.c  | 2 +-
- kernel/sched/fair.c  | 1 +
- kernel/sched/sched.h | 1 +
- 3 files changed, 3 insertions(+), 1 deletion(-)
+ kernel/sched/fair.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 54f5722..92dd6d1 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6964,7 +6964,7 @@ void __init sched_init(void)
- #ifdef CONFIG_SMP
- 		rq->sd = NULL;
- 		rq->rd = NULL;
--		rq->cpu_capacity = SCHED_CAPACITY_SCALE;
-+		rq->cpu_capacity = rq->cpu_capacity_orig = SCHED_CAPACITY_SCALE;
- 		rq->post_schedule = 0;
- 		rq->active_balance = 0;
- 		rq->next_balance = jiffies;
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index f0bba5f..7dff578 100644
+index c6dba48..148b277 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -5671,6 +5671,7 @@ static void update_cpu_capacity(struct sched_domain *sd, int cpu)
+@@ -4051,7 +4051,7 @@ static unsigned long capacity_of(int cpu)
+ static unsigned long cpu_avg_load_per_task(int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+-	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
++	unsigned long nr_running = ACCESS_ONCE(rq->cfs.h_nr_running);
+ 	unsigned long load_avg = rq->cfs.runnable_load_avg;
  
- 	capacity >>= SCHED_CAPACITY_SHIFT;
+ 	if (nr_running)
+@@ -5865,7 +5865,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 			load = source_load(i, load_idx);
  
-+	cpu_rq(cpu)->cpu_capacity_orig = capacity;
- 	sdg->sgc->capacity_orig = capacity;
- 
- 	if (sched_feat(ARCH_CAPACITY))
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 2f86361..7b311de 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -568,6 +568,7 @@ struct rq {
- 	struct sched_domain *sd;
- 
- 	unsigned long cpu_capacity;
-+	unsigned long cpu_capacity_orig;
- 
- 	unsigned char idle_balance;
- 	/* For active balancing */
+ 		sgs->group_load += load;
+-		sgs->sum_nr_running += rq->nr_running;
++		sgs->sum_nr_running += rq->cfs.h_nr_running;
+ #ifdef CONFIG_NUMA_BALANCING
+ 		sgs->nr_numa_running += rq->nr_numa_running;
+ 		sgs->nr_preferred_running += rq->nr_preferred_running;
 -- 
 1.9.1
 
