@@ -1,170 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122AbaF3MXn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:23:43 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51918 "EHLO
+	id S1753993AbaF3MXl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:23:41 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51925 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752136AbaF3LxY (ORCPT
+	by vger.kernel.org with ESMTP id S1752568AbaF3LxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:24 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Benjamin Poirier <bpoirier@suse.de>,
-        Tom Herbert <therbert@google.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 015/181] net: Do not enable tx-nocache-copy by default
-Date: Mon, 30 Jun 2014 13:50:36 +0200
-Message-Id: <9f6e089cb55bdc5a90fe6ec755a20941da9a0b3b.1404128997.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 063/181] USB: cdc-acm: fix potential urb leak and PM imbalance in write
+Date: Mon, 30 Jun 2014 13:51:24 +0200
+Message-Id: <26307821d8781367b154e5dadea8c42ccb4d1ff1.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 In-Reply-To: <cover.1404128997.git.jslaby@suse.cz>
 References: <cover.1404128997.git.jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Poirier <bpoirier@suse.de>
+From: Johan Hovold <jhovold@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit cdb3f4a31b64c3a1c6eef40bc01ebc9594c58a8c upstream.
+commit 183a45087d126d126e8dd1d9b2602fc129dff9ad upstream.
 
-There are many cases where this feature does not improve performance or even
-reduces it.
+Make sure to check return value of autopm get in write() in order to
+avoid urb leak and PM counter imbalance on errors.
 
-For example, here are the results from tests that I've run using 3.12.6 on one
-Intel Xeon W3565 and one i7 920 connected by ixgbe adapters. The results are
-from the Xeon, but they're similar on the i7. All numbers report the
-mean±stddev over 10 runs of 10s.
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
 
-1) latency tests similar to what is described in "c6e1a0d net: Allow no-cache
-copy from user on transmit"
-There is no statistically significant difference between tx-nocache-copy
-on/off.
-nic irqs spread out (one queue per cpu)
-
-200x netperf -r 1400,1
-tx-nocache-copy off
-        692000±1000 tps
-        50/90/95/99% latency (us): 275±2/643.8±0.4/799±1/2474.4±0.3
-tx-nocache-copy on
-        693000±1000 tps
-        50/90/95/99% latency (us): 274±1/644.1±0.7/800±2/2474.5±0.7
-
-200x netperf -r 14000,14000
-tx-nocache-copy off
-        86450±80 tps
-        50/90/95/99% latency (us): 334.37±0.02/838±1/2100±20/3990±40
-tx-nocache-copy on
-        86110±60 tps
-        50/90/95/99% latency (us): 334.28±0.01/837±2/2110±20/3990±20
-
-2) single stream throughput tests
-tx-nocache-copy leads to higher service demand
-
-                        throughput  cpu0        cpu1        demand
-                        (Gb/s)      (Gcycle)    (Gcycle)    (cycle/B)
-
-nic irqs and netperf on cpu0 (1x netperf -T0,0 -t omni -- -d send)
-
-tx-nocache-copy off     9402±5      9.4±0.2                 0.80±0.01
-tx-nocache-copy on      9403±3      9.85±0.04               0.838±0.004
-
-nic irqs on cpu0, netperf on cpu1 (1x netperf -T1,1 -t omni -- -d send)
-
-tx-nocache-copy off     9401±5      5.83±0.03   5.0±0.1     0.923±0.007
-tx-nocache-copy on      9404±2      5.74±0.03   5.523±0.009 0.958±0.002
-
-As a second example, here are some results from Eric Dumazet with latest
-net-next.
-tx-nocache-copy also leads to higher service demand
-
-(cpu is Intel(R) Xeon(R) CPU X5660  @ 2.80GHz)
-
-lpq83:~# ./ethtool -K eth0 tx-nocache-copy on
-lpq83:~# perf stat ./netperf -H lpq84 -c
-MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to lpq84.prod.google.com () port 0 AF_INET
-Recv   Send    Send                          Utilization       Service Demand
-Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
-Size   Size    Size     Time     Throughput  local    remote   local   remote
-bytes  bytes   bytes    secs.    10^6bits/s  % S      % U      us/KB   us/KB
-
- 87380  16384  16384    10.00      9407.44   2.50     -1.00    0.522   -1.000
-
- Performance counter stats for './netperf -H lpq84 -c':
-
-       4282.648396 task-clock                #    0.423 CPUs utilized
-             9,348 context-switches          #    0.002 M/sec
-                88 CPU-migrations            #    0.021 K/sec
-               355 page-faults               #    0.083 K/sec
-    11,812,797,651 cycles                    #    2.758 GHz                     [82.79%]
-     9,020,522,817 stalled-cycles-frontend   #   76.36% frontend cycles idle    [82.54%]
-     4,579,889,681 stalled-cycles-backend    #   38.77% backend  cycles idle    [67.33%]
-     6,053,172,792 instructions              #    0.51  insns per cycle
-                                             #    1.49  stalled cycles per insn [83.64%]
-       597,275,583 branches                  #  139.464 M/sec                   [83.70%]
-         8,960,541 branch-misses             #    1.50% of all branches         [83.65%]
-
-      10.128990264 seconds time elapsed
-
-lpq83:~# ./ethtool -K eth0 tx-nocache-copy off
-lpq83:~# perf stat ./netperf -H lpq84 -c
-MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to lpq84.prod.google.com () port 0 AF_INET
-Recv   Send    Send                          Utilization       Service Demand
-Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
-Size   Size    Size     Time     Throughput  local    remote   local   remote
-bytes  bytes   bytes    secs.    10^6bits/s  % S      % U      us/KB   us/KB
-
- 87380  16384  16384    10.00      9412.45   2.15     -1.00    0.449   -1.000
-
- Performance counter stats for './netperf -H lpq84 -c':
-
-       2847.375441 task-clock                #    0.281 CPUs utilized
-            11,632 context-switches          #    0.004 M/sec
-                49 CPU-migrations            #    0.017 K/sec
-               354 page-faults               #    0.124 K/sec
-     7,646,889,749 cycles                    #    2.686 GHz                     [83.34%]
-     6,115,050,032 stalled-cycles-frontend   #   79.97% frontend cycles idle    [83.31%]
-     1,726,460,071 stalled-cycles-backend    #   22.58% backend  cycles idle    [66.55%]
-     2,079,702,453 instructions              #    0.27  insns per cycle
-                                             #    2.94  stalled cycles per insn [83.22%]
-       363,773,213 branches                  #  127.757 M/sec                   [83.29%]
-         4,242,732 branch-misses             #    1.17% of all branches         [83.51%]
-
-      10.128449949 seconds time elapsed
-
-CC: Tom Herbert <therbert@google.com>
-Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/core/dev.c | 5 -----
- 1 file changed, 5 deletions(-)
+ drivers/usb/class/cdc-acm.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 58990d60e65b..704c0c5bed1f 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -5636,13 +5636,8 @@ int register_netdevice(struct net_device *dev)
- 	dev->features |= NETIF_F_SOFT_FEATURES;
- 	dev->wanted_features = dev->features & dev->hw_features;
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index ae4d028b4209..6774bf165083 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -654,7 +654,13 @@ static int acm_tty_write(struct tty_struct *tty,
+ 	memcpy(wb->buf, buf, count);
+ 	wb->len = count;
  
--	/* Turn on no cache copy if HW is doing checksum */
- 	if (!(dev->flags & IFF_LOOPBACK)) {
- 		dev->hw_features |= NETIF_F_NOCACHE_COPY;
--		if (dev->features & NETIF_F_ALL_CSUM) {
--			dev->wanted_features |= NETIF_F_NOCACHE_COPY;
--			dev->features |= NETIF_F_NOCACHE_COPY;
--		}
- 	}
- 
- 	/* Make NETIF_F_HIGHDMA inheritable to VLAN devices.
+-	usb_autopm_get_interface_async(acm->control);
++	stat = usb_autopm_get_interface_async(acm->control);
++	if (stat) {
++		wb->use = 0;
++		spin_unlock_irqrestore(&acm->write_lock, flags);
++		return stat;
++	}
++
+ 	if (acm->susp_count) {
+ 		usb_anchor_urb(wb->urb, &acm->delayed);
+ 		spin_unlock_irqrestore(&acm->write_lock, flags);
 -- 
 2.0.0
 
