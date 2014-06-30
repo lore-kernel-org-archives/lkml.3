@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063AbaF3MlP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:41:15 -0400
+	id S1756094AbaF3Mlj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:41:39 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932213AbaF3MbU (ORCPT
+	by vger.kernel.org with ESMTP id S1754867AbaF3MbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:31:20 -0400
+	Mon, 30 Jun 2014 08:31:19 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 126/181] matroxfb: perform a dummy read of M_STATUS
-Date: Mon, 30 Jun 2014 13:52:27 +0200
-Message-Id: <3633bbaec56c99a04939d6088c711645a284c34c.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 136/181] USB: sierra: fix urb and memory leak on disconnect
+Date: Mon, 30 Jun 2014 13:52:37 +0200
+Message-Id: <e386ef8e2c352e24b25bd95f01957842bbbf1b92.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,46 +23,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Johan Hovold <jhovold@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 972754cfaee94d6e25acf94a497bc0a864d91b7e upstream.
+commit 014333f77c0b71123d6ef7d31a9724e0699c9548 upstream.
 
-I had occasional screen corruption with the matrox framebuffer driver and
-I found out that the reason for the corruption is that the hardware
-blitter accesses the videoram while it is being written to.
+The delayed-write queue was never emptied on disconnect, something which
+would lead to leaked urbs and transfer buffers if the device is
+disconnected before being runtime resumed due to a write.
 
-The matrox driver has a macro WaitTillIdle() that should wait until the
-blitter is idle, but it sometimes doesn't work. I added a dummy read
-mga_inl(M_STATUS) to WaitTillIdle() to fix the problem. The dummy read
-will flush the write buffer in the PCI chipset, and the next read of
-M_STATUS will return the hardware status.
+Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
+online")
 
-Since applying this patch, I had no screen corruption at all.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/video/matrox/matroxfb_base.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/sierra.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/drivers/video/matrox/matroxfb_base.h b/drivers/video/matrox/matroxfb_base.h
-index 556d96ce40bf..89a8a89a5eb2 100644
---- a/drivers/video/matrox/matroxfb_base.h
-+++ b/drivers/video/matrox/matroxfb_base.h
-@@ -698,7 +698,7 @@ void matroxfb_unregister_driver(struct matroxfb_driver* drv);
+diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
+index 5f7f64f70044..0988887e2059 100644
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -767,6 +767,7 @@ static void sierra_close(struct usb_serial_port *port)
+ 	struct usb_serial *serial = port->serial;
+ 	struct sierra_port_private *portdata;
+ 	struct sierra_intf_private *intfdata = port->serial->private;
++	struct urb *urb;
  
- #define mga_fifo(n)	do {} while ((mga_inl(M_FIFOSTATUS) & 0xFF) < (n))
+ 	portdata = usb_get_serial_port_data(port);
  
--#define WaitTillIdle()	do {} while (mga_inl(M_STATUS) & 0x10000)
-+#define WaitTillIdle()	do { mga_inl(M_STATUS); do {} while (mga_inl(M_STATUS) & 0x10000); } while (0)
+@@ -788,6 +789,18 @@ static void sierra_close(struct usb_serial_port *port)
+ 	portdata->opened = 0;
+ 	spin_unlock_irq(&intfdata->susp_lock);
  
- /* code speedup */
- #ifdef CONFIG_FB_MATROX_MILLENIUM
++	for (;;) {
++		urb = usb_get_from_anchor(&portdata->delayed);
++		if (!urb)
++			break;
++		kfree(urb->transfer_buffer);
++		usb_free_urb(urb);
++		usb_autopm_put_interface_async(serial->interface);
++		spin_lock(&portdata->lock);
++		portdata->outstanding_urbs--;
++		spin_unlock(&portdata->lock);
++	}
++
+ 	sierra_stop_rx_urbs(port);
+ 	for (i = 0; i < portdata->num_in_urbs; i++) {
+ 		sierra_release_urb(portdata->in_urbs[i]);
 -- 
 2.0.0
 
