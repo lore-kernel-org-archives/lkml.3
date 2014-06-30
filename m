@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802AbaF3MRf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:17:35 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51968 "EHLO
+	id S1756824AbaF3MRh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:17:37 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51937 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753259AbaF3LxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753202AbaF3LxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 058/181] USB: cdc-acm: fix write and suspend race
-Date: Mon, 30 Jun 2014 13:51:19 +0200
-Message-Id: <6bdf0862d98dd3431ea70f942d3a8a67609e7139.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jeff Layton <jlayton@redhat.com>,
+        "J. Bruce Fields" <bfields@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 047/181] nfsd: don't try to reuse an expired DRC entry off the list
+Date: Mon, 30 Jun 2014 13:51:08 +0200
+Message-Id: <efb4f7e7637104196aa4e6825294efec838f1990.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,60 +23,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Jeff Layton <jlayton@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 5a345c20c17d87099224a4be12e69e5bd7023dca upstream.
+commit a0ef5e19684f0447da9ff0654a12019c484f57ca upstream.
 
-Fix race between write() and suspend() which could lead to writes being
-dropped (or I/O while suspended) if the device is runtime suspended
-while a write request is being processed.
+Currently when we are processing a request, we try to scrape an expired
+or over-limit entry off the list in preference to allocating a new one
+from the slab.
 
-Specifically, suspend() releases the write_lock after determining the
-device is idle but before incrementing the susp_count, thus leaving a
-window where a concurrent write() can submit an urb.
+This is unnecessarily complicated. Just use the slab layer.
 
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/class/cdc-acm.c | 15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+ fs/nfsd/nfscache.c | 36 ++++--------------------------------
+ 1 file changed, 4 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 0b5e381bcbe6..8bde4781d347 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1420,18 +1420,15 @@ static int acm_suspend(struct usb_interface *intf, pm_message_t message)
- 	struct acm *acm = usb_get_intfdata(intf);
- 	int cnt;
+diff --git a/fs/nfsd/nfscache.c b/fs/nfsd/nfscache.c
+index b6af150c96b8..f8f060ffbf4f 100644
+--- a/fs/nfsd/nfscache.c
++++ b/fs/nfsd/nfscache.c
+@@ -132,13 +132,6 @@ nfsd_reply_cache_alloc(void)
+ }
  
-+	spin_lock_irq(&acm->read_lock);
-+	spin_lock(&acm->write_lock);
- 	if (PMSG_IS_AUTO(message)) {
--		int b;
+ static void
+-nfsd_reply_cache_unhash(struct svc_cacherep *rp)
+-{
+-	hlist_del_init(&rp->c_hash);
+-	list_del_init(&rp->c_lru);
+-}
 -
--		spin_lock_irq(&acm->write_lock);
--		b = acm->transmitting;
--		spin_unlock_irq(&acm->write_lock);
--		if (b)
-+		if (acm->transmitting) {
-+			spin_unlock(&acm->write_lock);
-+			spin_unlock_irq(&acm->read_lock);
- 			return -EBUSY;
-+		}
+-static void
+ nfsd_reply_cache_free_locked(struct svc_cacherep *rp)
+ {
+ 	if (rp->c_type == RC_REPLBUFF && rp->c_replvec.iov_base) {
+@@ -416,22 +409,8 @@ nfsd_cache_lookup(struct svc_rqst *rqstp)
+ 
+ 	/*
+ 	 * Since the common case is a cache miss followed by an insert,
+-	 * preallocate an entry. First, try to reuse the first entry on the LRU
+-	 * if it works, then go ahead and prune the LRU list.
++	 * preallocate an entry.
+ 	 */
+-	spin_lock(&cache_lock);
+-	if (!list_empty(&lru_head)) {
+-		rp = list_first_entry(&lru_head, struct svc_cacherep, c_lru);
+-		if (nfsd_cache_entry_expired(rp) ||
+-		    num_drc_entries >= max_drc_entries) {
+-			nfsd_reply_cache_unhash(rp);
+-			prune_cache_entries();
+-			goto search_cache;
+-		}
+-	}
+-
+-	/* No expired ones available, allocate a new one. */
+-	spin_unlock(&cache_lock);
+ 	rp = nfsd_reply_cache_alloc();
+ 	spin_lock(&cache_lock);
+ 	if (likely(rp)) {
+@@ -439,7 +418,9 @@ nfsd_cache_lookup(struct svc_rqst *rqstp)
+ 		drc_mem_usage += sizeof(*rp);
  	}
+ 
+-search_cache:
++	/* go ahead and prune the cache */
++	prune_cache_entries();
++
+ 	found = nfsd_cache_search(rqstp, csum);
+ 	if (found) {
+ 		if (likely(rp))
+@@ -453,15 +434,6 @@ search_cache:
+ 		goto out;
+ 	}
+ 
+-	/*
+-	 * We're keeping the one we just allocated. Are we now over the
+-	 * limit? Prune one off the tip of the LRU in trade for the one we
+-	 * just allocated if so.
+-	 */
+-	if (num_drc_entries >= max_drc_entries)
+-		nfsd_reply_cache_free_locked(list_first_entry(&lru_head,
+-						struct svc_cacherep, c_lru));
 -
--	spin_lock_irq(&acm->read_lock);
--	spin_lock(&acm->write_lock);
- 	cnt = acm->susp_count++;
- 	spin_unlock(&acm->write_lock);
- 	spin_unlock_irq(&acm->read_lock);
+ 	nfsdstats.rcmisses++;
+ 	rqstp->rq_cacherep = rp;
+ 	rp->c_state = RC_INPROG;
 -- 
 2.0.0
 
