@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920AbaF3Mih (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:38:37 -0400
+	id S964817AbaF3Mbe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:31:34 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964795AbaF3Mbf (ORCPT
+	by vger.kernel.org with ESMTP id S964795AbaF3Mbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:31:35 -0400
+	Mon, 30 Jun 2014 08:31:31 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Maurizio Lombardi <mlombard@redhat.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 125/181] ext4: fix wrong assert in ext4_mb_normalize_request()
-Date: Mon, 30 Jun 2014 13:52:26 +0200
-Message-Id: <b0337fd7c5e0d639a0c0d70cc0741c9d533723a1.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 134/181] USB: sierra: fix use after free at suspend/resume
+Date: Mon, 30 Jun 2014 13:52:35 +0200
+Message-Id: <5335b365b1d7a24630fb5485fc19d883eec99147.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,38 +23,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maurizio Lombardi <mlombard@redhat.com>
+From: Johan Hovold <jhovold@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit b5b60778558cafad17bbcbf63e0310bd3c68eb17 upstream.
+commit 8452727de70f6ad850cd6d0aaa18b5d9050aa63b upstream.
 
-The variable "size" is expressed as number of blocks and not as
-number of clusters, this could trigger a kernel panic when using
-ext4 with the size of a cluster different from the size of a block.
+Fix use after free or NULL-pointer dereference during suspend and
+resume.
 
-Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+The port data may never have been allocated (port probe failed)
+or may already have been released by port_remove (e.g. driver is
+unloaded) when suspend and resume are called.
+
+Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
+online")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/ext4/mballoc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/sierra.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 04a5c7504be9..08ddfdac955c 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -3135,7 +3135,7 @@ ext4_mb_normalize_request(struct ext4_allocation_context *ac,
+diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
+index b3f2b60465bd..efdb76a7b787 100644
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -941,6 +941,7 @@ static int sierra_port_remove(struct usb_serial_port *port)
+ 	struct sierra_port_private *portdata;
+ 
+ 	portdata = usb_get_serial_port_data(port);
++	usb_set_serial_port_data(port, NULL);
+ 	kfree(portdata);
+ 
+ 	return 0;
+@@ -957,6 +958,8 @@ static void stop_read_write_urbs(struct usb_serial *serial)
+ 	for (i = 0; i < serial->num_ports; ++i) {
+ 		port = serial->port[i];
+ 		portdata = usb_get_serial_port_data(port);
++		if (!portdata)
++			continue;
+ 		sierra_stop_rx_urbs(port);
+ 		usb_kill_anchored_urbs(&portdata->active);
  	}
- 	BUG_ON(start + size <= ac->ac_o_ex.fe_logical &&
- 			start > ac->ac_o_ex.fe_logical);
--	BUG_ON(size <= 0 || size > EXT4_CLUSTERS_PER_GROUP(ac->ac_sb));
-+	BUG_ON(size <= 0 || size > EXT4_BLOCKS_PER_GROUP(ac->ac_sb));
+@@ -999,6 +1002,9 @@ static int sierra_resume(struct usb_serial *serial)
+ 		port = serial->port[i];
+ 		portdata = usb_get_serial_port_data(port);
  
- 	/* now prepare goal request */
- 
++		if (!portdata)
++			continue;
++
+ 		while ((urb = usb_get_from_anchor(&portdata->delayed))) {
+ 			usb_anchor_urb(urb, &portdata->active);
+ 			intfdata->in_flight++;
 -- 
 2.0.0
 
