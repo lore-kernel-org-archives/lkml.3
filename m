@@ -1,57 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412AbaF3VJK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 17:09:10 -0400
-Received: from smtprelay0086.hostedemail.com ([216.40.44.86]:54607 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752266AbaF3VJJ (ORCPT
+	id S1753797AbaF3VJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 17:09:42 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:63446 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753465AbaF3VJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 17:09:09 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3870:3872:3873:4321:5007:6119:6120:7652:7903:8603:10004:10400:10848:10967:11232:11658:11914:12043:12517:12519:12555:12740:13069:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: burn23_4f95697afe53c
-X-Filterd-Recvd-Size: 1823
-Message-ID: <1404162545.2717.14.camel@joe-AO725>
-Subject: Re: [RFC 1/1] proc: constify seq_operations
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org
-Date: Mon, 30 Jun 2014 14:09:05 -0700
-In-Reply-To: <20140630135744.51ebff73c7e396f1c50f0c81@linux-foundation.org>
-References: <1404154997-15490-1-git-send-email-fabf@skynet.be>
-	 <20140630133939.c24cd71919cd28c90992d6e1@linux-foundation.org>
-	 <1404161370.2717.10.camel@joe-AO725>
-	 <20140630135744.51ebff73c7e396f1c50f0c81@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Jun 2014 17:09:41 -0400
+Date: Mon, 30 Jun 2014 14:08:11 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Mel Gorman <mgorman@suse.de>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] shmem: fix init_page_accessed use to stop !PageLRU bug
+Message-ID: <alpine.LSU.2.11.1406301405230.1096@eggly.anvils>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-30 at 13:57 -0700, Andrew Morton wrote:
-> On Mon, 30 Jun 2014 13:49:30 -0700 Joe Perches <joe@perches.com> wrote:
+Under shmem swapping load, I sometimes hit the VM_BUG_ON_PAGE(!PageLRU)
+in isolate_lru_pages() at mm/vmscan.c:1281!
 
-> > It moves ~100 bytes from data to text
+Commit 2457aec63745 ("mm: non-atomically mark page accessed during page
+cache allocation where possible") looks like interrupted work-in-progress.
 
-> > $ size kernel/user_namespace.o*
-> >    text    data     bss     dec     hex filename
-> >    6676    3107    2248   12031    2eff kernel/user_namespace.o.new
-> >    6580    3211    2248   12039    2f07 kernel/user_namespace.o.old
+mm/filemap.c's call to init_page_accessed() is fine, but not mm/shmem.c's
+- shmem_write_begin() is clearly wrong to use it after shmem_getpage(),
+when the page is always visible in radix_tree, and often already on LRU.
 
-> doh, I only looked at base.o.
-> 
-> I added this to the changelog.  It should have been there originally,
-> please.
-> 
->    text    data     bss     dec     hex filename
->    6817     404    1984    9205    23f5 kernel/user_namespace.o-before
->    6913     308    1984    9205    23f5 kernel/user_namespace.o-after
+Revert change to shmem_write_begin(), and use init_page_accessed() or
+mark_page_accessed() appropriately for SGP_WRITE in shmem_getpage_gfp().
 
-The delta in our object sizes in curious.
+SGP_WRITE also covers shmem_symlink(), which did not mark_page_accessed()
+before; but since many other filesystems use [__]page_symlink(), which did
+and does mark the page accessed, consider this as rectifying an oversight.
 
-x86-64 allyesconfig here.
-What gcc version for you?
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
 
+ mm/shmem.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
+--- 3.16-rc3/mm/shmem.c	2014-06-29 15:22:10.592003936 -0700
++++ linux/mm/shmem.c	2014-06-30 12:15:52.204093217 -0700
+@@ -1029,6 +1029,9 @@ repeat:
+ 		goto failed;
+ 	}
+ 
++	if (page && sgp == SGP_WRITE)
++		mark_page_accessed(page);
++
+ 	/* fallocated page? */
+ 	if (page && !PageUptodate(page)) {
+ 		if (sgp != SGP_READ)
+@@ -1110,6 +1113,9 @@ repeat:
+ 		shmem_recalc_inode(inode);
+ 		spin_unlock(&info->lock);
+ 
++		if (sgp == SGP_WRITE)
++			mark_page_accessed(page);
++
+ 		delete_from_swap_cache(page);
+ 		set_page_dirty(page);
+ 		swap_free(swap);
+@@ -1136,6 +1142,9 @@ repeat:
+ 
+ 		__SetPageSwapBacked(page);
+ 		__set_page_locked(page);
++		if (sgp == SGP_WRITE)
++			init_page_accessed(page);
++
+ 		error = mem_cgroup_charge_file(page, current->mm,
+ 						gfp & GFP_RECLAIM_MASK);
+ 		if (error)
+@@ -1412,13 +1421,9 @@ shmem_write_begin(struct file *file, str
+ 			loff_t pos, unsigned len, unsigned flags,
+ 			struct page **pagep, void **fsdata)
+ {
+-	int ret;
+ 	struct inode *inode = mapping->host;
+ 	pgoff_t index = pos >> PAGE_CACHE_SHIFT;
+-	ret = shmem_getpage(inode, index, pagep, SGP_WRITE, NULL);
+-	if (ret == 0 && *pagep)
+-		init_page_accessed(*pagep);
+-	return ret;
++	return shmem_getpage(inode, index, pagep, SGP_WRITE, NULL);
+ }
+ 
+ static int
