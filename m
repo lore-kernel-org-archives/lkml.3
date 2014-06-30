@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789AbaF3Qzm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 12:55:42 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:65065 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754773AbaF3Qzk (ORCPT
+	id S1756158AbaF3Q4e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 12:56:34 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:42881 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753948AbaF3Q4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 12:55:40 -0400
-Message-ID: <53B19687.5050400@cogentembedded.com>
-Date: Mon, 30 Jun 2014 20:55:35 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 30 Jun 2014 12:56:33 -0400
+Date: Mon, 30 Jun 2014 22:26:26 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] tracing/uprobes: Revert "Support mix of ftrace and
+ perf"
+Message-ID: <20140630165626.GA5619@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20140627170116.GA18298@redhat.com>
+ <20140627170136.GA18319@redhat.com>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Antoine_T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: tj@kernel.org, kishon@ti.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        alexandre.belloni@free-electrons.com, jszhang@marvell.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v7 1/7] phy: add a driver for the Berlin SATA PHY
-References: <1403530783-17180-1-git-send-email-antoine.tenart@free-electrons.com> <1403530783-17180-2-git-send-email-antoine.tenart@free-electrons.com> <53AB1CFD.4040500@cogentembedded.com> <20140630095940.GB10058@kwain> <53B176F1.5060308@gmail.com> <20140630154409.GB29613@kwain>
-In-Reply-To: <20140630154409.GB29613@kwain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20140627170136.GA18319@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14063016-9574-0000-0000-00000E9E7B11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+* Oleg Nesterov <oleg@redhat.com> [2014-06-27 19:01:36]:
 
-On 06/30/2014 07:44 PM, Antoine Ténart wrote:
+> This reverts commit 43fe98913c9f67e3b523615ee3316f9520a623e0.
+> 
+> This patch is very wrong. Firstly, this change leads to unbalanced
+> uprobe_unregister(). Just for example,
+> 
+> 	# perf probe -x /lib/libc.so.6 syscall
+> 	# echo 1 >> /sys/kernel/debug/tracing/events/probe_libc/enable
+> 	# perf record -e probe_libc:syscall whatever
+> 
+> after that uprobe is dead (unregistered) but the user of ftrace/perf
+> can't know this, and it looks as if nobody hits this probe.
+> 
+> This would be easy to fix, but there are other reasons why it is not
+> simple to mix ftrace and perf. If nothing else, they can't share the
+> same ->consumer.filter. This is fixable too, but probably we need to
+> fix the poorly designed uprobe_register() interface first. At least
+> "register" and "apply" should be clearly separated.
+> 
+> Cc: stable@vger.kernel.org # v3.14
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
->>>>> +	/* set the controller speed */
->>>>> +	writel(0x31, ctrl_reg + PORT_SCR_CTL);
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
->>>>     Value undocumented? Or is this the SATA SControl register by chance?
-
->>> Some magic is still there...
-
->> I guess Sergei was referring to AHCI spec here.
-
-    Actually, even to the SATA specs. :-)
-
->> PORT_SCR bits are documented in AHCI spec as:
-
->> 7:4 = 0x3 Limit speed negotiation to a rate not greater than Gen3
->>            communication rate.
-
->> 3:0 = 0x1 Perform interface communication sequence [...]. This is
->>            functionally equivalent to a hard reset [...].
-
->> So, the question is: Should we really need to reset controller in the
->> PHY driver or is it already done in AHCI common code? At least we
->> should change the comment to something like
->> /* set Gen3 controller speed and perform hard reset */
-
-> I just checked, the AHCI common code has a function to do the reset:
-> ahci_reset_controller(). As of the max speed negociation rate, I did not
-> see it in the common AHCI functions.
-
-    You've looked in a wrong place -- since SControl is a standard *SATA* 
-register, it gets read/written by the libata core. The low-level driver only 
-provides scr_{read|write}() methods.
-
-> The eSATA port on the Berlin2Q works without this line, but it may be a
-> good idea to keep the max speed negociation rate.
-
-    It's usually libata's task to negotiate the SATA speed.
-
-> Anyway, we can remove the reset part. Nice catch!
-
-    Thanks.
-
-> Antoine
-
-WBR, Sergei
+-- 
+Thanks and Regards
+Srikar Dronamraju
 
