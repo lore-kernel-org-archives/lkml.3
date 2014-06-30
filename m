@@ -1,130 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487AbaF3WrQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 18:47:16 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:58764 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745AbaF3WrO (ORCPT
+	id S1755905AbaF3WuK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 18:50:10 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:35235 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503AbaF3WuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 18:47:14 -0400
-Date: Mon, 30 Jun 2014 16:47:09 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Andreas Noever <andreas.noever@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH] PCI: Do not touch siblings in
- pci_assign_unassigned_bridge_resources
-Message-ID: <20140630224709.GA22024@google.com>
-References: <1402346730-2508-1-git-send-email-andreas.noever@gmail.com>
- <20140617221620.GC30559@google.com>
- <CAE9FiQXD7hvt0cUYMzvq0r6CbZn=iJZc7BHRaF2nACbG7qwuBQ@mail.gmail.com>
- <CAMxnaaWWuNeNbnUe++N=2bBfs5JyKiq7tHH+_kiQZyQ9aakEHg@mail.gmail.com>
- <CAE9FiQVQ657vDOhdhBq5VC044qt6TUF7FKP_-qy+35g71e56Yg@mail.gmail.com>
+	Mon, 30 Jun 2014 18:50:08 -0400
+Date: Mon, 30 Jun 2014 15:48:39 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH mmotm/next] mm: memcontrol: rewrite charge API: fix
+ shmem_unuse
+Message-ID: <alpine.LSU.2.11.1406301541420.4349@eggly.anvils>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQVQ657vDOhdhBq5VC044qt6TUF7FKP_-qy+35g71e56Yg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 09:41:02PM -0700, Yinghai Lu wrote:
-> On Wed, Jun 18, 2014 at 3:40 PM, Andreas Noever
-> <andreas.noever@gmail.com> wrote:
-> > On Wed, Jun 18, 2014 at 1:39 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> > It seems to fix the testcase (no unwanted resources are released). But
-> > why do you reassign bus and not just skip the top level bridge? If one
-> > of the allocations below bridge failed then a resource of that device
-> > will be in fail_res and bridge->subordinate will get released anyways?
-> > Also by not removing fail_res from the list you trigger the code in
-> > the next loop for the top level bridge (in particular the res->flags =
-> > 0 line looks dangerous).
-> 
-> Should not be dangerous, just second try.
+Under shmem swapping and swapoff load, I sometimes hit the
+VM_BUG_ON_PAGE(!page->mapping) in mem_cgroup_commit_charge() at
+mm/memcontrol.c:6502!  Each time it has been a call from shmem_unuse().
 
-I still don't understand this.  Why do we set "res->flags = 0"?  That
-clears out the resource type.  Where do we figure out the type of "res"
-again?
+Yes, there are some cases (most commonly when the page being unswapped
+is in a file being unlinked and evicted at that time) when the charge
+should not be committed.  In the old scheme, the page got uncharged
+again on release; but in the new scheme, it hits that BUG beforehand.
 
-> > Could you explain why this function attempts to assign resources two
-> > times? In which scenario will a second attempt be successful?
-> 
-> For example, at first mmio is assigned (by firmware), but pref mmio fails,
-> then before second try,  mmio get cleared, then we could separate
-> mmio and mmio pref. So need to try again for pref mmio.
-> 
-> Also I missed one MEM_64 for hotplug path.
-> 
-> So we need two patches.
-> 
-> Thanks
-> 
-> Yinghai
+It's a useful BUG, so adapt shmem_unuse() to allow for it.  Which needs
+more info from shmem_unuse_inode(): so abuse -EAGAIN internally to
+replace the previous !found state (-ENOENT would be a more natural
+code, but that's exactly what you get when the swap has been evicted).
 
-> Subject: [PATCH] pci: Don't release sibiling bridge resources
-> 
-> On hotplug case, we should not touch sibling bridges that is out
-> side of the slots.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  drivers/pci/setup-bus.c |   12 +++++++++---
->  1 file changed, 9 insertions(+), 3 deletions(-)
-> 
-> Index: linux-2.6/drivers/pci/setup-bus.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/pci/setup-bus.c
-> +++ linux-2.6/drivers/pci/setup-bus.c
-> @@ -1676,10 +1676,16 @@ again:
->  	 * Try to release leaf bridge's resources that doesn't fit resource of
->  	 * child device under that bridge
->  	 */
-> -	list_for_each_entry(fail_res, &fail_head, list)
-> -		pci_bus_release_bridge_resources(fail_res->dev->bus,
-> +	list_for_each_entry(fail_res, &fail_head, list) {
-> +		struct pci_bus *bus = fail_res->dev->bus;
-> +
-> +		if (fail_res->dev == bridge)
-> +			bus = bridge->subordinate;
-> +
-> +		pci_bus_release_bridge_resources(bus,
->  						 fail_res->flags & type_mask,
->  						 whole_subtree);
-> +	}
->  
->  	/* restore size and flags */
->  	list_for_each_entry(fail_res, &fail_head, list) {
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
 
-> Subject: [PATCH] pci: Add back missing MEM_64 check for hotplug path
-> 
-> We miss that in
-> |  commit 5b28541552ef5eeffc41d6936105f38c2508e566
-> |    PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources
-> for pci hotplug path.
+ mm/shmem.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-This changelog is useless.  I don't have time to spend a few hours
-figuring out why we want this change.
-
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  drivers/pci/setup-bus.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux-2.6/drivers/pci/setup-bus.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/pci/setup-bus.c
-> +++ linux-2.6/drivers/pci/setup-bus.c
-> @@ -1652,7 +1652,7 @@ void pci_assign_unassigned_bridge_resour
->  	struct pci_dev_resource *fail_res;
->  	int retval;
->  	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
-> -				  IORESOURCE_PREFETCH;
-> +				  IORESOURCE_PREFETCH | IORESOURCE_MEM_64;
->  
->  again:
->  	__pci_bus_size_bridges(parent, &add_list);
-
+--- 3.16-rc2-mm1/mm/shmem.c	2014-06-25 18:43:59.868588121 -0700
++++ linux/mm/shmem.c	2014-06-30 15:05:50.736335600 -0700
+@@ -611,7 +611,7 @@ static int shmem_unuse_inode(struct shme
+ 	radswap = swp_to_radix_entry(swap);
+ 	index = radix_tree_locate_item(&mapping->page_tree, radswap);
+ 	if (index == -1)
+-		return 0;
++		return -EAGAIN;
+ 
+ 	/*
+ 	 * Move _head_ to start search for next from here.
+@@ -670,7 +670,6 @@ static int shmem_unuse_inode(struct shme
+ 			spin_unlock(&info->lock);
+ 			swap_free(swap);
+ 		}
+-		error = 1;	/* not an error, but entry was found */
+ 	}
+ 	return error;
+ }
+@@ -683,7 +682,6 @@ int shmem_unuse(swp_entry_t swap, struct
+ 	struct list_head *this, *next;
+ 	struct shmem_inode_info *info;
+ 	struct mem_cgroup *memcg;
+-	int found = 0;
+ 	int error = 0;
+ 
+ 	/*
+@@ -702,22 +700,24 @@ int shmem_unuse(swp_entry_t swap, struct
+ 	if (error)
+ 		goto out;
+ 	/* No radix_tree_preload: swap entry keeps a place for page in tree */
++	error = -EAGAIN;
+ 
+ 	mutex_lock(&shmem_swaplist_mutex);
+ 	list_for_each_safe(this, next, &shmem_swaplist) {
+ 		info = list_entry(this, struct shmem_inode_info, swaplist);
+ 		if (info->swapped)
+-			found = shmem_unuse_inode(info, swap, &page);
++			error = shmem_unuse_inode(info, swap, &page);
+ 		else
+ 			list_del_init(&info->swaplist);
+ 		cond_resched();
+-		if (found)
++		if (error != -EAGAIN)
+ 			break;
+ 	}
+ 	mutex_unlock(&shmem_swaplist_mutex);
+ 
+-	if (found < 0) {
+-		error = found;
++	if (error) {
++		if (error != -ENOMEM)
++			error = 0;
+ 		mem_cgroup_cancel_charge(page, memcg);
+ 	} else
+ 		mem_cgroup_commit_charge(page, memcg, true);
