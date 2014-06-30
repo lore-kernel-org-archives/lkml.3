@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971AbaF3MbI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:31:08 -0400
+	id S1756193AbaF3MoJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:44:09 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752830AbaF3MbF (ORCPT
+	by vger.kernel.org with ESMTP id S1754910AbaF3MbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:31:05 -0400
+	Mon, 30 Jun 2014 08:31:07 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jukka Taimisto <jtt@codenomicon.com>,
-        Johan Hedberg <johan.hedberg@intel.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 147/181] Bluetooth: Fix L2CAP deadlock
-Date: Mon, 30 Jun 2014 13:52:48 +0200
-Message-Id: <1fb469d54d67cbcb5323f918e9901cc2ac125806.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 146/181] bluetooth: hci_ldisc: fix deadlock condition
+Date: Mon, 30 Jun 2014 13:52:47 +0200
+Message-Id: <a2a20391e95359ae7887f96ed067993c2ab2da2d.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -26,95 +26,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jukka Taimisto <jtt@codenomicon.com>
+From: Felipe Balbi <balbi@ti.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 8a96f3cd22878fc0bb564a8478a6e17c0b8dca73 upstream.
+commit da64c27d3c93ee9f89956b9de86c4127eb244494 upstream.
 
--[0x01 Introduction
+LDISCs shouldn't call tty->ops->write() from within
+->write_wakeup().
 
-We have found a programming error causing a deadlock in Bluetooth subsystem
-of Linux kernel. The problem is caused by missing release_sock() call when
-L2CAP connection creation fails due full accept queue.
+->write_wakeup() is called with port lock taken and
+IRQs disabled, tty->ops->write() will try to acquire
+the same port lock and we will deadlock.
 
-The issue can be reproduced with 3.15-rc5 kernel and is also present in
-earlier kernels.
-
--[0x02 Details
-
-The problem occurs when multiple L2CAP connections are created to a PSM which
-contains listening socket (like SDP) and left pending, for example,
-configuration (the underlying ACL link is not disconnected between
-connections).
-
-When L2CAP connection request is received and listening socket is found the
-l2cap_sock_new_connection_cb() function (net/bluetooth/l2cap_sock.c) is called.
-This function locks the 'parent' socket and then checks if the accept queue
-is full.
-
-1178         lock_sock(parent);
-1179
-1180         /* Check for backlog size */
-1181         if (sk_acceptq_is_full(parent)) {
-1182                 BT_DBG("backlog full %d", parent->sk_ack_backlog);
-1183                 return NULL;
-1184         }
-
-If case the accept queue is full NULL is returned, but the 'parent' socket
-is not released. Thus when next L2CAP connection request is received the code
-blocks on lock_sock() since the parent is still locked.
-
-Also note that for connections already established and waiting for
-configuration to complete a timeout will occur and l2cap_chan_timeout()
-(net/bluetooth/l2cap_core.c) will be called. All threads calling this
-function will also be blocked waiting for the channel mutex since the thread
-which is waiting on lock_sock() alread holds the channel mutex.
-
-We were able to reproduce this by sending continuously L2CAP connection
-request followed by disconnection request containing invalid CID. This left
-the created connections pending configuration.
-
-After the deadlock occurs it is impossible to kill bluetoothd, btmon will not
-get any more data etc. requiring reboot to recover.
-
--[0x03 Fix
-
-Releasing the 'parent' socket when l2cap_sock_new_connection_cb() returns NULL
-seems to fix the issue.
-
-Signed-off-by: Jukka Taimisto <jtt@codenomicon.com>
-Reported-by: Tommi Mäkilä <tmakila@codenomicon.com>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
+Reported-by: Huang Shijie <b32955@freescale.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Tested-by: Andreas Bießmann <andreas@biessmann.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/bluetooth/l2cap_sock.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/bluetooth/hci_ldisc.c | 24 +++++++++++++++++++-----
+ drivers/bluetooth/hci_uart.h  |  1 +
+ 2 files changed, 20 insertions(+), 5 deletions(-)
 
-diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
-index 0098af80b213..07c9aea21244 100644
---- a/net/bluetooth/l2cap_sock.c
-+++ b/net/bluetooth/l2cap_sock.c
-@@ -949,13 +949,16 @@ static struct l2cap_chan *l2cap_sock_new_connection_cb(struct l2cap_chan *chan)
- 	/* Check for backlog size */
- 	if (sk_acceptq_is_full(parent)) {
- 		BT_DBG("backlog full %d", parent->sk_ack_backlog);
-+		release_sock(parent);
- 		return NULL;
- 	}
+diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
+index bc68a440d432..c4d2f0e48685 100644
+--- a/drivers/bluetooth/hci_ldisc.c
++++ b/drivers/bluetooth/hci_ldisc.c
+@@ -118,10 +118,6 @@ static inline struct sk_buff *hci_uart_dequeue(struct hci_uart *hu)
  
- 	sk = l2cap_sock_alloc(sock_net(parent), NULL, BTPROTO_L2CAP,
- 			      GFP_ATOMIC);
--	if (!sk)
-+	if (!sk) {
-+		release_sock(parent);
- 		return NULL;
-+        }
+ int hci_uart_tx_wakeup(struct hci_uart *hu)
+ {
+-	struct tty_struct *tty = hu->tty;
+-	struct hci_dev *hdev = hu->hdev;
+-	struct sk_buff *skb;
+-
+ 	if (test_and_set_bit(HCI_UART_SENDING, &hu->tx_state)) {
+ 		set_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
+ 		return 0;
+@@ -129,6 +125,22 @@ int hci_uart_tx_wakeup(struct hci_uart *hu)
  
- 	bt_sock_reclassify_lock(sk, BTPROTO_L2CAP);
+ 	BT_DBG("");
  
++	schedule_work(&hu->write_work);
++
++	return 0;
++}
++
++static void hci_uart_write_work(struct work_struct *work)
++{
++	struct hci_uart *hu = container_of(work, struct hci_uart, write_work);
++	struct tty_struct *tty = hu->tty;
++	struct hci_dev *hdev = hu->hdev;
++	struct sk_buff *skb;
++
++	/* REVISIT: should we cope with bad skbs or ->write() returning
++	 * and error value ?
++	 */
++
+ restart:
+ 	clear_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
+ 
+@@ -153,7 +165,6 @@ restart:
+ 		goto restart;
+ 
+ 	clear_bit(HCI_UART_SENDING, &hu->tx_state);
+-	return 0;
+ }
+ 
+ static void hci_uart_init_work(struct work_struct *work)
+@@ -289,6 +300,7 @@ static int hci_uart_tty_open(struct tty_struct *tty)
+ 	tty->receive_room = 65536;
+ 
+ 	INIT_WORK(&hu->init_ready, hci_uart_init_work);
++	INIT_WORK(&hu->write_work, hci_uart_write_work);
+ 
+ 	spin_lock_init(&hu->rx_lock);
+ 
+@@ -326,6 +338,8 @@ static void hci_uart_tty_close(struct tty_struct *tty)
+ 	if (hdev)
+ 		hci_uart_close(hdev);
+ 
++	cancel_work_sync(&hu->write_work);
++
+ 	if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
+ 		if (hdev) {
+ 			if (test_bit(HCI_UART_REGISTERED, &hu->flags))
+diff --git a/drivers/bluetooth/hci_uart.h b/drivers/bluetooth/hci_uart.h
+index fffa61ff5cb1..12df101ca942 100644
+--- a/drivers/bluetooth/hci_uart.h
++++ b/drivers/bluetooth/hci_uart.h
+@@ -68,6 +68,7 @@ struct hci_uart {
+ 	unsigned long		hdev_flags;
+ 
+ 	struct work_struct	init_ready;
++	struct work_struct	write_work;
+ 
+ 	struct hci_uart_proto	*proto;
+ 	void			*priv;
 -- 
 2.0.0
 
