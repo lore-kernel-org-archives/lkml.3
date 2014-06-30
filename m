@@ -1,98 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924AbaF3V0m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 17:26:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25373 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124AbaF3V0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 17:26:40 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Ping Cheng <pinglinux@gmail.com>, Jason Gerecke <killertofu@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxwacom-devel@lists.sourceforge.net
-Subject: [PATCH 00/15] Input - Wacom: switch from an USB to a HID driver
-Date: Mon, 30 Jun 2014 17:26:11 -0400
-Message-Id: <1404163586-29582-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1752206AbaF3Vnx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 17:43:53 -0400
+Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:59276 "EHLO
+	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751333AbaF3Vnw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 17:43:52 -0400
+Message-ID: <53B1DA16.5060208@akamai.com>
+Date: Mon, 30 Jun 2014 17:43:50 -0400
+From: Jason Baron <jbaron@akamai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "andi@firstfloor.org" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>
+Subject: Re: [PATCH 0/3] static keys: fix test/set races
+References: <cover.1372457176.git.jbaron@akamai.com> <20140623222802.4900881c@gandalf.local.home>
+In-Reply-To: <20140623222802.4900881c@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+Hi Steve,
 
-this patch series is a cleanup for the Wacom USB driver.
+I took a closer look at this, and I'm thinking now that its simpler to
+just take the &inode->i_mutex in sched_feat_write(), surrounding the
+test/set jump_label call. It should be about 3 lines :)
 
-I started working on this topic when I saw patches floating around which
-implemented a report descriptor parser within the wacom.ko module.
-However, we already have a nice HID subsystem which is more generic than the
-HID implementation we can find in this USB driver.
-Further details of the benefits (code reduction, regression tests) are hopefully
-explained in the commit messages of the corresponding patches.
+I started re-working this with the patches in this series and it just
+seemed like a lot of code for only 1 current use-case. (The udp case
+doesn't appear to disable the branch and thus is not racy.)
 
-Also, I am working on a way to handle the new Wacom tablets in a more generic
-way in the hid tree, so consider this patch series as a first step in this
-direction.
+So I've swung back to what Ingo originally said - I can test/post the
+suggested 3-line patch, unless there are other thoughts...
 
-This patch series transfers the wacom.ko driver from the input tree into the hid
-tree. I did not made the corresponding move of the files in the series hoping
-that we will find a way to achieve it if this step is validated.
+Thanks,
 
-IMO, the smoothest path would be that Jiri takes care of the wacom driver
-in the input tree (and that we move into into the hid subfolder). This can be
-achieve if the current pending wacom patches are applied in the hid tree too.
+-Jason
 
-Another solution could be to keep the wacom changes in the input tree and put the
-hid changes in the hid tree by using separate commits. Once 3.17 is out, we can
-then change the module into the hid subfolder.
-
-I wanted to send this patch series right now so we can figure out how we will
-handle the transition.
-
-I am pretty confident the patch series does not break any existing device
-(except for the required user space changes which can be handled correctly if
-we tackle them right now). The USB commands are executed in the same way,
-and the protocol handling is also done in the same way.
-
-Anyway, the net difference in lines of code (-307) should be enough to be of
-interest.
-
-Note: This patch series requires the current pending wacom patches to be applied.
-I set up a tree with all the patch applied if anyone wants to give a try:
-https://github.com/bentiss/linux/commits/hid-wacom-legacy-3.16-rc3
-
-Cheers,
-Benjamin
-
-Benjamin Tissoires (15):
-  Input - wacom: include and use linux/hid.h
-  Input - wacom: switch from an USB driver to a HID driver
-  Input - wacom: use hid communication instead of plain usb
-  Input - wacom: use HID core to actually fetch the report descriptor
-  Input - wacom: compute the HID report size to get the actual packet
-    size
-  Input - wacom: install LED/OLED sysfs files in the HID device instead
-    of USB
-  Input - wacom: register the input devices on top of the HID one
-  Input - wacom: remove usb dependency for siblings devices
-  Input - wacom: register power device at the HID level
-  Input - wacom: use hid_info instead of plain dev_info
-  HID: uhid: add and set HID_TYPE_UHID for uhid devices
-  Input - wacom: use in-kernel HID parser
-  Input - wacom: use hidinput_calc_abs_res instead of duplicating its
-    code
-  Input - wacom: remove field pktlen declaration in the list of devices
-  Input - wacom: keep wacom_ids ordered
-
- drivers/hid/hid-core.c           |  15 +-
- drivers/hid/hid-wacom.c          |   2 +-
- drivers/hid/uhid.c               |   2 +
- drivers/input/tablet/wacom.h     |   7 +-
- drivers/input/tablet/wacom_sys.c | 908 +++++++++++++--------------------------
- drivers/input/tablet/wacom_wac.c | 647 ++++++++++++++--------------
- drivers/input/tablet/wacom_wac.h |  10 +-
- include/linux/hid.h              |   4 +-
- 8 files changed, 644 insertions(+), 951 deletions(-)
-
--- 
-2.0.0
+On 06/23/2014 10:28 PM, Steven Rostedt wrote:
+> 
+> Cleaning out my INBOX I found this patch series. It seems to have been
+> forgotten about. It ended up with Ingo and Peter agreeing with the way
+> things should be done and I thought Jason was going to send an update.
+> But that seems to never have happened.
+> 
+> Does this patch series still look legit? Should we pursue it?
+> 
+> -- Steve
+> 
+> On Fri, 28 Jun 2013 22:30:28 +0000 (GMT)
+> jbaron@akamai.com wrote:
+> 
+>> Hi,
+>>
+>> As pointed out by Andi Kleen, some static key users can be racy because they
+>> check the value of the key->enabled, and then subsequently update the branch
+>> direction. A number of call sites have 'higher' level locking that avoids this
+>> race, but the usage in the scheduler features does not. See:
+>> http://lkml.indiana.edu/hypermail/linux/kernel/1304.2/01655.html
+>>
+>> Thus, introduce a new API that does the check and set under the
+>> 'jump_label_mutex'. This should also allow to simplify call sites a bit.
+>>
+>> Users of static keys should use either the inc/dec or the set_true/set_false
+>> API.
+>>
+>> Thanks,
+>>
+>> -Jason
+>>
+>>
+>> Jason Baron (3):
+>>   static_keys: Add a static_key_slow_set_true()/false() interface
+>>   sched: fix static keys race in sched_feat
+>>   udp: make use of static_key_slow_set_true() interface
+>>
+>>  Documentation/static-keys.txt |    8 ++++++++
+>>  include/linux/jump_label.h    |   30 ++++++++++++++++++++++++++++++
+>>  kernel/jump_label.c           |   40 ++++++++++++++++++++++++++++++++++++++++
+>>  kernel/sched/core.c           |   12 +++++-------
+>>  kernel/sched/sched.h          |   10 +++++-----
+>>  net/ipv4/udp.c                |    9 ++++-----
+>>  net/ipv6/udp.c                |    9 ++++-----
+>>  7 files changed, 96 insertions(+), 22 deletions(-)
+>>
+> 
 
