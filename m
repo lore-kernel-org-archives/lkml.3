@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233AbaF3Mbp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:31:45 -0400
+	id S932378AbaF3Mgq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:36:46 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755173AbaF3Mbm (ORCPT
+	by vger.kernel.org with ESMTP id S1755206AbaF3Mbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:31:42 -0400
+	Mon, 30 Jun 2014 08:31:44 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
-        Chen Gong <gong.chen@linux.jf.intel.com>,
+Cc: linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 114/181] mm/memory-failure.c: don't let collect_procs() skip over processes for MF_ACTION_REQUIRED
-Date: Mon, 30 Jun 2014 13:52:15 +0200
-Message-Id: <709cc7fa85380d7a51079122867945b1c3473631.1404128998.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 118/181] mm: vmscan: clear kswapd's special reclaim powers before exiting
+Date: Mon, 30 Jun 2014 13:52:19 +0200
+Message-Id: <9e88c3ebabe6683dd3d4269060ce977059cf924b.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -28,129 +27,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tony Luck <tony.luck@intel.com>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 74614de17db6fb472370c426d4f934d8d616edf2 upstream.
+commit 71abdc15adf8c702a1dd535f8e30df50758848d2 upstream.
 
-When Linux sees an "action optional" machine check (where h/w has reported
-an error that is not in the current execution path) we generally do not
-want to signal a process, since most processes do not have a SIGBUS
-handler - we'd just prematurely terminate the process for a problem that
-they might never actually see.
+When kswapd exits, it can end up taking locks that were previously held
+by allocating tasks while they waited for reclaim.  Lockdep currently
+warns about this:
 
-task_early_kill() decides whether to consider a process - and it checks
-whether this specific process has been marked for early signals with
-"prctl", or if the system administrator has requested early signals for
-all processes using /proc/sys/vm/memory_failure_early_kill.
+On Wed, May 28, 2014 at 06:06:34PM +0800, Gu Zheng wrote:
+>  inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
+>  kswapd2/1151 [HC0[0]:SC0[0]:HE1:SE1] takes:
+>   (&sig->group_rwsem){+++++?}, at: exit_signals+0x24/0x130
+>  {RECLAIM_FS-ON-W} state was registered at:
+>     mark_held_locks+0xb9/0x140
+>     lockdep_trace_alloc+0x7a/0xe0
+>     kmem_cache_alloc_trace+0x37/0x240
+>     flex_array_alloc+0x99/0x1a0
+>     cgroup_attach_task+0x63/0x430
+>     attach_task_by_pid+0x210/0x280
+>     cgroup_procs_write+0x16/0x20
+>     cgroup_file_write+0x120/0x2c0
+>     vfs_write+0xc0/0x1f0
+>     SyS_write+0x4c/0xa0
+>     tracesys+0xdd/0xe2
+>  irq event stamp: 49
+>  hardirqs last  enabled at (49):  _raw_spin_unlock_irqrestore+0x36/0x70
+>  hardirqs last disabled at (48):  _raw_spin_lock_irqsave+0x2b/0xa0
+>  softirqs last  enabled at (0):  copy_process.part.24+0x627/0x15f0
+>  softirqs last disabled at (0):            (null)
+>
+>  other info that might help us debug this:
+>   Possible unsafe locking scenario:
+>
+>         CPU0
+>         ----
+>    lock(&sig->group_rwsem);
+>    <Interrupt>
+>      lock(&sig->group_rwsem);
+>
+>   *** DEADLOCK ***
+>
+>  no locks held by kswapd2/1151.
+>
+>  stack backtrace:
+>  CPU: 30 PID: 1151 Comm: kswapd2 Not tainted 3.10.39+ #4
+>  Call Trace:
+>    dump_stack+0x19/0x1b
+>    print_usage_bug+0x1f7/0x208
+>    mark_lock+0x21d/0x2a0
+>    __lock_acquire+0x52a/0xb60
+>    lock_acquire+0xa2/0x140
+>    down_read+0x51/0xa0
+>    exit_signals+0x24/0x130
+>    do_exit+0xb5/0xa50
+>    kthread+0xdb/0x100
+>    ret_from_fork+0x7c/0xb0
 
-But for MF_ACTION_REQUIRED case we must not defer.  The error is in the
-execution path of the current thread so we must send the SIGBUS
-immediatley.
+This is because the kswapd thread is still marked as a reclaimer at the
+time of exit.  But because it is exiting, nobody is actually waiting on
+it to make reclaim progress anymore, and it's nothing but a regular
+thread at this point.  Be tidy and strip it of all its powers
+(PF_MEMALLOC, PF_SWAPWRITE, PF_KSWAPD, and the lockdep reclaim state)
+before returning from the thread function.
 
-Fix by passing a flag argument through collect_procs*() to
-task_early_kill() so it knows whether we can defer or must take action.
-
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Chen Gong <gong.chen@linux.jf.intel.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reported-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- mm/memory-failure.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ mm/vmscan.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index fe4873b010eb..340fc9ae63bd 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -384,10 +384,12 @@ static void kill_procs(struct list_head *to_kill, int forcekill, int trapno,
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index d873137bf503..1d891f49587b 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -3298,7 +3298,10 @@ static int kswapd(void *p)
+ 		}
  	}
+ 
++	tsk->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD);
+ 	current->reclaim_state = NULL;
++	lockdep_clear_current_reclaim_state();
++
+ 	return 0;
  }
  
--static int task_early_kill(struct task_struct *tsk)
-+static int task_early_kill(struct task_struct *tsk, int force_early)
- {
- 	if (!tsk->mm)
- 		return 0;
-+	if (force_early)
-+		return 1;
- 	if (tsk->flags & PF_MCE_PROCESS)
- 		return !!(tsk->flags & PF_MCE_EARLY);
- 	return sysctl_memory_failure_early_kill;
-@@ -397,7 +399,7 @@ static int task_early_kill(struct task_struct *tsk)
-  * Collect processes when the error hit an anonymous page.
-  */
- static void collect_procs_anon(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -413,7 +415,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
- 	for_each_process (tsk) {
- 		struct anon_vma_chain *vmac;
- 
--		if (!task_early_kill(tsk))
-+		if (!task_early_kill(tsk, force_early))
- 			continue;
- 		anon_vma_interval_tree_foreach(vmac, &av->rb_root,
- 					       pgoff, pgoff) {
-@@ -432,7 +434,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
-  * Collect processes when the error hit a file mapped page.
-  */
- static void collect_procs_file(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -443,7 +445,7 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
- 	for_each_process(tsk) {
- 		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
- 
--		if (!task_early_kill(tsk))
-+		if (!task_early_kill(tsk, force_early))
- 			continue;
- 
- 		vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff,
-@@ -469,7 +471,8 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
-  * First preallocate one tokill structure outside the spin locks,
-  * so that we can kill at least one process reasonably reliable.
-  */
--static void collect_procs(struct page *page, struct list_head *tokill)
-+static void collect_procs(struct page *page, struct list_head *tokill,
-+				int force_early)
- {
- 	struct to_kill *tk;
- 
-@@ -480,9 +483,9 @@ static void collect_procs(struct page *page, struct list_head *tokill)
- 	if (!tk)
- 		return;
- 	if (PageAnon(page))
--		collect_procs_anon(page, tokill, &tk);
-+		collect_procs_anon(page, tokill, &tk, force_early);
- 	else
--		collect_procs_file(page, tokill, &tk);
-+		collect_procs_file(page, tokill, &tk, force_early);
- 	kfree(tk);
- }
- 
-@@ -967,7 +970,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
- 	 * there's nothing that can be done.
- 	 */
- 	if (kill)
--		collect_procs(ppage, &tokill);
-+		collect_procs(ppage, &tokill, flags & MF_ACTION_REQUIRED);
- 
- 	ret = try_to_unmap(ppage, ttu);
- 	if (ret != SWAP_SUCCESS)
 -- 
 2.0.0
 
