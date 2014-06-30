@@ -1,117 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885AbaF3CJh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 22:09:37 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:58039 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753435AbaF3CJg (ORCPT
+	id S1753874AbaF3CdK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 22:33:10 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:54662 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753435AbaF3CdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 22:09:36 -0400
+	Sun, 29 Jun 2014 22:33:08 -0400
+X-IronPort-AV: E=Sophos;i="5.00,804,1396972800"; 
+   d="scan'208";a="32596876"
+Message-ID: <53B0CC45.4080109@cn.fujitsu.com>
+Date: Mon, 30 Jun 2014 10:32:37 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <20140629213206.GE2162@thunk.org>
-References: <CAPDOMVg=L+spebzkckNpM0=9NY=meV=F_+ko+VJN_6M50NdNew@mail.gmail.com>
-	<CAPDOMVjnROuS4D4E2B7=PxOZUB4YXHuFUKy5C9Y8Lm7gxN=N_Q@mail.gmail.com>
-	<20140628201804.215ca896@alan.etchedpixels.co.uk>
-	<CAPDOMVgYsQ_zDaBN-XPwN06OUvph9YGPRqn2gUoso4f5y2fZ=g@mail.gmail.com>
-	<CAPNrq4yZTFXhPG4U5H4mqFw-xbvJL5Ht-XofwKTqApgM2jsAGQ@mail.gmail.com>
-	<53AFBE8A.3020408@linux.com>
-	<20140629213206.GE2162@thunk.org>
-Date: Sun, 29 Jun 2014 22:09:35 -0400
-Message-ID: <CAPDOMVgNZ84yWM1V=P_CX2GNyOFqf_LSTe14vsqNuE4e4TSnZw@mail.gmail.com>
-Subject: Re: Cleanup of Kernel Bugzilla
-From: Nick Krause <xerofoify@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Levente Kurusa <levex@linux.com>,
-        "Gideon D'souza" <gidisrael@gmail.com>,
-        Nick Krause <xerofoify@gmail.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>,
+        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH 2/2] workqueue: stronger test in process_one_work()
+References: <1401780809-12331-1-git-send-email-laijs@cn.fujitsu.com> <1401780809-12331-2-git-send-email-laijs@cn.fujitsu.com> <20140619194432.GC7390@mtj.dyndns.org> <53AC03AF.9050303@cn.fujitsu.com>
+In-Reply-To: <53AC03AF.9050303@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If that is true , it may be a good idea to get me or someone to write
-a text file like maintainers that
-is used to keep track of open bugs by subsystem in the main kernel directory.
-Cheers Nick
+Ping.
 
-On Sun, Jun 29, 2014 at 5:32 PM, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Sun, Jun 29, 2014 at 09:21:46AM +0200, Levente Kurusa wrote:
+Thanks,
+Lai
+
+On 06/26/2014 07:27 PM, Lai Jiangshan wrote:
+> On 06/20/2014 03:44 AM, Tejun Heo wrote:
+>> On Tue, Jun 03, 2014 at 03:33:28PM +0800, Lai Jiangshan wrote:
+>>> When POOL_DISASSOCIATED is cleared, the running worker's local CPU should
+>>> be the same as pool->cpu without any exception even during cpu-hotplug.
+>>>
+>>> This fix changes "(proposition_A && proposition_B && proposition_C)"
+>>> to "(proposition_B && proposition_C)", so if the old compound proposition
+>>> is true, the new one must be true too. so this fix will not hide any
+>>> possible bug which can be hit by old test.
+>>>
+>>> CC: Jason J. Herne <jjherne@linux.vnet.ibm.com>
+>>> CC: Sasha Levin <sasha.levin@oracle.com>
+>>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 >>
->> I think that is because they are relatively young and they are generally
->> used for one direct purpose. The kernel has to make sure it works in a lot
->> of different situations and hence a lot of different bugs arise.
->
-> There are a huge number of bugs which are hardware specific --- and
-> worse, fixing it for one hardware device can often cause problems for
-> others.
->
->> >With the linux kernel not only doesn't anything exist, the project
->> >itself is so bloody hard right, kernel programming, most of the
->> >bugzilla bugs I can barely understand let alone even begin to deduce
->> >what is going on. Now given that the list itself isn't maintained
->> >makes things extremely hard.
+>> Applied to wq/for-3.17 with minor updates.
 >>
->> There are still methods to extract various unresolved bugs from the
->> bugzilla though. Look in any subsystem you find delicious and then
->> just sort the bugs by the date they were modified. This will yield
->> a list of nice fresh bugs along with some recently fixed bugs.
->
-> Or, try to find your own bugs.  Grab the development kernel, and see
-> if it breaks on your system.  If it does, and it was working on the
-> last stable kernel, then you can use "git bisect" to try to find the
-> point where things broke, and report the problem, and perhaps try to
-> figure out why it didn't work.  This can be a huge benefit for
-> developers who can't test their changes on every single hardware
-> configuration out there, so this sort of early testing of either daily
-> linux-next, or the mainline linux tree right after the merge window,
-> is a great way to learn about kernel programming.
->
-> Because of the focus on "no new regressions", testing the bleeding
-> edge development kernels so we can fix problems before they get
-> released to civilians is not only important, but often means that the
-> bugs that are still open are the ones which are incredibly hard to
-> reproduce, or which require very specialized hardware.  So it's very
-> likely that they won't be the bugs that are best suited for people who
-> are just getting started on kernel development.  Basically, for the
-> most part, if they were easy, they would have been fixed already.  :-)
->
->> I brought this up as well on the Kernel Summit list. There wasn't any
->> feedback on this :-), I guess there are some maintainers who care about
->> bugzilla, but the rest (and the majority probably) does not care.
->
-> If you ("you" being the generic you) are someone who likes grooming
-> the bug tracking systems, you can certainly start to try to figure out
-> which bugs are no longer relevant, and then work with someone like
-> Alan so they can get closed out.  Over time, as you become trusted to
-> have good judgement over bugs, various subsystem maintainers may be
-> willing to give you admin bits to close bugs directly.  (And by the
-> way, that's something else important to note --- it's good to
-> specialize; the kernel is huge, so focusing on a single subsystem is a
-> good way to more quickly build up expertise, and for developers for
-> that subsystem to get to know you and to trust your judgement and your
-> skills.)
->
-> However, you may find that unless you're someone who tends to be a bit
-> obsessive-compulsive, that grooming the bugzilla doesn't really
-> provide much in the way of real benefit to kernel development, and so
-> don't provide you with much satisfaction.
->
-> After all, we don't have any direct management oversight over
-> developers for the upstream kernel.  So tracking things so that
-> policies such as "all P1 bugs must be updated every day" can be
-> enforced, or to keep lists of which bugs have been opened for the
-> longest time so that people can have long interminable meetings about
-> why a short-staffed team has so many bugs open, are things which are
-> much more applicable for pointy-haired engineering managers who can
-> boss engineers around and tell them to work on a particular bugs or
-> else they will get a bad rating at the next performance review.  But
-> for a volunteer project, keeping track of bugs is something that has
-> benefits which are much more indirect.  If as a result, you don't find
-> bug grooming to be very satisfying, there's no shame in moving on to
-> some other form of kernel contributions that *do* give you more
-> satisfaction.
->
-> Best regards,
->
->                                                 - Ted
+>> Nice set of cleanups.  Thanks!
+>>
+> 
+> Hi,Tejun
+> 
+> I found the slight earlier 6 patches are in wq/for-3.17.
+> But these two patches (in this email thread) are not in wq/for-3.17 yet.
+> 
+> workqueue: clear POOL_DISASSOCIATED in rebind_workers()
+> workqueue: stronger test in process_one_work()
+> 
+> Thanks,
+> Lai
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
