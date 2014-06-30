@@ -1,62 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756064AbaF3P5x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:57:53 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58251 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754706AbaF3P5r (ORCPT
+	id S1756120AbaF3P6r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:58:47 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:38016 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754590AbaF3P6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:57:47 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Keerthy J <j-keerthy@ti.com>
-CC: Tero Kristo <t-kristo@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH V2 6/6] regulator: palmas: Fix SMPS enable/disable/is_enable for tps65917
-Date: Mon, 30 Jun 2014 10:57:39 -0500
-Message-ID: <1404143859-8160-7-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404143859-8160-1-git-send-email-nm@ti.com>
-References: <1404143859-8160-1-git-send-email-nm@ti.com>
+	Mon, 30 Jun 2014 11:58:44 -0400
+Date: Mon, 30 Jun 2014 11:58:39 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: John Hubbard <jhubbard@nvidia.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, hpa@zytor.com,
+        peterz@infraread.org, aarcange@redhat.com, riel@redhat.com,
+        jweiner@redhat.com, torvalds@linux-foundation.org,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Jatin Kumar <jakumar@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Sherry Cheung <SCheung@nvidia.com>, Duncan Poole <dpoole@nvidia.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        =?iso-8859-1?B?Suly9G1l?= Glisse <jglisse@redhat.com>
+Subject: Re: [PATCH 2/6] mm: differentiate unmap for vmscan from other unmap.
+Message-ID: <20140630155838.GD1956@gmail.com>
+References: <1403920822-14488-1-git-send-email-j.glisse@gmail.com>
+ <1403920822-14488-3-git-send-email-j.glisse@gmail.com>
+ <alpine.DEB.2.10.1406292054080.21595@blueforge.nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.DEB.2.10.1406292054080.21595@blueforge.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We use regmap regulator ops to enable/disable and check if regulator
-is enabled for various SMPS. However, these depend on valid
-enable_reg, enable_mask and enable_value in regulator descriptor.
+On Sun, Jun 29, 2014 at 08:58:17PM -0700, John Hubbard wrote:
+> On Fri, 27 Jun 2014, Jérôme Glisse wrote:
+> 
+> > From: Jérôme Glisse <jglisse@redhat.com>
+> > 
+> > New code will need to be able to differentiate between a regular unmap and
+> > an unmap trigger by vmscan in which case we want to be as quick as possible.
+> > 
+> > Signed-off-by: Jérôme Glisse <jglisse@redhat.com>
+> > ---
+> >  include/linux/rmap.h | 15 ++++++++-------
+> >  mm/memory-failure.c  |  2 +-
+> >  mm/vmscan.c          |  4 ++--
+> >  3 files changed, 11 insertions(+), 10 deletions(-)
+> > 
+> > diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+> > index be57450..eddbc07 100644
+> > --- a/include/linux/rmap.h
+> > +++ b/include/linux/rmap.h
+> > @@ -72,13 +72,14 @@ struct anon_vma_chain {
+> >  };
+> >  
+> >  enum ttu_flags {
+> > -	TTU_UNMAP = 1,			/* unmap mode */
+> > -	TTU_MIGRATION = 2,		/* migration mode */
+> > -	TTU_MUNLOCK = 4,		/* munlock mode */
+> > -
+> > -	TTU_IGNORE_MLOCK = (1 << 8),	/* ignore mlock */
+> > -	TTU_IGNORE_ACCESS = (1 << 9),	/* don't age */
+> > -	TTU_IGNORE_HWPOISON = (1 << 10),/* corrupted page is recoverable */
+> > +	TTU_VMSCAN = 1,			/* unmap for vmscan */
+> > +	TTU_POISON = 2,			/* unmap for poison */
+> > +	TTU_MIGRATION = 4,		/* migration mode */
+> > +	TTU_MUNLOCK = 8,		/* munlock mode */
+> > +
+> > +	TTU_IGNORE_MLOCK = (1 << 9),	/* ignore mlock */
+> > +	TTU_IGNORE_ACCESS = (1 << 10),	/* don't age */
+> > +	TTU_IGNORE_HWPOISON = (1 << 11),/* corrupted page is recoverable */
+> 
+> Unless there is a deeper purpose that I am overlooking, I think it would 
+> be better to leave the _MLOCK, _ACCESS, and _HWPOISON at their original 
+> values. I just can't quite see why they would need to start at bit 9 
+> instead of bit 8...
 
-So, similar to fix we did in commit 318dbb02b50c
-("regulator: palmas: Fix SMPS enable/disable/is_enabled"), populate the
-same for TPS65917 SMPS registration. LDO definitions are already in
-place.
-
-Fixes: d6f83370ed97 ("regulator: palmas: Add tps65917 PMIC support")
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- drivers/regulator/palmas-regulator.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index ae0f639..a7ce34d 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -1312,6 +1312,11 @@ static int tps65917_smps_registration(struct palmas_pmic *pmic,
- 			return ret;
- 		pmic->current_reg_mode[id] = reg &
- 				PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
-+		desc->enable_reg = PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
-+						      rinfo->ctrl_addr);
-+		desc->enable_mask = PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
-+		/* set_mode overrides this value */
-+		desc->enable_val = SMPS_CTRL_MODE_ON;
- 
- 		desc->type = REGULATOR_VOLTAGE;
- 		desc->owner = THIS_MODULE;
--- 
-1.7.9.5
+This code change to have various TTU_* be bitflag instead of value. I am
+not sure what was the win in that, would need to dig up that patch that
+did that. But in all the case i preserve that change here hence starting
+at 9.
+> 
+> >  };
+> >  
+> >  #ifdef CONFIG_MMU
+> > diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+> > index a7a89eb..ba176c4 100644
+> > --- a/mm/memory-failure.c
+> > +++ b/mm/memory-failure.c
+> > @@ -887,7 +887,7 @@ static int page_action(struct page_state *ps, struct page *p,
+> >  static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+> >  				  int trapno, int flags, struct page **hpagep)
+> >  {
+> > -	enum ttu_flags ttu = TTU_UNMAP | TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS;
+> > +	enum ttu_flags ttu = TTU_POISON | TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS;
+> >  	struct address_space *mapping;
+> >  	LIST_HEAD(tokill);
+> >  	int ret;
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 6d24fd6..5a7d286 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -1163,7 +1163,7 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+> >  	}
+> >  
+> >  	ret = shrink_page_list(&clean_pages, zone, &sc,
+> > -			TTU_UNMAP|TTU_IGNORE_ACCESS,
+> > +			TTU_VMSCAN|TTU_IGNORE_ACCESS,
+> >  			&dummy1, &dummy2, &dummy3, &dummy4, &dummy5, true);
+> >  	list_splice(&clean_pages, page_list);
+> >  	mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
+> > @@ -1518,7 +1518,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+> >  	if (nr_taken == 0)
+> >  		return 0;
+> >  
+> > -	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
+> > +	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_VMSCAN,
+> >  				&nr_dirty, &nr_unqueued_dirty, &nr_congested,
+> >  				&nr_writeback, &nr_immediate,
+> >  				false);
+> > -- 
+> > 1.9.0
+> > 
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > 
+> 
+> Other than that, looks good.
+> 
+> Reviewed-by: John Hubbard <jhubbard@nvidia.com>
+> 
+> thanks,
+> John H.
 
