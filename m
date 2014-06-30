@@ -1,144 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028AbaF3D6Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 23:58:24 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:4403 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286AbaF3D6X (ORCPT
+	id S1750934AbaF3EBj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 00:01:39 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:57060 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaF3EBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 23:58:23 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 29 Jun 2014 20:48:13 -0700
-Date: Sun, 29 Jun 2014 20:58:17 -0700
-From: John Hubbard <jhubbard@nvidia.com>
-To: =?ISO-8859-15?Q?J=E9r=F4me_Glisse?= <j.glisse@gmail.com>
-CC: <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <mgorman@suse.de>, <hpa@zytor.com>,
-        <peterz@infraread.org>, <aarcange@redhat.com>, <riel@redhat.com>,
-        <jweiner@redhat.com>, <torvalds@linux-foundation.org>,
-        Mark Hairgrove <mhairgrove@nvidia.com>,
-        Jatin Kumar <jakumar@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
-        Lucien Dunning <ldunning@nvidia.com>,
-        Cameron Buschardt <cabuschardt@nvidia.com>,
-        Arvind Gopalakrishnan <arvindg@nvidia.com>,
-        Sherry Cheung <SCheung@nvidia.com>, Duncan Poole <dpoole@nvidia.com>,
-        Oded Gabbay <Oded.Gabbay@amd.com>,
-        Alexander Deucher <Alexander.Deucher@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        =?ISO-8859-15?Q?J=E9r=F4me_Glisse?= <jglisse@redhat.com>
-Subject: Re: [PATCH 2/6] mm: differentiate unmap for vmscan from other
- unmap.
-In-Reply-To: <1403920822-14488-3-git-send-email-j.glisse@gmail.com>
-Message-ID: <alpine.DEB.2.10.1406292054080.21595@blueforge.nvidia.com>
-References: <1403920822-14488-1-git-send-email-j.glisse@gmail.com> <1403920822-14488-3-git-send-email-j.glisse@gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-X-NVConfidentiality: public
+	Mon, 30 Jun 2014 00:01:37 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="279739828-1357833611-1404100702=:21595"
+In-Reply-To: <1403806546-31122-6-git-send-email-javier.martinez@collabora.co.uk>
+References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk>
+	<1403806546-31122-6-git-send-email-javier.martinez@collabora.co.uk>
+Date: Mon, 30 Jun 2014 09:31:36 +0530
+Message-ID: <CAKew6eU5X=WxhECtwUUwbXe_fCRU4bD6B7caWiA2dwcBfThd-g@mail.gmail.com>
+Subject: Re: [PATCH v5 05/14] clk: Add generic driver for Maxim PMIC clocks
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---279739828-1357833611-1404100702=:21595
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+Hi Javier,
 
-On Fri, 27 Jun 2014, Jérôme Glisse wrote:
-
-> From: Jérôme Glisse <jglisse@redhat.com>
-> 
-> New code will need to be able to differentiate between a regular unmap and
-> an unmap trigger by vmscan in which case we want to be as quick as possible.
-> 
-> Signed-off-by: Jérôme Glisse <jglisse@redhat.com>
+On Thu, Jun 26, 2014 at 11:45 PM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+> Maxim Integrated Power Management ICs are very similar with
+> regard to their clock outputs. Most of the clock drivers for
+> these chips are duplicating code and are simpler enough that
+> can be converted to use a generic driver to consolidate code
+> and avoid duplication.
+>
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 > ---
->  include/linux/rmap.h | 15 ++++++++-------
->  mm/memory-failure.c  |  2 +-
->  mm/vmscan.c          |  4 ++--
->  3 files changed, 11 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-> index be57450..eddbc07 100644
-> --- a/include/linux/rmap.h
-> +++ b/include/linux/rmap.h
-> @@ -72,13 +72,14 @@ struct anon_vma_chain {
->  };
->  
->  enum ttu_flags {
-> -	TTU_UNMAP = 1,			/* unmap mode */
-> -	TTU_MIGRATION = 2,		/* migration mode */
-> -	TTU_MUNLOCK = 4,		/* munlock mode */
-> -
-> -	TTU_IGNORE_MLOCK = (1 << 8),	/* ignore mlock */
-> -	TTU_IGNORE_ACCESS = (1 << 9),	/* don't age */
-> -	TTU_IGNORE_HWPOISON = (1 << 10),/* corrupted page is recoverable */
-> +	TTU_VMSCAN = 1,			/* unmap for vmscan */
-> +	TTU_POISON = 2,			/* unmap for poison */
-> +	TTU_MIGRATION = 4,		/* migration mode */
-> +	TTU_MUNLOCK = 8,		/* munlock mode */
+>
+> Changes since v4:
+>  - Return recalc 0 if clock isn't enabled in Suggested by Yadwinder Singh Brar.
+>
+
+It seems you didn't implement or posted same patch again :) .
+
+> Changes since v3:
+>  - Add current copyright information. Suggested by Krzysztof Kozlowski
+>  - Do a single allocation for struct max_gen_clk. Suggested by Krzysztof Kozlowski
+>  - Add EXPORT_SYMBOL() for exported symbols. Suggested by Krzysztof Kozlowski
+>
+>  drivers/clk/Kconfig       |   3 +
+>  drivers/clk/Makefile      |   1 +
+>  drivers/clk/clk-max-gen.c | 195 ++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/clk/clk-max-gen.h |  32 ++++++++
+>  4 files changed, 231 insertions(+)
+>  create mode 100644 drivers/clk/clk-max-gen.c
+>  create mode 100644 drivers/clk/clk-max-gen.h
+>
+
+[ .. ]
+
 > +
-> +	TTU_IGNORE_MLOCK = (1 << 9),	/* ignore mlock */
-> +	TTU_IGNORE_ACCESS = (1 << 10),	/* don't age */
-> +	TTU_IGNORE_HWPOISON = (1 << 11),/* corrupted page is recoverable */
+> +static unsigned long max_gen_recalc_rate(struct clk_hw *hw,
+> +                                        unsigned long parent_rate)
+> +{
+> +       return 32768;
+> +}
 
-Unless there is a deeper purpose that I am overlooking, I think it would 
-be better to leave the _MLOCK, _ACCESS, and _HWPOISON at their original 
-values. I just can't quite see why they would need to start at bit 9 
-instead of bit 8...
+Its still same here.
 
->  };
->  
->  #ifdef CONFIG_MMU
-> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-> index a7a89eb..ba176c4 100644
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -887,7 +887,7 @@ static int page_action(struct page_state *ps, struct page *p,
->  static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
->  				  int trapno, int flags, struct page **hpagep)
->  {
-> -	enum ttu_flags ttu = TTU_UNMAP | TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS;
-> +	enum ttu_flags ttu = TTU_POISON | TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS;
->  	struct address_space *mapping;
->  	LIST_HEAD(tokill);
->  	int ret;
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 6d24fd6..5a7d286 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1163,7 +1163,7 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
->  	}
->  
->  	ret = shrink_page_list(&clean_pages, zone, &sc,
-> -			TTU_UNMAP|TTU_IGNORE_ACCESS,
-> +			TTU_VMSCAN|TTU_IGNORE_ACCESS,
->  			&dummy1, &dummy2, &dummy3, &dummy4, &dummy5, true);
->  	list_splice(&clean_pages, page_list);
->  	mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
-> @@ -1518,7 +1518,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->  	if (nr_taken == 0)
->  		return 0;
->  
-> -	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
-> +	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_VMSCAN,
->  				&nr_dirty, &nr_unqueued_dirty, &nr_congested,
->  				&nr_writeback, &nr_immediate,
->  				false);
-> -- 
-> 1.9.0
-> 
+> +
+> +struct clk_ops max_gen_clk_ops = {
+> +       .prepare        = max_gen_clk_prepare,
+> +       .unprepare      = max_gen_clk_unprepare,
+> +       .is_prepared    = max_gen_clk_is_prepared,
+> +       .recalc_rate    = max_gen_recalc_rate,
+> +};
+> +EXPORT_SYMBOL_GPL(max_gen_clk_ops);
+> +
+> +static struct clk *max_gen_clk_register(struct device *dev,
+> +                                       struct max_gen_clk *max_gen)
+> +{
+> +       struct clk *clk;
+> +       struct clk_hw *hw = &max_gen->hw;
+> +
+> +       clk = clk_register(dev, hw);
+> +       if (IS_ERR(clk))
+> +               return clk;
+> +
+> +       max_gen->lookup = kzalloc(sizeof(struct clk_lookup), GFP_KERNEL);
+
+As I suggested in other patch[1] also, its better to use
+clkdev_alloc() instead of kzalloc() here.
+
+> +       if (!max_gen->lookup)
+> +               return ERR_PTR(-ENOMEM);
+> +
+> +       max_gen->lookup->con_id = hw->init->name;
+
+Also IMO,  init->name should be over-written if name is provided in DT,
+otherwise generic "clock-output-names" property will go futile,
+perhaps it should be done before clk_register.
+
+Regards,
+Yadwinder
+
+[1] : https://lkml.org/lkml/2014/6/27/197
+
+> +       max_gen->lookup->clk = clk;
+> +
+> +       clkdev_add(max_gen->lookup);
+> +
+> +       return clk;
+> +}
+> +
+> +int max_gen_clk_probe(struct platform_device *pdev, struct regmap *regmap,
+> +                     u32 reg, struct clk_init_data *clks_init, int num_init)
+> +{
+> +       int i, ret;
+> +       struct max_gen_clk *max_gen_clks;
+> +       struct clk **clocks;
+> +       struct device *dev = &pdev->dev;
+> +
+> +       clocks = devm_kzalloc(dev, sizeof(struct clk *) * num_init, GFP_KERNEL);
+> +       if (!clocks)
+> +               return -ENOMEM;
+> +
+> +       max_gen_clks = devm_kzalloc(dev, sizeof(struct max_gen_clk)
+> +                                   * num_init, GFP_KERNEL);
+> +       if (!max_gen_clks)
+> +               return -ENOMEM;
+> +
+> +       for (i = 0; i < num_init; i++) {
+> +               max_gen_clks[i].regmap = regmap;
+> +               max_gen_clks[i].mask = 1 << i;
+> +               max_gen_clks[i].reg = reg;
+> +               max_gen_clks[i].hw.init = &clks_init[i];
+> +
+> +               clocks[i] = max_gen_clk_register(dev, &max_gen_clks[i]);
+> +               if (IS_ERR(clocks[i])) {
+> +                       ret = PTR_ERR(clocks[i]);
+> +                       dev_err(dev, "failed to register %s\n",
+> +                               max_gen_clks[i].hw.init->name);
+> +                       goto err_clocks;
+> +               }
+> +       }
+> +
+> +       platform_set_drvdata(pdev, clocks);
+> +
+> +       if (dev->of_node) {
+> +               struct clk_onecell_data *of_data;
+> +
+> +               of_data = devm_kzalloc(dev, sizeof(*of_data), GFP_KERNEL);
+> +               if (!of_data) {
+> +                       ret = -ENOMEM;
+> +                       goto err_clocks;
+> +               }
+> +
+> +               of_data->clks = clocks;
+> +               of_data->clk_num = num_init;
+> +               ret = of_clk_add_provider(dev->of_node, of_clk_src_onecell_get,
+> +                                         of_data);
+> +
+> +               if (ret) {
+> +                       dev_err(dev, "failed to register OF clock provider\n");
+> +                       goto err_clocks;
+> +               }
+> +       }
+> +
+> +       return 0;
+> +
+> +err_clocks:
+> +       for (--i; i >= 0; --i) {
+> +               clkdev_drop(max_gen_clks[i].lookup);
+> +               clk_unregister(max_gen_clks[i].hw.clk);
+> +       }
+> +
+> +       return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(max_gen_clk_probe);
+> +
+> +int max_gen_clk_remove(struct platform_device *pdev, int num_init)
+> +{
+> +       struct clk **clocks = platform_get_drvdata(pdev);
+> +       struct device *dev = pdev->dev.parent;
+> +       int i;
+> +
+> +       if (dev->of_node)
+> +               of_clk_del_provider(dev->of_node);
+> +
+> +       for (i = 0; i < num_init; i++) {
+> +               struct clk_hw *hw = __clk_get_hw(clocks[i]);
+> +               struct max_gen_clk *max_gen = to_max_gen_clk(hw);
+> +
+> +               clkdev_drop(max_gen->lookup);
+> +               clk_unregister(clocks[i]);
+> +       }
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(max_gen_clk_remove);
+> diff --git a/drivers/clk/clk-max-gen.h b/drivers/clk/clk-max-gen.h
+> new file mode 100644
+> index 0000000..997e86f
+> --- /dev/null
+> +++ b/drivers/clk/clk-max-gen.h
+> @@ -0,0 +1,32 @@
+> +/*
+> + * clk-max-gen.h - Generic clock driver for Maxim PMICs clocks
+> + *
+> + * Copyright (C) 2014 Google, Inc
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +
+> +#ifndef __CLK_MAX_GEN_H__
+> +#define __CLK_MAX_GEN_H__
+> +
+> +#include <linux/types.h>
+> +#include <linux/device.h>
+> +#include <linux/clkdev.h>
+> +#include <linux/regmap.h>
+> +#include <linux/platform_device.h>
+> +
+> +int max_gen_clk_probe(struct platform_device *pdev, struct regmap *regmap,
+> +                     u32 reg, struct clk_init_data *clks_init, int num_init);
+> +int max_gen_clk_remove(struct platform_device *pdev, int num_init);
+> +extern struct clk_ops max_gen_clk_ops;
+> +
+> +#endif /* __CLK_MAX_GEN_H__ */
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-
-Other than that, looks good.
-
-Reviewed-by: John Hubbard <jhubbard@nvidia.com>
-
-thanks,
-John H.
---279739828-1357833611-1404100702=:21595--
+> 2.0.0.rc2
+>
