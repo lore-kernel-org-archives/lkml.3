@@ -1,77 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243AbaF3MM3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:12:29 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51979 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753432AbaF3LxZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 07:53:25 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 061/181] USB: cdc-acm: fix runtime PM for control messages
-Date: Mon, 30 Jun 2014 13:51:22 +0200
-Message-Id: <2b3d198964217187e5e1da3013008d98769751b6.1404128998.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
-References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
-In-Reply-To: <cover.1404128997.git.jslaby@suse.cz>
-References: <cover.1404128997.git.jslaby@suse.cz>
+	id S1756538AbaF3MMg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:12:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9835 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756060AbaF3MMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 08:12:33 -0400
+Message-ID: <53B1541E.4080008@redhat.com>
+Date: Mon, 30 Jun 2014 14:12:14 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Nadav Amit <nadav.amit@gmail.com>, Bandan Das <bsd@redhat.com>,
+        Nadav Amit <namit@cs.technion.ac.il>
+CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: Fix lapic.c debug prints
+References: <1404034131-2392-1-git-send-email-namit@cs.technion.ac.il> <jpgr427kys6.fsf@redhat.com> <53B0B773.3030107@gmail.com>
+In-Reply-To: <53B0B773.3030107@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <jhovold@gmail.com>
+Il 30/06/2014 03:03, Nadav Amit ha scritto:
+>>>
+>>>           sipi_vector = apic->sipi_vector;
+>>> -        pr_debug("vcpu %d received sipi with vector # %x\n",
+>>> +        apic_debug("vcpu %d received sipi with vector # %x\n",
+>>
+>> Why don't we just use pr_debug all throughout ?
+>>
+> I don't know. I just tried to make it consistent, since it really bugged
+> me while I was debugging the local-apic.
+> If you prefer the other way around (which does seem to be better), I can
+> do the search-and-replace.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+vcpu number probably could be moved inside apic_debug, at which point 
+apic_debug becomes preferrable.
 
-===============
-
-commit bae3f4c53585e9a170da9436e0f06919874bda9a upstream.
-
-Fix runtime PM handling of control messages by adding the required PM
-counter operations.
-
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/usb/class/cdc-acm.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index d9e346cf1eb8..d89871b49f11 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -122,13 +122,23 @@ static void acm_release_minor(struct acm *acm)
- static int acm_ctrl_msg(struct acm *acm, int request, int value,
- 							void *buf, int len)
- {
--	int retval = usb_control_msg(acm->dev, usb_sndctrlpipe(acm->dev, 0),
-+	int retval;
-+
-+	retval = usb_autopm_get_interface(acm->control);
-+	if (retval)
-+		return retval;
-+
-+	retval = usb_control_msg(acm->dev, usb_sndctrlpipe(acm->dev, 0),
- 		request, USB_RT_ACM, value,
- 		acm->control->altsetting[0].desc.bInterfaceNumber,
- 		buf, len, 5000);
-+
- 	dev_dbg(&acm->control->dev,
- 			"%s - rq 0x%02x, val %#x, len %#x, result %d\n",
- 			__func__, request, value, len, retval);
-+
-+	usb_autopm_put_interface(acm->control);
-+
- 	return retval < 0 ? retval : 0;
- }
- 
--- 
-2.0.0
-
+Paolo
