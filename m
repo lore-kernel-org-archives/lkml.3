@@ -1,147 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841AbaF3Bmt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 21:42:49 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:62391 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753796AbaF3Bmr (ORCPT
+	id S1753902AbaF3Bon (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 21:44:43 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:43540 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753796AbaF3Bol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 21:42:47 -0400
-Message-ID: <53B0C092.6020704@gmail.com>
-Date: Mon, 30 Jun 2014 09:42:42 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sun, 29 Jun 2014 21:44:41 -0400
+X-IronPort-AV: E=Sophos;i="5.00,803,1396972800"; 
+   d="scan'208";a="32595236"
+Message-ID: <53B0C13C.20206@cn.fujitsu.com>
+Date: Mon, 30 Jun 2014 09:45:32 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Liqin Chen <liqin.linux@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] arch/score/include/uapi/asm/ptrace.h: Add prefix 'SCORE_'
- for related macros
-References: <53A66000.4010208@gmail.com> <53A6669B.1010701@roeck-us.net> <53A66A92.9040106@gmail.com> <53A6EDF6.2030203@roeck-us.net> <53A6EFEC.1020207@roeck-us.net> <53A79905.9020007@gmail.com> <53A97BF6.1060203@gmail.com> <53A98EBA.6050900@roeck-us.net> <53AA17C5.4030304@gmail.com> <53AD437E.6050000@gmail.com>
-In-Reply-To: <53AD437E.6050000@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Gleb Natapov <gleb@kernel.org>, <pbonzini@redhat.com>,
+        <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
+        <mgorman@suse.de>, <yinghai@kernel.org>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
+        <laijs@cn.fujitsu.com>, <kvm@vger.kernel.org>, <linux-mm@kvack.org>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi.kivity@gmail.com>, Tang Chen <tangchen@cn.fujitsu.com>
+Subject: Re: [RFC PATCH 1/1] Move two pinned pages to non-movable node in
+ kvm.
+References: <1403070600-6083-1-git-send-email-tangchen@cn.fujitsu.com> <20140618061230.GA10948@minantech.com> <53A136C4.5070206@cn.fujitsu.com> <20140619092031.GA429@minantech.com> <20140619190024.GA3887@amt.cnet> <20140620111509.GE20764@minantech.com> <20140620125326.GA22283@amt.cnet> <20140620142622.GA28698@minantech.com> <20140620203146.GA6580@amt.cnet> <20140620203903.GA7838@amt.cnet>
+In-Reply-To: <20140620203903.GA7838@amt.cnet>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2014 06:12 PM, Chen Gang wrote:
-> On 06/25/2014 08:28 AM, Chen Gang wrote:
->> On 06/24/2014 10:44 PM, Guenter Roeck wrote:
->>> On 06/24/2014 06:24 AM, Chen Gang wrote:
->>>> On 06/23/2014 11:03 AM, Chen Gang wrote:
->>>>> On 06/22/2014 11:02 PM, Guenter Roeck wrote:
->>>>>> On 06/22/2014 07:53 AM, Guenter Roeck wrote:
->>>>>>> I did that, and managed to build gcc.
->>>>>>>
->>>>>>> However, when trying to compile score defconfig, I get internal
->>>>>>> compiler errors in cc1
->>>>>>> when compiling drivers/tty/tty_mutex.o and block/elevator.o.
->>>>>>>
->>>>>>>    CC      block/elevator.o
->>>>>>> score-elf-gcc: internal compiler error: Segmentation fault (program
->>>>>>> cc1)
->>>>>>> 0x40c073 execute
->>>>>>>       ../../gcc/gcc/gcc.c:2848
->>>>>>> Please submit a full bug report,
->>>>>>> with preprocessed source if appropriate.
->>>>>>> Please include the complete backtrace with any bug report.
->>>>>>> See <http://gcc.gnu.org/bugs.html> for instructions.
->>>>>>> make[1]: *** [block/elevator.o] Error 4
->>>>>>> make: *** [block/elevator.o] Error 2
->>>>>>>
->>>>>>> Do you see that as well ?
->>>>>>>
->>>>>>> This is with
->>>>>>>
->>>>>>> GNU assembler version 2.24.51 (score-elf) using BFD version (GNU
->>>>>>> Binutils) 2.24.51.20140622
->>>>>>>
->>>>>>> and gcc configured with:
->>>>>>>
->>>>>>> Configured with: ../gcc/configure --prefix=/opt/kernel/score
->>>>>>> --program-prefix=score-elf- \
->>>>>>> --target=score-elf --without-header --disable-nls --enable-languages=c
->>>>>>> --disable-threads \
->>>>>>> --disable-shared --enable-werror=no
->>>>>>> target_configargs=enable_vtable_verify=yes \
->>>>>>> --enable-obsolete --disable-libssp --disable-libquadmath
->>>>>>>
->>>>>>> Tip of gcc source is commit d8686b0aa945a, tip of binutils source is
->>>>>>> commit d17c74c1d41.
->>>>>>> Your assembler fix is included in this version of binutils.
->>>>>>>
->>>>
->>>> Can we repeated this issue, or it is random?  I have try it use my
->>>> current gcc version, it has no issue.
->>>>
->>>> If it can be repeated in the latest version, I shall use version compine
->>>> (and try step by step) to fix it.
->>>>
->>>> If real random issue, if possible, please help repeated and generate
->>>> coredump file, and put it to a place to let me get back for analysing.
->>>>
->>> I got the same error each time. You should be able to reproduce it by
->>> checking out the latest gcc. If that doesn't produce the error, try
->>> checking out sha d8686b0aa945a. I didn't keep that compiler after the tip
->>> of the gcc 4.9 branch worked, so I'd have to rebuild it myself
->>> to reproduce it myself.
->>>
->>> Note that compilation of libssp failed with d8686b0aa945a, which is why
->>> I disabled it. I didn't try to build it with 4.9.
->>>
+On 06/21/2014 04:39 AM, Marcelo Tosatti wrote:
+> On Fri, Jun 20, 2014 at 05:31:46PM -0300, Marcelo Tosatti wrote:
+>>> IIRC your shadow page pinning patch series support flushing of ptes
+>>> by mmu notifier by forcing MMU reload and, as a result, faulting in of
+>>> pinned pages during next entry.  Your patch series does not pin pages
+>>> by elevating their page count.
+>>
+>> No but PEBS series does and its required to stop swap-out
+>> of the page.
+>
+> Well actually no because of mmu notifiers.
+>
+> Tang, can you implement mmu notifiers for the other breaker of
+> mem hotplug ?
 
-gcc members response quickly, and confirm it, the related fix patch
-which is made by a gcc member and I, have applied into latest gcc source
-code.
+Hi Marcelo,
 
-So... I finished it within this month (this thread will be end)!  :-)
+I made a patch to update ept and apic pages when finding them in the
+next ept violation. And I also updated the APIC_ACCESS_ADDR phys_addr.
+The pages can be migrated, but the guest crached.
 
+How do I stop guest from access apic pages in mmu_notifier when the
+page migration starts ?  Do I need to stop all the vcpus by set vcpu
+state to KVM_MP_STATE_HALTED ?  If so, the vcpu will not able to go
+to the next ept violation.
+
+So, may I write any specific value into APIC_ACCESS_ADDR to stop guest
+from access to apic page ?
 
 Thanks.
-> 
-> And I guess, I have found the root cause, and sent related information
-> to gcc mailing list (also cc to you). And one temporary fix below (can
-> cross compile score defconfig successfully for latest gcc):
-> 
->   diff --git a/gcc/c/c-decl.c b/gcc/c/c-decl.c
->   index def10a2..af49601 100644
->   --- a/gcc/c/c-decl.c
->   +++ b/gcc/c/c-decl.c
->   @@ -2300,15 +2300,6 @@ merge_decls (tree newdecl, tree olddecl, tree newtype, tree oldtype)
->    
->      if (CODE_CONTAINS_STRUCT (TREE_CODE (olddecl), TS_DECL_WITH_VIS))
->        {
->   -      /* Merge the section attribute.
->   -	 We want to issue an error if the sections conflict but that
->   -	 must be done later in decl_attributes since we are called
->   -	 before attributes are assigned.  */
->   -      if ((DECL_EXTERNAL (olddecl) || TREE_PUBLIC (olddecl) || TREE_STATIC (olddecl))
->   -	  && DECL_SECTION_NAME (newdecl) == NULL
->   -	  && DECL_SECTION_NAME (olddecl))
->   -	set_decl_section_name (newdecl, DECL_SECTION_NAME (olddecl));
->   -
->          /* Copy the assembler name.
->    	 Currently, it can only be defined in the prototype.  */
->          COPY_DECL_ASSEMBLER_NAME (olddecl, newdecl);
-> 
-> I shall continue for it, and provide the final property fix for it.
-> 
-> Thanks.
-> 
->>
->> Thank you very much for your work.
->>
->> It is my chance to fix gcc issues which I have planed, I shall continue
->> based on it, hope I can finish within this month (within 2014-06-30).
->>
->>
->> Thanks.
->>
-> 
-
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
