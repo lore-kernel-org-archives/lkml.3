@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910AbaF3PKo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:10:44 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:41194 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751015AbaF3PKm (ORCPT
+	id S1752676AbaF3PNL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:13:11 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:53203 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771AbaF3PNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:10:42 -0400
-Date: Mon, 30 Jun 2014 11:10:40 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Xie XiuQi <xiexiuqi@huawei.com>
-Cc: <linux-kernel@vger.kernel.org>, <mingo@redhat.com>, <tony.luck@intel.com>,
-        <fweisbec@gmail.com>, <m.chehab@samsung.com>
-Subject: Re: [PATCH 1/2] tracing: fix uptime overflow problem
-Message-ID: <20140630111040.58fe70de@gandalf.local.home>
-In-Reply-To: <1403953801-19068-2-git-send-email-xiexiuqi@huawei.com>
-References: <1403953801-19068-1-git-send-email-xiexiuqi@huawei.com>
-	<1403953801-19068-2-git-send-email-xiexiuqi@huawei.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 30 Jun 2014 11:13:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+In-Reply-To: <20140628170700.GA23634@xo-6d-61-c0.localdomain>
+References: <55466fbd36df1d011876135cf7ca5d40c05029c7.1403809591.git.luto@amacapital.net>
+ <20140626195629.GC5714@two.firstfloor.org> <CALCETrVBKno2skh3zR=1GYuojwPhYPLD=1HFcLMXjStS+0SPJQ@mail.gmail.com>
+ <CALCETrWJD4kvoCxxb9y19uMakChmxamveKDceDOhyjYzFkJoUA@mail.gmail.com>
+ <7919ae8b-958b-4b12-a5f4-8be2c3df3824@email.android.com> <CALCETrVkeTd4UJNm2ir3AMo1eLEr6CKK0Cf9_-NCO+DP+iTRxg@mail.gmail.com>
+ <20140628170700.GA23634@xo-6d-61-c0.localdomain>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 30 Jun 2014 08:12:47 -0700
+Message-ID: <CALCETrVGTPL9tuODBRW08-q_RrvR1q2kfnjRs3g8+r6vGsLrzw@mail.gmail.com>
+Subject: Re: [PATCH] x86_64,entry: Fix RCX for traced syscalls
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        X86 ML <x86@kernel.org>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Jun 2014 19:10:00 +0800
-Xie XiuQi <xiexiuqi@huawei.com> wrote:
+On Sat, Jun 28, 2014 at 10:07 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> On Thu 2014-06-26 13:47:32, Andy Lutomirski wrote:
+>> On Thu, Jun 26, 2014 at 1:12 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> > The real question is if we care that sysret and iter don't match.  On 32 bits the situation is even more complex.
+>>
+>> At least for 64 bits, iret vs sysret is purely a kernel implementation
+>> detail (except where a tracer modifies things that are inaccessible to
+>> sysret), so ISTM it's worth one instruction to make them match.
+>>
+>> I noticed this thing while fiddling with moving some of the syscall
+>> tracing logic to C.  This isn't a real problem, but it at least made
+>> me scratch my head.
+>
+> If possible, we'd like to trace programs without programs being noticed they are
+> being traced. See subterfugue utility, for example.
+>
+> It is certainly worth one extra instruction.
 
- 
->  /*
-> - * trace_jiffy_clock(): Simply use jiffies as a clock counter.
-> + * trace_clock_uptime(): Use lockless version __current_kernel_time,
-> + * so it's safe in NMI context.
->   */
-> -u64 notrace trace_clock_jiffies(void)
-> +u64 notrace trace_clock_uptime(void)
->  {
-> -	u64 jiffy = jiffies - INITIAL_JIFFIES;
-> +	struct timespec uptime, now, boottime;
-> +
-> +	/* Does not take xtime_lock, so it's safe in NMI context. */
-> +	now = __current_kernel_time();
+I tend to agree.
 
-The problem with this patch is that you have a race:
+FWIW, I haven't looked at the ia32 stuff, but it should be possible to
+do something similar if it's not there already.  The iret path can set
+any user state it wants.
 
-        ts.tv_sec = tk->xtime_sec;
-        ts.tv_nsec = (long)(tk->xtime_nsec >> tk->shift);
-
-There's a chance that gets done between the update of xtime_sec an
-xtime_nsec, and make time go backwards.
-
-This call is lockless but is not reliable.
-
--- Steve
-
-
-> +	getboottime(&boottime);
-> +	uptime = timespec_sub(now, boottime);
->  
->  	/* Return nsecs */
-> -	return (u64)jiffies_to_usecs(jiffy) * 1000ULL;
-> +	return timespec_to_ns(&uptime);
->  }
->  
->  /*
-
+--Andy
