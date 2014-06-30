@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495AbaF3Ke5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 06:34:57 -0400
-Received: from mail-wi0-f201.google.com ([209.85.212.201]:46063 "EHLO
-	mail-wi0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711AbaF3Kez (ORCPT
+	id S1755559AbaF3KfO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 06:35:14 -0400
+Received: from mail-lb0-f202.google.com ([209.85.217.202]:64130 "EHLO
+	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755262AbaF3KfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 06:34:55 -0400
+	Mon, 30 Jun 2014 06:35:10 -0400
 From: David Drysdale <drysdale@google.com>
 To: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -15,9 +15,9 @@ Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
         Kees Cook <keescook@chromium.org>,
         James Morris <james.l.morris@oracle.com>, linux-api@vger.kernel.org,
         David Drysdale <drysdale@google.com>
-Subject: [PATCH 06/11] capsicum: implement sockfd_lookupr()
-Date: Mon, 30 Jun 2014 11:28:06 +0100
-Message-Id: <1404124096-21445-7-git-send-email-drysdale@google.com>
+Subject: [PATCH 08/11] capsicum: add new LSM hooks on FD/file conversion
+Date: Mon, 30 Jun 2014 11:28:08 +0100
+Message-Id: <1404124096-21445-9-git-send-email-drysdale@google.com>
 X-Mailer: git-send-email 2.0.0.526.g5318336
 In-Reply-To: <1404124096-21445-1-git-send-email-drysdale@google.com>
 References: <1404124096-21445-1-git-send-email-drysdale@google.com>
@@ -25,199 +25,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add variants of sockfd_lookup() and related functions where the caller
-indicates the operations that will be performed on the socket.
-
-If CONFIG_SECURITY_CAPSICUM is defined, these variants use the
-fgetr()-style functions to retrieve the struct file from the file
-descriptor.
-
-If CONFIG_SECURITY_CAPSICUM is not defined, these variants use the
-normal fget() functions.
+Add the following new LSM hooks:
+ - file_lookup: check an fd->struct file conversion operation,
+   potentially failing the lookup or potentially altering the looked
+   up file
+ - file_install: check a file to be installed in the fd table, to
+   potentially allow the LSM to replace it.
 
 Signed-off-by: David Drysdale <drysdale@google.com>
 ---
- include/linux/net.h |  16 +++++++
- net/socket.c        | 118 ++++++++++++++++++++++++++++++++++++++++++++--------
- 2 files changed, 117 insertions(+), 17 deletions(-)
+ include/linux/security.h | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ security/security.c      | 13 +++++++++++++
+ 2 files changed, 61 insertions(+)
 
-diff --git a/include/linux/net.h b/include/linux/net.h
-index 17d83393afcc..05429ce3b730 100644
---- a/include/linux/net.h
-+++ b/include/linux/net.h
-@@ -24,6 +24,7 @@
- #include <linux/fcntl.h>	/* For O_CLOEXEC and O_NONBLOCK */
- #include <linux/kmemcheck.h>
- #include <linux/rcupdate.h>
-+#include <linux/capsicum.h>
- #include <linux/jump_label.h>
- #include <uapi/linux/net.h>
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 6478ce3252c7..4d0c079187d4 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -53,6 +53,7 @@ struct msg_queue;
+ struct xattr;
+ struct xfrm_sec_ctx;
+ struct mm_struct;
++struct capsicum_rights;
  
-@@ -222,6 +223,21 @@ struct socket *sock_from_file(struct file *file, int *err);
- #define		     sockfd_put(sock) fput(sock->file)
- int net_ratelimit(void);
+ /* Maximum number of letters for an LSM name string */
+ #define SECURITY_NAME_MAX	10
+@@ -656,6 +657,28 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
+  *	to receive an open file descriptor via socket IPC.
+  *	@file contains the file structure being received.
+  *	Return 0 if permission is granted.
++ * @file_lookup:
++ *	This hook allows security modules to intercept file descriptor lookups
++ *	to check whether a required set of rights are available for the file
++ *	descriptor. This allows the security model to fail the lookup, or to
++ *	substitute a new return value for fget().
++ *	@file is the file in the process's file table, which may be replaced by
++ *	another file as the return value from the hook.
++ *	@required_rights is the rights that the file descriptor should hold, or
++ *	may be NULL to indicate that no specific rights are needed.
++ *	@actual_rights is returned (if it is non-NULL) as a pointer to the
++ *	rights that the file descriptor has.  The caller does not own this
++ *	memory, and should only use if while maintaining a refcount to the
++ *	returned unwrapped file.
++ *	Return PTR_ERR holding the unwrapped file.
++ * @file_install:
++ *	This hook allows security modules to intercept newly created files that
++ *	are about to be installed in the file descriptor table, to potentially
++ *	substitute a different file for the newly opened file.
++ *	@base_rights is the rights associated with an existing file that the
++ *	new file is derived from; CAP_ALL for non-capabilities.
++ *	@file is the newly opened struct file.
++ *	Return PTR_ERR holding the struct file to be used.
+  * @file_open
+  *	Save open-time permission checking state for later use upon
+  *	file_permission, and recheck access if anything has changed
+@@ -1555,6 +1578,11 @@ struct security_operations {
+ 				    struct fown_struct *fown, int sig);
+ 	int (*file_receive) (struct file *file);
+ 	int (*file_open) (struct file *file, const struct cred *cred);
++	struct file * (*file_lookup)(struct file *orig,
++				const struct capsicum_rights *required_rights,
++				const struct capsicum_rights **actual_rights);
++	struct file * (*file_install)(const struct capsicum_rights *base_rights,
++				      struct file *file);
  
-+#ifdef CONFIG_SECURITY_CAPSICUM
-+struct socket *sockfd_lookup_rights(int fd, int *err,
-+				    struct capsicum_rights *rights);
-+struct socket *_sockfd_lookupr(int fd, int *err, ...);
-+#define sockfd_lookupr(fd, err, ...) \
-+	_sockfd_lookupr((fd), (err), __VA_ARGS__, 0ULL)
-+#else
-+static inline struct socket *
-+sockfd_lookup_rights(int fd, int *err, struct capsicum_rights *rights)
-+{
-+	return sockfd_lookup(fd, err);
-+}
-+#define sockfd_lookupr(fd, err, ...)	sockfd_lookup((fd), (err))
-+#endif
-+
- #define net_ratelimited_function(function, ...)			\
- do {								\
- 	if (net_ratelimit())					\
-diff --git a/net/socket.c b/net/socket.c
-index abf56b2a14f9..f254e9bf9c4d 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -96,6 +96,7 @@
- #include <net/compat.h>
- #include <net/wext.h>
- #include <net/cls_cgroup.h>
-+#include <net/sctp/sctp.h>
- 
- #include <net/sock.h>
- #include <linux/netfilter.h>
-@@ -418,6 +419,106 @@ struct socket *sock_from_file(struct file *file, int *err)
+ 	int (*task_create) (unsigned long clone_flags);
+ 	void (*task_free) (struct task_struct *task);
+@@ -1829,6 +1857,11 @@ int security_file_send_sigiotask(struct task_struct *tsk,
+ 				 struct fown_struct *fown, int sig);
+ int security_file_receive(struct file *file);
+ int security_file_open(struct file *file, const struct cred *cred);
++struct file *security_file_lookup(struct file *orig,
++				  const struct capsicum_rights *required_rights,
++				  const struct capsicum_rights **actual_rights);
++struct file *security_file_install(const struct capsicum_rights *base_rights,
++				   struct file *file);
+ int security_task_create(unsigned long clone_flags);
+ void security_task_free(struct task_struct *task);
+ int security_cred_alloc_blank(struct cred *cred, gfp_t gfp);
+@@ -2324,6 +2357,21 @@ static inline int security_file_open(struct file *file,
+ 	return 0;
  }
- EXPORT_SYMBOL(sock_from_file);
  
-+static struct socket *sockfd_lookup_light(int fd, int *err, int *fput_needed)
++static inline struct file *
++security_file_lookup(struct file *orig,
++		     const struct capsicum_rights *required_rights,
++		     const struct capsicum_rights **actual_rights)
 +{
-+	struct fd f = fdget(fd);
-+	struct socket *sock;
-+
-+	*err = -EBADF;
-+	if (f.file) {
-+		sock = sock_from_file(f.file, err);
-+		if (likely(sock)) {
-+			*fput_needed = f.flags;
-+			return sock;
-+		}
-+		fdput(f);
-+	}
-+	return NULL;
++	return orig;
 +}
 +
-+#ifdef CONFIG_SECURITY_CAPSICUM
-+struct socket *sockfd_lookup_rights(int fd, int *err,
-+				    struct capsicum_rights *rights)
++static inline struct file *
++security_file_install(const struct capsicum_rights *base_rights,
++		      struct file *file)
 +{
-+	struct file *file;
-+	struct socket *sock;
-+
-+	file = fget_rights(fd, rights);
-+	if (IS_ERR(file)) {
-+		*err = PTR_ERR(file);
-+		return NULL;
-+	}
-+
-+	sock = sock_from_file(file, err);
-+	if (!sock)
-+		fput(file);
-+	return sock;
-+}
-+EXPORT_SYMBOL(sockfd_lookup_rights);
-+
-+static struct socket *
-+sockfd_lookup_light_rights(int fd, int *err, int *fput_needed,
-+			   const struct capsicum_rights **actual_rights,
-+			   const struct capsicum_rights *required_rights)
-+{
-+	struct fd f = fdget_raw_rights(fd, actual_rights, required_rights);
-+	struct socket *sock;
-+
-+	*err = -EBADF;
-+	if (!IS_ERR(f.file)) {
-+		sock = sock_from_file(f.file, err);
-+		if (likely(sock)) {
-+			*fput_needed = f.flags;
-+			return sock;
-+		}
-+		fdput(f);
-+	} else {
-+		*err = PTR_ERR(f.file);
-+	}
-+	return NULL;
++	return file;
 +}
 +
-+struct socket *_sockfd_lookupr(int fd, int *err, ...)
-+{
-+	struct capsicum_rights rights;
-+	struct socket *sock;
-+	va_list ap;
-+	va_start(ap, err);
-+	sock = sockfd_lookup_rights(fd, err, cap_rights_vinit(&rights, ap));
-+	va_end(ap);
-+	return sock;
-+}
-+EXPORT_SYMBOL(_sockfd_lookupr);
-+
-+struct socket *_sockfd_lookupr_light(int fd, int *err, int *fput_needed, ...)
-+{
-+	struct capsicum_rights rights;
-+	struct socket *sock;
-+	va_list ap;
-+	va_start(ap, fput_needed);
-+	sock = sockfd_lookup_light_rights(fd, err, fput_needed,
-+					  NULL, cap_rights_vinit(&rights, ap));
-+	va_end(ap);
-+	return sock;
-+}
-+#define sockfd_lookupr_light(fd, err, fpn, ...) \
-+	_sockfd_lookupr_light((fd), (err), (fpn), __VA_ARGS__, 0ULL)
-+
-+#else
-+
-+static inline struct socket *
-+sockfd_lookup_light_rights(int fd, int *err, int *fput_needed,
-+			   const struct capsicum_rights **actual_rights,
-+			   const struct capsicum_rights *required_rights)
-+{
-+	return sockfd_lookup_light(fd, err, fput_needed);
-+}
-+
-+#define sockfd_lookupr_light(f, e, p, ...) \
-+	sockfd_lookup_light((f), (e), (p))
-+
-+#endif
-+
- /**
-  *	sockfd_lookup - Go from a file number to its socket slot
-  *	@fd: file handle
-@@ -449,23 +550,6 @@ struct socket *sockfd_lookup(int fd, int *err)
+ static inline int security_task_create(unsigned long clone_flags)
+ {
+ 	return 0;
+diff --git a/security/security.c b/security/security.c
+index 8b774f362a3d..5ab3e893b46c 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -802,6 +802,19 @@ int security_file_open(struct file *file, const struct cred *cred)
+ 	return fsnotify_perm(file, MAY_OPEN);
  }
- EXPORT_SYMBOL(sockfd_lookup);
  
--static struct socket *sockfd_lookup_light(int fd, int *err, int *fput_needed)
--{
--	struct fd f = fdget(fd);
--	struct socket *sock;
--
--	*err = -EBADF;
--	if (f.file) {
--		sock = sock_from_file(f.file, err);
--		if (likely(sock)) {
--			*fput_needed = f.flags;
--			return sock;
--		}
--		fdput(f);
--	}
--	return NULL;
--}
--
- #define XATTR_SOCKPROTONAME_SUFFIX "sockprotoname"
- #define XATTR_NAME_SOCKPROTONAME (XATTR_SYSTEM_PREFIX XATTR_SOCKPROTONAME_SUFFIX)
- #define XATTR_NAME_SOCKPROTONAME_LEN (sizeof(XATTR_NAME_SOCKPROTONAME)-1)
++struct file *security_file_lookup(struct file *file,
++				  const struct capsicum_rights *required_rights,
++				  const struct capsicum_rights **actual_rights)
++{
++	return security_ops->file_lookup(file, required_rights, actual_rights);
++}
++
++struct file *security_file_install(const struct capsicum_rights *base_rights,
++				   struct file *file)
++{
++	return security_ops->file_install(base_rights, file);
++}
++
+ int security_task_create(unsigned long clone_flags)
+ {
+ 	return security_ops->task_create(clone_flags);
 -- 
 2.0.0.526.g5318336
 
