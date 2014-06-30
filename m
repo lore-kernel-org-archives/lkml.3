@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855AbaF3OuG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 10:50:06 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:63555 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409AbaF3OuD (ORCPT
+	id S1753603AbaF3Oul (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 10:50:41 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:46348 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361AbaF3Ouj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 10:50:03 -0400
+	Mon, 30 Jun 2014 10:50:39 -0400
+Date: Mon, 30 Jun 2014 16:50:31 +0200
+From: Robert Richter <rric@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jean Pihet <jean.pihet@linaro.org>, Fu Wei <fu.wei@linaro.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>
+Subject: Re: crazy idea (was: Re: [PATCH] perf tool: Carve out ctype.h et al)
+Message-ID: <20140630145031.GR27560@rric.localhost>
+References: <20140630070755.GA4766@pd.tnic>
+ <CAFrcx1=ri4MO3SUn85KqRDc-OBdbRumM44-OsxbU6CckszhH=g@mail.gmail.com>
+ <20140630100115.GC4766@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <1404124096-21445-2-git-send-email-drysdale@google.com>
-References: <1404124096-21445-1-git-send-email-drysdale@google.com> <1404124096-21445-2-git-send-email-drysdale@google.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 30 Jun 2014 07:49:41 -0700
-Message-ID: <CALCETrU=HLmw9n-DxPkFV1xP5wtzQ7-YF3-uao6YiGZODA9kdw@mail.gmail.com>
-Subject: Re: [PATCH 01/11] fs: add O_BENEATH_ONLY flag to openat(2)
-To: David Drysdale <drysdale@google.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140630100115.GC4766@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jun 30, 2014 3:36 AM, "David Drysdale" <drysdale@google.com> wrote:
->
-> Add a new O_BENEATH_ONLY flag for openat(2) which restricts the
-> provided path, rejecting (with -EACCES) paths that are not beneath
-> the provided dfd.  In particular, reject:
->  - paths that contain .. components
->  - paths that begin with /
->  - symlinks that have paths as above.
+On 30.06.14 12:01:15, Borislav Petkov wrote:
+> Well, do you have it as a standalong program? If so, you can put it in
+> a repo somewhere and we can start hacking away and playing with it. If
+> not, we will have to copy the perf code *into* the RAS daemon first so
+> that we can have a separate source on which we all can work on.
+> 
+> Someone should be a maintainer of some sorts who merges the patches.
+> 
+> And we will continue working on the split so that once the perf tool is
+> properly separated, we can switch to it in the RAS daemon and drop the
+> copied code.
+> 
+> This is, to me at least, the best possible thing we can do right now so
+> as not to slow us all down.
+> 
+> Any other opinions?
 
-I like this a lot.  However, I think I'd like it even better if it
-were AT_BENEATH_ONLY so that it could be added to the rest of the *at
-family.
+Perfectly fine with me.
 
---Andy
+-Robert
