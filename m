@@ -1,91 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976AbaF3RVb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 13:21:31 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:10369 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754774AbaF3RV2 (ORCPT
+	id S1755289AbaF3RV3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 13:21:29 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37106 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754756AbaF3RV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 13:21:28 -0400
-Date: Mon, 30 Jun 2014 13:21:26 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] tracing/uprobes: Fix the usage of
- uprobe_buffer_enable() in probe_event_enable()
-Message-ID: <20140630132126.5479795e@gandalf.local.home>
-In-Reply-To: <20140630170409.GD5619@linux.vnet.ibm.com>
-References: <20140627170116.GA18298@redhat.com>
-	<20140627170146.GA18332@redhat.com>
-	<20140630170409.GD5619@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 30 Jun 2014 13:21:27 -0400
+Date: Mon, 30 Jun 2014 18:21:15 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Dan Murphy <dmurphy@ti.com>
+Cc: "linux-sound@vger.kernel.org" <linux-sound@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2] ASoC: tas2552: Support TI TAS2552 Amplifier
+Message-ID: <20140630172115.GE28740@leverpostej>
+References: <1404148259-17305-1-git-send-email-dmurphy@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404148259-17305-1-git-send-email-dmurphy@ti.com>
+Thread-Topic: [PATCH v2] ASoC: tas2552: Support TI TAS2552 Amplifier
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jun 2014 22:34:09 +0530
-Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
+Hi,
 
-
-> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> (one nit .. )
+On Mon, Jun 30, 2014 at 06:10:59PM +0100, Dan Murphy wrote:
+> Support the TI TAS2552 Class D amplifier.
 > 
-> > +	ret = uprobe_buffer_enable();
-> > +	if (ret)
-> > +		goto err_flags;
-> > +
-> >  	tu->consumer.filter = filter;
-> >  	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
-> > -	if (ret) {
-> > -		if (file) {
-> > -			list_del(&link->list);
-> > -			kfree(link);
-> > -			tu->tp.flags &= ~TP_FLAG_TRACE;
-> > -		} else
-> > -			tu->tp.flags &= ~TP_FLAG_PROFILE;
-> > -	}
-> > +	if (ret)
-> > +		goto err_buffer;
-> > 
-> > +	return 0;
-> > +
-> > + err_buffer:
-> > +	uprobe_buffer_disable();
-> > +
+> The TAS2552 is a high efficiency Class-D audio
+> power amplifier with advanced battery current
+> management and an integrated Class-G boost
+> The device constantly measures the
+> current and voltage across the load and provides a
+> digital stream of this information.
 > 
-> How about avoiding err_buffer label?
-> +	if (!ret)
-> +		return 0;
+> Signed-off-by: Dan Murphy <dmurphy@ti.com>
+> ---
 > 
-> +	uprobe_buffer_disable();
+> v2 - Address RFC comments- Added regmap, and snd_soc calls
+> removed debug code, address checkpatch errors -https://patchwork.kernel.org/patch/4378281/
+> 
+>  .../devicetree/bindings/sound/tas2552.txt          |   22 +
+>  include/sound/tas2552-plat.h                       |   25 ++
+>  sound/soc/codecs/Kconfig                           |    5 +
+>  sound/soc/codecs/Makefile                          |    2 +
+>  sound/soc/codecs/tas2552.c                         |  462 ++++++++++++++++++++
+>  sound/soc/codecs/tas2552.h                         |   75 ++++
+>  6 files changed, 591 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/sound/tas2552.txt
+>  create mode 100644 include/sound/tas2552-plat.h
+>  create mode 100644 sound/soc/codecs/tas2552.c
+>  create mode 100644 sound/soc/codecs/tas2552.h
+> 
+> diff --git a/Documentation/devicetree/bindings/sound/tas2552.txt b/Documentation/devicetree/bindings/sound/tas2552.txt
+> new file mode 100644
+> index 0000000..58e931b
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/sound/tas2552.txt
+> @@ -0,0 +1,22 @@
+> +Texas Instruments - tas2552 Codec module
 > +
-> 
+> +The tas2552 serial control bus communicates through I2C protocols
+> +
+> +Required properties:
+> +
+> +- compatible - "string" - One of:
+> +    "ti,tas2552" - TAS2552
 
-Oleg, you OK with this update?
+Drop the "string". The compatible list is a standard property and its
+type (string list) is well-known.
 
-I can kill my tests and restart with this update. Or you can resend this
-patch. Or we can just push it as is, and have this be a patch that
-get's queued as a cleanup for 3.17?
+You could change "One of:" to "should contain:", which will look less
+weird with a single entry.
 
--- Steve
+> +- reg - <int> -  I2C slave address
 
-> 
-> > + err_flags:
-> > +	if (file) {
-> > +		list_del(&link->list);
-> > 
-> > -- 
-> > 1.5.5.1
-> > 
-> 
+Similarly to "string" we can get rid of <int> here. i2c addresses are
+well-known to be described in a single u32 cell.
 
+> +
+> +Optional properties:
+> +
+> +- power-gpio - gpio pin to enable/disable the device
+
+The code below seems to look for "enable-gpio". Searching for
+"power-gpio" only hits in the line above and the example below. I assume
+the code is in error?
+
+> +
+> +Example:
+> +
+> +tas2552: tas2552@41 {
+> +       compatible = "ti,tas2552";
+> +       reg = <0x41>;
+> +       power-gpio = <&gpio4 2 GPIO_ACTIVE_HIGH>;
+> +};
+
+[...]
+
+> +       if (pdata) {
+> +               data->power_gpio = pdata->power_gpio;
+> +       } else if (np) {
+> +               data->power_gpio = of_get_named_gpio(np, "enable-gpio", 0);
+
+Usually I see this logic the other way around, looking for DT data first
+then falling back to platform data if no DT information was present.
+
+Cheers,
+Mark.
