@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993AbaF3MXl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:23:41 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51925 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752568AbaF3LxY (ORCPT
+	id S1752703AbaF3M0D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:26:03 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:59714 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831AbaF3M0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 07:53:24 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 063/181] USB: cdc-acm: fix potential urb leak and PM imbalance in write
-Date: Mon, 30 Jun 2014 13:51:24 +0200
-Message-Id: <26307821d8781367b154e5dadea8c42ccb4d1ff1.1404128998.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
-References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
-In-Reply-To: <cover.1404128997.git.jslaby@suse.cz>
-References: <cover.1404128997.git.jslaby@suse.cz>
+	Mon, 30 Jun 2014 08:26:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <53B14E9E.3040505@vmware.com>
+References: <1395967502-71219-1-git-send-email-chrisfriedt@gmail.com>
+ <CAPM=9tx4hdU0PZqdZcCd-x3HMu+6ZsGibeOHZPLe3OpW9Wsa0g@mail.gmail.com>
+ <533A8E52.5050304@vmware.com> <CAF4BF-Rmxqbbd_xroQbRTWeE2NfKAZm=Jm7SG2bNppHV2odYNA@mail.gmail.com>
+ <53B14E9E.3040505@vmware.com>
+From: Christopher Friedt <chrisfriedt@gmail.com>
+Date: Mon, 30 Jun 2014 08:25:40 -0400
+Message-ID: <CAF4BF-T4VZQtd_3wWfNQ_==KJE0z0N5XonG4jcy=Ys5x_XxJ=w@mail.gmail.com>
+Subject: Re: [PATCH 1/1] drm/vmwgfx: correct fb_fix_screeninfo.line_length
+To: Thomas Hellstrom <thellstrom@vmware.com>
+Cc: dri-devel <dri-devel@lists.freedesktop.org>, linux-kernel@vger.kernel.org,
+        Dave Airlie <airlied@gmail.com>, linux-graphics-maintainer@vmware.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <jhovold@gmail.com>
+On Mon, Jun 30, 2014 at 7:48 AM, Thomas Hellstrom <thellstrom@vmware.com> wrote:
+> I don't think we can blame video-vmware for this. A kernel driver change
+> that breaks existing user-space is by definition a kernel driver bug,
+> regardless whether exisiting user-space is doing something horrendously
+> stupid.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+I wouldn't be so quick to say it's a kernel bug. The fbdev contract
+hasn't changed. Also xf86-video-vmware isn't using the fbdev driver,
+and the fbdev driver code is obviously correct (see screenshots in
+link submitted with initial patch).
 
-===============
+> So the fix must IMO be a kernel driver fix. My initial guess is that
+> once we set the bytes per line register, it might not be automatically
+> updated when the screen width is changed, but the documentation is poor.
+> I see if I can shed some light over this.
 
-commit 183a45087d126d126e8dd1d9b2602fc129dff9ad upstream.
+Having dumped all of the svga registers while hacking on vmwgfx, I
+noticed that the BYTES_PER_LINE field is initially incorrectly set to
+something way off. My initial reaction is that video-vmware doesn't
+properly compute the bytes-per-line register, and therefore that it is
+a video-vmware bug that has always existed.
 
-Make sure to check return value of autopm get in write() in order to
-avoid urb leak and PM counter imbalance on errors.
+I'm reproducing the problem and providing a fix for video-vmware as I
+write this.
 
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/usb/class/cdc-acm.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index ae4d028b4209..6774bf165083 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -654,7 +654,13 @@ static int acm_tty_write(struct tty_struct *tty,
- 	memcpy(wb->buf, buf, count);
- 	wb->len = count;
- 
--	usb_autopm_get_interface_async(acm->control);
-+	stat = usb_autopm_get_interface_async(acm->control);
-+	if (stat) {
-+		wb->use = 0;
-+		spin_unlock_irqrestore(&acm->write_lock, flags);
-+		return stat;
-+	}
-+
- 	if (acm->susp_count) {
- 		usb_anchor_urb(wb->urb, &acm->delayed);
- 		spin_unlock_irqrestore(&acm->write_lock, flags);
--- 
-2.0.0
-
+C
