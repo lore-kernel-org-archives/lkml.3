@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360AbaF3J4k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 05:56:40 -0400
+	id S1755389AbaF3J4x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 05:56:53 -0400
 Received: from mga01.intel.com ([192.55.52.88]:63303 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752372AbaF3J4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 05:56:37 -0400
+	id S1755127AbaF3J4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 05:56:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,574,1400050800"; 
-   d="scan'208";a="555187584"
+   d="scan'208";a="555187627"
 From: Jenny TC <jenny.tc@intel.com>
 To: linux-kernel@vger.kernel.org, Sebastian Reichel <sre@kernel.org>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
@@ -18,9 +18,9 @@ Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
         David Cohen <david.a.cohen@linux.intel.com>,
         Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
         Jenny TC <jenny.tc@intel.com>
-Subject: [PATCH 2/4] power_supply: Introduce generic psy charging driver
-Date: Mon, 30 Jun 2014 15:25:53 +0530
-Message-Id: <1404122155-12369-3-git-send-email-jenny.tc@intel.com>
+Subject: [PATCH 4/4] power_supply: bq24261 charger driver
+Date: Mon, 30 Jun 2014 15:25:55 +0530
+Message-Id: <1404122155-12369-5-git-send-email-jenny.tc@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1404122155-12369-1-git-send-email-jenny.tc@intel.com>
 References: <1404122155-12369-1-git-send-email-jenny.tc@intel.com>
@@ -28,433 +28,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Power Supply charging driver connects multiple subsystems
-to do charging in a generic way. The subsystems involves power_supply,
-thermal and battery communication subsystems (1wire). With this the charging is
-handled in a generic way.
-
-The driver makes use of different new features - Battery Identification
-interfaces, pluggable charging algorithms, charger cable arbitrations etc.
-The patch also introduces generic interface for charger cable notifications.
-Charger cable events and capabilities can be notified using the generic
-power_supply_notifier chain.
-
-Overall this driver removes the charging logic out of the charger chip driver
-and the charger chip driver can just listen to the request from the power
-supply charging driver to set the charger properties. This can be implemented
-by exposing get_property and set property callbacks.
+This patch introduces BQ24261 charger driver. The driver makes use of power
+supply charging driver to setup charging. So the driver does hardware
+abstraction and handles h/w specific corner cases. The charging logic resides
+with power supply charging driver
 
 Signed-off-by: Jenny TC <jenny.tc@intel.com>
 ---
- Documentation/power/power_supply_charger.txt |  350 +++++++++
- drivers/power/Kconfig                        |    8 +
- drivers/power/Makefile                       |    1 +
- drivers/power/power_supply_charger.c         | 1016 ++++++++++++++++++++++++++
- drivers/power/power_supply_charger.h         |  226 ++++++
- drivers/power/power_supply_core.c            |    3 +
- include/linux/power/power_supply_charger.h   |  307 ++++++++
- include/linux/power_supply.h                 |  161 ++++
- 8 files changed, 2072 insertions(+)
- create mode 100644 Documentation/power/power_supply_charger.txt
- create mode 100644 drivers/power/power_supply_charger.c
- create mode 100644 drivers/power/power_supply_charger.h
- create mode 100644 include/linux/power/power_supply_charger.h
+ drivers/power/Kconfig                 |   10 +
+ drivers/power/Makefile                |    1 +
+ drivers/power/bq24261_charger.c       | 1351 +++++++++++++++++++++++++++++++++
+ include/linux/power/bq24261-charger.h |   25 +
+ 4 files changed, 1387 insertions(+)
+ create mode 100644 drivers/power/bq24261_charger.c
+ create mode 100644 include/linux/power/bq24261-charger.h
 
-diff --git a/Documentation/power/power_supply_charger.txt b/Documentation/power/power_supply_charger.txt
-new file mode 100644
-index 0000000..e81754b
---- /dev/null
-+++ b/Documentation/power/power_supply_charger.txt
-@@ -0,0 +1,350 @@
-+1. Introduction
-+===============
-+
-+The Power Supply charging driver connects multiple subsystems
-+to do charging in a generic way. The subsystems involves power_supply,
-+thermal and battery communication subsystems (1wire). With this the charging is
-+handled in a generic way by plugging the driver to power supply subsystem.
-+
-+The driver introduces different new features - Battery Identification
-+interfaces, pluggable charging algorithms, charger cable arbitrations etc.
-+
-+In existing driver implementations the charging is done based on the static
-+battery characteristics. This is done at the boot time by passing the battery
-+properties (max_voltage, capacity) etc. as a platform data to the
-+charger/battery driver. But new generation high volt batteries needs to be
-+identified dynamically to do charging in a safe manner. The batteries are
-+coming with different communication protocols. It become necessary to
-+communicate with battery and identify it's charging profiles before setup
-+charging.
-+
-+Also the charging algorithms can vary based on the battery characteristics
-+and the platform characteristics. To handle charging in a generic way it's
-+necessary to support pluggable charging algorithms. Power Supply Charging
-+driver selects algorithms based on the type of battery charging profile.
-+This is a simple binding and can be improved later. This may be improved to
-+select the algorithms based on the platform requirements. Also we can extend
-+this driver to plug algorithms from the user space.
-+
-+The driver also introduces the charger cable arbitration. A charger may
-+supports multiple cables, but it may not be able to charge with multiple
-+cables at a time (USB/AC/Wireless etc.). The arbitration logic inside the
-+driver selects the cable based on it's capabilities and the maximum
-+charge current the platform can support.
-+
-+Also the driver exposes features to control charging on different platform
-+states. One such feature is thermal. The driver handles the thermal
-+throttling requests for charging and control charging based on the thermal
-+subsystem requirements.
-+
-+Overall this driver removes the charging logic out of the charger chip driver
-+and the charger chip driver can just listen to the request from the power
-+supply charging driver to set the charger properties. This can be implemented
-+by exposing get_property and set property callbacks.
-+
-+2. Reading Battery charging profile
-+===================================
-+
-+Power Supply charging driver expose APIs to retrieve battery profile of a
-+battery. The battery profile can be read by battery identification driver which
-+may be 1wire/I2C/SFI driver. Battery identification driver can register the
-+battery profile with the power supply charging driver using the API
-+psy_battery_prop_changed(). The driver also exposes API
-+psy_get_battery_prop() to retrieve the battery profile which can be
-+used by power supply drivers to setup the charging. Also drivers
-+can register for battery removal/insertion notifications using
-+power_supply_reg_notifier()
-+
-+3. Use Charging Driver to setup charging
-+===========================================
-+
-+* Register the driver with the power_supply class
-+* Register the driver with the power supply charging driver
-+* Expose set_property and get_property functions so that charging
-+  framework can control the charging
-+
-+3.1  Registering charger chip driver with power supply charging driver
-+================================================================
-+
-+struct power_supply_class psy_usb;
-+struct power_supply_charger psyc_usb;
-+
-+/* register with power supply subsystem */
-+psy_usb.name = DEV_NAME;
-+psy_usb.type = POWER_SUPPLY_TYPE_USB;
-+
-+/* pointer to power supply property structure */
-+psy_usb.properties =  &psy_usb_props;
-+psy_usb.num_properties = ARRAY_SIZE(psy_usb_props);
-+
-+/* pointer to power supply get property function */
-+psy_usb.get_property = psy_usb_get_property;
-+
-+/* pointer to power supply set property function */
-+psy_usb.set_property = psy_usb_set_property;
-+
-+/* pointer to the supplied_to argument to indicate the batteries
-+   to which this charger is supplying power  */
-+psy_usb.supplied_to = supplied_to;
-+psy_usb.num_supplicants = num_supplicants;
-+
-+/* register with power_supply subsystem */
-+power_supply_register(device, &psy_usb);
-+
-+/* Register with power supply charging driver */
-+
-+/* define supported cable types for this driver */
-+psyc_usb.supported_cables = POWER_SUPPLY_CHARGER_TYPE_USB;
-+
-+/* pointer to power supply charger get property function */
-+psyc_usb.get_property = bq24261_usb_psyc_get_property;
-+
-+/* pointer to power supply charger set property function */
-+psyc_usb.set_property = bq24261_usb_psyc_set_property;
-+
-+/* pointer to throttle states */
-+psyc_usb.throttle_states = chip->pdata->throttle_states;
-+
-+/* Number of throttle states */
-+psyc_usb.num_throttle_states = chip->pdata->num_throttle_states;
-+
-+/*register with power supply charging */
-+power_supply_register_charger(&chip->psy_usb, &chip->psyc_usb);
-+
-+3.2 Properties exposed to power supply class driver
-+==================================================
-+* POWER_SUPPLY_PROP_ONLINE
-+	* Read access using get_property_function
-+		* Returns the online property set using the set_property
-+		  function
-+	* Write access using set_property function
-+		* Expose the value through get_property_function.
-+* POWER_SUPPLY_PROP_PRESENT
-+	* Read access using get_property_function
-+		* Returns the present property set using the set_property
-+		  function
-+	* Write access using set_property function
-+		* Expose the value through get_property_function.
-+* POWER_SUPPLY_PROP_HEALTH
-+	* Read access using get_property_function
-+		* Returns charger health
-+* POWER_SUPPLY_PROP_TYPE
-+	* Read access using power_supply structure
-+		* Returns charger type
-+* POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT
-+	* Read access using get property
-+		* Returns the present charge control limit
-+	* Write access using set property
-+		* Set charge control limit.
-+		* Action: Driver is not expected to take any actions on this.
-+			  Instead need to expose this on the read interface.
-+			  Charging framework process this and notifies the
-+			  charging parameters accordingly.
-+* POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT_MAX
-+	* Read access using get property
-+		* Returns the maximum charge control limit
-+* POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT
-+	* Read access using get property
-+		* Returns the input current limit passed by set_property
-+		  function
-+		* Default value : 0
-+	* Write access using set property
-+		* Set input current limit
-+		* Action : Write h/w register to set the input current limit
-+			   based on the value
-+* POWER_SUPPLY_PROP_CHARGE_CURRENT
-+	* Read access using get property
-+		* Returns charge current passed by set_property function
-+		* Default value : 0
-+	* Write access using set property
-+		* Set charge current
-+		* Action : Write h/w register to set the charge current based
-+			   on the value
-+* POWER_SUPPLY_PROP_CHARGE_VOLTAGE
-+	* Read access using get property
-+		* Returns charge voltage passed by set_property function
-+		* Default value: 0
-+	* Write access using set property
-+		* Set charge voltage
-+		* Action : Write h/w register to set the charge voltage based
-+			   on the value
-+* POWER_SUPPLY_PROP_CHARGE_TERM_CURRENT
-+	* Read access using get property
-+		* Returns charge termination current passed by set_property
-+		  function
-+		* Default value : 0
-+	* Write access using set property
-+		* Set charge termination current
-+		* Action : Write h/w register to set the charge termination
-+			   current
-+			   based on the value
-+* POWER_SUPPLY_PROP_TEMP_MIN
-+	* Read access using get property
-+		* Returns minimum charging  temperature passed by set_property
-+		* Default value : Platform dependant
-+	* Write access using set_property
-+		* Set Minimum charging temperature
-+		* Action : Write h/w register to set the minimum charging
-+			   temperature based on the value
-+* POWER_SUPPLY_PROP_TEMP_MAX
-+	* Write access using set_property
-+		* Set Maximum charging temperature
-+		* Action : Write h/w register to set the maximum charging
-+			   temperature based on the value
-+	* Read access using get property
-+		* Returns maximum charging  temperature passed by set_property
-+		* Default value : Platform dependent
-+* POWER_SUPPLY_PROP_MAX_CHARGE_CURRENT
-+	* Read access using get property
-+		* Returns maximum charging  current passed by set_property
-+		* Default value : Platform dependent
-+	* Write access using set_property
-+		* Set Maximum charging current
-+		* Action: Configure safety charging registers if any. If no h/w
-+			  actions expected, report the value on the
-+			  get_property interface.
-+* POWER_SUPPLY_PROP_MAX_CHARGE_VOLTAGE
-+	* Read access using get property
-+		* Returns maximum charging  current passed by set_property
-+		* Default value : Platform dependent
-+	* Write access using set_property
-+		* Set Maximum charging voltage
-+		* Action: Configure safety charging registers if any. If not,
-+			  no actions expected for this.
-+
-+3.3 Properties exposed to power supply charging driver
-+=====================================================
-+
-+* POWER_SUPPLY_CHARGER_PROP_ENABLE_CHARGING
-+	* Write access using set_property
-+		* Enable/Disable charging. Charger supplies power to platform,
-+		  but charging is disabled
-+		* Action: Configure charger chip registers to enable/disable
-+		  charging. Writing 0, disables charging, writing 1 enables
-+		  charging
-+* POWER_SUPPLY_CHARGER_PROP_ENABLE_CHARGER
-+	* Write access using set_property
-+		* Enable/Disable charger. Charger doesn't supply power to
-+		  platform or battery and battery start to discharge.
-+		* Action: Configure charger chip registers to enable/disable
-+		  charger. Writing 0 disables charger, writing 1 enables
-+		  charger
-+* POWER_SUPPLY_CHARGER_PROP_CABLE_TYPE
-+	* Write access using set_property
-+		* Set charger cable type.
-+		* Action: Report power supply type based on cable type
-+* POWER_SUPPLY_CHARGER_PROP_RESET_WDT
-+	* Write access using set_property
-+		* Reset charger Watch Dog Timer
-+		* Action: Reset charger Watch Dog Timer.
-+* POWER_SUPPLY_CHARGER_PROP_PRIORITY
-+	* Read access using get property
-+		* Expose charger driver/chips priority if platform has multiple
-+		  charger chip/drivers.
-+
-+3.4 Throttling data configuration
-+=============================
-+Power supply charging driver can take actions for Thermal throttling requests.
-+Power supply core sends event PSY_EVENT_THROTTLE  on power_supply_notifier
-+chain. Power supply charging driver handle this event and takes throttling
-+actions as in the throttling configuration structure. The throttling
-+configuration structure has the following format:
-+
-+struct psy_throttle_state {
-+	enum psy_throttle_action throttle_action;
-+	unsigned throttle_val;
-+};
-+
-+enum psy_throttle_action {
-+	/* Disable charger, charger doesn't supply VSYS */
-+	PSY_THROTTLE_DISABLE_CHARGER = 0,
-+
-+	/* Disable charging, charger would supply VSYS */
-+	PSY_THROTTLE_DISABLE_CHARGING,
-+
-+	/* Throttle charge current */
-+	PSY_THROTTLE_CC_LIMIT,
-+
-+	/* Throttle input current limit */
-+	PSY_THROTTLE_INPUT_LIMIT,
-+};
-+
-+Throttling configuration example:
-+
-+struct psy_throttle_state my_throttle_states[] = {
-+
-+	/* Level 0:  Limit charge current to 1500mA. Normal Level */
-+	{
-+		.throttle_action = PSY_THROTTLE_CC_LIMIT,
-+		.throttle_val = 1500,
-+	},
-+
-+	/* Level 1: Limit charge current to 500mA */
-+	{
-+		.throttle_action = PSY_THROTTLE_CC_LIMIT,
-+		.throttle_val = 500,
-+	},
-+
-+	/*
-+	* Level 2: Disable charging: Stop charging, charger supply power to
-+	* platform.
-+	*/
-+	{
-+		.throttle_action = PSY_THROTTLE_DISABLE_CHARGING,
-+	},
-+
-+	/* Level 3: Disable charger: Battery start discharging */
-+	{
-+		.throttle_action = PSY_THROTTLE_DISABLE_CHARGER,
-+	},
-+
-+};
-+
-+4. Charger Cable notifications
-+==============================
-+
-+Charger cables can have different charging capabilities (current) depending on
-+platform and cable type. The cable provider drivers detect and identify the
-+cable types and notifies the power supply subsystem by posting an event
-+PSY_EVENT_CABLE on the power_supply_notifier chain. The event notification
-+should have a property structure pointer which indicates the cable type, event
-+and capability.
-+
-+struct psy_cable_props cable;
-+cable.chrg_evt = PSY_CHARGER_CABLE_EVENT_CONNECT;
-+cable.chrg_type = PSY_CHARGER_CABLE_TYPE_USB_DCP;
-+cable.ma = 1500;
-+
-+atomic_notifier_call_chain(&power_supply_notifier,
-+				PSY_EVENT_CABLE, &cable);
-+
-+Power supply charging driver process this event and takes actions to setup
-+charging.
-+
-+5. Registering new charging algorithm
-+===================================
-+Power supply charging driver supports pluggable charging algorithms. Charging
-+algorithms processes charging profile and/or applies different logic (pulse
-+charging/fast charging/relaxed charging) to decide the charging parameters (CC
-+and CV).
-+
-+* Populate algorithm structure
-+	struct psy_charging_algo new_algo;
-+	/* populate the type charging profile the algorithm handles */
-+	pse_algo.chrg_prof_type = PSY_CHRG_PROF_PSE;
-+	pse_algo.name = "my_algo";
-+	/* callback function to retrieve CC and CV */
-+	pse_algo.get_next_cc_cv = my_algo_get_next_cc_cv;
-+	/* callback function to retreive battery thresholds */
-+	pse_algo.get_batt_thresholds = my_algo_get_bat_thresholds;
-+	/* register charging algorithm */
-+	power_supply_register_charging_algo(&pse_algo);
-+
-+When the type of charging profile reported by battery and algorithm matches,
-+the algorithm will be invoked to get the charging parameters.
-+
-+6. TODO
-+=======
-+* Replace static cable array with dynamic list
-+* Implement safety timer and watch dog timer features with more monitoring
-+* Move charge full detection logic to psy charging driver from algorithm driver
 diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index 0196acf..f679f82 100644
+index 54a0321..4ff080c 100644
 --- a/drivers/power/Kconfig
 +++ b/drivers/power/Kconfig
-@@ -14,6 +14,14 @@ config POWER_SUPPLY_DEBUG
- 	  Say Y here to enable debugging messages for power supply class
- 	  and drivers.
+@@ -411,6 +411,16 @@ config BATTERY_GOLDFISH
+ 	  Say Y to enable support for the battery and AC power in the
+ 	  Goldfish emulator.
  
-+config POWER_SUPPLY_CHARGER
-+	bool "Power Supply Charger"
++config CHARGER_BQ24261
++	tristate "BQ24261 charger driver"
++	select POWER_SUPPLY_CHARGER
++	depends on I2C
 +	help
-+	  Say Y here to enable the power supply charging control driver. Charging
-+	  control supports charging in a generic way. This allows the charger
-+	  drivers to keep the charging logic outside and the charger driver
-+	  just need to abstract the charger hardware.
++	  Say Y to include support for BQ24261 Charger driver. This driver
++	  makes use of power supply charging driver. So the driver gives
++	  the charger hardware abstraction only. Charging logic is abstracted
++	  in the power supply charging driver.
 +
- config PDA_POWER
- 	tristate "Generic PDA/phone power driver"
- 	depends on !S390
+ source "drivers/power/reset/Kconfig"
+ 
+ endif # POWER_SUPPLY
 diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index ee54a3e..405f0f4 100644
+index 77535fd..a6e9897 100644
 --- a/drivers/power/Makefile
 +++ b/drivers/power/Makefile
-@@ -7,6 +7,7 @@ power_supply-$(CONFIG_LEDS_TRIGGERS)	+= power_supply_leds.o
- obj-$(CONFIG_POWER_SUPPLY)	+= power_supply.o
- obj-$(CONFIG_GENERIC_ADC_BATTERY)	+= generic-adc-battery.o
- 
-+obj-$(CONFIG_POWER_SUPPLY_CHARGER) += power_supply_charger.o
- obj-$(CONFIG_PDA_POWER)		+= pda_power.o
- obj-$(CONFIG_APM_POWER)		+= apm_power.o
- obj-$(CONFIG_MAX8925_POWER)	+= max8925_power.o
-diff --git a/drivers/power/power_supply_charger.c b/drivers/power/power_supply_charger.c
+@@ -59,4 +59,5 @@ obj-$(CONFIG_CHARGER_BQ24735)	+= bq24735-charger.o
+ obj-$(CONFIG_POWER_AVS)		+= avs/
+ obj-$(CONFIG_CHARGER_SMB347)	+= smb347-charger.o
+ obj-$(CONFIG_CHARGER_TPS65090)	+= tps65090-charger.o
++obj-$(CONFIG_CHARGER_BQ24261)	+= bq24261_charger.o
+ obj-$(CONFIG_POWER_RESET)	+= reset/
+diff --git a/drivers/power/bq24261_charger.c b/drivers/power/bq24261_charger.c
 new file mode 100644
-index 0000000..1993c8c
+index 0000000..c21ea04
 --- /dev/null
-+++ b/drivers/power/power_supply_charger.c
-@@ -0,0 +1,1016 @@
++++ b/drivers/power/bq24261_charger.c
+@@ -0,0 +1,1351 @@
 +/*
-+ * Copyright (C) 2012 Intel Corporation
++ * bq24261-charger.c - BQ24261 Charger I2C client driver
++ *
++ * Copyright (C) 2011 Intel Corporation
 + *
 + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 + *
@@ -471,1747 +100,1368 @@ index 0000000..1993c8c
 + * Author: Jenny TC <jenny.tc@intel.com>
 + */
 +
++#include <linux/delay.h>
 +#include <linux/device.h>
 +#include <linux/err.h>
++#include <linux/i2c.h>
 +#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/notifier.h>
++#include <linux/pm_runtime.h>
 +#include <linux/power_supply.h>
 +#include <linux/power/power_supply_charger.h>
++#include <linux/power/bq24261-charger.h>
++#include <linux/sched.h>
++#include <linux/seq_file.h>
 +#include <linux/slab.h>
-+#include <linux/thermal.h>
-+#include <linux/types.h>
 +#include <linux/usb/otg.h>
-+#include "power_supply_charger.h"
++#include <linux/version.h>
 +
 +
-+#define MAX_CHARGER_COUNT 5
-+#define MAX_CABLE_COUNT 15
++#define DEV_NAME "bq24261_charger"
++#define MODEL_NAME_SIZE 8
 +
-+static LIST_HEAD(algo_list);
++#define EXCEPTION_MONITOR_DELAY (60 * HZ)
++#define WDT_RESET_DELAY (15 * HZ)
 +
-+struct psy_event_node {
-+	struct list_head node;
-+	unsigned long event;
-+	struct psy_cable_props cap;
-+	struct power_supply *psy;
-+	struct psy_batt_chrg_prof batt_property;
++/* BQ24261 registers */
++#define BQ24261_STAT_CTRL0_ADDR		0x00
++#define BQ24261_CTRL_ADDR		0x01
++#define BQ24261_BATT_VOL_CTRL_ADDR	0x02
++#define BQ24261_VENDOR_REV_ADDR		0x03
++#define BQ24261_TERM_FCC_ADDR		0x04
++#define BQ24261_VINDPM_STAT_ADDR	0x05
++#define BQ24261_ST_NTC_MON_ADDR		0x06
++
++#define BQ24261_RESET_MASK		(0x01 << 7)
++#define BQ24261_RESET_ENABLE		(0x01 << 7)
++
++#define BQ24261_FAULT_MASK		0x07
++#define BQ24261_STAT_MASK		(0x03 << 4)
++#define BQ24261_BOOST_MASK		(0x01 << 6)
++#define BQ24261_TMR_RST_MASK		(0x01 << 7)
++#define BQ24261_TMR_RST			(0x01 << 7)
++
++#define BQ24261_ENABLE_BOOST		(0x01 << 6)
++
++#define BQ24261_VOVP			0x01
++#define BQ24261_LOW_SUPPLY		0x02
++#define BQ24261_THERMAL_SHUTDOWN	0x03
++#define BQ24261_BATT_TEMP_FAULT		0x04
++#define BQ24261_TIMER_FAULT		0x05
++#define BQ24261_BATT_OVP		0x06
++#define BQ24261_NO_BATTERY		0x07
++#define BQ24261_STAT_READY		0x00
++
++#define BQ24261_STAT_CHRG_PRGRSS	(0x01 << 4)
++#define BQ24261_STAT_CHRG_DONE		(0x02 << 4)
++#define BQ24261_STAT_FAULT		(0x03 << 4)
++
++#define BQ24261_CE_MASK			(0x01 << 1)
++#define BQ24261_CE_DISABLE		(0x01 << 1)
++
++#define BQ24261_HZ_MASK			(0x01)
++#define BQ24261_HZ_ENABLE		(0x01)
++
++#define BQ24261_ICHRG_MASK		(0x1F << 3)
++#define BQ24261_MIN_CC 500 /* 500mA */
++#define BQ24261_MAX_CC	3000 /* 3A */
++
++#define BQ24261_ITERM_MASK		(0x03)
++#define BQ24261_MIN_ITERM 50 /* 50 mA */
++#define BQ24261_MAX_ITERM 300 /* 300mA */
++
++#define BQ24261_VBREG_MASK		(0x3F << 2)
++
++#define BQ24261_INLMT_MASK		(0x03 << 4)
++#define BQ24261_INLMT_100		0x00
++#define BQ24261_INLMT_150		(0x01 << 4)
++#define BQ24261_INLMT_500		(0x02 << 4)
++#define BQ24261_INLMT_900		(0x03 << 4)
++#define BQ24261_INLMT_1500		(0x04 << 4)
++#define BQ24261_INLMT_2500		(0x06 << 4)
++
++#define BQ24261_TE_MASK			(0x01 << 2)
++#define BQ24261_TE_ENABLE		(0x01 << 2)
++#define BQ24261_STAT_ENABLE_MASK	(0x01 << 3)
++#define BQ24261_STAT_ENABLE		(0x01 << 3)
++
++#define BQ24261_VENDOR_MASK		(0x07 << 5)
++#define BQ24261_VENDOR			(0x02 << 5)
++#define BQ24261_REV_MASK		(0x07)
++#define BQ24261_REV			(0x02)
++#define BQ24261_PG2_3_REV		(0x06)
++#define BQ24260_REV			(0x01)
++
++#define BQ24261_TS_MASK			(0x01 << 3)
++#define BQ24261_TS_ENABLED		(0x01 << 3)
++#define BQ24261_BOOST_ILIM_MASK		(0x01 << 4)
++#define BQ24261_BOOST_ILIM_500ma	(0x0)
++#define BQ24261_BOOST_ILIM_1A		(0x01 << 4)
++
++#define BQ24261_SAFETY_TIMER_MASK	(0x03 << 5)
++#define BQ24261_SAFETY_TIMER_40MIN	0x00
++#define BQ24261_SAFETY_TIMER_6HR	(0x01 << 5)
++#define BQ24261_SAFETY_TIMER_9HR	(0x02 << 5)
++#define BQ24261_SAFETY_TIMER_DISABLED	(0x03 << 5)
++
++/* 1% above voltage max design to report over voltage */
++#define BQ24261_OVP_MULTIPLIER			1010
++#define BQ24261_OVP_RECOVER_MULTIPLIER		990
++#define BQ24261_DEF_BAT_VOLT_MAX_DESIGN		4200000
++
++/* Settings for Voltage / DPPM Register (05) */
++#define BQ24261_VBATT_LEVEL1		3700000
++#define BQ24261_VBATT_LEVEL2		3960000
++#define BQ24261_VINDPM_MASK		(0x07)
++#define BQ24261_VINDPM_320MV		(0x01 << 2)
++#define BQ24261_VINDPM_160MV		(0x01 << 1)
++#define BQ24261_VINDPM_80MV		(0x01 << 0)
++#define BQ24261_CD_STATUS_MASK		(0x01 << 3)
++#define BQ24261_DPM_EN_MASK		(0x01 << 4)
++#define BQ24261_DPM_EN_FORCE		(0x01 << 4)
++#define BQ24261_LOW_CHG_MASK		(0x01 << 5)
++#define BQ24261_LOW_CHG_EN		(0x01 << 5)
++#define BQ24261_LOW_CHG_DIS		(~BQ24261_LOW_CHG_EN)
++#define BQ24261_DPM_STAT_MASK		(0x01 << 6)
++#define BQ24261_MINSYS_STAT_MASK	(0x01 << 7)
++
++#define BQ24261_MIN_CC			500
++
++static u16 bq24261_sfty_tmr[][2] = {
++	{0, BQ24261_SAFETY_TIMER_DISABLED}
++	,
++	{40, BQ24261_SAFETY_TIMER_40MIN}
++	,
++	{360, BQ24261_SAFETY_TIMER_6HR}
++	,
++	{540, BQ24261_SAFETY_TIMER_9HR}
++	,
 +};
 +
-+struct charger_cable {
-+	struct psy_cable_props cable_props;
-+	unsigned long psy_cable_type;
++
++static u16 bq24261_inlmt[][2] = {
++	{100, BQ24261_INLMT_100}
++	,
++	{150, BQ24261_INLMT_150}
++	,
++	{500, BQ24261_INLMT_500}
++	,
++	{900, BQ24261_INLMT_900}
++	,
++	{1500, BQ24261_INLMT_1500}
++	,
++	{2500, BQ24261_INLMT_2500}
++	,
 +};
 +
-+struct psy_charger_drv_context {
-+	bool is_usb_cable_evt_reg;
-+	int psyc_cnt;
-+	int batt_status;
-+	/* cache battery and charger properties */
-+	struct mutex event_lock;
-+	struct list_head event_queue;
-+	struct psy_batt_chrg_prof batt_property;
-+	struct work_struct event_work;
-+	struct charger_cable cable_list[MAX_CABLE_COUNT];
-+	wait_queue_head_t wait_chrg_enable;
-+	spinlock_t event_queue_lock;
++#define BQ24261_MIN_CV_mV 3500
++#define BQ24261_MAX_CV_mV 4440
++
++static enum power_supply_property bq24261_usb_props[] = {
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_ONLINE,
++	POWER_SUPPLY_PROP_TYPE,
++	POWER_SUPPLY_PROP_HEALTH,
++	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX,
++	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE_MAX,
++	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT,
++	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
++	POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT,
++	POWER_SUPPLY_PROP_CHARGE_TERM_CURRENT,
++	POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT,
++	POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT_MAX,
++	POWER_SUPPLY_PROP_MODEL_NAME,
++	POWER_SUPPLY_PROP_MANUFACTURER,
++	POWER_SUPPLY_PROP_TEMP_MAX,
++	POWER_SUPPLY_PROP_TEMP_MIN,
 +};
 +
-+DEFINE_MUTEX(battid_lock);
++enum bq24261_chrgr_stat {
++	BQ24261_CHRGR_STAT_UNKNOWN,
++	BQ24261_CHRGR_STAT_READY,
++	BQ24261_CHRGR_STAT_CHARGING,
++	BQ24261_CHRGR_STAT_BAT_FULL,
++	BQ24261_CHRGR_STAT_FAULT,
++};
 +
-+static struct psy_charger_drv_context psy_chrgr;
-+static struct usb_phy *otg_xceiver;
-+static int handle_event_notification(struct notifier_block *nb,
-+				   unsigned long event, void *data);
-+static struct notifier_block nb = {
-+		   .notifier_call = handle_event_notification,
-+		};
-+static void configure_chrgr_source(struct charger_cable *cable_lst);
-+static struct psy_charging_algo *power_supply_get_charging_algo
-+		(struct power_supply *, struct psy_batt_chrg_prof *);
-+static void __power_supply_trigger_charging_handler(struct power_supply *psy);
-+static void power_supply_trigger_charging_handler(struct power_supply *psy);
-+static void trigger_algo_psy_class(void);
-+static int psy_charger_throttle_charger(struct power_supply *psy,
-+					unsigned long state);
++struct bq24261_charger {
 +
-+static inline bool psy_is_battery_prop_changed(struct psy_batt_props *bat_prop,
-+		struct psy_batt_props *bat_cache)
++	struct mutex lock;
++	struct i2c_client *client;
++	struct bq24261_plat_data *pdata;
++	struct power_supply psy_usb;
++	struct power_supply_charger psyc_usb;
++	struct delayed_work notify_work;
++	struct delayed_work low_supply_fault_work;
++	struct delayed_work exception_mon_work;
++	struct list_head irq_queue;
++	wait_queue_head_t wait_ready;
++
++	int chrgr_health;
++	int bat_health;
++	int cc;
++	int cv;
++	int inlmt;
++	int max_cc;
++	int max_cv;
++	int iterm;
++	int cable_type;
++	int cntl_state;
++	int max_temp;
++	int min_temp;
++	enum bq24261_chrgr_stat chrgr_stat;
++	bool online;
++	bool present;
++	bool is_charging_enabled;
++	bool is_charger_enabled;
++	bool is_vsys_on;
++	bool is_hw_chrg_term;
++	char model_name[MODEL_NAME_SIZE];
++};
++
++enum bq2426x_model_num {
++	BQ24260 = 0,
++	BQ24261,
++};
++
++struct bq2426x_model {
++	char model_name[MODEL_NAME_SIZE];
++	enum bq2426x_model_num model;
++};
++
++static struct bq2426x_model bq24261_model_name[] = {
++	{ "bq24260", BQ24260 },
++	{ "bq24261", BQ24261 },
++};
++
++struct i2c_client *bq24261_client;
++static inline int get_battery_voltage(int *volt);
++static int bq24261_handle_irq(struct bq24261_charger *chip, u8 stat_reg);
++static inline int bq24261_set_iterm(struct bq24261_charger *chip, int iterm);
++static inline int bq24261_enable_hw_charge_term(struct bq24261_charger *chip,
++		bool val);
++
++enum power_supply_type get_power_supply_type(
++		unsigned long cable)
 +{
-+	if (!bat_cache)
-+		return true;
-+
-+	/* return true if temperature, health or throttling state changed */
-+	if ((bat_cache->temperature != bat_prop->temperature) ||
-+		(bat_cache->health != bat_prop->health) ||
-+		(bat_cache->throttle_state != bat_prop->throttle_state))
-+		return true;
-+
-+	/* return true if voltage or current changed not within TTL limit */
-+	if (time_after64(bat_prop->tstamp, bat_cache->tstamp + PROP_TTL) &&
-+		(bat_cache->current_now != bat_prop->current_now ||
-+		bat_cache->voltage_now != bat_prop->voltage_now))
-+		return true;
-+
-+	return false;
-+}
-+
-+static inline bool psy_is_charger_prop_changed(struct psy_charger_props *prop,
-+		struct psy_charger_props *cache_prop)
-+{
-+	/* if online/prsent/health/is_charging is changed, then return true */
-+	if (!cache_prop)
-+		return true;
-+
-+	if (cache_prop->online != prop->online ||
-+		cache_prop->present != prop->present ||
-+		cache_prop->is_charging != prop->is_charging ||
-+		cache_prop->health != prop->health)
-+		return true;
-+	else
-+		return false;
-+
-+}
-+
-+static inline void get_cur_chrgr_prop(struct power_supply *psy,
-+				      struct psy_charger_props *chrgr_prop)
-+{
-+	chrgr_prop->is_charging = psy_is_charging_enabled(psy);
-+	chrgr_prop->online = psy_is_online(psy);
-+	chrgr_prop->present = psy_is_present(psy);
-+	chrgr_prop->cable = psy_cable_type(psy);
-+	chrgr_prop->health = PSY_HEALTH(psy);
-+	chrgr_prop->tstamp = get_jiffies_64();
-+}
-+
-+static void dump_charger_props(struct psy_charger_props *props)
-+{
-+	if (props)
-+		pr_debug("%s: present=%d is_charging=%d health=%d online=%d cable=%ld tstamp=%ld\n",
-+			__func__, props->present, props->is_charging,
-+			props->health, props->online, props->cable,
-+			props->tstamp);
-+}
-+
-+static void dump_battery_props(struct psy_batt_props *props)
-+{
-+	if (props)
-+		pr_debug("%s voltage_now=%ld current_now=%ld temperature=%d status=%ld health=%d tstamp=%lld",
-+			__func__, props->voltage_now, props->current_now,
-+			props->temperature, props->status, props->health,
-+			props->tstamp);
-+}
-+
-+static int  __update_supplied_psy(struct device *dev, void *data)
-+{
-+	struct psy_charger_context *charger_context;
-+	struct psy_batt_context *batt_context;
-+	struct power_supply *psb, *psy;
-+	int i;
-+
-+	psy = dev_get_drvdata(dev);
-+
-+	if (!psy || !psy_is_charger(psy) || !psy->data)
-+		return 0;
-+
-+	charger_context = psy->data;
-+	charger_context->num_supplied_to_psy = 0;
-+
-+	for (i = 0; i < psy->num_supplicants; i++) {
-+		psb = power_supply_get_by_name(psy->supplied_to[i]);
-+		if (!psb)
-+			continue;
-+
-+		if (!psb->data)
-+			psb->data = devm_kzalloc(psb->dev,
-+				sizeof(struct psy_batt_context), GFP_KERNEL);
-+
-+		batt_context = psb->data;
-+		batt_context->supplied_by_psy
-+				[batt_context->num_supplied_by_psy++] = psy;
-+		charger_context->supplied_to_psy
-+				[charger_context->num_supplied_to_psy++] = psb;
-+	}
-+
-+	return 0;
-+}
-+
-+static void update_supplied_psy(void)
-+{
-+
-+	class_for_each_device(power_supply_class, NULL, NULL,
-+			__update_supplied_psy);
-+
-+}
-+
-+static inline bool is_chrgr_prop_changed(struct power_supply *psy)
-+{
-+	struct psy_charger_context *charger_context;
-+	struct psy_charger_props new_charger_props;
-+
-+	if (!psy->data) {
-+		pr_err("%s:%d Invalid charger context\n", __func__, __LINE__);
-+		return false;
-+	}
-+
-+	charger_context = psy->data;
-+
-+	get_cur_chrgr_prop(psy, &new_charger_props);
-+
-+	dump_charger_props(&charger_context->charger_props);
-+	dump_charger_props(&new_charger_props);
-+
-+	if (!psy_is_charger_prop_changed(&new_charger_props,
-+				&charger_context->charger_props))
-+		return false;
-+
-+	charger_context->charger_props =  new_charger_props;
-+
-+	return true;
-+}
-+
-+static void cache_successive_samples(long *sample_array, long new_sample)
-+{
-+	int i;
-+
-+	for (i = 0; i < MAX_CUR_VOLT_SAMPLES - 1; ++i)
-+		*(sample_array + i) = *(sample_array + i + 1);
-+
-+	*(sample_array + i) = new_sample;
-+}
-+
-+
-+static void psy_update_batt_context(struct psy_batt_context *batt_context,
-+	struct psy_batt_props *new_bat_props)
-+{
-+	if (time_after64(new_bat_props->tstamp,
-+		(batt_context->batt_props.tstamp + DEF_CUR_VOLT_SAMPLE_JIFF))) {
-+
-+		cache_successive_samples(batt_context->voltage_now_cache,
-+						new_bat_props->voltage_now);
-+		cache_successive_samples(batt_context->current_now_cache,
-+						new_bat_props->current_now);
-+	}
-+
-+	batt_context->batt_props = *new_bat_props;
-+}
-+
-+static inline void get_cur_bat_prop(struct power_supply *psy,
-+				    struct psy_batt_props *bat_prop)
-+{
-+	bat_prop->voltage_now = PSY_VOLTAGE_OCV(psy) / 1000;
-+	bat_prop->current_now = PSY_CURRENT_NOW(psy) / 1000;
-+	bat_prop->temperature = PSY_TEMPERATURE(psy) / 10;
-+	bat_prop->status = PSY_STATUS(psy);
-+	bat_prop->health = PSY_HEALTH(psy);
-+	bat_prop->throttle_state = psy_current_throttle_state(psy);
-+	bat_prop->tstamp = get_jiffies_64();
-+}
-+
-+static inline bool is_batt_prop_changed(struct power_supply *psy)
-+{
-+	struct psy_batt_context *batt_context;
-+	struct psy_batt_props new_batt_props;
-+
-+	if (!psy->data)
-+		update_supplied_psy();
-+
-+	batt_context =  psy->data;
-+	get_cur_bat_prop(psy, &new_batt_props);
-+	dump_battery_props(&batt_context->batt_props);
-+	dump_battery_props(&new_batt_props);
-+
-+	if (!psy_is_battery_prop_changed(&new_batt_props,
-+					&batt_context->batt_props))
-+		return false;
-+
-+	psy_update_batt_context(batt_context, &new_batt_props);
-+
-+	return true;
-+}
-+
-+static inline bool is_supplied_to_has_ext_pwr_changed(struct power_supply *psy)
-+{
-+	int cnt;
-+	struct power_supply *psb;
-+	struct psy_charger_context *charger_context;
-+
-+	charger_context = psy->data;
-+	cnt = charger_context->num_supplied_to_psy;
-+
-+	while (cnt--) {
-+		psb = charger_context->supplied_to_psy[cnt];
-+		if (!psb->external_power_changed)
-+			return false;
-+	}
-+
-+	return true;
-+}
-+
-+static inline bool is_supplied_by_changed(struct power_supply *psy)
-+{
-+	int cnt;
-+	struct power_supply *psc;
-+	struct psy_batt_context *batt_context;
-+
-+	batt_context = psy->data;
-+	cnt = batt_context->num_supplied_by_psy;
-+
-+	while (cnt--) {
-+		psc = batt_context->supplied_by_psy[cnt];
-+		if ((psy_is_charger(psc)) && is_chrgr_prop_changed(psc))
-+			return true;
-+	}
-+
-+	return false;
-+}
-+
-+static int process_cable_props(struct psy_cable_props *cap)
-+{
-+	struct charger_cable *cable = NULL;
-+	unsigned off;
-+
-+	pr_info("%s: event:%d, type:%lu, current_mA:%d\n",
-+		__func__, cap->chrg_evt, cap->chrg_type, cap->current_mA);
-+
-+	off = ffs(cap->chrg_type);
-+
-+	if (!off || off >= ARRAY_SIZE(psy_chrgr.cable_list)) {
-+		pr_err("%s:%d Invalid cable type\n", __FILE__, __LINE__);
-+		return -EINVAL;
-+	}
-+
-+	cable = &psy_chrgr.cable_list[off - 1];
-+
-+	if (cable->psy_cable_type == PSY_CHARGER_CABLE_TYPE_NONE)
-+		cable->psy_cable_type = cap->chrg_type;
-+
-+	memcpy((void *)&cable->cable_props, (void *)cap,
-+			sizeof(cable->cable_props));
-+
-+	configure_chrgr_source(psy_chrgr.cable_list);
-+
-+	return 0;
-+}
-+
-+static void event_worker(struct work_struct *work)
-+{
-+	int state;
-+	struct psy_event_node *evt, *tmp;
-+
-+	spin_lock(&psy_chrgr.event_queue_lock);
-+	list_for_each_entry_safe(evt, tmp, &psy_chrgr.event_queue, node) {
-+		list_del(&evt->node);
-+		spin_unlock(&psy_chrgr.event_queue_lock);
-+
-+		mutex_lock(&psy_chrgr.event_lock);
-+
-+		switch (evt->event) {
-+		case PSY_EVENT_CABLE:
-+			process_cable_props(&evt->cap);
-+			break;
-+		case PSY_EVENT_PROP_CHANGED:
-+			power_supply_trigger_charging_handler(evt->psy);
-+			break;
-+		case PSY_EVENT_THROTTLE:
-+			state = psy_current_throttle_state(evt->psy);
-+			psy_charger_throttle_charger(evt->psy, state);
-+			break;
-+		case PSY_EVENT_BATTERY:
-+			power_supply_trigger_charging_handler(NULL);
-+			/* TODO: Cache battery profile */
-+			break;
-+		default:
-+			pr_err("%s: Invalid event\n", __func__);
-+			break;
-+		}
-+
-+		mutex_unlock(&psy_chrgr.event_lock);
-+
-+		spin_lock(&psy_chrgr.event_queue_lock);
-+		kfree(evt);
-+	}
-+
-+	spin_unlock(&psy_chrgr.event_queue_lock);
-+}
-+
-+static int handle_event_notification(struct notifier_block *nb,
-+				   unsigned long event, void *data)
-+{
-+	struct psy_event_node *evt;
-+
-+	evt = kzalloc(sizeof(*evt), GFP_ATOMIC);
-+	if (!evt) {
-+		pr_err("%s: failed to allocate memory for event\n", __func__);
-+		return NOTIFY_DONE;
-+	}
-+
-+	evt->event = event;
-+
-+	switch (event) {
-+	case PSY_EVENT_CABLE:
-+		memcpy(&evt->cap, data, sizeof(struct psy_cable_props));
-+		break;
-+	case PSY_EVENT_PROP_CHANGED:
-+	case PSY_EVENT_THROTTLE:
-+		evt->psy = data;
-+		break;
-+	case PSY_EVENT_BATTERY:
-+		memcpy(&evt->batt_property, data,
-+			sizeof(struct psy_batt_chrg_prof));
-+		break;
++	switch (cable) {
++
++	case PSY_CHARGER_CABLE_TYPE_USB_DCP:
++		return POWER_SUPPLY_TYPE_USB_DCP;
++	case PSY_CHARGER_CABLE_TYPE_USB_CDP:
++		return POWER_SUPPLY_TYPE_USB_CDP;
++	case PSY_CHARGER_CABLE_TYPE_USB_ACA:
++	case PSY_CHARGER_CABLE_TYPE_ACA_DOCK:
++		return POWER_SUPPLY_TYPE_USB_ACA;
++	case PSY_CHARGER_CABLE_TYPE_AC:
++		return POWER_SUPPLY_TYPE_MAINS;
++	case PSY_CHARGER_CABLE_TYPE_NONE:
++	case PSY_CHARGER_CABLE_TYPE_USB_SDP:
++		return POWER_SUPPLY_TYPE_USB;
 +	default:
-+		return NOTIFY_DONE;
++		return POWER_SUPPLY_TYPE_UNKNOWN;
 +	}
 +
-+	INIT_LIST_HEAD(&evt->node);
-+	spin_lock(&psy_chrgr.event_queue_lock);
-+	list_add_tail(&evt->node, &psy_chrgr.event_queue);
-+	spin_unlock(&psy_chrgr.event_queue_lock);
-+	queue_work(system_wq, &psy_chrgr.event_work);
-+	return NOTIFY_OK;
++	return POWER_SUPPLY_TYPE_USB;
 +}
 +
-+static int register_usb_notifier(void)
++static u8 lookup_regval(u16 tbl[][2], size_t size, u16 in_val)
 +{
-+	int retval = 0;
++	int i;
 +
-+	otg_xceiver = usb_get_phy(USB_PHY_TYPE_USB2);
-+	if (!otg_xceiver) {
-+		pr_err("failure to get otg transceiver\n");
-+		retval = -EIO;
-+		goto notifier_reg_failed;
++	for (i = 1; i < size; ++i)
++		if (in_val < tbl[i][0])
++			break;
++
++	return tbl[i - 1][1];
++}
++
++static u8 bq24261_cc_to_reg(int cc)
++{
++	cc = clamp_t(int, cc, BQ24261_MIN_CC, BQ24261_MAX_CC);
++	cc = cc - BQ24261_MIN_CC;
++	return  (cc / 100) << 3;
++}
++
++static u8 bq24261_cv_to_reg(int cv)
++{
++	cv = clamp_t(int, cv, BQ24261_MIN_CV_mV, BQ24261_MAX_CV_mV);
++	cv = cv - BQ24261_MIN_CV_mV;
++	return	(cv / 20) << 2;
++}
++
++static u8 bq24261_inlmt_to_reg(int inlmt)
++{
++	return lookup_regval(bq24261_inlmt, ARRAY_SIZE(bq24261_inlmt), inlmt);
++}
++
++static u8 bq24261_iterm_to_reg(int iterm)
++{
++	iterm = clamp_t(int, iterm, BQ24261_MIN_ITERM,  BQ24261_MAX_ITERM);
++	iterm = iterm - BQ24261_MIN_ITERM;
++
++	return   iterm/50;
++}
++
++static u8 bq24261_sfty_tmr_to_reg(int tmr)
++{
++	return lookup_regval(bq24261_sfty_tmr,
++			ARRAY_SIZE(bq24261_sfty_tmr), tmr);
++}
++
++static inline int bq24261_read_reg(struct i2c_client *client, u8 reg)
++{
++	int ret;
++
++	ret = i2c_smbus_read_byte_data(client, reg);
++	if (ret < 0)
++		dev_err(&client->dev, "Error(%d) in reading reg %d\n", ret,
++			reg);
++
++	return ret;
++}
++
++static inline int bq24261_write_reg(struct i2c_client *client, u8 reg, u8 data)
++{
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, reg, data);
++	if (ret < 0)
++		dev_err(&client->dev, "Error(%d) in writing %d to reg %d\n",
++			ret, data, reg);
++
++	return ret;
++}
++
++static inline int bq24261_read_modify_reg(struct i2c_client *client, u8 reg,
++					  u8 mask, u8 val)
++{
++	int ret;
++
++	ret = bq24261_read_reg(client, reg);
++	if (ret < 0)
++		return ret;
++	ret = (ret & ~mask) | (mask & val);
++	return bq24261_write_reg(client, reg, ret);
++}
++
++static inline int bq24261_tmr_ntc_init(struct bq24261_charger *chip)
++{
++	u8 reg_val;
++	int ret;
++
++	reg_val = bq24261_sfty_tmr_to_reg(chip->pdata->safety_timer);
++
++	if (chip->pdata->is_ts_enabled)
++		reg_val |= BQ24261_TS_ENABLED;
++
++	ret = bq24261_read_modify_reg(chip->client, BQ24261_ST_NTC_MON_ADDR,
++			BQ24261_TS_MASK|BQ24261_SAFETY_TIMER_MASK|
++			BQ24261_BOOST_ILIM_MASK, reg_val);
++
++	return ret;
++}
++
++static inline int bq24261_enable_charging(
++	struct bq24261_charger *chip, bool val)
++{
++	int ret;
++	u8 reg_val;
++	bool is_ready;
++
++	ret = bq24261_read_reg(chip->client,
++					BQ24261_STAT_CTRL0_ADDR);
++	if (ret < 0) {
++		dev_err(&chip->client->dev,
++			"Error(%d) in reading BQ24261_STAT_CTRL0_ADDR\n", ret);
 +	}
-+	retval = usb_register_notifier(otg_xceiver, &nb);
-+	if (retval) {
-+		pr_err("failure to register otg notifier\n");
-+		goto notifier_reg_failed;
-+	}
 +
-+notifier_reg_failed:
-+	return retval;
-+}
++	is_ready =  (ret & BQ24261_STAT_MASK) != BQ24261_STAT_FAULT;
 +
-+static inline bool is_trigger_charging_algo(struct power_supply *psy)
-+{
-+	/*
-+	* trigger charging algorithm if battery or
-+	* charger properties are changed. Also no need to
-+	* invoke algorithm for power_supply_changed from
-+	* charger, if all supplied_to has the ext_port_changed defined.
-+	* On invoking the ext_port_changed the supplied to can send
-+	* power_supplied_changed event.
-+	*/
++	/* If status is fault, wait for READY before enabling the charging */
 +
-+	if ((psy_is_charger(psy) && !is_supplied_to_has_ext_pwr_changed(psy)) &&
-+			is_chrgr_prop_changed(psy))
-+		return true;
-+
-+	if ((psy_is_battery(psy)) && (is_batt_prop_changed(psy) ||
-+				is_supplied_by_changed(psy)))
-+		return true;
-+
-+	return false;
-+}
-+
-+static int get_battery_status(struct power_supply *psy)
-+{
-+	int status;
-+	struct power_supply *psc;
-+	struct psy_batt_context *batt_context;
-+	int cnt;
-+
-+	if (!psy_is_battery(psy) || (!psy->data))
-+		return POWER_SUPPLY_STATUS_UNKNOWN;
-+
-+	batt_context = psy->data;
-+	status = POWER_SUPPLY_STATUS_DISCHARGING;
-+	cnt = batt_context->num_supplied_by_psy;
-+
-+	while (cnt--) {
-+		psc = batt_context->supplied_by_psy[cnt];
-+
-+		if (psy_is_present(psc))
-+			status = POWER_SUPPLY_STATUS_NOT_CHARGING;
-+
-+		if (!(psy_is_charging_can_be_enabled(psc)) ||
-+			(!psy_is_health_good(psy)) ||
-+				(!psy_is_health_good(psc)))
-+			continue;
-+
-+		if ((batt_context->algo_stat == PSY_ALGO_STAT_FULL) ||
-+			(batt_context->algo_stat == PSY_ALGO_STAT_MAINT))
-+				status = POWER_SUPPLY_STATUS_FULL;
-+		else if (psy_is_charging_enabled(psc))
-+				status = POWER_SUPPLY_STATUS_CHARGING;
-+	}
-+
-+	pr_debug("%s: Set status=%d for %s\n", __func__, status, psy->name);
-+
-+	return status;
-+}
-+
-+static void update_charger_online(struct power_supply *psy)
-+{
-+	int online;
-+	struct psy_charger_context *charger_context;
-+
-+	online = psy_is_charger_enabled(psy) ? 1 : 0;
-+	psy_set_charger_online(psy, online);
-+	charger_context = psy->data;
-+	charger_context->charger_props.online = online;
-+}
-+
-+static void update_battery_status(struct power_supply *psy)
-+{
-+	int status;
-+	struct psy_batt_context *batt_context;
-+
-+	status = get_battery_status(psy);
-+	psy_set_battery_status(psy, status);
-+
-+	batt_context = psy->data;
-+	batt_context->batt_props.status = status;
-+}
-+
-+static void update_sysfs(struct power_supply *psy)
-+{
-+	int cnt;
-+	struct power_supply *psb;
-+	struct power_supply *psc;
-+	struct psy_batt_context *batt_context;
-+	struct psy_charger_context *charger_context;
-+
-+	if (psy_is_battery(psy)) {
-+
-+		update_battery_status(psy);
-+
-+		batt_context = psy->data;
-+		cnt = batt_context->num_supplied_by_psy;
-+
-+		while (cnt--) {
-+			psc = batt_context->supplied_by_psy[cnt];
-+			update_charger_online(psc);
++	if (!is_ready && val) {
++		ret = wait_event_timeout(chip->wait_ready,
++			(chip->chrgr_stat == BQ24261_CHRGR_STAT_READY),
++				HZ);
++		dev_info(&chip->client->dev,
++			"chrgr_stat=%x\n", chip->chrgr_stat);
++		if (ret == 0) {
++			dev_err(&chip->client->dev,
++				"Waiting for Charger Ready Failed. Enabling charging anyway\n");
 +		}
-+		return;
 +	}
 +
-+	charger_context =  psy->data;
-+	cnt = charger_context->num_supplied_to_psy;
-+
-+	while (cnt--) {
-+		psb = charger_context->supplied_to_psy[cnt];
-+		if (psb && psy_is_battery(psb) && psy_is_present(psb))
-+			update_battery_status(psb);
++	if (val) {
++		reg_val = (~BQ24261_CE_DISABLE & BQ24261_CE_MASK);
++		if (chip->is_hw_chrg_term)
++			reg_val |= BQ24261_TE_ENABLE;
++	} else {
++		reg_val = BQ24261_CE_DISABLE;
 +	}
 +
-+	update_charger_online(psy);
++	reg_val |=  BQ24261_STAT_ENABLE;
 +
++	ret = bq24261_read_modify_reg(chip->client, BQ24261_CTRL_ADDR,
++		       BQ24261_STAT_ENABLE_MASK|BQ24261_RESET_MASK|
++				BQ24261_CE_MASK|BQ24261_TE_MASK,
++					reg_val);
++	if (ret || !val) {
++		cancel_delayed_work_sync(&chip->notify_work);
++		return ret;
++	}
++
++	bq24261_set_iterm(chip, chip->iterm);
++	schedule_delayed_work(&chip->notify_work, 0);
++	bq24261_enable_hw_charge_term(chip, true);
++	return bq24261_tmr_ntc_init(chip);
 +}
 +
-+static int trigger_algo(struct power_supply *psy)
++static inline int bq24261_reset_timer(struct bq24261_charger *chip)
 +{
-+	unsigned long cc = 0, cv = 0, cc_min;
-+	struct psy_batt_context *batt_context;
-+	struct psy_charging_algo *algo;
-+	struct psy_batt_chrg_prof chrg_profile;
-+	struct power_supply *psc;
-+	int cnt;
++	return bq24261_read_modify_reg(chip->client, BQ24261_STAT_CTRL0_ADDR,
++			BQ24261_TMR_RST_MASK, BQ24261_TMR_RST);
++}
 +
-+	if (!psy_is_battery(psy))
-+		return 0;
++static inline int bq24261_enable_charger(
++	struct bq24261_charger *chip, int val)
++{
 +
-+	if (psy_get_battery_prop(&chrg_profile)) {
-+		pr_err("%s:Battery profile missing!!\n", __FILE__);
-+		return -EINVAL;
++	u8 reg_val;
++	int ret;
++
++	reg_val = val ? (~BQ24261_HZ_ENABLE & BQ24261_HZ_MASK)  :
++			BQ24261_HZ_ENABLE;
++
++	ret = bq24261_read_modify_reg(chip->client, BQ24261_CTRL_ADDR,
++		       BQ24261_HZ_MASK|BQ24261_RESET_MASK, reg_val);
++	if (ret)
++		return ret;
++
++	return bq24261_reset_timer(chip);
++}
++
++static inline int bq24261_set_cc(struct bq24261_charger *chip, int cc)
++{
++	u8 reg_val;
++	int ret;
++
++	dev_dbg(&chip->client->dev, "cc=%d\n", cc);
++
++	if (cc && (cc < BQ24261_MIN_CC)) {
++		dev_dbg(&chip->client->dev, "Set LOW_CHG bit\n");
++		reg_val = BQ24261_LOW_CHG_EN;
++		ret = bq24261_read_modify_reg(chip->client,
++				BQ24261_VINDPM_STAT_ADDR,
++				BQ24261_LOW_CHG_MASK, reg_val);
++	} else {
++		dev_dbg(&chip->client->dev, "Clear LOW_CHG bit\n");
++		reg_val = BQ24261_LOW_CHG_DIS;
++		ret = bq24261_read_modify_reg(chip->client,
++				BQ24261_VINDPM_STAT_ADDR,
++				BQ24261_LOW_CHG_MASK, reg_val);
 +	}
 +
-+	batt_context = psy->data;
++	reg_val = bq24261_cc_to_reg(cc);
 +
-+	algo = power_supply_get_charging_algo(psy, &chrg_profile);
-+	if (!algo) {
-+		pr_err("%s:Charging algo not found!!\n", __FILE__);
-+		return -EINVAL;
-+	}
++	return bq24261_read_modify_reg(chip->client, BQ24261_TERM_FCC_ADDR,
++			BQ24261_ICHRG_MASK, reg_val);
++}
 +
-+	batt_context->algo_stat = algo->get_next_cc_cv
-+			(batt_context, chrg_profile, &cc, &cv);
-+
-+	pr_info("%s:Algo_status:%d\n", __func__, batt_context->algo_stat);
-+
-+	if (!cc || !cv)
-+		return -ENODATA;
++static inline int bq24261_set_cv(struct bq24261_charger *chip, int cv)
++{
++	int bat_volt;
++	int ret;
++	u8 reg_val;
++	u8 vindpm_val = 0x0;
 +
 +	/*
-+	* CC needs to be updated for all chargers which are supplying
-+	* power to this battery to ensure that the sum of CCs of all
-+	* chargers are never more than the CC selected by the algo.
-+	* The CC is set based on the charger priority.
++	* Setting VINDPM value as per the battery voltage
++	*  VBatt           Vindpm     Register Setting
++	*  < 3.7v           4.2v       0x0 (default)
++	*  3.71v - 3.96v    4.36v      0x2
++	*  > 3.96v          4.6v       0x5
 +	*/
-+
-+	cnt = batt_context->num_supplied_by_psy;
-+
-+	while (cnt--) {
-+		psc = batt_context->supplied_by_psy[cnt];
-+		if (!psy_is_present(psc))
-+			continue;
-+
-+		cc_min = min_t(unsigned long, PSY_MAX_CC(psc), cc);
-+		if (cc_min < 0)
-+			cc_min = 0;
-+		cc -= cc_min;
-+		psy_set_cc(psc, cc_min);
-+		psy_set_cv(psc, cv);
++	ret = get_battery_voltage(&bat_volt);
++	if (ret) {
++		dev_err(&chip->client->dev,
++			"Error getting battery voltage!!\n");
++	} else {
++		if (bat_volt > BQ24261_VBATT_LEVEL2)
++			vindpm_val =
++				(BQ24261_VINDPM_320MV | BQ24261_VINDPM_80MV);
++		else if (bat_volt > BQ24261_VBATT_LEVEL1)
++			vindpm_val = BQ24261_VINDPM_160MV;
 +	}
 +
-+	return 0;
++	ret = bq24261_read_modify_reg(chip->client,
++			BQ24261_VINDPM_STAT_ADDR,
++			BQ24261_VINDPM_MASK,
++			vindpm_val);
++	if (ret) {
++		dev_err(&chip->client->dev,
++			"Error setting VINDPM setting!!\n");
++		return ret;
++	}
++
++
++	reg_val = bq24261_cv_to_reg(cv);
++
++	return bq24261_read_modify_reg(chip->client, BQ24261_BATT_VOL_CTRL_ADDR,
++				       BQ24261_VBREG_MASK, reg_val);
 +}
 +
-+static inline void wait_for_charging_enabled(struct power_supply *psy)
++static inline int bq24261_set_inlmt(struct bq24261_charger *chip, int inlmt)
 +{
-+	wait_event_timeout(psy_chrgr.wait_chrg_enable,
-+			(psy_is_charging_enabled(psy)), HZ);
++	u8 reg_val;
++
++	reg_val = bq24261_inlmt_to_reg(inlmt);
++
++	return bq24261_read_modify_reg(chip->client, BQ24261_CTRL_ADDR,
++		       BQ24261_RESET_MASK|BQ24261_INLMT_MASK, reg_val);
++
 +}
 +
-+static inline void enable_supplied_by_charging(struct power_supply *psy,
-+					bool is_enable)
++static inline void resume_charging(struct bq24261_charger *chip)
 +{
-+	struct power_supply *psc;
-+	struct psy_batt_context *batt_context;
-+	int cnt;
++	int ret = 0;
 +
-+	if (!psy_is_battery(psy))
-+		return;
++	if (chip->is_charger_enabled)
++		ret = bq24261_enable_charger(chip, true);
++	if (!ret && chip->inlmt)
++		ret = bq24261_set_inlmt(chip, chip->inlmt);
++	if (!ret && chip->cc)
++		ret = bq24261_set_cc(chip, chip->cc);
++	if (!ret && chip->cv)
++		ret = bq24261_set_cv(chip, chip->cv);
++	if (!ret && chip->is_charging_enabled)
++		ret = bq24261_enable_charging(chip, true);
++
++	if (ret)
++		dev_err(&bq24261_client->dev,
++			"Error(%d) in resume charging\n", ret);
++}
++
++static inline int bq24261_set_iterm(struct bq24261_charger *chip, int iterm)
++{
++	u8 reg_val;
++
++	reg_val = bq24261_iterm_to_reg(iterm);
++
++	return bq24261_read_modify_reg(chip->client, BQ24261_TERM_FCC_ADDR,
++				       BQ24261_ITERM_MASK, reg_val);
++}
++
++static inline int bq24261_enable_hw_charge_term(
++	struct bq24261_charger *chip, bool val)
++{
++	u8 data;
++	int ret;
++
++	data = val ? BQ24261_TE_ENABLE : (~BQ24261_TE_ENABLE & BQ24261_TE_MASK);
++
++	ret = bq24261_read_modify_reg(chip->client, BQ24261_CTRL_ADDR,
++			       BQ24261_RESET_MASK|BQ24261_TE_MASK, data);
++
++	if (ret)
++		return ret;
++
++	chip->is_hw_chrg_term = val ? true : false;
++
++	return ret;
++}
++
++static inline bool bq24261_is_vsys_on(struct bq24261_charger *chip)
++{
++	int ret;
++	struct i2c_client *client = chip->client;
++
++	ret = bq24261_read_reg(client, BQ24261_CTRL_ADDR);
++	if (ret < 0) {
++		dev_err(&client->dev,
++			"Error(%d) in reading BQ24261_CTRL_ADDR\n", ret);
++		return false;
++	}
++
++	if (((ret & BQ24261_HZ_MASK) == BQ24261_HZ_ENABLE) &&
++			chip->is_charger_enabled) {
++		dev_err(&client->dev, "Charger in Hi Z Mode\n");
++		return false;
++	}
++
++	ret = bq24261_read_reg(client, BQ24261_VINDPM_STAT_ADDR);
++	if (ret < 0) {
++		dev_err(&client->dev,
++			"Error(%d) in reading BQ24261_VINDPM_STAT_ADDR\n", ret);
++		return false;
++	}
++
++	if (ret & BQ24261_CD_STATUS_MASK) {
++		dev_err(&client->dev, "CD line asserted\n");
++		return false;
++	}
++
++	return true;
++}
++
++static inline bool is_bq24261_enabled(struct bq24261_charger *chip)
++{
++	if (chip->cable_type == PSY_CHARGER_CABLE_TYPE_NONE)
++		return false;
++	else if (!chip->is_charger_enabled)
++		return false;
 +	/*
-+	* Get list of chargers supplying power to this battery and
-+	* disable charging for all chargers
++	* BQ24261 gives interrupt only on stop/resume charging.
++	* If charging is already stopped, we need to query the hardware
++	* to see charger is still active and can supply vsys or not.
 +	*/
-+	batt_context  = psy->data;
-+	cnt = batt_context->num_supplied_by_psy;
++	if ((chip->chrgr_stat == BQ24261_CHRGR_STAT_FAULT) ||
++		 (!chip->is_charging_enabled))
++		return bq24261_is_vsys_on(chip);
 +
-+	while (cnt--) {
-+		psc = batt_context->supplied_by_psy[cnt];
-+		if (!psy_is_present(psc))
-+			continue;
-+		if (is_enable && psy_is_charging_can_be_enabled(psc)) {
-+			psy_enable_charging(psc);
-+			wait_for_charging_enabled(psc);
++	return chip->is_vsys_on;
++}
 +
++static int bq24261_usb_psyc_set_property(struct power_supply_charger *psyc,
++				    enum power_supply_charger_property pscp,
++				    const union power_supply_propval *val)
++{
++	struct bq24261_charger *chip;
++	int ret = 0;
++
++	chip = container_of(psyc, struct bq24261_charger, psyc_usb);
++
++	mutex_lock(&chip->lock);
++	dev_dbg(&chip->client->dev, "%s: prop=%d, val=%d\n",
++			__func__, pscp, val->intval);
++
++	switch (pscp) {
++
++	case POWER_SUPPLY_CHARGER_PROP_ENABLE_CHARGING:
++		ret = bq24261_enable_charging(chip, val->intval);
++
++		if (ret)
++			dev_err(&chip->client->dev,
++				"Error(%d) in %s charging", ret,
++				(val->intval ? "enable" : "disable"));
++		else
++			chip->is_charging_enabled = val->intval;
++
++		break;
++	case POWER_SUPPLY_CHARGER_PROP_ENABLE_CHARGER:
++		/* Don't enable the charger unless over voltage is recovered */
++
++		if (chip->bat_health != POWER_SUPPLY_HEALTH_OVERVOLTAGE) {
++			ret = bq24261_enable_charger(chip, val->intval);
++
++			if (ret)
++				dev_err(&chip->client->dev,
++					"Error(%d) in %s charger", ret,
++					(val->intval ? "enable" : "disable"));
++			else
++				chip->is_charger_enabled = val->intval;
 +		} else {
-+			psy_disable_charging(psc);
++			dev_info(&chip->client->dev, "Battery Over Voltage. Charger will be disabled\n");
 +		}
-+	}
-+}
-+
-+static void __power_supply_trigger_charging_handler(struct power_supply *psy)
-+{
-+	int cnt;
-+	struct power_supply *psb = NULL;
-+	struct psy_charger_context *charger_context;
-+
-+	if (!is_trigger_charging_algo(psy))
-+		return;
-+
-+	if (psy_is_battery(psy)) {
-+
-+		enable_supplied_by_charging(psy, !trigger_algo(psy));
-+		goto update_sysfs;
-+
-+	}
-+
-+	charger_context = psy->data;
-+	cnt = charger_context->num_supplied_to_psy;
-+
-+	while (cnt--) {
-+		psb = charger_context->supplied_to_psy[cnt];
-+		if (psy_is_battery(psb) && psy_is_present(psb)) {
-+			if (trigger_algo(psb)) {
-+				psy_disable_charging(psy);
-+				break;
-+			} else if (psy_is_charging_can_be_enabled(psy)) {
-+				psy_enable_charging(psy);
-+				wait_for_charging_enabled(psy);
-+			}
-+		}
-+	}
-+
-+update_sysfs:
-+	update_sysfs(psy);
-+	power_supply_changed(psy);
-+
-+}
-+
-+static int __trigger_charging_handler(struct device *dev, void *data)
-+{
-+	struct power_supply *psy = dev_get_drvdata(dev);
-+
-+	__power_supply_trigger_charging_handler(psy);
-+
-+	return 0;
-+}
-+
-+static void trigger_algo_psy_class(void)
-+{
-+	class_for_each_device(power_supply_class, NULL, NULL,
-+			__trigger_charging_handler);
-+}
-+
-+static void power_supply_trigger_charging_handler(struct power_supply *psy)
-+{
-+	if (!psy_chrgr.psyc_cnt)
-+		return;
-+
-+	wake_up(&psy_chrgr.wait_chrg_enable);
-+
-+	if (psy)
-+		__power_supply_trigger_charging_handler(psy);
-+	else
-+		trigger_algo_psy_class();
-+
-+}
-+
-+static inline int get_battery_thresholds(struct power_supply *psy,
-+	struct psy_batt_thresholds *bat_thresh)
-+{
-+	struct psy_charging_algo *algo;
-+	struct psy_batt_chrg_prof chrg_profile;
-+
-+	/* FIXME: Get iterm only for supplied_to arguments*/
-+	if (psy_get_battery_prop(&chrg_profile)) {
-+		pr_err("%s:Error in getting charge profile\n", __func__);
-+		return -EINVAL;
-+	}
-+
-+	algo = power_supply_get_charging_algo(psy, &chrg_profile);
-+	if (!algo) {
-+		pr_err("%s:Error in getting charging algo!!\n", __func__);
-+		return -EINVAL;
-+	}
-+
-+	if (algo->get_batt_thresholds) {
-+		algo->get_batt_thresholds(chrg_profile, bat_thresh);
-+	} else {
-+		pr_err("%s:Error in getting battery thresholds from: %s\n",
-+			__func__, algo->name);
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+static int select_chrgr_cable(struct device *dev, void *data)
-+{
-+	struct power_supply *psy = dev_get_drvdata(dev);
-+	struct charger_cable *cable, *max_mA_cable = NULL;
-+	struct charger_cable *cable_lst = (struct charger_cable *)data;
-+	struct psy_batt_thresholds bat_thresh;
-+	unsigned int max_mA = 0;
-+	int i;
-+
-+	if (!psy_is_charger(psy))
-+		return 0;
-+
-+	/* get cable with maximum capability */
-+	for (i = 0; i < ARRAY_SIZE(psy_chrgr.cable_list); ++i) {
-+		cable = cable_lst + i;
-+		if ((!psy_is_cable_active(cable->cable_props.chrg_evt)) ||
-+		    (!psy_is_supported_cable(psy, cable->psy_cable_type)))
-+			continue;
-+
-+		if (cable->cable_props.current_mA > max_mA) {
-+			max_mA_cable = cable;
-+			max_mA = cable->cable_props.current_mA;
-+		}
-+	}
-+
-+	/* no cable connected. disable charging */
-+	if (!max_mA_cable) {
-+
-+		if ((psy_is_charger_enabled(psy) ||
-+				psy_is_charging_enabled(psy))) {
-+			psy_disable_charging(psy);
-+			psy_disable_charger(psy);
-+		}
-+		psy_set_cc(psy, 0);
-+		psy_set_cv(psy, 0);
-+		psy_set_inlmt(psy, 0);
-+
-+		/* set present and online as 0 */
-+		psy_set_present(psy, 0);
-+
-+		update_sysfs(psy);
-+		psy_switch_cable(psy, PSY_CHARGER_CABLE_TYPE_NONE);
-+
-+		power_supply_changed(psy);
-+		return 0;
-+	}
-+
-+	/*
-+	* cable type changed.New cable connected or existing cable
-+	* capabilities changed.switch cable and enable charger and charging
-+	*/
-+	psy_set_present(psy, 1);
-+
-+	if (psy_cable_type(psy) != max_mA_cable->psy_cable_type)
-+		psy_switch_cable(psy, max_mA_cable->psy_cable_type);
-+
-+	if (psy_is_charger_can_be_enabled(psy)) {
-+		memset(&bat_thresh, 0, sizeof(bat_thresh));
-+		psy_enable_charger(psy);
-+
-+		update_charger_online(psy);
-+
-+		psy_set_inlmt(psy, max_mA_cable->cable_props.current_mA);
-+		if (!get_battery_thresholds(psy, &bat_thresh)) {
-+			psy_set_iterm(psy, bat_thresh.iterm);
-+			psy_set_min_temp(psy, bat_thresh.temp_min);
-+			psy_set_max_temp(psy, bat_thresh.temp_max);
-+		}
-+
-+	} else {
-+		psy_disable_charger(psy);
-+		update_charger_online(psy);
-+	}
-+
-+	power_supply_trigger_charging_handler(NULL);
-+	/* Cable status is same as previous. No action to be taken */
-+	return 0;
-+}
-+
-+static void configure_chrgr_source(struct charger_cable *cable_lst)
-+{
-+	class_for_each_device(power_supply_class, NULL,
-+			      cable_lst, select_chrgr_cable);
-+}
-+
-+static int psy_charger_throttle_charger(struct power_supply *psy,
-+					unsigned long state)
-+{
-+	if (state < 0 || state > psy_max_throttle_state(psy))
-+		return -EINVAL;
-+
-+
-+	switch (psy_throttle_action(psy, state)) {
-+	case PSY_THROTTLE_DISABLE_CHARGER:
-+		psy_set_max_cc(psy, 0);
-+		psy_disable_charger(psy);
 +		break;
-+	case PSY_THROTTLE_DISABLE_CHARGING:
-+		psy_set_max_cc(psy, 0);
-+		psy_disable_charging(psy);
++	case POWER_SUPPLY_CHARGER_PROP_CABLE_TYPE:
++		chip->cable_type = val->intval;
++		chip->psy_usb.type = get_power_supply_type(chip->cable_type);
++		if (chip->cable_type != PSY_CHARGER_CABLE_TYPE_NONE) {
++			chip->chrgr_health = POWER_SUPPLY_HEALTH_GOOD;
++			chip->chrgr_stat = BQ24261_CHRGR_STAT_UNKNOWN;
++
++			/*
++			* Adding this processing in order to check
++			* for any faults during connect
++			*/
++
++			ret = bq24261_read_reg(chip->client,
++						BQ24261_STAT_CTRL0_ADDR);
++			if (ret < 0)
++				dev_err(&chip->client->dev, "Error (%d) in reading status register(0x00)\n",
++						ret);
++			else
++				bq24261_handle_irq(chip, ret);
++		} else {
++			chip->chrgr_stat = BQ24261_CHRGR_STAT_UNKNOWN;
++			chip->chrgr_health = POWER_SUPPLY_HEALTH_UNKNOWN;
++			cancel_delayed_work_sync(&chip->low_supply_fault_work);
++		}
 +		break;
-+	case PSY_THROTTLE_CC_LIMIT:
-+		psy_set_max_cc(psy, psy_throttle_cc_value(psy, state));
-+		break;
-+	case PSY_THROTTLE_INPUT_LIMIT:
-+		psy_set_inlmt(psy, psy_throttle_cc_value(psy, state));
++	case POWER_SUPPLY_CHARGER_PROP_RESET_WDT:
++		bq24261_reset_timer(chip);
 +		break;
 +	default:
-+		pr_err("Invalid throttle action for %s\n", psy->name);
++		ret = -ENODATA;
++	}
++
++	mutex_unlock(&chip->lock);
++	return ret;
++}
++
++static int bq24261_usb_set_property(struct power_supply *psy,
++				    enum power_supply_property psp,
++				    const union power_supply_propval *val)
++{
++	struct bq24261_charger *chip;
++	int ret = 0;
++
++	chip = container_of(psy, struct bq24261_charger, psy_usb);
++
++	mutex_lock(&chip->lock);
++
++	switch (psp) {
++
++	case POWER_SUPPLY_PROP_PRESENT:
++		chip->present = val->intval;
++		break;
++	case POWER_SUPPLY_PROP_ONLINE:
++		chip->online = val->intval;
++		break;
++	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT:
++		ret = bq24261_set_cc(chip, val->intval);
++		if (!ret)
++			chip->cc = val->intval;
++		break;
++	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
++		ret = bq24261_set_cv(chip, val->intval);
++		if (!ret)
++			chip->cv = val->intval;
++		break;
++	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX:
++		chip->max_cc = val->intval;
++		break;
++	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE_MAX:
++		chip->max_cv = val->intval;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_TERM_CURRENT:
++		ret = bq24261_set_iterm(chip, val->intval);
++		if (!ret)
++			chip->iterm = val->intval;
++		break;
++	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT:
++		ret = bq24261_set_inlmt(chip, val->intval);
++		if (!ret)
++			chip->inlmt = val->intval;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT:
++		chip->cntl_state = val->intval;
++		break;
++	case POWER_SUPPLY_PROP_TEMP_MAX:
++		chip->max_temp = val->intval;
++		break;
++	case POWER_SUPPLY_PROP_TEMP_MIN:
++		chip->min_temp = val->intval;
++		break;
++	default:
++		ret = -ENODATA;
++	}
++
++	mutex_unlock(&chip->lock);
++	return ret;
++}
++
++static int bq24261_usb_psyc_get_property(struct power_supply_charger *psyc,
++				    enum power_supply_charger_property pscp,
++				    union power_supply_propval *val)
++{
++	struct bq24261_charger *chip;
++
++	chip = container_of(psyc, struct bq24261_charger, psyc_usb);
++
++	mutex_lock(&chip->lock);
++
++	switch (pscp) {
++	case POWER_SUPPLY_CHARGER_PROP_CABLE_TYPE:
++		val->intval = chip->cable_type;
++		break;
++	case POWER_SUPPLY_CHARGER_PROP_ENABLE_CHARGING:
++		val->intval = (chip->is_charging_enabled &&
++			(chip->chrgr_stat == BQ24261_CHRGR_STAT_CHARGING));
++
++		break;
++	case POWER_SUPPLY_CHARGER_PROP_ENABLE_CHARGER:
++		val->intval = is_bq24261_enabled(chip);
++		break;
++	default:
++		mutex_unlock(&chip->lock);
 +		return -EINVAL;
 +	}
 +
-+	configure_chrgr_source(psy_chrgr.cable_list);
++	mutex_unlock(&chip->lock);
 +	return 0;
 +}
 +
-+int power_supply_register_charging_algo(struct psy_charging_algo *algo)
++static int bq24261_usb_get_property(struct power_supply *psy,
++				    enum power_supply_property psp,
++				    union power_supply_propval *val)
 +{
-+	list_add_tail(&algo->node, &algo_list);
-+	return 0;
-+}
-+EXPORT_SYMBOL(power_supply_register_charging_algo);
++	struct bq24261_charger *chip;
 +
-+int power_supply_unregister_charging_algo(struct psy_charging_algo *algo)
-+{
-+	struct psy_charging_algo *algo_l, *tmp;
++	chip  = container_of(psy, struct bq24261_charger, psy_usb);
 +
-+	list_for_each_entry_safe(algo_l, tmp, &algo_list, node) {
-+		if (algo_l == algo) {
-+			list_del(&algo_l->node);
-+			kfree(algo_l);
-+		}
++	mutex_lock(&chip->lock);
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_PRESENT:
++		val->intval = chip->present;
++		break;
++	case POWER_SUPPLY_PROP_ONLINE:
++		val->intval = chip->online;
++		break;
++	case POWER_SUPPLY_PROP_HEALTH:
++		val->intval = chip->chrgr_health;
++		break;
++	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX:
++		val->intval = chip->max_cc;
++		break;
++	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE_MAX:
++		val->intval = chip->max_cv;
++		break;
++	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT:
++		val->intval = chip->cc;
++		break;
++	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
++		val->intval = chip->cv;
++		break;
++	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT:
++		val->intval = chip->inlmt;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_TERM_CURRENT:
++		val->intval = chip->iterm;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT:
++		val->intval = chip->cntl_state;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT_MAX:
++		val->intval = chip->pdata->num_throttle_states;
++		break;
++	case POWER_SUPPLY_PROP_MODEL_NAME:
++		val->strval = chip->model_name;
++		break;
++	case POWER_SUPPLY_PROP_MANUFACTURER:
++		val->strval = "TI";
++		break;
++	case POWER_SUPPLY_PROP_TEMP_MAX:
++		val->intval = chip->max_temp;
++		break;
++	case POWER_SUPPLY_PROP_TEMP_MIN:
++		val->intval = chip->min_temp;
++		break;
++	default:
++		mutex_unlock(&chip->lock);
++		return -EINVAL;
 +	}
++
++	mutex_unlock(&chip->lock);
 +	return 0;
-+
 +}
-+EXPORT_SYMBOL(power_supply_unregister_charging_algo);
 +
-+
-+static struct psy_charging_algo *get_charging_algo_by_type
-+		(enum psy_batt_chrg_prof_type chrg_prof_type)
++static inline struct power_supply *get_psy_battery(void)
 +{
-+	struct psy_charging_algo *algo;
++	static struct power_supply *psy;
++	struct bq24261_charger *chip;
++	int i;
 +
-+	list_for_each_entry(algo, &algo_list, node) {
-+		if (algo->chrg_prof_type == chrg_prof_type)
-+			return algo;
++	if (!bq24261_client)
++		return NULL;
++
++	chip = i2c_get_clientdata(bq24261_client);
++
++	for (i = 0; i < chip->psy_usb.num_supplicants; ++i) {
++		psy = power_supply_get_by_name(chip->psy_usb.supplied_to[i]);
++		if (psy)
++			return psy;
 +	}
 +
 +	return NULL;
 +}
 +
-+static struct psy_charging_algo *power_supply_get_charging_algo
-+	(struct power_supply *psy, struct psy_batt_chrg_prof *batt_prof)
++static inline int get_battery_voltage(int *volt)
 +{
++	struct power_supply *psy;
++	union power_supply_propval val;
++	int ret;
 +
-+	return get_charging_algo_by_type(batt_prof->chrg_prof_type);
++	psy = get_psy_battery();
++	if (!psy)
++		return -EINVAL;
 +
-+}
-+
-+/**
-+ * psy_battery_prop_changed - Update properties when  battery connection status
-+ *                        changes
-+ * @battery_conn_stat : The current connection status of battery
-+ * @batt_prop : Address of the psy_batt_chrg_prof structure with the updated
-+ *              values passed from the calling function
-+ *
-+ * Whenever the battery connection status changes this function will be called
-+ * to indicate a change in the status and to update the status and value of
-+ * properties
-+ */
-+void psy_battery_prop_changed(int battery_conn_stat,
-+			struct psy_batt_chrg_prof *batt_prop)
-+{
-+
-+	mutex_lock(&battid_lock);
-+	psy_chrgr.batt_property = *batt_prop;
-+	psy_chrgr.batt_status = battery_conn_stat;
-+	mutex_unlock(&battid_lock);
-+
-+	atomic_notifier_call_chain(&power_supply_notifier,
-+			PSY_EVENT_BATTERY, &psy_chrgr.batt_property);
-+}
-+EXPORT_SYMBOL_GPL(psy_battery_prop_changed);
-+
-+/**
-+ * psy_get_battery_prop - Get the battery connection status and updated properties
-+ * @batt_prop : battery properties structure copied to this address
-+ */
-+int psy_get_battery_prop(struct psy_batt_chrg_prof *batt_prop)
-+{
-+	int ret = 0;
-+
-+	mutex_lock(&battid_lock);
-+
-+	if (psy_chrgr.batt_status != POWER_SUPPLY_BATTERY_INSERTED)
-+		ret = -ENODATA;
-+	else
-+		*batt_prop = psy_chrgr.batt_property;
-+
-+	mutex_unlock(&battid_lock);
++	ret = psy->get_property(psy, POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
++	if (!ret)
++		*volt = val.intval;
 +
 +	return ret;
 +}
-+EXPORT_SYMBOL_GPL(psy_get_battery_prop);
 +
-+
-+int power_supply_register_charger(struct power_supply *psy,
-+		struct power_supply_charger *psyc)
++static inline int get_battery_property
++	(enum power_supply_property prop, int *prop_val)
 +{
-+	struct psy_charger_context *charger_context;
++	struct power_supply *psy;
 +
-+
-+	if (!psy || !psyc->get_property || !psyc->set_property || psy->data) {
-+		pr_err("%s:Failed to register power_supply_charger\n",
-+					__func__);
++	psy = get_psy_battery();
++	if (!psy)
 +		return -EINVAL;
++
++	*prop_val = psy_get_ps_int_property(psy, prop);
++
++	return 0;
++}
++
++static inline int get_battery_volt_max_design(int *volt)
++{
++	return get_battery_property(POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN, volt);
++
++}
++
++static void notify_worker(struct work_struct *work)
++{
++
++	struct bq24261_charger *chip = container_of(work,
++						    struct bq24261_charger,
++						    notify_work.work);
++
++	atomic_notifier_call_chain(&power_supply_notifier,
++				PSY_EVENT_PROP_CHANGED, &chip->psy_usb);
++	schedule_delayed_work(&chip->notify_work, WDT_RESET_DELAY);
++}
++
++int bq24261_get_bat_health(void)
++{
++
++	struct bq24261_charger *chip;
++
++	if (!bq24261_client)
++		return -ENODEV;
++
++	chip = i2c_get_clientdata(bq24261_client);
++
++	return chip->bat_health;
++}
++
++
++static void bq24261_low_supply_fault_work(struct work_struct *work)
++{
++	struct bq24261_charger *chip = container_of(work,
++						    struct bq24261_charger,
++						    low_supply_fault_work.work);
++
++	if (chip->chrgr_stat == BQ24261_CHRGR_STAT_FAULT) {
++		dev_err(&chip->client->dev, "Low Supply Fault detected!!\n");
++		chip->chrgr_health = POWER_SUPPLY_HEALTH_DEAD;
++		power_supply_changed(&chip->psy_usb);
 +	}
-+
-+	mutex_lock(&psy_chrgr.event_lock);
-+
-+	if (!psy_chrgr.is_usb_cable_evt_reg && !register_usb_notifier())
-+		psy_chrgr.is_usb_cable_evt_reg = true;
-+
-+	if (psy->data == NULL)
-+		psy->data = devm_kzalloc(psy->dev,
-+			sizeof(struct psy_charger_context), GFP_KERNEL);
-+
-+	charger_context =  psy->data;
-+	charger_context->psyc = psyc;
-+	psyc->psy = psy;
-+	psy_chrgr.psyc_cnt++;
-+	update_supplied_psy();
-+
-+	mutex_unlock(&psy_chrgr.event_lock);
-+	power_supply_trigger_charging_handler(psy);
-+	return 0;
-+}
-+EXPORT_SYMBOL(power_supply_register_charger);
-+
-+int power_supply_unregister_charger(struct power_supply_charger *psyc)
-+{
-+	mutex_lock(&psy_chrgr.event_lock);
-+	update_supplied_psy();
-+	psyc->psy->data = NULL;
-+	psy_chrgr.psyc_cnt--;
-+	mutex_unlock(&psy_chrgr.event_lock);
-+	return 0;
-+}
-+EXPORT_SYMBOL(power_supply_unregister_charger);
-+
-+static int __init power_supply_charger_init(void)
-+{
-+	mutex_init(&psy_chrgr.event_lock);
-+	init_waitqueue_head(&psy_chrgr.wait_chrg_enable);
-+	INIT_LIST_HEAD(&psy_chrgr.event_queue);
-+	spin_lock_init(&psy_chrgr.event_queue_lock);
-+	INIT_WORK(&psy_chrgr.event_work, event_worker);
-+
-+	if (power_supply_reg_notifier(&nb))
-+		pr_err("%s:Failed to register power_supply notifier\n",
-+				__func__);
-+
-+	return 0;
++	return;
 +}
 +
-+/*
-+*  init before charger and cable drivers, but after power_supply_core
++
++/* is_bat_over_voltage: check battery is over voltage or not
++*  @chip: bq24261_charger context
++*
++*  This function is used to verify the over voltage condition.
++*  In some scenarios, HW generates Over Voltage exceptions when
++*  battery voltage is normal. This function uses the over voltage
++*  condition (voltage_max_design * 1.01) to verify battery is really
++*  over charged or not.
 +*/
 +
-+fs_initcall(power_supply_charger_init);
-diff --git a/drivers/power/power_supply_charger.h b/drivers/power/power_supply_charger.h
-new file mode 100644
-index 0000000..665ab7b
---- /dev/null
-+++ b/drivers/power/power_supply_charger.h
-@@ -0,0 +1,226 @@
-+/*
-+ * Copyright (C) 2012 Intel Corporation
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the GNU
-+ * General Public License for more details.
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ * Author: Jenny TC <jenny.tc@intel.com>
-+ */
-+#include <linux/power_supply.h>
-+#include <linux/power/power_supply_charger.h>
-+
-+static inline struct power_supply_charger
-+		*psy_to_psyc(struct power_supply *psy)
++static bool is_bat_over_voltage(struct bq24261_charger *chip)
 +{
-+	struct psy_charger_context *charger_context;
++	int bat_volt, bat_volt_max_des, ret;
 +
-+	if (!psy_is_charger(psy))
-+		return NULL;
-+	charger_context = (struct psy_charger_context *) psy->data;
-+	return charger_context->psyc;
++	ret = get_battery_voltage(&bat_volt);
++	if (ret)
++		return true;
++
++	ret = get_battery_volt_max_design(&bat_volt_max_des);
++
++	if (ret)
++		bat_volt_max_des = BQ24261_DEF_BAT_VOLT_MAX_DESIGN;
++
++	dev_info(&chip->client->dev, "bat_volt=%d Voltage Max Design=%d OVP_VOLT=%d\n",
++			bat_volt, bat_volt_max_des,
++			(bat_volt_max_des/1000 * BQ24261_OVP_MULTIPLIER));
++
++	if ((bat_volt) >= (bat_volt_max_des / 1000 *
++					BQ24261_OVP_MULTIPLIER))
++			return true;
++
++	return false;
 +}
 +
-+static inline int psyc_set_ps_int_property(struct power_supply_charger *psyc,
-+				      enum power_supply_charger_property psp,
-+				      int prop_val)
-+{
-+	union power_supply_propval val;
++#define IS_BATTERY_OVER_VOLTAGE_RECOVERED(chip) \
++	(!is_bat_over_voltage(chip))
 +
-+	val.intval = prop_val;
-+	if (psyc)
-+		return psyc->set_property(psyc, psp, &val);
-+	else
-+		return -EINVAL;
++static void handle_battery_over_voltage(struct bq24261_charger *chip)
++{
++	/*
++	* Set Health to Over Voltage. Disable charger to discharge
++	* battery to reduce the battery voltage.
++	*/
++	chip->bat_health = POWER_SUPPLY_HEALTH_OVERVOLTAGE;
++	bq24261_enable_charger(chip, false);
++	chip->is_charger_enabled = false;
++	cancel_delayed_work_sync(&chip->exception_mon_work);
++	schedule_delayed_work(&chip->exception_mon_work,
++			EXCEPTION_MONITOR_DELAY);
 +}
 +
-+static inline int psyc_get_ps_int_property(struct power_supply_charger *psyc,
-+				      enum power_supply_charger_property psp)
++static void bq24261_exception_mon_work(struct work_struct *work)
 +{
-+	union power_supply_propval val;
-+
-+	val.intval = 0;
-+	if (psyc)
-+		psyc->get_property(psyc, psp, &val);
-+
-+	return val.intval;
++	struct bq24261_charger *chip = container_of(work,
++						    struct bq24261_charger,
++						    exception_mon_work.work);
++	/* Only over voltage exception need to monitor.*/
++	if (IS_BATTERY_OVER_VOLTAGE_RECOVERED(chip)) {
++		dev_info(&chip->client->dev, "Over Voltage Exception Recovered\n");
++		chip->bat_health = POWER_SUPPLY_HEALTH_GOOD;
++		bq24261_enable_charger(chip, true);
++		chip->is_charger_enabled = true;
++		resume_charging(chip);
++	} else {
++		schedule_delayed_work(&chip->exception_mon_work,
++			      EXCEPTION_MONITOR_DELAY);
++	}
 +}
 +
-+
-+static inline int psy_prioirty(struct power_supply *psy)
++static int bq24261_handle_irq(struct bq24261_charger *chip, u8 stat_reg)
 +{
++	struct i2c_client *client = chip->client;
++	bool notify = true;
 +
-+	return psyc_get_ps_int_property(psy_to_psyc(psy),
-+				POWER_SUPPLY_CHARGER_PROP_PRIORITY);
-+}
++	dev_info(&client->dev, "%s:%d stat=0x%x\n",
++			__func__, __LINE__, stat_reg);
 +
-+static inline int psy_cable_type(struct power_supply *psy)
-+{
-+	return psyc_get_ps_int_property(psy_to_psyc(psy),
-+				POWER_SUPPLY_CHARGER_PROP_CABLE_TYPE);
-+}
++	switch (stat_reg & BQ24261_STAT_MASK) {
++	case BQ24261_STAT_READY:
++		chip->chrgr_stat = BQ24261_CHRGR_STAT_READY;
++		chip->chrgr_health = POWER_SUPPLY_HEALTH_GOOD;
++		chip->bat_health = POWER_SUPPLY_HEALTH_GOOD;
++		dev_info(&client->dev, "Charger Status: Ready\n");
++		notify = false;
++		break;
++	case BQ24261_STAT_CHRG_PRGRSS:
++		chip->chrgr_stat = BQ24261_CHRGR_STAT_CHARGING;
++		chip->chrgr_health = POWER_SUPPLY_HEALTH_GOOD;
++		chip->bat_health = POWER_SUPPLY_HEALTH_GOOD;
++		dev_info(&client->dev, "Charger Status: Charge Progress\n");
++		break;
++	case BQ24261_STAT_CHRG_DONE:
++		chip->chrgr_health = POWER_SUPPLY_HEALTH_GOOD;
++		chip->bat_health = POWER_SUPPLY_HEALTH_GOOD;
++		dev_info(&client->dev, "Charger Status: Charge Done\n");
 +
-+static inline int psy_throttle_action
-+		(struct power_supply *psy, unsigned int state)
-+{
-+	struct power_supply_charger *psyc;
++		/*
++		*  HW reports charge termination. Stop h/w charge termination
++		* and resume charging. Let power supply charging driver decide
++		* on charge termination
++		*/
 +
-+	psyc = psy_to_psyc(psy);
++		bq24261_enable_hw_charge_term(chip, false);
++		resume_charging(chip);
++		break;
 +
-+	if (psyc)
-+		return ((psyc->throttle_states)+state)->throttle_action;
++	case BQ24261_STAT_FAULT:
++		break;
++	}
 +
-+	/* If undetermined state, better disable charger for safety reasons */
++	if (stat_reg & BQ24261_BOOST_MASK)
++		dev_info(&client->dev, "Boost Mode\n");
 +
-+	return PSY_THROTTLE_DISABLE_CHARGER;
-+}
++	if ((stat_reg & BQ24261_STAT_MASK) == BQ24261_STAT_FAULT) {
++		chip->chrgr_stat = BQ24261_CHRGR_STAT_FAULT;
 +
-+static inline int psy_max_throttle_state(struct power_supply *psy)
-+{
-+	struct power_supply_charger *psyc;
++		switch (stat_reg & BQ24261_FAULT_MASK) {
++		case BQ24261_VOVP:
++			chip->chrgr_health = POWER_SUPPLY_HEALTH_OVERVOLTAGE;
++			dev_err(&client->dev, "Charger OVP Fault\n");
++			break;
 +
-+	psyc = psy_to_psyc(psy);
++		case BQ24261_LOW_SUPPLY:
++			notify = false;
 +
-+	if (psyc)
-+		return psyc->num_throttle_states;
++			if (chip->cable_type !=
++					PSY_CHARGER_CABLE_TYPE_NONE) {
++				schedule_delayed_work
++					(&chip->low_supply_fault_work,
++					5*HZ);
++				dev_dbg(&client->dev,
++					"Schedule Low Supply Fault work!!\n");
++			}
++			break;
 +
-+	return -EINVAL;
-+}
++		case BQ24261_THERMAL_SHUTDOWN:
++			chip->chrgr_health = POWER_SUPPLY_HEALTH_OVERHEAT;
++			dev_err(&client->dev, "Charger Thermal Fault\n");
++			break;
 +
-+static inline int psy_current_throttle_state(struct power_supply *psy)
-+{
-+	return psy_get_ps_int_property(psy,
-+				POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT);
-+}
++		case BQ24261_BATT_TEMP_FAULT:
++			chip->bat_health = POWER_SUPPLY_HEALTH_OVERHEAT;
++			dev_err(&client->dev, "Battery Temperature Fault\n");
++			break;
 +
-+static inline int psy_current_throttle_action(struct power_supply *psy)
-+{
-+	return psy_throttle_action(psy, psy_current_throttle_state(psy));
++		case BQ24261_TIMER_FAULT:
++			chip->bat_health = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
++			chip->chrgr_health = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
++			dev_err(&client->dev, "Charger Timer Fault\n");
++			break;
 +
-+}
++		case BQ24261_BATT_OVP:
++			notify = false;
++			if (chip->bat_health !=
++					POWER_SUPPLY_HEALTH_OVERVOLTAGE) {
++				if (!is_bat_over_voltage(chip)) {
++					chip->chrgr_stat =
++						BQ24261_CHRGR_STAT_UNKNOWN;
++					resume_charging(chip);
++				} else {
++					dev_err(&client->dev, "Battery Over Voltage Fault\n");
++					handle_battery_over_voltage(chip);
++					notify = true;
++				}
++			}
++			break;
++		case BQ24261_NO_BATTERY:
++			dev_err(&client->dev, "No Battery Connected\n");
++			break;
 +
-+static inline int psy_throttle_cc_value(struct power_supply *psy,
-+			unsigned int state)
-+{
-+	struct power_supply_charger *psyc;
++		}
 +
-+	psyc = psy_to_psyc(psy);
++	}
 +
-+	if (psyc)
-+		return ((psyc->throttle_states)+state)->throttle_val;
++	wake_up(&chip->wait_ready);
 +
-+	/* If undetermined state, better set CC as 0 */
++	chip->is_vsys_on = bq24261_is_vsys_on(chip);
++	if (notify)
++		power_supply_changed(&chip->psy_usb);
++
 +	return 0;
 +}
 +
-+static inline int psy_is_charging_enabled(struct power_supply *psy)
++static irqreturn_t bq24261_thread_handler(int id, void *data)
 +{
-+	return	psyc_get_ps_int_property(psy_to_psyc(psy),
-+			POWER_SUPPLY_CHARGER_PROP_ENABLE_CHARGING);
-+}
-+
-+static inline int psy_is_charger_enabled(struct power_supply *psy)
-+{
-+	return	psyc_get_ps_int_property(psy_to_psyc(psy),
-+			POWER_SUPPLY_CHARGER_PROP_ENABLE_CHARGER);
-+}
-+
-+static inline bool psy_is_supported_cable(struct power_supply *psy,
-+		unsigned long cable_type)
-+{
-+	struct power_supply_charger *psyc;
-+
-+	psyc = psy_to_psyc(psy);
-+
-+	/*
-+	*  if unable to determine the state, better return cable not supported
-+	*/
-+
-+	if (!psyc)
-+		return false;
-+
-+	return psy_to_psyc(psy)->supported_cables &&
-+		(psy_to_psyc(psy)->supported_cables & cable_type);
-+}
-+
-+static inline int psy_reset_charger_wdt(struct power_supply *psy)
-+{
-+	return psyc_set_ps_int_property(psy_to_psyc(psy),
-+			POWER_SUPPLY_CHARGER_PROP_RESET_WDT, true);
-+}
-+
-+static inline int psy_enable_charger(struct power_supply *psy)
-+{
-+	return psyc_set_ps_int_property(psy_to_psyc(psy),
-+			POWER_SUPPLY_CHARGER_PROP_ENABLE_CHARGER, true);
-+}
-+
-+static inline int psy_enable_charging(struct power_supply *psy)
-+{
++	struct bq24261_charger *chip = (struct bq24261_charger *)data;
 +	int ret;
 +
-+	if ((psy_cable_type(psy) != PSY_CHARGER_CABLE_TYPE_NONE) &&
-+			!psy_is_charging_enabled(psy)) {
++	mutex_lock(&chip->lock);
 +
-+		ret = psy_enable_charger(psy);
-+		if (ret)
-+			return ret;
-+		ret = psyc_set_ps_int_property(psy_to_psyc(psy),
-+			POWER_SUPPLY_CHARGER_PROP_ENABLE_CHARGING, true);
-+		if (ret)
-+			return ret;
++	ret = bq24261_read_reg(chip->client, BQ24261_STAT_CTRL0_ADDR);
++	if (ret < 0)
++		dev_err(&chip->client->dev,
++			"Error (%d) in reading BQ24261_STAT_CTRL0_ADDR\n", ret);
++	else
++		bq24261_handle_irq(chip, ret);
++
++	mutex_unlock(&chip->lock);
++
++	return IRQ_HANDLED;
++}
++
++static enum bq2426x_model_num bq24261_get_model(int bq24261_rev_reg)
++{
++	switch (bq24261_rev_reg & BQ24261_REV_MASK) {
++	case BQ24260_REV:
++		return BQ24260;
++	case BQ24261_REV:
++	case BQ24261_PG2_3_REV:
++		return BQ24261;
++	default:
++		return -EINVAL;
++	}
++}
++
++static int bq24261_probe(struct i2c_client *client,
++			 const struct i2c_device_id *id)
++{
++	struct i2c_adapter *adapter;
++	struct bq24261_charger *chip;
++	int ret;
++	enum bq2426x_model_num bq24261_rev;
++
++	adapter = to_i2c_adapter(client->dev.parent);
++
++	if (!client->dev.platform_data) {
++		dev_err(&client->dev, "platform data is null");
++		return -EFAULT;
 +	}
 +
-+	return psy_reset_charger_wdt(psy);
-+}
++	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE_DATA)) {
++		dev_err(&client->dev,
++			"I2C adapter %s doesn't support BYTE DATA transfer\n",
++			adapter->name);
++		return -EIO;
++	}
 +
-+static inline int psy_disable_charging(struct power_supply *psy)
-+{
-+	return psyc_set_ps_int_property(psy_to_psyc(psy),
-+			POWER_SUPPLY_CHARGER_PROP_ENABLE_CHARGING, false);
-+}
++	ret = bq24261_read_reg(client, BQ24261_VENDOR_REV_ADDR);
++	if (ret < 0) {
++		dev_err(&client->dev,
++			"Error (%d) in reading BQ24261_VENDOR_REV_ADDR\n", ret);
++		return ret;
++	}
 +
-+static inline int psy_disable_charger(struct power_supply *psy)
-+{
-+	psy_disable_charging(psy);
-+	return psyc_set_ps_int_property(psy_to_psyc(psy),
-+			POWER_SUPPLY_CHARGER_PROP_ENABLE_CHARGER, false);
-+}
++	bq24261_rev = bq24261_get_model(ret);
++	if (((ret & BQ24261_VENDOR_MASK) != BQ24261_VENDOR) ||
++		(bq24261_rev < 0)) {
++		dev_err(&client->dev,
++			"Invalid Vendor/Revision number in BQ24261_VENDOR_REV_ADDR: %d",
++			ret);
++		return -ENODEV;
++	}
 +
-+static inline int psy_switch_cable(struct power_supply *psy,
-+		unsigned long cable)
-+{
-+	return	psyc_set_ps_int_property(psy_to_psyc(psy),
-+		POWER_SUPPLY_CHARGER_PROP_CABLE_TYPE, cable);
-+}
++	chip = devm_kzalloc(&client->dev, sizeof(*chip), GFP_KERNEL);
++	if (!chip) {
++		dev_err(&client->dev, "mem alloc failed\n");
++		return -ENOMEM;
++	}
 +
-+static inline bool psy_is_charging_can_be_enabled(struct power_supply *psy)
-+{
-+	return (psy_current_throttle_action(psy) !=
-+					PSY_THROTTLE_DISABLE_CHARGER) &&
-+		(psy_current_throttle_action(psy) !=
-+				PSY_THROTTLE_DISABLE_CHARGING);
-+}
++	init_waitqueue_head(&chip->wait_ready);
++	i2c_set_clientdata(client, chip);
++	chip->pdata = client->dev.platform_data;
 +
-+static inline bool psy_is_charger_can_be_enabled(struct power_supply *psy)
-+{
-+	return psy_current_throttle_action(psy) !=
-+			PSY_THROTTLE_DISABLE_CHARGER;
-+}
 +
-+static inline bool psy_is_cable_active(unsigned long status)
-+{
-+	if (status == PSY_CHARGER_CABLE_EVENT_DISCONNECT ||
-+			status == PSY_CHARGER_CABLE_EVENT_SUSPEND)
-+		return false;
++	chip->client = client;
++	chip->pdata = client->dev.platform_data;
++
++	chip->psy_usb.name = DEV_NAME;
++	chip->psy_usb.type = POWER_SUPPLY_TYPE_USB;
++	chip->psy_usb.properties = bq24261_usb_props;
++	chip->psy_usb.num_properties = ARRAY_SIZE(bq24261_usb_props);
++	chip->psy_usb.get_property = bq24261_usb_get_property;
++	chip->psy_usb.set_property = bq24261_usb_set_property;
++	chip->psy_usb.supplied_to = chip->pdata->supplied_to;
++	chip->psy_usb.num_supplicants = chip->pdata->num_supplicants;
++	/* Limit charge current */
++	chip->max_cc = 1500;
++	chip->chrgr_stat = BQ24261_CHRGR_STAT_UNKNOWN;
++	chip->chrgr_health = POWER_SUPPLY_HEALTH_UNKNOWN;
++
++	chip->psyc_usb.get_property = bq24261_usb_psyc_get_property;
++	chip->psyc_usb.set_property = bq24261_usb_psyc_set_property;
++	chip->psyc_usb.throttle_states = chip->pdata->throttle_states;
++	chip->psyc_usb.num_throttle_states = chip->pdata->num_throttle_states;
++	chip->psyc_usb.supported_cables = PSY_CHARGER_CABLE_TYPE_USB;
++
++	strncpy(chip->model_name,
++		bq24261_model_name[bq24261_rev].model_name,
++		MODEL_NAME_SIZE);
++
++	mutex_init(&chip->lock);
++	ret = power_supply_register(&client->dev, &chip->psy_usb);
++	if (ret) {
++		dev_err(&client->dev, "Failed: power supply register (%d)\n",
++			ret);
++		return ret;
++	}
++
++	ret = power_supply_register_charger(&chip->psy_usb, &chip->psyc_usb);
++	if (ret) {
++		dev_err(&client->dev, "Failed: power supply register (%d)\n",
++			ret);
++		power_supply_unregister(&chip->psy_usb);
++		return ret;
++	}
++
++	INIT_DELAYED_WORK(&chip->notify_work, notify_worker);
++	INIT_DELAYED_WORK(&chip->low_supply_fault_work,
++				bq24261_low_supply_fault_work);
++	INIT_DELAYED_WORK(&chip->exception_mon_work,
++				bq24261_exception_mon_work);
++	bq24261_client = client;
++
++	if (chip->client->irq) {
++		ret = request_threaded_irq(chip->client->irq,
++					   NULL,
++					   bq24261_thread_handler,
++					   IRQF_SHARED|IRQF_NO_SUSPEND,
++					   DEV_NAME, chip);
++		if (ret) {
++			dev_err(&client->dev, "Failed: request_irq (%d)\n",
++				ret);
++			power_supply_unregister(&chip->psy_usb);
++			power_supply_unregister_charger(&chip->psyc_usb);
++			bq24261_client = NULL;
++			return ret;
++		}
++	}
++
++	if (is_bat_over_voltage(chip))
++		handle_battery_over_voltage(chip);
 +	else
-+		return true;
++		chip->bat_health = POWER_SUPPLY_HEALTH_GOOD;
++
++
++	return 0;
 +}
-diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
-index 2660664..1daa5c2 100644
---- a/drivers/power/power_supply_core.c
-+++ b/drivers/power/power_supply_core.c
-@@ -483,6 +483,9 @@ static int ps_set_cur_charge_cntl_limit(struct thermal_cooling_device *tcd,
- 	ret = psy->set_property(psy,
- 		POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT, &val);
- 
-+	atomic_notifier_call_chain(&power_supply_notifier,
-+		PSY_EVENT_THROTTLE, psy);
 +
- 	return ret;
- }
- 
-diff --git a/include/linux/power/power_supply_charger.h b/include/linux/power/power_supply_charger.h
++static int bq24261_remove(struct i2c_client *client)
++{
++	struct bq24261_charger *chip = i2c_get_clientdata(client);
++
++	if (client->irq)
++		free_irq(client->irq, chip);
++
++	flush_scheduled_work();
++
++	power_supply_unregister(&chip->psy_usb);
++	return 0;
++}
++
++static const struct i2c_device_id bq24261_id[] = {
++	{DEV_NAME, 0},
++	{},
++};
++
++MODULE_DEVICE_TABLE(i2c, bq24261_id);
++
++static struct i2c_driver bq24261_driver = {
++	.driver = {
++		   .name = DEV_NAME,
++	},
++	.probe = bq24261_probe,
++	.remove = bq24261_remove,
++	.id_table = bq24261_id,
++};
++
++module_i2c_driver(bq24261_driver);
++
++MODULE_AUTHOR("Jenny TC <jenny.tc@intel.com>");
++MODULE_DESCRIPTION("BQ24261 Charger Driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/power/bq24261-charger.h b/include/linux/power/bq24261-charger.h
 new file mode 100644
-index 0000000..2b59817
+index 0000000..4ff02af
 --- /dev/null
-+++ b/include/linux/power/power_supply_charger.h
-@@ -0,0 +1,307 @@
-+
-+#ifndef __LINUX_POWER_SUPPLY_CHARGER_H__
-+#define __LINUX_POWER_SUPPLY_CHARGER_H__
-+
-+#include <linux/power_supply.h>
-+
-+#define MAX_CUR_VOLT_SAMPLES 3
-+#define DEF_CUR_VOLT_SAMPLE_PERIOD 30000
-+#define DEF_CUR_VOLT_SAMPLE_JIFF msecs_to_jiffies(DEF_CUR_VOLT_SAMPLE_PERIOD)
-+
++++ b/include/linux/power/bq24261-charger.h
+@@ -0,0 +1,25 @@
 +/*
-+* Define a TTL for some properties to optimize the frequency of
-+* algorithm calls. This can be used by properties which will be changed
-+* very frequently (e.g. Current, Voltage..)
-+*/
-+#define PROP_TTL_PERIOD 10000
-+#define PROP_TTL msecs_to_jiffies(PROP_TTL_PERIOD)
-+
-+/* Support maximum 2 charger drivers and 2 battery drivers simultaneously */
-+#define MAX_BATTERY_NUMBER 2
-+#define MAX_CHARGER_NUMBER 2
-+#define PSY_CHRGR_MAX_SUPPLIED_TO MAX_BATTERY_NUMBER
-+#define PSY_CHRGR_MAX_SUPPLIED_BY MAX_CHARGER_NUMBER
-+
-+enum psy_charger_cable_event {
-+	PSY_CHARGER_CABLE_EVENT_DISCONNECT = 0,
-+	PSY_CHARGER_CABLE_EVENT_CONNECT,
-+	PSY_CHARGER_CABLE_EVENT_UPDATE,
-+	PSY_CHARGER_CABLE_EVENT_RESUME,
-+	PSY_CHARGER_CABLE_EVENT_SUSPEND,
-+};
-+
-+#define PSY_CHARGER_CABLE_TYPE_NONE 0
-+#define	PSY_CHARGER_CABLE_TYPE_USB_SDP BIT(0)
-+#define	PSY_CHARGER_CABLE_TYPE_USB_DCP BIT(1)
-+#define	PSY_CHARGER_CABLE_TYPE_USB_CDP BIT(2)
-+#define	PSY_CHARGER_CABLE_TYPE_USB_ACA BIT(3)
-+#define	PSY_CHARGER_CABLE_TYPE_AC BIT(4)
-+#define	PSY_CHARGER_CABLE_TYPE_ACA_DOCK BIT(5)
-+#define	PSY_CHARGER_CABLE_TYPE_ACA_A BIT(6)
-+#define	PSY_CHARGER_CABLE_TYPE_ACA_B BIT(7)
-+#define	PSY_CHARGER_CABLE_TYPE_ACA_C BIT(8)
-+#define	PSY_CHARGER_CABLE_TYPE_SE1 BIT(9)
-+#define	PSY_CHARGER_CABLE_TYPE_MHL BIT(10)
-+
-+/**
-+ * struct osy_cable_props: charger cable properties structure
-+ * @chrg_evt: charger cable event
-+ * @chrg_type: charger cable type
-+ * @current_mA: current supplied by the cable in mA
++ * bq24261_charger.h: platform data structure for bq24261 driver
 + *
-+ * cable properties structure is populated by the cable provider drivers after
-+ * detecting the cable type and capabilities. The structure is then passed to
-+ * power supply class using the power_supply_notifier chain
-+*/
-+
-+struct psy_cable_props {
-+	enum psy_charger_cable_event	chrg_evt;
-+	unsigned long			chrg_type;
-+	unsigned int			current_mA;
-+};
-+
-+#define PSY_CHARGER_CABLE_TYPE_USB \
-+	(PSY_CHARGER_CABLE_TYPE_USB_SDP | \
-+	PSY_CHARGER_CABLE_TYPE_USB_DCP | \
-+	PSY_CHARGER_CABLE_TYPE_USB_CDP | \
-+	PSY_CHARGER_CABLE_TYPE_USB_ACA | \
-+	PSY_CHARGER_CABLE_TYPE_ACA_DOCK)
-+
-+enum psy_throttle_action {
-+	PSY_THROTTLE_DISABLE_CHARGER = 0,
-+	PSY_THROTTLE_DISABLE_CHARGING,
-+	PSY_THROTTLE_CC_LIMIT,
-+	PSY_THROTTLE_INPUT_LIMIT,
-+};
-+
-+struct psy_throttle_state {
-+	enum psy_throttle_action throttle_action;
-+	unsigned throttle_val;
-+};
-+
-+enum psy_algo_stat {
-+	PSY_ALGO_STAT_UNKNOWN,
-+	PSY_ALGO_STAT_NOT_CHARGE,
-+	PSY_ALGO_STAT_CHARGE,
-+	PSY_ALGO_STAT_FULL,
-+	PSY_ALGO_STAT_MAINT,
-+};
-+
-+enum battery_events {
-+	POWER_SUPPLY_BATTERY_REMOVED = 0,
-+	POWER_SUPPLY_BATTERY_INSERTED,
-+};
-+
-+enum psy_batt_chrg_prof_type {
-+	PSY_CHRG_PROF_NONE = 0,
-+};
-+
-+/**
-+ * struct psy_batt_chrg_prof - power supply charging profile structure
-+ * @chrg_prof_type: charging profile type
-+ * @batt_prof: pointer to battery charging profile structure
++ * (C) Copyright 2012 Intel Corporation
 + *
-+ * This structure is populated by the battery identification driver
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
 + */
 +
-+struct psy_batt_chrg_prof {
-+	enum psy_batt_chrg_prof_type chrg_prof_type;
-+	void *batt_prof;
-+};
++#ifndef __BQ24261_CHARGER_H__
++#define __BQ24261_CHARGER_H__
 +
-+/**
-+ * struct psy_batt_props - battery properties
-+ * @voltage_now: voltage read from psy get_property and stored in in mV
-+ * @current_now: current read from psy get_property and stored in in mA
-+ * @temperature: battery temperature in degree Celsius
-+ * @status: battery status as defined by POWER_SUPPLY_STATUS_*
-+ * @health: battery health, as defined by POWER_SUPPLY_HEALTH_*
-+ * @throttle_state: throttle state
-+ * @tstamp: time stamp at which the properties are read
-+ *
-+ * battery properties structure is used to store important battery properties
-+ * to decide on charging parameters
-+ */
-+
-+struct psy_batt_props {
-+	long voltage_now;
-+	long current_now;
-+	int temperature;
-+	long status;
-+	int health;
-+	int throttle_state;
-+	unsigned long long tstamp;
-+};
-+
-+/**
-+ * struct psy_batt_props - battery properties
-+ * @batt_props: battery properties
-+ * @voltage_now_cache: successive samples of voltage_now, used to determine end
-+ *	of charge condition
-+ * @current_now_cache: successive samples of current_now, used to determine end
-+ *	of charge condition
-+ * @algo_stat: algorithm status, returned by the charging algorithm
-+ * @supplied_by_psy: psy pointer for all supplied by objects.
-+ * @num_supplied_by_psy: number of supplied_by objects.
-+ *
-+ * battery context structure is used to store the battery context
-+ * to decide on charging parameters
-+ */
-+
-+struct psy_batt_context {
-+	struct psy_batt_props batt_props;
-+	long voltage_now_cache[MAX_CUR_VOLT_SAMPLES];
-+	long current_now_cache[MAX_CUR_VOLT_SAMPLES];
-+	enum psy_algo_stat algo_stat;
-+	struct power_supply *supplied_by_psy[PSY_CHRGR_MAX_SUPPLIED_BY];
-+	int num_supplied_by_psy;
-+};
-+
-+/**
-+ * struct psy_charger_props - charger properties
-+ * @psyc: pointer to power_supply_charger structure
-+ * @name: charger psy name
-+ * @present: indicates charger source is present/not
-+ * @is_charging: indicates charging is enabled or not
-+ * @health: charger health, as defined in POWER_SUPPLY_HEALTH_*
-+ * @online: charger online/not
-+ * @cable: cable type
-+ * @tstamp: time stamp at which the properties are read
-+ *
-+ * charger properties structure is used to store important charger properties
-+ * to decide on charging parameters
-+ */
-+
-+struct psy_charger_props {
-+	bool present;
-+	bool is_charging;
-+	int health;
-+	bool online;
-+	unsigned long cable;
-+	unsigned long tstamp;
-+};
-+
-+/**
-+ * struct psy_charger_props - charger properties
-+ * @charger_props: charger properties
-+ * @psyc: pointer to power_supply_charger structure
-+ * @supplied_to_psy: psy pointers for all supplied to objects.
-+ * @num_supplied_to_psy: number of supplied_to_psy pointers
-+ */
-+
-+struct psy_charger_context {
-+	struct psy_charger_props charger_props;
-+	struct power_supply_charger *psyc;
-+	struct power_supply *supplied_to_psy[PSY_CHRGR_MAX_SUPPLIED_TO];
-+	int num_supplied_to_psy;
-+};
-+
-+/**
-+ * struct psy_batt_thresholds - battery thresholds structure
-+ * @temp_min: minimum charging temperature in Degree Celsius
-+ * @temp_max: maximum charging temperature in Degree Celsius
-+ * @iterm: charge termination current
-+ *
-+ * battery thresholds structure to limit charging in different scenario
-+ */
-+
-+struct psy_batt_thresholds {
-+	int temp_min;
-+	int temp_max;
-+	unsigned int iterm;
-+};
-+
-+enum power_supply_charger_property {
-+	POWER_SUPPLY_CHARGER_PROP_ENABLE_CHARGING = 0,
-+	POWER_SUPPLY_CHARGER_PROP_ENABLE_CHARGER,
-+	POWER_SUPPLY_CHARGER_PROP_CABLE_TYPE,
-+	POWER_SUPPLY_CHARGER_PROP_PRIORITY,
-+	POWER_SUPPLY_CHARGER_PROP_RESET_WDT,
-+};
-+
-+/**
-+ * struct power_supply_charger - power supply charger driver
-+ * @psy: psy driver handle
-+ * @throttle_states: pointer to throttle states array
-+ * @num_throttle_states: number of throttling states
-+ * @supported_cables: supported cable bitmask
-+ * @get_property: get property function to retrieve charger properties defined
-+ *	in enum power_supply_charger_property
-+ * @set_property: get property function to retrieve charger properties defined
-+ *	in enum power_supply_charger_property
-+ *
-+ * This structure is used by charger drivers to register with power supply
-+ * charging driver
-+ */
-+
-+struct power_supply_charger {
-+	struct power_supply *psy;
++struct bq24261_plat_data {
++	char **supplied_to;
++	size_t num_supplicants;
 +	struct psy_throttle_state *throttle_states;
 +	size_t num_throttle_states;
-+	unsigned long supported_cables;
-+	int (*get_property)(struct power_supply_charger *psyc,
-+			    enum power_supply_charger_property psp,
-+			    union power_supply_propval *val);
-+	int (*set_property)(struct power_supply_charger *psyc,
-+			    enum power_supply_charger_property psp,
-+			    const union power_supply_propval *val);
++	int safety_timer;
++	bool is_ts_enabled;
++
 +};
 +
-+/**
-+ * struct psy_charging_algo - charging algo structure
-+ * @node: list head, not used by algo drivers.
-+ * @chrg_prof_type: charging profile type which can be handled by the algorithm.
-+ * @name: charging algorithm name
-+ * @get_next_cc_cv: function pointer which returns CC and CV
-+ * @get_batt_thresholds: function pointer to retrieve the battery thresholds
-+ *	from battery charging profile
-+ *
-+ * This structure is used by charging algorithm drivers to register with power
-+ * supply charging driver
-+ */
-+
-+struct psy_charging_algo {
-+	struct list_head node;
-+	unsigned int chrg_prof_type;
-+	char *name;
-+	enum psy_algo_stat (*get_next_cc_cv)(struct psy_batt_context *,
-+			struct psy_batt_chrg_prof, unsigned long *cc,
-+			unsigned long *cv);
-+	int (*get_batt_thresholds)(struct psy_batt_chrg_prof,
-+			struct psy_batt_thresholds *bat_thr);
-+};
-+
-+
-+/* power_supply_charger functions */
-+
-+#ifdef CONFIG_POWER_SUPPLY_CHARGER
-+
-+extern int power_supply_register_charger(struct power_supply *psy,
-+		struct power_supply_charger *psyc);
-+extern int power_supply_unregister_charger(struct power_supply_charger *psyc);
-+extern int power_supply_register_charging_algo(struct psy_charging_algo *);
-+extern int power_supply_unregister_charging_algo(struct psy_charging_algo *);
-+extern int psy_get_battery_prop(struct psy_batt_chrg_prof *batt_prop);
-+extern void psy_battery_prop_changed(int battery_conn_stat,
-+				struct psy_batt_chrg_prof *batt_prop);
-+
-+#else
-+
-+static int power_supply_register_charger(struct power_supply_charger *psyc)
-+{ return -EINVAL; }
-+static  int power_supply_unregister_charger(struct power_supply_charger *psyc)
-+{ return -EINVAL; }
-+static int power_supply_register_charging_algo(struct psy_charging_algo *algo)
-+{ return -EINVAL; }
-+static int power_supply_unregister_charging_algo(struct psy_charging_algo *algo)
-+{ return -EINVAL; }
-+static inline int psy_get_battery_prop(struct psy_batt_chrg_prof *batt_prop)
-+{
-+	return -ENOMEM;
-+}
-+static void psy_battery_prop_changed(int battery_conn_stat,
-+				struct psy_batt_chrg_prof *batt_prop) { }
 +#endif
-+
-+
-+#endif
-diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
-index 0278600..87af1e4 100644
---- a/include/linux/power_supply.h
-+++ b/include/linux/power_supply.h
-@@ -165,6 +165,9 @@ enum power_supply_type {
- 
- enum power_supply_notifier_events {
- 	PSY_EVENT_PROP_CHANGED,
-+	PSY_EVENT_BATTERY,
-+	PSY_EVENT_THROTTLE,
-+	PSY_EVENT_CABLE,
- };
- 
- union power_supply_propval {
-@@ -206,6 +209,7 @@ struct power_supply {
- 	struct work_struct changed_work;
- 	spinlock_t changed_lock;
- 	bool changed;
-+	void *data;
- #ifdef CONFIG_THERMAL
- 	struct thermal_zone_device *tzd;
- 	struct thermal_cooling_device *tcd;
-@@ -324,4 +328,161 @@ static inline bool power_supply_is_watt_property(enum power_supply_property psp)
- 	return 0;
- }
- 
-+static inline int psy_set_ps_int_property(struct power_supply *psy,
-+				      enum power_supply_property psp,
-+				      int prop_val)
-+{
-+	union power_supply_propval val;
-+
-+	val.intval = prop_val;
-+	return psy->set_property(psy, psp, &val);
-+}
-+
-+static inline int psy_get_ps_int_property(struct power_supply *psy,
-+				      enum power_supply_property psp)
-+{
-+	union power_supply_propval val;
-+
-+	val.intval = 0;
-+	psy->get_property(psy, psp, &val);
-+	return val.intval;
-+}
-+
-+
-+#define PSY_HEALTH(psy) \
-+		psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_HEALTH)
-+#define PSY_CV(psy) \
-+		psy_get_ps_int_property(psy,\
-+			POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE)
-+#define PSY_CC(psy) \
-+		psy_get_ps_int_property(psy,\
-+			POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT)
-+#define PSY_INLMT(psy) \
-+		psy_get_ps_int_property(psy,\
-+i			POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT)
-+#define PSY_MAX_CC(psy) \
-+		psy_get_ps_int_property(psy,\
-+			POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX)
-+#define PSY_MAX_CV(psy) \
-+		psy_get_ps_int_property(psy,\
-+			POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE_MAX)
-+#define PSY_VOLTAGE_NOW(psy) \
-+		psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_VOLTAGE_NOW)
-+#define PSY_VOLTAGE_OCV(psy) \
-+		psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_VOLTAGE_OCV)
-+#define PSY_CURRENT_NOW(psy) \
-+		psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_CURRENT_NOW)
-+#define PSY_STATUS(psy) \
-+		psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_STATUS)
-+#define PSY_TEMPERATURE(psy) \
-+		psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_TEMP)
-+#define PSY_BATTERY_TYPE(psy) \
-+		psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_TECHNOLOGY)
-+#define PSY_ONLINE(psy) \
-+		psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_ONLINE)
-+
-+
-+static inline int psy_set_present(struct power_supply *psy, int present)
-+{
-+	return	psy_set_ps_int_property(psy,
-+			POWER_SUPPLY_PROP_PRESENT, present);
-+}
-+
-+static inline int psy_set_iterm(struct power_supply *psy, int iterm)
-+{
-+	return	psy_set_ps_int_property(psy,
-+			POWER_SUPPLY_PROP_CHARGE_TERM_CURRENT, iterm);
-+}
-+
-+static inline int psy_set_max_temp(struct power_supply *psy, int temp)
-+{
-+	return	psy_set_ps_int_property(psy, POWER_SUPPLY_PROP_TEMP_MAX, temp);
-+}
-+
-+static inline int psy_set_min_temp(struct power_supply *psy, int temp)
-+{
-+	return	psy_set_ps_int_property(psy, POWER_SUPPLY_PROP_TEMP_MIN, temp);
-+}
-+
-+static inline int psy_is_online(struct power_supply *psy)
-+{
-+	return	psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_ONLINE);
-+}
-+
-+static inline int psy_is_present(struct power_supply *psy)
-+{
-+	return	psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_PRESENT);
-+}
-+
-+static inline bool psy_is_health_good(struct power_supply *psy)
-+{
-+	return PSY_HEALTH(psy) == POWER_SUPPLY_HEALTH_GOOD;
-+}
-+
-+static inline int psy_set_cc(struct power_supply *psy, int cc)
-+{
-+	return	psy_set_ps_int_property(psy,
-+			POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT, cc);
-+}
-+
-+static inline int psy_set_cv(struct power_supply *psy, int cc)
-+{
-+	return	psy_set_ps_int_property(psy,
-+			POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE, cc);
-+}
-+
-+static inline int psy_set_inlmt(struct power_supply *psy, int inlmt)
-+{
-+	return	psy_set_ps_int_property(psy,
-+			POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT, inlmt);
-+}
-+
-+static inline int psy_set_max_cc(struct power_supply *psy, int max_cc)
-+{
-+	return psy_set_ps_int_property(psy,
-+			POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX, max_cc);
-+}
-+
-+static inline int psy_set_max_cv(struct power_supply *psy, int max_cv)
-+{
-+	return psy_set_ps_int_property(psy,
-+			POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE_MAX, max_cv);
-+}
-+
-+static inline bool psy_is_battery(struct power_supply *psy)
-+{
-+	return psy->type == POWER_SUPPLY_TYPE_BATTERY;
-+}
-+
-+static inline bool psy_is_charger(struct power_supply *psy)
-+{
-+	return psy->type == POWER_SUPPLY_TYPE_USB ||
-+			psy->type == POWER_SUPPLY_TYPE_USB_CDP ||
-+			psy->type == POWER_SUPPLY_TYPE_USB_DCP ||
-+			psy->type == POWER_SUPPLY_TYPE_USB_ACA;
-+}
-+
-+static inline bool is_online(struct power_supply *psy)
-+{
-+	return psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_ONLINE) == 1;
-+}
-+
-+static inline bool is_present(struct power_supply *psy)
-+{
-+	return psy_get_ps_int_property(psy, POWER_SUPPLY_PROP_PRESENT) == 1;
-+}
-+
-+
-+static inline void psy_set_battery_status(struct power_supply *psy, int status)
-+{
-+	if (PSY_STATUS(psy) != status)
-+		psy_set_ps_int_property(psy, POWER_SUPPLY_PROP_STATUS, status);
-+}
-+
-+static inline void psy_set_charger_online(struct power_supply *psy, int online)
-+{
-+	if (PSY_ONLINE(psy) != online)
-+		psy_set_ps_int_property(psy, POWER_SUPPLY_PROP_ONLINE, online);
-+}
-+
- #endif /* __LINUX_POWER_SUPPLY_H__ */
 -- 
 1.7.9.5
 
