@@ -1,115 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530AbaF3Qbh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 12:31:37 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:38377 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776AbaF3Qbf (ORCPT
+	id S1754974AbaF3QcB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 12:32:01 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52142 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754428AbaF3Qb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 12:31:35 -0400
+	Mon, 30 Jun 2014 12:31:59 -0400
+Message-ID: <53B190FE.80208@infradead.org>
+Date: Mon, 30 Jun 2014 09:31:58 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140629204231.GD12943@pd.tnic>
-References: <CAC-LjFtjS5RS9=Lvb090-0aEnSdR1a28Scve2gvTR3yAZtt+9g@mail.gmail.com>
- <20140629191254.GA13271@pd.tnic> <CAC-LjFsF1qAVPKJeYmR0+6wTVmCwo2TkC8bia-KmxQ3wyUXYaw@mail.gmail.com>
- <20140629204231.GD12943@pd.tnic>
-From: Jeshwanth Kumar N K <jeshkumar555@gmail.com>
-Date: Mon, 30 Jun 2014 22:01:14 +0530
-Message-ID: <CAC-LjFsseRBAhnEw8rSfidW91eS3GRX3xn=Q0A1H-YQ6rsm5Qw@mail.gmail.com>
-Subject: Re: [BUG] User process tainting in linux-next tree
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+To: =?UTF-8?B?SG9yaWEgR2VhbnTEgw==?= <horia.geanta@freescale.com>
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts/kernel-doc: handle object-like macros
+References: <1403525732-7653-1-git-send-email-horia.geanta@freescale.com> <53AF7F63.9080807@infradead.org> <53B16B46.7060101@freescale.com>
+In-Reply-To: <53B16B46.7060101@freescale.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 2:12 AM, Borislav Petkov <bp@alien8.de> wrote:
-> Hi,
->
-> first of all, please do not top-post. Here's why:
->
-> A: Because it messes up the order in which people normally read text.
-> Q: Why is top-posting such a bad thing?
-> A: Top-posting.
-> Q: What is the most annoying thing in e-mail?
-
-Looks bottom posting is better :). Thanks
->
->> Yes booted by increase the buffer length, but the ignore_loglevel is
->> running continously for 5 minutes.
->
-> Huh, what? I can't parse that sentence above.
-
-I will explain:
-1. I have compiled kernel with LOG level 7.
-2. You have mentioned to run with "log_buf_len=10M ignore_loglevel".
-When I ran, the Error messages started splashing continuously, I
-waited for 5 mins and tried to switch modes using Ctrl+alt+F1, no use.
-3. The one I attached dmesg is only log_buf_len=500M (no ignore_loglevel).
-
->
-> ignore_loglevel is another kernel cmdline parameter:
->
->         ignore_loglevel [KNL]
->                         Ignore loglevel setting - this will print /all/
->                         kernel messages to the console. Useful for debugging.
->                         We also add it as printk module parameter, so users
->                         could change it dynamically, usually by
->                         /sys/module/printk/parameters/ignore_loglevel.
->
->
->> So I ignored that and ran with
->> log_buf_len=500M ( because 10M also filled) only.
+On 06/30/14 06:51, Horia Geantă wrote:
+> On 6/29/2014 5:52 AM, Randy Dunlap wrote:
+>> On 06/23/14 05:15, Horia Geanta wrote:
+>>> Object-like macros are different than function-like macros:
+>>> https://gcc.gnu.org/onlinedocs/cpp/Object-like-Macros.html
+>>> https://gcc.gnu.org/onlinedocs/cpp/Function-like-Macros.html
+>>>
+>>> They are not parsed correctly, generating invalid intermediate
+>>> files (xmls) for cases like:
+>>>      #define BIT_MASK    (0xFF << BIT_SHIFT)
+>>> where "OxFF <<" is considered to be parameter type.
+>>>
+>>> When parsing, we can differentiate beween these two types of macros by
+> 
+>                                      between.
+> 
+>>> checking whether there is at least one whitespace b/w "#define" and
+>>> first opening paranthesis.
 >>
->> When I copied the dmesg, the size was 76M, so I attached only first
->> 1500 lines. Please find in below link.
+>>                  parenthesis.
+> 
+> Thanks, I'll fix both typos in v2.
+> 
 >>
->> https://bugzilla.kernel.org/show_bug.cgi?id=79171
->
-> Ok, that's better. The warnings start spewing pretty early with the one
-> below. Let's CC linux-mm.
->
-> [    1.062658] registered taskstats version 1
-> [    1.063400] ------------[ cut here ]------------
-> [    1.063455] WARNING: CPU: 0 PID: 55 at kernel/res_counter.c:28 res_counter_uncharge_until+0x84/0x110()
-> [    1.063513] Modules linked in:
-> [    1.063516] CPU: 0 PID: 55 Comm: modprobe Not tainted 3.16.0-rc1-next-20140620+ #4
-> [    1.063518] Hardware name: Dell Inc. Studio 1555/0C234M, BIOS A11 03/29/2010
-> [    1.063520]  00000000 00000000 d34d7de4 c1648de3 00000000 d34d7e14 c105b74e c1822e40
-> [    1.063524]  00000000 00000037 c183384f 0000001c c10dab24 c10dab24 d3c048c8 ffffffff
-> [    1.063529]  00000000 d34d7e24 c105b812 00000009 00000000 d34d7e58 c10dab24 00000282
-> [    1.063534] Call Trace:
-> [    1.063538]  [<c1648de3>] dump_stack+0x41/0x52
-> [    1.063541]  [<c105b74e>] warn_slowpath_common+0x7e/0xa0
-> [    1.063543]  [<c10dab24>] ? res_counter_uncharge_until+0x84/0x110
-> [    1.063546]  [<c10dab24>] ? res_counter_uncharge_until+0x84/0x110
-> [    1.063548]  [<c105b812>] warn_slowpath_null+0x22/0x30
-> [    1.063551]  [<c10dab24>] res_counter_uncharge_until+0x84/0x110
-> [    1.063553]  [<c10dabc1>] res_counter_uncharge+0x11/0x20
-> [    1.063557]  [<c117e975>] mem_cgroup_uncharge_end+0x85/0xa0
-> [    1.063560]  [<c113acb1>] release_pages+0x71/0x1c0
-> [    1.063563]  [<c1164072>] free_pages_and_swap_cache+0x92/0xb0
-> [    1.063567]  [<c1151b63>] tlb_flush_mmu_free+0x23/0x40
-> [    1.063570]  [<c11523cd>] tlb_flush_mmu+0x1d/0x30
-> [    1.063572]  [<c11523f1>] tlb_finish_mmu+0x11/0x40
-> [    1.063575]  [<c11588c7>] unmap_region+0x97/0xc0
-> [    1.063577]  [<c1158c22>] ? vma_rb_erase+0xe2/0x1b0
-> [    1.063580]  [<c115a8e3>] do_munmap+0x1c3/0x2d0
-> [    1.063582]  [<c115aa27>] vm_munmap+0x37/0x50
-> [    1.063584]  [<c115b710>] SyS_munmap+0x20/0x30
-> [    1.063588]  [<c1650318>] sysenter_do_call+0x12/0x28
-> [    1.063590] ---[ end trace 812035dd9a004e6c ]---
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+>> Where did you see a problem?  I tested the patch and all of the
+>> Documentation/DocBook/*.xml files are the same without or with the patch.
+>>
+> 
+> Indeed, right now there is no kernel-doc for "object-like" macros in Docbook.
+> 
+> I am preparing documentation for not-yet-upstreamed code in drivers/crypto/caam and I thought it would be useful to use kernel-doc for some of the #defines.
 
+OK, thanks for the explanation.  I am applying your patch.
+
+> Doc would look like this (no @param list, no "Return" section, only a description):
+> 
+> /**
+>  * DEFAULT_SEC_ERA - the default value for the SEC era in case the user
+>  * provides an unsupported value.
+>  */
+> #define DEFAULT_SEC_ERA 6
 
 
 -- 
-Regards
-Jeshwanth Kumar N K
-Bangalore, India
+~Randy
