@@ -1,74 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195AbaF3Nz3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 09:55:29 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55046 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751207AbaF3Nz1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 09:55:27 -0400
-Date: Mon, 30 Jun 2014 15:39:48 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Antoine =?iso-8859-1?Q?T=E9nart'?=" 
-	<antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 07/12] usb: chipidea: add a generic driver
-Message-ID: <20140630133948.GB11880@kwain>
-References: <1403606121-6368-1-git-send-email-antoine.tenart@free-electrons.com>
- <1403606121-6368-8-git-send-email-antoine.tenart@free-electrons.com>
- <000001cf8f9a$3045f3a0$90d1dae0$%han@samsung.com>
+	id S1753347AbaF3N4x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 09:56:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44349 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750996AbaF3N4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 09:56:52 -0400
+From: Andreas Schwab <schwab@suse.de>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm64/crypto: fix makefile rule for aes-glue-%.o
+References: <mvmvbri4k06.fsf@hawking.suse.de>
+	<CAKv+Gu-NAVjMR-Jkw=W-8f7M5FSsQOSdzYN6A0kHDd1m0WA8EA@mail.gmail.com>
+X-Yow: HUMAN REPLICAS are inserted into VATS of NUTRITIONAL YEAST...
+Date: Mon, 30 Jun 2014 15:56:50 +0200
+In-Reply-To: <CAKv+Gu-NAVjMR-Jkw=W-8f7M5FSsQOSdzYN6A0kHDd1m0WA8EA@mail.gmail.com>
+	(Ard Biesheuvel's message of "Mon, 30 Jun 2014 15:38:41 +0200")
+Message-ID: <mvmr4264i1p.fsf@hawking.suse.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <000001cf8f9a$3045f3a0$90d1dae0$%han@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Ard Biesheuvel <ard.biesheuvel@linaro.org> writes:
 
-On Tue, Jun 24, 2014 at 07:51:01PM +0900, Jingoo Han wrote:
-> On Tuesday, June 24, 2014 7:35 PM, Antoine Tenart wrote:
-> > 
-> > Add a generic ChipIdea driver, with optional PHY and clock, to support
-> > ChipIdea controllers that doesn't need specific functions.
-> 
-> s/doesn't/don't
-> 
-> > 
-> > Needed for the Marvell Berlin SoCs SUB controllers.
-> 
-> s/SUB/USB
+> Out of curiosity, how did you trigger this failure? I have build this
+> code numerous times (and so have others) and I have never seen this
+> failure.
 
-Right, I'll fix these.
+Did you ever start with a clean tree?
 
-> 
-> > +
-> > +MODULE_DESCRIPTION("Generic ChipIdea HDRC USB binding");
-> > +MODULE_AUTHOR("Antoine Ténart <antoine.tenart@free-electrons.com>");
-> > +MODULE_LICENSE("GPL");
-> 
-> How about "GPL v2"?
-
-Well, "GPL" stands for "GNU Public License v2 or later" as documented
-in:
-http://lxr.free-electrons.com/source/include/linux/module.h#L100
-
-Is there a reason I should use "GPLv2"? Or is this a best practice?
-
-Thanks!
-
-Antoine
+Andreas.
 
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Andreas Schwab, SUSE Labs, schwab@suse.de
+GPG Key fingerprint = 0196 BAD8 1CE9 1970 F4BE  1748 E4D4 88E3 0EEA B9D7
+"And now for something completely different."
