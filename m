@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059AbaF3WJx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 18:09:53 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:60597 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754612AbaF3WJu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 18:09:50 -0400
-From: Alex Elder <elder@linaro.org>
-To: mporter@linaro.org, bcm@fixthebug.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] devicetree: bindings: document Broadcom CPU enable method
-Date: Mon, 30 Jun 2014 17:09:45 -0500
-Message-Id: <1404166185-4168-1-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	id S1752266AbaF3WPP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 18:15:15 -0400
+Received: from mga03.intel.com ([143.182.124.21]:2026 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751273AbaF3WPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 18:15:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,577,1400050800"; 
+   d="scan'208";a="451794710"
+Date: Mon, 30 Jun 2014 16:15:01 -0600 (MDT)
+From: Keith Busch <keith.busch@intel.com>
+X-X-Sender: vmware@localhost.localdom
+To: David Rientjes <rientjes@google.com>
+cc: Keith Busch <keith.busch@intel.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
+Subject: Re: [PATCH] x86: ioapic: Fix irq_free_descs count
+In-Reply-To: <alpine.DEB.2.02.1406301452060.13545@chino.kir.corp.google.com>
+Message-ID: <alpine.LRH.2.03.1406301613100.4699@AMR>
+References: <1404142271-18311-1-git-send-email-keith.busch@intel.com> <alpine.DEB.2.02.1406301452060.13545@chino.kir.corp.google.com>
+User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Broadcom mobile SoCs use a ROM-implemented holding pen for
-controlled boot of secondary cores.  A special register is
-used to communicate to the ROM that a secondary core should
-start executing kernel code.  This enable method is currently
-used for members of the bcm281xx and bcm21664 SoC families.
+On Mon, 30 Jun 2014, David Rientjes wrote:
+> On Mon, 30 Jun 2014, Keith Busch wrote:
+>
+>> Signed-off-by: Keith Busch <keith.busch@intel.com>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: x86@kernel.org
+>
+> Acked-by: David Rientjes <rientjes@google.com>
+>
+> This is definitely a fix for "genirq: Provide generic hwirq allocation
+> facility", but the changelog doesn't describe what the problem is and the
+> title that this somehow fixes irq_free_descs() doesn't make any sense.
 
-The use of an enable method also allows the SMP operation vector to
-be assigned as a result of device tree content for these SoCs.
+My mistake, I used the component from the commit I bisected the bug
+down to.
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
-Notes:
-  - This patch was previously posted as part of this series:
-	https://lkml.org/lkml/2014/6/16/580
-  - The binding definition is now found in a separate file rather
-    than embedding it in:
-	Documentation/devicetree/bindings/arm/cpus.txt
+> It's the equivalent of just doing
+>
+> -	irq_free_descs(from, cnt);
+> +	irq_free_descs(from, i - from);
+>
+> I'd suggest the patch title be changed to
+>
+> 	genirq: Fix memory leak when calling irq_free_hwirqs()
+>
+> and the changelog state
+>
+> irq_free_hwirqs() always calls irq_free_descs() with a cnt == 0 which
+> makes it a no-op since the interrupt count to free is decremented in
+> itself.
 
- .../bindings/arm/bcm/brcm,bcm11351-cpu-method      | 36 ++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/bcm/brcm,bcm11351-cpu-method
-
-diff --git a/Documentation/devicetree/bindings/arm/bcm/brcm,bcm11351-cpu-method b/Documentation/devicetree/bindings/arm/bcm/brcm,bcm11351-cpu-method
-new file mode 100644
-index 0000000..8240c02
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/bcm/brcm,bcm11351-cpu-method
-@@ -0,0 +1,36 @@
-+Broadcom Kona Family CPU Enable Method
-+--------------------------------------
-+This binding defines the enable method used for starting secondary
-+CPUs in the following Broadcom SoCs:
-+  BCM11130, BCM11140, BCM11351, BCM28145, BCM28155, BCM21664
-+
-+The enable method is specified by defining the following required
-+properties in the "cpus" device tree node:
-+  - enable-method = "brcm,bcm11351-cpu-method";
-+  - secondary-boot-reg = <...>;
-+
-+The secondary-boot-reg property is a u32 value that specifies the
-+physical address of the register used to request the ROM holding pen
-+code release a secondary CPU.  The value written to the register is
-+formed by encoding the target CPU id into the low bits of the
-+physical start address it should jump to.
-+
-+Example:
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		enable-method = "brcm,bcm11351-cpu-method";
-+		secondary-boot-reg = <0x3500417c>;
-+
-+		cpu0: cpu@0 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a9";
-+			reg = <0>;
-+		};
-+
-+		cpu1: cpu@1 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a9";
-+			reg = <1>;
-+		};
-+	};
--- 
-1.9.1
-
+Yes, I like your suggestion. Should I submit a v2, or will maintainer
+replace the changelog?
