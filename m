@@ -1,103 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697AbaF3E7D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 00:59:03 -0400
-Received: from mail-bn1lp0141.outbound.protection.outlook.com ([207.46.163.141]:26213
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750815AbaF3E7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 00:59:02 -0400
-From: "Bharat.Bhushan@freescale.com" <Bharat.Bhushan@freescale.com>
-To: Scott Wood <scottwood@freescale.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RESEND PATCH] memory: Freescale CoreNet Coherency Fabric error
- reporting driver
-Thread-Topic: [RESEND PATCH] memory: Freescale CoreNet Coherency Fabric error
- reporting driver
-Thread-Index: AQHPfFZ5AO8lYHxFT069YHO6X2X6YptgmrRggACUZICAAAVDUIAAAe4AgCgMmMA=
-Date: Mon, 30 Jun 2014 04:58:57 +0000
-Message-ID: <806516468c994e638fc9214b0e5a7b9f@DM2PR03MB574.namprd03.prod.outlook.com>
-References: <20140530222743.GA6918@home.buserror.net>
-	 <967d9a5e0f7e4d0a8f5e7ec6b8e88ff2@BLUPR03MB566.namprd03.prod.outlook.com>
-	 <1401900111.6603.325.camel@snotra.buserror.net>
-	 <35f1762b80694ba4835cd7902a2faa0a@BLUPR03MB566.namprd03.prod.outlook.com>
- <1401901656.6603.327.camel@snotra.buserror.net>
-In-Reply-To: <1401901656.6603.327.camel@snotra.buserror.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.169.1]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 0258E7CCD4
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(377454003)(51704005)(13464003)(377424004)(24454002)(199002)(189002)(95666004)(101416001)(74662001)(107046002)(66066001)(83072002)(85306003)(31966008)(76576001)(81542001)(74502001)(81342001)(99396002)(99286002)(105586002)(19580395003)(106116001)(20776003)(83322001)(19580405001)(33646001)(74316001)(86362001)(92566001)(80022001)(21056001)(64706001)(106356001)(76482001)(77982001)(54356999)(76176999)(2656002)(85852003)(50986999)(4396001)(46102001)(87936001)(79102001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB397;H:DM2PR03MB574.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1751583AbaF3FMt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 01:12:49 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37668 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751109AbaF3FMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 01:12:48 -0400
+Message-ID: <53B0F168.7050709@ti.com>
+Date: Mon, 30 Jun 2014 10:41:04 +0530
+From: Keerthy <a0393675@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Nishanth Menon <nm@ti.com>
+CC: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Keerthy <j-keerthy@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <t-kristo@ti.com>
+Subject: Re: [PATCH] regulator: tps65917: Fix SMPS enable/disable/is_enable
+References: <1403807494-23907-1-git-send-email-nm@ti.com> <53AD36E1.1010700@ti.com> <20140627171503.GA26734@kahuna>
+In-Reply-To: <20140627171503.GA26734@kahuna>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5U4xAkZ009260
+
+Hi Nishanth,
+
+On Friday 27 June 2014 10:45 PM, Nishanth Menon wrote:
+> On 14:48-20140627, Keerthy wrote:
+>> Hello Nishanth,
+>>
+>> On Friday 27 June 2014 12:01 AM, Nishanth Menon wrote:
+>>> We use regmap regulator ops to enable/disable and check if regulator
+>>> is enabled for various SMPS. However, these depend on valid
+>>> enable_reg, enable_mask and enable_value in regulator descriptor.
+>>>
+>>> So, similar to fix we did in commit 318dbb02b50c
+>>> ("regulator: palmas: Fix SMPS enable/disable/is_enabled"), populate the
+>>> same for TPS65917 SMPS registration. LDO definitions are already in place.
+>>>
+>>> Fixes: d6f83370ed97 ("regulator: palmas: Add tps65917 PMIC support")
+>>> Signed-off-by: Nishanth Menon <nm@ti.com>
+>>> ---
+>>>
+>>> Applies on:
+>>> 	git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git
+>>> branch: topic/palmas (4c0c9ca Merge remote-tracking branch 'regulator/fix/palmas' into regulator-palmas)
+>>>
+>>> Note: Ignored the minor style check from checkpatch --strict as fixing
+>>> it would create an 80 char warning
+>>>
+>>>   drivers/regulator/palmas-regulator.c |    8 ++++++++
+>>>   1 file changed, 8 insertions(+)
+>>>
+>>> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+>>> index 7c8b441..c7aa1b1 100644
+>>> --- a/drivers/regulator/palmas-regulator.c
+>>> +++ b/drivers/regulator/palmas-regulator.c
+>>> @@ -1333,6 +1333,14 @@ static int tps65917_smps_registration(struct palmas_pmic *pmic,
+>>>   		pmic->current_reg_mode[id] = reg &
+>>>   				PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
+>>> +		pmic->desc[id].enable_reg =
+>>> +				PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+>>> +					palmas_regs_info[id].ctrl_addr);
+>> This is wrong. Please change palmas_regs_info[id].ctrl_addr to
+>> ddata->palmas_regs_info[id].ctrl_addr. The palmas_regs_info
+>> should come from the driver data for specific instances as the regmap
+>> is different for the different PMICs we support.
+>>
+>> Once you make the above changes please feel free to add
+> Uggh.. just realized... since I was testing CPUFREQ with SMPS1 never
+> realized it. and searched elsewhere on topic/palmas branch as well..
+> Looks like we should make the following changes? since the register data
+> is now a parameter and it so happened that palmas_reg_info was mapping
+> back to a valid variable and the error is easily missed - so rename the
+> variable as well - I can break this up as proper series of patches for
+> topic/palmas - let me know what you think..
+>
+>
+> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+> index 7c8b441..86fefdfb 100644
+> --- a/drivers/regulator/palmas-regulator.c
+> +++ b/drivers/regulator/palmas-regulator.c
+> @@ -41,7 +41,7 @@ static const struct regulator_linear_range smps_high_ranges[] = {
+>   	REGULATOR_LINEAR_RANGE(3300000, 0x7A, 0x7f, 0),
+>   };
+>   
+> -static struct regs_info palmas_regs_info[] = {
+> +static struct regs_info palmas_generic_regs_info[] = {
 
 
+Good renaming but You need to make one more change i guess. Otherwise
+there is a compilation break.
 
-> -----Original Message-----
-> From: Wood Scott-B07421
-> Sent: Wednesday, June 04, 2014 10:38 PM
-> To: Bhushan Bharat-R65777
-> Cc: Greg Kroah-Hartman; linuxppc-dev@lists.ozlabs.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [RESEND PATCH] memory: Freescale CoreNet Coherency Fabric error
-> reporting driver
-> 
-> On Wed, 2014-06-04 at 12:04 -0500, Bhushan Bharat-R65777 wrote:
-> >
-> > > -----Original Message-----
-> > > From: Wood Scott-B07421
-> > > Sent: Wednesday, June 04, 2014 10:12 PM
-> > > To: Bhushan Bharat-R65777
-> > > Cc: Greg Kroah-Hartman; linuxppc-dev@lists.ozlabs.org; linux-
-> > > kernel@vger.kernel.org
-> > > Subject: Re: [RESEND PATCH] memory: Freescale CoreNet Coherency
-> > > Fabric error reporting driver
-> > >
-> > > On Wed, 2014-06-04 at 03:17 -0500, Bhushan Bharat-R65777 wrote:
-> > > > > +static int ccf_remove(struct platform_device *pdev) {
-> > > > > +	struct ccf_private *ccf = dev_get_drvdata(&pdev->dev);
-> > > > > +
-> > > > > +	switch (ccf->info->version) {
-> > > > > +	case CCF1:
-> > > > > +		iowrite32be(0, &ccf->err_regs->errdis);
-> > > > > +		break;
-> > > > > +
-> > > > > +	case CCF2:
-> > > > > +		iowrite32be(0, &ccf->err_regs->errinten);
-> > > >
-> > > > Do you think it is same to disable detection bits in ccf->err_regs-
-> >errdis?
-> > >
-> > > Disabling the interrupt is what we're aiming for here, but ccf1
-> > > doesn't provide a way to do that separate from disabling detection.
-> >
-> > What I wanted to say that do we also need to disable detection (set
-> > ERRDET_LAE | ERRDET_CV bits in errdis) apart from clearing errinten on
-> > ccf2 ?
-> 
-> I don't think we "need" to.  You could argue that we should for consistency,
-> though I think there's value in errors continuing to be detected even without
-> the driver (e.g. can dump the registers in a debugger).
+@@ -643,7 +643,8 @@
+static int palmas_regulator_config_external(struct palmas *palmas, int id,
+          struct palmas_reg_init *reg_init)
+{
+-    int sleep_id = palmas_regs_info[id].sleep_id;
++    struct palmas_pmic_driver_data *ddata = palmas->pmic_ddata;
++    int sleep_id = ddata->palmas_regs_info[id].sleep_id;
+      int ret;
 
-Yes this comment was for consistency. Also IIUC, the state which is left when the driver is removed is not default reset behavior.
-If we want errors to be detected then should not we have a sysfs interface?
+Including the above change.
+Tested-by: Keerthy <j-keerthy@ti.com>.
 
-Thanks
--Bharat
+>   	{
+>   		.name		= "SMPS12",
+>   		.sname		= "smps1-in",
+> @@ -1165,18 +1165,18 @@ static int palmas_smps_registration(struct palmas_pmic *pmic,
+>   			pmic->desc[id].ops = &palmas_ops_smps10;
+>   			pmic->desc[id].vsel_reg =
+>   					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+> -							PALMAS_SMPS10_CTRL);
+> +					        ddata->palmas_regs_info[id].ctrl_addr);
+>   			pmic->desc[id].vsel_mask = SMPS10_VSEL;
+>   			pmic->desc[id].enable_reg =
+>   					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+> -							PALMAS_SMPS10_CTRL);
+> +					        ddata->palmas_regs_info[id].ctrl_addr);
+>   			if (id == PALMAS_REG_SMPS10_OUT1)
+>   				pmic->desc[id].enable_mask = SMPS10_SWITCH_EN;
+>   			else
+>   				pmic->desc[id].enable_mask = SMPS10_BOOST_EN;
+>   			pmic->desc[id].bypass_reg =
+>   					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+> -							PALMAS_SMPS10_CTRL);
+> +					        ddata->palmas_regs_info[id].ctrl_addr);
+>   			pmic->desc[id].bypass_mask = SMPS10_BYPASS_EN;
+>   			pmic->desc[id].min_uV = 3750000;
+>   			pmic->desc[id].uV_step = 1250000;
+> @@ -1188,7 +1188,7 @@ static int palmas_smps_registration(struct palmas_pmic *pmic,
+>   			 * otherwise we error in probe with unsupportable
+>   			 * ranges. Read the current smps mode for later use.
+>   			 */
+> -			addr = palmas_regs_info[id].vsel_addr;
+> +			addr = ddata->palmas_regs_info[id].vsel_addr;
+>   			pmic->desc[id].n_linear_ranges = 3;
+>   
+>   			ret = palmas_smps_read(pmic->palmas, addr, &reg);
+> @@ -1209,12 +1209,12 @@ static int palmas_smps_registration(struct palmas_pmic *pmic,
+>   			pmic->desc[id].n_voltages = PALMAS_SMPS_NUM_VOLTAGES;
+>   			pmic->desc[id].vsel_reg =
+>   					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+> -						palmas_regs_info[id].vsel_addr);
+> +						ddata->palmas_regs_info[id].vsel_addr);
+>   			pmic->desc[id].vsel_mask =
+>   					PALMAS_SMPS12_VOLTAGE_VSEL_MASK;
+>   
+>   			/* Read the smps mode for later use. */
+> -			addr = palmas_regs_info[id].ctrl_addr;
+> +			addr = ddata->palmas_regs_info[id].ctrl_addr;
+>   			ret = palmas_smps_read(pmic->palmas, addr, &reg);
+>   			if (ret)
+>   				return ret;
+> @@ -1223,7 +1223,7 @@ static int palmas_smps_registration(struct palmas_pmic *pmic,
+>   
+>   			pmic->desc[id].enable_reg =
+>   					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+> -						palmas_regs_info[id].ctrl_addr);
+> +						ddata->palmas_regs_info[id].ctrl_addr);
+>   			pmic->desc[id].enable_mask =
+>   					PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK;
+>   			/* set_mode overrides this value */
+> @@ -1319,7 +1319,7 @@ static int tps65917_smps_registration(struct palmas_pmic *pmic,
+>   		pmic->desc[id].n_voltages = PALMAS_SMPS_NUM_VOLTAGES;
+>   		pmic->desc[id].vsel_reg =
+>   				PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+> -						   tps65917_regs_info[id].vsel_addr);
+> +					        ddata->palmas_regs_info[id].vsel_addr);
+>   		pmic->desc[id].vsel_mask =
+>   				PALMAS_SMPS12_VOLTAGE_VSEL_MASK;
+>   
+> @@ -1414,7 +1414,7 @@ struct palmas_pmic_driver_data palmas_ddata = {
+>   	.ldo_begin = PALMAS_REG_LDO1,
+>   	.ldo_end = PALMAS_REG_LDOUSB,
+>   	.max_reg = PALMAS_NUM_REGS,
+> -	.palmas_regs_info = palmas_regs_info,
+> +	.palmas_regs_info = palmas_generic_regs_info,
+>   	.palmas_matches = palmas_matches,
+>   	.sleep_req_info = palma_sleep_req_info,
+>   	.smps_register = palmas_smps_registration,
 
-> 
-> -Scott
-> 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Regards,
+Keerthy
