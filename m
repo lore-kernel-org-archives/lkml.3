@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255AbaF3MqZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:46:25 -0400
+	id S1756282AbaF3Mqr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:46:47 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754662AbaF3Max (ORCPT
+	by vger.kernel.org with ESMTP id S1754431AbaF3Maw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:30:53 -0400
+	Mon, 30 Jun 2014 08:30:52 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 150/181] Target/iser: Improve cm events handling
-Date: Mon, 30 Jun 2014 13:52:51 +0200
-Message-Id: <a5441ea3e39a00df2106d20193bfa829c6dbe99e.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 158/181] x86-32, espfix: Remove filter for espfix32 due to race
+Date: Mon, 30 Jun 2014 13:52:59 +0200
+Message-Id: <75e445d937aa12752e5da3f1812c11a7f05e1934.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,121 +23,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 88c4015fda6d014392f76d3b1688347950d7a12d upstream.
+commit 246f2d2ee1d715e1077fc47d61c394569c8ee692 upstream.
 
-There are 4 RDMA_CM events that all basically mean that
-the user should teardown the IB connection:
-- DISCONNECTED
-- ADDR_CHANGE
-- DEVICE_REMOVAL
-- TIMEWAIT_EXIT
+It is not safe to use LAR to filter when to go down the espfix path,
+because the LDT is per-process (rather than per-thread) and another
+thread might change the descriptors behind our back.  Fortunately it
+is always *safe* (if a bit slow) to go down the espfix path, and a
+32-bit LDT stack segment is extremely rare.
 
-Only in DISCONNECTED/ADDR_CHANGE it makes sense to
-call rdma_disconnect (send DREQ/DREP to our initiator).
-So we keep the same teardown handler for all of them
-but only indicate calling rdma_disconnect for the relevant
-events.
-
-This patch also removes redundant debug prints for each single
-event.
-
-v2 changes:
- - Call isert_disconnected_handler() for DEVICE_REMOVAL (Or + Sag)
-
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c | 26 ++++++++++++++------------
- drivers/infiniband/ulp/isert/ib_isert.h |  1 +
- 2 files changed, 15 insertions(+), 12 deletions(-)
+ arch/x86/kernel/entry_32.S | 5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index 9d3dec3a5235..d93b586dcd17 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -689,8 +689,10 @@ isert_disconnect_work(struct work_struct *work)
- 		return;
- 	}
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 15a569a47b4d..cef8f5132b87 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -554,11 +554,6 @@ ENTRY(iret_exc)
  
--	/* Send DREQ/DREP towards our initiator */
--	rdma_disconnect(isert_conn->conn_cm_id);
-+	if (isert_conn->disconnect) {
-+		/* Send DREQ/DREP towards our initiator */
-+		rdma_disconnect(isert_conn->conn_cm_id);
-+	}
- 
- 	mutex_unlock(&isert_conn->conn_mutex);
- 
-@@ -700,10 +702,11 @@ wake_up:
- }
- 
- static void
--isert_disconnected_handler(struct rdma_cm_id *cma_id)
-+isert_disconnected_handler(struct rdma_cm_id *cma_id, bool disconnect)
- {
- 	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
- 
-+	isert_conn->disconnect = disconnect;
- 	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
- 	schedule_work(&isert_conn->conn_logout_work);
- }
-@@ -712,29 +715,28 @@ static int
- isert_cma_handler(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
- {
- 	int ret = 0;
-+	bool disconnect = false;
- 
- 	pr_debug("isert_cma_handler: event %d status %d conn %p id %p\n",
- 		 event->event, event->status, cma_id->context, cma_id);
- 
- 	switch (event->event) {
- 	case RDMA_CM_EVENT_CONNECT_REQUEST:
--		pr_debug("RDMA_CM_EVENT_CONNECT_REQUEST: >>>>>>>>>>>>>>>\n");
- 		ret = isert_connect_request(cma_id, event);
- 		break;
- 	case RDMA_CM_EVENT_ESTABLISHED:
--		pr_debug("RDMA_CM_EVENT_ESTABLISHED >>>>>>>>>>>>>>\n");
- 		isert_connected_handler(cma_id);
- 		break;
--	case RDMA_CM_EVENT_DISCONNECTED:
--		pr_debug("RDMA_CM_EVENT_DISCONNECTED: >>>>>>>>>>>>>>\n");
--		isert_disconnected_handler(cma_id);
--		break;
--	case RDMA_CM_EVENT_DEVICE_REMOVAL:
--	case RDMA_CM_EVENT_ADDR_CHANGE:
-+	case RDMA_CM_EVENT_ADDR_CHANGE:    /* FALLTHRU */
-+	case RDMA_CM_EVENT_DISCONNECTED:   /* FALLTHRU */
-+	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
-+		disconnect = true;
-+	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
-+		isert_disconnected_handler(cma_id, disconnect);
- 		break;
- 	case RDMA_CM_EVENT_CONNECT_ERROR:
- 	default:
--		pr_err("Unknown RDMA CMA event: %d\n", event->event);
-+		pr_err("Unhandled RDMA CMA event: %d\n", event->event);
- 		break;
- 	}
- 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.h b/drivers/infiniband/ulp/isert/ib_isert.h
-index f0ed44c89b71..90e6aa3c25d2 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -121,6 +121,7 @@ struct isert_conn {
- 	int			conn_frwr_pool_size;
- 	/* lock to protect frwr_pool */
- 	spinlock_t		conn_lock;
-+	bool                    disconnect;
- };
- 
- #define ISERT_MAX_CQ 64
+ 	CFI_RESTORE_STATE
+ ldt_ss:
+-	larl PT_OLDSS(%esp), %eax
+-	jnz restore_nocheck
+-	testl $0x00400000, %eax		# returning to 32bit stack?
+-	jnz restore_nocheck		# allright, normal return
+-
+ #ifdef CONFIG_PARAVIRT
+ 	/*
+ 	 * The kernel can't run on a non-flat stack if paravirt mode
 -- 
 2.0.0
 
