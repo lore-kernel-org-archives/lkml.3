@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554AbaF3MWY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:22:24 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51929 "EHLO
+	id S1753475AbaF3MWW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:22:22 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51932 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752926AbaF3LxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1752939AbaF3LxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 064/181] USB: cdc-acm: fix I/O after failed open
-Date: Mon, 30 Jun 2014 13:51:25 +0200
-Message-Id: <f524bcefecdd95da34a614e42e674c9cc501abfc.1404128998.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 065/181] USB: cdc-acm: fix runtime PM imbalance at shutdown
+Date: Mon, 30 Jun 2014 13:51:26 +0200
+Message-Id: <31f1aa154ff793028bc7dc57372c476cea061022.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -29,39 +29,52 @@ From: Johan Hovold <jhovold@gmail.com>
 
 ===============
 
-commit e4c36076c2a6195ec62c35b03c3fde84d0087dc8 upstream.
+commit 5292afa657d0e790b7479ad8eef9450c1e040b3d upstream.
 
-Make sure to kill any already submitted read urbs on read-urb submission
-failures in open in order to prevent doing I/O for a closed port.
+Make sure only to decrement the PM counters if they were actually
+incremented.
 
-Fixes: 088c64f81284 ("USB: cdc-acm: re-write read processing")
+Note that the USB PM counter, but not necessarily the driver core PM
+counter, is reset when the interface is unbound.
+
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
+
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/class/cdc-acm.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/class/cdc-acm.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 6774bf165083..ebbe89f60f7b 100644
+index ebbe89f60f7b..669836ae53e0 100644
 --- a/drivers/usb/class/cdc-acm.c
 +++ b/drivers/usb/class/cdc-acm.c
-@@ -494,6 +494,7 @@ static int acm_port_activate(struct tty_port *port, struct tty_struct *tty)
- {
- 	struct acm *acm = container_of(port, struct acm, port);
- 	int retval = -ENODEV;
-+	int i;
+@@ -575,12 +575,13 @@ static void acm_port_shutdown(struct tty_port *port)
+ 	struct urb *urb;
+ 	struct acm_wb *wb;
+ 	int i;
++	int pm_err;
  
  	dev_dbg(&acm->control->dev, "%s\n", __func__);
  
-@@ -542,6 +543,8 @@ static int acm_port_activate(struct tty_port *port, struct tty_struct *tty)
- 	return 0;
+ 	mutex_lock(&acm->mutex);
+ 	if (!acm->disconnected) {
+-		usb_autopm_get_interface(acm->control);
++		pm_err = usb_autopm_get_interface(acm->control);
+ 		acm_set_control(acm, acm->ctrlout = 0);
  
- error_submit_read_urbs:
-+	for (i = 0; i < acm->rx_buflimit; i++)
-+		usb_kill_urb(acm->read_urbs[i]);
- 	acm->ctrlout = 0;
- 	acm_set_control(acm, acm->ctrlout);
- error_set_control:
+ 		for (;;) {
+@@ -598,7 +599,8 @@ static void acm_port_shutdown(struct tty_port *port)
+ 		for (i = 0; i < acm->rx_buflimit; i++)
+ 			usb_kill_urb(acm->read_urbs[i]);
+ 		acm->control->needs_remote_wakeup = 0;
+-		usb_autopm_put_interface(acm->control);
++		if (!pm_err)
++			usb_autopm_put_interface(acm->control);
+ 	}
+ 	mutex_unlock(&acm->mutex);
+ }
 -- 
 2.0.0
 
