@@ -1,39 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049AbaF3PtI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:49:08 -0400
-Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:35045 "EHLO
-	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751385AbaF3PtH (ORCPT
+	id S1754275AbaF3Ptc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:49:32 -0400
+Received: from mail-la0-f74.google.com ([209.85.215.74]:36647 "EHLO
+	mail-la0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754141AbaF3Pta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:49:07 -0400
-Date: Mon, 30 Jun 2014 10:49:03 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Vladimir Davydov <vdavydov@parallels.com>, akpm@linux-foundation.org,
-        rientjes@google.com, penberg@kernel.org, hannes@cmpxchg.org,
-        mhocko@suse.cz, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH -mm v3 8/8] slab: do not keep free objects/slabs on dead
- memcg caches
-In-Reply-To: <20140627060534.GC9511@js1304-P5Q-DELUXE>
-Message-ID: <alpine.DEB.2.11.1406301048070.19422@gentwo.org>
-References: <cover.1402602126.git.vdavydov@parallels.com> <a985aec824cd35df381692fca83f7a8debc80305.1402602126.git.vdavydov@parallels.com> <20140624073840.GC4836@js1304-P5Q-DELUXE> <20140625134545.GB22340@esperanza>
- <20140627060534.GC9511@js1304-P5Q-DELUXE>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 30 Jun 2014 11:49:30 -0400
+Date: Mon, 30 Jun 2014 16:49:28 +0100
+From: David Drysdale <drysdale@google.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/11] fs: add O_BENEATH_ONLY flag to openat(2)
+Message-ID: <20140630154928.GB10375@google.com>
+References: <1404124096-21445-1-git-send-email-drysdale@google.com>
+ <1404124096-21445-2-git-send-email-drysdale@google.com>
+ <CALCETrU=HLmw9n-DxPkFV1xP5wtzQ7-YF3-uao6YiGZODA9kdw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrU=HLmw9n-DxPkFV1xP5wtzQ7-YF3-uao6YiGZODA9kdw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jun 2014, Joonsoo Kim wrote:
+On Mon, Jun 30, 2014 at 07:49:41AM -0700, Andy Lutomirski wrote:
+> On Jun 30, 2014 3:36 AM, "David Drysdale" <drysdale@google.com> wrote:
+> >
+> > Add a new O_BENEATH_ONLY flag for openat(2) which restricts the
+> > provided path, rejecting (with -EACCES) paths that are not beneath
+> > the provided dfd.  In particular, reject:
+> >  - paths that contain .. components
+> >  - paths that begin with /
+> >  - symlinks that have paths as above.
+> 
+> I like this a lot.  However, I think I'd like it even better if it
+> were AT_BENEATH_ONLY so that it could be added to the rest of the *at
+> family.
+> 
+> --Andy
 
-> Christoph,
-> Is it tolerable result for large scale system? Or do we need to find
-> another solution?
+Wouldn't it need to be both O_BENEATH_ONLY (for openat()) and 
+AT_BENEATH_ONLY (for other *at() functions), like O_NOFOLLOW and
+AT_SYMLINK_NOFOLLOW?  (I.e. aren't the AT_* flags in a different
+numbering space than O_* flags?)
 
-
-The overhead is pretty intense but then this is a rare event I guess?
-
-It seems that it is much easier on the code and much faster to do the
-periodic reaping. Why not simply go with that?
-
+Or am I misunderstanding?
 
