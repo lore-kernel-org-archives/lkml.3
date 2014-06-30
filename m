@@ -1,107 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730AbaF3H5z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 03:57:55 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57418 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754667AbaF3H5x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 03:57:53 -0400
+	id S1754554AbaF3IBa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 04:01:30 -0400
+Received: from mx02.posteo.de ([89.146.194.165]:48164 "EHLO posteo.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751125AbaF3IB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 04:01:28 -0400
+Message-ID: <53B1192B.7020904@posteo.de>
+Date: Mon, 30 Jun 2014 10:00:43 +0200
+From: Martin Kepplinger <martink@posteo.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CAKohponvN3rAvJrfi4TojFcq5gq7r2oNE4Q0_NtwBHmEZ8waBA@mail.gmail.com>
-References: <cover.1403684824.git.viresh.kumar@linaro.org>
-	<e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
-	<53AB1CC1.4010907@codeaurora.org>
-	<CAKohpo=Q7eWNwcK6KF9_U-zD0g=96QHW9hiQupLpV5GqoWE+mA@mail.gmail.com>
-	<53ACB568.4000903@codeaurora.org>
-	<20140627015354.32686.83046@quantum>
-	<CAKohponvN3rAvJrfi4TojFcq5gq7r2oNE4Q0_NtwBHmEZ8waBA@mail.gmail.com>
-Date: Mon, 30 Jun 2014 13:27:52 +0530
-Message-ID: <CAKohpo=dgSW551yzqjAV2_opw_4naqFEWpwUz9ktkGgR5vCBZA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: cpu0: Extend support beyond CPU0
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>,
-        Rob Herring <rob.herring@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm@vger.kernel.org, Sachin Kamat <spk.linux@gmail.com>,
-        Thomas P Abraham <thomas.ab@samsung.com>, Nishanth Menon <nm@ti.com>,
-        Tomasz Figa <t.figa@samsung.com>, Mark Brown <broonie@kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Aaron Lu <aaron.lu@intel.com>, rui.zhang@intel.com
+CC: rjw@rjwysocki.net, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix backlight control for Acer TravelMate B113
+References: <1403555446-16863-1-git-send-email-martink@posteo.de> <53AFD16D.10209@posteo.de> <53B0BD92.8090209@intel.com>
+In-Reply-To: <53B0BD92.8090209@intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 June 2014 07:45, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 27 June 2014 07:23, Mike Turquette <mturquette@linaro.org> wrote:
->>> but it isn't future-proof if/when the clock framework starts returning
->>> dynamically allocated clock pointers for each clk_get() invocation.
->>> Maybe we need a function in the common clock framework that tells us if
->>> the clocks are the same either via DT or by taking two clock pointers?
+Am 2014-06-30 03:29, schrieb Aaron Lu:
+> On 06/29/2014 04:42 PM, Martin Kepplinger wrote:
+>> Am 2014-06-23 22:30, schrieb Martin Kepplinger:
+>>> Fix backlight control for Acer TravelMate B113 Laptop by adding
+>>> it to the video_dmi_table.
+>>>
+>>> A workaround before that was to use acpi_osi=Linux or
+>>> acpi_backlight=vendor on boot but even then, only the function-
+>>> keys worked.
+>>>
+>>> With this change there is no need for boot parameters and DE's
+>>> controls work as well.
+>>>
+>>> Signed-off-by: Martin Kepplinger <martink@posteo.de>
+>>> Tested-by: Martin Kepplinger <martink@posteo.de>
+>>> ---
+>>>  drivers/acpi/video.c |    8 ++++++++
+>>>  1 file changed, 8 insertions(+)
+>>>
+>>> diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+>>> index f8bc5a7..acb0670 100644
+>>> --- a/drivers/acpi/video.c
+>>> +++ b/drivers/acpi/video.c
+>>> @@ -528,6 +528,14 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
+>>>  		},
+>>>  	},
+>>>  	{
+>>> +	 .callback = video_set_use_native_backlight,
+>>> +	 .ident = "Acer TravelMate B113",
+>>> +	 .matches = {
+>>> +		DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+>>> +		DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate B113"),
+>>> +		},
+>>> +	},
+>>> +	{
+>>>  	.callback = video_set_use_native_backlight,
+>>>  	.ident = "HP ProBook 4340s",
+>>>  	.matches = {
+>>>
 >>
->> I looked through the patch briefly and did not see why we would need to
->> do this. Any hint?
->
-> We want to know which CPUs are sharing clock line, so that we can
-> fill affected-cpus field of cpufreq core.
+>> are there objections or advice on this? this would be really good to
+>> have, even if for 3.17.
+> 
+> For v3.16, we already have this commit to make use_native_backlight
+> equal to 1 by default:
+> 
+> commit 751109aad5834375ca9ed0dcfcd85a00cbf872b5
+> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Date:   Thu Jun 5 22:47:35 2014 +0200
+> 
+>     ACPI / video: Change the default for video.use_native_backlight to 1
+> 
+> 
+> Thanks,
+> Aaron
+> 
+thanks! That should do it and would be a better solution. I can't test
+it on 3.16 though, as rc3 is still broken for me, see
+https://lkml.org/lkml/2014/6/30/66
 
-What about comparing "clocks" property in cpu DT nodes?
+>>
+>> thanks.
+>>                                 martin
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-@Rob/Grant: I tried looking for an existing routine to do that, but couldn't
-find it. And so wrote one.
-
-I am not good at DT stuff and so I do hope there would be few correction
-required here. Let me know if this can be added to drivers/of/base.c :
-
-+/**
-+ * of_property_match - Match property in two nodes
-+ * @np1, np2: Nodes to match
-+ * @list_name: property to match
-+ *
-+ * Returns 1 on match, 0 on no match, and error for missing property.
-+ */
-+static int of_property_match(const struct device_node *np1,
-+                             const struct device_node *np2,
-+                             const char *list_name)
-+{
-+       const __be32 *list1, *list2, *list1_end;
-+       int size1, size2;
-+       phandle phandle1, phandle2;
-+
-+       /* Retrieve the list property */
-+       list1 = of_get_property(np1, list_name, &size1);
-+       if (!list1)
-+               return -ENOENT;
-+
-+       list2 = of_get_property(np2, list_name, &size2);
-+       if (!list2)
-+               return -ENOENT;
-+
-+       if (size1 != size2)
-+               return 0;
-+
-+       list1_end = list1 + size1 / sizeof(*list1);
-+
-+       /* Loop over the phandles */
-+       while (list1 < list1_end) {
-+               phandle1 = be32_to_cpup(list1++);
-+               phandle2 = be32_to_cpup(list2++);
-+
-+               if (phandle1 != phandle2)
-+                       return 0;
-+       }
-+
-+       return 1;
-+}
-
-@Stephen: I have updated my tree with this change, in case you wanna
-try.
