@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166AbaF3Mbk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:31:40 -0400
+	id S1755306AbaF3McA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:32:00 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964844AbaF3Mbh (ORCPT
+	by vger.kernel.org with ESMTP id S964906AbaF3Mb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:31:37 -0400
+	Mon, 30 Jun 2014 08:31:57 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 130/181] USB: usb_wwan: fix urb leak at shutdown
-Date: Mon, 30 Jun 2014 13:52:31 +0200
-Message-Id: <a7ce85c750bd587927638f0e39bcb1277dc30ccd.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 117/181] HID: core: fix validation of report id 0
+Date: Mon, 30 Jun 2014 13:52:18 +0200
+Message-Id: <772b0286464c4dc5e361067e5b1103290b6119ed.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,99 +23,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Kees Cook <keescook@chromium.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 79eed03e77d481b55d85d1cfe5a1636a0d3897fd upstream.
+commit 1b15d2e5b8077670b1e6a33250a0d9577efff4a5 upstream.
 
-The delayed-write queue was never emptied at shutdown (close), something
-which could lead to leaked urbs if the port is closed before being
-runtime resumed due to a write.
+Some drivers use the first HID report in the list instead of using an
+index. In these cases, validation uses ID 0, which was supposed to mean
+"first known report". This fixes the problem, which was causing at least
+the lgff family of devices to stop working since hid_validate_values
+was being called with ID 0, but the devices used single numbered IDs
+for their reports:
 
-When this happens the output buffer would not drain on close
-(closing_wait timeout), and after consecutive opens, writes could be
-corrupted with previously buffered data, transfered with reduced
-throughput or completely blocked.
+0x05, 0x01,         /*  Usage Page (Desktop),                   */
+0x09, 0x05,         /*  Usage (Gamepad),                        */
+0xA1, 0x01,         /*  Collection (Application),               */
+0xA1, 0x02,         /*      Collection (Logical),               */
+0x85, 0x01,         /*          Report ID (1),                  */
+...
 
-Note that unbusy_queued_urb() was simply moved out of CONFIG_PM.
-
-Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
-option driver")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Reported-by: Simon Wood <simon@mungewell.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/serial/usb_wwan.c | 34 ++++++++++++++++++++++------------
- 1 file changed, 22 insertions(+), 12 deletions(-)
+ drivers/hid/hid-core.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
-index ede88f1e09a3..f155018a91a5 100644
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -414,12 +414,26 @@ int usb_wwan_open(struct tty_struct *tty, struct usb_serial_port *port)
- }
- EXPORT_SYMBOL(usb_wwan_open);
- 
-+static void unbusy_queued_urb(struct urb *urb,
-+					struct usb_wwan_port_private *portdata)
-+{
-+	int i;
-+
-+	for (i = 0; i < N_OUT_URB; i++) {
-+		if (urb == portdata->out_urbs[i]) {
-+			clear_bit(i, &portdata->out_busy);
-+			break;
-+		}
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 0335f86502c2..245f8922f813 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -842,7 +842,17 @@ struct hid_report *hid_validate_values(struct hid_device *hid,
+ 	 * ->numbered being checked, which may not always be the case when
+ 	 * drivers go to access report values.
+ 	 */
+-	report = hid->report_enum[type].report_id_hash[id];
++	if (id == 0) {
++		/*
++		 * Validating on id 0 means we should examine the first
++		 * report in the list.
++		 */
++		report = list_entry(
++				hid->report_enum[type].report_list.next,
++				struct hid_report, list);
++	} else {
++		report = hid->report_enum[type].report_id_hash[id];
 +	}
-+}
-+
- void usb_wwan_close(struct usb_serial_port *port)
- {
- 	int i;
- 	struct usb_serial *serial = port->serial;
- 	struct usb_wwan_port_private *portdata;
- 	struct usb_wwan_intf_private *intfdata = port->serial->private;
-+	struct urb *urb;
- 
- 	portdata = usb_get_serial_port_data(port);
- 
-@@ -428,6 +442,14 @@ void usb_wwan_close(struct usb_serial_port *port)
- 	portdata->opened = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
- 
-+	for (;;) {
-+		urb = usb_get_from_anchor(&portdata->delayed);
-+		if (!urb)
-+			break;
-+		unbusy_queued_urb(urb, portdata);
-+		usb_autopm_put_interface_async(serial->interface);
-+	}
-+
- 	for (i = 0; i < N_IN_URB; i++)
- 		usb_kill_urb(portdata->in_urbs[i]);
- 	for (i = 0; i < N_OUT_URB; i++)
-@@ -600,18 +622,6 @@ int usb_wwan_suspend(struct usb_serial *serial, pm_message_t message)
- }
- EXPORT_SYMBOL(usb_wwan_suspend);
- 
--static void unbusy_queued_urb(struct urb *urb, struct usb_wwan_port_private *portdata)
--{
--	int i;
--
--	for (i = 0; i < N_OUT_URB; i++) {
--		if (urb == portdata->out_urbs[i]) {
--			clear_bit(i, &portdata->out_busy);
--			break;
--		}
--	}
--}
--
- static void play_delayed(struct usb_serial_port *port)
- {
- 	struct usb_wwan_intf_private *data;
+ 	if (!report) {
+ 		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
+ 		return NULL;
 -- 
 2.0.0
 
