@@ -1,153 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127AbaF3Dc4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 23:32:56 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:41422 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283AbaF3Dcz (ORCPT
+	id S1754156AbaF3DeG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 23:34:06 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:55706 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283AbaF3DeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 23:32:55 -0400
+	Sun, 29 Jun 2014 23:34:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <1403871670-19344-1-git-send-email-k.kozlowski@samsung.com>
-References: <1403871670-19344-1-git-send-email-k.kozlowski@samsung.com>
-Date: Mon, 30 Jun 2014 09:02:54 +0530
-Message-ID: <CAKew6eW5LXGhWnEySFGGmBSQG4bPSvd26r=YBWja=r26fidBCQ@mail.gmail.com>
-Subject: Re: [PATCH v2] clk: s2mps11: Fix double free corruption during driver unbind
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Tushar Behera <tushar.behera@linaro.org>
+In-Reply-To: <20140628054641.GA14192@shlinux1.ap.freescale.net>
+References: <1403868233-5123-1-git-send-email-punnaia@xilinx.com>
+	<fa656d2d-a2a8-4b8d-a29b-e89e4bfced3e@BL2FFO11FD034.protection.gbl>
+	<20140627125515.GA6025@pengutronix.de>
+	<20140628054641.GA14192@shlinux1.ap.freescale.net>
+Date: Mon, 30 Jun 2014 09:04:01 +0530
+X-Google-Sender-Auth: rAXrG1lfix_vNqxsIbfAPOCxbMM
+Message-ID: <CAGnW=Ba3SGejFPEyNt0rArPpcGwbi5Y6JkRgaw6iw4Aj4R7xJw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] usb: chipidea: Add support for zynq usb host and
+ device controller
+From: punnaiah choudary kalluri <punnaia@xilinx.com>
+To: Peter Chen <peter.chen@freescale.com>
+Cc: Michael Grzeschik <mgr@pengutronix.de>,
+        Punnaiah Choudary Kalluri 
+	<punnaiah.choudary.kalluri@xilinx.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Kumar Gala <galak@codeaurora.org>, rdunlap@infradead.org,
+        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        Punnaiah Choudary <kpc528@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 5:51 PM, Krzysztof Kozlowski
-<k.kozlowski@samsung.com> wrote:
-> After unbinding the driver memory was corrupted by double free of
-> clk_lookup structure. This lead to OOPS when re-binding the driver
-> again.
+On Sat, Jun 28, 2014 at 11:16 AM, Peter Chen <peter.chen@freescale.com> wrote:
+> On Fri, Jun 27, 2014 at 02:55:15PM +0200, Michael Grzeschik wrote:
+>> Hi,
+>>
+>> On Fri, Jun 27, 2014 at 04:53:53PM +0530, Punnaiah Choudary Kalluri wrote:
+>> > Zynq soc uses Chipidea/Synopsys usb IP core(CI13612). This patch adds
+>> > necessary glue to allow the chipidea driver to work on zynq soc.
+>> >
+>>
+>> Did you see the currently discussed patches for the generic chipidea
+>> glue?
+>>
+>> http://www.spinics.net/lists/linux-usb/msg109576.html
+>>
+>> Try to improve that code instead writing another version
+>> of this simple gluecode.
+>>
 >
-> The driver allocated memory for 'clk_lookup' with devm_kzalloc. During
-> driver removal this memory was freed twice: once by clkdev_drop() and
-> second by devm code.
->
-> Kernel panic log:
-> [   30.839284] Unable to handle kernel paging request at virtual address 5f343173
-> [   30.846476] pgd = dee14000
-> [   30.849165] [5f343173] *pgd=00000000
-> [   30.852703] Internal error: Oops: 805 [#1] PREEMPT SMP ARM
-> [   30.858166] Modules linked in:
-> [   30.861208] CPU: 0 PID: 1 Comm: bash Not tainted 3.16.0-rc2-00239-g94bdf617b07e-dirty #40
-> [   30.869364] task: df478000 ti: df480000 task.ti: df480000
-> [   30.874752] PC is at clkdev_add+0x2c/0x38
-> [   30.878738] LR is at clkdev_add+0x18/0x38
-> [   30.882732] pc : [<c0350908>]    lr : [<c03508f4>]    psr: 60000013
-> [   30.882732] sp : df481e78  ip : 00000001  fp : c0700ed8
-> [   30.894187] r10: 0000000c  r9 : 00000000  r8 : c07b0e3c
-> [   30.899396] r7 : 00000002  r6 : df45f9d0  r5 : df421390  r4 : c0700d6c
-> [   30.905906] r3 : 5f343173  r2 : c0700d84  r1 : 60000013  r0 : c0700d6c
-> [   30.912417] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-> [   30.919534] Control: 10c53c7d  Table: 5ee1406a  DAC: 00000015
-> [   30.925262] Process bash (pid: 1, stack limit = 0xdf480240)
-> [   30.930817] Stack: (0xdf481e78 to 0xdf482000)
-> [   30.935159] 1e60:                                                       00001000 df6de610
-> [   30.943321] 1e80: df7f4558 c0355650 c05ec6ec c0700eb0 df6de600 df7f4510 dec9d69c 00000014
-> [   30.951480] 1ea0: 00167b48 df6de610 c0700e30 c0713518 00000000 c0700e30 dec9d69c 00000006
-> [   30.959639] 1ec0: 00167b48 c02c1b7c c02c1b64 df6de610 c07aff48 c02c0420 c06fb150 c047cc20
-> [   30.967798] 1ee0: df6de610 df6de610 c0700e30 df6de644 c06fb150 0000000c dec9d690 c02bef90
-> [   30.975957] 1f00: dec9c6c0 dece4c00 df481f80 dece4c00 0000000c c02be73c 0000000c c016ca8c
-> [   30.984116] 1f20: c016ca48 00000000 00000000 c016c1f4 00000000 00000000 b6f18000 df481f80
-> [   30.992276] 1f40: df7f66c0 0000000c df480000 df480000 b6f18000 c011094c df47839c 60000013
-> [   31.000435] 1f60: 00000000 00000000 df7f66c0 df7f66c0 0000000c df480000 b6f18000 c0110dd4
-> [   31.008594] 1f80: 00000000 00000000 0000000c b6ec05d8 0000000c b6f18000 00000004 c000f2a8
-> [   31.016753] 1fa0: 00001000 c000f0e0 b6ec05d8 0000000c 00000001 b6f18000 0000000c 00000000
-> [   31.024912] 1fc0: b6ec05d8 0000000c b6f18000 00000004 0000000c 00000001 00000000 00167b48
-> [   31.033071] 1fe0: 00000000 bed83a80 b6e004f0 b6e5122c 60000010 00000001 ffffffff ffffffff
-> [   31.041248] [<c0350908>] (clkdev_add) from [<c0355650>] (s2mps11_clk_probe+0x2b4/0x3b4)
-> [   31.049223] [<c0355650>] (s2mps11_clk_probe) from [<c02c1b7c>] (platform_drv_probe+0x18/0x48)
-> [   31.057728] [<c02c1b7c>] (platform_drv_probe) from [<c02c0420>] (driver_probe_device+0x13c/0x384)
-> [   31.066579] [<c02c0420>] (driver_probe_device) from [<c02bef90>] (bind_store+0x88/0xd8)
-> [   31.074564] [<c02bef90>] (bind_store) from [<c02be73c>] (drv_attr_store+0x20/0x2c)
-> [   31.082118] [<c02be73c>] (drv_attr_store) from [<c016ca8c>] (sysfs_kf_write+0x44/0x48)
-> [   31.090016] [<c016ca8c>] (sysfs_kf_write) from [<c016c1f4>] (kernfs_fop_write+0xc0/0x17c)
-> [   31.098176] [<c016c1f4>] (kernfs_fop_write) from [<c011094c>] (vfs_write+0xa0/0x1c4)
-> [   31.105899] [<c011094c>] (vfs_write) from [<c0110dd4>] (SyS_write+0x40/0x8c)
-> [   31.112931] [<c0110dd4>] (SyS_write) from [<c000f0e0>] (ret_fast_syscall+0x0/0x3c)
-> [   31.120481] Code: e2842018 e584501c e1a00004 e885000c (e5835000)
-> [   31.126596] ---[ end trace efad45bfa3a61b05 ]---
-> [   31.131181] Kernel panic - not syncing: Fatal exception
-> [   31.136368] CPU1: stopping
-> [   31.139054] CPU: 1 PID: 0 Comm: swapper/1 Tainted: G      D       3.16.0-rc2-00239-g94bdf617b07e-dirty #40
-> [   31.148697] [<c0016480>] (unwind_backtrace) from [<c0012950>] (show_stack+0x10/0x14)
-> [   31.156419] [<c0012950>] (show_stack) from [<c0480db8>] (dump_stack+0x80/0xcc)
-> [   31.163622] [<c0480db8>] (dump_stack) from [<c001499c>] (handle_IPI+0x130/0x15c)
-> [   31.170998] [<c001499c>] (handle_IPI) from [<c000862c>] (gic_handle_irq+0x60/0x68)
-> [   31.178549] [<c000862c>] (gic_handle_irq) from [<c0013480>] (__irq_svc+0x40/0x70)
-> [   31.186009] Exception stack(0xdf4bdf88 to 0xdf4bdfd0)
-> [   31.191046] df80:                   ffffffed 00000000 00000000 00000000 df4bc000 c06d042c
-> [   31.199207] dfa0: 00000000 ffffffed c06d03c0 00000000 c070c288 00000000 00000000 df4bdfd0
-> [   31.207363] dfc0: c0010324 c0010328 60000013 ffffffff
-> [   31.212402] [<c0013480>] (__irq_svc) from [<c0010328>] (arch_cpu_idle+0x28/0x30)
-> [   31.219783] [<c0010328>] (arch_cpu_idle) from [<c005f150>] (cpu_startup_entry+0x2c4/0x3f0)
-> [   31.228027] [<c005f150>] (cpu_startup_entry) from [<400086c4>] (0x400086c4)
-> [   31.234968] ---[ end Kernel panic - not syncing: Fatal exception
->
-> Fixes: 7cc560dea415 ("clk: s2mps11: Add support for s2mps11")
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
->
-> ---
->
-> Changes since v1:
-> 1. Allocate memory for clk_lookup with clkdev_alloc() instead of
->    kzalloc(). Suggested by Yadwinder Singh Brar.
-> ---
+> +1 if you think your version can be covered by generic one.
 
-Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+Ok. I will check this possibility.
 
-Regards,
-Yadwinder
-
->  drivers/clk/clk-s2mps11.c | 7 ++-----
->  1 file changed, 2 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
-> index 9b7b5859a420..3757e9e72d37 100644
-> --- a/drivers/clk/clk-s2mps11.c
-> +++ b/drivers/clk/clk-s2mps11.c
-> @@ -230,16 +230,13 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
->                         goto err_reg;
->                 }
->
-> -               s2mps11_clk->lookup = devm_kzalloc(&pdev->dev,
-> -                                       sizeof(struct clk_lookup), GFP_KERNEL);
-> +               s2mps11_clk->lookup = clkdev_alloc(s2mps11_clk->clk,
-> +                                       s2mps11_name(s2mps11_clk), NULL);
->                 if (!s2mps11_clk->lookup) {
->                         ret = -ENOMEM;
->                         goto err_lup;
->                 }
->
-> -               s2mps11_clk->lookup->con_id = s2mps11_name(s2mps11_clk);
-> -               s2mps11_clk->lookup->clk = s2mps11_clk->clk;
-> -
->                 clkdev_add(s2mps11_clk->lookup);
->         }
+Thanks,
+Punnaiah
 >
 > --
-> 1.9.1
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+> Best Regards,
+> Peter Chen
