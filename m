@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345AbaF3VXJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 17:23:09 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47338 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184AbaF3VXH (ORCPT
+	id S1753507AbaF3VZD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 17:25:03 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:53212 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401AbaF3VZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 17:23:07 -0400
-Message-ID: <53B1D538.6000704@wwwdotorg.org>
-Date: Mon, 30 Jun 2014 15:23:04 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 30 Jun 2014 17:25:01 -0400
+Date: Mon, 30 Jun 2014 23:23:35 +0200
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@kernel.org>, "Wenyou.Yang" <wenyou.yang@atmel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] regulator: act8865: Explictly initialize of_node
+ array
+Message-ID: <20140630212334.GA5745@gmail.com>
+References: <1404113529.21614.1.camel@phoenix>
+ <1404113605.21614.3.camel@phoenix>
 MIME-Version: 1.0
-To: Mikko Perttunen <mperttunen@nvidia.com>, rui.zhang@intel.com,
-        edubezval@gmail.com, thierry.reding@gmail.com, pdeschrijver@nvidia.com,
-        mlongnecker@nvidia.com
-CC: linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 6/6] thermal: Add Tegra SOCTHERM thermal management driver
-References: <1403856699-2140-1-git-send-email-mperttunen@nvidia.com> <1403856699-2140-7-git-send-email-mperttunen@nvidia.com>
-In-Reply-To: <1403856699-2140-7-git-send-email-mperttunen@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1404113605.21614.3.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2014 02:11 AM, Mikko Perttunen wrote:
-> This adds support for the Tegra SOCTHERM thermal sensing and management
-> system found in the Tegra124 system-on-chip. This initial driver supports
-> the four thermal zones with hardware-tracked trip points.
+On Mon, Jun 30, 2014 at 03:33:25PM +0800, Axel Lin wrote:
+> Silence below build warning:
+>   CC [M]  drivers/regulator/act8865-regulator.o
+> drivers/regulator/act8865-regulator.c: In function ‘act8865_pmic_probe’:
+> drivers/regulator/act8865-regulator.c:321: warning: ‘of_node’ may be used uninitialized in this function
 
-> diff --git a/drivers/thermal/tegra_soctherm.c b/drivers/thermal/tegra_soctherm.c
+Hi Axel,
 
-> +static struct tegra_tsensor t124_tsensors[] = {
-> +	{
-> +		.base = 0xc0,
-> +		.name = "cpu0",
-> +		.config = &t124_tsensor_config,
-> +		.calib_fuse_offset = 0x098,
-> +		.fuse_corr_alpha = 1135400,
-> +		.fuse_corr_beta = -6266900,
-> +	},
+some days ago I submitted a patch series that adds support for other
+act88xx chips to the driver and reworks the probe function, also
+indirectly fixing the warning about uninitialized of_node:
 
-I wonder why some of those fields are named "fuse_xxx" when the values
-are hard-coded in these tables rather than read from fuses? These values
-don't seem to be used to adjust values read from fuses.
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/265477.html
 
-> +static int tegra_thermctl_get_temp(void *data, long *out_temp)
+Beniamino
 
-> +	switch (zone->sensor) {
-> +	case 0:
-> +		val = readl(zone->tegra->regs + SENSOR_TEMP1)
-> +			>> SENSOR_TEMP1_CPU_TEMP_SHIFT;
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+>  drivers/regulator/act8865-regulator.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/regulator/act8865-regulator.c b/drivers/regulator/act8865-regulator.c
+> index f07be36..e9fea78 100644
+> --- a/drivers/regulator/act8865-regulator.c
+> +++ b/drivers/regulator/act8865-regulator.c
+> @@ -276,7 +276,7 @@ static int act8865_pmic_probe(struct i2c_client *client,
+>  	struct act8865_platform_data *pdata = dev_get_platdata(dev);
+>  	struct regulator_config config = { };
+>  	struct act8865 *act8865;
+> -	struct device_node *of_node[ACT8865_REG_NUM];
+> +	struct device_node *of_node[ACT8865_REG_NUM] = { };
+>  	int i;
+>  	int ret;
+>  
+> -- 
+> 1.9.1
 
-Can't the register offset and shift be stored in *zone, so that this
-whole switch can be replaced with something generic:
 
-val = readl(zone->tegra->regs + zone->reg_offset) >> zone->value_shift;
-
-> +static int tegra_soctherm_probe(struct platform_device *pdev)
-
-> +	irq = platform_get_irq(pdev, 0);
-> +	if (irq <= 0) {
-> +		dev_err(&pdev->dev, "can't get interrupt\n");
-> +		return -EINVAL;
-> +	}
-
-irq is assigned once here ... (see later)
-
-> +	for (i = 0; i < 4; ++i) {
-
-Why "4"? Should the loop count be the ARRAY_SIZE(some array)? At the
-very least, a named constant that describes the value would be useful...
-
-> +		err = devm_request_threaded_irq(&pdev->dev, irq, soctherm_isr,
-> +						soctherm_isr_thread,
-> +						IRQF_SHARED, "tegra_soctherm",
-> +						zone);
-
-Why request the same IRQ 4 times here. Rather, shouldn't the IRQ be
-requested once, and the ISR simply loop over the status register (or
-whatever there are 4 of)?
