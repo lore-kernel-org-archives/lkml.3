@@ -1,73 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334AbaF3Lxa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 07:53:30 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51919 "EHLO
+	id S1754247AbaF3Lx2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 07:53:28 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51913 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752372AbaF3LxY (ORCPT
+	by vger.kernel.org with ESMTP id S1751285AbaF3LxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:24 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 007/181] intel_idle: close avn_cstates array with correct marker
-Date: Mon, 30 Jun 2014 13:50:28 +0200
-Message-Id: <4c65d4f6fd4ae448900a9c3a0a9a31c5a5583774.1404128997.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Michal=20Kube=C4=8Dek?= <mkubecek@suse.cz>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 017/181] vlan: more careful checksum features handling
+Date: Mon, 30 Jun 2014 13:50:38 +0200
+Message-Id: <306ba5b24eab33ed30f13ff2005e021881b3d2bf.1404128997.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 In-Reply-To: <cover.1404128997.git.jslaby@suse.cz>
 References: <cover.1404128997.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@linux.intel.com>
+From: Michal Kubeček <mkubecek@suse.cz>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 88390996c95b879ba365888199b45ace3f5ca80b upstream.
+commit da08143b85203b581f4a6461b149186b0e9592df upstream.
 
-Close avn_cstates array with correct marker to avoid overflow
-in function intel_idle_cpu_init().
+When combining real_dev's features and vlan_features, simple
+bitwise AND is used. This doesn't work well for checksum
+offloading features as if one set has NETIF_F_HW_CSUM and the
+other NETIF_F_IP_CSUM and/or NETIF_F_IPV6_CSUM, we end up with
+no checksum offloading. However, from the logical point of view
+(how can_checksum_protocol() works), NETIF_F_HW_CSUM contains
+the functionality of NETIF_F_IP_CSUM and NETIF_F_IPV6_CSUM so
+that the result should be IP/IPV6.
 
-[rjw: The problem was introduced when commit 22e580d07f65 was merged
- on top of eba682a5aeb6 (intel_idle: shrink states tables).]
+Add helper function netdev_intersect_features() implementing
+this logic and use it in vlan_dev_fix_features().
 
-Fixes: 22e580d07f65 (intel_idle: Fixed C6 state on Avoton/Rangeley processors)
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/idle/intel_idle.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/linux/netdevice.h | 14 ++++++++++++++
+ net/8021q/vlan_dev.c      |  4 ++--
+ 2 files changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 53235814ea0f..97f4e807c862 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -329,7 +329,7 @@ static struct cpuidle_state atom_cstates[CPUIDLE_STATE_MAX] = {
- 	{
- 		.enter = NULL }
- };
--static struct cpuidle_state avn_cstates[] __initdata = {
-+static struct cpuidle_state avn_cstates[] = {
- 	{
- 		.name = "C1-AVN",
- 		.desc = "MWAIT 0x00",
-@@ -344,6 +344,8 @@ static struct cpuidle_state avn_cstates[] __initdata = {
- 		.exit_latency = 15,
- 		.target_residency = 45,
- 		.enter = &intel_idle },
-+	{
-+		.enter = NULL }
- };
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 9f2a0cbc7d06..51bfd7a68272 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -2892,6 +2892,20 @@ extern const char *netdev_drivername(const struct net_device *dev);
  
- /**
+ extern void linkwatch_run_queue(void);
+ 
++static inline netdev_features_t netdev_intersect_features(netdev_features_t f1,
++							  netdev_features_t f2)
++{
++	if (f1 & NETIF_F_GEN_CSUM)
++		f1 |= (NETIF_F_ALL_CSUM & ~NETIF_F_GEN_CSUM);
++	if (f2 & NETIF_F_GEN_CSUM)
++		f2 |= (NETIF_F_ALL_CSUM & ~NETIF_F_GEN_CSUM);
++	f1 &= f2;
++	if (f1 & NETIF_F_GEN_CSUM)
++		f1 &= ~(NETIF_F_ALL_CSUM & ~NETIF_F_GEN_CSUM);
++
++	return f1;
++}
++
+ static inline netdev_features_t netdev_get_wanted_features(
+ 	struct net_device *dev)
+ {
+diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
+index 1b89bc7468de..0c21361fab30 100644
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -694,9 +694,9 @@ static netdev_features_t vlan_dev_fix_features(struct net_device *dev,
+ 	struct net_device *real_dev = vlan_dev_priv(dev)->real_dev;
+ 	netdev_features_t old_features = features;
+ 
+-	features &= real_dev->vlan_features;
++	features = netdev_intersect_features(features, real_dev->vlan_features);
+ 	features |= NETIF_F_RXCSUM;
+-	features &= real_dev->features;
++	features = netdev_intersect_features(features, real_dev->features);
+ 
+ 	features |= old_features & NETIF_F_SOFT_FEATURES;
+ 	features |= NETIF_F_LLTX;
 -- 
 2.0.0
 
