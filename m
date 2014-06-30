@@ -1,392 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899AbaF3JYO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 05:24:14 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61919 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751514AbaF3JYM (ORCPT
+	id S1755020AbaF3JY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 05:24:28 -0400
+Received: from fgwmail.fujitsu.co.jp ([164.71.1.133]:56895 "EHLO
+	fgwmail.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754843AbaF3JY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 05:24:12 -0400
-Date: Mon, 30 Jun 2014 10:23:22 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-Cc: "mturquette@linaro.org" <mturquette@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: Re: [PATCH v2 01/14] clk: st: Update ST clock binding documentation
-Message-ID: <20140630092322.GQ7262@leverpostej>
-References: <1403875511-7710-1-git-send-email-gabriel.fernandez@linaro.org>
- <1403875511-7710-2-git-send-email-gabriel.fernandez@linaro.org>
+	Mon, 30 Jun 2014 05:24:26 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219
+Message-ID: <53B12CB3.5050508@jp.fujitsu.com>
+Date: Mon, 30 Jun 2014 18:24:03 +0900
+From: "HATAYAMA, Daisuke" <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403875511-7710-2-git-send-email-gabriel.fernandez@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: hpa@zytor.com, ak@linux.intel.com
+CC: Don Zickus <dzickus@redhat.com>, matt@console-pimps.org,
+        peterz@infradead.org, acme@kernel.org, mingo@redhat.com,
+        paulus@samba.org, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] perf/x86/intel: ignore CondChgd bit to avoid false
+ NMI handling
+References: <20140613084437.12424.62294.stgit@localhost6.localdomain6> <20140616153047.GJ177152@redhat.com>
+In-Reply-To: <20140616153047.GJ177152@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 02:24:58PM +0100, Gabriel FERNANDEZ wrote:
-> This patch adds new compatibilities to support STiH407 SoC.
+Hello,
 
-This doesn't seem to match the patch, which seems to relabel nodes,
-rename nodes, change clock-output-names, _and_ adds some new compatible
-strings.
+(2014/06/17 0:30), Don Zickus wrote:
+> On Fri, Jun 13, 2014 at 05:44:37PM +0900, HATAYAMA Daisuke wrote:
+>> Currently, a NMI handler for NMI watchdog may falsely handle any NMI
+>> signaled for different purpose if CondChgd bit in
+>> MSR_CORE_PERF_GLOBAL_STATUS MSR is set.
+>>
+>> This commit deals with the issue simply by ignoring CondChgd bit.
+>>
+>> Here is explanation in detail.
+>>
+>> On x86 NMI watchdog uses performance monitoring feature to
+>> periodically signal NMI each time performance counter gets overflowed.
+>>
+>> intel_pmu_handle_irq() is called as a NMI_LOCAL handler from a NMI
+>> handler of NMI watchdog, perf_event_nmi_handler(). It identifies an
+>> owner of a given NMI by looking at overflow status bits in
+>> MSR_CORE_PERF_GLOBAL_STATUS MSR. If some of the bits are set, then it
+>> handles the given NMI as its own NMI.
+>>
+>> The problem is that the intel_pmu_handle_irq() doesn't distinguish
+>> CondChgd bit from other bits. Unlike the other status bits, CondChgd
+>> bit doesn't represent overflow status for performance counters. Thus,
+>> CondChgd bit cannot be thought of as a mark indicating a given NMI is
+>> NMI watchdog's. As a result, if CondChgd bit is set, any NMI is
+>> falsely handled by the NMI handler of NMI watchdog. Also, if type of
+>> the falsely handled NMI is either NMI_UNKNOWN, NMI_SERR or
+>> NMI_IO_CHECK, the corresponding action is never performed until
+>> CondChgd bit is cleared.
+>>
+>> I noticed this behavior on systems with Ivy Bridge processors: Intel
+>> Xeon CPU E5-2630 v2 and Intel Xeon CPU E7-8890 v2. On both systems,
+>> CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR has already been set
+>> in the beginning at boot. Then the CondChgd bit is immediately cleared
+>> by next wrmsr to MSR_CORE_PERF_GLOBAL_CTRL MSR and appears to remain
+>> 0.
+>>
+>> On the other hand, on older processors such as Nehalem, Xeon E7540,
+>> CondChgd bit is not set in the beginning at boot.
+>>
+>> I'm not sure about exact behavior of CondChgd bit, in particular when
+>> this bit is set. Although I read Intel System Programmer's Manual to
+>> figure out that, the descriptions I found are:
+>>
+>>    In 18.9.1:
+>>
+>>    "The MSR_PERF_GLOBAL_STATUS MSR also provides a ‘sticky bit’ to
+>>     indicate changes to the state of performancmonitoring hardware"
+>>
+>>    In Table 35-2 IA-32 Architectural MSRs
+>>
+>>    63 CondChg: status bits of this register has changed.
+>>
+>> These are different from the bahviour I see on the actual system as I
+>> explained above.
+>>
+>> At least, I think ignoring CondChgd bit should be enough for NMI
+>> watchdog perspective.
+>
+> As I said in a previous email, I ran into a similar problem and was going
+> to solve it by zeroing out all the registers on init (which probably would
+> have upset Peter :-) ).  This is a smaller solution and seems ok.  The
+> only downside is it is called in the nmi handler.
+>
+>
+> I am working with our customer to try and talk with Intel why this bit is
+> set to begin with.  Our customer says their BIOS doesn't use the PMU
+> during boot so it wasn't clear why this is now set on IVBs (though I don't
+> see them on Intel whitebox IVBs).
+>
 
-Therefore this commit message is completely inappropriate for the patch.
-It doesn't match the diff and it doesn't tell me why you are making the
-changes below.
+I'm also interested in the behaviour of CondChgd bit on Ivy Bridge processors.
 
-NAK until that is fixed.
+Do you know something about this behaviour?
 
-Mark.
+-- 
+Thanks.
+HATAYAMA, Daisuke
 
-> 
-> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-> Acked-by: Peter Griffin <peter.griffin@linaro.org>
-> ---
->  .../bindings/clock/st/st,clkgen-divmux.txt         | 28 +++++------
->  .../devicetree/bindings/clock/st/st,clkgen-mux.txt |  6 +--
->  .../devicetree/bindings/clock/st/st,clkgen-pll.txt | 17 ++++---
->  .../bindings/clock/st/st,clkgen-prediv.txt         |  8 ++--
->  .../devicetree/bindings/clock/st/st,clkgen-vcc.txt | 34 ++++++++------
->  .../devicetree/bindings/clock/st/st,clkgen.txt     | 54 +++++++++++++---------
->  .../devicetree/bindings/clock/st/st,quadfs.txt     | 15 +++---
->  7 files changed, 94 insertions(+), 68 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-divmux.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-divmux.txt
-> index ae56315..6247652 100644
-> --- a/Documentation/devicetree/bindings/clock/st/st,clkgen-divmux.txt
-> +++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-divmux.txt
-> @@ -24,26 +24,26 @@ Required properties:
->  
->  Example:
->  
-> -	clockgenA@fd345000 {
-> +	clockgen-a@fd345000 {
->  		reg = <0xfd345000 0xb50>;
->  
-> -		CLK_M_A1_DIV1: CLK_M_A1_DIV1 {
-> +		clk_m_a1_div1: clk-m-a1-div1 {
->  			#clock-cells = <1>;
->  			compatible = "st,clkgena-divmux-c32-odf1",
->  				     "st,clkgena-divmux";
->  
-> -			clocks = <&CLK_M_A1_OSC_PREDIV>,
-> -				 <&CLK_M_A1_PLL0 1>, /* PLL0 PHI1 */
-> -				 <&CLK_M_A1_PLL1 1>; /* PLL1 PHI1 */
-> -
-> -			clock-output-names = "CLK_M_RX_ICN_TS",
-> -					     "CLK_M_RX_ICN_VDP_0",
-> -					     "", /* Unused */
-> -					     "CLK_M_PRV_T1_BUS",
-> -					     "CLK_M_ICN_REG_12",
-> -					     "CLK_M_ICN_REG_10",
-> -					     "", /* Unused */
-> -					     "CLK_M_ICN_ST231";
-> +			clocks = <&clk_m_a1_osc_prediv>,
-> +				 <&clk_m_a1_pll0 1>, /* PLL0 PHI1 */
-> +				 <&clk_m_a1_pll1 1>; /* PLL1 PHI1 */
-> +
-> +			clock-output-names = "clk-m-rx-icn-ts",
-> +					     "clk-m-rx-icn-vdp-0",
-> +					     "", /* unused */
-> +					     "clk-m-prv-t1-bus",
-> +					     "clk-m-icn-reg-12",
-> +					     "clk-m-icn-reg-10",
-> +					     "", /* unused */
-> +					     "clk-m-icn-st231";
->  		};
->  	};
->  
-> diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
-> index 943e080..f1fa91c 100644
-> --- a/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
-> +++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-mux.txt
-> @@ -17,7 +17,7 @@ Required properties:
->  	"st,stih416-clkgenf-vcc-sd",	"st,clkgen-mux"
->  	"st,stih415-clkgen-a9-mux",	"st,clkgen-mux"
->  	"st,stih416-clkgen-a9-mux",	"st,clkgen-mux"
-> -
-> +	"st,stih407-clkgen-a9-mux",	"st,clkgen-mux"
->  
->  - #clock-cells : from common clock binding; shall be set to 0.
->  
-> @@ -27,10 +27,10 @@ Required properties:
->  
->  Example:
->  
-> -	CLK_M_HVA: CLK_M_HVA {
-> +	clk_m_hva: clk-m-hva@fd690868 {
->  		#clock-cells = <0>;
->  		compatible = "st,stih416-clkgenf-vcc-hva", "st,clkgen-mux";
->  		reg = <0xfd690868 4>;
->  
-> -		clocks = <&CLOCKGEN_F 1>, <&CLK_M_A1_DIV0 3>;
-> +		clocks = <&clockgen_f 1>, <&clk_m_a1_div0 3>;
->  	};
-> diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
-> index 81eb385..efb51cf 100644
-> --- a/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
-> +++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-pll.txt
-> @@ -19,11 +19,14 @@ Required properties:
->  	"st,stih415-plls-c32-ddr",	"st,clkgen-plls-c32"
->  	"st,stih416-plls-c32-a9",	"st,clkgen-plls-c32"
->  	"st,stih416-plls-c32-ddr",	"st,clkgen-plls-c32"
-> +	"st,stih407-plls-c32-a0",	"st,clkgen-plls-c32"
-> +	"st,stih407-plls-c32-a9",	"st,clkgen-plls-c32"
-> +	"st,stih407-plls-c32-c0_0",	"st,clkgen-plls-c32"
-> +	"st,stih407-plls-c32-c0_1",	"st,clkgen-plls-c32"
->  
->  	"st,stih415-gpu-pll-c32",	"st,clkgengpu-pll-c32"
->  	"st,stih416-gpu-pll-c32",	"st,clkgengpu-pll-c32"
->  
-> -
->  - #clock-cells : From common clock binding; shall be set to 1.
->  
->  - clocks : From common clock binding
-> @@ -32,17 +35,17 @@ Required properties:
->  
->  Example:
->  
-> -	clockgenA@fee62000 {
-> +	clockgen-a@fee62000 {
->  		reg = <0xfee62000 0xb48>;
->  
-> -		CLK_S_A0_PLL: CLK_S_A0_PLL {
-> +		clk_s_a0_pll: clk-s-a0-pll {
->  			#clock-cells = <1>;
->  			compatible = "st,clkgena-plls-c65";
->  
-> -			clocks = <&CLK_SYSIN>;
-> +			clocks = <&clk_sysin>;
->  
-> -			clock-output-names = "CLK_S_A0_PLL0_HS",
-> -					     "CLK_S_A0_PLL0_LS",
-> -					     "CLK_S_A0_PLL1";
-> +			clock-output-names = "clk-s-a0-pll0-hs",
-> +					     "clk-s-a0-pll0-ls",
-> +					     "clk-s-a0-pll1";
->  		};
->  	};
-> diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-prediv.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-prediv.txt
-> index 566c9d7..604766c 100644
-> --- a/Documentation/devicetree/bindings/clock/st/st,clkgen-prediv.txt
-> +++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-prediv.txt
-> @@ -20,17 +20,17 @@ Required properties:
->  
->  Example:
->  
-> -	clockgenA@fd345000 {
-> +	clockgen-a@fd345000 {
->  		reg = <0xfd345000 0xb50>;
->  
-> -		CLK_M_A2_OSC_PREDIV: CLK_M_A2_OSC_PREDIV {
-> +		clk_m_a2_osc_prediv: clk-m-a2-osc-prediv {
->  			#clock-cells = <0>;
->  			compatible = "st,clkgena-prediv-c32",
->  				     "st,clkgena-prediv";
->  
-> -			clocks = <&CLK_SYSIN>;
-> +			clocks = <&clk_sysin>;
->  
-> -			clock-output-names = "CLK_M_A2_OSC_PREDIV";
-> +			clock-output-names = "clk-m-a2-osc-prediv";
->  		};
->  	};
->  
-> diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen-vcc.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen-vcc.txt
-> index 4e3ff28..109b3ed 100644
-> --- a/Documentation/devicetree/bindings/clock/st/st,clkgen-vcc.txt
-> +++ b/Documentation/devicetree/bindings/clock/st/st,clkgen-vcc.txt
-> @@ -32,22 +32,30 @@ Required properties:
->  
->  Example:
->  
-> -	CLOCKGEN_C_VCC: CLOCKGEN_C_VCC {
-> +	clockgen_c_vcc: clockgen-c-vcc@0xfe8308ac {
->  		#clock-cells = <1>;
->  		compatible = "st,stih416-clkgenc", "st,clkgen-vcc";
->  		reg = <0xfe8308ac 12>;
->  
-> -		clocks = <&CLK_S_VCC_HD>, <&CLOCKGEN_C 1>,
-> -			<&CLK_S_TMDS_FROMPHY>, <&CLOCKGEN_C 2>;
-> -
-> -		clock-output-names  =
-> -			"CLK_S_PIX_HDMI",  "CLK_S_PIX_DVO",
-> -			"CLK_S_OUT_DVO",   "CLK_S_PIX_HD",
-> -			"CLK_S_HDDAC",     "CLK_S_DENC",
-> -			"CLK_S_SDDAC",     "CLK_S_PIX_MAIN",
-> -			"CLK_S_PIX_AUX",   "CLK_S_STFE_FRC_0",
-> -			"CLK_S_REF_MCRU",  "CLK_S_SLAVE_MCRU",
-> -			"CLK_S_TMDS_HDMI", "CLK_S_HDMI_REJECT_PLL",
-> -			"CLK_S_THSENS";
-> +		clocks = <&clk_s_vcc_hd>,
-> +			 <&clockgen_c 1>,
-> +			 <&clk_s_tmds_fromphy>,
-> +			 <&clockgen_c 2>;
-> +
-> +		clock-output-names  = "clk-s-pix-hdmi",
-> +				      "clk-s-pix-dvo",
-> +				      "clk-s-out-dvo",
-> +				      "clk-s-pix-hd",
-> +				      "clk-s-hddac",
-> +				      "clk-s-denc",
-> +				      "clk-s-sddac",
-> +				      "clk-s-pix-main",
-> +				      "clk-s-pix-aux",
-> +				      "clk-s-stfe-frc-0",
-> +				      "clk-s-ref-mcru",
-> +				      "clk-s-slave-mcru",
-> +				      "clk-s-tmds-hdmi",
-> +				      "clk-s-hdmi-reject-pll",
-> +				      "clk-s-thsens";
->  	};
->  
-> diff --git a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
-> index 49ec5ae..427bad8 100644
-> --- a/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
-> +++ b/Documentation/devicetree/bindings/clock/st/st,clkgen.txt
-> @@ -24,60 +24,72 @@ address is common of all subnode.
->  		quadfs_node {
->  			...
->  		};
-> +
-> +		mux_node {
-> +			...
-> +		};
-> +
-> +		vcc_node {
-> +			...
-> +		};
->  		...
->  	};
->  
->  This binding uses the common clock binding[1].
-> -Each subnode should use the binding discribe in [2]..[4]
-> +Each subnode should use the binding discribe in [2]..[7]
->  
->  [1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-> -[2] Documentation/devicetree/bindings/clock/st,quadfs.txt
-> -[3] Documentation/devicetree/bindings/clock/st,quadfs.txt
-> -[4] Documentation/devicetree/bindings/clock/st,quadfs.txt
-> +[2] Documentation/devicetree/bindings/clock/st,clkgen-divmux.txt
-> +[3] Documentation/devicetree/bindings/clock/st,clkgen-mux.txt
-> +[4] Documentation/devicetree/bindings/clock/st,clkgen-pll.txt
-> +[5] Documentation/devicetree/bindings/clock/st,clkgen-prediv.txt
-> +[6] Documentation/devicetree/bindings/clock/st,vcc.txt
-> +[7] Documentation/devicetree/bindings/clock/st,quadfs.txt
-> +
->  
->  Required properties:
->  - reg : A Base address and length of the register set.
->  
->  Example:
->  
-> -	clockgenA@fee62000 {
-> +	clockgen-a@fee62000 {
->  
->  		reg = <0xfee62000 0xb48>;
->  
-> -		CLK_S_A0_PLL: CLK_S_A0_PLL {
-> +		clk_s_a0_pll: clk-s-a0-pll {
->  			#clock-cells = <1>;
->  			compatible = "st,clkgena-plls-c65";
->  
-> -			clocks = <&CLK_SYSIN>;
-> +			clocks = <&clk-sysin>;
->  
-> -			clock-output-names = "CLK_S_A0_PLL0_HS",
-> -					     "CLK_S_A0_PLL0_LS",
-> -					     "CLK_S_A0_PLL1";
-> +			clock-output-names = "clk-s-a0-pll0-hs",
-> +					     "clk-s-a0-pll0-ls",
-> +					     "clk-s-a0-pll1";
->  		};
->  
-> -		CLK_S_A0_OSC_PREDIV: CLK_S_A0_OSC_PREDIV {
-> +		clk_s_a0_osc_prediv: clk-s-a0-osc-prediv {
->  			#clock-cells = <0>;
->  			compatible = "st,clkgena-prediv-c65",
->  				     "st,clkgena-prediv";
->  
-> -			clocks = <&CLK_SYSIN>;
-> +			clocks = <&clk_sysin>;
->  
-> -			clock-output-names = "CLK_S_A0_OSC_PREDIV";
-> +			clock-output-names = "clk-s-a0-osc-prediv";
->  		};
->  
-> -		CLK_S_A0_HS: CLK_S_A0_HS {
-> +		clk_s_a0_hs: clk-s-a0-hs {
->  			#clock-cells = <1>;
->  			compatible = "st,clkgena-divmux-c65-hs",
->  				     "st,clkgena-divmux";
->  
-> -			clocks = <&CLK_S_A0_OSC_PREDIV>,
-> -				 <&CLK_S_A0_PLL 0>, /* PLL0 HS */
-> -				 <&CLK_S_A0_PLL 2>; /* PLL1 */
-> +			clocks = <&clk-s_a0_osc_prediv>,
-> +				 <&clk-s_a0_pll 0>, /* pll0 hs */
-> +				 <&clk-s_a0_pll 2>; /* pll1 */
->  
-> -			clock-output-names = "CLK_S_FDMA_0",
-> -					     "CLK_S_FDMA_1",
-> -					     ""; /* CLK_S_JIT_SENSE */
-> -					     /* Fourth output unused */
-> +			clock-output-names = "clk-s-fdma-0",
-> +					     "clk-s-fdma-1",
-> +					     ""; /* clk-s-jit-sense */
-> +					     /* fourth output unused */
->  		};
->  	};
->  
-> diff --git a/Documentation/devicetree/bindings/clock/st/st,quadfs.txt b/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
-> index ec86d62..cedeb9c 100644
-> --- a/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
-> +++ b/Documentation/devicetree/bindings/clock/st/st,quadfs.txt
-> @@ -15,6 +15,9 @@ Required properties:
->    "st,stih416-quadfs432",	"st,quadfs"
->    "st,stih416-quadfs660-E",	"st,quadfs"
->    "st,stih416-quadfs660-F",	"st,quadfs"
-> +  "st,stih407-quadfs660-C",	"st,quadfs"
-> +  "st,stih407-quadfs660-D",	"st,quadfs"
-> +
->  
->  - #clock-cells : from common clock binding; shall be set to 1.
->  
-> @@ -32,14 +35,14 @@ Required properties:
->  
->  Example:
->  
-> -	CLOCKGEN_E: CLOCKGEN_E {
-> +	clockgen_e: clockgen-e@fd3208bc {
->                  #clock-cells = <1>;
->                  compatible = "st,stih416-quadfs660-E", "st,quadfs";
->                  reg = <0xfd3208bc 0xB0>;
->  
-> -                clocks = <&CLK_SYSIN>;
-> -                clock-output-names = "CLK_M_PIX_MDTP_0",
-> -                                        "CLK_M_PIX_MDTP_1",
-> -                                        "CLK_M_PIX_MDTP_2",
-> -                                        "CLK_M_MPELPC";
-> +                clocks = <&clk_sysin>;
-> +                clock-output-names = "clk-m-pix-mdtp-0",
-> +				     "clk-m-pix-mdtp-1",
-> +				     "clk-m-pix-mdtp-2",
-> +				     "clk-m-mpelpc";
->          };
-> -- 
-> 1.9.1
-> 
-> 
