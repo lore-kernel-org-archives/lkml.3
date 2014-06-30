@@ -1,69 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448AbaF3KsY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 06:48:24 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:48006 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755179AbaF3KsW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 06:48:22 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Mon, 30 Jun 2014 12:47:44 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Johan Hovold <johan@kernel.org>,
-        Janne Kanniainen <janne.kanniainen@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        linux-usb@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 2/2 v2] HID: leds: Use attribute-groups in MSI GT683R
- driver
-Message-ID: <20140630104744.GB2486@localhost>
-References: <20140625115541.GA1409@localhost>
- <1403711966-13003-1-git-send-email-janne.kanniainen@gmail.com>
- <20140625174109.GE1409@localhost>
- <alpine.LNX.2.00.1406252107070.15939@pobox.suse.cz>
- <CAK5ve-JnqpogKaG1V=mfvKEHMPb8ma4Zeyz9rF4kT-W2Gj=p0A@mail.gmail.com>
+	id S932170AbaF3Kwf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 06:52:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40784 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932077AbaF3Kwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 06:52:33 -0400
+Message-ID: <53B1416D.8020305@suse.de>
+Date: Mon, 30 Jun 2014 12:52:29 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK5ve-JnqpogKaG1V=mfvKEHMPb8ma4Zeyz9rF4kT-W2Gj=p0A@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Paul Mackerras <paulus@samba.org>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+CC: Vladimir Davydov <vdavydov@parallels.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: Regression in 3.15 on POWER8 with multipath SCSI
+References: <20140630103058.GA17747@iris.ozlabs.ibm.com>
+In-Reply-To: <20140630103058.GA17747@iris.ozlabs.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 03:55:10PM -0700, Bryan Wu wrote:
-> On Wed, Jun 25, 2014 at 12:09 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> > On Wed, 25 Jun 2014, Johan Hovold wrote:
-> >
-> >> Did you see the attribute-race series I posted? Not sure how best to
-> >> handle the dependency, as those patches should probably go in through
-> >> the LEDs tree, while the first patch in that series (adding the groups
-> >> field) is a dependency for this patch.
-> >>
-> >> Jiri, how would this best be solved?
-> >
-> > I think the best course of action here is to gather Acks from the
-> > respective maintainers, and take the whole lot trough a single tree
-> > (probably the leds tree in this case) to avoid unnecessary intra-tree
-> > dependencies in a rather straighforward situation like this.
-> 
-> I think the better place is HID/input tree, since this patch depends
-> on the initial one which is not in my tree.
-> I'm going to merge Johan's whole patchset and this patch probably
-> depends Johan's work too.
+On 06/30/2014 12:30 PM, Paul Mackerras wrote:
+> I have a machine on which 3.15 usually fails to boot, and 3.14 boots
+> every time.  The machine is a POWER8 2-socket server with 20 cores
+> (thus 160 CPUs), 128GB of RAM, and 7 SCSI disks connected via a
+> hardware-RAID-capable adapter which appears as two IPR controllers
+> which are both connected to each disk.  I am booting from a disk that
+> has Fedora 20 installed on it.
+>
+> After over two weeks of bisections, I can finally point to the commits
+> that cause the problems.  The culprits are:
+>
+> 3e9f1be1 dm mpath: remove process_queued_ios()
+> e8099177 dm mpath: push back requests instead of queueing
+> bcccff93 kobject: don't block for each kobject_uevent
+>
+> The interesting thing is that neither e8099177 nor bcccff93 cause
+> failures on their own, but with both commits in there are failures
+> where the system will fail to find /home on some occasions.
+>
+> With 3e9f1be1 included, the system appears to be prone to a deadlock
+> condition which typically causes the boot process to hang with this
+> message showing:
+>
+> A start job is running for Monitoring of LVM2 mirror...rogress polling
+>
+> (with a [***     ] thing before it where the asterisks move back and
+> forth).
+>
+> If I revert 63d832c3 ("dm mpath: really fix lockdep warning") ,
+> 4cdd2ad7 ("dm mpath: fix lock order inconsistency in
+> multipath_ioctl"), 3e9f1be1 and bcccff93, in that order, I get a
+> kernel that will boot every time.  The first two are later commits
+> that fix some problems with 3e9f1be1 (though not the problems I am
+> seeing).
+>
+> Can anyone see any reason why e8099177 and bcccff93 would interfere
+> with each other?
+>
+It might be running afoul with the 'cookie' mechanism.
+Device-mapper is using inserting a 'cookie' with the ioctl, and 
+listens to any event containing the cookie to ensure udev has 
+finished processing that device and hence the device node is 
+accessible. Added to this is the problem that we don't have any good 
+means of detecting any changes to device-mapper devices.
 
-Dmitry has ACKed the input-patch and Bryan has applied that one and the
-leds-patches to his tree (of which the first one is a dependency of this
-patch).
+EG look at this sequence of events:
 
-Jiri, are you saying that the gt683r-driver should go in through his
-tree as well, that is all three patches including the first that you
-have already applied? I just assumed your for-next branch was immutable,
-but perhaps I was mistaken.
+add dm-1
+remove dm-1
+add dm-1
 
-Thanks,
-Johan
+Originally udev would pick up the event, read the details from 
+sysfs, and return control to the kernel.
+With bcccff93 udev will _not_have a chance to read the details
+from sysfs for 'dm-1', as anything read from sysfs relating to 
+'dm-1' might infact refer to the _second_ 'add' event, which might 
+be a totally different device.
+As far as I know udev doesn't have any mechanism to drop events,
+so it'll always process all events. Assuming that the sysfs 
+attributes it reads _do_ relate to that event. If they don't things 
+become interesting ...
+
+(Actually, this issue was always present, especially with 
+multipathing. multipath occasionally can become sluggish when 
+processing events, so the same might happen with it. We've tried to 
+work around this, but never found a fool-proof way of doing so).
+
+Adding Kay as he might have some more insight here.
+
+Another thing:
+Do you run LVM on top of multipathing?
+If so, could you setup your system with _not_ using LVM and 
+disabling the LVM service?
+
+Reasoning here is that multipath should not be that susceptible to 
+changes here than LVM2 is (don't nail me on this, I not _that_ into 
+LVM2 details).
+
+And as the system is stuck while waiting for LVM it might indeed be 
+an side-effect when running LVM on top of multipathing.
+
+Cheers,
+
+Hannes
+-- 
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
