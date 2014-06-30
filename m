@@ -1,68 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756934AbaF3TLj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 15:11:39 -0400
-Received: from mga14.intel.com ([192.55.52.115]:59165 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756873AbaF3TLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 15:11:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,576,1400050800"; 
-   d="scan'208";a="555417711"
-Subject: Re: [PATCH char-misc-next v2 0/8] Enable dma driver for MIC X100
- Coprocessors
-From: Sudeep Dutt <sudeep.dutt@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: sudeep.dutt@intel.com, Dan Williams <dan.j.williams@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Nikhil Rao <nikhil.rao@intel.com>, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org
-In-Reply-To: <20140630162718.GE24179@kroah.com>
-References: <cover.1401397315.git.sudeep.dutt@intel.com>
-	 <1402934289.16234.6.camel@rbtaylor-desk1.amr.corp.intel.com>
-	 <1404142433.27474.6.camel@rbtaylor-desk1.amr.corp.intel.com>
-	 <20140630162718.GE24179@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 30 Jun 2014 12:04:29 -0700
-Message-ID: <1404155069.11388.11.camel@rbtaylor-desk1.amr.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	id S932217AbaF3TLy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 15:11:54 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:47667 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932114AbaF3TLu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 15:11:50 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Wim Van Sebroeck <wim@iguana.be>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [RFC PATCH 1/6] kernel: Add support for restart notifier call chain
+Date: Mon, 30 Jun 2014 12:11:34 -0700
+Message-Id: <1404155499-21177-2-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404155499-21177-1-git-send-email-linux@roeck-us.net>
+References: <1404155499-21177-1-git-send-email-linux@roeck-us.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-30 at 09:27 -0700, Greg Kroah-Hartman wrote:
-> On Mon, Jun 30, 2014 at 08:33:53AM -0700, Sudeep Dutt wrote:
-> > On Mon, 2014-06-16 at 08:58 -0700, Sudeep Dutt wrote:
-> > > On Thu, 2014-05-29 at 14:23 -0700, Sudeep Dutt wrote:
-> > > > ChangeLog:
-> > > > =========
-> > > > v1 => v2:
-> > > > a) MIC bus driver cleanups and device release callback fix in patch 2,
-> > > >    as per feedback from Greg Kroah-Hartman.
-> > > > 
-> > > > v1: Initial post @ https://lkml.org/lkml/2014/5/27/819
-> > > > 
-> > > 
-> > > Hi Greg/Dan,
-> > > 
-> > > We have addressed the feedback received so far. Please take a look at
-> > > this patch series.
-> > > 
-> > 
-> > Another gentle reminder to take a look at this patch series. Greg/Dan,
-> > please let us know what we can do to speed things up here.
-> 
-> Wait for me to get back from vacation next week :)
-> 
+Various drivers implement architecture and/or device specific means
+to restart (reset) the system. Various mechanisms have been implemented
+to support those schemes. The best known mechanism is arm_pm_restart,
+which is a function pointer to be set either from platform specific code
+or from drivers. Another mechanism is to use hardware watchdogs to issue
+a reset; this mechanism is used if there is no other method available
+to reset a board or system. Two examples are alim7101_wdt, which currently
+uses the reboot notifier to trigger a reset, and moxart_wdt, which registers
+the arm_pm_restart function.
 
-Sounds good. I do see a minor conflict in patch 3 with v3.16-rc1 which
-can be fixed up with a trivial Makefile change for adding the driver to
-the end of the file. Please let me know if you want me to resend the
-patch series with that fixed up.
+The existing mechanisms have a number of drawbacks. Typically only one scheme
+to restart the system is supported (at least if arm_pm_restart is used).
+At least in theory there can be mutliple means to restart the system, some of
+which may be less desirable (for example one mechanism may only reset the CPU,
+while another may reset the entire system). Using arm_pm_restart can also be
+racy if the function pointer is set from a driver, as the driver may be in
+the process of being unloaded when arm_pm_restart is called.
+Using the reboot notifier is always racy, as it is unknown if and when
+other functions using the reboot notifier have completed execution
+by the time the watchdog fires.
 
-Thanks,
-Sudeep Dutt
+To solve the problem, introduce a system restart notifier. This notifier
+is expected to be called from the architecture specific machine_restart()
+function. Drivers providing system restart functionality (such as the watchdog
+drivers mentioned above) are expected to register with this notifier.
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ include/linux/notifier.h |  1 +
+ include/linux/reboot.h   |  2 ++
+ kernel/notifier.c        |  6 ++++++
+ kernel/reboot.c          | 32 ++++++++++++++++++++++++++++++++
+ 4 files changed, 41 insertions(+)
+
+diff --git a/include/linux/notifier.h b/include/linux/notifier.h
+index d14a4c3..3d7d2fc 100644
+--- a/include/linux/notifier.h
++++ b/include/linux/notifier.h
+@@ -210,6 +210,7 @@ static inline int notifier_to_errno(int ret)
+ #define KBD_POST_KEYSYM		0x0005 /* Called after keyboard keysym interpretation */
+ 
+ extern struct blocking_notifier_head reboot_notifier_list;
++extern struct blocking_notifier_head restart_notifier_list;
+ 
+ #endif /* __KERNEL__ */
+ #endif /* _LINUX_NOTIFIER_H */
+diff --git a/include/linux/reboot.h b/include/linux/reboot.h
+index 48bf152..f8e7e0a 100644
+--- a/include/linux/reboot.h
++++ b/include/linux/reboot.h
+@@ -38,6 +38,8 @@ extern int reboot_force;
+ extern int register_reboot_notifier(struct notifier_block *);
+ extern int unregister_reboot_notifier(struct notifier_block *);
+ 
++extern int register_restart_notifier(struct notifier_block *);
++extern int unregister_restart_notifier(struct notifier_block *);
+ 
+ /*
+  * Architecture-specific implementations of sys_reboot commands.
+diff --git a/kernel/notifier.c b/kernel/notifier.c
+index 4803da6..2f2b071 100644
+--- a/kernel/notifier.c
++++ b/kernel/notifier.c
+@@ -14,6 +14,12 @@
+ BLOCKING_NOTIFIER_HEAD(reboot_notifier_list);
+ 
+ /*
++ *	Notifier list for kernel code which wants to be called
++ *	to restart the system.
++ */
++BLOCKING_NOTIFIER_HEAD(restart_notifier_list);
++
++/*
+  *	Notifier chain core routines.  The exported routines below
+  *	are layered on top of these, with appropriate locking added.
+  */
+diff --git a/kernel/reboot.c b/kernel/reboot.c
+index a3a9e24..374896f 100644
+--- a/kernel/reboot.c
++++ b/kernel/reboot.c
+@@ -104,6 +104,38 @@ int unregister_reboot_notifier(struct notifier_block *nb)
+ }
+ EXPORT_SYMBOL(unregister_reboot_notifier);
+ 
++/**
++ *	register_restart_notifier - Register function to be called to reset
++ *				    the system
++ *	@nb: Info about notifier function to be called
++ *
++ *	Registers a function with the list of functions
++ *	to be called to restart the system.
++ *
++ *	Currently always returns zero, as blocking_notifier_chain_register()
++ *	always returns zero.
++ */
++int register_restart_notifier(struct notifier_block *nb)
++{
++	return blocking_notifier_chain_register(&restart_notifier_list, nb);
++}
++EXPORT_SYMBOL(register_restart_notifier);
++
++/**
++ *	unregister_restart_notifier - Unregister previously registered
++ *				      restart notifier
++ *	@nb: Hook to be unregistered
++ *
++ *	Unregisters a previously registered restart notifier function.
++ *
++ *	Returns zero on success, or %-ENOENT on failure.
++ */
++int unregister_restart_notifier(struct notifier_block *nb)
++{
++	return blocking_notifier_chain_unregister(&restart_notifier_list, nb);
++}
++EXPORT_SYMBOL(unregister_restart_notifier);
++
+ void migrate_to_reboot_cpu(void)
+ {
+ 	/* The boot cpu is always logical cpu 0 */
+-- 
+1.9.1
 
