@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283AbaF3MTb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:19:31 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51966 "EHLO
+	id S1756849AbaF3MT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:19:28 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51949 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753204AbaF3LxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753094AbaF3LxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 060/181] USB: cdc-acm: fix broken runtime suspend
-Date: Mon, 30 Jun 2014 13:51:21 +0200
-Message-Id: <1effe732d46d18b95d3f7c635997a084c8cd4c19.1404128998.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 073/181] lz4: ensure length does not wrap
+Date: Mon, 30 Jun 2014 13:51:34 +0200
+Message-Id: <1f4abc9e35ad7340d3cbd141b816e68f3a796888.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,133 +24,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 140cb81ac8c625942a1d695875932c615767a526 upstream.
+commit 206204a1162b995e2185275167b22468c00d6b36 upstream.
 
-The current ACM runtime-suspend implementation is broken in several
-ways:
+Given some pathologically compressed data, lz4 could possibly decide to
+wrap a few internal variables, causing unknown things to happen.  Catch
+this before the wrapping happens and abort the decompression.
 
-Firstly, it buffers only the first write request being made while
-suspended -- any further writes are silently dropped.
-
-Secondly, writes being dropped also leak write urbs, which are never
-reclaimed (until the device is unbound).
-
-Thirdly, even the single buffered write is not cleared at shutdown
-(which may happen before the device is resumed), something which can
-lead to another urb leak as well as a PM usage-counter leak.
-
-Fix this by implementing a delayed-write queue using urb anchors and
-making sure to discard the queue properly at shutdown.
-
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
-
-Reported-by: Xiao Jin <jin.xiao@intel.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Reported-by: "Don A. Bailey" <donb@securitymouse.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/class/cdc-acm.c | 32 ++++++++++++++++++++++----------
- drivers/usb/class/cdc-acm.h |  2 +-
- 2 files changed, 23 insertions(+), 11 deletions(-)
+ lib/lz4/lz4_decompress.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 19263a3f3d0d..d9e346cf1eb8 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -559,6 +559,8 @@ static void acm_port_destruct(struct tty_port *port)
- static void acm_port_shutdown(struct tty_port *port)
- {
- 	struct acm *acm = container_of(port, struct acm, port);
-+	struct urb *urb;
-+	struct acm_wb *wb;
- 	int i;
- 
- 	dev_dbg(&acm->control->dev, "%s\n", __func__);
-@@ -567,6 +569,16 @@ static void acm_port_shutdown(struct tty_port *port)
- 	if (!acm->disconnected) {
- 		usb_autopm_get_interface(acm->control);
- 		acm_set_control(acm, acm->ctrlout = 0);
-+
-+		for (;;) {
-+			urb = usb_get_from_anchor(&acm->delayed);
-+			if (!urb)
-+				break;
-+			wb = urb->context;
-+			wb->use = 0;
-+			usb_autopm_put_interface_async(acm->control);
-+		}
-+
- 		usb_kill_urb(acm->ctrlurb);
- 		for (i = 0; i < ACM_NW; i++)
- 			usb_kill_urb(acm->wb[i].urb);
-@@ -634,12 +646,9 @@ static int acm_tty_write(struct tty_struct *tty,
- 
- 	usb_autopm_get_interface_async(acm->control);
- 	if (acm->susp_count) {
--		if (!acm->delayed_wb)
--			acm->delayed_wb = wb;
--		else
--			usb_autopm_put_interface_async(acm->control);
-+		usb_anchor_urb(wb->urb, &acm->delayed);
- 		spin_unlock_irqrestore(&acm->write_lock, flags);
--		return count;	/* A white lie */
-+		return count;
- 	}
- 	usb_mark_last_busy(acm->dev);
- 
-@@ -1176,6 +1185,7 @@ made_compressed_probe:
- 		acm->bInterval = epread->bInterval;
- 	tty_port_init(&acm->port);
- 	acm->port.ops = &acm_port_ops;
-+	init_usb_anchor(&acm->delayed);
- 
- 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
- 	if (!buf) {
-@@ -1445,7 +1455,7 @@ static int acm_suspend(struct usb_interface *intf, pm_message_t message)
- static int acm_resume(struct usb_interface *intf)
- {
- 	struct acm *acm = usb_get_intfdata(intf);
--	struct acm_wb *wb;
-+	struct urb *urb;
- 	int rv = 0;
- 
- 	spin_lock_irq(&acm->read_lock);
-@@ -1457,10 +1467,12 @@ static int acm_resume(struct usb_interface *intf)
- 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
- 		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
- 
--		if (acm->delayed_wb) {
--			wb = acm->delayed_wb;
--			acm->delayed_wb = NULL;
--			acm_start_wb(acm, wb);
-+		for (;;) {
-+			urb = usb_get_from_anchor(&acm->delayed);
-+			if (!urb)
-+				break;
-+
-+			acm_start_wb(acm, urb->context);
+diff --git a/lib/lz4/lz4_decompress.c b/lib/lz4/lz4_decompress.c
+index df6839e3ce08..99a03acb7d47 100644
+--- a/lib/lz4/lz4_decompress.c
++++ b/lib/lz4/lz4_decompress.c
+@@ -72,6 +72,8 @@ static int lz4_uncompress(const char *source, char *dest, int osize)
+ 			len = *ip++;
+ 			for (; len == 255; length += 255)
+ 				len = *ip++;
++			if (unlikely(length > (size_t)(length + len)))
++				goto _output_error;
+ 			length += len;
  		}
  
- 		/*
-diff --git a/drivers/usb/class/cdc-acm.h b/drivers/usb/class/cdc-acm.h
-index 0f76e4af600e..1683ac161cf6 100644
---- a/drivers/usb/class/cdc-acm.h
-+++ b/drivers/usb/class/cdc-acm.h
-@@ -117,7 +117,7 @@ struct acm {
- 	unsigned int throttled:1;			/* actually throttled */
- 	unsigned int throttle_req:1;			/* throttle requested */
- 	u8 bInterval;
--	struct acm_wb *delayed_wb;			/* write queued for a device about to be woken */
-+	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
- };
- 
- #define CDC_DATA_INTERFACE_TYPE	0x0a
 -- 
 2.0.0
 
