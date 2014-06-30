@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756082AbaF3XLk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 19:11:40 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:5646 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563AbaF3XLi (ORCPT
+	id S1753601AbaF3XRf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 19:17:35 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:44948 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539AbaF3XRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 19:11:38 -0400
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-To: Heinrich Schuchardt <xypron.glpk@gmx.de>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/1] script/kconfig: remove a warning for menucofig
-Thread-Topic: [PATCH 1/1] script/kconfig: remove a warning for menucofig
-Thread-Index: AQHPlBHdItIp9bBBQ0OFqHOm4gNIfZuJ4g6AgABmSBA=
-Date: Mon, 30 Jun 2014 23:10:32 +0000
-Message-ID: <1267BB84A242B24E81E0C0C8955CFFC061A30C1D@G9W0343.americas.hpqcorp.net>
-References: <1404098187-9638-1-git-send-email-zhen-hual@hp.com>
- <53B1982F.4030504@gmx.de>
-In-Reply-To: <53B1982F.4030504@gmx.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [15.201.58.17]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 30 Jun 2014 19:17:33 -0400
 MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1406301330240.28307@pobox.suse.cz>
+References: <20140625115541.GA1409@localhost> <1403711966-13003-1-git-send-email-janne.kanniainen@gmail.com>
+ <20140625174109.GE1409@localhost> <alpine.LNX.2.00.1406252107070.15939@pobox.suse.cz>
+ <CAK5ve-JnqpogKaG1V=mfvKEHMPb8ma4Zeyz9rF4kT-W2Gj=p0A@mail.gmail.com>
+ <20140630104744.GB2486@localhost> <alpine.LNX.2.00.1406301330240.28307@pobox.suse.cz>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Mon, 30 Jun 2014 16:17:10 -0700
+Message-ID: <CAK5ve-+-wkiG6n2Z5aPXQ7gYEDPwcAtPzjOLB+wyi+7h+8=8Hg@mail.gmail.com>
+Subject: Re: [PATCH 2/2 v2] HID: leds: Use attribute-groups in MSI GT683R driver
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Johan Hovold <johan@kernel.org>,
+        Janne Kanniainen <janne.kanniainen@gmail.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        linux-usb@vger.kernel.org, linux-input@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5UNBiCp017944
 
-When malloc for jump, 
-if (head && location) {
-	jump = xmalloc(sizeof(struct jump_key));
-	....
-}
-And here it is used:
-if (head && location && menu == location)
-	jump->offset = strlen(r->s);
-
-
-So I think when jump is used, it must not be NULL; then !=NULL is not needed.
------Original Message-----
-From: Heinrich Schuchardt [mailto:xypron.glpk@gmx.de] 
-Sent: Tuesday, July 01, 2014 1:03 AM
-To: Li, Zhen-Hua; Yann E. MORIN; linux-kbuild@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] script/kconfig: remove a warning for menucofig
-
-On 30.06.2014 05:16, Li, Zhen-Hua wrote:
-> There is a warning when run "make menuconfig".
+On Mon, Jun 30, 2014 at 4:33 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Mon, 30 Jun 2014, Johan Hovold wrote:
 >
-> scripts/kconfig/menu.c: In function â€˜get_symbol_strâ€™:
-> scripts/kconfig/menu.c:591:18: warning: â€˜jumpâ€™ may be used uninitialized in
-> this function [-Wmaybe-uninitialized]
->       jump->offset = strlen(r->s);
->                    ^
-> scripts/kconfig/menu.c:551:19: note: â€˜jumpâ€™ was declared here
->    struct jump_key *jump;
->                     ^
+>> > I think the better place is HID/input tree, since this patch depends
+>> > on the initial one which is not in my tree.
+>> > I'm going to merge Johan's whole patchset and this patch probably
+>> > depends Johan's work too.
+>>
+>> Dmitry has ACKed the input-patch and Bryan has applied that one and the
+>> leds-patches to his tree (of which the first one is a dependency of this
+>> patch).
+>>
+>> Jiri, are you saying that the gt683r-driver should go in through his
+>> tree as well, that is all three patches including the first that you
+>> have already applied? I just assumed your for-next branch was immutable,
+>> but perhaps I was mistaken.
 >
-> It is because the compiler think "jump" is not initialized, though in fact
-> it is already initialized.
+> Well, for-next branch is a collection of all the topic branches I am
+> queuing for the following merge window.
 >
-> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
-> ---
->   scripts/kconfig/menu.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
+> I am never really rebasing it, but I can definitely not include
+> 'for-3.17/hid-gt683r' topic branch in the pile I will be sending to Linus
+> (all the scheduled branches are getting merged into 'for-linus' only when
+> merge window open). So the only potential conflict between hid.git and
+> Bryan's tree would be in linux-next (and probably there will be none, git
+> can handle duplicate patches nicely).
 >
-> diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
-> index a26cc5d..584e0fc 100644
-> --- a/scripts/kconfig/menu.c
-> +++ b/scripts/kconfig/menu.c
-> @@ -548,7 +548,7 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
->   {
->   	int i, j;
->   	struct menu *submenu[8], *menu, *location = NULL;
-> -	struct jump_key *jump;
-> +	struct jump_key *jump = NULL;
+> So once Bryan confirms he's queued it (please preserve my Signoff from my
+> tree), then I will just not include for-3.17/hid-gt683r branch in pull
+> request to Linus and all is fine.
 >
->   	str_printf(r, _("Prompt: %s\n"), _(prop->text));
->   	menu = prop->menu->parent;
->
-Hello Zhen-Hua,
 
-the patch looks incomplete to me. A check
-jump != NULL
-should be added before accessing parts of structure jump_key.
+I'm OK to merge Janne's first patch for HID GT683R through my tree
+with you guys' SOB.
+I'm also OK to merge this incremental patchset here. Please confirm it
+if I didn't misunderstand here.
 
-Best regards
+Also Janne or someone, can you post the original first patch to me or
+point me where is it?
 
-Heinrich Schuchardt
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks,
+-Bryan
