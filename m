@@ -1,222 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842AbaF3NCz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 09:02:55 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:63106 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754510AbaF3NCZ (ORCPT
+	id S1755941AbaF3NDK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 09:03:10 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:51625 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751609AbaF3NDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 09:02:25 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kishon@ti.com
-Cc: lee.jones@linaro.org, kernel@stlinux.com
-Subject: [PATCH 4/5] phy: miphy365x: Represent each PHY channel as a subnode
-Date: Mon, 30 Jun 2014 14:01:56 +0100
-Message-Id: <1404133317-25953-5-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1404133317-25953-1-git-send-email-lee.jones@linaro.org>
-References: <1404133317-25953-1-git-send-email-lee.jones@linaro.org>
+	Mon, 30 Jun 2014 09:03:07 -0400
+Message-ID: <53B16006.1080605@vmware.com>
+Date: Mon, 30 Jun 2014 15:03:02 +0200
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Christopher Friedt <chrisfriedt@gmail.com>
+CC: dri-devel <dri-devel@lists.freedesktop.org>, linux-kernel@vger.kernel.org,
+        Dave Airlie <airlied@gmail.com>, linux-graphics-maintainer@vmware.com
+Subject: Re: [PATCH 1/1] drm/vmwgfx: correct fb_fix_screeninfo.line_length
+References: <1395967502-71219-1-git-send-email-chrisfriedt@gmail.com> <CAPM=9tx4hdU0PZqdZcCd-x3HMu+6ZsGibeOHZPLe3OpW9Wsa0g@mail.gmail.com> <533A8E52.5050304@vmware.com> <CAF4BF-Rmxqbbd_xroQbRTWeE2NfKAZm=Jm7SG2bNppHV2odYNA@mail.gmail.com> <53B14E9E.3040505@vmware.com> <CAF4BF-T4VZQtd_3wWfNQ_==KJE0z0N5XonG4jcy=Ys5x_XxJ=w@mail.gmail.com> <53B15A94.3010402@vmware.com> <CAF4BF-TiHkaaOejH6p1QnnepfOxmvirds3vQD2YdXih_6kkUpQ@mail.gmail.com>
+In-Reply-To: <CAF4BF-TiHkaaOejH6p1QnnepfOxmvirds3vQD2YdXih_6kkUpQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- drivers/phy/phy-miphy365x.c | 104 ++++++++++++++++++++++++++++++++------------
- 1 file changed, 75 insertions(+), 29 deletions(-)
+On 06/30/2014 02:49 PM, Christopher Friedt wrote:
+> On Mon, Jun 30, 2014 at 8:39 AM, Thomas Hellstrom <thellstrom@vmware.com> wrote:
+>> xf86-video-vmware in kms mode uses the kernel driver to set these registers.
+>> FWIW, the modesetting part of the kernel driver uses SVGA_REG_PITCHLOCK
+>> instead of
+>> SVGA_REG_BYTES_PER_LINE to set the pitch. That's probably where the
+>> clash happens.
+> That sounds a bit more accurate. Should kms and fbdev be setting both
+> registers then?
 
-diff --git a/drivers/phy/phy-miphy365x.c b/drivers/phy/phy-miphy365x.c
-index 1109f42..2c4ea6e 100644
---- a/drivers/phy/phy-miphy365x.c
-+++ b/drivers/phy/phy-miphy365x.c
-@@ -17,6 +17,7 @@
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
-+#include <linux/of_address.h>
- #include <linux/clk.h>
- #include <linux/phy/phy.h>
- #include <linux/delay.h>
-@@ -144,6 +145,7 @@ struct miphy365x {
- 	void __iomem *pcie;
- 	u8 type;
- 	u8 port;
-+	bool enabled;
- };
- 
- struct miphy365x_dev {
-@@ -468,7 +470,7 @@ static struct phy *miphy365x_xlate(struct device *dev,
- 	struct miphy365x_dev *state = dev_get_drvdata(dev);
- 	u8 port, type;
- 
--	if (args->count != 2) {
-+	if (args->args_count != 2) {
- 		dev_err(dev, "Invalid number of cells in 'phy' property\n");
- 		return ERR_PTR(-EINVAL);
- 	}
-@@ -484,6 +486,11 @@ static struct phy *miphy365x_xlate(struct device *dev,
- 	if (WARN_ON(port >= ARRAY_SIZE(ports)))
- 		return ERR_PTR(-EINVAL);
- 
-+	if (!state->phys[port].enabled) {
-+		dev_warn(dev, "PHY port %d is disabled\n", port);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
- 	if (type == MIPHY_TYPE_SATA)
- 		state->phys[port].base = state->phys[port].sata;
- 	else if (type == MIPHY_TYPE_PCIE)
-@@ -503,38 +510,75 @@ static struct phy_ops miphy365x_ops = {
- 	.owner		= THIS_MODULE,
- };
- 
--static int miphy365x_get_base_addr(struct platform_device *pdev,
--				    struct miphy365x_phy *phy, u8 port)
-+static int miphy365x_get_base_addr_one(struct platform_device *pdev,
-+				       struct miphy365x *phy,
-+				       struct device_node *child,
-+				       int index)
- {
--	struct resource *res;
--	char type[6];
-+	void __iomem *base;
-+	const char *name;
-+	int ret;
- 
--	sprintf(type, "sata%d", port);
-+	base = of_iomap(child, index);
-+	if (!base) {
-+		dev_err(&pdev->dev, "Failed to map %s\n", child->full_name);
-+		return -EINVAL;
-+	}
- 
--	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, type);
--	if (!res)
--		return -ENODEV;
-+	ret = of_property_read_string_index(child, "reg-names", index, &name);
-+	if (ret) {
-+		dev_err(&pdev->dev,
-+			"%s: no reg-names property not found\n", child->name);
-+		return ret;
-+	}
- 
--	phy->sata = devm_ioremap(&pdev->dev, res->start, resource_size(res));
--	if (!phy->sata)
--		return -ENOMEM;
-+	if (!strncmp(name, "sata", 4))
-+		phy->sata = base;
-+	else if (!strncmp(name, "pcie", 4))
-+		phy->pcie = base;
-+	else {
-+		dev_err(&pdev->dev, "reg-names in %s not sata or pcie: %s",
-+			child->name, name);
-+		return -EINVAL;
-+	}
- 
--	sprintf(type, "pcie%d", port);
-+	return 0;
-+}
- 
--	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, type);
--	if (!res)
--		return -ENODEV;
-+static int miphy365x_get_base_addr(struct platform_device *pdev,
-+				   struct miphy365x *phy,
-+				   struct device_node *child)
-+{
-+	int index;
-+	int ret;
- 
--	phy->pcie = devm_ioremap(&pdev->dev, res->start, resource_size(res));
--	if (!phy->pcie)
--		return -ENOMEM;
-+	/* Each port handles SATA or PCIE. */
-+	for (index = 0; index < 2; index++) {
-+		ret = miphy365x_get_base_addr_one(pdev, phy,
-+						  child, index);
-+		if (ret)
-+			return ret;
-+	}
- 
- 	return 0;
- }
- 
--static int miphy365x_of_probe(struct device_node *np,
-+static int miphy365x_of_probe(struct platform_device *pdev,
- 			      struct miphy365x_dev *phy_dev)
- {
-+	struct device_node *np = pdev->dev.of_node;
-+	struct device_node *child;
-+	int child_count = 0;
-+
-+	for_each_child_of_node(np, child)
-+		child_count++;
-+
-+	if (child_count != ARRAY_SIZE(ports)) {
-+		dev_err(&pdev->dev, "%d ports supported, %d supplied\n",
-+			ARRAY_SIZE(ports), child_count);
-+		return -EINVAL;
-+	}
-+
- 	phy_dev->regmap = syscon_regmap_lookup_by_phandle(np, "st,syscfg");
- 	if (IS_ERR(phy_dev->regmap)) {
- 		dev_err(phy_dev->dev, "No syscfg phandle specified\n");
-@@ -556,11 +600,10 @@ static int miphy365x_of_probe(struct device_node *np,
- 
- static int miphy365x_probe(struct platform_device *pdev)
- {
--	struct device_node *np = pdev->dev.of_node;
-+	struct device_node *child, *np = pdev->dev.of_node;
- 	struct miphy365x_dev *phy_dev;
- 	struct device *dev = &pdev->dev;
- 	struct phy_provider *provider;
--	u8 port;
- 	int ret;
- 
- 	if (!np) {
-@@ -572,7 +615,7 @@ static int miphy365x_probe(struct platform_device *pdev)
- 	if (!phy_dev)
- 		return -ENOMEM;
- 
--	ret = miphy365x_of_probe(np, phy_dev);
-+	ret = miphy365x_of_probe(pdev, phy_dev);
- 	if (ret)
- 		return ret;
- 
-@@ -582,8 +625,9 @@ static int miphy365x_probe(struct platform_device *pdev)
- 
- 	mutex_init(&phy_dev->miphy_mutex);
- 
--	for (port = 0; port < ARRAY_SIZE(ports); port++) {
-+	for_each_child_of_node(np, child) {
- 		struct phy *phy;
-+		static int port = 0;
- 
- 		phy = devm_phy_create(dev, &miphy365x_ops, NULL);
- 		if (IS_ERR(phy)) {
-@@ -591,15 +635,17 @@ static int miphy365x_probe(struct platform_device *pdev)
- 			return PTR_ERR(phy);
- 		}
- 
--		phy_dev->phys[port].phy  = phy;
--		phy_dev->phys[port].port = port;
--
--		ret = miphy365x_get_base_addr(pdev,
--					&phy_dev->phys[port], port);
-+		ret = miphy365x_get_base_addr(pdev, &phy_dev->phys[port],
-+					      child);
- 		if (ret)
- 			return ret;
- 
-+		phy_dev->phys[port].phy  = phy;
-+		phy_dev->phys[port].port = port;
-+		phy_dev->phys[port].enabled = !!of_device_is_available(child);
-+
- 		phy_set_drvdata(phy, &phy_dev->phys[port]);
-+		port++;
- 	}
- 
- 	provider = devm_of_phy_provider_register(dev, miphy365x_xlate);
--- 
-1.8.3.2
+>From a quick browse of the device code, it looks like
+SVGA_REG_BYTES_PER_LINE is intended for reading only, but I've asked the
+experts that are on US time.
 
+However, since the function
+vmw_kms_write_svga()
+should set up the pitch correctly using PITCHLOCK, could you just try
+reverting the last line of your patch, the one that says
+
+vmw_write(vmw_priv, SVGA_REG_BYTES_PER_LINE, info->fix.line_length);
+
+That should hopefully fix the new bug and leave fbdev working as you
+intended.
+
+Thanks,
+Thomas
