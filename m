@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493AbaF3HW6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 03:22:58 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754405AbaF3HW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 03:22:57 -0400
-Message-ID: <53B11047.3000105@nod.at>
-Date: Mon, 30 Jun 2014 09:22:47 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: donb@securitymouse.com, markus@oberhumer.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: lzo1x_decompress_safe: Macro compares unsigned to 0  (NO_EFFECT)
-References: <53b0f0f715b96_146f12c1338333fa@209.249.196.67.mail>
-In-Reply-To: <53b0f0f715b96_146f12c1338333fa@209.249.196.67.mail>
-X-Enigmail-Version: 1.6
-X-Forwarded-Message-Id: <53b0f0f715b96_146f12c1338333fa@209.249.196.67.mail>
-Content-Type: text/plain; charset=UTF-8
+	id S1754509AbaF3HcP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 03:32:15 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:54597 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752140AbaF3HcO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 03:32:14 -0400
+Message-ID: <1404113529.21614.1.camel@phoenix>
+Subject: [PATCH 1/2] regulator: act8865: Remove error variable in
+ act8865_pmic_probe
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Beniamino Galvani <b.galvani@gmail.com>,
+        "Wenyou.Yang" <wenyou.yang@atmel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Mon, 30 Jun 2014 15:32:09 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was introduced by:
-commit 206a81c18401c0cde6e579164f752c4b147324ce
-Author: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date:   Fri Jun 20 22:00:53 2014 -0700
+Simply use ret variable instead.
+Also remove unneeded initialize for ret variable.
 
-    lzo: properly check for overruns
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/act8865-regulator.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-Thanks,
-//richard
-
--------- Original-Nachricht --------
-Betreff: New Defects reported by Coverity Scan for Linux
-Datum: Sun, 29 Jun 2014 22:09:11 -0700
-Von: scan-admin@coverity.com
-
-
-Hi,
-
-
-Please find the latest report on new defect(s) introduced to Linux found with Coverity Scan.
-
-Defect(s) Reported-by: Coverity Scan
-Showing 1 of 1 defect(s)
-
-
-** CID 1224102:  Macro compares unsigned to 0  (NO_EFFECT)
-/lib/lzo/lzo1x_decompress_safe.c: 225 in lzo1x_decompress_safe()
-
-
-________________________________________________________________________________________________________
-*** CID 1224102:  Macro compares unsigned to 0  (NO_EFFECT)
-/lib/lzo/lzo1x_decompress_safe.c: 225 in lzo1x_decompress_safe()
-219     			op += t;
-220     			ip += t;
-221     		} else
-222     #endif
-223     		{
-224     			NEED_IP(t, 3);
->>>     CID 1224102:  Macro compares unsigned to 0  (NO_EFFECT)
->>>     This greater-than-or-equal-to-zero comparison of an unsigned value is always true. "t + 0UL >= 0UL".
-225     			NEED_OP(t, 0);
-226     			while (t > 0) {
-227     				*op++ = *ip++;
-228     				t--;
-229     			}
-230     		}
-
-
-________________________________________________________________________________________________________
-To view the defects in Coverity Scan visit, http://scan.coverity.com/projects/128?tab=overview
-
-To unsubscribe from the email notification for new defects, http://scan5.coverity.com/cgi-bin/unsubscribe.py
-
-
+diff --git a/drivers/regulator/act8865-regulator.c b/drivers/regulator/act8865-regulator.c
+index fe2c038..f07be36 100644
+--- a/drivers/regulator/act8865-regulator.c
++++ b/drivers/regulator/act8865-regulator.c
+@@ -278,8 +278,7 @@ static int act8865_pmic_probe(struct i2c_client *client,
+ 	struct act8865 *act8865;
+ 	struct device_node *of_node[ACT8865_REG_NUM];
+ 	int i;
+-	int ret = -EINVAL;
+-	int error;
++	int ret;
+ 
+ 	if (dev->of_node && !pdata) {
+ 		const struct of_device_id *id;
+@@ -307,10 +306,10 @@ static int act8865_pmic_probe(struct i2c_client *client,
+ 
+ 	act8865->regmap = devm_regmap_init_i2c(client, &act8865_regmap_config);
+ 	if (IS_ERR(act8865->regmap)) {
+-		error = PTR_ERR(act8865->regmap);
++		ret = PTR_ERR(act8865->regmap);
+ 		dev_err(&client->dev, "Failed to allocate register map: %d\n",
+-			error);
+-		return error;
++			ret);
++		return ret;
+ 	}
+ 
+ 	/* Finally register devices */
+-- 
+1.9.1
 
 
 
