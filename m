@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425AbaF3Tny (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 15:43:54 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:43430 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836AbaF3Tnw (ORCPT
+	id S1756960AbaF3ToA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 15:44:00 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:48170 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839AbaF3Tn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 15:43:52 -0400
-Date: Mon, 30 Jun 2014 21:43:46 +0200
-From: Rabin Vincent <rabin@rab.in>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 3/5] clk: use struct clk only for external API
-Message-ID: <20140630194311.GA5167@dator>
-References: <1403855872-14749-1-git-send-email-tomeu.vizoso@collabora.com>
- <1403855872-14749-4-git-send-email-tomeu.vizoso@collabora.com>
- <53ADF239.9050008@wwwdotorg.org>
+	Mon, 30 Jun 2014 15:43:57 -0400
+Date: Mon, 30 Jun 2014 23:43:54 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrey Vagin <avagin@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vladimir Davydov <vdavydov@parallels.com>
+Subject: Re: [patch 0/4] timerfd c/r support, v4
+Message-ID: <20140630194354.GB2305@moon>
+References: <20140623185431.396309193@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53ADF239.9050008@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140623185431.396309193@openvz.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 04:37:45PM -0600, Stephen Warren wrote:
-> On 06/27/2014 01:57 AM, Tomeu Vizoso wrote:
-> > +struct clk {
-> > +	struct clk_core clk;
-> > +};
-> 
-> I'm confused why that field isn't a pointer instead.
+On Mon, Jun 23, 2014 at 10:54:31PM +0400, Cyrill Gorcunov wrote:
+>
+> Hi guys, here is an updated version of c/r support for timerfd files. The main change
+> is in how @ticks are restored in patch 3 -- I switched to ioctl code, which is wrapped
+> with CONFIG because I still think that while there is only one ioctl designated
+> solely for c/r needs no need to build it all the time until explicitly requested.
+> Please take a look once time permit. Comments are highly appreciated.
+> Also note the last patch is for man-page git repo, not for kernel.
 
-It becomes a pointer in the following patch.
-
-It's been a while since I created these patches, but IIRC I split it
-this way because this patch was large and touching several drivers and
-thus I wanted to make it do just the rename and keep core changes to a
-minimum.  Such as step may not be needed with Tomeu's series since it's
-organized differently.
+Gentlemen, could you please point me if there something preventing the
+series from being picked up? Or there some way to improve the series?
