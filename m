@@ -1,45 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438AbaF3PEG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:04:06 -0400
-Received: from mail.kernel.org ([198.145.19.201]:41781 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752499AbaF3PED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:04:03 -0400
-Date: Mon, 30 Jun 2014 12:03:59 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 05/18] perf tools: Add ordered_events_(get|put) interface
-Message-ID: <20140630150359.GC4762@kernel.org>
-References: <1403103539-16807-1-git-send-email-jolsa@kernel.org>
- <1403103539-16807-6-git-send-email-jolsa@kernel.org>
- <53ADF8FC.5030604@gmail.com>
- <20140629163933.GA1407@krava.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140629163933.GA1407@krava.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754553AbaF3PFH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:05:07 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:53798 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751005AbaF3PFF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 11:05:05 -0400
+Message-ID: <1404140703.2978.13.camel@x41>
+Subject: drm: i915: "plane B assertion failure, should be off on pipe B but
+ is still active"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>
+Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 30 Jun 2014 17:05:03 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 30 Jun 2014 15:05:03.0337 (UTC) FILETIME=[AB9D6590:01CF9474]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, Jun 29, 2014 at 06:39:33PM +0200, Jiri Olsa escreveu:
-> On Fri, Jun 27, 2014 at 05:06:36PM -0600, David Ahern wrote:
-> > On 6/18/14, 8:58 AM, Jiri Olsa wrote:
-> > >+static struct ordered_event*
-> > >+ordered_events_get(struct ordered_events_queue *q, u64 timestamp)
+Kernels v3.16-rc2 and v3.16-rc3 trigger a new (for me) warning. (I never
+booted v3.16-rc1). Machine is a, rather outdated, ThinkPad X41 (ie,
+single core i686).
 
-Also I don't think that it matters that much to have explicit in the
-name above the data structure used to reorder events, i.e. I suggest
-renaming "struct ordered_events_queue" to just "struct ordered_events".
+WARNING: CPU: 0 PID: 221 at drivers/gpu/drm/i915/intel_display.c:1274 assert_planes_disabled+0xf9/0x100 [i915]()
+plane B assertion failure, should be off on pipe B but is still active
+Modules linked in: tg3 i915(+) i2c_algo_bit drm_kms_helper ptp drm ata_generic pata_acpi yenta_socket i2c_core pps_core video
+CPU: 0 PID: 221 Comm: systemd-udevd Not tainted 3.16.0-0.rc3.1.local0.fc20.i686 #1
+Hardware name: IBM 2525FAG/2525FAG, BIOS 74ET64WW (2.09 ) 12/14/2006
+ c0c87907 add7c490 00000000 f652b9ac c09fdab7 f652b9ec f652b9dc c045008e
+ f830c6cc f652ba0c 000000dd f830c634 000004fa f82b4d59 f82b4d59 f6728000
+ 00000001 f65a8c00 f652b9f8 c04500ee 00000009 f652b9ec f830c6cc f652ba0c
+Call Trace:
+ [<c09fdab7>] dump_stack+0x41/0x52
+ [<c045008e>] warn_slowpath_common+0x7e/0xa0
+ [<f82b4d59>] ? assert_planes_disabled+0xf9/0x100 [i915]
+ [<f82b4d59>] ? assert_planes_disabled+0xf9/0x100 [i915]
+ [<c04500ee>] warn_slowpath_fmt+0x3e/0x60
+ [<f82b4d59>] assert_planes_disabled+0xf9/0x100 [i915]
+ [<f82bd8d6>] intel_disable_pipe+0x26/0xb0 [i915]
+ [<f82aec40>] ? gen4_read8+0xc0/0xc0 [i915]
+ [<f82c25d3>] i9xx_crtc_disable+0x93/0x3d0 [i915]
+ [<f82c91bc>] intel_modeset_setup_hw_state+0x7ac/0xbc0 [i915]
+ [<f82aec40>] ? gen4_read8+0xc0/0xc0 [i915]
+ [<f815bc7c>] ? drm_modeset_lock_all_crtcs+0x3c/0x50 [drm]
+ [<f82c9d04>] intel_modeset_init+0x734/0x1220 [i915]
+ [<f82a2edb>] ? i915_enable_pipestat+0xab/0x120 [i915]
+ [<f82a34c4>] ? i915_irq_postinstall+0x104/0x110 [i915]
+ [<f8146ba9>] ? drm_irq_install+0xa9/0x170 [drm]
+ [<f82f4016>] i915_driver_load+0xa76/0xe70 [i915]
+ [<f82f13d0>] ? i915_switcheroo_set_state+0x90/0x90 [i915]
+ [<c06b5880>] ? cleanup_uevent_env+0x10/0x10
+ [<c05d8243>] ? sysfs_add_file+0x23/0x30
+ [<c07a4034>] ? get_device+0x14/0x30
+ [<c07a8e52>] ? klist_class_dev_get+0x12/0x20
+ [<c09f73ce>] ? klist_node_init+0x2e/0x50
+ [<c09f7487>] ? klist_add_tail+0x27/0x30
+ [<c07a5506>] ? device_add+0x1d6/0x5a0
+ [<f814ca8a>] ? drm_sysfs_device_add+0xba/0x100 [drm]
+ [<f81496ee>] drm_dev_register+0x8e/0xe0 [drm]
+ [<f814bca9>] drm_get_pci_dev+0x79/0x1c0 [drm]
+ [<f8274415>] i915_pci_probe+0x35/0x60 [i915]
+ [<c06f0baf>] pci_device_probe+0x6f/0xc0
+ [<c05d8625>] ? sysfs_create_link+0x25/0x40
+ [<c07a8093>] driver_probe_device+0x93/0x3a0
+ [<c05d8357>] ? sysfs_create_dir_ns+0x37/0x80
+ [<c06f0af1>] ? pci_match_device+0xc1/0xe0
+ [<c07a8451>] __driver_attach+0x71/0x80
+ [<c07a83e0>] ? __device_attach+0x40/0x40
+ [<c07a64c7>] bus_for_each_dev+0x57/0xa0
+ [<c07a7bbe>] driver_attach+0x1e/0x20
+ [<c07a83e0>] ? __device_attach+0x40/0x40
+ [<c07a7807>] bus_add_driver+0x157/0x230
+ [<f7fc8000>] ? 0xf7fc7fff
+ [<f7fc8000>] ? 0xf7fc7fff
+ [<c07a8b39>] driver_register+0x59/0xe0
+ [<c0564f56>] ? __kmalloc_track_caller+0x46/0x1f0
+ [<c06ef722>] __pci_register_driver+0x32/0x40
+ [<f814bed5>] drm_pci_init+0xe5/0x110 [drm]
+ [<f7fc8000>] ? 0xf7fc7fff
+ [<f7fc8088>] i915_init+0x88/0x8a [i915]
+ [<f7fc8000>] ? 0xf7fc7fff
+ [<c0400492>] do_one_initcall+0xc2/0x1f0
+ [<f7fc8000>] ? 0xf7fc7fff
+ [<c05624dd>] ? kfree+0xdd/0x120
+ [<c05524ef>] ? __vunmap+0x8f/0xe0
+ [<c05524ef>] ? __vunmap+0x8f/0xe0
+ [<c05524ef>] ? __vunmap+0x8f/0xe0
+ [<c04bee92>] load_module+0x1a92/0x23b0
+ [<c04bbd69>] ? copy_module_from_fd.isra.46+0x109/0x1a0
+ [<c04bf94d>] SyS_finit_module+0x8d/0xd0
+ [<c0538f43>] ? vm_mmap_pgoff+0x93/0xb0
+ [<c0a045df>] sysenter_do_call+0x12/0x16
 
-- Arnaldo
+Feel free to prod me for further details.
+
+
+Paul Bolle
+
