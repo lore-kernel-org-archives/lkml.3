@@ -1,75 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679AbaF3Ujg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 16:39:36 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:53489 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904AbaF3Ujc (ORCPT
+	id S1756942AbaF3Ujn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 16:39:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41695 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755904AbaF3Ujl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 16:39:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrUs8mmVK70rwkQz=Dzu2ZjPYU_TMuydnXsJM8jAxTv0WQ@mail.gmail.com>
-References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
-	<1403913966-4927-8-git-send-email-ast@plumgrid.com>
-	<CALCETrXDR1LVmbigTicBiddgvcucM1dGk1R7rxdJyBCvGEBQMw@mail.gmail.com>
-	<CAMEtUuywNHVcZ__296NzXK7RPXUBOf7gNQY9JFx0a9PV0Se+wA@mail.gmail.com>
-	<CALCETrXQ60J+UqafHRKPbgQ37zhstW+E8xAponWs7AQ-DCgaWA@mail.gmail.com>
-	<CAMEtUuwmxgrGMigmh1vZ7qCh9qB9ph9uFbPmVmmbqZvC5N9WyA@mail.gmail.com>
-	<20140628152104.GB29548@kroah.com>
-	<CALCETrUs8mmVK70rwkQz=Dzu2ZjPYU_TMuydnXsJM8jAxTv0WQ@mail.gmail.com>
-Date: Mon, 30 Jun 2014 13:39:31 -0700
-Message-ID: <CAMEtUuxSdw+9WiB2ps0aYE5hdH9NTnq48VdELLEg17tz1B96WQ@mail.gmail.com>
-Subject: Re: [PATCH RFC net-next 07/14] bpf: expand BPF syscall with program load/unload
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>,
-        David Laight <David.Laight@aculab.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 30 Jun 2014 16:39:41 -0400
+Date: Mon, 30 Jun 2014 13:39:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, joe@perches.com
+Subject: Re: [RFC 1/1] proc: constify seq_operations
+Message-Id: <20140630133939.c24cd71919cd28c90992d6e1@linux-foundation.org>
+In-Reply-To: <1404154997-15490-1-git-send-email-fabf@skynet.be>
+References: <1404154997-15490-1-git-send-email-fabf@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 28, 2014 at 8:35 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Sat, Jun 28, 2014 at 8:21 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> On Sat, Jun 28, 2014 at 12:26:14AM -0700, Alexei Starovoitov wrote:
->>> On Fri, Jun 27, 2014 at 11:28 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> > On Fri, Jun 27, 2014 at 11:12 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->>> > If you want to add GPL-only functions in the future, that would be one
->>> > thing.  But if someone writes a nice eBPF compiler, and someone else
->>> > writes a little program that filters on network packets, I see no
->>> > reason to claim that the little program is a derivative work of the
->>> > kernel and therefore must be GPL.
->>>
->>> I think we have to draw a line somewhere. Say, tomorrow I want
->>> to modify libpcap to emit eBPF based on existing tcpdump syntax.
->>> Would it mean that tcpdump filter strings are GPLed? Definitely not,
->>> since they existed before and can function without new libpcap.
->>> But if I write a new packet filtering program in C, compile it
->>> using LLVM->eBPF and call into in-kernel helper functions
->>> (like bpf_map_lookup_elem()),  I think it's exactly the derivative work.
->>> It's analogous to kernel modules. If module wants to call
->>> export_symbol_gpl() functions, it needs to be GPLed. Here all helper
->>> functions are GPL. So we just have a blank check for eBPF program.
->>
->> I agree, these eBFP programs should be GPL-compatible licensed as well.
->
-> I think I'd be happy with an export_symbol_gpl analogue.  I might
-> argue that bpf_map_lookup_elem shouldn't be gpl-only, though.
+On Mon, 30 Jun 2014 21:03:17 +0200 Fabian Frederick <fabf@skynet.be> wrote:
 
-ok. sounds like module-like approach will be more acceptable to potential
-user base. Will change it. Last thing I want to do is to scary users away.
+> proc_uid_seq_operations, proc_gid_seq_operations and proc_projid_seq_operations
+> are only called in proc_id_map_open with seq_open as
+> const struct seq_operations so we can constify the 3 structures and update
+> proc_id_map_open prototype.
+
+There are an absolutely enormous number of places where we could
+constify things.  For sheer sanity's sake I'm not inclined to churn the
+code in this way unless a patch provides some sort of runtime benefit. 
+And this particular patch doesn't appear to change the generated code
+at all.
+
+
