@@ -1,114 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244AbaF3I5R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 04:57:17 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:51192 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755163AbaF3I5O (ORCPT
+	id S1755434AbaF3I5Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 04:57:24 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:62681 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755092AbaF3I5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 04:57:14 -0400
+	Mon, 30 Jun 2014 04:57:20 -0400
+X-IronPort-AV: E=Sophos;i="5.00,804,1396972800"; 
+   d="scan'208";a="32611797"
+Message-ID: <53B126A2.30108@cn.fujitsu.com>
+Date: Mon, 30 Jun 2014 16:58:10 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Date: Mon, 30 Jun 2014 01:57:13 -0700
-X-Google-Sender-Auth: 7Iwam5svylYIBmtVrnJcH95nbv4
-Message-ID: <CANeU7Q=a82YmUE49uZ1sOxZn0KGLuktSXuj7YsmUb=wXQEpPXA@mail.gmail.com>
-Subject: [PATCH] sparse: Add CLOG option for saving warning
-From: Christopher Li <sparse@chrisli.org>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Linux-Sparse <linux-sparse@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>
-Content-Type: multipart/mixed; boundary=001a113a76ca62b5ba04fd09d8a3
+To: Gleb Natapov <gleb@kernel.org>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, <pbonzini@redhat.com>,
+        <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
+        <mgorman@suse.de>, <yinghai@kernel.org>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
+        <laijs@cn.fujitsu.com>, <kvm@vger.kernel.org>, <linux-mm@kvack.org>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi.kivity@gmail.com>, Tang Chen <tangchen@cn.fujitsu.com>
+Subject: Re: [RFC PATCH 1/1] Move two pinned pages to non-movable node in
+ kvm.
+References: <20140618061230.GA10948@minantech.com> <53A136C4.5070206@cn.fujitsu.com> <20140619092031.GA429@minantech.com> <20140619190024.GA3887@amt.cnet> <20140620111509.GE20764@minantech.com> <20140620125326.GA22283@amt.cnet> <20140620142622.GA28698@minantech.com> <20140620203146.GA6580@amt.cnet> <20140620203903.GA7838@amt.cnet> <53B0C13C.20206@cn.fujitsu.com> <20140630060047.GI18167@minantech.com>
+In-Reply-To: <20140630060047.GI18167@minantech.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a113a76ca62b5ba04fd09d8a3
-Content-Type: text/plain; charset=ISO-8859-1
+Hi Gleb,
 
-Currently sparse warning only output to stderr.
-In the parallel build process, different source
-file output is fixed together. It is hard to keep
-track of the warning.
+On 06/30/2014 02:00 PM, Gleb Natapov wrote:
+> On Mon, Jun 30, 2014 at 09:45:32AM +0800, Tang Chen wrote:
+>> On 06/21/2014 04:39 AM, Marcelo Tosatti wrote:
+>>> On Fri, Jun 20, 2014 at 05:31:46PM -0300, Marcelo Tosatti wrote:
+>>>>> IIRC your shadow page pinning patch series support flushing of ptes
+>>>>> by mmu notifier by forcing MMU reload and, as a result, faulting in of
+>>>>> pinned pages during next entry.  Your patch series does not pin pages
+>>>>> by elevating their page count.
+>>>>
+>>>> No but PEBS series does and its required to stop swap-out
+>>>> of the page.
+>>>
+>>> Well actually no because of mmu notifiers.
+>>>
+>>> Tang, can you implement mmu notifiers for the other breaker of
+>>> mem hotplug ?
+>>
+>> Hi Marcelo,
+>>
+>> I made a patch to update ept and apic pages when finding them in the
+>> next ept violation. And I also updated the APIC_ACCESS_ADDR phys_addr.
+>> The pages can be migrated, but the guest crached.
+> How does it crash?
 
-Add the CLOG=<logname> option in command line to
-save the sparse warning into individual log file.
+It just stopped running. The guest system is dead.
+I'll try to debug it and give some more info.
 
-Typical usage:
+>
+>>
+>> How do I stop guest from access apic pages in mmu_notifier when the
+>> page migration starts ?  Do I need to stop all the vcpus by set vcpu
+>> state to KVM_MP_STATE_HALTED ?  If so, the vcpu will not able to go
+>> to the next ept violation.
+> When apic access page is unmapped from ept pages by mmu notifiers you
+> need to set its value in VMCS to a physical address that will never be
+> mapped into guest memory. Zero for instance. You can do it by introducing
+> new KVM_REQ_ bit and set VMCS value during next vcpu's vmentry. On ept
+> violation you need to update VMCS pointer to newly allocated physical
+> address, you can use the same KVM_REQ_ mechanism again.
+>
+>>
+>> So, may I write any specific value into APIC_ACCESS_ADDR to stop guest
+>> from access to apic page ?
+>>
+> Any phys address that will never be mapped into guest's memory should work.
 
-make -j8 C=2 CLOG=<logname>
+Thanks for the advice. I'll try it.
 
-The log file is saved in the target directory as
-.xxx.o.<logname>.sparse
-
-By diffing between different log file, it is much
-easier to analyze how the sparse change impact
-the whole kernel build.
-
-Signed-off-by: Christopher Li <sparse@chrisli.org>
-
-
-Chris
-
---001a113a76ca62b5ba04fd09d8a3
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-sparse-Add-CLOG-option-for-saving-warning.patch"
-Content-Disposition: attachment; 
-	filename="0001-sparse-Add-CLOG-option-for-saving-warning.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hx1jvqmh0
-
-RnJvbSAzYjJmZjIwNGNiZGE2ODRhZGY5ZGJhMmFkZjU2ODA2MjUzM2FlMzRkIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBDaHJpc3RvcGhlciBMaSA8c3BhcnNlQGNocmlzbGkub3JnPgpE
-YXRlOiBNb24sIDMwIEp1biAyMDE0IDAxOjMzOjIyIC0wNzAwClN1YmplY3Q6IFtQQVRDSF0gc3Bh
-cnNlOiBBZGQgQ0xPRyBvcHRpb24gZm9yIHNhdmluZyB3YXJuaW5nCgpDdXJyZW50bHkgc3BhcnNl
-IHdhcm5pbmcgb25seSBvdXRwdXQgdG8gc3RkZXJyLgpJbiB0aGUgcGFyYWxsZWwgYnVpbGQgcHJv
-Y2VzcywgZGlmZmVyZW50IHNvdXJjZQpmaWxlIG91dHB1dCBpcyBmaXhlZCB0b2dldGhlci4gSXQg
-aXMgaGFyZCB0byBrZWVwCnRyYWNrIG9mIHRoZSB3YXJuaW5nLgoKQWRkIHRoZSBDTE9HPTxsb2du
-YW1lPiBvcHRpb24gaW4gY29tbWFuZCBsaW5lIHRvCnNhdmUgdGhlIHNwYXJzZSB3YXJuaW5nIGlu
-dG8gaW5kaXZpZHVhbCBsb2cgZmlsZS4KClR5cGljYWwgdXNhZ2U6CgptYWtlIC1qOCBDPTIgQ0xP
-Rz08bG9nbmFtZT4KClRoZSBsb2cgZmlsZSBpcyBzYXZlZCBpbiB0aGUgdGFyZ2V0IGRpcmVjdG9y
-eSBhcwoueHh4Lm8uPGxvZ25hbWU+LnNwYXJzZQoKQnkgZGlmZmluZyBiZXR3ZWVuIGRpZmZlcmVu
-dCBsb2cgZmlsZSwgaXQgaXMgbXVjaAplYXNpZXIgdG8gYW5hbHl6ZSBob3cgdGhlIHNwYXJzZSBj
-aGFuZ2UgaW1wYWN0CnRoZSB3aG9sZSBrZXJuZWwgYnVpbGQuCgpTaWduZWQtb2ZmLWJ5OiBDaHJp
-c3RvcGhlciBMaSA8c3BhcnNlQGNocmlzbGkub3JnPgotLS0KIE1ha2VmaWxlICAgICAgICAgICAg
-ICAgfCAxMyArKysrKysrKysrKystCiBzY3JpcHRzL01ha2VmaWxlLmJ1aWxkIHwgMTEgKysrKysr
-KysrLS0KIDIgZmlsZXMgY2hhbmdlZCwgMjEgaW5zZXJ0aW9ucygrKSwgMyBkZWxldGlvbnMoLSkK
-CmRpZmYgLS1naXQgYS9NYWtlZmlsZSBiL01ha2VmaWxlCmluZGV4IGIxMWUyZDUuLjU2YzM1MDIg
-MTAwNjQ0Ci0tLSBhL01ha2VmaWxlCisrKyBiL01ha2VmaWxlCkBAIC02OCw2ICs2OCwxNiBAQCBp
-Zm5kZWYgS0JVSUxEX0NIRUNLU1JDCiAgIEtCVUlMRF9DSEVDS1NSQyA9IDAKIGVuZGlmCiAKK2lm
-ZXEgKCIkKG9yaWdpbiBDTE9HKSIsICJjb21tYW5kIGxpbmUiKQorICBLQlVJTERfQ0hFQ0tMT0cg
-PSAkKENMT0cpCitlbmRpZgoraWZuZGVmIEtCVUlMRF9DSEVDS0xPRworICBLQlVJTERfQ0hFQ0tM
-T0cgPQorZW5kaWYKKworCisKKwogIyBVc2UgbWFrZSBNPWRpciB0byBzcGVjaWZ5IGRpcmVjdG9y
-eSBvZiBleHRlcm5hbCBtb2R1bGUgdG8gYnVpbGQKICMgT2xkIHN5bnRheCBtYWtlIC4uLiBTVUJE
-SVJTPSRQV0QgaXMgc3RpbGwgc3VwcG9ydGVkCiAjIFNldHRpbmcgdGhlIGVudmlyb25tZW50IHZh
-cmlhYmxlIEtCVUlMRF9FWFRNT0QgdGFrZSBwcmVjZWRlbmNlCkBAIC0yODcsNyArMjk3LDcgQEAg
-aWZlcSAoJChNQUtFQ01ER09BTFMpLCkKIGVuZGlmCiAKIGV4cG9ydCBLQlVJTERfTU9EVUxFUyBL
-QlVJTERfQlVJTFRJTgotZXhwb3J0IEtCVUlMRF9DSEVDS1NSQyBLQlVJTERfU1JDIEtCVUlMRF9F
-WFRNT0QKK2V4cG9ydCBLQlVJTERfQ0hFQ0tTUkMgS0JVSUxEX0NIRUNLTE9HIEtCVUlMRF9TUkMg
-S0JVSUxEX0VYVE1PRAogCiAjIEJlYXV0aWZ5IG91dHB1dAogIyAtLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0K
-QEAgLTEzNzAsNiArMTM4MCw3IEBAIGNsZWFuOiAkKGNsZWFuLWRpcnMpCiAJJChjYWxsIGNtZCxy
-bWZpbGVzKQogCUBmaW5kICQoaWYgJChLQlVJTERfRVhUTU9EKSwgJChLQlVJTERfRVhUTU9EKSwg
-LikgJChSQ1NfRklORF9JR05PUkUpIFwKIAkJXCggLW5hbWUgJyouW29hc10nIC1vIC1uYW1lICcq
-LmtvJyAtbyAtbmFtZSAnLiouY21kJyBcCisJCS1vIC1uYW1lICcuKi5zcGFyc2UnIFwKIAkJLW8g
-LW5hbWUgJyoua28uKicgXAogCQktbyAtbmFtZSAnLiouZCcgLW8gLW5hbWUgJy4qLnRtcCcgLW8g
-LW5hbWUgJyoubW9kLmMnIFwKIAkJLW8gLW5hbWUgJyouc3ltdHlwZXMnIC1vIC1uYW1lICdtb2R1
-bGVzLm9yZGVyJyBcCmRpZmYgLS1naXQgYS9zY3JpcHRzL01ha2VmaWxlLmJ1aWxkIGIvc2NyaXB0
-cy9NYWtlZmlsZS5idWlsZAppbmRleCBiZjNlNjc3Li40NWM2MDA0IDEwMDY0NAotLS0gYS9zY3Jp
-cHRzL01ha2VmaWxlLmJ1aWxkCisrKyBiL3NjcmlwdHMvTWFrZWZpbGUuYnVpbGQKQEAgLTk2LDE0
-ICs5NiwyMSBAQCBfX2J1aWxkOiAkKGlmICQoS0JVSUxEX0JVSUxUSU4pLCQoYnVpbHRpbi10YXJn
-ZXQpICQobGliLXRhcmdldCkgJChleHRyYS15KSkgXAogCSAkKHN1YmRpci15bSkgJChhbHdheXMp
-CiAJQDoKIAorY2hlY2tfbG9nX2ZpbGUgPSAkKGRvdC10YXJnZXQpLiQoS0JVSUxEX0NIRUNLTE9H
-KS5zcGFyc2UKKworaWZuZXEgKCQoS0JVSUxEX0NIRUNLTE9HKSwpCisgIGNoZWNrX2xvZ2dpbmcg
-PSAyPiAkKGNoZWNrX2xvZ19maWxlKQorZW5kaWYKKworY21kX2NoZWNrID0gJChDSEVDSykgJChD
-SEVDS0ZMQUdTKSAkKGNfZmxhZ3MpICQ8ICQoY2hlY2tfbG9nZ2luZykgOwogIyBMaW51cycga2Vy
-bmVsIHNhbml0eSBjaGVja2luZyB0b29sCiBpZm5lcSAoJChLQlVJTERfQ0hFQ0tTUkMpLDApCiAg
-IGlmZXEgKCQoS0JVSUxEX0NIRUNLU1JDKSwyKQogICAgIHF1aWV0X2NtZF9mb3JjZV9jaGVja3Ny
-YyA9IENIRUNLICAgJDwKLSAgICAgICAgICBjbWRfZm9yY2VfY2hlY2tzcmMgPSAkKENIRUNLKSAk
-KENIRUNLRkxBR1MpICQoY19mbGFncykgJDwgOworICAgICAgICAgIGNtZF9mb3JjZV9jaGVja3Ny
-YyA9ICQoY21kX2NoZWNrKQogICBlbHNlCiAgICAgICBxdWlldF9jbWRfY2hlY2tzcmMgICAgID0g
-Q0hFQ0sgICAkPAotICAgICAgICAgICAgY21kX2NoZWNrc3JjICAgICA9ICQoQ0hFQ0spICQoQ0hF
-Q0tGTEFHUykgJChjX2ZsYWdzKSAkPCA7CisgICAgICAgICAgICBjbWRfY2hlY2tzcmMgICAgID0g
-JChjbWRfY2hlY2spCiAgIGVuZGlmCiBlbmRpZgogCi0tIAoxLjkuMwoK
---001a113a76ca62b5ba04fd09d8a3--
+Thanks.
