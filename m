@@ -1,82 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466AbaF3LzR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 07:55:17 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52076 "EHLO
+	id S1755411AbaF3LzP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 07:55:15 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52128 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753955AbaF3Lx0 (ORCPT
+	by vger.kernel.org with ESMTP id S1752950AbaF3Lx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:26 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Vincent Guittot <vincent.guittot@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, pjt@google.com,
-        alex.shi@linaro.org, Ingo Molnar <mingo@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 001/181] Revert "sched: Fix sleep time double accounting in enqueue entity"
-Date: Mon, 30 Jun 2014 13:50:22 +0200
-Message-Id: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 104/181] USB: usbtest: add a timeout for scatter-gather tests
+Date: Mon, 30 Jun 2014 13:52:05 +0200
+Message-Id: <684e9f2e2acc1c5745e7304c073dab0022ef3aea.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
+In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
+References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 In-Reply-To: <cover.1404128997.git.jslaby@suse.cz>
 References: <cover.1404128997.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vincent Guittot <vincent.guittot@linaro.org>
+From: Alan Stern <stern@rowland.harvard.edu>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 9390675af0835ae1d654d33bfcf16096028550ad upstream.
+commit 32b36eeae6a859670d2939a7d6136cb5e9ed64f8 upstream.
 
-This reverts commit 282cf499f03ec1754b6c8c945c9674b02631fb0f.
+In usbtest, tests 5 - 8 use the scatter-gather library in usbcore
+without any sort of timeout.  If there's a problem in the gadget or
+host controller being tested, the test can hang.
 
-With the current implementation, the load average statistics of a sched entity
-change according to other activity on the CPU even if this activity is done
-between the running window of the sched entity and have no influence on the
-running duration of the task.
+This patch adds a 10-second timeout to the tests, so that they will
+fail gracefully with an ETIMEDOUT error instead of hanging.
 
-When a task wakes up on the same CPU, we currently update last_runnable_update
-with the return  of __synchronize_entity_decay without updating the
-runnable_avg_sum and runnable_avg_period accordingly. In fact, we have to sync
-the load_contrib of the se with the rq's blocked_load_contrib before removing
-it from the latter (with __synchronize_entity_decay) but we must keep
-last_runnable_update unchanged for updating runnable_avg_sum/period during the
-next update_entity_load_avg.
-
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Reviewed-by: Ben Segall <bsegall@google.com>
-Cc: pjt@google.com
-Cc: alex.shi@linaro.org
-Link: http://lkml.kernel.org/r/1390376734-6800-1-git-send-email-vincent.guittot@linaro.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Huang Rui <ray.huang@amd.com>
+Tested-by: Huang Rui <ray.huang@amd.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- kernel/sched/fair.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ drivers/usb/misc/usbtest.c | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 790e2fc808da..25658d2c68d0 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1579,13 +1579,7 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
- 		}
- 		wakeup = 0;
- 	} else {
--		/*
--		 * Task re-woke on same cpu (or else migrate_task_rq_fair()
--		 * would have made count negative); we must be careful to avoid
--		 * double-accounting blocked time after synchronizing decays.
--		 */
--		se->avg.last_runnable_update += __synchronize_entity_decay(se)
--							<< 20;
-+		__synchronize_entity_decay(se);
- 	}
+diff --git a/drivers/usb/misc/usbtest.c b/drivers/usb/misc/usbtest.c
+index d90556eb8da5..9a1297eb1abc 100644
+--- a/drivers/usb/misc/usbtest.c
++++ b/drivers/usb/misc/usbtest.c
+@@ -7,7 +7,7 @@
+ #include <linux/moduleparam.h>
+ #include <linux/scatterlist.h>
+ #include <linux/mutex.h>
+-
++#include <linux/timer.h>
+ #include <linux/usb.h>
  
- 	/* migrated tasks did not contribute to our blocked load */
+ #define SIMPLE_IO_TIMEOUT	10000	/* in milliseconds */
+@@ -484,6 +484,14 @@ alloc_sglist(int nents, int max, int vary)
+ 	return sg;
+ }
+ 
++static void sg_timeout(unsigned long _req)
++{
++	struct usb_sg_request	*req = (struct usb_sg_request *) _req;
++
++	req->status = -ETIMEDOUT;
++	usb_sg_cancel(req);
++}
++
+ static int perform_sglist(
+ 	struct usbtest_dev	*tdev,
+ 	unsigned		iterations,
+@@ -495,6 +503,9 @@ static int perform_sglist(
+ {
+ 	struct usb_device	*udev = testdev_to_usbdev(tdev);
+ 	int			retval = 0;
++	struct timer_list	sg_timer;
++
++	setup_timer_on_stack(&sg_timer, sg_timeout, (unsigned long) req);
+ 
+ 	while (retval == 0 && iterations-- > 0) {
+ 		retval = usb_sg_init(req, udev, pipe,
+@@ -505,7 +516,10 @@ static int perform_sglist(
+ 
+ 		if (retval)
+ 			break;
++		mod_timer(&sg_timer, jiffies +
++				msecs_to_jiffies(SIMPLE_IO_TIMEOUT));
+ 		usb_sg_wait(req);
++		del_timer_sync(&sg_timer);
+ 		retval = req->status;
+ 
+ 		/* FIXME check resulting data pattern */
 -- 
 2.0.0
 
