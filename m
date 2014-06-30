@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244AbaF3PPu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:15:50 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52573 "EHLO mail.skyhub.de"
+	id S1753254AbaF3PSJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:18:09 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45834 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750868AbaF3PPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:15:48 -0400
-Date: Mon, 30 Jun 2014 17:15:44 +0200
+	id S1750771AbaF3PSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 11:18:07 -0400
+Date: Mon, 30 Jun 2014 17:18:02 +0200
 From: Borislav Petkov <bp@alien8.de>
-To: Jan Kiszka <jan.kiszka@web.de>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, x86-ml <x86@kernel.org>,
-        kvm@vger.kernel.org, =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
-Subject: Re: [PATCH] KVM: SVM: Fix CPL export via SS.DPL
-Message-ID: <20140630151544.GF4766@pd.tnic>
-References: <53B0050B.90104@web.de>
- <20140629131443.GA5199@pd.tnic>
- <20140629134247.GG18167@minantech.com>
- <20140629140104.GB12528@pd.tnic>
- <20140629142722.GH18167@minantech.com>
- <53B02395.8030505@web.de>
- <53B027E0.7040003@web.de>
- <53B02CEB.7010607@web.de>
- <53B17BDD.5030301@redhat.com>
- <53B17C5D.5050407@web.de>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Robert Richter <rric@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Fu Wei <fu.wei@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>
+Subject: Re: crazy idea (was: Re: [PATCH] perf tool: Carve out ctype.h et al)
+Message-ID: <20140630151802.GG4766@pd.tnic>
+References: <20140630070755.GA4766@pd.tnic>
+ <CAFrcx1=ri4MO3SUn85KqRDc-OBdbRumM44-OsxbU6CckszhH=g@mail.gmail.com>
+ <20140630100115.GC4766@pd.tnic>
+ <20140630145031.GR27560@rric.localhost>
+ <20140630145831.GA4762@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53B17C5D.5050407@web.de>
+In-Reply-To: <20140630145831.GA4762@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 05:03:57PM +0200, Jan Kiszka wrote:
-> 15.5.1:
-> 
-> "When examining segment attributes after a #VMEXIT:
-> [...]
-> • Retrieve the CPL from the CPL field in the VMCB, not from any segment
-> DPL."
+On Mon, Jun 30, 2014 at 11:58:31AM -0300, Arnaldo Carvalho de Melo wrote:
+> Yeap, guess its the most sensible to do given how things went so far.
+>
+> Please submit patches when you fix things on code copied from
+> tools/perf/ and generally when improving it.
 
-Heey, it is even documented! :-P
+Sure.
+
+Btw, should I still be working on the split even if the RAS daemon is
+out-of-tree?
+
+If I do, the advantage is that there'll be no pressure on anyone and
+we'll be applying patches as they come.
 
 -- 
 Regards/Gruss,
