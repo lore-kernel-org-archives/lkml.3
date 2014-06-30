@@ -1,98 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200AbaF3Dum (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 23:50:42 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:34000 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552AbaF3Duk (ORCPT
+	id S1754258AbaF3Dus (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 23:50:48 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:15413 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751757AbaF3Dup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 23:50:40 -0400
-Message-ID: <53B0DE84.40206@huawei.com>
-Date: Mon, 30 Jun 2014 11:50:28 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Sun, 29 Jun 2014 23:50:45 -0400
+X-IronPort-AV: E=Sophos;i="5.00,804,1396972800"; 
+   d="scan'208";a="32600004"
+Message-ID: <53B0DBE2.9030300@cn.fujitsu.com>
+Date: Mon, 30 Jun 2014 11:39:14 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v3 2/3] kernfs: introduce kernfs_pin_sb()
-References: <53B0DE66.5080100@huawei.com>
-In-Reply-To: <53B0DE66.5080100@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: Jens <axboe@kernel.dk>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Kent <kmo@daterainc.com>, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH] bio-integrity: add "bip_max_vcnt" into struct bio_integrity_payload
+References: <53AD4385.8080105@cn.fujitsu.com> <yq1fvin9uje.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1fvin9uje.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernfs_pin_sb() tries to get a refcnt of the superblock.
+Hi Martin,
+On 06/30/2014 07:15 AM, Martin K. Petersen wrote:
 
-This will be used by cgroupfs.
+>>>>>> "Gu" == Gu Zheng <guz.fnst@cn.fujitsu.com> writes:
+> 
+> [Sorry about the delay. I'm on vacation right now.]
+> 
+> Gu> But it seems that bip_integrity_vecs() will return the wrong number
+> Gu> if the bio is not based on any bio_set for some reason(bio->bi_pool
+> Gu> == NULL), because in that case, the bip_inline_vecs[0] is malloced
+> Gu> directly.  So here we add the bip_max_vcnt to record the count of
+> Gu> vector slots, and cleanup the function bip_integrity_vecs().
+> 
+> I'm in agreement with your fix.
 
-v2:
-- make kernfs_pin_sb() return the superblock.
-- drop kernfs_drop_sb().
+Thanks.
 
-[ This is a prerequisite for a bugfix. ]
-Cc: <stable@vger.kernel.org> # 3.15
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- fs/kernfs/mount.c      | 27 +++++++++++++++++++++++++++
- include/linux/kernfs.h |  1 +
- 2 files changed, 28 insertions(+)
+> 
+> However, I'm still not sure what the use case is for bios without an
+> associated bioset. I do not see any callers that pass in a NULL bioset.
 
-diff --git a/fs/kernfs/mount.c b/fs/kernfs/mount.c
-index f25a7c0..616c5c4 100644
---- a/fs/kernfs/mount.c
-+++ b/fs/kernfs/mount.c
-@@ -210,6 +210,33 @@ void kernfs_kill_sb(struct super_block *sb)
- 	kernfs_put(root_kn);
- }
- 
-+/**
-+ * kernfs_pin_sb: try to pin the superblock associated with a kernfs_root
-+ * @kernfs_root: the kernfs_root in question
-+ * @ns: the namespace tag
-+ *
-+ * Pin the superblock so the superblock won't be destroyed in subsequent
-+ * operations. Return NULL if there's no superblock associated to this
-+ * kernfs_root, or -EINVAL if the superblock is being freed.
-+ */
-+struct super_block *kernfs_pin_sb(struct kernfs_root *root, const void *ns)
-+{
-+	struct kernfs_super_info *info;
-+	struct super_block *sb = NULL;
-+
-+	mutex_lock(&kernfs_mutex);
-+	list_for_each_entry(info, &root->supers, node) {
-+		if (info->ns == ns) {
-+			sb = info->sb;
-+			if (!atomic_inc_not_zero(&info->sb->s_active))
-+				sb = ERR_PTR(-EINVAL);
-+			break;
-+		}
-+	}
-+	mutex_unlock(&kernfs_mutex);
-+	return sb;
-+}
-+
- void __init kernfs_init(void)
- {
- 	kernfs_node_cache = kmem_cache_create("kernfs_node_cache",
-diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 589318b..9096296 100644
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -287,6 +287,7 @@ struct dentry *kernfs_mount_ns(struct file_system_type *fs_type, int flags,
- 			       struct kernfs_root *root, bool *new_sb_created,
- 			       const void *ns);
- void kernfs_kill_sb(struct super_block *sb);
-+struct super_block *kernfs_pin_sb(struct kernfs_root *root, const void *ns);
- 
- void kernfs_init(void);
- 
--- 
-1.8.0.2
+Please refer to bio_kmalloc()--alloc bio via kmalloc.
+And IMO, the API(e.g. bio_alloc_bioset) is EXPORT, any guys(including
+some out of mainline code, some special drivers) can alloc a bio via
+kmalloc without based on associated bioset.
+
+Regards,
+Gu
+
+> 
+
 
