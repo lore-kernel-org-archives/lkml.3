@@ -1,72 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128AbaF3MHn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:07:43 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52036 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753782AbaF3LxZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 07:53:25 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Aleksander Morgado <aleksander@aleksander.es>,
-        Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 093/181] usb: qcserial: add additional Sierra Wireless QMI devices
-Date: Mon, 30 Jun 2014 13:51:54 +0200
-Message-Id: <2ae0cc9835e2da5e77c45586de6a412962ddaf03.1404128998.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
-References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
-In-Reply-To: <cover.1404128997.git.jslaby@suse.cz>
-References: <cover.1404128997.git.jslaby@suse.cz>
+	id S1756151AbaF3MHq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:07:46 -0400
+Received: from mta-out1.inet.fi ([62.71.2.199]:57236 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756132AbaF3MHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 08:07:44 -0400
+Date: Mon, 30 Jun 2014 15:07:35 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v3 07/13] numa_maps: remove numa_maps->vma
+Message-ID: <20140630120735.GW19833@node.dhcp.inet.fi>
+References: <1403295099-6407-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1403295099-6407-8-git-send-email-n-horiguchi@ah.jp.nec.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403295099-6407-8-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aleksander Morgado <aleksander@aleksander.es>
+On Fri, Jun 20, 2014 at 04:11:33PM -0400, Naoya Horiguchi wrote:
+> pagewalk.c can handle vma in itself, so we don't have to pass vma via
+> walk->private. And show_numa_map() walks pages on vma basis, so using
+> walk_page_vma() is preferable.
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  fs/proc/task_mmu.c | 18 ++++++++----------
+>  1 file changed, 8 insertions(+), 10 deletions(-)
+> 
+> diff --git v3.16-rc1.orig/fs/proc/task_mmu.c v3.16-rc1/fs/proc/task_mmu.c
+> index 74f87794afab..b4459c006d50 100644
+> --- v3.16-rc1.orig/fs/proc/task_mmu.c
+> +++ v3.16-rc1/fs/proc/task_mmu.c
+> @@ -1247,7 +1247,6 @@ const struct file_operations proc_pagemap_operations = {
+>  #ifdef CONFIG_NUMA
+>  
+>  struct numa_maps {
+> -	struct vm_area_struct *vma;
+>  	unsigned long pages;
+>  	unsigned long anon;
+>  	unsigned long active;
+> @@ -1316,18 +1315,17 @@ static struct page *can_gather_numa_stats(pte_t pte, struct vm_area_struct *vma,
+>  static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
+>  		unsigned long end, struct mm_walk *walk)
+>  {
+> -	struct numa_maps *md;
+> +	struct numa_maps *md = walk->private;
+> +	struct vm_area_struct *vma = walk->vma;
+>  	spinlock_t *ptl;
+>  	pte_t *orig_pte;
+>  	pte_t *pte;
+>  
+> -	md = walk->private;
+> -
+> -	if (pmd_trans_huge_lock(pmd, md->vma, &ptl) == 1) {
+> +	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+>  		pte_t huge_pte = *(pte_t *)pmd;
+>  		struct page *page;
+>  
+> -		page = can_gather_numa_stats(huge_pte, md->vma, addr);
+> +		page = can_gather_numa_stats(huge_pte, vma, addr);
+>  		if (page)
+>  			gather_stats(page, md, pte_dirty(huge_pte),
+>  				     HPAGE_PMD_SIZE/PAGE_SIZE);
+> @@ -1339,7 +1337,7 @@ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
+>  		return 0;
+>  	orig_pte = pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
+>  	do {
+> -		struct page *page = can_gather_numa_stats(*pte, md->vma, addr);
+> +		struct page *page = can_gather_numa_stats(*pte, vma, addr);
+>  		if (!page)
+>  			continue;
+>  		gather_stats(page, md, pte_dirty(*pte), 1);
+> @@ -1398,12 +1396,11 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+>  	/* Ensure we start with an empty set of numa_maps statistics. */
+>  	memset(md, 0, sizeof(*md));
+>  
+> -	md->vma = vma;
+> -
+>  	walk.hugetlb_entry = gather_hugetbl_stats;
+>  	walk.pmd_entry = gather_pte_stats;
+>  	walk.private = md;
+>  	walk.mm = mm;
+> +	walk.vma = vma;
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Redundant. 
 
-===============
+And it's probably good idea move walk initialization to declaration.
 
-commit 0ce5fb58564fd85aa8fd2d24209900e2e845317b upstream.
+Otherwise:
 
-A set of new VID/PIDs retrieved from the out-of-tree GobiNet/GobiSerial
-Sierra Wireless drivers.
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
-Signed-off-by: Aleksander Morgado <aleksander@aleksander.es>
-Link: http://marc.info/?l=linux-usb&m=140136310027293&w=2
-Cc: <stable@vger.kernel.org>	# backport in link above
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/usb/serial/qcserial.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+>  
+>  	pol = get_vma_policy(task, vma, vma->vm_start);
+>  	mpol_to_str(buffer, sizeof(buffer), pol);
+> @@ -1434,7 +1431,8 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+>  	if (is_vm_hugetlb_page(vma))
+>  		seq_puts(m, " huge");
+>  
+> -	walk_page_range(vma->vm_start, vma->vm_end, &walk);
+> +	/* mmap_sem is held by m_start */
+> +	walk_page_vma(vma, &walk);
+>  
+>  	if (!md->pages)
+>  		goto out;
+> -- 
+> 1.9.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
-index 2029f8f7f53f..3e96d1a9cbdb 100644
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -142,9 +142,15 @@ static const struct usb_device_id id_table[] = {
- 	{DEVICE_SWI(0x1199, 0x68c0)},	/* Sierra Wireless MC73xx */
- 	{DEVICE_SWI(0x1199, 0x901c)},	/* Sierra Wireless EM7700 */
- 	{DEVICE_SWI(0x1199, 0x901f)},	/* Sierra Wireless EM7355 */
-+	{DEVICE_SWI(0x1199, 0x9040)},	/* Sierra Wireless Modem */
- 	{DEVICE_SWI(0x1199, 0x9041)},	/* Sierra Wireless MC7305/MC7355 */
- 	{DEVICE_SWI(0x1199, 0x9051)},	/* Netgear AirCard 340U */
-+	{DEVICE_SWI(0x1199, 0x9053)},	/* Sierra Wireless Modem */
-+	{DEVICE_SWI(0x1199, 0x9054)},	/* Sierra Wireless Modem */
- 	{DEVICE_SWI(0x1199, 0x9055)},	/* Netgear AirCard 341U */
-+	{DEVICE_SWI(0x1199, 0x9056)},	/* Sierra Wireless Modem */
-+	{DEVICE_SWI(0x1199, 0x9060)},	/* Sierra Wireless Modem */
-+	{DEVICE_SWI(0x1199, 0x9061)},	/* Sierra Wireless Modem */
- 	{DEVICE_SWI(0x413c, 0x81a2)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card */
- 	{DEVICE_SWI(0x413c, 0x81a3)},	/* Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card */
- 	{DEVICE_SWI(0x413c, 0x81a4)},	/* Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card */
 -- 
-2.0.0
-
+ Kirill A. Shutemov
