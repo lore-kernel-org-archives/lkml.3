@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480AbaF3KyW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 06:54:22 -0400
-Received: from smtprelay0119.b.hostedemail.com ([64.98.42.119]:36435 "EHLO
-	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755133AbaF3KyV (ORCPT
+	id S1755276AbaF3K4V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 06:56:21 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:65384 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660AbaF3K4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 06:54:21 -0400
-X-Greylist: delayed 513 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jun 2014 06:54:21 EDT
-X-Session-Marker: 742E617274656D406C79636F732E636F6D
-X-Spam-Summary: 50,3,0,,d41d8cd98f00b204,t.artem@lycos.com,:,RULES_HIT:41:46:150:153:355:379:582:988:989:1152:1261:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3622:3690:3865:3867:3868:3874:5007:6261:7903:10004:10400:10450:10455:11658:11914:11984:12517:12519:13019:13069:13071:13255:13311:13357:19904:19999:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: star42_156ef1b9ca402
-X-Filterd-Recvd-Size: 1180
+	Mon, 30 Jun 2014 06:56:20 -0400
+Message-ID: <53B14250.2080509@redhat.com>
+Date: Mon, 30 Jun 2014 12:56:16 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
- format=flowed
+To: "Chen, Tiejun" <tiejun.chen@intel.com>, daniel.vetter@ffwll.ch,
+        jani.nikula@linux.intel.com, airlied@linux.ie
+CC: intel-gfx@lists.freedesktop.org, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        qemu-devel@nongnu.org
+Subject: Re: [RFC][PATCH] gpu:drm:i915:intel_detect_pch: back to check devfn
+ instead of check class type
+References: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com> <53A42DAA.80406@redhat.com> <53A692F9.3060200@intel.com> <53AA70C0.2000806@redhat.com> <53AA7B73.90503@intel.com> <53AA808C.5020402@redhat.com> <53B0D5EB.70103@intel.com>
+In-Reply-To: <53B0D5EB.70103@intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Mon, 30 Jun 2014 15:45:47 +0500
-From: t.artem@lycos.com
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: BLKRASET =?UTF-8?Q?=28ra=5Fpages=29=20on=20a=20per=20partition=20?=
- =?UTF-8?Q?basis?=
-Message-ID: <882e8e779e724990b242ecdab21c484d@lycos.com>
-User-Agent: Roundcube Webmail/1.0.1
-X-Originating-IP: [5.166.185.249]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Il 30/06/2014 05:13, Chen, Tiejun ha scritto:
+> After I discuss internal, we think even we just set the real
+> vendor/device ids to this ISA bridge at 00:1f.0, guest firmware should
+> still work well with these pair of real vendor/device ids.
+>
+> So if you think something would conflict or be broken, could you tell us
+> what's exactly that? Then we will double check.
 
-I wonder how difficult and feasible would be to implement per partition 
-readahead settings.
+The Xen hvmloader doesn't break since it only supports one chipset.  But 
+SeaBIOS checks for the exact vendor/device ids since Q35 support was added.
 
-Currently the Linux kernel sets readahead for the entire device, as 
-opposed to individual partitions and that's absolutely inconvenient.
+If you want to add this feature, try to implement it in a way that is a 
+bit more forward-looking.  I'm sure that Xen sooner or later will want a 
+PCIe chipset, otherwise things such as AER forwarding are impossible.
 
-For instance, I don't want large readahead numbers for my / and /home 
-partitions, however for my /mnt/media partition setting a high readahead 
-value would be very beneficial.
-
-
-
-Artem
-
+Paolo
