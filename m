@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783AbaF3MRb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:17:31 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51962 "EHLO
+	id S1756762AbaF3MR3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:17:29 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51984 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753288AbaF3LxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753321AbaF3LxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Josef Bacik <jbacik@fusionio.com>,
-        Chris Mason <chris.mason@fusionio.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 026/181] Btrfs: cleanup transaction on abort
-Date: Mon, 30 Jun 2014 13:50:47 +0200
-Message-Id: <bd32872f2d74ea81fbb80b362052037b5882d414.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 059/181] USB: cdc-acm: fix write and resume race
+Date: Mon, 30 Jun 2014 13:51:20 +0200
+Message-Id: <cb7ae87692ed7a4696ff8857296a03a43852cca4.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,60 +23,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Johan Hovold <jhovold@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 4e121c06adf53aae478ebce3035116595d063413 upstream.
+commit e144ed28bed10684f9aaec6325ed974d53f76110 upstream.
 
-If we abort not during a transaction commit we won't clean up anything until we
-unmount.  Unfortunately if we abort in the middle of writing out an ordered
-extent we won't clean it up and if somebody is waiting on that ordered extent
-they will wait forever.  To fix this just make the transaction kthread call the
-cleanup transaction stuff if it notices theres an error, and make
-btrfs_end_transaction wake up the transaction kthread if there is an error.
-Thanks,
+Fix race between write() and resume() due to improper locking that could
+lead to writes being reordered.
 
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Resume must be done atomically and susp_count be protected by the
+write_lock in order to prevent racing with write(). This could otherwise
+lead to writes being reordered if write() grabs the write_lock after
+susp_count is decremented, but before the delayed urb is submitted.
+
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/btrfs/disk-io.c     | 3 +++
- fs/btrfs/transaction.c | 4 +++-
- 2 files changed, 6 insertions(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c | 23 +++++++++--------------
+ 1 file changed, 9 insertions(+), 14 deletions(-)
 
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 84d590a9e4ad..409dcbd234dc 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -1780,6 +1780,9 @@ sleep:
- 		wake_up_process(root->fs_info->cleaner_kthread);
- 		mutex_unlock(&root->fs_info->transaction_kthread_mutex);
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index 8bde4781d347..19263a3f3d0d 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1447,27 +1447,20 @@ static int acm_resume(struct usb_interface *intf)
+ 	struct acm *acm = usb_get_intfdata(intf);
+ 	struct acm_wb *wb;
+ 	int rv = 0;
+-	int cnt;
  
-+		if (unlikely(test_bit(BTRFS_FS_STATE_ERROR,
-+				      &root->fs_info->fs_state)))
-+			btrfs_cleanup_transaction(root);
- 		if (!try_to_freeze()) {
- 			set_current_state(TASK_INTERRUPTIBLE);
- 			if (!kthread_should_stop() &&
-diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
-index 25d64e8e8e47..f98b976ce2b5 100644
---- a/fs/btrfs/transaction.c
-+++ b/fs/btrfs/transaction.c
-@@ -738,8 +738,10 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
- 		btrfs_run_delayed_iputs(root);
+ 	spin_lock_irq(&acm->read_lock);
+-	acm->susp_count -= 1;
+-	cnt = acm->susp_count;
+-	spin_unlock_irq(&acm->read_lock);
++	spin_lock(&acm->write_lock);
  
- 	if (trans->aborted ||
--	    test_bit(BTRFS_FS_STATE_ERROR, &root->fs_info->fs_state))
-+	    test_bit(BTRFS_FS_STATE_ERROR, &root->fs_info->fs_state)) {
-+		wake_up_process(info->transaction_kthread);
- 		err = -EIO;
-+	}
- 	assert_qgroups_uptodate(trans);
+-	if (cnt)
+-		return 0;
++	if (--acm->susp_count)
++		goto out;
  
- 	kmem_cache_free(btrfs_trans_handle_cachep, trans);
+ 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
+-		rv = usb_submit_urb(acm->ctrlurb, GFP_NOIO);
++		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
+ 
+-		spin_lock_irq(&acm->write_lock);
+ 		if (acm->delayed_wb) {
+ 			wb = acm->delayed_wb;
+ 			acm->delayed_wb = NULL;
+-			spin_unlock_irq(&acm->write_lock);
+ 			acm_start_wb(acm, wb);
+-		} else {
+-			spin_unlock_irq(&acm->write_lock);
+ 		}
+ 
+ 		/*
+@@ -1475,12 +1468,14 @@ static int acm_resume(struct usb_interface *intf)
+ 		 * do the write path at all cost
+ 		 */
+ 		if (rv < 0)
+-			goto err_out;
++			goto out;
+ 
+-		rv = acm_submit_read_urbs(acm, GFP_NOIO);
++		rv = acm_submit_read_urbs(acm, GFP_ATOMIC);
+ 	}
++out:
++	spin_unlock(&acm->write_lock);
++	spin_unlock_irq(&acm->read_lock);
+ 
+-err_out:
+ 	return rv;
+ }
+ 
 -- 
 2.0.0
 
