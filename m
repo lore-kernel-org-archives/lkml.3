@@ -1,103 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986AbaF3PUl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:20:41 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:41233 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344AbaF3PUj (ORCPT
+	id S1754064AbaF3PWU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:22:20 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:53125 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897AbaF3PWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:20:39 -0400
-Message-ID: <53B18053.2030805@kernel.dk>
-Date: Mon, 30 Jun 2014 09:20:51 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Bart Van Assche <bvanassche@fusionio.com>, Robert Elliott <Elliott@hp.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Mason <clm@fb.com>
-Subject: Re: scsi-mq V2
-References: <1403715121-1201-1-git-send-email-hch@lst.de> <53ABA6A4.8090400@kernel.dk>
-In-Reply-To: <53ABA6A4.8090400@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 30 Jun 2014 11:22:18 -0400
+From: Chen Yucong <slaoub@gmail.com>
+To: mgorman@suse.de
+Cc: hannes@cmpxchg.org, mhocko@suse.cz, riel@redhat.com,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Chen Yucong <slaoub@gmail.com>
+Subject: [PATCH] mm: vmscan: proportional scanning cleanup
+Date: Mon, 30 Jun 2014 23:22:07 +0800
+Message-Id: <1404141727-31601-1-git-send-email-slaoub@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/25/2014 10:50 PM, Jens Axboe wrote:
-> On 2014-06-25 10:51, Christoph Hellwig wrote:
->> This is the second post of the scsi-mq series.
->>
->> At this point the code is ready for merging and use by developers and
->> early
->> adopters.  The core blk-mq code isn't that suitable for slow devices
->> yet, mostly due to the lack of an I/O scheduler, but Jens is working
->> on it.
->> Similarly there is no dm-multipath support for drivers using blk-mq yet,
->> but I'm working on it.  It should also be noted that the code doesn't
->> actually support multiple hardware queues or fine grained tuning of the
->> blk-mq parameters yet.  All these could be added fairly easily as soon
->> as low-level drivers want to make use of them.
->>
->> The amount of chances to the existing code are fairly small, and mostly
->> speedups or cleanups that also apply to the old path as well.  Because
->> of this I also haven't bothered to put it under a config option, just
->> like the blk-mq core.
->>
->> The usage of blk-mq dramatically decreases CPU usage under all
->> workloads going
->> down from 100% CPU usage that the old setup can hit easily to usually
->> less
->> than 20% for maxing out storage subsystems with 512byte reads and writes,
->> and it allows to easily archive millions of IOPS.  Bart and Robert have
->> helped with some very detailed measurements that they might be able to
->> send
->> in reply to this, although these usually involve significantly
->> reworked low
->> level drivers to avoid other bottle necks.
->>
->> One major objection to previous iterations of this code was the simple
->> replacement of the host_lock with atomic counters for the host and busy
->> counters.  The host_lock avoidance on it's own already improves
->> performance,
->> and with the patch to avoid maintaining the per-target busy counter
->> unless
->> needed we now replace a lock round trip on the host_lock with just a
->> single
->> atomic increment in the submission path, and a single atomic decrement in
->> completion path, which should provide benefits even for the oddest RISC
->> architecture.  Longer term I'd still love to get rid of these entirely
->> and use the counters in blk-mq, but due to the difference in how they
->> are maintained this doesn't seem feasible as long as we still need to
->> support the legacy request code path.
->>
->> Changes from V1:
->>   - rebased on top of the core-for-3.17 branch, most notable the
->>     scsi logging changes
->>   - fixed handling of cmd_list to prevent crashes for some heavy
->>     workloads
->>   - fixed incorrect handling of !target->can_queue
->>   - avoid scheduling a workqueue on I/O completions when no queues
->>     are congested
->>
->> In addition to the patches in this thread there also is a git
->> available at:
->>
->>     git://git.infradead.org/users/hch/scsi.git scsi-mq.2
-> 
-> You can add my acked/reviewed-by to the series.
+This patch aims for clean up, not changing behavior. It records the file_targets
+and anon_target in advance, removing the need for the targets[] array and adjusts
+the inactive/active lists by the scanning targets.
 
-Ran stress testing from Friday to now, 65h of beating up on it and no
-problems observed. 47TB read and 20TB written for a total of 17.7
-billion of IOs issued and completed. Latencies look good. I officially
-declare this code for bug free.
+This patch also adds some comments, making it more readable and clarify. To be
+clear: most of those comments stem from https://lkml.org/lkml/2014/6/17/17 and
+https://lkml.org/lkml/2014/6/19/723.
 
-Bug-free-by: Jens Axboe <axboe@fb.com>
+Check the file/anon rate of scanning by invoking trace-vmscan-postprocess.pl during
+the execution of mmtests(config-global-dhp__pagereclaim-performance).
 
-Now lets get this queued up for inclusion, pretty please.
+FTrace Reclaim Statistics: vmscan
 
+The first round of the test:
+					without-patch  with-patch
+Direct reclaims:     			4502		4629
+Direct reclaim pages scanned:		584978		586063
+Direct reclaim file pages scanned:	556080		565488
+Direct reclaim anon pages scanned:	28898		20575
+Direct reclaim file/anon ratio:		19.242		27.484
+Direct reclaim pages reclaimed:		226069		234171
+Direct reclaim write file sync I/O:	0		0
+Direct reclaim write anon sync I/O:	0		0
+Direct reclaim write file async I/O:	0		0
+Direct reclaim write anon async I/O:	12		9
+Wake kswapd requests:			17676		18974
+Time stalled direct reclaim(seconds): 	3.40		3.77
+
+Kswapd wakeups:				3369		3566
+Kswapd pages scanned:			21777692	21657203
+Kswapd file pages scanned:		21312208	21189120
+Kswapd anon pages scanned:		465484		468083
+Kswapd file/anon ratio:			45.785		45.267
+Kswapd pages reclaimed:			15289358	15239544
+Kswapd reclaim write file sync I/O:	0		0
+Kswapd reclaim write anon sync I/O:	0		0
+Kswapd reclaim write file async I/O:	0		0
+Kswapd reclaim write anon async I/O:	1064		1077
+Time kswapd awake(seconds):		1410.73		1460.54
+
+The second round of the test:
+					without-patch  with-patch
+Direct reclaims:     			5455		4034
+Direct reclaim pages scanned:		686646		557039
+Direct reclaim file pages scanned:	633144		527209
+Direct reclaim anon pages scanned:	53502		29830
+Direct reclaim file/anon ratio:		11.834		17.673
+Direct reclaim pages reclaimed:		272571		202050
+Direct reclaim write file sync I/O:	0		0
+Direct reclaim write anon sync I/O:	0		0
+Direct reclaim write file async I/O:	0		0
+Direct reclaim write anon async I/O:	7		5
+Wake kswapd requests:			19404		18786
+Time stalled direct reclaim(seconds): 	3.89		4.52
+
+Kswapd wakeups:				3109		3583
+Kswapd pages scanned:			22006470	21619496
+Kswapd file pages scanned:		21568763	21165916
+Kswapd anon pages scanned:		437707		453580
+Kswapd file/anon ratio:			49.276		46.664
+Kswapd pages reclaimed:			15363377	15237407
+Kswapd reclaim write file sync I/O:	0		0
+Kswapd reclaim write anon sync I/O:	0		0
+Kswapd reclaim write file async I/O:	0		0
+Kswapd reclaim write anon async I/O:	1104		1101
+Time kswapd awake(seconds):		1318.28		1486.85
+
+Signed-off-by: Chen Yucong <slaoub@gmail.com>
+---
+ mm/vmscan.c |   84 ++++++++++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 57 insertions(+), 27 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index a8ffe4e..ad46a7b 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2057,8 +2057,7 @@ out:
+ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ {
+ 	unsigned long nr[NR_LRU_LISTS];
+-	unsigned long targets[NR_LRU_LISTS];
+-	unsigned long nr_to_scan;
++	unsigned long file_target, anon_target;
+ 	enum lru_list lru;
+ 	unsigned long nr_reclaimed = 0;
+ 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
+@@ -2067,8 +2066,12 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 
+ 	get_scan_count(lruvec, sc, nr);
+ 
+-	/* Record the original scan target for proportional adjustments later */
+-	memcpy(targets, nr, sizeof(nr));
++	/*
++	 * Record the original scan target of file and anon for proportional
++	 * adjustments later
++	 */
++	file_target = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
++	anon_target = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
+ 
+ 	/*
+ 	 * Global reclaiming within direct reclaim at DEF_PRIORITY is a normal
+@@ -2084,11 +2087,18 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 	scan_adjusted = (global_reclaim(sc) && !current_is_kswapd() &&
+ 			 sc->priority == DEF_PRIORITY);
+ 
++	/*
++	 * we scanned the LRUs in batches of SWAP_CLUSTER_MAX until the
++	 * requested number of pages were reclaimed. Assuming the scan
++	 * counts do not reach zero prematurely, the ratio between nr_file
++	 * and nr_anon should remain constant.
++	 */
+ 	blk_start_plug(&plug);
+ 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+ 					nr[LRU_INACTIVE_FILE]) {
+-		unsigned long nr_anon, nr_file, percentage;
+-		unsigned long nr_scanned;
++		unsigned long nr_to_scan, nr_scanned;
++		unsigned long nr_anon, nr_file;
++		unsigned percentage;
+ 
+ 		for_each_evictable_lru(lru) {
+ 			if (nr[lru]) {
+@@ -2104,11 +2114,14 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 			continue;
+ 
+ 		/*
+-		 * For kswapd and memcg, reclaim at least the number of pages
+-		 * requested. Ensure that the anon and file LRUs are scanned
+-		 * proportionally what was requested by get_scan_count(). We
+-		 * stop reclaiming one LRU and reduce the amount scanning
+-		 * proportional to the original scan target.
++		 * In the normal case, file/anon LRUs are scanned at a rate
++		 * proportional to the value of vm.swappiness. get_scan_count()
++		 * calculates the number of pages to scan from each LRU taking
++		 * into account additional factors such as the availability of
++		 * swap. When the requested number of pages have been reclaimed
++		 * we adjust to scan targets to minimize the number of pages
++		 * scanned while maintaining the ratio of file/anon pages that
++		 * are scanned.
+ 		 */
+ 		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
+ 		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
+@@ -2122,35 +2135,52 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 		if (!nr_file || !nr_anon)
+ 			break;
+ 
++		/*
++		 * Scan the bigger of the LRU more while stop scanning the
++		 * smaller of the LRU to keep aging balance between LRUs
++		 */
+ 		if (nr_file > nr_anon) {
+-			unsigned long scan_target = targets[LRU_INACTIVE_ANON] +
+-						targets[LRU_ACTIVE_ANON] + 1;
++			/*
++			 * In order to maintain the original proportion, we
++			 * need to calculate the percentage of anonymous LRUs
++			 * that has already been scanned. In other words, we
++			 * still need to scan file LRUs until they achieve the
++			 * same *percentage*.
++			 */
++			percentage = nr_anon * 100 / anon_target;
++			nr_scanned = file_target - nr_file;
++			nr_to_scan = file_target * (100 - percentage) / 100;
+ 			lru = LRU_BASE;
+-			percentage = nr_anon * 100 / scan_target;
++
++			/*
++			 * Here, Recalculating the percentage is just used to
++			 * divide nr_so_scan pages appropriately between active
++			 * and inactive lists.
++			 */
++			percentage = nr[LRU_FILE] * 100 / nr_file;
+ 		} else {
+-			unsigned long scan_target = targets[LRU_INACTIVE_FILE] +
+-						targets[LRU_ACTIVE_FILE] + 1;
++			percentage = nr_file * 100 / file_target;
++			nr_scanned = anon_target - nr_anon;
++			nr_to_scan = anon_target * (100 - percentage) / 100;
+ 			lru = LRU_FILE;
+-			percentage = nr_file * 100 / scan_target;
++			percentage = nr[LRU_BASE] * 100 / nr_anon;
+ 		}
++
++		if (nr_to_scan <= nr_scanned)
++			break;
++		nr_to_scan -= nr_scanned;
+ 
+ 		/* Stop scanning the smaller of the LRU */
+ 		nr[lru] = 0;
+ 		nr[lru + LRU_ACTIVE] = 0;
+ 
+ 		/*
+-		 * Recalculate the other LRU scan count based on its original
+-		 * scan target and the percentage scanning already complete
++		 * Distribute nr_so_scan pages proportionally between active and
++		 * inactive LRU lists.
+ 		 */
+ 		lru = (lru == LRU_FILE) ? LRU_BASE : LRU_FILE;
+-		nr_scanned = targets[lru] - nr[lru];
+-		nr[lru] = targets[lru] * (100 - percentage) / 100;
+-		nr[lru] -= min(nr[lru], nr_scanned);
+-
+-		lru += LRU_ACTIVE;
+-		nr_scanned = targets[lru] - nr[lru];
+-		nr[lru] = targets[lru] * (100 - percentage) / 100;
+-		nr[lru] -= min(nr[lru], nr_scanned);
++		nr[lru] = nr_to_scan * percentage / 100;
++		nr[lru + LRU_ACTIVE] = nr_to_scan - nr[lru];
+ 
+ 		scan_adjusted = true;
+ 	}
 -- 
-Jens Axboe
+1.7.10.4
 
