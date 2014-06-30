@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036AbaF3Rvv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 13:51:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38049 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753233AbaF3Rvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 13:51:50 -0400
-Date: Mon, 30 Jun 2014 19:50:25 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] tracing/uprobes: Fix the usage of
-	uprobe_buffer_enable() in probe_event_enable()
-Message-ID: <20140630175025.GA21918@redhat.com>
-References: <20140627170116.GA18298@redhat.com> <20140627170146.GA18332@redhat.com> <20140630170409.GD5619@linux.vnet.ibm.com>
+	id S1756413AbaF3RwW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 13:52:22 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:54364 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754701AbaF3RwV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 13:52:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140630170409.GD5619@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <871tu6ux2c.fsf@igel.home>
+References: <1404097610-5739-1-git-send-email-xerofoify@gmail.com>
+	<871tu6ux2c.fsf@igel.home>
+Date: Mon, 30 Jun 2014 19:52:19 +0200
+X-Google-Sender-Auth: Q64BpyaDvT_58GsLwVH-w0xoNtA
+Message-ID: <CAMuHMdXFf0VXJikw1d6b6NAC91NUfDvw64oEME=fc7=+Sms98g@mail.gmail.com>
+Subject: Re: [PATCH] Fixes q40_irq_startup to return -ENXIO
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: Nicholas Krause <xerofoify@gmail.com>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30, Srikar Dronamraju wrote:
+On Mon, Jun 30, 2014 at 7:27 PM, Andreas Schwab <schwab@linux-m68k.org> wrote:
+> Nicholas Krause <xerofoify@gmail.com> writes:
 >
-> > The usage of uprobe_buffer_enable() added by dcad1a20 is very wrong,
-> >
-> > 1. uprobe_buffer_enable() and uprobe_buffer_disable() are not balanced,
-> >    _enable() should be called only if !enabled.
-> >
-> > 2. If uprobe_buffer_enable() fails probe_event_enable() should clear
-> >    tp.flags and free event_file_link.
-> >
-> > 3. If uprobe_register() fails it should do uprobe_buffer_disable().
-> >
-> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+>> Fixes q40_irq_startup to return -ENXIO for cases 11-13 in the switch
+>> statement of this function to handle these failure cases.
+>>
+>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> ---
+>>  arch/m68k/q40/q40ints.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/m68k/q40/q40ints.c b/arch/m68k/q40/q40ints.c
+>> index 513f9bb..9dfa1ea 100644
+>> --- a/arch/m68k/q40/q40ints.c
+>> +++ b/arch/m68k/q40/q40ints.c
+>> @@ -49,7 +49,7 @@ static unsigned int q40_irq_startup(struct irq_data *data)
+>>       case 1: case 2: case 8: case 9:
+>>       case 11: case 12: case 13:
+>>               printk("%s: ISA IRQ %d not implemented by HW\n", __func__, irq);
+>> -             /* FIXME return -ENXIO; */
+>> +             return -ENXIO;
 >
-> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> There must be more to it, given the FIXME.
 
-Thanks!
+I think I really just forgot to get rid of it. It was introduced in commit
+c288bf2533e57174b90b07860c4391bcd1ea269c ("m68k/irq: Rename
+irq_controller to irq_chip").
 
-> (one nit .. )
->
-> > +	ret = uprobe_buffer_enable();
-> > +	if (ret)
-> > +		goto err_flags;
-> > +
-> >  	tu->consumer.filter = filter;
-> >  	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
-> > -	if (ret) {
-> > -		if (file) {
-> > -			list_del(&link->list);
-> > -			kfree(link);
-> > -			tu->tp.flags &= ~TP_FLAG_TRACE;
-> > -		} else
-> > -			tu->tp.flags &= ~TP_FLAG_PROFILE;
-> > -	}
-> > +	if (ret)
-> > +		goto err_buffer;
-> >
-> > +	return 0;
-> > +
-> > + err_buffer:
-> > +	uprobe_buffer_disable();
-> > +
->
-> How about avoiding err_buffer label?
-> +	if (!ret)
-> +		return 0;
->
-> +	uprobe_buffer_disable();
-> +
+I think I added the FIXME because I got puzzled by the return value change
+from (signed) int to unsigned int, which doesn't match well with a negative
+error number.
 
-Well, I do not really mind. But to me it looks more consistent this way,
-if-something-fail-goto-err_label.
+However:
+  1. While irq_chip.irq_startup() returns unsigned int, irq_startup()
+does return
+     int (why this difference, historical reasons?), so it becomes a negative
+     number again later,
+  2. The return value of irq_startup() seems to used in
+     kernel/irq/autoprobe.c:probe_irq_on() only, and the actual (non-zero) value
+     doesn't matter, just whether it returns zero or non-zero.
 
-IOW, I think that the code should either not use err-labels, or always
-use them like above.
+So I'm gonna take this patch, unless someone screams with a very good reason.
 
-Besides, perhaps we will add "if (file) uprobe_apply()" after _register()
-to mix perf/ftrace, then we will need to change this "if (!ret)" code again.
+Gr{oetje,eeting}s,
 
-Oleg.
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
