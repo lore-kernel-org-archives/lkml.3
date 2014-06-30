@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376AbaF3VOI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 17:14:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41822 "EHLO
+	id S1752362AbaF3VRq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 17:17:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41829 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254AbaF3VOH (ORCPT
+	with ESMTP id S1750836AbaF3VRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 17:14:07 -0400
-Date: Mon, 30 Jun 2014 14:14:04 -0700
+	Mon, 30 Jun 2014 17:17:45 -0400
+Date: Mon, 30 Jun 2014 14:17:44 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 4/4] mm: page_alloc: Reduce cost of the fair zone
- allocation policy
-Message-Id: <20140630141404.e09bdb5fa6a879d17c4556b1@linux-foundation.org>
-In-Reply-To: <1404146883-21414-5-git-send-email-mgorman@suse.de>
-References: <1404146883-21414-1-git-send-email-mgorman@suse.de>
-	<1404146883-21414-5-git-send-email-mgorman@suse.de>
+To: Joe Perches <joe@perches.com>
+Cc: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/1] proc: constify seq_operations
+Message-Id: <20140630141744.d7c29bf0d7e94e7ee3c4dd79@linux-foundation.org>
+In-Reply-To: <1404162545.2717.14.camel@joe-AO725>
+References: <1404154997-15490-1-git-send-email-fabf@skynet.be>
+	<20140630133939.c24cd71919cd28c90992d6e1@linux-foundation.org>
+	<1404161370.2717.10.camel@joe-AO725>
+	<20140630135744.51ebff73c7e396f1c50f0c81@linux-foundation.org>
+	<1404162545.2717.14.camel@joe-AO725>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -27,51 +27,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jun 2014 17:48:03 +0100 Mel Gorman <mgorman@suse.de> wrote:
+On Mon, 30 Jun 2014 14:09:05 -0700 Joe Perches <joe@perches.com> wrote:
 
-> The fair zone allocation policy round-robins allocations between zones
-> within a node to avoid age inversion problems during reclaim. If the
-> first allocation fails, the batch counts is reset and a second attempt
-> made before entering the slow path.
+> On Mon, 2014-06-30 at 13:57 -0700, Andrew Morton wrote:
+> > On Mon, 30 Jun 2014 13:49:30 -0700 Joe Perches <joe@perches.com> wrote:
 > 
-> One assumption made with this scheme is that batches expire at roughly the
-> same time and the resets each time are justified. This assumption does not
-> hold when zones reach their low watermark as the batches will be consumed
-> at uneven rates.  Allocation failure due to watermark depletion result in
-> additional zonelist scans for the reset and another watermark check before
-> hitting the slowpath.
+> > > It moves ~100 bytes from data to text
 > 
-> This patch makes a number of changes that should reduce the overall cost
+> > > $ size kernel/user_namespace.o*
+> > >    text    data     bss     dec     hex filename
+> > >    6676    3107    2248   12031    2eff kernel/user_namespace.o.new
+> > >    6580    3211    2248   12039    2f07 kernel/user_namespace.o.old
 > 
-> o Abort the fair zone allocation policy once remote zones are encountered
-> o Use a simplier scan when resetting NR_ALLOC_BATCH
-> o Use a simple flag to identify depleted zones instead of accessing a
->   potentially write-intensive cache line for counters
+> > doh, I only looked at base.o.
+> > 
+> > I added this to the changelog.  It should have been there originally,
+> > please.
+> > 
+> >    text    data     bss     dec     hex filename
+> >    6817     404    1984    9205    23f5 kernel/user_namespace.o-before
+> >    6913     308    1984    9205    23f5 kernel/user_namespace.o-after
 > 
-> On UMA machines, the effect on overall performance is marginal. The main
-> impact is on system CPU usage which is small enough on UMA to begin with.
-> This comparison shows the system CPu usage between vanilla, the previous
-> patch and this patch.
+> The delta in our object sizes in curious.
 > 
->           3.16.0-rc2  3.16.0-rc2  3.16.0-rc2
->              vanilla checklow-v4 fairzone-v4
-> User          390.13      400.85      396.13
-> System        404.41      393.60      389.61
-> Elapsed      5412.45     5166.12     5163.49
-> 
-> There is a small reduction and it appears consistent.
-> 
-> On NUMA machines, the scanning overhead is higher as zones are scanned
-> that are ineligible for use by zone allocation policy. This patch fixes
-> the zone-order zonelist policy and reduces the numbers of zones scanned
-> by the allocator leading to an overall reduction of CPU usage.
-> 
->           3.16.0-rc2  3.16.0-rc2  3.16.0-rc2
->              vanilla checklow-v4 fairzone-v4
-> User          744.05      763.26      778.53
-> System      70148.60    49331.48    44905.73
-> Elapsed     28094.08    27476.72    27378.98
+> x86-64 allyesconfig here.
+> What gcc version for you?
 
-That's a large change in system time.  Does this all include kswapd
-activity?
-
+gcc-4.4.4 allmodconfig, minus CONFIG_DEBUG_INFO 
