@@ -1,77 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757027AbaF3TYE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 15:24:04 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:51181 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754670AbaF3TYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 15:24:02 -0400
-Date: Mon, 30 Jun 2014 21:23:57 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Nick Warne <nick@linicks.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 3.15.2 build error on AMD64
-Message-ID: <20140630192357.GI4766@pd.tnic>
-References: <53AE9863.6050102@linicks.net>
- <53AE9F0B.1080207@linicks.net>
- <20140628122322.GC4373@pd.tnic>
- <53AEBE75.9070301@linicks.net>
- <53B063BC.4040200@linicks.net>
- <20140629194403.GB12943@pd.tnic>
- <53B07F99.40600@linicks.net>
- <20140629212423.GE12943@pd.tnic>
- <20140630132637.GD4766@pd.tnic>
- <53B1B194.3060907@linicks.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53B1B194.3060907@linicks.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756978AbaF3T1U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 15:27:20 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58047 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752197AbaF3T1R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 15:27:17 -0400
+Date: Mon, 30 Jun 2014 21:27:07 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-pm@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Michal Simek <michal.simek@xilinx.com>, cpufreq@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Uwe =?UTF-8?B?S2xl?= =?UTF-8?B?aW5lLUvDtm5pZw==?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/4] clk: Introduce 'clk_find_nearest_rate()'
+Message-ID: <20140630212707.1eb44db6@bbrezillon>
+In-Reply-To: <1404147396-8041-2-git-send-email-soren.brinkmann@xilinx.com>
+References: <1404147396-8041-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1404147396-8041-2-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 07:51:00PM +0100, Nick Warne wrote:
-> Ummm, interesting.
+Hello Soren,
+
+On Mon, 30 Jun 2014 09:56:33 -0700
+Soren Brinkmann <soren.brinkmann@xilinx.com> wrote:
+
+> Introduce a new API function to find the rate a clock can provide
+> which is closest to a given rate.
 > 
-> But is it solved?
+> clk_round_rate() leaves it to the clock driver how rounding is done.
+> Commonly implementations round down due to use-cases that have a
+> certain frequency maximum that must not be exceeded.
+
+I had the same concern (how could a driver decide whether it should
+round up, down or to the closest value), but had a slightly different
+approach in mind.
+
+AFAIU, you're assuming the clock is always a power of two (which is
+true most of the time, but some clock implementation might differ,
+i.e. a PLL accept any kind of multiplier not necessarily a power of 2).
+
+How about improving the clk_ops interface instead by adding a new method
+
+	long (*round_rate_with_constraint)(struct clk_hw *hw,
+					   unsigned long requested_rate,
+					   unsigned long *parent_rate,
+					   enum clk_round_type type);
+
+with
+
+enum clk_round_type {
+	CLK_ROUND_DOWN,
+	CLK_ROUND_UP,
+	CLK_ROUND_CLOSEST,
+};
+
+or just adding these 3 methods:
+
+	long (*round_rate_up)(struct clk_hw *hw,
+			      unsigned long requested_rate,
+			      unsigned long *parent_rate);
+
+	long (*round_rate_down)(struct clk_hw *hw,
+				unsigned long requested_rate,
+				unsigned long *parent_rate);
+
+	long (*round_rate_closest)(struct clk_hw *hw,
+				   unsigned long requested_rate,
+				   unsigned long *parent_rate);
+
+and let the round_rate method implement the default behaviour.
+
+This way you could add 3 functions to the API:
+
+clk_round_closest (or clk_find_nearest_rate as you called it),
+clk_round_up and clk_round_down, and let the clk driver implementation
+return the appropriate rate.
+
+These are just some thoughts...
+
+Best Regards,
+
+Boris
+
 > 
-> Suppose developer a.n.other submits a patch that works with his/her GCC
-> version but doesn't with some other GCC version.  I guess this will be
-> picked up in GIT build tests, but that only then tells everybody to upgrade
-> GCC or find a patch that fixes the issue (like you did, but I couldn't find
-> it).
+> The new API call enables use-cases where accuracy is preferred. E.g.
+> Ethernet clocks.
+> 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+> 
+>  drivers/clk/clk.c   | 57
+> +++++++++++++++++++++++++++++++++++++++++++++++++++++
+> include/linux/clk.h |  9 +++++++++ 2 files changed, 66 insertions(+)
+> 
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 8b73edef151d..fce1165cd879 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -1030,6 +1030,63 @@ long clk_round_rate(struct clk *clk, unsigned
+> long rate) EXPORT_SYMBOL_GPL(clk_round_rate);
+>  
+>  /**
+> + * clk_find_nearest_rate - round the given rate for a clk
+> + * @clk: the clk for which we are rounding a rate
+> + * @rate: the rate which is to be rounded
+> + *
+> + * Takes in a rate as input and finds the closest rate that the clk
+> + * can actually use which is then returned.
+> + * Note: This function relies on the clock's clk_round_rate()
+> implementation.
+> + * For cases clk_round_rate() rounds up, not the closest but the
+> rounded up
+> + * rate is found.
+> + */
+> +long clk_find_nearest_rate(struct clk *clk, unsigned long rate)
+> +{
+> +	long ret, lower, upper;
+> +	unsigned long tmp;
+> +
+> +	clk_prepare_lock();
+> +
+> +	lower = __clk_round_rate(clk, rate);
+> +	if (lower >= rate || lower < 0) {
+> +		ret = lower;
+> +		goto unlock;
+> +	}
+> +
+> +	tmp = rate + (rate - lower) - 1;
+> +	if (tmp > LONG_MAX)
+> +		upper = LONG_MAX;
+> +	else
+> +		upper = tmp;
+> +
+> +	upper = __clk_round_rate(clk, upper);
+> +	if (upper <= lower || upper < 0) {
+> +		ret = lower;
+> +		goto unlock;
+> +	}
+> +
+> +	lower = rate + 1;
+> +	while (lower < upper) {
+> +		long rounded, mid;
+> +
+> +		mid = lower + ((upper - lower) >> 1);
+> +		rounded = __clk_round_rate(clk, mid);
+> +		if (rounded < lower)
+> +			lower = mid + 1;
+> +		else
+> +			upper = rounded;
+> +	}
+> +
+> +	ret = upper;
+> +
+> +unlock:
+> +	clk_prepare_unlock();
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_find_nearest_rate);
+> +
+> +/**
+>   * __clk_notify - call clk notifier chain
+>   * @clk: struct clk * that is changing rate
+>   * @msg: clk notifier type (see include/linux/clk.h)
+> diff --git a/include/linux/clk.h b/include/linux/clk.h
+> index fb5e097d8f72..f8b53c515483 100644
+> --- a/include/linux/clk.h
+> +++ b/include/linux/clk.h
+> @@ -264,6 +264,15 @@ void devm_clk_put(struct device *dev, struct clk
+> *clk); long clk_round_rate(struct clk *clk, unsigned long rate);
+>  
+>  /**
+> + * clk_find_nearest_rate - Find nearest rate to the exact rate a
+> clock can provide
+> + * @clk: the clk for which we are rounding a rate
+> + * @rate: the rate which is to be rounded
+> + *
+> + * Returns the rate closest to @rate the clock can provide.
+> + */
+> +long clk_find_nearest_rate(struct clk *clk, unsigned long rate);
+> +
+> +/**
+>   * clk_set_rate - set the clock rate for a clock source
+>   * @clk: clock source
+>   * @rate: desired clock rate in Hz
 
-Well, this is generally something that will have to get fixed when
-someone reports it. That's why I wanted to have an ancient environment
-to build kernels in - just for that purpose. We have a bunch of people
-who do test latest kernels on ancient hw and sw but as it is always the
-case with testing, we cannot have total coverage.
 
-So yes, in such cases, we aim at having the kernel build with all
-supported gcc versions. Which brings me to your question below...
-
-> Is there a document or something that stipulates what is the minimum
-> version[s] of GCC to build a particular version of the kernel? If not,
-> perhaps this is something that needs addressing.
-
-#if GCC_VERSION < 30200
-# error Sorry, your compiler is too old - please upgrade it.
-#endif
-
-... yes, so we do support gcc versions >= 3.2 and the kernel has to be
-buildable with those.
-
-So, long story short, people should report such issues to lkml so that
-they get addressed.
-
-Ok?
-
-:-)
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
