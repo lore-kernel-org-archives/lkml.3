@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794AbaF3ImU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 04:42:20 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:50912 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752672AbaF3ImS convert rfc822-to-8bit (ORCPT
+	id S1754710AbaF3IrO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 04:47:14 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:44149 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752527AbaF3IrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 04:42:18 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Richard Leitner'" <richard.leitner@skidata.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Felipe Balbi <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCHv2] usb: gadget: serial: replace hardcoded ttyGS with
- PREFIX
-Thread-Topic: [PATCHv2] usb: gadget: serial: replace hardcoded ttyGS with
- PREFIX
-Thread-Index: AQHPlD5SSygGtgUtdESncUl0Nvmcr5uJVOuQ
-Date: Mon, 30 Jun 2014 08:41:18 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1726930B@AcuExch.aculab.com>
-References: <20140627133721.10ca6cab@lxbuild.skidata.net>
-	<20140627174628.GA1449@kroah.com>
-	<20140630083205.596557f1@lxbuild.skidata.net>
- <20140630103616.620a13a2@lxbuild.skidata.net>
-In-Reply-To: <20140630103616.620a13a2@lxbuild.skidata.net>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Mon, 30 Jun 2014 04:47:12 -0400
+Date: Mon, 30 Jun 2014 11:47:07 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Nadav Amit <namit@cs.technion.ac.il>
+Cc: pbonzini@redhat.com, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: Pending interrupt may be delivered after INIT
+Message-ID: <20140630084707.GJ18167@minantech.com>
+References: <1404117327-20976-1-git-send-email-namit@cs.technion.ac.il>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404117327-20976-1-git-send-email-namit@cs.technion.ac.il>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Of Richard Leitner
-> Replaces all hardcoded ttyGS strings with the PREFIX macro.
-> Due to the fact the strings are spread over different source files the
-> PREFIX definition is moved to u_serial.h
+On Mon, Jun 30, 2014 at 11:35:27AM +0300, Nadav Amit wrote:
+> We encountered a scenario in which after an INIT is delivered, a pending
+> interrupt is delivered, although it was sent before the INIT.  As the SDM
+> states in section 10.4.7.1, the ISR and the IRR should be cleared after INIT as
+> KVM does.  This also means that pending interrupts should be cleared.  This
+> patch clears upon reset (and INIT) the pending interrupts; and at the same
+> occassion clears the pending exceptions, since they may cause a similar issue.
+> 
+> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+> ---
+>  arch/x86/kvm/x86.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index f32a025..863ac07 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -6835,6 +6835,8 @@ void kvm_vcpu_reset(struct kvm_vcpu *vcpu)
+>  	atomic_set(&vcpu->arch.nmi_queued, 0);
+>  	vcpu->arch.nmi_pending = 0;
+>  	vcpu->arch.nmi_injected = false;
+> +	vcpu->arch.interrupt.pending = false;
+> +	vcpu->arch.exception.pending = false;
+kvm_clear_interrupt_queue(vcpu);
+kvm_clear_exception_queue(vcpu);
 
-Lots of changes like:
-> -		DBG(cdev, "acm ttyGS%d completion, err %d\n",
-> -				acm->port_num, req->status);
-> +		DBG(cdev, "acm %s%d completion, err %d\n",
-> +				PREFIX, acm->port_num, req->status);
+>  
+>  	memset(vcpu->arch.db, 0, sizeof(vcpu->arch.db));
+>  	vcpu->arch.dr6 = DR6_FIXED_1;
+> -- 
+> 1.9.1
+> 
 
-I'm not sure this improves the code.
-Do you see a need to ever change PREFIX?
-
-Even if it is a reasonable change, the name PREFIX is hopeless.
-It would have to be something like ACM_TTYNAME_PREFIX.
-
-	David
-
-
-
+--
+			Gleb.
