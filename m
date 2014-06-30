@@ -1,106 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608AbaF3Phf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:37:35 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:36009
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751005AbaF3Phd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:37:33 -0400
-X-IronPort-AV: E=Sophos;i="5.01,575,1400018400"; 
-   d="scan'208";a="69603461"
-Date: Mon, 30 Jun 2014 17:37:29 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Alan Stern <stern@rowland.harvard.edu>
-cc: Himangi Saraogi <himangi774@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: host: ohci-tmio: Use managed interfaces for resource
- allocation
-In-Reply-To: <Pine.LNX.4.44L0.1406301105530.1550-100000@iolanthe.rowland.org>
-Message-ID: <alpine.DEB.2.10.1406301737020.3511@hadrien>
-References: <Pine.LNX.4.44L0.1406301105530.1550-100000@iolanthe.rowland.org>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1754309AbaF3Phr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:37:47 -0400
+Received: from 8bytes.org ([85.214.48.195]:34619 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003AbaF3Phe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 11:37:34 -0400
+Date: Mon, 30 Jun 2014 17:37:26 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: =?iso-8859-1?B?Suly9G1l?= Glisse <j.glisse@gmail.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, hpa@zytor.com,
+        peterz@infraread.org, aarcange@redhat.com, riel@redhat.com,
+        jweiner@redhat.com, torvalds@linux-foundation.org,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Jatin Kumar <jakumar@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        John Hubbard <jhubbard@nvidia.com>, Sherry Cheung <SCheung@nvidia.com>,
+        Duncan Poole <dpoole@nvidia.com>, Oded Gabbay <Oded.Gabbay@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Andrew Lewycky <Andrew.Lewycky@amd.com>,
+        =?iso-8859-1?B?Suly9G1l?= Glisse <jglisse@redhat.com>
+Subject: Re: [PATCH 1/6] mmput: use notifier chain to call subsystem exit
+ handler.
+Message-ID: <20140630153726.GC26537@8bytes.org>
+References: <1403920822-14488-1-git-send-email-j.glisse@gmail.com>
+ <1403920822-14488-2-git-send-email-j.glisse@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1403920822-14488-2-git-send-email-j.glisse@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon Jun 30 17:37:32 2014
+X-DSPAM-Confidence: 0.9996
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 53b1843c20868981876322
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 27, 2014 at 10:00:19PM -0400, Jérôme Glisse wrote:
+> Note that this patch also move the call to cleanup functions after
+> exit_mmap so that new call back can assume that mmu_notifier_release
+> have already been call. This does not impact existing cleanup functions
+> as they do not rely on anything that exit_mmap is freeing. Also moved
+> khugepaged_exit to exit_mmap so that ordering is preserved for that
+> function.
+
+What this patch does is duplicating the functionality of the
+mmu_notifier_release call-back. Why is it needed?
 
 
-On Mon, 30 Jun 2014, Alan Stern wrote:
+	Joerg
 
-> On Sun, 29 Jun 2014, Himangi Saraogi wrote:
->
-> > This patch moves resources allocated using ioremap or
-> > dma_declare_coherent_memory to the corresponding managed interface. The
-> > function calls to free the allocated resources are removed in the probe
-> > and remove functions as they are no longer required. Also, some labels
-> > are done away with and a new label err added to make it less specific to
-> > the context.
-> >
-> > Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> > Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-> > ---
-> >  drivers/usb/host/ohci-tmio.c | 36 ++++++++++++------------------------
-> >  1 file changed, 12 insertions(+), 24 deletions(-)
-> >
-> > diff --git a/drivers/usb/host/ohci-tmio.c b/drivers/usb/host/ohci-tmio.c
-> > index bb40958..1a6034f 100644
-> > --- a/drivers/usb/host/ohci-tmio.c
-> > +++ b/drivers/usb/host/ohci-tmio.c
-> > @@ -203,10 +203,8 @@ static int ohci_hcd_tmio_drv_probe(struct platform_device *dev)
-> >  		return -EINVAL;
-> >
-> >  	hcd = usb_create_hcd(&ohci_tmio_hc_driver, &dev->dev, dev_name(&dev->dev));
-> > -	if (!hcd) {
-> > -		ret = -ENOMEM;
-> > -		goto err_usb_create_hcd;
-> > -	}
-> > +	if (!hcd)
-> > +		return -ENOMEM;
-> >
-> >  	hcd->rsrc_start = regs->start;
-> >  	hcd->rsrc_len = resource_size(regs);
-> > @@ -215,30 +213,31 @@ static int ohci_hcd_tmio_drv_probe(struct platform_device *dev)
-> >
-> >  	spin_lock_init(&tmio->lock);
-> >
-> > -	tmio->ccr = ioremap(config->start, resource_size(config));
-> > +	tmio->ccr = devm_ioremap(&dev->dev, config->start,
-> > +				 resource_size(config));
->
-> You should use devm_ioremap_resource() rather than devm_ioremap().
 
-Even if there was no request_mem_region in the original code?
-
-julia
-
->
-> ...
->
-> > @@ -259,16 +258,8 @@ err_add_hcd:
-> >  	tmio_stop_hc(dev);
-> >  	if (cell->disable)
-> >  		cell->disable(dev);
-> > -err_enable:
-> > -	dma_release_declared_memory(&dev->dev);
-> > -err_dma_declare:
-> > -	iounmap(hcd->regs);
-> > -err_ioremap_regs:
-> > -	iounmap(tmio->ccr);
-> > -err_ioremap_ccr:
-> > -	usb_put_hcd(hcd);
-> > -err_usb_create_hcd:
-> > -
-> > +err:
-> > +	usb_put_hcr(hcd);
->
-> There is no function named "usb_put_hcr()".  Did you try to compile
-> this patch?
->
-> Alan Stern
->
->
