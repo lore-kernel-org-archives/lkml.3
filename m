@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360AbaF3NU7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 09:20:59 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:60398 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913AbaF3NU5 (ORCPT
+	id S1753229AbaF3NVc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 09:21:32 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:49228 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752033AbaF3NVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 09:20:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Paul Bolle <pebolle@tiscali.nl>,
-        patches@linaro.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v7 0/4] arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
-Date: Mon, 30 Jun 2014 15:20:39 +0200
-Message-ID: <4167835.TLMiA9Dyqd@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1404127855-30459-1-git-send-email-daniel.thompson@linaro.org>
-References: <1401206421-29832-1-git-send-email-daniel.thompson@linaro.org> <1404127855-30459-1-git-send-email-daniel.thompson@linaro.org>
+	Mon, 30 Jun 2014 09:21:30 -0400
+Date: Mon, 30 Jun 2014 21:21:19 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Evan Gilman <evan@pagerduty.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: Sporadic ESP payload corruption when using IPSec in NAT-T
+ Transport Mode
+Message-ID: <20140630132119.GA19500@gondor.apana.org.au>
+References: <CALEwOppxvZ5F1-HeEnEEfe+GXs4=q+Eq+yL6W4xshemW8Wu9Ww@mail.gmail.com>
+ <20140630113324.GR32371@secunet.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:lrMgegl9MEU8l/mdtxBKRqy81Uh1p6LRGzZ8+tI2qJr
- vgN7NHSIU8t/kCRLzWq3r6hwHwyJWXICjCbmuOskdq+5DQHxXw
- hoyGvAZ5/lb567uOdaLZFofoNj+B3Mf2Zp3XQIY86JhHU71EKq
- E1rpqnZ/HfDGD2NGTm4jY7AI1xj4Bgkykob9Kt0oHILCT2nXEJ
- 8Ewa3075ZEf18wW/9jC/9D6JyMdIgTs1qfRRrB+V318/0fk+Lp
- LaXFHt+hY+dMdvwfCcN+j0tAudQ6LAtxAZ1n/Ks9AhWXD23hrC
- ngh1LbuP9BkM/SMX3c6KHJQoTu6dunIBEA87d8i5PP5ZKena6e
- Ox2uFhZToJ6XgAPxoESQ=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140630113324.GR32371@secunet.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 30 June 2014 12:30:51 Daniel Thompson wrote:
-> This patchset removes some single-platform compatibility tricks related
-> to DEBUG_LL and, as a result, allows multi_v7_defconfig derived builds
-> to enable DEBUG_LL. Currently the user selected kbuild setting is
-> ignored and the PL01X's DEBUG_LL stub is silently selected instead. This
-> is a pain if your hardware doesn't have this cell, not least because it
-> takes a little time to figure out that kbuild built the wrong code.
+On Mon, Jun 30, 2014 at 01:33:24PM +0200, Steffen Klassert wrote:
+> Ccing netdev.
+> 
+> On Thu, Jun 26, 2014 at 02:12:30PM -0700, Evan Gilman wrote:
+> >    Hi all
+> >    We have a couple Ubuntu 10.04 hosts with kernel version 3.14.5 which are
+> >    experiencing TCP payload corruption when using IPSec in NAT-T transport
+> >    mode. All are running under Xen at third party providers. When
+> >    communicating with other hosts using IPSec, we see that these corrupt TCP
+> >    PDUs are still being received by the remote listener, even though the TCP
+> >    checksum is invalid.
+> >    All other checksums (IPSec authentication header and IP checksum) are
+> >    good. So, we are thinking that corruption is happening during the ESP
+> >    encapsulation and decapsulation phase (IPSec required for reproduction).
+> >    The corruption occurs sporadically, and we have not found any one
+> >    payload/packet combination that will reliably trigger it, though we can
+> >    typically reproduce it in less than 30 minutes. We can do it very simply
+> >    by reading from /dev/zero with dd and piping through netcat. It occurs
+> >    whenever a 3.14.5 kernel is involved at either end of the conversation. I
+> >    can send captures to those who are interested. Does any of this sound
+> >    familiar?
+> 
+> I can't remember anyone reporting such problems, but maybe someone
+> else does.
 
-Looks fine to me.
+I have seen one report where a Xen guest experienced IPsec corruption
+when using aesni-intel.  However, in that case the corruption was at
+the authentication level.  Are you using aesni-intel by any chance?
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
