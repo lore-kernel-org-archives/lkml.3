@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221AbaF3Px0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:53:26 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:46475 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755168AbaF3PxX (ORCPT
+	id S1755280AbaF3Pxg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:53:36 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:28501 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755245AbaF3Pxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:53:23 -0400
+	Mon, 30 Jun 2014 11:53:33 -0400
+Date: Mon, 30 Jun 2014 11:53:31 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH] debugfs: Fix corrupted loop in
+ debugfs_remove_recursive
+Message-ID: <20140630115331.5135b511@gandalf.local.home>
+In-Reply-To: <20140610202302.GB20499@kroah.com>
+References: <20140609140607.3e3aae39@gandalf.local.home>
+	<20140610093357.7ef3792b@gandalf.local.home>
+	<20140610202302.GB20499@kroah.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140630154928.GB10375@google.com>
-References: <1404124096-21445-1-git-send-email-drysdale@google.com>
- <1404124096-21445-2-git-send-email-drysdale@google.com> <CALCETrU=HLmw9n-DxPkFV1xP5wtzQ7-YF3-uao6YiGZODA9kdw@mail.gmail.com>
- <20140630154928.GB10375@google.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 30 Jun 2014 08:53:01 -0700
-Message-ID: <CALCETrWJ-rqDo8OvSZWPUt1806gObNtwVHvC4M6kfQgvd3Eg9w@mail.gmail.com>
-Subject: Re: [PATCH 01/11] fs: add O_BENEATH_ONLY flag to openat(2)
-To: David Drysdale <drysdale@google.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 8:49 AM, David Drysdale <drysdale@google.com> wrote:
-> On Mon, Jun 30, 2014 at 07:49:41AM -0700, Andy Lutomirski wrote:
->> On Jun 30, 2014 3:36 AM, "David Drysdale" <drysdale@google.com> wrote:
->> >
->> > Add a new O_BENEATH_ONLY flag for openat(2) which restricts the
->> > provided path, rejecting (with -EACCES) paths that are not beneath
->> > the provided dfd.  In particular, reject:
->> >  - paths that contain .. components
->> >  - paths that begin with /
->> >  - symlinks that have paths as above.
->>
->> I like this a lot.  However, I think I'd like it even better if it
->> were AT_BENEATH_ONLY so that it could be added to the rest of the *at
->> family.
->>
->> --Andy
->
-> Wouldn't it need to be both O_BENEATH_ONLY (for openat()) and
-> AT_BENEATH_ONLY (for other *at() functions), like O_NOFOLLOW and
-> AT_SYMLINK_NOFOLLOW?  (I.e. aren't the AT_* flags in a different
-> numbering space than O_* flags?)
->
-> Or am I misunderstanding?
->
+On Tue, 10 Jun 2014 13:23:02 -0700
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
 
-Ugh, you're probably right.  I wish openat had separate flags and
-atflags arguments.  Oh well.
 
---Andy
+> Anyway, thanks for the patch, I'll queue it up after 3.16-rc1 is out.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Did this patch get dropped?
+
+-- Steve
+
