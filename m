@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757176AbaF3TaY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 15:30:24 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:48072 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757149AbaF3TaV (ORCPT
+	id S1757204AbaF3TbM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 15:31:12 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:61272 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754306AbaF3TbK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 15:30:21 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18V1HplUE9lLCDMMesmexSQg8cgk5Dbuck=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 1AAEE59EA34
-Date: Mon, 30 Jun 2014 15:30:09 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sricharan R <r.sricharan@ti.com>
-Cc: nm@ti.com, devicetree@vger.kernel.org, linux@arm.linux.org.uk,
-        tony@atomide.com, rnayak@ti.com, linux-kernel@vger.kernel.org,
-        santosh.shilimkar@ti.com, joe@perches.com, tglx@linutronix.de,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V4 13/16] irqchip: crossbar: Introduce
- ti,max-crossbar-sources to identify valid crossbar mapping
-Message-ID: <20140630193009.GB23978@titan.lakedaemon.net>
-References: <1403766634-18543-1-git-send-email-r.sricharan@ti.com>
- <1403766634-18543-14-git-send-email-r.sricharan@ti.com>
- <20140627120035.GB23978@titan.lakedaemon.net>
+	Mon, 30 Jun 2014 15:31:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140627120035.GB23978@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAPybu_29FPnRyJSJvnX+mosto+CF944PpREROeP282uqYb-FNw@mail.gmail.com>
+References: <1400603412-19406-1-git-send-email-ricardo.ribalda@gmail.com> <CAPybu_29FPnRyJSJvnX+mosto+CF944PpREROeP282uqYb-FNw@mail.gmail.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Mon, 30 Jun 2014 21:30:49 +0200
+Message-ID: <CAPybu_3Mhho97gw+bN4ENnSGg37ajS7eEvNC3WbX+4PH6vUB5A@mail.gmail.com>
+Subject: Re: [PATCH 00/10] net2280: Support for PLX USB338x and cleanout code
+To: "balbi@ti.com" <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Joe Perches <joe@perches.com>,
+        Amit Uttamchandani <auttamchandani@logicube.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 08:00:35AM -0400, Jason Cooper wrote:
-> On Thu, Jun 26, 2014 at 12:40:31PM +0530, Sricharan R wrote:
-> > From: Nishanth Menon <nm@ti.com>
-> > 
-> > Currently we attempt to map any crossbar value to an IRQ, however,
-> > this is not correct from hardware perspective. There is a max crossbar
-> > event number upto which hardware supports. So describe the same in
-> > device tree using 'ti,max-crossbar-sources' property and use it to
-> > validate requests.
-> > 
-> > Signed-off-by: Nishanth Menon <nm@ti.com>
-> > Signed-off-by: Sricharan R <r.sricharan@ti.com>
-> > Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> > ---
-> >  .../devicetree/bindings/arm/omap/crossbar.txt      |    2 ++
-> >  drivers/irqchip/irq-crossbar.c                     |   21 ++++++++++++++++++--
-> >  2 files changed, 21 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/arm/omap/crossbar.txt b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-> > index 5f45c78..6923531 100644
-> > --- a/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-> > +++ b/Documentation/devicetree/bindings/arm/omap/crossbar.txt
-> > @@ -10,6 +10,7 @@ Required properties:
-> >  - compatible : Should be "ti,irq-crossbar"
-> >  - reg: Base address and the size of the crossbar registers.
-> >  - ti,max-irqs: Total number of irqs available at the interrupt controller.
-> > +- ti,max-crossbar-sources: Maximum number of crossbar sources that can be routed.
-> >  - ti,reg-size: Size of a individual register in bytes. Every individual
-> >  	    register is assumed to be of same size. Valid sizes are 1, 2, 4.
-> >  - ti,irqs-reserved: List of the reserved irq lines that are not muxed using
-> > @@ -30,6 +31,7 @@ Examples:
-> >  			compatible = "ti,irq-crossbar";
-> >  			reg = <0x4a002a48 0x130>;
-> >  			ti,max-irqs = <160>;
-> > +			ti,max-crossbar-sources = <MAX_SOURCES>;
-> 
-> As mentioned in my reply to #15, I can change this to 400 when I apply
-> it, or you can send a new version of #15 using the macro and explaining
-> it's definition.
-> 
-> Thinking about it more, it's probably best just to use numbers in the
-> docs.
+Hello Felipe
 
-I just did s/MAX_SOURCES/400/ when I applied this.  We shouldn't be
-polluting the binding docs with implementation details.
+Any comment on this patchset? Shall I resend it rebased on v3.16-rc2?
 
-thx,
 
-Jason.
+Regards
+
+On Tue, Jun 10, 2014 at 10:19 PM, Ricardo Ribalda Delgado
+<ricardo.ribalda@gmail.com> wrote:
+> Ping...
+>
+> On Tue, May 20, 2014 at 6:30 PM, Ricardo Ribalda Delgado
+> <ricardo.ribalda@gmail.com> wrote:
+>> The USB 3380 is a PCI Express Gen 2 to USB 3.0 SuperSpeed Peripheral
+>> Controller. It shares a lot functionatily with the net228x family.
+>>
+>> This series of patches includes some resend of previous patches.
+>>
+>> Please check the changelog for every patch. This time it has been placed
+>> under the tear line
+>>
+>>
+>>
+>> Ricardo Ribalda Delgado (10):
+>>   usb: gadget: net2280: Add support for PLX USB338X
+>>   usb: gadget: net2280: Dont use magic numbers
+>>   usb: gadget: net2280: Use BIT() macro
+>>   usb: gadget: net2280: Use true/false instead of 1/0
+>>   usb: gadget: net2280: Use module_pci_driver macro
+>>   usb: gadget: net2280: Refactor queues_show
+>>   usb: gadget: net2280: Pass checkpacth.pl test
+>>   usb: gadget: net2280: Code Cleanup
+>>   usb: gadget: net2280: Use pr_* function
+>>   usb: gadget: net2280: Use quirks instead of pci id
+>>
+>>  drivers/usb/gadget/Kconfig   |   10 +-
+>>  drivers/usb/gadget/net2280.c | 2752 ++++++++++++++++++++++++++++--------------
+>>  drivers/usb/gadget/net2280.h |  285 +++--
+>>  include/linux/usb/usb338x.h  |  199 +++
+>>  4 files changed, 2235 insertions(+), 1011 deletions(-)
+>>  create mode 100644 include/linux/usb/usb338x.h
+>>
+>> --
+>> 2.0.0.rc2
+>>
+>
+>
+>
+> --
+> Ricardo Ribalda
+
+
+
+-- 
+Ricardo Ribalda
