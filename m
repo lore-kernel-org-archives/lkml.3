@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405AbaF3PcN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:32:13 -0400
-Received: from puma-aaisp.mxtelecom.com ([81.187.36.3]:54671 "EHLO
-	puma.mxtelecom.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750815AbaF3PcM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:32:12 -0400
-X-Greylist: delayed 955 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jun 2014 11:32:11 EDT
-From: Edward Allcutt <edward.allcutt@openmarket.com>
-To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Edward Allcutt <edward.allcutt@openmarket.com>
-Subject: [PATCH] ipv4: icmp: Fix pMTU handling for rare case
-Date: Mon, 30 Jun 2014 16:16:02 +0100
-Message-Id: <1404141362-21015-1-git-send-email-edward.allcutt@openmarket.com>
-X-Mailer: git-send-email 2.0.0
+	id S1754120AbaF3PcZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:32:25 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35310 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753465AbaF3PcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 11:32:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,575,1400050800"; 
+   d="scan'208";a="566078573"
+From: Keith Busch <keith.busch@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Keith Busch <keith.busch@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org
+Subject: [PATCH] x86: ioapic: Fix irq_free_descs count
+Date: Mon, 30 Jun 2014 09:31:11 -0600
+Message-Id: <1404142271-18311-1-git-send-email-keith.busch@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some older router implementations still send Fragmentation Needed
-errors with the Next-Hop MTU field set to zero. This is explicitly
-described as an eventuality that hosts must deal with by the
-standard (RFC 1191) since older standards specified that those
-bits must be zero.
+Signed-off-by: Keith Busch <keith.busch@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: x86@kernel.org
+---
+ kernel/irq/irqdesc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Linux had a generic (for all of IPv4) implementation of the algorithm
-described in the RFC for searching a list of MTU plateaus for a good
-value. Commit 46517008e116 ("ipv4: Kill ip_rt_frag_needed().")
-removed this as part of the changes to remove the routing cache.
-Subsequently any Fragmentation Needed packet with a zero Next-Hop
-MTU has been discarded without being passed to the per-protocol
-handlers or notifying userspace for raw sockets.
-
-When there is a router which does not implement RFC 1191 on an
-MTU limited path then this results in stalled connections since
-large packets are discarded and the local protocols are not
-notified so they never attempt to lower the pMTU.
-
-One example I have seen is an OpenBSD router terminating IPSec
-tunnels. It's worth pointing out that this case is distinct from
-the BSD 4.2 bug which incorrectly calculated the Next-Hop MTU
-since the commit in question dismissed that as a valid concern.
-
-All of the per-protocols handlers implement the simple approach from
-RFC 1191 of immediately falling back to the minimum value. Although
-this is sub-optimal it is vastly preferable to connections hanging
-indefinitely.
-
-Remove the Next-Hop MTU != 0 check and allow such packets
-to follow the normal path.
-
-Fixes: 46517008e116 ("ipv4: Kill ip_rt_frag_needed().")
-Signed-off-by: Edward Allcutt <edward.allcutt@openmarket.com>
-
-diff --git a/net/ipv4/icmp.c b/net/ipv4/icmp.c
-index 79c3d94..42b7bcf 100644
---- a/net/ipv4/icmp.c
-+++ b/net/ipv4/icmp.c
-@@ -739,8 +739,6 @@ static void icmp_unreach(struct sk_buff *skb)
- 				/* fall through */
- 			case 0:
- 				info = ntohs(icmph->un.frag.mtu);
--				if (!info)
--					goto out;
- 			}
- 			break;
- 		case ICMP_SR_FAILED:
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 7339e42..1487a12 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -455,9 +455,9 @@ EXPORT_SYMBOL_GPL(irq_alloc_hwirqs);
+  */
+ void irq_free_hwirqs(unsigned int from, int cnt)
+ {
+-	int i;
++	int i, j;
+ 
+-	for (i = from; cnt > 0; i++, cnt--) {
++	for (i = from, j = cnt; j > 0; i++, j--) {
+ 		irq_set_status_flags(i, _IRQ_NOREQUEST | _IRQ_NOPROBE);
+ 		arch_teardown_hwirq(i);
+ 	}
 -- 
-2.0.0
+1.7.10.4
 
