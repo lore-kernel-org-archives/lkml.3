@@ -1,112 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050AbaF3XJJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 19:09:09 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:58428 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745AbaF3XJH (ORCPT
+	id S1756082AbaF3XLk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 19:11:40 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:5646 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751563AbaF3XLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 19:09:07 -0400
+	Mon, 30 Jun 2014 19:11:38 -0400
+From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+To: Heinrich Schuchardt <xypron.glpk@gmx.de>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1] script/kconfig: remove a warning for menucofig
+Thread-Topic: [PATCH 1/1] script/kconfig: remove a warning for menucofig
+Thread-Index: AQHPlBHdItIp9bBBQ0OFqHOm4gNIfZuJ4g6AgABmSBA=
+Date: Mon, 30 Jun 2014 23:10:32 +0000
+Message-ID: <1267BB84A242B24E81E0C0C8955CFFC061A30C1D@G9W0343.americas.hpqcorp.net>
+References: <1404098187-9638-1-git-send-email-zhen-hual@hp.com>
+ <53B1982F.4030504@gmx.de>
+In-Reply-To: <53B1982F.4030504@gmx.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [15.201.58.17]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
-References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
-Date: Mon, 30 Jun 2014 16:09:06 -0700
-X-Google-Sender-Auth: fyi9YJEdiuld6QKYPSbHCJ156JI
-Message-ID: <CAGXu5jK9Bwocjz8y26=GEk0qg5ru1Mu7j9FVuu20KfTDUrSkuQ@mail.gmail.com>
-Subject: Re: [PATCH RFC net-next 00/14] BPF syscall, maps, verifier, samples
-From: Kees Cook <keescook@chromium.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5UNBiCp017944
 
-On Fri, Jun 27, 2014 at 5:05 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> Hi All,
->
-> this patch set demonstrates the potential of eBPF.
->
-> First patch "net: filter: split filter.c into two files" splits eBPF interpreter
-> out of networking into kernel/bpf/. The goal for BPF subsystem is to be usable
-> in NET-less configuration. Though the whole set is marked is RFC, the 1st patch
-> is good to go. Similar version of the patch that was posted few weeks ago, but
-> was deferred. I'm assuming due to lack of forward visibility. I hope that this
-> patch set shows what eBPF is capable of and where it's heading.
->
-> Other patches expose eBPF instruction set to user space and introduce concepts
-> of maps and programs accessible via syscall.
->
-> 'maps' is a generic storage of different types for sharing data between kernel
-> and userspace. Maps are referrenced by global id. Root can create multiple
-> maps of different types where key/value are opaque bytes of data. It's up to
-> user space and eBPF program to decide what they store in the maps.
->
-> eBPF programs are similar to kernel modules. They live in global space and
-> have unique prog_id. Each program is a safe run-to-completion set of
-> instructions. eBPF verifier statically determines that the program terminates
-> and safe to execute. During verification the program takes a hold of maps
-> that it intends to use, so selected maps cannot be removed until program is
-> unloaded. The program can be attached to different events. These events can
-> be packets, tracepoint events and other types in the future. New event triggers
-> execution of the program which may store information about the event in the maps.
-> Beyond storing data the programs may call into in-kernel helper functions
-> which may, for example, dump stack, do trace_printk or other forms of live
-> kernel debugging. Same program can be attached to multiple events. Different
-> programs can access the same map:
->
->   tracepoint  tracepoint  tracepoint    sk_buff    sk_buff
->    event A     event B     event C      on eth0    on eth1
->     |             |          |            |          |
->     |             |          |            |          |
->     --> tracing <--      tracing       socket      socket
->          prog_1           prog_2       prog_3      prog_4
->          |  |               |            |
->       |---  -----|  |-------|           map_3
->     map_1       map_2
->
-> User space (via syscall) and eBPF programs access maps concurrently.
->
-> Last two patches are sample code. 1st demonstrates stateful packet inspection.
-> It counts tcp and udp packets on eth0. Should be easy to see how this eBPF
-> framework can be used for network analytics.
-> 2nd sample does simple 'drop monitor'. It attaches to kfree_skb tracepoint
-> event and counts number of packet drops at particular $pc location.
-> User space periodically summarizes what eBPF programs recorded.
-> In these two samples the eBPF programs are tiny and written in 'assembler'
-> with macroses. More complex programs can be written C (llvm backend is not
-> part of this diff to reduce 'huge' perception).
-> Since eBPF is fully JITed on x64, the cost of running eBPF program is very
-> small even for high frequency events. Here are the numbers comparing
-> flow_dissector in C vs eBPF:
->   x86_64 skb_flow_dissect() same skb (all cached)         -  42 nsec per call
->   x86_64 skb_flow_dissect() different skbs (cache misses) - 141 nsec per call
-> eBPF+jit skb_flow_dissect() same skb (all cached)         -  51 nsec per call
-> eBPF+jit skb_flow_dissect() different skbs (cache misses) - 135 nsec per call
->
-> Detailed explanation on eBPF verifier and safety is in patch 08/14
+When malloc for jump, 
+if (head && location) {
+	jump = xmalloc(sizeof(struct jump_key));
+	....
+}
+And here it is used:
+if (head && location && menu == location)
+	jump->offset = strlen(r->s);
 
-This is very exciting! Thanks for working on it. :)
 
-Between the new eBPF syscall and the new seccomp syscall, I'm really
-looking forward to using lookup tables for seccomp filters. Under
-certain types of filters, we'll likely see some non-trivial
-performance improvements.
+So I think when jump is used, it must not be NULL; then !=NULL is not needed.
+-----Original Message-----
+From: Heinrich Schuchardt [mailto:xypron.glpk@gmx.de] 
+Sent: Tuesday, July 01, 2014 1:03 AM
+To: Li, Zhen-Hua; Yann E. MORIN; linux-kbuild@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] script/kconfig: remove a warning for menucofig
 
--Kees
+On 30.06.2014 05:16, Li, Zhen-Hua wrote:
+> There is a warning when run "make menuconfig".
+>
+> scripts/kconfig/menu.c: In function â€˜get_symbol_strâ€™:
+> scripts/kconfig/menu.c:591:18: warning: â€˜jumpâ€™ may be used uninitialized in
+> this function [-Wmaybe-uninitialized]
+>       jump->offset = strlen(r->s);
+>                    ^
+> scripts/kconfig/menu.c:551:19: note: â€˜jumpâ€™ was declared here
+>    struct jump_key *jump;
+>                     ^
+>
+> It is because the compiler think "jump" is not initialized, though in fact
+> it is already initialized.
+>
+> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+> ---
+>   scripts/kconfig/menu.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
+> index a26cc5d..584e0fc 100644
+> --- a/scripts/kconfig/menu.c
+> +++ b/scripts/kconfig/menu.c
+> @@ -548,7 +548,7 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
+>   {
+>   	int i, j;
+>   	struct menu *submenu[8], *menu, *location = NULL;
+> -	struct jump_key *jump;
+> +	struct jump_key *jump = NULL;
+>
+>   	str_printf(r, _("Prompt: %s\n"), _(prop->text));
+>   	menu = prop->menu->parent;
+>
+Hello Zhen-Hua,
 
--- 
-Kees Cook
-Chrome OS Security
+the patch looks incomplete to me. A check
+jump != NULL
+should be added before accessing parts of structure jump_key.
+
+Best regards
+
+Heinrich Schuchardt
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
