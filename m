@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002AbaF3LyZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 07:54:25 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52106 "EHLO
+	id S1754875AbaF3LyX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 07:54:23 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52126 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754023AbaF3Lx0 (ORCPT
+	by vger.kernel.org with ESMTP id S1754058AbaF3Lx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:26 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, James Hogan <james.hogan@imgtec.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        kvm@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        linux-mips@linux-mips.org, Sanjay Lal <sanjayl@kymasys.com>,
+Cc: linux-kernel@vger.kernel.org, Huang Rui <ray.huang@amd.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 057/181] MIPS: KVM: Allocate at least 16KB for exception handlers
-Date: Mon, 30 Jun 2014 13:51:18 +0200
-Message-Id: <8dd214d3843a26826c23dd08034e5ad8c6970d7a.1404128998.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 103/181] usb: usbtest: fix unlink write error with pattern 1
+Date: Mon, 30 Jun 2014 13:52:04 +0200
+Message-Id: <9bc860d837703b23740db72d2811a07fbc7a41f3.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -26,56 +23,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: James Hogan <james.hogan@imgtec.com>
+From: Huang Rui <ray.huang@amd.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 7006e2dfda9adfa40251093604db76d7e44263b3 upstream.
+commit e4d58f5dcb7d7be45df8def31881ebfae99c75da upstream.
 
-Each MIPS KVM guest has its own copy of the KVM exception vector. This
-contains the TLB refill exception handler at offset 0x000, the general
-exception handler at offset 0x180, and interrupt exception handlers at
-offset 0x200 in case Cause_IV=1. A common handler is copied to offset
-0x2000 and offset 0x3000 is used for temporarily storing k1 during entry
-from guest.
+TEST 12 and TEST 24 unlinks the URB write request for N times. When
+host and gadget both initialize pattern 1 (mod 63) data series to
+transfer, the gadget side will complain the wrong data which is not
+expected.  Because in host side, usbtest doesn't fill the data buffer
+as mod 63 and this patch fixed it.
 
-However the amount of memory allocated for this purpose is calculated as
-0x200 rounded up to the next page boundary, which is insufficient if 4KB
-pages are in use. This can lead to the common handler at offset 0x2000
-being overwritten and infinitely recursive exceptions on the next exit
-from the guest.
+[20285.488974] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
+[20285.489181] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
+[20285.489423] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb50800 length 512 last
+[20285.489727] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
+[20285.490055] dwc3 dwc3.0.auto: Command Complete --> 0
+[20285.490281] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
+[20285.490492] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Active
+[20285.490713] dwc3 dwc3.0.auto: ep1out-bulk: endpoint busy
+[20285.490909] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Complete
+[20285.491117] dwc3 dwc3.0.auto: request ffff8800aa6cb480 from ep1out-bulk completed 512/512 ===> 0
+[20285.491431] zero gadget: bad OUT byte, buf[1] = 0
+[20285.491605] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Set Stall' params 00000000 00000000 00000000
+[20285.491915] dwc3 dwc3.0.auto: Command Complete --> 0
+[20285.492099] dwc3 dwc3.0.auto: queing request ffff8800aa6cb480 to ep1out-bulk length 512
+[20285.492387] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
+[20285.492595] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
+[20285.492830] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb51000 length 512 last
+[20285.493135] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
+[20285.493465] dwc3 dwc3.0.auto: Command Complete --> 0
 
-Increase the minimum size from 0x200 to 0x4000 to cover the full use of
-the page.
-
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Gleb Natapov <gleb@kernel.org>
-Cc: kvm@vger.kernel.org
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org
-Cc: Sanjay Lal <sanjayl@kymasys.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Huang Rui <ray.huang@amd.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/mips/kvm/kvm_mips.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/misc/usbtest.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/arch/mips/kvm/kvm_mips.c b/arch/mips/kvm/kvm_mips.c
-index a7b044536de4..b31153969946 100644
---- a/arch/mips/kvm/kvm_mips.c
-+++ b/arch/mips/kvm/kvm_mips.c
-@@ -303,7 +303,7 @@ struct kvm_vcpu *kvm_arch_vcpu_create(struct kvm *kvm, unsigned int id)
- 	if (cpu_has_veic || cpu_has_vint) {
- 		size = 0x200 + VECTORSPACING * 64;
- 	} else {
--		size = 0x200;
-+		size = 0x4000;
+diff --git a/drivers/usb/misc/usbtest.c b/drivers/usb/misc/usbtest.c
+index afe616b55f01..d90556eb8da5 100644
+--- a/drivers/usb/misc/usbtest.c
++++ b/drivers/usb/misc/usbtest.c
+@@ -1157,6 +1157,11 @@ static int unlink1(struct usbtest_dev *dev, int pipe, int size, int async)
+ 	urb->context = &completion;
+ 	urb->complete = unlink1_callback;
+ 
++	if (usb_pipeout(urb->pipe)) {
++		simple_fill_buf(urb);
++		urb->transfer_flags |= URB_ZERO_PACKET;
++	}
++
+ 	/* keep the endpoint busy.  there are lots of hc/hcd-internal
+ 	 * states, and testing should get to all of them over time.
+ 	 *
+@@ -1287,6 +1292,11 @@ static int unlink_queued(struct usbtest_dev *dev, int pipe, unsigned num,
+ 				unlink_queued_callback, &ctx);
+ 		ctx.urbs[i]->transfer_dma = buf_dma;
+ 		ctx.urbs[i]->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
++
++		if (usb_pipeout(ctx.urbs[i]->pipe)) {
++			simple_fill_buf(ctx.urbs[i]);
++			ctx.urbs[i]->transfer_flags |= URB_ZERO_PACKET;
++		}
  	}
  
- 	/* Save Linux EBASE */
+ 	/* Submit all the URBs and then unlink URBs num - 4 and num - 2. */
 -- 
 2.0.0
 
