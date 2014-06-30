@@ -1,37 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959AbaF3Cu0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 22:50:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34312 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753607AbaF3CuZ (ORCPT
+	id S1754040AbaF3Cwq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 22:52:46 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:57128 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753980AbaF3Cwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 22:50:25 -0400
-Date: Sun, 29 Jun 2014 14:21:44 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: devel@driverdev.osuosl.org, shaun@XResource.ca, weo@weo1.de,
-        sachin.kamat@linaro.org, peter.p.waskiewicz.jr@intel.com,
-        linux-kernel@vger.kernel.org, himangi774@gmail.com, fempsci@gmail.com
-Subject: Re: [PATCH 1/3] staging: cxt1e1: Remove useless OS_phystov() and
- OS_vtophys()
-Message-ID: <20140629212144.GA12303@kroah.com>
-References: <20140627095226.GA9420@devel.8.8.4.4>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140627095226.GA9420@devel.8.8.4.4>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sun, 29 Jun 2014 22:52:45 -0400
+From: Nicholas Krause <xerofoify@gmail.com>
+To: ulli.kroll@googlemail.com
+Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Fixes gemmi_idle in file idle.c
+Date: Sun, 29 Jun 2014 22:52:40 -0400
+Message-Id: <1404096760-5239-1-git-send-email-xerofoify@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 06:52:26PM +0900, Daeseok Youn wrote:
-> OS_phystov()/OS_vtophys() are replaced with __va()/__pa().
+disables the IRQ line in gemmi_idle before calling cpu_do_idle.
+In addition, according to the Fixme message in this file fixes
+races that may occur due to not disabling the IRQ before calling
+cpu_do_idle.
 
-No, you should use virt_to_phys() and phys_to_virt() instead of these
-internal macros which might not be correct for all architectures.
+Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+---
+ arch/arm/mach-gemini/idle.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-thanks,
+diff --git a/arch/arm/mach-gemini/idle.c b/arch/arm/mach-gemini/idle.c
+index ddf8ec9..2880f5a 100644
+--- a/arch/arm/mach-gemini/idle.c
++++ b/arch/arm/mach-gemini/idle.c
+@@ -17,8 +17,7 @@ static void gemini_idle(void)
+ 	 * disabled.
+ 	 */
+ 
+-	/* FIXME: Enabling interrupts here is racy! */
+-	local_irq_enable();
++	local_irq_disable();
+ 	cpu_do_idle();
+ }
+ 
+-- 
+1.9.1
 
-greg k-h
