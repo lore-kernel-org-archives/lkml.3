@@ -1,73 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198AbaF3Mtr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:49:47 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753290AbaF3Mad (ORCPT
+	id S1756592AbaF3MuJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:50:09 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:33908 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755407AbaF3MuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:30:33 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Wang Shilong <wangsl.fnst@cn.fujitsu.com>,
-        Chris Mason <clm@fb.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 169/181] Btrfs: set right total device count for seeding support
-Date: Mon, 30 Jun 2014 13:53:10 +0200
-Message-Id: <e4de74491ca5c9db7496ab2750efe1c9e5a241ba.1404128998.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
-References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
-In-Reply-To: <cover.1404128997.git.jslaby@suse.cz>
-References: <cover.1404128997.git.jslaby@suse.cz>
+	Mon, 30 Jun 2014 08:50:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <53B15A94.3010402@vmware.com>
+References: <1395967502-71219-1-git-send-email-chrisfriedt@gmail.com>
+ <CAPM=9tx4hdU0PZqdZcCd-x3HMu+6ZsGibeOHZPLe3OpW9Wsa0g@mail.gmail.com>
+ <533A8E52.5050304@vmware.com> <CAF4BF-Rmxqbbd_xroQbRTWeE2NfKAZm=Jm7SG2bNppHV2odYNA@mail.gmail.com>
+ <53B14E9E.3040505@vmware.com> <CAF4BF-T4VZQtd_3wWfNQ_==KJE0z0N5XonG4jcy=Ys5x_XxJ=w@mail.gmail.com>
+ <53B15A94.3010402@vmware.com>
+From: Christopher Friedt <chrisfriedt@gmail.com>
+Date: Mon, 30 Jun 2014 08:49:40 -0400
+Message-ID: <CAF4BF-TiHkaaOejH6p1QnnepfOxmvirds3vQD2YdXih_6kkUpQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] drm/vmwgfx: correct fb_fix_screeninfo.line_length
+To: Thomas Hellstrom <thellstrom@vmware.com>
+Cc: dri-devel <dri-devel@lists.freedesktop.org>, linux-kernel@vger.kernel.org,
+        Dave Airlie <airlied@gmail.com>, linux-graphics-maintainer@vmware.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
+On Mon, Jun 30, 2014 at 8:39 AM, Thomas Hellstrom <thellstrom@vmware.com> wrote:
+> xf86-video-vmware in kms mode uses the kernel driver to set these registers.
+> FWIW, the modesetting part of the kernel driver uses SVGA_REG_PITCHLOCK
+> instead of
+> SVGA_REG_BYTES_PER_LINE to set the pitch. That's probably where the
+> clash happens.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
-
-===============
-
-commit 298658414a2f0bea1f05a81876a45c1cd96aa2e0 upstream.
-
-Seeding device support allows us to create a new filesystem
-based on existed filesystem.
-
-However newly created filesystem's @total_devices should include seed
-devices. This patch fix the following problem:
-
- # mkfs.btrfs -f /dev/sdb
- # btrfstune -S 1 /dev/sdb
- # mount /dev/sdb /mnt
- # btrfs device add -f /dev/sdc /mnt --->fs_devices->total_devices = 1
- # umount /mnt
- # mount /dev/sdc /mnt               --->fs_devices->total_devices = 2
-
-This is because we record right @total_devices in superblock, but
-@fs_devices->total_devices is reset to be 0 in btrfs_prepare_sprout().
-
-Fix this problem by not resetting @fs_devices->total_devices.
-
-Signed-off-by: Wang Shilong <wangsl.fnst@cn.fujitsu.com>
-Signed-off-by: Chris Mason <clm@fb.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- fs/btrfs/volumes.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index f0f50531c6c3..c06616106fa9 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -1889,7 +1889,6 @@ static int btrfs_prepare_sprout(struct btrfs_root *root)
- 	fs_devices->seeding = 0;
- 	fs_devices->num_devices = 0;
- 	fs_devices->open_devices = 0;
--	fs_devices->total_devices = 0;
- 	fs_devices->seed = seed_devices;
- 
- 	generate_random_uuid(fs_devices->fsid);
--- 
-2.0.0
-
+That sounds a bit more accurate. Should kms and fbdev be setting both
+registers then?
