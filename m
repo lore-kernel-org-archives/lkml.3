@@ -1,70 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731AbaF3Gg0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 02:36:26 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:46826 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910AbaF3GgY (ORCPT
+	id S1754332AbaF3GlD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 02:41:03 -0400
+Received: from relay-s04-hub005.domainlocalhost.com ([74.115.207.216]:23102
+	"EHLO relay-S04-HUB005.domainlocalhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752520AbaF3GlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 02:36:24 -0400
-Message-ID: <53B10548.8040702@huawei.com>
-Date: Mon, 30 Jun 2014 14:35:52 +0800
-From: Xie XiuQi <xiexiuqi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Mon, 30 Jun 2014 02:41:00 -0400
+From: Dudley Du <dudl@cypress.com>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "patrikf@google.com" <patrikf@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Benson Leung <bleung@google.com>, Daniel Kurtz <djkurtz@google.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 0/14] input: cyapa: re-architecture driver to support
+ multi-trackpads in one driver
+Thread-Topic: [PATCH v2 0/14] input: cyapa: re-architecture driver to
+ support multi-trackpads in one driver
+Thread-Index: Ac+ULjhEwkp8lgV3RSWLQ2Yycfo9ag==
+Date: Mon, 30 Jun 2014 06:40:46 +0000
+Message-ID: <77BC725C9062764F874D79F51E1F1A8F4C902BF0@S04-MBX01-01.s04.local>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.30.12.155]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>
-CC: Borislav Petkov <bp@alien8.de>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        "Chen, Gong" <gong.chen@linux.intel.com>,
-        "joe@perches.com" <joe@perches.com>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        "arozansk@redhat.com" <arozansk@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Bin <huawei.libin@huawei.com>
-Subject: Re: [PATCH v3 4/9] ACPI, x86: Extended error log driver for x86 platform
-References: <1382084624-10857-1-git-send-email-gong.chen@linux.intel.com> <1382084624-10857-5-git-send-email-gong.chen@linux.intel.com> <52612BA4.2060906@linux.vnet.ibm.com> <53AD0275.7020003@huawei.com> <20140627092227.GA23153@pd.tnic> <3908561D78D1C84285E8C5FCA982C28F3284BBB1@ORSMSX114.amr.corp.intel.com> <20140627211441.GA20305@nazgul.tnic> <3908561D78D1C84285E8C5FCA982C28F3284C082@ORSMSX114.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3284C082@ORSMSX114.amr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.17.191]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5U6f6jt009548
 
-On 2014/6/28 6:10, Luck, Tony wrote:
->>> Not all machine checks are fatal - it would be bad for us to go into
->>> an infinite spin instead of executing the recovery code.
->>
->> Then for the time being extlog shouldn't hook into the decoder chain
->> but into mce_process_work, i.e. the last should call it. Or maybe add
->> another notifier which is not atomic...
-> 
-> I spoke too quickly.  The only MCE for which we have recovery code are
-> those that hit in application code.  So the processor that is trying to do
-> the printk() can't possibly be holding the locks.  Other processors might
-> have held the lock at the time of the MCE - but they have all returned 
-> from the handler at the time we try the printk - so they will make progess
-> and release the lock so that we can acquire it.
+This patch set is made based on kernel 3.15.0-rc8.
+It's aimed to re-architecture the cyapa driver to support
+old gen3 trackpad device and new gen5 trackpad device in one
+cyapa driver for easily productions support based on
+customers' requirements, and add sysfs functions and interfaces
+supported that required by users and customers.
+Because the earlier gen3 and the latest gen5 trackpad devies using
+two different chipsets, and have different protocol and interfaces.
+If supported these two trackpad devices in two different drivers, then
+it will be difficult to manage productions and later firmware updates.
+it will cause customer don't know which one to use and update
+because these two trackpad devices have been used and integrated
+in same one productions at a time, so must to support these two trackpad
+devices in same on driver.
 
-Thank you for your reply.
+The new architecture is made of:
+cyapa.c - the core of the architecture, supply interfaces and
+functions to system and read trackpad devices.
+cyapa_gen3.c - functions supported for gen3 trackpad devices,
+cyapa_gen5.c - functions supported for gen5 trackpad devices.
 
-When we got a MCE which hit in application code, it will be broadcast to
-other processors immediately. Other processors who might have held the lock
-at the time of MCE, have no chance to release the lock and return from the
-printk. Isn't it?
+Beside this introduction patch, it has 14 patches listed as below.
+For these patches each one is patched based on previous one.
 
-I know this rarely happens in production environments, but I think it's still
-a risk here. So it's very good if we have a printk safe in atomic context in
-the future.
+patch 1/14: re-architecture cyapa driver with core functions,
+and applying the device detecting function in async thread to speed
+up system boot time.
 
---
-Thanks,
-	XiuQi
+patch 2/14: add cyapa driver power management interfaces supported.
 
-> 
-> -Tony
-> 
+patch 3/14: add cyapa driver runtime power management interfaces supported.
 
+patch 4/14: add cyapa key function interfaces in sysfs system.
+Including read firmware version, get production ID, read baseline,
+re-calibrate trackpad baselines and do trackpad firmware update.
 
+patch 5/14: add read firmware image and read raw trackpad device'
+sensors' raw data interface in debugfs system.
+
+patch 6/14: add gen3 trackpad device basic functions supported.
+
+patch 7/14: add gen3 trackpad device firmware update function supported.
+
+patch 8/14: add gen3 trackpad device report baseline and do force
+re-calibrate functions supported.
+
+patch 9/14: add gen3 trackpad device read firmware image function supported.
+
+patch 10/14: add gen5 trackpad device basic functions supported.
+
+patch 11/14: add gen5 trackpad device firmware update function supported.
+
+patch 12/14: add gen5 trackpad device report baseline and do force
+re-calibrate functions supported.
+
+patch 13/14: add gen5 trackpad device read firmware image and report
+sensors' raw data values functions supported.
+
+patch 14/14: add function to monitor LID close event to off trackpad device.
+This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
