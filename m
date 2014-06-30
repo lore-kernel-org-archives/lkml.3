@@ -1,108 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553AbaF3PFH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:05:07 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:53798 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751005AbaF3PFF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:05:05 -0400
-Message-ID: <1404140703.2978.13.camel@x41>
-Subject: drm: i915: "plane B assertion failure, should be off on pipe B but
- is still active"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>
-Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 30 Jun 2014 17:05:03 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 30 Jun 2014 15:05:03.0337 (UTC) FILETIME=[AB9D6590:01CF9474]
-X-RcptDomain: vger.kernel.org
+	id S1754618AbaF3PFN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:05:13 -0400
+Received: from mout.web.de ([212.227.15.14]:61710 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751005AbaF3PFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 11:05:09 -0400
+Message-ID: <53B17C5D.5050407@web.de>
+Date: Mon, 30 Jun 2014 17:03:57 +0200
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Gleb Natapov <gleb@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, x86-ml <x86@kernel.org>,
+        kvm@vger.kernel.org,
+        =?windows-1252?Q?J=F6rg_?= =?windows-1252?Q?R=F6del?= 
+	<joro@8bytes.org>
+Subject: Re: [PATCH] KVM: SVM: Fix CPL export via SS.DPL
+References: <53AFE2B3.5080300@web.de> <20140629102403.GE18167@minantech.com> <53AFEB16.5040608@web.de> <20140629105339.GF18167@minantech.com> <53AFF192.7020801@web.de> <20140629115143.GA4362@pd.tnic> <53B0050B.90104@web.de> <20140629131443.GA5199@pd.tnic> <20140629134247.GG18167@minantech.com> <20140629140104.GB12528@pd.tnic> <20140629142722.GH18167@minantech.com> <53B02395.8030505@web.de> <53B027E0.7040003@web.de> <53B02CEB.7010607@web.de> <53B17BDD.5030301@redhat.com>
+In-Reply-To: <53B17BDD.5030301@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="mXhX4n0huw4C0Av9lOoPnfJDJoistk8im"
+X-Provags-ID: V03:K0:5xCE8fQ6JO54HNPgadVpuoJeCRtD2ruvHg56uas8mU7aRVJ5ZWS
+ kThpiJH4Apm5SCzxwVv9gzHLImJtaETbTbxDKUuFt9pIliUrMvLe0vUpp2k75QxgRtfY0fv
+ rffXpQNhNbD49uqC+XE8BV5/UPpaskHTwd6bMaisSpiii/mzxRiy8iY/7dkXpkc526DeTiT
+ 9J2I4JzWQr/0UVZhxL/aQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernels v3.16-rc2 and v3.16-rc3 trigger a new (for me) warning. (I never
-booted v3.16-rc1). Machine is a, rather outdated, ThinkPad X41 (ie,
-single core i686).
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--mXhX4n0huw4C0Av9lOoPnfJDJoistk8im
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-WARNING: CPU: 0 PID: 221 at drivers/gpu/drm/i915/intel_display.c:1274 assert_planes_disabled+0xf9/0x100 [i915]()
-plane B assertion failure, should be off on pipe B but is still active
-Modules linked in: tg3 i915(+) i2c_algo_bit drm_kms_helper ptp drm ata_generic pata_acpi yenta_socket i2c_core pps_core video
-CPU: 0 PID: 221 Comm: systemd-udevd Not tainted 3.16.0-0.rc3.1.local0.fc20.i686 #1
-Hardware name: IBM 2525FAG/2525FAG, BIOS 74ET64WW (2.09 ) 12/14/2006
- c0c87907 add7c490 00000000 f652b9ac c09fdab7 f652b9ec f652b9dc c045008e
- f830c6cc f652ba0c 000000dd f830c634 000004fa f82b4d59 f82b4d59 f6728000
- 00000001 f65a8c00 f652b9f8 c04500ee 00000009 f652b9ec f830c6cc f652ba0c
-Call Trace:
- [<c09fdab7>] dump_stack+0x41/0x52
- [<c045008e>] warn_slowpath_common+0x7e/0xa0
- [<f82b4d59>] ? assert_planes_disabled+0xf9/0x100 [i915]
- [<f82b4d59>] ? assert_planes_disabled+0xf9/0x100 [i915]
- [<c04500ee>] warn_slowpath_fmt+0x3e/0x60
- [<f82b4d59>] assert_planes_disabled+0xf9/0x100 [i915]
- [<f82bd8d6>] intel_disable_pipe+0x26/0xb0 [i915]
- [<f82aec40>] ? gen4_read8+0xc0/0xc0 [i915]
- [<f82c25d3>] i9xx_crtc_disable+0x93/0x3d0 [i915]
- [<f82c91bc>] intel_modeset_setup_hw_state+0x7ac/0xbc0 [i915]
- [<f82aec40>] ? gen4_read8+0xc0/0xc0 [i915]
- [<f815bc7c>] ? drm_modeset_lock_all_crtcs+0x3c/0x50 [drm]
- [<f82c9d04>] intel_modeset_init+0x734/0x1220 [i915]
- [<f82a2edb>] ? i915_enable_pipestat+0xab/0x120 [i915]
- [<f82a34c4>] ? i915_irq_postinstall+0x104/0x110 [i915]
- [<f8146ba9>] ? drm_irq_install+0xa9/0x170 [drm]
- [<f82f4016>] i915_driver_load+0xa76/0xe70 [i915]
- [<f82f13d0>] ? i915_switcheroo_set_state+0x90/0x90 [i915]
- [<c06b5880>] ? cleanup_uevent_env+0x10/0x10
- [<c05d8243>] ? sysfs_add_file+0x23/0x30
- [<c07a4034>] ? get_device+0x14/0x30
- [<c07a8e52>] ? klist_class_dev_get+0x12/0x20
- [<c09f73ce>] ? klist_node_init+0x2e/0x50
- [<c09f7487>] ? klist_add_tail+0x27/0x30
- [<c07a5506>] ? device_add+0x1d6/0x5a0
- [<f814ca8a>] ? drm_sysfs_device_add+0xba/0x100 [drm]
- [<f81496ee>] drm_dev_register+0x8e/0xe0 [drm]
- [<f814bca9>] drm_get_pci_dev+0x79/0x1c0 [drm]
- [<f8274415>] i915_pci_probe+0x35/0x60 [i915]
- [<c06f0baf>] pci_device_probe+0x6f/0xc0
- [<c05d8625>] ? sysfs_create_link+0x25/0x40
- [<c07a8093>] driver_probe_device+0x93/0x3a0
- [<c05d8357>] ? sysfs_create_dir_ns+0x37/0x80
- [<c06f0af1>] ? pci_match_device+0xc1/0xe0
- [<c07a8451>] __driver_attach+0x71/0x80
- [<c07a83e0>] ? __device_attach+0x40/0x40
- [<c07a64c7>] bus_for_each_dev+0x57/0xa0
- [<c07a7bbe>] driver_attach+0x1e/0x20
- [<c07a83e0>] ? __device_attach+0x40/0x40
- [<c07a7807>] bus_add_driver+0x157/0x230
- [<f7fc8000>] ? 0xf7fc7fff
- [<f7fc8000>] ? 0xf7fc7fff
- [<c07a8b39>] driver_register+0x59/0xe0
- [<c0564f56>] ? __kmalloc_track_caller+0x46/0x1f0
- [<c06ef722>] __pci_register_driver+0x32/0x40
- [<f814bed5>] drm_pci_init+0xe5/0x110 [drm]
- [<f7fc8000>] ? 0xf7fc7fff
- [<f7fc8088>] i915_init+0x88/0x8a [i915]
- [<f7fc8000>] ? 0xf7fc7fff
- [<c0400492>] do_one_initcall+0xc2/0x1f0
- [<f7fc8000>] ? 0xf7fc7fff
- [<c05624dd>] ? kfree+0xdd/0x120
- [<c05524ef>] ? __vunmap+0x8f/0xe0
- [<c05524ef>] ? __vunmap+0x8f/0xe0
- [<c05524ef>] ? __vunmap+0x8f/0xe0
- [<c04bee92>] load_module+0x1a92/0x23b0
- [<c04bbd69>] ? copy_module_from_fd.isra.46+0x109/0x1a0
- [<c04bf94d>] SyS_finit_module+0x8d/0xd0
- [<c0538f43>] ? vm_mmap_pgoff+0x93/0xb0
- [<c0a045df>] sysenter_do_call+0x12/0x16
+On 2014-06-30 17:01, Paolo Bonzini wrote:
+> Il 29/06/2014 17:12, Jan Kiszka ha scritto:
+>> From: Jan Kiszka <jan.kiszka@siemens.com>
+>>
+>> We import the CPL via SS.DPL since ae9fedc793. However, we fail to
+>> export it this way so far. This caused spurious guest crashes, e.g. of=
 
-Feel free to prod me for further details.
+>> Linux when accessing the vmport from guest user space which triggered
+>> register saving/restoring to/from host user space.
+>>
+>> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+>> ---
+>>
+>> Just in time for the next match :D
+>>
+>>  arch/x86/kvm/svm.c | 1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+>> index ec8366c..b5e994a 100644
+>> --- a/arch/x86/kvm/svm.c
+>> +++ b/arch/x86/kvm/svm.c
+>> @@ -1462,6 +1462,7 @@ static void svm_get_segment(struct kvm_vcpu *vcp=
+u,
+>>           */
+>>          if (var->unusable)
+>>              var->db =3D 0;
+>> +        var->dpl =3D to_svm(vcpu)->vmcb->save.cpl;
+>>          break;
+>>      }
+>>  }
+>>
+>=20
+> Thanks.  In theory this is not necessary, the SS.DPL should be the same=
+
+> as the CPL according to the manuals (the manual say that the SS.DPL
+> "should match" the CPL, and that's the only reason why I included the
+> import in ae9fedc793).  But apparently this is not the case.
+
+15.5.1:
+
+"When examining segment attributes after a #VMEXIT:
+[...]
+=95 Retrieve the CPL from the CPL field in the VMCB, not from any segment=
+
+DPL."
+
+Jan
 
 
-Paul Bolle
 
+--mXhX4n0huw4C0Av9lOoPnfJDJoistk8im
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlOxfGAACgkQitSsb3rl5xScMQCgqzbTHsMUBTE8lyvumWZaAQL5
+l7sAoJ3sT35win58oY7HArovCxhE6CGG
+=xIz3
+-----END PGP SIGNATURE-----
+
+--mXhX4n0huw4C0Av9lOoPnfJDJoistk8im--
