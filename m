@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778AbaF3L6Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 07:58:24 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52061 "EHLO
+	id S1755757AbaF3L6W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 07:58:22 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52065 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753919AbaF3Lx0 (ORCPT
+	by vger.kernel.org with ESMTP id S1753939AbaF3Lx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:26 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Stephane Grosjean <s.grosjean@peak-system.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 095/181] can: peak_pci: prevent use after free at netdev removal
-Date: Mon, 30 Jun 2014 13:51:56 +0200
-Message-Id: <ffd3987ddafb5bf6205701663d551b17f566a186.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
+        Jonathan Cameron <jic23@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 070/181] iio: adc: at91: signedness bug in at91_adc_get_trigger_value_by_name()
+Date: Mon, 30 Jun 2014 13:51:31 +0200
+Message-Id: <5501c4fc29c2cae76961c70b7ce421096c237011.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -24,75 +23,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Grosjean <s.grosjean@peak-system.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 0b5a958cf4df3a5cd578b861471e62138f55c85e upstream.
+commit 4f3bcd878f1d3c730fe00f619b7260c6125d49eb upstream.
 
-As remarked by Christopher R. Baker in his post at
+at91_adc_get_trigger_value_by_name() was returning -ENOMEM truncated to
+a positive u8 and that doesn't work.  I've changed it to int and
+refactored it to preserve the error code.
 
-http://marc.info/?l=linux-can&m=139707295706465&w=2
-
-there's a possibility for an use after free condition at device removal.
-
-This simplified patch introduces an additional variable to prevent the issue.
-Thanks for catching this.
-
-Reported-by: Christopher R. Baker <cbaker@rec.ri.cmu.edu>
-Signed-off-by: Stephane Grosjean <s.grosjean@peak-system.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Tested-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/can/sja1000/peak_pci.c | 14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ drivers/iio/adc/at91_adc.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/can/sja1000/peak_pci.c b/drivers/net/can/sja1000/peak_pci.c
-index 6b6f0ad75090..7042f5faddd7 100644
---- a/drivers/net/can/sja1000/peak_pci.c
-+++ b/drivers/net/can/sja1000/peak_pci.c
-@@ -551,7 +551,7 @@ static int peak_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- {
- 	struct sja1000_priv *priv;
- 	struct peak_pci_chan *chan;
--	struct net_device *dev;
-+	struct net_device *dev, *prev_dev;
- 	void __iomem *cfg_base, *reg_base;
- 	u16 sub_sys_id, icr;
- 	int i, err, channels;
-@@ -687,11 +687,13 @@ failure_remove_channels:
- 	writew(0x0, cfg_base + PITA_ICR + 2);
+diff --git a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
+index 0f16b553e063..b023cd3fe4f1 100644
+--- a/drivers/iio/adc/at91_adc.c
++++ b/drivers/iio/adc/at91_adc.c
+@@ -166,12 +166,11 @@ static int at91_adc_channel_init(struct iio_dev *idev)
+ 	return idev->num_channels;
+ }
  
- 	chan = NULL;
--	for (dev = pci_get_drvdata(pdev); dev; dev = chan->prev_dev) {
--		unregister_sja1000dev(dev);
--		free_sja1000dev(dev);
-+	for (dev = pci_get_drvdata(pdev); dev; dev = prev_dev) {
- 		priv = netdev_priv(dev);
- 		chan = priv->priv;
-+		prev_dev = chan->prev_dev;
-+
-+		unregister_sja1000dev(dev);
-+		free_sja1000dev(dev);
+-static u8 at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
++static int at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
+ 					     struct at91_adc_trigger *triggers,
+ 					     const char *trigger_name)
+ {
+ 	struct at91_adc_state *st = iio_priv(idev);
+-	u8 value = 0;
+ 	int i;
+ 
+ 	for (i = 0; i < st->trigger_number; i++) {
+@@ -184,15 +183,16 @@ static u8 at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
+ 			return -ENOMEM;
+ 
+ 		if (strcmp(trigger_name, name) == 0) {
+-			value = triggers[i].value;
+ 			kfree(name);
+-			break;
++			if (triggers[i].value == 0)
++				return -EINVAL;
++			return triggers[i].value;
+ 		}
+ 
+ 		kfree(name);
  	}
  
- 	/* free any PCIeC resources too */
-@@ -725,10 +727,12 @@ static void peak_pci_remove(struct pci_dev *pdev)
+-	return value;
++	return -EINVAL;
+ }
  
- 	/* Loop over all registered devices */
- 	while (1) {
-+		struct net_device *prev_dev = chan->prev_dev;
-+
- 		dev_info(&pdev->dev, "removing device %s\n", dev->name);
- 		unregister_sja1000dev(dev);
- 		free_sja1000dev(dev);
--		dev = chan->prev_dev;
-+		dev = prev_dev;
+ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
+@@ -202,14 +202,14 @@ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
+ 	struct iio_buffer *buffer = idev->buffer;
+ 	struct at91_adc_reg_desc *reg = st->registers;
+ 	u32 status = at91_adc_readl(st, reg->trigger_register);
+-	u8 value;
++	int value;
+ 	u8 bit;
  
- 		if (!dev) {
- 			/* do that only for first channel */
+ 	value = at91_adc_get_trigger_value_by_name(idev,
+ 						   st->trigger_list,
+ 						   idev->trig->name);
+-	if (value == 0)
+-		return -EINVAL;
++	if (value < 0)
++		return value;
+ 
+ 	if (state) {
+ 		st->buffer = kmalloc(idev->scan_bytes, GFP_KERNEL);
 -- 
 2.0.0
 
