@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964941AbaF3MfH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:35:07 -0400
+	id S932342AbaF3Mfi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:35:38 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964858AbaF3Mbx (ORCPT
+	by vger.kernel.org with ESMTP id S964866AbaF3Mbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:31:53 -0400
+	Mon, 30 Jun 2014 08:31:51 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Matthew Dempsky <mdempsky@chromium.org>,
-        Kees Cook <keescook@chromium.org>, Julien Tinnes <jln@chromium.org>,
-        Roland McGrath <mcgrathr@chromium.org>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 119/181] ptrace: fix fork event messages across pid namespaces
-Date: Mon, 30 Jun 2014 13:52:20 +0200
-Message-Id: <d6a5e143f535c50d0fdf888fc4731d31debad64a.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 122/181] s390/lowcore: reserve 96 bytes for IRB in lowcore
+Date: Mon, 30 Jun 2014 13:52:23 +0200
+Message-Id: <9202bf159dd6994988162fe14e303549c7918764.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -28,126 +27,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matthew Dempsky <mdempsky@chromium.org>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 4e52365f279564cef0ddd41db5237f0471381093 upstream.
+commit 993072ee67aa179c48c85eb19869804e68887d86 upstream.
 
-When tracing a process in another pid namespace, it's important for fork
-event messages to contain the child's pid as seen from the tracer's pid
-namespace, not the parent's.  Otherwise, the tracer won't be able to
-correlate the fork event with later SIGTRAP signals it receives from the
-child.
+The IRB might be 96 bytes if the extended-I/O-measurement facility is
+used. This feature is currently not used by Linux, but struct irb
+already has the emw defined. So let's make the irb in lowcore match the
+size of the internal data structure to be future proof.
+We also have to add a pad, to correctly align the paste.
 
-We still risk a race condition if a ptracer from a different pid
-namespace attaches after we compute the pid_t value.  However, sending a
-bogus fork event message in this unlikely scenario is still a vast
-improvement over the status quo where we always send bogus fork event
-messages to debuggers in a different pid namespace than the forking
-process.
+The bigger irb field also circumvents a bug in some QEMU versions that
+always write the emw field on test subchannel and therefore destroy the
+paste definitions of this CPU. Running under these QEMU version broke
+some timing functions in the VDSO and all users of these functions,
+e.g. some JREs.
 
-Signed-off-by: Matthew Dempsky <mdempsky@chromium.org>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Julien Tinnes <jln@chromium.org>
-Cc: Roland McGrath <mcgrathr@chromium.org>
-Cc: Jan Kratochvil <jan.kratochvil@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- include/linux/ptrace.h | 32 ++++++++++++++++++++++++++++++++
- kernel/fork.c          | 10 +++++++---
- 2 files changed, 39 insertions(+), 3 deletions(-)
+ arch/s390/include/asm/lowcore.h | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 07d0df6bf768..077904c8b70d 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -5,6 +5,7 @@
- #include <linux/sched.h>		/* For struct task_struct.  */
- #include <linux/err.h>			/* for IS_ERR_VALUE */
- #include <linux/bug.h>			/* For BUG_ON.  */
-+#include <linux/pid_namespace.h>	/* For task_active_pid_ns.  */
- #include <uapi/linux/ptrace.h>
+diff --git a/arch/s390/include/asm/lowcore.h b/arch/s390/include/asm/lowcore.h
+index bbf8141408cd..2bed4f02a558 100644
+--- a/arch/s390/include/asm/lowcore.h
++++ b/arch/s390/include/asm/lowcore.h
+@@ -142,9 +142,9 @@ struct _lowcore {
+ 	__u8	pad_0x02fc[0x0300-0x02fc];	/* 0x02fc */
  
- /*
-@@ -129,6 +130,37 @@ static inline void ptrace_event(int event, unsigned long message)
- }
+ 	/* Interrupt response block */
+-	__u8	irb[64];			/* 0x0300 */
++	__u8	irb[96];			/* 0x0300 */
  
- /**
-+ * ptrace_event_pid - possibly stop for a ptrace event notification
-+ * @event:	%PTRACE_EVENT_* value to report
-+ * @pid:	process identifier for %PTRACE_GETEVENTMSG to return
-+ *
-+ * Check whether @event is enabled and, if so, report @event and @pid
-+ * to the ptrace parent.  @pid is reported as the pid_t seen from the
-+ * the ptrace parent's pid namespace.
-+ *
-+ * Called without locks.
-+ */
-+static inline void ptrace_event_pid(int event, struct pid *pid)
-+{
-+	/*
-+	 * FIXME: There's a potential race if a ptracer in a different pid
-+	 * namespace than parent attaches between computing message below and
-+	 * when we acquire tasklist_lock in ptrace_stop().  If this happens,
-+	 * the ptracer will get a bogus pid from PTRACE_GETEVENTMSG.
-+	 */
-+	unsigned long message = 0;
-+	struct pid_namespace *ns;
-+
-+	rcu_read_lock();
-+	ns = task_active_pid_ns(rcu_dereference(current->parent));
-+	if (ns)
-+		message = pid_nr_ns(pid, ns);
-+	rcu_read_unlock();
-+
-+	ptrace_event(event, message);
-+}
-+
-+/**
-  * ptrace_init_task - initialize ptrace state for a new child
-  * @child:		new child task
-  * @ptrace:		true if child should be ptrace'd by parent's tracer
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 11a23afc6ee5..c873bd081e09 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1609,10 +1609,12 @@ long do_fork(unsigned long clone_flags,
- 	 */
- 	if (!IS_ERR(p)) {
- 		struct completion vfork;
-+		struct pid *pid;
+-	__u8	pad_0x0340[0x0e00-0x0340];	/* 0x0340 */
++	__u8	pad_0x0360[0x0e00-0x0360];	/* 0x0360 */
  
- 		trace_sched_process_fork(current, p);
+ 	/*
+ 	 * 0xe00 contains the address of the IPL Parameter Information
+@@ -288,12 +288,13 @@ struct _lowcore {
+ 	__u8	pad_0x03a0[0x0400-0x03a0];	/* 0x03a0 */
  
--		nr = task_pid_vnr(p);
-+		pid = get_task_pid(p, PIDTYPE_PID);
-+		nr = pid_vnr(pid);
+ 	/* Interrupt response block. */
+-	__u8	irb[64];			/* 0x0400 */
++	__u8	irb[96];			/* 0x0400 */
++	__u8	pad_0x0460[0x0480-0x0460];	/* 0x0460 */
  
- 		if (clone_flags & CLONE_PARENT_SETTID)
- 			put_user(nr, parent_tidptr);
-@@ -1627,12 +1629,14 @@ long do_fork(unsigned long clone_flags,
+ 	/* Per cpu primary space access list */
+-	__u32	paste[16];			/* 0x0440 */
++	__u32	paste[16];			/* 0x0480 */
  
- 		/* forking complete and child started to run, tell ptracer */
- 		if (unlikely(trace))
--			ptrace_event(trace, nr);
-+			ptrace_event_pid(trace, pid);
+-	__u8	pad_0x0480[0x0e00-0x0480];	/* 0x0480 */
++	__u8	pad_0x04c0[0x0e00-0x04c0];	/* 0x04c0 */
  
- 		if (clone_flags & CLONE_VFORK) {
- 			if (!wait_for_vfork_done(p, &vfork))
--				ptrace_event(PTRACE_EVENT_VFORK_DONE, nr);
-+				ptrace_event_pid(PTRACE_EVENT_VFORK_DONE, pid);
- 		}
-+
-+		put_pid(pid);
- 	} else {
- 		nr = PTR_ERR(p);
- 	}
+ 	/*
+ 	 * 0xe00 contains the address of the IPL Parameter Information
 -- 
 2.0.0
 
