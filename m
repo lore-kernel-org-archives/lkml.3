@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964770AbaF3MTc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:19:32 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51950 "EHLO
+	id S932283AbaF3MTb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:19:31 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51966 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753082AbaF3LxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753204AbaF3LxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Sachin Prabhu <sprabhu@redhat.com>,
-        Steve French <smfrench@gmail.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 020/181] cifs: Set client guid on per connection basis
-Date: Mon, 30 Jun 2014 13:50:41 +0200
-Message-Id: <8f7e86ca1df5a1766b9566540a62ff2804104bd4.1404128997.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 060/181] USB: cdc-acm: fix broken runtime suspend
+Date: Mon, 30 Jun 2014 13:51:21 +0200
+Message-Id: <1effe732d46d18b95d3f7c635997a084c8cd4c19.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,131 +23,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sachin Prabhu <sprabhu@redhat.com>
+From: Johan Hovold <jhovold@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 39552ea8120a699dbd0360848c4d949f9f0e6deb upstream.
+commit 140cb81ac8c625942a1d695875932c615767a526 upstream.
 
-When mounting from a Windows 2012R2 server, we hit the following
-problem:
-1) Mount with any of the following versions - 2.0, 2.1 or 3.0
-2) unmount
-3) Attempt a mount again using a different SMB version >= 2.0.
+The current ACM runtime-suspend implementation is broken in several
+ways:
 
-You end up with the following failure:
-Status code returned 0xc0000203 STATUS_USER_SESSION_DELETED
-CIFS VFS: Send error in SessSetup = -5
-CIFS VFS: cifs_mount failed w/return code = -5
+Firstly, it buffers only the first write request being made while
+suspended -- any further writes are silently dropped.
 
-I cannot reproduce this issue using a Windows 2008 R2 server.
+Secondly, writes being dropped also leak write urbs, which are never
+reclaimed (until the device is unbound).
 
-This appears to be caused because we use the same client guid for the
-connection on first mount which we then disconnect and attempt to mount
-again using a different protocol version. By generating a new guid each
-time a new connection is Negotiated, we avoid hitting this problem.
+Thirdly, even the single buffered write is not cleared at shutdown
+(which may happen before the device is resumed), something which can
+lead to another urb leak as well as a PM usage-counter leak.
 
-Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Fix this by implementing a delayed-write queue using urb anchors and
+making sure to discard the queue properly at shutdown.
+
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
+
+Reported-by: Xiao Jin <jin.xiao@intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/cifs/cifsfs.c   | 8 --------
- fs/cifs/cifsglob.h | 1 +
- fs/cifs/connect.c  | 3 +++
- fs/cifs/smb2pdu.c  | 5 +++--
- fs/cifs/smb2pdu.h  | 2 --
- 5 files changed, 7 insertions(+), 12 deletions(-)
+ drivers/usb/class/cdc-acm.c | 32 ++++++++++++++++++++++----------
+ drivers/usb/class/cdc-acm.h |  2 +-
+ 2 files changed, 23 insertions(+), 11 deletions(-)
 
-diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
-index b38bd052ce6d..b9f5709b54ca 100644
---- a/fs/cifs/cifsfs.c
-+++ b/fs/cifs/cifsfs.c
-@@ -87,10 +87,6 @@ extern mempool_t *cifs_mid_poolp;
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index 19263a3f3d0d..d9e346cf1eb8 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -559,6 +559,8 @@ static void acm_port_destruct(struct tty_port *port)
+ static void acm_port_shutdown(struct tty_port *port)
+ {
+ 	struct acm *acm = container_of(port, struct acm, port);
++	struct urb *urb;
++	struct acm_wb *wb;
+ 	int i;
  
- struct workqueue_struct	*cifsiod_wq;
+ 	dev_dbg(&acm->control->dev, "%s\n", __func__);
+@@ -567,6 +569,16 @@ static void acm_port_shutdown(struct tty_port *port)
+ 	if (!acm->disconnected) {
+ 		usb_autopm_get_interface(acm->control);
+ 		acm_set_control(acm, acm->ctrlout = 0);
++
++		for (;;) {
++			urb = usb_get_from_anchor(&acm->delayed);
++			if (!urb)
++				break;
++			wb = urb->context;
++			wb->use = 0;
++			usb_autopm_put_interface_async(acm->control);
++		}
++
+ 		usb_kill_urb(acm->ctrlurb);
+ 		for (i = 0; i < ACM_NW; i++)
+ 			usb_kill_urb(acm->wb[i].urb);
+@@ -634,12 +646,9 @@ static int acm_tty_write(struct tty_struct *tty,
  
--#ifdef CONFIG_CIFS_SMB2
--__u8 cifs_client_guid[SMB2_CLIENT_GUID_SIZE];
--#endif
--
- /*
-  * Bumps refcount for cifs super block.
-  * Note that it should be only called if a referece to VFS super block is
-@@ -1192,10 +1188,6 @@ init_cifs(void)
- 	spin_lock_init(&cifs_file_list_lock);
- 	spin_lock_init(&GlobalMid_Lock);
+ 	usb_autopm_get_interface_async(acm->control);
+ 	if (acm->susp_count) {
+-		if (!acm->delayed_wb)
+-			acm->delayed_wb = wb;
+-		else
+-			usb_autopm_put_interface_async(acm->control);
++		usb_anchor_urb(wb->urb, &acm->delayed);
+ 		spin_unlock_irqrestore(&acm->write_lock, flags);
+-		return count;	/* A white lie */
++		return count;
+ 	}
+ 	usb_mark_last_busy(acm->dev);
  
--#ifdef CONFIG_CIFS_SMB2
--	get_random_bytes(cifs_client_guid, SMB2_CLIENT_GUID_SIZE);
--#endif
--
- 	if (cifs_max_pending < 2) {
- 		cifs_max_pending = 2;
- 		cifs_dbg(FYI, "cifs_max_pending set to min of 2\n");
-diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
-index b6e1b2f36b69..465b65488b27 100644
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -547,6 +547,7 @@ struct TCP_Server_Info {
- 	int echo_credits;  /* echo reserved slots */
- 	int oplock_credits;  /* oplock break reserved slots */
- 	bool echoes:1; /* enable echoes */
-+	__u8 client_guid[SMB2_CLIENT_GUID_SIZE]; /* Client GUID */
- #endif
- 	u16 dialect; /* dialect index that server chose */
- 	bool oplocks:1; /* enable oplocks */
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index a279ffc0bc29..89b5519085c2 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -2144,6 +2144,9 @@ cifs_get_tcp_session(struct smb_vol *volume_info)
- 	       sizeof(tcp_ses->srcaddr));
- 	memcpy(&tcp_ses->dstaddr, &volume_info->dstaddr,
- 		sizeof(tcp_ses->dstaddr));
-+#ifdef CONFIG_CIFS_SMB2
-+	get_random_bytes(tcp_ses->client_guid, SMB2_CLIENT_GUID_SIZE);
-+#endif
- 	/*
- 	 * at this point we are the only ones with the pointer
- 	 * to the struct since the kernel thread not created yet
-diff --git a/fs/cifs/smb2pdu.c b/fs/cifs/smb2pdu.c
-index c54d7eb39b41..37de258d9a34 100644
---- a/fs/cifs/smb2pdu.c
-+++ b/fs/cifs/smb2pdu.c
-@@ -375,7 +375,7 @@ SMB2_negotiate(const unsigned int xid, struct cifs_ses *ses)
+@@ -1176,6 +1185,7 @@ made_compressed_probe:
+ 		acm->bInterval = epread->bInterval;
+ 	tty_port_init(&acm->port);
+ 	acm->port.ops = &acm_port_ops;
++	init_usb_anchor(&acm->delayed);
  
- 	req->Capabilities = cpu_to_le32(ses->server->vals->req_capabilities);
+ 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
+ 	if (!buf) {
+@@ -1445,7 +1455,7 @@ static int acm_suspend(struct usb_interface *intf, pm_message_t message)
+ static int acm_resume(struct usb_interface *intf)
+ {
+ 	struct acm *acm = usb_get_intfdata(intf);
+-	struct acm_wb *wb;
++	struct urb *urb;
+ 	int rv = 0;
  
--	memcpy(req->ClientGUID, cifs_client_guid, SMB2_CLIENT_GUID_SIZE);
-+	memcpy(req->ClientGUID, server->client_guid, SMB2_CLIENT_GUID_SIZE);
+ 	spin_lock_irq(&acm->read_lock);
+@@ -1457,10 +1467,12 @@ static int acm_resume(struct usb_interface *intf)
+ 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
+ 		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
  
- 	iov[0].iov_base = (char *)req;
- 	/* 4 for rfc1002 length field */
-@@ -478,7 +478,8 @@ int smb3_validate_negotiate(const unsigned int xid, struct cifs_tcon *tcon)
+-		if (acm->delayed_wb) {
+-			wb = acm->delayed_wb;
+-			acm->delayed_wb = NULL;
+-			acm_start_wb(acm, wb);
++		for (;;) {
++			urb = usb_get_from_anchor(&acm->delayed);
++			if (!urb)
++				break;
++
++			acm_start_wb(acm, urb->context);
+ 		}
  
- 	vneg_inbuf.Capabilities =
- 			cpu_to_le32(tcon->ses->server->vals->req_capabilities);
--	memcpy(vneg_inbuf.Guid, cifs_client_guid, SMB2_CLIENT_GUID_SIZE);
-+	memcpy(vneg_inbuf.Guid, tcon->ses->server->client_guid,
-+					SMB2_CLIENT_GUID_SIZE);
+ 		/*
+diff --git a/drivers/usb/class/cdc-acm.h b/drivers/usb/class/cdc-acm.h
+index 0f76e4af600e..1683ac161cf6 100644
+--- a/drivers/usb/class/cdc-acm.h
++++ b/drivers/usb/class/cdc-acm.h
+@@ -117,7 +117,7 @@ struct acm {
+ 	unsigned int throttled:1;			/* actually throttled */
+ 	unsigned int throttle_req:1;			/* throttle requested */
+ 	u8 bInterval;
+-	struct acm_wb *delayed_wb;			/* write queued for a device about to be woken */
++	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
+ };
  
- 	if (tcon->ses->sign)
- 		vneg_inbuf.SecurityMode =
-diff --git a/fs/cifs/smb2pdu.h b/fs/cifs/smb2pdu.h
-index 870f97303ef3..6133a4e45c6e 100644
---- a/fs/cifs/smb2pdu.h
-+++ b/fs/cifs/smb2pdu.h
-@@ -166,8 +166,6 @@ struct smb2_symlink_err_rsp {
- 
- #define SMB2_CLIENT_GUID_SIZE 16
- 
--extern __u8 cifs_client_guid[SMB2_CLIENT_GUID_SIZE];
--
- struct smb2_negotiate_req {
- 	struct smb2_hdr hdr;
- 	__le16 StructureSize; /* Must be 36 */
+ #define CDC_DATA_INTERFACE_TYPE	0x0a
 -- 
 2.0.0
 
