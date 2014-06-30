@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589AbaF3O0f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 10:26:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65457 "EHLO mx1.redhat.com"
+	id S1753143AbaF3O03 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 10:26:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47134 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753094AbaF3O0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 10:26:33 -0400
+	id S1751314AbaF3O01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 10:26:27 -0400
 From: Hans de Goede <hdegoede@redhat.com>
 To: Mark Brown <broonie@linaro.org>,
         Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
@@ -15,96 +15,138 @@ Cc: Carlo Caione <carlo@caione.org>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         linux-sunxi@googlegroups.com, Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH resend v2 3/3] arizona-mfd-codecs: Add mfd_register_supply_aliases() calls
-Date: Mon, 30 Jun 2014 16:26:09 +0200
-Message-Id: <1404138369-23907-4-git-send-email-hdegoede@redhat.com>
+Subject: [PATCH resend v2 1/3] mfd-core: Don't register supplies from add_device, add register_supply_aliases()
+Date: Mon, 30 Jun 2014 16:26:07 +0200
+Message-Id: <1404138369-23907-2-git-send-email-hdegoede@redhat.com>
 In-Reply-To: <1404138369-23907-1-git-send-email-hdegoede@redhat.com>
 References: <1404138369-23907-1-git-send-email-hdegoede@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mfd-core no longer registers the supply aliases, instead the platform
-driver probe method must now call mfd_register_supply_aliases().
+We cannot register supply alias in mfd_add_device before calling
+platform_add_device because platform-dev's name must be set before registering
+the aliases which happens from platform_add_device.
+
+So stop registering supply aliases from mfd_add_device, and add a
+mfd_register_supply_aliases helper functions for the cell's plaform driver
+probe method to use.
 
 Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 ---
- sound/soc/codecs/wm5102.c | 5 +++++
- sound/soc/codecs/wm5110.c | 5 +++++
- sound/soc/codecs/wm8997.c | 7 ++++++-
- 3 files changed, 16 insertions(+), 1 deletion(-)
+ drivers/mfd/mfd-core.c   | 37 +++++++++++++++++++++----------------
+ include/linux/mfd/core.h |  6 +++++-
+ 2 files changed, 26 insertions(+), 17 deletions(-)
 
-diff --git a/sound/soc/codecs/wm5102.c b/sound/soc/codecs/wm5102.c
-index 289b64d..82249c4 100644
---- a/sound/soc/codecs/wm5102.c
-+++ b/sound/soc/codecs/wm5102.c
-@@ -26,6 +26,7 @@
- #include <sound/initval.h>
- #include <sound/tlv.h>
+diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+index 892d343..03f6fee 100644
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -102,13 +102,6 @@ static int mfd_add_device(struct device *parent, int id,
+ 	pdev->dev.dma_mask = parent->dma_mask;
+ 	pdev->dev.dma_parms = parent->dma_parms;
  
-+#include <linux/mfd/core.h>
- #include <linux/mfd/arizona/core.h>
- #include <linux/mfd/arizona/registers.h>
+-	ret = regulator_bulk_register_supply_alias(
+-			&pdev->dev, cell->parent_supplies,
+-			parent, cell->parent_supplies,
+-			cell->num_parent_supplies);
+-	if (ret < 0)
+-		goto fail_res;
+-
+ 	if (parent->of_node && cell->of_compatible) {
+ 		for_each_child_of_node(parent->of_node, np) {
+ 			if (of_device_is_compatible(np, cell->of_compatible)) {
+@@ -122,12 +115,12 @@ static int mfd_add_device(struct device *parent, int id,
+ 		ret = platform_device_add_data(pdev,
+ 					cell->platform_data, cell->pdata_size);
+ 		if (ret)
+-			goto fail_alias;
++			goto fail_res;
+ 	}
  
-@@ -1829,6 +1830,10 @@ static int wm5102_probe(struct platform_device *pdev)
- 	struct wm5102_priv *wm5102;
- 	int i, ret;
+ 	ret = mfd_platform_add_cell(pdev, cell, usage_count);
+ 	if (ret)
+-		goto fail_alias;
++		goto fail_res;
  
-+	ret = mfd_register_supply_aliases(pdev);
-+	if (ret)
-+		return ret;
+ 	for (r = 0; r < cell->num_resources; r++) {
+ 		res[r].name = cell->resources[r].name;
+@@ -162,17 +155,17 @@ static int mfd_add_device(struct device *parent, int id,
+ 		if (!cell->ignore_resource_conflicts) {
+ 			ret = acpi_check_resource_conflict(&res[r]);
+ 			if (ret)
+-				goto fail_alias;
++				goto fail_res;
+ 		}
+ 	}
+ 
+ 	ret = platform_device_add_resources(pdev, res, cell->num_resources);
+ 	if (ret)
+-		goto fail_alias;
++		goto fail_res;
+ 
+ 	ret = platform_device_add(pdev);
+ 	if (ret)
+-		goto fail_alias;
++		goto fail_res;
+ 
+ 	if (cell->pm_runtime_no_callbacks)
+ 		pm_runtime_no_callbacks(&pdev->dev);
+@@ -181,10 +174,6 @@ static int mfd_add_device(struct device *parent, int id,
+ 
+ 	return 0;
+ 
+-fail_alias:
+-	regulator_bulk_unregister_supply_alias(&pdev->dev,
+-					       cell->parent_supplies,
+-					       cell->num_parent_supplies);
+ fail_res:
+ 	kfree(res);
+ fail_device:
+@@ -289,5 +278,21 @@ int mfd_clone_cell(const char *cell, const char **clones, size_t n_clones)
+ }
+ EXPORT_SYMBOL(mfd_clone_cell);
+ 
++int mfd_register_supply_aliases(struct platform_device *pdev)
++{
++	const struct mfd_cell *cell;
 +
- 	wm5102 = devm_kzalloc(&pdev->dev, sizeof(struct wm5102_priv),
- 			      GFP_KERNEL);
- 	if (wm5102 == NULL)
-diff --git a/sound/soc/codecs/wm5110.c b/sound/soc/codecs/wm5110.c
-index 2e5fcb5..786a64a 100644
---- a/sound/soc/codecs/wm5110.c
-+++ b/sound/soc/codecs/wm5110.c
-@@ -26,6 +26,7 @@
- #include <sound/initval.h>
- #include <sound/tlv.h>
- 
-+#include <linux/mfd/core.h>
- #include <linux/mfd/arizona/core.h>
- #include <linux/mfd/arizona/registers.h>
- 
-@@ -1665,6 +1666,10 @@ static int wm5110_probe(struct platform_device *pdev)
- 	struct wm5110_priv *wm5110;
- 	int i, ret;
- 
-+	ret = mfd_register_supply_aliases(pdev);
-+	if (ret)
-+		return ret;
++	if (pdev->dev.type != &mfd_dev_type)
++		return -EINVAL;
 +
- 	wm5110 = devm_kzalloc(&pdev->dev, sizeof(struct wm5110_priv),
- 			      GFP_KERNEL);
- 	if (wm5110 == NULL)
-diff --git a/sound/soc/codecs/wm8997.c b/sound/soc/codecs/wm8997.c
-index bb9b47b..e7c9c4e 100644
---- a/sound/soc/codecs/wm8997.c
-+++ b/sound/soc/codecs/wm8997.c
-@@ -26,6 +26,7 @@
- #include <sound/initval.h>
- #include <sound/tlv.h>
- 
-+#include <linux/mfd/core.h>
- #include <linux/mfd/arizona/core.h>
- #include <linux/mfd/arizona/registers.h>
- 
-@@ -1110,7 +1111,11 @@ static int wm8997_probe(struct platform_device *pdev)
- {
- 	struct arizona *arizona = dev_get_drvdata(pdev->dev.parent);
- 	struct wm8997_priv *wm8997;
--	int i;
-+	int i, ret;
++	cell = mfd_get_cell(pdev);
 +
-+	ret = mfd_register_supply_aliases(pdev);
-+	if (ret)
-+		return ret;
++	return devm_regulator_bulk_register_supply_alias(
++			&pdev->dev, cell->parent_supplies,
++			pdev->dev.parent, cell->parent_supplies,
++			cell->num_parent_supplies);
++}
++EXPORT_SYMBOL(mfd_register_supply_aliases);
++
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Ian Molton, Dmitry Baryshkov");
+diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+index f543de9..f05488e 100644
+--- a/include/linux/mfd/core.h
++++ b/include/linux/mfd/core.h
+@@ -61,7 +61,9 @@ struct mfd_cell {
+ 	bool			pm_runtime_no_callbacks;
  
- 	wm8997 = devm_kzalloc(&pdev->dev, sizeof(struct wm8997_priv),
- 			      GFP_KERNEL);
+ 	/* A list of regulator supplies that should be mapped to the MFD
+-	 * device rather than the child device when requested
++	 * device rather than the child device when requested.
++	 * Drivers using this must call mfd_register_supply_aliases()
++	 * from their probe method.
+ 	 */
+ 	const char * const	*parent_supplies;
+ 	int			num_parent_supplies;
+@@ -110,4 +112,6 @@ extern int mfd_add_devices(struct device *parent, int id,
+ 
+ extern void mfd_remove_devices(struct device *parent);
+ 
++extern int mfd_register_supply_aliases(struct platform_device *pdev);
++
+ #endif
 -- 
 2.0.0
 
