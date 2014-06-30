@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794AbaF3MRd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:17:33 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51964 "EHLO
+	id S1756783AbaF3MRb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:17:31 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51962 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753308AbaF3LxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753288AbaF3LxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 050/181] mm: add !pte_present() check on existing hugetlb_entry callbacks
-Date: Mon, 30 Jun 2014 13:51:11 +0200
-Message-Id: <3e500cc45f518651ca7ff2e91fece7ed1c039704.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Josef Bacik <jbacik@fusionio.com>,
+        Chris Mason <chris.mason@fusionio.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 026/181] Btrfs: cleanup transaction on abort
+Date: Mon, 30 Jun 2014 13:50:47 +0200
+Message-Id: <bd32872f2d74ea81fbb80b362052037b5882d414.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -26,78 +23,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Josef Bacik <jbacik@fusionio.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit d4c54919ed86302094c0ca7d48a8cbd4ee753e92 upstream.
+commit 4e121c06adf53aae478ebce3035116595d063413 upstream.
 
-The age table walker doesn't check non-present hugetlb entry in common
-path, so hugetlb_entry() callbacks must check it.  The reason for this
-behavior is that some callers want to handle it in its own way.
+If we abort not during a transaction commit we won't clean up anything until we
+unmount.  Unfortunately if we abort in the middle of writing out an ordered
+extent we won't clean it up and if somebody is waiting on that ordered extent
+they will wait forever.  To fix this just make the transaction kthread call the
+cleanup transaction stuff if it notices theres an error, and make
+btrfs_end_transaction wake up the transaction kthread if there is an error.
+Thanks,
 
-[ I think that reason is bogus, btw - it should just do what the regular
-  code does, which is to call the "pte_hole()" function for such hugetlb
-  entries  - Linus]
-
-However, some callers don't check it now, which causes unpredictable
-result, for example when we have a race between migrating hugepage and
-reading /proc/pid/numa_maps.  This patch fixes it by adding !pte_present
-checks on buggy callbacks.
-
-This bug exists for years and got visible by introducing hugepage
-migration.
-
-ChangeLog v2:
-- fix if condition (check !pte_present() instead of pte_present())
-
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: <stable@vger.kernel.org> [3.12+]
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-[ Backported to 3.15.  Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org> ]
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/proc/task_mmu.c | 2 +-
- mm/mempolicy.c     | 6 +++++-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ fs/btrfs/disk-io.c     | 3 +++
+ fs/btrfs/transaction.c | 4 +++-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 390bdab01c3c..ad4df869c907 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -1353,7 +1353,7 @@ static int gather_hugetbl_stats(pte_t *pte, unsigned long hmask,
- 	struct numa_maps *md;
- 	struct page *page;
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 84d590a9e4ad..409dcbd234dc 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -1780,6 +1780,9 @@ sleep:
+ 		wake_up_process(root->fs_info->cleaner_kthread);
+ 		mutex_unlock(&root->fs_info->transaction_kthread_mutex);
  
--	if (pte_none(*pte))
-+	if (!pte_present(*pte))
- 		return 0;
++		if (unlikely(test_bit(BTRFS_FS_STATE_ERROR,
++				      &root->fs_info->fs_state)))
++			btrfs_cleanup_transaction(root);
+ 		if (!try_to_freeze()) {
+ 			set_current_state(TASK_INTERRUPTIBLE);
+ 			if (!kthread_should_stop() &&
+diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
+index 25d64e8e8e47..f98b976ce2b5 100644
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -738,8 +738,10 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
+ 		btrfs_run_delayed_iputs(root);
  
- 	page = pte_page(*pte);
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 927a69cf354a..a005cc9f6f18 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -525,9 +525,13 @@ static void queue_pages_hugetlb_pmd_range(struct vm_area_struct *vma,
- #ifdef CONFIG_HUGETLB_PAGE
- 	int nid;
- 	struct page *page;
-+	pte_t entry;
+ 	if (trans->aborted ||
+-	    test_bit(BTRFS_FS_STATE_ERROR, &root->fs_info->fs_state))
++	    test_bit(BTRFS_FS_STATE_ERROR, &root->fs_info->fs_state)) {
++		wake_up_process(info->transaction_kthread);
+ 		err = -EIO;
++	}
+ 	assert_qgroups_uptodate(trans);
  
- 	spin_lock(&vma->vm_mm->page_table_lock);
--	page = pte_page(huge_ptep_get((pte_t *)pmd));
-+	entry = huge_ptep_get((pte_t *)pmd);
-+	if (!pte_present(entry))
-+		goto unlock;
-+	page = pte_page(entry);
- 	nid = page_to_nid(page);
- 	if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
- 		goto unlock;
+ 	kmem_cache_free(btrfs_trans_handle_cachep, trans);
 -- 
 2.0.0
 
