@@ -1,60 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478AbaF3Q2b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 12:28:31 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20925 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754697AbaF3Q22 (ORCPT
+	id S1754530AbaF3Qbh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 12:31:37 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:38377 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776AbaF3Qbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 12:28:28 -0400
-Date: Mon, 30 Jun 2014 17:28:17 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Bjorn Helgaas <bhelgaas@google.com>,
-        "rric@kernel.org" <rric@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>
-Subject: Re: [PATCH v4 07/13] ARM64 / ACPI: Introduce lowlevel suspend
- function
-Message-ID: <20140630162817.GS28951@arm.com>
-References: <1403840976-7456-1-git-send-email-hanjun.guo@linaro.org>
- <1403840976-7456-8-git-send-email-hanjun.guo@linaro.org>
+	Mon, 30 Jun 2014 12:31:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403840976-7456-8-git-send-email-hanjun.guo@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140629204231.GD12943@pd.tnic>
+References: <CAC-LjFtjS5RS9=Lvb090-0aEnSdR1a28Scve2gvTR3yAZtt+9g@mail.gmail.com>
+ <20140629191254.GA13271@pd.tnic> <CAC-LjFsF1qAVPKJeYmR0+6wTVmCwo2TkC8bia-KmxQ3wyUXYaw@mail.gmail.com>
+ <20140629204231.GD12943@pd.tnic>
+From: Jeshwanth Kumar N K <jeshkumar555@gmail.com>
+Date: Mon, 30 Jun 2014 22:01:14 +0530
+Message-ID: <CAC-LjFsseRBAhnEw8rSfidW91eS3GRX3xn=Q0A1H-YQ6rsm5Qw@mail.gmail.com>
+Subject: Re: [BUG] User process tainting in linux-next tree
+To: Borislav Petkov <bp@alien8.de>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 04:49:30AM +0100, Hanjun Guo wrote:
-> From: Graeme Gregory <graeme.gregory@linaro.org>
-> 
-> acpi_wakeup_address is used on x86 as the address bios jumps into
-> when machine wakes up from suspend. As arm64 does not have such a
-> bios this mechanism will be provided by other means. But the define
-> is still required inside the acpi core.
+On Mon, Jun 30, 2014 at 2:12 AM, Borislav Petkov <bp@alien8.de> wrote:
+> Hi,
+>
+> first of all, please do not top-post. Here's why:
+>
+> A: Because it messes up the order in which people normally read text.
+> Q: Why is top-posting such a bad thing?
+> A: Top-posting.
+> Q: What is the most annoying thing in e-mail?
 
-Why not fix the place where it is used rather than defining a dummy
-pointer?
+Looks bottom posting is better :). Thanks
+>
+>> Yes booted by increase the buffer length, but the ignore_loglevel is
+>> running continously for 5 minutes.
+>
+> Huh, what? I can't parse that sentence above.
 
-> Introduce a null stub for acpi_suspend_lowlevel as this is also
-> required by core. This will be filled in when standards are
-> defined for arm64 ACPI global power states.
+I will explain:
+1. I have compiled kernel with LOG level 7.
+2. You have mentioned to run with "log_buf_len=10M ignore_loglevel".
+When I ran, the Error messages started splashing continuously, I
+waited for 5 mins and tried to switch modes using Ctrl+alt+F1, no use.
+3. The one I attached dmesg is only log_buf_len=500M (no ignore_loglevel).
 
-I assume acpi_suspend_lowlevel would be just a dummy definition but it
-will have some use when the standard allows.
+>
+> ignore_loglevel is another kernel cmdline parameter:
+>
+>         ignore_loglevel [KNL]
+>                         Ignore loglevel setting - this will print /all/
+>                         kernel messages to the console. Useful for debugging.
+>                         We also add it as printk module parameter, so users
+>                         could change it dynamically, usually by
+>                         /sys/module/printk/parameters/ignore_loglevel.
+>
+>
+>> So I ignored that and ran with
+>> log_buf_len=500M ( because 10M also filled) only.
+>>
+>> When I copied the dmesg, the size was 76M, so I attached only first
+>> 1500 lines. Please find in below link.
+>>
+>> https://bugzilla.kernel.org/show_bug.cgi?id=79171
+>
+> Ok, that's better. The warnings start spewing pretty early with the one
+> below. Let's CC linux-mm.
+>
+> [    1.062658] registered taskstats version 1
+> [    1.063400] ------------[ cut here ]------------
+> [    1.063455] WARNING: CPU: 0 PID: 55 at kernel/res_counter.c:28 res_counter_uncharge_until+0x84/0x110()
+> [    1.063513] Modules linked in:
+> [    1.063516] CPU: 0 PID: 55 Comm: modprobe Not tainted 3.16.0-rc1-next-20140620+ #4
+> [    1.063518] Hardware name: Dell Inc. Studio 1555/0C234M, BIOS A11 03/29/2010
+> [    1.063520]  00000000 00000000 d34d7de4 c1648de3 00000000 d34d7e14 c105b74e c1822e40
+> [    1.063524]  00000000 00000037 c183384f 0000001c c10dab24 c10dab24 d3c048c8 ffffffff
+> [    1.063529]  00000000 d34d7e24 c105b812 00000009 00000000 d34d7e58 c10dab24 00000282
+> [    1.063534] Call Trace:
+> [    1.063538]  [<c1648de3>] dump_stack+0x41/0x52
+> [    1.063541]  [<c105b74e>] warn_slowpath_common+0x7e/0xa0
+> [    1.063543]  [<c10dab24>] ? res_counter_uncharge_until+0x84/0x110
+> [    1.063546]  [<c10dab24>] ? res_counter_uncharge_until+0x84/0x110
+> [    1.063548]  [<c105b812>] warn_slowpath_null+0x22/0x30
+> [    1.063551]  [<c10dab24>] res_counter_uncharge_until+0x84/0x110
+> [    1.063553]  [<c10dabc1>] res_counter_uncharge+0x11/0x20
+> [    1.063557]  [<c117e975>] mem_cgroup_uncharge_end+0x85/0xa0
+> [    1.063560]  [<c113acb1>] release_pages+0x71/0x1c0
+> [    1.063563]  [<c1164072>] free_pages_and_swap_cache+0x92/0xb0
+> [    1.063567]  [<c1151b63>] tlb_flush_mmu_free+0x23/0x40
+> [    1.063570]  [<c11523cd>] tlb_flush_mmu+0x1d/0x30
+> [    1.063572]  [<c11523f1>] tlb_finish_mmu+0x11/0x40
+> [    1.063575]  [<c11588c7>] unmap_region+0x97/0xc0
+> [    1.063577]  [<c1158c22>] ? vma_rb_erase+0xe2/0x1b0
+> [    1.063580]  [<c115a8e3>] do_munmap+0x1c3/0x2d0
+> [    1.063582]  [<c115aa27>] vm_munmap+0x37/0x50
+> [    1.063584]  [<c115b710>] SyS_munmap+0x20/0x30
+> [    1.063588]  [<c1650318>] sysenter_do_call+0x12/0x28
+> [    1.063590] ---[ end trace 812035dd9a004e6c ]---
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
+
+
 
 -- 
-Catalin
+Regards
+Jeshwanth Kumar N K
+Bangalore, India
