@@ -1,57 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660AbaF3S1d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 14:27:33 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:36433 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001AbaF3S1c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 14:27:32 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/ER70N5tA6cp4POVJRbmfeQpBt5aVcKrs=
-X-DKIM: OpenDKIM Filter v2.0.1 titan C288D59E87B
-Date: Mon, 30 Jun 2014 14:27:25 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-Cc: marc.zyngier@arm.com, Catalin.Marinas@arm.com, Will.Deacon@arm.com,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Liviu.Dudau@arm.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/2] Introduce ARM GICv2m MSI(-X) support
-Message-ID: <20140630182725.GZ23978@titan.lakedaemon.net>
-References: <1403569980-12913-1-git-send-email-suravee.suthikulpanit@amd.com>
- <20140624122639.GL10202@titan.lakedaemon.net>
- <53AA158E.1040700@amd.com>
+	id S1756459AbaF3S1s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 14:27:48 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57937 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755486AbaF3S1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 14:27:42 -0400
+Date: Mon, 30 Jun 2014 20:27:36 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: RFC: /proc/cpuinfo confusion with AMD processors
+Message-ID: <20140630182736.GH4766@pd.tnic>
+References: <53B15D27.9010306@redhat.com>
+ <20140630131309.GA5199@pd.tnic>
+ <53B16621.50505@redhat.com>
+ <20140630133803.GE4766@pd.tnic>
+ <53B16F3D.5020303@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53AA158E.1040700@amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <53B16F3D.5020303@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 24, 2014 at 07:19:26PM -0500, Suravee Suthikulanit wrote:
-> On 6/24/2014 7:26 AM, Jason Cooper wrote:
-> >On Mon, Jun 23, 2014 at 07:32:58PM -0500, suravee.suthikulpanit@amd.com wrote:
-> >>This patch set introduces support for MSI(-X) in GICv2m specification,
-> >>which is implemented in some variation of GIC400.
-> >>
-> >>This depends on and has been tested with the V7 of "Add support for PCI in AArch64"
-> >>(https://lkml.org/lkml/2014/3/14/320).
-> >
-> >Is this a build, boot, or runtime dependency?
-> >
+On Mon, Jun 30, 2014 at 10:07:57AM -0400, Prarit Bhargava wrote:
+> Sorry, yes, exactly that. Requests have come in where an admin
+> is setting up system loads relative to specific nodes and cores.
+> Determining that information is trivial on Intel and a lot more
+> difficult on AMD. (see below)
+
+Yeah, that might not always work, see below.
+
+> Intel does not have the concept of multi-node packages (AFAIK).
+
+Let's establish terminology first: So I think you mean MCM - Multi-Chip
+Module where you have more than one nodes, right?
+
+https://en.wikipedia.org/wiki/Multi-chip_module
+
+And according to the wiki article, Intel has that too.
+
+HOWEVER(!), it is a whole another question whether that is made visible
+to the software!
+
+> So the Intel
+> existing physical id and core id (both of which are relative to the package) is
+> good enough to determine which core it is.  For example from an Intel box
 > 
-> For all of the above.
+> 
+> processor       : 3
+> ...
+> physical id     : 3
+> siblings        : 2
+> core id         : 1
+> cpu cores       : 2
+> 
+> 
+> 
+> tells me that this processor 3 is on socket/package (physical id) 3, core 1 out
+> of 2, and the cores are not hyperthreaded.  On a system in which an admin would
+> like to (for example) set cpu affinity for a VM or a particular application
+> knowing this information is useful.
 
-Ok, the gic change in #1 should be a trivial conflict to resolve, so
-it'll be easiest for you guys to merge this with the other code you have
-going into arm-soc.
+> On an AMD system,
+> 
+> processor       : 31
+> physical id     : 1
+> siblings        : 16
+> core id         : 7
+> cpu cores       : 8
+> 
+> implies (using the logic above), package/socket 1,
 
-Just keep me in the Cc and I'll Ack it when it's ready.
+Yes, the second socket.
 
-thx,
+> core 7/8 cores, and multi-threading is on ... which is incorrect.
 
-Jason.
+What says that multithreading is on? How do you decide that? I think
+you're reading too much into it.
+
+> The package in question is 16 thread and 16 core with no multi-threading.
+
+No, this is wrong.
+
+So you are on socket 1 ("physical id"), it has 16 siblings, i.e.
+threads. In this case, 16 threads means 16/2 = 8 compute units.
+And core id 7 means the id of the the core on this NUMA node.
+
+But just to show you that this information can be misleading, let's look
+at another AMD box:
+
+processor       : 30
+cpu family      : 21
+model           : 1
+model name      : AMD Opteron(TM) Processor 6272
+stepping        : 2
+microcode       : 0x600063d
+cpu MHz         : 1400.000
+cache size      : 2048 KB
+physical id     : 0
+siblings        : 16
+core id         : 7
+cpu cores       : 8
+apicid          : 47
+initial apicid  : 15
+
+processor       : 31
+cpu family      : 21
+model           : 1
+model name      : AMD Opteron(TM) Processor 6272
+stepping        : 2
+microcode       : 0x600063d
+cpu MHz         : 1400.000
+cache size      : 2048 KB
+physical id     : 1
+siblings        : 16
+core id         : 7
+cpu cores       : 8
+apicid          : 79
+initial apicid  : 47
+
+So those are the last two cores, 30 and 31.
+
+Now look at physical id - 30 is on node 0 and 31 is on node 1. So thread
+30 is on physical package 0 and thread 31 is on physical package 1, i.e.
+on different physical sockets.
+
+And yet, all the info there is correct - it is just not complete for your
+purposes.
+
+If you want to have the detailed information you're interested in,
+simply do:
+
+$ grep . /sys/devices/system/cpu/cpu30/topology/*
+/sys/devices/system/cpu/cpu30/topology/core_id:7
+/sys/devices/system/cpu/cpu30/topology/core_siblings:55555555
+/sys/devices/system/cpu/cpu30/topology/core_siblings_list:0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30
+
+All the core siblings, i.e. threads on this node, i.e. package 0.
+
+/sys/devices/system/cpu/cpu30/topology/physical_package_id:0
+
+This is the physical CPU package 0 on the socket in the motherboard.
+
+/sys/devices/system/cpu/cpu30/topology/thread_siblings:50000000
+/sys/devices/system/cpu/cpu30/topology/thread_siblings_list:28,30
+
+This is thread 30 in a compute unit together with thread 28.
+
+
+$ grep . /sys/devices/system/cpu/cpu31/topology/*
+/sys/devices/system/cpu/cpu31/topology/core_id:7
+/sys/devices/system/cpu/cpu31/topology/core_siblings:aaaaaaaa
+/sys/devices/system/cpu/cpu31/topology/core_siblings_list:1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31
+/sys/devices/system/cpu/cpu31/topology/physical_package_id:1
+
+This is the physical CPU package 1 on the socket in the motherboard.
+
+/sys/devices/system/cpu/cpu31/topology/thread_siblings:a0000000
+/sys/devices/system/cpu/cpu31/topology/thread_siblings_list:29,31
+
+This is thread 31 in a compute unit with thread 29 together.
+
+At the time when we were talking about adding that info to
+/proc/cpuinfo, the intention was declined by reviewers and it was said
+that we have the topology hierarchy in sysfs where it all should be. And
+I agree now, btw...
+
+> The difference in the result occurs because AMD is (IMO) erroneously
+> reporting per node information. Another view of this could be that
+> on AMD systems we should modify the output to report per package
+> information to make it consistent with Intel (and other arches ... ppc
+> reports per socket as does s390. I haven't checked ARM yet). AMD is
+> the outlier here.
+
+... you can't express complicated topologies in /proc/cpuinfo. This is
+nicely done in sysfs where all tools can access it.
+
+> The problem isn't turbostat though -- it is that core_id implies two
+> different things for two different x86 processors. Intel reports that
+> value as per package, while AMD reports it as per node (and there is
+> no way to determine which node it is).
+
+No, you're making the wrong assumption that a single package can have
+only one NUMA node. Which is basically not true on AMD. core_id is the
+id of the core on that NUMA node. It means the same on Intel *and* AMD.
+
+IF you have more than one nodes in a package, the core_id is still
+correct as it is the numbering within the NUMA node.
+
+Again, /proc/cpuinfo is not the proper place for complicated topologies,
+at least on x86.
+
+For NUMA we have different tools like numactl which give you that
+precise information of the system topology and there was this other tool
+which even generates PDFs of the topology. I'm forgetting the name right
+now though.
+
+HTH.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
