@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591AbaF3SHu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 14:07:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14293 "EHLO mx1.redhat.com"
+	id S1756752AbaF3SIC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 14:08:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47224 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754520AbaF3SHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 14:07:48 -0400
-Date: Mon, 30 Jun 2014 20:07:31 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 3/3] perf tools: Add ui.show-headers config file option
-Message-ID: <20140630180731.GF1236@krava.redhat.com>
-References: <1403886418-5556-1-git-send-email-jolsa@kernel.org>
- <1403886418-5556-4-git-send-email-jolsa@kernel.org>
- <1404126804.1648.12.camel@leonhard>
+	id S1754520AbaF3SIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 14:08:00 -0400
+From: Bandan Das <bsd@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Nadav Amit <nadav.amit@gmail.com>, Nadav Amit <namit@cs.technion.ac.il>,
+        gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: Fix lapic.c debug prints
+References: <1404034131-2392-1-git-send-email-namit@cs.technion.ac.il>
+	<jpgr427kys6.fsf@redhat.com> <53B0B773.3030107@gmail.com>
+	<53B1541E.4080008@redhat.com> <jpgsimmuwij.fsf@nelium.bos.redhat.com>
+	<53B1A62A.9070500@redhat.com>
+Date: Mon, 30 Jun 2014 14:07:49 -0400
+In-Reply-To: <53B1A62A.9070500@redhat.com> (Paolo Bonzini's message of "Mon,
+	30 Jun 2014 20:02:18 +0200")
+Message-ID: <jpgvbris22y.fsf@nelium.bos.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1404126804.1648.12.camel@leonhard>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 08:13:24PM +0900, Namhyung Kim wrote:
-> Hi Jiri,
-> 
-> 2014-06-27 (금), 18:26 +0200, Jiri Olsa:
-> > Adding report.show-headers config file option to setup
-> > the appearance of the columns headers.
-> > 
-> > Currently columns headers are displayed by default, following
-> > lines in ~/.perfconfig file will disable that:
-> > 
-> >   [ui]
-> >         show-headers = true
-> 
-> s/true/false/  :)
+Paolo Bonzini <pbonzini@redhat.com> writes:
 
-ouch ;-)
+> Il 30/06/2014 19:39, Bandan Das ha scritto:
+>> Paolo Bonzini <pbonzini@redhat.com> writes:
+>>
+>>> Il 30/06/2014 03:03, Nadav Amit ha scritto:
+>>>>>>
+>>>>>>           sipi_vector = apic->sipi_vector;
+>>>>>> -        pr_debug("vcpu %d received sipi with vector # %x\n",
+>>>>>> +        apic_debug("vcpu %d received sipi with vector # %x\n",
+>>>>>
+>>>>> Why don't we just use pr_debug all throughout ?
+>>>>>
+>>>> I don't know. I just tried to make it consistent, since it really bugged
+>>>> me while I was debugging the local-apic.
+>>>> If you prefer the other way around (which does seem to be better), I can
+>>>> do the search-and-replace.
+>>>
+>>> vcpu number probably could be moved inside apic_debug, at which point
+>>> apic_debug becomes preferrable.
+>>
+>> I am not sure, I think all that could be achieved with a file private
+>> debug define can be done with pr_debug which is generic.
+>> Nadav didn't introduce apic_debug to this file, so I am
+>> fine either way.
+>
+> I am applying the patch, anything else can be done on top.
 
-> 
-> I'm afraid that we might need to add some code to show/hide column
-> headers for stdio and GTK too..
-> 
-> 
-> > 
-> > Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-> > Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> > Cc: David Ahern <dsahern@gmail.com>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Paul Mackerras <paulus@samba.org>
-> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-> 
-> Anyway, with above typo fixed, patches look good!
-> 
-> Acked-by: Namhyung Kim <namhyung@kernel.org>
+Sure, it can but it's sure gonna get forgotten since you are 
+already applying it :)
 
-thanks,
-jirka
+> Paolo
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
