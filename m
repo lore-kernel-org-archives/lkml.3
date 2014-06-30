@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514AbaF3K3h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 06:29:37 -0400
-Received: from mail-lb0-f201.google.com ([209.85.217.201]:47888 "EHLO
+	id S1755556AbaF3K3z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 06:29:55 -0400
+Received: from mail-lb0-f201.google.com ([209.85.217.201]:62034 "EHLO
 	mail-lb0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755452AbaF3K2s (ORCPT
+	with ESMTP id S1755410AbaF3K2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 06:28:48 -0400
+	Mon, 30 Jun 2014 06:28:46 -0400
 From: David Drysdale <drysdale@google.com>
 To: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -15,9 +15,9 @@ Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
         Kees Cook <keescook@chromium.org>,
         James Morris <james.l.morris@oracle.com>, linux-api@vger.kernel.org,
         David Drysdale <drysdale@google.com>
-Subject: [PATCH 2/5] man-pages: capsicum.7: describe Capsicum capability framework
-Date: Mon, 30 Jun 2014 11:28:13 +0100
-Message-Id: <1404124096-21445-14-git-send-email-drysdale@google.com>
+Subject: [PATCH 5/5] man-pages: cap_rights_get: retrieve Capsicum fd rights
+Date: Mon, 30 Jun 2014 11:28:16 +0100
+Message-Id: <1404124096-21445-17-git-send-email-drysdale@google.com>
 X-Mailer: git-send-email 2.0.0.526.g5318336
 In-Reply-To: <1404124096-21445-1-git-send-email-drysdale@google.com>
 References: <1404124096-21445-1-git-send-email-drysdale@google.com>
@@ -27,20 +27,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: David Drysdale <drysdale@google.com>
 ---
- man7/capsicum.7 | 97 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 97 insertions(+)
- create mode 100644 man7/capsicum.7
+ man2/cap_rights_get.2 | 126 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 126 insertions(+)
+ create mode 100644 man2/cap_rights_get.2
 
-diff --git a/man7/capsicum.7 b/man7/capsicum.7
+diff --git a/man2/cap_rights_get.2 b/man2/cap_rights_get.2
 new file mode 100644
-index 000000000000..e736060bb5bc
+index 000000000000..966c0ed7e336
 --- /dev/null
-+++ b/man7/capsicum.7
-@@ -0,0 +1,97 @@
++++ b/man2/cap_rights_get.2
+@@ -0,0 +1,126 @@
 +.\"
-+.\" Copyright (c) 2014 Google, Inc.
-+.\" Copyright (c) 2011, 2013 Robert N. M. Watson
-+.\" Copyright (c) 2011 Jonathan Anderson
++.\" Copyright (c) 2008-2010 Robert N. M. Watson
++.\" Copyright (c) 2012-2013 The FreeBSD Foundation
++.\" Copyright (c) 2013-2014 Google, Inc.
 +.\" All rights reserved.
 +.\"
 +.\" %%%LICENSE_START(BSD_2_CLAUSE)
@@ -66,72 +66,101 @@ index 000000000000..e736060bb5bc
 +.\" SUCH DAMAGE.
 +.\" %%%LICENSE_END
 +.\"
-+.TH CAPSICUM 7 2014-05-07 "Linux" "Linux Programmer's Manual"
++.TH CAP_RIGHTS_GET 2 2014-05-07 "Linux" "Linux Programmer's Manual"
 +.SH NAME
-+capsicum \- lightweight OS capability and sandbox framework
++cap_rights_get \- retrieve Capsicum capability rights
 +.SH SYNOPSIS
++.nf
 +.B #include <sys/capsicum.h>
++.sp
++.BI "int cap_rights_get(int " fd ", struct cap_rights *" rights ,
++.BI "                   unsigned int *" fcntls ,
++.BI "                   int *" nioctls ", unsigned int *" ioctls );
 +.SH DESCRIPTION
-+Capsicum is a lightweight OS capability and sandbox framework implementing a hybrid
-+capability system model.
-+Capsicum can be used for application and library compartmentalisation, the
-+decomposition of larger bodies of software into isolated (sandboxed)
-+components in order to implement security policies and limit the impact of
-+software vulnerabilities.
++Obtain the current Capsicum capability rights for a file descriptor.
 +.PP
-+Capsicum provides three core kernel mechanisms,
-+.IR "Capsicum capabilities",
-+.I "capability mode"
-+and
-+.IR "process descriptors",
-+each described below.
-+
-+.SS Capsicum Capabilities
-+A
-+.I Capsicum capability
-+is a file descriptor that has been limited so that only
-+certain operations can be performed on it.
-+For example, a file descriptor returned by
-+.BR open (2)
-+may be refined using
-+.BR cap_rights_limit (2)
-+so that only
-+.BR read (2)
-+and
-+.BR write (2)
-+can be called on it, but not
-+.BR fchmod (2).
-+The complete list of the capability rights can be found in the
++The function will fill the
++.I rights
++argument (if non-NULL) with the primary capability rights of the
++.I fd
++descriptor.  The result can be examined with the
++.BR cap_rights_is_set (3)
++family of functions.  The complete list of primary rights can be found in the
 +.BR rights (7)
 +manual page.
-+
-+.SS Capability Mode
-+Capsicum capability mode is a process mode, entered by invoking
-+.BR cap_enter (3),
-+in which access to global OS namespaces (such as the file system and PID
-+namespaces) is restricted; only explicitly delegated rights, referenced by
-+memory mappings or file descriptors, may be used.
-+Once set, the flag is inherited by future children processes, and may not be
-+cleared.
-+
-+.SS Process Descriptors
-+.I Process descriptors
-+are file descriptors representing processes, allowing parent processes to manage
-+child processes without requiring access to the PID namespace, and are described in
-+greater detail in
-+.BR procdesc (7).
-+.SH VERSIONS
-+Capsicum support is available in the kernel since version 3.???.
++.PP
++If the
++.I fcntls
++argument is non-NULL, it will be filled in with a bitmask of allowed
++.BR fcntl (2)
++commands; see
++.BR cap_rights_limit (2)
++for values.  If the file descriptor does not have the
++.B CAP_FCNTL
++primary right, the returned
++.I fcntls
++value will be zero.
++.PP
++If the
++.I nioctls
++argument is non-NULL, it will be filled in with the number of allowed
++.BR ioctl (2)
++commands, or with the value CAP_IOCTLS_ALL to indicate that all
++.BR ioctl (2)
++commands are allowed.  If the file descriptor does not have the
++.B CAP_IOCTL
++primary right, the returned
++.I nioctls
++value will be zero.
++.PP
++The
++.I ioctls
++argument (if non-NULL) should point at memory that can hold up to
++.I nioctls
++values.
++The system call populates the provided buffer with up to
++.I nioctls
++elements, but always returns the total number of
++.BR ioctl (2)
++commands allowed for the given file descriptor in
++.I nioctls
++as described above.
++.PP
++If all
++.BR ioctl (2)
++commands are allowed (the
++.B CAP_IOCTL
++primary capability right is assigned to the file descriptor and the
++set of allowed
++.BR ioctl (2)
++commands was never limited for this file descriptor), the
++system call will not modify the buffer pointed to by the
++.I ioctls
++argument.
++.PP
++Capsicum capability rights assigned to a file descriptor can be reduced with the
++.BR cap_rights_limit (2)
++system call.
++.SH RETURN VALUE
++.BR cap_rights_get ()
++returns zero on success. On error, -1 is returned and
++.I errno
++is set appropriately.
++.SH ERRORS
++.TP
++.B EBADF
++.I fd
++isn't a valid open file descriptor.
++.TP
++.B EFAULT
++Invalid pointer argument.
++.SH VERSION
++Capsicum support was added to the kernel in version 3.???.
 +.SH SEE ALSO
-+.BR cap_enter (3),
-+.BR cap_getmode (3) ,
-+.BR cap_rights_get (2),
-+.BR cap_rights_limit (2) ,
-+.BR pdfork (2),
-+.BR pdgetpid (2),
-+.BR pdkill (2),
-+.BR pdwait4 (2),
-+.BR procdesc (7),
++.BR cap_enter (2),
++.BR cap_rights_limit (2),
++.BR cap_rights_init (3),
++.BR capsicum (7),
 +.BR rights (7)
 +
 --
