@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733AbaF3RyM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 13:54:12 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:16886 "EHLO
+	id S1756776AbaF3RyW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 13:54:22 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:16964 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754860AbaF3RyH (ORCPT
+	with ESMTP id S1754860AbaF3RyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 13:54:07 -0400
+	Mon, 30 Jun 2014 13:54:15 -0400
 From: Daniel Kiper <daniel.kiper@oracle.com>
 To: linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
         linux-kernel@vger.kernel.org, x86@kernel.org,
@@ -18,46 +18,161 @@ Cc: andrew.cooper3@citrix.com, boris.ostrovsky@oracle.com,
         mingo@redhat.com, mjg59@srcf.ucam.org,
         stefano.stabellini@eu.citrix.com, tglx@linutronix.de,
         tony.luck@intel.com
-Subject: [PATCH v7 00/10] xen: Add EFI support
-Date: Mon, 30 Jun 2014 19:52:54 +0200
-Message-Id: <1404150784-27921-1-git-send-email-daniel.kiper@oracle.com>
+Subject: [PATCH v7 04/10] efi: Introduce EFI_PARAVIRT flag
+Date: Mon, 30 Jun 2014 19:52:58 +0200
+Message-Id: <1404150784-27921-5-git-send-email-daniel.kiper@oracle.com>
 X-Mailer: git-send-email 1.7.10.4
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1404150784-27921-1-git-send-email-daniel.kiper@oracle.com>
+References: <1404150784-27921-1-git-send-email-daniel.kiper@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+Introduce EFI_PARAVIRT flag. If it is set then kernel runs
+on EFI platform but it has not direct control on EFI stuff
+like EFI runtime, tables, structures, etc. If not this means
+that Linux Kernel has direct access to EFI infrastructure
+and everything runs as usual.
 
-This patch series adds EFI support for Xen dom0 guests.
-It is based on Jan Beulich and Tang Liang work. I was
-trying to take into account all previous comments,
-however, if I missed something sorry for that.
+This functionality is used in Xen dom0 because hypervisor
+has full control on EFI stuff and all calls from dom0 to
+EFI must be requested via special hypercall which in turn
+executes relevant EFI code in behalf of dom0.
 
-Daniel
+Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+---
+v6 - suggestions/fixes:
+   - rename EFI_NO_DIRECT to EFI_PARAVIRT
+     (suggested by David Vrabel),
+   - improve code comments
+     (suggested by Matt Fleming).
 
- arch/ia64/include/asm/io.h       |    1 +
- arch/x86/kernel/setup.c          |    4 +-
- arch/x86/platform/efi/efi.c      |  106 ++++++++++--------------
- arch/x86/xen/enlighten.c         |   15 ++++
- drivers/firmware/efi/efi.c       |   25 +++---
- drivers/xen/Kconfig              |    4 +
- drivers/xen/Makefile             |    3 +
- drivers/xen/efi.c                |  368 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/efi.h              |    4 +-
- include/xen/interface/platform.h |  123 ++++++++++++++++++++++++++++
- include/xen/xen-ops.h            |   11 +++
- 11 files changed, 587 insertions(+), 77 deletions(-)
+v5 - suggestions/fixes:
+   - rename EFI_DIRECT to EFI_NO_DIRECT
+     (suggested by David Vrabel),
+   - limit EFI_NO_DIRECT usage
+     (suggested by Jan Beulich and Matt Fleming),
+   - improve commit message
+     (suggested by David Vrabel).
+---
+ arch/x86/platform/efi/efi.c |   31 +++++++++++++++++++++++++------
+ drivers/firmware/efi/efi.c  |   21 ++++++++++++---------
+ include/linux/efi.h         |    3 ++-
+ 3 files changed, 39 insertions(+), 16 deletions(-)
 
-Daniel Kiper (10):
-      arch/ia64: Define early_memunmap()
-      efi: Use early_mem*() instead of early_io*()
-      arch/x86: Do not access EFI memory map if it is not available
-      efi: Introduce EFI_PARAVIRT flag
-      arch/x86: Remove redundant set_bit(EFI_SYSTEM_TABLES) call
-      arch/x86: Remove redundant set_bit(EFI_MEMMAP) call
-      xen: Define EFI related stuff
-      xen: Put EFI machinery in place
-      arch/x86: Replace plain strings with constants
-      arch/x86: Remove efi_set_rtc_mmss()
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index d2d3c41..b9c23d7 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -350,6 +350,9 @@ int __init efi_memblock_x86_reserve_range(void)
+ 	struct efi_info *e = &boot_params.efi_info;
+ 	unsigned long pmap;
+ 
++	if (efi_enabled(EFI_PARAVIRT))
++		return 0;
++
+ #ifdef CONFIG_X86_32
+ 	/* Can't handle data above 4GB at this time */
+ 	if (e->efi_memmap_hi) {
+@@ -616,14 +619,24 @@ static int __init efi_runtime_init(void)
+ 	 * the runtime services table so that we can grab the physical
+ 	 * address of several of the EFI runtime functions, needed to
+ 	 * set the firmware into virtual mode.
++	 *
++	 * When EFI_PARAVIRT is in force then we could not map runtime
++	 * service memory region because we do not have direct access to it.
++	 * However, runtime services are available through proxy functions
++	 * (e.g. in case of Xen dom0 EFI implementation they call special
++	 * hypercall which executes relevant EFI functions) and that is why
++	 * they are always enabled.
+ 	 */
+-	if (efi_enabled(EFI_64BIT))
+-		rv = efi_runtime_init64();
+-	else
+-		rv = efi_runtime_init32();
+ 
+-	if (rv)
+-		return rv;
++	if (!efi_enabled(EFI_PARAVIRT)) {
++		if (efi_enabled(EFI_64BIT))
++			rv = efi_runtime_init64();
++		else
++			rv = efi_runtime_init32();
++
++		if (rv)
++			return rv;
++	}
+ 
+ 	set_bit(EFI_RUNTIME_SERVICES, &efi.flags);
+ 
+@@ -632,6 +645,9 @@ static int __init efi_runtime_init(void)
+ 
+ static int __init efi_memmap_init(void)
+ {
++	if (efi_enabled(EFI_PARAVIRT))
++		return 0;
++
+ 	/* Map the EFI memory map */
+ 	memmap.map = early_memremap((unsigned long)memmap.phys_map,
+ 				   memmap.nr_map * memmap.desc_size);
+@@ -1188,6 +1204,9 @@ static void __init __efi_enter_virtual_mode(void)
+ 
+ void __init efi_enter_virtual_mode(void)
+ {
++	if (efi_enabled(EFI_PARAVIRT))
++		return;
++
+ 	if (efi_setup)
+ 		kexec_enter_virtual_mode();
+ 	else
+diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
+index 4fd17ca..07329d1 100644
+--- a/drivers/firmware/efi/efi.c
++++ b/drivers/firmware/efi/efi.c
+@@ -104,16 +104,19 @@ static struct attribute *efi_subsys_attrs[] = {
+ static umode_t efi_attr_is_visible(struct kobject *kobj,
+ 				   struct attribute *attr, int n)
+ {
+-	umode_t mode = attr->mode;
+-
+-	if (attr == &efi_attr_fw_vendor.attr)
+-		return (efi.fw_vendor == EFI_INVALID_TABLE_ADDR) ? 0 : mode;
+-	else if (attr == &efi_attr_runtime.attr)
+-		return (efi.runtime == EFI_INVALID_TABLE_ADDR) ? 0 : mode;
+-	else if (attr == &efi_attr_config_table.attr)
+-		return (efi.config_table == EFI_INVALID_TABLE_ADDR) ? 0 : mode;
++	if (attr == &efi_attr_fw_vendor.attr) {
++		if (efi_enabled(EFI_PARAVIRT) ||
++				efi.fw_vendor == EFI_INVALID_TABLE_ADDR)
++			return 0;
++	} else if (attr == &efi_attr_runtime.attr) {
++		if (efi.runtime == EFI_INVALID_TABLE_ADDR)
++			return 0;
++	} else if (attr == &efi_attr_config_table.attr) {
++		if (efi.config_table == EFI_INVALID_TABLE_ADDR)
++			return 0;
++	}
+ 
+-	return mode;
++	return attr->mode;
+ }
+ 
+ static struct attribute_group efi_subsys_attr_group = {
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 41bbf8b..713a4f1 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -916,7 +916,8 @@ extern int __init efi_setup_pcdp_console(char *);
+ #define EFI_RUNTIME_SERVICES	3	/* Can we use runtime services? */
+ #define EFI_MEMMAP		4	/* Can we use EFI memory map? */
+ #define EFI_64BIT		5	/* Is the firmware 64-bit? */
+-#define EFI_ARCH_1		6	/* First arch-specific bit */
++#define EFI_PARAVIRT		6	/* Access is via a paravirt interface */
++#define EFI_ARCH_1		7	/* First arch-specific bit */
+ 
+ #ifdef CONFIG_EFI
+ /*
+-- 
+1.7.10.4
 
