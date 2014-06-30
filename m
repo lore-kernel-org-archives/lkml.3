@@ -1,103 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756889AbaF3Sem (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 14:34:42 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43613 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756399AbaF3Sel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 14:34:41 -0400
-Date: Mon, 30 Jun 2014 13:34:06 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-CC: Felipe Balbi <balbi@ti.com>, <sebastian.hesselbarth@gmail.com>,
-        <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [PATCH v2 05/12] usb: phy: add the Berlin USB PHY driver
-Message-ID: <20140630183406.GT31442@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1403606121-6368-1-git-send-email-antoine.tenart@free-electrons.com>
- <1403606121-6368-6-git-send-email-antoine.tenart@free-electrons.com>
- <20140627155622.GL8069@saruman.home>
- <20140627160557.GA6622@kwain>
- <20140627230433.GC762@saruman.home>
- <20140630145211.GA29613@kwain>
+	id S1754882AbaF3Sjc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 14:39:32 -0400
+Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:36440
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752438AbaF3Sjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 14:39:31 -0400
+Date: Mon, 30 Jun 2014 11:39:19 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: timers & suspend
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="D+M1YvVlDncl3vD5"
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20140630145211.GA29613@kwain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <f270ad9c-9906-445d-9e9a-4d3618787455@BY2FFO11FD039.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(164054003)(189002)(199002)(70736001)(53416004)(83322001)(4396001)(104016002)(21056001)(64706001)(106466001)(20776003)(77982001)(80022001)(46102001)(47776003)(76482001)(74502001)(44976005)(95666004)(81542001)(102836001)(6806004)(77096002)(81342001)(31696002)(74316001)(99396002)(85852003)(1496007)(87936001)(83506001)(23676002)(85182001)(92566001)(31966008)(74662001)(85306003)(92726001)(33646001)(54356999)(86362001)(79102001)(83072002)(50986999)(229853001)(107046002)(50466002)(107986001)(23106004);DIR:OUT;SFP:;SCL:1;SRVR:BY2FFO11HUB001;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-OriginatorOrg: xilinx.onmicrosoft.com
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0258E7CCD4
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---D+M1YvVlDncl3vD5
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On Mon, Jun 30, 2014 at 04:52:11PM +0200, Antoine T=E9nart wrote:
-> Felipe,
->=20
-> On Fri, Jun 27, 2014 at 06:04:33PM -0500, Felipe Balbi wrote:
-> > On Fri, Jun 27, 2014 at 06:05:57PM +0200, Antoine T=E9nart wrote:
-> > > Hi Felipe,
-> > >=20
-> > > On Fri, Jun 27, 2014 at 10:56:22AM -0500, Felipe Balbi wrote:
-> > > > On Tue, Jun 24, 2014 at 12:35:14PM +0200, Antoine T=E9nart wrote:
-> > > > > Add the driver driving the Marvell Berlin USB PHY. This allows to
-> > > > > initialize the PHY and to use it from the USB driver later.
-> > > > >=20
-> > > > > Signed-off-by: Antoine T=E9nart <antoine.tenart@free-electrons.co=
-m>
-> > > >=20
-> > > > since this is a brand new driver, it should go to drivers/phy inste=
-ad.
-> > >=20
-> > > This PHY is used by a ChipIdea USB driver, which uses the provided
-> > > common function for ChipIdea. These functions use the usb_phy framewo=
-rk.
-> > > That's why this PHY driver is there.
-> >=20
-> > right, but you can add support for the new PHY layer which would help
-> > other users convert their PHY drivers to the new PHY framework.
->=20
-> Adding the support for the new PHY layer in the common CI code is not
-> complicated, but these functions also use some parts from usb hcd or usb
-> otg which are only usb_phy compatible.
->=20
-> Shouldn't these parts add the new PHY support first, to avoid ending up
-> with a fairly big series, quite long to do and complicated to review?
+I'm currently working on suspend for Zynq and try to track down some
+spurious wakes. It looks like the spurious wakes are caused by timers,
+hence I was wondering whether there are any special requirements for
+timer drivers when it comes to suspend support or if I just missed
+something.
 
-sure, patches are welcome. :-)
+Zynq sets the 'IRQCHIP_MASK_ON_SUSPEND' flag, which should mask all
+interrupts but the wake source. Reading through kernel/irq/pm.c
+indicates, that timer interrupts get some special treatment though.
+Therefore I implemented some suspend/resume callbacks for the
+cadence_ttc which disable and clear the timer's interrupts when going
+into suspend. That seems to mitigate the issue quite a bit, but I still
+saw spurious wakes - just a lot less often.
+Digging a little deeper revealed, the spurious wakes are caused by the
+ARM's smp_twd timer now. Given that that driver is probably used by a few
+more ARM platforms, I get the feeling that I'm missing something.
 
---=20
-balbi
+It's probably worth mentioning that the suspend state in Zynq does not
+power off the CPU cores. It just asserts the resets on secondary cores
+and the primary one waits in wfi.
 
---D+M1YvVlDncl3vD5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+	Thanks,
+	Sören
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTsa2eAAoJEIaOsuA1yqREkAEP/235IN/u5ZOmX6Fl6qEwJx8U
-R8AwZXOMzaie5vFm2rDwnixUeClUJBiCwONlR6PGGVrwx1lYw/dkOsUJmOZlfxiC
-EGdFvt1Wi3zf+21oyBHP2RijhzfpQDsA4SJv7ppsOhjczmC6c3YEmr47EoP7UZ2h
-8jU1Q8WTx2UVw5N8lzKNUKEhfOX7Ur0Kp/euQ/j5gpxnVd+eJgBy3omo9fPVNN1s
-L+vN85lxp2DH6uY1NbiGVe0Jj0r+4tbKkUHmERg8Bf7ak/+ykaJaeVn+93Rbv01/
-1OEpsno2QX6aKfIErC3uQGug70NQRUkKPmMtWhKvHxiNqXj+EiceQ74UThALBvbg
-kP0qUPCDvbVK0afc8/PSnQxEmIyCqzk258DhVVQjJ1Mu3BZROuWGeMzxx3/5Imub
-GQ5zZqSD6F18MmXEOvsu2epOE88bu3a0Z5Z5q2SMV51rgJ1gxuGCueCQZlTTSoVX
-NmaFE0V1nBA8xqa8oqJEOQBlKcuKArEx0h31zAzECI3HiH0m2sJRkIkduPUitDsG
-YWGHoWqskZYFbNWlL1o0+z6dZQXNtlavSPvnxgKD9liUuZwAq/kfQ7UjZ2Q0ZcSJ
-rezjOPXLf0fdDisXeNifbvpmKyMMfDI5QdZn+5opXis/e0mZKwS+ecNsnV6XPgn9
-CPo7MkLuCZE26NgUlzT9
-=cvPO
------END PGP SIGNATURE-----
-
---D+M1YvVlDncl3vD5--
