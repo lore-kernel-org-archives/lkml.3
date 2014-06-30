@@ -1,50 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380AbaF3GzA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 02:55:00 -0400
-Received: from relay-s04-hub002.domainlocalhost.com ([74.115.207.101]:34946
-	"EHLO relay-S04-HUB002.domainlocalhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752131AbaF3Gy7 (ORCPT
+	id S1754436AbaF3G5U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 02:57:20 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:41860 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338AbaF3G5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 02:54:59 -0400
-From: Dudley Du <dudl@cypress.com>
-To: Patrik Fimml <patrikf@google.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Benson Leung <bleung@google.com>, Lily Rui <lily@cypress.com>,
-        Daniel Kurtz <djkurtz@google.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2 0/14] input: cyapa: re-architecture driver to support
- multi-trackpads in one driver
-Thread-Topic: [PATCH v2 0/14] input: cyapa: re-architecture driver to
- support multi-trackpads in one driver
-Thread-Index: AQHPkmJ9t+T52SM2e0uifNVuU/yAn5uJOpGA
-Date: Mon, 30 Jun 2014 06:54:57 +0000
-Message-ID: <77BC725C9062764F874D79F51E1F1A8F4C902D71@S04-MBX01-01.s04.local>
-References: <CAEn7tidaRxbLwQti8joDgq48K2YCAVE3uG-q6ZR=jEWAgm2tPg@mail.gmail.com>
-In-Reply-To: <CAEn7tidaRxbLwQti8joDgq48K2YCAVE3uG-q6ZR=jEWAgm2tPg@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.30.12.155]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 30 Jun 2014 02:57:18 -0400
+Date: Mon, 30 Jun 2014 15:56:11 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: himangi774@gmail.com, sachin.kamat@linaro.org, fempsci@gmail.com,
+        weo@weo1.de, sima.baymani@gmail.com, shaun@XResource.ca,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3 V2] staging: cxt1e1: Remove useless OS_phystov() and
+ OS_vtophys()
+Message-ID: <20140630065611.GA28940@devel.8.8.4.4>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s5U6t6Zo009672
 
-Hi All,
+OS_phystov()/OS_vtophys() are replaced with
+phys_to_virt()/virt_to_phys().
 
-Sorry for the disturb again.
-The 14 caypa V2 patches I re-sent through 14:41 to 14:45 at 2014/6/30 still have some of them corrupted by the mail server.
-Please ignore them. I will try to fix them.
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+V2: use virt_to_phys()/phys_to_virt() instead of __pa()/__va().
 
-Thanks,
-Dudley
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ drivers/staging/cxt1e1/musycc.c              |   16 ++++++++--------
+ drivers/staging/cxt1e1/pmcc4_drv.c           |   12 ++++++------
+ drivers/staging/cxt1e1/sbecom_inline_linux.h |   19 -------------------
+ 3 files changed, 14 insertions(+), 33 deletions(-)
+
+diff --git a/drivers/staging/cxt1e1/musycc.c b/drivers/staging/cxt1e1/musycc.c
+index 9495c0b..0ae62b3 100644
+--- a/drivers/staging/cxt1e1/musycc.c
++++ b/drivers/staging/cxt1e1/musycc.c
+@@ -103,7 +103,7 @@ musycc_dump_rxbuffer_ring_locked(mch_t *ch)
+ 				if (m->data)
+ #endif
+ 				{
+-					dp = (u_int32_t *)OS_phystov((void *)(le32_to_cpu(m->data)));
++					dp = phys_to_virt(le32_to_cpu(m->data));
+ 					if (len >= 0x10)
+ 						pr_info("    %x[%x]: %08X %08X %08X %08x\n",
+ 							(u_int32_t)dp, len,
+@@ -173,7 +173,7 @@ musycc_dump_txbuffer_ring_locked(mch_t *ch)
+ 			len = status & LENGTH_MASK;
+ 
+ 			if (m->data) {
+-				dp = (u_int32_t *)OS_phystov((void *)(le32_to_cpu(m->data)));
++				dp = phys_to_virt(le32_to_cpu(m->data));
+ 				if (len >= 0x10)
+ 					pr_info("    %x[%x]: %08X %08X %08X %08x\n",
+ 						(u_int32_t) dp, len,
+@@ -328,7 +328,7 @@ musycc_update_tx_thp(mch_t *ch)
+ 		musycc_bh_tx_eom(ch->up, ch->gchan);
+ 	}
+ 	md = ch->txd_irq_srv;
+-	ch->up->regram->thp[ch->gchan] = cpu_to_le32(OS_vtophys(md));
++	ch->up->regram->thp[ch->gchan] = cpu_to_le32(virt_to_phys(md));
+ 	FLUSH_MEM_WRITE();
+ 
+ 	if (ch->tx_full) {
+@@ -729,7 +729,7 @@ musycc_chan_proto(int proto)
+ static void __init
+ musycc_init_port(mpi_t *pi)
+ {
+-	pci_write_32((u_int32_t *) &pi->reg->gbp, OS_vtophys(pi->regram));
++	pci_write_32((u_int32_t *) &pi->reg->gbp, virt_to_phys(pi->regram));
+ 
+ 	pi->regram->grcd =
+ 		__constant_cpu_to_le32(MUSYCC_GRCD_RX_ENABLE |
+@@ -817,7 +817,7 @@ musycc_init(ci_t *ci)
+ 	ci->regram = ci->port[0].regram;
+ 	musycc_serv_req(&ci->port[0], SR_CHIP_RESET);
+ 
+-	pci_write_32((u_int32_t *) &ci->reg->gbp, OS_vtophys(ci->regram));
++	pci_write_32((u_int32_t *) &ci->reg->gbp, virt_to_phys(ci->regram));
+ 	pci_flush_write(ci);
+ #ifdef CONFIG_SBE_PMCC4_NCOMM
+ 	ci->regram->__glcd = __constant_cpu_to_le32(GCD_MAGIC);
+@@ -827,7 +827,7 @@ musycc_init(ci_t *ci)
+ 						    MUSYCC_GCD_INTB_DISABLE);
+ #endif
+ 
+-	ci->regram->__iqp = cpu_to_le32(OS_vtophys(&ci->iqd_p[0]));
++	ci->regram->__iqp = cpu_to_le32(virt_to_phys(&ci->iqd_p[0]));
+ 	ci->regram->__iql = __constant_cpu_to_le32(INT_QUEUE_SIZE - 1);
+ 	pci_write_32((u_int32_t *) &ci->reg->dacbp, 0);
+ 	FLUSH_MEM_WRITE();
+@@ -1045,7 +1045,7 @@ musycc_bh_rx_eom(mpi_t *pi, int gchan)
+ 				if (m2) {
+ 					/* substitute the mbuf+cluster */
+ 					md->mem_token = m2;
+-					md->data = cpu_to_le32(OS_vtophys(
++					md->data = cpu_to_le32(virt_to_phys(
+ 							       OS_mem_token_data(m2)));
+ 
+ 					/* pass the received mbuf upward */
+@@ -1698,7 +1698,7 @@ musycc_start_xmit(ci_t *ci, int channum, void *mem_token)
+ 		 */
+ 		md->mem_token = len ? NULL : mem_token;
+ 
+-		md->data = cpu_to_le32(OS_vtophys(OS_mem_token_data(m2)));
++		md->data = cpu_to_le32(virt_to_phys(OS_mem_token_data(m2)));
+ 		FLUSH_MEM_WRITE();
+ 		md->status = cpu_to_le32(u);
+ 		--ch->txd_free;
+diff --git a/drivers/staging/cxt1e1/pmcc4_drv.c b/drivers/staging/cxt1e1/pmcc4_drv.c
+index 76bebdd..02f6770 100644
+--- a/drivers/staging/cxt1e1/pmcc4_drv.c
++++ b/drivers/staging/cxt1e1/pmcc4_drv.c
+@@ -919,7 +919,7 @@ c4_set_port (ci_t *ci, int portnum)
+ 
+     pci_write_32 ((u_int32_t *) &ci->cpldbase->mclk, clck);
+     pci_write_32 ((u_int32_t *) &ci->cpldbase->mcsr, PMCC4_CPLD_MCSR_IND);
+-    pci_write_32 ((u_int32_t *) &pi->reg->gbp, OS_vtophys (pi->regram));
++    pci_write_32 ((u_int32_t *) &pi->reg->gbp, virt_to_phys(pi->regram));
+ 
+     /*********************************************************************/
+     /* ERRATA: If transparent mode is used, do not set OOFMP_DISABLE bit */
+@@ -1355,7 +1355,7 @@ c4_chan_up (ci_t *ci, int channum)
+         {
+             md->snext = &ch->mdr[i + 1];
+         }
+-        md->next = cpu_to_le32 (OS_vtophys (md->snext));
++        md->next = cpu_to_le32 (virt_to_phys(md->snext));
+ 
+ 	m = OS_mem_token_alloc(cxt1e1_max_mru);
+ 	if (!m) {
+@@ -1366,7 +1366,7 @@ c4_chan_up (ci_t *ci, int channum)
+ 		goto errfree;
+         }
+         md->mem_token = m;
+-        md->data = cpu_to_le32 (OS_vtophys (OS_mem_token_data (m)));
++        md->data = cpu_to_le32 (virt_to_phys(OS_mem_token_data (m)));
+         md->status = tmp | MUSYCC_RX_OWNED;     /* MUSYCC owns RX descriptor **
+                                                  * CODING NOTE:
+                                                  * MUSYCC_RX_OWNED = 0 so no
+@@ -1387,7 +1387,7 @@ c4_chan_up (ci_t *ci, int channum)
+         {
+             md->snext = &ch->mdt[i + 1];
+         }
+-        md->next = cpu_to_le32 (OS_vtophys (md->snext));
++        md->next = cpu_to_le32 (virt_to_phys(md->snext));
+     }
+     ch->txd_irq_srv = ch->txd_usr_add = &ch->mdt[0];
+     ch->txd_free = txnum;
+@@ -1395,11 +1395,11 @@ c4_chan_up (ci_t *ci, int channum)
+     ch->txd_required = 0;
+ 
+     /* Configure it into the chip */
+-    tmp = cpu_to_le32 (OS_vtophys (&ch->mdt[0]));
++    tmp = cpu_to_le32 (virt_to_phys(&ch->mdt[0]));
+     pi->regram->thp[gchan] = tmp;
+     pi->regram->tmp[gchan] = tmp;
+ 
+-    tmp = cpu_to_le32 (OS_vtophys (&ch->mdr[0]));
++    tmp = cpu_to_le32 (virt_to_phys(&ch->mdr[0]));
+     pi->regram->rhp[gchan] = tmp;
+     pi->regram->rmp[gchan] = tmp;
+ 
+diff --git a/drivers/staging/cxt1e1/sbecom_inline_linux.h b/drivers/staging/cxt1e1/sbecom_inline_linux.h
+index f5835c2..af2bffe 100644
+--- a/drivers/staging/cxt1e1/sbecom_inline_linux.h
++++ b/drivers/staging/cxt1e1/sbecom_inline_linux.h
+@@ -99,25 +99,6 @@ OS_mem_token_tlen (void *token)
+     return ((struct sk_buff *) token)->len;
+ }
+ 
+-
+-/***************************************/
+-/* virtual to physical addr conversion */
+-/***************************************/
+-
+-static inline u_long
+-OS_phystov (void *addr)
+-{
+-    return (u_long) __va (addr);
+-}
+-
+-
+-static inline u_long
+-OS_vtophys (void *addr)
+-{
+-    return __pa (addr);
+-}
+-
+-
+ /**********/
+ /* semops */
+ /**********/
+-- 
+1.7.1
+
