@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190AbaF3RCw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 13:02:52 -0400
-Received: from mout.gmx.net ([212.227.15.18]:49663 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751184AbaF3RCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 13:02:49 -0400
-Message-ID: <53B1982F.4030504@gmx.de>
-Date: Mon, 30 Jun 2014 19:02:39 +0200
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1755898AbaF3REQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 13:04:16 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:57618 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752643AbaF3REP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 13:04:15 -0400
+Date: Mon, 30 Jun 2014 22:34:09 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] tracing/uprobes: Fix the usage of
+ uprobe_buffer_enable() in probe_event_enable()
+Message-ID: <20140630170409.GD5619@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20140627170116.GA18298@redhat.com>
+ <20140627170146.GA18332@redhat.com>
 MIME-Version: 1.0
-To: "Li, Zhen-Hua" <zhen-hual@hp.com>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] script/kconfig: remove a warning for menucofig
-References: <1404098187-9638-1-git-send-email-zhen-hual@hp.com>
-In-Reply-To: <1404098187-9638-1-git-send-email-zhen-hual@hp.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:rI86fz+BfqLnBPxZdqGjOuAqFiKO5IB/1LxMIcCanlDF7D3n5Sg
- VKKUUaKQqF1bq7WkkPLl/InGmMXx5eaDpKtURGj/M2BhB0NDH9vcneRFo7jC+o2q96ekR1x
- KARZfNTASYvd3oBc1nYT/h8wW04J4JF6CdUX7z96zxiKlnqoZLrJHVNlXjmvErZniDHAMw/
- F/yErfDHOV7p6N68tM+KA==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20140627170146.GA18332@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14063017-8878-0000-0000-00000D4100B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.06.2014 05:16, Li, Zhen-Hua wrote:
-> There is a warning when run "make menuconfig".
->
-> scripts/kconfig/menu.c: In function ‘get_symbol_str’:
-> scripts/kconfig/menu.c:591:18: warning: ‘jump’ may be used uninitialized in
-> this function [-Wmaybe-uninitialized]
->       jump->offset = strlen(r->s);
->                    ^
-> scripts/kconfig/menu.c:551:19: note: ‘jump’ was declared here
->    struct jump_key *jump;
->                     ^
->
-> It is because the compiler think "jump" is not initialized, though in fact
-> it is already initialized.
->
-> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
-> ---
->   scripts/kconfig/menu.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
-> index a26cc5d..584e0fc 100644
-> --- a/scripts/kconfig/menu.c
-> +++ b/scripts/kconfig/menu.c
-> @@ -548,7 +548,7 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
->   {
->   	int i, j;
->   	struct menu *submenu[8], *menu, *location = NULL;
-> -	struct jump_key *jump;
-> +	struct jump_key *jump = NULL;
->
->   	str_printf(r, _("Prompt: %s\n"), _(prop->text));
->   	menu = prop->menu->parent;
->
-Hello Zhen-Hua,
+> The usage of uprobe_buffer_enable() added by dcad1a20 is very wrong,
+> 
+> 1. uprobe_buffer_enable() and uprobe_buffer_disable() are not balanced,
+>    _enable() should be called only if !enabled.
+> 
+> 2. If uprobe_buffer_enable() fails probe_event_enable() should clear
+>    tp.flags and free event_file_link.
+> 
+> 3. If uprobe_register() fails it should do uprobe_buffer_disable().
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-the patch looks incomplete to me. A check
-jump != NULL
-should be added before accessing parts of structure jump_key.
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+(one nit .. )
 
-Best regards
+> +	ret = uprobe_buffer_enable();
+> +	if (ret)
+> +		goto err_flags;
+> +
+>  	tu->consumer.filter = filter;
+>  	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
+> -	if (ret) {
+> -		if (file) {
+> -			list_del(&link->list);
+> -			kfree(link);
+> -			tu->tp.flags &= ~TP_FLAG_TRACE;
+> -		} else
+> -			tu->tp.flags &= ~TP_FLAG_PROFILE;
+> -	}
+> +	if (ret)
+> +		goto err_buffer;
+> 
+> +	return 0;
+> +
+> + err_buffer:
+> +	uprobe_buffer_disable();
+> +
 
-Heinrich Schuchardt
+How about avoiding err_buffer label?
++	if (!ret)
++		return 0;
+
++	uprobe_buffer_disable();
++
+
+
+> + err_flags:
+> +	if (file) {
+> +		list_del(&link->list);
+> 
+> -- 
+> 1.5.5.1
+> 
+
+-- 
+Thanks and Regards
+Srikar Dronamraju
+
