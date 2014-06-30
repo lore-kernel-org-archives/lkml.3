@@ -1,130 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415AbaF3OlQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 10:41:16 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:40716 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753223AbaF3OlO (ORCPT
+	id S1753758AbaF3OlZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 10:41:25 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:43337 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753223AbaF3OlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 10:41:14 -0400
-Date: Mon, 30 Jun 2014 10:41:13 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Chen, Alvin" <alvin.chen@intel.com>
-cc: Jingoo Han <jg1.han@samsung.com>, David Laight <David.Laight@ACULAB.COM>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Boon Leong Ong <boon.leong.ong@intel.com>
-Subject: Re: [PATCH v3] USB: ehci-pci: USB host controller support for Intel
- Quark X1000
-In-Reply-To: <1404147960-17596-2-git-send-email-alvin.chen@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1406301029190.1550-100000@iolanthe.rowland.org>
+	Mon, 30 Jun 2014 10:41:20 -0400
+Date: Mon, 30 Jun 2014 15:41:14 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kishon@ti.com
+Cc: kernel@stlinux.com
+Subject: [PATCH v2 4/5] phy: miphy365x: Represent each PHY channel as a
+ subnode
+Message-ID: <20140630144114.GB25926@lee--X1>
+References: <1404133317-25953-1-git-send-email-lee.jones@linaro.org>
+ <1404133317-25953-5-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404133317-25953-5-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jun 2014, Chen, Alvin wrote:
+phy: miphy365x: Represent each PHY channel as a DT subnode
 
-> From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
-> 
-> The EHCI packet buffer in/out threshold is programmable for Intel Quark X1000
-> USB host controller, and the default value is 0x20 dwords. The in/out threshold
-> can be programmed to 0x80 dwords (512 Bytes) to maximize the perfomrance,
-> but only when isochronous/interrupt transactions are not initiated by the USB
-> host controller. This patch is to reconfigure the packet buffer in/out
-> threshold as maximal as possible to maximize the performance, and 0x7F dwords
-> (508 Bytes) should be used because the USB host controller initiates
-> isochronous/interrupt transactions.
-> 
-> Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
-> Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
+This has the added advantages of being able to enable/disable each
+of the channels as simply as enabling/disabling the DT node.
 
-This is getting a lot better.
+Suggested-by: Kishon Vijay Abraham I <kishon@ti.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-> diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
-> index 3e86bf4..78f1622 100644
-> --- a/drivers/usb/host/ehci-pci.c
-> +++ b/drivers/usb/host/ehci-pci.c
-> @@ -35,11 +35,35 @@ static const char hcd_name[] = "ehci-pci";
->  #define PCI_DEVICE_ID_INTEL_CE4100_USB	0x2e70
->  
->  /*-------------------------------------------------------------------------*/
-> +#define PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC		0x0939
-> +static inline bool is_intel_quark_x1000(struct pci_dev *pdev)
-> +{
-> +	return pdev->vendor == PCI_VENDOR_ID_INTEL &&
-> +		pdev->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC;
-> +}
-
-Whether to put this test directly into ehci_pci_reset() or leave it as
-a separate subroutine is up to you.  I don't care either way.
-
-> +
-> +/*
-> +	* The offset of in/out threshold register is 0x84.
-> +	* And it is the register of 'hostpc'
-> +	* in memory-mapped EHCI controller.
-> +*/
-
-0x84 is the same as offset of the hostpc register in the Intel
-Moorestown controller.  hostpc is not present in general EHCI 
-controllers.
-
-> +#define	intel_quark_x1000_insnreg01	hostpc
-> +
-> +/* The maximal ehci packet buffer size is 512 bytes */
-> +#define INTEL_QUARK_X1000_EHCI_MAX_PACKET_BUFFER_SIZE	512
-> +
-> +/* The threshold value set the register is in DWORD */
-> +#define INTEL_QUARK_X1000_EHCI_THRESHOLD(size)	((size)/4u)
-> +#define INTEL_QUARK_X1000_EHCI_THRESHOLD_OUT_SHIFT	16
-> +#define INTEL_QUARK_X1000_EHCI_THRESHOLD_IN_SHIFT	0
-> +
->  /* called after powerup, by probe or system-pm "wakeup" */
->  static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
->  {
->  	int			retval;
-> +	u32			val;
-> +	u32			thr;
->  
->  	/* we expect static quirk code to handle the "extended capabilities"
->  	 * (currently just BIOS handoff) allowed starting with EHCI 0.96
-> @@ -50,6 +74,22 @@ static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
->  	if (!retval)
->  		ehci_dbg(ehci, "MWI active\n");
->  
-> +	/* Reset the threshold limit */
-> +	if (is_intel_quark_x1000(pdev)) {
-> +		/*
-> +			* In order to support the isochronous/interrupt
-> +			* transactions, 508 bytes should be used as
-> +			* max threshold values to maximize the
-> +			* performance
-> +		*/
-> +		thr = INTEL_QUARK_X1000_EHCI_THRESHOLD(
-> +			INTEL_QUARK_X1000_EHCI_MAX_PACKET_BUFFER_SIZE - 4
-> +			);
-> +		val = thr<<INTEL_QUARK_X1000_EHCI_THRESHOLD_OUT_SHIFT |
-> +				thr<<INTEL_QUARK_X1000_EHCI_THRESHOLD_IN_SHIFT;
-> +		ehci_writel(ehci, val, ehci->regs->intel_quark_x1000_insnreg01);
-
-I saw what other people told you about the original patch version, and 
-I disagree with them.  It is not necessary to include a detailed 
-calculation like this, it only makes the code harder to read.  It will 
-be better to have a single #define with a comment explaining it, like 
-this:
-
-/* Maximum usable threshold value is 0x7f dwords for both IN and OUT */
-#define INTEL_QUARK_X1000_EHCI_MAX_THRESHOLD	0x007f007f
-
-Then here, just use INTEL_QUARK_X1000_EHCI_MAX_THRESHOLD instead of 
-val.  The comment can simply say:
-
-	/*
-	 * For the Intel QUARK X1000, raise the I/O threshold to the 
-	 * maximum usable value in order to improve performance.
-	 */
-
-Alan Stern
-
+diff --git a/drivers/phy/phy-miphy365x.c b/drivers/phy/phy-miphy365x.c
+index 1109f42..2c4ea6e 100644
+--- a/drivers/phy/phy-miphy365x.c
++++ b/drivers/phy/phy-miphy365x.c
+@@ -17,6 +17,7 @@
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
++#include <linux/of_address.h>
+ #include <linux/clk.h>
+ #include <linux/phy/phy.h>
+ #include <linux/delay.h>
+@@ -144,6 +145,7 @@ struct miphy365x {
+ 	void __iomem *pcie;
+ 	u8 type;
+ 	u8 port;
++	bool enabled;
+ };
+ 
+ struct miphy365x_dev {
+@@ -468,7 +470,7 @@ static struct phy *miphy365x_xlate(struct device *dev,
+ 	struct miphy365x_dev *state = dev_get_drvdata(dev);
+ 	u8 port, type;
+ 
+-	if (args->count != 2) {
++	if (args->args_count != 2) {
+ 		dev_err(dev, "Invalid number of cells in 'phy' property\n");
+ 		return ERR_PTR(-EINVAL);
+ 	}
+@@ -484,6 +486,11 @@ static struct phy *miphy365x_xlate(struct device *dev,
+ 	if (WARN_ON(port >= ARRAY_SIZE(ports)))
+ 		return ERR_PTR(-EINVAL);
+ 
++	if (!state->phys[port].enabled) {
++		dev_warn(dev, "PHY port %d is disabled\n", port);
++		return ERR_PTR(-EINVAL);
++	}
++
+ 	if (type == MIPHY_TYPE_SATA)
+ 		state->phys[port].base = state->phys[port].sata;
+ 	else if (type == MIPHY_TYPE_PCIE)
+@@ -503,38 +510,75 @@ static struct phy_ops miphy365x_ops = {
+ 	.owner		= THIS_MODULE,
+ };
+ 
+-static int miphy365x_get_base_addr(struct platform_device *pdev,
+-				    struct miphy365x_phy *phy, u8 port)
++static int miphy365x_get_base_addr_one(struct platform_device *pdev,
++				       struct miphy365x *phy,
++				       struct device_node *child,
++				       int index)
+ {
+-	struct resource *res;
+-	char type[6];
++	void __iomem *base;
++	const char *name;
++	int ret;
+ 
+-	sprintf(type, "sata%d", port);
++	base = of_iomap(child, index);
++	if (!base) {
++		dev_err(&pdev->dev, "Failed to map %s\n", child->full_name);
++		return -EINVAL;
++	}
+ 
+-	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, type);
+-	if (!res)
+-		return -ENODEV;
++	ret = of_property_read_string_index(child, "reg-names", index, &name);
++	if (ret) {
++		dev_err(&pdev->dev,
++			"%s: no reg-names property not found\n", child->name);
++		return ret;
++	}
+ 
+-	phy->sata = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+-	if (!phy->sata)
+-		return -ENOMEM;
++	if (!strncmp(name, "sata", 4))
++		phy->sata = base;
++	else if (!strncmp(name, "pcie", 4))
++		phy->pcie = base;
++	else {
++		dev_err(&pdev->dev, "reg-names in %s not sata or pcie: %s",
++			child->name, name);
++		return -EINVAL;
++	}
+ 
+-	sprintf(type, "pcie%d", port);
++	return 0;
++}
+ 
+-	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, type);
+-	if (!res)
+-		return -ENODEV;
++static int miphy365x_get_base_addr(struct platform_device *pdev,
++				   struct miphy365x *phy,
++				   struct device_node *child)
++{
++	int index;
++	int ret;
+ 
+-	phy->pcie = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+-	if (!phy->pcie)
+-		return -ENOMEM;
++	/* Each port handles SATA or PCIE. */
++	for (index = 0; index < 2; index++) {
++		ret = miphy365x_get_base_addr_one(pdev, phy,
++						  child, index);
++		if (ret)
++			return ret;
++	}
+ 
+ 	return 0;
+ }
+ 
+-static int miphy365x_of_probe(struct device_node *np,
++static int miphy365x_of_probe(struct platform_device *pdev,
+ 			      struct miphy365x_dev *phy_dev)
+ {
++	struct device_node *np = pdev->dev.of_node;
++	struct device_node *child;
++	int child_count = 0;
++
++	for_each_child_of_node(np, child)
++		child_count++;
++
++	if (child_count != ARRAY_SIZE(ports)) {
++		dev_err(&pdev->dev, "%d ports supported, %d supplied\n",
++			ARRAY_SIZE(ports), child_count);
++		return -EINVAL;
++	}
++
+ 	phy_dev->regmap = syscon_regmap_lookup_by_phandle(np, "st,syscfg");
+ 	if (IS_ERR(phy_dev->regmap)) {
+ 		dev_err(phy_dev->dev, "No syscfg phandle specified\n");
+@@ -556,11 +600,10 @@ static int miphy365x_of_probe(struct device_node *np,
+ 
+ static int miphy365x_probe(struct platform_device *pdev)
+ {
+-	struct device_node *np = pdev->dev.of_node;
++	struct device_node *child, *np = pdev->dev.of_node;
+ 	struct miphy365x_dev *phy_dev;
+ 	struct device *dev = &pdev->dev;
+ 	struct phy_provider *provider;
+-	u8 port;
+ 	int ret;
+ 
+ 	if (!np) {
+@@ -572,7 +615,7 @@ static int miphy365x_probe(struct platform_device *pdev)
+ 	if (!phy_dev)
+ 		return -ENOMEM;
+ 
+-	ret = miphy365x_of_probe(np, phy_dev);
++	ret = miphy365x_of_probe(pdev, phy_dev);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -582,8 +625,9 @@ static int miphy365x_probe(struct platform_device *pdev)
+ 
+ 	mutex_init(&phy_dev->miphy_mutex);
+ 
+-	for (port = 0; port < ARRAY_SIZE(ports); port++) {
++	for_each_child_of_node(np, child) {
+ 		struct phy *phy;
++		static int port = 0;
+ 
+ 		phy = devm_phy_create(dev, &miphy365x_ops, NULL);
+ 		if (IS_ERR(phy)) {
+@@ -591,15 +635,17 @@ static int miphy365x_probe(struct platform_device *pdev)
+ 			return PTR_ERR(phy);
+ 		}
+ 
+-		phy_dev->phys[port].phy  = phy;
+-		phy_dev->phys[port].port = port;
+-
+-		ret = miphy365x_get_base_addr(pdev,
+-					&phy_dev->phys[port], port);
++		ret = miphy365x_get_base_addr(pdev, &phy_dev->phys[port],
++					      child);
+ 		if (ret)
+ 			return ret;
+ 
++		phy_dev->phys[port].phy  = phy;
++		phy_dev->phys[port].port = port;
++		phy_dev->phys[port].enabled = !!of_device_is_available(child);
++
+ 		phy_set_drvdata(phy, &phy_dev->phys[port]);
++		port++;
+ 	}
+ 
+ 	provider = devm_of_phy_provider_register(dev, miphy365x_xlate);
