@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594AbaF3Rxz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 13:53:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48255 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754774AbaF3Rxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 13:53:54 -0400
-Date: Mon, 30 Jun 2014 19:53:51 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, linux-firmware@kernel.org,
-        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] README: clarify redistribution requirements covering
-	patents
-Message-ID: <20140630175351.GL27687@wotan.suse.de>
-References: <1403897967-5894-1-git-send-email-mcgrof@do-not-panic.com> <20140628163108.0b8b81ce@alan.etchedpixels.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140628163108.0b8b81ce@alan.etchedpixels.co.uk>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1756733AbaF3RyM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 13:54:12 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:16886 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754860AbaF3RyH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 13:54:07 -0400
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org
+Cc: andrew.cooper3@citrix.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, eshelton@pobox.com, fenghua.yu@intel.com,
+        hpa@zytor.com, ian.campbell@citrix.com, jbeulich@suse.com,
+        jeremy@goop.org, konrad.wilk@oracle.com, matt.fleming@intel.com,
+        mingo@redhat.com, mjg59@srcf.ucam.org,
+        stefano.stabellini@eu.citrix.com, tglx@linutronix.de,
+        tony.luck@intel.com
+Subject: [PATCH v7 00/10] xen: Add EFI support
+Date: Mon, 30 Jun 2014 19:52:54 +0200
+Message-Id: <1404150784-27921-1-git-send-email-daniel.kiper@oracle.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 28, 2014 at 04:31:08PM +0100, One Thousand Gnomes wrote:
-> > +the firmware license provided includes an implicit or explicit
-> > +patent grant to end users to ensure full functionality of device
-> > +operation with the firmware. If the licence is long and involved, it's
-> >  permitted to include it in a separate file and refer to it from the
-> >  WHENCE file.
-> >  And if it were possible, a changelog of the firmware itself.
-> 
-> "end users of the device" or just "end users"
-> 
-> I'm assuming the worry for most vendors is licensing it to be used on
-> some third party product ?
+Hey,
 
-The proposed language includes both whereas the "end users of the device"
-would exclude some subset use including the implicit license use case.
-Thoughts?
+This patch series adds EFI support for Xen dom0 guests.
+It is based on Jan Beulich and Tang Liang work. I was
+trying to take into account all previous comments,
+however, if I missed something sorry for that.
 
-  Luis
+Daniel
+
+ arch/ia64/include/asm/io.h       |    1 +
+ arch/x86/kernel/setup.c          |    4 +-
+ arch/x86/platform/efi/efi.c      |  106 ++++++++++--------------
+ arch/x86/xen/enlighten.c         |   15 ++++
+ drivers/firmware/efi/efi.c       |   25 +++---
+ drivers/xen/Kconfig              |    4 +
+ drivers/xen/Makefile             |    3 +
+ drivers/xen/efi.c                |  368 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/efi.h              |    4 +-
+ include/xen/interface/platform.h |  123 ++++++++++++++++++++++++++++
+ include/xen/xen-ops.h            |   11 +++
+ 11 files changed, 587 insertions(+), 77 deletions(-)
+
+Daniel Kiper (10):
+      arch/ia64: Define early_memunmap()
+      efi: Use early_mem*() instead of early_io*()
+      arch/x86: Do not access EFI memory map if it is not available
+      efi: Introduce EFI_PARAVIRT flag
+      arch/x86: Remove redundant set_bit(EFI_SYSTEM_TABLES) call
+      arch/x86: Remove redundant set_bit(EFI_MEMMAP) call
+      xen: Define EFI related stuff
+      xen: Put EFI machinery in place
+      arch/x86: Replace plain strings with constants
+      arch/x86: Remove efi_set_rtc_mmss()
+
