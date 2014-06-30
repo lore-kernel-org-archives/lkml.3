@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874AbaF3CdK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 22:33:10 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:54662 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753435AbaF3CdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 22:33:08 -0400
-X-IronPort-AV: E=Sophos;i="5.00,804,1396972800"; 
-   d="scan'208";a="32596876"
-Message-ID: <53B0CC45.4080109@cn.fujitsu.com>
-Date: Mon, 30 Jun 2014 10:32:37 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1753923AbaF3CsH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 22:48:07 -0400
+Received: from ozlabs.org ([103.22.144.67]:38473 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753607AbaF3CsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jun 2014 22:48:05 -0400
+Date: Mon, 30 Jun 2014 12:47:50 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Octavian Purdila <octavian.purdila@intel.com>
+Subject: linux-next: build failure after merge of the net-next tree
+Message-ID: <20140630124750.0aad0c82@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>,
-        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH 2/2] workqueue: stronger test in process_one_work()
-References: <1401780809-12331-1-git-send-email-laijs@cn.fujitsu.com> <1401780809-12331-2-git-send-email-laijs@cn.fujitsu.com> <20140619194432.GC7390@mtj.dyndns.org> <53AC03AF.9050303@cn.fujitsu.com>
-In-Reply-To: <53AC03AF.9050303@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/VJceZM/kZSHofSPljmo4_NY"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping.
+--Sig_/VJceZM/kZSHofSPljmo4_NY
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Lai
+Hi all,
 
-On 06/26/2014 07:27 PM, Lai Jiangshan wrote:
-> On 06/20/2014 03:44 AM, Tejun Heo wrote:
->> On Tue, Jun 03, 2014 at 03:33:28PM +0800, Lai Jiangshan wrote:
->>> When POOL_DISASSOCIATED is cleared, the running worker's local CPU should
->>> be the same as pool->cpu without any exception even during cpu-hotplug.
->>>
->>> This fix changes "(proposition_A && proposition_B && proposition_C)"
->>> to "(proposition_B && proposition_C)", so if the old compound proposition
->>> is true, the new one must be true too. so this fix will not hide any
->>> possible bug which can be hit by old test.
->>>
->>> CC: Jason J. Herne <jjherne@linux.vnet.ibm.com>
->>> CC: Sasha Levin <sasha.levin@oracle.com>
->>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
->>
->> Applied to wq/for-3.17 with minor updates.
->>
->> Nice set of cleanups.  Thanks!
->>
-> 
-> Hi,Tejun
-> 
-> I found the slight earlier 6 patches are in wq/for-3.17.
-> But these two patches (in this email thread) are not in wq/for-3.17 yet.
-> 
-> workqueue: clear POOL_DISASSOCIATED in rebind_workers()
-> workqueue: stronger test in process_one_work()
-> 
-> Thanks,
-> Lai
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+After merging the net-next tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
+In file included from include/net/inet_connection_sock.h:23:0,
+                 from include/linux/tcp.h:24,
+                 from include/net/tcp.h:24,
+                 from net/ipv4/tcp_input.c:72:
+net/ipv4/tcp_input.c: In function 'pr_drop_req':
+include/net/inet_sock.h:77:41: error: 'struct sock_common' has no member na=
+med 'skc_v6_daddr'
+ #define ir_v6_rmt_addr  req.__req_common.skc_v6_daddr
+                                         ^
+include/net/sock.h:2273:57: note: in expansion of macro 'ir_v6_rmt_addr'
+  do { if (net_msg_warn && net_ratelimit()) printk(fmt,##args); } while(0)
+                                                         ^
+net/ipv4/tcp_input.c:5889:3: note: in expansion of macro 'LIMIT_NETDEBUG'
+   LIMIT_NETDEBUG(KERN_DEBUG pr_fmt("drop open request from %pI6/%u\n"),
+   ^
+
+Caused by commit 1fb6f159fd21 ("tcp: add tcp_conn_request").  This
+build has CONFIG_IPV6 unset.
+
+I have used the net-next tree from next-20140627 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/VJceZM/kZSHofSPljmo4_NY
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTsM/fAAoJEMDTa8Ir7ZwVl1oP/jXgyvUq17AfiQBGrn9C+s0x
+UXxFoGgtzjad461wUsvdg6NR6Kgq9FYMDVi1Eu6lkRMvTCNxaR5rOAU9U1TC759X
+5L2F2qhly7bPMlbNlJgssbYtkWYktdBf9uCHYoZUuV4oO2y5t2JisnA65EuMNea8
+OIJjX/JdrklBPUImmih8XfNeJIbf1eFcB6p19GhiXDYyIQJH+Y+ajgXOhAYe/DGz
+Za9r+qdxGnTZCi/Y3zT1swBWLPm4juUPGPJU5ZkJrlLylFcjfClJ8jjnMSH6cqX4
+Lcm0KB+iK/s4+eX0mLwi09k6DQ6fotJmJ8X70y/5jheVLxnJV0bYdx/aT3nJVz2q
+vZim8bWDlgaFJEUG66/F9heNIJhA7AS6/iwP4FTxbT2PWF/j2YDttM+zz4pbi0bu
+yxnCIhyBahWx6v46yeQp/civLXnhfq4yDEovPkV8kBPShCPyCa1JNeJ2PM+qIdRT
+MdnSndKHM+Xr8dU9ZtktRt9py5HHq+mgqic6WKFArYElkv/lbIGcjn8cQwYx+IU8
+84/C+opaaVXetbroLl203A+sg2z9/CW07u7LmauDfpRRcY67vXOs5P/XImmI9bTz
+xiTA3w5J+7739KTVUINMGN7fVLTie7gRKDnGgwSwm7Smuyj+eAGdK2zw0760MfEp
+8D9gcpbPl+duWRtghaVP
+=XcTH
+-----END PGP SIGNATURE-----
+
+--Sig_/VJceZM/kZSHofSPljmo4_NY--
