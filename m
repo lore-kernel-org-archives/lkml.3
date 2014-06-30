@@ -1,56 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563AbaF3RVJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 13:21:09 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:45354 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776AbaF3RVH (ORCPT
+	id S1755976AbaF3RVb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 13:21:31 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:10369 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754774AbaF3RV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 13:21:07 -0400
-Message-ID: <53B19C80.8060306@linaro.org>
-Date: Mon, 30 Jun 2014 18:21:04 +0100
-From: Graeme Gregory <graeme.gregory@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 30 Jun 2014 13:21:28 -0400
+Date: Mon, 30 Jun 2014 13:21:26 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] tracing/uprobes: Fix the usage of
+ uprobe_buffer_enable() in probe_event_enable()
+Message-ID: <20140630132126.5479795e@gandalf.local.home>
+In-Reply-To: <20140630170409.GD5619@linux.vnet.ibm.com>
+References: <20140627170116.GA18298@redhat.com>
+	<20140627170146.GA18332@redhat.com>
+	<20140630170409.GD5619@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Hanjun Guo <hanjun.guo@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Bjorn Helgaas <bhelgaas@google.com>,
-        "rric@kernel.org" <rric@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Al Stone <al.stone@linaro.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: Re: [PATCH v4 05/13] ARM64 / ACPI: Introduce arm-core.c and its related
- head file
-References: <1403840976-7456-1-git-send-email-hanjun.guo@linaro.org> <1403840976-7456-6-git-send-email-hanjun.guo@linaro.org> <20140630162406.GR28951@arm.com>
-In-Reply-To: <20140630162406.GR28951@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 30 Jun 2014 22:34:09 +0530
+Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
 
-On 30/06/2014 17:24, Catalin Marinas wrote:
-> On Fri, Jun 27, 2014 at 04:49:28AM +0100, Hanjun Guo wrote:
->>   drivers/acpi/Makefile          |    2 +
->>   drivers/acpi/plat/Makefile     |    1 +
->>   drivers/acpi/plat/arm-core.c   |  110 ++++++++++++++++++++++++++++++++++++++++
-> Do you ever plan to add ACPI support for 32-bit ARM? If not, this part
-> could be placed under arch/arm64 (similar to x86).
->
-Originally the plan was to support both platforms, but it seems people 
-have stopped talking to Linaro about 32bit support now so unless anyone 
-else has some actual info I guess it would be safe to move it into arm64.
 
-Graeme
+> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> (one nit .. )
+> 
+> > +	ret = uprobe_buffer_enable();
+> > +	if (ret)
+> > +		goto err_flags;
+> > +
+> >  	tu->consumer.filter = filter;
+> >  	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
+> > -	if (ret) {
+> > -		if (file) {
+> > -			list_del(&link->list);
+> > -			kfree(link);
+> > -			tu->tp.flags &= ~TP_FLAG_TRACE;
+> > -		} else
+> > -			tu->tp.flags &= ~TP_FLAG_PROFILE;
+> > -	}
+> > +	if (ret)
+> > +		goto err_buffer;
+> > 
+> > +	return 0;
+> > +
+> > + err_buffer:
+> > +	uprobe_buffer_disable();
+> > +
+> 
+> How about avoiding err_buffer label?
+> +	if (!ret)
+> +		return 0;
+> 
+> +	uprobe_buffer_disable();
+> +
+> 
+
+Oleg, you OK with this update?
+
+I can kill my tests and restart with this update. Or you can resend this
+patch. Or we can just push it as is, and have this be a patch that
+get's queued as a cleanup for 3.17?
+
+-- Steve
+
+> 
+> > + err_flags:
+> > +	if (file) {
+> > +		list_del(&link->list);
+> > 
+> > -- 
+> > 1.5.5.1
+> > 
+> 
 
