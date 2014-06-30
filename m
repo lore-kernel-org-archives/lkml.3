@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831AbaF3Spr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 14:45:47 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:49799 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754455AbaF3Spq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 14:45:46 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] powerpc: Disable RELOCATABLE for COMPILE_TEST with PPC64
-Date: Mon, 30 Jun 2014 11:45:30 -0700
-Message-Id: <1404153930-26568-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
+	id S1756726AbaF3Stw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 14:49:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11625 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753896AbaF3Stv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 14:49:51 -0400
+Date: Mon, 30 Jun 2014 20:48:28 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] tracing/uprobes: Revert "Support mix of ftrace and
+	perf"
+Message-ID: <20140630184828.GA24594@redhat.com>
+References: <20140627170116.GA18298@redhat.com> <20140627170136.GA18319@redhat.com> <87k37z54lu.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87k37z54lu.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-powerpc:allmodconfig has been failing for some time with the following
-error.
+Hi Namhyung,
 
-arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
-arch/powerpc/kernel/exceptions-64s.S:1312: Error: attempt to move .org backwards
-make[1]: *** [arch/powerpc/kernel/head_64.o] Error 1
+On 06/30, Namhyung Kim wrote:
+>
+> On Fri, 27 Jun 2014 19:01:36 +0200, Oleg Nesterov wrote:
+> >
+> > This would be easy to fix, but there are other reasons why it is not
+> > simple to mix ftrace and perf. If nothing else, they can't share the
+> > same ->consumer.filter. This is fixable too, but probably we need to
+> > fix the poorly designed uprobe_register() interface first. At least
+> > "register" and "apply" should be clearly separated.
+>
+> Hmm.. right.  It seems the current filter logic only cares about the
+> perf.  If ftrace comes after perf, it might not see some events due to
+> the filter, right?
 
-A number of attempts to fix the problem by moving around code have been
-unsuccessful and resulted in failed builds for some configurations and
-the discovery of toolchain bugs.
+Yes. Or vice versa, ftrace can miss the events because perf can return
+UPROBE_HANDLER_REMOVE. Or ftrace can come after perf, but in this case
+it should call uprobe_apply() or it won't add the new breakpoints.
 
-Fix the problem by disabling RELOCATABLE for COMPILE_TEST builds instead.
-While this is less than perfect, it avoids substantial code changes
-which would otherwise be necessary just to make COMPILE_TEST builds
-happy and might have undesired side effects.
+Actually, I'll probably try to make the patch tomorrow. It looks simple
+enough, the main complication is CONFIG_PERF. And, to keep this patch
+simple, I won't try to optimize (say) the TP_FLAG_TRACE-comes-first
+case which could avoid uprobe_apply().
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- arch/powerpc/Kconfig | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Yes, I still think it would be better to change the register/unregister
+API first, but I do not know when I do this ;)
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index bd6dd6e..fefe7c8 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -414,7 +414,7 @@ config KEXEC
- config CRASH_DUMP
- 	bool "Build a kdump crash kernel"
- 	depends on PPC64 || 6xx || FSL_BOOKE || (44x && !SMP)
--	select RELOCATABLE if PPC64 || 44x || FSL_BOOKE
-+	select RELOCATABLE if (PPC64 && !COMPILE_TEST) || 44x || FSL_BOOKE
- 	help
- 	  Build a kernel suitable for use as a kdump capture kernel.
- 	  The same kernel binary can be used as production kernel and dump
-@@ -1017,6 +1017,7 @@ endmenu
- if PPC64
- config RELOCATABLE
- 	bool "Build a relocatable kernel"
-+	depends on !COMPILE_TEST
- 	select NONSTATIC_KERNEL
- 	help
- 	  This builds a kernel image that is capable of running anywhere
--- 
-1.9.1
+> > Cc: stable@vger.kernel.org # v3.14
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+>
+> Acked-by: Namhyung Kim <namhyung@kernel.org>
+
+Thanks!
+
+Oleg.
 
