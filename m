@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218AbaF3JoY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 05:44:24 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:53257 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838AbaF3JoX (ORCPT
+	id S932103AbaF3JrM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 05:47:12 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:57912 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753581AbaF3JrL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 05:44:23 -0400
-From: Sachin Kamat <sachin.kamat@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: mturquette@linaro.org, spk.linux@gmail.com,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Subject: [PATCH 1/1] clk: Fix build warnings
-Date: Mon, 30 Jun 2014 15:10:54 +0530
-Message-Id: <1404121254-23823-1-git-send-email-sachin.kamat@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 30 Jun 2014 05:47:11 -0400
+Date: Mon, 30 Jun 2014 18:46:37 +0900
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 1/2] zram: use size_t instead of u16
+Message-ID: <20140630094637.GA1055@swordfish>
+References: <1404096879-24529-1-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404096879-24529-1-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-‘all_lists’ and ‘orphan_list’ is accessed only when DEBUG_FS is defined.
-Thus, make their compilation conditional to fix the below warnings introduced
-by commit 27b8d5f723 ("clk: flatten clk tree in debugfs"):
-drivers/clk/clk.c:40:27: warning: ‘all_lists’ defined but not used [-Wunused-variable]
-drivers/clk/clk.c:46:27: warning: ‘orphan_list’ defined but not used [-Wunused-variable]
+On (06/30/14 11:54), Minchan Kim wrote:
+> Date: Mon, 30 Jun 2014 11:54:38 +0900
+> From: Minchan Kim <minchan@kernel.org>
+> To: Andrew Morton <akpm@linux-foundation.org>
+> Cc: linux-kernel@vger.kernel.org, Sergey Senozhatsky
+>  <sergey.senozhatsky@gmail.com>, Weijie Yang <weijie.yang@samsung.com>,
+>  Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+>  Minchan Kim <minchan@kernel.org>
+> Subject: [PATCH 1/2] zram: use size_t instead of u16
+> X-Mailer: git-send-email 2.0.0
+> 
+> Some of arch(ex, hexagon and PowerPC) could use PAGE_SHIFT
+> as 16 above. In the case, u16 is is lack of representing
+> compressed page's size so use size_t.
+> 
+> Reported-by: Weijie Yang <weijie.yang@samsung.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
 
-Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- drivers/clk/clk.c |    2 ++
- 1 file changed, 2 insertions(+)
+Acked-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 7dfb2f308b35..a95233c14f86 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -36,6 +36,7 @@ static HLIST_HEAD(clk_root_list);
- static HLIST_HEAD(clk_orphan_list);
- static LIST_HEAD(clk_notifier_list);
- 
-+#ifdef CONFIG_DEBUG_FS
- static struct hlist_head *all_lists[] = {
- 	&clk_root_list,
- 	&clk_orphan_list,
-@@ -46,6 +47,7 @@ static struct hlist_head *orphan_list[] = {
- 	&clk_orphan_list,
- 	NULL,
- };
-+#endif
- 
- /***           locking             ***/
- static void clk_prepare_lock(void)
--- 
-1.7.9.5
+	-ss
 
+> ---
+>  drivers/block/zram/zram_drv.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 089e72cd37be..3233bccd6361 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -337,7 +337,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+>  	unsigned char *cmem;
+>  	struct zram_meta *meta = zram->meta;
+>  	unsigned long handle;
+> -	u16 size;
+> +	size_t size;
+>  
+>  	read_lock(&meta->tb_lock);
+>  	handle = meta->table[index].handle;
+> -- 
+> 2.0.0
+> 
