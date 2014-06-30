@@ -1,39 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942AbaF3Ujn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 16:39:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41695 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904AbaF3Ujl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 16:39:41 -0400
-Date: Mon, 30 Jun 2014 13:39:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, joe@perches.com
-Subject: Re: [RFC 1/1] proc: constify seq_operations
-Message-Id: <20140630133939.c24cd71919cd28c90992d6e1@linux-foundation.org>
-In-Reply-To: <1404154997-15490-1-git-send-email-fabf@skynet.be>
-References: <1404154997-15490-1-git-send-email-fabf@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757165AbaF3Uku (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 16:40:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14959 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755773AbaF3Ukr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 16:40:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,577,1400050800"; 
+   d="scan'208";a="536762965"
+From: Andi Kleen <andi@firstfloor.org>
+To: David Drysdale <drysdale@google.com>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>, linux-api@vger.kernel.org
+Subject: Re: [PATCH 01/11] fs: add O_BENEATH_ONLY flag to openat(2)
+References: <1404124096-21445-1-git-send-email-drysdale@google.com>
+	<1404124096-21445-2-git-send-email-drysdale@google.com>
+Date: Mon, 30 Jun 2014 13:40:40 -0700
+In-Reply-To: <1404124096-21445-2-git-send-email-drysdale@google.com> (David
+	Drysdale's message of "Mon, 30 Jun 2014 11:28:01 +0100")
+Message-ID: <87mwcuw2pj.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jun 2014 21:03:17 +0200 Fabian Frederick <fabf@skynet.be> wrote:
+David Drysdale <drysdale@google.com> writes:
 
-> proc_uid_seq_operations, proc_gid_seq_operations and proc_projid_seq_operations
-> are only called in proc_id_map_open with seq_open as
-> const struct seq_operations so we can constify the 3 structures and update
-> proc_id_map_open prototype.
+> Add a new O_BENEATH_ONLY flag for openat(2) which restricts the
+> provided path, rejecting (with -EACCES) paths that are not beneath
+> the provided dfd.  In particular, reject:
+>  - paths that contain .. components
+>  - paths that begin with /
+>  - symlinks that have paths as above.
 
-There are an absolutely enormous number of places where we could
-constify things.  For sheer sanity's sake I'm not inclined to churn the
-code in this way unless a patch provides some sort of runtime benefit. 
-And this particular patch doesn't appear to change the generated code
-at all.
+How about bind mounts?
 
+-Andi
 
+-- 
+ak@linux.intel.com -- Speaking for myself only
