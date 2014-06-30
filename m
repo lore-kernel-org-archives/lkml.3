@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875AbaF3LyX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 07:54:23 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52126 "EHLO
+	id S1755534AbaF3LzT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 07:55:19 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52115 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754058AbaF3Lx0 (ORCPT
+	by vger.kernel.org with ESMTP id S1753988AbaF3Lx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:26 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Huang Rui <ray.huang@amd.com>,
+Cc: linux-kernel@vger.kernel.org, Paul Bolle <pebolle@tiscali.nl>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 103/181] usb: usbtest: fix unlink write error with pattern 1
-Date: Mon, 30 Jun 2014 13:52:04 +0200
-Message-Id: <9bc860d837703b23740db72d2811a07fbc7a41f3.1404128998.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 100/181] staging: tidspbridge: check for CONFIG_SND_OMAP_SOC_MCBSP
+Date: Mon, 30 Jun 2014 13:52:01 +0200
+Message-Id: <8454436ae3803ca071d2955cb0a01fc495fba40f.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,74 +23,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Huang Rui <ray.huang@amd.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit e4d58f5dcb7d7be45df8def31881ebfae99c75da upstream.
+commit d3921a03a89acb1b9ca599590c0131c89f8737d8 upstream.
 
-TEST 12 and TEST 24 unlinks the URB write request for N times. When
-host and gadget both initialize pattern 1 (mod 63) data series to
-transfer, the gadget side will complain the wrong data which is not
-expected.  Because in host side, usbtest doesn't fill the data buffer
-as mod 63 and this patch fixed it.
+Commit d0f47ff17f29 ("ASoC: OMAP: Build config cleanup for McBSP")
+removed the Kconfig symbol OMAP_MCBSP. It left two checks for
+CONFIG_OMAP_MCBSP untouched.
 
-[20285.488974] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
-[20285.489181] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
-[20285.489423] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb50800 length 512 last
-[20285.489727] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
-[20285.490055] dwc3 dwc3.0.auto: Command Complete --> 0
-[20285.490281] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
-[20285.490492] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Active
-[20285.490713] dwc3 dwc3.0.auto: ep1out-bulk: endpoint busy
-[20285.490909] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Complete
-[20285.491117] dwc3 dwc3.0.auto: request ffff8800aa6cb480 from ep1out-bulk completed 512/512 ===> 0
-[20285.491431] zero gadget: bad OUT byte, buf[1] = 0
-[20285.491605] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Set Stall' params 00000000 00000000 00000000
-[20285.491915] dwc3 dwc3.0.auto: Command Complete --> 0
-[20285.492099] dwc3 dwc3.0.auto: queing request ffff8800aa6cb480 to ep1out-bulk length 512
-[20285.492387] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
-[20285.492595] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
-[20285.492830] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb51000 length 512 last
-[20285.493135] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
-[20285.493465] dwc3 dwc3.0.auto: Command Complete --> 0
+Convert these to checks for CONFIG_SND_OMAP_SOC_MCBSP. That must be
+correct, since that re-enables calls to functions that are all found in
+sound/soc/omap/mcbsp.c. And that file is built only if
+CONFIG_SND_OMAP_SOC_MCBSP is defined.
 
-Signed-off-by: Huang Rui <ray.huang@amd.com>
+Fixes: d0f47ff17f29 ("ASoC: OMAP: Build config cleanup for McBSP")
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/misc/usbtest.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/staging/tidspbridge/core/dsp-clock.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/misc/usbtest.c b/drivers/usb/misc/usbtest.c
-index afe616b55f01..d90556eb8da5 100644
---- a/drivers/usb/misc/usbtest.c
-+++ b/drivers/usb/misc/usbtest.c
-@@ -1157,6 +1157,11 @@ static int unlink1(struct usbtest_dev *dev, int pipe, int size, int async)
- 	urb->context = &completion;
- 	urb->complete = unlink1_callback;
- 
-+	if (usb_pipeout(urb->pipe)) {
-+		simple_fill_buf(urb);
-+		urb->transfer_flags |= URB_ZERO_PACKET;
-+	}
-+
- 	/* keep the endpoint busy.  there are lots of hc/hcd-internal
- 	 * states, and testing should get to all of them over time.
- 	 *
-@@ -1287,6 +1292,11 @@ static int unlink_queued(struct usbtest_dev *dev, int pipe, unsigned num,
- 				unlink_queued_callback, &ctx);
- 		ctx.urbs[i]->transfer_dma = buf_dma;
- 		ctx.urbs[i]->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
-+
-+		if (usb_pipeout(ctx.urbs[i]->pipe)) {
-+			simple_fill_buf(ctx.urbs[i]);
-+			ctx.urbs[i]->transfer_flags |= URB_ZERO_PACKET;
-+		}
- 	}
- 
- 	/* Submit all the URBs and then unlink URBs num - 4 and num - 2. */
+diff --git a/drivers/staging/tidspbridge/core/dsp-clock.c b/drivers/staging/tidspbridge/core/dsp-clock.c
+index 2f084e181d39..a1aca4416ca7 100644
+--- a/drivers/staging/tidspbridge/core/dsp-clock.c
++++ b/drivers/staging/tidspbridge/core/dsp-clock.c
+@@ -226,7 +226,7 @@ int dsp_clk_enable(enum dsp_clk_id clk_id)
+ 	case GPT_CLK:
+ 		status = omap_dm_timer_start(timer[clk_id - 1]);
+ 		break;
+-#ifdef CONFIG_OMAP_MCBSP
++#ifdef CONFIG_SND_OMAP_SOC_MCBSP
+ 	case MCBSP_CLK:
+ 		omap_mcbsp_request(MCBSP_ID(clk_id));
+ 		omap2_mcbsp_set_clks_src(MCBSP_ID(clk_id), MCBSP_CLKS_PAD_SRC);
+@@ -302,7 +302,7 @@ int dsp_clk_disable(enum dsp_clk_id clk_id)
+ 	case GPT_CLK:
+ 		status = omap_dm_timer_stop(timer[clk_id - 1]);
+ 		break;
+-#ifdef CONFIG_OMAP_MCBSP
++#ifdef CONFIG_SND_OMAP_SOC_MCBSP
+ 	case MCBSP_CLK:
+ 		omap2_mcbsp_set_clks_src(MCBSP_ID(clk_id), MCBSP_CLKS_PRCM_SRC);
+ 		omap_mcbsp_free(MCBSP_ID(clk_id));
 -- 
 2.0.0
 
