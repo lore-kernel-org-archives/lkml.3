@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680AbaF3UWL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 16:22:11 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56310 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162AbaF3UWJ (ORCPT
+	id S1753401AbaF3UY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 16:24:28 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:57388 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaF3UY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 16:22:09 -0400
-Message-ID: <53B1C6EC.7070907@wwwdotorg.org>
-Date: Mon, 30 Jun 2014 14:22:04 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 30 Jun 2014 16:24:27 -0400
+Date: Mon, 30 Jun 2014 13:24:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 0/2] rcu: uninline rcu_lock_acquire() and
+ rcu_lock_release()
+Message-ID: <20140630202420.GG4603@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140630161837.GA15873@redhat.com>
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, Keerthy J <j-keerthy@ti.com>
-CC: Tero Kristo <t-kristo@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V2 0/6] regulator: palmas: cleanup and fixes
-References: <1404143859-8160-1-git-send-email-nm@ti.com>
-In-Reply-To: <1404143859-8160-1-git-send-email-nm@ti.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140630161837.GA15873@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14063020-6688-0000-0000-000002F4833E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2014 09:57 AM, Nishanth Menon wrote:
-> Hi,
-> 	Original thread (v1): http://marc.info/?t=140380766500004&r=1&w=2
-> This series is based on: git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git
-> branch: topic/palmas (4c0c9ca Merge remote-tracking branch 'regulator/fix/palmas' into regulator-palmas)
+On Mon, Jun 30, 2014 at 06:18:37PM +0200, Oleg Nesterov wrote:
+> Hello,
 > 
-> This series does a few cleanups to help ensure we dont make typo mistakes and finally provides a fix as attempted by (v1).
+> May be correct this time ;) Based on paulmck/linux-rcu.git rcu/next.
 > 
-> Basic cpufreq tests performed on OMAP5uEVM, DRA7-evm, DRA72-evm all of which are palmas variants.
-> 
-> The patches are also available here: https://github.com/nmenon/linux-2.6-playground/commits/broonie-topic-palmas-fixes
+> 2/2 is new and hopefully trivial. But! the numbers look suspiciously
+> good, I do not understand where does the difference come from...
 
-The series,
-Tested-by: Stephen Warren <swarren@nvidia.com>
+Probably from rcu_dereference_raw() and rcu_dereference_check(..., 1).  ;-)
 
-(An NVIDIA Dalmore board boots and shuts down OK with these applied on
-top of next-20140630, and various peripherals such as LCD panel, audio,
-USB, and SPI flash all work)
+Queued and kicked off testing, both mine and (indirectly) Fengguang's.
+
+							Thanx, Paul
+
