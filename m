@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaF3Nm0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 09:42:26 -0400
-Received: from mail.eperm.de ([89.247.134.16]:50565 "EHLO mail.eperm.de"
+	id S1752592AbaF3NnS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 09:43:18 -0400
+Received: from imap.thunk.org ([74.207.234.97]:36939 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750868AbaF3NmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 09:42:24 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org, aris@redhat.com, aquini@redhat.com
-Subject: Re: [crypto] BUG: unable to handle kernel paging request at ffff88000bb88000
-Date: Mon, 30 Jun 2014 15:39:37 +0200
-Message-ID: <1485256.DS9rzaQkMP@tauon>
-User-Agent: KMail/4.12.5 (Linux/3.14.8-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <20140630053126.GA13887@localhost>
-References: <20140629145246.GA9134@localhost> <42550233.Kxs179MjQV@myon.chronox.de> <20140630053126.GA13887@localhost>
+	id S1751291AbaF3NnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 09:43:17 -0400
+Date: Mon, 30 Jun 2014 09:43:13 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: ext4: total breakdown on USB hdd, 3.0 kernel
+Message-ID: <20140630134313.GA3753@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Pavel Machek <pavel@ucw.cz>,
+	kernel list <linux-kernel@vger.kernel.org>
+References: <20140626202021.GA8512@xo-6d-61-c0.localdomain>
+ <20140626203052.GA9449@xo-6d-61-c0.localdomain>
+ <20140627024659.GF6826@thunk.org>
+ <20140629202516.GA11430@amd.pavel.ucw.cz>
+ <20140629210428.GD2162@thunk.org>
+ <20140630064644.GA23079@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140630064644.GA23079@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 30. Juni 2014, 13:31:26 schrieb Fengguang Wu:
+On Mon, Jun 30, 2014 at 08:46:44AM +0200, Pavel Machek wrote:
+> :-). Aha, and I misremembered, it was block descriptor checksums, not
+> inode checksums:
+> 
+> One or more block group descriptor checksums are invalid.  Fix? yes
+> 
+> Group descriptor 0 checksum is invalid.  FIXED.
+> Group descriptor 1 checksum is invalid.  FIXED.
+> Group descriptor 2 checksum is invalid.  FIXED.
+> Group descriptor 3 checksum is invalid.  FIXED.
 
-Hi Fengguang,
+Yeah, what we should be doing here is to try to backup block
+descriptors and check to see if they are valid, and if so, use them
+instead.
 
->Hi Stephan,
->
->On Sun, Jun 29, 2014 at 09:45:48PM +0200, Stephan Mueller wrote:
->> Am Sonntag, 29. Juni 2014, 22:52:46 schrieb Fengguang Wu:
->> 
->> Hi Fengguang,
->> 
->> > Greetings,
->> > 
->> > 0day kernel testing robot got the below dmesg and the first bad
->> > commit is> 
->> May I ask whether there is anything special in your kernel config?
->
->It's an x86_64 randconfig. You may find it in the attachment of the
->original report email.
 
-Thanks, I used that config. I was just wondering whether there were some 
-special config options that changed the memory allocation mechanism. The 
-kernel configs I used never triggered the issue albeit it should have 
-had.
+> I'm still trying to figure out what went wrong in the OLPC-1.75 + USB
+> disk case.
+> 
+> One possibility is that OLPC is unable to provide enough power from
+> the two USB ports to power Seagate Momentus 5400.6, and that the hard
+> drive fails to detect the brown-out and does something wrong. (Are
+> SATA drives expected to work at 4.5V? Because that's what is
+> guaranteed on USB, IIRC).
 
-I ran stress tests months ago (with the bug present) where I invoked the 
-DRBG for one day, causing billions of rounds of RNG operation where each 
-round should have triggered the bug.
->
->> This very bug should have been triggered already in all previous code
->> levels! I am seriously wondering why this bug was not triggered
->> before -- does kalloc somehow allocates more memory than you
->> requested? And only your specific kernel config made kalloc to
->> allocate the exact amount of memory that was requested?
->
->Yeah the bug may have been triggered in other places. If you see
->anything valuable from this bisect result, it would be great. Judging
->from the comparison of 64d1cdfbe2 and its parent commit 3332ee2a17,
->it's pretty reproducible, so easy to verify the possible fixes.
+The USB spec seems to require 5V +/i 0.25V, which also seems to be the
+spec on laptop drives.  It wouldn't surprise me if the OLPC (or its
+power adapter) is a bit dodgy under heavy load, though.  It might be
+useful for you to measure the voltage and amps delivered at the USB
+ports
 
-Well, it is not so reproducible as you may think. And I as far as I can 
-see the other oops that you send was caused by the same issue.
+> Heavy corruption happened when I was charging the phone _and_ running
+> the hard drive, from the OLPC. Now I have seen cases when OLPC crashed 
+> on device plug-in, in what looked like a brown-out...
 
-When I was debugging the issue and just adding some printk statements, 
-the crasher went away (reliably) or it crashed at some other random 
-places. It was very bizarre. But after adding my fix, I did not see any 
-crash any more.
+.... and from the power brick to see if either is out of spec.
 
-Ciao
-Stephan
+
+
+						- Ted
