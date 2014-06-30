@@ -1,104 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806AbaF3Sdw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 14:33:52 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37562 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264AbaF3Sdu (ORCPT
+	id S1756861AbaF3SeY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 14:34:24 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:42498 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756819AbaF3SeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 14:33:50 -0400
-Date: Mon, 30 Jun 2014 13:33:37 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Robert Baldyga <r.baldyga@samsung.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <m.szyprowski@samsung.com>,
-        <andrzej.p@samsung.com>
-Subject: Re: [PATCH] usb: gadget: add claimed field in struct usb_ep
-Message-ID: <20140630183337.GS31442@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1402906836-12733-1-git-send-email-r.baldyga@samsung.com>
- <20140619150853.GG23782@saruman.home>
- <53A7C42F.1060603@samsung.com>
- <20140623182725.GD5073@saruman.home>
- <53A96C23.8040800@samsung.com>
+	Mon, 30 Jun 2014 14:34:21 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7L9kolmstoDTZ4pm"
-Content-Disposition: inline
-In-Reply-To: <53A96C23.8040800@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAKohpo=dgSW551yzqjAV2_opw_4naqFEWpwUz9ktkGgR5vCBZA@mail.gmail.com>
+References: <cover.1403684824.git.viresh.kumar@linaro.org> <e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
+ <53AB1CC1.4010907@codeaurora.org> <CAKohpo=Q7eWNwcK6KF9_U-zD0g=96QHW9hiQupLpV5GqoWE+mA@mail.gmail.com>
+ <53ACB568.4000903@codeaurora.org> <20140627015354.32686.83046@quantum>
+ <CAKohponvN3rAvJrfi4TojFcq5gq7r2oNE4Q0_NtwBHmEZ8waBA@mail.gmail.com> <CAKohpo=dgSW551yzqjAV2_opw_4naqFEWpwUz9ktkGgR5vCBZA@mail.gmail.com>
+From: Rob Herring <rob.herring@linaro.org>
+Date: Mon, 30 Jun 2014 13:33:59 -0500
+Message-ID: <CABGGiswMuofH5WRh4jgwh1=CV+fEXM_Ec3+WNwThbuMLVxsdcg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] cpufreq: cpu0: Extend support beyond CPU0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm@vger.kernel.org, Sachin Kamat <spk.linux@gmail.com>,
+        Thomas P Abraham <thomas.ab@samsung.com>, Nishanth Menon <nm@ti.com>,
+        Tomasz Figa <t.figa@samsung.com>, Mark Brown <broonie@kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---7L9kolmstoDTZ4pm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jun 30, 2014 at 2:57 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 27 June 2014 07:45, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> On 27 June 2014 07:23, Mike Turquette <mturquette@linaro.org> wrote:
+>>>> but it isn't future-proof if/when the clock framework starts returning
+>>>> dynamically allocated clock pointers for each clk_get() invocation.
+>>>> Maybe we need a function in the common clock framework that tells us if
+>>>> the clocks are the same either via DT or by taking two clock pointers?
+>>>
+>>> I looked through the patch briefly and did not see why we would need to
+>>> do this. Any hint?
+>>
+>> We want to know which CPUs are sharing clock line, so that we can
+>> fill affected-cpus field of cpufreq core.
+>
+> What about comparing "clocks" property in cpu DT nodes?
 
-On Tue, Jun 24, 2014 at 02:16:35PM +0200, Robert Baldyga wrote:
-> On 06/23/2014 08:27 PM, Felipe Balbi wrote:
-> > Hi,
-> >=20
-> > On Mon, Jun 23, 2014 at 08:07:43AM +0200, Robert Baldyga wrote:
-> >> On 06/19/2014 05:08 PM, Felipe Balbi wrote:
-> >>> On Mon, Jun 16, 2014 at 10:20:36AM +0200, Robert Baldyga wrote:
-> >>>> This field allows to mark ep as claimed in more clear way. Claiming
-> >>>> endpoint by setting driver_data to non-null value is leaky solution
-> >>>> and makes code unreadable.
-> >>>
-> >>> how come ? How can it be unreadable ? how can it be leaky ?
-> >>>
-> >>
-> >> What if gadget will not assign any value to driver_data (just like
-> >> Gadget Zero do)? Endpoint will be seen as not used, and autoconfig will
-> >=20
-> > huh ??? The gadget isn't the endpoint user, the function is. Look at
-> > f_sourcesink.c and f_loopback.c. If the function doesn't set anything to
-> > driver_data, then that's a bug on the function which needs fixing.
-> >=20
-> > Moreover, if there's a function which doesn't set driver_data, we could
-> > just as well have a function which doesn't set "claimed", so the problem
-> > is the same.
-> >=20
->=20
-> I mean the function, not the gadget. Sorry for confusion.
-> Mechanism I developed marks endpoint as claimed *inside autoconfig
-> function*. It's significant difference, because there's not possible to
-> forget to mark that endpoint is claimed. When endpoint is returned from
-> autoconfig function, it belongs to function, and the function doesn't
-> need to do anything to claim obtained endpoint - it's already done.
+What if a different clock is selected for some reason. I think a clock
+api function would be better.
 
-we still might need to keep driver_data though. Some functions might
-need it. But now that you explained your goal, I can see how that might
-help. Please send a complete patchset also with the implementation for
-ep_autoconfig so we can all review your idea.
+That being said, I don't really have any issue with such a function.
+Some comments on the implementation.
 
-cheers
+>
+> @Rob/Grant: I tried looking for an existing routine to do that, but couldn't
+> find it. And so wrote one.
+>
+> I am not good at DT stuff and so I do hope there would be few correction
+> required here. Let me know if this can be added to drivers/of/base.c :
+>
+> +/**
+> + * of_property_match - Match property in two nodes
+> + * @np1, np2: Nodes to match
+> + * @list_name: property to match
+> + *
+> + * Returns 1 on match, 0 on no match, and error for missing property.
+> + */
+> +static int of_property_match(const struct device_node *np1,
+> +                             const struct device_node *np2,
+> +                             const char *list_name)
+> +{
+> +       const __be32 *list1, *list2, *list1_end;
 
---=20
-balbi
+s/list/prop/
 
---7L9kolmstoDTZ4pm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Everywhere.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> +       int size1, size2;
+> +       phandle phandle1, phandle2;
+> +
+> +       /* Retrieve the list property */
+> +       list1 = of_get_property(np1, list_name, &size1);
+> +       if (!list1)
+> +               return -ENOENT;
+> +
+> +       list2 = of_get_property(np2, list_name, &size2);
+> +       if (!list2)
+> +               return -ENOENT;
+> +
+> +       if (size1 != size2)
+> +               return 0;
+> +
+> +       list1_end = list1 + size1 / sizeof(*list1);
+> +
+> +       /* Loop over the phandles */
+> +       while (list1 < list1_end) {
+> +               phandle1 = be32_to_cpup(list1++);
+> +               phandle2 = be32_to_cpup(list2++);
+> +
+> +               if (phandle1 != phandle2)
+> +                       return 0;
+> +       }
 
-iQIcBAEBAgAGBQJTsa2BAAoJEIaOsuA1yqREwGYP/AkEZ75r1GYUb+w/Ar1Dl3j5
-fBDGVvjA5n5HTMhsEWLgWRCX1XmNPgAWpRZ3knn6w2GCGUt58F2QWMgT/828pFtt
-GuCiBlXMtgFKVPCOXNZI5BfZeupbo2dSUbNgVdlvj0CYIMD0/YVFKsrVasoJeV3j
-npJwzqjJIll6GnVGNTEuYHjeUV0L1mjS2gr6BBEkXL4jZgy+vjx3rXa3ufvSGhTY
-2V/DgI6uiRZPcZa53+IM+zlAejOnzd3kyuoyz+O63BUxgNJj5UZ2kWt8vRuWIiW/
-4kCBa/IvfTDMpy0thnOjM/IxByjihMVIhjoAYhr0N4S2BhMbJxAl6aCVhoCEqdA9
-/fDxiER2AZqF6ggI0ZJLQgyfdYh8cv2gZ8qwzvui+6Es6B+lY4BESu4OBVyofVl0
-sXLdgz+F9bIKF2ff00sK8OtBchGFWceI95ih7eB3yB3t2L0OQVobSITtdudVWhVH
-nwCXgjOFk0LWAzIN3CCM08l/80Q4KcyD3ow/KWZTb+Abrscq5WsBW/1XRQ2zB/9T
-RbKyo3I1ldLYHVi5W9d9GDeGz40y7b8xRUlxeBgYrkdfXLEu8WDo7xSRuzDY0RYB
-35SPH3x2Dpivznw4Wtg097IfFzdi7M7KbAo6+mmtjF9ypkrnd/RV5tbrA23Xyws2
-9e8HRHJA/CkGbznY8SAr
-=PG0v
------END PGP SIGNATURE-----
+You can just do a memcmp here.
 
---7L9kolmstoDTZ4pm--
+This is wrong anyway because you don't know #clock-cells size.
+
+Rob
