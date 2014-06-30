@@ -1,88 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231AbaF3Mol (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:44:41 -0400
-Received: from mail6.autoliv.com ([195.33.130.243]:41193 "EHLO
-	mail6.autoliv.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754839AbaF3MbC convert rfc822-to-8bit (ORCPT
+	id S1756207AbaF3Moj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:44:39 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754809AbaF3MbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:31:02 -0400
-From: Fredrik Noring <fredrik.noring@autoliv.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: Oops: 17 SMP ARM (v3.16-rc2)
-Thread-Topic: Oops: 17 SMP ARM (v3.16-rc2)
-Thread-Index: Ac+QeuMIv4ry9FBDTNKHf1ccZ0ioqQAu3GGAAAUkuuD//+tKAIABUVuA//+RU9CAAMUXAP/7a+yw
-Date: Mon, 30 Jun 2014 12:30:57 +0000
-Message-ID: <3FFB61A7A8473C49831AF20FA193534A43CB69F6@ALVA-EXMB01.alv.autoliv.int>
-References: <C4A61A5CA4AD2246942F4BA6F20ACB804356534D@ALVA-EXMB04.alv.autoliv.int>
- <20140626140115.GQ32514@n2100.arm.linux.org.uk>
- <C4A61A5CA4AD2246942F4BA6F20ACB80435655E9@ALVA-EXMB04.alv.autoliv.int>
- <20140626151424.GT32514@n2100.arm.linux.org.uk>
- <20140627112151.GF32514@n2100.arm.linux.org.uk>
- <3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int>
- <20140627163108.GP32514@n2100.arm.linux.org.uk>
-In-Reply-To: <20140627163108.GP32514@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.14.8.136]
-x-tm-as-product-ver: SMEX-10.2.0.2087-7.500.1017-20788.006
-x-tm-as-result: No--40.228100-8.000000-31
-x-tm-as-user-approved-sender: No
-x-tm-as-user-blocked-sender: No
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 30 Jun 2014 08:31:06 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Olivier Langlois <olivier@trillion01.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 143/181] media: uvcvideo: Fix clock param realtime setting
+Date: Mon, 30 Jun 2014 13:52:44 +0200
+Message-Id: <1b7e7f0b92251b1ba9c08336b599e6465e7de259.1404128998.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
+References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
+In-Reply-To: <cover.1404128997.git.jslaby@suse.cz>
+References: <cover.1404128997.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+From: Olivier Langlois <olivier@trillion01.com>
 
-It seems to be a compiler issue, where (GCC) 4.8.2 does not produce a properly
-working kernel. Happily, (Fedora 2013.11.24-2.fc19) 4.8.1 appears to do a lot
-better. No crashes so far with v3.16-rc2!
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-All the best,
-Fredrik
+===============
 
-> -----Original Message-----
-> Hi Fredrik,
-> 
-> On Fri, Jun 27, 2014 at 04:16:57PM +0000, Fredrik Noring wrote:
-> > Please find below a trace that appeared once with 3.16-rc2. Perhaps it
-> > is of some interest?
-> 
-> It's not that serious... I know that the FEC ethernet driver is horrendously
-> racy (I have had a patch set for about the last six months which fixes some of
-> its problems) but as I've had a lot of patches to deal with, and it's been
-> pushed to the back of the queue...
-> 
-> The races don't lead to data corruption though, merely timeouts and some
-> lost packets.
-> 
-> Now because things have changed during the last merge window, I've got an
-> even bigger problem sorting through that patch set and getting it back into a
-> submittable state.  I've just sent out v2 for it onto the
-> netdev@vger.kernel.org mailing list.
-> 
-> The initial version (marked RFC) attracted very little interest from testers, or
-> acks.  I'd very much like to have some testing of it, so if you want to try it
-> out, I can provide you with a git URL, patches or a combined patch.
-> 
-> --
-> FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-> improving, and getting towards what was expected from it.
-***************************************************************
-Consider the environment before printing this message.
+commit 3b35fc81e7ec552147a4fd843d0da0bbbe4ef253 upstream.
 
-To read Autoliv's Information and Confidentiality Notice, follow this link:
-http://www.autoliv.com/disclaimer.html
-***************************************************************
+timestamps in v4l2 buffers returned to userspace are updated in
+uvc_video_clock_update() which uses timestamps fetched from
+uvc_video_clock_decode() by calling unconditionally ktime_get_ts().
+
+Hence setting the module clock param to realtime has no effect before
+this patch.
+
+This has been tested with ffmpeg:
+
+ffmpeg -y -f v4l2 -input_format yuyv422 -video_size 640x480 -framerate 30 -i /dev/video0 \
+ -f alsa -acodec pcm_s16le -ar 16000 -ac 1 -i default \
+ -c:v libx264 -preset ultrafast \
+ -c:a libfdk_aac \
+ out.mkv
+
+and inspecting the v4l2 input starting timestamp.
+
+Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/media/usb/uvc/uvc_video.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/media/usb/uvc/uvc_video.c b/drivers/media/usb/uvc/uvc_video.c
+index e1c5bf3ea112..c081812ac5c0 100644
+--- a/drivers/media/usb/uvc/uvc_video.c
++++ b/drivers/media/usb/uvc/uvc_video.c
+@@ -361,6 +361,14 @@ static int uvc_commit_video(struct uvc_streaming *stream,
+  * Clocks and timestamps
+  */
+ 
++static inline void uvc_video_get_ts(struct timespec *ts)
++{
++	if (uvc_clock_param == CLOCK_MONOTONIC)
++		ktime_get_ts(ts);
++	else
++		ktime_get_real_ts(ts);
++}
++
+ static void
+ uvc_video_clock_decode(struct uvc_streaming *stream, struct uvc_buffer *buf,
+ 		       const __u8 *data, int len)
+@@ -420,7 +428,7 @@ uvc_video_clock_decode(struct uvc_streaming *stream, struct uvc_buffer *buf,
+ 	stream->clock.last_sof = dev_sof;
+ 
+ 	host_sof = usb_get_current_frame_number(stream->dev->udev);
+-	ktime_get_ts(&ts);
++	uvc_video_get_ts(&ts);
+ 
+ 	/* The UVC specification allows device implementations that can't obtain
+ 	 * the USB frame number to keep their own frame counters as long as they
+@@ -1010,10 +1018,7 @@ static int uvc_video_decode_start(struct uvc_streaming *stream,
+ 			return -ENODATA;
+ 		}
+ 
+-		if (uvc_clock_param == CLOCK_MONOTONIC)
+-			ktime_get_ts(&ts);
+-		else
+-			ktime_get_real_ts(&ts);
++		uvc_video_get_ts(&ts);
+ 
+ 		buf->buf.v4l2_buf.sequence = stream->sequence;
+ 		buf->buf.v4l2_buf.timestamp.tv_sec = ts.tv_sec;
+-- 
+2.0.0
 
