@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205AbaF3MIh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:08:37 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51974 "EHLO
+	id S932228AbaF3MIe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:08:34 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52020 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753439AbaF3LxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753774AbaF3LxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tim Kryger <tim.kryger@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 051/181] serial: 8250_dw: Improve unwritable LCR workaround
-Date: Mon, 30 Jun 2014 13:51:12 +0200
-Message-Id: <6f1af30fb905c550ec0c6d396cbda0075add07f1.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Takashi Iwai <tiwai@suse.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 078/181] ALSA: control: Fix replacing user controls
+Date: Mon, 30 Jun 2014 13:51:39 +0200
+Message-Id: <2e907db4213b61bb38a4754eb50bf85786f17b6c.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -24,163 +23,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tim Kryger <tim.kryger@linaro.org>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit c49436b657d0a56a6ad90d14a7c3041add7cf64d upstream.
+commit 82262a46627bebb0febcc26664746c25cef08563 upstream.
 
-When configured with UART_16550_COMPATIBLE=NO or in versions prior to
-the introduction of this option, the Designware UART will ignore writes
-to the LCR if the UART is busy.  The current workaround saves a copy of
-the last written LCR and re-writes it in the ISR for a special interrupt
-that is raised when a write was ignored.
+There are two issues with the current implementation for replacing user
+controls. The first is that the code does not check if the control is actually a
+user control and neither does it check if the control is owned by the process
+that tries to remove it. That allows userspace applications to remove arbitrary
+controls, which can cause a user after free if a for example a driver does not
+expect a control to be removed from under its feed.
 
-Unfortunately, interrupts are typically disabled prior to performing a
-sequence of register writes that include the LCR so the point at which
-the retry occurs is too late.  An example is serial8250_do_set_termios()
-where an ignored LCR write results in the baud divisor not being set and
-instead a garbage character is sent out the transmitter.
+The second issue is that on one hand when a control is replaced the
+user_ctl_count limit is not checked and on the other hand the user_ctl_count is
+increased (even though the number of user controls does not change). This allows
+userspace, once the user_ctl_count limit as been reached, to repeatedly replace
+a control until user_ctl_count overflows. Once that happens new controls can be
+added effectively bypassing the user_ctl_count limit.
 
-Furthermore, since serial_port_out() offers no way to indicate failure,
-a serious effort must be made to ensure that the LCR is actually updated
-before returning back to the caller.  This is difficult, however, as a
-UART that was busy during the first attempt is likely to still be busy
-when a subsequent attempt is made unless some extra action is taken.
+Both issues can be fixed by instead of open-coding the removal of the control
+that is to be replaced to use snd_ctl_remove_user_ctl(). This function does
+proper permission checks as well as decrements user_ctl_count after the control
+has been removed.
 
-This updated workaround reads back the LCR after each write to confirm
-that the new value was accepted by the hardware.  Should the hardware
-ignore a write, the TX/RX FIFOs are cleared and the receive buffer read
-before attempting to rewrite the LCR out of the hope that doing so will
-force the UART into an idle state.  While this may seem unnecessarily
-aggressive, writes to the LCR are used to change the baud rate, parity,
-stop bit, or data length so the data that may be lost is likely not
-important.  Admittedly, this is far from ideal but it seems to be the
-best that can be done given the hardware limitations.
+Note that by using snd_ctl_remove_user_ctl() the check which returns -EBUSY at
+beginning of the function if the control already exists is removed. This is not
+a problem though since the check is quite useless, because the lock that is
+protecting the control list is released between the check and before adding the
+new control to the list, which means that it is possible that a different
+control with the same settings is added to the list after the check. Luckily
+there is another check that is done while holding the lock in snd_ctl_add(), so
+we'll rely on that to make sure that the same control is not added twice.
 
-Lastly, the revised workaround doesn't touch the LCR in the ISR, so it
-avoids the possibility of a "serial8250: too much work for irq" lock up.
-This problem is rare in real situations but can be reproduced easily by
-wiring up two UARTs and running the following commands.
-
-  # stty -F /dev/ttyS1 echo
-  # stty -F /dev/ttyS2 echo
-  # cat /dev/ttyS1 &
-  [1] 375
-  # echo asdf > /dev/ttyS1
-  asdf
-
-  [   27.700000] serial8250: too much work for irq96
-  [   27.700000] serial8250: too much work for irq96
-  [   27.710000] serial8250: too much work for irq96
-  [   27.710000] serial8250: too much work for irq96
-  [   27.720000] serial8250: too much work for irq96
-  [   27.720000] serial8250: too much work for irq96
-  [   27.730000] serial8250: too much work for irq96
-  [   27.730000] serial8250: too much work for irq96
-  [   27.740000] serial8250: too much work for irq96
-
-Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-Reviewed-by: Matt Porter <matt.porter@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Jaroslav Kysela <perex@perex.cz>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-
-Conflicts:
-	drivers/tty/serial/8250/8250_dw.c
 ---
- drivers/tty/serial/8250/8250_dw.c | 41 ++++++++++++++++++++++++++++++---------
- 1 file changed, 32 insertions(+), 9 deletions(-)
+ sound/core/control.c | 25 +++++++++----------------
+ 1 file changed, 9 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index 8b2accbad3d1..1dec9af3c9ab 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -56,7 +56,6 @@
+diff --git a/sound/core/control.c b/sound/core/control.c
+index 183fab277b69..15bc84492746 100644
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -1155,8 +1155,6 @@ static int snd_ctl_elem_add(struct snd_ctl_file *file,
+ 	struct user_element *ue;
+ 	int idx, err;
  
- 
- struct dw8250_data {
--	int		last_lcr;
- 	int		last_mcr;
- 	int		line;
- 	struct clk	*clk;
-@@ -76,17 +75,33 @@ static inline int dw8250_modify_msr(struct uart_port *p, int offset, int value)
- 	return value;
- }
- 
-+static void dw8250_force_idle(struct uart_port *p)
-+{
-+	serial8250_clear_and_reinit_fifos(container_of
-+					  (p, struct uart_8250_port, port));
-+	(void)p->serial_in(p, UART_RX);
-+}
+-	if (!replace && card->user_ctl_count >= MAX_USER_CONTROLS)
+-		return -ENOMEM;
+ 	if (info->count < 1)
+ 		return -EINVAL;
+ 	access = info->access == 0 ? SNDRV_CTL_ELEM_ACCESS_READWRITE :
+@@ -1165,21 +1163,16 @@ static int snd_ctl_elem_add(struct snd_ctl_file *file,
+ 				 SNDRV_CTL_ELEM_ACCESS_TLV_READWRITE));
+ 	info->id.numid = 0;
+ 	memset(&kctl, 0, sizeof(kctl));
+-	down_write(&card->controls_rwsem);
+-	_kctl = snd_ctl_find_id(card, &info->id);
+-	err = 0;
+-	if (_kctl) {
+-		if (replace)
+-			err = snd_ctl_remove(card, _kctl);
+-		else
+-			err = -EBUSY;
+-	} else {
+-		if (replace)
+-			err = -ENOENT;
 +
- static void dw8250_serial_out(struct uart_port *p, int offset, int value)
- {
- 	struct dw8250_data *d = p->private_data;
- 
--	if (offset == UART_LCR)
--		d->last_lcr = value;
--
- 	if (offset == UART_MCR)
- 		d->last_mcr = value;
- 
- 	writeb(value, p->membase + (offset << p->regshift));
-+
-+	/* Make sure LCR write wasn't ignored */
-+	if (offset == UART_LCR) {
-+		int tries = 1000;
-+		while (tries--) {
-+			if (value == p->serial_in(p, UART_LCR))
-+				return;
-+			dw8250_force_idle(p);
-+			writeb(value, p->membase + (UART_LCR << p->regshift));
-+		}
-+		dev_err(p->dev, "Couldn't set LCR to %d\n", value);
-+	}
- }
- 
- static unsigned int dw8250_serial_in(struct uart_port *p, int offset)
-@@ -107,13 +122,22 @@ static void dw8250_serial_out32(struct uart_port *p, int offset, int value)
- {
- 	struct dw8250_data *d = p->private_data;
- 
--	if (offset == UART_LCR)
--		d->last_lcr = value;
--
- 	if (offset == UART_MCR)
- 		d->last_mcr = value;
- 
- 	writel(value, p->membase + (offset << p->regshift));
-+
-+	/* Make sure LCR write wasn't ignored */
-+	if (offset == UART_LCR) {
-+		int tries = 1000;
-+		while (tries--) {
-+			if (value == p->serial_in(p, UART_LCR))
-+				return;
-+			dw8250_force_idle(p);
-+			writel(value, p->membase + (UART_LCR << p->regshift));
-+		}
-+		dev_err(p->dev, "Couldn't set LCR to %d\n", value);
-+	}
- }
- 
- static unsigned int dw8250_serial_in32(struct uart_port *p, int offset)
-@@ -131,9 +155,8 @@ static int dw8250_handle_irq(struct uart_port *p)
- 	if (serial8250_handle_irq(p, iir)) {
- 		return 1;
- 	} else if ((iir & UART_IIR_BUSY) == UART_IIR_BUSY) {
--		/* Clear the USR and write the LCR again. */
-+		/* Clear the USR */
- 		(void)p->serial_in(p, d->usr_reg);
--		p->serial_out(p, UART_LCR, d->last_lcr);
- 
- 		return 1;
++	if (replace) {
++		err = snd_ctl_remove_user_ctl(file, &info->id);
++		if (err)
++			return err;
  	}
+-	up_write(&card->controls_rwsem);
+-	if (err < 0)
+-		return err;
++
++	if (card->user_ctl_count >= MAX_USER_CONTROLS)
++		return -ENOMEM;
++
+ 	memcpy(&kctl.id, &info->id, sizeof(info->id));
+ 	kctl.count = info->owner ? info->owner : 1;
+ 	access |= SNDRV_CTL_ELEM_ACCESS_USER;
 -- 
 2.0.0
 
