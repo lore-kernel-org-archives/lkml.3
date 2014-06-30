@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579AbaF3Qyb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 12:54:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44293 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751883AbaF3Qya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 12:54:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,576,1400050800"; 
-   d="scan'208";a="536652167"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: x86@kernel.org, Borislav Petkov <bp@alien8.de>,
-        Chen Gong <gong.chen@linux.jf.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] extlog trace event - queue for 3.17
-Date: Mon, 30 Jun 2014 09:54:00 -0700
-Message-Id: <53b196284053a30cc@agluck-desk.sc.intel.com>
+	id S1755789AbaF3Qzm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 12:55:42 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:65065 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754773AbaF3Qzk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 12:55:40 -0400
+Message-ID: <53B19687.5050400@cogentembedded.com>
+Date: Mon, 30 Jun 2014 20:55:35 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: tj@kernel.org, kishon@ti.com, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        alexandre.belloni@free-electrons.com, jszhang@marvell.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v7 1/7] phy: add a driver for the Berlin SATA PHY
+References: <1403530783-17180-1-git-send-email-antoine.tenart@free-electrons.com> <1403530783-17180-2-git-send-email-antoine.tenart@free-electrons.com> <53AB1CFD.4040500@cogentembedded.com> <20140630095940.GB10058@kwain> <53B176F1.5060308@gmail.com> <20140630154409.GB29613@kwain>
+In-Reply-To: <20140630154409.GB29613@kwain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 4d4c9cc839a308be3289a361ccba4447ee140552:
+Hello.
 
-  tracing: Add __field_struct macro for TRACE_EVENT() (2014-06-21 00:18:42 -0400)
+On 06/30/2014 07:44 PM, Antoine Ténart wrote:
 
-[Note this base commit was pulled by Linus between 3.16-rc2 and -rc3]
+>>>>> +	/* set the controller speed */
+>>>>> +	writel(0x31, ctrl_reg + PORT_SCR_CTL);
 
-are available in the git repository at:
+>>>>     Value undocumented? Or is this the SATA SControl register by chance?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-extlog-trace
+>>> Some magic is still there...
 
-for you to fetch changes up to 7c76bb5f7a3d052339b873374333dd0dcc35ce28:
+>> I guess Sergei was referring to AHCI spec here.
 
-  RAS, extlog: Adjust init flow (2014-06-25 13:27:26 -0700)
+    Actually, even to the SATA specs. :-)
 
-----------------------------------------------------------------
-Report extended error information ("extlog") using
-a trace/event.  Provide a mechanism for a smart
-daemon collecting this information to tell the kernel
-to skip logging corrected errors to the console.
+>> PORT_SCR bits are documented in AHCI spec as:
 
-----------------------------------------------------------------
-Chen, Gong (7):
-      trace, RAS: Add basic RAS trace event
-      trace, AER: Move trace into unified interface
-      CPER: Adjust code flow of some functions
-      RAS, debugfs: Add debugfs interface for RAS subsystem
-      trace, RAS: Add eMCA trace event interface
-      trace, eMCA: Add a knob to adjust where to save event log
-      RAS, extlog: Adjust init flow
+>> 7:4 = 0x3 Limit speed negotiation to a rate not greater than Gen3
+>>            communication rate.
 
- drivers/Kconfig                        |   2 +
- drivers/Makefile                       |   1 +
- drivers/acpi/Kconfig                   |   4 +-
- drivers/acpi/acpi_extlog.c             |  46 ++++++--
- drivers/edac/Kconfig                   |   1 +
- drivers/edac/edac_mc.c                 |   3 -
- drivers/firmware/efi/cper.c            | 192 +++++++++++++++++++++++----------
- drivers/pci/pcie/aer/Kconfig           |   1 +
- drivers/pci/pcie/aer/aerdrv_errprint.c |   4 +-
- drivers/ras/Kconfig                    |   2 +
- drivers/ras/Makefile                   |   1 +
- drivers/ras/debugfs.c                  |  56 ++++++++++
- drivers/ras/ras.c                      |  29 +++++
- include/linux/cper.h                   |  32 ++++++
- include/linux/ras.h                    |  14 +++
- include/ras/ras_event.h                | 128 ++++++++++++++++++++++
- include/trace/events/ras.h             |  77 -------------
- 17 files changed, 443 insertions(+), 150 deletions(-)
- create mode 100644 drivers/ras/Kconfig
- create mode 100644 drivers/ras/Makefile
- create mode 100644 drivers/ras/debugfs.c
- create mode 100644 drivers/ras/ras.c
- create mode 100644 include/linux/ras.h
- delete mode 100644 include/trace/events/ras.h
+>> 3:0 = 0x1 Perform interface communication sequence [...]. This is
+>>            functionally equivalent to a hard reset [...].
+
+>> So, the question is: Should we really need to reset controller in the
+>> PHY driver or is it already done in AHCI common code? At least we
+>> should change the comment to something like
+>> /* set Gen3 controller speed and perform hard reset */
+
+> I just checked, the AHCI common code has a function to do the reset:
+> ahci_reset_controller(). As of the max speed negociation rate, I did not
+> see it in the common AHCI functions.
+
+    You've looked in a wrong place -- since SControl is a standard *SATA* 
+register, it gets read/written by the libata core. The low-level driver only 
+provides scr_{read|write}() methods.
+
+> The eSATA port on the Berlin2Q works without this line, but it may be a
+> good idea to keep the max speed negociation rate.
+
+    It's usually libata's task to negotiate the SATA speed.
+
+> Anyway, we can remove the reset part. Nice catch!
+
+    Thanks.
+
+> Antoine
+
+WBR, Sergei
+
