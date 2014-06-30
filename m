@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676AbaF3PNL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 11:13:11 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:53203 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771AbaF3PNJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 11:13:09 -0400
+	id S1753244AbaF3PPu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 11:15:50 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52573 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750868AbaF3PPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 11:15:48 -0400
+Date: Mon, 30 Jun 2014 17:15:44 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jan Kiszka <jan.kiszka@web.de>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, x86-ml <x86@kernel.org>,
+        kvm@vger.kernel.org, =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
+Subject: Re: [PATCH] KVM: SVM: Fix CPL export via SS.DPL
+Message-ID: <20140630151544.GF4766@pd.tnic>
+References: <53B0050B.90104@web.de>
+ <20140629131443.GA5199@pd.tnic>
+ <20140629134247.GG18167@minantech.com>
+ <20140629140104.GB12528@pd.tnic>
+ <20140629142722.GH18167@minantech.com>
+ <53B02395.8030505@web.de>
+ <53B027E0.7040003@web.de>
+ <53B02CEB.7010607@web.de>
+ <53B17BDD.5030301@redhat.com>
+ <53B17C5D.5050407@web.de>
 MIME-Version: 1.0
-In-Reply-To: <20140628170700.GA23634@xo-6d-61-c0.localdomain>
-References: <55466fbd36df1d011876135cf7ca5d40c05029c7.1403809591.git.luto@amacapital.net>
- <20140626195629.GC5714@two.firstfloor.org> <CALCETrVBKno2skh3zR=1GYuojwPhYPLD=1HFcLMXjStS+0SPJQ@mail.gmail.com>
- <CALCETrWJD4kvoCxxb9y19uMakChmxamveKDceDOhyjYzFkJoUA@mail.gmail.com>
- <7919ae8b-958b-4b12-a5f4-8be2c3df3824@email.android.com> <CALCETrVkeTd4UJNm2ir3AMo1eLEr6CKK0Cf9_-NCO+DP+iTRxg@mail.gmail.com>
- <20140628170700.GA23634@xo-6d-61-c0.localdomain>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 30 Jun 2014 08:12:47 -0700
-Message-ID: <CALCETrVGTPL9tuODBRW08-q_RrvR1q2kfnjRs3g8+r6vGsLrzw@mail.gmail.com>
-Subject: Re: [PATCH] x86_64,entry: Fix RCX for traced syscalls
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        X86 ML <x86@kernel.org>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53B17C5D.5050407@web.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 28, 2014 at 10:07 AM, Pavel Machek <pavel@ucw.cz> wrote:
-> On Thu 2014-06-26 13:47:32, Andy Lutomirski wrote:
->> On Thu, Jun 26, 2014 at 1:12 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> > The real question is if we care that sysret and iter don't match.  On 32 bits the situation is even more complex.
->>
->> At least for 64 bits, iret vs sysret is purely a kernel implementation
->> detail (except where a tracer modifies things that are inaccessible to
->> sysret), so ISTM it's worth one instruction to make them match.
->>
->> I noticed this thing while fiddling with moving some of the syscall
->> tracing logic to C.  This isn't a real problem, but it at least made
->> me scratch my head.
->
-> If possible, we'd like to trace programs without programs being noticed they are
-> being traced. See subterfugue utility, for example.
->
-> It is certainly worth one extra instruction.
+On Mon, Jun 30, 2014 at 05:03:57PM +0200, Jan Kiszka wrote:
+> 15.5.1:
+> 
+> "When examining segment attributes after a #VMEXIT:
+> [...]
+> • Retrieve the CPL from the CPL field in the VMCB, not from any segment
+> DPL."
 
-I tend to agree.
+Heey, it is even documented! :-P
 
-FWIW, I haven't looked at the ia32 stuff, but it should be possible to
-do something similar if it's not there already.  The iret path can set
-any user state it wants.
+-- 
+Regards/Gruss,
+    Boris.
 
---Andy
+Sent from a fat crate under my desk. Formatting is fine.
+--
