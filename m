@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071AbaF3NLZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 09:11:25 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54465 "EHLO
+	id S1754990AbaF3NMq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 09:12:46 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54487 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753045AbaF3NLV (ORCPT
+	with ESMTP id S1753308AbaF3NLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 09:11:21 -0400
+	Mon, 30 Jun 2014 09:11:23 -0400
 From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
 	<antoine.tenart@free-electrons.com>
 To: sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com
@@ -17,9 +17,9 @@ Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?=
         jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
         linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v8 2/7] Documentation: bindings: add the Berlin SATA PHY
-Date: Mon, 30 Jun 2014 15:09:27 +0200
-Message-Id: <1404133772-11741-3-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v8 7/7] ARM: berlin: enable the eSATA interface on the BG2Q DMP
+Date: Mon, 30 Jun 2014 15:09:32 +0200
+Message-Id: <1404133772-11741-8-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404133772-11741-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1404133772-11741-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -30,55 +30,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Berlin SATA PHY drives the PHY related to the SATA interface. Add
-the corresponding documentation.
+The BG2Q has an AHCI SATA controller with an eSATA interface. Enable it.
+Only enable the first port, the BG2Q DMP does not support the second one.
 
 Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 ---
- .../devicetree/bindings/phy/berlin-sata-phy.txt    | 34 ++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
+ arch/arm/boot/dts/berlin2q-marvell-dmp.dts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt b/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
-new file mode 100644
-index 000000000000..88f8c23384c0
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
-@@ -0,0 +1,34 @@
-+Berlin SATA PHY
-+---------------
+diff --git a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
+index 995150f93795..385f6af64d0c 100644
+--- a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
++++ b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
+@@ -37,3 +37,11 @@
+ &uart0 {
+ 	status = "okay";
+ };
 +
-+Required properties:
-+- compatible: should be "marvell,berlin2q-sata-phy"
-+- address-cells: should be 1
-+- size-cells: should be 0
-+- phy-cells: from the generic PHY bindings, must be 1
-+- reg: address and length of the register
-+- clocks: reference to the clock entry
++&sata0 {
++	status = "okay";
++};
 +
-+Sub-nodes:
-+Each PHY should be represented as a sub-node.
-+
-+Sub-nodes required properties:
-+- reg: the PHY number
-+
-+Example:
-+	sata_phy: phy@f7e900a0 {
-+		compatible = "marvell,berlin2q-sata-phy";
-+		reg = <0xf7e900a0 0x200>;
-+		clocks = <&chip CLKID_SATA>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		#phy-cells = <1>;
-+
-+		sata-phy@0 {
-+			reg = <0>;
-+		};
-+
-+		sata-phy@1 {
-+			reg = <1>;
-+		};
-+	};
++&sata_phy {
++	status = "okay";
++};
 -- 
 1.9.1
 
