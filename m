@@ -1,124 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019AbaF3DOk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 23:14:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22651 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752688AbaF3DOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 23:14:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,573,1400050800"; 
-   d="scan'208";a="565801494"
-Message-ID: <53B0D5EB.70103@intel.com>
-Date: Mon, 30 Jun 2014 11:13:47 +0800
-From: "Chen, Tiejun" <tiejun.chen@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754070AbaF3DOs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 23:14:48 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:40499 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688AbaF3DOo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 29 Jun 2014 23:14:44 -0400
+Message-ID: <53B0D61B.9010104@hitachi.com>
+Date: Mon, 30 Jun 2014 12:14:35 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, daniel.vetter@ffwll.ch,
-        jani.nikula@linux.intel.com, airlied@linux.ie
-CC: intel-gfx@lists.freedesktop.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        qemu-devel@nongnu.org
-Subject: Re: [RFC][PATCH] gpu:drm:i915:intel_detect_pch: back to check devfn
- instead of check class type
-References: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com> <53A42DAA.80406@redhat.com> <53A692F9.3060200@intel.com> <53AA70C0.2000806@redhat.com> <53AA7B73.90503@intel.com> <53AA808C.5020402@redhat.com>
-In-Reply-To: <53AA808C.5020402@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-tip-commits@vger.kernel.org,
+        Michael Ellerman <mpe@ellerman.id.au>, akataria@vmware.com,
+        anil.s.keshavamurthy@intel.com,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH v4] [BUGFIX] kprobes: Fix "Failed to find blacklist" error
+ on ia64 and ppc64
+References: <20140620022307.23075.55858.stgit@kbuild-fedora.novalocal>
+In-Reply-To: <20140620022307.23075.55858.stgit@kbuild-fedora.novalocal>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/6/25 15:55, Paolo Bonzini wrote:
-> Il 25/06/2014 09:34, Chen, Tiejun ha scritto:
->> On 2014/6/25 14:48, Paolo Bonzini wrote:
->>> Second problem.  Your IGD passthrough code currently works with QEMU's
->>> PIIX4-based machine.  But what happens if you try to extend it, so that
->>
->> Yes, current xen machine, xenpv, is based on pii4, and also I don't
->> known if we will plan to migrate to q35 or others. So its hard to
->> further say more now.
->>
->>> it works with QEMU's ICH9-based machine?  That's a more modern machine
->>> that has a PCIe chipset and hence has its ISA bridge at 00:1f.0.  Now
->>
->> But even in this case, could we set the real vendor/device ids for that
->> ISA bridge at 00:1f.0? If not, what's broken?
->
-> The config space layout changes for different vendor/device ids, so the
-> guest firmware only works if you have the right vendor/device id.
+Ping? :)
 
-Paolo,
+(2014/06/20 11:23), Masami Hiramatsu wrote:
+> On ia64 and ppc64, the function pointer does not point the
+> entry address of the function, but the address of function
+> discriptor (which contains the entry address and misc
+> data.) Since the kprobes passes the function pointer stored
+> by NOKPROBE_SYMBOL() to kallsyms_lookup_size_offset() for
+> initalizing its blacklist, it fails and reports many errors
+> as below.
+> 
+>   Failed to find blacklist 0001013168300000
+>   Failed to find blacklist 0001013000f0a000
+>   Failed to find blacklist 000101315f70a000
+>   Failed to find blacklist 000101324c80a000
+>   Failed to find blacklist 0001013063f0a000
+>   Failed to find blacklist 000101327800a000
+>   Failed to find blacklist 0001013277f0a000
+>   Failed to find blacklist 000101315a70a000
+>   Failed to find blacklist 0001013277e0a000
+>   Failed to find blacklist 000101305a20a000
+>   Failed to find blacklist 0001013277d0a000
+>   Failed to find blacklist 00010130bdc0a000
+>   Failed to find blacklist 00010130dc20a000
+>   Failed to find blacklist 000101309a00a000
+>   Failed to find blacklist 0001013277c0a000
+>   Failed to find blacklist 0001013277b0a000
+>   Failed to find blacklist 0001013277a0a000
+>   Failed to find blacklist 000101327790a000
+>   Failed to find blacklist 000101303140a000
+>   Failed to find blacklist 0001013a3280a000
+> 
+> To fix this bug, this introduces function_entry() macro to
+> retrieve the entry address from the given function pointer,
+> and uses for kallsyms_lookup_size_offset() while initializing
+> blacklist.
+> 
+> Changes in v4:
+>  - Add kernel_text_address() check for verifying the address.
+>  - Moved on the latest linus tree.
+> 
+> Changes in v3:
+>  - Fix a bug to get blacklist address based on function entry
+>    instead of function descriptor. (Suzuki's work, Thanks!)
+> 
+> Changes in V2:
+>  - Use function_entry() macro when lookin up symbols instead
+>    of storing it.
+>  - Update for the latest -next.
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Reported-by: Tony Luck <tony.luck@gmail.com>
+> Tested-by: Tony Luck <tony.luck@intel.com>
+> Cc: Michael Ellerman <mpe@ellerman.id.au>
+> Cc: Suzuki K. Poulose <suzuki@in.ibm.com>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> Cc: Kevin Hao <haokexin@gmail.com>
+> Cc: linux-ia64@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linuxppc-dev@lists.ozlabs.org
+> ---
+>  arch/ia64/include/asm/types.h    |    2 ++
+>  arch/powerpc/include/asm/types.h |   11 +++++++++++
+>  include/linux/types.h            |    4 ++++
+>  kernel/kprobes.c                 |   15 ++++++++++-----
+>  4 files changed, 27 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/ia64/include/asm/types.h b/arch/ia64/include/asm/types.h
+> index 4c351b1..95279dd 100644
+> --- a/arch/ia64/include/asm/types.h
+> +++ b/arch/ia64/include/asm/types.h
+> @@ -27,5 +27,7 @@ struct fnptr {
+>  	unsigned long gp;
+>  };
+>  
+> +#define function_entry(fn) (((struct fnptr *)(fn))->ip)
+> +
+>  #endif /* !__ASSEMBLY__ */
+>  #endif /* _ASM_IA64_TYPES_H */
+> diff --git a/arch/powerpc/include/asm/types.h b/arch/powerpc/include/asm/types.h
+> index bfb6ded..8b89d65 100644
+> --- a/arch/powerpc/include/asm/types.h
+> +++ b/arch/powerpc/include/asm/types.h
+> @@ -25,6 +25,17 @@ typedef struct {
+>  	unsigned long env;
+>  } func_descr_t;
+>  
+> +#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
+> +/*
+> + * On PPC64 ABIv1 the function pointer actually points to the
+> + * function's descriptor. The first entry in the descriptor is the
+> + * address of the function text.
+> + */
+> +#define function_entry(fn)	(((func_descr_t *)(fn))->entry)
+> +#else
+> +#define function_entry(fn)	((unsigned long)(fn))
+> +#endif
+> +
+>  #endif /* __ASSEMBLY__ */
+>  
+>  #endif /* _ASM_POWERPC_TYPES_H */
+> diff --git a/include/linux/types.h b/include/linux/types.h
+> index a0bb704..3b95369 100644
+> --- a/include/linux/types.h
+> +++ b/include/linux/types.h
+> @@ -213,5 +213,9 @@ struct callback_head {
+>  };
+>  #define rcu_head callback_head
+>  
+> +#ifndef function_entry
+> +#define function_entry(fn)	((unsigned long)(fn))
+> +#endif
+> +
+>  #endif /*  __ASSEMBLY__ */
+>  #endif /* _LINUX_TYPES_H */
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index 3214289..7412535 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -32,6 +32,7 @@
+>   *		<prasanna@in.ibm.com> added function-return probes.
+>   */
+>  #include <linux/kprobes.h>
+> +#include <linux/types.h>
+>  #include <linux/hash.h>
+>  #include <linux/init.h>
+>  #include <linux/slab.h>
+> @@ -2037,19 +2038,23 @@ static int __init populate_kprobe_blacklist(unsigned long *start,
+>  {
+>  	unsigned long *iter;
+>  	struct kprobe_blacklist_entry *ent;
+> -	unsigned long offset = 0, size = 0;
+> +	unsigned long entry, offset = 0, size = 0;
+>  
+>  	for (iter = start; iter < end; iter++) {
+> -		if (!kallsyms_lookup_size_offset(*iter, &size, &offset)) {
+> -			pr_err("Failed to find blacklist %p\n", (void *)*iter);
+> +		entry = function_entry(*iter);
+> +
+> +		if (!kernel_text_address(entry) ||
+> +		    !kallsyms_lookup_size_offset(entry, &size, &offset)) {
+> +			pr_err("Failed to find blacklist at %p\n",
+> +				(void *)entry);
+>  			continue;
+>  		}
+>  
+>  		ent = kmalloc(sizeof(*ent), GFP_KERNEL);
+>  		if (!ent)
+>  			return -ENOMEM;
+> -		ent->start_addr = *iter;
+> -		ent->end_addr = *iter + size;
+> +		ent->start_addr = entry;
+> +		ent->end_addr = entry + size;
+>  		INIT_LIST_HEAD(&ent->list);
+>  		list_add_tail(&ent->list, &kprobe_blacklist);
+>  	}
+> 
+> 
+> 
 
-After I discuss internal, we think even we just set the real 
-vendor/device ids to this ISA bridge at 00:1f.0, guest firmware should 
-still work well with these pair of real vendor/device ids.
 
-So if you think something would conflict or be broken, could you tell us 
-what's exactly that? Then we will double check.
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Thanks
-Tiejun
 
->
->>> It is only slightly better, but the right solution is to fix the driver.
->>>   There is absolutely zero reason why a graphics driver should know
->>> about the vendor/device ids of the PCH.
->>
->> This means we have to fix this both on Linux and Windows but I'm not
->> sure if this is feasible to us.
->
-> You have to do it if you want this feature in QEMU in a future-proof way.
->
-> You _can_ provide the ugly PIIX4-specific hack as a compatibility
-> fallback (and this patch is okay to make the compatibility fallback less
-> hacky).  However, I don't think QEMU should accept the patch for IGD
-> passthrough unless Intel is willing to make drivers
-> virtualization-friendly.  Once you assign the IGD, it is not that
-> integrated anymore and the drivers must take that into account.
->
-> It is worthwhile pointing out that neither AMD nor nVidia need any of this.
->
->>> The right way could be to make QEMU add a vendor-specific capability to
->>> the video device. The driver can probe for that capability before
->>
->> Do you mean we can pick two unused offsets in the configuration space of
->> the video device as a vendor-specific capability to hold the
->> vendor/device ids of the PCH?
->
-> Yes, either that or add a new capability (which lets you choose the
-> offsets more freely).
->
-> If the IGD driver needs config space fields of the MCH, those fields
-> could also be mirrored in the new capability.  QEMU would forward them
-> automatically.
->
-> It could even be a new BAR, which gives even more freedom to allocate
-> the fields.
->
->>> looking at the PCI bus.  QEMU can add the capability to the list, it is
->>> easy because all accesses to the video device's configuration space trap
->>> to QEMU.  Then you do not need to add fake devices to the machine.
->>>
->>> In fact, it would be nice if Intel added such a capability on the next
->>> generation of integrated graphics, too.  On real hardware, ACPI or some
->>
->> Maybe, but even this would be implemented, shouldn't we need to be
->> compatible with those old generations?
->
-> Yes.
->
-> - old generation / old driver: use 00:1f.0 hack, only guaranteed to work
-> on PIIX4-based virtual guest
->
-> - old generation / new driver: use 00:1f.0 hack on real hardware, use
-> capability on 00:02.0 on virtual guest, can work on PCIe virtual guest
->
-> - new generation / old driver: doesn't exist
->
-> - new generation / new driver: always use capability on 00:02.0, can
-> work on PCIe virtual guest.
->
-> Paolo
->
->
