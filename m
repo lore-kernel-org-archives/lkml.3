@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296AbaF3MrN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:47:13 -0400
+	id S1756339AbaF3Mrk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:47:40 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754325AbaF3Mar (ORCPT
+	by vger.kernel.org with ESMTP id S1754361AbaF3Mao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:30:47 -0400
+	Mon, 30 Jun 2014 08:30:44 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mike Frysinger <vapier@gentoo.org>,
-        "H.J. Lu" <hjl.tools@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+Cc: linux-kernel@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>,
+        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 159/181] x86, x32: Use compat shims for io_{setup,submit}
-Date: Mon, 30 Jun 2014 13:53:00 +0200
-Message-Id: <826f4ea5eea1b61dc4858a72ca3dd5ab34946259.1404128998.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 161/181] aio: fix kernel memory disclosure in io_getevents() introduced in v3.10
+Date: Mon, 30 Jun 2014 13:53:02 +0200
+Message-Id: <d1360ea460be9cda7eafcfec67fd0b8f77dc191c.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -24,63 +25,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Frysinger <vapier@gentoo.org>
+From: Benjamin LaHaise <bcrl@kvack.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 7fd44dacdd803c0bbf38bf478d51d280902bb0f1 upstream.
+commit edfbbf388f293d70bf4b7c0bc38774d05e6f711a upstream.
 
-The io_setup takes a pointer to a context id of type aio_context_t.
-This in turn is typed to a __kernel_ulong_t.  We could tweak the
-exported headers to define this as a 64bit quantity for specific
-ABIs, but since we already have a 32bit compat shim for the x86 ABI,
-let's just re-use that logic.  The libaio package is also written to
-expect this as a pointer type, so a compat shim would simplify that.
+A kernel memory disclosure was introduced in aio_read_events_ring() in v3.10
+by commit a31ad380bed817aa25f8830ad23e1a0480fef797.  The changes made to
+aio_read_events_ring() failed to correctly limit the index into
+ctx->ring_pages[], allowing an attacked to cause the subsequent kmap() of
+an arbitrary page with a copy_to_user() to copy the contents into userspace.
+This vulnerability has been assigned CVE-2014-0206.  Thanks to Mateusz and
+Petr for disclosing this issue.
 
-The io_submit func operates on an array of pointers to iocb structs.
-Padding out the array to be 64bit aligned is a huge pain, so convert
-it over to the existing compat shim too.
+This patch applies to v3.12+.  A separate backport is needed for 3.10/3.11.
 
-We don't convert io_getevents to the compat func as its only purpose
-is to handle the timespec struct, and the x32 ABI uses 64bit times.
-
-With this change, the libaio package can now pass its testsuite when
-built for the x32 ABI.
-
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-Link: http://lkml.kernel.org/r/1399250595-5005-1-git-send-email-vapier@gentoo.org
-Cc: H.J. Lu <hjl.tools@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Mateusz Guzik <mguzik@redhat.com>
+Cc: Petr Matousek <pmatouse@redhat.com>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/syscalls/syscall_64.tbl | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/aio.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 38ae65dfd14f..63a899304d27 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -212,10 +212,10 @@
- 203	common	sched_setaffinity	sys_sched_setaffinity
- 204	common	sched_getaffinity	sys_sched_getaffinity
- 205	64	set_thread_area
--206	common	io_setup		sys_io_setup
-+206	64	io_setup		sys_io_setup
- 207	common	io_destroy		sys_io_destroy
- 208	common	io_getevents		sys_io_getevents
--209	common	io_submit		sys_io_submit
-+209	64	io_submit		sys_io_submit
- 210	common	io_cancel		sys_io_cancel
- 211	64	get_thread_area
- 212	common	lookup_dcookie		sys_lookup_dcookie
-@@ -356,3 +356,5 @@
- 540	x32	process_vm_writev	compat_sys_process_vm_writev
- 541	x32	setsockopt		compat_sys_setsockopt
- 542	x32	getsockopt		compat_sys_getsockopt
-+543	x32	io_setup		compat_sys_io_setup
-+544	x32	io_submit		compat_sys_io_submit
+diff --git a/fs/aio.c b/fs/aio.c
+index e609e15f36b9..0abde33de70e 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1066,6 +1066,9 @@ static long aio_read_events_ring(struct kioctx *ctx,
+ 	head %= ctx->nr_events;
+ 	tail %= ctx->nr_events;
+ 
++	head %= ctx->nr_events;
++	tail %= ctx->nr_events;
++
+ 	while (ret < nr) {
+ 		long avail;
+ 		struct io_event *ev;
 -- 
 2.0.0
 
