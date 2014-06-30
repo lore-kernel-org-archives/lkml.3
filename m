@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306AbaF3McA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:32:00 -0400
+	id S1755446AbaF3McO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:32:14 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964906AbaF3Mb5 (ORCPT
+	by vger.kernel.org with ESMTP id S1755337AbaF3McF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:31:57 -0400
+	Mon, 30 Jun 2014 08:32:05 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        Jiri Kosina <jkosina@suse.cz>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 117/181] HID: core: fix validation of report id 0
-Date: Mon, 30 Jun 2014 13:52:18 +0200
-Message-Id: <772b0286464c4dc5e361067e5b1103290b6119ed.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 120/181] arm64: ptrace: change fs when passing kernel pointer to regset code
+Date: Mon, 30 Jun 2014 13:52:21 +0200
+Message-Id: <bd44b0890d0e2ff4b0f59a1ac310dd9f401a4141.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,60 +23,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kees Cook <keescook@chromium.org>
+From: Will Deacon <will.deacon@arm.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 1b15d2e5b8077670b1e6a33250a0d9577efff4a5 upstream.
+commit c168870704bcde6bb63d05f7882b620dd3985a46 upstream.
 
-Some drivers use the first HID report in the list instead of using an
-index. In these cases, validation uses ID 0, which was supposed to mean
-"first known report". This fixes the problem, which was causing at least
-the lgff family of devices to stop working since hid_validate_values
-was being called with ID 0, but the devices used single numbered IDs
-for their reports:
+Our compat PTRACE_POKEUSR implementation simply passes the user data to
+regset_copy_from_user after some simple range checking. Unfortunately,
+the data in question has already been copied to the kernel stack by this
+point, so the subsequent access_ok check fails and the ptrace request
+returns -EFAULT. This causes problems tracing fork() with older versions
+of strace.
 
-0x05, 0x01,         /*  Usage Page (Desktop),                   */
-0x09, 0x05,         /*  Usage (Gamepad),                        */
-0xA1, 0x01,         /*  Collection (Application),               */
-0xA1, 0x02,         /*      Collection (Logical),               */
-0x85, 0x01,         /*          Report ID (1),                  */
-...
+This patch briefly changes the fs to KERNEL_DS, so that the access_ok
+check passes even with a kernel address.
 
-Reported-by: Simon Wood <simon@mungewell.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/hid/hid-core.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ arch/arm64/kernel/ptrace.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 0335f86502c2..245f8922f813 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -842,7 +842,17 @@ struct hid_report *hid_validate_values(struct hid_device *hid,
- 	 * ->numbered being checked, which may not always be the case when
- 	 * drivers go to access report values.
- 	 */
--	report = hid->report_enum[type].report_id_hash[id];
-+	if (id == 0) {
-+		/*
-+		 * Validating on id 0 means we should examine the first
-+		 * report in the list.
-+		 */
-+		report = list_entry(
-+				hid->report_enum[type].report_list.next,
-+				struct hid_report, list);
-+	} else {
-+		report = hid->report_enum[type].report_id_hash[id];
-+	}
- 	if (!report) {
- 		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
- 		return NULL;
+diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+index c484d5625ffb..9fa78cd0f092 100644
+--- a/arch/arm64/kernel/ptrace.c
++++ b/arch/arm64/kernel/ptrace.c
+@@ -823,6 +823,7 @@ static int compat_ptrace_write_user(struct task_struct *tsk, compat_ulong_t off,
+ 				    compat_ulong_t val)
+ {
+ 	int ret;
++	mm_segment_t old_fs = get_fs();
+ 
+ 	if (off & 3 || off >= COMPAT_USER_SZ)
+ 		return -EIO;
+@@ -830,10 +831,13 @@ static int compat_ptrace_write_user(struct task_struct *tsk, compat_ulong_t off,
+ 	if (off >= sizeof(compat_elf_gregset_t))
+ 		return 0;
+ 
++	set_fs(KERNEL_DS);
+ 	ret = copy_regset_from_user(tsk, &user_aarch32_view,
+ 				    REGSET_COMPAT_GPR, off,
+ 				    sizeof(compat_ulong_t),
+ 				    &val);
++	set_fs(old_fs);
++
+ 	return ret;
+ }
+ 
 -- 
 2.0.0
 
