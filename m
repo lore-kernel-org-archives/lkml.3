@@ -1,254 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756276AbaF3Qsy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 12:48:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47443 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754168AbaF3QsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 12:48:09 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 3/4] mm: vmscan: Do not reclaim from lower zones if they are balanced
-Date: Mon, 30 Jun 2014 17:48:02 +0100
-Message-Id: <1404146883-21414-4-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1404146883-21414-1-git-send-email-mgorman@suse.de>
-References: <1404146883-21414-1-git-send-email-mgorman@suse.de>
+	id S932127AbaF3QtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 12:49:18 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:43609 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754754AbaF3QtO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 12:49:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo7t2kXj2ZULLXCJSWb_awS+DCtCg51dnLbb8ztWmQdYog@mail.gmail.com>
+References: <20140617192734.30783.71260.stgit@amt.stowe>
+	<CAErSpo7t2kXj2ZULLXCJSWb_awS+DCtCg51dnLbb8ztWmQdYog@mail.gmail.com>
+Date: Mon, 30 Jun 2014 10:49:13 -0600
+Message-ID: <CAL-B5D3M9gmefaSkGnb13UtBHt857G-ixkmhjHawO5hW2AN9xA@mail.gmail.com>
+Subject: Re: [PATCH] PCI: pciehp: Include the Data Link Layer State Changed
+ bit when clearing the Slot Status register's event bits
+From: Myron Stowe <myron.stowe@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Myron Stowe <myron.stowe@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rajat Jain <rajatjain.linux@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Historically kswapd scanned from DMA->Movable in the opposite direction
-to the page allocator to avoid allocating behind kswapd direction of
-progress. The fair zone allocation policy altered this in a non-obvious
-manner.
+On Tue, Jun 17, 2014 at 3:07 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Tue, Jun 17, 2014 at 1:27 PM, Myron Stowe <myron.stowe@redhat.com> wrote:
+>> During PCIe hot-plug initialization - pciehp_probe - data structures
+>> related to slot capabilities are set up.  As part of this set up, ISRs are
+>> put in place to handle slot events and all event bits are cleared out.
+>>
+>> This patch adds the Data Link Layer State Changed (PCI_EXP_SLTSTA_DLLSC)
+>> Slot Status bit to the event bits that are cleared out during
+>> initialization.
+>
+> I think this is related to e48f1b67f668 ("PCI: pciehp: Use link change
+> notifications for hot-plug and removal").  Prior to that, pcie_isr()
+> didn't look at the PCI_EXP_SLTSTA_DLLSC bit.
+>
+> Apparently there's a non-public report of spurious messages like this
+> at boot-time, with no actual hotplug events:
+>
+>   pciehp 0000:82:04.0:pcie24: slot(4): Link Up event
+>   pciehp 0000:82:04.0:pcie24: Device 0000:83:00.0 already exists at
+> 0000:83:00, cannot hot-add
+>   pciehp 0000:82:04.0:pcie24: Cannot add device at 0000:83:00
+>
+> Device 0000:83:00.0 was enumerated previously, during the normal PCI
+> device enumeration.  I suspect DLLSC was set by the hardware when the
+> link came up after power-on, and it remained set until Linux booted.
+> Then when we take the first pciehp interrupt, we notice DLLSC is set
+> and think it's a new link state change.
+>
+> This might be system-specific, because some BIOSes might clear DLLSC
+> before handing off to the OS.  Or my theory might be all wet.
+>
+> But I think we should clear DLLSC in any case.  We clear all the other
+> RW1C bits in Slot Status, and I think we should clear DLLSC as well.
+>
+> I'd like to include a bugzilla or mailing list reference for the
+> spurious message, and I'd also like confirmation that this changes
+> actually fixes it.
 
-Traditionally, the page allocator prefers to use the highest eligible
-zones in order until the low watermarks are reached and then wakes kswapd.
-Once kswapd is awake, it scans zones in the opposite direction so the
-scanning lists on 64-bit look like this;
+I just got confirmation from the reporter that the patch fixes the
+issue they were encountering.
 
-Page alloc		Kswapd
-----------              ------
-Movable			DMA
-Normal			DMA32
-DMA32			Normal
-DMA			Movable
+I've also asked them numerous time if I could make the bug public as I
+expect others may be hitting it and could benefit from a BZ and
+analysis/explanation.  I just repeated my request - if they reply
+positively I'll follow through with some documentation.
 
-If kswapd scanned in the same direction as the page allocator then it is
-possible that kswapd would proportionally reclaim the lower zones that
-were never used as the page allocator was always allocating behind the
-reclaim. This would work as follows
+Myron
 
-	pgalloc hits Normal low wmark
-					kswapd reclaims Normal
-					kswapd reclaims DMA32
-	pgalloc hits Normal low wmark
-					kswapd reclaims Normal
-					kswapd reclaims DMA32
-
-The introduction of the fair zone allocation policy fundamentally altered
-this problem by interleaving between zones until the low watermark is
-reached. There are at least two issues with this
-
-o The page allocator can allocate behind kswapds progress (scans/reclaims
-  lower zone and fair zone allocation policy then uses those pages)
-o When the low watermark of the high zone is reached there may recently
-  allocated pages allocated from the lower zone but as kswapd scans
-  dma->highmem to the highest zone needing balancing it'll reclaim the
-  lower zone even if it was balanced.
-
-Let N = high_wmark(Normal) + high_wmark(DMA32). Of the last N allocations,
-some percentage will be allocated from Normal and some from DMA32. The
-percentage depends on the ratio of the zone sizes and when their watermarks
-were hit. If Normal is unbalanced, DMA32 will be shrunk by kswapd. If DMA32
-is unbalanced only DMA32 will be shrunk. This leads to a difference of
-ages between DMA32 and Normal. Relatively young pages are then continually
-rotated and reclaimed from DMA32 due to the higher zone being unbalanced.
-Some of these pages may be recently read-ahead pages requiring that the page
-be re-read from disk and impacting overall performance.
-
-The problem is fundamental to the fact we have per-zone LRU and allocation
-policies and ideally we would only have per-node allocation and LRU lists.
-This would avoid the need for the fair zone allocation policy but the
-low-memory-starvation issue would have to be addressed again from scratch.
-
-kswapd shrinks equally from all zones up to the high watermark plus a
-balance gap and the lowmem reserves. This patch removes the additional
-reclaim from lower zones on the grounds that the fair zone allocation
-policy will typically be interleaving between the zones.  This should not
-break the normal page aging as the proportional allocations due to the
-fair zone allocation policy should compensate.
-
-tiobench was used to evaluate this because it includes a simple
-sequential reader which is the most obvious regression. It also has threaded
-readers that produce reasonably steady figures.
-
-                                      3.16.0-rc2                 3.0.0            3.16.0-rc2
-                                         vanilla               vanilla           checklow-v4
-Min    SeqRead-MB/sec-1         120.92 (  0.00%)      133.65 ( 10.53%)      140.64 ( 16.31%)
-Min    SeqRead-MB/sec-2         100.25 (  0.00%)      121.74 ( 21.44%)      117.67 ( 17.38%)
-Min    SeqRead-MB/sec-4          96.27 (  0.00%)      113.48 ( 17.88%)      107.56 ( 11.73%)
-Min    SeqRead-MB/sec-8          83.55 (  0.00%)       97.87 ( 17.14%)       88.08 (  5.42%)
-Min    SeqRead-MB/sec-16         66.77 (  0.00%)       82.59 ( 23.69%)       71.04 (  6.40%)
-
-There are still regressions for higher number of threads but this is
-related to changes in the CFQ IO scheduler.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/swap.h |  9 ---------
- mm/vmscan.c          | 46 ++++++++++++++++------------------------------
- 2 files changed, 16 insertions(+), 39 deletions(-)
-
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 4bdbee8..1680307 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -165,15 +165,6 @@ enum {
- #define SWAP_CLUSTER_MAX 32UL
- #define COMPACT_CLUSTER_MAX SWAP_CLUSTER_MAX
- 
--/*
-- * Ratio between zone->managed_pages and the "gap" that above the per-zone
-- * "high_wmark". While balancing nodes, We allow kswapd to shrink zones that
-- * do not meet the (high_wmark + gap) watermark, even which already met the
-- * high_wmark, in order to provide better per-zone lru behavior. We are ok to
-- * spend not more than 1% of the memory for this zone balancing "gap".
-- */
--#define KSWAPD_ZONE_BALANCE_GAP_RATIO 100
--
- #define SWAP_MAP_MAX	0x3e	/* Max duplication count, in first swap_map */
- #define SWAP_MAP_BAD	0x3f	/* Note pageblock is bad, in first swap_map */
- #define SWAP_HAS_CACHE	0x40	/* Flag page is cached, in first swap_map */
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 0f16ffe..3e315c7 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2294,7 +2294,7 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
- /* Returns true if compaction should go ahead for a high-order request */
- static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
- {
--	unsigned long balance_gap, watermark;
-+	unsigned long watermark;
- 	bool watermark_ok;
- 
- 	/* Do not consider compaction for orders reclaim is meant to satisfy */
-@@ -2307,9 +2307,7 @@ static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
- 	 * there is a buffer of free pages available to give compaction
- 	 * a reasonable chance of completing and allocating the page
- 	 */
--	balance_gap = min(low_wmark_pages(zone), DIV_ROUND_UP(
--			zone->managed_pages, KSWAPD_ZONE_BALANCE_GAP_RATIO));
--	watermark = high_wmark_pages(zone) + balance_gap + (2UL << sc->order);
-+	watermark = high_wmark_pages(zone) + (2UL << sc->order);
- 	watermark_ok = zone_watermark_ok_safe(zone, 0, watermark, 0, 0);
- 
- 	/*
-@@ -2816,11 +2814,9 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc)
- 	} while (memcg);
- }
- 
--static bool zone_balanced(struct zone *zone, int order,
--			  unsigned long balance_gap, int classzone_idx)
-+static bool zone_balanced(struct zone *zone, int order)
- {
--	if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone) +
--				    balance_gap, classzone_idx, 0))
-+	if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone), 0, 0))
- 		return false;
- 
- 	if (IS_ENABLED(CONFIG_COMPACTION) && order &&
-@@ -2877,7 +2873,7 @@ static bool pgdat_balanced(pg_data_t *pgdat, int order, int classzone_idx)
- 			continue;
- 		}
- 
--		if (zone_balanced(zone, order, 0, i))
-+		if (zone_balanced(zone, order))
- 			balanced_pages += zone->managed_pages;
- 		else if (!order)
- 			return false;
-@@ -2934,7 +2930,6 @@ static bool kswapd_shrink_zone(struct zone *zone,
- 			       unsigned long *nr_attempted)
- {
- 	int testorder = sc->order;
--	unsigned long balance_gap;
- 	struct reclaim_state *reclaim_state = current->reclaim_state;
- 	struct shrink_control shrink = {
- 		.gfp_mask = sc->gfp_mask,
-@@ -2956,21 +2951,11 @@ static bool kswapd_shrink_zone(struct zone *zone,
- 		testorder = 0;
- 
- 	/*
--	 * We put equal pressure on every zone, unless one zone has way too
--	 * many pages free already. The "too many pages" is defined as the
--	 * high wmark plus a "gap" where the gap is either the low
--	 * watermark or 1% of the zone, whichever is smaller.
--	 */
--	balance_gap = min(low_wmark_pages(zone), DIV_ROUND_UP(
--			zone->managed_pages, KSWAPD_ZONE_BALANCE_GAP_RATIO));
--
--	/*
- 	 * If there is no low memory pressure or the zone is balanced then no
- 	 * reclaim is necessary
- 	 */
- 	lowmem_pressure = (buffer_heads_over_limit && is_highmem(zone));
--	if (!lowmem_pressure && zone_balanced(zone, testorder,
--						balance_gap, classzone_idx))
-+	if (!lowmem_pressure && zone_balanced(zone, testorder))
- 		return true;
- 
- 	shrink_zone(zone, sc);
-@@ -2993,7 +2978,7 @@ static bool kswapd_shrink_zone(struct zone *zone,
- 	 * waits.
- 	 */
- 	if (zone_reclaimable(zone) &&
--	    zone_balanced(zone, testorder, 0, classzone_idx)) {
-+	    zone_balanced(zone, testorder)) {
- 		zone_clear_flag(zone, ZONE_CONGESTED);
- 		zone_clear_flag(zone, ZONE_TAIL_LRU_DIRTY);
- 	}
-@@ -3079,7 +3064,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 				break;
- 			}
- 
--			if (!zone_balanced(zone, order, 0, 0)) {
-+			if (!zone_balanced(zone, order)) {
- 				end_zone = i;
- 				break;
- 			} else {
-@@ -3124,12 +3109,13 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 
- 		/*
- 		 * Now scan the zone in the dma->highmem direction, stopping
--		 * at the last zone which needs scanning.
--		 *
--		 * We do this because the page allocator works in the opposite
--		 * direction.  This prevents the page allocator from allocating
--		 * pages behind kswapd's direction of progress, which would
--		 * cause too much scanning of the lower zones.
-+		 * at the last zone which needs scanning. We do this because
-+		 * the page allocators prefers to work in the opposite
-+		 * direction and we want to avoid the page allocator reclaiming
-+		 * behind kswapd's direction of progress. Due to the fair zone
-+		 * allocation policy interleaving allocations between zones
-+		 * we no longer proportionally scan the lower zones if the
-+		 * watermarks are ok.
- 		 */
- 		for (i = 0; i <= end_zone; i++) {
- 			struct zone *zone = pgdat->node_zones + i;
-@@ -3397,7 +3383,7 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
- 	}
- 	if (!waitqueue_active(&pgdat->kswapd_wait))
- 		return;
--	if (zone_balanced(zone, order, 0, 0))
-+	if (zone_balanced(zone, order))
- 		return;
- 
- 	trace_mm_vmscan_wakeup_kswapd(pgdat->node_id, zone_idx(zone), order);
--- 
-1.8.4.5
-
+>
+> Bjorn
+>
+>> Reference:
+>>   PCI-SIG.  PCI Express Base Specification Revision 4.0 Version 0.3
+>>   (PCI-SIG, 2014): 7.8.11. Slot Status Register (Offset 1Ah).
+>>
+>> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+>> ---
+>>
+>>  drivers/pci/hotplug/pciehp_hpc.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
+>> index 42914e0..0568416 100644
+>> --- a/drivers/pci/hotplug/pciehp_hpc.c
+>> +++ b/drivers/pci/hotplug/pciehp_hpc.c
+>> @@ -794,7 +794,7 @@ struct controller *pcie_init(struct pcie_device *dev)
+>>         pcie_capability_write_word(pdev, PCI_EXP_SLTSTA,
+>>                 PCI_EXP_SLTSTA_ABP | PCI_EXP_SLTSTA_PFD |
+>>                 PCI_EXP_SLTSTA_MRLSC | PCI_EXP_SLTSTA_PDC |
+>> -               PCI_EXP_SLTSTA_CC);
+>> +               PCI_EXP_SLTSTA_CC | PCI_EXP_SLTSTA_DLLSC);
+>>
+>>         /* Disable software notification */
+>>         pcie_disable_notification(ctrl);
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
