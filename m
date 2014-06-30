@@ -1,92 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204AbaF3Kws (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 06:52:48 -0400
-Received: from mga03.intel.com ([143.182.124.21]:29545 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932077AbaF3Kwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 06:52:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,574,1400050800"; 
-   d="scan'208";a="451560279"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        Ville =?utf-8?B?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>
-Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [Intel-gfx] Regression in i915 driver in 3.16-rc2
-In-Reply-To: <Pine.LNX.4.44L0.1406251450110.822-100000@iolanthe.rowland.org>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <Pine.LNX.4.44L0.1406251450110.822-100000@iolanthe.rowland.org>
-User-Agent: Notmuch/0.18+25~gfdc3e52 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 30 Jun 2014 13:52:35 +0300
-Message-ID: <8738emis98.fsf@intel.com>
+	id S1755480AbaF3KyW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 06:54:22 -0400
+Received: from smtprelay0119.b.hostedemail.com ([64.98.42.119]:36435 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755133AbaF3KyV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 06:54:21 -0400
+X-Greylist: delayed 513 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jun 2014 06:54:21 EDT
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Spam-Summary: 50,3,0,,d41d8cd98f00b204,t.artem@lycos.com,:,RULES_HIT:41:46:150:153:355:379:582:988:989:1152:1261:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3622:3690:3865:3867:3868:3874:5007:6261:7903:10004:10400:10450:10455:11658:11914:11984:12517:12519:13019:13069:13071:13255:13311:13357:19904:19999:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: star42_156ef1b9ca402
+X-Filterd-Recvd-Size: 1180
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=US-ASCII;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Mon, 30 Jun 2014 15:45:47 +0500
+From: t.artem@lycos.com
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: BLKRASET =?UTF-8?Q?=28ra=5Fpages=29=20on=20a=20per=20partition=20?=
+ =?UTF-8?Q?basis?=
+Message-ID: <882e8e779e724990b242ecdab21c484d@lycos.com>
+User-Agent: Roundcube Webmail/1.0.1
+X-Originating-IP: [5.166.185.249]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 25 Jun 2014, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Wed, 25 Jun 2014, Ville [iso-8859-1] Syrjl wrote:
->
->> On Wed, Jun 25, 2014 at 02:06:55PM -0400, Alan Stern wrote:
->> > Daniel:
->> > 
->> > I encountered a new problem in the i915 driver the first time I booted 
->> > a 3.16-rc kernel on this computer.  When it switched over to the frame 
->> > buffer driver, the screen went blank and stayed that way.
->> > 
->> > 3.15 works okay.
->> > 
->> > Attached are log extracts from 3.15 and 3.16 (both with drm.debug=0xe
->> > in the boot command line).  The timestamps have been stripped out for
->> > easy diff comparison.  These are the result of
->> > 
->> > 	dmesg | egrep 'drm|i915|frame'
->> > 
->> > with a couple of irrelevant lines removed.  I can send the complete 
->> > logs if you need them.
->> > 
->> > Alan Stern
->> 
->> > Kernel command line: BOOT_IMAGE=/boot/test-3.x root=/dev/hda8 ro console=ttyS0,115200 console=tty0 earlyprintk=serial,ttyS0,115200 no_console_suspend drm.debug=0xe vconsole.keymap=us vconsole.font=latarcyrheb-sun16 LANG=en_US.UTF-8 usbcore.dyndbg=+p ehci_hcd.dyndbg=+p
->> > [drm] Initialized drm 1.1.0 20060810
->> > [drm:i915_dump_device_info] i915 device info: gen=2, pciid=0x2572 flags=has_overlay,overlay_needs_physical,
->> > [drm:intel_detect_pch] No PCH found.
->> > [drm] Memory usable by graphics device = 128M
->> > [drm:i915_gem_gtt_init] GMADR size = 128M
->> > [drm:i915_gem_gtt_init] GTT stolen size = 8M
->> > [drm:i915_gem_gtt_init] ppgtt mode: 0
->> > [drm:intel_opregion_setup] graphic opregion physical addr: 0x0
->> > [drm:intel_opregion_setup] ACPI OpRegion not supported!
->> > [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
->> > [drm] Driver supports precise vblank timestamp query.
->> > [drm:init_vbt_defaults] Set default to SSC at 66667 kHz
->> > [drm:parse_general_features] BDB_GENERAL_FEATURES int_tv_support 1 int_crt_support 0 lvds_use_ssc 0 lvds_ssc_freq 48000 display_clock_mode 0 fdi_rx_polarity_inverted 0
->>                                                                      ^^^^^^^^^^^^^^^^^
->> 
->> This should get your display back:
->> http://patchwork.freedesktop.org/patch/28508/
->
-> It did indeed.  Thank you very much.
+Hello,
 
-Fix pushed to drm-intel-fixes; expect to land in v3.16-rc4 or v3.16-rc5
-at the latest.
+I wonder how difficult and feasible would be to implement per partition 
+readahead settings.
 
-Thanks for the report and testing.
+Currently the Linux kernel sets readahead for the entire device, as 
+opposed to individual partitions and that's absolutely inconvenient.
 
-BR,
-Jani.
+For instance, I don't want large readahead numbers for my / and /home 
+partitions, however for my /mnt/media partition setting a high readahead 
+value would be very beneficial.
 
 
->
-> Alan Stern
->
-> _______________________________________________
-> Intel-gfx mailing list
-> Intel-gfx@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
 
--- 
-Jani Nikula, Intel Open Source Technology Center
+Artem
+
