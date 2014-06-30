@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756956AbaF3R4f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 13:56:35 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:17653 "EHLO
+	id S1756657AbaF3RyK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 13:54:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:17620 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756678AbaF3RyL (ORCPT
+	with ESMTP id S1755498AbaF3RyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 13:54:11 -0400
+	Mon, 30 Jun 2014 13:54:07 -0400
 From: Daniel Kiper <daniel.kiper@oracle.com>
 To: linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
         linux-kernel@vger.kernel.org, x86@kernel.org,
@@ -18,9 +18,9 @@ Cc: andrew.cooper3@citrix.com, boris.ostrovsky@oracle.com,
         mingo@redhat.com, mjg59@srcf.ucam.org,
         stefano.stabellini@eu.citrix.com, tglx@linutronix.de,
         tony.luck@intel.com
-Subject: [PATCH v7 03/10] arch/x86: Do not access EFI memory map if it is not available
-Date: Mon, 30 Jun 2014 19:52:57 +0200
-Message-Id: <1404150784-27921-4-git-send-email-daniel.kiper@oracle.com>
+Subject: [PATCH v7 01/10] arch/ia64: Define early_memunmap()
+Date: Mon, 30 Jun 2014 19:52:55 +0200
+Message-Id: <1404150784-27921-2-git-send-email-daniel.kiper@oracle.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1404150784-27921-1-git-send-email-daniel.kiper@oracle.com>
 References: <1404150784-27921-1-git-send-email-daniel.kiper@oracle.com>
@@ -29,32 +29,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do not access EFI memory map if it is not available. At least
-Xen dom0 EFI implementation does not have an access to it.
+This is odd to use early_iounmap() function do tear down mapping
+created by early_memremap() function, even if it works right now,
+because they belong to different set of functions. The former is
+I/O related function and the later is memory related. So, create
+early_memunmap() macro which in real is early_iounmap(). This
+thing will help to not confuse code readers longer by mixing
+functions from different classes.
+
+EFI patches following this patch uses that functionality.
 
 Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
 ---
-v6 - suggestions/fixes:
-   - create this separate patch from main EFI_PARAVIRT patch
-     (suggested by Matt Fleming).
----
- arch/x86/platform/efi/efi.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/ia64/include/asm/io.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 0ee1f46..d2d3c41 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -1220,6 +1220,9 @@ u64 efi_mem_attributes(unsigned long phys_addr)
- 	efi_memory_desc_t *md;
- 	void *p;
- 
-+	if (!efi_enabled(EFI_MEMMAP))
-+		return 0;
-+
- 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
- 		md = p;
- 		if ((md->phys_addr <= phys_addr) &&
+diff --git a/arch/ia64/include/asm/io.h b/arch/ia64/include/asm/io.h
+index 0d2bcb3..bee0acd 100644
+--- a/arch/ia64/include/asm/io.h
++++ b/arch/ia64/include/asm/io.h
+@@ -426,6 +426,7 @@ extern void iounmap (volatile void __iomem *addr);
+ extern void __iomem * early_ioremap (unsigned long phys_addr, unsigned long size);
+ #define early_memremap(phys_addr, size)        early_ioremap(phys_addr, size)
+ extern void early_iounmap (volatile void __iomem *addr, unsigned long size);
++#define early_memunmap(addr, size)             early_iounmap(addr, size)
+ static inline void __iomem * ioremap_cache (unsigned long phys_addr, unsigned long size)
+ {
+ 	return ioremap(phys_addr, size);
 -- 
 1.7.10.4
 
