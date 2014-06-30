@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879AbaF3Ryo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 13:54:44 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:17245 "EHLO
+	id S1756900AbaF3Ry7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 13:54:59 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:17253 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756779AbaF3Ryl (ORCPT
+	with ESMTP id S1756851AbaF3Ryl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 13:54:41 -0400
 From: Daniel Kiper <daniel.kiper@oracle.com>
@@ -18,91 +18,45 @@ Cc: andrew.cooper3@citrix.com, boris.ostrovsky@oracle.com,
         mingo@redhat.com, mjg59@srcf.ucam.org,
         stefano.stabellini@eu.citrix.com, tglx@linutronix.de,
         tony.luck@intel.com
-Subject: [PATCH v7 10/10] arch/x86: Remove efi_set_rtc_mmss()
-Date: Mon, 30 Jun 2014 19:53:04 +0200
-Message-Id: <1404150784-27921-11-git-send-email-daniel.kiper@oracle.com>
+Subject: [PATCH v7 09/10] arch/x86: Replace plain strings with constants
+Date: Mon, 30 Jun 2014 19:53:03 +0200
+Message-Id: <1404150784-27921-10-git-send-email-daniel.kiper@oracle.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1404150784-27921-1-git-send-email-daniel.kiper@oracle.com>
 References: <1404150784-27921-1-git-send-email-daniel.kiper@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-efi_set_rtc_mmss() is never used to set RTC due to bugs found
-on many EFI platforms. It is set directly by mach_set_rtc_mmss().
-Hence, remove unused efi_set_rtc_mmss() function.
+We've got constants, so let's use them instead of hard-coded values.
 
 Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
 ---
 v6 - suggestions/fixes:
-   - remove efi_set_rtc_mmss() instead of commenting out it
-     (suggested by Stefano Stabellini, Juergen Gross,
-     H. Peter Anvin and Matt Fleming).
+   - improve commit message
+     (suggested by Matt Fleming).
 ---
- arch/x86/platform/efi/efi.c |   36 ------------------------------------
- include/linux/efi.h         |    1 -
- 2 files changed, 37 deletions(-)
+ arch/x86/kernel/setup.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index da15df9..d569eea 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -244,42 +244,6 @@ static efi_status_t __init phys_efi_set_virtual_address_map(
- 	return status;
- }
- 
--int efi_set_rtc_mmss(const struct timespec *now)
--{
--	unsigned long nowtime = now->tv_sec;
--	efi_status_t	status;
--	efi_time_t	eft;
--	efi_time_cap_t	cap;
--	struct rtc_time	tm;
--
--	status = efi.get_time(&eft, &cap);
--	if (status != EFI_SUCCESS) {
--		pr_err("Oops: efitime: can't read time!\n");
--		return -1;
--	}
--
--	rtc_time_to_tm(nowtime, &tm);
--	if (!rtc_valid_tm(&tm)) {
--		eft.year = tm.tm_year + 1900;
--		eft.month = tm.tm_mon + 1;
--		eft.day = tm.tm_mday;
--		eft.minute = tm.tm_min;
--		eft.second = tm.tm_sec;
--		eft.nanosecond = 0;
--	} else {
--		pr_err("%s: Invalid EFI RTC value: write of %lx to EFI RTC failed\n",
--		       __func__, nowtime);
--		return -1;
--	}
--
--	status = efi.set_time(&eft);
--	if (status != EFI_SUCCESS) {
--		pr_err("Oops: efitime: can't write time!\n");
--		return -1;
--	}
--	return 0;
--}
--
- void efi_get_time(struct timespec *now)
- {
- 	efi_status_t status;
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 713a4f1..322366b 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -870,7 +870,6 @@ extern int __init efi_uart_console_only (void);
- extern void efi_initialize_iomem_resources(struct resource *code_resource,
- 		struct resource *data_resource, struct resource *bss_resource);
- extern void efi_get_time(struct timespec *now);
--extern int efi_set_rtc_mmss(const struct timespec *now);
- extern void efi_reserve_boot_services(void);
- extern int efi_get_fdt_params(struct efi_fdt_params *params, int verbose);
- extern struct efi_memory_map memmap;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 78a0e62..41ead8d 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -924,10 +924,10 @@ void __init setup_arch(char **cmdline_p)
+ #endif
+ #ifdef CONFIG_EFI
+ 	if (!strncmp((char *)&boot_params.efi_info.efi_loader_signature,
+-		     "EL32", 4)) {
++		     EFI32_LOADER_SIGNATURE, 4)) {
+ 		set_bit(EFI_BOOT, &efi.flags);
+ 	} else if (!strncmp((char *)&boot_params.efi_info.efi_loader_signature,
+-		     "EL64", 4)) {
++		     EFI64_LOADER_SIGNATURE, 4)) {
+ 		set_bit(EFI_BOOT, &efi.flags);
+ 		set_bit(EFI_64BIT, &efi.flags);
+ 	}
 -- 
 1.7.10.4
 
