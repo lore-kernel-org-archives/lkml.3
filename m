@@ -1,117 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861AbaF3SeY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 14:34:24 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:42498 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756819AbaF3SeV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 14:34:21 -0400
+	id S1756889AbaF3Sem (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 14:34:42 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:43613 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756399AbaF3Sel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 14:34:41 -0400
+Date: Mon, 30 Jun 2014 13:34:06 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+CC: Felipe Balbi <balbi@ti.com>, <sebastian.hesselbarth@gmail.com>,
+        <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Subject: Re: [PATCH v2 05/12] usb: phy: add the Berlin USB PHY driver
+Message-ID: <20140630183406.GT31442@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1403606121-6368-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1403606121-6368-6-git-send-email-antoine.tenart@free-electrons.com>
+ <20140627155622.GL8069@saruman.home>
+ <20140627160557.GA6622@kwain>
+ <20140627230433.GC762@saruman.home>
+ <20140630145211.GA29613@kwain>
 MIME-Version: 1.0
-In-Reply-To: <CAKohpo=dgSW551yzqjAV2_opw_4naqFEWpwUz9ktkGgR5vCBZA@mail.gmail.com>
-References: <cover.1403684824.git.viresh.kumar@linaro.org> <e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
- <53AB1CC1.4010907@codeaurora.org> <CAKohpo=Q7eWNwcK6KF9_U-zD0g=96QHW9hiQupLpV5GqoWE+mA@mail.gmail.com>
- <53ACB568.4000903@codeaurora.org> <20140627015354.32686.83046@quantum>
- <CAKohponvN3rAvJrfi4TojFcq5gq7r2oNE4Q0_NtwBHmEZ8waBA@mail.gmail.com> <CAKohpo=dgSW551yzqjAV2_opw_4naqFEWpwUz9ktkGgR5vCBZA@mail.gmail.com>
-From: Rob Herring <rob.herring@linaro.org>
-Date: Mon, 30 Jun 2014 13:33:59 -0500
-Message-ID: <CABGGiswMuofH5WRh4jgwh1=CV+fEXM_Ec3+WNwThbuMLVxsdcg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: cpu0: Extend support beyond CPU0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm@vger.kernel.org, Sachin Kamat <spk.linux@gmail.com>,
-        Thomas P Abraham <thomas.ab@samsung.com>, Nishanth Menon <nm@ti.com>,
-        Tomasz Figa <t.figa@samsung.com>, Mark Brown <broonie@kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="D+M1YvVlDncl3vD5"
+Content-Disposition: inline
+In-Reply-To: <20140630145211.GA29613@kwain>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 2:57 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 27 June 2014 07:45, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> On 27 June 2014 07:23, Mike Turquette <mturquette@linaro.org> wrote:
->>>> but it isn't future-proof if/when the clock framework starts returning
->>>> dynamically allocated clock pointers for each clk_get() invocation.
->>>> Maybe we need a function in the common clock framework that tells us if
->>>> the clocks are the same either via DT or by taking two clock pointers?
->>>
->>> I looked through the patch briefly and did not see why we would need to
->>> do this. Any hint?
->>
->> We want to know which CPUs are sharing clock line, so that we can
->> fill affected-cpus field of cpufreq core.
->
-> What about comparing "clocks" property in cpu DT nodes?
+--D+M1YvVlDncl3vD5
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-What if a different clock is selected for some reason. I think a clock
-api function would be better.
+On Mon, Jun 30, 2014 at 04:52:11PM +0200, Antoine T=E9nart wrote:
+> Felipe,
+>=20
+> On Fri, Jun 27, 2014 at 06:04:33PM -0500, Felipe Balbi wrote:
+> > On Fri, Jun 27, 2014 at 06:05:57PM +0200, Antoine T=E9nart wrote:
+> > > Hi Felipe,
+> > >=20
+> > > On Fri, Jun 27, 2014 at 10:56:22AM -0500, Felipe Balbi wrote:
+> > > > On Tue, Jun 24, 2014 at 12:35:14PM +0200, Antoine T=E9nart wrote:
+> > > > > Add the driver driving the Marvell Berlin USB PHY. This allows to
+> > > > > initialize the PHY and to use it from the USB driver later.
+> > > > >=20
+> > > > > Signed-off-by: Antoine T=E9nart <antoine.tenart@free-electrons.co=
+m>
+> > > >=20
+> > > > since this is a brand new driver, it should go to drivers/phy inste=
+ad.
+> > >=20
+> > > This PHY is used by a ChipIdea USB driver, which uses the provided
+> > > common function for ChipIdea. These functions use the usb_phy framewo=
+rk.
+> > > That's why this PHY driver is there.
+> >=20
+> > right, but you can add support for the new PHY layer which would help
+> > other users convert their PHY drivers to the new PHY framework.
+>=20
+> Adding the support for the new PHY layer in the common CI code is not
+> complicated, but these functions also use some parts from usb hcd or usb
+> otg which are only usb_phy compatible.
+>=20
+> Shouldn't these parts add the new PHY support first, to avoid ending up
+> with a fairly big series, quite long to do and complicated to review?
 
-That being said, I don't really have any issue with such a function.
-Some comments on the implementation.
+sure, patches are welcome. :-)
 
->
-> @Rob/Grant: I tried looking for an existing routine to do that, but couldn't
-> find it. And so wrote one.
->
-> I am not good at DT stuff and so I do hope there would be few correction
-> required here. Let me know if this can be added to drivers/of/base.c :
->
-> +/**
-> + * of_property_match - Match property in two nodes
-> + * @np1, np2: Nodes to match
-> + * @list_name: property to match
-> + *
-> + * Returns 1 on match, 0 on no match, and error for missing property.
-> + */
-> +static int of_property_match(const struct device_node *np1,
-> +                             const struct device_node *np2,
-> +                             const char *list_name)
-> +{
-> +       const __be32 *list1, *list2, *list1_end;
+--=20
+balbi
 
-s/list/prop/
+--D+M1YvVlDncl3vD5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Everywhere.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-> +       int size1, size2;
-> +       phandle phandle1, phandle2;
-> +
-> +       /* Retrieve the list property */
-> +       list1 = of_get_property(np1, list_name, &size1);
-> +       if (!list1)
-> +               return -ENOENT;
-> +
-> +       list2 = of_get_property(np2, list_name, &size2);
-> +       if (!list2)
-> +               return -ENOENT;
-> +
-> +       if (size1 != size2)
-> +               return 0;
-> +
-> +       list1_end = list1 + size1 / sizeof(*list1);
-> +
-> +       /* Loop over the phandles */
-> +       while (list1 < list1_end) {
-> +               phandle1 = be32_to_cpup(list1++);
-> +               phandle2 = be32_to_cpup(list2++);
-> +
-> +               if (phandle1 != phandle2)
-> +                       return 0;
-> +       }
+iQIcBAEBAgAGBQJTsa2eAAoJEIaOsuA1yqREkAEP/235IN/u5ZOmX6Fl6qEwJx8U
+R8AwZXOMzaie5vFm2rDwnixUeClUJBiCwONlR6PGGVrwx1lYw/dkOsUJmOZlfxiC
+EGdFvt1Wi3zf+21oyBHP2RijhzfpQDsA4SJv7ppsOhjczmC6c3YEmr47EoP7UZ2h
+8jU1Q8WTx2UVw5N8lzKNUKEhfOX7Ur0Kp/euQ/j5gpxnVd+eJgBy3omo9fPVNN1s
+L+vN85lxp2DH6uY1NbiGVe0Jj0r+4tbKkUHmERg8Bf7ak/+ykaJaeVn+93Rbv01/
+1OEpsno2QX6aKfIErC3uQGug70NQRUkKPmMtWhKvHxiNqXj+EiceQ74UThALBvbg
+kP0qUPCDvbVK0afc8/PSnQxEmIyCqzk258DhVVQjJ1Mu3BZROuWGeMzxx3/5Imub
+GQ5zZqSD6F18MmXEOvsu2epOE88bu3a0Z5Z5q2SMV51rgJ1gxuGCueCQZlTTSoVX
+NmaFE0V1nBA8xqa8oqJEOQBlKcuKArEx0h31zAzECI3HiH0m2sJRkIkduPUitDsG
+YWGHoWqskZYFbNWlL1o0+z6dZQXNtlavSPvnxgKD9liUuZwAq/kfQ7UjZ2Q0ZcSJ
+rezjOPXLf0fdDisXeNifbvpmKyMMfDI5QdZn+5opXis/e0mZKwS+ecNsnV6XPgn9
+CPo7MkLuCZE26NgUlzT9
+=cvPO
+-----END PGP SIGNATURE-----
 
-You can just do a memcmp here.
-
-This is wrong anyway because you don't know #clock-cells size.
-
-Rob
+--D+M1YvVlDncl3vD5--
