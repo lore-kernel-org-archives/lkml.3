@@ -1,117 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932170AbaF3Kwf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 06:52:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40784 "EHLO mx2.suse.de"
+	id S932204AbaF3Kws (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 06:52:48 -0400
+Received: from mga03.intel.com ([143.182.124.21]:29545 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932077AbaF3Kwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 06:52:33 -0400
-Message-ID: <53B1416D.8020305@suse.de>
-Date: Mon, 30 Jun 2014 12:52:29 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S932077AbaF3Kwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 06:52:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,574,1400050800"; 
+   d="scan'208";a="451560279"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        Ville =?utf-8?B?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>
+Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [Intel-gfx] Regression in i915 driver in 3.16-rc2
+In-Reply-To: <Pine.LNX.4.44L0.1406251450110.822-100000@iolanthe.rowland.org>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <Pine.LNX.4.44L0.1406251450110.822-100000@iolanthe.rowland.org>
+User-Agent: Notmuch/0.18+25~gfdc3e52 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 30 Jun 2014 13:52:35 +0300
+Message-ID: <8738emis98.fsf@intel.com>
 MIME-Version: 1.0
-To: Paul Mackerras <paulus@samba.org>, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-CC: Vladimir Davydov <vdavydov@parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: Regression in 3.15 on POWER8 with multipath SCSI
-References: <20140630103058.GA17747@iris.ozlabs.ibm.com>
-In-Reply-To: <20140630103058.GA17747@iris.ozlabs.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2014 12:30 PM, Paul Mackerras wrote:
-> I have a machine on which 3.15 usually fails to boot, and 3.14 boots
-> every time.  The machine is a POWER8 2-socket server with 20 cores
-> (thus 160 CPUs), 128GB of RAM, and 7 SCSI disks connected via a
-> hardware-RAID-capable adapter which appears as two IPR controllers
-> which are both connected to each disk.  I am booting from a disk that
-> has Fedora 20 installed on it.
+On Wed, 25 Jun 2014, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Wed, 25 Jun 2014, Ville [iso-8859-1] Syrjl wrote:
 >
-> After over two weeks of bisections, I can finally point to the commits
-> that cause the problems.  The culprits are:
+>> On Wed, Jun 25, 2014 at 02:06:55PM -0400, Alan Stern wrote:
+>> > Daniel:
+>> > 
+>> > I encountered a new problem in the i915 driver the first time I booted 
+>> > a 3.16-rc kernel on this computer.  When it switched over to the frame 
+>> > buffer driver, the screen went blank and stayed that way.
+>> > 
+>> > 3.15 works okay.
+>> > 
+>> > Attached are log extracts from 3.15 and 3.16 (both with drm.debug=0xe
+>> > in the boot command line).  The timestamps have been stripped out for
+>> > easy diff comparison.  These are the result of
+>> > 
+>> > 	dmesg | egrep 'drm|i915|frame'
+>> > 
+>> > with a couple of irrelevant lines removed.  I can send the complete 
+>> > logs if you need them.
+>> > 
+>> > Alan Stern
+>> 
+>> > Kernel command line: BOOT_IMAGE=/boot/test-3.x root=/dev/hda8 ro console=ttyS0,115200 console=tty0 earlyprintk=serial,ttyS0,115200 no_console_suspend drm.debug=0xe vconsole.keymap=us vconsole.font=latarcyrheb-sun16 LANG=en_US.UTF-8 usbcore.dyndbg=+p ehci_hcd.dyndbg=+p
+>> > [drm] Initialized drm 1.1.0 20060810
+>> > [drm:i915_dump_device_info] i915 device info: gen=2, pciid=0x2572 flags=has_overlay,overlay_needs_physical,
+>> > [drm:intel_detect_pch] No PCH found.
+>> > [drm] Memory usable by graphics device = 128M
+>> > [drm:i915_gem_gtt_init] GMADR size = 128M
+>> > [drm:i915_gem_gtt_init] GTT stolen size = 8M
+>> > [drm:i915_gem_gtt_init] ppgtt mode: 0
+>> > [drm:intel_opregion_setup] graphic opregion physical addr: 0x0
+>> > [drm:intel_opregion_setup] ACPI OpRegion not supported!
+>> > [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
+>> > [drm] Driver supports precise vblank timestamp query.
+>> > [drm:init_vbt_defaults] Set default to SSC at 66667 kHz
+>> > [drm:parse_general_features] BDB_GENERAL_FEATURES int_tv_support 1 int_crt_support 0 lvds_use_ssc 0 lvds_ssc_freq 48000 display_clock_mode 0 fdi_rx_polarity_inverted 0
+>>                                                                      ^^^^^^^^^^^^^^^^^
+>> 
+>> This should get your display back:
+>> http://patchwork.freedesktop.org/patch/28508/
 >
-> 3e9f1be1 dm mpath: remove process_queued_ios()
-> e8099177 dm mpath: push back requests instead of queueing
-> bcccff93 kobject: don't block for each kobject_uevent
+> It did indeed.  Thank you very much.
+
+Fix pushed to drm-intel-fixes; expect to land in v3.16-rc4 or v3.16-rc5
+at the latest.
+
+Thanks for the report and testing.
+
+BR,
+Jani.
+
+
 >
-> The interesting thing is that neither e8099177 nor bcccff93 cause
-> failures on their own, but with both commits in there are failures
-> where the system will fail to find /home on some occasions.
+> Alan Stern
 >
-> With 3e9f1be1 included, the system appears to be prone to a deadlock
-> condition which typically causes the boot process to hang with this
-> message showing:
->
-> A start job is running for Monitoring of LVM2 mirror...rogress polling
->
-> (with a [***     ] thing before it where the asterisks move back and
-> forth).
->
-> If I revert 63d832c3 ("dm mpath: really fix lockdep warning") ,
-> 4cdd2ad7 ("dm mpath: fix lock order inconsistency in
-> multipath_ioctl"), 3e9f1be1 and bcccff93, in that order, I get a
-> kernel that will boot every time.  The first two are later commits
-> that fix some problems with 3e9f1be1 (though not the problems I am
-> seeing).
->
-> Can anyone see any reason why e8099177 and bcccff93 would interfere
-> with each other?
->
-It might be running afoul with the 'cookie' mechanism.
-Device-mapper is using inserting a 'cookie' with the ioctl, and 
-listens to any event containing the cookie to ensure udev has 
-finished processing that device and hence the device node is 
-accessible. Added to this is the problem that we don't have any good 
-means of detecting any changes to device-mapper devices.
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
 
-EG look at this sequence of events:
-
-add dm-1
-remove dm-1
-add dm-1
-
-Originally udev would pick up the event, read the details from 
-sysfs, and return control to the kernel.
-With bcccff93 udev will _not_have a chance to read the details
-from sysfs for 'dm-1', as anything read from sysfs relating to 
-'dm-1' might infact refer to the _second_ 'add' event, which might 
-be a totally different device.
-As far as I know udev doesn't have any mechanism to drop events,
-so it'll always process all events. Assuming that the sysfs 
-attributes it reads _do_ relate to that event. If they don't things 
-become interesting ...
-
-(Actually, this issue was always present, especially with 
-multipathing. multipath occasionally can become sluggish when 
-processing events, so the same might happen with it. We've tried to 
-work around this, but never found a fool-proof way of doing so).
-
-Adding Kay as he might have some more insight here.
-
-Another thing:
-Do you run LVM on top of multipathing?
-If so, could you setup your system with _not_ using LVM and 
-disabling the LVM service?
-
-Reasoning here is that multipath should not be that susceptible to 
-changes here than LVM2 is (don't nail me on this, I not _that_ into 
-LVM2 details).
-
-And as the system is stuck while waiting for LVM it might indeed be 
-an side-effect when running LVM on top of multipathing.
-
-Cheers,
-
-Hannes
 -- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+Jani Nikula, Intel Open Source Technology Center
