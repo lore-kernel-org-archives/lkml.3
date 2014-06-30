@@ -1,210 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756022AbaF3UfA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 16:35:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60969 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754558AbaF3UeV (ORCPT
+	id S1756284AbaF3Ufw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 16:35:52 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46631 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810AbaF3Ufr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 16:34:21 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 4/4] lzo: properly check for overruns
-Date: Mon, 30 Jun 2014 13:34:04 -0700
-Message-Id: <1404160444-9157-5-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404160444-9157-1-git-send-email-kamal@canonical.com>
-References: <1404160444-9157-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Mon, 30 Jun 2014 16:35:47 -0400
+Date: Mon, 30 Jun 2014 22:32:25 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Suman Anna <s-anna@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Jassi Brar <jaswinder.singh@linaro.org>,
+        Dave Gerlach <d-gerlach@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH 2/6] mailbox/omap: add support for parsing dt devices
+Message-ID: <20140630203225.GA3893@amd.pavel.ucw.cz>
+References: <1403660878-56350-1-git-send-email-s-anna@ti.com>
+ <1403660878-56350-3-git-send-email-s-anna@ti.com>
+ <20140628170709.GB23634@xo-6d-61-c0.localdomain>
+ <53B18999.2020506@ti.com>
+ <20140630185942.GA5410@amd.pavel.ucw.cz>
+ <53B1BBA8.5090507@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53B1BBA8.5090507@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.26 -stable review patch.  If anyone has any objections, please let me know.
+Hi!
 
-------------------
+> >>>> The non-DT support has to be maintained for now to not break
+> >>>> OMAP3 legacy boot, and the legacy-style code will be cleaned
+> >>>> up once OMAP3 is also converted to DT-boot only.
+> >>>
+> >>>> @@ -587,24 +606,157 @@ static int omap_mbox_unregister(struct omap_mbox_device *mdev)
+> >>>>  	return 0;
+> >>>>  }
+> >>>>  
+> >>>> +static const struct omap_mbox_device_data omap2_data = {
+> >>>> +	.num_users	= 4,
+> >>>> +	.num_fifos	= 6,
+> >>>> +	.intr_type	= MBOX_INTR_CFG_TYPE1,
+> >>>> +};
+> >>>> +
+> >>>> +static const struct omap_mbox_device_data omap3_data = {
+> >>>> +	.num_users	= 2,
+> >>>> +	.num_fifos	= 2,
+> >>>> +	.intr_type	= MBOX_INTR_CFG_TYPE1,
+> >>>> +};
+> >>>> +
+> >>>> +static const struct omap_mbox_device_data am335x_data = {
+> >>>> +	.num_users	= 4,
+> >>>> +	.num_fifos	= 8,
+> >>>> +	.intr_type	= MBOX_INTR_CFG_TYPE2,
+> >>>> +};
+> >>>
+> >>> So you use compatible strings to look up 3 integers. Would it be better to have
+> >>> num_users/num_fifos/intr_type directly in the device tree? That should be cleaner
+> >>> and more flexible...
+> >>>
+> >>> If you do that, would it be possible to have share compatible string?
+> >>
+> >> Yeah, I have actually encoded the .num_users and .num_fifos in DT in the
+> >> previous version [1] with shared compatible strings, but dropped those
+> >> properties in favour of adding minimal custom properties to DT based on
+> >> some offline IRC comments. I have no objections either way, but there is
+> >> really nothing to be gained from minimizing compatible strings.
+> > 
+> > Actually, I'd guess best solution would be to do both: have it encoded
+> > in device tree _and_ have separate compatible string for each version
+> > (in case there are other differences). You'd still get rid of the
+> > table...
+> 
+> Do note that the .intr_type has to with the register layout rather than
+> a physical property (mainly to distinguish the pre-OMAP4 IP register
+> layout), so I am not convinced that belongs to DT. This is the reason
+> why I didn't represent it in DT even in the previous version. The
+> other
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Aha, ok, then the intr_type should be derived from
+compatible-string. Or rather... you should have three
+compatible-strings for the three possibilities? (And then subtype,
+currently unused, in case there are more hw differences).
 
-commit 206a81c18401c0cde6e579164f752c4b147324ce upstream.
+> two are HW IP design parameters, so in general putting them in DT isn't
+> completely a bad idea, but I will wait to see if there are any further
+> comments on this from Tony or DT maintainers before I make changes.
 
-The lzo decompressor can, if given some really crazy data, possibly
-overrun some variable types.  Modify the checking logic to properly
-detect overruns before they happen.
+Ok, right... I'd vote for putting them into DT.
 
-Reported-by: "Don A. Bailey" <donb@securitymouse.com>
-Tested-by: "Don A. Bailey" <donb@securitymouse.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CVE-2014-4608
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- lib/lzo/lzo1x_decompress_safe.c | 62 +++++++++++++++++++++++++++--------------
- 1 file changed, 41 insertions(+), 21 deletions(-)
-
-diff --git a/lib/lzo/lzo1x_decompress_safe.c b/lib/lzo/lzo1x_decompress_safe.c
-index 569985d..8563081 100644
---- a/lib/lzo/lzo1x_decompress_safe.c
-+++ b/lib/lzo/lzo1x_decompress_safe.c
-@@ -19,11 +19,31 @@
- #include <linux/lzo.h>
- #include "lzodefs.h"
- 
--#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
--#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
--#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
--#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
--#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
-+#define HAVE_IP(t, x)					\
-+	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
-+	 (((t + x) >= t) && ((t + x) >= x)))
-+
-+#define HAVE_OP(t, x)					\
-+	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
-+	 (((t + x) >= t) && ((t + x) >= x)))
-+
-+#define NEED_IP(t, x)					\
-+	do {						\
-+		if (!HAVE_IP(t, x))			\
-+			goto input_overrun;		\
-+	} while (0)
-+
-+#define NEED_OP(t, x)					\
-+	do {						\
-+		if (!HAVE_OP(t, x))			\
-+			goto output_overrun;		\
-+	} while (0)
-+
-+#define TEST_LB(m_pos)					\
-+	do {						\
-+		if ((m_pos) < out)			\
-+			goto lookbehind_overrun;	\
-+	} while (0)
- 
- int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
- 			  unsigned char *out, size_t *out_len)
-@@ -58,14 +78,14 @@ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
- 					while (unlikely(*ip == 0)) {
- 						t += 255;
- 						ip++;
--						NEED_IP(1);
-+						NEED_IP(1, 0);
- 					}
- 					t += 15 + *ip++;
- 				}
- 				t += 3;
- copy_literal_run:
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
-+				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
- 					const unsigned char *ie = ip + t;
- 					unsigned char *oe = op + t;
- 					do {
-@@ -81,8 +101,8 @@ copy_literal_run:
- 				} else
- #endif
- 				{
--					NEED_OP(t);
--					NEED_IP(t + 3);
-+					NEED_OP(t, 0);
-+					NEED_IP(t, 3);
- 					do {
- 						*op++ = *ip++;
- 					} while (--t > 0);
-@@ -95,7 +115,7 @@ copy_literal_run:
- 				m_pos -= t >> 2;
- 				m_pos -= *ip++ << 2;
- 				TEST_LB(m_pos);
--				NEED_OP(2);
-+				NEED_OP(2, 0);
- 				op[0] = m_pos[0];
- 				op[1] = m_pos[1];
- 				op += 2;
-@@ -119,10 +139,10 @@ copy_literal_run:
- 				while (unlikely(*ip == 0)) {
- 					t += 255;
- 					ip++;
--					NEED_IP(1);
-+					NEED_IP(1, 0);
- 				}
- 				t += 31 + *ip++;
--				NEED_IP(2);
-+				NEED_IP(2, 0);
- 			}
- 			m_pos = op - 1;
- 			next = get_unaligned_le16(ip);
-@@ -137,10 +157,10 @@ copy_literal_run:
- 				while (unlikely(*ip == 0)) {
- 					t += 255;
- 					ip++;
--					NEED_IP(1);
-+					NEED_IP(1, 0);
- 				}
- 				t += 7 + *ip++;
--				NEED_IP(2);
-+				NEED_IP(2, 0);
- 			}
- 			next = get_unaligned_le16(ip);
- 			ip += 2;
-@@ -154,7 +174,7 @@ copy_literal_run:
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
- 		if (op - m_pos >= 8) {
- 			unsigned char *oe = op + t;
--			if (likely(HAVE_OP(t + 15))) {
-+			if (likely(HAVE_OP(t, 15))) {
- 				do {
- 					COPY8(op, m_pos);
- 					op += 8;
-@@ -164,7 +184,7 @@ copy_literal_run:
- 					m_pos += 8;
- 				} while (op < oe);
- 				op = oe;
--				if (HAVE_IP(6)) {
-+				if (HAVE_IP(6, 0)) {
- 					state = next;
- 					COPY4(op, ip);
- 					op += next;
-@@ -172,7 +192,7 @@ copy_literal_run:
- 					continue;
- 				}
- 			} else {
--				NEED_OP(t);
-+				NEED_OP(t, 0);
- 				do {
- 					*op++ = *m_pos++;
- 				} while (op < oe);
-@@ -181,7 +201,7 @@ copy_literal_run:
- #endif
- 		{
- 			unsigned char *oe = op + t;
--			NEED_OP(t);
-+			NEED_OP(t, 0);
- 			op[0] = m_pos[0];
- 			op[1] = m_pos[1];
- 			op += 2;
-@@ -194,15 +214,15 @@ match_next:
- 		state = next;
- 		t = next;
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
-+		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
- 			COPY4(op, ip);
- 			op += t;
- 			ip += t;
- 		} else
- #endif
- 		{
--			NEED_IP(t + 3);
--			NEED_OP(t);
-+			NEED_IP(t, 3);
-+			NEED_OP(t, 0);
- 			while (t > 0) {
- 				*op++ = *ip++;
- 				t--;
+								Pavel
 -- 
-1.9.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
