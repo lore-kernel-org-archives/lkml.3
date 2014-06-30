@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909AbaF3OXc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 10:23:32 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:54978 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111AbaF3OXb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 10:23:31 -0400
-Date: Mon, 30 Jun 2014 10:23:24 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v3 3/3] cgroup: fix a race between cgroup_mount() and
- cgroup_kill_sb()
-Message-ID: <20140630142324.GD14807@htj.dyndns.org>
-References: <53B0DE66.5080100@huawei.com>
- <53B0DEA3.80807@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B0DEA3.80807@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753390AbaF3O0c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 10:26:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41923 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753094AbaF3O03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 10:26:29 -0400
+From: Hans de Goede <hdegoede@redhat.com>
+To: Mark Brown <broonie@linaro.org>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Cc: Carlo Caione <carlo@caione.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-sunxi@googlegroups.com, Hans de Goede <hdegoede@redhat.com>
+Subject: [PATCH resend v2 2/3] regulator/axp20x: Call mfd_register_supply_aliases
+Date: Mon, 30 Jun 2014 16:26:08 +0200
+Message-Id: <1404138369-23907-3-git-send-email-hdegoede@redhat.com>
+In-Reply-To: <1404138369-23907-1-git-send-email-hdegoede@redhat.com>
+References: <1404138369-23907-1-git-send-email-hdegoede@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Li.
+The mfd-core no longer registers the supply aliases, instead the platform
+driver probe method must now call mfd_register_supply_aliases().
 
-I applied the three patches with some updates (mostly comments).
-Dynamic root management is turning out to be pretty ugly but I think
-we can clean it up a bit.
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+---
+ drivers/regulator/axp20x-regulator.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-On Mon, Jun 30, 2014 at 11:50:59AM +0800, Li Zefan wrote:
-> @@ -1790,6 +1795,17 @@ out_free:
->  	dentry = kernfs_mount(fs_type, flags, root->kf_root, &new_sb);
->  	if (IS_ERR(dentry) || !new_sb)
->  		cgroup_put(&root->cgrp);
-> +
-> +	if (sb) {
-> +		/*
-> +		 * On success kernfs_mount() returns with sb->s_umount held,
-> +		 * but kernfs_mount() also increases the superblock's refcnt,
-> +		 * so calling deactivate_super() to drop the refcnt we got when
-> +		 * looking up cgroup root won't acquire sb->s_umount again.
-> +		 */
-> +		WARN_ON(new_sb);
-> +		deactivate_super(sb);
-> +	}
-
-So, @new_sb and @sb indicate the same conditions now.  When we reuse
-an existing root, we always reuse its sb too which means that we at
-least no longer need the @new_sb ugliness.  I actually kinda prefer it
-as this means that the ugliness is confined to one ugly function -
-kernfs_pin_sb() - instead of the generic kernfs_mount().  Can you
-please prepare patches to clean these up?  I'll pull in for-3.16-fixes
-into for-3.17 and apply the cleanup on top.
-
-Thanks!
-
+diff --git a/drivers/regulator/axp20x-regulator.c b/drivers/regulator/axp20x-regulator.c
+index 004aadb..0e5ff8a 100644
+--- a/drivers/regulator/axp20x-regulator.c
++++ b/drivers/regulator/axp20x-regulator.c
+@@ -21,6 +21,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/regmap.h>
+ #include <linux/mfd/axp20x.h>
++#include <linux/mfd/core.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/of_regulator.h>
+ 
+@@ -238,6 +239,10 @@ static int axp20x_regulator_probe(struct platform_device *pdev)
+ 	int ret, i;
+ 	u32 workmode;
+ 
++	ret = mfd_register_supply_aliases(pdev);
++	if (ret)
++		return ret;
++
+ 	ret = axp20x_regulator_parse_dt(pdev);
+ 	if (ret)
+ 		return ret;
 -- 
-tejun
+2.0.0
+
