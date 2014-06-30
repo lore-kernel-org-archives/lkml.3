@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167AbaF3JmG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 05:42:06 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:46948 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752372AbaF3JmE (ORCPT
+	id S1755218AbaF3JoY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 05:44:24 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:53257 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838AbaF3JoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 05:42:04 -0400
-Date: Mon, 30 Jun 2014 10:41:57 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: ulli.kroll@googlemail.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fixes gemmi_idle in file idle.c
-Message-ID: <20140630094157.GT32514@n2100.arm.linux.org.uk>
-References: <1404096760-5239-1-git-send-email-xerofoify@gmail.com>
+	Mon, 30 Jun 2014 05:44:23 -0400
+From: Sachin Kamat <sachin.kamat@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: mturquette@linaro.org, spk.linux@gmail.com,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Subject: [PATCH 1/1] clk: Fix build warnings
+Date: Mon, 30 Jun 2014 15:10:54 +0530
+Message-Id: <1404121254-23823-1-git-send-email-sachin.kamat@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404096760-5239-1-git-send-email-xerofoify@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 29, 2014 at 10:52:40PM -0400, Nicholas Krause wrote:
-> disables the IRQ line in gemmi_idle before calling cpu_do_idle.
-> In addition, according to the Fixme message in this file fixes
-> races that may occur due to not disabling the IRQ before calling
-> cpu_do_idle.
+‘all_lists’ and ‘orphan_list’ is accessed only when DEBUG_FS is defined.
+Thus, make their compilation conditional to fix the below warnings introduced
+by commit 27b8d5f723 ("clk: flatten clk tree in debugfs"):
+drivers/clk/clk.c:40:27: warning: ‘all_lists’ defined but not used [-Wunused-variable]
+drivers/clk/clk.c:46:27: warning: ‘orphan_list’ defined but not used [-Wunused-variable]
 
-1) the idle method is called with interrupts already disabled.
-2) I wonder if you read the comment above the comment you removed, and
-   if so, why it wasn't removed.
-3) can you indicate how the hardware problem has been fixed, or give some
-   justification why this change should be accepted.
+Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ drivers/clk/clk.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 7dfb2f308b35..a95233c14f86 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -36,6 +36,7 @@ static HLIST_HEAD(clk_root_list);
+ static HLIST_HEAD(clk_orphan_list);
+ static LIST_HEAD(clk_notifier_list);
+ 
++#ifdef CONFIG_DEBUG_FS
+ static struct hlist_head *all_lists[] = {
+ 	&clk_root_list,
+ 	&clk_orphan_list,
+@@ -46,6 +47,7 @@ static struct hlist_head *orphan_list[] = {
+ 	&clk_orphan_list,
+ 	NULL,
+ };
++#endif
+ 
+ /***           locking             ***/
+ static void clk_prepare_lock(void)
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+1.7.9.5
+
