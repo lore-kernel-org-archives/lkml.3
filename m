@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666AbaF3Meq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:34:46 -0400
+	id S964941AbaF3MfH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:35:07 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964896AbaF3Mbz (ORCPT
+	by vger.kernel.org with ESMTP id S964858AbaF3Mbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:31:55 -0400
+	Mon, 30 Jun 2014 08:31:53 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+Cc: linux-kernel@vger.kernel.org, Matthew Dempsky <mdempsky@chromium.org>,
+        Kees Cook <keescook@chromium.org>, Julien Tinnes <jln@chromium.org>,
+        Roland McGrath <mcgrathr@chromium.org>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 111/181] mm: vmscan: do not throttle based on pfmemalloc reserves if node has no ZONE_NORMAL
-Date: Mon, 30 Jun 2014 13:52:12 +0200
-Message-Id: <ae9e3dac0e9e51072f0706028726849c377e5481.1404128998.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 119/181] ptrace: fix fork event messages across pid namespaces
+Date: Mon, 30 Jun 2014 13:52:20 +0200
+Message-Id: <d6a5e143f535c50d0fdf888fc4731d31debad64a.1404128998.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -25,112 +28,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mel Gorman <mgorman@suse.de>
+From: Matthew Dempsky <mdempsky@chromium.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 675becce15f320337499bc1a9356260409a5ba29 upstream.
+commit 4e52365f279564cef0ddd41db5237f0471381093 upstream.
 
-throttle_direct_reclaim() is meant to trigger during swap-over-network
-during which the min watermark is treated as a pfmemalloc reserve.  It
-throttes on the first node in the zonelist but this is flawed.
+When tracing a process in another pid namespace, it's important for fork
+event messages to contain the child's pid as seen from the tracer's pid
+namespace, not the parent's.  Otherwise, the tracer won't be able to
+correlate the fork event with later SIGTRAP signals it receives from the
+child.
 
-The user-visible impact is that a process running on CPU whose local
-memory node has no ZONE_NORMAL will stall for prolonged periods of time,
-possibly indefintely.  This is due to throttle_direct_reclaim thinking the
-pfmemalloc reserves are depleted when in fact they don't exist on that
-node.
+We still risk a race condition if a ptracer from a different pid
+namespace attaches after we compute the pid_t value.  However, sending a
+bogus fork event message in this unlikely scenario is still a vast
+improvement over the status quo where we always send bogus fork event
+messages to debuggers in a different pid namespace than the forking
+process.
 
-On a NUMA machine running a 32-bit kernel (I know) allocation requests
-from CPUs on node 1 would detect no pfmemalloc reserves and the process
-gets throttled.  This patch adjusts throttling of direct reclaim to
-throttle based on the first node in the zonelist that has a usable
-ZONE_NORMAL or lower zone.
-
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Matthew Dempsky <mdempsky@chromium.org>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Julien Tinnes <jln@chromium.org>
+Cc: Roland McGrath <mcgrathr@chromium.org>
+Cc: Jan Kratochvil <jan.kratochvil@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- mm/vmscan.c | 43 +++++++++++++++++++++++++++++++++++++------
- 1 file changed, 37 insertions(+), 6 deletions(-)
+ include/linux/ptrace.h | 32 ++++++++++++++++++++++++++++++++
+ kernel/fork.c          | 10 +++++++---
+ 2 files changed, 39 insertions(+), 3 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 05e6095159dc..d873137bf503 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2484,10 +2484,17 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
+diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
+index 07d0df6bf768..077904c8b70d 100644
+--- a/include/linux/ptrace.h
++++ b/include/linux/ptrace.h
+@@ -5,6 +5,7 @@
+ #include <linux/sched.h>		/* For struct task_struct.  */
+ #include <linux/err.h>			/* for IS_ERR_VALUE */
+ #include <linux/bug.h>			/* For BUG_ON.  */
++#include <linux/pid_namespace.h>	/* For task_active_pid_ns.  */
+ #include <uapi/linux/ptrace.h>
  
- 	for (i = 0; i <= ZONE_NORMAL; i++) {
- 		zone = &pgdat->node_zones[i];
-+		if (!populated_zone(zone))
-+			continue;
-+
- 		pfmemalloc_reserve += min_wmark_pages(zone);
- 		free_pages += zone_page_state(zone, NR_FREE_PAGES);
- 	}
+ /*
+@@ -129,6 +130,37 @@ static inline void ptrace_event(int event, unsigned long message)
+ }
  
-+	/* If there are no reserves (unexpected config) then do not throttle */
-+	if (!pfmemalloc_reserve)
-+		return true;
-+
- 	wmark_ok = free_pages > pfmemalloc_reserve / 2;
- 
- 	/* kswapd must be awake if processes are being throttled */
-@@ -2512,9 +2519,9 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
- static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
- 					nodemask_t *nodemask)
- {
-+	struct zoneref *z;
- 	struct zone *zone;
--	int high_zoneidx = gfp_zone(gfp_mask);
--	pg_data_t *pgdat;
-+	pg_data_t *pgdat = NULL;
- 
- 	/*
- 	 * Kernel threads should not be throttled as they may be indirectly
-@@ -2533,10 +2540,34 @@ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
- 	if (fatal_signal_pending(current))
- 		goto out;
- 
--	/* Check if the pfmemalloc reserves are ok */
--	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
--	pgdat = zone->zone_pgdat;
--	if (pfmemalloc_watermark_ok(pgdat))
+ /**
++ * ptrace_event_pid - possibly stop for a ptrace event notification
++ * @event:	%PTRACE_EVENT_* value to report
++ * @pid:	process identifier for %PTRACE_GETEVENTMSG to return
++ *
++ * Check whether @event is enabled and, if so, report @event and @pid
++ * to the ptrace parent.  @pid is reported as the pid_t seen from the
++ * the ptrace parent's pid namespace.
++ *
++ * Called without locks.
++ */
++static inline void ptrace_event_pid(int event, struct pid *pid)
++{
 +	/*
-+	 * Check if the pfmemalloc reserves are ok by finding the first node
-+	 * with a usable ZONE_NORMAL or lower zone. The expectation is that
-+	 * GFP_KERNEL will be required for allocating network buffers when
-+	 * swapping over the network so ZONE_HIGHMEM is unusable.
-+	 *
-+	 * Throttling is based on the first usable node and throttled processes
-+	 * wait on a queue until kswapd makes progress and wakes them. There
-+	 * is an affinity then between processes waking up and where reclaim
-+	 * progress has been made assuming the process wakes on the same node.
-+	 * More importantly, processes running on remote nodes will not compete
-+	 * for remote pfmemalloc reserves and processes on different nodes
-+	 * should make reasonable progress.
++	 * FIXME: There's a potential race if a ptracer in a different pid
++	 * namespace than parent attaches between computing message below and
++	 * when we acquire tasklist_lock in ptrace_stop().  If this happens,
++	 * the ptracer will get a bogus pid from PTRACE_GETEVENTMSG.
 +	 */
-+	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-+					gfp_mask, nodemask) {
-+		if (zone_idx(zone) > ZONE_NORMAL)
-+			continue;
++	unsigned long message = 0;
++	struct pid_namespace *ns;
 +
-+		/* Throttle based on the first usable node */
-+		pgdat = zone->zone_pgdat;
-+		if (pfmemalloc_watermark_ok(pgdat))
-+			goto out;
-+		break;
-+	}
++	rcu_read_lock();
++	ns = task_active_pid_ns(rcu_dereference(current->parent));
++	if (ns)
++		message = pid_nr_ns(pid, ns);
++	rcu_read_unlock();
 +
-+	/* If no zone was usable by the allocation flags then do not throttle */
-+	if (!pgdat)
- 		goto out;
++	ptrace_event(event, message);
++}
++
++/**
+  * ptrace_init_task - initialize ptrace state for a new child
+  * @child:		new child task
+  * @ptrace:		true if child should be ptrace'd by parent's tracer
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 11a23afc6ee5..c873bd081e09 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1609,10 +1609,12 @@ long do_fork(unsigned long clone_flags,
+ 	 */
+ 	if (!IS_ERR(p)) {
+ 		struct completion vfork;
++		struct pid *pid;
  
- 	/* Account for the throttling */
+ 		trace_sched_process_fork(current, p);
+ 
+-		nr = task_pid_vnr(p);
++		pid = get_task_pid(p, PIDTYPE_PID);
++		nr = pid_vnr(pid);
+ 
+ 		if (clone_flags & CLONE_PARENT_SETTID)
+ 			put_user(nr, parent_tidptr);
+@@ -1627,12 +1629,14 @@ long do_fork(unsigned long clone_flags,
+ 
+ 		/* forking complete and child started to run, tell ptracer */
+ 		if (unlikely(trace))
+-			ptrace_event(trace, nr);
++			ptrace_event_pid(trace, pid);
+ 
+ 		if (clone_flags & CLONE_VFORK) {
+ 			if (!wait_for_vfork_done(p, &vfork))
+-				ptrace_event(PTRACE_EVENT_VFORK_DONE, nr);
++				ptrace_event_pid(PTRACE_EVENT_VFORK_DONE, pid);
+ 		}
++
++		put_pid(pid);
+ 	} else {
+ 		nr = PTR_ERR(p);
+ 	}
 -- 
 2.0.0
 
