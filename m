@@ -1,87 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180AbaF3NhR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 09:37:17 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:5605 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005AbaF3NhP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 09:37:15 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 30 Jun 2014 06:30:48 -0700
-Date: Mon, 30 Jun 2014 16:37:12 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Sachin Kamat <sachin.kamat@samsung.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "spk.linux@gmail.com" <spk.linux@gmail.com>
-Subject: Re: [PATCH 1/1] clk: Fix build warnings
-Message-ID: <20140630133712.GU3679@tbergstrom-lnx.Nvidia.com>
-References: <1404121254-23823-1-git-send-email-sachin.kamat@samsung.com>
+	id S1752843AbaF3NiJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 09:38:09 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42705 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750969AbaF3NiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 09:38:07 -0400
+Date: Mon, 30 Jun 2014 15:38:03 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: RFC: /proc/cpuinfo confusion with AMD processors
+Message-ID: <20140630133803.GE4766@pd.tnic>
+References: <53B15D27.9010306@redhat.com>
+ <20140630131309.GA5199@pd.tnic>
+ <53B16621.50505@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1404121254-23823-1-git-send-email-sachin.kamat@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53B16621.50505@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 11:40:54AM +0200, Sachin Kamat wrote:
-> ‘all_lists’ and ‘orphan_list’ is accessed only when DEBUG_FS is defined.
-> Thus, make their compilation conditional to fix the below warnings introduced
-> by commit 27b8d5f723 ("clk: flatten clk tree in debugfs"):
-> drivers/clk/clk.c:40:27: warning: ‘all_lists’ defined but not used [-Wunused-variable]
-> drivers/clk/clk.c:46:27: warning: ‘orphan_list’ defined but not used [-Wunused-variable]
-> 
+On Mon, Jun 30, 2014 at 09:29:05AM -0400, Prarit Bhargava wrote:
+> Yes, I get that. But this doesn't uniquely identify *which* processor
+> it is.
 
-Maybe just move them inside the existing #ifdef CONFIG_DEBUG_FS / #endif?
+What do you mean, which processor it is? You want to know which
+processor on the motherboard, physically? When you look at the mobo and
+if all is enumerated regularly and you have a, say, two socket system
+with the processors above, to be able to say that processor 31 is the
+16th core on the second node on the motherboard? Something like that?
 
-Like:
+> Admins load systems relative to nodes, and look at /proc/cpuinfo as a
+> "known" place to get that info. At the end of the day I'd like to be
+> able to human-read /proc/cpuinfo and get the correct data out of it
+> without jumping through hoops
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 7dfb2f3..3b735de 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -36,17 +36,6 @@ static HLIST_HEAD(clk_root_list);
- static HLIST_HEAD(clk_orphan_list);
- static LIST_HEAD(clk_notifier_list);
- 
--static struct hlist_head *all_lists[] = {
--	&clk_root_list,
--	&clk_orphan_list,
--	NULL,
--};
--
--static struct hlist_head *orphan_list[] = {
--	&clk_orphan_list,
--	NULL,
--};
--
- /***           locking             ***/
- static void clk_prepare_lock(void)
- {
-@@ -108,6 +97,17 @@ static void clk_enable_unlock(unsigned long flags)
- #ifdef CONFIG_DEBUG_FS
- #include <linux/debugfs.h>
- 
-+static struct hlist_head *all_lists[] = {
-+	&clk_root_list,
-+	&clk_orphan_list,
-+	NULL,
-+};
-+
-+static struct hlist_head *orphan_list[] = {
-+	&clk_orphan_list,
-+	NULL,
-+};
-+
- static struct dentry *rootdir;
- static int inited = 0;
- 
-Thanks for finding this.
+What correct data? All that's there is correct AFAICT. Give an example
+of what you want to do?
 
-Cheers,
+> to get processor location information. I can, in theory, use the
+> initial apicid and the apicid to map everything out ... but I
+> shouldn't have to. /proc/cpuinfo provides an easy look up for this
+> data for Intel; why not for AMD?
 
-Peter.
+What does it show on Intel that's clear there and that's puzzling you on
+AMD?
+
+> Additionally the turbostat utility, for example, is broken because of
+> this lack of info. It assumes that /sys/../cpu/cpuX/topology/core_id
+> is *per package* when on AMD systems it is reported as per node.
+
+The turbostat utility might need some testing and fixing on AMD. If you
+can get some resources to do that I think everyone will profit from it.
+
+> I read that exact same thing somewhere else. The argument you're
+> making is that it might be broken for some other reason. It already is
+> completely misleading and utterly useless in the above case. A simple
+> test patch to arch/x86/kernel/cpu/proc.c shows that including the
+> information above is trivial. Adding it /sys/.../cpu/cpuX/topology is
+> a little bit more difficult.
+
+And I'm still saying that that information - albeit being trivial to
+add - might be lying on some system doing renumbering. So, again: what
+exactly do you want to be able to figure out from /proc/cpuinfo and what
+is puzzling you? Give concrete examples please...
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
