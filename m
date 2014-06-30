@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321AbaF3MKw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:10:52 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52006 "EHLO
+	id S1756299AbaF3MKv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:10:51 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:51944 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753571AbaF3LxZ (ORCPT
+	by vger.kernel.org with ESMTP id S1753276AbaF3LxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 30 Jun 2014 07:53:25 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jie Liu <jeff.liu@oracle.com>,
-        Ben Myers <bpm@sgi.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 044/181] xfs: don't perform discard if the given range length is less than block size
-Date: Mon, 30 Jun 2014 13:51:05 +0200
-Message-Id: <7a244136936f105d353eab16e2583f0bd418c927.1404128998.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 014/181] ACPI / memhotplug: add parameter to disable memory hotplug
+Date: Mon, 30 Jun 2014 13:50:35 +0200
+Message-Id: <e801ececc95d6df1256d1b7c479456f7dc7dc045.1404128997.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -23,56 +24,152 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jie Liu <jeff.liu@oracle.com>
+From: Prarit Bhargava <prarit@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit f9fd0135610084abef6867d984e9951c3099950d upstream.
+commit 00159a2013269bc0a617de885e4b921349192bd0 upstream.
 
-For discard operation, we should return EINVAL if the given range length
-is less than a block size, otherwise it will go through the file system
-to discard data blocks as the end range might be evaluated to -1, e.g,
-/xfs7: 9811378176 bytes were trimmed
+When booting a kexec/kdump kernel on a system that has specific memory
+hotplug regions the boot will fail with warnings like:
 
-This issue can be triggered via xfstests/generic/288.
+ swapper/0: page allocation failure: order:9, mode:0x84d0
+ CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.10.0-65.el7.x86_64 #1
+ Hardware name: QCI QSSC-S4R/QSSC-S4R, BIOS QSSC-S4R.QCI.01.00.S013.032920111005 03/29/2011
+  0000000000000000 ffff8800341bd8c8 ffffffff815bcc67 ffff8800341bd950
+  ffffffff8113b1a0 ffff880036339b00 0000000000000009 00000000000084d0
+  ffff8800341bd950 ffffffff815b87ee 0000000000000000 0000000000000200
+ Call Trace:
+  [<ffffffff815bcc67>] dump_stack+0x19/0x1b
+  [<ffffffff8113b1a0>] warn_alloc_failed+0xf0/0x160
+  [<ffffffff815b87ee>] ?  __alloc_pages_direct_compact+0xac/0x196
+  [<ffffffff8113f14f>] __alloc_pages_nodemask+0x7ff/0xa00
+  [<ffffffff815b417c>] vmemmap_alloc_block+0x62/0xba
+  [<ffffffff815b41e9>] vmemmap_alloc_block_buf+0x15/0x3b
+  [<ffffffff815b1ff6>] vmemmap_populate+0xb4/0x21b
+  [<ffffffff815b461d>] sparse_mem_map_populate+0x27/0x35
+  [<ffffffff815b400f>] sparse_add_one_section+0x7a/0x185
+  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
+  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
+  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
+  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
+  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
+  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
+  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
+  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
+  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
+  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
+  [<ffffffff81a1fd58>] ? acpi_sleep_proc_init+0x2a/0x2a
+  [<ffffffff810020e2>] do_one_initcall+0xe2/0x190
+  [<ffffffff819e20c4>] kernel_init_freeable+0x17c/0x207
+  [<ffffffff819e18d0>] ? do_early_param+0x88/0x88
+  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
+  [<ffffffff8159feae>] kernel_init+0xe/0x180
+  [<ffffffff815cca2c>] ret_from_fork+0x7c/0xb0
+  [<ffffffff8159fea0>] ? rest_init+0x80/0x80
+ Mem-Info:
+ Node 0 DMA per-cpu:
+ CPU    0: hi:    0, btch:   1 usd:   0
+ Node 0 DMA32 per-cpu:
+ CPU    0: hi:   42, btch:   7 usd:   0
+ active_anon:0 inactive_anon:0 isolated_anon:0
+  active_file:0 inactive_file:0 isolated_file:0
+  unevictable:0 dirty:0 writeback:0 unstable:0
+  free:872 slab_reclaimable:13 slab_unreclaimable:1880
+  mapped:0 shmem:0 pagetables:0 bounce:0
+  free_cma:0
 
-Also, it seems to get the request queue pointer via bdev_get_queue()
-instead of the hard code pointer dereference is not a bad thing.
+because the system has run out of memory at boot time.  This occurs
+because of the following sequence in the boot:
 
-Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+Main kernel boots and sets E820 map.  The second kernel is booted with a
+map generated by the kdump service using memmap= and memmap=exactmap.
+These parameters are added to the kernel parameters of the kexec/kdump
+kernel.   The kexec/kdump kernel has limited memory resources so as not
+to severely impact the main kernel.
 
+The system then panics and the kdump/kexec kernel boots (which is a
+completely new kernel boot).  During this boot ACPI is initialized and the
+kernel (as can be seen above) traverses the ACPI namespace and finds an
+entry for a memory device to be hotadded.
+
+ie)
+
+  [<ffffffff815a1e9f>] __add_pages+0xaf/0x240
+  [<ffffffff81047359>] arch_add_memory+0x59/0xd0
+  [<ffffffff815a21d9>] add_memory+0xb9/0x1b0
+  [<ffffffff81333b9c>] acpi_memory_device_add+0x18d/0x26d
+  [<ffffffff81309a01>] acpi_bus_device_attach+0x7d/0xcd
+  [<ffffffff8132379d>] acpi_ns_walk_namespace+0xc8/0x17f
+  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+  [<ffffffff81309984>] ? acpi_bus_type_and_status+0x90/0x90
+  [<ffffffff81323c8c>] acpi_walk_namespace+0x95/0xc5
+  [<ffffffff8130a6d6>] acpi_bus_scan+0x8b/0x9d
+  [<ffffffff81a2019a>] acpi_scan_init+0x63/0x160
+  [<ffffffff81a1ffb5>] acpi_init+0x25d/0x2a6
+
+At this point the kernel adds page table information and the the kexec/kdump
+kernel runs out of memory.
+
+This can also be reproduced by using the memmap=exactmap and mem=X
+parameters on the main kernel and booting.
+
+This patchset resolves the problem by adding a kernel parameter,
+acpi_no_memhotplug, to disable ACPI memory hotplug.
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/xfs/xfs_discard.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ Documentation/kernel-parameters.txt |  3 +++
+ drivers/acpi/acpi_memhotplug.c      | 12 ++++++++++++
+ 2 files changed, 15 insertions(+)
 
-diff --git a/fs/xfs/xfs_discard.c b/fs/xfs/xfs_discard.c
-index 45560ee1a4ba..19d9fd6caf8c 100644
---- a/fs/xfs/xfs_discard.c
-+++ b/fs/xfs/xfs_discard.c
-@@ -158,7 +158,7 @@ xfs_ioc_trim(
- 	struct xfs_mount		*mp,
- 	struct fstrim_range __user	*urange)
- {
--	struct request_queue	*q = mp->m_ddev_targp->bt_bdev->bd_disk->queue;
-+	struct request_queue	*q = bdev_get_queue(mp->m_ddev_targp->bt_bdev);
- 	unsigned int		granularity = q->limits.discard_granularity;
- 	struct fstrim_range	range;
- 	xfs_daddr_t		start, end, minlen;
-@@ -181,7 +181,8 @@ xfs_ioc_trim(
- 	 * matter as trimming blocks is an advisory interface.
- 	 */
- 	if (range.start >= XFS_FSB_TO_B(mp, mp->m_sb.sb_dblocks) ||
--	    range.minlen > XFS_FSB_TO_B(mp, XFS_ALLOC_AG_MAX_USABLE(mp)))
-+	    range.minlen > XFS_FSB_TO_B(mp, XFS_ALLOC_AG_MAX_USABLE(mp)) ||
-+	    range.len < mp->m_sb.sb_blocksize)
- 		return -XFS_ERROR(EINVAL);
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 4f7c57cb6022..789b8941a0c6 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -343,6 +343,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			no: ACPI OperationRegions are not marked as reserved,
+ 			no further checks are performed.
  
- 	start = BTOBB(range.start);
++	acpi_no_memhotplug [ACPI] Disable memory hotplug.  Useful for kdump
++			   kernels.
++
+ 	add_efi_memmap	[EFI; X86] Include EFI memory map in
+ 			kernel's map of available physical RAM.
+ 
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index 999adb5499c7..1a8cdf9f94c3 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -360,7 +360,19 @@ static void acpi_memory_device_remove(struct acpi_device *device)
+ 	acpi_memory_device_free(mem_device);
+ }
+ 
++static bool __initdata acpi_no_memhotplug;
++
+ void __init acpi_memory_hotplug_init(void)
+ {
++	if (acpi_no_memhotplug)
++		return;
++
+ 	acpi_scan_add_handler_with_hotplug(&memory_device_handler, "memory");
+ }
++
++static int __init disable_acpi_memory_hotplug(char *str)
++{
++	acpi_no_memhotplug = true;
++	return 1;
++}
++__setup("acpi_no_memhotplug", disable_acpi_memory_hotplug);
 -- 
 2.0.0
 
