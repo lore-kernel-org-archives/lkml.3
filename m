@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849AbaF3RvG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 13:51:06 -0400
-Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:57333 "EHLO
-	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753256AbaF3RvD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 13:51:03 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhgJAGiisVNbtAo1/2dsb2JhbABagw2sQQUBAQEBAQEFAW4BmUaBERd1hDEvI4EaN4hGAcgpF4VkiSMdhC0Fml6LP4g+g0Q7
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        linux-nfs@vger.kernel.org
-Subject: [PATCH 1/1] NFS: use ARRAY_SIZE instead of sizeof/sizeof[0]
-Date: Mon, 30 Jun 2014 19:49:39 +0200
-Message-Id: <1404150579-8092-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	id S1756036AbaF3Rvv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 13:51:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38049 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753233AbaF3Rvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 13:51:50 -0400
+Date: Mon, 30 Jun 2014 19:50:25 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] tracing/uprobes: Fix the usage of
+	uprobe_buffer_enable() in probe_event_enable()
+Message-ID: <20140630175025.GA21918@redhat.com>
+References: <20140627170116.GA18298@redhat.com> <20140627170146.GA18332@redhat.com> <20140630170409.GD5619@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140630170409.GD5619@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use macro definition
+On 06/30, Srikar Dronamraju wrote:
+>
+> > The usage of uprobe_buffer_enable() added by dcad1a20 is very wrong,
+> >
+> > 1. uprobe_buffer_enable() and uprobe_buffer_disable() are not balanced,
+> >    _enable() should be called only if !enabled.
+> >
+> > 2. If uprobe_buffer_enable() fails probe_event_enable() should clear
+> >    tp.flags and free event_file_link.
+> >
+> > 3. If uprobe_register() fails it should do uprobe_buffer_disable().
+> >
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+>
+> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: linux-nfs@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/nfs/super.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Thanks!
 
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index 084af10..c08e837 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -1027,8 +1027,7 @@ static bool nfs_auth_info_add(struct nfs_auth_info *auth_info,
- 			      rpc_authflavor_t flavor)
- {
- 	unsigned int i;
--	unsigned int max_flavor_len = (sizeof(auth_info->flavors) /
--				       sizeof(auth_info->flavors[0]));
-+	unsigned int max_flavor_len = ARRAY_SIZE(auth_info->flavors);
- 
- 	/* make sure this flavor isn't already in the list */
- 	for (i = 0; i < auth_info->flavor_len; i++) {
--- 
-1.8.4.5
+> (one nit .. )
+>
+> > +	ret = uprobe_buffer_enable();
+> > +	if (ret)
+> > +		goto err_flags;
+> > +
+> >  	tu->consumer.filter = filter;
+> >  	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
+> > -	if (ret) {
+> > -		if (file) {
+> > -			list_del(&link->list);
+> > -			kfree(link);
+> > -			tu->tp.flags &= ~TP_FLAG_TRACE;
+> > -		} else
+> > -			tu->tp.flags &= ~TP_FLAG_PROFILE;
+> > -	}
+> > +	if (ret)
+> > +		goto err_buffer;
+> >
+> > +	return 0;
+> > +
+> > + err_buffer:
+> > +	uprobe_buffer_disable();
+> > +
+>
+> How about avoiding err_buffer label?
+> +	if (!ret)
+> +		return 0;
+>
+> +	uprobe_buffer_disable();
+> +
+
+Well, I do not really mind. But to me it looks more consistent this way,
+if-something-fail-goto-err_label.
+
+IOW, I think that the code should either not use err-labels, or always
+use them like above.
+
+Besides, perhaps we will add "if (file) uprobe_apply()" after _register()
+to mix perf/ftrace, then we will need to change this "if (!ret)" code again.
+
+Oleg.
 
