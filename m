@@ -1,118 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709AbaF3XGr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 19:06:47 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:61109 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563AbaF3XGp (ORCPT
+	id S1756050AbaF3XJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 19:09:09 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:58428 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745AbaF3XJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 19:06:45 -0400
+	Mon, 30 Jun 2014 19:09:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKdAkRSaurygSeXdt09MpLGaXojJ1YW3SzTn1pBz2076hF514Q@mail.gmail.com>
-References: <1403716136-32694-1-git-send-email-johan@kernel.org>
- <1403716136-32694-12-git-send-email-johan@kernel.org> <CAKdAkRSaurygSeXdt09MpLGaXojJ1YW3SzTn1pBz2076hF514Q@mail.gmail.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Mon, 30 Jun 2014 16:06:23 -0700
-Message-ID: <CAK5ve-+BhzZG01_zg=XJzkvrgcO0RzfYjEZ9dV7tJgGMROjBLg@mail.gmail.com>
-Subject: Re: [PATCH 11/13] input: lm8323: fix attribute-creation race
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Johan Hovold <johan@kernel.org>, Richard Purdie <rpurdie@rpsys.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        Janne Kanniainen <janne.kanniainen@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+In-Reply-To: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
+References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
+Date: Mon, 30 Jun 2014 16:09:06 -0700
+X-Google-Sender-Auth: fyi9YJEdiuld6QKYPSbHCJ156JI
+Message-ID: <CAGXu5jK9Bwocjz8y26=GEk0qg5ru1Mu7j9FVuu20KfTDUrSkuQ@mail.gmail.com>
+Subject: Re: [PATCH RFC net-next 00/14] BPF syscall, maps, verifier, samples
+From: Kees Cook <keescook@chromium.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 11:50 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Wed, Jun 25, 2014 at 10:08 AM, Johan Hovold <johan@kernel.org> wrote:
->> Use the attribute groups of the led-class to create the time attribute
->> during probe in order to avoid racing with userspace.
->>
->> Signed-off-by: Johan Hovold <johan@kernel.org>
+On Fri, Jun 27, 2014 at 5:05 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> Hi All,
 >
-> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> this patch set demonstrates the potential of eBPF.
 >
+> First patch "net: filter: split filter.c into two files" splits eBPF interpreter
+> out of networking into kernel/bpf/. The goal for BPF subsystem is to be usable
+> in NET-less configuration. Though the whole set is marked is RFC, the 1st patch
+> is good to go. Similar version of the patch that was posted few weeks ago, but
+> was deferred. I'm assuming due to lack of forward visibility. I hope that this
+> patch set shows what eBPF is capable of and where it's heading.
+>
+> Other patches expose eBPF instruction set to user space and introduce concepts
+> of maps and programs accessible via syscall.
+>
+> 'maps' is a generic storage of different types for sharing data between kernel
+> and userspace. Maps are referrenced by global id. Root can create multiple
+> maps of different types where key/value are opaque bytes of data. It's up to
+> user space and eBPF program to decide what they store in the maps.
+>
+> eBPF programs are similar to kernel modules. They live in global space and
+> have unique prog_id. Each program is a safe run-to-completion set of
+> instructions. eBPF verifier statically determines that the program terminates
+> and safe to execute. During verification the program takes a hold of maps
+> that it intends to use, so selected maps cannot be removed until program is
+> unloaded. The program can be attached to different events. These events can
+> be packets, tracepoint events and other types in the future. New event triggers
+> execution of the program which may store information about the event in the maps.
+> Beyond storing data the programs may call into in-kernel helper functions
+> which may, for example, dump stack, do trace_printk or other forms of live
+> kernel debugging. Same program can be attached to multiple events. Different
+> programs can access the same map:
+>
+>   tracepoint  tracepoint  tracepoint    sk_buff    sk_buff
+>    event A     event B     event C      on eth0    on eth1
+>     |             |          |            |          |
+>     |             |          |            |          |
+>     --> tracing <--      tracing       socket      socket
+>          prog_1           prog_2       prog_3      prog_4
+>          |  |               |            |
+>       |---  -----|  |-------|           map_3
+>     map_1       map_2
+>
+> User space (via syscall) and eBPF programs access maps concurrently.
+>
+> Last two patches are sample code. 1st demonstrates stateful packet inspection.
+> It counts tcp and udp packets on eth0. Should be easy to see how this eBPF
+> framework can be used for network analytics.
+> 2nd sample does simple 'drop monitor'. It attaches to kfree_skb tracepoint
+> event and counts number of packet drops at particular $pc location.
+> User space periodically summarizes what eBPF programs recorded.
+> In these two samples the eBPF programs are tiny and written in 'assembler'
+> with macroses. More complex programs can be written C (llvm backend is not
+> part of this diff to reduce 'huge' perception).
+> Since eBPF is fully JITed on x64, the cost of running eBPF program is very
+> small even for high frequency events. Here are the numbers comparing
+> flow_dissector in C vs eBPF:
+>   x86_64 skb_flow_dissect() same skb (all cached)         -  42 nsec per call
+>   x86_64 skb_flow_dissect() different skbs (cache misses) - 141 nsec per call
+> eBPF+jit skb_flow_dissect() same skb (all cached)         -  51 nsec per call
+> eBPF+jit skb_flow_dissect() different skbs (cache misses) - 135 nsec per call
+>
+> Detailed explanation on eBPF verifier and safety is in patch 08/14
 
-Good, I merged this patch with others into my for-next branch.
+This is very exciting! Thanks for working on it. :)
 
--Bryan
+Between the new eBPF syscall and the new seccomp syscall, I'm really
+looking forward to using lookup tables for seccomp filters. Under
+certain types of filters, we'll likely see some non-trivial
+performance improvements.
 
->> ---
->>  drivers/input/keyboard/lm8323.c | 22 +++++++++-------------
->>  1 file changed, 9 insertions(+), 13 deletions(-)
->>
->> diff --git a/drivers/input/keyboard/lm8323.c b/drivers/input/keyboard/lm8323.c
->> index 0b42118cbf8f..cb32e2b506b7 100644
->> --- a/drivers/input/keyboard/lm8323.c
->> +++ b/drivers/input/keyboard/lm8323.c
->> @@ -558,6 +558,12 @@ static ssize_t lm8323_pwm_store_time(struct device *dev,
->>  }
->>  static DEVICE_ATTR(time, 0644, lm8323_pwm_show_time, lm8323_pwm_store_time);
->>
->> +static struct attribute *lm8323_pwm_attrs[] = {
->> +       &dev_attr_time.attr,
->> +       NULL
->> +};
->> +ATTRIBUTE_GROUPS(lm8323_pwm);
->> +
->>  static int init_pwm(struct lm8323_chip *lm, int id, struct device *dev,
->>                     const char *name)
->>  {
->> @@ -580,16 +586,11 @@ static int init_pwm(struct lm8323_chip *lm, int id, struct device *dev,
->>         if (name) {
->>                 pwm->cdev.name = name;
->>                 pwm->cdev.brightness_set = lm8323_pwm_set_brightness;
->> +               pwm->cdev.groups = lm8323_pwm_groups;
->>                 if (led_classdev_register(dev, &pwm->cdev) < 0) {
->>                         dev_err(dev, "couldn't register PWM %d\n", id);
->>                         return -1;
->>                 }
->> -               if (device_create_file(pwm->cdev.dev,
->> -                                       &dev_attr_time) < 0) {
->> -                       dev_err(dev, "couldn't register time attribute\n");
->> -                       led_classdev_unregister(&pwm->cdev);
->> -                       return -1;
->> -               }
->>                 pwm->enabled = true;
->>         }
->>
->> @@ -753,11 +754,8 @@ fail3:
->>         device_remove_file(&client->dev, &dev_attr_disable_kp);
->>  fail2:
->>         while (--pwm >= 0)
->> -               if (lm->pwm[pwm].enabled) {
->> -                       device_remove_file(lm->pwm[pwm].cdev.dev,
->> -                                          &dev_attr_time);
->> +               if (lm->pwm[pwm].enabled)
->>                         led_classdev_unregister(&lm->pwm[pwm].cdev);
->> -               }
->>  fail1:
->>         input_free_device(idev);
->>         kfree(lm);
->> @@ -777,10 +775,8 @@ static int lm8323_remove(struct i2c_client *client)
->>         device_remove_file(&lm->client->dev, &dev_attr_disable_kp);
->>
->>         for (i = 0; i < 3; i++)
->> -               if (lm->pwm[i].enabled) {
->> -                       device_remove_file(lm->pwm[i].cdev.dev, &dev_attr_time);
->> +               if (lm->pwm[i].enabled)
->>                         led_classdev_unregister(&lm->pwm[i].cdev);
->> -               }
->>
->>         kfree(lm);
->>
->> --
->> 1.8.5.5
->>
->
-> Thanks.
->
-> --
-> Dmitry
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
