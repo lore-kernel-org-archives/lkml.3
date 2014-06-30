@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180AbaF3I47 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 04:56:59 -0400
-Received: from mga11.intel.com ([192.55.52.93]:33602 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754240AbaF3I46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 04:56:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,573,1400050800"; 
-   d="scan'208";a="562903331"
-Message-ID: <1404118612.5102.4.camel@smile.fi.intel.com>
-Subject: Re: [PATCH v2 2/2] lib.c: skip --param parameters
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Christopher Li <sparse@chrisli.org>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-Sparse <linux-sparse@vger.kernel.org>
-Date: Mon, 30 Jun 2014 11:56:52 +0300
-In-Reply-To: <CANeU7Qk6e-CAK_aRTzq=ev_esQ9uGsbc6ihH7m-0=ngoPotVzg@mail.gmail.com>
-References: <1402996306-6811-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1402996306-6811-3-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <CANeU7QnLad1f4KkLpTGSWB8eD8_La-tACim6rR7DLQ=hggwhOQ@mail.gmail.com>
-	 <1404117165.5102.3.camel@smile.fi.intel.com>
-	 <CANeU7Qk6e-CAK_aRTzq=ev_esQ9uGsbc6ihH7m-0=ngoPotVzg@mail.gmail.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755244AbaF3I5R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 04:57:17 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:51192 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755163AbaF3I5O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 04:57:14 -0400
+MIME-Version: 1.0
+Date: Mon, 30 Jun 2014 01:57:13 -0700
+X-Google-Sender-Auth: 7Iwam5svylYIBmtVrnJcH95nbv4
+Message-ID: <CANeU7Q=a82YmUE49uZ1sOxZn0KGLuktSXuj7YsmUb=wXQEpPXA@mail.gmail.com>
+Subject: [PATCH] sparse: Add CLOG option for saving warning
+From: Christopher Li <sparse@chrisli.org>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Linux-Sparse <linux-sparse@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Content-Type: multipart/mixed; boundary=001a113a76ca62b5ba04fd09d8a3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-30 at 01:51 -0700, Christopher Li wrote:
-> On Mon, Jun 30, 2014 at 1:32 AM, Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com> wrote:
-> >
-> > Hmm... I'd just added test printf to the handle_param() and see if I
-> > print *next, it is either --param or --param=*. So, using return (next +
-> > 2) helps, otherwise we end up with the same situation as before patch.
-> 
-> The return value from handle_switch() is a bit tricky. It is actually points to
-> the current args which about to be expired.
-> 
-> Take a look at this code which invoke the handle_switch().
->     for (;;) {
->         char *arg = *++args;      <---------------- notice the ++
-> before the fetch
->         if (!arg)
->             break;
-> 
->         if (arg[0] == '-' && arg[1]) {
->             args = handle_switch(arg+1, args); <-------- args return here.
->             continue;
->         }
->         add_ptr_list_notag(filelist, arg);
->     }
-> 
-> >
-> > What did I miss?
-> 
-> So the caller loop will perform 1 pointer advance before fetch.
-> Your code can advance 2 pointer, so that is  total 3 pointer advance.
+--001a113a76ca62b5ba04fd09d8a3
+Content-Type: text/plain; charset=ISO-8859-1
 
-Yeah, thanks for explanation. Just noticed this after send a message.
+Currently sparse warning only output to stderr.
+In the parallel build process, different source
+file output is fixed together. It is hard to keep
+track of the warning.
 
-> 
-> >
-> > Which was explicitly mentioned in the commit message.
-> 
-> Sorry about that, I jump to the code first. I later notice that  in
-> the commit message as well.
-> 
-> Any way, the change I push should fix all that.
+Add the CLOG=<logname> option in command line to
+save the sparse warning into individual log file.
 
-Yup. Thank you.
+Typical usage:
+
+make -j8 C=2 CLOG=<logname>
+
+The log file is saved in the target directory as
+.xxx.o.<logname>.sparse
+
+By diffing between different log file, it is much
+easier to analyze how the sparse change impact
+the whole kernel build.
+
+Signed-off-by: Christopher Li <sparse@chrisli.org>
 
 
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
+Chris
 
+--001a113a76ca62b5ba04fd09d8a3
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-sparse-Add-CLOG-option-for-saving-warning.patch"
+Content-Disposition: attachment; 
+	filename="0001-sparse-Add-CLOG-option-for-saving-warning.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hx1jvqmh0
+
+RnJvbSAzYjJmZjIwNGNiZGE2ODRhZGY5ZGJhMmFkZjU2ODA2MjUzM2FlMzRkIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBDaHJpc3RvcGhlciBMaSA8c3BhcnNlQGNocmlzbGkub3JnPgpE
+YXRlOiBNb24sIDMwIEp1biAyMDE0IDAxOjMzOjIyIC0wNzAwClN1YmplY3Q6IFtQQVRDSF0gc3Bh
+cnNlOiBBZGQgQ0xPRyBvcHRpb24gZm9yIHNhdmluZyB3YXJuaW5nCgpDdXJyZW50bHkgc3BhcnNl
+IHdhcm5pbmcgb25seSBvdXRwdXQgdG8gc3RkZXJyLgpJbiB0aGUgcGFyYWxsZWwgYnVpbGQgcHJv
+Y2VzcywgZGlmZmVyZW50IHNvdXJjZQpmaWxlIG91dHB1dCBpcyBmaXhlZCB0b2dldGhlci4gSXQg
+aXMgaGFyZCB0byBrZWVwCnRyYWNrIG9mIHRoZSB3YXJuaW5nLgoKQWRkIHRoZSBDTE9HPTxsb2du
+YW1lPiBvcHRpb24gaW4gY29tbWFuZCBsaW5lIHRvCnNhdmUgdGhlIHNwYXJzZSB3YXJuaW5nIGlu
+dG8gaW5kaXZpZHVhbCBsb2cgZmlsZS4KClR5cGljYWwgdXNhZ2U6CgptYWtlIC1qOCBDPTIgQ0xP
+Rz08bG9nbmFtZT4KClRoZSBsb2cgZmlsZSBpcyBzYXZlZCBpbiB0aGUgdGFyZ2V0IGRpcmVjdG9y
+eSBhcwoueHh4Lm8uPGxvZ25hbWU+LnNwYXJzZQoKQnkgZGlmZmluZyBiZXR3ZWVuIGRpZmZlcmVu
+dCBsb2cgZmlsZSwgaXQgaXMgbXVjaAplYXNpZXIgdG8gYW5hbHl6ZSBob3cgdGhlIHNwYXJzZSBj
+aGFuZ2UgaW1wYWN0CnRoZSB3aG9sZSBrZXJuZWwgYnVpbGQuCgpTaWduZWQtb2ZmLWJ5OiBDaHJp
+c3RvcGhlciBMaSA8c3BhcnNlQGNocmlzbGkub3JnPgotLS0KIE1ha2VmaWxlICAgICAgICAgICAg
+ICAgfCAxMyArKysrKysrKysrKystCiBzY3JpcHRzL01ha2VmaWxlLmJ1aWxkIHwgMTEgKysrKysr
+KysrLS0KIDIgZmlsZXMgY2hhbmdlZCwgMjEgaW5zZXJ0aW9ucygrKSwgMyBkZWxldGlvbnMoLSkK
+CmRpZmYgLS1naXQgYS9NYWtlZmlsZSBiL01ha2VmaWxlCmluZGV4IGIxMWUyZDUuLjU2YzM1MDIg
+MTAwNjQ0Ci0tLSBhL01ha2VmaWxlCisrKyBiL01ha2VmaWxlCkBAIC02OCw2ICs2OCwxNiBAQCBp
+Zm5kZWYgS0JVSUxEX0NIRUNLU1JDCiAgIEtCVUlMRF9DSEVDS1NSQyA9IDAKIGVuZGlmCiAKK2lm
+ZXEgKCIkKG9yaWdpbiBDTE9HKSIsICJjb21tYW5kIGxpbmUiKQorICBLQlVJTERfQ0hFQ0tMT0cg
+PSAkKENMT0cpCitlbmRpZgoraWZuZGVmIEtCVUlMRF9DSEVDS0xPRworICBLQlVJTERfQ0hFQ0tM
+T0cgPQorZW5kaWYKKworCisKKwogIyBVc2UgbWFrZSBNPWRpciB0byBzcGVjaWZ5IGRpcmVjdG9y
+eSBvZiBleHRlcm5hbCBtb2R1bGUgdG8gYnVpbGQKICMgT2xkIHN5bnRheCBtYWtlIC4uLiBTVUJE
+SVJTPSRQV0QgaXMgc3RpbGwgc3VwcG9ydGVkCiAjIFNldHRpbmcgdGhlIGVudmlyb25tZW50IHZh
+cmlhYmxlIEtCVUlMRF9FWFRNT0QgdGFrZSBwcmVjZWRlbmNlCkBAIC0yODcsNyArMjk3LDcgQEAg
+aWZlcSAoJChNQUtFQ01ER09BTFMpLCkKIGVuZGlmCiAKIGV4cG9ydCBLQlVJTERfTU9EVUxFUyBL
+QlVJTERfQlVJTFRJTgotZXhwb3J0IEtCVUlMRF9DSEVDS1NSQyBLQlVJTERfU1JDIEtCVUlMRF9F
+WFRNT0QKK2V4cG9ydCBLQlVJTERfQ0hFQ0tTUkMgS0JVSUxEX0NIRUNLTE9HIEtCVUlMRF9TUkMg
+S0JVSUxEX0VYVE1PRAogCiAjIEJlYXV0aWZ5IG91dHB1dAogIyAtLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0K
+QEAgLTEzNzAsNiArMTM4MCw3IEBAIGNsZWFuOiAkKGNsZWFuLWRpcnMpCiAJJChjYWxsIGNtZCxy
+bWZpbGVzKQogCUBmaW5kICQoaWYgJChLQlVJTERfRVhUTU9EKSwgJChLQlVJTERfRVhUTU9EKSwg
+LikgJChSQ1NfRklORF9JR05PUkUpIFwKIAkJXCggLW5hbWUgJyouW29hc10nIC1vIC1uYW1lICcq
+LmtvJyAtbyAtbmFtZSAnLiouY21kJyBcCisJCS1vIC1uYW1lICcuKi5zcGFyc2UnIFwKIAkJLW8g
+LW5hbWUgJyoua28uKicgXAogCQktbyAtbmFtZSAnLiouZCcgLW8gLW5hbWUgJy4qLnRtcCcgLW8g
+LW5hbWUgJyoubW9kLmMnIFwKIAkJLW8gLW5hbWUgJyouc3ltdHlwZXMnIC1vIC1uYW1lICdtb2R1
+bGVzLm9yZGVyJyBcCmRpZmYgLS1naXQgYS9zY3JpcHRzL01ha2VmaWxlLmJ1aWxkIGIvc2NyaXB0
+cy9NYWtlZmlsZS5idWlsZAppbmRleCBiZjNlNjc3Li40NWM2MDA0IDEwMDY0NAotLS0gYS9zY3Jp
+cHRzL01ha2VmaWxlLmJ1aWxkCisrKyBiL3NjcmlwdHMvTWFrZWZpbGUuYnVpbGQKQEAgLTk2LDE0
+ICs5NiwyMSBAQCBfX2J1aWxkOiAkKGlmICQoS0JVSUxEX0JVSUxUSU4pLCQoYnVpbHRpbi10YXJn
+ZXQpICQobGliLXRhcmdldCkgJChleHRyYS15KSkgXAogCSAkKHN1YmRpci15bSkgJChhbHdheXMp
+CiAJQDoKIAorY2hlY2tfbG9nX2ZpbGUgPSAkKGRvdC10YXJnZXQpLiQoS0JVSUxEX0NIRUNLTE9H
+KS5zcGFyc2UKKworaWZuZXEgKCQoS0JVSUxEX0NIRUNLTE9HKSwpCisgIGNoZWNrX2xvZ2dpbmcg
+PSAyPiAkKGNoZWNrX2xvZ19maWxlKQorZW5kaWYKKworY21kX2NoZWNrID0gJChDSEVDSykgJChD
+SEVDS0ZMQUdTKSAkKGNfZmxhZ3MpICQ8ICQoY2hlY2tfbG9nZ2luZykgOwogIyBMaW51cycga2Vy
+bmVsIHNhbml0eSBjaGVja2luZyB0b29sCiBpZm5lcSAoJChLQlVJTERfQ0hFQ0tTUkMpLDApCiAg
+IGlmZXEgKCQoS0JVSUxEX0NIRUNLU1JDKSwyKQogICAgIHF1aWV0X2NtZF9mb3JjZV9jaGVja3Ny
+YyA9IENIRUNLICAgJDwKLSAgICAgICAgICBjbWRfZm9yY2VfY2hlY2tzcmMgPSAkKENIRUNLKSAk
+KENIRUNLRkxBR1MpICQoY19mbGFncykgJDwgOworICAgICAgICAgIGNtZF9mb3JjZV9jaGVja3Ny
+YyA9ICQoY21kX2NoZWNrKQogICBlbHNlCiAgICAgICBxdWlldF9jbWRfY2hlY2tzcmMgICAgID0g
+Q0hFQ0sgICAkPAotICAgICAgICAgICAgY21kX2NoZWNrc3JjICAgICA9ICQoQ0hFQ0spICQoQ0hF
+Q0tGTEFHUykgJChjX2ZsYWdzKSAkPCA7CisgICAgICAgICAgICBjbWRfY2hlY2tzcmMgICAgID0g
+JChjbWRfY2hlY2spCiAgIGVuZGlmCiBlbmRpZgogCi0tIAoxLjkuMwoK
+--001a113a76ca62b5ba04fd09d8a3--
