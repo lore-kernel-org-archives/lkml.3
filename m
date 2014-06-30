@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101AbaF3Mb1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 08:31:27 -0400
+	id S1753915AbaF3Mkb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 08:40:31 -0400
 Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:53045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932199AbaF3MbX (ORCPT
+	by vger.kernel.org with ESMTP id S932309AbaF3Mb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 08:31:23 -0400
+	Mon, 30 Jun 2014 08:31:26 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, xiao jin <jin.xiao@intel.com>,
-        "Zhang, Qi1" <qi1.zhang@intel.com>, Johan Hovold <jhovold@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Wendy Xiong <wenxiong@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 128/181] USB: usb_wwan: fix race between write and resume
-Date: Mon, 30 Jun 2014 13:52:29 +0200
-Message-Id: <532cbca6e560818d2023790a9039bdfb1438e9b9.1404128998.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 012/181] [SCSI] ipr: Add new CCIN definition for Grand Canyon support
+Date: Mon, 30 Jun 2014 13:50:33 +0200
+Message-Id: <dcc23f13ff973c49651f0f020495a26baec32343.1404128997.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
 References: <61844d8e25eb8899b0836afa9796fa239db80f1f.1404128997.git.jslaby@suse.cz>
@@ -24,71 +24,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: xiao jin <jin.xiao@intel.com>
+From: Wendy Xiong <wenxiong@linux.vnet.ibm.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit d9e93c08d8d985e5ef89436ebc9f4aad7e31559f upstream.
+commit 5eeac3e99ae220aea787527d1bfd9e846adf9fac upstream.
 
-We find a race between write and resume. usb_wwan_resume run play_delayed()
-and spin_unlock, but intfdata->suspended still is not set to zero.
-At this time usb_wwan_write is called and anchor the urb to delay
-list. Then resume keep running but the delayed urb have no chance
-to be commit until next resume. If the time of next resume is far
-away, tty will be blocked in tty_wait_until_sent during time. The
-race also can lead to writes being reordered.
+Add the appropriate definition and table entry for new hardware support.
 
-This patch put play_Delayed and intfdata->suspended together in the
-spinlock, it's to avoid the write race during resume.
-
-Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
-option driver")
-
-Signed-off-by: xiao jin <jin.xiao@intel.com>
-Signed-off-by: Zhang, Qi1 <qi1.zhang@intel.com>
-Reviewed-by: David Cohen <david.a.cohen@linux.intel.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Wen Xiong <wenxiong@linux.vnet.ibm.com>
+Acked-by: Brian King <brking@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/serial/usb_wwan.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/scsi/ipr.c | 6 ++++++
+ drivers/scsi/ipr.h | 3 +++
+ 2 files changed, 9 insertions(+)
 
-diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
-index 7096d0ba1d0f..80c16d84156a 100644
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -664,17 +664,15 @@ int usb_wwan_resume(struct usb_serial *serial)
- 		}
- 	}
+diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
+index 573f4128b6b6..074f278f7dab 100644
+--- a/drivers/scsi/ipr.c
++++ b/drivers/scsi/ipr.c
+@@ -10005,6 +10005,12 @@ static struct pci_device_id ipr_pci_table[] = {
+ 		PCI_VENDOR_ID_IBM, IPR_SUBS_DEV_ID_57EF, 0, 0, 0 },
+ 	{ PCI_VENDOR_ID_IBM, PCI_DEVICE_ID_IBM_CROCODILE,
+ 		PCI_VENDOR_ID_IBM, IPR_SUBS_DEV_ID_57F0, 0, 0, 0 },
++	{ PCI_VENDOR_ID_IBM, PCI_DEVICE_ID_IBM_CROCODILE,
++		PCI_VENDOR_ID_IBM, IPR_SUBS_DEV_ID_2CCA, 0, 0, 0 },
++	{ PCI_VENDOR_ID_IBM, PCI_DEVICE_ID_IBM_CROCODILE,
++		PCI_VENDOR_ID_IBM, IPR_SUBS_DEV_ID_2CD2, 0, 0, 0 },
++	{ PCI_VENDOR_ID_IBM, PCI_DEVICE_ID_IBM_CROCODILE,
++		PCI_VENDOR_ID_IBM, IPR_SUBS_DEV_ID_2CCD, 0, 0, 0 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(pci, ipr_pci_table);
+diff --git a/drivers/scsi/ipr.h b/drivers/scsi/ipr.h
+index cad1483f05da..58c6630fe3e2 100644
+--- a/drivers/scsi/ipr.h
++++ b/drivers/scsi/ipr.h
+@@ -107,6 +107,9 @@
+ #define IPR_SUBS_DEV_ID_57EE    0x049A
+ #define IPR_SUBS_DEV_ID_57EF    0x049B
+ #define IPR_SUBS_DEV_ID_57F0    0x049C
++#define IPR_SUBS_DEV_ID_2CCA	0x04C7
++#define IPR_SUBS_DEV_ID_2CD2	0x04C8
++#define IPR_SUBS_DEV_ID_2CCD	0x04C9
+ #define IPR_NAME				"ipr"
  
-+	spin_lock_irq(&intfdata->susp_lock);
- 	for (i = 0; i < serial->num_ports; i++) {
- 		/* walk all ports */
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
- 
- 		/* skip closed ports */
--		spin_lock_irq(&intfdata->susp_lock);
--		if (!portdata || !portdata->opened) {
--			spin_unlock_irq(&intfdata->susp_lock);
-+		if (!portdata || !portdata->opened)
- 			continue;
--		}
- 
- 		for (j = 0; j < N_IN_URB; j++) {
- 			urb = portdata->in_urbs[j];
-@@ -687,9 +685,7 @@ int usb_wwan_resume(struct usb_serial *serial)
- 			}
- 		}
- 		play_delayed(port);
--		spin_unlock_irq(&intfdata->susp_lock);
- 	}
--	spin_lock_irq(&intfdata->susp_lock);
- 	intfdata->suspended = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
- err_out:
+ /*
 -- 
 2.0.0
 
