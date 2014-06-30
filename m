@@ -1,131 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857AbaF3CEU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 29 Jun 2014 22:04:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55362 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378AbaF3CET (ORCPT
+	id S1753885AbaF3CJh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 29 Jun 2014 22:09:37 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:58039 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753435AbaF3CJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 29 Jun 2014 22:04:19 -0400
-Message-ID: <53B0C596.6090007@canonical.com>
-Date: Mon, 30 Jun 2014 10:04:06 +0800
-From: Hui Wang <hui.wang@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Sun, 29 Jun 2014 22:09:36 -0400
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@web.de>
-CC: Hui Wang <jason77.wang@gmail.com>, tiwai@suse.de,
-        alsa-devel@alsa-project.org, alex.hung@canonical.com, yk@canonical.com,
-        david.henningsson@canonical.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [V2 PATCH] ALSA: hda - Enable mute/mic-mute LEDs for more Thinkpads
- with Conexant codec
-References: <1385534846-20829-1-git-send-email-hui.wang@canonical.com> <53AFF992.5030403@web.de>
-In-Reply-To: <53AFF992.5030403@web.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140629213206.GE2162@thunk.org>
+References: <CAPDOMVg=L+spebzkckNpM0=9NY=meV=F_+ko+VJN_6M50NdNew@mail.gmail.com>
+	<CAPDOMVjnROuS4D4E2B7=PxOZUB4YXHuFUKy5C9Y8Lm7gxN=N_Q@mail.gmail.com>
+	<20140628201804.215ca896@alan.etchedpixels.co.uk>
+	<CAPDOMVgYsQ_zDaBN-XPwN06OUvph9YGPRqn2gUoso4f5y2fZ=g@mail.gmail.com>
+	<CAPNrq4yZTFXhPG4U5H4mqFw-xbvJL5Ht-XofwKTqApgM2jsAGQ@mail.gmail.com>
+	<53AFBE8A.3020408@linux.com>
+	<20140629213206.GE2162@thunk.org>
+Date: Sun, 29 Jun 2014 22:09:35 -0400
+Message-ID: <CAPDOMVgNZ84yWM1V=P_CX2GNyOFqf_LSTe14vsqNuE4e4TSnZw@mail.gmail.com>
+Subject: Re: Cleanup of Kernel Bugzilla
+From: Nick Krause <xerofoify@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Levente Kurusa <levex@linux.com>,
+        "Gideon D'souza" <gidisrael@gmail.com>,
+        Nick Krause <xerofoify@gmail.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2014 07:33 PM, Jan Kiszka wrote:
-> On 2013-11-27 07:47, Hui Wang wrote:
->> Most Thinkpad Edge series laptops use conexant codec, so far although
->> the codecs have different minor Vendor Id and minor Subsystem Id,
->> they all belong to the cxt5066 family, this change can make the
->> mute/mic-mute LEDs support more generic among cxt_5066 family.
->>
->> This design refers to the similar solution for the realtek codec
->> ALC269 family in the patch_realtek.c.
->>
->> Cc: Alex Hung <alex.hung@canonical.com>
->> Cc: David Henningsson <david.henningsson@canonical.com>
->> Signed-off-by: Hui Wang <hui.wang@canonical.com>
->> ---
->>   sound/pci/hda/patch_conexant.c | 23 +++++++++++++++++++++++
->>   1 file changed, 23 insertions(+)
->>
->> diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
->> index c205bb1..1f2717f 100644
->> --- a/sound/pci/hda/patch_conexant.c
->> +++ b/sound/pci/hda/patch_conexant.c
->> @@ -3244,9 +3244,29 @@ enum {
->>   #if IS_ENABLED(CONFIG_THINKPAD_ACPI)
->>   
->>   #include <linux/thinkpad_acpi.h>
->> +#include <acpi/acpi.h>
->>   
->>   static int (*led_set_func)(int, bool);
->>   
->> +static acpi_status acpi_check_cb(acpi_handle handle, u32 lvl, void *context,
->> +				 void **rv)
->> +{
->> +	bool *found = context;
->> +	*found = true;
->> +	return AE_OK;
->> +}
->> +
->> +static bool is_thinkpad(struct hda_codec *codec)
->> +{
->> +	bool found = false;
->> +	if (codec->subsystem_id >> 16 != 0x17aa)
->> +		return false;
->> +	if (ACPI_SUCCESS(acpi_get_devices("LEN0068", acpi_check_cb, &found, NULL)) && found)
->> +		return true;
->> +	found = false;
->> +	return ACPI_SUCCESS(acpi_get_devices("IBM0068", acpi_check_cb, &found, NULL)) && found;
->> +}
->> +
->>   static void update_tpacpi_mute_led(void *private_data, int enabled)
->>   {
->>   	struct hda_codec *codec = private_data;
->> @@ -3279,6 +3299,8 @@ static void cxt_fixup_thinkpad_acpi(struct hda_codec *codec,
->>   	bool removefunc = false;
->>   
->>   	if (action == HDA_FIXUP_ACT_PROBE) {
->> +		if (!is_thinkpad(codec))
->> +			return;
->>   		if (!led_set_func)
->>   			led_set_func = symbol_request(tpacpi_led_set);
->>   		if (!led_set_func) {
->> @@ -3494,6 +3516,7 @@ static const struct snd_pci_quirk cxt5066_fixups[] = {
->>   	SND_PCI_QUIRK(0x17aa, 0x3975, "Lenovo U300s", CXT_FIXUP_STEREO_DMIC),
->>   	SND_PCI_QUIRK(0x17aa, 0x3977, "Lenovo IdeaPad U310", CXT_FIXUP_STEREO_DMIC),
->>   	SND_PCI_QUIRK(0x17aa, 0x397b, "Lenovo S205", CXT_FIXUP_STEREO_DMIC),
->> +	SND_PCI_QUIRK_VENDOR(0x17aa, "Thinkpad", CXT_FIXUP_THINKPAD_ACPI),
->>   	SND_PCI_QUIRK(0x1c06, 0x2011, "Lemote A1004", CXT_PINCFG_LEMOTE_A1004),
->>   	SND_PCI_QUIRK(0x1c06, 0x2012, "Lemote A1205", CXT_PINCFG_LEMOTE_A1205),
->>   	{}
->>
-> Starting with this patch, my Lenovo Thinkpad X121e netbook (it's without
-> any mute LEDs, BTW, there is only a power LED) considers the power
-> button as hard reset. I have to exclude my machine from that ACPI fixup
-> (this is on top of current Linus master):
-It seems more like a firmware issue, in the acpi code, the "SSMS" is for 
-mute led, and the "MMTS" is for micmute led, I don't know why your 
-machine can pass "SSMS" or "MMTS" scanning even without mute LEDs.
+If that is true , it may be a good idea to get me or someone to write
+a text file like maintainers that
+is used to keep track of open bugs by subsystem in the main kernel directory.
+Cheers Nick
 
-
-
-> diff --git a/sound/pci/hda/thinkpad_helper.c b/sound/pci/hda/thinkpad_helper.c
-> index 6ba0b55..7e1a179 100644
-> --- a/sound/pci/hda/thinkpad_helper.c
-> +++ b/sound/pci/hda/thinkpad_helper.c
-> @@ -21,7 +21,8 @@ static acpi_status acpi_check_cb(acpi_handle handle, u32 lvl, void *context,
->   static bool is_thinkpad(struct hda_codec *codec)
->   {
->   	bool found = false;
-> -	if (codec->subsystem_id >> 16 != 0x17aa)
-> +	if (codec->subsystem_id >> 16 != 0x17aa ||
-> +	    codec->subsystem_id == 0x17aa21ec)
->   		return false;
->   	if (ACPI_SUCCESS(acpi_get_devices("LEN0068", acpi_check_cb, &found, NULL)) && found)
->   		return true;
+On Sun, Jun 29, 2014 at 5:32 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Sun, Jun 29, 2014 at 09:21:46AM +0200, Levente Kurusa wrote:
+>>
+>> I think that is because they are relatively young and they are generally
+>> used for one direct purpose. The kernel has to make sure it works in a lot
+>> of different situations and hence a lot of different bugs arise.
 >
+> There are a huge number of bugs which are hardware specific --- and
+> worse, fixing it for one hardware device can often cause problems for
+> others.
 >
-> Is that the way to address it? Then I can send a proper patch. Any hints
-> regarding the "why" will be incorporated into its description.
+>> >With the linux kernel not only doesn't anything exist, the project
+>> >itself is so bloody hard right, kernel programming, most of the
+>> >bugzilla bugs I can barely understand let alone even begin to deduce
+>> >what is going on. Now given that the list itself isn't maintained
+>> >makes things extremely hard.
+>>
+>> There are still methods to extract various unresolved bugs from the
+>> bugzilla though. Look in any subsystem you find delicious and then
+>> just sort the bugs by the date they were modified. This will yield
+>> a list of nice fresh bugs along with some recently fixed bugs.
 >
-> Thanks,
-> Jan
+> Or, try to find your own bugs.  Grab the development kernel, and see
+> if it breaks on your system.  If it does, and it was working on the
+> last stable kernel, then you can use "git bisect" to try to find the
+> point where things broke, and report the problem, and perhaps try to
+> figure out why it didn't work.  This can be a huge benefit for
+> developers who can't test their changes on every single hardware
+> configuration out there, so this sort of early testing of either daily
+> linux-next, or the mainline linux tree right after the merge window,
+> is a great way to learn about kernel programming.
 >
-
+> Because of the focus on "no new regressions", testing the bleeding
+> edge development kernels so we can fix problems before they get
+> released to civilians is not only important, but often means that the
+> bugs that are still open are the ones which are incredibly hard to
+> reproduce, or which require very specialized hardware.  So it's very
+> likely that they won't be the bugs that are best suited for people who
+> are just getting started on kernel development.  Basically, for the
+> most part, if they were easy, they would have been fixed already.  :-)
+>
+>> I brought this up as well on the Kernel Summit list. There wasn't any
+>> feedback on this :-), I guess there are some maintainers who care about
+>> bugzilla, but the rest (and the majority probably) does not care.
+>
+> If you ("you" being the generic you) are someone who likes grooming
+> the bug tracking systems, you can certainly start to try to figure out
+> which bugs are no longer relevant, and then work with someone like
+> Alan so they can get closed out.  Over time, as you become trusted to
+> have good judgement over bugs, various subsystem maintainers may be
+> willing to give you admin bits to close bugs directly.  (And by the
+> way, that's something else important to note --- it's good to
+> specialize; the kernel is huge, so focusing on a single subsystem is a
+> good way to more quickly build up expertise, and for developers for
+> that subsystem to get to know you and to trust your judgement and your
+> skills.)
+>
+> However, you may find that unless you're someone who tends to be a bit
+> obsessive-compulsive, that grooming the bugzilla doesn't really
+> provide much in the way of real benefit to kernel development, and so
+> don't provide you with much satisfaction.
+>
+> After all, we don't have any direct management oversight over
+> developers for the upstream kernel.  So tracking things so that
+> policies such as "all P1 bugs must be updated every day" can be
+> enforced, or to keep lists of which bugs have been opened for the
+> longest time so that people can have long interminable meetings about
+> why a short-staffed team has so many bugs open, are things which are
+> much more applicable for pointy-haired engineering managers who can
+> boss engineers around and tell them to work on a particular bugs or
+> else they will get a bad rating at the next performance review.  But
+> for a volunteer project, keeping track of bugs is something that has
+> benefits which are much more indirect.  If as a result, you don't find
+> bug grooming to be very satisfying, there's no shame in moving on to
+> some other form of kernel contributions that *do* give you more
+> satisfaction.
+>
+> Best regards,
+>
+>                                                 - Ted
