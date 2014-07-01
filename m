@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758037AbaGAPNe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 11:13:34 -0400
-Received: from mail.eperm.de ([89.247.134.16]:52690 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754767AbaGAPNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 11:13:33 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: herbert@gondor.apana.org.au
-Cc: Rafael Aquini <aquini@redhat.com>, aris@redhat.com,
-        Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] DRBG: fix memory corruption for AES192
-Date: Tue, 01 Jul 2014 17:08:48 +0200
-Message-ID: <3083657.SRQmeelhqi@myon.chronox.de>
-User-Agent: KMail/4.12.5 (Linux/3.14.9-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <36957559.tbJt1gJF6I@myon.chronox.de>
-References: <36957559.tbJt1gJF6I@myon.chronox.de>
+	id S1758106AbaGAPOr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 11:14:47 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:10817 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754356AbaGAPOq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 11:14:46 -0400
+Date: Tue, 1 Jul 2014 11:14:44 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, stable-rt@vger.kernel.org
+Subject: [PATCH RT] sched: Do not clear PF_NO_SETAFFINITY flag in
+ select_fallback_rq()
+Message-ID: <20140701111444.0cfebaa1@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the CTR DRBG, the drbg_state->scratchpad temp buffer (i.e. the
-memory location immediately before the drbg_state->tfm variable
-is the buffer that the BCC function operates on. BCC operates
-blockwise. Making the temp buffer drbg_statelen(drbg) in size is
-sufficient when the DRBG state length is a multiple of the block
-size. For AES192 this is not the case and the length for temp is
-insufficient (yes, that also means for such ciphers, the final
-output of all BCC rounds are truncated before used to update the
-state of the DRBG!!).
 
-The patch enlarges the temp buffer from drbg_statelen to
-drbg_statelen + drbg_blocklen to have sufficient space.
+I talked with Peter Zijlstra about this, and he told me that the clearing
+of the PF_NO_SETAFFINITY flag was to deal with the optimization of
+migrate_disable/enable() that ignores tasks that have that flag set. But
+that optimization was removed when I did a rework of the cpu hotplug code.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
+I found that ignoring tasks that had that flag set would cause those tasks
+to not sync with the hotplug code and cause the kernel to crash. Thus it
+needed to not treat them special and those tasks had to go though the same
+work as tasks without that flag set.
+
+Now that those tasks are not treated special, there's no reason to clear the
+flag.
+
+May still need to be tested as the migrate_me() code does not ignore those
+flags.
+
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- crypto/drbg.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
-
-diff --git a/crypto/drbg.c b/crypto/drbg.c
-index 86d483f..c2f02b7 100644
---- a/crypto/drbg.c
-+++ b/crypto/drbg.c
-@@ -441,8 +441,16 @@ static int drbg_ctr_bcc(struct drbg_state *drbg,
-  *		length: drbg_blocklen(drbg)
-  *	temp
-  *		start: iv + drbg_blocklen(drbg)
-- *		length: (drbg_keylen(drbg) + drbg_blocklen(drbg) ==
-- *				drbg_statelen(drbg))
-+ *		length: drbg_satelen(drbg) + drbg_blocklen(drbg)
-+ *			note: temp is the buffer that the BCC function 
-operates
-+ *			on. BCC operates blockwise. drbg_statelen(drbg)
-+ *			is sufficient when the DRBG state length is a multiple
-+ *			of the block size. For AES192 (and maybe other 
-ciphers)
-+ *			this is not correct and the length for temp is
-+ *			insufficient (yes, that also means for such ciphers,
-+ *			the final output of all BCC rounds are truncated).
-+ *			Therefore, add drbg_blocklen(drbg) to cover all
-+ *			possibilities.
-  */
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index ce80b93..352239e 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1393,12 +1393,6 @@ out:
+ 		}
+ 	}
  
- /* Derivation Function for CTR DRBG as defined in 10.4.2 */
-@@ -1214,7 +1222,7 @@ static inline int drbg_alloc_state(struct drbg_state 
-*drbg)
- 			  drbg_statelen(drbg) +	/* df_data */
- 			  drbg_blocklen(drbg) +	/* pad */
- 			  drbg_blocklen(drbg) +	/* iv */
--			  drbg_statelen(drbg);	/* temp */
-+			  drbg_statelen(drbg) + drbg_blocklen(drbg); /* temp 
-*/
- 	else
- 		sb_size = drbg_statelen(drbg) + drbg_blocklen(drbg);
+-	/*
+-	 * Clear PF_NO_SETAFFINITY, otherwise we wreckage
+-	 * migrate_disable/enable. See optimization for
+-	 * PF_NO_SETAFFINITY tasks there.
+-	 */
+-	p->flags &= ~PF_NO_SETAFFINITY;
+ 	return dest_cpu;
+ }
  
--- 
-1.9.3
-
-
