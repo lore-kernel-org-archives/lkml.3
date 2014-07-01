@@ -1,73 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757419AbaGANep (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 09:34:45 -0400
-Received: from vegas.theobroma-systems.com ([144.76.126.164]:46632 "EHLO
-	mail.theobroma-systems.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754297AbaGANeo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 09:34:44 -0400
-X-Greylist: delayed 2010 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Jul 2014 09:34:43 EDT
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Subject: Re: [PATCH 15/24] ARM64:ILP32: Use the non compat HWCAP for ILP32.
-From: "Dr. Philipp Tomsich" <philipp.tomsich@theobroma-systems.com>
-In-Reply-To: <1400914939-9708-16-git-send-email-apinski@cavium.com>
-Date: Tue, 1 Jul 2014 15:01:06 +0200
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <6E65D0A3-E36A-4A34-8CD0-258964FA623A@theobroma-systems.com>
-References: <1400914939-9708-1-git-send-email-apinski@cavium.com> <1400914939-9708-16-git-send-email-apinski@cavium.com>
-To: Andrew Pinski <apinski@cavium.com>
-X-Mailer: Apple Mail (2.1878.2)
+	id S1757423AbaGANgh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 09:36:37 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49838 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753191AbaGANgf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 09:36:35 -0400
+Date: Tue, 1 Jul 2014 14:36:27 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] ARM: mvebu: add armada drm init to Dove board setup
+Message-ID: <20140701133627.GP32514@n2100.arm.linux.org.uk>
+References: <1404219871-18419-1-git-send-email-sebastian.hesselbarth@gmail.com> <1404219871-18419-5-git-send-email-sebastian.hesselbarth@gmail.com> <20140701131026.GO32514@n2100.arm.linux.org.uk> <53B2B5E5.50502@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53B2B5E5.50502@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 May 2014, at 09:02 , Andrew Pinski <apinski@cavium.com> wrote:
+On Tue, Jul 01, 2014 at 03:21:41PM +0200, Sebastian Hesselbarth wrote:
+> On 07/01/2014 03:10 PM, Russell King - ARM Linux wrote:
+>> On Tue, Jul 01, 2014 at 03:04:31PM +0200, Sebastian Hesselbarth wrote:
+>>> +	pdev = platform_device_register_full(&armada_drm_dev_info);
+>>> +	/* assign last found lcd node to drm device for clk lookup */
+>>> +	pdev->dev.of_node = clknp;
+>>
+>> NAK.  This really isn't a good way to deal with this, even in a
+>> temporary basis.  While assigning a DT node to a manually created
+>> platform device does solve that problem, it also introduces the
+>> problem that this platform device will now match any platform driver
+>> which recognises the "marvell,dove-lcd" compatible type, which may
+>> occur _before_ we find the driver to match using the legacy strings.
+>
+> Right, I never said it is a good solution but there is no driver for
+> "marvell,dove-lcd" *and* there is no way to assign clock aliases for
+> clocks not yet registered.
 
-> #ifdef CONFIG_COMPAT
-> -#define COMPAT_ELF_HWCAP	(compat_elf_hwcap)
-> -#define COMPAT_ELF_HWCAP2	(compat_elf_hwcap2)
-> extern unsigned int compat_elf_hwcap, compat_elf_hwcap2;
-> +#define COMPAT_ELF_HWCAP	\
-> +	(is_a32_compat_task()	\
-> +	  ? compat_elf_hwcap	\
-> +	  : elf_hwcap)
-> +
-> +#define COMPAT_ELF_HWCAP2	\
-> +	(is_a32_compat_task()	\
-> +	  ? compat_elf_hwcap2	\
-> +	  : 0)
-> +
-> #endif
+Now consider what happens when I get to push the updates which do add
+that to David Airlie.
 
-You missed the COMPAT_ELF_PLATFORM (in arm64/include/asm/elf.h), which is used to setup AT_PLATFORM in the auxilary vectors. I’d suggest to use a similar naming convention to what will be used in gdb (i.e. appending a “:ilp32” to the base architecture.
+> Well, you may have noticed that three moving subsystems plus new
+> bindings plus non-DT/DT drivers quickly create some kind of patch
+> deadlock. This is a dirty but tiny step to resolve one of those
+> deadlocks.
 
-The proposed change would thus be:
----
- arch/arm64/include/asm/elf.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The deadlock only exists because it is impossible to get anyone to look
+outside their own little world and review patches.  This is a growing
+problem, and there's a growing number of articles and blogs on the
+Internet about how kernel development now sucks rocks because of it.
 
-diff --git a/arch/arm64/include/asm/elf.h b/arch/arm64/include/asm/elf.h
-index 3f979b5..6d38edc 100644
---- a/arch/arm64/include/asm/elf.h
-+++ b/arch/arm64/include/asm/elf.h
-@@ -168,9 +168,9 @@ extern unsigned long arch_randomize_brk(struct mm_struct *mm);
- #ifdef CONFIG_COMPAT
- 
- #ifdef __AARCH64EB__
--#define COMPAT_ELF_PLATFORM            ("v8b")
-+#define COMPAT_ELF_PLATFORM            (is_ilp32_compat_task() ? "aarch64_be:ilp32" : "v8b")
- #else
--#define COMPAT_ELF_PLATFORM            ("v8l")
-+#define COMPAT_ELF_PLATFORM            (is_ilp32_compat_task() ? "aarch64:ilp32" : "v8l")
- #endif
- 
- #define COMPAT_ELF_ET_DYN_BASE         (randomize_et_dyn(2 * TASK_SIZE_32 / 3))
+Where do you get three moving subsystems from anyway?  There's the
+component stuff and the DRM stuff - that's two subsystems.  The component
+stuff is something which I maintain, but needs to go through Greg.  I'm
+seriously thinking about just pushing those three patches to Greg in the
+next few days.  Then I'll start talking to David about the rest of it.
+
+The Armada DRM stuff shouldn't be a problem, but the TDA998x may end up
+being so /if/ Jean-Francois decides to object to my approach there to
+allow tilcdc to continue working with the driver... but then as I now
+maintain that as well, that's not much of an issue because I can make
+the decision to overrule that point.
+
+>> The other problem in this series is that while you introduce some
+>> bindings which may work today, they're not going to work tomorrow, and
+>> that's a problem.  Don't do DT piecemeal like this and end up having to
+>> break the bindings (which we will have to do to add the endpoints.)
+>
+> Adding new properties/subnodes never has been a problem for us at all.
+> New generic bindings were introduced *often* in the past and added to
+> existing bindings, e.g. clocks, gpio, pinctrl.
+>
+> The proposed binding for dove-lcd simply reflects the tiny part that
+> is mandatory for identifying the lcd controllers. It only contains
+> reg and interrupts which would also be in the corresponding
+> platform_device.
+
+There is a difference between augmenting an existing driver binding for
+new features (such as adding a GPIO to allow a new platform to work) and
+adding new bindings which are required becaues we've updated the driver.
+
+The former adds a new feature but allows existing users to continue
+working.  The latter adds a new feature which breaks existing users.
+That's a problem.
+
+In this case, it can be trivially avoided by adding all the properties
+that we need right from the start.  We know what we need, and the
+of_graph stuff is now established and in use by other DRM drivers.
+
+Just because the existing driver may not make use of it is no excuse to
+omit it - it's part of the description of how the hardware is connected,
+it conforms to agreed methods to describe this connectivity, we know that
+it works, and we know that the driver will need it in the very near future.
+
+Omitting it now just results in additional pain later on that we can
+avoid.
+
+>> If you want to do this then you need to add the endpoints from the start
+>> even though the driver doesn't yet make use of them - or don't add the
+>> DT bits at all.
+>
+> If you really think that way, I definitely give up on mainline Dove and
+> SolidRun Cubox. You are /really/ proposing to wait for *all* related
+> subsystem bindings to settle before even starting to add DT support?
+
+*Sigh*.
+
 -- 
-1.9.0
-
-
-Best,
-Philipp.
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
