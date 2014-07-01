@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758057AbaGAONu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 10:13:50 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35569 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758032AbaGAONs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 10:13:48 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 04/33] ARM: at91: prepare common clk transition for rm9200
-Date: Tue,  1 Jul 2014 16:12:13 +0200
-Message-Id: <1404223962-30471-5-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com>
+	id S932621AbaGAOWq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 10:22:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54615 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932595AbaGAOWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 10:22:44 -0400
+Date: Tue, 1 Jul 2014 10:22:01 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: "HATAYAMA, Daisuke" <d.hatayama@jp.fujitsu.com>, hpa@zytor.com,
+        matt@console-pimps.org, peterz@infradead.org, acme@kernel.org,
+        mingo@redhat.com, paulus@samba.org, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] perf/x86/intel: ignore CondChgd bit to avoid false
+ NMI handling
+Message-ID: <20140701142201.GU7959@redhat.com>
+References: <20140613084437.12424.62294.stgit@localhost6.localdomain6>
+ <20140616153047.GJ177152@redhat.com>
+ <53B12CB3.5050508@jp.fujitsu.com>
+ <20140630222224.GH19781@tassilo.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140630222224.GH19781@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enclose the rm9200 old clk registration in "#if defined(CONFIG_OLD_CLK_AT91)
- #endif"
+On Mon, Jun 30, 2014 at 03:22:24PM -0700, Andi Kleen wrote:
+> > 
+> > I'm also interested in the behaviour of CondChgd bit on Ivy Bridge processors.
+> 
+> The intended meaning of CondChgd is that a hardware debugger has taken over the
+> PMU. It shouldn't really be set in other circumstances.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/mach-at91/at91rm9200.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+Interesting.  My concern is we have customers that can soft reboot a
+machine and have this bit accidentally be enabled.  I am pretty sure they
+do not have a hardware debugger attached (I would have to double check).
+Is there other ways this can be set?
 
-diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
-index 787bb50a4dff..038702ee8bc6 100644
---- a/arch/arm/mach-at91/at91rm9200.c
-+++ b/arch/arm/mach-at91/at91rm9200.c
-@@ -26,10 +26,11 @@
- #include "at91_aic.h"
- #include "soc.h"
- #include "generic.h"
--#include "clock.h"
- #include "sam9_smc.h"
- #include "pm.h"
- 
-+#if defined(CONFIG_OLD_CLK_AT91)
-+#include "clock.h"
- /* --------------------------------------------------------------------
-  *  Clocks
-  * -------------------------------------------------------------------- */
-@@ -277,6 +278,9 @@ static void __init at91rm9200_register_clocks(void)
- 	clk_register(&pck2);
- 	clk_register(&pck3);
- }
-+#else
-+#define at91rm9200_register_clocks NULL
-+#endif
- 
- /* --------------------------------------------------------------------
-  *  GPIO
--- 
-1.9.1
+Cheers,
+Don
 
+> 
+> I think right now for perf it would be best to just ignore it.
+> 
+> In theory could stop using the PMU, but if some BIOS set it it would
+> completely disable perf there. So better to just ignore it.
+> 
+> -Andi
+> 
+> -- 
+> ak@linux.intel.com -- Speaking for myself only
