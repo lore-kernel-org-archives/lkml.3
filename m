@@ -1,65 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758111AbaGAQao (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 12:30:44 -0400
-Received: from smtprelay0183.hostedemail.com ([216.40.44.183]:34350 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756491AbaGAQan (ORCPT
+	id S1758233AbaGAQd0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 12:33:26 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:65313 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758139AbaGAQdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 12:30:43 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3867:3868:4250:4321:4385:5007:6119:7576:7652:10004:10400:10450:10455:10848:11026:11232:11658:11914:12043:12296:12517:12519:12740:13019:13069:13255:13311:13357:19904:19999:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: chin72_22ffa8cf61947
-X-Filterd-Recvd-Size: 1975
-Message-ID: <1404232237.14624.2.camel@joe-AO725>
-Subject: Re: [PATCH 15/20] drbd: cosmetic: change all printk(level, ...) to
- pr_<level>(...)
-From: Joe Perches <joe@perches.com>
-To: Philipp Reisner <philipp.reisner@linbit.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        drbd-dev@lists.linbit.com
-Date: Tue, 01 Jul 2014 09:30:37 -0700
-In-Reply-To: <1404231410-29852-16-git-send-email-philipp.reisner@linbit.com>
-References: <1404231410-29852-1-git-send-email-philipp.reisner@linbit.com>
-	 <1404231410-29852-16-git-send-email-philipp.reisner@linbit.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Jul 2014 12:33:24 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net, shawn.guo@linaro.org
+Cc: linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, arvind.chauhan@arm.com,
+        sboyd@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        spk.linux@gmail.com, thomas.ab@samsung.com, nm@ti.com,
+        t.figa@samsung.com, Viresh Kumar <viresh.kumar@linaro.org>,
+        devicetree@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Rob Herring <rob.herring@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Simon Horman <horms@verge.net.au>
+Subject: [PATCH 00/14] cpufreq: cpu0: Extend support beyond CPU0, V2
+Date: Tue,  1 Jul 2014 22:02:29 +0530
+Message-Id: <cover.1404231535.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 2.0.0.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-01 at 18:16 +0200, Philipp Reisner wrote:
-> From: Lars Ellenberg <lars.ellenberg@linbit.com>
-> 
-> Cosmetic change only.
-[]
-> diff --git a/drivers/block/drbd/drbd_bitmap.c b/drivers/block/drbd/drbd_bitmap.c
-[]
-> @@ -353,9 +353,8 @@ static void bm_free_pages(struct page **pages, unsigned long number)
->  
->  	for (i = 0; i < number; i++) {
->  		if (!pages[i]) {
-> -			printk(KERN_ALERT "drbd: bm_free_pages tried to free "
-> -					  "a NULL pointer; i=%lu n=%lu\n",
-> -					  i, number);
-> +			pr_alert("bm_free_pages tried to free a NULL pointer; i=%lu n=%lu\n",
-> +				 i, number);
+V1: https://lkml.org/lkml/2014/6/25/152
 
-Cosmetic yes, but these won't be prefixed with "drbd: "
-unless there's a #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-somewhere above this and before any other #include.
+Stephen Boyd sent few patches some time back around a new cpufreq driver for
+Qualcomm's Krait SoC: https://lkml.org/lkml/2014/6/24/918.
 
-> diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-[]
-> @@ -26,6 +26,8 @@
->  
->   */
->  
-> +#define pr_fmt(fmt)	"drbd: " fmt
+Krait couldn't use existing cpufreq-cpu0 driver as it doesn't have support for
+SoC's with multiple clusters or SoC's which don't share clock line across all
+CPUs.
 
-like this one, though I think KBUILD_MODNAME would be better.
+This patchset is all about extending support beyond CPU0. It can be used for
+platforms like Krait or ARM big LITTLE architecture now.
 
+First two patches add helper routine for of and clk layer, which would be used
+by later patches.
 
+Third one adds space for driver specific data in 'struct cpufreq_policy' and
+later ones migrate cpufreq-cpu0 to cpufreq-generic, i.e. can be used for SoCs
+which don't share clock lines across all CPUs.
+
+@Stephen: I haven't added your Tested-by as there were few modifications since
+the time you tested it last.
+
+Pushed here:
+Rebased over v3.16-rc3:
+git://git.linaro.org/people/viresh.kumar/linux.git cpufreq/cpu0-krait-v2
+
+For guys looking to test on exynos, rebased over linux-next + some patches from
+Thomas Abraham to use cpufreq-cpu0 for exynos:
+git://git.linaro.org/people/viresh.kumar/linux.git cpufreq/cpu0-exynos-v2
+
+Cc: devicetree@vger.kernel.org
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Michal Simek <michal.simek@xilinx.com>
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Rob Herring <rob.herring@linaro.org>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Simon Horman <horms@verge.net.au>
+
+Viresh Kumar (14):
+  of: Create of_property_match()
+  clk: Create of_clk_shared_by_cpus()
+  cpufreq: Add support for per-policy driver data
+  cpufreq: cpu0: Add Module Author
+  cpufreq: cpu0: don't validate clock on clk_put()
+  cpufreq: cpu0: defer probe if clock isn't registered yet
+  cpufreq: cpu0: OPPs can be populated at runtime
+  cpufreq: cpu0: use dev_{err|warn|dbg} instead of pr_{err|warn|debug}
+  cpufreq: cpu0: Move per-cluster initialization code to ->init()
+  cpufreq: cpu0: try regulators with name "cpu-supply"
+  cpufreq: cpu0: Make allocate_resources() work for any CPU
+  cpufreq: cpu0: Extend support beyond CPU0
+  cpufreq: cpu0: rename driver and internals to 'cpufreq_generic'
+  cpufreq: generic: set platform_{driver|device} '.name' to
+    'cpufreq-generic'
+
+ .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt   |  62 ----
+ .../bindings/cpufreq/cpufreq-generic.txt           | 126 +++++++
+ arch/arm/mach-imx/imx27-dt.c                       |   2 +-
+ arch/arm/mach-imx/imx51-dt.c                       |   2 +-
+ arch/arm/mach-omap2/pm.c                           |   2 +-
+ arch/arm/mach-shmobile/board-ape6evm-reference.c   |   2 +-
+ arch/arm/mach-shmobile/setup-sh73a0.c              |   4 +-
+ arch/arm/mach-zynq/common.c                        |   2 +-
+ drivers/clk/clk.c                                  |  56 +++
+ drivers/cpufreq/Kconfig                            |  10 +-
+ drivers/cpufreq/Kconfig.arm                        |   2 +-
+ drivers/cpufreq/Makefile                           |   2 +-
+ drivers/cpufreq/cpufreq-cpu0.c                     | 251 -------------
+ drivers/cpufreq/cpufreq-generic.c                  | 394 +++++++++++++++++++++
+ drivers/cpufreq/exynos4x12-cpufreq.c               |   2 +-
+ drivers/cpufreq/highbank-cpufreq.c                 |   6 +-
+ drivers/of/base.c                                  |  29 ++
+ include/linux/clk.h                                |   6 +
+ include/linux/cpufreq.h                            |   3 +
+ include/linux/of.h                                 |  10 +
+ 20 files changed, 642 insertions(+), 331 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
+ create mode 100644 Documentation/devicetree/bindings/cpufreq/cpufreq-generic.txt
+ delete mode 100644 drivers/cpufreq/cpufreq-cpu0.c
+ create mode 100644 drivers/cpufreq/cpufreq-generic.c
+
+-- 
+2.0.0.rc2
 
