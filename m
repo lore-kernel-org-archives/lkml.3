@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932449AbaGAJhk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 05:37:40 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33588 "EHLO
+	id S1757911AbaGAJh5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 05:37:57 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33593 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757778AbaGAJfM (ORCPT
+	with ESMTP id S1757768AbaGAJfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Jul 2014 05:35:12 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
@@ -16,9 +16,9 @@ Cc: Boris Brezillon <boris@free-electrons.com>,
         Thomas Petazzoni <thomas@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v2 03/14] AT91: PIT: Use DIV_ROUND_CLOSEST to compute the cycles
-Date: Tue,  1 Jul 2014 11:33:16 +0200
-Message-Id: <1404207208-14513-4-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 02/14] AT91: generic.h: Add include safe guards
+Date: Tue,  1 Jul 2014 11:33:15 +0200
+Message-Id: <1404207208-14513-3-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404207208-14513-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1404207208-14513-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -26,27 +26,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Until now, the pit_cycle computation was dividing the rate by HZ, rounding to
-the closest integer, but without using the appropriate macro.
+The generic.h header file doesn't have any safe guards against multiple
+inclusion. It only worked so far because all the symbols defined in it were
+extern, but this is a rather fragile assumption.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/mach-at91/at91sam926x_time.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-at91/generic.h | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/arm/mach-at91/at91sam926x_time.c b/arch/arm/mach-at91/at91sam926x_time.c
-index fd3170b65fbb..2e6f1a37ab90 100644
---- a/arch/arm/mach-at91/at91sam926x_time.c
-+++ b/arch/arm/mach-at91/at91sam926x_time.c
-@@ -252,7 +252,7 @@ void __init at91sam926x_pit_init(void)
- 	if (IS_ERR(mck))
- 		panic("AT91: PIT: Unable to get mck clk\n");
- 	pit_rate = clk_get_rate(mck) / 16;
--	pit_cycle = (pit_rate + HZ/2) / HZ;
-+	pit_cycle = DIV_ROUND_CLOSEST(pit_rate, HZ);
- 	WARN_ON(((pit_cycle - 1) & ~AT91_PIT_PIV) != 0);
+diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
+index 631fa3b8c16d..77d4daeee66a 100644
+--- a/arch/arm/mach-at91/generic.h
++++ b/arch/arm/mach-at91/generic.h
+@@ -8,6 +8,9 @@
+  * published by the Free Software Foundation.
+  */
  
- 	/* Initialize and enable the timer */
++#ifndef _AT91_GENERIC_H
++#define _AT91_GENERIC_H
++
+ #include <linux/clkdev.h>
+ #include <linux/of.h>
+ #include <linux/reboot.h>
+@@ -90,3 +93,5 @@ extern int  __init at91_gpio_of_irq_setup(struct device_node *node,
+ 					  struct device_node *parent);
+ 
+ extern u32 at91_get_extern_irq(void);
++
++#endif /* _AT91_GENERIC_H */
 -- 
 2.0.0
 
