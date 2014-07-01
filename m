@@ -1,116 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866AbaGAFrT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 01:47:19 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:2847 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495AbaGAFrR (ORCPT
+	id S1753068AbaGAFrx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 01:47:53 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:38544 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818AbaGAFru convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 01:47:17 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 30 Jun 2014 22:40:48 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [RFC 1/3] gpio: always compile label support
-Date: Tue, 1 Jul 2014 14:45:14 +0900
-Message-ID: <1404193516-4384-2-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404193516-4384-1-git-send-email-acourbot@nvidia.com>
-References: <1404193516-4384-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
+	Tue, 1 Jul 2014 01:47:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CALCETrW3=idHOKF56d94suiA0NoiUGwr7pENm13q6=1XMbBPdw@mail.gmail.com>
+References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
+	<1403913966-4927-4-git-send-email-ast@plumgrid.com>
+	<CALCETrV3WLBmHewCZgfhCkjODWfq_byRg6sF7HpqZ6n9BVMBVQ@mail.gmail.com>
+	<CAMEtUuzWs+MbSOGGD-Rc01DHKASa4GxbHdtCrSCLit4cUM35mA@mail.gmail.com>
+	<CALCETrWy6=dzTycy-ckiMR92+nQeqAWp_Hw=hi__VSzVWZ43Ag@mail.gmail.com>
+	<CAMEtUuwRf--qyPu3rKB7-57KAu2NdsQdEpVRckqabmf61g+h-g@mail.gmail.com>
+	<CALCETrUoOTtQ1R1A8Ak35fxHxaFTPHWP6oZWnXDVLKa_ESziWw@mail.gmail.com>
+	<CAMEtUuzS=9Y_ZjigofvQ5d3=89RS=+d8-WGPk9VVSMc3qawWsw@mail.gmail.com>
+	<CALCETrWq+=Q3G2Smjd2RYES42UagpmD0EKxFM+jNufi6_qitWg@mail.gmail.com>
+	<CAMEtUuyKY=haqP11VgXHdfHBkqfB-KxuswygUd7hDPLkOFz9HQ@mail.gmail.com>
+	<CALCETrW3=idHOKF56d94suiA0NoiUGwr7pENm13q6=1XMbBPdw@mail.gmail.com>
+Date: Mon, 30 Jun 2014 22:47:49 -0700
+Message-ID: <CAMEtUuyX-tybpMEW=f-00qgq9h3AcHovLNW0_bak3oT4Oj3FuA@mail.gmail.com>
+Subject: Re: [PATCH RFC net-next 03/14] bpf: introduce syscall(BPF, ...) and
+ BPF maps
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compiling out GPIO labels results in a space gain so small that it can
-hardly be justified. Labels can also be useful for printing debug
-messages, so always keep them around.
+On Mon, Jun 30, 2014 at 3:09 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Sat, Jun 28, 2014 at 11:36 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> On Sat, Jun 28, 2014 at 6:52 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On Sat, Jun 28, 2014 at 1:49 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>>>
+>>>> Sorry I don't like 'fd' direction at all.
+>>>> 1. it will make the whole thing very socket specific and 'net' dependent.
+>>>> but the goal here is to be able to use eBPF for tracing in embedded
+>>>> setups. So it's gotta be net independent.
+>>>> 2. sockets are already overloaded with all sorts of stuff. Adding more
+>>>> types of sockets will complicate it a lot.
+>>>> 3. and most important. read/write operations on sockets are not
+>>>> done every nanosecond, whereas lookup operations on bpf maps
+>>>> are done every dozen instructions, so we cannot have any overhead
+>>>> when accessing maps.
+>>>> In other words the verifier is done as static analyzer. I moved all
+>>>> the complexity to verify time, so at run-time the programs are as
+>>>> fast as possible. I'm strongly against run-time checks in critical path,
+>>>> since they kill performance and make the whole approach a lot less usable.
+>>>
+>>> I may have described my suggestion poorly.  I'm suggesting that all of
+>>> these global ids be replaced *for userspace's benefit* with fds.  That
+>>> is, a map would have an associated struct inode, and, when you load an
+>>> eBPF program, you'd pass fds into the kernel instead of global ids.
+>>> The kernel would still compile the eBPF program to use the global ids,
+>>> though.
+>>
+>> Hmm. If I understood you correctly, you're suggesting to do it similar
+>> to ipc/mqueue, shmem, sockets do. By registering and mounting
+>> a file system and providing all superblock and inode hooks… and
+>> probably have its own namespace type… hmm… may be. That's
+>> quite a bit of work to put lightly. As I said in the other email the first
+>> step is root only and all these complexity just not worth doing
+>> at this stage.
+>
+> The downside of not doing it right away is that it's harder to
+> retrofit in without breaking early users.
+>
+> You might be able to get away with using anon_inodes.  That will
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- drivers/gpio/gpiolib.c | 27 ++-------------------------
- 1 file changed, 2 insertions(+), 25 deletions(-)
-
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 2ebc9071e354..8ba9dbedcfdf 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -66,9 +66,7 @@ struct gpio_desc {
- #define GPIO_FLAGS_MASK		((1 << ID_SHIFT) - 1)
- #define GPIO_TRIGGER_MASK	(BIT(FLAG_TRIG_FALL) | BIT(FLAG_TRIG_RISE))
- 
--#ifdef CONFIG_DEBUG_FS
- 	const char		*label;
--#endif
- };
- static struct gpio_desc gpio_desc[ARCH_NR_GPIOS];
- 
-@@ -87,7 +85,6 @@ static void gpiod_free(struct gpio_desc *desc);
- 
- /* With descriptor prefix */
- 
--#ifdef CONFIG_DEBUG_FS
- #define gpiod_emerg(desc, fmt, ...)					       \
- 	pr_emerg("gpio-%d (%s): " fmt, desc_to_gpio(desc), desc->label ? : "?",\
-                  ##__VA_ARGS__)
-@@ -106,20 +103,6 @@ static void gpiod_free(struct gpio_desc *desc);
- #define gpiod_dbg(desc, fmt, ...)					       \
- 	pr_debug("gpio-%d (%s): " fmt, desc_to_gpio(desc), desc->label ? : "?",\
-                  ##__VA_ARGS__)
--#else
--#define gpiod_emerg(desc, fmt, ...)					\
--	pr_emerg("gpio-%d: " fmt, desc_to_gpio(desc), ##__VA_ARGS__)
--#define gpiod_crit(desc, fmt, ...)					\
--	pr_crit("gpio-%d: " fmt, desc_to_gpio(desc), ##__VA_ARGS__)
--#define gpiod_err(desc, fmt, ...)					\
--	pr_err("gpio-%d: " fmt, desc_to_gpio(desc), ##__VA_ARGS__)
--#define gpiod_warn(desc, fmt, ...)					\
--	pr_warn("gpio-%d: " fmt, desc_to_gpio(desc), ##__VA_ARGS__)
--#define gpiod_info(desc, fmt, ...)					\
--	pr_info("gpio-%d: " fmt, desc_to_gpio(desc), ##__VA_ARGS__)
--#define gpiod_dbg(desc, fmt, ...)					\
--	pr_debug("gpio-%d: " fmt, desc_to_gpio(desc), ##__VA_ARGS__)
--#endif
- 
- /* With chip prefix */
- 
-@@ -138,9 +121,7 @@ static void gpiod_free(struct gpio_desc *desc);
- 
- static inline void desc_set_label(struct gpio_desc *d, const char *label)
- {
--#ifdef CONFIG_DEBUG_FS
- 	d->label = label;
--#endif
- }
- 
- /*
-@@ -1906,8 +1887,8 @@ EXPORT_SYMBOL_GPL(gpio_free_array);
-  * @offset: of signal within controller's 0..(ngpio - 1) range
-  *
-  * Returns NULL if the GPIO is not currently requested, else a string.
-- * If debugfs support is enabled, the string returned is the label passed
-- * to gpio_request(); otherwise it is a meaningless constant.
-+ * The string returned is the label passed to gpio_request(); if none has been
-+ * passed it is a meaningless, non-NULL constant.
-  *
-  * This function is for use by GPIO controller drivers.  The label can
-  * help with diagnostics, and knowing that the signal is used as a GPIO
-@@ -1924,11 +1905,7 @@ const char *gpiochip_is_requested(struct gpio_chip *chip, unsigned offset)
- 
- 	if (test_bit(FLAG_REQUESTED, &desc->flags) == 0)
- 		return NULL;
--#ifdef CONFIG_DEBUG_FS
- 	return desc->label;
--#else
--	return "?";
--#endif
- }
- EXPORT_SYMBOL_GPL(gpiochip_is_requested);
- 
--- 
-2.0.0
-
+Spent quite a bit of time playing with anon_inode_getfd(). The model
+works ok for seccomp, but doesn't seem to work for tracing,
+since tracepoints are global. Say, syscall(bpf, load_prog) returns
+a process-local fd. This 'fd' as a string can be written to
+debugfs/tracing/events/.../filter which will increment a refcnt of a global
+ebpf_program structure and will keep using it. When process exits it will
+close all fds which in case of ebpf_prog_fd should be a nop, since
+the program is still attached to a global event. Now we have a
+program and maps that still alive and dangling, since tracepoint events
+keep coming, but no new process can access it. Here we just lost all
+benefits of making it 'fd' based. Theoretically we can extend tracing to
+be fd-based too and tracepoints will auto-detach upon process exit,
+but that's not going to work for all other global events. Like networking
+components (bridge, ovs, …) are global and they won't be adding
+fd-based interfaces.
+I'm still thinking about it, but it looks like that any process-local
+ebpf_prog_id scheme is not going to work for global events. Thoughts?
