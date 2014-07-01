@@ -1,1075 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288AbaGAVxx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:53:53 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.163]:30142 "EHLO
+	id S1758999AbaGAV5H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:57:07 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.160]:15057 "EHLO
 	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758869AbaGAVxt (ORCPT
+	with ESMTP id S1758882AbaGAVxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:53:49 -0400
+	Tue, 1 Jul 2014 17:53:53 -0400
 X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
 X-RZG-CLASS-ID: mo00
 From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 34/50] mars: add new file drivers/block/mars/xio_bricks/xio_if.c
-Date: Tue,  1 Jul 2014 23:47:14 +0200
-Message-Id: <1404251250-22992-35-git-send-email-tst@schoebel-theuer.de>
+Subject: Please review: generic brick framework + first application: asynchronous block device replication
+Date: Tue,  1 Jul 2014 23:46:40 +0200
+Message-Id: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
-References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
----
- drivers/block/mars/xio_bricks/xio_if.c | 1037 ++++++++++++++++++++++++++++++++
- 1 file changed, 1037 insertions(+)
- create mode 100644 drivers/block/mars/xio_bricks/xio_if.c
+Hi together,
 
-diff --git a/drivers/block/mars/xio_bricks/xio_if.c b/drivers/block/mars/xio_bricks/xio_if.c
-new file mode 100644
-index 0000000..2c2fa42
---- /dev/null
-+++ b/drivers/block/mars/xio_bricks/xio_if.c
-@@ -0,0 +1,1037 @@
-+/*  (c) 2010 Thomas Schoebel-Theuer / 1&1 Internet AG */
-+
-+/* Interface to a Linux device.
-+ * 1 Input, 0 Outputs.
-+ */
-+
-+#define REQUEST_MERGING
-+#define ALWAYS_UNPLUG			true
-+#define PREFETCH_LEN			PAGE_SIZE
-+
-+/*  low-level device parameters */
-+#define USE_MAX_SECTORS			(XIO_MAX_SEGMENT_SIZE >> 9)
-+#define USE_MAX_PHYS_SEGMENTS		(XIO_MAX_SEGMENT_SIZE >> 9)
-+#define USE_MAX_SEGMENT_SIZE		XIO_MAX_SEGMENT_SIZE
-+#define USE_LOGICAL_BLOCK_SIZE		512
-+#define USE_SEGMENT_BOUNDARY		(PAGE_SIZE-1)
-+
-+#define USE_CONGESTED_FN
-+#define USE_MERGE_BVEC
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/string.h>
-+
-+#include <linux/bio.h>
-+#include <linux/major.h>
-+#include <linux/genhd.h>
-+#include <linux/blkdev.h>
-+
-+#include <linux/xio.h>
-+#include <linux/brick/lib_limiter.h>
-+
-+#ifndef XIO_MAJOR /*  remove this later: fallback to old prepatch */
-+#define XIO_MAJOR			MARS_MAJOR
-+#endif
-+
-+/************************ global tuning ***********************/
-+
-+int if_throttle_start_size = 0; /*  in kb */
-+EXPORT_SYMBOL_GPL(if_throttle_start_size);
-+
-+struct xio_limiter if_throttle = {
-+	.lim_max_rate = 5000,
-+};
-+EXPORT_SYMBOL_GPL(if_throttle);
-+
-+/************************ own type definitions ***********************/
-+
-+#include <linux/xio/xio_if.h>
-+
-+#define IF_HASH_MAX			(PAGE_SIZE / sizeof(struct if_hash_anchor))
-+#define IF_HASH_CHUNK			(PAGE_SIZE * 32)
-+
-+struct if_hash_anchor {
-+	spinlock_t hash_lock;
-+	struct list_head hash_anchor;
-+};
-+
-+/************************ own static definitions ***********************/
-+
-+/*  TODO: check bounds, ensure that free minor numbers are recycled */
-+static int device_minor;
-+
-+/*************** object * aspect constructors * destructors **************/
-+
-+/************************ linux operations ***********************/
-+
-+#ifdef part_stat_lock
-+static
-+void _if_start_io_acct(struct if_input *input, struct bio_wrapper *biow)
-+{
-+	struct bio *bio = biow->bio;
-+	const int rw = bio_data_dir(bio);
-+	const int cpu = part_stat_lock();
-+
-+	(void)cpu;
-+	part_round_stats(cpu, &input->disk->part0);
-+	part_stat_inc(cpu, &input->disk->part0, ios[rw]);
-+	part_stat_add(cpu, &input->disk->part0, sectors[rw], bio->bi_iter.bi_size >> 9);
-+	part_inc_in_flight(&input->disk->part0, rw);
-+	part_stat_unlock();
-+	biow->start_time = jiffies;
-+}
-+
-+static
-+void _if_end_io_acct(struct if_input *input, struct bio_wrapper *biow)
-+{
-+	unsigned long duration = jiffies - biow->start_time;
-+	struct bio *bio = biow->bio;
-+	const int rw = bio_data_dir(bio);
-+	const int cpu = part_stat_lock();
-+
-+	(void)cpu;
-+	part_stat_add(cpu, &input->disk->part0, ticks[rw], duration);
-+	part_round_stats(cpu, &input->disk->part0);
-+	part_dec_in_flight(&input->disk->part0, rw);
-+	part_stat_unlock();
-+}
-+
-+#else /*  part_stat_lock */
-+#define _if_start_io_acct(...) do {} while (0)
-+#define _if_end_io_acct(...)   do {} while (0)
-+#endif
-+
-+/* callback
-+ */
-+static
-+void if_endio(struct generic_callback *cb)
-+{
-+	struct if_aio_aspect *aio_a = cb->cb_private;
-+	struct if_input *input;
-+	int k;
-+	int rw;
-+	int error;
-+
-+	LAST_CALLBACK(cb);
-+	if (unlikely(!aio_a || !aio_a->object)) {
-+		XIO_FAT("aio_a = %p aio = %p, something is very wrong here!\n", aio_a, aio_a->object);
-+		goto out_return;
-+	}
-+	input = aio_a->input;
-+	CHECK_PTR(input, err);
-+
-+	rw = aio_a->object->io_rw;
-+
-+	for (k = 0; k < aio_a->bio_count; k++) {
-+		struct bio_wrapper *biow;
-+		struct bio *bio;
-+
-+		biow = aio_a->orig_biow[k];
-+		aio_a->orig_biow[k] = NULL;
-+		CHECK_PTR(biow, err);
-+
-+		CHECK_ATOMIC(&biow->bi_comp_cnt, 1);
-+		if (!atomic_dec_and_test(&biow->bi_comp_cnt))
-+			continue;
-+
-+		bio = biow->bio;
-+		CHECK_PTR_NULL(bio, err);
-+
-+		_if_end_io_acct(input, biow);
-+
-+		error = CALLBACK_ERROR(aio_a->object);
-+		if (unlikely(error < 0)) {
-+			int bi_size = bio->bi_iter.bi_size;
-+
-+			XIO_ERR("NYI: error=%d RETRY LOGIC %u\n", error, bi_size);
-+		} else { /*  bio conventions are slightly different... */
-+			error = 0;
-+			bio->bi_iter.bi_size = 0;
-+		}
-+		bio_endio(bio, error);
-+		bio_put(bio);
-+		brick_mem_free(biow);
-+	}
-+	atomic_dec(&input->flying_count);
-+	if (rw)
-+		atomic_dec(&input->write_flying_count);
-+	else
-+		atomic_dec(&input->read_flying_count);
-+	goto out_return;
-+err:
-+	XIO_FAT("error in callback, giving up\n");
-+out_return:;
-+}
-+
-+/* Kick off plugged aios
-+ */
-+static
-+void _if_unplug(struct if_input *input)
-+{
-+	/* struct if_brick *brick = input->brick; */
-+	LIST_HEAD(tmp_list);
-+
-+#ifdef CONFIG_MARS_DEBUG
-+	might_sleep();
-+#endif
-+
-+	down(&input->kick_sem);
-+	spin_lock(&input->req_lock);
-+	if (!list_empty(&input->plug_anchor)) {
-+		/*  move over the whole list */
-+		list_replace_init(&input->plug_anchor, &tmp_list);
-+		atomic_set(&input->plugged_count, 0);
-+	}
-+	spin_unlock(&input->req_lock);
-+	up(&input->kick_sem);
-+
-+	while (!list_empty(&tmp_list)) {
-+		struct if_aio_aspect *aio_a;
-+		struct aio_object *aio;
-+		int hash_index;
-+
-+		aio_a = container_of(tmp_list.next, struct if_aio_aspect, plug_head);
-+		list_del_init(&aio_a->plug_head);
-+
-+		hash_index = aio_a->hash_index;
-+		spin_lock(&input->hash_table[hash_index].hash_lock);
-+		list_del_init(&aio_a->hash_head);
-+		spin_unlock(&input->hash_table[hash_index].hash_lock);
-+
-+		aio = aio_a->object;
-+
-+		if (unlikely(aio_a->current_len > aio_a->max_len))
-+			XIO_ERR("request len %d > %d\n", aio_a->current_len, aio_a->max_len);
-+		aio->io_len = aio_a->current_len;
-+
-+		atomic_inc(&input->flying_count);
-+		atomic_inc(&input->total_fire_count);
-+		if (aio->io_rw)
-+			atomic_inc(&input->write_flying_count);
-+		else
-+			atomic_inc(&input->read_flying_count);
-+		if (aio->io_skip_sync)
-+			atomic_inc(&input->total_skip_sync_count);
-+
-+		GENERIC_INPUT_CALL(input, aio_io, aio);
-+		GENERIC_INPUT_CALL(input, aio_put, aio);
-+	}
-+}
-+
-+/* accept a linux bio, convert to aio and call buf_io() on it.
-+ */
-+static
-+#ifdef BIO_CPU_AFFINE
-+int
-+#else
-+void
-+#endif
-+if_make_request(struct request_queue *q, struct bio *bio)
-+{
-+	struct if_input *input = q->queuedata;
-+	struct if_brick *brick = input->brick;
-+
-+	/* Original flags of the source bio
-+	 */
-+	const int  rw = bio_data_dir(bio);
-+	const int  sectors = bio_sectors(bio);
-+
-+/*  adapt to different kernel versions (TBD: improve) */
-+#if defined(BIO_RW_RQ_MASK) || defined(BIO_FLUSH)
-+	const bool ahead = bio_rw_flagged(bio, BIO_RW_AHEAD) && rw == READ;
-+	const bool barrier = bio_rw_flagged(bio, BIO_RW_BARRIER);
-+	const bool syncio = bio_rw_flagged(bio, BIO_RW_SYNCIO);
-+	const bool unplug = bio_rw_flagged(bio, BIO_RW_UNPLUG);
-+	const bool meta = bio_rw_flagged(bio, BIO_RW_META);
-+	const bool discard = bio_rw_flagged(bio, BIO_RW_DISCARD);
-+	const bool noidle = bio_rw_flagged(bio, BIO_RW_NOIDLE);
-+
-+#elif defined(REQ_FLUSH) && defined(REQ_SYNC)
-+#define _flagged(x) (bio->bi_rw & (x))
-+	const bool ahead = _flagged(REQ_RAHEAD) && rw == READ;
-+	const bool barrier = _flagged(REQ_FLUSH);
-+	const bool syncio = _flagged(REQ_SYNC);
-+	const bool unplug = false;
-+	const bool meta = _flagged(REQ_META);
-+	const bool discard = _flagged(REQ_DISCARD);
-+	const bool noidle = _flagged(REQ_THROTTLED);
-+
-+#else
-+#error Cannot decode the bio flags
-+#endif
-+	const int  prio = bio_prio(bio);
-+
-+	/* Transform into XIO flags
-+	 */
-+	const int  io_prio =
-+		(prio == IOPRIO_CLASS_RT || (meta | syncio)) ?
-+		XIO_PRIO_HIGH :
-+		(prio == IOPRIO_CLASS_IDLE) ?
-+		XIO_PRIO_LOW :
-+		XIO_PRIO_NORMAL;
-+	const bool do_unplug = ALWAYS_UNPLUG | unplug | noidle;
-+	const bool do_skip_sync = brick->skip_sync && !(barrier | syncio);
-+
-+	struct bio_wrapper *biow;
-+	struct aio_object *aio = NULL;
-+	struct if_aio_aspect *aio_a;
-+
-+	struct bio_vec bvec;
-+	struct bvec_iter i;
-+
-+	loff_t pos = ((loff_t)bio->bi_iter.bi_sector) << 9; /*	TODO: make dynamic */
-+	int total_len = bio->bi_iter.bi_size;
-+
-+	bool assigned = false;
-+	int error = -ENOSYS;
-+
-+	bind_to_channel(brick->say_channel, current);
-+
-+	might_sleep();
-+
-+	if (unlikely(!sectors)) {
-+		_if_unplug(input);
-+		/* THINK: usually this happens only at write barriers.
-+		 * We have no "barrier" operation in XIO, since
-+		 * callback semantics should always denote
-+		 * "writethrough accomplished".
-+		 * In case of exceptional semantics, we need to do
-+		 * something here. For now, we do just nothing.
-+		 */
-+		bio_endio(bio, 0);
-+		error = 0;
-+		goto done;
-+	}
-+
-+	/*  throttling of too big write requests */
-+	if (rw && if_throttle_start_size > 0) {
-+		int kb = (total_len + 512) / 1024;
-+
-+		if (kb >= if_throttle_start_size)
-+			xio_limit_sleep(&if_throttle, kb);
-+	}
-+
-+	(void)ahead; /*  shut up gcc */
-+	if (unlikely(discard)) { /*  NYI */
-+		bio_endio(bio, 0);
-+		error = 0;
-+		goto done;
-+	}
-+
-+	biow = brick_mem_alloc(sizeof(struct bio_wrapper));
-+	biow->bio = bio;
-+	atomic_set(&biow->bi_comp_cnt, 0);
-+
-+	if (rw)
-+		atomic_inc(&input->total_write_count);
-+	else
-+		atomic_inc(&input->total_read_count);
-+	_if_start_io_acct(input, biow);
-+
-+	/* Get a reference to the bio.
-+	 * Will be released after bio_endio().
-+	 */
-+	atomic_inc(&bio->bi_cnt);
-+
-+	/* FIXME: THIS IS PROVISIONARY (use event instead)
-+	 */
-+	while (unlikely(!brick->power.on_led))
-+		brick_msleep(100);
-+
-+	down(&input->kick_sem);
-+
-+	bio_for_each_segment(bvec, bio, i) {
-+		struct page *page = bvec.bv_page;
-+		int bv_len = bvec.bv_len;
-+		int offset = bvec.bv_offset;
-+
-+		void *data;
-+
-+#ifdef ARCH_HAS_KMAP
-+#error FIXME: the current infrastructure cannot deal with HIGHMEM / kmap()
-+#endif
-+		data = page_address(page);
-+		error = -EINVAL;
-+		if (unlikely(!data))
-+			break;
-+
-+		data += offset;
-+
-+		while (bv_len > 0) {
-+			struct list_head *tmp;
-+			int hash_index;
-+			int this_len = 0;
-+
-+			aio = NULL;
-+			aio_a = NULL;
-+
-+			hash_index = (pos / IF_HASH_CHUNK) % IF_HASH_MAX;
-+
-+#ifdef REQUEST_MERGING
-+			spin_lock(&input->hash_table[hash_index].hash_lock);
-+			for (tmp = input->hash_table[hash_index].hash_anchor.next; tmp != &input->hash_table[hash_index].hash_anchor; tmp = tmp->next) {
-+				struct if_aio_aspect *tmp_a;
-+				struct aio_object *tmp_aio;
-+				int i;
-+
-+				tmp_a = container_of(tmp, struct if_aio_aspect, hash_head);
-+				tmp_aio = tmp_a->object;
-+				if (tmp_a->orig_page != page || tmp_aio->io_rw != rw || tmp_a->bio_count >= MAX_BIO || tmp_a->current_len + bv_len > tmp_a->max_len)
-+					continue;
-+
-+				if (tmp_aio->io_data + tmp_a->current_len == data)
-+					goto merge_end;
-+				continue;
-+
-+merge_end:
-+				tmp_a->current_len += bv_len;
-+				aio = tmp_aio;
-+				aio_a = tmp_a;
-+				this_len = bv_len;
-+				if (!do_skip_sync)
-+					aio->io_skip_sync = false;
-+
-+				for (i = 0; i < aio_a->bio_count; i++) {
-+					if (aio_a->orig_biow[i]->bio == bio)
-+						goto unlock;
-+				}
-+
-+				CHECK_ATOMIC(&biow->bi_comp_cnt, 0);
-+				atomic_inc(&biow->bi_comp_cnt);
-+				aio_a->orig_biow[aio_a->bio_count++] = biow;
-+				assigned = true;
-+				goto unlock;
-+			} /*  foreach hash collision list member */
-+
-+unlock:
-+			spin_unlock(&input->hash_table[hash_index].hash_lock);
-+#endif
-+			if (!aio) {
-+				int prefetch_len;
-+
-+				error = -ENOMEM;
-+				aio = if_alloc_aio(brick);
-+				aio_a = if_aio_get_aspect(brick, aio);
-+				if (unlikely(!aio_a)) {
-+					up(&input->kick_sem);
-+					goto err;
-+				}
-+
-+#ifdef PREFETCH_LEN
-+				prefetch_len = PREFETCH_LEN - offset;
-+/**/
-+				if (prefetch_len > total_len)
-+					prefetch_len = total_len;
-+				if (pos + prefetch_len > brick->dev_size)
-+					prefetch_len = brick->dev_size - pos;
-+				if (prefetch_len < bv_len)
-+					prefetch_len = bv_len;
-+#else
-+				prefetch_len = bv_len;
-+#endif
-+
-+				SETUP_CALLBACK(aio, if_endio, aio_a);
-+
-+				aio_a->input = input;
-+				aio->io_rw = aio->io_may_write = rw;
-+				aio->io_pos = pos;
-+				aio->io_len = prefetch_len;
-+				aio->io_data = data; /*  direct IO */
-+				aio->io_prio = io_prio;
-+				aio_a->orig_page = page;
-+
-+				error = GENERIC_INPUT_CALL(input, aio_get, aio);
-+				if (unlikely(error < 0)) {
-+					up(&input->kick_sem);
-+					goto err;
-+				}
-+
-+				this_len = aio->io_len; /*  now may be shorter than originally requested. */
-+				aio_a->max_len = this_len;
-+				if (this_len > bv_len)
-+					this_len = bv_len;
-+				aio_a->current_len = this_len;
-+				if (rw)
-+					atomic_inc(&input->total_aio_write_count);
-+				else
-+					atomic_inc(&input->total_aio_read_count);
-+				CHECK_ATOMIC(&biow->bi_comp_cnt, 0);
-+				atomic_inc(&biow->bi_comp_cnt);
-+				aio_a->orig_biow[0] = biow;
-+				aio_a->bio_count = 1;
-+				assigned = true;
-+
-+				/* When a bio with multiple biovecs is split into
-+				 * multiple aios, only the last one should be
-+				 * working in synchronous writethrough mode.
-+				 */
-+				aio->io_skip_sync = true;
-+				if (!do_skip_sync && i.bi_idx + 1 >= bio->bi_iter.bi_idx)
-+					aio->io_skip_sync = false;
-+
-+				atomic_inc(&input->plugged_count);
-+
-+				aio_a->hash_index = hash_index;
-+				spin_lock(&input->hash_table[hash_index].hash_lock);
-+				list_add_tail(&aio_a->hash_head, &input->hash_table[hash_index].hash_anchor);
-+				spin_unlock(&input->hash_table[hash_index].hash_lock);
-+
-+				spin_lock(&input->req_lock);
-+				list_add_tail(&aio_a->plug_head, &input->plug_anchor);
-+				spin_unlock(&input->req_lock);
-+			} /*  !aio */
-+
-+			pos += this_len;
-+			data += this_len;
-+			bv_len -= this_len;
-+			total_len -= this_len;
-+		} /*  while bv_len > 0 */
-+	} /*  foreach bvec */
-+
-+	up(&input->kick_sem);
-+
-+	if (likely(!total_len))
-+		error = 0;
-+	else
-+		XIO_ERR("bad rest len = %d\n", total_len);
-+err:
-+	if (error < 0) {
-+		XIO_ERR("cannot submit request from bio, status=%d\n", error);
-+		if (!assigned)
-+			bio_endio(bio, error);
-+	}
-+
-+	if (do_unplug ||
-+	   (brick && brick->max_plugged > 0 && atomic_read(&input->plugged_count) > brick->max_plugged)) {
-+		_if_unplug(input);
-+	}
-+
-+done:
-+	remove_binding_from(brick->say_channel, current);
-+
-+#ifdef BIO_CPU_AFFINE
-+	return error;
-+#else
-+	goto out_return;
-+#endif
-+out_return:;
-+}
-+
-+#ifndef BLK_MAX_REQUEST_COUNT
-+/* static */
-+void if_unplug(struct request_queue *q)
-+{
-+	struct if_input *input = q->queuedata;
-+
-+	spin_lock_irq(q->queue_lock);
-+	was_plugged = blk_remove_plug(q);
-+	spin_unlock_irq(q->queue_lock);
-+
-+	_if_unplug(input);
-+}
-+#endif
-+
-+/* static */
-+int xio_congested(void *data, int bdi_bits)
-+{
-+	struct if_input *input = data;
-+	int ret = 0;
-+
-+	if (bdi_bits & (1 << BDI_sync_congested) &&
-+	    atomic_read(&input->read_flying_count) > 0) {
-+		ret |= (1 << BDI_sync_congested);
-+	}
-+	if (bdi_bits & (1 << BDI_async_congested) &&
-+	    atomic_read(&input->write_flying_count) > 0) {
-+		ret |= (1 << BDI_async_congested);
-+	}
-+	return ret;
-+}
-+
-+static
-+int xio_merge_bvec(struct request_queue *q, struct bvec_merge_data *bvm, struct bio_vec *bvec)
-+{
-+	unsigned int bio_size = bvm->bi_size;
-+
-+	if (!bio_size)
-+		return bvec->bv_len;
-+	return 128;
-+}
-+
-+static
-+loff_t if_get_capacity(struct if_brick *brick)
-+{
-+	/* Don't read always, read only when unknown.
-+	 * brick->dev_size may be different from underlying sizes,
-+	 * e.g. when the size symlink indicates a logically smaller
-+	 * device than physically.
-+	 */
-+	if (brick->dev_size <= 0) {
-+		struct xio_info info = {};
-+		struct if_input *input = brick->inputs[0];
-+		int status;
-+
-+		status = GENERIC_INPUT_CALL(input, xio_get_info, &info);
-+		if (unlikely(status < 0)) {
-+			XIO_ERR("cannot get device info, status=%d\n", status);
-+			return 0;
-+		}
-+		XIO_INF("determined default capacity: %lld bytes\n", info.current_size);
-+		brick->dev_size = info.current_size;
-+	}
-+	return brick->dev_size;
-+}
-+
-+static
-+void if_set_capacity(struct if_input *input, loff_t capacity)
-+{
-+	CHECK_PTR(input->disk, done);
-+	CHECK_PTR(input->disk->disk_name, done);
-+	XIO_INF("new capacity of '%s': %lld bytes\n", input->disk->disk_name, capacity);
-+	input->capacity = capacity;
-+	set_capacity(input->disk, capacity >> 9);
-+	if (likely(input->bdev && input->bdev->bd_inode))
-+		i_size_write(input->bdev->bd_inode, capacity);
-+done:;
-+}
-+
-+static const struct block_device_operations if_blkdev_ops;
-+
-+static int if_switch(struct if_brick *brick)
-+{
-+	struct if_input *input = brick->inputs[0];
-+	struct request_queue *q;
-+	struct gendisk *disk;
-+	int minor;
-+	int status = 0;
-+
-+	down(&brick->switch_sem);
-+
-+	/*  brick is in operation */
-+	if (brick->power.button && brick->power.on_led) {
-+		loff_t capacity;
-+
-+		capacity = if_get_capacity(brick);
-+		if (capacity > 0 && capacity != input->capacity) {
-+			XIO_INF("changing capacity from %lld to %lld\n",
-+				(long long)input->capacity,
-+				(long long)capacity);
-+			if_set_capacity(input, capacity);
-+		}
-+	}
-+
-+	/*  brick should be switched on */
-+	if (brick->power.button && brick->power.off_led) {
-+		loff_t capacity;
-+
-+		xio_set_power_off_led((void *)brick,  false);
-+		brick->say_channel = get_binding(current);
-+
-+		status = -ENOMEM;
-+		q = blk_alloc_queue(GFP_BRICK);
-+		if (!q) {
-+			XIO_ERR("cannot allocate device request queue\n");
-+			goto is_down;
-+		}
-+		q->queuedata = input;
-+		input->q = q;
-+
-+		disk = alloc_disk(1);
-+		if (!disk) {
-+			XIO_ERR("cannot allocate gendisk\n");
-+			goto is_down;
-+		}
-+
-+		minor = device_minor++; /* TODO: protect against races (e.g. atomic_t) */
-+		set_disk_ro(disk, true);
-+
-+		disk->queue = q;
-+		disk->major = XIO_MAJOR; /* TODO: make this dynamic for >256 devices */
-+		disk->first_minor = minor;
-+		disk->fops = &if_blkdev_ops;
-+		snprintf(disk->disk_name, sizeof(disk->disk_name),  "%s", brick->brick_name);
-+		disk->private_data = input;
-+		input->disk = disk;
-+		capacity = if_get_capacity(brick);
-+		XIO_DBG("created device name %s, capacity=%lld\n", disk->disk_name, capacity);
-+		if_set_capacity(input, capacity);
-+
-+		blk_queue_make_request(q, if_make_request);
-+#ifdef USE_MAX_SECTORS
-+#ifdef MAX_SEGMENT_SIZE
-+		XIO_DBG("blk_queue_max_sectors()\n");
-+		blk_queue_max_sectors(q, USE_MAX_SECTORS);
-+#else
-+		XIO_DBG("blk_queue_max_hw_sectors()\n");
-+		blk_queue_max_hw_sectors(q, USE_MAX_SECTORS);
-+#endif
-+#endif
-+#ifdef USE_MAX_PHYS_SEGMENTS
-+#ifdef MAX_SEGMENT_SIZE
-+		XIO_DBG("blk_queue_max_phys_segments()\n");
-+		blk_queue_max_phys_segments(q, USE_MAX_PHYS_SEGMENTS);
-+#else
-+		XIO_DBG("blk_queue_max_segments()\n");
-+		blk_queue_max_segments(q, USE_MAX_PHYS_SEGMENTS);
-+#endif
-+#endif
-+#ifdef USE_MAX_HW_SEGMENTS
-+		XIO_DBG("blk_queue_max_hw_segments()\n");
-+		blk_queue_max_hw_segments(q, USE_MAX_HW_SEGMENTS);
-+#endif
-+#ifdef USE_MAX_SEGMENT_SIZE
-+		XIO_DBG("blk_queue_max_segment_size()\n");
-+		blk_queue_max_segment_size(q, USE_MAX_SEGMENT_SIZE);
-+#endif
-+#ifdef USE_LOGICAL_BLOCK_SIZE
-+		XIO_DBG("blk_queue_logical_block_size()\n");
-+		blk_queue_logical_block_size(q, USE_LOGICAL_BLOCK_SIZE);
-+#endif
-+#ifdef USE_SEGMENT_BOUNDARY
-+		XIO_DBG("blk_queue_segment_boundary()\n");
-+		blk_queue_segment_boundary(q, USE_SEGMENT_BOUNDARY);
-+#endif
-+#ifdef QUEUE_ORDERED_DRAIN
-+		XIO_DBG("blk_queue_ordered()\n");
-+		blk_queue_ordered(q, QUEUE_ORDERED_DRAIN, NULL);
-+#endif
-+		XIO_DBG("blk_queue_bounce_limit()\n");
-+		blk_queue_bounce_limit(q, BLK_BOUNCE_ANY);
-+#ifndef BLK_MAX_REQUEST_COUNT
-+		XIO_DBG("unplug_fn\n");
-+		q->unplug_fn = if_unplug;
-+#endif
-+		XIO_DBG("queue_lock\n");
-+		q->queue_lock = &input->req_lock; /*  needed! */
-+
-+		input->bdev = bdget(MKDEV(disk->major, minor));
-+		/* we have no partitions. we contain only ourselves. */
-+		input->bdev->bd_contains = input->bdev;
-+
-+#ifdef USE_CONGESTED_FN
-+		XIO_DBG("congested_fn\n");
-+		q->backing_dev_info.congested_fn = xio_congested;
-+		q->backing_dev_info.congested_data = input;
-+#endif
-+#ifdef USE_MERGE_BVEC
-+		XIO_DBG("blk_queue_merge_bvec()\n");
-+		blk_queue_merge_bvec(q, xio_merge_bvec);
-+#endif
-+
-+		/*  point of no return */
-+		XIO_DBG("add_disk()\n");
-+		add_disk(disk);
-+		set_disk_ro(disk, false);
-+
-+		/*  report success */
-+		xio_set_power_on_led((void *)brick, true);
-+		status = 0;
-+	}
-+
-+	/*  brick should be switched off */
-+	if (!brick->power.button && !brick->power.off_led) {
-+		int flying;
-+
-+		xio_set_power_on_led((void *)brick, false);
-+		disk = input->disk;
-+		if (!disk)
-+			goto is_down;
-+
-+		if (atomic_read(&brick->open_count) > 0) {
-+			XIO_INF("device '%s' is open %d times, cannot shutdown\n",
-+				disk->disk_name,
-+				atomic_read(&brick->open_count));
-+			status = -EBUSY;
-+			goto done; /*  don't indicate "off" status */
-+		}
-+		flying = atomic_read(&input->flying_count);
-+		if (flying > 0) {
-+			XIO_INF("device '%s' has %d flying requests, cannot shutdown\n", disk->disk_name, flying);
-+			status = -EBUSY;
-+			goto done; /*  don't indicate "off" status */
-+		}
-+		if (input->bdev) {
-+			XIO_DBG("calling bdput()\n");
-+			bdput(input->bdev);
-+			input->bdev = NULL;
-+		}
-+		XIO_DBG("calling del_gendisk()\n");
-+		del_gendisk(input->disk);
-+		XIO_DBG("calling put_disk()\n");
-+		put_disk(input->disk);
-+		input->disk = NULL;
-+		status = 0;
-+is_down:
-+		xio_set_power_off_led((void *)brick, true);
-+	}
-+
-+done:
-+	up(&brick->switch_sem);
-+	return status;
-+}
-+
-+/*************** interface to the outer world (kernel) **************/
-+
-+static int if_open(struct block_device *bdev, fmode_t mode)
-+{
-+	struct if_input *input;
-+	struct if_brick *brick;
-+
-+	if (unlikely(!bdev || !bdev->bd_disk)) {
-+		XIO_ERR("----------------------- INVAL ------------------------------\n");
-+		return -EINVAL;
-+	}
-+
-+	input = bdev->bd_disk->private_data;
-+
-+	if (unlikely(!input || !input->brick)) {
-+		XIO_ERR("----------------------- BAD IF SETUP ------------------------------\n");
-+		return -EINVAL;
-+	}
-+	brick = input->brick;
-+
-+	down(&brick->switch_sem);
-+
-+	if (unlikely(!brick->power.on_led)) {
-+		XIO_INF("----------------------- BUSY %d ------------------------------\n",
-+			atomic_read(&brick->open_count));
-+		up(&brick->switch_sem);
-+		return -EBUSY;
-+	}
-+
-+	atomic_inc(&brick->open_count);
-+
-+	XIO_INF("----------------------- OPEN %d ------------------------------\n", atomic_read(&brick->open_count));
-+
-+	up(&brick->switch_sem);
-+	return 0;
-+}
-+
-+static
-+void
-+if_release(struct gendisk *gd, fmode_t mode)
-+{
-+	struct if_input *input = gd->private_data;
-+	struct if_brick *brick = input->brick;
-+	int nr;
-+
-+	XIO_INF("----------------------- CLOSE %d ------------------------------\n", atomic_read(&brick->open_count));
-+
-+	if (atomic_dec_and_test(&brick->open_count)) {
-+		while ((nr = atomic_read(&input->flying_count)) > 0) {
-+			XIO_INF("%d IO requests not yet completed\n", nr);
-+			brick_msleep(1000);
-+		}
-+
-+		XIO_DBG("status button=%d on_led=%d off_led=%d\n",
-+			brick->power.button,
-+			brick->power.on_led,
-+			brick->power.off_led);
-+		local_trigger();
-+	}
-+}
-+
-+static const struct block_device_operations if_blkdev_ops = {
-+	.owner = THIS_MODULE,
-+	.open = if_open,
-+	.release = if_release,
-+
-+};
-+
-+/*************** informational * statistics **************/
-+
-+static
-+char *if_statistics(struct if_brick *brick, int verbose)
-+{
-+	struct if_input *input = brick->inputs[0];
-+	char *res = brick_string_alloc(512);
-+	int tmp0 = atomic_read(&input->total_reada_count);
-+	int tmp1 = atomic_read(&input->total_read_count);
-+	int tmp2 = atomic_read(&input->total_aio_read_count);
-+	int tmp3 = atomic_read(&input->total_write_count);
-+	int tmp4 = atomic_read(&input->total_aio_write_count);
-+
-+	snprintf(res, 512,
-+		 "total reada = %d reads = %d aio_reads = %d (%d%%) writes = %d aio_writes = %d (%d%%) empty = %d fired = %d skip_sync = %d | plugged = %d flying = %d (reads = %d writes = %d)\n",
-+		 tmp0,
-+		 tmp1,
-+		 tmp2,
-+		 tmp1 ? tmp2 * 100 / tmp1 : 0,
-+		 tmp3,
-+		 tmp4,
-+		 tmp3 ? tmp4 * 100 / tmp3 : 0,
-+		 atomic_read(&input->total_empty_count),
-+		 atomic_read(&input->total_fire_count),
-+		 atomic_read(&input->total_skip_sync_count),
-+		 atomic_read(&input->plugged_count),
-+		 atomic_read(&input->flying_count),
-+		 atomic_read(&input->read_flying_count),
-+		 atomic_read(&input->write_flying_count));
-+	return res;
-+}
-+
-+static
-+void if_reset_statistics(struct if_brick *brick)
-+{
-+	struct if_input *input = brick->inputs[0];
-+
-+	atomic_set(&input->total_read_count, 0);
-+	atomic_set(&input->total_write_count, 0);
-+	atomic_set(&input->total_empty_count, 0);
-+	atomic_set(&input->total_fire_count, 0);
-+	atomic_set(&input->total_skip_sync_count, 0);
-+	atomic_set(&input->total_aio_read_count, 0);
-+	atomic_set(&input->total_aio_write_count, 0);
-+}
-+
-+/***************** own brick * input * output operations *****************/
-+
-+/*  none */
-+
-+/*************** object * aspect constructors * destructors **************/
-+
-+static int if_aio_aspect_init_fn(struct generic_aspect *_ini)
-+{
-+	struct if_aio_aspect *ini = (void *)_ini;
-+
-+	INIT_LIST_HEAD(&ini->plug_head);
-+	INIT_LIST_HEAD(&ini->hash_head);
-+	return 0;
-+}
-+
-+static void if_aio_aspect_exit_fn(struct generic_aspect *_ini)
-+{
-+	struct if_aio_aspect *ini = (void *)_ini;
-+
-+	CHECK_HEAD_EMPTY(&ini->plug_head);
-+	CHECK_HEAD_EMPTY(&ini->hash_head);
-+}
-+
-+XIO_MAKE_STATICS(if);
-+
-+/*********************** constructors * destructors ***********************/
-+
-+static int if_brick_construct(struct if_brick *brick)
-+{
-+	sema_init(&brick->switch_sem, 1);
-+	atomic_set(&brick->open_count, 0);
-+	return 0;
-+}
-+
-+static int if_brick_destruct(struct if_brick *brick)
-+{
-+	return 0;
-+}
-+
-+static int if_input_construct(struct if_input *input)
-+{
-+	int i;
-+
-+	input->hash_table = brick_block_alloc(0, PAGE_SIZE);
-+	for (i = 0; i < IF_HASH_MAX; i++) {
-+		spin_lock_init(&input->hash_table[i].hash_lock);
-+		INIT_LIST_HEAD(&input->hash_table[i].hash_anchor);
-+	}
-+	INIT_LIST_HEAD(&input->plug_anchor);
-+	sema_init(&input->kick_sem, 1);
-+	spin_lock_init(&input->req_lock);
-+	atomic_set(&input->flying_count, 0);
-+	atomic_set(&input->read_flying_count, 0);
-+	atomic_set(&input->write_flying_count, 0);
-+	atomic_set(&input->plugged_count, 0);
-+	return 0;
-+}
-+
-+static int if_input_destruct(struct if_input *input)
-+{
-+	int i;
-+
-+	for (i = 0; i < IF_HASH_MAX; i++)
-+		CHECK_HEAD_EMPTY(&input->hash_table[i].hash_anchor);
-+	CHECK_HEAD_EMPTY(&input->plug_anchor);
-+	brick_block_free(input->hash_table, PAGE_SIZE);
-+	return 0;
-+}
-+
-+static int if_output_construct(struct if_output *output)
-+{
-+	return 0;
-+}
-+
-+/************************ static structs ***********************/
-+
-+static struct if_brick_ops if_brick_ops = {
-+	.brick_switch = if_switch,
-+	.brick_statistics = if_statistics,
-+	.reset_statistics = if_reset_statistics,
-+};
-+
-+static struct if_output_ops if_output_ops;
-+
-+const struct if_input_type if_input_type = {
-+	.type_name = "if_input",
-+	.input_size = sizeof(struct if_input),
-+	.input_construct = &if_input_construct,
-+	.input_destruct = &if_input_destruct,
-+};
-+
-+static const struct if_input_type *if_input_types[] = {
-+	&if_input_type,
-+};
-+
-+const struct if_output_type if_output_type = {
-+	.type_name = "if_output",
-+	.output_size = sizeof(struct if_output),
-+	.master_ops = &if_output_ops,
-+	.output_construct = &if_output_construct,
-+};
-+
-+static const struct if_output_type *if_output_types[] = {
-+	&if_output_type,
-+};
-+
-+const struct if_brick_type if_brick_type = {
-+	.type_name = "if_brick",
-+	.brick_size = sizeof(struct if_brick),
-+	.max_inputs = 1,
-+	.max_outputs = 0,
-+	.master_ops = &if_brick_ops,
-+	.aspect_types = if_aspect_types,
-+	.default_input_types = if_input_types,
-+	.default_output_types = if_output_types,
-+	.brick_construct = &if_brick_construct,
-+	.brick_destruct = &if_brick_destruct,
-+};
-+EXPORT_SYMBOL_GPL(if_brick_type);
-+
-+/***************** module init stuff ************************/
-+
-+void exit_xio_if(void)
-+{
-+	int status;
-+
-+	XIO_INF("exit_if()\n");
-+	status = if_unregister_brick_type();
-+	unregister_blkdev(XIO_MAJOR, "xio");
-+}
-+
-+int __init init_xio_if(void)
-+{
-+	int status;
-+
-+	(void)if_aspect_types; /*  not used, shut up gcc */
-+
-+	XIO_INF("init_if()\n");
-+	status = register_blkdev(XIO_MAJOR, "xio");
-+	if (status)
-+		return status;
-+	status = if_register_brick_type();
-+	if (status)
-+		goto err_device;
-+	return status;
-+err_device:
-+	XIO_ERR("init_if() status=%d\n", status);
-+	exit_xio_if();
-+	return status;
-+}
--- 
-2.0.0
+after almost 20 years, I am happy to be back at the kernel hacker
+community with a new project called MARS Light (Multiversion
+Asynchronous Replication System).
+
+Its application area is _different_ from DRBD:
+
+MARS replicates generic block devices asynchronously over long distances
+and through network bottlenecks, while the synchronous DRBD works best with
+crossover cables (running DRBD through long-distance network bottlenecks
+may lead to serious problems described in the presentation below and
+also observed in practice -- however I must clearly emphasize that
+I can confirm from our experiences in 1&1 datacenters that DRBD runs
+very fine in appropriate short-distance scenarios -- so both systems
+just have different application areas, not more, not less).
+
+In addition, MARS can replicate to k > 2 replicas out of the box.
+
+For a quick overview, differences to DRBD (conceptual / behavioural),
+feature comparisons (also to the commercial DRBD/proxy), etc, please look
+at the presentation slides from LinuxTag 2014:
+
+https://github.com/schoebel/mars/blob/master/docu/MARS_LinuxTag2014.pdf?raw=true
+
+...which is an extended version of my LCA2014 presentation from January
+2014 where some attending kernel hackers already could get some impressions.
+
+If you want a deeper understanding of concepts and operations, please
+read the manual at
+
+https://github.com/schoebel/mars/blob/master/docu/mars-manual.pdf?raw=true
+
+MARS is in production at 1&1 Internet AG since March 2014.
+
+In addition, MARS has been extensively tested with a fully automatic
+test suite developed by Frank Liepold (also available at
+https://github.com/schoebel/mars ). It contains more than 100 testcases.
+
+Although the test suite has some shortcomings (many false positives
+when run uncustomized/unmodified on different hardware/networks), it has
+proved to me a valuable tool at least for regression testing.
+Unfortunately, Frank is no longer at 1&1. When I had more time, I would
+fix the test suite to make it more robust. Alternatively, help from
+the community would be highly appreciated! Please contact me
+by email if you are seriously interested.
+
+The github version of MARS should be compilable out-of-tree with
+elder kernels (starting at least from 2.6.32).
+
+In contrast, the attached patches are for kernel 3.16 and should no
+longer contain code for backward compatibility (as well as containing
+many other code cleanups, in order to pass checkpatch.pl except
+some probably false-positives and except LONG_LINE).
+
+The github version can almost fully automatically be converted to the
+(proposed) upstream version via ./rework-mars-for-upstream.pl which
+not only renames some identifiers to (hopefully) better names / more
+systematic naming conventions via some heavy regex magic, but also
+moves files to different (configurable) locations. If anyone wants
+a different location than drivers/block/mars/ (e.g. for the generic
+brick framework part which doesn't really belong to "drivers" because
+it /potentially/ can be used almost everywhere) it should be very
+easy to adapt this.
+
+If possible and if it makes sense, I will also fix many _systematic_
+review complaints in ./rework-mars-for-upstream.pl instead of in the
+C sources. ./rework-mars-for-upstream.pl starts in the out-of-tree
+MARS repo (see github) from the branch WIP-BASE, and creates two
+branches WIP-PORTABLE (which contains the intended future base
+for the out-of-tree version) and WIP-PROPOSED-UPSTREAM (where the
+code for backwards compatibility is already stripped off).
+Finally, the files are transferred to the kernel repo (using
+different paths) and the kernel patchset is generated
+where the new files appear as starting afresh.
+
+For some limited time (a few years), the out-of-tree repo must be
+maintained in parallel to the kernel upstream, because 1&1
+(and probably other people in the world) are using very old
+kernels, at least for some time. My long-term goal is to freeze
+the out-of-tree version some day and only maintain the in-tree
+version permanently.
+
+The attached kernel patchset (as generated by rework-mars-for-upstream.pl)
+contains 4 parts which could theoretically be submitted independently
+from each other, but IMHO that wouldn't make sense in order to get a
+_working_ system:
+
+1) the generic brick framework. Many concepts are from my old Athomux
+research project from the University of Stuttgart. The current Linux
+implementation is only "instance based", while Athomux was the first
+prototype implementation of a fully "instance oriented" (IOP) system.
+The future "MARS Full" is planned to make full use of IOP.
+
+Details on IOP concepts can be found at www.athomux.net under papers/
+(also look for the monography written in German if you are /very/ deeply
+interested - and of course I will be happy to explain it personally
+to anyone, best at a meeting opportunity).
+
+2) the first framework personality called "XIO" (eXtended IO), conceptually
+similar to AIO, conceptually a true superset of BIO.
+
+3) the first application "MARS Light" which uses the XIO personality.
+
+Notice that 1) to 3) make _no_ _modifications_ to any other parts of
+the kernel! They just reside in their own subdirectory, each.
+
+IMHO, 1) to 2) potentially form a new subsystem in the kernel. Of course,
+there might be different opinions on that, so I prefer starting with a
+small version containing only the needed things for MARS, and later
+moving / extending it only when needed.
+
+4) only 2 patches (the last two ones in the patchset) which should make only
+_trivial_ modifications to the rest of the kernel: mostly some additional
+EXPORT_SYMBOL() and of course some 1-liners for Kconfig and Makefile.
+
+The attached version for item 4) is the so-called "generic" pre-patch
+which is also needed for out-of-tree builds with elder kernels.
+The current version of MARS can only be compiled as a module
+(if needed, this restriction could be overcome some day).
+
+Please, if possible, include this pre-patch (or a substitute) more quickly
+if the main code review would take a longer time. You would help me
+establishing MARS more widely in the world / at Linux distros
+via the out-of-tree version.
+
+It would be great if maintainers for elder *.y kernel branches would
+also include the corresponding pre-patch for their version, this
+would help me _greatly_. Specialized versions for elder kernels can be
+found at github in the pre-patches/ subdirectory.
+
+The "generic" pre-patch generically calls EXPORT_SYMBOL() on all
+sys_*() functions, instead of marking only the needed ones. IMHO,
+this has the advantage that no maintainance is needed whenever some
+future extension of MARS (or any other external kernel modules) need
+dynamic linking on such a symbol. Of course, it has the disadvantage
+of growing the symbol table. IMHO, the sys_* are _anyway_ standardized
+by POSIX and other standards, forming one of the most stable APIs in the
+world. So there should be no other drawback when mass exporting those
+symbols - even better than exporting any other kernel symbol.
+
+If the "generic" version of the pre-patch is objected / rejected
+for any reason, I will happily provide you a new version exporting only
+the needed symbols.
+
+Although I am very busy working at 1&1 (not always on MARS),
+I will try to answer all your questions in the next time.
+
+I would be glad to get invited to the Kernel Summit, and I would
+like to meet some old friends again from ancient times when I was
+active in the community, but sadly lost connection due to fateful
+private reasons.
+
+Thanks and cheers,
+
+Thomas
 
