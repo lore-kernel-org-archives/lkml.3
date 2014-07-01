@@ -1,93 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758595AbaGARtT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 13:49:19 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42860 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755607AbaGARtR (ORCPT
+	id S932249AbaGARvg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 13:51:36 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:32926 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755115AbaGARve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 13:49:17 -0400
-Date: Tue, 1 Jul 2014 18:48:44 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Rongjun Ying <rongjun.ying@csr.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Barry Song <baohua@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, Workgroup.linux@csr.com
-Message-ID: <20140701174844.GA410@sirena.org.uk>
-References: <1404181134-21663-1-git-send-email-rongjun.ying@csr.com>
- <1404181134-21663-2-git-send-email-rongjun.ying@csr.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HlL+5n6rz5pIUxbD"
-Content-Disposition: inline
-In-Reply-To: <1404181134-21663-2-git-send-email-rongjun.ying@csr.com>
-X-Cookie: Semper Fi, dude.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] ASoC: sirf: Add audio usp interface driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Tue, 1 Jul 2014 13:51:34 -0400
+From: Janne Kanniainen <janne.kanniainen@gmail.com>
+To: johan@kernel.org
+Cc: cooloney@gmail.com, jkosina@suse.cz, greg@kroah.com, bjorn@mork.no,
+        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
+        Janne Kanniainen <janne.kanniainen@gmail.com>
+Subject: [PATCH 2/2 v4] HID: leds: move led_mode attribute to led-class devices in MSI GT683R driver
+Date: Tue,  1 Jul 2014 20:50:54 +0300
+Message-Id: <1404237054-12906-1-git-send-email-janne.kanniainen@gmail.com>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <20140630103911.GA2486@localhost>
+References: <20140630103911.GA2486@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Move led_mode attribute from HID device to led-class devices and rename it
+msi_mode. This will also fix race condition by using attribute-groups.
 
---HlL+5n6rz5pIUxbD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Janne Kanniainen <janne.kanniainen@gmail.com>
+---
 
-On Tue, Jul 01, 2014 at 10:18:53AM +0800, Rongjun Ying wrote:
+Changes in v3:
+	- Style fixes
+	- Rename sysfs-class-hid-driver-gt683r to sysfs-class-leds-driver-gt683r
 
-A few *really* trivial things below, otherwise this looks good:
+Changes in v4:
+	- Rename sysfs-class-leds-driver-gt683r to sysfs-class-leds-gt683r
+	- Change "What: " to /sys/class/leds/<led>/gt683r/mode
+	- Change .name from gt683r_led to gt683r
 
-> +	if (usp->daifmt_format == SND_SOC_DAIFMT_I2S)
-> +		regmap_update_bits(usp->regmap, USP_RX_FRAME_CTRL,
-> +			USP_I2S_SYNC_CHG, USP_I2S_SYNC_CHG);
-> +	else if (usp->daifmt_format == SND_SOC_DAIFMT_DSP_A) {
-> +		regmap_update_bits(usp->regmap, USP_RX_FRAME_CTRL,
-> +			USP_I2S_SYNC_CHG, 0);
-> +		frame_len = data_len * params_channels(params);
-> +		data_len = frame_len;
-> +	}
+ .../ABI/testing/sysfs-class-hid-driver-gt683r      | 14 ----------
+ Documentation/ABI/testing/sysfs-class-leds-gt683r  | 16 ++++++++++++
+ drivers/hid/hid-gt683r.c                           | 30 ++++++++++++----------
+ 3 files changed, 33 insertions(+), 27 deletions(-)
+ delete mode 100644 Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
+ create mode 100644 Documentation/ABI/testing/sysfs-class-leds-gt683r
 
-Make this a switch statement for legibility, and if you do need to use {
-} make sure they're used consistently for all branches of an if ().
+diff --git a/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r b/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
+deleted file mode 100644
+index 317e9d5..0000000
+--- a/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
++++ /dev/null
+@@ -1,14 +0,0 @@
+-What:		/sys/class/hidraw/<hidraw>/device/leds_mode
+-Date:		Jun 2014
+-KernelVersion:	3.17
+-Contact:	Janne Kanniainen <janne.kanniainen@gmail.com>
+-Description:
+-		Set the mode of LEDs
+-
+-		0 - normal
+-		1 - audio
+-		2 - breathing
+-
+-		Normal: LEDs are fully on when enabled
+-		Audio:  LEDs brightness depends on sound level
+-		Breathing: LEDs brightness varies at human breathing rate
+\ No newline at end of file
+diff --git a/Documentation/ABI/testing/sysfs-class-leds-gt683r b/Documentation/ABI/testing/sysfs-class-leds-gt683r
+new file mode 100644
+index 0000000..e4fae60
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-class-leds-gt683r
+@@ -0,0 +1,16 @@
++What:		/sys/class/leds/<led>/gt683r/mode
++Date:		Jun 2014
++KernelVersion:	3.17
++Contact:	Janne Kanniainen <janne.kanniainen@gmail.com>
++Description:
++		Set the mode of LEDs. You should notice that changing the mode
++		of one LED will update the mode of its two sibling devices as
++		well.
++
++		0 - normal
++		1 - audio
++		2 - breathing
++
++		Normal: LEDs are fully on when enabled
++		Audio:  LEDs brightness depends on sound level
++		Breathing: LEDs brightness varies at human breathing rate
+\ No newline at end of file
+diff --git a/drivers/hid/hid-gt683r.c b/drivers/hid/hid-gt683r.c
+index 073bd80..f743444 100644
+--- a/drivers/hid/hid-gt683r.c
++++ b/drivers/hid/hid-gt683r.c
+@@ -84,12 +84,13 @@ static void gt683r_brightness_set(struct led_classdev *led_cdev,
+ 	}
+ }
+ 
+-static ssize_t leds_mode_show(struct device *dev,
++static ssize_t mode_show(struct device *dev,
+ 				struct device_attribute *attr,
+ 				char *buf)
+ {
+ 	u8 sysfs_mode;
+-	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
++	struct hid_device *hdev = container_of(dev->parent,
++					struct hid_device, dev);
+ 	struct gt683r_led *led = hid_get_drvdata(hdev);
+ 
+ 	if (led->mode == GT683R_LED_NORMAL)
+@@ -102,12 +103,13 @@ static ssize_t leds_mode_show(struct device *dev,
+ 	return scnprintf(buf, PAGE_SIZE, "%u\n", sysfs_mode);
+ }
+ 
+-static ssize_t leds_mode_store(struct device *dev,
++static ssize_t mode_store(struct device *dev,
+ 				struct device_attribute *attr,
+ 				const char *buf, size_t count)
+ {
+ 	u8 sysfs_mode;
+-	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
++	struct hid_device *hdev = container_of(dev->parent,
++					struct hid_device, dev);
+ 	struct gt683r_led *led = hid_get_drvdata(hdev);
+ 
+ 
+@@ -212,7 +214,14 @@ fail:
+ 	mutex_unlock(&led->lock);
+ }
+ 
+-static DEVICE_ATTR_RW(leds_mode);
++static DEVICE_ATTR_RW(mode);
++
++static struct attribute *gt683r_led_attrs[] = {
++	&dev_attr_mode.attr,
++	NULL
++};
++
++ATTRIBUTE_GROUPS(gt683r_led);
+ 
+ static int gt683r_led_probe(struct hid_device *hdev,
+ 			const struct hid_device_id *id)
+@@ -261,6 +270,8 @@ static int gt683r_led_probe(struct hid_device *hdev,
+ 		led->led_devs[i].name = name;
+ 		led->led_devs[i].max_brightness = 1;
+ 		led->led_devs[i].brightness_set = gt683r_brightness_set;
++		led->led_devs[i].groups = gt683r_led_groups;
++
+ 		ret = led_classdev_register(&hdev->dev, &led->led_devs[i]);
+ 		if (ret) {
+ 			hid_err(hdev, "could not register led device\n");
+@@ -268,12 +279,6 @@ static int gt683r_led_probe(struct hid_device *hdev,
+ 		}
+ 	}
+ 
+-	ret = device_create_file(&led->hdev->dev, &dev_attr_leds_mode);
+-	if (ret) {
+-		hid_err(hdev, "could not make mode attribute file\n");
+-		goto fail;
+-	}
+-
+ 	return 0;
+ 
+ fail:
+@@ -288,7 +293,6 @@ static void gt683r_led_remove(struct hid_device *hdev)
+ 	int i;
+ 	struct gt683r_led *led = hid_get_drvdata(hdev);
+ 
+-	device_remove_file(&hdev->dev, &dev_attr_leds_mode);
+ 	for (i = 0; i < GT683R_LED_COUNT; i++)
+ 		led_classdev_unregister(&led->led_devs[i]);
+ 	flush_work(&led->work);
+@@ -298,7 +302,7 @@ static void gt683r_led_remove(struct hid_device *hdev)
+ static struct hid_driver gt683r_led_driver = {
+ 	.probe = gt683r_led_probe,
+ 	.remove = gt683r_led_remove,
+-	.name = "gt683r_led",
++	.name = "gt683r",
+ 	.id_table = gt683r_led_id,
+ };
+ 
+-- 
+1.9.2
 
-> +	int playback = substream->stream == SNDRV_PCM_STREAM_PLAYBACK;
-
-I'm not sure the extra variable adds much here.
-
-> +static struct snd_soc_dai_driver sirf_usp_pcm_dai = {
-> +	.probe = sirf_usp_pcm_dai_probe,
-> +	.name		= "sirf-usp-pcm",
-> +	.id			= 0,
-
-Weird indentation here.
-
---HlL+5n6rz5pIUxbD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTsvR5AAoJELSic+t+oim9730QAIVOkmg4xp3NzxMusbbEZmNY
-UNank+PX00PQwAEUAlDaWuGTvrRNsKs974Un0l1uAmewsWfaZPR9q6CXab2QAfrp
-ld85dm+nbpK3LkDqk9pKMuih49pn4QPtl23g7cjCh1dFnD145hGd+aI9XBDdMR8B
-Bf6NViVoa6WPHbbmLno08FKsIX+p2hJHKC8Sl1xELk+cfyELlYF6ugWIRBvz3+18
-B+gV9O/uSfxFJn2GG0Jz2qxMhEVENii/j3bRuuJH6jeAiNRaCMu5bcB3QESs53wJ
-x1kepyijISEUjrjoR0GO1ptc763vJVkVPd2h0DgsPg0JVlxxsKBMustETo6+X8MS
-rREvAzkQ4CDdG9EjLPyTHPEhdksj5SQB2T1ay9ZgR/cZc2YYDSAeRqmAVLV2uXiZ
-5xlBYCZat6PNdyIzpB8KoDabH3F67FUYtk7hOMW7DEx6wPltRx/9kq44IN5YXJc1
-yWcbBqClTOdDWba6qZ/BojfPf4WFlIy6UW8cToXtSi6UxJpBBigCEPKQVPyUDQSE
-9VKwrTmLt0Yvr/6u7ws9D5MhCJulOFcgiSrP/s4hWRSMuDeSNOK05y7CU6gWRi6M
-1/F9mVgYqCM4605blRlYQhz6wmY09xN8B6wRNEse13s7HAoV6Gn3/yfHQA77PKWm
-QsTqA4+gEHRNW99qDyj3
-=EqWV
------END PGP SIGNATURE-----
-
---HlL+5n6rz5pIUxbD--
+Did you mean like this?
