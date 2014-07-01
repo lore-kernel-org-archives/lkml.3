@@ -1,95 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757963AbaGAPhx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 11:37:53 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:36211 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756675AbaGAPhv (ORCPT
+	id S1758063AbaGAPic (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 11:38:32 -0400
+Received: from smtp4-g21.free.fr ([212.27.42.4]:51531 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756622AbaGAPia convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 11:37:51 -0400
+	Tue, 1 Jul 2014 11:38:30 -0400
+Date: Tue, 1 Jul 2014 17:40:12 +0200
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
+        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] ARM: dts: dove: enable lcd0 on SolidRun CuBox
+Message-ID: <20140701174012.11c60043@armhf>
+In-Reply-To: <1404219871-18419-4-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1404219871-18419-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1404219871-18419-4-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-In-Reply-To: <1404219616-1788-3-git-send-email-mpappas@fastmail.fm>
-References: <1404219616-1788-1-git-send-email-mpappas@fastmail.fm> <1404219616-1788-3-git-send-email-mpappas@fastmail.fm>
-From: Ben Chan <benchan@chromium.org>
-Date: Tue, 1 Jul 2014 08:37:31 -0700
-X-Google-Sender-Auth: lcVDRx3a51AxoWxreYWgWyZT0Y8
-Message-ID: <CAC5Y2nNhQvDve4SiV7Eat9t_82S3S26sU+p4R=vGQ2hk4tdAMg@mail.gmail.com>
-Subject: Re: [PATCH] staging: gdm72xx: move T_CAPABILITY bit definitions to hci.h
-To: Michalis Pappas <mpappas@fastmail.fm>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 1, 2014 at 6:00 AM, Michalis Pappas <mpappas@fastmail.fm> wrote:
-> Signed-off-by: Michalis Pappas <mpappas@fastmail.fm>
+On Tue,  1 Jul 2014 15:04:30 +0200
+Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
+
+> From: Russell King <rmk+kernel@arm.linux.org.uk>
+> 
+> This enables lcd0 on SolidRun CuBox which is connected to TDA998x
+> HDMI transmitter. Also, set the external video clock connected to
+> Si5351 clock generator.
+> 
+> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 > ---
->  drivers/staging/gdm72xx/gdm_wimax.c | 10 +++-------
->  drivers/staging/gdm72xx/hci.h       |  6 ++++++
->  2 files changed, 9 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/staging/gdm72xx/gdm_wimax.c b/drivers/staging/gdm72xx/gdm_wimax.c
-> index 63a760b..1fc64a9 100644
-> --- a/drivers/staging/gdm72xx/gdm_wimax.c
-> +++ b/drivers/staging/gdm72xx/gdm_wimax.c
-> @@ -600,10 +600,6 @@ static void gdm_wimax_prepare_device(struct net_device *dev)
->         u16 len = 0;
->         u32 val = 0;
->
-> -       #define BIT_MULTI_CS    0
-> -       #define BIT_WIMAX               1
-> -       #define BIT_QOS                 2
-> -       #define BIT_AGGREGATION 3
->
->         /* GetInformation mac address */
->         len = 0;
-> @@ -612,12 +608,12 @@ static void gdm_wimax_prepare_device(struct net_device *dev)
->         hci->length = H2B(len);
->         gdm_wimax_send(nic, hci, HCI_HEADER_SIZE+len);
->
-> -       val = (1<<BIT_WIMAX) | (1<<BIT_MULTI_CS);
-> +       val = (1 << T_CAPABILITY_BIT_WIMAX) | (1 << T_CAPABILITY_BIT_MULTI_CS);
->         #if defined(CONFIG_WIMAX_GDM72XX_QOS)
-> -       val |= (1<<BIT_QOS);
-> +       val |= (1 << T_CAPABILITY_BIT_QOS);
->         #endif
->         #if defined(CONFIG_WIMAX_GDM72XX_WIMAX2)
-> -       val |= (1<<BIT_AGGREGATION);
-> +       val |= (1 << T_CAPABILITY_BIT_AGGREGATION);
->         #endif
-
-[Ben] We can simply the code by defining these constants as bitmasks
-instead, e.g.
-
-T_CAPABILITY_MULTI_CS  (1 << 0)
-T_CAPABILITY_WIMAX  (1 << 1)
-T_CAPABILITY_QOS  (1 << 2)
-T_CAPABILITY_AGGREGATION  (1 << 3)
-
->         /* Set capability */
-> diff --git a/drivers/staging/gdm72xx/hci.h b/drivers/staging/gdm72xx/hci.h
-> index 059ba00..0cdd1fc 100644
-> --- a/drivers/staging/gdm72xx/hci.h
-> +++ b/drivers/staging/gdm72xx/hci.h
-> @@ -198,6 +198,12 @@
->  #define T_FFTSIZE                      (0xda   | (4 << 16))
->  #define T_DUPLEX_MODE                  (0xdb   | (4 << 16))
->
-> +/* T_CAPABILITY */
-> +#define T_CAPABILITY_BIT_MULTI_CS      0
-> +#define T_CAPABILITY_BIT_WIMAX         1
-> +#define T_CAPABILITY_BIT_QOS           2
-> +#define T_CAPABILITY_BIT_AGGREGATION   3
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> Cc: Kumar Gala <galak@codeaurora.org>
+> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Gregory Clement <gregory.clement@free-electrons.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/boot/dts/dove-cubox.dts |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/dove-cubox.dts b/arch/arm/boot/dts/dove-cubox.dts
+> index 7a70f4c..303a354 100644
+> --- a/arch/arm/boot/dts/dove-cubox.dts
+> +++ b/arch/arm/boot/dts/dove-cubox.dts
+> @@ -134,3 +134,9 @@
+>  	pinctrl-0 = <&pmx_audio1_i2s1_spdifo &pmx_audio1_extclk>;
+>  	pinctrl-names = "default";
+>  };
 > +
->  struct hci_s {
->         unsigned short cmd_evt;
->         unsigned short length;
-> --
-> 1.8.4
->
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+> +&lcd0 {
+> +	status = "okay";
+> +	clocks = <&si5351 0>;
+> +	clock-names = "ext_ref_clk_1";
+> +};
+
+My driver has "axiclk", "extclk0", "lcdpll" and "extclk1" as the clock
+names. It is a bit shorter.
+
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
