@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522AbaGAIbw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 04:31:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61772 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754237AbaGAIbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 04:31:49 -0400
-Message-ID: <53B271C0.5090008@redhat.com>
-Date: Tue, 01 Jul 2014 10:30:56 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1757543AbaGAIiF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 04:38:05 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47688 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753510AbaGAIiB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 04:38:01 -0400
+Date: Tue, 1 Jul 2014 09:37:49 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Dan Murphy <dmurphy@ti.com>,
+        "linux-sound@vger.kernel.org" <linux-sound@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2] ASoC: tas2552: Support TI TAS2552 Amplifier
+Message-ID: <20140701083749.GH28740@leverpostej>
+References: <1404148259-17305-1-git-send-email-dmurphy@ti.com>
+ <20140630172115.GE28740@leverpostej>
+ <20140630214342.GI23300@sirena.org.uk>
 MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC net-next 11/14] tracing: allow eBPF programs to be
- attached to events
-References: <1403913966-4927-1-git-send-email-ast@plumgrid.com> <1403913966-4927-12-git-send-email-ast@plumgrid.com>
-In-Reply-To: <1403913966-4927-12-git-send-email-ast@plumgrid.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140630214342.GI23300@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2014 02:06 AM, Alexei Starovoitov wrote:
-> User interface:
-> cat bpf_123 > /sys/kernel/debug/tracing/__event__/filter
->
-> where 123 is an id of the eBPF program priorly loaded.
-> __event__ is static tracepoint event.
-> (kprobe events will be supported in the future patches)
->
-> eBPF programs can call in-kernel helper functions to:
-> - lookup/update/delete elements in maps
-> - memcmp
-> - trace_printk
-> - load_pointer
-> - dump_stack
+On Mon, Jun 30, 2014 at 10:43:42PM +0100, Mark Brown wrote:
+> On Mon, Jun 30, 2014 at 06:21:15PM +0100, Mark Rutland wrote:
+> > On Mon, Jun 30, 2014 at 06:10:59PM +0100, Dan Murphy wrote:
+> 
+> > > +Optional properties:
+> 
+> > > +- power-gpio - gpio pin to enable/disable the device
+> 
+> > The code below seems to look for "enable-gpio". Searching for
+> > "power-gpio" only hits in the line above and the example below. I assume
+> > the code is in error?
+> 
+> It depends what this is for - if it's for an external regulator it
+> should be a regulator binding.  Also all GPIO properties
+> are supposed to be called -gpios because DT conventions.
 
-Are there plans to let eBPF replace the generic event
-filtering framework in tracing?
+Sure. I was commenting on the mismatch between "enable" in the code and
+"power" in the documentation rather than the appropriateness of either
+"power-gpios" or "enable-gpios".
 
-> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-> ---
->   include/linux/ftrace_event.h       |    5 +
->   include/trace/bpf_trace.h          |   29 +++++
->   include/trace/ftrace.h             |   10 ++
->   include/uapi/linux/bpf.h           |    5 +
->   kernel/trace/Kconfig               |    1 +
->   kernel/trace/Makefile              |    1 +
->   kernel/trace/bpf_trace.c           |  217 ++++++++++++++++++++++++++++++++++++
->   kernel/trace/trace.h               |    3 +
->   kernel/trace/trace_events.c        |    7 ++
->   kernel/trace/trace_events_filter.c |   72 +++++++++++-
->   10 files changed, 349 insertions(+), 1 deletion(-)
->   create mode 100644 include/trace/bpf_trace.h
->   create mode 100644 kernel/trace/bpf_trace.c
+Mark.
