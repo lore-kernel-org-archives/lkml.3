@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758649AbaGAQi0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 12:38:26 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:58001 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758137AbaGAQiW (ORCPT
+	id S1758499AbaGAQkD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 12:40:03 -0400
+Received: from static.88-198-71-155.clients.your-server.de ([88.198.71.155]:45326
+	"EHLO socrates.bennee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756854AbaGAQkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 12:38:22 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: "Pinski, Andrew" <Andrew.Pinski@caviumnetworks.com>,
+	Tue, 1 Jul 2014 12:40:00 -0400
+X-Greylist: delayed 2774 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Jul 2014 12:39:59 EDT
+From: =?UTF-8?q?Alex=20Benn=C3=A9e?= <alex.bennee@linaro.org>
+To: kvmarm@lists.cs.columbia.edu, linux-arm-kernel@lists.infradead.org
+Cc: kvm@vger.kernel.org,
+        =?UTF-8?q?Alex=20Benn=C3=A9e?= <alex.bennee@linaro.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, Gleb Natapov <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
         Catalin Marinas <catalin.marinas@arm.com>,
-        Andrew Pinski <apinski@cavium.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 22/24] ARM64:ILP32: Use a seperate syscall table as a few syscalls need to be using the compat syscalls.
-Date: Tue, 01 Jul 2014 18:38:12 +0200
-Message-ID: <4268617.3t49DXZOBa@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <800835FF-E10A-4C0C-A68F-0ED1434F1CE2@caviumnetworks.com>
-References: <1400914939-9708-1-git-send-email-apinski@cavium.com> <20140701150539.GA18309@arm.com> <800835FF-E10A-4C0C-A68F-0ED1434F1CE2@caviumnetworks.com>
+        Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] arm64: KVM: export demux regids as KVM_REG_ARM64
+Date: Tue,  1 Jul 2014 16:53:13 +0100
+Message-Id: <1404229993-14522-1-git-send-email-alex.bennee@linaro.org>
+X-Mailer: git-send-email 2.0.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:0KQnlMWYovqF9iZ2cJIxGbZD3Q6+Tkv8F3Vgf+FBWOi
- Q07P3UzM27ZfV9povvCQENHFhVesRElLrKwKrq8gT0bnivVTVf
- uNO9AWw0ntSCAGYDAIYWKJz2Uhf+HYRytEHHd4NsdI2mp/lQ+O
- tZf3/2ccFdBb6RegNULpNK/+tD2mnufQeMFiXZPOaKjBgBqkMq
- dq6uQp6XGc0x0Zogb9CuQqqsTtKpwaV6cbbJjQZ3rF3K1MNMHW
- yBAfqw81fz+FAKiq2cLG4LFGuqh2XKgmpz493GVPHvic3n6Coh
- oPq2377kP3DJXdh0yAXAcdWN696ymjTzCIYvrUj29NC61d+F5C
- kQrgcXzrGBF7+TKYYWaA=
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 127.0.0.1
+X-SA-Exim-Mail-From: alex.bennee@linaro.org
+X-SA-Exim-Scanned: No (on socrates.bennee.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 01 July 2014 15:30:51 Pinski, Andrew wrote:
-> > On Jul 1, 2014, at 8:07 AM, "Catalin Marinas" <catalin.marinas@arm.com> wrote:
-> >> On Sat, May 24, 2014 at 12:02:17AM -0700, Andrew Pinski wrote:
-> >> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-> >> index 1e1ebfc..8241ffe 100644
-> >> --- a/arch/arm64/kernel/entry.S
-> >> +++ b/arch/arm64/kernel/entry.S
-> >> @@ -620,9 +620,14 @@ ENDPROC(ret_from_fork)
-> >>  */
-> >>    .align    6
-> >> el0_svc:
-> >> -    adrp    stbl, sys_call_table        // load syscall table pointer
-> >>    uxtw    scno, w8            // syscall number in w8
-> >>    mov    sc_nr, #__NR_syscalls
-> >> +#ifdef CONFIG_ARM64_ILP32
-> >> +    get_thread_info tsk
-> >> +    ldr    x16, [tsk, #TI_FLAGS]
-> >> +    tbnz    x16, #TIF_32BIT_AARCH64, el0_ilp32_svc // We are using ILP32
-> >> +#endif
-> >> +    adrp    stbl, sys_call_table        // load syscall table pointer
-> > 
-> > This adds a slight penalty on the AArch64 SVC entry path. I can't tell
-> > whether that's visible or not but I think the x86 guys decided to set an
-> > extra bit to the syscall number to distinguish it from native calls.
+I suspect this is a -ECUTPASTE fault from the initial implementation. If
+we don't declare the register ID to be KVM_REG_ARM64 the KVM_GET_ONE_REG
+implementation kvm_arm_get_reg() returns -EINVAL and hilarity ensues.
 
-IIRC the intention on x86 was that you should always be able to call
-any of the three syscall ABIs (x86-32, x86-64, x32) from any process
-by passing the right number, for flexibility.
+The kvm/api.txt document describes all arm64 registers as starting with
+0x60xx... (i.e KVM_REG_ARM64).
 
-	Arnd
+Signed-off-by: Alex Bennée <alex.bennee@linaro.org>
+Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
+---
+ arch/arm64/kvm/sys_regs.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/kvm/sys_regs.c b/arch/arm64/kvm/sys_regs.c
+index 0324458..5ee99e4 100644
+--- a/arch/arm64/kvm/sys_regs.c
++++ b/arch/arm64/kvm/sys_regs.c
+@@ -962,7 +962,7 @@ static unsigned int num_demux_regs(void)
+ 
+ static int write_demux_regids(u64 __user *uindices)
+ {
+-	u64 val = KVM_REG_ARM | KVM_REG_SIZE_U32 | KVM_REG_ARM_DEMUX;
++	u64 val = KVM_REG_ARM64 | KVM_REG_SIZE_U32 | KVM_REG_ARM_DEMUX;
+ 	unsigned int i;
+ 
+ 	val |= KVM_REG_ARM_DEMUX_ID_CCSIDR;
+-- 
+2.0.0
+
