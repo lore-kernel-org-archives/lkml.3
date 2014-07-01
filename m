@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758563AbaGATiI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 15:38:08 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:24731 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754922AbaGATiH (ORCPT
+	id S1758678AbaGATiO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 15:38:14 -0400
+Received: from puma-aaisp.mxtelecom.com ([81.187.36.3]:39159 "EHLO
+	puma.mxtelecom.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756400AbaGATiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 15:38:07 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArsHAKgNs1NbsGsk/2dsb2JhbABagw2sYwUBbplbgQ8XdYRgI4EaN4hGAbMKlXaFb4kwHYQtBZpmi0WIPoNEOw
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Josh Triplett <josh@joshtriplett.org>, devel@driverdev.osuosl.org
-Subject: [PATCH 1/1] staging/lustre/libcfs: use ARRAY_SIZE instead of sizeof/sizeof[0]
-Date: Tue,  1 Jul 2014 21:38:02 +0200
-Message-Id: <1404243482-23799-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	Tue, 1 Jul 2014 15:38:11 -0400
+Date: Tue, 1 Jul 2014 20:38:07 +0100 (BST)
+From: Edward Allcutt <edward.allcutt@openmarket.com>
+To: David Miller <davem@davemloft.net>
+cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Edward Allcutt <edward.allcutt@openmarket.com>
+Subject: Re: [PATCH] ipv4: icmp: Fix pMTU handling for rare case
+In-Reply-To: <20140701.120730.2210532934459689553.davem@davemloft.net>
+Message-ID: <alpine.DEB.2.10.1407012020011.5997@tabini.allcutt.me.uk>
+References: <alpine.DEB.2.10.1407010937120.5997@tabini.allcutt.me.uk> <20140701.110510.2218293817137911715.davem@davemloft.net> <alpine.DEB.2.10.1407011912440.5997@tabini.allcutt.me.uk> <20140701.120730.2210532934459689553.davem@davemloft.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use macro definition
+On Tue, 1 Jul 2014, David Miller wrote:
+> I didn't say I won't apply the patch, actually the email you are
+> replying to is strictly about figuring out what's happening on
+> the OpenBSD systems for their sake.
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Josh Triplett <josh@joshtriplett.org>
-Cc: devel@driverdev.osuosl.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/staging/lustre/lustre/libcfs/nidstrings.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Ah, sorry for the misunderstanding.
 
-diff --git a/drivers/staging/lustre/lustre/libcfs/nidstrings.c b/drivers/staging/lustre/lustre/libcfs/nidstrings.c
-index 87705ae..4fc7b45 100644
---- a/drivers/staging/lustre/lustre/libcfs/nidstrings.c
-+++ b/drivers/staging/lustre/lustre/libcfs/nidstrings.c
-@@ -74,8 +74,7 @@ libcfs_next_nidstring(void)
- 	spin_lock_irqsave(&libcfs_nidstring_lock, flags);
- 
- 	str = libcfs_nidstrings[libcfs_nidstring_idx++];
--	if (libcfs_nidstring_idx ==
--	    sizeof(libcfs_nidstrings)/sizeof(libcfs_nidstrings[0]))
-+	if (libcfs_nidstring_idx == ARRAY_SIZE(libcfs_nidstrings))
- 		libcfs_nidstring_idx = 0;
- 
- 	spin_unlock_irqrestore(&libcfs_nidstring_lock, flags);
-@@ -198,7 +197,7 @@ static struct netstrfns  libcfs_netstrfns[] = {
- 	{/* .nf_type      */  -1},
- };
- 
--const int libcfs_nnetstrfns = sizeof(libcfs_netstrfns)/sizeof(libcfs_netstrfns[0]);
-+const int libcfs_nnetstrfns = ARRAY_SIZE(libcfs_netstrfns);
- 
- int
- libcfs_lo_str2addr(const char *str, int nob, __u32 *addr)
+I'll see if I can find the place in the BSD code. Although I think in 
+principle this could come up in other "technically correct" router 
+implementations.
+
 -- 
-1.9.1
-
+Edward Allcutt
