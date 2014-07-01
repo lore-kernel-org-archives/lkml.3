@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758168AbaGAQGC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 12:06:02 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:13979 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756201AbaGAQGB (ORCPT
+	id S1758246AbaGAQRE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 12:17:04 -0400
+Received: from zimbra13.linbit.com ([212.69.166.240]:53112 "EHLO
+	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757119AbaGAQQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 12:06:01 -0400
-Message-ID: <1404230760.25766.5.camel@hornet>
-Subject: Re: [PATCH v2] perf: Handle compat ioctl
-From: Pawel Moll <pawel.moll@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Drew Richardson <Drew.Richardson@arm.com>
-Date: Tue, 01 Jul 2014 17:06:00 +0100
-In-Reply-To: <1403009029-30967-1-git-send-email-pawel.moll@arm.com>
-References: <20140617121328.GO3213@twins.programming.kicks-ass.net>
-	 <1403009029-30967-1-git-send-email-pawel.moll@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Jul 2014 12:16:54 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 07/20] drbd: Limit the time we are waiting for the first packet on an accepted socket
+Date: Tue,  1 Jul 2014 18:16:37 +0200
+Message-Id: <1404231410-29852-8-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404231410-29852-1-git-send-email-philipp.reisner@linbit.com>
+References: <1404231410-29852-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-17 at 13:43 +0100, Pawel Moll wrote:
-> When running a 32-bit userspace on a 64-bit kernel (eg. i386
-> application on x86_64 kernel or 32-bit arm userspace on arm64
-> kernel) some of the perf ioctls must be treated with special
-> care, as they have a pointer size encoded in the command.
-> 
-> For example, PERF_EVENT_IOC_ID in 32-bit world will be encoded
-> as 0x80042407, but 64-bit kernel will expect 0x80082407. In
-> result the ioctl will fail returning -ENOTTY.
-> 
-> This patch solves the problem by adding code fixing up the
-> size as compat_ioctl file operation.
-> 
-> Reported-by: Drew Richardson <drew.richardson@arm.com>
-> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+Before the patch
+'drbd: Keep the listening socket open while trying to connect to the peer'
 
-This just is a polite and friendly nag...
+the newly created socket inherited the receive timeout from the listen
+socket. The listen socket had a receive timeout of connect-intervall
++- 30% random jitter.
 
-Any, strong or not, opinions on the matter?
+The real issue is that after the mentioned patch we had no timeout at all.
+Now use 4 times the ping-timeout.
 
-Cheers!
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_receiver.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-Pawel
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index d326af6..7da83f3 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -791,8 +791,18 @@ static int receive_first_packet(struct drbd_connection *connection, struct socke
+ {
+ 	unsigned int header_size = drbd_header_size(connection);
+ 	struct packet_info pi;
++	struct net_conf *nc;
+ 	int err;
+ 
++	rcu_read_lock();
++	nc = rcu_dereference(connection->net_conf);
++	if (!nc) {
++		rcu_read_unlock();
++		return -EIO;
++	}
++	sock->sk->sk_rcvtimeo = nc->ping_timeo * 4 * HZ / 10;
++	rcu_read_unlock();
++
+ 	err = drbd_recv_short(sock, connection->data.rbuf, header_size, 0);
+ 	if (err != header_size) {
+ 		if (err >= 0)
+-- 
+1.9.1
 
