@@ -1,59 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758486AbaGARr6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 13:47:58 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:36559 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757542AbaGARr4 (ORCPT
+	id S1758555AbaGARsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 13:48:08 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:38037 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758493AbaGARsE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 13:47:56 -0400
+	Tue, 1 Jul 2014 13:48:04 -0400
+Date: Tue, 1 Jul 2014 19:49:53 +0200
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] ARM: mvebu: add armada drm init to Dove board setup
+Message-ID: <20140701194953.78a0c5cf@armhf>
+In-Reply-To: <20140701164527.GY32514@n2100.arm.linux.org.uk>
+References: <1404219871-18419-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1404219871-18419-5-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20140701131026.GO32514@n2100.arm.linux.org.uk>
+	<53B2B5E5.50502@gmail.com>
+	<20140701133627.GP32514@n2100.arm.linux.org.uk>
+	<20140701180426.54a79a0b@armhf>
+	<20140701164527.GY32514@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-In-Reply-To: <1404211489-9848-1-git-send-email-pbonzini@redhat.com>
-References: <1404211489-9848-1-git-send-email-pbonzini@redhat.com>
-Date: Tue, 1 Jul 2014 10:47:55 -0700
-X-Google-Sender-Auth: 7v6NTjA4aQXcNOvS5tWUTqBKp2Y
-Message-ID: <CA+55aFyLk1AWxd9r2zfrKtpawPhw53k_rBdj8kq159i=hf6xsA@mail.gmail.com>
-Subject: Re: [GIT PULL] KVM changes for 3.16-rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@kernel.org>, KVM list <kvm@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 1, 2014 at 3:44 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
->
->   git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/for-linus
+On Tue, 1 Jul 2014 17:45:27 +0100
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> Let's tell the full story rather than just presenting half of it.
+> 
+> You indeed wanted to do what you said above, but you also wanted to
+> completely change the component helpers in a way that I was not happy
+> with.  You wanted to add all sorts of DT specific gunk into the
+> helpers, which would have tied it to DT.
+> 
+> While DT is the current thing on ARM, it is /not/ the current thing
+> everywhere - a point which you failed to grasp.
 
-I've pulled this, but I was pretty close to saying "screw this shit".
+I don't think that there will ever be a x86 DT.
+Yes, I did not know what was the DT. For me, when entering in the ARM
+world, it was a marvellous tool which could have ended in a unique ARM
+kernel. I'm a dreamer!
 
-Look at commit 9a630d15f16d, and pray tell me why those kinds of
-commit logs are excusable?
+> You wanted to make the component operations optional, which I pointed
+> out makes no sense (because then components have no way to know what
+> happens to their master device - which is /really/ important for DRM.)
 
-That commit message is totally worthless noise. It doesn't explain
-what it merges, much less give any explanation of *why* it is a merge.
+You did not explain too much that you wanted to keep it for DRM only.
 
-Merges need explanations too. Tell what the branch you are merging
-does, and why you are doing the merge. Yeah, in this case the "branch"
-contains a single commit, but that *still* doesn't excuse not telling
-what the merge is, and why it exists at all.
+> You refused to listen to those concerns, and refused to look at the
+> patch which I proposed, which did exactly the same as your patch,
+> while keeping the DRM slave interfaces for tilcdc to use, until they
+> have a chance to convert over.
 
-Seriously. Do "git log --merges" on current git, and look at the
-discrepancy between merge commit messages. That commit 9a630d15f16d is
-pure garbage.
+The change in tilcdc was easy and the code was greatly simplified.
 
-It's not the only crappy one, but it really does stand out. There are
-other one-liners in there, but even then they tend to have at least
-*some* semblance of actual information in them, ie
+> You kept telling me that I had "opened the door" to your changes.  I
+> claimed that your changes abused the code which I had written - a point
+> which I still maintain to this day.
 
-    Merge branch 'for-v3.16/ti-clk-drv' of
-github.com:t-kristo/linux-pm into clk-next
+Your code was offering a simple way to synchronize the system
+initialization without this lot of 'probe defer's. It could have been
+used so.
 
-at least shows that there's a topic branch with a reasonable name, and
-where it comes from. I'd really prefer it to talk about what it merges
-and why, but it's still *much* better than your completely
-information-free merge message.
+> You also claimed that deferred probing didn't work.  Since the component
+> helpers were designed with the deferred probing problem in mind at the
+> time, and include the solution to that problem - which has been well
+> tested hundreds if not thousands of times by now - and you did not
+> provide the technical details as to why you thought it didn't work,
+> there was nothing that could be done to progress that point.
 
-                Linus
+AFAIR, you also said that the probe defer was not working. But, thanks
+again for your component layer: all my init problems are gone, even if
+there are still some prove defer's...
+
+> Moreover, your abuse of the component layer would have made it more
+> difficult to maintain it into the future - which is a fundamental
+> point which has to be considered when accepting any patch into the
+> kernel.  If a patch makes some code unable to be maintained, then an
+> alternative approach has to be found.  Since you were not willing to
+> compromise on finding or considering alternative approaches such as
+> the one I presented.
+
+I don't see what you are talking about.
+
+> Since the component layer had had various comments which were in
+> progress, and your abuse of the component layer would have also
+> prevented those changes taking place (which are - in part - the set
+> of component patches which are on the list now) there is no way that
+> your uncompromising set of patches would be merged - at least not
+> until you start accepting some of the comments being given to you.
+> 
+> > Now, the last thing for me is to put the TDA998x codec in the kernel
+> > (it is also working in an other machine with 2 tda998x's).  
+> 
+> Yes, supporting the I2S connection is something that is need, but we
+> /also/ need to support SPDIF, and SPDIF is the preferred method on
+> the Cubox.  SPDIF should be used to talk to the TDA998x whenever
+> possible because it opens up the possibility for sending out
+> compressed MPEG2 and AC-3 audio streams, thus offloading the decode
+> of these formats to external hardware.
+> 
+> This works today, and is a feature that people have been using with
+> platforms such as xbmc and various other installations on the Cubox.
+> 
+> Limiting to I2S means that you can't send out these compressed audio
+> streams.  In fact, the Dove manual tells you that you must disable
+> the I2S playback stream if you're sending non-PCM - non-PCM is only
+> supported via SPDIF.
+
+I don't understand: both I2S and S/PDIF may work in the kirkwood audio
+subsystem as it is (yes, actually not at the same time, and this is a
+choice because DPCM does not work for the Cubox). I have the 3 ways in
+my system:
+
+$ cat /proc/asound/pcm 
+00-00: i2s-i2s-hifi i2s-hifi-0 :  : playback 1
+00-01: spdif-spdif-hifi spdif-hifi-1 :  : playback 1
+00-02: spdif-dit-hifi dit-hifi-2 :  : playback 1
+
+So, S/PDIF should work, but I don't know it: I have no optical connector.
+
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
