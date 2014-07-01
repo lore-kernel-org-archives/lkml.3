@@ -1,1119 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965059AbaGAV75 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:59:57 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.216]:12339 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754072AbaGAVxl (ORCPT
+	id S1030270AbaGAWA2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 18:00:28 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50487 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1030255AbaGAWAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:53:41 -0400
-X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
-X-RZG-CLASS-ID: mo00
-From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 06/50] mars: add new file drivers/block/mars/brick_mem.c
-Date: Tue,  1 Jul 2014 23:46:46 +0200
-Message-Id: <1404251250-22992-7-git-send-email-tst@schoebel-theuer.de>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
-References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
+	Tue, 1 Jul 2014 18:00:24 -0400
+Date: Tue, 1 Jul 2014 23:00:11 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] ARM: mvebu: add armada drm init to Dove board setup
+Message-ID: <20140701220011.GB32514@n2100.arm.linux.org.uk>
+References: <1404219871-18419-1-git-send-email-sebastian.hesselbarth@gmail.com> <1404219871-18419-5-git-send-email-sebastian.hesselbarth@gmail.com> <20140701131026.GO32514@n2100.arm.linux.org.uk> <53B2B5E5.50502@gmail.com> <20140701133627.GP32514@n2100.arm.linux.org.uk> <20140701180426.54a79a0b@armhf> <20140701164527.GY32514@n2100.arm.linux.org.uk> <20140701194953.78a0c5cf@armhf>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140701194953.78a0c5cf@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
----
- drivers/block/mars/brick_mem.c | 1081 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 1081 insertions(+)
- create mode 100644 drivers/block/mars/brick_mem.c
+On Tue, Jul 01, 2014 at 07:49:53PM +0200, Jean-Francois Moine wrote:
+> On Tue, 1 Jul 2014 17:45:27 +0100
+> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> > Let's tell the full story rather than just presenting half of it.
+> > 
+> > You indeed wanted to do what you said above, but you also wanted to
+> > completely change the component helpers in a way that I was not happy
+> > with.  You wanted to add all sorts of DT specific gunk into the
+> > helpers, which would have tied it to DT.
+> > 
+> > While DT is the current thing on ARM, it is /not/ the current thing
+> > everywhere - a point which you failed to grasp.
+> 
+> I don't think that there will ever be a x86 DT.
 
-diff --git a/drivers/block/mars/brick_mem.c b/drivers/block/mars/brick_mem.c
-new file mode 100644
-index 0000000..ce682fc
---- /dev/null
-+++ b/drivers/block/mars/brick_mem.c
-@@ -0,0 +1,1081 @@
-+/*  (c) 2011 Thomas Schoebel-Theuer / 1&1 Internet AG */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/mm.h>
-+#include <linux/fs.h>
-+#include <linux/slab.h>
-+#include <linux/delay.h>
-+
-+#include <linux/atomic.h>
-+
-+#include <linux/brick/brick_mem.h>
-+#include <linux/brick/brick_say.h>
-+#include <linux/brick/lamport.h>
-+
-+#define USE_KERNEL_PAGES		/*  currently mandatory (vmalloc does not work) */
-+
-+#define MAGIC_BLOCK			((int)0x8B395D7B)
-+#define MAGIC_BEND			((int)0x8B395D7C)
-+#define MAGIC_MEM1			((int)0x8B395D7D)
-+#define MAGIC_MEM2			((int)0x9B395D8D)
-+#define MAGIC_MEND1			((int)0x8B395D7E)
-+#define MAGIC_MEND2			((int)0x9B395D8E)
-+#define MAGIC_STR			((int)0x8B395D7F)
-+#define MAGIC_SEND			((int)0x9B395D8F)
-+
-+#define INT_ACCESS(ptr, offset) (*(int *)(((char *)(ptr)) + (offset)))
-+
-+#define _BRICK_FMT(_fmt, _class)					\
-+	"%ld.%09ld %ld.%09ld MEM_%-5s %s[%d] %s:%d %s(): "		\
-+		_fmt,							\
-+		_s_now.tv_sec, _s_now.tv_nsec,				\
-+		_l_now.tv_sec, _l_now.tv_nsec,				\
-+		say_class[_class],					\
-+		current->comm, (int)smp_processor_id(),			\
-+		__BASE_FILE__,						\
-+		__LINE__,						\
-+		__func__
-+
-+#define _BRICK_MSG(_class, _dump, _fmt, _args...)			\
-+	do {								\
-+		struct timespec _s_now = CURRENT_TIME;			\
-+		struct timespec _l_now;					\
-+		get_lamport(&_l_now);					\
-+		say(_class, _BRICK_FMT(_fmt, _class), ##_args);		\
-+		if (_dump)						\
-+			dump_stack();					\
-+	} while (0)
-+
-+#define BRICK_ERR(_fmt, _args...) _BRICK_MSG(SAY_ERROR, true,  _fmt, ##_args)
-+#define BRICK_WRN(_fmt, _args...) _BRICK_MSG(SAY_WARN,	false, _fmt, ##_args)
-+#define BRICK_INF(_fmt, _args...) _BRICK_MSG(SAY_INFO,	false, _fmt, ##_args)
-+
-+/***********************************************************************/
-+
-+/*  limit handling */
-+
-+#include <linux/swap.h>
-+
-+long long brick_global_memavail = 0;
-+EXPORT_SYMBOL_GPL(brick_global_memavail);
-+long long brick_global_memlimit = 0;
-+EXPORT_SYMBOL_GPL(brick_global_memlimit);
-+atomic64_t brick_global_block_used = ATOMIC64_INIT(0);
-+EXPORT_SYMBOL_GPL(brick_global_block_used);
-+
-+void get_total_ram(void)
-+{
-+	struct sysinfo i = {};
-+
-+	si_meminfo(&i);
-+	/* si_swapinfo(&i); */
-+	brick_global_memavail = (long long)i.totalram * (PAGE_SIZE / 1024);
-+	BRICK_INF("total RAM = %lld [KiB]\n", brick_global_memavail);
-+}
-+
-+/***********************************************************************/
-+
-+/*  small memory allocation (use this only for len < PAGE_SIZE) */
-+
-+#ifdef BRICK_DEBUG_MEM
-+static atomic_t phys_mem_alloc = ATOMIC_INIT(0);
-+static atomic_t mem_redirect_alloc = ATOMIC_INIT(0);
-+static atomic_t mem_count[BRICK_DEBUG_MEM];
-+static atomic_t mem_free[BRICK_DEBUG_MEM];
-+static int  mem_len[BRICK_DEBUG_MEM];
-+
-+#define PLUS_SIZE			(6 * sizeof(int))
-+#else
-+#define PLUS_SIZE			(2 * sizeof(int))
-+#endif
-+
-+static inline
-+void *__brick_mem_alloc(int len)
-+{
-+	void *res;
-+
-+	if (len >= PAGE_SIZE) {
-+#ifdef BRICK_DEBUG_MEM
-+		atomic_inc(&mem_redirect_alloc);
-+#endif
-+		res = _brick_block_alloc(0, len, 0);
-+	} else {
-+		for (;;) {
-+			res = kmalloc(len, GFP_BRICK);
-+			if (likely(res))
-+				break;
-+			msleep(1000);
-+		}
-+#ifdef BRICK_DEBUG_MEM
-+		atomic_inc(&phys_mem_alloc);
-+#endif
-+	}
-+	return res;
-+}
-+
-+static inline
-+void __brick_mem_free(void *data, int len)
-+{
-+	if (len >= PAGE_SIZE) {
-+		_brick_block_free(data, len, 0);
-+#ifdef BRICK_DEBUG_MEM
-+		atomic_dec(&mem_redirect_alloc);
-+#endif
-+	} else {
-+		kfree(data);
-+#ifdef BRICK_DEBUG_MEM
-+		atomic_dec(&phys_mem_alloc);
-+#endif
-+	}
-+}
-+
-+void *_brick_mem_alloc(int len, int line)
-+{
-+	void *res;
-+
-+#ifdef CONFIG_MARS_DEBUG
-+	might_sleep();
-+#endif
-+
-+	res = __brick_mem_alloc(len + PLUS_SIZE);
-+
-+#ifdef BRICK_DEBUG_MEM
-+	if (unlikely(line < 0))
-+		line = 0;
-+	else if (unlikely(line >= BRICK_DEBUG_MEM))
-+		line = BRICK_DEBUG_MEM - 1;
-+	INT_ACCESS(res, 0 * sizeof(int)) = MAGIC_MEM1;
-+	INT_ACCESS(res, 1 * sizeof(int)) = len;
-+	INT_ACCESS(res, 2 * sizeof(int)) = line;
-+	INT_ACCESS(res, 3 * sizeof(int)) = MAGIC_MEM2;
-+	res += 4 * sizeof(int);
-+	INT_ACCESS(res, len + 0 * sizeof(int)) = MAGIC_MEND1;
-+	INT_ACCESS(res, len + 1 * sizeof(int)) = MAGIC_MEND2;
-+	atomic_inc(&mem_count[line]);
-+	mem_len[line] = len;
-+#else
-+	INT_ACCESS(res, 0 * sizeof(int)) = len;
-+	res += PLUS_SIZE;
-+#endif
-+	return res;
-+}
-+EXPORT_SYMBOL_GPL(_brick_mem_alloc);
-+
-+void _brick_mem_free(void *data, int cline)
-+{
-+#ifdef BRICK_DEBUG_MEM
-+	void *test = data - 4 * sizeof(int);
-+	int magic1 = INT_ACCESS(test, 0 * sizeof(int));
-+	int len = INT_ACCESS(test, 1 * sizeof(int));
-+	int line = INT_ACCESS(test, 2 * sizeof(int));
-+	int magic2 = INT_ACCESS(test, 3 * sizeof(int));
-+
-+	if (unlikely(magic1 != MAGIC_MEM1)) {
-+		BRICK_ERR("line %d memory corruption: magix1 %08x != %08x, len = %d\n",
-+			cline,
-+			magic1,
-+			MAGIC_MEM1,
-+			len);
-+		goto _out_return;
-+	}
-+	if (unlikely(magic2 != MAGIC_MEM2)) {
-+		BRICK_ERR("line %d memory corruption: magix2 %08x != %08x, len = %d\n",
-+			cline,
-+			magic2,
-+			MAGIC_MEM2,
-+			len);
-+		goto _out_return;
-+	}
-+	if (unlikely(line < 0 || line >= BRICK_DEBUG_MEM)) {
-+		BRICK_ERR("line %d memory corruption: alloc line = %d, len = %d\n", cline, line, len);
-+		goto _out_return;
-+	}
-+	INT_ACCESS(test, 0) = 0xffffffff;
-+	magic1 = INT_ACCESS(data, len + 0 * sizeof(int));
-+	if (unlikely(magic1 != MAGIC_MEND1)) {
-+		BRICK_ERR("line %d memory corruption: magix1 %08x != %08x, len = %d\n",
-+			cline,
-+			magic1,
-+			MAGIC_MEND1,
-+			len);
-+		goto _out_return;
-+	}
-+	magic2 = INT_ACCESS(data, len + 1 * sizeof(int));
-+	if (unlikely(magic2 != MAGIC_MEND2)) {
-+		BRICK_ERR("line %d memory corruption: magix2 %08x != %08x, len = %d\n",
-+			cline,
-+			magic2,
-+			MAGIC_MEND2,
-+			len);
-+		goto _out_return;
-+	}
-+	INT_ACCESS(data, len) = 0xffffffff;
-+	atomic_dec(&mem_count[line]);
-+	atomic_inc(&mem_free[line]);
-+#else
-+	void *test = data - PLUS_SIZE;
-+	int len = INT_ACCESS(test, 0 * sizeof(int));
-+
-+#endif
-+	data = test;
-+	__brick_mem_free(data, len + PLUS_SIZE);
-+#ifdef BRICK_DEBUG_MEM
-+_out_return:;
-+#endif
-+}
-+EXPORT_SYMBOL_GPL(_brick_mem_free);
-+
-+/***********************************************************************/
-+
-+/*  string memory allocation */
-+
-+#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
-+# define STRING_CANARY							\
-+	"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
-+	"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy" \
-+	"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" \
-+	"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
-+	"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy" \
-+	"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" \
-+	"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
-+	"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy" \
-+	"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" \
-+	" FILE = "	__FILE__					\
-+	" DATE = "	__DATE__					\
-+	" TIME = "	__TIME__					\
-+	" VERSION = "	__VERSION__					\
-+	" xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx STRING_error xxx\n"
-+# define STRING_PLUS (sizeof(int) * 3 + sizeof(STRING_CANARY))
-+#elif defined(BRICK_DEBUG_MEM)
-+# define STRING_PLUS (sizeof(int) * 4)
-+#else
-+# define STRING_PLUS 0
-+#endif
-+
-+#ifdef BRICK_DEBUG_MEM
-+static atomic_t phys_string_alloc = ATOMIC_INIT(0);
-+static atomic_t string_count[BRICK_DEBUG_MEM];
-+static atomic_t string_free[BRICK_DEBUG_MEM];
-+
-+#endif
-+
-+char *_brick_string_alloc(int len, int line)
-+{
-+	char *res;
-+
-+#ifdef CONFIG_MARS_DEBUG
-+	might_sleep();
-+	if (unlikely(len > PAGE_SIZE))
-+		BRICK_WRN("line = %d string too long: len = %d\n", line, len);
-+#endif
-+	if (len <= 0)
-+		len = BRICK_STRING_LEN;
-+
-+	for (;;) {
-+		res = kzalloc(len + STRING_PLUS, GFP_BRICK);
-+		if (likely(res))
-+			break;
-+		msleep(1000);
-+	}
-+
-+#ifdef BRICK_DEBUG_MEM
-+#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
-+	memset(res + 1, '?', len - 1);
-+#endif
-+	atomic_inc(&phys_string_alloc);
-+	if (unlikely(line < 0))
-+		line = 0;
-+	else if (unlikely(line >= BRICK_DEBUG_MEM))
-+		line = BRICK_DEBUG_MEM - 1;
-+	INT_ACCESS(res, 0) = MAGIC_STR;
-+	INT_ACCESS(res, sizeof(int)) = len;
-+	INT_ACCESS(res, sizeof(int) * 2) = line;
-+	res += sizeof(int) * 3;
-+#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
-+	strcpy(res + len, STRING_CANARY);
-+#else
-+	INT_ACCESS(res, len) = MAGIC_SEND;
-+#endif
-+	atomic_inc(&string_count[line]);
-+#endif
-+	return res;
-+}
-+EXPORT_SYMBOL_GPL(_brick_string_alloc);
-+
-+void _brick_string_free(const char *data, int cline)
-+{
-+#ifdef BRICK_DEBUG_MEM
-+	int magic;
-+	int len;
-+	int line;
-+	char *orig = (void *)data;
-+
-+	data -= sizeof(int) * 3;
-+	magic = INT_ACCESS(data, 0);
-+	if (unlikely(magic != MAGIC_STR)) {
-+		BRICK_ERR("cline %d stringmem corruption: magix %08x != %08x\n", cline, magic, MAGIC_STR);
-+		goto _out_return;
-+	}
-+	len = INT_ACCESS(data, sizeof(int));
-+	line = INT_ACCESS(data, sizeof(int) * 2);
-+	if (unlikely(len <= 0)) {
-+		BRICK_ERR("cline %d stringmem corruption: line = %d len = %d\n", cline, line, len);
-+		goto _out_return;
-+	}
-+	if (unlikely(len > PAGE_SIZE))
-+		BRICK_ERR("cline %d string too long: line = %d len = %d string='%s'\n", cline, line, len, orig);
-+	if (unlikely(line < 0 || line >= BRICK_DEBUG_MEM)) {
-+		BRICK_ERR("cline %d stringmem corruption: line = %d (len = %d)\n", cline, line, len);
-+		goto _out_return;
-+	}
-+#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
-+	if (unlikely(strcmp(orig + len, STRING_CANARY))) {
-+		BRICK_ERR("cline %d stringmem corruption: bad canary '%s', line = %d len = %d\n",
-+			  cline, STRING_CANARY, line, len);
-+		goto _out_return;
-+	}
-+	orig[len]--;
-+	memset(orig, '!', len);
-+#else
-+	magic = INT_ACCESS(orig, len);
-+	if (unlikely(magic != MAGIC_SEND)) {
-+		BRICK_ERR("cline %d stringmem corruption: end_magix %08x != %08x, line = %d len = %d\n",
-+			  cline, magic, MAGIC_SEND, line, len);
-+		goto _out_return;
-+	}
-+	INT_ACCESS(orig, len) = 0xffffffff;
-+#endif
-+	atomic_dec(&string_count[line]);
-+	atomic_inc(&string_free[line]);
-+	atomic_dec(&phys_string_alloc);
-+#endif
-+	kfree(data);
-+#ifdef BRICK_DEBUG_MEM
-+_out_return:;
-+#endif
-+}
-+EXPORT_SYMBOL_GPL(_brick_string_free);
-+
-+/***********************************************************************/
-+
-+/*  block memory allocation */
-+
-+static
-+int len2order(int len)
-+{
-+	int order = 0;
-+
-+	if (unlikely(len <= 0)) {
-+		BRICK_ERR("trying to use %d bytes\n", len);
-+		return 0;
-+	}
-+
-+	while ((PAGE_SIZE << order) < len)
-+		order++;
-+
-+	if (unlikely(order > BRICK_MAX_ORDER)) {
-+		BRICK_ERR("trying to use %d bytes (oder = %d, max = %d)\n", len, order, BRICK_MAX_ORDER);
-+		return BRICK_MAX_ORDER;
-+	}
-+	return order;
-+}
-+
-+#ifdef CONFIG_MARS_MEM_PREALLOC
-+static atomic_t _alloc_count[BRICK_MAX_ORDER+1];
-+int brick_mem_alloc_count[BRICK_MAX_ORDER+1] = {};
-+EXPORT_SYMBOL_GPL(brick_mem_alloc_count);
-+int brick_mem_alloc_max[BRICK_MAX_ORDER+1] = {};
-+EXPORT_SYMBOL_GPL(brick_mem_alloc_max);
-+int brick_mem_freelist_max[BRICK_MAX_ORDER+1] = {};
-+EXPORT_SYMBOL_GPL(brick_mem_freelist_max);
-+#endif
-+
-+#ifdef BRICK_DEBUG_MEM
-+static atomic_t phys_block_alloc = ATOMIC_INIT(0);
-+
-+/*  indexed by line */
-+static atomic_t block_count[BRICK_DEBUG_MEM];
-+static atomic_t block_free[BRICK_DEBUG_MEM];
-+static int  block_len[BRICK_DEBUG_MEM];
-+
-+/*  indexed by order */
-+static atomic_t op_count[BRICK_MAX_ORDER+1];
-+static atomic_t raw_count[BRICK_MAX_ORDER+1];
-+static int alloc_line[BRICK_MAX_ORDER+1];
-+static int alloc_len[BRICK_MAX_ORDER+1];
-+
-+#endif
-+
-+#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
-+
-+#define MAX_INFO_LISTS			1024
-+
-+#define INFO_LIST_HASH(addr) ((unsigned long)(addr) / (PAGE_SIZE * 2) % MAX_INFO_LISTS)
-+
-+struct mem_block_info {
-+	struct list_head inf_head;
-+	void *inf_data;
-+	int inf_len;
-+	int inf_line;
-+	bool inf_used;
-+};
-+
-+static struct list_head inf_anchor[MAX_INFO_LISTS];
-+static rwlock_t inf_lock[MAX_INFO_LISTS];
-+
-+static
-+void _new_block_info(void *data, int len, int cline)
-+{
-+	struct mem_block_info *inf;
-+	int hash;
-+
-+	for (;;) {
-+		inf = kmalloc(sizeof(struct mem_block_info), GFP_BRICK);
-+		if (likely(inf))
-+			break;
-+		msleep(1000);
-+	}
-+	inf->inf_data = data;
-+	inf->inf_len = len;
-+	inf->inf_line = cline;
-+	inf->inf_used = true;
-+
-+	hash = INFO_LIST_HASH(data);
-+
-+	write_lock(&inf_lock[hash]);
-+	list_add(&inf->inf_head, &inf_anchor[hash]);
-+	write_unlock(&inf_lock[hash]);
-+}
-+
-+static
-+struct mem_block_info *_find_block_info(void *data, bool remove)
-+{
-+	struct mem_block_info *res = NULL;
-+	struct list_head *tmp;
-+	int hash = INFO_LIST_HASH(data);
-+
-+	if (remove)
-+		write_lock(&inf_lock[hash]);
-+	else
-+		read_lock(&inf_lock[hash]);
-+	for (tmp = inf_anchor[hash].next; tmp != &inf_anchor[hash]; tmp = tmp->next) {
-+		struct mem_block_info *inf = container_of(tmp, struct mem_block_info, inf_head);
-+
-+		if (inf->inf_data != data)
-+			continue;
-+		if (remove)
-+			list_del_init(tmp);
-+		res = inf;
-+		break;
-+	}
-+	if (remove)
-+		write_unlock(&inf_lock[hash]);
-+	else
-+		read_unlock(&inf_lock[hash]);
-+	return res;
-+}
-+
-+#endif /*  CONFIG_MARS_DEBUG_MEM_STRONG */
-+
-+static inline
-+void *__brick_block_alloc(gfp_t gfp, int order, int cline)
-+{
-+	void *res;
-+
-+	for (;;) {
-+#ifdef USE_KERNEL_PAGES
-+		res = (void *)__get_free_pages(gfp, order);
-+#else
-+		res = __vmalloc(PAGE_SIZE << order, gfp, PAGE_KERNEL_IO);
-+#endif
-+		if (likely(res))
-+			break;
-+		msleep(1000);
-+	}
-+
-+#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
-+	_new_block_info(res, PAGE_SIZE << order, cline);
-+#endif
-+#ifdef BRICK_DEBUG_MEM
-+	atomic_inc(&phys_block_alloc);
-+	atomic_inc(&raw_count[order]);
-+#endif
-+	atomic64_add((PAGE_SIZE/1024) << order, &brick_global_block_used);
-+
-+	return res;
-+}
-+
-+static inline
-+void __brick_block_free(void *data, int order, int cline)
-+{
-+#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
-+	struct mem_block_info *inf = _find_block_info(data, true);
-+
-+	if (likely(inf)) {
-+		int inf_len = inf->inf_len;
-+		int inf_line = inf->inf_line;
-+
-+		kfree(inf);
-+		if (unlikely(inf_len != (PAGE_SIZE << order))) {
-+			BRICK_ERR("line %d: address %p: bad freeing size %d (correct should be %d, previous line = %d)\n",
-+				cline,
-+				data,
-+				(int)(PAGE_SIZE << order),
-+				inf_len,
-+				inf_line);
-+			goto err;
-+		}
-+	} else {
-+		BRICK_ERR("line %d: trying to free non-existent address %p (order = %d)\n", cline, data, order);
-+		goto err;
-+	}
-+#endif
-+#ifdef USE_KERNEL_PAGES
-+	__free_pages(virt_to_page((unsigned long)data), order);
-+#else
-+	vfree(data);
-+#endif
-+#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
-+err:
-+#endif
-+#ifdef BRICK_DEBUG_MEM
-+	atomic_dec(&phys_block_alloc);
-+	atomic_dec(&raw_count[order]);
-+#endif
-+	atomic64_sub((PAGE_SIZE/1024) << order, &brick_global_block_used);
-+}
-+
-+#ifdef CONFIG_MARS_MEM_PREALLOC
-+int brick_allow_freelist = 1;
-+EXPORT_SYMBOL_GPL(brick_allow_freelist);
-+
-+int brick_pre_reserve[BRICK_MAX_ORDER+1] = {};
-+EXPORT_SYMBOL_GPL(brick_pre_reserve);
-+
-+/* Note: we have no separate lists per CPU.
-+ * This should not hurt because the freelists are only used
-+ * for higher-order pages which should be rather low-frequency.
-+ */
-+static spinlock_t freelist_lock[BRICK_MAX_ORDER+1];
-+static void *brick_freelist[BRICK_MAX_ORDER+1];
-+static atomic_t freelist_count[BRICK_MAX_ORDER+1];
-+
-+static
-+void *_get_free(int order, int cline)
-+{
-+	void *data;
-+
-+	spin_lock(&freelist_lock[order]);
-+	data = brick_freelist[order];
-+	if (likely(data)) {
-+		void *next = *(void **)data;
-+
-+#ifdef BRICK_DEBUG_MEM /*  check for corruptions */
-+		long pattern = *(((long *)data)+1);
-+		void *copy = *(((void **)data)+2);
-+
-+		if (unlikely(pattern != 0xf0f0f0f0f0f0f0f0 || next != copy)) { /*  found a corruption */
-+			/*  prevent further trouble by leaving a memleak */
-+			brick_freelist[order] = NULL;
-+			spin_unlock(&freelist_lock[order]);
-+			BRICK_ERR("line %d:freelist corruption at %p (pattern = %lx next %p != %p, murdered = %d), order = %d\n",
-+				  cline, data, pattern, next, copy, atomic_read(&freelist_count[order]), order);
-+			return NULL;
-+		}
-+#endif
-+		brick_freelist[order] = next;
-+		atomic_dec(&freelist_count[order]);
-+	}
-+	spin_unlock(&freelist_lock[order]);
-+#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
-+	if (data) {
-+		struct mem_block_info *inf = _find_block_info(data, false);
-+
-+		if (likely(inf)) {
-+			if (unlikely(inf->inf_len != (PAGE_SIZE << order))) {
-+				BRICK_ERR("line %d: address %p: bad freelist size %d (correct should be %d, previous line = %d)\n",
-+					  cline, data, (int)(PAGE_SIZE << order), inf->inf_len, inf->inf_line);
-+			}
-+			inf->inf_line = cline;
-+			inf->inf_used = true;
-+		} else {
-+			BRICK_ERR("line %d: freelist address %p is invalid (order = %d)\n", cline, data, order);
-+		}
-+	}
-+#endif
-+	return data;
-+}
-+
-+static
-+void _put_free(void *data, int order)
-+{
-+	void *next;
-+
-+#ifdef BRICK_DEBUG_MEM /*  fill with pattern */
-+	memset(data, 0xf0, PAGE_SIZE << order);
-+#endif
-+
-+	spin_lock(&freelist_lock[order]);
-+	next = brick_freelist[order];
-+	*(void **)data = next;
-+#ifdef BRICK_DEBUG_MEM /*  insert redundant copy for checking */
-+	*(((void **)data)+2) = next;
-+#endif
-+	brick_freelist[order] = data;
-+	spin_unlock(&freelist_lock[order]);
-+	atomic_inc(&freelist_count[order]);
-+}
-+
-+static
-+void _free_all(void)
-+{
-+	int order;
-+
-+	for (order = BRICK_MAX_ORDER; order >= 0; order--) {
-+		for (;;) {
-+			void *data = _get_free(order, __LINE__);
-+
-+			if (!data)
-+				break;
-+			__brick_block_free(data, order, __LINE__);
-+		}
-+	}
-+}
-+
-+int brick_mem_reserve(void)
-+{
-+	int order;
-+	int status = 0;
-+
-+	for (order = BRICK_MAX_ORDER; order >= 0; order--) {
-+		int max = brick_pre_reserve[order];
-+		int i;
-+
-+		brick_mem_freelist_max[order] += max;
-+		BRICK_INF("preallocating %d at order %d (new maxlevel = %d)\n",
-+			max,
-+			order,
-+			brick_mem_freelist_max[order]);
-+
-+		max = brick_mem_freelist_max[order] - atomic_read(&freelist_count[order]);
-+		if (max >= 0) {
-+			for (i = 0; i < max; i++) {
-+				void *data = __brick_block_alloc(GFP_KERNEL, order, __LINE__);
-+
-+				if (likely(data))
-+					_put_free(data, order);
-+				else
-+					status = -ENOMEM;
-+			}
-+		} else {
-+			for (i = 0; i < -max; i++) {
-+				void *data = _get_free(order, __LINE__);
-+
-+				if (likely(data))
-+					__brick_block_free(data, order, __LINE__);
-+			}
-+		}
-+	}
-+	return status;
-+}
-+#else
-+int brick_mem_reserve(struct mem_reservation *r)
-+{
-+	BRICK_INF("preallocation is not compiled in\n");
-+	return 0;
-+}
-+#endif
-+EXPORT_SYMBOL_GPL(brick_mem_reserve);
-+
-+void *_brick_block_alloc(loff_t pos, int len, int line)
-+{
-+	void *data;
-+	int count;
-+
-+#ifdef BRICK_DEBUG_MEM
-+#ifdef BRICK_DEBUG_ORDER0
-+	const int plus0 = PAGE_SIZE;
-+
-+#else
-+	const int plus0 = 0;
-+
-+#endif
-+	const int plus = len <= PAGE_SIZE ? plus0 : PAGE_SIZE * 2;
-+
-+#else
-+	const int plus = 0;
-+
-+#endif
-+	int order = len2order(len + plus);
-+
-+	if (unlikely(order < 0)) {
-+		BRICK_ERR("trying to allocate %d bytes (max = %d)\n", len, (int)(PAGE_SIZE << order));
-+		return NULL;
-+	}
-+
-+#ifdef CONFIG_MARS_DEBUG
-+	might_sleep();
-+#endif
-+
-+#ifdef CONFIG_MARS_MEM_PREALLOC
-+	count = atomic_add_return(1, &_alloc_count[order]);
-+	brick_mem_alloc_count[order] = count;
-+	if (count > brick_mem_alloc_max[order])
-+		brick_mem_alloc_max[order] = count;
-+#endif
-+
-+#ifdef BRICK_DEBUG_MEM
-+	atomic_inc(&op_count[order]);
-+	/*  statistics */
-+	alloc_line[order] = line;
-+	alloc_len[order] = len;
-+#endif
-+
-+#ifdef CONFIG_MARS_MEM_PREALLOC
-+	/* Dynamic increase of limits, in order to reduce
-+	 * fragmentation on higher-order pages.
-+	 * This comes on cost of higher memory usage.
-+	 */
-+	if (order > 0 && count > brick_mem_freelist_max[order])
-+		brick_mem_freelist_max[order] = count;
-+#endif
-+
-+#ifdef CONFIG_MARS_MEM_PREALLOC
-+	data = _get_free(order, line);
-+	if (!data)
-+#endif
-+		data = __brick_block_alloc(GFP_BRICK, order, line);
-+
-+#ifdef BRICK_DEBUG_MEM
-+	if (order > 0) {
-+		if (unlikely(line < 0))
-+			line = 0;
-+		else if (unlikely(line >= BRICK_DEBUG_MEM))
-+			line = BRICK_DEBUG_MEM - 1;
-+		atomic_inc(&block_count[line]);
-+		block_len[line] = len;
-+		if (order > 1) {
-+			INT_ACCESS(data, 0 * sizeof(int)) = MAGIC_BLOCK;
-+			INT_ACCESS(data, 1 * sizeof(int)) = line;
-+			INT_ACCESS(data, 2 * sizeof(int)) = len;
-+			data += PAGE_SIZE;
-+			INT_ACCESS(data, -1 * sizeof(int)) = MAGIC_BLOCK;
-+			INT_ACCESS(data, len) = MAGIC_BEND;
-+		} else if (order == 1) {
-+			INT_ACCESS(data, PAGE_SIZE + 0 * sizeof(int)) = MAGIC_BLOCK;
-+			INT_ACCESS(data, PAGE_SIZE + 1 * sizeof(int)) = line;
-+			INT_ACCESS(data, PAGE_SIZE + 2 * sizeof(int)) = len;
-+		}
-+	}
-+#endif
-+	return data;
-+}
-+EXPORT_SYMBOL_GPL(_brick_block_alloc);
-+
-+void _brick_block_free(void *data, int len, int cline)
-+{
-+	int order;
-+
-+#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
-+	struct mem_block_info *inf;
-+	char *real_data;
-+
-+#endif
-+#ifdef BRICK_DEBUG_MEM
-+	int prev_line = 0;
-+
-+#ifdef BRICK_DEBUG_ORDER0
-+	const int plus0 = PAGE_SIZE;
-+
-+#else
-+	const int plus0 = 0;
-+
-+#endif
-+	const int plus = len <= PAGE_SIZE ? plus0 : PAGE_SIZE * 2;
-+
-+#else
-+	const int plus = 0;
-+
-+#endif
-+
-+	order = len2order(len + plus);
-+#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
-+	real_data = data;
-+	if (order > 1)
-+		real_data -= PAGE_SIZE;
-+	inf = _find_block_info(real_data, false);
-+	if (likely(inf)) {
-+		prev_line = inf->inf_line;
-+		if (unlikely(inf->inf_len != (PAGE_SIZE << order))) {
-+			BRICK_ERR("line %d: address %p: bad freeing size %d (correct should be %d, previous line = %d)\n",
-+				  cline, data, (int)(PAGE_SIZE << order), inf->inf_len, prev_line);
-+			goto _out_return;
-+		}
-+		if (unlikely(!inf->inf_used)) {
-+			BRICK_ERR("line %d: address %p: double freeing (previous line = %d)\n",
-+				cline,
-+				data,
-+				prev_line);
-+			goto _out_return;
-+		}
-+		inf->inf_line = cline;
-+		inf->inf_used = false;
-+	} else {
-+		BRICK_ERR("line %d: trying to free non-existent address %p (order = %d)\n", cline, data, order);
-+		goto _out_return;
-+	}
-+#endif
-+#ifdef BRICK_DEBUG_MEM
-+	if (order > 1) {
-+		void *test = data - PAGE_SIZE;
-+		int magic = INT_ACCESS(test, 0);
-+		int line = INT_ACCESS(test, sizeof(int));
-+		int oldlen = INT_ACCESS(test, sizeof(int)*2);
-+		int magic1 = INT_ACCESS(data, -1 * sizeof(int));
-+		int magic2;
-+
-+		if (unlikely(magic1 != MAGIC_BLOCK)) {
-+			BRICK_ERR("line %d memory corruption: %p magix1 %08x != %08x (previous line = %d)\n",
-+				cline,
-+				data,
-+				magic1,
-+				MAGIC_BLOCK,
-+				prev_line);
-+			goto _out_return;
-+		}
-+		if (unlikely(magic != MAGIC_BLOCK)) {
-+			BRICK_ERR("line %d memory corruption: %p magix %08x != %08x (previous line = %d)\n",
-+				cline,
-+				data,
-+				magic,
-+				MAGIC_BLOCK,
-+				prev_line);
-+			goto _out_return;
-+		}
-+		if (unlikely(line < 0 || line >= BRICK_DEBUG_MEM)) {
-+			BRICK_ERR("line %d memory corruption %p: alloc line = %d (previous line = %d)\n",
-+				cline,
-+				data,
-+				line,
-+				prev_line);
-+			goto _out_return;
-+		}
-+		if (unlikely(oldlen != len)) {
-+			BRICK_ERR("line %d memory corruption %p: len != oldlen (%d != %d, previous line = %d))\n",
-+				cline,
-+				data,
-+				len,
-+				oldlen,
-+				prev_line);
-+			goto _out_return;
-+		}
-+		magic2 = INT_ACCESS(data, len);
-+		if (unlikely(magic2 != MAGIC_BEND)) {
-+			BRICK_ERR("line %d memory corruption %p: magix %08x != %08x (previous line = %d)\n",
-+				cline,
-+				data,
-+				magic,
-+				MAGIC_BEND,
-+				prev_line);
-+			goto _out_return;
-+		}
-+		INT_ACCESS(test, 0) = 0xffffffff;
-+		INT_ACCESS(data, len) = 0xffffffff;
-+		data = test;
-+		atomic_dec(&block_count[line]);
-+		atomic_inc(&block_free[line]);
-+	} else if (order == 1) {
-+		void *test = data + PAGE_SIZE;
-+		int magic = INT_ACCESS(test, 0 * sizeof(int));
-+		int line = INT_ACCESS(test, 1 * sizeof(int));
-+		int oldlen = INT_ACCESS(test, 2 * sizeof(int));
-+
-+		if (unlikely(magic != MAGIC_BLOCK)) {
-+			BRICK_ERR("line %d memory corruption %p: magix %08x != %08x (previous line = %d)\n",
-+				cline,
-+				data,
-+				magic,
-+				MAGIC_BLOCK,
-+				prev_line);
-+			goto _out_return;
-+		}
-+		if (unlikely(line < 0 || line >= BRICK_DEBUG_MEM)) {
-+			BRICK_ERR("line %d memory corruption %p: alloc line = %d (previous line = %d)\n",
-+				cline,
-+				data,
-+				line,
-+				prev_line);
-+			goto _out_return;
-+		}
-+		if (unlikely(oldlen != len)) {
-+			BRICK_ERR("line %d memory corruption %p: len != oldlen (%d != %d, previous line = %d))\n",
-+				cline,
-+				data,
-+				len,
-+				oldlen,
-+				prev_line);
-+			goto _out_return;
-+		}
-+		atomic_dec(&block_count[line]);
-+		atomic_inc(&block_free[line]);
-+	}
-+#endif
-+#ifdef CONFIG_MARS_MEM_PREALLOC
-+	if (order > 0 && brick_allow_freelist && atomic_read(&freelist_count[order]) <= brick_mem_freelist_max[order]) {
-+		_put_free(data, order);
-+	} else
-+#endif
-+		__brick_block_free(data, order, cline);
-+
-+#ifdef CONFIG_MARS_MEM_PREALLOC
-+	brick_mem_alloc_count[order] = atomic_dec_return(&_alloc_count[order]);
-+#endif
-+#ifdef BRICK_DEBUG_MEM
-+_out_return:;
-+#endif
-+}
-+EXPORT_SYMBOL_GPL(_brick_block_free);
-+
-+struct page *brick_iomap(void *data, int *offset, int *len)
-+{
-+	int _offset = ((unsigned long)data) & (PAGE_SIZE-1);
-+	struct page *page;
-+
-+	*offset = _offset;
-+	if (*len > PAGE_SIZE - _offset)
-+		*len = PAGE_SIZE - _offset;
-+	if (is_vmalloc_addr(data))
-+		page = vmalloc_to_page(data);
-+	else
-+		page = virt_to_page(data);
-+	return page;
-+}
-+EXPORT_SYMBOL_GPL(brick_iomap);
-+
-+/***********************************************************************/
-+
-+/*  module */
-+
-+void brick_mem_statistics(bool final)
-+{
-+#ifdef BRICK_DEBUG_MEM
-+	int i;
-+	int count = 0;
-+	int places = 0;
-+
-+	BRICK_INF("======== page allocation:\n");
-+#ifdef CONFIG_MARS_MEM_PREALLOC
-+	for (i = 0; i <= BRICK_MAX_ORDER; i++) {
-+		BRICK_INF("pages order = %2d operations = %9d freelist_count = %4d / %3d raw_count = %5d alloc_count = %5d alloc_len = %5d line = %5d max_count = %5d\n",
-+			  i,
-+			  atomic_read(&op_count[i]),
-+			  atomic_read(&freelist_count[i]),
-+			  brick_mem_freelist_max[i],
-+			  atomic_read(&raw_count[i]),
-+			  brick_mem_alloc_count[i],
-+			  alloc_len[i],
-+			  alloc_line[i],
-+			  brick_mem_alloc_max[i]);
-+	}
-+#endif
-+	for (i = 0; i < BRICK_DEBUG_MEM; i++) {
-+		int val = atomic_read(&block_count[i]);
-+
-+		if (val) {
-+			count += val;
-+			places++;
-+			BRICK_INF("line %4d: %6d allocated (last size = %4d, freed = %6d)\n",
-+				  i,
-+				  val,
-+				  block_len[i],
-+				  atomic_read(&block_free[i]));
-+		}
-+	}
-+	if (!final || !count) {
-+		BRICK_INF("======== %d block allocations in %d places (phys=%d)\n",
-+			  count, places, atomic_read(&phys_block_alloc));
-+	} else {
-+		BRICK_ERR("======== %d block allocations in %d places (phys=%d)\n",
-+			  count, places, atomic_read(&phys_block_alloc));
-+	}
-+	count = places = 0;
-+	for (i = 0; i < BRICK_DEBUG_MEM; i++) {
-+		int val = atomic_read(&mem_count[i]);
-+
-+		if (val) {
-+			count += val;
-+			places++;
-+			BRICK_INF("line %4d: %6d allocated (last size = %4d, freed = %6d)\n",
-+				  i,
-+				  val,
-+				  mem_len[i],
-+				  atomic_read(&mem_free[i]));
-+		}
-+	}
-+	if (!final || !count) {
-+		BRICK_INF("======== %d memory allocations in %d places (phys=%d,redirect=%d)\n",
-+			  count, places,
-+			  atomic_read(&phys_mem_alloc), atomic_read(&mem_redirect_alloc));
-+	} else {
-+		BRICK_ERR("======== %d memory allocations in %d places (phys=%d,redirect=%d)\n",
-+			  count, places,
-+			  atomic_read(&phys_mem_alloc), atomic_read(&mem_redirect_alloc));
-+	}
-+	count = places = 0;
-+	for (i = 0; i < BRICK_DEBUG_MEM; i++) {
-+		int val = atomic_read(&string_count[i]);
-+
-+		if (val) {
-+			count += val;
-+			places++;
-+			BRICK_INF("line %4d: %6d allocated (freed = %6d)\n",
-+				  i,
-+				  val,
-+				  atomic_read(&string_free[i]));
-+		}
-+	}
-+	if (!final || !count) {
-+		BRICK_INF("======== %d string allocations in %d places (phys=%d)\n",
-+			  count, places, atomic_read(&phys_string_alloc));
-+	} else {
-+		BRICK_ERR("======== %d string allocations in %d places (phys=%d)\n",
-+			  count, places, atomic_read(&phys_string_alloc));
-+	}
-+#endif
-+}
-+EXPORT_SYMBOL_GPL(brick_mem_statistics);
-+
-+/*  module init stuff */
-+
-+int __init init_brick_mem(void)
-+{
-+	int i;
-+
-+#ifdef CONFIG_MARS_MEM_PREALLOC
-+	for (i = BRICK_MAX_ORDER; i >= 0; i--)
-+		spin_lock_init(&freelist_lock[i]);
-+#endif
-+#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
-+	for (i = 0; i < MAX_INFO_LISTS; i++) {
-+		INIT_LIST_HEAD(&inf_anchor[i]);
-+		rwlock_init(&inf_lock[i]);
-+	}
-+#else
-+	(void)i;
-+#endif
-+
-+	get_total_ram();
-+
-+	return 0;
-+}
-+
-+void exit_brick_mem(void)
-+{
-+	BRICK_INF("deallocating memory...\n");
-+#ifdef CONFIG_MARS_MEM_PREALLOC
-+	_free_all();
-+#endif
-+
-+	brick_mem_statistics(true);
-+}
+x86 is ACPI, which is a completely different firmware interface.
+Now, we are starting to see ARM peripherals (even some rather old
+ones) being used on some x86 platforms.
+
+You can't assume that just because something is used on ARM, it's never
+going to be used on any other architecture.  IP which gets used with one
+host CPU, even where it's integrated into a SoC, can find its way to
+other CPU architectures very easily, and this really does happen.
+
+So don't be surprised one day to find (eg) that the Dove/Kirkwood I2S
+audio interface ends up being connected to an x86 CPU at some point.
+Or the TDA998x ends up being used on x86 in a set top box.
+
+You really can't think that just because something seems to be ARM
+specific that it's absolutely fine to assume that it will always be
+specific to ARM - /especially/ when adding core kernel facilities.
+Core kernel facilities have to be completely independent of any CPU
+architecture.  If they aren't, by definition they aren't core kernel
+facilities.
+
+> > You wanted to make the component operations optional, which I pointed
+> > out makes no sense (because then components have no way to know what
+> > happens to their master device - which is /really/ important for DRM.)
+> 
+> You did not explain too much that you wanted to keep it for DRM only.
+
+It /isn't/ just for DRM, I've no idea what gave you that idea.  I've
+said that I want to keep DT out of the core component helpers (see above
+why.)  I also want to keep subsystem specifics out of it as well.
+
+> > You refused to listen to those concerns, and refused to look at the
+> > patch which I proposed, which did exactly the same as your patch,
+> > while keeping the DRM slave interfaces for tilcdc to use, until they
+> > have a chance to convert over.
+> 
+> The change in tilcdc was easy and the code was greatly simplified.
+
+The same applies to mine once tilcdc is converted to the component
+helpers - provided there are no other users of TDA998x, then the
+non-component code can all be dropped and the driver reduced down -
+and at that point it becomes purely a drm encoder with an associated
+drm connector with just one setup methodology.
+
+> > You kept telling me that I had "opened the door" to your changes.  I
+> > claimed that your changes abused the code which I had written - a point
+> > which I still maintain to this day.
+> 
+> Your code was offering a simple way to synchronize the system
+> initialization without this lot of 'probe defer's. It could have been
+> used so.
+
+My code does /today/ offer a simple way to sort out the initialisation
+without lots of deferred probes.  This is what happens:
+
+1. There are zero deferred probes until all components for the master
+   are present.
+
+2. You will only get a deferred probe once all components are present
+   _unless_ the master bind function returns a deferred probe, which
+   _may_ come from a component driver.
+
+So, the deferred probes are reduced to an absolute minimum.  Again, this
+is by intention and design.
+
+When resources are not available, we have to rely on the deferred probe
+mechanism, because the deferred probe mechanism knows when other non-
+component drivers are probed - and thus when resources may become
+available.  This is not really any different from a single driver
+trying to claim resources, finding one that isn't available, and
+returning -EPROBE_DEFER - in fact, only the last driver to be probed
+in a set of components which satisfies the master will suffer deferred
+probes.
+
+I'm now pushing changes to the component helper which change the way
+the matching works, so that master doesn't have to keep scanning
+whatever it needs to in order to work out which components are
+required.  Masters will be required to gather that information
+before registering themselves and supply it when registering into the
+component helper.  This is beneficial for two reasons - not only does
+it avoid wasting time rescanning (eg) the device tree multiple times,
+but it also means that we can eventually allow partial subsystem
+bring-up which is something the v4l2 people would like.
+
+So, there's quite some work planned here which will require a number of
+changes to the visible API.  So, it's really important that all users
+make use of the component layer as it is intended to be used, so that
+changes can be made.
+
+Right now, that hasn't happened with Exynos, and that is right now giving
+problems pushing this work forward - and that's the /exact/ problem when
+stuff starts getting abused.  It means that it can't be maintained and it
+blocks other work.  As the person who created this problem isn't
+responding to my emails, it's pretty hard to see how to retire the old
+interfaces - except maybe by forcing the issue which I really don't want
+to do.
+
+> > You also claimed that deferred probing didn't work.  Since the component
+> > helpers were designed with the deferred probing problem in mind at the
+> > time, and include the solution to that problem - which has been well
+> > tested hundreds if not thousands of times by now - and you did not
+> > provide the technical details as to why you thought it didn't work,
+> > there was nothing that could be done to progress that point.
+> 
+> AFAIR, you also said that the probe defer was not working. But, thanks
+> again for your component layer: all my init problems are gone, even if
+> there are still some prove defer's...
+
+That's really strange, because imx-drm relies upon it since day one,
+and I even sent you the kernel boot log which provided evidence of it
+working correctly.  Yes, there have been a few corner cases where the
+devm resources were not handled quite correctly, but those have been
+corrected.
+
+> > Moreover, your abuse of the component layer would have made it more
+> > difficult to maintain it into the future - which is a fundamental
+> > point which has to be considered when accepting any patch into the
+> > kernel.  If a patch makes some code unable to be maintained, then an
+> > alternative approach has to be found.  Since you were not willing to
+> > compromise on finding or considering alternative approaches such as
+> > the one I presented.
+> 
+> I don't see what you are talking about.
+
+See my explanation of the upcoming changes above - some of those
+changes are required for Armada DRM (required in the sense that I
+want Armada DRM to use the new way right now rather than have to
+rework yet another DRM driver for those changes, pushing the
+component changes even later - allowing more users to come along
+potentially blocking the work.)
+
+> > Since the component layer had had various comments which were in
+> > progress, and your abuse of the component layer would have also
+> > prevented those changes taking place (which are - in part - the set
+> > of component patches which are on the list now) there is no way that
+> > your uncompromising set of patches would be merged - at least not
+> > until you start accepting some of the comments being given to you.
+> > 
+> > > Now, the last thing for me is to put the TDA998x codec in the kernel
+> > > (it is also working in an other machine with 2 tda998x's).  
+> > 
+> > Yes, supporting the I2S connection is something that is need, but we
+> > /also/ need to support SPDIF, and SPDIF is the preferred method on
+> > the Cubox.  SPDIF should be used to talk to the TDA998x whenever
+> > possible because it opens up the possibility for sending out
+> > compressed MPEG2 and AC-3 audio streams, thus offloading the decode
+> > of these formats to external hardware.
+> > 
+> > This works today, and is a feature that people have been using with
+> > platforms such as xbmc and various other installations on the Cubox.
+> > 
+> > Limiting to I2S means that you can't send out these compressed audio
+> > streams.  In fact, the Dove manual tells you that you must disable
+> > the I2S playback stream if you're sending non-PCM - non-PCM is only
+> > supported via SPDIF.
+> 
+> I don't understand: both I2S and S/PDIF may work in the kirkwood audio
+> subsystem as it is (yes, actually not at the same time, and this is a
+> choice because DPCM does not work for the Cubox). I have the 3 ways in
+> my system:
+> 
+> $ cat /proc/asound/pcm 
+> 00-00: i2s-i2s-hifi i2s-hifi-0 :  : playback 1
+> 00-01: spdif-spdif-hifi spdif-hifi-1 :  : playback 1
+> 00-02: spdif-dit-hifi dit-hifi-2 :  : playback 1
+> 
+> So, S/PDIF should work, but I don't know it: I have no optical connector.
+
+How does that even work - I mean, pulseaudio will try and open all three
+at startup and it sends samples through each...  Have you tested this
+with pulseaudio?  Have you tested it with other programs such as an
+audio player going direct to the ALSA interfaces (as would happen with
+a compressed audio stream) - and checked what happens if pulse wants to
+use it?  You don't need an actual compressed audio stream to test that
+- you can just send audio direct to one of your other devices.
+
+Second point - if you have the TDA998x only using i2s, then (as you say)
+you can't use spdif, so simultaneous output via both HDMI and optical
+is impossible with your driver on the Cubox.
+
 -- 
-2.0.0
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
