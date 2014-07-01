@@ -1,108 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757868AbaGANpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 09:45:30 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:59675 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256AbaGANp2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 09:45:28 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53B2BB74.7050300@roeck-us.net>
-Date: Tue, 01 Jul 2014 06:45:24 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [RFC PATCH 0/6] kernel: Add support for restart notifier call
- chain
-References: <1404155499-21177-1-git-send-email-linux@roeck-us.net> <20140630195946.GI32514@n2100.arm.linux.org.uk> <20140630202851.GA12888@roeck-us.net> <20140701112413.GQ18313@arm.com>
-In-Reply-To: <20140701112413.GQ18313@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756018AbaGANt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 09:49:56 -0400
+Received: from mga03.intel.com ([143.182.124.21]:29664 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752862AbaGANtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 09:49:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,581,1400050800"; 
+   d="scan'208";a="452079742"
+Message-ID: <1404222565.8366.32.camel@rzhang1-toshiba>
+Subject: Re: PATCH 0/2 tmon: fix a few minor security issues
+From: Zhang Rui <rui.zhang@intel.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org, Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Date: Tue, 01 Jul 2014 21:49:25 +0800
+In-Reply-To: <20140701114249.GF7322@hmsreliant.think-freely.org>
+References: <1403035509-31815-1-git-send-email-nhorman@tuxdriver.com>
+	 <20140701114249.GF7322@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2014 04:24 AM, Catalin Marinas wrote:
-> On Mon, Jun 30, 2014 at 09:28:51PM +0100, Guenter Roeck wrote:
->> On Mon, Jun 30, 2014 at 08:59:47PM +0100, Russell King - ARM Linux wrote:
->>> On Mon, Jun 30, 2014 at 12:11:33PM -0700, Guenter Roeck wrote:
->>>> Various drivers implement architecture and/or device specific means
->>>> to restart (reset) the system. Various mechanisms have been implemented
->>>> to support those schemes. The best known mechanism is arm_pm_restart,
->>>> which is a function pointer to be set either from platform specific code
->>>> or from drivers. Another mechanism is to use hardware watchdogs to issue
->>>> a reset; this mechanism is used if there is no other method available
->>>> to reset a board or system. Two examples are alim7101_wdt, which currently
->>>> uses the reboot notifier to trigger a reset, and moxart_wdt, which registers
->>>> the arm_pm_restart function.
->>>>
->>>> The existing mechanisms have a number of drawbacks. Typically only one scheme
->>>> to restart the system is supported (at least if arm_pm_restart is used).
->>>> At least in theory there can be mutliple means to restart the system, some of
->>>> which may be less desirable (for example one mechanism may only reset the CPU,
->>>> while another may reset the entire system). Using arm_pm_restart can also be
->>>> racy if the function pointer is set from a driver, as the driver may be in
->>>> the process of being unloaded when arm_pm_restart is called.
->>>> Using the reboot notifier is always racy, as it is unknown if and when
->>>> other functions using the reboot notifier have completed execution
->>>> by the time the watchdog fires.
->>>>
->>>> To solve the problem, introduce a system restart notifier. This notifier
->>>> is expected to be called from the architecture specific machine_restart()
->>>> function. Drivers providing system restart functionality (such as the watchdog
->>>> drivers mentioned above) are expected to register with this notifier.
->>>>
->>>> Patch 1 of this series implements the notifier function. Patches 2 and 3
->>>> implement calling the notifier chain from arm and arm64 restart code.
->>>> Patch 4 and 5 convert existing restart handlers in the watchdog subsystem
->>>> to use the restart notifier. Patch 6 unexports arm_pm_restart to ensure
->>>> that no one gets the idea to implement a restart handler as module.
->>>
->>> I think you need to restructure stuff somewhat, because I think
->>> you've missed drivers/power/reset/ entirely, or at least you've
->>> missed drivers/power/reset/restart-poweroff.c which calls
->>> arm_pm_restart directly.  I'm not quite sure how we ended up with
->>> that...
->>
->> Yes, guess I missed (and did not really expect) that arm_pm_restart
->> is called from multiple places.
->
-> Most of the ARM-specific code in drivers/power/reset/ consists of SoC
-> power-off/restart back-ends (e.g. vexpress-poweroff.c). Since there is
-> no generic pm_restart, we continued to use arm_pm_restart (also for
-> arm64 since we share some of the drivers). Maybe some driver model here
-> would help.
->
->> What is restart-poweroff supposed to do in the first place, and why
->> doesn't it call machine_restart() ? If it is what I think it is, ie
->> a fallback for pm_power_off, it could be made generic and does not
->> really have to depend on ARM.
->
-> I think this one pretends to do a power-off via restart. It could call
-> machine_restart() but this only passes the default reboot_mode to
-> arm_pm_restart().
->
+On Tue, 2014-07-01 at 07:42 -0400, Neil Horman wrote:
+> On Tue, Jun 17, 2014 at 04:05:07PM -0400, Neil Horman wrote:
+> > Just a few little fixups for tmon, to prevent abuse of its logging facility
+> > 
+> > Best
+> > Neil
+> > 
+> Ping, Zhang, Jacob acked these, but I've not seen them go into your tree yet.
+> Do you have an issue with them?
+> 
+Oh, next time when you send thermal related patches, please send them to
+linux-pm@vger.kernel.org mailing list so that I can review the patches
+in https://patchwork.kernel.org/project/linux-pm/list/
 
-Unless one sets reboot_mode first. See my proposed patch in
-https://lkml.org/lkml/2014/6/30/792.
+Both patches applied. Thanks!
 
-Guenter
+-rui
+> Neil
+> 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
+
 
