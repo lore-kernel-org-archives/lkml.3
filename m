@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758459AbaGAQxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 12:53:33 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28021 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753109AbaGAQxc (ORCPT
+	id S1758542AbaGAQyI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 12:54:08 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:51535 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758139AbaGAQyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 12:53:32 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18DNxBx2y8pCgt8Tn1onzo0xTqOHTS8f6o=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 1A21B59F8C2
-Date: Tue, 1 Jul 2014 12:53:19 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] ARM: mvebu: add armada drm init to Dove board setup
-Message-ID: <20140701165319.GH23978@titan.lakedaemon.net>
-References: <1404219871-18419-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1404219871-18419-5-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140701131026.GO32514@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140701131026.GO32514@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 1 Jul 2014 12:54:06 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: next-20140640 - fatal crash at boot time in sound drivers...
+In-Reply-To: Your message of "Tue, 01 Jul 2014 11:18:15 +0200."
+             <s5hlhsd8mjs.wl%tiwai@suse.de>
+From: Valdis.Kletnieks@vt.edu
+References: <11205.1404146754@turing-police.cc.vt.edu>
+            <s5hlhsd8mjs.wl%tiwai@suse.de>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1404233632_3099P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 01 Jul 2014 12:53:52 -0400
+Message-ID: <6331.1404233632@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell,
+--==_Exmh_1404233632_3099P
+Content-Type: text/plain; charset=us-ascii
 
-On Tue, Jul 01, 2014 at 02:10:26PM +0100, Russell King - ARM Linux wrote:
-> On Tue, Jul 01, 2014 at 03:04:31PM +0200, Sebastian Hesselbarth wrote:
-> > +	pdev = platform_device_register_full(&armada_drm_dev_info);
-> > +	/* assign last found lcd node to drm device for clk lookup */
-> > +	pdev->dev.of_node = clknp;
-> 
-> NAK.  This really isn't a good way to deal with this, even in a
-> temporary basis.  While assigning a DT node to a manually created
-> platform device does solve that problem, it also introduces the
-> problem that this platform device will now match any platform driver
-> which recognises the "marvell,dove-lcd" compatible type, which may
-> occur _before_ we find the driver to match using the legacy strings.
-> 
-> There really isn't an easy solution to this other than doing the thing
-> properly.
+On Tue, 01 Jul 2014 11:18:15 +0200, Takashi Iwai said:
+> At Mon, 30 Jun 2014 12:45:54 -0400, Valdis Kletnieks wrote:
+> >
+> > Seeing this on a Dell Latitude E6530 - kernel lives for just a few
+> > seconds before committing hari-kiri trying to initialize the sound chipset.
+>
+> The bug has been fixed yesterday, so today's next tree should work.
+> Let me know if you still see the issue.
 
-And this creates our current deadlock.
+Confirming that next-20140701 boots without this issue, thanks...
 
-> The other problem in this series is that while you introduce some
-> bindings which may work today, they're not going to work tomorrow, and
-> that's a problem.  Don't do DT piecemeal like this and end up having to
-> break the bindings (which we will have to do to add the endpoints.)
+--==_Exmh_1404233632_3099P
+Content-Type: application/pgp-signature
 
-Seriously, we've got to do something to get off of the X.  Why not just
-declare the binding Sebastian just sent as unstable?  Then we change it
-as needed until we get all the pieces in place.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
 
-At KS2013, we discussed, and agreed upon the fact that we _can_ have
-unstable bindings to keep the bus moving.  Perfection being the enemy of
-getting it done and all.
+iQIVAwUBU7LnoAdmEQWDXROgAQIOyRAAmt1eGiXxz276ZZaHFBUgHj7nbO3XBzES
+i1TzXCllIPauSS7IECt0j8tI1QH5ATyDNGiBnEHtLNwPjXnMMdklFKpzLYXJk/uS
+oOyeZ24KyKgiT3sLMu4P4ggDZVCrL/diDQTCbdxtub5Jsf9O/X4qVRnI5gRXX0Z9
+9UYuPVtqnxaE9JM75bGi3jmBqenB1uB2Fl3Yce+PmQtCM8w1p01sWHpgBqXneUgt
+fCHq+oJItAwcfwt8aBfbWKVM/fAF/rET2hkfoTF47cIp2pJDtBpZ10uuV/2WVYFU
+f1zwyb84uF95Wgz1w1jCgx1MIZ9+pwGS7JGiMj+tNZCvlnxaKF8Phv6WhwXxwdfr
+KComtFvbtitFilAuMRn2FjQs7iK/zjz3O9vwu9yToyIJ1SqaS+C8U3SNLS/x2oso
+Jc5VFfcWblF4Q7pfJ3knkPJ+zS6rcqsWEKFpqElngZrKHdKWhxaTfWmhV3ErDeik
+IvEX/mSxafliMbr+1Qq4Tl2APd8TjOA9AHa3PRWf+37a+ivjJ/VrltjBLK4O2+5x
+n8BY/HexDdAYGb9vScXFPeMI5e4NW7bdu/0VzYPwHBUV6/5KXQXGMdEc5raaoiOX
+JpZKUe+UqS4l3j6o+9UvnbXDTiCaxZLOSkUMhbiPjkaLM3TIlj31VTWFgzq8NaCR
+I7vqfIPH99M=
+=iDQ4
+-----END PGP SIGNATURE-----
 
-Once we reach the goal of how we want the bindings to look, then we
-declare it stable.  I know it's not ideal, but "plan it out perfectly
-before pushing anything" isn't realistic either.
-
-thx,
-
-Jason.
+--==_Exmh_1404233632_3099P--
