@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317AbaGAHzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 03:55:54 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:50791 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150AbaGAHzw (ORCPT
+	id S1757446AbaGAH6O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 03:58:14 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:38716 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752578AbaGAH6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 03:55:52 -0400
-Message-ID: <53B2694F.7070501@linaro.org>
-Date: Tue, 01 Jul 2014 15:54:55 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 1 Jul 2014 03:58:12 -0400
+Date: Tue, 1 Jul 2014 00:58:02 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@poochiereds.net>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] fs.h: Remove unnecessary extern prototypes
+Message-ID: <20140701075802.GA9606@infradead.org>
+References: <cover.1403999769.git.joe@perches.com>
+ <c81908e88f71ca2c21a8e3eaf3e5f72bd8d6c322.1403999769.git.joe@perches.com>
+ <20140630161944.bd57016cba11f47185dbe6c5@linux-foundation.org>
+ <1404171091.2717.24.camel@joe-AO725>
+ <20140630163909.9859f3c55406746129a69e77@linux-foundation.org>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Bjorn Helgaas <bhelgaas@google.com>,
-        "rric@kernel.org" <rric@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Al Stone <al.stone@linaro.org>
-Subject: Re: [PATCH v4 13/13] ARM64 / ACPI: Enable ARM64 in Kconfig
-References: <1403840976-7456-1-git-send-email-hanjun.guo@linaro.org> <1403840976-7456-14-git-send-email-hanjun.guo@linaro.org> <20140630104652.GG28951@arm.com>
-In-Reply-To: <20140630104652.GG28951@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140630163909.9859f3c55406746129a69e77@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-6-30 18:46, Catalin Marinas wrote:
-> On Fri, Jun 27, 2014 at 04:49:36AM +0100, Hanjun Guo wrote:
->> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
->> index 7de5e3f..33d6dbb 100644
->> --- a/drivers/acpi/Kconfig
->> +++ b/drivers/acpi/Kconfig
->> @@ -8,10 +8,10 @@ config ACPI_SCAN_BIOS_NOT_EFI
->>  menuconfig ACPI
->>  	bool "ACPI (Advanced Configuration and Power Interface) Support"
->>  	depends on !IA64_HP_SIM
->> -	depends on IA64 || X86
->> +	depends on IA64 || X86 || ARM64
+On Mon, Jun 30, 2014 at 04:39:09PM -0700, Andrew Morton wrote:
+> > I can fix it and resubmit if you like.
 > 
-> I still don't understand what the point of enabling ACPI for arm64
-> during this series is. Do you get any working arm64 functionality
-> (on hardware or model) without subsequent patches? If it's just for
-> compilation reasons, the best we could do is depending on (ARM64 &&
-> COMPILE_TEST) but even though I would not merge this patch until we have
-> most of the arm64 required features in place (some of which are
-> introduced by the upcoming ACPI version).
+> OK.  How about we wait for -rc6 or thereabouts?  That should minimise
+> the pain profile.
 
-it is ok to me to merge all the patches together, but if Rafael is happy
-with the clean up patches (patch 1~3) for ACPI core, they can be merged
-first.
+Or just drop it.  This is the perfect example for a patch having
+absolutely no real benefit and introducing a lot of churn.
 
-> 
->>  	depends on PCI
->>  	select PNP
->> -	default y
->> +	default y if !ARM64
-> 
-> For the benefit of single Image, I think you can default to y here.
+People need to learn that randomly fixing style in code they don't
+maintain or change in a major way is abosolutely poinless.  Help with
+reviewing newly added code so that it has good style instead.
 
-It ok to me. if we default to y here, devicetree will not be unflattened
-in default, is it ok to you? you can refer to "[PATCH 12/13] ARM64 / ACPI: if
-we chose to boot from acpi then disable FDT".
-
-Thanks
-Hanjun
