@@ -1,75 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759048AbaGAWln (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 18:41:43 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:59646 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951AbaGAWll (ORCPT
+	id S1030338AbaGAWn0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 18:43:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55435 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965071AbaGAWnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 18:41:41 -0400
-Message-ID: <53B33920.4040800@redhat.com>
-Date: Wed, 02 Jul 2014 00:41:36 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 1 Jul 2014 18:43:24 -0400
+Date: Tue, 1 Jul 2014 13:51:48 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Josh Boyer <jwboyer@fedoraproject.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Brian Lane <bcl@redhat.com>, John McCutchan <john@johnmccutchan.com>,
+        Robert Love <rlove@rlove.org>, Eric Paris <eparis@parisplace.org>
+Subject: Re: [PATCH driver-core-linus] kernfs: kernfs_notify() must be
+ useable from non-sleepable contexts
+Message-ID: <20140701205148.GA26542@kroah.com>
+References: <CA+5PVA4h2hQJLrAm4eEZ8oUgGiAjq2y5eAyBcJWxK_FiQXnuQg@mail.gmail.com>
+ <20140629082637.GA23942@redhat.com>
+ <20140629193222.GA7030@lst.de>
+ <20140629204710.GB11100@redhat.com>
+ <53B07D48.60003@kernel.dk>
+ <20140630201741.GA20853@htj.dyndns.org>
+ <20140701204103.GA12459@htj.dyndns.org>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@kernel.org>, KVM list <kvm@vger.kernel.org>
-Subject: Re: [GIT PULL] KVM changes for 3.16-rc4
-References: <1404211489-9848-1-git-send-email-pbonzini@redhat.com> <CA+55aFyLk1AWxd9r2zfrKtpawPhw53k_rBdj8kq159i=hf6xsA@mail.gmail.com>
-In-Reply-To: <CA+55aFyLk1AWxd9r2zfrKtpawPhw53k_rBdj8kq159i=hf6xsA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140701204103.GA12459@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 01/07/2014 19:47, Linus Torvalds ha scritto:
-> Merges need explanations too. Tell what the branch you are merging
-> does, and why you are doing the merge. Yeah, in this case the "branch"
-> contains a single commit, but that *still* doesn't excuse not telling
-> what the merge is, and why it exists at all.
->
-> Seriously. Do "git log --merges" on current git, and look at the
-> discrepancy between merge commit messages. That commit 9a630d15f16d is
-> pure garbage.
->
-> It's not the only crappy one, but it really does stand out. There are
-> other one-liners in there, but even then they tend to have at least
-> *some* semblance of actual information in them, ie
->
->     Merge branch 'for-v3.16/ti-clk-drv' of
-> github.com:t-kristo/linux-pm into clk-next
->
-> at least shows that there's a topic branch with a reasonable name, and
-> where it comes from. I'd really prefer it to talk about what it merges
-> and why, but it's still *much* better than your completely
-> information-free merge message.
+On Tue, Jul 01, 2014 at 04:41:03PM -0400, Tejun Heo wrote:
+> d911d9874801 ("kernfs: make kernfs_notify() trigger inotify events
+> too") added fsnotify triggering to kernfs_notify() which requires a
+> sleepable context.  There are already existing users of
+> kernfs_notify() which invoke it from an atomic context and in general
+> it's silly to require a sleepable context for triggering a
+> notification.
+> 
+> The following is an invalid context bug triggerd by md invoking
+> sysfs_notify() from IO completion path.
+> 
+>  BUG: sleeping function called from invalid context at kernel/locking/mutex.c:586
+>  in_atomic(): 1, irqs_disabled(): 1, pid: 0, name: swapper/1
+>  2 locks held by swapper/1/0:
+>   #0:  (&(&vblk->vq_lock)->rlock){-.-...}, at: [<ffffffffa0039042>] virtblk_done+0x42/0xe0 [virtio_blk]
+>   #1:  (&(&bitmap->counts.lock)->rlock){-.....}, at: [<ffffffff81633718>] bitmap_endwrite+0x68/0x240
+>  irq event stamp: 33518
+>  hardirqs last  enabled at (33515): [<ffffffff8102544f>] default_idle+0x1f/0x230
+>  hardirqs last disabled at (33516): [<ffffffff818122ed>] common_interrupt+0x6d/0x72
+>  softirqs last  enabled at (33518): [<ffffffff810a1272>] _local_bh_enable+0x22/0x50
+>  softirqs last disabled at (33517): [<ffffffff810a29e0>] irq_enter+0x60/0x80
+>  CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.16.0-0.rc2.git2.1.fc21.x86_64 #1
+>  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+>   0000000000000000 f90db13964f4ee05 ffff88007d403b80 ffffffff81807b4c
+>   0000000000000000 ffff88007d403ba8 ffffffff810d4f14 0000000000000000
+>   0000000000441800 ffff880078fa1780 ffff88007d403c38 ffffffff8180caf2
+>  Call Trace:
+>   <IRQ>  [<ffffffff81807b4c>] dump_stack+0x4d/0x66
+>   [<ffffffff810d4f14>] __might_sleep+0x184/0x240
+>   [<ffffffff8180caf2>] mutex_lock_nested+0x42/0x440
+>   [<ffffffff812d76a0>] kernfs_notify+0x90/0x150
+>   [<ffffffff8163377c>] bitmap_endwrite+0xcc/0x240
+>   [<ffffffffa00de863>] close_write+0x93/0xb0 [raid1]
+>   [<ffffffffa00df029>] r1_bio_write_done+0x29/0x50 [raid1]
+>   [<ffffffffa00e0474>] raid1_end_write_request+0xe4/0x260 [raid1]
+>   [<ffffffff813acb8b>] bio_endio+0x6b/0xa0
+>   [<ffffffff813b46c4>] blk_update_request+0x94/0x420
+>   [<ffffffff813bf0ea>] blk_mq_end_io+0x1a/0x70
+>   [<ffffffffa00392c2>] virtblk_request_done+0x32/0x80 [virtio_blk]
+>   [<ffffffff813c0648>] __blk_mq_complete_request+0x88/0x120
+>   [<ffffffff813c070a>] blk_mq_complete_request+0x2a/0x30
+>   [<ffffffffa0039066>] virtblk_done+0x66/0xe0 [virtio_blk]
+>   [<ffffffffa002535a>] vring_interrupt+0x3a/0xa0 [virtio_ring]
+>   [<ffffffff81116177>] handle_irq_event_percpu+0x77/0x340
+>   [<ffffffff8111647d>] handle_irq_event+0x3d/0x60
+>   [<ffffffff81119436>] handle_edge_irq+0x66/0x130
+>   [<ffffffff8101c3e4>] handle_irq+0x84/0x150
+>   [<ffffffff818146ad>] do_IRQ+0x4d/0xe0
+>   [<ffffffff818122f2>] common_interrupt+0x72/0x72
+>   <EOI>  [<ffffffff8105f706>] ? native_safe_halt+0x6/0x10
+>   [<ffffffff81025454>] default_idle+0x24/0x230
+>   [<ffffffff81025f9f>] arch_cpu_idle+0xf/0x20
+>   [<ffffffff810f5adc>] cpu_startup_entry+0x37c/0x7b0
+>   [<ffffffff8104df1b>] start_secondary+0x25b/0x300
+> 
+> This patch fixes it by punting the notification delivery through a
+> work item.  This ends up adding an extra pointer to kernfs_elem_attr
+> enlarging kernfs_node by a pointer, which is not ideal but not a very
+> big deal either.  If this turns out to be an actual issue, we can move
+> kernfs_elem_attr->size to kernfs_node->iattr later.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Josh Boyer <jwboyer@fedoraproject.org>
+> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> ---
+>  fs/kernfs/file.c       |   69 +++++++++++++++++++++++++++++++++++++++----------
+>  include/linux/kernfs.h |    1 
+>  2 files changed, 56 insertions(+), 14 deletions(-)
 
-You're definitely right about the poor commit message.
+Looks good to me, do you want to take this with your other kernfs
+patches for 3.16-final?  Or if you don't have that, I can take it
+through my tree, it's your choice, either is fine for me.
 
-I made this a merge because I really wanted this commit in the 3.17 
-development branch too.  So I applied the patch on top of -rc1 and 
-merged it into both branches (kvm-master for 3.16 and kvm-next for 
-3.17).  For some reason, I did see a need to justify the merge commit in 
-kvm-next:
-
-     commit dc720f95939280f9e69cafe7389be6d0fa6f22dd
-     Merge: 27e6fb5dae28 33b458d276bb
-     Author: Paolo Bonzini <pbonzini@redhat.com>
-     Date:   Mon Jun 30 16:51:07 2014 +0200
-
-         Merge commit '33b458d276bb' into kvm-next
-
-         Fix bad x86 regression introduced during merge window.
-
-Probably still not verbose enough, but a little better.
-
-Am I just over-engineering it and I should have simply cherry-picked it? 
-  In this particular case the change is not likely to get other changes 
-(and thus conflicts) in kvm-next, but in general it could.
-
-Thanks,
-
-Paolo
+If you want it in your tree, feel free to add:
+	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
