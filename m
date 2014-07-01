@@ -1,137 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758634AbaGAUEH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 16:04:07 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:50360 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754676AbaGAUEG (ORCPT
+	id S1758759AbaGAUEp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 16:04:45 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:64198 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758707AbaGAUEm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 16:04:06 -0400
-Date: Wed, 2 Jul 2014 01:33:59 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH v2] mailbox/omap: Use devm_ functions
-Message-ID: <20140701200358.GA10153@himangi-Dell>
+	Tue, 1 Jul 2014 16:04:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53B26BB0.90209@redhat.com>
+References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
+	<1403913966-4927-9-git-send-email-ast@plumgrid.com>
+	<53B26BB0.90209@redhat.com>
+Date: Tue, 1 Jul 2014 13:04:41 -0700
+Message-ID: <CAMEtUuyc3+jrxG4r4=fk=Gc9OMhO8a2X1oyWPx1LsKzewVf01w@mail.gmail.com>
+Subject: Re: [PATCH RFC net-next 08/14] bpf: add eBPF verifier
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the use of devm_kzalloc and devm_ioremap instead
-of the unmanaged interfaces. The calls to the corresponding functions to
-free the allocated memory in probe and remove function are done away
-with. The labels in the probe function are also removed.
+On Tue, Jul 1, 2014 at 1:05 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+> On 06/28/2014 02:06 AM, Alexei Starovoitov wrote:
+>>
+>> Safety of eBPF programs is statically determined by the verifier, which
+>> detects:
+>> - loops
+>> - out of range jumps
+>> - unreachable instructions
+>> - invalid instructions
+>> - uninitialized register access
+>> - uninitialized stack access
+>> - misaligned stack access
+>> - out of range stack access
+>> - invalid calling convention
+>
+> ...
+>
+>> More details in Documentation/networking/filter.txt
+>>
+>> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+>> ---
+>
+> ...
+>>
+>>   kernel/bpf/verifier.c               | 1431
+>> +++++++++++++++++++++++++++++++++++
+>
+>
+> Looking at classic BPF verifier which checks safety of BPF
+> user space programs, it's roughly 200 loc. :-/
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/mailbox/mailbox-omap2.c | 62 ++++++++++++-----------------------------
- 1 file changed, 18 insertions(+), 44 deletions(-)
+I'm not sure what's your point comparing apples to oranges.
+For the record 1431 lines include ~200 lines worth of comments
+and 200 lines of verbose prints. Without them rejected eBPF
+program is black box. Users need a way to understand why
+verifier rejected it.
 
-diff --git a/drivers/mailbox/mailbox-omap2.c b/drivers/mailbox/mailbox-omap2.c
-index 42d2b89..8a96de9 100644
---- a/drivers/mailbox/mailbox-omap2.c
-+++ b/drivers/mailbox/mailbox-omap2.c
-@@ -236,21 +236,20 @@ static int omap2_mbox_probe(struct platform_device *pdev)
- 	}
- 
- 	/* allocate one extra for marking end of list */
--	list = kzalloc((pdata->info_cnt + 1) * sizeof(*list), GFP_KERNEL);
-+	list = devm_kzalloc(&pdev->dev, (pdata->info_cnt + 1) * sizeof(*list),
-+			    GFP_KERNEL);
- 	if (!list)
- 		return -ENOMEM;
- 
--	mboxblk = mbox = kzalloc(pdata->info_cnt * sizeof(*mbox), GFP_KERNEL);
--	if (!mboxblk) {
--		ret = -ENOMEM;
--		goto free_list;
--	}
-+	mboxblk = mbox = devm_kzalloc(&pdev->dev,
-+				pdata->info_cnt * sizeof(*mbox), GFP_KERNEL);
-+	if (!mboxblk)
-+		return -ENOMEM;
- 
--	privblk = priv = kzalloc(pdata->info_cnt * sizeof(*priv), GFP_KERNEL);
--	if (!privblk) {
--		ret = -ENOMEM;
--		goto free_mboxblk;
--	}
-+	privblk = priv = devm_kzalloc(&pdev->dev,
-+				pdata->info_cnt * sizeof(*priv), GFP_KERNEL);
-+	if (!privblk)
-+		return -ENOMEM;
- 
- 	info = pdata->info;
- 	for (i = 0; i < pdata->info_cnt; i++, info++, priv++) {
-@@ -276,55 +275,30 @@ static int omap2_mbox_probe(struct platform_device *pdev)
- 		mbox->name = info->name;
- 		mbox->ops = &omap2_mbox_ops;
- 		mbox->irq = platform_get_irq(pdev, info->irq_id);
--		if (mbox->irq < 0) {
--			ret = mbox->irq;
--			goto free_privblk;
--		}
-+		if (mbox->irq < 0)
-+			return mbox->irq;
- 		list[i] = mbox++;
- 	}
- 
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!mem) {
--		ret = -ENOENT;
--		goto free_privblk;
--	}
-+	if (!mem)
-+		return -ENOENT;
- 
--	mbox_base = ioremap(mem->start, resource_size(mem));
--	if (!mbox_base) {
--		ret = -ENOMEM;
--		goto free_privblk;
--	}
-+	mbox_base = devm_ioremap(&pdev->dev, mem->start, resource_size(mem));
-+	if (!mbox_base)
-+		return -ENOMEM;
- 
- 	ret = omap_mbox_register(&pdev->dev, list);
- 	if (ret)
--		goto unmap_mbox;
-+		return ret;
- 	platform_set_drvdata(pdev, list);
- 
- 	return 0;
--
--unmap_mbox:
--	iounmap(mbox_base);
--free_privblk:
--	kfree(privblk);
--free_mboxblk:
--	kfree(mboxblk);
--free_list:
--	kfree(list);
--	return ret;
- }
- 
- static int omap2_mbox_remove(struct platform_device *pdev)
- {
--	struct omap_mbox2_priv *privblk;
--	struct omap_mbox **list = platform_get_drvdata(pdev);
--	struct omap_mbox *mboxblk = list[0];
--
--	privblk = mboxblk->priv;
- 	omap_mbox_unregister();
--	iounmap(mbox_base);
--	kfree(privblk);
--	kfree(mboxblk);
--	kfree(list);
- 
- 	return 0;
- }
--- 
-1.9.1
+>
+>> diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
+>> new file mode 100644
+>
+> ...
+>
+>> +#define _(OP) ({ int ret = OP; if (ret < 0) return ret; })
+>
+> ...
+>>
+>> +       _(get_map_info(env, map_id, &map));
+>
+> ...
+>>
+>> +       _(size = bpf_size_to_bytes(bpf_size));
+>
+>
+> Nit: such macros should be removed, please.
 
+It may surely look unconventional, but alternative is to replace
+every usage of _ macro with:
+err = …
+if (err)
+  return err;
+
+and since this macro is used 38 times, it will add ~120 unnecessary
+lines that will only make code much harder to follow.
+I tried not using macro and results were not pleasing.
