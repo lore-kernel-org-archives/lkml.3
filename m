@@ -1,102 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758537AbaGAS0s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 14:26:48 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34263 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756946AbaGAS0q (ORCPT
+	id S1758442AbaGASaQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 14:30:16 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:40756 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754995AbaGASaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 14:26:46 -0400
-Message-ID: <53B2FD61.9000101@wwwdotorg.org>
-Date: Tue, 01 Jul 2014 12:26:41 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 1 Jul 2014 14:30:14 -0400
+Date: Tue, 1 Jul 2014 14:29:08 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [RESEND][PATCH] rtlwifi: btcoexist: avoid format string in printk
+Message-ID: <20140701182908.GD6358@tuxdriver.com>
+References: <20140630203849.GA4787@www.outflux.net>
 MIME-Version: 1.0
-To: Mikko Perttunen <mperttunen@nvidia.com>,
-        "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "edubezval@gmail.com" <edubezval@gmail.com>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Matthew Longnecker <MLongnecker@nvidia.com>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 6/6] thermal: Add Tegra SOCTHERM thermal management driver
-References: <1403856699-2140-1-git-send-email-mperttunen@nvidia.com> <1403856699-2140-7-git-send-email-mperttunen@nvidia.com> <53B1D538.6000704@wwwdotorg.org> <53B26BF2.7090009@nvidia.com>
-In-Reply-To: <53B26BF2.7090009@nvidia.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140630203849.GA4787@www.outflux.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2014 02:06 AM, Mikko Perttunen wrote:
-> Inline.
+Please look in the git trees before reposting patches...
+
+commit 6437f51ec36af8ef1e3e2659439b35c37e5498e2
+Author: Kees Cook <keescook@chromium.org>
+Date:   Tue Jun 10 10:37:24 2014 -0700
+
+    rtlwifi: btcoexist: avoid format string in printk
+    
+    Since CL_PRINTF only ever takes a single argument, make sure a format
+    string cannot leak into printk.
+    
+    Signed-off-by: Kees Cook <keescook@chromium.org>
+    Signed-off-by: John W. Linville <linville@tuxdriver.com>
+
+On Mon, Jun 30, 2014 at 01:38:49PM -0700, Kees Cook wrote:
+> Since CL_PRINTF only ever takes a single argument, make sure a format
+> string cannot leak into printk.
 > 
-> On 01/07/14 00:23, Stephen Warren wrote:
->> On 06/27/2014 02:11 AM, Mikko Perttunen wrote:
->>> This adds support for the Tegra SOCTHERM thermal sensing and management
->>> system found in the Tegra124 system-on-chip. This initial driver
->>> supports
->>> the four thermal zones with hardware-tracked trip points.
->>
->>> diff --git a/drivers/thermal/tegra_soctherm.c
->>> b/drivers/thermal/tegra_soctherm.c
->>
->>> +static struct tegra_tsensor t124_tsensors[] = {
->>> +    {
->>> +        .base = 0xc0,
->>> +        .name = "cpu0",
->>> +        .config = &t124_tsensor_config,
->>> +        .calib_fuse_offset = 0x098,
->>> +        .fuse_corr_alpha = 1135400,
->>> +        .fuse_corr_beta = -6266900,
->>> +    },
->>
->> I wonder why some of those fields are named "fuse_xxx" when the values
->> are hard-coded in these tables rather than read from fuses? These values
->> don't seem to be used to adjust values read from fuses.
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  .../net/wireless/rtlwifi/btcoexist/halbtcoutsrc.h  |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> They are used to when calculating the thermal calibration in
-> calculate_tsensor_calibration, which is based on the value read from the
-> fuse. Downstream calls them fuse correction values, so I kept that. (I
-> guess the meaning of corr might not be obvious..) On downstream there is
-> another set of these correction values used depending on the fuse
-> revision, but I believe the older revision is only found internally.
-
-Ah, so there's some manufacturing calibration process that sets some
-fuse value, and the HW uses a combination of that fuse value, and some
-parameters of the manufacturing process as represented by the
-SENSOR_CONFIG2 register, to apply the calibration? I wonder why
-SENSOR_CONFIG2 is a register not a fuse in that case, but anyway...
-
-Perhaps some comments or kerneldoc in the definition of struct
-tegra_tsensor would be useful?
-
-I did notice some inconsistency in bracketing at:
-
-> +	*calib = ((u16)(therma) << SENSOR_CONFIG2_THERMA_SHIFT) |
-> +		 ((u16)thermb << SENSOR_CONFIG2_THERMB_SHIFT);
-
->>> +        err = devm_request_threaded_irq(&pdev->dev, irq, soctherm_isr,
->>> +                        soctherm_isr_thread,
->>> +                        IRQF_SHARED, "tegra_soctherm",
->>> +                        zone);
->>
->> Why request the same IRQ 4 times here. Rather, shouldn't the IRQ be
->> requested once, and the ISR simply loop over the status register (or
->> whatever there are 4 of)?
+> diff --git a/drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.h b/drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.h
+> index 871fc3c6d559..049f4c8d98a8 100644
+> --- a/drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.h
+> +++ b/drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.h
+> @@ -114,7 +114,7 @@ extern u32 btc_dbg_type[];
+>  
+>  
+>  #define	CL_SPRINTF	snprintf
+> -#define	CL_PRINTF	printk
+> +#define	CL_PRINTF(buf)	printk("%s", buf)
+>  
+>  #define	BTC_PRINT(dbgtype, dbgflag, printstr, ...)		\
+>  	do {							\
+> -- 
+> 1.7.9.5
 > 
-> I had that variant as well, but since we need to pass the list of
-> tripped sensors to soctherm_isr_thread somehow, I guess some kind of
-> locking or atomic is needed. This version doesn't need that, so I went
-> with it.
+> 
+> -- 
+> Kees Cook
+> Chrome OS Security
+> 
 
-Why not read THERMCTL_INTR_STATUS inside the IRQ thread. IIRC, if the
-ISR wakes an IRQ thread, the interrupt remains disable until the thread
-has run its course, so there's no issue deferring the register read
-until the thread runs, at which point, the thread can simply loop over
-all the sensors.
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
