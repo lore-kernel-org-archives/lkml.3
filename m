@@ -1,5833 +1,4055 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620AbaGAEGE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 00:06:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45264 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350AbaGAEF5 (ORCPT
+	id S1751146AbaGAEJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 00:09:20 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:61485 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750822AbaGAEJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 00:05:57 -0400
-Date: Mon, 30 Jun 2014 21:05:42 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.15.3
-Message-ID: <20140701040542.GB26668@kroah.com>
-References: <20140701040527.GA26668@kroah.com>
+	Tue, 1 Jul 2014 00:09:17 -0400
+Date: Tue, 1 Jul 2014 00:09:13 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [BUILD BUG][3.16-rc3] Error: too many copied sections (max = 13)
+Message-ID: <20140701000913.5ea51f77@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140701040527.GA26668@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Documentation/vm/hwpoison.txt b/Documentation/vm/hwpoison.txt
-index 550068466605..6ae89a9edf2a 100644
---- a/Documentation/vm/hwpoison.txt
-+++ b/Documentation/vm/hwpoison.txt
-@@ -84,6 +84,11 @@ PR_MCE_KILL
- 		PR_MCE_KILL_EARLY: Early kill
- 		PR_MCE_KILL_LATE:  Late kill
- 		PR_MCE_KILL_DEFAULT: Use system global default
-+	Note that if you want to have a dedicated thread which handles
-+	the SIGBUS(BUS_MCEERR_AO) on behalf of the process, you should
-+	call prctl(PR_MCE_KILL_EARLY) on the designated thread. Otherwise,
-+	the SIGBUS is sent to the main thread.
-+
- PR_MCE_KILL_GET
- 	return current mode
- 
-diff --git a/Makefile b/Makefile
-index 475e0853a2f4..2e37d8b0bb96 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 15
--SUBLEVEL = 2
-+SUBLEVEL = 3
- EXTRAVERSION =
- NAME = Shuffling Zombie Juror
- 
-diff --git a/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts b/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
-index 5d42feb31049..178382ca594f 100644
---- a/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
-+++ b/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
-@@ -25,7 +25,7 @@
- 
- 	memory {
- 		device_type = "memory";
--		reg = <0 0x00000000 0 0xC0000000>; /* 3 GB */
-+		reg = <0 0x00000000 0 0x40000000>; /* 1 GB soldered on */
- 	};
- 
- 	soc {
-diff --git a/arch/arm/kernel/stacktrace.c b/arch/arm/kernel/stacktrace.c
-index af4e8c8a5422..6582c4adc182 100644
---- a/arch/arm/kernel/stacktrace.c
-+++ b/arch/arm/kernel/stacktrace.c
-@@ -83,13 +83,16 @@ static int save_trace(struct stackframe *frame, void *d)
- 	return trace->nr_entries >= trace->max_entries;
- }
- 
--void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
-+/* This must be noinline to so that our skip calculation works correctly */
-+static noinline void __save_stack_trace(struct task_struct *tsk,
-+	struct stack_trace *trace, unsigned int nosched)
- {
- 	struct stack_trace_data data;
- 	struct stackframe frame;
- 
- 	data.trace = trace;
- 	data.skip = trace->skip;
-+	data.no_sched_functions = nosched;
- 
- 	if (tsk != current) {
- #ifdef CONFIG_SMP
-@@ -102,7 +105,6 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- 			trace->entries[trace->nr_entries++] = ULONG_MAX;
- 		return;
- #else
--		data.no_sched_functions = 1;
- 		frame.fp = thread_saved_fp(tsk);
- 		frame.sp = thread_saved_sp(tsk);
- 		frame.lr = 0;		/* recovered from the stack */
-@@ -111,11 +113,12 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- 	} else {
- 		register unsigned long current_sp asm ("sp");
- 
--		data.no_sched_functions = 0;
-+		/* We don't want this function nor the caller */
-+		data.skip += 2;
- 		frame.fp = (unsigned long)__builtin_frame_address(0);
- 		frame.sp = current_sp;
- 		frame.lr = (unsigned long)__builtin_return_address(0);
--		frame.pc = (unsigned long)save_stack_trace_tsk;
-+		frame.pc = (unsigned long)__save_stack_trace;
- 	}
- 
- 	walk_stackframe(&frame, save_trace, &data);
-@@ -123,9 +126,14 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- 		trace->entries[trace->nr_entries++] = ULONG_MAX;
- }
- 
-+void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
-+{
-+	__save_stack_trace(tsk, trace, 1);
-+}
-+
- void save_stack_trace(struct stack_trace *trace)
- {
--	save_stack_trace_tsk(current, trace);
-+	__save_stack_trace(current, trace, 0);
- }
- EXPORT_SYMBOL_GPL(save_stack_trace);
- #endif
-diff --git a/arch/arm/mach-omap1/board-h2.c b/arch/arm/mach-omap1/board-h2.c
-index 65d2acb31498..5b45d266d83e 100644
---- a/arch/arm/mach-omap1/board-h2.c
-+++ b/arch/arm/mach-omap1/board-h2.c
-@@ -346,7 +346,7 @@ static struct omap_usb_config h2_usb_config __initdata = {
- 	/* usb1 has a Mini-AB port and external isp1301 transceiver */
- 	.otg		= 2,
- 
--#ifdef	CONFIG_USB_GADGET_OMAP
-+#if IS_ENABLED(CONFIG_USB_OMAP)
- 	.hmc_mode	= 19,	/* 0:host(off) 1:dev|otg 2:disabled */
- 	/* .hmc_mode	= 21,*/	/* 0:host(off) 1:dev(loopback) 2:host(loopback) */
- #elif	defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
-diff --git a/arch/arm/mach-omap1/board-h3.c b/arch/arm/mach-omap1/board-h3.c
-index 816ecd13f81e..bfed4f928663 100644
---- a/arch/arm/mach-omap1/board-h3.c
-+++ b/arch/arm/mach-omap1/board-h3.c
-@@ -366,7 +366,7 @@ static struct omap_usb_config h3_usb_config __initdata = {
- 	/* usb1 has a Mini-AB port and external isp1301 transceiver */
- 	.otg	    = 2,
- 
--#ifdef CONFIG_USB_GADGET_OMAP
-+#if IS_ENABLED(CONFIG_USB_OMAP)
- 	.hmc_mode       = 19,   /* 0:host(off) 1:dev|otg 2:disabled */
- #elif  defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
- 	/* NONSTANDARD CABLE NEEDED (B-to-Mini-B) */
-diff --git a/arch/arm/mach-omap1/board-innovator.c b/arch/arm/mach-omap1/board-innovator.c
-index bd5f02e9c354..c49ce83cc1eb 100644
---- a/arch/arm/mach-omap1/board-innovator.c
-+++ b/arch/arm/mach-omap1/board-innovator.c
-@@ -312,7 +312,7 @@ static struct omap_usb_config h2_usb_config __initdata = {
- 	/* usb1 has a Mini-AB port and external isp1301 transceiver */
- 	.otg		= 2,
- 
--#ifdef	CONFIG_USB_GADGET_OMAP
-+#if IS_ENABLED(CONFIG_USB_OMAP)
- 	.hmc_mode	= 19,	/* 0:host(off) 1:dev|otg 2:disabled */
- 	/* .hmc_mode	= 21,*/	/* 0:host(off) 1:dev(loopback) 2:host(loopback) */
- #elif	defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
-diff --git a/arch/arm/mach-omap1/board-osk.c b/arch/arm/mach-omap1/board-osk.c
-index 3a0262156e93..7436d4cf6596 100644
---- a/arch/arm/mach-omap1/board-osk.c
-+++ b/arch/arm/mach-omap1/board-osk.c
-@@ -283,7 +283,7 @@ static struct omap_usb_config osk_usb_config __initdata = {
- 	 * be used, with a NONSTANDARD gender-bending cable/dongle, as
- 	 * a peripheral.
- 	 */
--#ifdef	CONFIG_USB_GADGET_OMAP
-+#if IS_ENABLED(CONFIG_USB_OMAP)
- 	.register_dev	= 1,
- 	.hmc_mode	= 0,
- #else
-diff --git a/arch/arm/mach-omap2/gpmc-nand.c b/arch/arm/mach-omap2/gpmc-nand.c
-index 4349e82debfe..17cd39360afe 100644
---- a/arch/arm/mach-omap2/gpmc-nand.c
-+++ b/arch/arm/mach-omap2/gpmc-nand.c
-@@ -46,7 +46,7 @@ static struct platform_device gpmc_nand_device = {
- static bool gpmc_hwecc_bch_capable(enum omap_ecc ecc_opt)
- {
- 	/* platforms which support all ECC schemes */
--	if (soc_is_am33xx() || cpu_is_omap44xx() ||
-+	if (soc_is_am33xx() || soc_is_am43xx() || cpu_is_omap44xx() ||
- 		 soc_is_omap54xx() || soc_is_dra7xx())
- 		return 1;
- 
-diff --git a/arch/arm/mm/hugetlbpage.c b/arch/arm/mm/hugetlbpage.c
-index 54ee6163c181..66781bf34077 100644
---- a/arch/arm/mm/hugetlbpage.c
-+++ b/arch/arm/mm/hugetlbpage.c
-@@ -56,8 +56,3 @@ int pmd_huge(pmd_t pmd)
- {
- 	return pmd_val(pmd) && !(pmd_val(pmd) & PMD_TABLE_BIT);
- }
--
--int pmd_huge_support(void)
--{
--	return 1;
--}
-diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
-index 01a719e18bb0..22e3ad63500c 100644
---- a/arch/arm/mm/proc-v7-3level.S
-+++ b/arch/arm/mm/proc-v7-3level.S
-@@ -64,6 +64,14 @@ ENTRY(cpu_v7_switch_mm)
- 	mov	pc, lr
- ENDPROC(cpu_v7_switch_mm)
- 
-+#ifdef __ARMEB__
-+#define rl r3
-+#define rh r2
-+#else
-+#define rl r2
-+#define rh r3
-+#endif
-+
- /*
-  * cpu_v7_set_pte_ext(ptep, pte)
-  *
-@@ -73,13 +81,13 @@ ENDPROC(cpu_v7_switch_mm)
-  */
- ENTRY(cpu_v7_set_pte_ext)
- #ifdef CONFIG_MMU
--	tst	r2, #L_PTE_VALID
-+	tst	rl, #L_PTE_VALID
- 	beq	1f
--	tst	r3, #1 << (57 - 32)		@ L_PTE_NONE
--	bicne	r2, #L_PTE_VALID
-+	tst	rh, #1 << (57 - 32)		@ L_PTE_NONE
-+	bicne	rl, #L_PTE_VALID
- 	bne	1f
--	tst	r3, #1 << (55 - 32)		@ L_PTE_DIRTY
--	orreq	r2, #L_PTE_RDONLY
-+	tst	rh, #1 << (55 - 32)		@ L_PTE_DIRTY
-+	orreq	rl, #L_PTE_RDONLY
- 1:	strd	r2, r3, [r0]
- 	ALT_SMP(W(nop))
- 	ALT_UP (mcr	p15, 0, r0, c7, c10, 1)		@ flush_pte
-diff --git a/arch/arm64/include/asm/Kbuild b/arch/arm64/include/asm/Kbuild
-index 83f71b3004a8..f06a9c2d399e 100644
---- a/arch/arm64/include/asm/Kbuild
-+++ b/arch/arm64/include/asm/Kbuild
-@@ -30,7 +30,6 @@ generic-y += msgbuf.h
- generic-y += mutex.h
- generic-y += pci.h
- generic-y += poll.h
--generic-y += posix_types.h
- generic-y += preempt.h
- generic-y += resource.h
- generic-y += rwsem.h
-diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
-index 3a4572ec3273..dc82e52acdb3 100644
---- a/arch/arm64/include/asm/dma-mapping.h
-+++ b/arch/arm64/include/asm/dma-mapping.h
-@@ -26,8 +26,6 @@
- #include <xen/xen.h>
- #include <asm/xen/hypervisor.h>
- 
--#define ARCH_HAS_DMA_GET_REQUIRED_MASK
--
- #define DMA_ERROR_CODE	(~(dma_addr_t)0)
- extern struct dma_map_ops *dma_ops;
- extern struct dma_map_ops coherent_swiotlb_dma_ops;
-diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
-index 7b1c67a0b485..d123f0eea332 100644
---- a/arch/arm64/include/asm/pgtable.h
-+++ b/arch/arm64/include/asm/pgtable.h
-@@ -253,7 +253,7 @@ static inline pmd_t pte_pmd(pte_t pte)
- #define pmd_mkwrite(pmd)	pte_pmd(pte_mkwrite(pmd_pte(pmd)))
- #define pmd_mkdirty(pmd)	pte_pmd(pte_mkdirty(pmd_pte(pmd)))
- #define pmd_mkyoung(pmd)	pte_pmd(pte_mkyoung(pmd_pte(pmd)))
--#define pmd_mknotpresent(pmd)	(__pmd(pmd_val(pmd) &= ~PMD_TYPE_MASK))
-+#define pmd_mknotpresent(pmd)	(__pmd(pmd_val(pmd) & ~PMD_TYPE_MASK))
- 
- #define __HAVE_ARCH_PMD_WRITE
- #define pmd_write(pmd)		pte_write(pmd_pte(pmd))
-diff --git a/arch/arm64/include/uapi/asm/posix_types.h b/arch/arm64/include/uapi/asm/posix_types.h
-new file mode 100644
-index 000000000000..7985ff60ca3f
---- /dev/null
-+++ b/arch/arm64/include/uapi/asm/posix_types.h
-@@ -0,0 +1,10 @@
-+#ifndef __ASM_POSIX_TYPES_H
-+#define __ASM_POSIX_TYPES_H
-+
-+typedef unsigned short __kernel_old_uid_t;
-+typedef unsigned short __kernel_old_gid_t;
-+#define __kernel_old_uid_t __kernel_old_uid_t
-+
-+#include <asm-generic/posix_types.h>
-+
-+#endif /*  __ASM_POSIX_TYPES_H */
-diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-index 6a8928bba03c..7a50b86464cc 100644
---- a/arch/arm64/kernel/ptrace.c
-+++ b/arch/arm64/kernel/ptrace.c
-@@ -650,11 +650,16 @@ static int compat_gpr_get(struct task_struct *target,
- 			reg = task_pt_regs(target)->regs[idx];
- 		}
- 
--		ret = copy_to_user(ubuf, &reg, sizeof(reg));
--		if (ret)
--			break;
--
--		ubuf += sizeof(reg);
-+		if (kbuf) {
-+			memcpy(kbuf, &reg, sizeof(reg));
-+			kbuf += sizeof(reg);
-+		} else {
-+			ret = copy_to_user(ubuf, &reg, sizeof(reg));
-+			if (ret)
-+				break;
-+
-+			ubuf += sizeof(reg);
-+		}
- 	}
- 
- 	return ret;
-@@ -684,11 +689,16 @@ static int compat_gpr_set(struct task_struct *target,
- 		unsigned int idx = start + i;
- 		compat_ulong_t reg;
- 
--		ret = copy_from_user(&reg, ubuf, sizeof(reg));
--		if (ret)
--			return ret;
-+		if (kbuf) {
-+			memcpy(&reg, kbuf, sizeof(reg));
-+			kbuf += sizeof(reg);
-+		} else {
-+			ret = copy_from_user(&reg, ubuf, sizeof(reg));
-+			if (ret)
-+				return ret;
- 
--		ubuf += sizeof(reg);
-+			ubuf += sizeof(reg);
-+		}
- 
- 		switch (idx) {
- 		case 15:
-@@ -821,6 +831,7 @@ static int compat_ptrace_write_user(struct task_struct *tsk, compat_ulong_t off,
- 				    compat_ulong_t val)
- {
- 	int ret;
-+	mm_segment_t old_fs = get_fs();
- 
- 	if (off & 3 || off >= COMPAT_USER_SZ)
- 		return -EIO;
-@@ -828,10 +839,13 @@ static int compat_ptrace_write_user(struct task_struct *tsk, compat_ulong_t off,
- 	if (off >= sizeof(compat_elf_gregset_t))
- 		return 0;
- 
-+	set_fs(KERNEL_DS);
- 	ret = copy_regset_from_user(tsk, &user_aarch32_view,
- 				    REGSET_COMPAT_GPR, off,
- 				    sizeof(compat_ulong_t),
- 				    &val);
-+	set_fs(old_fs);
-+
- 	return ret;
- }
- 
-diff --git a/arch/arm64/mm/hugetlbpage.c b/arch/arm64/mm/hugetlbpage.c
-index 31eb959e9aa8..023747bf4dd7 100644
---- a/arch/arm64/mm/hugetlbpage.c
-+++ b/arch/arm64/mm/hugetlbpage.c
-@@ -58,11 +58,6 @@ int pud_huge(pud_t pud)
- #endif
- }
- 
--int pmd_huge_support(void)
--{
--	return 1;
--}
--
- static __init int setup_hugepagesz(char *opt)
- {
- 	unsigned long ps = memparse(opt, &opt);
-diff --git a/arch/ia64/hp/common/sba_iommu.c b/arch/ia64/hp/common/sba_iommu.c
-index 1a871b78e570..344387a55406 100644
---- a/arch/ia64/hp/common/sba_iommu.c
-+++ b/arch/ia64/hp/common/sba_iommu.c
-@@ -242,7 +242,7 @@ struct ioc {
- 	struct pci_dev	*sac_only_dev;
- };
- 
--static struct ioc *ioc_list;
-+static struct ioc *ioc_list, *ioc_found;
- static int reserve_sba_gart = 1;
- 
- static SBA_INLINE void sba_mark_invalid(struct ioc *, dma_addr_t, size_t);
-@@ -1809,20 +1809,13 @@ static struct ioc_iommu ioc_iommu_info[] __initdata = {
- 	{ SX2000_IOC_ID, "sx2000", NULL },
- };
- 
--static struct ioc *
--ioc_init(unsigned long hpa, void *handle)
-+static void ioc_init(unsigned long hpa, struct ioc *ioc)
- {
--	struct ioc *ioc;
- 	struct ioc_iommu *info;
- 
--	ioc = kzalloc(sizeof(*ioc), GFP_KERNEL);
--	if (!ioc)
--		return NULL;
--
- 	ioc->next = ioc_list;
- 	ioc_list = ioc;
- 
--	ioc->handle = handle;
- 	ioc->ioc_hpa = ioremap(hpa, 0x1000);
- 
- 	ioc->func_id = READ_REG(ioc->ioc_hpa + IOC_FUNC_ID);
-@@ -1863,8 +1856,6 @@ ioc_init(unsigned long hpa, void *handle)
- 		"%s %d.%d HPA 0x%lx IOVA space %dMb at 0x%lx\n",
- 		ioc->name, (ioc->rev >> 4) & 0xF, ioc->rev & 0xF,
- 		hpa, ioc->iov_size >> 20, ioc->ibase);
--
--	return ioc;
- }
- 
- 
-@@ -2031,22 +2022,21 @@ sba_map_ioc_to_node(struct ioc *ioc, acpi_handle handle)
- #endif
- }
- 
--static int
--acpi_sba_ioc_add(struct acpi_device *device,
--		 const struct acpi_device_id *not_used)
-+static void acpi_sba_ioc_add(struct ioc *ioc)
- {
--	struct ioc *ioc;
-+	acpi_handle handle = ioc->handle;
- 	acpi_status status;
- 	u64 hpa, length;
- 	struct acpi_device_info *adi;
- 
--	status = hp_acpi_csr_space(device->handle, &hpa, &length);
-+	ioc_found = ioc->next;
-+	status = hp_acpi_csr_space(handle, &hpa, &length);
- 	if (ACPI_FAILURE(status))
--		return 1;
-+		goto err;
- 
--	status = acpi_get_object_info(device->handle, &adi);
-+	status = acpi_get_object_info(handle, &adi);
- 	if (ACPI_FAILURE(status))
--		return 1;
-+		goto err;
- 
- 	/*
- 	 * For HWP0001, only SBA appears in ACPI namespace.  It encloses the PCI
-@@ -2067,13 +2057,13 @@ acpi_sba_ioc_add(struct acpi_device *device,
- 	if (!iovp_shift)
- 		iovp_shift = 12;
- 
--	ioc = ioc_init(hpa, device->handle);
--	if (!ioc)
--		return 1;
--
-+	ioc_init(hpa, ioc);
- 	/* setup NUMA node association */
--	sba_map_ioc_to_node(ioc, device->handle);
--	return 0;
-+	sba_map_ioc_to_node(ioc, handle);
-+	return;
-+
-+ err:
-+	kfree(ioc);
- }
- 
- static const struct acpi_device_id hp_ioc_iommu_device_ids[] = {
-@@ -2081,9 +2071,26 @@ static const struct acpi_device_id hp_ioc_iommu_device_ids[] = {
- 	{"HWP0004", 0},
- 	{"", 0},
- };
-+
-+static int acpi_sba_ioc_attach(struct acpi_device *device,
-+			       const struct acpi_device_id *not_used)
-+{
-+	struct ioc *ioc;
-+
-+	ioc = kzalloc(sizeof(*ioc), GFP_KERNEL);
-+	if (!ioc)
-+		return -ENOMEM;
-+
-+	ioc->next = ioc_found;
-+	ioc_found = ioc;
-+	ioc->handle = device->handle;
-+	return 1;
-+}
-+
-+
- static struct acpi_scan_handler acpi_sba_ioc_handler = {
- 	.ids	= hp_ioc_iommu_device_ids,
--	.attach	= acpi_sba_ioc_add,
-+	.attach	= acpi_sba_ioc_attach,
- };
- 
- static int __init acpi_sba_ioc_init_acpi(void)
-@@ -2118,9 +2125,12 @@ sba_init(void)
- #endif
- 
- 	/*
--	 * ioc_list should be populated by the acpi_sba_ioc_handler's .attach()
-+	 * ioc_found should be populated by the acpi_sba_ioc_handler's .attach()
- 	 * routine, but that only happens if acpi_scan_init() has already run.
- 	 */
-+	while (ioc_found)
-+		acpi_sba_ioc_add(ioc_found);
-+
- 	if (!ioc_list) {
- #ifdef CONFIG_IA64_GENERIC
- 		/*
-diff --git a/arch/ia64/mm/hugetlbpage.c b/arch/ia64/mm/hugetlbpage.c
-index 68232db98baa..76069c18ee42 100644
---- a/arch/ia64/mm/hugetlbpage.c
-+++ b/arch/ia64/mm/hugetlbpage.c
-@@ -114,11 +114,6 @@ int pud_huge(pud_t pud)
- 	return 0;
- }
- 
--int pmd_huge_support(void)
--{
--	return 0;
--}
--
- struct page *
- follow_huge_pmd(struct mm_struct *mm, unsigned long address, pmd_t *pmd, int write)
- {
-diff --git a/arch/metag/mm/hugetlbpage.c b/arch/metag/mm/hugetlbpage.c
-index 042431509b56..3c52fa6d0f8e 100644
---- a/arch/metag/mm/hugetlbpage.c
-+++ b/arch/metag/mm/hugetlbpage.c
-@@ -110,11 +110,6 @@ int pud_huge(pud_t pud)
- 	return 0;
- }
- 
--int pmd_huge_support(void)
--{
--	return 1;
--}
--
- struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 			     pmd_t *pmd, int write)
- {
-diff --git a/arch/mips/mm/hugetlbpage.c b/arch/mips/mm/hugetlbpage.c
-index 77e0ae036e7c..4ec8ee10d371 100644
---- a/arch/mips/mm/hugetlbpage.c
-+++ b/arch/mips/mm/hugetlbpage.c
-@@ -84,11 +84,6 @@ int pud_huge(pud_t pud)
- 	return (pud_val(pud) & _PAGE_HUGE) != 0;
- }
- 
--int pmd_huge_support(void)
--{
--	return 1;
--}
--
- struct page *
- follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 		pmd_t *pmd, int write)
-diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
-index eb923654ba80..7e70ae968e5f 100644
---- a/arch/powerpc/mm/hugetlbpage.c
-+++ b/arch/powerpc/mm/hugetlbpage.c
-@@ -86,11 +86,6 @@ int pgd_huge(pgd_t pgd)
- 	 */
- 	return ((pgd_val(pgd) & 0x3) != 0x0);
- }
--
--int pmd_huge_support(void)
--{
--	return 1;
--}
- #else
- int pmd_huge(pmd_t pmd)
- {
-@@ -106,11 +101,6 @@ int pgd_huge(pgd_t pgd)
- {
- 	return 0;
- }
--
--int pmd_huge_support(void)
--{
--	return 0;
--}
- #endif
- 
- pte_t *huge_pte_offset(struct mm_struct *mm, unsigned long addr)
-diff --git a/arch/s390/include/asm/lowcore.h b/arch/s390/include/asm/lowcore.h
-index bbf8141408cd..2bed4f02a558 100644
---- a/arch/s390/include/asm/lowcore.h
-+++ b/arch/s390/include/asm/lowcore.h
-@@ -142,9 +142,9 @@ struct _lowcore {
- 	__u8	pad_0x02fc[0x0300-0x02fc];	/* 0x02fc */
- 
- 	/* Interrupt response block */
--	__u8	irb[64];			/* 0x0300 */
-+	__u8	irb[96];			/* 0x0300 */
- 
--	__u8	pad_0x0340[0x0e00-0x0340];	/* 0x0340 */
-+	__u8	pad_0x0360[0x0e00-0x0360];	/* 0x0360 */
- 
- 	/*
- 	 * 0xe00 contains the address of the IPL Parameter Information
-@@ -288,12 +288,13 @@ struct _lowcore {
- 	__u8	pad_0x03a0[0x0400-0x03a0];	/* 0x03a0 */
- 
- 	/* Interrupt response block. */
--	__u8	irb[64];			/* 0x0400 */
-+	__u8	irb[96];			/* 0x0400 */
-+	__u8	pad_0x0460[0x0480-0x0460];	/* 0x0460 */
- 
- 	/* Per cpu primary space access list */
--	__u32	paste[16];			/* 0x0440 */
-+	__u32	paste[16];			/* 0x0480 */
- 
--	__u8	pad_0x0480[0x0e00-0x0480];	/* 0x0480 */
-+	__u8	pad_0x04c0[0x0e00-0x04c0];	/* 0x04c0 */
- 
- 	/*
- 	 * 0xe00 contains the address of the IPL Parameter Information
-diff --git a/arch/s390/kernel/time.c b/arch/s390/kernel/time.c
-index 386d37a228bb..0931b110c826 100644
---- a/arch/s390/kernel/time.c
-+++ b/arch/s390/kernel/time.c
-@@ -226,7 +226,7 @@ void update_vsyscall(struct timekeeper *tk)
- 	vdso_data->wtom_clock_sec =
- 		tk->xtime_sec + tk->wall_to_monotonic.tv_sec;
- 	vdso_data->wtom_clock_nsec = tk->xtime_nsec +
--		+ (tk->wall_to_monotonic.tv_nsec << tk->shift);
-+		+ ((u64) tk->wall_to_monotonic.tv_nsec << tk->shift);
- 	nsecps = (u64) NSEC_PER_SEC << tk->shift;
- 	while (vdso_data->wtom_clock_nsec >= nsecps) {
- 		vdso_data->wtom_clock_nsec -= nsecps;
-diff --git a/arch/s390/mm/hugetlbpage.c b/arch/s390/mm/hugetlbpage.c
-index 0727a55d87d9..0ff66a7e29bb 100644
---- a/arch/s390/mm/hugetlbpage.c
-+++ b/arch/s390/mm/hugetlbpage.c
-@@ -220,11 +220,6 @@ int pud_huge(pud_t pud)
- 	return 0;
- }
- 
--int pmd_huge_support(void)
--{
--	return 1;
--}
--
- struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 			     pmd_t *pmdp, int write)
- {
-diff --git a/arch/sh/mm/hugetlbpage.c b/arch/sh/mm/hugetlbpage.c
-index 0d676a41081e..d7762349ea48 100644
---- a/arch/sh/mm/hugetlbpage.c
-+++ b/arch/sh/mm/hugetlbpage.c
-@@ -83,11 +83,6 @@ int pud_huge(pud_t pud)
- 	return 0;
- }
- 
--int pmd_huge_support(void)
--{
--	return 0;
--}
--
- struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 			     pmd_t *pmd, int write)
- {
-diff --git a/arch/sparc/mm/hugetlbpage.c b/arch/sparc/mm/hugetlbpage.c
-index 9bd9ce80bf77..d329537739c6 100644
---- a/arch/sparc/mm/hugetlbpage.c
-+++ b/arch/sparc/mm/hugetlbpage.c
-@@ -231,11 +231,6 @@ int pud_huge(pud_t pud)
- 	return 0;
- }
- 
--int pmd_huge_support(void)
--{
--	return 0;
--}
--
- struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 			     pmd_t *pmd, int write)
- {
-diff --git a/arch/tile/mm/hugetlbpage.c b/arch/tile/mm/hugetlbpage.c
-index 0cb3bbaa580c..e514899e1100 100644
---- a/arch/tile/mm/hugetlbpage.c
-+++ b/arch/tile/mm/hugetlbpage.c
-@@ -166,11 +166,6 @@ int pud_huge(pud_t pud)
- 	return !!(pud_val(pud) & _PAGE_HUGE_PAGE);
- }
- 
--int pmd_huge_support(void)
--{
--	return 1;
--}
--
- struct page *follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- 			     pmd_t *pmd, int write)
- {
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 25d2c6f7325e..6b8b429c832f 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1871,6 +1871,10 @@ config ARCH_ENABLE_SPLIT_PMD_PTLOCK
- 	def_bool y
- 	depends on X86_64 || X86_PAE
- 
-+config ARCH_ENABLE_HUGEPAGE_MIGRATION
-+	def_bool y
-+	depends on X86_64 && HUGETLB_PAGE && MIGRATION
-+
- menu "Power management and ACPI options"
- 
- config ARCH_HIBERNATION_HEADER
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index a2a4f4697889..6491353cc9aa 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -431,9 +431,10 @@ sysenter_past_esp:
- 	jnz sysenter_audit
- sysenter_do_call:
- 	cmpl $(NR_syscalls), %eax
--	jae syscall_badsys
-+	jae sysenter_badsys
- 	call *sys_call_table(,%eax,4)
- 	movl %eax,PT_EAX(%esp)
-+sysenter_after_call:
- 	LOCKDEP_SYS_EXIT
- 	DISABLE_INTERRUPTS(CLBR_ANY)
- 	TRACE_IRQS_OFF
-@@ -551,11 +552,6 @@ ENTRY(iret_exc)
- 
- 	CFI_RESTORE_STATE
- ldt_ss:
--	larl PT_OLDSS(%esp), %eax
--	jnz restore_nocheck
--	testl $0x00400000, %eax		# returning to 32bit stack?
--	jnz restore_nocheck		# allright, normal return
--
- #ifdef CONFIG_PARAVIRT
- 	/*
- 	 * The kernel can't run on a non-flat stack if paravirt mode
-@@ -688,7 +684,12 @@ END(syscall_fault)
- 
- syscall_badsys:
- 	movl $-ENOSYS,PT_EAX(%esp)
--	jmp resume_userspace
-+	jmp syscall_exit
-+END(syscall_badsys)
-+
-+sysenter_badsys:
-+	movl $-ENOSYS,PT_EAX(%esp)
-+	jmp sysenter_after_call
- END(syscall_badsys)
- 	CFI_ENDPROC
- /*
-diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
-index 8c9f647ff9e1..8b977ebf9388 100644
---- a/arch/x86/mm/hugetlbpage.c
-+++ b/arch/x86/mm/hugetlbpage.c
-@@ -58,11 +58,6 @@ follow_huge_pmd(struct mm_struct *mm, unsigned long address,
- {
- 	return NULL;
- }
--
--int pmd_huge_support(void)
--{
--	return 0;
--}
- #else
- 
- struct page *
-@@ -80,11 +75,6 @@ int pud_huge(pud_t pud)
- {
- 	return !!(pud_val(pud) & _PAGE_PSE);
- }
--
--int pmd_huge_support(void)
--{
--	return 1;
--}
- #endif
- 
- #ifdef CONFIG_HUGETLB_PAGE
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 04376ac3d9ef..ec255a1646d2 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -212,10 +212,10 @@
- 203	common	sched_setaffinity	sys_sched_setaffinity
- 204	common	sched_getaffinity	sys_sched_getaffinity
- 205	64	set_thread_area
--206	common	io_setup		sys_io_setup
-+206	64	io_setup		sys_io_setup
- 207	common	io_destroy		sys_io_destroy
- 208	common	io_getevents		sys_io_getevents
--209	common	io_submit		sys_io_submit
-+209	64	io_submit		sys_io_submit
- 210	common	io_cancel		sys_io_cancel
- 211	64	get_thread_area
- 212	common	lookup_dcookie		sys_lookup_dcookie
-@@ -359,3 +359,5 @@
- 540	x32	process_vm_writev	compat_sys_process_vm_writev
- 541	x32	setsockopt		compat_sys_setsockopt
- 542	x32	getsockopt		compat_sys_getsockopt
-+543	x32	io_setup		compat_sys_io_setup
-+544	x32	io_submit		compat_sys_io_submit
-diff --git a/drivers/acpi/acpica/utstring.c b/drivers/acpi/acpica/utstring.c
-index 77219336c7e0..6dc54b3c28b0 100644
---- a/drivers/acpi/acpica/utstring.c
-+++ b/drivers/acpi/acpica/utstring.c
-@@ -353,7 +353,7 @@ void acpi_ut_print_string(char *string, u16 max_length)
- 	}
- 
- 	acpi_os_printf("\"");
--	for (i = 0; string[i] && (i < max_length); i++) {
-+	for (i = 0; (i < max_length) && string[i]; i++) {
- 
- 		/* Escape sequences */
- 
-diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-index cf925c4f36b7..ed9fca0250fa 100644
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -52,6 +52,12 @@ struct proc_dir_entry *acpi_root_dir;
- EXPORT_SYMBOL(acpi_root_dir);
- 
- #ifdef CONFIG_X86
-+#ifdef CONFIG_ACPI_CUSTOM_DSDT
-+static inline int set_copy_dsdt(const struct dmi_system_id *id)
-+{
-+	return 0;
-+}
-+#else
- static int set_copy_dsdt(const struct dmi_system_id *id)
- {
- 	printk(KERN_NOTICE "%s detected - "
-@@ -59,6 +65,7 @@ static int set_copy_dsdt(const struct dmi_system_id *id)
- 	acpi_gbl_copy_dsdt_locally = 1;
- 	return 0;
- }
-+#endif
- 
- static struct dmi_system_id dsdt_dmi_table[] __initdata = {
- 	/*
-diff --git a/drivers/acpi/utils.c b/drivers/acpi/utils.c
-index bba526148583..07c8c5a5ee95 100644
---- a/drivers/acpi/utils.c
-+++ b/drivers/acpi/utils.c
-@@ -30,6 +30,7 @@
- #include <linux/types.h>
- #include <linux/hardirq.h>
- #include <linux/acpi.h>
-+#include <linux/dynamic_debug.h>
- 
- #include "internal.h"
- 
-@@ -457,6 +458,24 @@ acpi_evaluate_ost(acpi_handle handle, u32 source_event, u32 status_code,
- EXPORT_SYMBOL(acpi_evaluate_ost);
- 
- /**
-+ * acpi_handle_path: Return the object path of handle
-+ *
-+ * Caller must free the returned buffer
-+ */
-+static char *acpi_handle_path(acpi_handle handle)
-+{
-+	struct acpi_buffer buffer = {
-+		.length = ACPI_ALLOCATE_BUFFER,
-+		.pointer = NULL
-+	};
-+
-+	if (in_interrupt() ||
-+	    acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer) != AE_OK)
-+		return NULL;
-+	return buffer.pointer;
-+}
-+
-+/**
-  * acpi_handle_printk: Print message with ACPI prefix and object path
-  *
-  * This function is called through acpi_handle_<level> macros and prints
-@@ -469,29 +488,50 @@ acpi_handle_printk(const char *level, acpi_handle handle, const char *fmt, ...)
- {
- 	struct va_format vaf;
- 	va_list args;
--	struct acpi_buffer buffer = {
--		.length = ACPI_ALLOCATE_BUFFER,
--		.pointer = NULL
--	};
- 	const char *path;
- 
- 	va_start(args, fmt);
- 	vaf.fmt = fmt;
- 	vaf.va = &args;
- 
--	if (in_interrupt() ||
--	    acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer) != AE_OK)
--		path = "<n/a>";
--	else
--		path = buffer.pointer;
--
--	printk("%sACPI: %s: %pV", level, path, &vaf);
-+	path = acpi_handle_path(handle);
-+	printk("%sACPI: %s: %pV", level, path ? path : "<n/a>" , &vaf);
- 
- 	va_end(args);
--	kfree(buffer.pointer);
-+	kfree(path);
- }
- EXPORT_SYMBOL(acpi_handle_printk);
- 
-+#if defined(CONFIG_DYNAMIC_DEBUG)
-+/**
-+ * __acpi_handle_debug: pr_debug with ACPI prefix and object path
-+ *
-+ * This function is called through acpi_handle_debug macro and debug
-+ * prints a message with ACPI prefix and object path. This function
-+ * acquires the global namespace mutex to obtain an object path.  In
-+ * interrupt context, it shows the object path as <n/a>.
-+ */
-+void
-+__acpi_handle_debug(struct _ddebug *descriptor, acpi_handle handle,
-+		    const char *fmt, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+	const char *path;
-+
-+	va_start(args, fmt);
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
-+	path = acpi_handle_path(handle);
-+	__dynamic_pr_debug(descriptor, "ACPI: %s: %pV", path ? path : "<n/a>", &vaf);
-+
-+	va_end(args);
-+	kfree(path);
-+}
-+EXPORT_SYMBOL(__acpi_handle_debug);
-+#endif
-+
- /**
-  * acpi_has_method: Check whether @handle has a method named @name
-  * @handle: ACPI device handle
-diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-index 25538675d59e..c539d70b97ab 100644
---- a/drivers/base/power/opp.c
-+++ b/drivers/base/power/opp.c
-@@ -734,11 +734,9 @@ int of_init_opp_table(struct device *dev)
- 		unsigned long freq = be32_to_cpup(val++) * 1000;
- 		unsigned long volt = be32_to_cpup(val++);
- 
--		if (dev_pm_opp_add(dev, freq, volt)) {
-+		if (dev_pm_opp_add(dev, freq, volt))
- 			dev_warn(dev, "%s: Failed to add OPP %ld\n",
- 				 __func__, freq);
--			continue;
--		}
- 		nr -= 2;
- 	}
- 
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index cb9b1f8326c3..31e5bc1351b4 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -159,6 +159,7 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
- 	unsigned int num;
- 	const bool last = (req->cmd_flags & REQ_END) != 0;
- 	int err;
-+	bool notify = false;
- 
- 	BUG_ON(req->nr_phys_segments + 2 > vblk->sg_elems);
- 
-@@ -211,10 +212,12 @@ static int virtio_queue_rq(struct blk_mq_hw_ctx *hctx, struct request *req)
- 		return BLK_MQ_RQ_QUEUE_ERROR;
- 	}
- 
--	if (last)
--		virtqueue_kick(vblk->vq);
--
-+	if (last && virtqueue_kick_prepare(vblk->vq))
-+		notify = true;
- 	spin_unlock_irqrestore(&vblk->vq_lock, flags);
-+
-+	if (notify)
-+		virtqueue_notify(vblk->vq);
- 	return BLK_MQ_RQ_QUEUE_OK;
- }
- 
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 9849b5233bf4..48eccb350180 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -572,10 +572,10 @@ static void zram_bio_discard(struct zram *zram, u32 index,
- 	 * skipping this logical block is appropriate here.
- 	 */
- 	if (offset) {
--		if (n < offset)
-+		if (n <= (PAGE_SIZE - offset))
- 			return;
- 
--		n -= offset;
-+		n -= (PAGE_SIZE - offset);
- 		index++;
- 	}
- 
-diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
-index f1fbf4f1e5be..e00f8f5b5c8e 100644
---- a/drivers/bluetooth/hci_ldisc.c
-+++ b/drivers/bluetooth/hci_ldisc.c
-@@ -118,10 +118,6 @@ static inline struct sk_buff *hci_uart_dequeue(struct hci_uart *hu)
- 
- int hci_uart_tx_wakeup(struct hci_uart *hu)
- {
--	struct tty_struct *tty = hu->tty;
--	struct hci_dev *hdev = hu->hdev;
--	struct sk_buff *skb;
--
- 	if (test_and_set_bit(HCI_UART_SENDING, &hu->tx_state)) {
- 		set_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
- 		return 0;
-@@ -129,6 +125,22 @@ int hci_uart_tx_wakeup(struct hci_uart *hu)
- 
- 	BT_DBG("");
- 
-+	schedule_work(&hu->write_work);
-+
-+	return 0;
-+}
-+
-+static void hci_uart_write_work(struct work_struct *work)
-+{
-+	struct hci_uart *hu = container_of(work, struct hci_uart, write_work);
-+	struct tty_struct *tty = hu->tty;
-+	struct hci_dev *hdev = hu->hdev;
-+	struct sk_buff *skb;
-+
-+	/* REVISIT: should we cope with bad skbs or ->write() returning
-+	 * and error value ?
-+	 */
-+
- restart:
- 	clear_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
- 
-@@ -153,7 +165,6 @@ restart:
- 		goto restart;
- 
- 	clear_bit(HCI_UART_SENDING, &hu->tx_state);
--	return 0;
- }
- 
- static void hci_uart_init_work(struct work_struct *work)
-@@ -282,6 +293,7 @@ static int hci_uart_tty_open(struct tty_struct *tty)
- 	tty->receive_room = 65536;
- 
- 	INIT_WORK(&hu->init_ready, hci_uart_init_work);
-+	INIT_WORK(&hu->write_work, hci_uart_write_work);
- 
- 	spin_lock_init(&hu->rx_lock);
- 
-@@ -319,6 +331,8 @@ static void hci_uart_tty_close(struct tty_struct *tty)
- 	if (hdev)
- 		hci_uart_close(hdev);
- 
-+	cancel_work_sync(&hu->write_work);
-+
- 	if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
- 		if (hdev) {
- 			if (test_bit(HCI_UART_REGISTERED, &hu->flags))
-diff --git a/drivers/bluetooth/hci_uart.h b/drivers/bluetooth/hci_uart.h
-index fffa61ff5cb1..12df101ca942 100644
---- a/drivers/bluetooth/hci_uart.h
-+++ b/drivers/bluetooth/hci_uart.h
-@@ -68,6 +68,7 @@ struct hci_uart {
- 	unsigned long		hdev_flags;
- 
- 	struct work_struct	init_ready;
-+	struct work_struct	write_work;
- 
- 	struct hci_uart_proto	*proto;
- 	void			*priv;
-diff --git a/drivers/char/applicom.c b/drivers/char/applicom.c
-index 974321a2508d..14790304b84b 100644
---- a/drivers/char/applicom.c
-+++ b/drivers/char/applicom.c
-@@ -345,7 +345,6 @@ out:
- 			free_irq(apbs[i].irq, &dummy);
- 		iounmap(apbs[i].RamIO);
- 	}
--	pci_disable_device(dev);
- 	return ret;
- }
- 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 102c50d38902..2b6e4cd8de8e 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -979,7 +979,6 @@ static void push_to_pool(struct work_struct *work)
- static size_t account(struct entropy_store *r, size_t nbytes, int min,
- 		      int reserved)
- {
--	int have_bytes;
- 	int entropy_count, orig;
- 	size_t ibytes;
- 
-@@ -988,17 +987,19 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
- 	/* Can we pull enough? */
- retry:
- 	entropy_count = orig = ACCESS_ONCE(r->entropy_count);
--	have_bytes = entropy_count >> (ENTROPY_SHIFT + 3);
- 	ibytes = nbytes;
- 	/* If limited, never pull more than available */
--	if (r->limit)
--		ibytes = min_t(size_t, ibytes, have_bytes - reserved);
-+	if (r->limit) {
-+		int have_bytes = entropy_count >> (ENTROPY_SHIFT + 3);
-+
-+		if ((have_bytes -= reserved) < 0)
-+			have_bytes = 0;
-+		ibytes = min_t(size_t, ibytes, have_bytes);
-+	}
- 	if (ibytes < min)
- 		ibytes = 0;
--	if (have_bytes >= ibytes + reserved)
--		entropy_count -= ibytes << (ENTROPY_SHIFT + 3);
--	else
--		entropy_count = reserved << (ENTROPY_SHIFT + 3);
-+	if ((entropy_count -= ibytes << (ENTROPY_SHIFT + 3)) < 0)
-+		entropy_count = 0;
- 
- 	if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
- 		goto retry;
-diff --git a/drivers/extcon/extcon-max14577.c b/drivers/extcon/extcon-max14577.c
-index 3846941801b8..5c948c9625d2 100644
---- a/drivers/extcon/extcon-max14577.c
-+++ b/drivers/extcon/extcon-max14577.c
-@@ -650,7 +650,7 @@ static int max14577_muic_probe(struct platform_device *pdev)
- 		unsigned int virq = 0;
- 
- 		virq = regmap_irq_get_virq(max14577->irq_data, muic_irq->irq);
--		if (!virq)
-+		if (virq <= 0)
- 			return -EINVAL;
- 		muic_irq->virq = virq;
- 
-@@ -710,13 +710,8 @@ static int max14577_muic_probe(struct platform_device *pdev)
- 	 * driver should notify cable state to upper layer.
- 	 */
- 	INIT_DELAYED_WORK(&info->wq_detcable, max14577_muic_detect_cable_wq);
--	ret = queue_delayed_work(system_power_efficient_wq, &info->wq_detcable,
-+	queue_delayed_work(system_power_efficient_wq, &info->wq_detcable,
- 			delay_jiffies);
--	if (ret < 0) {
--		dev_err(&pdev->dev,
--			"failed to schedule delayed work for cable detect\n");
--		goto err_extcon;
--	}
- 
- 	return ret;
- 
-diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-index da268fbc901b..4657a91acf56 100644
---- a/drivers/extcon/extcon-max77693.c
-+++ b/drivers/extcon/extcon-max77693.c
-@@ -1193,7 +1193,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
- 
- 
- 	/* Initialize MUIC register by using platform data or default data */
--	if (pdata->muic_data) {
-+	if (pdata && pdata->muic_data) {
- 		init_data = pdata->muic_data->init_data;
- 		num_init_data = pdata->muic_data->num_init_data;
- 	} else {
-@@ -1226,7 +1226,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
- 				= init_data[i].data;
- 	}
- 
--	if (pdata->muic_data) {
-+	if (pdata && pdata->muic_data) {
- 		struct max77693_muic_platform_data *muic_pdata
- 						   = pdata->muic_data;
- 
-diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
-index 6a00464658c5..5e1b88cecb76 100644
---- a/drivers/extcon/extcon-max8997.c
-+++ b/drivers/extcon/extcon-max8997.c
-@@ -715,7 +715,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
- 		goto err_irq;
- 	}
- 
--	if (pdata->muic_pdata) {
-+	if (pdata && pdata->muic_pdata) {
- 		struct max8997_muic_platform_data *muic_pdata
- 			= pdata->muic_pdata;
- 
-diff --git a/drivers/firmware/efi/efi-pstore.c b/drivers/firmware/efi/efi-pstore.c
-index 4b9dc836dcf9..e992abc5ef26 100644
---- a/drivers/firmware/efi/efi-pstore.c
-+++ b/drivers/firmware/efi/efi-pstore.c
-@@ -40,7 +40,7 @@ struct pstore_read_data {
- static inline u64 generic_id(unsigned long timestamp,
- 			     unsigned int part, int count)
- {
--	return (timestamp * 100 + part) * 1000 + count;
-+	return ((u64) timestamp * 100 + part) * 1000 + count;
- }
- 
- static int efi_pstore_read_func(struct efivar_entry *entry, void *data)
-diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
-index 2bdae61c0ac0..12c663e86ca1 100644
---- a/drivers/gpu/drm/radeon/radeon_pm.c
-+++ b/drivers/gpu/drm/radeon/radeon_pm.c
-@@ -984,6 +984,8 @@ void radeon_dpm_enable_uvd(struct radeon_device *rdev, bool enable)
- 		if (enable) {
- 			mutex_lock(&rdev->pm.mutex);
- 			rdev->pm.dpm.uvd_active = true;
-+			/* disable this for now */
-+#if 0
- 			if ((rdev->pm.dpm.sd == 1) && (rdev->pm.dpm.hd == 0))
- 				dpm_state = POWER_STATE_TYPE_INTERNAL_UVD_SD;
- 			else if ((rdev->pm.dpm.sd == 2) && (rdev->pm.dpm.hd == 0))
-@@ -993,6 +995,7 @@ void radeon_dpm_enable_uvd(struct radeon_device *rdev, bool enable)
- 			else if ((rdev->pm.dpm.sd == 0) && (rdev->pm.dpm.hd == 2))
- 				dpm_state = POWER_STATE_TYPE_INTERNAL_UVD_HD2;
- 			else
-+#endif
- 				dpm_state = POWER_STATE_TYPE_INTERNAL_UVD;
- 			rdev->pm.dpm.state = dpm_state;
- 			mutex_unlock(&rdev->pm.mutex);
-diff --git a/drivers/gpu/drm/radeon/radeon_uvd.c b/drivers/gpu/drm/radeon/radeon_uvd.c
-index 1b65ae2433cd..a4ad270e8261 100644
---- a/drivers/gpu/drm/radeon/radeon_uvd.c
-+++ b/drivers/gpu/drm/radeon/radeon_uvd.c
-@@ -812,7 +812,8 @@ void radeon_uvd_note_usage(struct radeon_device *rdev)
- 		    (rdev->pm.dpm.hd != hd)) {
- 			rdev->pm.dpm.sd = sd;
- 			rdev->pm.dpm.hd = hd;
--			streams_changed = true;
-+			/* disable this for now */
-+			/*streams_changed = true;*/
- 		}
- 	}
- 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index da52279de939..a5c7927c9bd2 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -842,7 +842,17 @@ struct hid_report *hid_validate_values(struct hid_device *hid,
- 	 * ->numbered being checked, which may not always be the case when
- 	 * drivers go to access report values.
- 	 */
--	report = hid->report_enum[type].report_id_hash[id];
-+	if (id == 0) {
-+		/*
-+		 * Validating on id 0 means we should examine the first
-+		 * report in the list.
-+		 */
-+		report = list_entry(
-+				hid->report_enum[type].report_list.next,
-+				struct hid_report, list);
-+	} else {
-+		report = hid->report_enum[type].report_id_hash[id];
-+	}
- 	if (!report) {
- 		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
- 		return NULL;
-diff --git a/drivers/infiniband/ulp/iser/iser_initiator.c b/drivers/infiniband/ulp/iser/iser_initiator.c
-index 2e2d903db838..8d44a4060634 100644
---- a/drivers/infiniband/ulp/iser/iser_initiator.c
-+++ b/drivers/infiniband/ulp/iser/iser_initiator.c
-@@ -41,11 +41,11 @@
- #include "iscsi_iser.h"
- 
- /* Register user buffer memory and initialize passive rdma
-- *  dto descriptor. Total data size is stored in
-- *  iser_task->data[ISER_DIR_IN].data_len
-+ *  dto descriptor. Data size is stored in
-+ *  task->data[ISER_DIR_IN].data_len, Protection size
-+ *  os stored in task->prot[ISER_DIR_IN].data_len
-  */
--static int iser_prepare_read_cmd(struct iscsi_task *task,
--				 unsigned int edtl)
-+static int iser_prepare_read_cmd(struct iscsi_task *task)
- 
- {
- 	struct iscsi_iser_task *iser_task = task->dd_data;
-@@ -73,14 +73,6 @@ static int iser_prepare_read_cmd(struct iscsi_task *task,
- 			return err;
- 	}
- 
--	if (edtl > iser_task->data[ISER_DIR_IN].data_len) {
--		iser_err("Total data length: %ld, less than EDTL: "
--			 "%d, in READ cmd BHS itt: %d, conn: 0x%p\n",
--			 iser_task->data[ISER_DIR_IN].data_len, edtl,
--			 task->itt, iser_task->ib_conn);
--		return -EINVAL;
--	}
--
- 	err = device->iser_reg_rdma_mem(iser_task, ISER_DIR_IN);
- 	if (err) {
- 		iser_err("Failed to set up Data-IN RDMA\n");
-@@ -100,8 +92,9 @@ static int iser_prepare_read_cmd(struct iscsi_task *task,
- }
- 
- /* Register user buffer memory and initialize passive rdma
-- *  dto descriptor. Total data size is stored in
-- *  task->data[ISER_DIR_OUT].data_len
-+ *  dto descriptor. Data size is stored in
-+ *  task->data[ISER_DIR_OUT].data_len, Protection size
-+ *  is stored at task->prot[ISER_DIR_OUT].data_len
-  */
- static int
- iser_prepare_write_cmd(struct iscsi_task *task,
-@@ -135,14 +128,6 @@ iser_prepare_write_cmd(struct iscsi_task *task,
- 			return err;
- 	}
- 
--	if (edtl > iser_task->data[ISER_DIR_OUT].data_len) {
--		iser_err("Total data length: %ld, less than EDTL: %d, "
--			 "in WRITE cmd BHS itt: %d, conn: 0x%p\n",
--			 iser_task->data[ISER_DIR_OUT].data_len,
--			 edtl, task->itt, task->conn);
--		return -EINVAL;
--	}
--
- 	err = device->iser_reg_rdma_mem(iser_task, ISER_DIR_OUT);
- 	if (err != 0) {
- 		iser_err("Failed to register write cmd RDMA mem\n");
-@@ -417,11 +402,12 @@ int iser_send_command(struct iscsi_conn *conn,
- 	if (scsi_prot_sg_count(sc)) {
- 		prot_buf->buf  = scsi_prot_sglist(sc);
- 		prot_buf->size = scsi_prot_sg_count(sc);
--		prot_buf->data_len = sc->prot_sdb->length;
-+		prot_buf->data_len = data_buf->data_len >>
-+				     ilog2(sc->device->sector_size) * 8;
- 	}
- 
- 	if (hdr->flags & ISCSI_FLAG_CMD_READ) {
--		err = iser_prepare_read_cmd(task, edtl);
-+		err = iser_prepare_read_cmd(task);
- 		if (err)
- 			goto send_command_error;
- 	}
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index b9d647468b99..d4c7928a0f36 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -663,8 +663,9 @@ isert_connect_request(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
- 
- 	pi_support = np->tpg_np->tpg->tpg_attrib.t10_pi;
- 	if (pi_support && !device->pi_capable) {
--		pr_err("Protection information requested but not supported\n");
--		ret = -EINVAL;
-+		pr_err("Protection information requested but not supported, "
-+		       "rejecting connect request\n");
-+		ret = rdma_reject(cma_id, NULL, 0);
- 		goto out_mr;
- 	}
- 
-@@ -787,14 +788,12 @@ isert_disconnect_work(struct work_struct *work)
- 		isert_put_conn(isert_conn);
- 		return;
- 	}
--	if (!isert_conn->logout_posted) {
--		pr_debug("Calling rdma_disconnect for !logout_posted from"
--			 " isert_disconnect_work\n");
-+
-+	if (isert_conn->disconnect) {
-+		/* Send DREQ/DREP towards our initiator */
- 		rdma_disconnect(isert_conn->conn_cm_id);
--		mutex_unlock(&isert_conn->conn_mutex);
--		iscsit_cause_connection_reinstatement(isert_conn->conn, 0);
--		goto wake_up;
- 	}
-+
- 	mutex_unlock(&isert_conn->conn_mutex);
- 
- wake_up:
-@@ -803,10 +802,11 @@ wake_up:
- }
- 
- static void
--isert_disconnected_handler(struct rdma_cm_id *cma_id)
-+isert_disconnected_handler(struct rdma_cm_id *cma_id, bool disconnect)
- {
- 	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
- 
-+	isert_conn->disconnect = disconnect;
- 	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
- 	schedule_work(&isert_conn->conn_logout_work);
- }
-@@ -815,29 +815,28 @@ static int
- isert_cma_handler(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
- {
- 	int ret = 0;
-+	bool disconnect = false;
- 
- 	pr_debug("isert_cma_handler: event %d status %d conn %p id %p\n",
- 		 event->event, event->status, cma_id->context, cma_id);
- 
- 	switch (event->event) {
- 	case RDMA_CM_EVENT_CONNECT_REQUEST:
--		pr_debug("RDMA_CM_EVENT_CONNECT_REQUEST: >>>>>>>>>>>>>>>\n");
- 		ret = isert_connect_request(cma_id, event);
- 		break;
- 	case RDMA_CM_EVENT_ESTABLISHED:
--		pr_debug("RDMA_CM_EVENT_ESTABLISHED >>>>>>>>>>>>>>\n");
- 		isert_connected_handler(cma_id);
- 		break;
--	case RDMA_CM_EVENT_DISCONNECTED:
--		pr_debug("RDMA_CM_EVENT_DISCONNECTED: >>>>>>>>>>>>>>\n");
--		isert_disconnected_handler(cma_id);
--		break;
--	case RDMA_CM_EVENT_DEVICE_REMOVAL:
--	case RDMA_CM_EVENT_ADDR_CHANGE:
-+	case RDMA_CM_EVENT_ADDR_CHANGE:    /* FALLTHRU */
-+	case RDMA_CM_EVENT_DISCONNECTED:   /* FALLTHRU */
-+	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
-+		disconnect = true;
-+	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
-+		isert_disconnected_handler(cma_id, disconnect);
- 		break;
- 	case RDMA_CM_EVENT_CONNECT_ERROR:
- 	default:
--		pr_err("Unknown RDMA CMA event: %d\n", event->event);
-+		pr_err("Unhandled RDMA CMA event: %d\n", event->event);
- 		break;
- 	}
- 
-@@ -1054,7 +1053,9 @@ isert_put_login_tx(struct iscsi_conn *conn, struct iscsi_login *login,
- 	}
- 	if (!login->login_failed) {
- 		if (login->login_complete) {
--			if (isert_conn->conn_device->use_fastreg) {
-+			if (!conn->sess->sess_ops->SessionType &&
-+			    isert_conn->conn_device->use_fastreg) {
-+				/* Normal Session and fastreg is used */
- 				u8 pi_support = login->np->tpg_np->tpg->tpg_attrib.t10_pi;
- 
- 				ret = isert_conn_create_fastreg_pool(isert_conn,
-@@ -1824,11 +1825,8 @@ isert_do_control_comp(struct work_struct *work)
- 		break;
- 	case ISTATE_SEND_LOGOUTRSP:
- 		pr_debug("Calling iscsit_logout_post_handler >>>>>>>>>>>>>>\n");
--		/*
--		 * Call atomic_dec(&isert_conn->post_send_buf_count)
--		 * from isert_wait_conn()
--		 */
--		isert_conn->logout_posted = true;
-+
-+		atomic_dec(&isert_conn->post_send_buf_count);
- 		iscsit_logout_post_handler(cmd, cmd->conn);
- 		break;
- 	case ISTATE_SEND_TEXTRSP:
-@@ -2034,6 +2032,8 @@ isert_cq_rx_comp_err(struct isert_conn *isert_conn)
- 	isert_conn->state = ISER_CONN_DOWN;
- 	mutex_unlock(&isert_conn->conn_mutex);
- 
-+	iscsit_cause_connection_reinstatement(isert_conn->conn, 0);
-+
- 	complete(&isert_conn->conn_wait_comp_err);
- }
- 
-@@ -2320,7 +2320,7 @@ isert_put_text_rsp(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
- 	int rc;
- 
- 	isert_create_send_desc(isert_conn, isert_cmd, &isert_cmd->tx_desc);
--	rc = iscsit_build_text_rsp(cmd, conn, hdr);
-+	rc = iscsit_build_text_rsp(cmd, conn, hdr, ISCSI_INFINIBAND);
- 	if (rc < 0)
- 		return rc;
- 
-@@ -3156,9 +3156,14 @@ accept_wait:
- 		return -ENODEV;
- 
- 	spin_lock_bh(&np->np_thread_lock);
--	if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
-+	if (np->np_thread_state >= ISCSI_NP_THREAD_RESET) {
- 		spin_unlock_bh(&np->np_thread_lock);
--		pr_debug("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
-+		pr_debug("np_thread_state %d for isert_accept_np\n",
-+			 np->np_thread_state);
-+		/**
-+		 * No point in stalling here when np_thread
-+		 * is in state RESET/SHUTDOWN/EXIT - bail
-+		 **/
- 		return -ENODEV;
- 	}
- 	spin_unlock_bh(&np->np_thread_lock);
-@@ -3208,15 +3213,9 @@ static void isert_wait_conn(struct iscsi_conn *conn)
- 	struct isert_conn *isert_conn = conn->context;
- 
- 	pr_debug("isert_wait_conn: Starting \n");
--	/*
--	 * Decrement post_send_buf_count for special case when called
--	 * from isert_do_control_comp() -> iscsit_logout_post_handler()
--	 */
--	mutex_lock(&isert_conn->conn_mutex);
--	if (isert_conn->logout_posted)
--		atomic_dec(&isert_conn->post_send_buf_count);
- 
--	if (isert_conn->conn_cm_id && isert_conn->state != ISER_CONN_DOWN) {
-+	mutex_lock(&isert_conn->conn_mutex);
-+	if (isert_conn->conn_cm_id) {
- 		pr_debug("Calling rdma_disconnect from isert_wait_conn\n");
- 		rdma_disconnect(isert_conn->conn_cm_id);
- 	}
-@@ -3293,6 +3292,7 @@ destroy_rx_wq:
- 
- static void __exit isert_exit(void)
- {
-+	flush_scheduled_work();
- 	destroy_workqueue(isert_comp_wq);
- 	destroy_workqueue(isert_rx_wq);
- 	iscsit_unregister_transport(&iser_target_transport);
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.h b/drivers/infiniband/ulp/isert/ib_isert.h
-index da6612e68000..04f51f7bf614 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -116,7 +116,6 @@ struct isert_device;
- 
- struct isert_conn {
- 	enum iser_conn_state	state;
--	bool			logout_posted;
- 	int			post_recv_buf_count;
- 	atomic_t		post_send_buf_count;
- 	u32			responder_resources;
-@@ -151,6 +150,7 @@ struct isert_conn {
- #define ISERT_COMP_BATCH_COUNT	8
- 	int			conn_comp_batch;
- 	struct llist_head	conn_comp_llist;
-+	bool                    disconnect;
- };
- 
- #define ISERT_MAX_CQ 64
-diff --git a/drivers/media/pci/ivtv/ivtv-alsa-pcm.c b/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
-index e1863dbf4edc..7a9b98bc208b 100644
---- a/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
-+++ b/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
-@@ -159,6 +159,12 @@ static int snd_ivtv_pcm_capture_open(struct snd_pcm_substream *substream)
- 
- 	/* Instruct the CX2341[56] to start sending packets */
- 	snd_ivtv_lock(itvsc);
-+
-+	if (ivtv_init_on_first_open(itv)) {
-+		snd_ivtv_unlock(itvsc);
-+		return -ENXIO;
-+	}
-+
- 	s = &itv->streams[IVTV_ENC_STREAM_TYPE_PCM];
- 
- 	v4l2_fh_init(&item.fh, s->vdev);
-diff --git a/drivers/media/pci/saa7134/saa7134-video.c b/drivers/media/pci/saa7134/saa7134-video.c
-index eb472b5b26a0..40396e8b16a8 100644
---- a/drivers/media/pci/saa7134/saa7134-video.c
-+++ b/drivers/media/pci/saa7134/saa7134-video.c
-@@ -1243,6 +1243,7 @@ static int video_release(struct file *file)
- 		videobuf_streamoff(&dev->cap);
- 		res_free(dev, fh, RESOURCE_VIDEO);
- 		videobuf_mmap_free(&dev->cap);
-+		INIT_LIST_HEAD(&dev->cap.stream);
- 	}
- 	if (dev->cap.read_buf) {
- 		buffer_release(&dev->cap, dev->cap.read_buf);
-@@ -1254,6 +1255,7 @@ static int video_release(struct file *file)
- 		videobuf_stop(&dev->vbi);
- 		res_free(dev, fh, RESOURCE_VBI);
- 		videobuf_mmap_free(&dev->vbi);
-+		INIT_LIST_HEAD(&dev->vbi.stream);
- 	}
- 
- 	/* ts-capture will not work in planar mode, so turn it off Hac: 04.05*/
-@@ -1987,17 +1989,12 @@ int saa7134_streamoff(struct file *file, void *priv,
- 					enum v4l2_buf_type type)
- {
- 	struct saa7134_dev *dev = video_drvdata(file);
--	int err;
- 	int res = saa7134_resource(file);
- 
- 	if (res != RESOURCE_EMPRESS)
- 		pm_qos_remove_request(&dev->qos_request);
- 
--	err = videobuf_streamoff(saa7134_queue(file));
--	if (err < 0)
--		return err;
--	res_free(dev, priv, res);
--	return 0;
-+	return videobuf_streamoff(saa7134_queue(file));
- }
- EXPORT_SYMBOL_GPL(saa7134_streamoff);
- 
-diff --git a/drivers/media/platform/exynos4-is/fimc-is.c b/drivers/media/platform/exynos4-is/fimc-is.c
-index 128b73b6cce2..5476dce3ad29 100644
---- a/drivers/media/platform/exynos4-is/fimc-is.c
-+++ b/drivers/media/platform/exynos4-is/fimc-is.c
-@@ -367,6 +367,9 @@ static void fimc_is_free_cpu_memory(struct fimc_is *is)
- {
- 	struct device *dev = &is->pdev->dev;
- 
-+	if (is->memory.vaddr == NULL)
-+		return;
-+
- 	dma_free_coherent(dev, is->memory.size, is->memory.vaddr,
- 			  is->memory.paddr);
- }
-diff --git a/drivers/media/platform/exynos4-is/media-dev.c b/drivers/media/platform/exynos4-is/media-dev.c
-index e62211a80f0e..6e2d6042ade6 100644
---- a/drivers/media/platform/exynos4-is/media-dev.c
-+++ b/drivers/media/platform/exynos4-is/media-dev.c
-@@ -1520,7 +1520,7 @@ err:
- }
- #else
- #define fimc_md_register_clk_provider(fmd) (0)
--#define fimc_md_unregister_clk_provider(fmd) (0)
-+#define fimc_md_unregister_clk_provider(fmd)
- #endif
- 
- static int subdev_notifier_bound(struct v4l2_async_notifier *notifier,
-diff --git a/drivers/media/platform/exynos4-is/media-dev.h b/drivers/media/platform/exynos4-is/media-dev.h
-index ee1e2519f728..58c49456b13f 100644
---- a/drivers/media/platform/exynos4-is/media-dev.h
-+++ b/drivers/media/platform/exynos4-is/media-dev.h
-@@ -94,7 +94,9 @@ struct fimc_sensor_info {
- };
- 
- struct cam_clk {
-+#ifdef CONFIG_COMMON_CLK
- 	struct clk_hw hw;
-+#endif
- 	struct fimc_md *fmd;
- };
- #define to_cam_clk(_hw) container_of(_hw, struct cam_clk, hw)
-@@ -142,7 +144,9 @@ struct fimc_md {
- 
- 	struct cam_clk_provider {
- 		struct clk *clks[FIMC_MAX_CAMCLKS];
-+#ifdef CONFIG_COMMON_CLK
- 		struct clk_onecell_data clk_data;
-+#endif
- 		struct device_node *of_node;
- 		struct cam_clk camclk[FIMC_MAX_CAMCLKS];
- 		int num_clocks;
-diff --git a/drivers/media/usb/stk1160/stk1160-core.c b/drivers/media/usb/stk1160/stk1160-core.c
-index 34a26e0cfe77..03504dcf3c52 100644
---- a/drivers/media/usb/stk1160/stk1160-core.c
-+++ b/drivers/media/usb/stk1160/stk1160-core.c
-@@ -67,17 +67,25 @@ int stk1160_read_reg(struct stk1160 *dev, u16 reg, u8 *value)
- {
- 	int ret;
- 	int pipe = usb_rcvctrlpipe(dev->udev, 0);
-+	u8 *buf;
- 
- 	*value = 0;
-+
-+	buf = kmalloc(sizeof(u8), GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
- 	ret = usb_control_msg(dev->udev, pipe, 0x00,
- 			USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
--			0x00, reg, value, sizeof(u8), HZ);
-+			0x00, reg, buf, sizeof(u8), HZ);
- 	if (ret < 0) {
- 		stk1160_err("read failed on reg 0x%x (%d)\n",
- 			reg, ret);
-+		kfree(buf);
- 		return ret;
- 	}
- 
-+	*value = *buf;
-+	kfree(buf);
- 	return 0;
- }
- 
-diff --git a/drivers/media/usb/stk1160/stk1160.h b/drivers/media/usb/stk1160/stk1160.h
-index 05b05b160e1e..abdea484c998 100644
---- a/drivers/media/usb/stk1160/stk1160.h
-+++ b/drivers/media/usb/stk1160/stk1160.h
-@@ -143,7 +143,6 @@ struct stk1160 {
- 	int num_alt;
- 
- 	struct stk1160_isoc_ctl isoc_ctl;
--	char urb_buf[255];	 /* urb control msg buffer */
- 
- 	/* frame properties */
- 	int width;		  /* current frame width */
-diff --git a/drivers/media/usb/uvc/uvc_video.c b/drivers/media/usb/uvc/uvc_video.c
-index 8d52baf5952b..8496811fb7fa 100644
---- a/drivers/media/usb/uvc/uvc_video.c
-+++ b/drivers/media/usb/uvc/uvc_video.c
-@@ -361,6 +361,14 @@ static int uvc_commit_video(struct uvc_streaming *stream,
-  * Clocks and timestamps
-  */
- 
-+static inline void uvc_video_get_ts(struct timespec *ts)
-+{
-+	if (uvc_clock_param == CLOCK_MONOTONIC)
-+		ktime_get_ts(ts);
-+	else
-+		ktime_get_real_ts(ts);
-+}
-+
- static void
- uvc_video_clock_decode(struct uvc_streaming *stream, struct uvc_buffer *buf,
- 		       const __u8 *data, int len)
-@@ -420,7 +428,7 @@ uvc_video_clock_decode(struct uvc_streaming *stream, struct uvc_buffer *buf,
- 	stream->clock.last_sof = dev_sof;
- 
- 	host_sof = usb_get_current_frame_number(stream->dev->udev);
--	ktime_get_ts(&ts);
-+	uvc_video_get_ts(&ts);
- 
- 	/* The UVC specification allows device implementations that can't obtain
- 	 * the USB frame number to keep their own frame counters as long as they
-@@ -1011,10 +1019,7 @@ static int uvc_video_decode_start(struct uvc_streaming *stream,
- 			return -ENODATA;
- 		}
- 
--		if (uvc_clock_param == CLOCK_MONOTONIC)
--			ktime_get_ts(&ts);
--		else
--			ktime_get_real_ts(&ts);
-+		uvc_video_get_ts(&ts);
- 
- 		buf->buf.v4l2_buf.sequence = stream->sequence;
- 		buf->buf.v4l2_buf.timestamp.tv_sec = ts.tv_sec;
-diff --git a/drivers/pci/hotplug/acpiphp.h b/drivers/pci/hotplug/acpiphp.h
-index 2b859249303b..b0e61bf261a7 100644
---- a/drivers/pci/hotplug/acpiphp.h
-+++ b/drivers/pci/hotplug/acpiphp.h
-@@ -142,6 +142,16 @@ static inline acpi_handle func_to_handle(struct acpiphp_func *func)
- 	return func_to_acpi_device(func)->handle;
- }
- 
-+struct acpiphp_root_context {
-+	struct acpi_hotplug_context hp;
-+	struct acpiphp_bridge *root_bridge;
-+};
-+
-+static inline struct acpiphp_root_context *to_acpiphp_root_context(struct acpi_hotplug_context *hp)
-+{
-+	return container_of(hp, struct acpiphp_root_context, hp);
-+}
-+
- /*
-  * struct acpiphp_attention_info - device specific attention registration
-  *
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index bccc27ee1030..af53580cf4f5 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -374,17 +374,13 @@ static acpi_status acpiphp_add_context(acpi_handle handle, u32 lvl, void *data,
- 
- static struct acpiphp_bridge *acpiphp_dev_to_bridge(struct acpi_device *adev)
- {
--	struct acpiphp_context *context;
- 	struct acpiphp_bridge *bridge = NULL;
- 
- 	acpi_lock_hp_context();
--	context = acpiphp_get_context(adev);
--	if (context) {
--		bridge = context->bridge;
-+	if (adev->hp) {
-+		bridge = to_acpiphp_root_context(adev->hp)->root_bridge;
- 		if (bridge)
- 			get_bridge(bridge);
--
--		acpiphp_put_context(context);
- 	}
- 	acpi_unlock_hp_context();
- 	return bridge;
-@@ -883,7 +879,17 @@ void acpiphp_enumerate_slots(struct pci_bus *bus)
- 	 */
- 	get_device(&bus->dev);
- 
--	if (!pci_is_root_bus(bridge->pci_bus)) {
-+	acpi_lock_hp_context();
-+	if (pci_is_root_bus(bridge->pci_bus)) {
-+		struct acpiphp_root_context *root_context;
-+
-+		root_context = kzalloc(sizeof(*root_context), GFP_KERNEL);
-+		if (!root_context)
-+			goto err;
-+
-+		root_context->root_bridge = bridge;
-+		acpi_set_hp_context(adev, &root_context->hp, NULL, NULL, NULL);
-+	} else {
- 		struct acpiphp_context *context;
- 
- 		/*
-@@ -892,21 +898,16 @@ void acpiphp_enumerate_slots(struct pci_bus *bus)
- 		 * parent is going to be handled by pciehp, in which case this
- 		 * bridge is not interesting to us either.
- 		 */
--		acpi_lock_hp_context();
- 		context = acpiphp_get_context(adev);
--		if (!context) {
--			acpi_unlock_hp_context();
--			put_device(&bus->dev);
--			pci_dev_put(bridge->pci_dev);
--			kfree(bridge);
--			return;
--		}
-+		if (!context)
-+			goto err;
-+
- 		bridge->context = context;
- 		context->bridge = bridge;
- 		/* Get a reference to the parent bridge. */
- 		get_bridge(context->func.parent);
--		acpi_unlock_hp_context();
- 	}
-+	acpi_unlock_hp_context();
- 
- 	/* Must be added to the list prior to calling acpiphp_add_context(). */
- 	mutex_lock(&bridge_mutex);
-@@ -921,6 +922,30 @@ void acpiphp_enumerate_slots(struct pci_bus *bus)
- 		cleanup_bridge(bridge);
- 		put_bridge(bridge);
- 	}
-+	return;
-+
-+ err:
-+	acpi_unlock_hp_context();
-+	put_device(&bus->dev);
-+	pci_dev_put(bridge->pci_dev);
-+	kfree(bridge);
-+}
-+
-+void acpiphp_drop_bridge(struct acpiphp_bridge *bridge)
-+{
-+	if (pci_is_root_bus(bridge->pci_bus)) {
-+		struct acpiphp_root_context *root_context;
-+		struct acpi_device *adev;
-+
-+		acpi_lock_hp_context();
-+		adev = ACPI_COMPANION(bridge->pci_bus->bridge);
-+		root_context = to_acpiphp_root_context(adev->hp);
-+		adev->hp = NULL;
-+		acpi_unlock_hp_context();
-+		kfree(root_context);
-+	}
-+	cleanup_bridge(bridge);
-+	put_bridge(bridge);
- }
- 
- /**
-@@ -938,8 +963,7 @@ void acpiphp_remove_slots(struct pci_bus *bus)
- 	list_for_each_entry(bridge, &bridge_list, list)
- 		if (bridge->pci_bus == bus) {
- 			mutex_unlock(&bridge_mutex);
--			cleanup_bridge(bridge);
--			put_bridge(bridge);
-+			acpiphp_drop_bridge(bridge);
- 			return;
- 		}
- 
-diff --git a/drivers/phy/phy-exynos-mipi-video.c b/drivers/phy/phy-exynos-mipi-video.c
-index 7f139326a642..ff026689358c 100644
---- a/drivers/phy/phy-exynos-mipi-video.c
-+++ b/drivers/phy/phy-exynos-mipi-video.c
-@@ -101,7 +101,7 @@ static struct phy *exynos_mipi_video_phy_xlate(struct device *dev,
- {
- 	struct exynos_mipi_video_phy *state = dev_get_drvdata(dev);
- 
--	if (WARN_ON(args->args[0] > EXYNOS_MIPI_PHYS_NUM))
-+	if (WARN_ON(args->args[0] >= EXYNOS_MIPI_PHYS_NUM))
- 		return ERR_PTR(-ENODEV);
- 
- 	return state->phys[args->args[0]].phy;
-diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
-index f19a30f0fb42..fdd68dd69049 100644
---- a/drivers/regulator/s2mpa01.c
-+++ b/drivers/regulator/s2mpa01.c
-@@ -116,7 +116,6 @@ static int s2mpa01_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
- 			ramp_delay = s2mpa01->ramp_delay16;
- 
- 		ramp_shift = S2MPA01_BUCK16_RAMP_SHIFT;
--		ramp_reg = S2MPA01_REG_RAMP1;
- 		break;
- 	case S2MPA01_BUCK2:
- 		enable_shift = S2MPA01_BUCK2_RAMP_EN_SHIFT;
-@@ -192,11 +191,15 @@ static int s2mpa01_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
- 	if (!ramp_enable)
- 		goto ramp_disable;
- 
--	ret = regmap_update_bits(rdev->regmap, S2MPA01_REG_RAMP1,
--				 1 << enable_shift, 1 << enable_shift);
--	if (ret) {
--		dev_err(&rdev->dev, "failed to enable ramp rate\n");
--		return ret;
-+	/* Ramp delay can be enabled/disabled only for buck[1234] */
-+	if (rdev_get_id(rdev) >= S2MPA01_BUCK1 &&
-+			rdev_get_id(rdev) <= S2MPA01_BUCK4) {
-+		ret = regmap_update_bits(rdev->regmap, S2MPA01_REG_RAMP1,
-+					 1 << enable_shift, 1 << enable_shift);
-+		if (ret) {
-+			dev_err(&rdev->dev, "failed to enable ramp rate\n");
-+			return ret;
-+		}
- 	}
- 
- 	ramp_val = get_ramp_delay(ramp_delay);
-diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index e713c162fbd4..aaca37e1424f 100644
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -202,11 +202,16 @@ static int s2mps11_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
- 	if (!ramp_enable)
- 		goto ramp_disable;
- 
--	ret = regmap_update_bits(rdev->regmap, S2MPS11_REG_RAMP,
--				 1 << enable_shift, 1 << enable_shift);
--	if (ret) {
--		dev_err(&rdev->dev, "failed to enable ramp rate\n");
--		return ret;
-+	/* Ramp delay can be enabled/disabled only for buck[2346] */
-+	if ((rdev_get_id(rdev) >= S2MPS11_BUCK2 &&
-+			rdev_get_id(rdev) <= S2MPS11_BUCK4) ||
-+			rdev_get_id(rdev) == S2MPS11_BUCK6)  {
-+		ret = regmap_update_bits(rdev->regmap, S2MPS11_REG_RAMP,
-+					 1 << enable_shift, 1 << enable_shift);
-+		if (ret) {
-+			dev_err(&rdev->dev, "failed to enable ramp rate\n");
-+			return ret;
-+		}
- 	}
- 
- 	ramp_val = get_ramp_delay(ramp_delay);
-diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
-index 26dc005bb0f0..3f462349b16c 100644
---- a/drivers/scsi/libiscsi.c
-+++ b/drivers/scsi/libiscsi.c
-@@ -338,7 +338,7 @@ static int iscsi_prep_scsi_cmd_pdu(struct iscsi_task *task)
- 	struct iscsi_session *session = conn->session;
- 	struct scsi_cmnd *sc = task->sc;
- 	struct iscsi_scsi_req *hdr;
--	unsigned hdrlength, cmd_len;
-+	unsigned hdrlength, cmd_len, transfer_length;
- 	itt_t itt;
- 	int rc;
- 
-@@ -391,11 +391,11 @@ static int iscsi_prep_scsi_cmd_pdu(struct iscsi_task *task)
- 	if (scsi_get_prot_op(sc) != SCSI_PROT_NORMAL)
- 		task->protected = true;
- 
-+	transfer_length = scsi_transfer_length(sc);
-+	hdr->data_length = cpu_to_be32(transfer_length);
- 	if (sc->sc_data_direction == DMA_TO_DEVICE) {
--		unsigned out_len = scsi_out(sc)->length;
- 		struct iscsi_r2t_info *r2t = &task->unsol_r2t;
- 
--		hdr->data_length = cpu_to_be32(out_len);
- 		hdr->flags |= ISCSI_FLAG_CMD_WRITE;
- 		/*
- 		 * Write counters:
-@@ -414,18 +414,19 @@ static int iscsi_prep_scsi_cmd_pdu(struct iscsi_task *task)
- 		memset(r2t, 0, sizeof(*r2t));
- 
- 		if (session->imm_data_en) {
--			if (out_len >= session->first_burst)
-+			if (transfer_length >= session->first_burst)
- 				task->imm_count = min(session->first_burst,
- 							conn->max_xmit_dlength);
- 			else
--				task->imm_count = min(out_len,
--							conn->max_xmit_dlength);
-+				task->imm_count = min(transfer_length,
-+						      conn->max_xmit_dlength);
- 			hton24(hdr->dlength, task->imm_count);
- 		} else
- 			zero_data(hdr->dlength);
- 
- 		if (!session->initial_r2t_en) {
--			r2t->data_length = min(session->first_burst, out_len) -
-+			r2t->data_length = min(session->first_burst,
-+					       transfer_length) -
- 					       task->imm_count;
- 			r2t->data_offset = task->imm_count;
- 			r2t->ttt = cpu_to_be32(ISCSI_RESERVED_TAG);
-@@ -438,7 +439,6 @@ static int iscsi_prep_scsi_cmd_pdu(struct iscsi_task *task)
- 	} else {
- 		hdr->flags |= ISCSI_FLAG_CMD_FINAL;
- 		zero_data(hdr->dlength);
--		hdr->data_length = cpu_to_be32(scsi_in(sc)->length);
- 
- 		if (sc->sc_data_direction == DMA_FROM_DEVICE)
- 			hdr->flags |= ISCSI_FLAG_CMD_READ;
-@@ -466,7 +466,7 @@ static int iscsi_prep_scsi_cmd_pdu(struct iscsi_task *task)
- 			  scsi_bidi_cmnd(sc) ? "bidirectional" :
- 			  sc->sc_data_direction == DMA_TO_DEVICE ?
- 			  "write" : "read", conn->id, sc, sc->cmnd[0],
--			  task->itt, scsi_bufflen(sc),
-+			  task->itt, transfer_length,
- 			  scsi_bidi_cmnd(sc) ? scsi_in(sc)->length : 0,
- 			  session->cmdsn,
- 			  session->max_cmdsn - session->exp_cmdsn + 1);
-diff --git a/drivers/staging/imx-drm/imx-hdmi.c b/drivers/staging/imx-drm/imx-hdmi.c
-index d47dedd2cdb4..6f5efcc89880 100644
---- a/drivers/staging/imx-drm/imx-hdmi.c
-+++ b/drivers/staging/imx-drm/imx-hdmi.c
-@@ -120,8 +120,6 @@ struct imx_hdmi {
- 	struct clk *isfr_clk;
- 	struct clk *iahb_clk;
- 
--	enum drm_connector_status connector_status;
--
- 	struct hdmi_data_info hdmi_data;
- 	int vic;
- 
-@@ -1382,7 +1380,9 @@ static enum drm_connector_status imx_hdmi_connector_detect(struct drm_connector
- {
- 	struct imx_hdmi *hdmi = container_of(connector, struct imx_hdmi,
- 					     connector);
--	return hdmi->connector_status;
-+
-+	return hdmi_readb(hdmi, HDMI_PHY_STAT0) & HDMI_PHY_HPD ?
-+		connector_status_connected : connector_status_disconnected;
- }
- 
- static int imx_hdmi_connector_get_modes(struct drm_connector *connector)
-@@ -1524,7 +1524,6 @@ static irqreturn_t imx_hdmi_irq(int irq, void *dev_id)
- 
- 			hdmi_modb(hdmi, 0, HDMI_PHY_HPD, HDMI_PHY_POL0);
- 
--			hdmi->connector_status = connector_status_connected;
- 			imx_hdmi_poweron(hdmi);
- 		} else {
- 			dev_dbg(hdmi->dev, "EVENT=plugout\n");
-@@ -1532,7 +1531,6 @@ static irqreturn_t imx_hdmi_irq(int irq, void *dev_id)
- 			hdmi_modb(hdmi, HDMI_PHY_HPD, HDMI_PHY_HPD,
- 				HDMI_PHY_POL0);
- 
--			hdmi->connector_status = connector_status_disconnected;
- 			imx_hdmi_poweroff(hdmi);
- 		}
- 		drm_helper_hpd_irq_event(hdmi->connector.dev);
-@@ -1606,7 +1604,6 @@ static int imx_hdmi_bind(struct device *dev, struct device *master, void *data)
- 		return -ENOMEM;
- 
- 	hdmi->dev = dev;
--	hdmi->connector_status = connector_status_disconnected;
- 	hdmi->sample_rate = 48000;
- 	hdmi->ratio = 100;
- 
-diff --git a/drivers/staging/media/bcm2048/radio-bcm2048.c b/drivers/staging/media/bcm2048/radio-bcm2048.c
-index b2cd3a85166d..bbf236e842a9 100644
---- a/drivers/staging/media/bcm2048/radio-bcm2048.c
-+++ b/drivers/staging/media/bcm2048/radio-bcm2048.c
-@@ -737,7 +737,7 @@ static int bcm2048_set_region(struct bcm2048_device *bdev, u8 region)
- 	int err;
- 	u32 new_frequency = 0;
- 
--	if (region > ARRAY_SIZE(region_configs))
-+	if (region >= ARRAY_SIZE(region_configs))
- 		return -EINVAL;
- 
- 	mutex_lock(&bdev->mutex);
-diff --git a/drivers/staging/mt29f_spinand/mt29f_spinand.c b/drivers/staging/mt29f_spinand/mt29f_spinand.c
-index 51dbc13e757f..5a40925680ac 100644
---- a/drivers/staging/mt29f_spinand/mt29f_spinand.c
-+++ b/drivers/staging/mt29f_spinand/mt29f_spinand.c
-@@ -924,6 +924,7 @@ static int spinand_remove(struct spi_device *spi)
- 
- static const struct of_device_id spinand_dt[] = {
- 	{ .compatible = "spinand,mt29f", },
-+	{}
- };
- 
- /*
-diff --git a/drivers/staging/rtl8188eu/core/rtw_wlan_util.c b/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
-index 3dd90599fd4b..6c9e9a16b2e9 100644
---- a/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
-@@ -1599,13 +1599,18 @@ int update_sta_support_rate(struct adapter *padapter, u8 *pvar_ie, uint var_ie_l
- 	pIE = (struct ndis_802_11_var_ie *)rtw_get_ie(pvar_ie, _SUPPORTEDRATES_IE_, &ie_len, var_ie_len);
- 	if (pIE == NULL)
- 		return _FAIL;
-+	if (ie_len > NDIS_802_11_LENGTH_RATES_EX)
-+		return _FAIL;
- 
- 	memcpy(pmlmeinfo->FW_sta_info[cam_idx].SupportedRates, pIE->data, ie_len);
- 	supportRateNum = ie_len;
- 
- 	pIE = (struct ndis_802_11_var_ie *)rtw_get_ie(pvar_ie, _EXT_SUPPORTEDRATES_IE_, &ie_len, var_ie_len);
--	if (pIE)
-+	if (pIE) {
-+		if (supportRateNum + ie_len > NDIS_802_11_LENGTH_RATES_EX)
-+			return _FAIL;
- 		memcpy((pmlmeinfo->FW_sta_info[cam_idx].SupportedRates + supportRateNum), pIE->data, ie_len);
-+	}
- 
- 	return _SUCCESS;
- }
-diff --git a/drivers/staging/tidspbridge/core/dsp-clock.c b/drivers/staging/tidspbridge/core/dsp-clock.c
-index 2f084e181d39..a1aca4416ca7 100644
---- a/drivers/staging/tidspbridge/core/dsp-clock.c
-+++ b/drivers/staging/tidspbridge/core/dsp-clock.c
-@@ -226,7 +226,7 @@ int dsp_clk_enable(enum dsp_clk_id clk_id)
- 	case GPT_CLK:
- 		status = omap_dm_timer_start(timer[clk_id - 1]);
- 		break;
--#ifdef CONFIG_OMAP_MCBSP
-+#ifdef CONFIG_SND_OMAP_SOC_MCBSP
- 	case MCBSP_CLK:
- 		omap_mcbsp_request(MCBSP_ID(clk_id));
- 		omap2_mcbsp_set_clks_src(MCBSP_ID(clk_id), MCBSP_CLKS_PAD_SRC);
-@@ -302,7 +302,7 @@ int dsp_clk_disable(enum dsp_clk_id clk_id)
- 	case GPT_CLK:
- 		status = omap_dm_timer_stop(timer[clk_id - 1]);
- 		break;
--#ifdef CONFIG_OMAP_MCBSP
-+#ifdef CONFIG_SND_OMAP_SOC_MCBSP
- 	case MCBSP_CLK:
- 		omap2_mcbsp_set_clks_src(MCBSP_ID(clk_id), MCBSP_CLKS_PRCM_SRC);
- 		omap_mcbsp_free(MCBSP_ID(clk_id));
-diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-index 9189bc0a87ae..ca2bc348ef5b 100644
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -3390,7 +3390,9 @@ static bool iscsit_check_inaddr_any(struct iscsi_np *np)
- 
- #define SENDTARGETS_BUF_LIMIT 32768U
- 
--static int iscsit_build_sendtargets_response(struct iscsi_cmd *cmd)
-+static int
-+iscsit_build_sendtargets_response(struct iscsi_cmd *cmd,
-+				  enum iscsit_transport_type network_transport)
- {
- 	char *payload = NULL;
- 	struct iscsi_conn *conn = cmd->conn;
-@@ -3467,6 +3469,9 @@ static int iscsit_build_sendtargets_response(struct iscsi_cmd *cmd)
- 				struct iscsi_np *np = tpg_np->tpg_np;
- 				bool inaddr_any = iscsit_check_inaddr_any(np);
- 
-+				if (np->np_network_transport != network_transport)
-+					continue;
-+
- 				if (!target_name_printed) {
- 					len = sprintf(buf, "TargetName=%s",
- 						      tiqn->tiqn);
-@@ -3520,11 +3525,12 @@ eob:
- 
- int
- iscsit_build_text_rsp(struct iscsi_cmd *cmd, struct iscsi_conn *conn,
--		      struct iscsi_text_rsp *hdr)
-+		      struct iscsi_text_rsp *hdr,
-+		      enum iscsit_transport_type network_transport)
- {
- 	int text_length, padding;
- 
--	text_length = iscsit_build_sendtargets_response(cmd);
-+	text_length = iscsit_build_sendtargets_response(cmd, network_transport);
- 	if (text_length < 0)
- 		return text_length;
- 
-@@ -3562,7 +3568,7 @@ static int iscsit_send_text_rsp(
- 	u32 tx_size = 0;
- 	int text_length, iov_count = 0, rc;
- 
--	rc = iscsit_build_text_rsp(cmd, conn, hdr);
-+	rc = iscsit_build_text_rsp(cmd, conn, hdr, ISCSI_TCP);
- 	if (rc < 0)
- 		return rc;
- 
-@@ -4234,8 +4240,6 @@ int iscsit_close_connection(
- 	if (conn->conn_transport->iscsit_wait_conn)
- 		conn->conn_transport->iscsit_wait_conn(conn);
- 
--	iscsit_free_queue_reqs_for_conn(conn);
--
- 	/*
- 	 * During Connection recovery drop unacknowledged out of order
- 	 * commands for this connection, and prepare the other commands
-@@ -4252,6 +4256,7 @@ int iscsit_close_connection(
- 		iscsit_clear_ooo_cmdsns_for_conn(conn);
- 		iscsit_release_commands_from_conn(conn);
- 	}
-+	iscsit_free_queue_reqs_for_conn(conn);
- 
- 	/*
- 	 * Handle decrementing session or connection usage count if
-diff --git a/drivers/target/loopback/tcm_loop.c b/drivers/target/loopback/tcm_loop.c
-index c886ad1c39fb..1f4c015e9078 100644
---- a/drivers/target/loopback/tcm_loop.c
-+++ b/drivers/target/loopback/tcm_loop.c
-@@ -179,7 +179,7 @@ static void tcm_loop_submission_work(struct work_struct *work)
- 	struct tcm_loop_hba *tl_hba;
- 	struct tcm_loop_tpg *tl_tpg;
- 	struct scatterlist *sgl_bidi = NULL;
--	u32 sgl_bidi_count = 0;
-+	u32 sgl_bidi_count = 0, transfer_length;
- 	int rc;
- 
- 	tl_hba = *(struct tcm_loop_hba **)shost_priv(sc->device->host);
-@@ -213,12 +213,21 @@ static void tcm_loop_submission_work(struct work_struct *work)
- 
- 	}
- 
--	if (!scsi_prot_sg_count(sc) && scsi_get_prot_op(sc) != SCSI_PROT_NORMAL)
-+	transfer_length = scsi_transfer_length(sc);
-+	if (!scsi_prot_sg_count(sc) &&
-+	    scsi_get_prot_op(sc) != SCSI_PROT_NORMAL) {
- 		se_cmd->prot_pto = true;
-+		/*
-+		 * loopback transport doesn't support
-+		 * WRITE_GENERATE, READ_STRIP protection
-+		 * information operations, go ahead unprotected.
-+		 */
-+		transfer_length = scsi_bufflen(sc);
-+	}
- 
- 	rc = target_submit_cmd_map_sgls(se_cmd, tl_nexus->se_sess, sc->cmnd,
- 			&tl_cmd->tl_sense_buf[0], tl_cmd->sc->device->lun,
--			scsi_bufflen(sc), tcm_loop_sam_attr(sc),
-+			transfer_length, tcm_loop_sam_attr(sc),
- 			sc->sc_data_direction, 0,
- 			scsi_sglist(sc), scsi_sg_count(sc),
- 			sgl_bidi, sgl_bidi_count,
-diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
-index e0229592ec55..bcbc6810666d 100644
---- a/drivers/target/target_core_sbc.c
-+++ b/drivers/target/target_core_sbc.c
-@@ -81,7 +81,7 @@ sbc_emulate_readcapacity(struct se_cmd *cmd)
- 		transport_kunmap_data_sg(cmd);
- 	}
- 
--	target_complete_cmd(cmd, GOOD);
-+	target_complete_cmd_with_length(cmd, GOOD, 8);
- 	return 0;
- }
- 
-@@ -137,7 +137,7 @@ sbc_emulate_readcapacity_16(struct se_cmd *cmd)
- 		transport_kunmap_data_sg(cmd);
- 	}
- 
--	target_complete_cmd(cmd, GOOD);
-+	target_complete_cmd_with_length(cmd, GOOD, 32);
- 	return 0;
- }
- 
-@@ -665,8 +665,19 @@ sbc_check_prot(struct se_device *dev, struct se_cmd *cmd, unsigned char *cdb,
- 
- 	cmd->prot_type = dev->dev_attrib.pi_prot_type;
- 	cmd->prot_length = dev->prot_length * sectors;
--	pr_debug("%s: prot_type=%d, prot_length=%d prot_op=%d prot_checks=%d\n",
--		 __func__, cmd->prot_type, cmd->prot_length,
-+
-+	/**
-+	 * In case protection information exists over the wire
-+	 * we modify command data length to describe pure data.
-+	 * The actual transfer length is data length + protection
-+	 * length
-+	 **/
-+	if (protect)
-+		cmd->data_length = sectors * dev->dev_attrib.block_size;
-+
-+	pr_debug("%s: prot_type=%d, data_length=%d, prot_length=%d "
-+		 "prot_op=%d prot_checks=%d\n",
-+		 __func__, cmd->prot_type, cmd->data_length, cmd->prot_length,
- 		 cmd->prot_op, cmd->prot_checks);
- 
- 	return true;
-diff --git a/drivers/target/target_core_spc.c b/drivers/target/target_core_spc.c
-index 8653666612a8..d24df1a6afc1 100644
---- a/drivers/target/target_core_spc.c
-+++ b/drivers/target/target_core_spc.c
-@@ -721,6 +721,7 @@ spc_emulate_inquiry(struct se_cmd *cmd)
- 	unsigned char *buf;
- 	sense_reason_t ret;
- 	int p;
-+	int len = 0;
- 
- 	buf = kzalloc(SE_INQUIRY_BUF, GFP_KERNEL);
- 	if (!buf) {
-@@ -742,6 +743,7 @@ spc_emulate_inquiry(struct se_cmd *cmd)
- 		}
- 
- 		ret = spc_emulate_inquiry_std(cmd, buf);
-+		len = buf[4] + 5;
- 		goto out;
- 	}
- 
-@@ -749,6 +751,7 @@ spc_emulate_inquiry(struct se_cmd *cmd)
- 		if (cdb[2] == evpd_handlers[p].page) {
- 			buf[1] = cdb[2];
- 			ret = evpd_handlers[p].emulate(cmd, buf);
-+			len = get_unaligned_be16(&buf[2]) + 4;
- 			goto out;
- 		}
- 	}
-@@ -765,7 +768,7 @@ out:
- 	kfree(buf);
- 
- 	if (!ret)
--		target_complete_cmd(cmd, GOOD);
-+		target_complete_cmd_with_length(cmd, GOOD, len);
- 	return ret;
- }
- 
-@@ -1103,7 +1106,7 @@ set_length:
- 		transport_kunmap_data_sg(cmd);
- 	}
- 
--	target_complete_cmd(cmd, GOOD);
-+	target_complete_cmd_with_length(cmd, GOOD, length);
- 	return 0;
- }
- 
-@@ -1279,7 +1282,7 @@ done:
- 	buf[3] = (lun_count & 0xff);
- 	transport_kunmap_data_sg(cmd);
- 
--	target_complete_cmd(cmd, GOOD);
-+	target_complete_cmd_with_length(cmd, GOOD, 8 + lun_count * 8);
- 	return 0;
- }
- EXPORT_SYMBOL(spc_emulate_report_luns);
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index a51dd4efc23b..14772e98d3d2 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -562,7 +562,7 @@ static int transport_cmd_check_stop(struct se_cmd *cmd, bool remove_from_lists,
- 
- 		spin_unlock_irqrestore(&cmd->t_state_lock, flags);
- 
--		complete(&cmd->t_transport_stop_comp);
-+		complete_all(&cmd->t_transport_stop_comp);
- 		return 1;
- 	}
- 
-@@ -687,7 +687,7 @@ void target_complete_cmd(struct se_cmd *cmd, u8 scsi_status)
- 	if (cmd->transport_state & CMD_T_ABORTED &&
- 	    cmd->transport_state & CMD_T_STOP) {
- 		spin_unlock_irqrestore(&cmd->t_state_lock, flags);
--		complete(&cmd->t_transport_stop_comp);
-+		complete_all(&cmd->t_transport_stop_comp);
- 		return;
- 	} else if (!success) {
- 		INIT_WORK(&cmd->work, target_complete_failure_work);
-@@ -703,6 +703,23 @@ void target_complete_cmd(struct se_cmd *cmd, u8 scsi_status)
- }
- EXPORT_SYMBOL(target_complete_cmd);
- 
-+void target_complete_cmd_with_length(struct se_cmd *cmd, u8 scsi_status, int length)
-+{
-+	if (scsi_status == SAM_STAT_GOOD && length < cmd->data_length) {
-+		if (cmd->se_cmd_flags & SCF_UNDERFLOW_BIT) {
-+			cmd->residual_count += cmd->data_length - length;
-+		} else {
-+			cmd->se_cmd_flags |= SCF_UNDERFLOW_BIT;
-+			cmd->residual_count = cmd->data_length - length;
-+		}
-+
-+		cmd->data_length = length;
-+	}
-+
-+	target_complete_cmd(cmd, scsi_status);
-+}
-+EXPORT_SYMBOL(target_complete_cmd_with_length);
-+
- static void target_add_to_state_list(struct se_cmd *cmd)
- {
- 	struct se_device *dev = cmd->se_dev;
-@@ -1761,7 +1778,7 @@ void target_execute_cmd(struct se_cmd *cmd)
- 			cmd->se_tfo->get_task_tag(cmd));
- 
- 		spin_unlock_irq(&cmd->t_state_lock);
--		complete(&cmd->t_transport_stop_comp);
-+		complete_all(&cmd->t_transport_stop_comp);
- 		return;
- 	}
- 
-@@ -2938,6 +2955,12 @@ static void target_tmr_work(struct work_struct *work)
- int transport_generic_handle_tmr(
- 	struct se_cmd *cmd)
- {
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&cmd->t_state_lock, flags);
-+	cmd->transport_state |= CMD_T_ACTIVE;
-+	spin_unlock_irqrestore(&cmd->t_state_lock, flags);
-+
- 	INIT_WORK(&cmd->work, target_tmr_work);
- 	queue_work(cmd->se_dev->tmr_wq, &cmd->work);
- 	return 0;
-diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
-index 99246606a256..27981e2b9430 100644
---- a/drivers/tty/serial/of_serial.c
-+++ b/drivers/tty/serial/of_serial.c
-@@ -173,6 +173,7 @@ static int of_platform_serial_probe(struct platform_device *ofdev)
- 	{
- 		struct uart_8250_port port8250;
- 		memset(&port8250, 0, sizeof(port8250));
-+		port.type = port_type;
- 		port8250.port = port;
- 
- 		if (port.fifosize)
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index 70715eeededd..85f398d3184d 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -604,6 +604,10 @@ static int __dwc3_gadget_ep_disable(struct dwc3_ep *dep)
- 
- 	dwc3_remove_requests(dwc, dep);
- 
-+	/* make sure HW endpoint isn't stalled */
-+	if (dep->flags & DWC3_EP_STALL)
-+		__dwc3_gadget_ep_set_halt(dep, 0);
-+
- 	reg = dwc3_readl(dwc->regs, DWC3_DALEPENA);
- 	reg &= ~DWC3_DALEPENA_EP(dep->number);
- 	dwc3_writel(dwc->regs, DWC3_DALEPENA, reg);
-diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
-index a925d0cbcd41..a0863a2d2142 100644
---- a/drivers/usb/gadget/inode.c
-+++ b/drivers/usb/gadget/inode.c
-@@ -1501,7 +1501,7 @@ gadgetfs_setup (struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
- 		}
- 		break;
- 
--#ifndef	CONFIG_USB_GADGET_PXA25X
-+#ifndef	CONFIG_USB_PXA25X
- 	/* PXA automagically handles this request too */
- 	case USB_REQ_GET_CONFIGURATION:
- 		if (ctrl->bRequestType != 0x80)
-diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-index 4a6d3dd68572..2f3acebb577a 100644
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -656,6 +656,14 @@ static const struct dmi_system_id ehci_dmi_nohandoff_table[] = {
- 			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
- 		},
- 	},
-+	{
-+		/* HASEE E200 */
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "HASEE"),
-+			DMI_MATCH(DMI_BOARD_NAME, "E210"),
-+			DMI_MATCH(DMI_BIOS_VERSION, "6.00"),
-+		},
-+	},
- 	{ }
- };
- 
-@@ -665,9 +673,14 @@ static void ehci_bios_handoff(struct pci_dev *pdev,
- {
- 	int try_handoff = 1, tried_handoff = 0;
- 
--	/* The Pegatron Lucid tablet sporadically waits for 98 seconds trying
--	 * the handoff on its unused controller.  Skip it. */
--	if (pdev->vendor == 0x8086 && pdev->device == 0x283a) {
-+	/*
-+	 * The Pegatron Lucid tablet sporadically waits for 98 seconds trying
-+	 * the handoff on its unused controller.  Skip it.
-+	 *
-+	 * The HASEE E200 hangs when the semaphore is set (bugzilla #77021).
-+	 */
-+	if (pdev->vendor == 0x8086 && (pdev->device == 0x283a ||
-+			pdev->device == 0x27cc)) {
- 		if (dmi_check_system(ehci_dmi_nohandoff_table))
- 			try_handoff = 0;
- 	}
-diff --git a/drivers/usb/misc/usbtest.c b/drivers/usb/misc/usbtest.c
-index f6568b5e9b06..71dcacbab398 100644
---- a/drivers/usb/misc/usbtest.c
-+++ b/drivers/usb/misc/usbtest.c
-@@ -7,7 +7,7 @@
- #include <linux/moduleparam.h>
- #include <linux/scatterlist.h>
- #include <linux/mutex.h>
--
-+#include <linux/timer.h>
- #include <linux/usb.h>
- 
- #define SIMPLE_IO_TIMEOUT	10000	/* in milliseconds */
-@@ -484,6 +484,14 @@ alloc_sglist(int nents, int max, int vary)
- 	return sg;
- }
- 
-+static void sg_timeout(unsigned long _req)
-+{
-+	struct usb_sg_request	*req = (struct usb_sg_request *) _req;
-+
-+	req->status = -ETIMEDOUT;
-+	usb_sg_cancel(req);
-+}
-+
- static int perform_sglist(
- 	struct usbtest_dev	*tdev,
- 	unsigned		iterations,
-@@ -495,6 +503,9 @@ static int perform_sglist(
- {
- 	struct usb_device	*udev = testdev_to_usbdev(tdev);
- 	int			retval = 0;
-+	struct timer_list	sg_timer;
-+
-+	setup_timer_on_stack(&sg_timer, sg_timeout, (unsigned long) req);
- 
- 	while (retval == 0 && iterations-- > 0) {
- 		retval = usb_sg_init(req, udev, pipe,
-@@ -505,7 +516,10 @@ static int perform_sglist(
- 
- 		if (retval)
- 			break;
-+		mod_timer(&sg_timer, jiffies +
-+				msecs_to_jiffies(SIMPLE_IO_TIMEOUT));
- 		usb_sg_wait(req);
-+		del_timer_sync(&sg_timer);
- 		retval = req->status;
- 
- 		/* FIXME check resulting data pattern */
-@@ -1320,6 +1334,11 @@ static int unlink1(struct usbtest_dev *dev, int pipe, int size, int async)
- 	urb->context = &completion;
- 	urb->complete = unlink1_callback;
- 
-+	if (usb_pipeout(urb->pipe)) {
-+		simple_fill_buf(urb);
-+		urb->transfer_flags |= URB_ZERO_PACKET;
-+	}
-+
- 	/* keep the endpoint busy.  there are lots of hc/hcd-internal
- 	 * states, and testing should get to all of them over time.
- 	 *
-@@ -1450,6 +1469,11 @@ static int unlink_queued(struct usbtest_dev *dev, int pipe, unsigned num,
- 				unlink_queued_callback, &ctx);
- 		ctx.urbs[i]->transfer_dma = buf_dma;
- 		ctx.urbs[i]->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
-+
-+		if (usb_pipeout(ctx.urbs[i]->pipe)) {
-+			simple_fill_buf(ctx.urbs[i]);
-+			ctx.urbs[i]->transfer_flags |= URB_ZERO_PACKET;
-+		}
- 	}
- 
- 	/* Submit all the URBs and then unlink URBs num - 4 and num - 2. */
-diff --git a/drivers/usb/phy/phy-isp1301-omap.c b/drivers/usb/phy/phy-isp1301-omap.c
-index 6e146d723b37..69e49be8866b 100644
---- a/drivers/usb/phy/phy-isp1301-omap.c
-+++ b/drivers/usb/phy/phy-isp1301-omap.c
-@@ -1295,7 +1295,7 @@ isp1301_set_host(struct usb_otg *otg, struct usb_bus *host)
- 		return isp1301_otg_enable(isp);
- 	return 0;
- 
--#elif	!defined(CONFIG_USB_GADGET_OMAP)
-+#elif !IS_ENABLED(CONFIG_USB_OMAP)
- 	// FIXME update its refcount
- 	otg->host = host;
- 
-diff --git a/drivers/usb/serial/bus.c b/drivers/usb/serial/bus.c
-index 35a2373cde67..9374bd2aba20 100644
---- a/drivers/usb/serial/bus.c
-+++ b/drivers/usb/serial/bus.c
-@@ -97,13 +97,19 @@ static int usb_serial_device_remove(struct device *dev)
- 	struct usb_serial_port *port;
- 	int retval = 0;
- 	int minor;
-+	int autopm_err;
- 
- 	port = to_usb_serial_port(dev);
- 	if (!port)
- 		return -ENODEV;
- 
--	/* make sure suspend/resume doesn't race against port_remove */
--	usb_autopm_get_interface(port->serial->interface);
-+	/*
-+	 * Make sure suspend/resume doesn't race against port_remove.
-+	 *
-+	 * Note that no further runtime PM callbacks will be made if
-+	 * autopm_get fails.
-+	 */
-+	autopm_err = usb_autopm_get_interface(port->serial->interface);
- 
- 	minor = port->minor;
- 	tty_unregister_device(usb_serial_tty_driver, minor);
-@@ -117,7 +123,9 @@ static int usb_serial_device_remove(struct device *dev)
- 	dev_info(dev, "%s converter now disconnected from ttyUSB%d\n",
- 		 driver->description, minor);
- 
--	usb_autopm_put_interface(port->serial->interface);
-+	if (!autopm_err)
-+		usb_autopm_put_interface(port->serial->interface);
-+
- 	return retval;
- }
- 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 948a19f0cdf7..70ede84f4f6b 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1925,6 +1925,7 @@ static int option_send_setup(struct usb_serial_port *port)
- 	struct option_private *priv = intfdata->private;
- 	struct usb_wwan_port_private *portdata;
- 	int val = 0;
-+	int res;
- 
- 	portdata = usb_get_serial_port_data(port);
- 
-@@ -1933,9 +1934,17 @@ static int option_send_setup(struct usb_serial_port *port)
- 	if (portdata->rts_state)
- 		val |= 0x02;
- 
--	return usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
-+	res = usb_autopm_get_interface(serial->interface);
-+	if (res)
-+		return res;
-+
-+	res = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
- 				0x22, 0x21, val, priv->bInterfaceNumber, NULL,
- 				0, USB_CTRL_SET_TIMEOUT);
-+
-+	usb_autopm_put_interface(serial->interface);
-+
-+	return res;
- }
- 
- MODULE_AUTHOR(DRIVER_AUTHOR);
-diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
-index 6c0a542e8ec1..43d93dbf7d71 100644
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -145,12 +145,33 @@ static const struct usb_device_id id_table[] = {
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 0)},	/* Sierra Wireless EM7355 Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 2)},	/* Sierra Wireless EM7355 NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x901f, 3)},	/* Sierra Wireless EM7355 Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9040, 3)},	/* Sierra Wireless Modem Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 0)},	/* Sierra Wireless MC7305/MC7355 Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 2)},	/* Sierra Wireless MC7305/MC7355 NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9041, 3)},	/* Sierra Wireless MC7305/MC7355 Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 0)},	/* Netgear AirCard 340U Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 2)},	/* Netgear AirCard 340U NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9051, 3)},	/* Netgear AirCard 340U Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9053, 3)},	/* Sierra Wireless Modem Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9054, 3)},	/* Sierra Wireless Modem Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 0)},	/* Netgear AirCard 341U Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 2)},	/* Netgear AirCard 341U NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9055, 3)},	/* Netgear AirCard 341U Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9056, 3)},	/* Sierra Wireless Modem Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9060, 3)},	/* Sierra Wireless Modem Modem */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 0)},	/* Sierra Wireless Modem Device Management */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 2)},	/* Sierra Wireless Modem NMEA */
-+	{USB_DEVICE_INTERFACE_NUMBER(0x1199, 0x9061, 3)},	/* Sierra Wireless Modem Modem */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 0)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Device Management */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 2)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card NMEA */
- 	{USB_DEVICE_INTERFACE_NUMBER(0x413c, 0x81a2, 3)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card Modem */
-diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
-index 6b192e602ce0..37480348e39b 100644
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -58,6 +58,7 @@ struct sierra_intf_private {
- 	spinlock_t susp_lock;
- 	unsigned int suspended:1;
- 	int in_flight;
-+	unsigned int open_ports;
- };
- 
- static int sierra_set_power_state(struct usb_device *udev, __u16 swiState)
-@@ -759,6 +760,7 @@ static void sierra_close(struct usb_serial_port *port)
- 	struct usb_serial *serial = port->serial;
- 	struct sierra_port_private *portdata;
- 	struct sierra_intf_private *intfdata = port->serial->private;
-+	struct urb *urb;
- 
- 	portdata = usb_get_serial_port_data(port);
- 
-@@ -767,7 +769,6 @@ static void sierra_close(struct usb_serial_port *port)
- 
- 	mutex_lock(&serial->disc_mutex);
- 	if (!serial->disconnected) {
--		serial->interface->needs_remote_wakeup = 0;
- 		/* odd error handling due to pm counters */
- 		if (!usb_autopm_get_interface(serial->interface))
- 			sierra_send_setup(port);
-@@ -778,8 +779,22 @@ static void sierra_close(struct usb_serial_port *port)
- 	mutex_unlock(&serial->disc_mutex);
- 	spin_lock_irq(&intfdata->susp_lock);
- 	portdata->opened = 0;
-+	if (--intfdata->open_ports == 0)
-+		serial->interface->needs_remote_wakeup = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
- 
-+	for (;;) {
-+		urb = usb_get_from_anchor(&portdata->delayed);
-+		if (!urb)
-+			break;
-+		kfree(urb->transfer_buffer);
-+		usb_free_urb(urb);
-+		usb_autopm_put_interface_async(serial->interface);
-+		spin_lock(&portdata->lock);
-+		portdata->outstanding_urbs--;
-+		spin_unlock(&portdata->lock);
-+	}
-+
- 	sierra_stop_rx_urbs(port);
- 	for (i = 0; i < portdata->num_in_urbs; i++) {
- 		sierra_release_urb(portdata->in_urbs[i]);
-@@ -816,23 +831,29 @@ static int sierra_open(struct tty_struct *tty, struct usb_serial_port *port)
- 			usb_sndbulkpipe(serial->dev, endpoint) | USB_DIR_IN);
- 
- 	err = sierra_submit_rx_urbs(port, GFP_KERNEL);
--	if (err) {
--		/* get rid of everything as in close */
--		sierra_close(port);
--		/* restore balance for autopm */
--		if (!serial->disconnected)
--			usb_autopm_put_interface(serial->interface);
--		return err;
--	}
-+	if (err)
-+		goto err_submit;
-+
- 	sierra_send_setup(port);
- 
--	serial->interface->needs_remote_wakeup = 1;
- 	spin_lock_irq(&intfdata->susp_lock);
- 	portdata->opened = 1;
-+	if (++intfdata->open_ports == 1)
-+		serial->interface->needs_remote_wakeup = 1;
- 	spin_unlock_irq(&intfdata->susp_lock);
- 	usb_autopm_put_interface(serial->interface);
- 
- 	return 0;
-+
-+err_submit:
-+	sierra_stop_rx_urbs(port);
-+
-+	for (i = 0; i < portdata->num_in_urbs; i++) {
-+		sierra_release_urb(portdata->in_urbs[i]);
-+		portdata->in_urbs[i] = NULL;
-+	}
-+
-+	return err;
- }
- 
- 
-@@ -928,6 +949,7 @@ static int sierra_port_remove(struct usb_serial_port *port)
- 	struct sierra_port_private *portdata;
- 
- 	portdata = usb_get_serial_port_data(port);
-+	usb_set_serial_port_data(port, NULL);
- 	kfree(portdata);
- 
- 	return 0;
-@@ -944,6 +966,8 @@ static void stop_read_write_urbs(struct usb_serial *serial)
- 	for (i = 0; i < serial->num_ports; ++i) {
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
-+		if (!portdata)
-+			continue;
- 		sierra_stop_rx_urbs(port);
- 		usb_kill_anchored_urbs(&portdata->active);
- 	}
-@@ -986,6 +1010,9 @@ static int sierra_resume(struct usb_serial *serial)
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
- 
-+		if (!portdata)
-+			continue;
-+
- 		while ((urb = usb_get_from_anchor(&portdata->delayed))) {
- 			usb_anchor_urb(urb, &portdata->active);
- 			intfdata->in_flight++;
-@@ -993,8 +1020,12 @@ static int sierra_resume(struct usb_serial *serial)
- 			if (err < 0) {
- 				intfdata->in_flight--;
- 				usb_unanchor_urb(urb);
--				usb_scuttle_anchored_urbs(&portdata->delayed);
--				break;
-+				kfree(urb->transfer_buffer);
-+				usb_free_urb(urb);
-+				spin_lock(&portdata->lock);
-+				portdata->outstanding_urbs--;
-+				spin_unlock(&portdata->lock);
-+				continue;
- 			}
- 		}
- 
-diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
-index b078440e822f..d91a9883e869 100644
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -228,8 +228,10 @@ int usb_wwan_write(struct tty_struct *tty, struct usb_serial_port *port,
- 			usb_pipeendpoint(this_urb->pipe), i);
- 
- 		err = usb_autopm_get_interface_async(port->serial->interface);
--		if (err < 0)
-+		if (err < 0) {
-+			clear_bit(i, &portdata->out_busy);
- 			break;
-+		}
- 
- 		/* send the data */
- 		memcpy(this_urb->transfer_buffer, buf, todo);
-@@ -386,6 +388,14 @@ int usb_wwan_open(struct tty_struct *tty, struct usb_serial_port *port)
- 	portdata = usb_get_serial_port_data(port);
- 	intfdata = serial->private;
- 
-+	if (port->interrupt_in_urb) {
-+		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
-+		if (err) {
-+			dev_dbg(&port->dev, "%s: submit int urb failed: %d\n",
-+				__func__, err);
-+		}
-+	}
-+
- 	/* Start reading from the IN endpoint */
- 	for (i = 0; i < N_IN_URB; i++) {
- 		urb = portdata->in_urbs[i];
-@@ -412,12 +422,26 @@ int usb_wwan_open(struct tty_struct *tty, struct usb_serial_port *port)
- }
- EXPORT_SYMBOL(usb_wwan_open);
- 
-+static void unbusy_queued_urb(struct urb *urb,
-+					struct usb_wwan_port_private *portdata)
-+{
-+	int i;
-+
-+	for (i = 0; i < N_OUT_URB; i++) {
-+		if (urb == portdata->out_urbs[i]) {
-+			clear_bit(i, &portdata->out_busy);
-+			break;
-+		}
-+	}
-+}
-+
- void usb_wwan_close(struct usb_serial_port *port)
- {
- 	int i;
- 	struct usb_serial *serial = port->serial;
- 	struct usb_wwan_port_private *portdata;
- 	struct usb_wwan_intf_private *intfdata = port->serial->private;
-+	struct urb *urb;
- 
- 	portdata = usb_get_serial_port_data(port);
- 
-@@ -426,10 +450,19 @@ void usb_wwan_close(struct usb_serial_port *port)
- 	portdata->opened = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
- 
-+	for (;;) {
-+		urb = usb_get_from_anchor(&portdata->delayed);
-+		if (!urb)
-+			break;
-+		unbusy_queued_urb(urb, portdata);
-+		usb_autopm_put_interface_async(serial->interface);
-+	}
-+
- 	for (i = 0; i < N_IN_URB; i++)
- 		usb_kill_urb(portdata->in_urbs[i]);
- 	for (i = 0; i < N_OUT_URB; i++)
- 		usb_kill_urb(portdata->out_urbs[i]);
-+	usb_kill_urb(port->interrupt_in_urb);
- 
- 	/* balancing - important as an error cannot be handled*/
- 	usb_autopm_get_interface_no_resume(serial->interface);
-@@ -463,7 +496,6 @@ int usb_wwan_port_probe(struct usb_serial_port *port)
- 	struct usb_wwan_port_private *portdata;
- 	struct urb *urb;
- 	u8 *buffer;
--	int err;
- 	int i;
- 
- 	if (!port->bulk_in_size || !port->bulk_out_size)
-@@ -503,13 +535,6 @@ int usb_wwan_port_probe(struct usb_serial_port *port)
- 
- 	usb_set_serial_port_data(port, portdata);
- 
--	if (port->interrupt_in_urb) {
--		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
--		if (err)
--			dev_dbg(&port->dev, "%s: submit irq_in urb failed %d\n",
--				__func__, err);
--	}
--
- 	return 0;
- 
- bail_out_error2:
-@@ -577,44 +602,29 @@ static void stop_read_write_urbs(struct usb_serial *serial)
- int usb_wwan_suspend(struct usb_serial *serial, pm_message_t message)
- {
- 	struct usb_wwan_intf_private *intfdata = serial->private;
--	int b;
- 
-+	spin_lock_irq(&intfdata->susp_lock);
- 	if (PMSG_IS_AUTO(message)) {
--		spin_lock_irq(&intfdata->susp_lock);
--		b = intfdata->in_flight;
--		spin_unlock_irq(&intfdata->susp_lock);
--
--		if (b)
-+		if (intfdata->in_flight) {
-+			spin_unlock_irq(&intfdata->susp_lock);
- 			return -EBUSY;
-+		}
- 	}
--
--	spin_lock_irq(&intfdata->susp_lock);
- 	intfdata->suspended = 1;
- 	spin_unlock_irq(&intfdata->susp_lock);
-+
- 	stop_read_write_urbs(serial);
- 
- 	return 0;
- }
- EXPORT_SYMBOL(usb_wwan_suspend);
- 
--static void unbusy_queued_urb(struct urb *urb, struct usb_wwan_port_private *portdata)
--{
--	int i;
--
--	for (i = 0; i < N_OUT_URB; i++) {
--		if (urb == portdata->out_urbs[i]) {
--			clear_bit(i, &portdata->out_busy);
--			break;
--		}
--	}
--}
--
--static void play_delayed(struct usb_serial_port *port)
-+static int play_delayed(struct usb_serial_port *port)
- {
- 	struct usb_wwan_intf_private *data;
- 	struct usb_wwan_port_private *portdata;
- 	struct urb *urb;
--	int err;
-+	int err = 0;
- 
- 	portdata = usb_get_serial_port_data(port);
- 	data = port->serial->private;
-@@ -631,6 +641,8 @@ static void play_delayed(struct usb_serial_port *port)
- 			break;
- 		}
- 	}
-+
-+	return err;
- }
- 
- int usb_wwan_resume(struct usb_serial *serial)
-@@ -640,54 +652,51 @@ int usb_wwan_resume(struct usb_serial *serial)
- 	struct usb_wwan_intf_private *intfdata = serial->private;
- 	struct usb_wwan_port_private *portdata;
- 	struct urb *urb;
--	int err = 0;
--
--	/* get the interrupt URBs resubmitted unconditionally */
--	for (i = 0; i < serial->num_ports; i++) {
--		port = serial->port[i];
--		if (!port->interrupt_in_urb) {
--			dev_dbg(&port->dev, "%s: No interrupt URB for port\n", __func__);
--			continue;
--		}
--		err = usb_submit_urb(port->interrupt_in_urb, GFP_NOIO);
--		dev_dbg(&port->dev, "Submitted interrupt URB for port (result %d)\n", err);
--		if (err < 0) {
--			dev_err(&port->dev, "%s: Error %d for interrupt URB\n",
--				__func__, err);
--			goto err_out;
--		}
--	}
-+	int err;
-+	int err_count = 0;
- 
-+	spin_lock_irq(&intfdata->susp_lock);
- 	for (i = 0; i < serial->num_ports; i++) {
- 		/* walk all ports */
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
- 
- 		/* skip closed ports */
--		spin_lock_irq(&intfdata->susp_lock);
--		if (!portdata || !portdata->opened) {
--			spin_unlock_irq(&intfdata->susp_lock);
-+		if (!portdata || !portdata->opened)
- 			continue;
-+
-+		if (port->interrupt_in_urb) {
-+			err = usb_submit_urb(port->interrupt_in_urb,
-+					GFP_ATOMIC);
-+			if (err) {
-+				dev_err(&port->dev,
-+					"%s: submit int urb failed: %d\n",
-+					__func__, err);
-+				err_count++;
-+			}
- 		}
- 
-+		err = play_delayed(port);
-+		if (err)
-+			err_count++;
-+
- 		for (j = 0; j < N_IN_URB; j++) {
- 			urb = portdata->in_urbs[j];
- 			err = usb_submit_urb(urb, GFP_ATOMIC);
- 			if (err < 0) {
- 				dev_err(&port->dev, "%s: Error %d for bulk URB %d\n",
- 					__func__, err, i);
--				spin_unlock_irq(&intfdata->susp_lock);
--				goto err_out;
-+				err_count++;
- 			}
- 		}
--		play_delayed(port);
--		spin_unlock_irq(&intfdata->susp_lock);
- 	}
--	spin_lock_irq(&intfdata->susp_lock);
- 	intfdata->suspended = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
--err_out:
--	return err;
-+
-+	if (err_count)
-+		return -EIO;
-+
-+	return 0;
- }
- EXPORT_SYMBOL(usb_wwan_resume);
- #endif
-diff --git a/drivers/video/fbdev/matrox/matroxfb_base.h b/drivers/video/fbdev/matrox/matroxfb_base.h
-index 556d96ce40bf..89a8a89a5eb2 100644
---- a/drivers/video/fbdev/matrox/matroxfb_base.h
-+++ b/drivers/video/fbdev/matrox/matroxfb_base.h
-@@ -698,7 +698,7 @@ void matroxfb_unregister_driver(struct matroxfb_driver* drv);
- 
- #define mga_fifo(n)	do {} while ((mga_inl(M_FIFOSTATUS) & 0xFF) < (n))
- 
--#define WaitTillIdle()	do {} while (mga_inl(M_STATUS) & 0x10000)
-+#define WaitTillIdle()	do { mga_inl(M_STATUS); do {} while (mga_inl(M_STATUS) & 0x10000); } while (0)
- 
- /* code speedup */
- #ifdef CONFIG_FB_MATROX_MILLENIUM
-diff --git a/drivers/video/fbdev/offb.c b/drivers/video/fbdev/offb.c
-index 7d44d669d5b6..43a0a52fc527 100644
---- a/drivers/video/fbdev/offb.c
-+++ b/drivers/video/fbdev/offb.c
-@@ -91,15 +91,6 @@ extern boot_infos_t *boot_infos;
- #define AVIVO_DC_LUTB_WHITE_OFFSET_GREEN        0x6cd4
- #define AVIVO_DC_LUTB_WHITE_OFFSET_RED          0x6cd8
- 
--#define FB_RIGHT_POS(p, bpp)         (fb_be_math(p) ? 0 : (32 - (bpp)))
--
--static inline u32 offb_cmap_byteswap(struct fb_info *info, u32 value)
--{
--	u32 bpp = info->var.bits_per_pixel;
--
--	return cpu_to_be32(value) >> FB_RIGHT_POS(info, bpp);
--}
--
-     /*
-      *  Set a single color register. The values supplied are already
-      *  rounded down to the hardware's capabilities (according to the
-@@ -129,7 +120,7 @@ static int offb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
- 			mask <<= info->var.transp.offset;
- 			value |= mask;
- 		}
--		pal[regno] = offb_cmap_byteswap(info, value);
-+		pal[regno] = value;
- 		return 0;
- 	}
- 
-diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
-index ff52618cafbe..5d7341520544 100644
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -1078,6 +1078,8 @@ static void w1_search_process(struct w1_master *dev, u8 search_type)
-  * w1_process_callbacks() - execute each dev->async_list callback entry
-  * @dev: w1_master device
-  *
-+ * The w1 master list_mutex must be held.
-+ *
-  * Return: 1 if there were commands to executed 0 otherwise
-  */
- int w1_process_callbacks(struct w1_master *dev)
-diff --git a/drivers/w1/w1_int.c b/drivers/w1/w1_int.c
-index 9b084db739c7..728039d2efe1 100644
---- a/drivers/w1/w1_int.c
-+++ b/drivers/w1/w1_int.c
-@@ -219,9 +219,13 @@ void __w1_remove_master_device(struct w1_master *dev)
- 
- 		if (msleep_interruptible(1000))
- 			flush_signals(current);
-+		mutex_lock(&dev->list_mutex);
- 		w1_process_callbacks(dev);
-+		mutex_unlock(&dev->list_mutex);
- 	}
-+	mutex_lock(&dev->list_mutex);
- 	w1_process_callbacks(dev);
-+	mutex_unlock(&dev->list_mutex);
- 
- 	memset(&msg, 0, sizeof(msg));
- 	msg.id.mst.id = dev->id;
-diff --git a/fs/aio.c b/fs/aio.c
-index a0ed6c7d2cd2..e609e15f36b9 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -1021,6 +1021,7 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 
- 	/* everything turned out well, dispose of the aiocb. */
- 	kiocb_free(iocb);
-+	put_reqs_available(ctx, 1);
- 
- 	/*
- 	 * We have to order our ring_info tail store above and test
-@@ -1062,6 +1063,9 @@ static long aio_read_events_ring(struct kioctx *ctx,
- 	if (head == tail)
- 		goto out;
- 
-+	head %= ctx->nr_events;
-+	tail %= ctx->nr_events;
-+
- 	while (ret < nr) {
- 		long avail;
- 		struct io_event *ev;
-@@ -1100,8 +1104,6 @@ static long aio_read_events_ring(struct kioctx *ctx,
- 	flush_dcache_page(ctx->ring_pages[0]);
- 
- 	pr_debug("%li  h%u t%u\n", ret, head, tail);
--
--	put_reqs_available(ctx, ret);
- out:
- 	mutex_unlock(&ctx->ring_lock);
- 
-diff --git a/fs/btrfs/backref.c b/fs/btrfs/backref.c
-index 10db21fa0926..b2e9b2063572 100644
---- a/fs/btrfs/backref.c
-+++ b/fs/btrfs/backref.c
-@@ -984,11 +984,12 @@ again:
- 				goto out;
- 		}
- 		if (ref->count && ref->parent) {
--			if (extent_item_pos && !ref->inode_list) {
-+			if (extent_item_pos && !ref->inode_list &&
-+			    ref->level == 0) {
- 				u32 bsz;
- 				struct extent_buffer *eb;
- 				bsz = btrfs_level_size(fs_info->extent_root,
--							info_level);
-+							ref->level);
- 				eb = read_tree_block(fs_info->extent_root,
- 							   ref->parent, bsz, 0);
- 				if (!eb || !extent_buffer_uptodate(eb)) {
-@@ -1404,9 +1405,10 @@ int extent_from_logical(struct btrfs_fs_info *fs_info, u64 logical,
-  * returns <0 on error
-  */
- static int __get_extent_inline_ref(unsigned long *ptr, struct extent_buffer *eb,
--				struct btrfs_extent_item *ei, u32 item_size,
--				struct btrfs_extent_inline_ref **out_eiref,
--				int *out_type)
-+				   struct btrfs_key *key,
-+				   struct btrfs_extent_item *ei, u32 item_size,
-+				   struct btrfs_extent_inline_ref **out_eiref,
-+				   int *out_type)
- {
- 	unsigned long end;
- 	u64 flags;
-@@ -1416,19 +1418,26 @@ static int __get_extent_inline_ref(unsigned long *ptr, struct extent_buffer *eb,
- 		/* first call */
- 		flags = btrfs_extent_flags(eb, ei);
- 		if (flags & BTRFS_EXTENT_FLAG_TREE_BLOCK) {
--			info = (struct btrfs_tree_block_info *)(ei + 1);
--			*out_eiref =
--				(struct btrfs_extent_inline_ref *)(info + 1);
-+			if (key->type == BTRFS_METADATA_ITEM_KEY) {
-+				/* a skinny metadata extent */
-+				*out_eiref =
-+				     (struct btrfs_extent_inline_ref *)(ei + 1);
-+			} else {
-+				WARN_ON(key->type != BTRFS_EXTENT_ITEM_KEY);
-+				info = (struct btrfs_tree_block_info *)(ei + 1);
-+				*out_eiref =
-+				   (struct btrfs_extent_inline_ref *)(info + 1);
-+			}
- 		} else {
- 			*out_eiref = (struct btrfs_extent_inline_ref *)(ei + 1);
- 		}
- 		*ptr = (unsigned long)*out_eiref;
--		if ((void *)*ptr >= (void *)ei + item_size)
-+		if ((unsigned long)(*ptr) >= (unsigned long)ei + item_size)
- 			return -ENOENT;
- 	}
- 
- 	end = (unsigned long)ei + item_size;
--	*out_eiref = (struct btrfs_extent_inline_ref *)*ptr;
-+	*out_eiref = (struct btrfs_extent_inline_ref *)(*ptr);
- 	*out_type = btrfs_extent_inline_ref_type(eb, *out_eiref);
- 
- 	*ptr += btrfs_extent_inline_ref_size(*out_type);
-@@ -1447,8 +1456,8 @@ static int __get_extent_inline_ref(unsigned long *ptr, struct extent_buffer *eb,
-  * <0 on error.
-  */
- int tree_backref_for_extent(unsigned long *ptr, struct extent_buffer *eb,
--				struct btrfs_extent_item *ei, u32 item_size,
--				u64 *out_root, u8 *out_level)
-+			    struct btrfs_key *key, struct btrfs_extent_item *ei,
-+			    u32 item_size, u64 *out_root, u8 *out_level)
- {
- 	int ret;
- 	int type;
-@@ -1459,8 +1468,8 @@ int tree_backref_for_extent(unsigned long *ptr, struct extent_buffer *eb,
- 		return 1;
- 
- 	while (1) {
--		ret = __get_extent_inline_ref(ptr, eb, ei, item_size,
--						&eiref, &type);
-+		ret = __get_extent_inline_ref(ptr, eb, key, ei, item_size,
-+					      &eiref, &type);
- 		if (ret < 0)
- 			return ret;
- 
-diff --git a/fs/btrfs/backref.h b/fs/btrfs/backref.h
-index a910b27a8ad9..519b49e51f57 100644
---- a/fs/btrfs/backref.h
-+++ b/fs/btrfs/backref.h
-@@ -40,8 +40,8 @@ int extent_from_logical(struct btrfs_fs_info *fs_info, u64 logical,
- 			u64 *flags);
- 
- int tree_backref_for_extent(unsigned long *ptr, struct extent_buffer *eb,
--				struct btrfs_extent_item *ei, u32 item_size,
--				u64 *out_root, u8 *out_level);
-+			    struct btrfs_key *key, struct btrfs_extent_item *ei,
-+			    u32 item_size, u64 *out_root, u8 *out_level);
- 
- int iterate_extent_inodes(struct btrfs_fs_info *fs_info,
- 				u64 extent_item_objectid,
-diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
-index ba6b88528dc7..9e80f527776a 100644
---- a/fs/btrfs/ctree.h
-+++ b/fs/btrfs/ctree.h
-@@ -1113,6 +1113,12 @@ struct btrfs_qgroup_limit_item {
- 	__le64 rsv_excl;
- } __attribute__ ((__packed__));
- 
-+/* For raid type sysfs entries */
-+struct raid_kobject {
-+	int raid_type;
-+	struct kobject kobj;
-+};
-+
- struct btrfs_space_info {
- 	spinlock_t lock;
- 
-@@ -1163,7 +1169,7 @@ struct btrfs_space_info {
- 	wait_queue_head_t wait;
- 
- 	struct kobject kobj;
--	struct kobject block_group_kobjs[BTRFS_NR_RAID_TYPES];
-+	struct kobject *block_group_kobjs[BTRFS_NR_RAID_TYPES];
- };
- 
- #define	BTRFS_BLOCK_RSV_GLOBAL		1
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 983314932af3..a62a5bdc0502 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -3633,6 +3633,11 @@ int close_ctree(struct btrfs_root *root)
- 
- 	btrfs_free_block_groups(fs_info);
- 
-+	/*
-+	 * we must make sure there is not any read request to
-+	 * submit after we stopping all workers.
-+	 */
-+	invalidate_inode_pages2(fs_info->btree_inode->i_mapping);
- 	btrfs_stop_all_workers(fs_info);
- 
- 	free_root_pointers(fs_info, 1);
-diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-index 5590af92094b..5c343a9909cd 100644
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -3401,10 +3401,8 @@ static int update_space_info(struct btrfs_fs_info *info, u64 flags,
- 		return ret;
- 	}
- 
--	for (i = 0; i < BTRFS_NR_RAID_TYPES; i++) {
-+	for (i = 0; i < BTRFS_NR_RAID_TYPES; i++)
- 		INIT_LIST_HEAD(&found->block_groups[i]);
--		kobject_init(&found->block_group_kobjs[i], &btrfs_raid_ktype);
--	}
- 	init_rwsem(&found->groups_sem);
- 	spin_lock_init(&found->lock);
- 	found->flags = flags & BTRFS_BLOCK_GROUP_TYPE_MASK;
-@@ -8327,8 +8325,9 @@ int btrfs_free_block_groups(struct btrfs_fs_info *info)
- 		list_del(&space_info->list);
- 		for (i = 0; i < BTRFS_NR_RAID_TYPES; i++) {
- 			struct kobject *kobj;
--			kobj = &space_info->block_group_kobjs[i];
--			if (kobj->parent) {
-+			kobj = space_info->block_group_kobjs[i];
-+			space_info->block_group_kobjs[i] = NULL;
-+			if (kobj) {
- 				kobject_del(kobj);
- 				kobject_put(kobj);
- 			}
-@@ -8352,17 +8351,26 @@ static void __link_block_group(struct btrfs_space_info *space_info,
- 	up_write(&space_info->groups_sem);
- 
- 	if (first) {
--		struct kobject *kobj = &space_info->block_group_kobjs[index];
-+		struct raid_kobject *rkobj;
- 		int ret;
- 
--		kobject_get(&space_info->kobj); /* put in release */
--		ret = kobject_add(kobj, &space_info->kobj, "%s",
--				  get_raid_name(index));
-+		rkobj = kzalloc(sizeof(*rkobj), GFP_NOFS);
-+		if (!rkobj)
-+			goto out_err;
-+		rkobj->raid_type = index;
-+		kobject_init(&rkobj->kobj, &btrfs_raid_ktype);
-+		ret = kobject_add(&rkobj->kobj, &space_info->kobj,
-+				  "%s", get_raid_name(index));
- 		if (ret) {
--			pr_warn("BTRFS: failed to add kobject for block cache. ignoring.\n");
--			kobject_put(&space_info->kobj);
-+			kobject_put(&rkobj->kobj);
-+			goto out_err;
- 		}
-+		space_info->block_group_kobjs[index] = &rkobj->kobj;
- 	}
-+
-+	return;
-+out_err:
-+	pr_warn("BTRFS: failed to add kobject for block cache. ignoring.\n");
- }
- 
- static struct btrfs_block_group_cache *
-@@ -8697,6 +8705,7 @@ int btrfs_remove_block_group(struct btrfs_trans_handle *trans,
- 	struct btrfs_root *tree_root = root->fs_info->tree_root;
- 	struct btrfs_key key;
- 	struct inode *inode;
-+	struct kobject *kobj = NULL;
- 	int ret;
- 	int index;
- 	int factor;
-@@ -8796,11 +8805,15 @@ int btrfs_remove_block_group(struct btrfs_trans_handle *trans,
- 	 */
- 	list_del_init(&block_group->list);
- 	if (list_empty(&block_group->space_info->block_groups[index])) {
--		kobject_del(&block_group->space_info->block_group_kobjs[index]);
--		kobject_put(&block_group->space_info->block_group_kobjs[index]);
-+		kobj = block_group->space_info->block_group_kobjs[index];
-+		block_group->space_info->block_group_kobjs[index] = NULL;
- 		clear_avail_alloc_bits(root->fs_info, block_group->flags);
- 	}
- 	up_write(&block_group->space_info->groups_sem);
-+	if (kobj) {
-+		kobject_del(kobj);
-+		kobject_put(kobj);
-+	}
- 
- 	if (block_group->cached == BTRFS_CACHE_STARTED)
- 		wait_block_group_cache_done(block_group);
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index 3955e475ceec..a2badb027ae6 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -1693,6 +1693,7 @@ again:
- 		 * shortening the size of the delalloc range we're searching
- 		 */
- 		free_extent_state(cached_state);
-+		cached_state = NULL;
- 		if (!loops) {
- 			max_bytes = PAGE_CACHE_SIZE;
- 			loops = 1;
-@@ -2353,7 +2354,7 @@ int end_extent_writepage(struct page *page, int err, u64 start, u64 end)
- {
- 	int uptodate = (err == 0);
- 	struct extent_io_tree *tree;
--	int ret;
-+	int ret = 0;
- 
- 	tree = &BTRFS_I(page->mapping->host)->io_tree;
- 
-@@ -2367,6 +2368,8 @@ int end_extent_writepage(struct page *page, int err, u64 start, u64 end)
- 	if (!uptodate) {
- 		ClearPageUptodate(page);
- 		SetPageError(page);
-+		ret = ret < 0 ? ret : -EIO;
-+		mapping_set_error(page->mapping, ret);
- 	}
- 	return 0;
- }
-diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-index ae6af072b635..3029925e96d7 100644
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -780,6 +780,18 @@ next_slot:
- 			extent_end = search_start;
- 		}
- 
-+		/*
-+		 * Don't skip extent items representing 0 byte lengths. They
-+		 * used to be created (bug) if while punching holes we hit
-+		 * -ENOSPC condition. So if we find one here, just ensure we
-+		 * delete it, otherwise we would insert a new file extent item
-+		 * with the same key (offset) as that 0 bytes length file
-+		 * extent item in the call to setup_items_for_insert() later
-+		 * in this function.
-+		 */
-+		if (extent_end == key.offset && extent_end >= search_start)
-+			goto delete_extent_item;
-+
- 		if (extent_end <= search_start) {
- 			path->slots[0]++;
- 			goto next_slot;
-@@ -893,6 +905,7 @@ next_slot:
- 		 *    | ------ extent ------ |
- 		 */
- 		if (start <= key.offset && end >= extent_end) {
-+delete_extent_item:
- 			if (del_nr == 0) {
- 				del_slot = path->slots[0];
- 				del_nr = 1;
-@@ -2187,13 +2200,14 @@ static int btrfs_punch_hole(struct inode *inode, loff_t offset, loff_t len)
- 	bool same_page = ((offset >> PAGE_CACHE_SHIFT) ==
- 			  ((offset + len - 1) >> PAGE_CACHE_SHIFT));
- 	bool no_holes = btrfs_fs_incompat(root->fs_info, NO_HOLES);
--	u64 ino_size = round_up(inode->i_size, PAGE_CACHE_SIZE);
-+	u64 ino_size;
- 
- 	ret = btrfs_wait_ordered_range(inode, offset, len);
- 	if (ret)
- 		return ret;
- 
- 	mutex_lock(&inode->i_mutex);
-+	ino_size = round_up(inode->i_size, PAGE_CACHE_SIZE);
- 	/*
- 	 * We needn't truncate any page which is beyond the end of the file
- 	 * because we are sure there is no data there.
-@@ -2347,7 +2361,12 @@ static int btrfs_punch_hole(struct inode *inode, loff_t offset, loff_t len)
- 	}
- 
- 	trans->block_rsv = &root->fs_info->trans_block_rsv;
--	if (cur_offset < ino_size) {
-+	/*
-+	 * Don't insert file hole extent item if it's for a range beyond eof
-+	 * (because it's useless) or if it represents a 0 bytes range (when
-+	 * cur_offset == drop_end).
-+	 */
-+	if (cur_offset < ino_size && cur_offset < drop_end) {
- 		ret = fill_holes(trans, inode, path, cur_offset, drop_end);
- 		if (ret) {
- 			err = ret;
-diff --git a/fs/btrfs/free-space-cache.c b/fs/btrfs/free-space-cache.c
-index 73f3de7a083c..a6bd654dcd47 100644
---- a/fs/btrfs/free-space-cache.c
-+++ b/fs/btrfs/free-space-cache.c
-@@ -831,7 +831,7 @@ int load_free_space_cache(struct btrfs_fs_info *fs_info,
- 
- 	if (!matched) {
- 		__btrfs_remove_free_space_cache(ctl);
--		btrfs_err(fs_info, "block group %llu has wrong amount of free space",
-+		btrfs_warn(fs_info, "block group %llu has wrong amount of free space",
- 			block_group->key.objectid);
- 		ret = -1;
- 	}
-@@ -843,7 +843,7 @@ out:
- 		spin_unlock(&block_group->lock);
- 		ret = 0;
- 
--		btrfs_err(fs_info, "failed to load free space cache for block group %llu",
-+		btrfs_warn(fs_info, "failed to load free space cache for block group %llu, rebuild it now",
- 			block_group->key.objectid);
- 	}
- 
-diff --git a/fs/btrfs/scrub.c b/fs/btrfs/scrub.c
-index 0be77993378e..12afb0dd3734 100644
---- a/fs/btrfs/scrub.c
-+++ b/fs/btrfs/scrub.c
-@@ -588,8 +588,9 @@ static void scrub_print_warning(const char *errstr, struct scrub_block *sblock)
- 
- 	if (flags & BTRFS_EXTENT_FLAG_TREE_BLOCK) {
- 		do {
--			ret = tree_backref_for_extent(&ptr, eb, ei, item_size,
--							&ref_root, &ref_level);
-+			ret = tree_backref_for_extent(&ptr, eb, &found_key, ei,
-+						      item_size, &ref_root,
-+						      &ref_level);
- 			printk_in_rcu(KERN_WARNING
- 				"BTRFS: %s at logical %llu on dev %s, "
- 				"sector %llu: metadata %s (level %d) in tree "
-diff --git a/fs/btrfs/send.c b/fs/btrfs/send.c
-index 484aacac2c89..6c9c084aa06a 100644
---- a/fs/btrfs/send.c
-+++ b/fs/btrfs/send.c
-@@ -975,7 +975,7 @@ static int iterate_dir_item(struct btrfs_root *root, struct btrfs_path *path,
- 	struct btrfs_dir_item *di;
- 	struct btrfs_key di_key;
- 	char *buf = NULL;
--	const int buf_len = PATH_MAX;
-+	int buf_len;
- 	u32 name_len;
- 	u32 data_len;
- 	u32 cur;
-@@ -985,6 +985,11 @@ static int iterate_dir_item(struct btrfs_root *root, struct btrfs_path *path,
- 	int num;
- 	u8 type;
- 
-+	if (found_key->type == BTRFS_XATTR_ITEM_KEY)
-+		buf_len = BTRFS_MAX_XATTR_SIZE(root);
-+	else
-+		buf_len = PATH_MAX;
-+
- 	buf = kmalloc(buf_len, GFP_NOFS);
- 	if (!buf) {
- 		ret = -ENOMEM;
-@@ -1006,12 +1011,23 @@ static int iterate_dir_item(struct btrfs_root *root, struct btrfs_path *path,
- 		type = btrfs_dir_type(eb, di);
- 		btrfs_dir_item_key_to_cpu(eb, di, &di_key);
- 
--		/*
--		 * Path too long
--		 */
--		if (name_len + data_len > buf_len) {
--			ret = -ENAMETOOLONG;
--			goto out;
-+		if (type == BTRFS_FT_XATTR) {
-+			if (name_len > XATTR_NAME_MAX) {
-+				ret = -ENAMETOOLONG;
-+				goto out;
-+			}
-+			if (name_len + data_len > buf_len) {
-+				ret = -E2BIG;
-+				goto out;
-+			}
-+		} else {
-+			/*
-+			 * Path too long
-+			 */
-+			if (name_len + data_len > buf_len) {
-+				ret = -ENAMETOOLONG;
-+				goto out;
-+			}
- 		}
- 
- 		read_extent_buffer(eb, buf, (unsigned long)(di + 1),
-@@ -1628,6 +1644,10 @@ static int lookup_dir_item_inode(struct btrfs_root *root,
- 		goto out;
- 	}
- 	btrfs_dir_item_key_to_cpu(path->nodes[0], di, &key);
-+	if (key.type == BTRFS_ROOT_ITEM_KEY) {
-+		ret = -ENOENT;
-+		goto out;
-+	}
- 	*found_inode = key.objectid;
- 	*found_type = btrfs_dir_type(path->nodes[0], di);
- 
-@@ -3054,33 +3074,18 @@ static int apply_dir_move(struct send_ctx *sctx, struct pending_dir_move *pm)
- 	if (ret < 0)
- 		goto out;
- 
--	if (parent_ino == sctx->cur_ino) {
--		/* child only renamed, not moved */
--		ASSERT(parent_gen == sctx->cur_inode_gen);
--		ret = get_cur_path(sctx, sctx->cur_ino, sctx->cur_inode_gen,
--				   from_path);
--		if (ret < 0)
--			goto out;
--		ret = fs_path_add_path(from_path, name);
--		if (ret < 0)
--			goto out;
--	} else {
--		/* child moved and maybe renamed too */
--		sctx->send_progress = pm->ino;
--		ret = get_cur_path(sctx, pm->ino, pm->gen, from_path);
--		if (ret < 0)
--			goto out;
--	}
-+	ret = get_cur_path(sctx, parent_ino, parent_gen,
-+			   from_path);
-+	if (ret < 0)
-+		goto out;
-+	ret = fs_path_add_path(from_path, name);
-+	if (ret < 0)
-+		goto out;
- 
--	fs_path_free(name);
-+	fs_path_reset(name);
-+	to_path = name;
- 	name = NULL;
- 
--	to_path = fs_path_alloc();
--	if (!to_path) {
--		ret = -ENOMEM;
--		goto out;
--	}
--
- 	sctx->send_progress = sctx->cur_ino + 1;
- 	ret = get_cur_path(sctx, pm->ino, pm->gen, to_path);
- 	if (ret < 0)
-diff --git a/fs/btrfs/sysfs.c b/fs/btrfs/sysfs.c
-index c5eb2143dc66..4825cd2b10c2 100644
---- a/fs/btrfs/sysfs.c
-+++ b/fs/btrfs/sysfs.c
-@@ -254,6 +254,7 @@ static ssize_t global_rsv_reserved_show(struct kobject *kobj,
- BTRFS_ATTR(global_rsv_reserved, 0444, global_rsv_reserved_show);
- 
- #define to_space_info(_kobj) container_of(_kobj, struct btrfs_space_info, kobj)
-+#define to_raid_kobj(_kobj) container_of(_kobj, struct raid_kobject, kobj)
- 
- static ssize_t raid_bytes_show(struct kobject *kobj,
- 			       struct kobj_attribute *attr, char *buf);
-@@ -266,7 +267,7 @@ static ssize_t raid_bytes_show(struct kobject *kobj,
- {
- 	struct btrfs_space_info *sinfo = to_space_info(kobj->parent);
- 	struct btrfs_block_group_cache *block_group;
--	int index = kobj - sinfo->block_group_kobjs;
-+	int index = to_raid_kobj(kobj)->raid_type;
- 	u64 val = 0;
- 
- 	down_read(&sinfo->groups_sem);
-@@ -288,7 +289,7 @@ static struct attribute *raid_attributes[] = {
- 
- static void release_raid_kobj(struct kobject *kobj)
- {
--	kobject_put(kobj->parent);
-+	kfree(to_raid_kobj(kobj));
- }
- 
- struct kobj_type btrfs_raid_ktype = {
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 49d7fab73360..57b699410fb8 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -1452,6 +1452,22 @@ out:
- 	return ret;
- }
- 
-+/*
-+ * Function to update ctime/mtime for a given device path.
-+ * Mainly used for ctime/mtime based probe like libblkid.
-+ */
-+static void update_dev_time(char *path_name)
-+{
-+	struct file *filp;
-+
-+	filp = filp_open(path_name, O_RDWR, 0);
-+	if (!filp)
-+		return;
-+	file_update_time(filp);
-+	filp_close(filp, NULL);
-+	return;
-+}
-+
- static int btrfs_rm_dev_item(struct btrfs_root *root,
- 			     struct btrfs_device *device)
- {
-@@ -1674,11 +1690,12 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
- 		struct btrfs_fs_devices *fs_devices;
- 		fs_devices = root->fs_info->fs_devices;
- 		while (fs_devices) {
--			if (fs_devices->seed == cur_devices)
-+			if (fs_devices->seed == cur_devices) {
-+				fs_devices->seed = cur_devices->seed;
- 				break;
-+			}
- 			fs_devices = fs_devices->seed;
- 		}
--		fs_devices->seed = cur_devices->seed;
- 		cur_devices->seed = NULL;
- 		lock_chunks(root);
- 		__btrfs_close_devices(cur_devices);
-@@ -1704,10 +1721,14 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
- 
- 	ret = 0;
- 
--	/* Notify udev that device has changed */
--	if (bdev)
-+	if (bdev) {
-+		/* Notify udev that device has changed */
- 		btrfs_kobject_uevent(bdev, KOBJ_CHANGE);
- 
-+		/* Update ctime/mtime for device path for libblkid */
-+		update_dev_time(device_path);
-+	}
-+
- error_brelse:
- 	brelse(bh);
- 	if (bdev)
-@@ -1883,7 +1904,6 @@ static int btrfs_prepare_sprout(struct btrfs_root *root)
- 	fs_devices->seeding = 0;
- 	fs_devices->num_devices = 0;
- 	fs_devices->open_devices = 0;
--	fs_devices->total_devices = 0;
- 	fs_devices->seed = seed_devices;
- 
- 	generate_random_uuid(fs_devices->fsid);
-@@ -2146,6 +2166,8 @@ int btrfs_init_new_device(struct btrfs_root *root, char *device_path)
- 		ret = btrfs_commit_transaction(trans, root);
- 	}
- 
-+	/* Update ctime/mtime for libblkid */
-+	update_dev_time(device_path);
- 	return ret;
- 
- error_trans:
-@@ -6058,10 +6080,14 @@ void btrfs_init_devices_late(struct btrfs_fs_info *fs_info)
- 	struct btrfs_fs_devices *fs_devices = fs_info->fs_devices;
- 	struct btrfs_device *device;
- 
--	mutex_lock(&fs_devices->device_list_mutex);
--	list_for_each_entry(device, &fs_devices->devices, dev_list)
--		device->dev_root = fs_info->dev_root;
--	mutex_unlock(&fs_devices->device_list_mutex);
-+	while (fs_devices) {
-+		mutex_lock(&fs_devices->device_list_mutex);
-+		list_for_each_entry(device, &fs_devices->devices, dev_list)
-+			device->dev_root = fs_info->dev_root;
-+		mutex_unlock(&fs_devices->device_list_mutex);
-+
-+		fs_devices = fs_devices->seed;
-+	}
- }
- 
- static void __btrfs_reset_dev_stats(struct btrfs_device *dev)
-diff --git a/fs/cifs/smb2pdu.c b/fs/cifs/smb2pdu.c
-index 3802f8c94acc..1fb6ad2ac92d 100644
---- a/fs/cifs/smb2pdu.c
-+++ b/fs/cifs/smb2pdu.c
-@@ -1089,6 +1089,7 @@ SMB2_open(const unsigned int xid, struct cifs_open_parms *oparms, __le16 *path,
- 	int rc = 0;
- 	unsigned int num_iovecs = 2;
- 	__u32 file_attributes = 0;
-+	char *dhc_buf = NULL, *lc_buf = NULL;
- 
- 	cifs_dbg(FYI, "create/open\n");
- 
-@@ -1155,6 +1156,7 @@ SMB2_open(const unsigned int xid, struct cifs_open_parms *oparms, __le16 *path,
- 			kfree(copy_path);
- 			return rc;
- 		}
-+		lc_buf = iov[num_iovecs-1].iov_base;
- 	}
- 
- 	if (*oplock == SMB2_OPLOCK_LEVEL_BATCH) {
-@@ -1169,9 +1171,10 @@ SMB2_open(const unsigned int xid, struct cifs_open_parms *oparms, __le16 *path,
- 		if (rc) {
- 			cifs_small_buf_release(req);
- 			kfree(copy_path);
--			kfree(iov[num_iovecs-1].iov_base);
-+			kfree(lc_buf);
- 			return rc;
- 		}
-+		dhc_buf = iov[num_iovecs-1].iov_base;
- 	}
- 
- 	rc = SendReceive2(xid, ses, iov, num_iovecs, &resp_buftype, 0);
-@@ -1203,6 +1206,8 @@ SMB2_open(const unsigned int xid, struct cifs_open_parms *oparms, __le16 *path,
- 		*oplock = rsp->OplockLevel;
- creat_exit:
- 	kfree(copy_path);
-+	kfree(lc_buf);
-+	kfree(dhc_buf);
- 	free_rsp_buf(resp_buftype, rsp);
- 	return rc;
- }
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index af903128891c..ead00467282d 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -910,7 +910,7 @@ static const struct file_operations eventpoll_fops = {
- void eventpoll_release_file(struct file *file)
- {
- 	struct eventpoll *ep;
--	struct epitem *epi;
-+	struct epitem *epi, *next;
- 
- 	/*
- 	 * We don't want to get "file->f_lock" because it is not
-@@ -926,7 +926,7 @@ void eventpoll_release_file(struct file *file)
- 	 * Besides, ep_remove() acquires the lock, so we can't hold it here.
- 	 */
- 	mutex_lock(&epmutex);
--	list_for_each_entry_rcu(epi, &file->f_ep_links, fllink) {
-+	list_for_each_entry_safe(epi, next, &file->f_ep_links, fllink) {
- 		ep = epi->ep;
- 		mutex_lock_nested(&ep->mtx, 0);
- 		ep_remove(ep, epi);
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 66946aa62127..f542e486a4a4 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2771,7 +2771,8 @@ extern void ext4_io_submit(struct ext4_io_submit *io);
- extern int ext4_bio_write_page(struct ext4_io_submit *io,
- 			       struct page *page,
- 			       int len,
--			       struct writeback_control *wbc);
-+			       struct writeback_control *wbc,
-+			       bool keep_towrite);
- 
- /* mmp.c */
- extern int ext4_multi_mount_protect(struct super_block *, ext4_fsblk_t);
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 01b0c208f625..f312c47b7d18 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -4744,6 +4744,13 @@ static long ext4_zero_range(struct file *file, loff_t offset,
- 	if (!S_ISREG(inode->i_mode))
- 		return -EINVAL;
- 
-+	/* Call ext4_force_commit to flush all data in case of data=journal. */
-+	if (ext4_should_journal_data(inode)) {
-+		ret = ext4_force_commit(inode->i_sb);
-+		if (ret)
-+			return ret;
-+	}
-+
- 	/*
- 	 * Write out all dirty pages to avoid race conditions
- 	 * Then release them.
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index d7b7462a0e13..5bc199445dc2 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1846,6 +1846,7 @@ static int ext4_writepage(struct page *page,
- 	struct buffer_head *page_bufs = NULL;
- 	struct inode *inode = page->mapping->host;
- 	struct ext4_io_submit io_submit;
-+	bool keep_towrite = false;
- 
- 	trace_ext4_writepage(page);
- 	size = i_size_read(inode);
-@@ -1876,6 +1877,7 @@ static int ext4_writepage(struct page *page,
- 			unlock_page(page);
- 			return 0;
- 		}
-+		keep_towrite = true;
- 	}
- 
- 	if (PageChecked(page) && ext4_should_journal_data(inode))
-@@ -1892,7 +1894,7 @@ static int ext4_writepage(struct page *page,
- 		unlock_page(page);
- 		return -ENOMEM;
- 	}
--	ret = ext4_bio_write_page(&io_submit, page, len, wbc);
-+	ret = ext4_bio_write_page(&io_submit, page, len, wbc, keep_towrite);
- 	ext4_io_submit(&io_submit);
- 	/* Drop io_end reference we got from init */
- 	ext4_put_io_end_defer(io_submit.io_end);
-@@ -1911,7 +1913,7 @@ static int mpage_submit_page(struct mpage_da_data *mpd, struct page *page)
- 	else
- 		len = PAGE_CACHE_SIZE;
- 	clear_page_dirty_for_io(page);
--	err = ext4_bio_write_page(&mpd->io_submit, page, len, mpd->wbc);
-+	err = ext4_bio_write_page(&mpd->io_submit, page, len, mpd->wbc, false);
- 	if (!err)
- 		mpd->wbc->nr_to_write--;
- 	mpd->first_page++;
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index c8238a26818c..fe4e668d3023 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -3145,7 +3145,7 @@ ext4_mb_normalize_request(struct ext4_allocation_context *ac,
- 	}
- 	BUG_ON(start + size <= ac->ac_o_ex.fe_logical &&
- 			start > ac->ac_o_ex.fe_logical);
--	BUG_ON(size <= 0 || size > EXT4_CLUSTERS_PER_GROUP(ac->ac_sb));
-+	BUG_ON(size <= 0 || size > EXT4_BLOCKS_PER_GROUP(ac->ac_sb));
- 
- 	/* now prepare goal request */
- 
-diff --git a/fs/ext4/page-io.c b/fs/ext4/page-io.c
-index c18d95b50540..b6a3804a9855 100644
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -401,7 +401,8 @@ submit_and_retry:
- int ext4_bio_write_page(struct ext4_io_submit *io,
- 			struct page *page,
- 			int len,
--			struct writeback_control *wbc)
-+			struct writeback_control *wbc,
-+			bool keep_towrite)
- {
- 	struct inode *inode = page->mapping->host;
- 	unsigned block_start, blocksize;
-@@ -414,10 +415,24 @@ int ext4_bio_write_page(struct ext4_io_submit *io,
- 	BUG_ON(!PageLocked(page));
- 	BUG_ON(PageWriteback(page));
- 
--	set_page_writeback(page);
-+	if (keep_towrite)
-+		set_page_writeback_keepwrite(page);
-+	else
-+		set_page_writeback(page);
- 	ClearPageError(page);
- 
- 	/*
-+	 * Comments copied from block_write_full_page_endio:
-+	 *
-+	 * The page straddles i_size.  It must be zeroed out on each and every
-+	 * writepage invocation because it may be mmapped.  "A file is mapped
-+	 * in multiples of the page size.  For a file that is not a multiple of
-+	 * the page size, the remaining memory is zeroed when mapped, and
-+	 * writes to that region are not written out to the file."
-+	 */
-+	if (len < PAGE_CACHE_SIZE)
-+		zero_user_segment(page, len, PAGE_CACHE_SIZE);
-+	/*
- 	 * In the first loop we prepare and mark buffers to submit. We have to
- 	 * mark all buffers in the page before submitting so that
- 	 * end_page_writeback() cannot be called from ext4_bio_end_io() when IO
-@@ -428,19 +443,6 @@ int ext4_bio_write_page(struct ext4_io_submit *io,
- 	do {
- 		block_start = bh_offset(bh);
- 		if (block_start >= len) {
--			/*
--			 * Comments copied from block_write_full_page_endio:
--			 *
--			 * The page straddles i_size.  It must be zeroed out on
--			 * each and every writepage invocation because it may
--			 * be mmapped.  "A file is mapped in multiples of the
--			 * page size.  For a file that is not a multiple of
--			 * the  page size, the remaining memory is zeroed when
--			 * mapped, and writes to that region are not written
--			 * out to the file."
--			 */
--			zero_user_segment(page, block_start,
--					  block_start + blocksize);
- 			clear_buffer_dirty(bh);
- 			set_buffer_uptodate(bh);
- 			continue;
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 45abd60e2bff..bc077f3c8868 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -835,6 +835,8 @@ out:
- 	unlock_page(page);
- 	if (need_balance_fs)
- 		f2fs_balance_fs(sbi);
-+	if (wbc->for_reclaim)
-+		f2fs_submit_merged_bio(sbi, DATA, WRITE);
- 	return 0;
- 
- redirty_out:
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 7a8f2cd66c8b..0e2569031a6f 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -37,6 +37,7 @@
- 
- #include <linux/list.h>
- #include <linux/mod_devicetable.h>
-+#include <linux/dynamic_debug.h>
- 
- #include <acpi/acpi.h>
- #include <acpi/acpi_bus.h>
-@@ -589,6 +590,14 @@ static inline __printf(3, 4) void
- acpi_handle_printk(const char *level, void *handle, const char *fmt, ...) {}
- #endif	/* !CONFIG_ACPI */
- 
-+#if defined(CONFIG_ACPI) && defined(CONFIG_DYNAMIC_DEBUG)
-+__printf(3, 4)
-+void __acpi_handle_debug(struct _ddebug *descriptor, acpi_handle handle, const char *fmt, ...);
-+#else
-+#define __acpi_handle_debug(descriptor, handle, fmt, ...)		\
-+	acpi_handle_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__);
-+#endif
-+
- /*
-  * acpi_handle_<level>: Print message with ACPI prefix and object path
-  *
-@@ -610,11 +619,19 @@ acpi_handle_printk(const char *level, void *handle, const char *fmt, ...) {}
- #define acpi_handle_info(handle, fmt, ...)				\
- 	acpi_handle_printk(KERN_INFO, handle, fmt, ##__VA_ARGS__)
- 
--/* REVISIT: Support CONFIG_DYNAMIC_DEBUG when necessary */
--#if defined(DEBUG) || defined(CONFIG_DYNAMIC_DEBUG)
-+#if defined(DEBUG)
- #define acpi_handle_debug(handle, fmt, ...)				\
- 	acpi_handle_printk(KERN_DEBUG, handle, fmt, ##__VA_ARGS__)
- #else
-+#if defined(CONFIG_DYNAMIC_DEBUG)
-+#define acpi_handle_debug(handle, fmt, ...)				\
-+do {									\
-+	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);			\
-+	if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT))		\
-+		__acpi_handle_debug(&descriptor, handle, pr_fmt(fmt),	\
-+				##__VA_ARGS__);				\
-+} while (0)
-+#else
- #define acpi_handle_debug(handle, fmt, ...)				\
- ({									\
- 	if (0)								\
-@@ -622,5 +639,6 @@ acpi_handle_printk(const char *level, void *handle, const char *fmt, ...) {}
- 	0;								\
- })
- #endif
-+#endif
- 
- #endif	/*_LINUX_ACPI_H*/
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index b65166de1d9d..d0bad1a8b0bd 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -392,15 +392,13 @@ static inline pgoff_t basepage_index(struct page *page)
- 
- extern void dissolve_free_huge_pages(unsigned long start_pfn,
- 				     unsigned long end_pfn);
--int pmd_huge_support(void);
--/*
-- * Currently hugepage migration is enabled only for pmd-based hugepage.
-- * This function will be updated when hugepage migration is more widely
-- * supported.
-- */
- static inline int hugepage_migration_support(struct hstate *h)
- {
--	return pmd_huge_support() && (huge_page_shift(h) == PMD_SHIFT);
-+#ifdef CONFIG_ARCH_ENABLE_HUGEPAGE_MIGRATION
-+	return huge_page_shift(h) == PMD_SHIFT;
-+#else
-+	return 0;
-+#endif
- }
- 
- static inline spinlock_t *huge_pte_lockptr(struct hstate *h,
-@@ -450,7 +448,6 @@ static inline pgoff_t basepage_index(struct page *page)
- 	return page->index;
- }
- #define dissolve_free_huge_pages(s, e)	do {} while (0)
--#define pmd_huge_support()	0
- #define hugepage_migration_support(h)	0
- 
- static inline spinlock_t *huge_pte_lockptr(struct hstate *h,
-diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
-index 26e2661d3935..472c021a2d4f 100644
---- a/include/linux/irqdesc.h
-+++ b/include/linux/irqdesc.h
-@@ -27,6 +27,8 @@ struct irq_desc;
-  * @irq_count:		stats field to detect stalled irqs
-  * @last_unhandled:	aging timer for unhandled count
-  * @irqs_unhandled:	stats field for spurious unhandled interrupts
-+ * @threads_handled:	stats field for deferred spurious detection of threaded handlers
-+ * @threads_handled_last: comparator field for deferred spurious detection of theraded handlers
-  * @lock:		locking for SMP
-  * @affinity_hint:	hint to user space for preferred irq affinity
-  * @affinity_notify:	context for notification of affinity changes
-@@ -52,6 +54,8 @@ struct irq_desc {
- 	unsigned int		irq_count;	/* For detecting broken IRQs */
- 	unsigned long		last_unhandled;	/* Aging timer for unhandled count */
- 	unsigned int		irqs_unhandled;
-+	atomic_t		threads_handled;
-+	int			threads_handled_last;
- 	raw_spinlock_t		lock;
- 	struct cpumask		*percpu_enabled;
- #ifdef CONFIG_SMP
-diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
-index 3c1b968da0ca..f230a978e6ba 100644
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -175,6 +175,12 @@ static inline int vma_migratable(struct vm_area_struct *vma)
- {
- 	if (vma->vm_flags & (VM_IO | VM_PFNMAP))
- 		return 0;
-+
-+#ifndef CONFIG_ARCH_ENABLE_HUGEPAGE_MIGRATION
-+	if (vma->vm_flags & VM_HUGETLB)
-+		return 0;
-+#endif
-+
- 	/*
- 	 * Migration allocates pages in the highest zone. If we cannot
- 	 * do so then migration (at least from node to node) is not
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index fac5509c18f0..835aa3d36719 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -75,9 +75,13 @@ enum {
- 
- extern int page_group_by_mobility_disabled;
- 
-+#define NR_MIGRATETYPE_BITS (PB_migrate_end - PB_migrate + 1)
-+#define MIGRATETYPE_MASK ((1UL << NR_MIGRATETYPE_BITS) - 1)
-+
- static inline int get_pageblock_migratetype(struct page *page)
- {
--	return get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
-+	BUILD_BUG_ON(PB_migrate_end - PB_migrate != 2);
-+	return get_pageblock_flags_mask(page, PB_migrate_end, MIGRATETYPE_MASK);
- }
- 
- struct free_area {
-diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
-index d1fe1a761047..ca71a1d347a0 100644
---- a/include/linux/page-flags.h
-+++ b/include/linux/page-flags.h
-@@ -317,13 +317,23 @@ CLEARPAGEFLAG(Uptodate, uptodate)
- extern void cancel_dirty_page(struct page *page, unsigned int account_size);
- 
- int test_clear_page_writeback(struct page *page);
--int test_set_page_writeback(struct page *page);
-+int __test_set_page_writeback(struct page *page, bool keep_write);
-+
-+#define test_set_page_writeback(page)			\
-+	__test_set_page_writeback(page, false)
-+#define test_set_page_writeback_keepwrite(page)	\
-+	__test_set_page_writeback(page, true)
- 
- static inline void set_page_writeback(struct page *page)
- {
- 	test_set_page_writeback(page);
- }
- 
-+static inline void set_page_writeback_keepwrite(struct page *page)
-+{
-+	test_set_page_writeback_keepwrite(page);
-+}
-+
- #ifdef CONFIG_PAGEFLAGS_EXTENDED
- /*
-  * System with lots of page flags available. This allows separate
-diff --git a/include/linux/pageblock-flags.h b/include/linux/pageblock-flags.h
-index 2ee8cd2466b5..c08730c10c7a 100644
---- a/include/linux/pageblock-flags.h
-+++ b/include/linux/pageblock-flags.h
-@@ -30,9 +30,12 @@ enum pageblock_bits {
- 	PB_migrate,
- 	PB_migrate_end = PB_migrate + 3 - 1,
- 			/* 3 bits required for migrate types */
--#ifdef CONFIG_COMPACTION
- 	PB_migrate_skip,/* If set the block is skipped by compaction */
--#endif /* CONFIG_COMPACTION */
-+
-+	/*
-+	 * Assume the bits will always align on a word. If this assumption
-+	 * changes then get/set pageblock needs updating.
-+	 */
- 	NR_PAGEBLOCK_BITS
- };
- 
-@@ -62,11 +65,33 @@ extern int pageblock_order;
- /* Forward declaration */
- struct page;
- 
-+unsigned long get_pageblock_flags_mask(struct page *page,
-+				unsigned long end_bitidx,
-+				unsigned long mask);
-+void set_pageblock_flags_mask(struct page *page,
-+				unsigned long flags,
-+				unsigned long end_bitidx,
-+				unsigned long mask);
-+
- /* Declarations for getting and setting flags. See mm/page_alloc.c */
--unsigned long get_pageblock_flags_group(struct page *page,
--					int start_bitidx, int end_bitidx);
--void set_pageblock_flags_group(struct page *page, unsigned long flags,
--					int start_bitidx, int end_bitidx);
-+static inline unsigned long get_pageblock_flags_group(struct page *page,
-+					int start_bitidx, int end_bitidx)
-+{
-+	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
-+	unsigned long mask = (1 << nr_flag_bits) - 1;
-+
-+	return get_pageblock_flags_mask(page, end_bitidx, mask);
-+}
-+
-+static inline void set_pageblock_flags_group(struct page *page,
-+					unsigned long flags,
-+					int start_bitidx, int end_bitidx)
-+{
-+	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
-+	unsigned long mask = (1 << nr_flag_bits) - 1;
-+
-+	set_pageblock_flags_mask(page, flags, end_bitidx, mask);
-+}
- 
- #ifdef CONFIG_COMPACTION
- #define get_pageblock_skip(page) \
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 07d0df6bf768..077904c8b70d 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -5,6 +5,7 @@
- #include <linux/sched.h>		/* For struct task_struct.  */
- #include <linux/err.h>			/* for IS_ERR_VALUE */
- #include <linux/bug.h>			/* For BUG_ON.  */
-+#include <linux/pid_namespace.h>	/* For task_active_pid_ns.  */
- #include <uapi/linux/ptrace.h>
- 
- /*
-@@ -129,6 +130,37 @@ static inline void ptrace_event(int event, unsigned long message)
- }
- 
- /**
-+ * ptrace_event_pid - possibly stop for a ptrace event notification
-+ * @event:	%PTRACE_EVENT_* value to report
-+ * @pid:	process identifier for %PTRACE_GETEVENTMSG to return
-+ *
-+ * Check whether @event is enabled and, if so, report @event and @pid
-+ * to the ptrace parent.  @pid is reported as the pid_t seen from the
-+ * the ptrace parent's pid namespace.
-+ *
-+ * Called without locks.
-+ */
-+static inline void ptrace_event_pid(int event, struct pid *pid)
-+{
-+	/*
-+	 * FIXME: There's a potential race if a ptracer in a different pid
-+	 * namespace than parent attaches between computing message below and
-+	 * when we acquire tasklist_lock in ptrace_stop().  If this happens,
-+	 * the ptracer will get a bogus pid from PTRACE_GETEVENTMSG.
-+	 */
-+	unsigned long message = 0;
-+	struct pid_namespace *ns;
-+
-+	rcu_read_lock();
-+	ns = task_active_pid_ns(rcu_dereference(current->parent));
-+	if (ns)
-+		message = pid_nr_ns(pid, ns);
-+	rcu_read_unlock();
-+
-+	ptrace_event(event, message);
-+}
-+
-+/**
-  * ptrace_init_task - initialize ptrace state for a new child
-  * @child:		new child task
-  * @ptrace:		true if child should be ptrace'd by parent's tracer
-diff --git a/include/net/bluetooth/mgmt.h b/include/net/bluetooth/mgmt.h
-index d4b571c2f9fd..b0b381b0cb07 100644
---- a/include/net/bluetooth/mgmt.h
-+++ b/include/net/bluetooth/mgmt.h
-@@ -181,6 +181,9 @@ struct mgmt_cp_load_link_keys {
- } __packed;
- #define MGMT_LOAD_LINK_KEYS_SIZE	3
- 
-+#define MGMT_LTK_UNAUTHENTICATED	0x00
-+#define MGMT_LTK_AUTHENTICATED		0x01
-+
- struct mgmt_ltk_info {
- 	struct mgmt_addr_info addr;
- 	__u8	type;
-diff --git a/include/scsi/scsi_cmnd.h b/include/scsi/scsi_cmnd.h
-index dd7c998221b3..a100c6e266c7 100644
---- a/include/scsi/scsi_cmnd.h
-+++ b/include/scsi/scsi_cmnd.h
-@@ -7,6 +7,7 @@
- #include <linux/types.h>
- #include <linux/timer.h>
- #include <linux/scatterlist.h>
-+#include <scsi/scsi_device.h>
- 
- struct Scsi_Host;
- struct scsi_device;
-@@ -306,4 +307,20 @@ static inline void set_driver_byte(struct scsi_cmnd *cmd, char status)
- 	cmd->result = (cmd->result & 0x00ffffff) | (status << 24);
- }
- 
-+static inline unsigned scsi_transfer_length(struct scsi_cmnd *scmd)
-+{
-+	unsigned int xfer_len = blk_rq_bytes(scmd->request);
-+	unsigned int prot_op = scsi_get_prot_op(scmd);
-+	unsigned int sector_size = scmd->device->sector_size;
-+
-+	switch (prot_op) {
-+	case SCSI_PROT_NORMAL:
-+	case SCSI_PROT_WRITE_STRIP:
-+	case SCSI_PROT_READ_INSERT:
-+		return xfer_len;
-+	}
-+
-+	return xfer_len + (xfer_len >> ilog2(sector_size)) * 8;
-+}
-+
- #endif /* _SCSI_SCSI_CMND_H */
-diff --git a/include/target/iscsi/iscsi_transport.h b/include/target/iscsi/iscsi_transport.h
-index 33b487b5da92..daef9daa500c 100644
---- a/include/target/iscsi/iscsi_transport.h
-+++ b/include/target/iscsi/iscsi_transport.h
-@@ -70,7 +70,8 @@ extern void iscsit_build_nopin_rsp(struct iscsi_cmd *, struct iscsi_conn *,
- extern void iscsit_build_task_mgt_rsp(struct iscsi_cmd *, struct iscsi_conn *,
- 				struct iscsi_tm_rsp *);
- extern int iscsit_build_text_rsp(struct iscsi_cmd *, struct iscsi_conn *,
--				struct iscsi_text_rsp *);
-+				struct iscsi_text_rsp *,
-+				enum iscsit_transport_type);
- extern void iscsit_build_reject(struct iscsi_cmd *, struct iscsi_conn *,
- 				struct iscsi_reject *);
- extern int iscsit_build_logout_rsp(struct iscsi_cmd *, struct iscsi_conn *,
-diff --git a/include/target/target_core_backend.h b/include/target/target_core_backend.h
-index 3a1c1eea1fff..9adc1bca1178 100644
---- a/include/target/target_core_backend.h
-+++ b/include/target/target_core_backend.h
-@@ -59,6 +59,7 @@ int	transport_subsystem_register(struct se_subsystem_api *);
- void	transport_subsystem_release(struct se_subsystem_api *);
- 
- void	target_complete_cmd(struct se_cmd *, u8);
-+void	target_complete_cmd_with_length(struct se_cmd *, u8, int);
- 
- sense_reason_t	spc_parse_cdb(struct se_cmd *cmd, unsigned int *size);
- sense_reason_t	spc_emulate_report_luns(struct se_cmd *cmd);
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 54a8d26f612f..142904349fb5 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1606,10 +1606,12 @@ long do_fork(unsigned long clone_flags,
- 	 */
- 	if (!IS_ERR(p)) {
- 		struct completion vfork;
-+		struct pid *pid;
- 
- 		trace_sched_process_fork(current, p);
- 
--		nr = task_pid_vnr(p);
-+		pid = get_task_pid(p, PIDTYPE_PID);
-+		nr = pid_vnr(pid);
- 
- 		if (clone_flags & CLONE_PARENT_SETTID)
- 			put_user(nr, parent_tidptr);
-@@ -1624,12 +1626,14 @@ long do_fork(unsigned long clone_flags,
- 
- 		/* forking complete and child started to run, tell ptracer */
- 		if (unlikely(trace))
--			ptrace_event(trace, nr);
-+			ptrace_event_pid(trace, pid);
- 
- 		if (clone_flags & CLONE_VFORK) {
- 			if (!wait_for_vfork_done(p, &vfork))
--				ptrace_event(PTRACE_EVENT_VFORK_DONE, nr);
-+				ptrace_event_pid(PTRACE_EVENT_VFORK_DONE, pid);
- 		}
-+
-+		put_pid(pid);
- 	} else {
- 		nr = PTR_ERR(p);
- 	}
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index d34131ca372b..3dc6a61bf06a 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -886,8 +886,8 @@ static int irq_thread(void *data)
- 		irq_thread_check_affinity(desc, action);
- 
- 		action_ret = handler_fn(desc, action);
--		if (!noirqdebug)
--			note_interrupt(action->irq, desc, action_ret);
-+		if (action_ret == IRQ_HANDLED)
-+			atomic_inc(&desc->threads_handled);
- 
- 		wake_threads_waitq(desc);
- 	}
-diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
-index a1d8cc63b56e..e2514b0e439e 100644
---- a/kernel/irq/spurious.c
-+++ b/kernel/irq/spurious.c
-@@ -270,6 +270,8 @@ try_misrouted_irq(unsigned int irq, struct irq_desc *desc,
- 	return action && (action->flags & IRQF_IRQPOLL);
- }
- 
-+#define SPURIOUS_DEFERRED	0x80000000
-+
- void note_interrupt(unsigned int irq, struct irq_desc *desc,
- 		    irqreturn_t action_ret)
- {
-@@ -277,15 +279,111 @@ void note_interrupt(unsigned int irq, struct irq_desc *desc,
- 	    irq_settings_is_polled(desc))
- 		return;
- 
--	/* we get here again via the threaded handler */
--	if (action_ret == IRQ_WAKE_THREAD)
--		return;
--
- 	if (bad_action_ret(action_ret)) {
- 		report_bad_irq(irq, desc, action_ret);
- 		return;
- 	}
- 
-+	/*
-+	 * We cannot call note_interrupt from the threaded handler
-+	 * because we need to look at the compound of all handlers
-+	 * (primary and threaded). Aside of that in the threaded
-+	 * shared case we have no serialization against an incoming
-+	 * hardware interrupt while we are dealing with a threaded
-+	 * result.
-+	 *
-+	 * So in case a thread is woken, we just note the fact and
-+	 * defer the analysis to the next hardware interrupt.
-+	 *
-+	 * The threaded handlers store whether they sucessfully
-+	 * handled an interrupt and we check whether that number
-+	 * changed versus the last invocation.
-+	 *
-+	 * We could handle all interrupts with the delayed by one
-+	 * mechanism, but for the non forced threaded case we'd just
-+	 * add pointless overhead to the straight hardirq interrupts
-+	 * for the sake of a few lines less code.
-+	 */
-+	if (action_ret & IRQ_WAKE_THREAD) {
-+		/*
-+		 * There is a thread woken. Check whether one of the
-+		 * shared primary handlers returned IRQ_HANDLED. If
-+		 * not we defer the spurious detection to the next
-+		 * interrupt.
-+		 */
-+		if (action_ret == IRQ_WAKE_THREAD) {
-+			int handled;
-+			/*
-+			 * We use bit 31 of thread_handled_last to
-+			 * denote the deferred spurious detection
-+			 * active. No locking necessary as
-+			 * thread_handled_last is only accessed here
-+			 * and we have the guarantee that hard
-+			 * interrupts are not reentrant.
-+			 */
-+			if (!(desc->threads_handled_last & SPURIOUS_DEFERRED)) {
-+				desc->threads_handled_last |= SPURIOUS_DEFERRED;
-+				return;
-+			}
-+			/*
-+			 * Check whether one of the threaded handlers
-+			 * returned IRQ_HANDLED since the last
-+			 * interrupt happened.
-+			 *
-+			 * For simplicity we just set bit 31, as it is
-+			 * set in threads_handled_last as well. So we
-+			 * avoid extra masking. And we really do not
-+			 * care about the high bits of the handled
-+			 * count. We just care about the count being
-+			 * different than the one we saw before.
-+			 */
-+			handled = atomic_read(&desc->threads_handled);
-+			handled |= SPURIOUS_DEFERRED;
-+			if (handled != desc->threads_handled_last) {
-+				action_ret = IRQ_HANDLED;
-+				/*
-+				 * Note: We keep the SPURIOUS_DEFERRED
-+				 * bit set. We are handling the
-+				 * previous invocation right now.
-+				 * Keep it for the current one, so the
-+				 * next hardware interrupt will
-+				 * account for it.
-+				 */
-+				desc->threads_handled_last = handled;
-+			} else {
-+				/*
-+				 * None of the threaded handlers felt
-+				 * responsible for the last interrupt
-+				 *
-+				 * We keep the SPURIOUS_DEFERRED bit
-+				 * set in threads_handled_last as we
-+				 * need to account for the current
-+				 * interrupt as well.
-+				 */
-+				action_ret = IRQ_NONE;
-+			}
-+		} else {
-+			/*
-+			 * One of the primary handlers returned
-+			 * IRQ_HANDLED. So we don't care about the
-+			 * threaded handlers on the same line. Clear
-+			 * the deferred detection bit.
-+			 *
-+			 * In theory we could/should check whether the
-+			 * deferred bit is set and take the result of
-+			 * the previous run into account here as
-+			 * well. But it's really not worth the
-+			 * trouble. If every other interrupt is
-+			 * handled we never trigger the spurious
-+			 * detector. And if this is just the one out
-+			 * of 100k unhandled ones which is handled
-+			 * then we merily delay the spurious detection
-+			 * by one hard interrupt. Not a real problem.
-+			 */
-+			desc->threads_handled_last &= ~SPURIOUS_DEFERRED;
-+		}
-+	}
-+
- 	if (unlikely(action_ret == IRQ_NONE)) {
- 		/*
- 		 * If we are seeing only the odd spurious IRQ caused by
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 9a130ec06f7a..c2390f41307b 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -262,7 +262,7 @@ static void create_kthread(struct kthread_create_info *create)
-  * kthread_stop() has been called).  The return value should be zero
-  * or a negative error number; it will be passed to kthread_stop().
-  *
-- * Returns a task_struct or ERR_PTR(-ENOMEM).
-+ * Returns a task_struct or ERR_PTR(-ENOMEM) or ERR_PTR(-EINTR).
-  */
- struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
- 					   void *data, int node,
-@@ -298,7 +298,7 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
- 		 * that thread.
- 		 */
- 		if (xchg(&create->done, NULL))
--			return ERR_PTR(-ENOMEM);
-+			return ERR_PTR(-EINTR);
- 		/*
- 		 * kthreadd (or new kernel thread) will call complete()
- 		 * shortly.
-diff --git a/kernel/locking/rtmutex-debug.h b/kernel/locking/rtmutex-debug.h
-index 14193d596d78..ab29b6a22669 100644
---- a/kernel/locking/rtmutex-debug.h
-+++ b/kernel/locking/rtmutex-debug.h
-@@ -31,3 +31,8 @@ static inline int debug_rt_mutex_detect_deadlock(struct rt_mutex_waiter *waiter,
- {
- 	return (waiter != NULL);
- }
-+
-+static inline void rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
-+{
-+	debug_rt_mutex_print_deadlock(w);
-+}
-diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
-index a620d4d08ca6..fc605941b9b8 100644
---- a/kernel/locking/rtmutex.c
-+++ b/kernel/locking/rtmutex.c
-@@ -83,6 +83,47 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
- 		owner = *p;
- 	} while (cmpxchg(p, owner, owner | RT_MUTEX_HAS_WAITERS) != owner);
- }
-+
-+/*
-+ * Safe fastpath aware unlock:
-+ * 1) Clear the waiters bit
-+ * 2) Drop lock->wait_lock
-+ * 3) Try to unlock the lock with cmpxchg
-+ */
-+static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
-+	__releases(lock->wait_lock)
-+{
-+	struct task_struct *owner = rt_mutex_owner(lock);
-+
-+	clear_rt_mutex_waiters(lock);
-+	raw_spin_unlock(&lock->wait_lock);
-+	/*
-+	 * If a new waiter comes in between the unlock and the cmpxchg
-+	 * we have two situations:
-+	 *
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 * cmpxchg(p, owner, 0) == owner
-+	 *					mark_rt_mutex_waiters(lock);
-+	 *					acquire(lock);
-+	 * or:
-+	 *
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 *					mark_rt_mutex_waiters(lock);
-+	 *
-+	 * cmpxchg(p, owner, 0) != owner
-+	 *					enqueue_waiter();
-+	 *					unlock(wait_lock);
-+	 * lock(wait_lock);
-+	 * wake waiter();
-+	 * unlock(wait_lock);
-+	 *					lock(wait_lock);
-+	 *					acquire(lock);
-+	 */
-+	return rt_mutex_cmpxchg(lock, owner, NULL);
-+}
-+
- #else
- # define rt_mutex_cmpxchg(l,c,n)	(0)
- static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
-@@ -90,6 +131,17 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
- 	lock->owner = (struct task_struct *)
- 			((unsigned long)lock->owner | RT_MUTEX_HAS_WAITERS);
- }
-+
-+/*
-+ * Simple slow path only version: lock->owner is protected by lock->wait_lock.
-+ */
-+static inline bool unlock_rt_mutex_safe(struct rt_mutex *lock)
-+	__releases(lock->wait_lock)
-+{
-+	lock->owner = NULL;
-+	raw_spin_unlock(&lock->wait_lock);
-+	return true;
-+}
- #endif
- 
- static inline int
-@@ -260,27 +312,36 @@ static void rt_mutex_adjust_prio(struct task_struct *task)
-  */
- int max_lock_depth = 1024;
- 
-+static inline struct rt_mutex *task_blocked_on_lock(struct task_struct *p)
-+{
-+	return p->pi_blocked_on ? p->pi_blocked_on->lock : NULL;
-+}
-+
- /*
-  * Adjust the priority chain. Also used for deadlock detection.
-  * Decreases task's usage by one - may thus free the task.
-  *
-- * @task: the task owning the mutex (owner) for which a chain walk is probably
-- *	  needed
-+ * @task:	the task owning the mutex (owner) for which a chain walk is
-+ *		probably needed
-  * @deadlock_detect: do we have to carry out deadlock detection?
-- * @orig_lock: the mutex (can be NULL if we are walking the chain to recheck
-- * 	       things for a task that has just got its priority adjusted, and
-- *	       is waiting on a mutex)
-+ * @orig_lock:	the mutex (can be NULL if we are walking the chain to recheck
-+ *		things for a task that has just got its priority adjusted, and
-+ *		is waiting on a mutex)
-+ * @next_lock:	the mutex on which the owner of @orig_lock was blocked before
-+ *		we dropped its pi_lock. Is never dereferenced, only used for
-+ *		comparison to detect lock chain changes.
-  * @orig_waiter: rt_mutex_waiter struct for the task that has just donated
-- *		 its priority to the mutex owner (can be NULL in the case
-- *		 depicted above or if the top waiter is gone away and we are
-- *		 actually deboosting the owner)
-- * @top_task: the current top waiter
-+ *		its priority to the mutex owner (can be NULL in the case
-+ *		depicted above or if the top waiter is gone away and we are
-+ *		actually deboosting the owner)
-+ * @top_task:	the current top waiter
-  *
-  * Returns 0 or -EDEADLK.
-  */
- static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 				      int deadlock_detect,
- 				      struct rt_mutex *orig_lock,
-+				      struct rt_mutex *next_lock,
- 				      struct rt_mutex_waiter *orig_waiter,
- 				      struct task_struct *top_task)
- {
-@@ -314,7 +375,7 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 		}
- 		put_task_struct(task);
- 
--		return deadlock_detect ? -EDEADLK : 0;
-+		return -EDEADLK;
- 	}
-  retry:
- 	/*
-@@ -339,6 +400,18 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 		goto out_unlock_pi;
- 
- 	/*
-+	 * We dropped all locks after taking a refcount on @task, so
-+	 * the task might have moved on in the lock chain or even left
-+	 * the chain completely and blocks now on an unrelated lock or
-+	 * on @orig_lock.
-+	 *
-+	 * We stored the lock on which @task was blocked in @next_lock,
-+	 * so we can detect the chain change.
-+	 */
-+	if (next_lock != waiter->lock)
-+		goto out_unlock_pi;
-+
-+	/*
- 	 * Drop out, when the task has no waiters. Note,
- 	 * top_waiter can be NULL, when we are in the deboosting
- 	 * mode!
-@@ -377,7 +450,7 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 	if (lock == orig_lock || rt_mutex_owner(lock) == top_task) {
- 		debug_rt_mutex_deadlock(deadlock_detect, orig_waiter, lock);
- 		raw_spin_unlock(&lock->wait_lock);
--		ret = deadlock_detect ? -EDEADLK : 0;
-+		ret = -EDEADLK;
- 		goto out_unlock_pi;
- 	}
- 
-@@ -422,11 +495,26 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 		__rt_mutex_adjust_prio(task);
- 	}
- 
-+	/*
-+	 * Check whether the task which owns the current lock is pi
-+	 * blocked itself. If yes we store a pointer to the lock for
-+	 * the lock chain change detection above. After we dropped
-+	 * task->pi_lock next_lock cannot be dereferenced anymore.
-+	 */
-+	next_lock = task_blocked_on_lock(task);
-+
- 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 
- 	top_waiter = rt_mutex_top_waiter(lock);
- 	raw_spin_unlock(&lock->wait_lock);
- 
-+	/*
-+	 * We reached the end of the lock chain. Stop right here. No
-+	 * point to go back just to figure that out.
-+	 */
-+	if (!next_lock)
-+		goto out_put_task;
-+
- 	if (!detect_deadlock && waiter != top_waiter)
- 		goto out_put_task;
- 
-@@ -536,8 +624,9 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- {
- 	struct task_struct *owner = rt_mutex_owner(lock);
- 	struct rt_mutex_waiter *top_waiter = waiter;
--	unsigned long flags;
-+	struct rt_mutex *next_lock;
- 	int chain_walk = 0, res;
-+	unsigned long flags;
- 
- 	/*
- 	 * Early deadlock detection. We really don't want the task to
-@@ -548,7 +637,7 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- 	 * which is wrong, as the other waiter is not in a deadlock
- 	 * situation.
- 	 */
--	if (detect_deadlock && owner == task)
-+	if (owner == task)
- 		return -EDEADLK;
- 
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
-@@ -569,20 +658,28 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- 	if (!owner)
- 		return 0;
- 
-+	raw_spin_lock_irqsave(&owner->pi_lock, flags);
- 	if (waiter == rt_mutex_top_waiter(lock)) {
--		raw_spin_lock_irqsave(&owner->pi_lock, flags);
- 		rt_mutex_dequeue_pi(owner, top_waiter);
- 		rt_mutex_enqueue_pi(owner, waiter);
- 
- 		__rt_mutex_adjust_prio(owner);
- 		if (owner->pi_blocked_on)
- 			chain_walk = 1;
--		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
--	}
--	else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock))
-+	} else if (debug_rt_mutex_detect_deadlock(waiter, detect_deadlock)) {
- 		chain_walk = 1;
-+	}
- 
--	if (!chain_walk)
-+	/* Store the lock on which owner is blocked or NULL */
-+	next_lock = task_blocked_on_lock(owner);
-+
-+	raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
-+	/*
-+	 * Even if full deadlock detection is on, if the owner is not
-+	 * blocked itself, we can avoid finding this out in the chain
-+	 * walk.
-+	 */
-+	if (!chain_walk || !next_lock)
- 		return 0;
- 
- 	/*
-@@ -594,8 +691,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- 
- 	raw_spin_unlock(&lock->wait_lock);
- 
--	res = rt_mutex_adjust_prio_chain(owner, detect_deadlock, lock, waiter,
--					 task);
-+	res = rt_mutex_adjust_prio_chain(owner, detect_deadlock, lock,
-+					 next_lock, waiter, task);
- 
- 	raw_spin_lock(&lock->wait_lock);
- 
-@@ -605,7 +702,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- /*
-  * Wake up the next waiter on the lock.
-  *
-- * Remove the top waiter from the current tasks waiter list and wake it up.
-+ * Remove the top waiter from the current tasks pi waiter list and
-+ * wake it up.
-  *
-  * Called with lock->wait_lock held.
-  */
-@@ -626,10 +724,23 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
- 	 */
- 	rt_mutex_dequeue_pi(current, waiter);
- 
--	rt_mutex_set_owner(lock, NULL);
-+	/*
-+	 * As we are waking up the top waiter, and the waiter stays
-+	 * queued on the lock until it gets the lock, this lock
-+	 * obviously has waiters. Just set the bit here and this has
-+	 * the added benefit of forcing all new tasks into the
-+	 * slow path making sure no task of lower priority than
-+	 * the top waiter can steal this lock.
-+	 */
-+	lock->owner = (void *) RT_MUTEX_HAS_WAITERS;
- 
- 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
- 
-+	/*
-+	 * It's safe to dereference waiter as it cannot go away as
-+	 * long as we hold lock->wait_lock. The waiter task needs to
-+	 * acquire it in order to dequeue the waiter.
-+	 */
- 	wake_up_process(waiter->task);
- }
- 
-@@ -644,8 +755,8 @@ static void remove_waiter(struct rt_mutex *lock,
- {
- 	int first = (waiter == rt_mutex_top_waiter(lock));
- 	struct task_struct *owner = rt_mutex_owner(lock);
-+	struct rt_mutex *next_lock = NULL;
- 	unsigned long flags;
--	int chain_walk = 0;
- 
- 	raw_spin_lock_irqsave(&current->pi_lock, flags);
- 	rt_mutex_dequeue(lock, waiter);
-@@ -669,13 +780,13 @@ static void remove_waiter(struct rt_mutex *lock,
- 		}
- 		__rt_mutex_adjust_prio(owner);
- 
--		if (owner->pi_blocked_on)
--			chain_walk = 1;
-+		/* Store the lock on which owner is blocked or NULL */
-+		next_lock = task_blocked_on_lock(owner);
- 
- 		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
- 	}
- 
--	if (!chain_walk)
-+	if (!next_lock)
- 		return;
- 
- 	/* gets dropped in rt_mutex_adjust_prio_chain()! */
-@@ -683,7 +794,7 @@ static void remove_waiter(struct rt_mutex *lock,
- 
- 	raw_spin_unlock(&lock->wait_lock);
- 
--	rt_mutex_adjust_prio_chain(owner, 0, lock, NULL, current);
-+	rt_mutex_adjust_prio_chain(owner, 0, lock, next_lock, NULL, current);
- 
- 	raw_spin_lock(&lock->wait_lock);
- }
-@@ -696,6 +807,7 @@ static void remove_waiter(struct rt_mutex *lock,
- void rt_mutex_adjust_pi(struct task_struct *task)
- {
- 	struct rt_mutex_waiter *waiter;
-+	struct rt_mutex *next_lock;
- 	unsigned long flags;
- 
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
-@@ -706,12 +818,13 @@ void rt_mutex_adjust_pi(struct task_struct *task)
- 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 		return;
- 	}
--
-+	next_lock = waiter->lock;
- 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 
- 	/* gets dropped in rt_mutex_adjust_prio_chain()! */
- 	get_task_struct(task);
--	rt_mutex_adjust_prio_chain(task, 0, NULL, NULL, task);
-+
-+	rt_mutex_adjust_prio_chain(task, 0, NULL, next_lock, NULL, task);
- }
- 
- /**
-@@ -763,6 +876,26 @@ __rt_mutex_slowlock(struct rt_mutex *lock, int state,
- 	return ret;
- }
- 
-+static void rt_mutex_handle_deadlock(int res, int detect_deadlock,
-+				     struct rt_mutex_waiter *w)
-+{
-+	/*
-+	 * If the result is not -EDEADLOCK or the caller requested
-+	 * deadlock detection, nothing to do here.
-+	 */
-+	if (res != -EDEADLOCK || detect_deadlock)
-+		return;
-+
-+	/*
-+	 * Yell lowdly and stop the task right here.
-+	 */
-+	rt_mutex_print_deadlock(w);
-+	while (1) {
-+		set_current_state(TASK_INTERRUPTIBLE);
-+		schedule();
-+	}
-+}
-+
- /*
-  * Slow path lock function:
-  */
-@@ -802,8 +935,10 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
- 
- 	set_current_state(TASK_RUNNING);
- 
--	if (unlikely(ret))
-+	if (unlikely(ret)) {
- 		remove_waiter(lock, &waiter);
-+		rt_mutex_handle_deadlock(ret, detect_deadlock, &waiter);
-+	}
- 
- 	/*
- 	 * try_to_take_rt_mutex() sets the waiter bit
-@@ -859,12 +994,49 @@ rt_mutex_slowunlock(struct rt_mutex *lock)
- 
- 	rt_mutex_deadlock_account_unlock(current);
- 
--	if (!rt_mutex_has_waiters(lock)) {
--		lock->owner = NULL;
--		raw_spin_unlock(&lock->wait_lock);
--		return;
-+	/*
-+	 * We must be careful here if the fast path is enabled. If we
-+	 * have no waiters queued we cannot set owner to NULL here
-+	 * because of:
-+	 *
-+	 * foo->lock->owner = NULL;
-+	 *			rtmutex_lock(foo->lock);   <- fast path
-+	 *			free = atomic_dec_and_test(foo->refcnt);
-+	 *			rtmutex_unlock(foo->lock); <- fast path
-+	 *			if (free)
-+	 *				kfree(foo);
-+	 * raw_spin_unlock(foo->lock->wait_lock);
-+	 *
-+	 * So for the fastpath enabled kernel:
-+	 *
-+	 * Nothing can set the waiters bit as long as we hold
-+	 * lock->wait_lock. So we do the following sequence:
-+	 *
-+	 *	owner = rt_mutex_owner(lock);
-+	 *	clear_rt_mutex_waiters(lock);
-+	 *	raw_spin_unlock(&lock->wait_lock);
-+	 *	if (cmpxchg(&lock->owner, owner, 0) == owner)
-+	 *		return;
-+	 *	goto retry;
-+	 *
-+	 * The fastpath disabled variant is simple as all access to
-+	 * lock->owner is serialized by lock->wait_lock:
-+	 *
-+	 *	lock->owner = NULL;
-+	 *	raw_spin_unlock(&lock->wait_lock);
-+	 */
-+	while (!rt_mutex_has_waiters(lock)) {
-+		/* Drops lock->wait_lock ! */
-+		if (unlock_rt_mutex_safe(lock) == true)
-+			return;
-+		/* Relock the rtmutex and try again */
-+		raw_spin_lock(&lock->wait_lock);
- 	}
- 
-+	/*
-+	 * The wakeup next waiter path does not suffer from the above
-+	 * race. See the comments there.
-+	 */
- 	wakeup_next_waiter(lock);
- 
- 	raw_spin_unlock(&lock->wait_lock);
-@@ -1112,7 +1284,8 @@ int rt_mutex_start_proxy_lock(struct rt_mutex *lock,
- 		return 1;
- 	}
- 
--	ret = task_blocks_on_rt_mutex(lock, waiter, task, detect_deadlock);
-+	/* We enforce deadlock detection for futexes */
-+	ret = task_blocks_on_rt_mutex(lock, waiter, task, 1);
- 
- 	if (ret && !rt_mutex_owner(lock)) {
- 		/*
-diff --git a/kernel/locking/rtmutex.h b/kernel/locking/rtmutex.h
-index a1a1dd06421d..f6a1f3c133b1 100644
---- a/kernel/locking/rtmutex.h
-+++ b/kernel/locking/rtmutex.h
-@@ -24,3 +24,8 @@
- #define debug_rt_mutex_print_deadlock(w)		do { } while (0)
- #define debug_rt_mutex_detect_deadlock(w,d)		(d)
- #define debug_rt_mutex_reset_waiter(w)			do { } while (0)
-+
-+static inline void rt_mutex_print_deadlock(struct rt_mutex_waiter *w)
-+{
-+	WARN(1, "rtmutex deadlock detected\n");
-+}
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 7228258b85ec..221229cf0190 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -2413,6 +2413,7 @@ int unregister_console(struct console *console)
- 	if (console_drivers != NULL && console->flags & CON_CONSDEV)
- 		console_drivers->flags |= CON_CONSDEV;
- 
-+	console->flags &= ~CON_ENABLED;
- 	console_unlock();
- 	console_sysfs_notify();
- 	return res;
-diff --git a/lib/idr.c b/lib/idr.c
-index 2642fa8e424d..4df67928816e 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -249,7 +249,7 @@ static int sub_alloc(struct idr *idp, int *starting_id, struct idr_layer **pa,
- 			id = (id | ((1 << (IDR_BITS * l)) - 1)) + 1;
- 
- 			/* if already at the top layer, we need to grow */
--			if (id >= 1 << (idp->layers * IDR_BITS)) {
-+			if (id > idr_max(idp->layers)) {
- 				*starting_id = id;
- 				return -EAGAIN;
- 			}
-@@ -811,12 +811,10 @@ void *idr_replace(struct idr *idp, void *ptr, int id)
- 	if (!p)
- 		return ERR_PTR(-EINVAL);
- 
--	n = (p->layer+1) * IDR_BITS;
--
--	if (id >= (1 << n))
-+	if (id > idr_max(p->layer + 1))
- 		return ERR_PTR(-EINVAL);
- 
--	n -= IDR_BITS;
-+	n = p->layer * IDR_BITS;
- 	while ((n > 0) && p) {
- 		p = p->ary[(id >> n) & IDR_MASK];
- 		n -= IDR_BITS;
-diff --git a/lib/lz4/lz4_decompress.c b/lib/lz4/lz4_decompress.c
-index 99a03acb7d47..b74da447e81e 100644
---- a/lib/lz4/lz4_decompress.c
-+++ b/lib/lz4/lz4_decompress.c
-@@ -108,6 +108,8 @@ static int lz4_uncompress(const char *source, char *dest, int osize)
- 		if (length == ML_MASK) {
- 			for (; *ip == 255; length += 255)
- 				ip++;
-+			if (unlikely(length > (size_t)(length + *ip)))
-+				goto _output_error;
- 			length += *ip++;
- 		}
- 
-@@ -157,7 +159,7 @@ static int lz4_uncompress(const char *source, char *dest, int osize)
- 
- 	/* write overflow error detected */
- _output_error:
--	return (int) (-(((char *)ip) - source));
-+	return -1;
- }
- 
- static int lz4_uncompress_unknownoutputsize(const char *source, char *dest,
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 1b5a95f0fa01..2f42b9c2f345 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -264,6 +264,9 @@ config MIGRATION
- 	  pages as migration can relocate pages to satisfy a huge page
- 	  allocation instead of reclaiming.
- 
-+config ARCH_ENABLE_HUGEPAGE_MIGRATION
-+	boolean
-+
- config PHYS_ADDR_T_64BIT
- 	def_bool 64BIT || ARCH_PHYS_ADDR_T_64BIT
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 5177c6d4a2dd..67c927a10add 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2684,7 +2684,8 @@ static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
- 	 * free their memory.
- 	 */
- 	if (unlikely(test_thread_flag(TIF_MEMDIE) ||
--		     fatal_signal_pending(current)))
-+		     fatal_signal_pending(current) ||
-+		     current->flags & PF_EXITING))
- 		goto bypass;
- 
- 	if (unlikely(task_in_memcg_oom(current)))
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 9ccef39a9de2..eb8fb727bd67 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -204,9 +204,9 @@ static int kill_proc(struct task_struct *t, unsigned long addr, int trapno,
- #endif
- 	si.si_addr_lsb = compound_order(compound_head(page)) + PAGE_SHIFT;
- 
--	if ((flags & MF_ACTION_REQUIRED) && t == current) {
-+	if ((flags & MF_ACTION_REQUIRED) && t->mm == current->mm) {
- 		si.si_code = BUS_MCEERR_AR;
--		ret = force_sig_info(SIGBUS, &si, t);
-+		ret = force_sig_info(SIGBUS, &si, current);
- 	} else {
- 		/*
- 		 * Don't use force here, it's convenient if the signal
-@@ -380,20 +380,51 @@ static void kill_procs(struct list_head *to_kill, int forcekill, int trapno,
- 	}
- }
- 
--static int task_early_kill(struct task_struct *tsk)
-+/*
-+ * Find a dedicated thread which is supposed to handle SIGBUS(BUS_MCEERR_AO)
-+ * on behalf of the thread group. Return task_struct of the (first found)
-+ * dedicated thread if found, and return NULL otherwise.
-+ *
-+ * We already hold read_lock(&tasklist_lock) in the caller, so we don't
-+ * have to call rcu_read_lock/unlock() in this function.
-+ */
-+static struct task_struct *find_early_kill_thread(struct task_struct *tsk)
- {
-+	struct task_struct *t;
-+
-+	for_each_thread(tsk, t)
-+		if ((t->flags & PF_MCE_PROCESS) && (t->flags & PF_MCE_EARLY))
-+			return t;
-+	return NULL;
-+}
-+
-+/*
-+ * Determine whether a given process is "early kill" process which expects
-+ * to be signaled when some page under the process is hwpoisoned.
-+ * Return task_struct of the dedicated thread (main thread unless explicitly
-+ * specified) if the process is "early kill," and otherwise returns NULL.
-+ */
-+static struct task_struct *task_early_kill(struct task_struct *tsk,
-+					   int force_early)
-+{
-+	struct task_struct *t;
- 	if (!tsk->mm)
--		return 0;
--	if (tsk->flags & PF_MCE_PROCESS)
--		return !!(tsk->flags & PF_MCE_EARLY);
--	return sysctl_memory_failure_early_kill;
-+		return NULL;
-+	if (force_early)
-+		return tsk;
-+	t = find_early_kill_thread(tsk);
-+	if (t)
-+		return t;
-+	if (sysctl_memory_failure_early_kill)
-+		return tsk;
-+	return NULL;
- }
- 
- /*
-  * Collect processes when the error hit an anonymous page.
-  */
- static void collect_procs_anon(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -408,16 +439,17 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
- 	read_lock(&tasklist_lock);
- 	for_each_process (tsk) {
- 		struct anon_vma_chain *vmac;
-+		struct task_struct *t = task_early_kill(tsk, force_early);
- 
--		if (!task_early_kill(tsk))
-+		if (!t)
- 			continue;
- 		anon_vma_interval_tree_foreach(vmac, &av->rb_root,
- 					       pgoff, pgoff) {
- 			vma = vmac->vma;
- 			if (!page_mapped_in_vma(page, vma))
- 				continue;
--			if (vma->vm_mm == tsk->mm)
--				add_to_kill(tsk, page, vma, to_kill, tkc);
-+			if (vma->vm_mm == t->mm)
-+				add_to_kill(t, page, vma, to_kill, tkc);
- 		}
- 	}
- 	read_unlock(&tasklist_lock);
-@@ -428,7 +460,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
-  * Collect processes when the error hit a file mapped page.
-  */
- static void collect_procs_file(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -438,10 +470,10 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
- 	read_lock(&tasklist_lock);
- 	for_each_process(tsk) {
- 		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
-+		struct task_struct *t = task_early_kill(tsk, force_early);
- 
--		if (!task_early_kill(tsk))
-+		if (!t)
- 			continue;
--
- 		vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff,
- 				      pgoff) {
- 			/*
-@@ -451,8 +483,8 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
- 			 * Assume applications who requested early kill want
- 			 * to be informed of all such data corruptions.
- 			 */
--			if (vma->vm_mm == tsk->mm)
--				add_to_kill(tsk, page, vma, to_kill, tkc);
-+			if (vma->vm_mm == t->mm)
-+				add_to_kill(t, page, vma, to_kill, tkc);
- 		}
- 	}
- 	read_unlock(&tasklist_lock);
-@@ -465,7 +497,8 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
-  * First preallocate one tokill structure outside the spin locks,
-  * so that we can kill at least one process reasonably reliable.
-  */
--static void collect_procs(struct page *page, struct list_head *tokill)
-+static void collect_procs(struct page *page, struct list_head *tokill,
-+				int force_early)
- {
- 	struct to_kill *tk;
- 
-@@ -476,9 +509,9 @@ static void collect_procs(struct page *page, struct list_head *tokill)
- 	if (!tk)
- 		return;
- 	if (PageAnon(page))
--		collect_procs_anon(page, tokill, &tk);
-+		collect_procs_anon(page, tokill, &tk, force_early);
- 	else
--		collect_procs_file(page, tokill, &tk);
-+		collect_procs_file(page, tokill, &tk, force_early);
- 	kfree(tk);
- }
- 
-@@ -963,7 +996,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
- 	 * there's nothing that can be done.
- 	 */
- 	if (kill)
--		collect_procs(ppage, &tokill);
-+		collect_procs(ppage, &tokill, flags & MF_ACTION_REQUIRED);
- 
- 	ret = try_to_unmap(ppage, ttu);
- 	if (ret != SWAP_SUCCESS)
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index a4317da60532..154af210178b 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -2398,7 +2398,7 @@ int test_clear_page_writeback(struct page *page)
- 	return ret;
- }
- 
--int test_set_page_writeback(struct page *page)
-+int __test_set_page_writeback(struct page *page, bool keep_write)
- {
- 	struct address_space *mapping = page_mapping(page);
- 	int ret;
-@@ -2423,9 +2423,10 @@ int test_set_page_writeback(struct page *page)
- 			radix_tree_tag_clear(&mapping->page_tree,
- 						page_index(page),
- 						PAGECACHE_TAG_DIRTY);
--		radix_tree_tag_clear(&mapping->page_tree,
--				     page_index(page),
--				     PAGECACHE_TAG_TOWRITE);
-+		if (!keep_write)
-+			radix_tree_tag_clear(&mapping->page_tree,
-+						page_index(page),
-+						PAGECACHE_TAG_TOWRITE);
- 		spin_unlock_irqrestore(&mapping->tree_lock, flags);
- 	} else {
- 		ret = TestSetPageWriteback(page);
-@@ -2436,7 +2437,7 @@ int test_set_page_writeback(struct page *page)
- 	return ret;
- 
- }
--EXPORT_SYMBOL(test_set_page_writeback);
-+EXPORT_SYMBOL(__test_set_page_writeback);
- 
- /*
-  * Return true if any of the pages in the mapping are marked with the
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5dba2933c9c0..56eb0eb382b1 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -6009,53 +6009,65 @@ static inline int pfn_to_bitidx(struct zone *zone, unsigned long pfn)
-  * @end_bitidx: The last bit of interest
-  * returns pageblock_bits flags
-  */
--unsigned long get_pageblock_flags_group(struct page *page,
--					int start_bitidx, int end_bitidx)
-+unsigned long get_pageblock_flags_mask(struct page *page,
-+					unsigned long end_bitidx,
-+					unsigned long mask)
- {
- 	struct zone *zone;
- 	unsigned long *bitmap;
--	unsigned long pfn, bitidx;
--	unsigned long flags = 0;
--	unsigned long value = 1;
-+	unsigned long pfn, bitidx, word_bitidx;
-+	unsigned long word;
- 
- 	zone = page_zone(page);
- 	pfn = page_to_pfn(page);
- 	bitmap = get_pageblock_bitmap(zone, pfn);
- 	bitidx = pfn_to_bitidx(zone, pfn);
-+	word_bitidx = bitidx / BITS_PER_LONG;
-+	bitidx &= (BITS_PER_LONG-1);
- 
--	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
--		if (test_bit(bitidx + start_bitidx, bitmap))
--			flags |= value;
--
--	return flags;
-+	word = bitmap[word_bitidx];
-+	bitidx += end_bitidx;
-+	return (word >> (BITS_PER_LONG - bitidx - 1)) & mask;
- }
- 
- /**
-- * set_pageblock_flags_group - Set the requested group of flags for a pageblock_nr_pages block of pages
-+ * set_pageblock_flags_mask - Set the requested group of flags for a pageblock_nr_pages block of pages
-  * @page: The page within the block of interest
-  * @start_bitidx: The first bit of interest
-  * @end_bitidx: The last bit of interest
-  * @flags: The flags to set
-  */
--void set_pageblock_flags_group(struct page *page, unsigned long flags,
--					int start_bitidx, int end_bitidx)
-+void set_pageblock_flags_mask(struct page *page, unsigned long flags,
-+					unsigned long end_bitidx,
-+					unsigned long mask)
- {
- 	struct zone *zone;
- 	unsigned long *bitmap;
--	unsigned long pfn, bitidx;
--	unsigned long value = 1;
-+	unsigned long pfn, bitidx, word_bitidx;
-+	unsigned long old_word, word;
-+
-+	BUILD_BUG_ON(NR_PAGEBLOCK_BITS != 4);
- 
- 	zone = page_zone(page);
- 	pfn = page_to_pfn(page);
- 	bitmap = get_pageblock_bitmap(zone, pfn);
- 	bitidx = pfn_to_bitidx(zone, pfn);
-+	word_bitidx = bitidx / BITS_PER_LONG;
-+	bitidx &= (BITS_PER_LONG-1);
-+
- 	VM_BUG_ON_PAGE(!zone_spans_pfn(zone, pfn), page);
- 
--	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
--		if (flags & value)
--			__set_bit(bitidx + start_bitidx, bitmap);
--		else
--			__clear_bit(bitidx + start_bitidx, bitmap);
-+	bitidx += end_bitidx;
-+	mask <<= (BITS_PER_LONG - bitidx - 1);
-+	flags <<= (BITS_PER_LONG - bitidx - 1);
-+
-+	word = ACCESS_ONCE(bitmap[word_bitidx]);
-+	for (;;) {
-+		old_word = cmpxchg(&bitmap[word_bitidx], word, (word & ~mask) | flags);
-+		if (word == old_word)
-+			break;
-+		word = old_word;
-+	}
- }
- 
- /*
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 83bfafabb47b..14d1e28774e5 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -103,6 +103,7 @@ static inline void anon_vma_free(struct anon_vma *anon_vma)
- 	 * LOCK should suffice since the actual taking of the lock must
- 	 * happen _before_ what follows.
- 	 */
-+	might_sleep();
- 	if (rwsem_is_locked(&anon_vma->root->rwsem)) {
- 		anon_vma_lock_write(anon_vma);
- 		anon_vma_unlock_write(anon_vma);
-@@ -426,8 +427,9 @@ struct anon_vma *page_get_anon_vma(struct page *page)
- 	 * above cannot corrupt).
- 	 */
- 	if (!page_mapped(page)) {
-+		rcu_read_unlock();
- 		put_anon_vma(anon_vma);
--		anon_vma = NULL;
-+		return NULL;
- 	}
- out:
- 	rcu_read_unlock();
-@@ -477,9 +479,9 @@ struct anon_vma *page_lock_anon_vma_read(struct page *page)
- 	}
- 
- 	if (!page_mapped(page)) {
-+		rcu_read_unlock();
- 		put_anon_vma(anon_vma);
--		anon_vma = NULL;
--		goto out;
-+		return NULL;
- 	}
- 
- 	/* we pinned the anon_vma, its safe to sleep */
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 32c661d66a45..a50bde6edbbc 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2525,10 +2525,17 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
- 
- 	for (i = 0; i <= ZONE_NORMAL; i++) {
- 		zone = &pgdat->node_zones[i];
-+		if (!populated_zone(zone))
-+			continue;
-+
- 		pfmemalloc_reserve += min_wmark_pages(zone);
- 		free_pages += zone_page_state(zone, NR_FREE_PAGES);
- 	}
- 
-+	/* If there are no reserves (unexpected config) then do not throttle */
-+	if (!pfmemalloc_reserve)
-+		return true;
-+
- 	wmark_ok = free_pages > pfmemalloc_reserve / 2;
- 
- 	/* kswapd must be awake if processes are being throttled */
-@@ -2553,9 +2560,9 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
- static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
- 					nodemask_t *nodemask)
- {
-+	struct zoneref *z;
- 	struct zone *zone;
--	int high_zoneidx = gfp_zone(gfp_mask);
--	pg_data_t *pgdat;
-+	pg_data_t *pgdat = NULL;
- 
- 	/*
- 	 * Kernel threads should not be throttled as they may be indirectly
-@@ -2574,10 +2581,34 @@ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
- 	if (fatal_signal_pending(current))
- 		goto out;
- 
--	/* Check if the pfmemalloc reserves are ok */
--	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
--	pgdat = zone->zone_pgdat;
--	if (pfmemalloc_watermark_ok(pgdat))
-+	/*
-+	 * Check if the pfmemalloc reserves are ok by finding the first node
-+	 * with a usable ZONE_NORMAL or lower zone. The expectation is that
-+	 * GFP_KERNEL will be required for allocating network buffers when
-+	 * swapping over the network so ZONE_HIGHMEM is unusable.
-+	 *
-+	 * Throttling is based on the first usable node and throttled processes
-+	 * wait on a queue until kswapd makes progress and wakes them. There
-+	 * is an affinity then between processes waking up and where reclaim
-+	 * progress has been made assuming the process wakes on the same node.
-+	 * More importantly, processes running on remote nodes will not compete
-+	 * for remote pfmemalloc reserves and processes on different nodes
-+	 * should make reasonable progress.
-+	 */
-+	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-+					gfp_mask, nodemask) {
-+		if (zone_idx(zone) > ZONE_NORMAL)
-+			continue;
-+
-+		/* Throttle based on the first usable node */
-+		pgdat = zone->zone_pgdat;
-+		if (pfmemalloc_watermark_ok(pgdat))
-+			goto out;
-+		break;
-+	}
-+
-+	/* If no zone was usable by the allocation flags then do not throttle */
-+	if (!pgdat)
- 		goto out;
- 
- 	/* Account for the throttling */
-@@ -3302,7 +3333,10 @@ static int kswapd(void *p)
- 		}
- 	}
- 
-+	tsk->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD);
- 	current->reclaim_state = NULL;
-+	lockdep_clear_current_reclaim_state();
-+
- 	return 0;
- }
- 
-diff --git a/net/bluetooth/6lowpan.c b/net/bluetooth/6lowpan.c
-index 73492b91105a..8796ffa08b43 100644
---- a/net/bluetooth/6lowpan.c
-+++ b/net/bluetooth/6lowpan.c
-@@ -420,12 +420,18 @@ static int conn_send(struct l2cap_conn *conn,
- 	return 0;
- }
- 
--static void get_dest_bdaddr(struct in6_addr *ip6_daddr,
--			    bdaddr_t *addr, u8 *addr_type)
-+static u8 get_addr_type_from_eui64(u8 byte)
- {
--	u8 *eui64;
-+	/* Is universal(0) or local(1) bit,  */
-+	if (byte & 0x02)
-+		return ADDR_LE_DEV_RANDOM;
- 
--	eui64 = ip6_daddr->s6_addr + 8;
-+	return ADDR_LE_DEV_PUBLIC;
-+}
-+
-+static void copy_to_bdaddr(struct in6_addr *ip6_daddr, bdaddr_t *addr)
-+{
-+	u8 *eui64 = ip6_daddr->s6_addr + 8;
- 
- 	addr->b[0] = eui64[7];
- 	addr->b[1] = eui64[6];
-@@ -433,16 +439,19 @@ static void get_dest_bdaddr(struct in6_addr *ip6_daddr,
- 	addr->b[3] = eui64[2];
- 	addr->b[4] = eui64[1];
- 	addr->b[5] = eui64[0];
-+}
- 
--	addr->b[5] ^= 2;
-+static void convert_dest_bdaddr(struct in6_addr *ip6_daddr,
-+				bdaddr_t *addr, u8 *addr_type)
-+{
-+	copy_to_bdaddr(ip6_daddr, addr);
- 
--	/* Set universal/local bit to 0 */
--	if (addr->b[5] & 1) {
--		addr->b[5] &= ~1;
--		*addr_type = ADDR_LE_DEV_PUBLIC;
--	} else {
--		*addr_type = ADDR_LE_DEV_RANDOM;
--	}
-+	/* We need to toggle the U/L bit that we got from IPv6 address
-+	 * so that we get the proper address and type of the BD address.
-+	 */
-+	addr->b[5] ^= 0x02;
-+
-+	*addr_type = get_addr_type_from_eui64(addr->b[5]);
- }
- 
- static int header_create(struct sk_buff *skb, struct net_device *netdev,
-@@ -473,9 +482,11 @@ static int header_create(struct sk_buff *skb, struct net_device *netdev,
- 		/* Get destination BT device from skb.
- 		 * If there is no such peer then discard the packet.
- 		 */
--		get_dest_bdaddr(&hdr->daddr, &addr, &addr_type);
-+		convert_dest_bdaddr(&hdr->daddr, &addr, &addr_type);
- 
--		BT_DBG("dest addr %pMR type %d", &addr, addr_type);
-+		BT_DBG("dest addr %pMR type %s IP %pI6c", &addr,
-+		       addr_type == ADDR_LE_DEV_PUBLIC ? "PUBLIC" : "RANDOM",
-+		       &hdr->daddr);
- 
- 		read_lock_irqsave(&devices_lock, flags);
- 		peer = peer_lookup_ba(dev, &addr, addr_type);
-@@ -556,7 +567,7 @@ static netdev_tx_t bt_xmit(struct sk_buff *skb, struct net_device *netdev)
- 	} else {
- 		unsigned long flags;
- 
--		get_dest_bdaddr(&lowpan_cb(skb)->addr, &addr, &addr_type);
-+		convert_dest_bdaddr(&lowpan_cb(skb)->addr, &addr, &addr_type);
- 		eui64_addr = lowpan_cb(skb)->addr.s6_addr + 8;
- 		dev = lowpan_dev(netdev);
- 
-@@ -564,8 +575,10 @@ static netdev_tx_t bt_xmit(struct sk_buff *skb, struct net_device *netdev)
- 		peer = peer_lookup_ba(dev, &addr, addr_type);
- 		read_unlock_irqrestore(&devices_lock, flags);
- 
--		BT_DBG("xmit from %s to %pMR (%pI6c) peer %p", netdev->name,
--		       &addr, &lowpan_cb(skb)->addr, peer);
-+		BT_DBG("xmit %s to %pMR type %s IP %pI6c peer %p",
-+		       netdev->name, &addr,
-+		       addr_type == ADDR_LE_DEV_PUBLIC ? "PUBLIC" : "RANDOM",
-+		       &lowpan_cb(skb)->addr, peer);
- 
- 		if (peer && peer->conn)
- 			err = send_pkt(peer->conn, netdev->dev_addr,
-@@ -620,13 +633,13 @@ static void set_addr(u8 *eui, u8 *addr, u8 addr_type)
- 	eui[6] = addr[1];
- 	eui[7] = addr[0];
- 
--	eui[0] ^= 2;
--
--	/* Universal/local bit set, RFC 4291 */
-+	/* Universal/local bit set, BT 6lowpan draft ch. 3.2.1 */
- 	if (addr_type == ADDR_LE_DEV_PUBLIC)
--		eui[0] |= 1;
-+		eui[0] &= ~0x02;
- 	else
--		eui[0] &= ~1;
-+		eui[0] |= 0x02;
-+
-+	BT_DBG("type %d addr %*phC", addr_type, 8, eui);
- }
- 
- static void set_dev_addr(struct net_device *netdev, bdaddr_t *addr,
-@@ -634,7 +647,6 @@ static void set_dev_addr(struct net_device *netdev, bdaddr_t *addr,
- {
- 	netdev->addr_assign_type = NET_ADDR_PERM;
- 	set_addr(netdev->dev_addr, addr->b, addr_type);
--	netdev->dev_addr[0] ^= 2;
- }
- 
- static void ifup(struct net_device *netdev)
-@@ -684,13 +696,6 @@ static int add_peer_conn(struct l2cap_conn *conn, struct lowpan_dev *dev)
- 
- 	memcpy(&peer->eui64_addr, (u8 *)&peer->peer_addr.s6_addr + 8,
- 	       EUI64_ADDR_LEN);
--	peer->eui64_addr[0] ^= 2; /* second bit-flip (Universe/Local)
--				   * is done according RFC2464
--				   */
--
--	raw_dump_inline(__func__, "peer IPv6 address",
--			(unsigned char *)&peer->peer_addr, 16);
--	raw_dump_inline(__func__, "peer EUI64 address", peer->eui64_addr, 8);
- 
- 	write_lock_irqsave(&devices_lock, flags);
- 	INIT_LIST_HEAD(&peer->list);
-diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-index 15010a230b6d..0381d55f995d 100644
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -1342,6 +1342,7 @@ static int hci_outgoing_auth_needed(struct hci_dev *hdev,
- 	 * is requested.
- 	 */
- 	if (!hci_conn_ssp_enabled(conn) && !(conn->auth_type & 0x01) &&
-+	    conn->pending_sec_level != BT_SECURITY_FIPS &&
- 	    conn->pending_sec_level != BT_SECURITY_HIGH &&
- 	    conn->pending_sec_level != BT_SECURITY_MEDIUM)
- 		return 0;
-@@ -2957,7 +2958,8 @@ static void hci_link_key_request_evt(struct hci_dev *hdev, struct sk_buff *skb)
- 		}
- 
- 		if (key->type == HCI_LK_COMBINATION && key->pin_len < 16 &&
--		    conn->pending_sec_level == BT_SECURITY_HIGH) {
-+		    (conn->pending_sec_level == BT_SECURITY_HIGH ||
-+		     conn->pending_sec_level == BT_SECURITY_FIPS)) {
- 			BT_DBG("%s ignoring key unauthenticated for high security",
- 			       hdev->name);
- 			goto not_found;
-diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
-index ef5e5b04f34f..ade3fb4c23bc 100644
---- a/net/bluetooth/l2cap_sock.c
-+++ b/net/bluetooth/l2cap_sock.c
-@@ -1180,13 +1180,16 @@ static struct l2cap_chan *l2cap_sock_new_connection_cb(struct l2cap_chan *chan)
- 	/* Check for backlog size */
- 	if (sk_acceptq_is_full(parent)) {
- 		BT_DBG("backlog full %d", parent->sk_ack_backlog);
-+		release_sock(parent);
- 		return NULL;
- 	}
- 
- 	sk = l2cap_sock_alloc(sock_net(parent), NULL, BTPROTO_L2CAP,
- 			      GFP_ATOMIC);
--	if (!sk)
-+	if (!sk) {
-+		release_sock(parent);
- 		return NULL;
-+        }
- 
- 	bt_sock_reclassify_lock(sk, BTPROTO_L2CAP);
- 
-diff --git a/net/bluetooth/mgmt.c b/net/bluetooth/mgmt.c
-index d2d4e0d5aed0..c88b2b671849 100644
---- a/net/bluetooth/mgmt.c
-+++ b/net/bluetooth/mgmt.c
-@@ -4530,7 +4530,7 @@ static int load_long_term_keys(struct sock *sk, struct hci_dev *hdev,
- 
- 	for (i = 0; i < key_count; i++) {
- 		struct mgmt_ltk_info *key = &cp->keys[i];
--		u8 type, addr_type;
-+		u8 type, addr_type, authenticated;
- 
- 		if (key->addr.type == BDADDR_LE_PUBLIC)
- 			addr_type = ADDR_LE_DEV_PUBLIC;
-@@ -4542,8 +4542,19 @@ static int load_long_term_keys(struct sock *sk, struct hci_dev *hdev,
- 		else
- 			type = HCI_SMP_LTK_SLAVE;
- 
-+		switch (key->type) {
-+		case MGMT_LTK_UNAUTHENTICATED:
-+			authenticated = 0x00;
-+			break;
-+		case MGMT_LTK_AUTHENTICATED:
-+			authenticated = 0x01;
-+			break;
-+		default:
-+			continue;
-+		}
-+
- 		hci_add_ltk(hdev, &key->addr.bdaddr, addr_type, type,
--			    key->type, key->val, key->enc_size, key->ediv,
-+			    authenticated, key->val, key->enc_size, key->ediv,
- 			    key->rand);
- 	}
- 
-@@ -5005,6 +5016,14 @@ void mgmt_new_link_key(struct hci_dev *hdev, struct link_key *key,
- 	mgmt_event(MGMT_EV_NEW_LINK_KEY, hdev, &ev, sizeof(ev), NULL);
- }
- 
-+static u8 mgmt_ltk_type(struct smp_ltk *ltk)
-+{
-+	if (ltk->authenticated)
-+		return MGMT_LTK_AUTHENTICATED;
-+
-+	return MGMT_LTK_UNAUTHENTICATED;
-+}
-+
- void mgmt_new_ltk(struct hci_dev *hdev, struct smp_ltk *key, bool persistent)
- {
- 	struct mgmt_ev_new_long_term_key ev;
-@@ -5030,7 +5049,7 @@ void mgmt_new_ltk(struct hci_dev *hdev, struct smp_ltk *key, bool persistent)
- 
- 	bacpy(&ev.key.addr.bdaddr, &key->bdaddr);
- 	ev.key.addr.type = link_to_bdaddr(LE_LINK, key->bdaddr_type);
--	ev.key.type = key->authenticated;
-+	ev.key.type = mgmt_ltk_type(key);
- 	ev.key.enc_size = key->enc_size;
- 	ev.key.ediv = key->ediv;
- 	ev.key.rand = key->rand;
-diff --git a/net/bluetooth/smp.c b/net/bluetooth/smp.c
-index dfb4e1161c10..956d127528cb 100644
---- a/net/bluetooth/smp.c
-+++ b/net/bluetooth/smp.c
-@@ -908,10 +908,11 @@ int smp_conn_security(struct hci_conn *hcon, __u8 sec_level)
- 
- 	authreq = seclevel_to_authreq(sec_level);
- 
--	/* hcon->auth_type is set by pair_device in mgmt.c. If the MITM
--	 * flag is set we should also set it for the SMP request.
-+	/* Require MITM if IO Capability allows or the security level
-+	 * requires it.
- 	 */
--	if ((hcon->auth_type & 0x01))
-+	if (hcon->io_capability != HCI_IO_NO_INPUT_OUTPUT ||
-+	    sec_level > BT_SECURITY_MEDIUM)
- 		authreq |= SMP_AUTH_MITM;
- 
- 	if (hcon->link_mode & HCI_LM_MASTER) {
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index f46e4dd0558d..152d4d25ab7c 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -155,11 +155,11 @@ if grep -q '^CONFIG_MODULES=y' $KCONFIG_CONFIG ; then
- 			for module in $(find lib/modules/ -name *.ko); do
- 				mkdir -p $(dirname $dbg_dir/usr/lib/debug/$module)
- 				# only keep debug symbols in the debug file
--				objcopy --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
-+				$OBJCOPY --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
- 				# strip original module from debug symbols
--				objcopy --strip-debug $module
-+				$OBJCOPY --strip-debug $module
- 				# then add a link to those
--				objcopy --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
-+				$OBJCOPY --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
- 			done
- 		)
- 	fi
-diff --git a/tools/vm/page-types.c b/tools/vm/page-types.c
-index 05654f5e48d5..c4d6d2e20e0d 100644
---- a/tools/vm/page-types.c
-+++ b/tools/vm/page-types.c
-@@ -32,6 +32,8 @@
- #include <assert.h>
- #include <ftw.h>
- #include <time.h>
-+#include <setjmp.h>
-+#include <signal.h>
- #include <sys/types.h>
- #include <sys/errno.h>
- #include <sys/fcntl.h>
-@@ -824,21 +826,38 @@ static void show_file(const char *name, const struct stat *st)
- 			atime, now - st->st_atime);
- }
- 
-+static sigjmp_buf sigbus_jmp;
-+
-+static void * volatile sigbus_addr;
-+
-+static void sigbus_handler(int sig, siginfo_t *info, void *ucontex)
-+{
-+	(void)sig;
-+	(void)ucontex;
-+	sigbus_addr = info ? info->si_addr : NULL;
-+	siglongjmp(sigbus_jmp, 1);
-+}
-+
-+static struct sigaction sigbus_action = {
-+	.sa_sigaction = sigbus_handler,
-+	.sa_flags = SA_SIGINFO,
-+};
-+
- static void walk_file(const char *name, const struct stat *st)
- {
- 	uint8_t vec[PAGEMAP_BATCH];
- 	uint64_t buf[PAGEMAP_BATCH], flags;
- 	unsigned long nr_pages, pfn, i;
-+	off_t off, end = st->st_size;
- 	int fd;
--	off_t off;
- 	ssize_t len;
- 	void *ptr;
- 	int first = 1;
- 
- 	fd = checked_open(name, O_RDONLY|O_NOATIME|O_NOFOLLOW);
- 
--	for (off = 0; off < st->st_size; off += len) {
--		nr_pages = (st->st_size - off + page_size - 1) / page_size;
-+	for (off = 0; off < end; off += len) {
-+		nr_pages = (end - off + page_size - 1) / page_size;
- 		if (nr_pages > PAGEMAP_BATCH)
- 			nr_pages = PAGEMAP_BATCH;
- 		len = nr_pages * page_size;
-@@ -855,11 +874,19 @@ static void walk_file(const char *name, const struct stat *st)
- 		if (madvise(ptr, len, MADV_RANDOM))
- 			fatal("madvice failed: %s", name);
- 
-+		if (sigsetjmp(sigbus_jmp, 1)) {
-+			end = off + sigbus_addr ? sigbus_addr - ptr : 0;
-+			fprintf(stderr, "got sigbus at offset %lld: %s\n",
-+					(long long)end, name);
-+			goto got_sigbus;
-+		}
-+
- 		/* populate ptes */
- 		for (i = 0; i < nr_pages ; i++) {
- 			if (vec[i] & 1)
- 				(void)*(volatile int *)(ptr + i * page_size);
- 		}
-+got_sigbus:
- 
- 		/* turn off harvesting reference bits */
- 		if (madvise(ptr, len, MADV_SEQUENTIAL))
-@@ -910,6 +937,7 @@ static void walk_page_cache(void)
- 
- 	kpageflags_fd = checked_open(PROC_KPAGEFLAGS, O_RDONLY);
- 	pagemap_fd = checked_open("/proc/self/pagemap", O_RDONLY);
-+	sigaction(SIGBUS, &sigbus_action, NULL);
- 
- 	if (stat(opt_file, &st))
- 		fatal("stat failed: %s\n", opt_file);
-@@ -925,6 +953,7 @@ static void walk_page_cache(void)
- 
- 	close(kpageflags_fd);
- 	close(pagemap_fd);
-+	signal(SIGBUS, SIG_DFL);
- }
- 
- static void parse_file(const char *name)
+Testing the latest kernel (3.16-rc3) I hit this build bug:
+
+  VDSO2C  arch/x86/vdso/vdso-image-64.c
+Error: too many copied sections (max = 13)
+/arch/x86/vdso/Makefile:61: recipe for target 'arch/x86/vdso/vdso-image-64.c' failed
+make[3]: *** [arch/x86/vdso/vdso-image-64.c] Error 1
+/scripts/Makefile.build:404: recipe for target 'arch/x86/vdso' failed
+make[2]: *** [arch/x86/vdso] Error 2
+
+I bisected it down to this commit:
+
+commit 0e3727a8839c988a3c56170bc8da76d55a16acad
+Author: Andy Lutomirski <luto@amacapital.net>
+Date:   Wed Jun 18 15:59:49 2014 -0700
+
+    x86/vdso: Remove some redundant in-memory section headers
+
+When I revert this commit, it compiles fine.
+
+I built my gcc and binutils from their sources unmodified:
+
+gcc 4.6.0
+
+binutils 2.21
+
+-- Steve
+
+#
+# Automatically generated file; DO NOT EDIT.
+# Linux/x86 3.16.0-rc3 Kernel Configuration
+#
+CONFIG_64BIT=y
+CONFIG_X86_64=y
+CONFIG_X86=y
+CONFIG_INSTRUCTION_DECODER=y
+CONFIG_OUTPUT_FORMAT="elf64-x86-64"
+CONFIG_ARCH_DEFCONFIG="arch/x86/configs/x86_64_defconfig"
+CONFIG_LOCKDEP_SUPPORT=y
+CONFIG_STACKTRACE_SUPPORT=y
+CONFIG_HAVE_LATENCYTOP_SUPPORT=y
+CONFIG_MMU=y
+CONFIG_NEED_DMA_MAP_STATE=y
+CONFIG_NEED_SG_DMA_LENGTH=y
+CONFIG_GENERIC_ISA_DMA=y
+CONFIG_GENERIC_BUG=y
+CONFIG_GENERIC_BUG_RELATIVE_POINTERS=y
+CONFIG_GENERIC_HWEIGHT=y
+CONFIG_ARCH_MAY_HAVE_PC_FDC=y
+CONFIG_RWSEM_XCHGADD_ALGORITHM=y
+CONFIG_GENERIC_CALIBRATE_DELAY=y
+CONFIG_ARCH_HAS_CPU_RELAX=y
+CONFIG_ARCH_HAS_CACHE_LINE_SIZE=y
+CONFIG_HAVE_SETUP_PER_CPU_AREA=y
+CONFIG_NEED_PER_CPU_EMBED_FIRST_CHUNK=y
+CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK=y
+CONFIG_ARCH_HIBERNATION_POSSIBLE=y
+CONFIG_ARCH_SUSPEND_POSSIBLE=y
+CONFIG_ARCH_WANT_HUGE_PMD_SHARE=y
+CONFIG_ARCH_WANT_GENERAL_HUGETLB=y
+CONFIG_ZONE_DMA32=y
+CONFIG_AUDIT_ARCH=y
+CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING=y
+CONFIG_ARCH_SUPPORTS_DEBUG_PAGEALLOC=y
+CONFIG_X86_64_SMP=y
+CONFIG_X86_HT=y
+CONFIG_ARCH_HWEIGHT_CFLAGS="-fcall-saved-rdi -fcall-saved-rsi -fcall-saved-rdx -fcall-saved-rcx -fcall-saved-r8 -fcall-saved-r9 -fcall-saved-r10 -fcall-saved-r11"
+CONFIG_ARCH_SUPPORTS_UPROBES=y
+CONFIG_FIX_EARLYCON_MEM=y
+CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
+CONFIG_CONSTRUCTORS=y
+CONFIG_IRQ_WORK=y
+CONFIG_BUILDTIME_EXTABLE_SORT=y
+
+#
+# General setup
+#
+CONFIG_INIT_ENV_ARG_LIMIT=32
+CONFIG_CROSS_COMPILE=""
+# CONFIG_COMPILE_TEST is not set
+CONFIG_LOCALVERSION=""
+# CONFIG_LOCALVERSION_AUTO is not set
+CONFIG_HAVE_KERNEL_GZIP=y
+CONFIG_HAVE_KERNEL_BZIP2=y
+CONFIG_HAVE_KERNEL_LZMA=y
+CONFIG_HAVE_KERNEL_XZ=y
+CONFIG_HAVE_KERNEL_LZO=y
+CONFIG_HAVE_KERNEL_LZ4=y
+CONFIG_KERNEL_GZIP=y
+# CONFIG_KERNEL_BZIP2 is not set
+# CONFIG_KERNEL_LZMA is not set
+# CONFIG_KERNEL_XZ is not set
+# CONFIG_KERNEL_LZO is not set
+# CONFIG_KERNEL_LZ4 is not set
+CONFIG_DEFAULT_HOSTNAME="(none)"
+CONFIG_SWAP=y
+CONFIG_SYSVIPC=y
+CONFIG_SYSVIPC_SYSCTL=y
+CONFIG_POSIX_MQUEUE=y
+CONFIG_POSIX_MQUEUE_SYSCTL=y
+CONFIG_CROSS_MEMORY_ATTACH=y
+# CONFIG_FHANDLE is not set
+CONFIG_USELIB=y
+CONFIG_AUDIT=y
+CONFIG_HAVE_ARCH_AUDITSYSCALL=y
+CONFIG_AUDITSYSCALL=y
+CONFIG_AUDIT_WATCH=y
+CONFIG_AUDIT_TREE=y
+
+#
+# IRQ subsystem
+#
+CONFIG_GENERIC_IRQ_PROBE=y
+CONFIG_GENERIC_IRQ_SHOW=y
+CONFIG_GENERIC_IRQ_LEGACY_ALLOC_HWIRQ=y
+CONFIG_GENERIC_PENDING_IRQ=y
+CONFIG_IRQ_DOMAIN=y
+# CONFIG_IRQ_DOMAIN_DEBUG is not set
+CONFIG_IRQ_FORCED_THREADING=y
+CONFIG_SPARSE_IRQ=y
+CONFIG_CLOCKSOURCE_WATCHDOG=y
+CONFIG_ARCH_CLOCKSOURCE_DATA=y
+CONFIG_GENERIC_TIME_VSYSCALL=y
+CONFIG_GENERIC_CLOCKEVENTS=y
+CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
+CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
+CONFIG_GENERIC_CLOCKEVENTS_MIN_ADJUST=y
+CONFIG_GENERIC_CMOS_UPDATE=y
+
+#
+# Timers subsystem
+#
+CONFIG_TICK_ONESHOT=y
+CONFIG_NO_HZ_COMMON=y
+# CONFIG_HZ_PERIODIC is not set
+CONFIG_NO_HZ_IDLE=y
+# CONFIG_NO_HZ_FULL is not set
+CONFIG_NO_HZ=y
+CONFIG_HIGH_RES_TIMERS=y
+
+#
+# CPU/Task time and stats accounting
+#
+CONFIG_TICK_CPU_ACCOUNTING=y
+# CONFIG_VIRT_CPU_ACCOUNTING_GEN is not set
+# CONFIG_IRQ_TIME_ACCOUNTING is not set
+CONFIG_BSD_PROCESS_ACCT=y
+# CONFIG_BSD_PROCESS_ACCT_V3 is not set
+CONFIG_TASKSTATS=y
+CONFIG_TASK_DELAY_ACCT=y
+CONFIG_TASK_XACCT=y
+CONFIG_TASK_IO_ACCOUNTING=y
+
+#
+# RCU Subsystem
+#
+CONFIG_TREE_PREEMPT_RCU=y
+CONFIG_PREEMPT_RCU=y
+CONFIG_RCU_STALL_COMMON=y
+# CONFIG_RCU_USER_QS is not set
+CONFIG_RCU_FANOUT=64
+CONFIG_RCU_FANOUT_LEAF=16
+# CONFIG_RCU_FANOUT_EXACT is not set
+# CONFIG_RCU_FAST_NO_HZ is not set
+# CONFIG_TREE_RCU_TRACE is not set
+# CONFIG_RCU_BOOST is not set
+# CONFIG_RCU_NOCB_CPU is not set
+CONFIG_IKCONFIG=y
+# CONFIG_IKCONFIG_PROC is not set
+CONFIG_LOG_BUF_SHIFT=17
+CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
+CONFIG_ARCH_SUPPORTS_NUMA_BALANCING=y
+CONFIG_ARCH_SUPPORTS_INT128=y
+CONFIG_ARCH_WANTS_PROT_NUMA_PROT_NONE=y
+# CONFIG_NUMA_BALANCING is not set
+CONFIG_CGROUPS=y
+CONFIG_CGROUP_DEBUG=y
+CONFIG_CGROUP_FREEZER=y
+CONFIG_CGROUP_DEVICE=y
+CONFIG_CPUSETS=y
+CONFIG_PROC_PID_CPUSET=y
+CONFIG_CGROUP_CPUACCT=y
+CONFIG_RESOURCE_COUNTERS=y
+# CONFIG_MEMCG is not set
+# CONFIG_CGROUP_HUGETLB is not set
+# CONFIG_CGROUP_PERF is not set
+CONFIG_CGROUP_SCHED=y
+CONFIG_FAIR_GROUP_SCHED=y
+# CONFIG_CFS_BANDWIDTH is not set
+CONFIG_RT_GROUP_SCHED=y
+CONFIG_BLK_CGROUP=y
+# CONFIG_DEBUG_BLK_CGROUP is not set
+# CONFIG_CHECKPOINT_RESTORE is not set
+CONFIG_NAMESPACES=y
+CONFIG_UTS_NS=y
+CONFIG_IPC_NS=y
+CONFIG_USER_NS=y
+CONFIG_PID_NS=y
+CONFIG_NET_NS=y
+# CONFIG_SCHED_AUTOGROUP is not set
+# CONFIG_SYSFS_DEPRECATED is not set
+CONFIG_RELAY=y
+CONFIG_BLK_DEV_INITRD=y
+CONFIG_INITRAMFS_SOURCE=""
+CONFIG_RD_GZIP=y
+CONFIG_RD_BZIP2=y
+CONFIG_RD_LZMA=y
+CONFIG_RD_XZ=y
+CONFIG_RD_LZO=y
+CONFIG_RD_LZ4=y
+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+CONFIG_SYSCTL=y
+CONFIG_ANON_INODES=y
+CONFIG_HAVE_UID16=y
+CONFIG_SYSCTL_EXCEPTION_TRACE=y
+CONFIG_HAVE_PCSPKR_PLATFORM=y
+# CONFIG_EXPERT is not set
+CONFIG_UID16=y
+CONFIG_SGETMASK_SYSCALL=y
+CONFIG_SYSFS_SYSCALL=y
+# CONFIG_SYSCTL_SYSCALL is not set
+CONFIG_KALLSYMS=y
+CONFIG_KALLSYMS_ALL=y
+CONFIG_PRINTK=y
+CONFIG_BUG=y
+CONFIG_ELF_CORE=y
+CONFIG_PCSPKR_PLATFORM=y
+CONFIG_BASE_FULL=y
+CONFIG_FUTEX=y
+CONFIG_EPOLL=y
+CONFIG_SIGNALFD=y
+CONFIG_TIMERFD=y
+CONFIG_EVENTFD=y
+CONFIG_SHMEM=y
+CONFIG_AIO=y
+CONFIG_PCI_QUIRKS=y
+# CONFIG_EMBEDDED is not set
+CONFIG_HAVE_PERF_EVENTS=y
+
+#
+# Kernel Performance Events And Counters
+#
+CONFIG_PERF_EVENTS=y
+# CONFIG_DEBUG_PERF_USE_VMALLOC is not set
+CONFIG_VM_EVENT_COUNTERS=y
+CONFIG_SLUB_DEBUG=y
+# CONFIG_COMPAT_BRK is not set
+# CONFIG_SLAB is not set
+CONFIG_SLUB=y
+CONFIG_SLUB_CPU_PARTIAL=y
+# CONFIG_SYSTEM_TRUSTED_KEYRING is not set
+CONFIG_PROFILING=y
+CONFIG_TRACEPOINTS=y
+# CONFIG_OPROFILE is not set
+CONFIG_HAVE_OPROFILE=y
+CONFIG_OPROFILE_NMI_TIMER=y
+CONFIG_KPROBES=y
+CONFIG_JUMP_LABEL=y
+CONFIG_KPROBES_ON_FTRACE=y
+# CONFIG_UPROBES is not set
+# CONFIG_HAVE_64BIT_ALIGNED_ACCESS is not set
+CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS=y
+CONFIG_ARCH_USE_BUILTIN_BSWAP=y
+CONFIG_KRETPROBES=y
+CONFIG_HAVE_IOREMAP_PROT=y
+CONFIG_HAVE_KPROBES=y
+CONFIG_HAVE_KRETPROBES=y
+CONFIG_HAVE_OPTPROBES=y
+CONFIG_HAVE_KPROBES_ON_FTRACE=y
+CONFIG_HAVE_ARCH_TRACEHOOK=y
+CONFIG_HAVE_DMA_ATTRS=y
+CONFIG_HAVE_DMA_CONTIGUOUS=y
+CONFIG_GENERIC_SMP_IDLE_THREAD=y
+CONFIG_HAVE_REGS_AND_STACK_ACCESS_API=y
+CONFIG_HAVE_DMA_API_DEBUG=y
+CONFIG_HAVE_HW_BREAKPOINT=y
+CONFIG_HAVE_MIXED_BREAKPOINTS_REGS=y
+CONFIG_HAVE_USER_RETURN_NOTIFIER=y
+CONFIG_HAVE_PERF_EVENTS_NMI=y
+CONFIG_HAVE_PERF_REGS=y
+CONFIG_HAVE_PERF_USER_STACK_DUMP=y
+CONFIG_HAVE_ARCH_JUMP_LABEL=y
+CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG=y
+CONFIG_HAVE_ALIGNED_STRUCT_PAGE=y
+CONFIG_HAVE_CMPXCHG_LOCAL=y
+CONFIG_HAVE_CMPXCHG_DOUBLE=y
+CONFIG_ARCH_WANT_COMPAT_IPC_PARSE_VERSION=y
+CONFIG_ARCH_WANT_OLD_COMPAT_IPC=y
+CONFIG_HAVE_ARCH_SECCOMP_FILTER=y
+CONFIG_SECCOMP_FILTER=y
+CONFIG_HAVE_CC_STACKPROTECTOR=y
+# CONFIG_CC_STACKPROTECTOR is not set
+CONFIG_CC_STACKPROTECTOR_NONE=y
+# CONFIG_CC_STACKPROTECTOR_REGULAR is not set
+# CONFIG_CC_STACKPROTECTOR_STRONG is not set
+CONFIG_HAVE_CONTEXT_TRACKING=y
+CONFIG_HAVE_VIRT_CPU_ACCOUNTING_GEN=y
+CONFIG_HAVE_IRQ_TIME_ACCOUNTING=y
+CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
+CONFIG_HAVE_ARCH_SOFT_DIRTY=y
+CONFIG_MODULES_USE_ELF_RELA=y
+CONFIG_HAVE_IRQ_EXIT_ON_IRQ_STACK=y
+CONFIG_OLD_SIGSUSPEND3=y
+CONFIG_COMPAT_OLD_SIGACTION=y
+
+#
+# GCOV-based kernel profiling
+#
+CONFIG_GCOV_KERNEL=y
+# CONFIG_GCOV_PROFILE_ALL is not set
+CONFIG_GCOV_FORMAT_AUTODETECT=y
+# CONFIG_GCOV_FORMAT_3_4 is not set
+# CONFIG_GCOV_FORMAT_4_7 is not set
+# CONFIG_HAVE_GENERIC_DMA_COHERENT is not set
+CONFIG_SLABINFO=y
+CONFIG_RT_MUTEXES=y
+CONFIG_BASE_SMALL=0
+CONFIG_MODULES=y
+# CONFIG_MODULE_FORCE_LOAD is not set
+CONFIG_MODULE_UNLOAD=y
+# CONFIG_MODULE_FORCE_UNLOAD is not set
+# CONFIG_MODVERSIONS is not set
+CONFIG_MODULE_SRCVERSION_ALL=y
+# CONFIG_MODULE_SIG is not set
+CONFIG_STOP_MACHINE=y
+CONFIG_BLOCK=y
+CONFIG_BLK_DEV_BSG=y
+CONFIG_BLK_DEV_BSGLIB=y
+CONFIG_BLK_DEV_INTEGRITY=y
+# CONFIG_BLK_DEV_THROTTLING is not set
+# CONFIG_BLK_CMDLINE_PARSER is not set
+
+#
+# Partition Types
+#
+CONFIG_PARTITION_ADVANCED=y
+# CONFIG_ACORN_PARTITION is not set
+# CONFIG_AIX_PARTITION is not set
+CONFIG_OSF_PARTITION=y
+CONFIG_AMIGA_PARTITION=y
+# CONFIG_ATARI_PARTITION is not set
+CONFIG_MAC_PARTITION=y
+CONFIG_MSDOS_PARTITION=y
+CONFIG_BSD_DISKLABEL=y
+CONFIG_MINIX_SUBPARTITION=y
+CONFIG_SOLARIS_X86_PARTITION=y
+CONFIG_UNIXWARE_DISKLABEL=y
+# CONFIG_LDM_PARTITION is not set
+CONFIG_SGI_PARTITION=y
+# CONFIG_ULTRIX_PARTITION is not set
+CONFIG_SUN_PARTITION=y
+CONFIG_KARMA_PARTITION=y
+CONFIG_EFI_PARTITION=y
+# CONFIG_SYSV68_PARTITION is not set
+# CONFIG_CMDLINE_PARTITION is not set
+CONFIG_BLOCK_COMPAT=y
+
+#
+# IO Schedulers
+#
+CONFIG_IOSCHED_NOOP=y
+CONFIG_IOSCHED_DEADLINE=y
+CONFIG_IOSCHED_CFQ=y
+CONFIG_CFQ_GROUP_IOSCHED=y
+# CONFIG_DEFAULT_DEADLINE is not set
+CONFIG_DEFAULT_CFQ=y
+# CONFIG_DEFAULT_NOOP is not set
+CONFIG_DEFAULT_IOSCHED="cfq"
+CONFIG_UNINLINE_SPIN_UNLOCK=y
+CONFIG_ARCH_USE_QUEUE_RWLOCK=y
+CONFIG_QUEUE_RWLOCK=y
+CONFIG_FREEZER=y
+
+#
+# Processor type and features
+#
+CONFIG_ZONE_DMA=y
+CONFIG_SMP=y
+CONFIG_X86_MPPARSE=y
+CONFIG_X86_EXTENDED_PLATFORM=y
+# CONFIG_X86_VSMP is not set
+# CONFIG_X86_GOLDFISH is not set
+# CONFIG_X86_INTEL_LPSS is not set
+CONFIG_X86_SUPPORTS_MEMORY_FAILURE=y
+CONFIG_SCHED_OMIT_FRAME_POINTER=y
+# CONFIG_HYPERVISOR_GUEST is not set
+CONFIG_NO_BOOTMEM=y
+# CONFIG_MEMTEST is not set
+# CONFIG_MK8 is not set
+# CONFIG_MPSC is not set
+# CONFIG_MCORE2 is not set
+# CONFIG_MATOM is not set
+CONFIG_GENERIC_CPU=y
+CONFIG_X86_INTERNODE_CACHE_SHIFT=6
+CONFIG_X86_L1_CACHE_SHIFT=6
+CONFIG_X86_TSC=y
+CONFIG_X86_CMPXCHG64=y
+CONFIG_X86_CMOV=y
+CONFIG_X86_MINIMUM_CPU_FAMILY=64
+CONFIG_X86_DEBUGCTLMSR=y
+CONFIG_CPU_SUP_INTEL=y
+CONFIG_CPU_SUP_AMD=y
+CONFIG_CPU_SUP_CENTAUR=y
+CONFIG_HPET_TIMER=y
+CONFIG_HPET_EMULATE_RTC=y
+CONFIG_DMI=y
+CONFIG_GART_IOMMU=y
+CONFIG_CALGARY_IOMMU=y
+CONFIG_CALGARY_IOMMU_ENABLED_BY_DEFAULT=y
+CONFIG_SWIOTLB=y
+CONFIG_IOMMU_HELPER=y
+# CONFIG_MAXSMP is not set
+CONFIG_NR_CPUS=256
+CONFIG_SCHED_SMT=y
+CONFIG_SCHED_MC=y
+# CONFIG_PREEMPT_NONE is not set
+# CONFIG_PREEMPT_VOLUNTARY is not set
+CONFIG_PREEMPT=y
+CONFIG_PREEMPT_COUNT=y
+CONFIG_X86_LOCAL_APIC=y
+CONFIG_X86_IO_APIC=y
+CONFIG_X86_REROUTE_FOR_BROKEN_BOOT_IRQS=y
+CONFIG_X86_MCE=y
+CONFIG_X86_MCE_INTEL=y
+CONFIG_X86_MCE_AMD=y
+CONFIG_X86_MCE_THRESHOLD=y
+# CONFIG_X86_MCE_INJECT is not set
+CONFIG_X86_THERMAL_VECTOR=y
+CONFIG_X86_16BIT=y
+CONFIG_X86_ESPFIX64=y
+# CONFIG_I8K is not set
+CONFIG_MICROCODE=y
+CONFIG_MICROCODE_INTEL=y
+CONFIG_MICROCODE_AMD=y
+CONFIG_MICROCODE_OLD_INTERFACE=y
+CONFIG_MICROCODE_INTEL_EARLY=y
+CONFIG_MICROCODE_AMD_EARLY=y
+CONFIG_MICROCODE_EARLY=y
+CONFIG_X86_MSR=y
+CONFIG_X86_CPUID=y
+CONFIG_ARCH_PHYS_ADDR_T_64BIT=y
+CONFIG_ARCH_DMA_ADDR_T_64BIT=y
+CONFIG_DIRECT_GBPAGES=y
+CONFIG_NUMA=y
+CONFIG_AMD_NUMA=y
+CONFIG_X86_64_ACPI_NUMA=y
+CONFIG_NODES_SPAN_OTHER_NODES=y
+# CONFIG_NUMA_EMU is not set
+CONFIG_NODES_SHIFT=9
+CONFIG_ARCH_SPARSEMEM_ENABLE=y
+CONFIG_ARCH_SPARSEMEM_DEFAULT=y
+CONFIG_ARCH_SELECT_MEMORY_MODEL=y
+CONFIG_ARCH_MEMORY_PROBE=y
+CONFIG_ARCH_PROC_KCORE_TEXT=y
+CONFIG_ILLEGAL_POINTER_VALUE=0xdead000000000000
+CONFIG_SELECT_MEMORY_MODEL=y
+CONFIG_SPARSEMEM_MANUAL=y
+CONFIG_SPARSEMEM=y
+CONFIG_NEED_MULTIPLE_NODES=y
+CONFIG_HAVE_MEMORY_PRESENT=y
+CONFIG_SPARSEMEM_EXTREME=y
+CONFIG_SPARSEMEM_VMEMMAP_ENABLE=y
+CONFIG_SPARSEMEM_ALLOC_MEM_MAP_TOGETHER=y
+CONFIG_SPARSEMEM_VMEMMAP=y
+CONFIG_HAVE_MEMBLOCK=y
+CONFIG_HAVE_MEMBLOCK_NODE_MAP=y
+CONFIG_ARCH_DISCARD_MEMBLOCK=y
+CONFIG_MEMORY_ISOLATION=y
+# CONFIG_MOVABLE_NODE is not set
+CONFIG_HAVE_BOOTMEM_INFO_NODE=y
+CONFIG_MEMORY_HOTPLUG=y
+CONFIG_MEMORY_HOTPLUG_SPARSE=y
+CONFIG_MEMORY_HOTREMOVE=y
+CONFIG_PAGEFLAGS_EXTENDED=y
+CONFIG_SPLIT_PTLOCK_CPUS=4
+CONFIG_ARCH_ENABLE_SPLIT_PMD_PTLOCK=y
+# CONFIG_COMPACTION is not set
+CONFIG_MIGRATION=y
+CONFIG_ARCH_ENABLE_HUGEPAGE_MIGRATION=y
+CONFIG_PHYS_ADDR_T_64BIT=y
+CONFIG_ZONE_DMA_FLAG=1
+CONFIG_BOUNCE=y
+CONFIG_NEED_BOUNCE_POOL=y
+CONFIG_VIRT_TO_BUS=y
+CONFIG_KSM=y
+CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
+CONFIG_ARCH_SUPPORTS_MEMORY_FAILURE=y
+CONFIG_MEMORY_FAILURE=y
+# CONFIG_HWPOISON_INJECT is not set
+# CONFIG_TRANSPARENT_HUGEPAGE is not set
+# CONFIG_CLEANCACHE is not set
+# CONFIG_FRONTSWAP is not set
+# CONFIG_CMA is not set
+# CONFIG_ZBUD is not set
+# CONFIG_ZSMALLOC is not set
+CONFIG_GENERIC_EARLY_IOREMAP=y
+# CONFIG_X86_CHECK_BIOS_CORRUPTION is not set
+CONFIG_X86_RESERVE_LOW=64
+CONFIG_MTRR=y
+CONFIG_MTRR_SANITIZER=y
+CONFIG_MTRR_SANITIZER_ENABLE_DEFAULT=1
+CONFIG_MTRR_SANITIZER_SPARE_REG_NR_DEFAULT=1
+CONFIG_X86_PAT=y
+CONFIG_ARCH_USES_PG_UNCACHED=y
+CONFIG_ARCH_RANDOM=y
+CONFIG_X86_SMAP=y
+CONFIG_EFI=y
+# CONFIG_EFI_STUB is not set
+CONFIG_SECCOMP=y
+# CONFIG_HZ_100 is not set
+# CONFIG_HZ_250 is not set
+# CONFIG_HZ_300 is not set
+CONFIG_HZ_1000=y
+CONFIG_HZ=1000
+CONFIG_SCHED_HRTICK=y
+CONFIG_KEXEC=y
+CONFIG_CRASH_DUMP=y
+CONFIG_KEXEC_JUMP=y
+CONFIG_PHYSICAL_START=0x1000000
+CONFIG_RELOCATABLE=y
+# CONFIG_RANDOMIZE_BASE is not set
+CONFIG_PHYSICAL_ALIGN=0x1000000
+CONFIG_HOTPLUG_CPU=y
+# CONFIG_BOOTPARAM_HOTPLUG_CPU0 is not set
+# CONFIG_DEBUG_HOTPLUG_CPU0 is not set
+# CONFIG_COMPAT_VDSO is not set
+# CONFIG_CMDLINE_BOOL is not set
+CONFIG_ARCH_ENABLE_MEMORY_HOTPLUG=y
+CONFIG_ARCH_ENABLE_MEMORY_HOTREMOVE=y
+CONFIG_USE_PERCPU_NUMA_NODE_ID=y
+
+#
+# Power management and ACPI options
+#
+CONFIG_ARCH_HIBERNATION_HEADER=y
+CONFIG_SUSPEND=y
+CONFIG_SUSPEND_FREEZER=y
+CONFIG_HIBERNATE_CALLBACKS=y
+CONFIG_HIBERNATION=y
+CONFIG_PM_STD_PARTITION=""
+CONFIG_PM_SLEEP=y
+CONFIG_PM_SLEEP_SMP=y
+# CONFIG_PM_AUTOSLEEP is not set
+# CONFIG_PM_WAKELOCKS is not set
+CONFIG_PM_RUNTIME=y
+CONFIG_PM=y
+CONFIG_PM_DEBUG=y
+# CONFIG_PM_ADVANCED_DEBUG is not set
+# CONFIG_PM_TEST_SUSPEND is not set
+CONFIG_PM_SLEEP_DEBUG=y
+CONFIG_PM_TRACE=y
+CONFIG_PM_TRACE_RTC=y
+# CONFIG_WQ_POWER_EFFICIENT_DEFAULT is not set
+CONFIG_ACPI=y
+CONFIG_ACPI_SLEEP=y
+CONFIG_ACPI_PROCFS_POWER=y
+# CONFIG_ACPI_EC_DEBUGFS is not set
+CONFIG_ACPI_AC=y
+CONFIG_ACPI_BATTERY=y
+CONFIG_ACPI_BUTTON=y
+CONFIG_ACPI_VIDEO=y
+CONFIG_ACPI_FAN=y
+CONFIG_ACPI_DOCK=y
+CONFIG_ACPI_PROCESSOR=y
+CONFIG_ACPI_HOTPLUG_CPU=y
+# CONFIG_ACPI_PROCESSOR_AGGREGATOR is not set
+CONFIG_ACPI_THERMAL=y
+CONFIG_ACPI_NUMA=y
+# CONFIG_ACPI_CUSTOM_DSDT is not set
+# CONFIG_ACPI_INITRD_TABLE_OVERRIDE is not set
+# CONFIG_ACPI_DEBUG is not set
+CONFIG_ACPI_PCI_SLOT=y
+CONFIG_X86_PM_TIMER=y
+CONFIG_ACPI_CONTAINER=y
+# CONFIG_ACPI_HOTPLUG_MEMORY is not set
+# CONFIG_ACPI_SBS is not set
+# CONFIG_ACPI_HED is not set
+# CONFIG_ACPI_CUSTOM_METHOD is not set
+# CONFIG_ACPI_BGRT is not set
+# CONFIG_ACPI_REDUCED_HARDWARE_ONLY is not set
+# CONFIG_ACPI_APEI is not set
+# CONFIG_ACPI_EXTLOG is not set
+CONFIG_SFI=y
+
+#
+# CPU Frequency scaling
+#
+CONFIG_CPU_FREQ=y
+CONFIG_CPU_FREQ_GOV_COMMON=y
+CONFIG_CPU_FREQ_STAT=y
+CONFIG_CPU_FREQ_STAT_DETAILS=y
+# CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE is not set
+CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE=y
+# CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND is not set
+# CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE is not set
+CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+# CONFIG_CPU_FREQ_GOV_POWERSAVE is not set
+CONFIG_CPU_FREQ_GOV_USERSPACE=y
+CONFIG_CPU_FREQ_GOV_ONDEMAND=y
+# CONFIG_CPU_FREQ_GOV_CONSERVATIVE is not set
+
+#
+# x86 CPU frequency scaling drivers
+#
+# CONFIG_X86_INTEL_PSTATE is not set
+# CONFIG_X86_PCC_CPUFREQ is not set
+CONFIG_X86_ACPI_CPUFREQ=y
+CONFIG_X86_ACPI_CPUFREQ_CPB=y
+CONFIG_X86_POWERNOW_K8=y
+# CONFIG_X86_AMD_FREQ_SENSITIVITY is not set
+# CONFIG_X86_SPEEDSTEP_CENTRINO is not set
+CONFIG_X86_P4_CLOCKMOD=y
+
+#
+# shared options
+#
+CONFIG_X86_SPEEDSTEP_LIB=y
+
+#
+# CPU Idle
+#
+CONFIG_CPU_IDLE=y
+# CONFIG_CPU_IDLE_MULTIPLE_DRIVERS is not set
+CONFIG_CPU_IDLE_GOV_LADDER=y
+CONFIG_CPU_IDLE_GOV_MENU=y
+# CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED is not set
+# CONFIG_INTEL_IDLE is not set
+
+#
+# Memory power savings
+#
+# CONFIG_I7300_IDLE is not set
+
+#
+# Bus options (PCI etc.)
+#
+CONFIG_PCI=y
+CONFIG_PCI_DIRECT=y
+CONFIG_PCI_MMCONFIG=y
+CONFIG_PCI_DOMAINS=y
+CONFIG_PCIEPORTBUS=y
+CONFIG_HOTPLUG_PCI_PCIE=y
+CONFIG_PCIEAER=y
+CONFIG_PCIE_ECRC=y
+# CONFIG_PCIEAER_INJECT is not set
+CONFIG_PCIEASPM=y
+# CONFIG_PCIEASPM_DEBUG is not set
+CONFIG_PCIEASPM_DEFAULT=y
+# CONFIG_PCIEASPM_POWERSAVE is not set
+# CONFIG_PCIEASPM_PERFORMANCE is not set
+CONFIG_PCIE_PME=y
+CONFIG_PCI_MSI=y
+# CONFIG_PCI_DEBUG is not set
+# CONFIG_PCI_REALLOC_ENABLE_AUTO is not set
+CONFIG_PCI_STUB=y
+CONFIG_HT_IRQ=y
+CONFIG_PCI_ATS=y
+CONFIG_PCI_IOV=y
+CONFIG_PCI_PRI=y
+CONFIG_PCI_PASID=y
+CONFIG_PCI_IOAPIC=y
+CONFIG_PCI_LABEL=y
+
+#
+# PCI host controller drivers
+#
+CONFIG_ISA_DMA_API=y
+CONFIG_AMD_NB=y
+CONFIG_PCCARD=y
+CONFIG_PCMCIA=y
+CONFIG_PCMCIA_LOAD_CIS=y
+CONFIG_CARDBUS=y
+
+#
+# PC-card bridges
+#
+# CONFIG_YENTA is not set
+# CONFIG_PD6729 is not set
+# CONFIG_I82092 is not set
+CONFIG_HOTPLUG_PCI=y
+CONFIG_HOTPLUG_PCI_ACPI=y
+# CONFIG_HOTPLUG_PCI_ACPI_IBM is not set
+# CONFIG_HOTPLUG_PCI_CPCI is not set
+# CONFIG_HOTPLUG_PCI_SHPC is not set
+# CONFIG_RAPIDIO is not set
+# CONFIG_X86_SYSFB is not set
+
+#
+# Executable file formats / Emulations
+#
+CONFIG_BINFMT_ELF=y
+CONFIG_COMPAT_BINFMT_ELF=y
+CONFIG_ARCH_BINFMT_ELF_RANDOMIZE_PIE=y
+CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+CONFIG_BINFMT_SCRIPT=y
+# CONFIG_HAVE_AOUT is not set
+CONFIG_BINFMT_MISC=y
+CONFIG_COREDUMP=y
+CONFIG_IA32_EMULATION=y
+# CONFIG_IA32_AOUT is not set
+# CONFIG_X86_X32 is not set
+CONFIG_COMPAT=y
+CONFIG_COMPAT_FOR_U64_ALIGNMENT=y
+CONFIG_SYSVIPC_COMPAT=y
+CONFIG_KEYS_COMPAT=y
+CONFIG_X86_DEV_DMA_OPS=y
+CONFIG_IOSF_MBI=m
+CONFIG_NET=y
+
+#
+# Networking options
+#
+CONFIG_PACKET=y
+# CONFIG_PACKET_DIAG is not set
+CONFIG_UNIX=y
+# CONFIG_UNIX_DIAG is not set
+# CONFIG_XFRM_USER is not set
+# CONFIG_NET_KEY is not set
+CONFIG_INET=y
+CONFIG_IP_MULTICAST=y
+CONFIG_IP_ADVANCED_ROUTER=y
+# CONFIG_IP_FIB_TRIE_STATS is not set
+CONFIG_IP_MULTIPLE_TABLES=y
+CONFIG_IP_ROUTE_MULTIPATH=y
+CONFIG_IP_ROUTE_VERBOSE=y
+# CONFIG_IP_PNP is not set
+# CONFIG_NET_IPIP is not set
+# CONFIG_NET_IPGRE_DEMUX is not set
+# CONFIG_NET_IP_TUNNEL is not set
+CONFIG_IP_MROUTE=y
+# CONFIG_IP_MROUTE_MULTIPLE_TABLES is not set
+CONFIG_IP_PIMSM_V1=y
+CONFIG_IP_PIMSM_V2=y
+CONFIG_SYN_COOKIES=y
+# CONFIG_INET_AH is not set
+# CONFIG_INET_ESP is not set
+# CONFIG_INET_IPCOMP is not set
+# CONFIG_INET_XFRM_TUNNEL is not set
+# CONFIG_INET_TUNNEL is not set
+# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
+# CONFIG_INET_XFRM_MODE_TUNNEL is not set
+# CONFIG_INET_XFRM_MODE_BEET is not set
+CONFIG_INET_LRO=y
+# CONFIG_INET_DIAG is not set
+CONFIG_TCP_CONG_ADVANCED=y
+# CONFIG_TCP_CONG_BIC is not set
+CONFIG_TCP_CONG_CUBIC=y
+# CONFIG_TCP_CONG_WESTWOOD is not set
+# CONFIG_TCP_CONG_HTCP is not set
+# CONFIG_TCP_CONG_HSTCP is not set
+# CONFIG_TCP_CONG_HYBLA is not set
+# CONFIG_TCP_CONG_VEGAS is not set
+# CONFIG_TCP_CONG_SCALABLE is not set
+# CONFIG_TCP_CONG_LP is not set
+# CONFIG_TCP_CONG_VENO is not set
+# CONFIG_TCP_CONG_YEAH is not set
+# CONFIG_TCP_CONG_ILLINOIS is not set
+CONFIG_DEFAULT_CUBIC=y
+# CONFIG_DEFAULT_RENO is not set
+CONFIG_DEFAULT_TCP_CONG="cubic"
+CONFIG_TCP_MD5SIG=y
+CONFIG_IPV6=y
+CONFIG_IPV6_ROUTER_PREF=y
+CONFIG_IPV6_ROUTE_INFO=y
+CONFIG_IPV6_OPTIMISTIC_DAD=y
+# CONFIG_INET6_AH is not set
+# CONFIG_INET6_ESP is not set
+# CONFIG_INET6_IPCOMP is not set
+# CONFIG_IPV6_MIP6 is not set
+# CONFIG_INET6_XFRM_TUNNEL is not set
+# CONFIG_INET6_TUNNEL is not set
+# CONFIG_INET6_XFRM_MODE_TRANSPORT is not set
+# CONFIG_INET6_XFRM_MODE_TUNNEL is not set
+# CONFIG_INET6_XFRM_MODE_BEET is not set
+# CONFIG_INET6_XFRM_MODE_ROUTEOPTIMIZATION is not set
+# CONFIG_IPV6_SIT is not set
+# CONFIG_IPV6_TUNNEL is not set
+# CONFIG_IPV6_GRE is not set
+CONFIG_IPV6_MULTIPLE_TABLES=y
+CONFIG_IPV6_SUBTREES=y
+CONFIG_IPV6_MROUTE=y
+# CONFIG_IPV6_MROUTE_MULTIPLE_TABLES is not set
+CONFIG_IPV6_PIMSM_V2=y
+CONFIG_NETLABEL=y
+CONFIG_NETWORK_SECMARK=y
+CONFIG_NET_PTP_CLASSIFY=y
+# CONFIG_NETWORK_PHY_TIMESTAMPING is not set
+CONFIG_NETFILTER=y
+# CONFIG_NETFILTER_DEBUG is not set
+CONFIG_NETFILTER_ADVANCED=y
+
+#
+# Core Netfilter Configuration
+#
+# CONFIG_NETFILTER_NETLINK_ACCT is not set
+# CONFIG_NETFILTER_NETLINK_QUEUE is not set
+# CONFIG_NETFILTER_NETLINK_LOG is not set
+CONFIG_NF_CONNTRACK=y
+CONFIG_NF_CONNTRACK_MARK=y
+CONFIG_NF_CONNTRACK_SECMARK=y
+CONFIG_NF_CONNTRACK_PROCFS=y
+CONFIG_NF_CONNTRACK_EVENTS=y
+# CONFIG_NF_CONNTRACK_TIMEOUT is not set
+# CONFIG_NF_CONNTRACK_TIMESTAMP is not set
+# CONFIG_NF_CT_PROTO_DCCP is not set
+# CONFIG_NF_CT_PROTO_SCTP is not set
+# CONFIG_NF_CT_PROTO_UDPLITE is not set
+# CONFIG_NF_CONNTRACK_AMANDA is not set
+# CONFIG_NF_CONNTRACK_FTP is not set
+# CONFIG_NF_CONNTRACK_H323 is not set
+# CONFIG_NF_CONNTRACK_IRC is not set
+# CONFIG_NF_CONNTRACK_NETBIOS_NS is not set
+# CONFIG_NF_CONNTRACK_SNMP is not set
+# CONFIG_NF_CONNTRACK_PPTP is not set
+# CONFIG_NF_CONNTRACK_SANE is not set
+# CONFIG_NF_CONNTRACK_SIP is not set
+# CONFIG_NF_CONNTRACK_TFTP is not set
+# CONFIG_NF_CT_NETLINK is not set
+# CONFIG_NF_CT_NETLINK_TIMEOUT is not set
+# CONFIG_NF_TABLES is not set
+CONFIG_NETFILTER_XTABLES=y
+
+#
+# Xtables combined modules
+#
+# CONFIG_NETFILTER_XT_MARK is not set
+# CONFIG_NETFILTER_XT_CONNMARK is not set
+
+#
+# Xtables targets
+#
+# CONFIG_NETFILTER_XT_TARGET_AUDIT is not set
+# CONFIG_NETFILTER_XT_TARGET_CLASSIFY is not set
+# CONFIG_NETFILTER_XT_TARGET_CONNMARK is not set
+# CONFIG_NETFILTER_XT_TARGET_CONNSECMARK is not set
+# CONFIG_NETFILTER_XT_TARGET_HMARK is not set
+# CONFIG_NETFILTER_XT_TARGET_IDLETIMER is not set
+# CONFIG_NETFILTER_XT_TARGET_LED is not set
+# CONFIG_NETFILTER_XT_TARGET_LOG is not set
+# CONFIG_NETFILTER_XT_TARGET_MARK is not set
+# CONFIG_NETFILTER_XT_TARGET_NFLOG is not set
+# CONFIG_NETFILTER_XT_TARGET_NFQUEUE is not set
+# CONFIG_NETFILTER_XT_TARGET_RATEEST is not set
+# CONFIG_NETFILTER_XT_TARGET_TEE is not set
+# CONFIG_NETFILTER_XT_TARGET_SECMARK is not set
+# CONFIG_NETFILTER_XT_TARGET_TCPMSS is not set
+
+#
+# Xtables matches
+#
+# CONFIG_NETFILTER_XT_MATCH_ADDRTYPE is not set
+# CONFIG_NETFILTER_XT_MATCH_BPF is not set
+# CONFIG_NETFILTER_XT_MATCH_CGROUP is not set
+# CONFIG_NETFILTER_XT_MATCH_CLUSTER is not set
+# CONFIG_NETFILTER_XT_MATCH_COMMENT is not set
+# CONFIG_NETFILTER_XT_MATCH_CONNBYTES is not set
+# CONFIG_NETFILTER_XT_MATCH_CONNLABEL is not set
+# CONFIG_NETFILTER_XT_MATCH_CONNLIMIT is not set
+# CONFIG_NETFILTER_XT_MATCH_CONNMARK is not set
+CONFIG_NETFILTER_XT_MATCH_CONNTRACK=y
+# CONFIG_NETFILTER_XT_MATCH_CPU is not set
+# CONFIG_NETFILTER_XT_MATCH_DCCP is not set
+# CONFIG_NETFILTER_XT_MATCH_DEVGROUP is not set
+# CONFIG_NETFILTER_XT_MATCH_DSCP is not set
+# CONFIG_NETFILTER_XT_MATCH_ECN is not set
+# CONFIG_NETFILTER_XT_MATCH_ESP is not set
+# CONFIG_NETFILTER_XT_MATCH_HASHLIMIT is not set
+# CONFIG_NETFILTER_XT_MATCH_HELPER is not set
+# CONFIG_NETFILTER_XT_MATCH_HL is not set
+# CONFIG_NETFILTER_XT_MATCH_IPCOMP is not set
+# CONFIG_NETFILTER_XT_MATCH_IPRANGE is not set
+# CONFIG_NETFILTER_XT_MATCH_L2TP is not set
+# CONFIG_NETFILTER_XT_MATCH_LENGTH is not set
+# CONFIG_NETFILTER_XT_MATCH_LIMIT is not set
+# CONFIG_NETFILTER_XT_MATCH_MAC is not set
+# CONFIG_NETFILTER_XT_MATCH_MARK is not set
+# CONFIG_NETFILTER_XT_MATCH_MULTIPORT is not set
+# CONFIG_NETFILTER_XT_MATCH_NFACCT is not set
+# CONFIG_NETFILTER_XT_MATCH_OWNER is not set
+# CONFIG_NETFILTER_XT_MATCH_PKTTYPE is not set
+# CONFIG_NETFILTER_XT_MATCH_QUOTA is not set
+# CONFIG_NETFILTER_XT_MATCH_RATEEST is not set
+# CONFIG_NETFILTER_XT_MATCH_REALM is not set
+# CONFIG_NETFILTER_XT_MATCH_RECENT is not set
+# CONFIG_NETFILTER_XT_MATCH_SCTP is not set
+# CONFIG_NETFILTER_XT_MATCH_SOCKET is not set
+CONFIG_NETFILTER_XT_MATCH_STATE=y
+# CONFIG_NETFILTER_XT_MATCH_STATISTIC is not set
+# CONFIG_NETFILTER_XT_MATCH_STRING is not set
+# CONFIG_NETFILTER_XT_MATCH_TCPMSS is not set
+# CONFIG_NETFILTER_XT_MATCH_TIME is not set
+# CONFIG_NETFILTER_XT_MATCH_U32 is not set
+# CONFIG_IP_SET is not set
+# CONFIG_IP_VS is not set
+
+#
+# IP: Netfilter Configuration
+#
+CONFIG_NF_DEFRAG_IPV4=y
+CONFIG_NF_CONNTRACK_IPV4=y
+# CONFIG_NF_CONNTRACK_PROC_COMPAT is not set
+CONFIG_IP_NF_IPTABLES=y
+# CONFIG_IP_NF_MATCH_AH is not set
+# CONFIG_IP_NF_MATCH_ECN is not set
+# CONFIG_IP_NF_MATCH_TTL is not set
+CONFIG_IP_NF_FILTER=y
+CONFIG_IP_NF_TARGET_REJECT=y
+# CONFIG_IP_NF_TARGET_SYNPROXY is not set
+# CONFIG_IP_NF_TARGET_ULOG is not set
+# CONFIG_NF_NAT_IPV4 is not set
+# CONFIG_IP_NF_MANGLE is not set
+# CONFIG_IP_NF_RAW is not set
+# CONFIG_IP_NF_SECURITY is not set
+# CONFIG_IP_NF_ARPTABLES is not set
+
+#
+# IPv6: Netfilter Configuration
+#
+CONFIG_NF_DEFRAG_IPV6=y
+CONFIG_NF_CONNTRACK_IPV6=y
+CONFIG_IP6_NF_IPTABLES=y
+# CONFIG_IP6_NF_MATCH_AH is not set
+# CONFIG_IP6_NF_MATCH_EUI64 is not set
+# CONFIG_IP6_NF_MATCH_FRAG is not set
+# CONFIG_IP6_NF_MATCH_OPTS is not set
+# CONFIG_IP6_NF_MATCH_HL is not set
+# CONFIG_IP6_NF_MATCH_IPV6HEADER is not set
+# CONFIG_IP6_NF_MATCH_MH is not set
+# CONFIG_IP6_NF_MATCH_RT is not set
+CONFIG_IP6_NF_FILTER=y
+CONFIG_IP6_NF_TARGET_REJECT=y
+# CONFIG_IP6_NF_TARGET_SYNPROXY is not set
+# CONFIG_IP6_NF_MANGLE is not set
+# CONFIG_IP6_NF_RAW is not set
+# CONFIG_IP6_NF_SECURITY is not set
+# CONFIG_NF_NAT_IPV6 is not set
+# CONFIG_IP_DCCP is not set
+# CONFIG_IP_SCTP is not set
+# CONFIG_RDS is not set
+# CONFIG_TIPC is not set
+# CONFIG_ATM is not set
+# CONFIG_L2TP is not set
+# CONFIG_BRIDGE is not set
+CONFIG_HAVE_NET_DSA=y
+CONFIG_NET_DSA=y
+CONFIG_NET_DSA_TAG_DSA=y
+CONFIG_NET_DSA_TAG_EDSA=y
+CONFIG_NET_DSA_TAG_TRAILER=y
+# CONFIG_VLAN_8021Q is not set
+# CONFIG_DECNET is not set
+# CONFIG_LLC2 is not set
+# CONFIG_IPX is not set
+# CONFIG_ATALK is not set
+# CONFIG_X25 is not set
+# CONFIG_LAPB is not set
+# CONFIG_PHONET is not set
+# CONFIG_IEEE802154 is not set
+CONFIG_NET_SCHED=y
+
+#
+# Queueing/Scheduling
+#
+# CONFIG_NET_SCH_CBQ is not set
+# CONFIG_NET_SCH_HTB is not set
+# CONFIG_NET_SCH_HFSC is not set
+# CONFIG_NET_SCH_PRIO is not set
+# CONFIG_NET_SCH_MULTIQ is not set
+# CONFIG_NET_SCH_RED is not set
+# CONFIG_NET_SCH_SFB is not set
+# CONFIG_NET_SCH_SFQ is not set
+# CONFIG_NET_SCH_TEQL is not set
+# CONFIG_NET_SCH_TBF is not set
+# CONFIG_NET_SCH_GRED is not set
+# CONFIG_NET_SCH_DSMARK is not set
+# CONFIG_NET_SCH_NETEM is not set
+# CONFIG_NET_SCH_DRR is not set
+# CONFIG_NET_SCH_MQPRIO is not set
+# CONFIG_NET_SCH_CHOKE is not set
+# CONFIG_NET_SCH_QFQ is not set
+# CONFIG_NET_SCH_CODEL is not set
+# CONFIG_NET_SCH_FQ_CODEL is not set
+# CONFIG_NET_SCH_FQ is not set
+# CONFIG_NET_SCH_HHF is not set
+# CONFIG_NET_SCH_PIE is not set
+# CONFIG_NET_SCH_INGRESS is not set
+# CONFIG_NET_SCH_PLUG is not set
+
+#
+# Classification
+#
+CONFIG_NET_CLS=y
+# CONFIG_NET_CLS_BASIC is not set
+# CONFIG_NET_CLS_TCINDEX is not set
+# CONFIG_NET_CLS_ROUTE4 is not set
+# CONFIG_NET_CLS_FW is not set
+# CONFIG_NET_CLS_U32 is not set
+# CONFIG_NET_CLS_RSVP is not set
+# CONFIG_NET_CLS_RSVP6 is not set
+# CONFIG_NET_CLS_FLOW is not set
+CONFIG_NET_CLS_CGROUP=y
+# CONFIG_NET_CLS_BPF is not set
+CONFIG_NET_EMATCH=y
+CONFIG_NET_EMATCH_STACK=32
+# CONFIG_NET_EMATCH_CMP is not set
+# CONFIG_NET_EMATCH_NBYTE is not set
+# CONFIG_NET_EMATCH_U32 is not set
+# CONFIG_NET_EMATCH_META is not set
+# CONFIG_NET_EMATCH_TEXT is not set
+CONFIG_NET_CLS_ACT=y
+# CONFIG_NET_ACT_POLICE is not set
+# CONFIG_NET_ACT_GACT is not set
+# CONFIG_NET_ACT_MIRRED is not set
+# CONFIG_NET_ACT_IPT is not set
+# CONFIG_NET_ACT_NAT is not set
+# CONFIG_NET_ACT_PEDIT is not set
+# CONFIG_NET_ACT_SIMP is not set
+# CONFIG_NET_ACT_SKBEDIT is not set
+# CONFIG_NET_ACT_CSUM is not set
+CONFIG_NET_SCH_FIFO=y
+CONFIG_DCB=y
+CONFIG_DNS_RESOLVER=y
+# CONFIG_BATMAN_ADV is not set
+# CONFIG_OPENVSWITCH is not set
+# CONFIG_VSOCKETS is not set
+# CONFIG_NETLINK_MMAP is not set
+# CONFIG_NETLINK_DIAG is not set
+# CONFIG_NET_MPLS_GSO is not set
+# CONFIG_HSR is not set
+CONFIG_RPS=y
+CONFIG_RFS_ACCEL=y
+CONFIG_XPS=y
+# CONFIG_CGROUP_NET_PRIO is not set
+CONFIG_CGROUP_NET_CLASSID=y
+CONFIG_NET_RX_BUSY_POLL=y
+CONFIG_BQL=y
+# CONFIG_BPF_JIT is not set
+CONFIG_NET_FLOW_LIMIT=y
+
+#
+# Network testing
+#
+# CONFIG_NET_PKTGEN is not set
+# CONFIG_NET_TCPPROBE is not set
+CONFIG_NET_DROP_MONITOR=y
+CONFIG_HAMRADIO=y
+
+#
+# Packet Radio protocols
+#
+# CONFIG_AX25 is not set
+# CONFIG_CAN is not set
+# CONFIG_IRDA is not set
+# CONFIG_BT is not set
+# CONFIG_AF_RXRPC is not set
+CONFIG_FIB_RULES=y
+CONFIG_WIRELESS=y
+# CONFIG_CFG80211 is not set
+# CONFIG_LIB80211 is not set
+
+#
+# CFG80211 needs to be enabled for MAC80211
+#
+# CONFIG_WIMAX is not set
+CONFIG_RFKILL=y
+CONFIG_RFKILL_LEDS=y
+CONFIG_RFKILL_INPUT=y
+# CONFIG_RFKILL_REGULATOR is not set
+# CONFIG_RFKILL_GPIO is not set
+# CONFIG_NET_9P is not set
+# CONFIG_CAIF is not set
+# CONFIG_CEPH_LIB is not set
+# CONFIG_NFC is not set
+CONFIG_HAVE_BPF_JIT=y
+
+#
+# Device Drivers
+#
+
+#
+# Generic Driver Options
+#
+CONFIG_UEVENT_HELPER=y
+CONFIG_UEVENT_HELPER_PATH=""
+CONFIG_DEVTMPFS=y
+CONFIG_DEVTMPFS_MOUNT=y
+CONFIG_STANDALONE=y
+CONFIG_PREVENT_FIRMWARE_BUILD=y
+CONFIG_FW_LOADER=y
+# CONFIG_FIRMWARE_IN_KERNEL is not set
+CONFIG_EXTRA_FIRMWARE=""
+CONFIG_FW_LOADER_USER_HELPER=y
+# CONFIG_DEBUG_DRIVER is not set
+CONFIG_DEBUG_DEVRES=y
+# CONFIG_SYS_HYPERVISOR is not set
+# CONFIG_GENERIC_CPU_DEVICES is not set
+CONFIG_GENERIC_CPU_AUTOPROBE=y
+CONFIG_DMA_SHARED_BUFFER=y
+
+#
+# Bus devices
+#
+CONFIG_CONNECTOR=y
+CONFIG_PROC_EVENTS=y
+# CONFIG_MTD is not set
+CONFIG_PARPORT=y
+CONFIG_ARCH_MIGHT_HAVE_PC_PARPORT=y
+CONFIG_PARPORT_PC=y
+# CONFIG_PARPORT_SERIAL is not set
+# CONFIG_PARPORT_PC_FIFO is not set
+# CONFIG_PARPORT_PC_SUPERIO is not set
+# CONFIG_PARPORT_PC_PCMCIA is not set
+# CONFIG_PARPORT_GSC is not set
+# CONFIG_PARPORT_AX88796 is not set
+CONFIG_PARPORT_1284=y
+CONFIG_PNP=y
+# CONFIG_PNP_DEBUG_MESSAGES is not set
+
+#
+# Protocols
+#
+CONFIG_PNPACPI=y
+CONFIG_BLK_DEV=y
+# CONFIG_BLK_DEV_NULL_BLK is not set
+# CONFIG_BLK_DEV_FD is not set
+# CONFIG_PARIDE is not set
+# CONFIG_BLK_DEV_PCIESSD_MTIP32XX is not set
+# CONFIG_BLK_CPQ_CISS_DA is not set
+# CONFIG_BLK_DEV_DAC960 is not set
+# CONFIG_BLK_DEV_UMEM is not set
+# CONFIG_BLK_DEV_COW_COMMON is not set
+CONFIG_BLK_DEV_LOOP=y
+CONFIG_BLK_DEV_LOOP_MIN_COUNT=8
+# CONFIG_BLK_DEV_CRYPTOLOOP is not set
+# CONFIG_BLK_DEV_DRBD is not set
+# CONFIG_BLK_DEV_NBD is not set
+# CONFIG_BLK_DEV_NVME is not set
+# CONFIG_BLK_DEV_SKD is not set
+# CONFIG_BLK_DEV_SX8 is not set
+CONFIG_BLK_DEV_RAM=y
+CONFIG_BLK_DEV_RAM_COUNT=16
+CONFIG_BLK_DEV_RAM_SIZE=16384
+# CONFIG_BLK_DEV_XIP is not set
+# CONFIG_CDROM_PKTCDVD is not set
+# CONFIG_ATA_OVER_ETH is not set
+# CONFIG_BLK_DEV_HD is not set
+# CONFIG_BLK_DEV_RBD is not set
+# CONFIG_BLK_DEV_RSXX is not set
+
+#
+# Misc devices
+#
+# CONFIG_SENSORS_LIS3LV02D is not set
+# CONFIG_AD525X_DPOT is not set
+# CONFIG_DUMMY_IRQ is not set
+# CONFIG_IBM_ASM is not set
+# CONFIG_PHANTOM is not set
+# CONFIG_SGI_IOC4 is not set
+# CONFIG_TIFM_CORE is not set
+# CONFIG_ICS932S401 is not set
+# CONFIG_ENCLOSURE_SERVICES is not set
+# CONFIG_HP_ILO is not set
+# CONFIG_APDS9802ALS is not set
+# CONFIG_ISL29003 is not set
+# CONFIG_ISL29020 is not set
+# CONFIG_SENSORS_TSL2550 is not set
+# CONFIG_SENSORS_BH1780 is not set
+# CONFIG_SENSORS_BH1770 is not set
+# CONFIG_SENSORS_APDS990X is not set
+# CONFIG_HMC6352 is not set
+# CONFIG_DS1682 is not set
+# CONFIG_BMP085_I2C is not set
+# CONFIG_USB_SWITCH_FSA9480 is not set
+# CONFIG_SRAM is not set
+# CONFIG_C2PORT is not set
+
+#
+# EEPROM support
+#
+# CONFIG_EEPROM_AT24 is not set
+# CONFIG_EEPROM_LEGACY is not set
+# CONFIG_EEPROM_MAX6875 is not set
+# CONFIG_EEPROM_93CX6 is not set
+# CONFIG_CB710_CORE is not set
+
+#
+# Texas Instruments shared transport line discipline
+#
+# CONFIG_TI_ST is not set
+# CONFIG_SENSORS_LIS3_I2C is not set
+
+#
+# Altera FPGA firmware download module
+#
+# CONFIG_ALTERA_STAPL is not set
+# CONFIG_INTEL_MEI is not set
+# CONFIG_INTEL_MEI_ME is not set
+# CONFIG_INTEL_MEI_TXE is not set
+# CONFIG_VMWARE_VMCI is not set
+
+#
+# Intel MIC Host Driver
+#
+# CONFIG_INTEL_MIC_HOST is not set
+
+#
+# Intel MIC Card Driver
+#
+# CONFIG_INTEL_MIC_CARD is not set
+# CONFIG_GENWQE is not set
+# CONFIG_ECHO is not set
+CONFIG_HAVE_IDE=y
+# CONFIG_IDE is not set
+
+#
+# SCSI device support
+#
+CONFIG_SCSI_MOD=y
+# CONFIG_RAID_ATTRS is not set
+CONFIG_SCSI=y
+CONFIG_SCSI_DMA=y
+# CONFIG_SCSI_TGT is not set
+CONFIG_SCSI_NETLINK=y
+CONFIG_SCSI_PROC_FS=y
+
+#
+# SCSI support type (disk, tape, CD-ROM)
+#
+CONFIG_BLK_DEV_SD=y
+# CONFIG_CHR_DEV_ST is not set
+# CONFIG_CHR_DEV_OSST is not set
+CONFIG_BLK_DEV_SR=y
+CONFIG_BLK_DEV_SR_VENDOR=y
+CONFIG_CHR_DEV_SG=y
+# CONFIG_CHR_DEV_SCH is not set
+CONFIG_SCSI_MULTI_LUN=y
+CONFIG_SCSI_CONSTANTS=y
+CONFIG_SCSI_LOGGING=y
+CONFIG_SCSI_SCAN_ASYNC=y
+
+#
+# SCSI Transports
+#
+# CONFIG_SCSI_SPI_ATTRS is not set
+CONFIG_SCSI_FC_ATTRS=y
+CONFIG_SCSI_ISCSI_ATTRS=y
+# CONFIG_SCSI_SAS_ATTRS is not set
+# CONFIG_SCSI_SAS_LIBSAS is not set
+# CONFIG_SCSI_SRP_ATTRS is not set
+CONFIG_SCSI_LOWLEVEL=y
+# CONFIG_ISCSI_TCP is not set
+# CONFIG_ISCSI_BOOT_SYSFS is not set
+# CONFIG_SCSI_CXGB3_ISCSI is not set
+# CONFIG_SCSI_CXGB4_ISCSI is not set
+CONFIG_SCSI_BNX2_ISCSI=y
+# CONFIG_SCSI_BNX2X_FCOE is not set
+# CONFIG_BE2ISCSI is not set
+# CONFIG_BLK_DEV_3W_XXXX_RAID is not set
+# CONFIG_SCSI_HPSA is not set
+# CONFIG_SCSI_3W_9XXX is not set
+# CONFIG_SCSI_3W_SAS is not set
+# CONFIG_SCSI_ACARD is not set
+# CONFIG_SCSI_AACRAID is not set
+# CONFIG_SCSI_AIC7XXX is not set
+# CONFIG_SCSI_AIC79XX is not set
+# CONFIG_SCSI_AIC94XX is not set
+# CONFIG_SCSI_MVSAS is not set
+# CONFIG_SCSI_MVUMI is not set
+# CONFIG_SCSI_DPT_I2O is not set
+# CONFIG_SCSI_ADVANSYS is not set
+# CONFIG_SCSI_ARCMSR is not set
+# CONFIG_SCSI_ESAS2R is not set
+CONFIG_MEGARAID_NEWGEN=y
+# CONFIG_MEGARAID_MM is not set
+# CONFIG_MEGARAID_LEGACY is not set
+# CONFIG_MEGARAID_SAS is not set
+# CONFIG_SCSI_MPT2SAS is not set
+# CONFIG_SCSI_MPT3SAS is not set
+# CONFIG_SCSI_UFSHCD is not set
+# CONFIG_SCSI_HPTIOP is not set
+# CONFIG_SCSI_BUSLOGIC is not set
+# CONFIG_VMWARE_PVSCSI is not set
+# CONFIG_LIBFC is not set
+# CONFIG_LIBFCOE is not set
+# CONFIG_FCOE is not set
+# CONFIG_FCOE_FNIC is not set
+# CONFIG_SCSI_DMX3191D is not set
+# CONFIG_SCSI_EATA is not set
+# CONFIG_SCSI_FUTURE_DOMAIN is not set
+# CONFIG_SCSI_GDTH is not set
+# CONFIG_SCSI_ISCI is not set
+# CONFIG_SCSI_IPS is not set
+# CONFIG_SCSI_INITIO is not set
+# CONFIG_SCSI_INIA100 is not set
+# CONFIG_SCSI_PPA is not set
+# CONFIG_SCSI_IMM is not set
+# CONFIG_SCSI_STEX is not set
+# CONFIG_SCSI_SYM53C8XX_2 is not set
+# CONFIG_SCSI_IPR is not set
+# CONFIG_SCSI_QLOGIC_1280 is not set
+# CONFIG_SCSI_QLA_FC is not set
+# CONFIG_SCSI_QLA_ISCSI is not set
+# CONFIG_SCSI_LPFC is not set
+# CONFIG_SCSI_DC395x is not set
+# CONFIG_SCSI_DC390T is not set
+# CONFIG_SCSI_DEBUG is not set
+# CONFIG_SCSI_PMCRAID is not set
+# CONFIG_SCSI_PM8001 is not set
+# CONFIG_SCSI_SRP is not set
+# CONFIG_SCSI_BFA_FC is not set
+# CONFIG_SCSI_CHELSIO_FCOE is not set
+CONFIG_SCSI_LOWLEVEL_PCMCIA=y
+# CONFIG_PCMCIA_AHA152X is not set
+# CONFIG_PCMCIA_FDOMAIN is not set
+# CONFIG_PCMCIA_QLOGIC is not set
+# CONFIG_PCMCIA_SYM53C500 is not set
+CONFIG_SCSI_DH=y
+# CONFIG_SCSI_DH_RDAC is not set
+# CONFIG_SCSI_DH_HP_SW is not set
+# CONFIG_SCSI_DH_EMC is not set
+# CONFIG_SCSI_DH_ALUA is not set
+# CONFIG_SCSI_OSD_INITIATOR is not set
+CONFIG_ATA=y
+# CONFIG_ATA_NONSTANDARD is not set
+CONFIG_ATA_VERBOSE_ERROR=y
+CONFIG_ATA_ACPI=y
+# CONFIG_SATA_ZPODD is not set
+CONFIG_SATA_PMP=y
+
+#
+# Controllers with non-SFF native interface
+#
+CONFIG_SATA_AHCI=y
+# CONFIG_SATA_AHCI_PLATFORM is not set
+# CONFIG_SATA_INIC162X is not set
+# CONFIG_SATA_ACARD_AHCI is not set
+# CONFIG_SATA_SIL24 is not set
+CONFIG_ATA_SFF=y
+
+#
+# SFF controllers with custom DMA interface
+#
+# CONFIG_PDC_ADMA is not set
+# CONFIG_SATA_QSTOR is not set
+# CONFIG_SATA_SX4 is not set
+CONFIG_ATA_BMDMA=y
+
+#
+# SATA SFF controllers with BMDMA
+#
+CONFIG_ATA_PIIX=y
+# CONFIG_SATA_MV is not set
+# CONFIG_SATA_NV is not set
+# CONFIG_SATA_PROMISE is not set
+# CONFIG_SATA_SIL is not set
+# CONFIG_SATA_SIS is not set
+# CONFIG_SATA_SVW is not set
+# CONFIG_SATA_ULI is not set
+# CONFIG_SATA_VIA is not set
+# CONFIG_SATA_VITESSE is not set
+
+#
+# PATA SFF controllers with BMDMA
+#
+# CONFIG_PATA_ALI is not set
+# CONFIG_PATA_AMD is not set
+# CONFIG_PATA_ARTOP is not set
+# CONFIG_PATA_ATIIXP is not set
+# CONFIG_PATA_ATP867X is not set
+# CONFIG_PATA_CMD64X is not set
+# CONFIG_PATA_CYPRESS is not set
+# CONFIG_PATA_EFAR is not set
+# CONFIG_PATA_HPT366 is not set
+# CONFIG_PATA_HPT37X is not set
+# CONFIG_PATA_HPT3X2N is not set
+# CONFIG_PATA_HPT3X3 is not set
+# CONFIG_PATA_IT8213 is not set
+# CONFIG_PATA_IT821X is not set
+# CONFIG_PATA_JMICRON is not set
+CONFIG_PATA_MARVELL=y
+# CONFIG_PATA_NETCELL is not set
+# CONFIG_PATA_NINJA32 is not set
+# CONFIG_PATA_NS87415 is not set
+# CONFIG_PATA_OLDPIIX is not set
+# CONFIG_PATA_OPTIDMA is not set
+# CONFIG_PATA_PDC2027X is not set
+# CONFIG_PATA_PDC_OLD is not set
+# CONFIG_PATA_RADISYS is not set
+# CONFIG_PATA_RDC is not set
+# CONFIG_PATA_SCH is not set
+# CONFIG_PATA_SERVERWORKS is not set
+# CONFIG_PATA_SIL680 is not set
+# CONFIG_PATA_SIS is not set
+# CONFIG_PATA_TOSHIBA is not set
+# CONFIG_PATA_TRIFLEX is not set
+# CONFIG_PATA_VIA is not set
+# CONFIG_PATA_WINBOND is not set
+
+#
+# PIO-only SFF controllers
+#
+# CONFIG_PATA_CMD640_PCI is not set
+# CONFIG_PATA_MPIIX is not set
+# CONFIG_PATA_NS87410 is not set
+# CONFIG_PATA_OPTI is not set
+# CONFIG_PATA_PCMCIA is not set
+# CONFIG_PATA_RZ1000 is not set
+
+#
+# Generic fallback / legacy drivers
+#
+CONFIG_PATA_ACPI=y
+CONFIG_ATA_GENERIC=y
+# CONFIG_PATA_LEGACY is not set
+CONFIG_MD=y
+CONFIG_BLK_DEV_MD=y
+CONFIG_MD_AUTODETECT=y
+# CONFIG_MD_LINEAR is not set
+# CONFIG_MD_RAID0 is not set
+# CONFIG_MD_RAID1 is not set
+# CONFIG_MD_RAID10 is not set
+# CONFIG_MD_RAID456 is not set
+# CONFIG_MD_MULTIPATH is not set
+# CONFIG_MD_FAULTY is not set
+# CONFIG_BCACHE is not set
+CONFIG_BLK_DEV_DM_BUILTIN=y
+CONFIG_BLK_DEV_DM=y
+CONFIG_DM_DEBUG=y
+CONFIG_DM_BUFIO=y
+# CONFIG_DM_CRYPT is not set
+CONFIG_DM_SNAPSHOT=y
+# CONFIG_DM_THIN_PROVISIONING is not set
+# CONFIG_DM_CACHE is not set
+# CONFIG_DM_ERA is not set
+CONFIG_DM_MIRROR=y
+# CONFIG_DM_LOG_USERSPACE is not set
+# CONFIG_DM_RAID is not set
+CONFIG_DM_ZERO=y
+# CONFIG_DM_MULTIPATH is not set
+# CONFIG_DM_DELAY is not set
+CONFIG_DM_UEVENT=y
+# CONFIG_DM_FLAKEY is not set
+# CONFIG_DM_VERITY is not set
+# CONFIG_DM_SWITCH is not set
+# CONFIG_TARGET_CORE is not set
+CONFIG_FUSION=y
+# CONFIG_FUSION_SPI is not set
+# CONFIG_FUSION_FC is not set
+# CONFIG_FUSION_SAS is not set
+CONFIG_FUSION_MAX_SGE=40
+CONFIG_FUSION_LOGGING=y
+
+#
+# IEEE 1394 (FireWire) support
+#
+CONFIG_FIREWIRE=y
+CONFIG_FIREWIRE_OHCI=y
+# CONFIG_FIREWIRE_SBP2 is not set
+# CONFIG_FIREWIRE_NET is not set
+# CONFIG_FIREWIRE_NOSY is not set
+# CONFIG_I2O is not set
+CONFIG_MACINTOSH_DRIVERS=y
+CONFIG_MAC_EMUMOUSEBTN=y
+CONFIG_NETDEVICES=y
+CONFIG_MII=y
+CONFIG_NET_CORE=y
+# CONFIG_BONDING is not set
+# CONFIG_DUMMY is not set
+# CONFIG_EQUALIZER is not set
+CONFIG_NET_FC=y
+# CONFIG_IFB is not set
+# CONFIG_NET_TEAM is not set
+# CONFIG_MACVLAN is not set
+# CONFIG_VXLAN is not set
+# CONFIG_NETCONSOLE is not set
+# CONFIG_NETPOLL is not set
+# CONFIG_NET_POLL_CONTROLLER is not set
+# CONFIG_TUN is not set
+# CONFIG_VETH is not set
+# CONFIG_NLMON is not set
+# CONFIG_ARCNET is not set
+
+#
+# CAIF transport drivers
+#
+# CONFIG_VHOST_NET is not set
+
+#
+# Distributed Switch Architecture drivers
+#
+CONFIG_NET_DSA_MV88E6XXX=y
+CONFIG_NET_DSA_MV88E6060=y
+CONFIG_NET_DSA_MV88E6XXX_NEED_PPU=y
+CONFIG_NET_DSA_MV88E6131=y
+CONFIG_NET_DSA_MV88E6123_61_65=y
+CONFIG_ETHERNET=y
+CONFIG_MDIO=y
+CONFIG_NET_VENDOR_3COM=y
+# CONFIG_PCMCIA_3C574 is not set
+# CONFIG_PCMCIA_3C589 is not set
+# CONFIG_VORTEX is not set
+# CONFIG_TYPHOON is not set
+CONFIG_NET_VENDOR_ADAPTEC=y
+# CONFIG_ADAPTEC_STARFIRE is not set
+CONFIG_NET_VENDOR_ALTEON=y
+# CONFIG_ACENIC is not set
+# CONFIG_ALTERA_TSE is not set
+CONFIG_NET_VENDOR_AMD=y
+# CONFIG_AMD8111_ETH is not set
+# CONFIG_PCNET32 is not set
+# CONFIG_PCMCIA_NMCLAN is not set
+CONFIG_NET_VENDOR_ARC=y
+CONFIG_NET_VENDOR_ATHEROS=y
+# CONFIG_ATL2 is not set
+# CONFIG_ATL1 is not set
+# CONFIG_ATL1E is not set
+# CONFIG_ATL1C is not set
+# CONFIG_ALX is not set
+CONFIG_NET_VENDOR_BROADCOM=y
+# CONFIG_B44 is not set
+CONFIG_BNX2=y
+CONFIG_CNIC=y
+# CONFIG_TIGON3 is not set
+# CONFIG_BNX2X is not set
+CONFIG_NET_VENDOR_BROCADE=y
+# CONFIG_BNA is not set
+# CONFIG_NET_CALXEDA_XGMAC is not set
+CONFIG_NET_VENDOR_CHELSIO=y
+# CONFIG_CHELSIO_T1 is not set
+# CONFIG_CHELSIO_T3 is not set
+# CONFIG_CHELSIO_T4 is not set
+# CONFIG_CHELSIO_T4VF is not set
+CONFIG_NET_VENDOR_CISCO=y
+# CONFIG_ENIC is not set
+# CONFIG_CX_ECAT is not set
+# CONFIG_DNET is not set
+CONFIG_NET_VENDOR_DEC=y
+CONFIG_NET_TULIP=y
+# CONFIG_DE2104X is not set
+# CONFIG_TULIP is not set
+# CONFIG_DE4X5 is not set
+# CONFIG_WINBOND_840 is not set
+# CONFIG_DM9102 is not set
+# CONFIG_ULI526X is not set
+# CONFIG_PCMCIA_XIRCOM is not set
+CONFIG_NET_VENDOR_DLINK=y
+# CONFIG_DL2K is not set
+# CONFIG_SUNDANCE is not set
+CONFIG_NET_VENDOR_EMULEX=y
+# CONFIG_BE2NET is not set
+CONFIG_NET_VENDOR_EXAR=y
+# CONFIG_S2IO is not set
+# CONFIG_VXGE is not set
+CONFIG_NET_VENDOR_FUJITSU=y
+# CONFIG_PCMCIA_FMVJ18X is not set
+CONFIG_NET_VENDOR_HP=y
+# CONFIG_HP100 is not set
+CONFIG_NET_VENDOR_INTEL=y
+# CONFIG_E100 is not set
+CONFIG_E1000=y
+CONFIG_E1000E=y
+# CONFIG_IGB is not set
+# CONFIG_IGBVF is not set
+# CONFIG_IXGB is not set
+# CONFIG_IXGBE is not set
+# CONFIG_IXGBEVF is not set
+# CONFIG_I40E is not set
+# CONFIG_I40EVF is not set
+CONFIG_NET_VENDOR_I825XX=y
+# CONFIG_IP1000 is not set
+# CONFIG_JME is not set
+CONFIG_NET_VENDOR_MARVELL=y
+# CONFIG_MVMDIO is not set
+# CONFIG_SKGE is not set
+# CONFIG_SKY2 is not set
+CONFIG_NET_VENDOR_MELLANOX=y
+# CONFIG_MLX4_EN is not set
+# CONFIG_MLX4_CORE is not set
+# CONFIG_MLX5_CORE is not set
+CONFIG_NET_VENDOR_MICREL=y
+# CONFIG_KS8851_MLL is not set
+# CONFIG_KSZ884X_PCI is not set
+CONFIG_NET_VENDOR_MYRI=y
+# CONFIG_MYRI10GE is not set
+# CONFIG_FEALNX is not set
+CONFIG_NET_VENDOR_NATSEMI=y
+# CONFIG_NATSEMI is not set
+# CONFIG_NS83820 is not set
+CONFIG_NET_VENDOR_8390=y
+# CONFIG_PCMCIA_AXNET is not set
+# CONFIG_NE2K_PCI is not set
+# CONFIG_PCMCIA_PCNET is not set
+CONFIG_NET_VENDOR_NVIDIA=y
+# CONFIG_FORCEDETH is not set
+CONFIG_NET_VENDOR_OKI=y
+# CONFIG_ETHOC is not set
+CONFIG_NET_PACKET_ENGINE=y
+# CONFIG_HAMACHI is not set
+# CONFIG_YELLOWFIN is not set
+CONFIG_NET_VENDOR_QLOGIC=y
+# CONFIG_QLA3XXX is not set
+# CONFIG_QLCNIC is not set
+# CONFIG_QLGE is not set
+# CONFIG_NETXEN_NIC is not set
+CONFIG_NET_VENDOR_REALTEK=y
+# CONFIG_ATP is not set
+CONFIG_8139CP=y
+CONFIG_8139TOO=y
+CONFIG_8139TOO_PIO=y
+# CONFIG_8139TOO_TUNE_TWISTER is not set
+# CONFIG_8139TOO_8129 is not set
+# CONFIG_8139_OLD_RX_RESET is not set
+# CONFIG_R8169 is not set
+# CONFIG_SH_ETH is not set
+CONFIG_NET_VENDOR_RDC=y
+# CONFIG_R6040 is not set
+CONFIG_NET_VENDOR_SAMSUNG=y
+# CONFIG_SXGBE_ETH is not set
+CONFIG_NET_VENDOR_SEEQ=y
+CONFIG_NET_VENDOR_SILAN=y
+# CONFIG_SC92031 is not set
+CONFIG_NET_VENDOR_SIS=y
+# CONFIG_SIS900 is not set
+# CONFIG_SIS190 is not set
+CONFIG_SFC=y
+CONFIG_SFC_MCDI_MON=y
+CONFIG_SFC_SRIOV=y
+CONFIG_NET_VENDOR_SMSC=y
+# CONFIG_PCMCIA_SMC91C92 is not set
+# CONFIG_EPIC100 is not set
+# CONFIG_SMSC911X is not set
+# CONFIG_SMSC9420 is not set
+CONFIG_NET_VENDOR_STMICRO=y
+# CONFIG_STMMAC_ETH is not set
+CONFIG_NET_VENDOR_SUN=y
+# CONFIG_HAPPYMEAL is not set
+# CONFIG_SUNGEM is not set
+# CONFIG_CASSINI is not set
+# CONFIG_NIU is not set
+CONFIG_NET_VENDOR_TEHUTI=y
+# CONFIG_TEHUTI is not set
+CONFIG_NET_VENDOR_TI=y
+# CONFIG_TLAN is not set
+CONFIG_NET_VENDOR_VIA=y
+# CONFIG_VIA_RHINE is not set
+# CONFIG_VIA_VELOCITY is not set
+CONFIG_NET_VENDOR_WIZNET=y
+# CONFIG_WIZNET_W5100 is not set
+# CONFIG_WIZNET_W5300 is not set
+CONFIG_NET_VENDOR_XIRCOM=y
+# CONFIG_PCMCIA_XIRC2PS is not set
+CONFIG_FDDI=y
+# CONFIG_DEFXX is not set
+# CONFIG_SKFP is not set
+# CONFIG_HIPPI is not set
+# CONFIG_NET_SB1000 is not set
+CONFIG_PHYLIB=y
+
+#
+# MII PHY device drivers
+#
+# CONFIG_AT803X_PHY is not set
+# CONFIG_AMD_PHY is not set
+# CONFIG_MARVELL_PHY is not set
+# CONFIG_DAVICOM_PHY is not set
+# CONFIG_QSEMI_PHY is not set
+# CONFIG_LXT_PHY is not set
+# CONFIG_CICADA_PHY is not set
+# CONFIG_VITESSE_PHY is not set
+# CONFIG_SMSC_PHY is not set
+# CONFIG_BROADCOM_PHY is not set
+# CONFIG_BCM7XXX_PHY is not set
+# CONFIG_BCM87XX_PHY is not set
+# CONFIG_ICPLUS_PHY is not set
+# CONFIG_REALTEK_PHY is not set
+# CONFIG_NATIONAL_PHY is not set
+# CONFIG_STE10XP is not set
+# CONFIG_LSI_ET1011C_PHY is not set
+# CONFIG_MICREL_PHY is not set
+CONFIG_FIXED_PHY=y
+# CONFIG_MDIO_BITBANG is not set
+# CONFIG_PLIP is not set
+# CONFIG_PPP is not set
+# CONFIG_SLIP is not set
+
+#
+# USB Network Adapters
+#
+# CONFIG_USB_CATC is not set
+# CONFIG_USB_KAWETH is not set
+# CONFIG_USB_PEGASUS is not set
+# CONFIG_USB_RTL8150 is not set
+# CONFIG_USB_RTL8152 is not set
+# CONFIG_USB_USBNET is not set
+# CONFIG_USB_HSO is not set
+# CONFIG_USB_IPHETH is not set
+CONFIG_WLAN=y
+# CONFIG_PCMCIA_RAYCS is not set
+# CONFIG_PRISM54 is not set
+# CONFIG_HOSTAP is not set
+# CONFIG_WL_TI is not set
+
+#
+# Enable WiMAX (Networking options) to see the WiMAX drivers
+#
+# CONFIG_WAN is not set
+# CONFIG_VMXNET3 is not set
+CONFIG_ISDN=y
+# CONFIG_ISDN_I4L is not set
+# CONFIG_ISDN_CAPI is not set
+# CONFIG_ISDN_DRV_GIGASET is not set
+# CONFIG_HYSDN is not set
+# CONFIG_MISDN is not set
+
+#
+# Input device support
+#
+CONFIG_INPUT=y
+CONFIG_INPUT_FF_MEMLESS=y
+# CONFIG_INPUT_POLLDEV is not set
+# CONFIG_INPUT_SPARSEKMAP is not set
+# CONFIG_INPUT_MATRIXKMAP is not set
+
+#
+# Userland interfaces
+#
+CONFIG_INPUT_MOUSEDEV=y
+# CONFIG_INPUT_MOUSEDEV_PSAUX is not set
+CONFIG_INPUT_MOUSEDEV_SCREEN_X=1024
+CONFIG_INPUT_MOUSEDEV_SCREEN_Y=768
+# CONFIG_INPUT_JOYDEV is not set
+CONFIG_INPUT_EVDEV=y
+# CONFIG_INPUT_EVBUG is not set
+
+#
+# Input Device Drivers
+#
+CONFIG_INPUT_KEYBOARD=y
+# CONFIG_KEYBOARD_ADP5588 is not set
+# CONFIG_KEYBOARD_ADP5589 is not set
+CONFIG_KEYBOARD_ATKBD=y
+# CONFIG_KEYBOARD_QT1070 is not set
+# CONFIG_KEYBOARD_QT2160 is not set
+# CONFIG_KEYBOARD_LKKBD is not set
+# CONFIG_KEYBOARD_GPIO is not set
+# CONFIG_KEYBOARD_GPIO_POLLED is not set
+# CONFIG_KEYBOARD_TCA6416 is not set
+# CONFIG_KEYBOARD_TCA8418 is not set
+# CONFIG_KEYBOARD_MATRIX is not set
+# CONFIG_KEYBOARD_LM8323 is not set
+# CONFIG_KEYBOARD_LM8333 is not set
+# CONFIG_KEYBOARD_MAX7359 is not set
+# CONFIG_KEYBOARD_MCS is not set
+# CONFIG_KEYBOARD_MPR121 is not set
+# CONFIG_KEYBOARD_NEWTON is not set
+# CONFIG_KEYBOARD_OPENCORES is not set
+# CONFIG_KEYBOARD_STOWAWAY is not set
+# CONFIG_KEYBOARD_SUNKBD is not set
+# CONFIG_KEYBOARD_XTKBD is not set
+CONFIG_INPUT_MOUSE=y
+CONFIG_MOUSE_PS2=y
+CONFIG_MOUSE_PS2_ALPS=y
+CONFIG_MOUSE_PS2_LOGIPS2PP=y
+CONFIG_MOUSE_PS2_SYNAPTICS=y
+CONFIG_MOUSE_PS2_CYPRESS=y
+CONFIG_MOUSE_PS2_LIFEBOOK=y
+CONFIG_MOUSE_PS2_TRACKPOINT=y
+CONFIG_MOUSE_PS2_ELANTECH=y
+CONFIG_MOUSE_PS2_SENTELIC=y
+# CONFIG_MOUSE_PS2_TOUCHKIT is not set
+# CONFIG_MOUSE_SERIAL is not set
+# CONFIG_MOUSE_APPLETOUCH is not set
+# CONFIG_MOUSE_BCM5974 is not set
+# CONFIG_MOUSE_CYAPA is not set
+# CONFIG_MOUSE_VSXXXAA is not set
+# CONFIG_MOUSE_GPIO is not set
+# CONFIG_MOUSE_SYNAPTICS_I2C is not set
+# CONFIG_MOUSE_SYNAPTICS_USB is not set
+CONFIG_INPUT_JOYSTICK=y
+# CONFIG_JOYSTICK_ANALOG is not set
+# CONFIG_JOYSTICK_A3D is not set
+# CONFIG_JOYSTICK_ADI is not set
+# CONFIG_JOYSTICK_COBRA is not set
+# CONFIG_JOYSTICK_GF2K is not set
+# CONFIG_JOYSTICK_GRIP is not set
+# CONFIG_JOYSTICK_GRIP_MP is not set
+# CONFIG_JOYSTICK_GUILLEMOT is not set
+# CONFIG_JOYSTICK_INTERACT is not set
+# CONFIG_JOYSTICK_SIDEWINDER is not set
+# CONFIG_JOYSTICK_TMDC is not set
+# CONFIG_JOYSTICK_IFORCE is not set
+# CONFIG_JOYSTICK_WARRIOR is not set
+# CONFIG_JOYSTICK_MAGELLAN is not set
+# CONFIG_JOYSTICK_SPACEORB is not set
+# CONFIG_JOYSTICK_SPACEBALL is not set
+# CONFIG_JOYSTICK_STINGER is not set
+# CONFIG_JOYSTICK_TWIDJOY is not set
+# CONFIG_JOYSTICK_ZHENHUA is not set
+# CONFIG_JOYSTICK_DB9 is not set
+# CONFIG_JOYSTICK_GAMECON is not set
+# CONFIG_JOYSTICK_TURBOGRAFX is not set
+# CONFIG_JOYSTICK_AS5011 is not set
+# CONFIG_JOYSTICK_JOYDUMP is not set
+# CONFIG_JOYSTICK_XPAD is not set
+# CONFIG_JOYSTICK_WALKERA0701 is not set
+CONFIG_INPUT_TABLET=y
+# CONFIG_TABLET_USB_ACECAD is not set
+# CONFIG_TABLET_USB_AIPTEK is not set
+# CONFIG_TABLET_USB_GTCO is not set
+# CONFIG_TABLET_USB_HANWANG is not set
+# CONFIG_TABLET_USB_KBTAB is not set
+# CONFIG_TABLET_USB_WACOM is not set
+CONFIG_INPUT_TOUCHSCREEN=y
+# CONFIG_TOUCHSCREEN_AD7879 is not set
+# CONFIG_TOUCHSCREEN_ATMEL_MXT is not set
+# CONFIG_TOUCHSCREEN_AUO_PIXCIR is not set
+# CONFIG_TOUCHSCREEN_BU21013 is not set
+# CONFIG_TOUCHSCREEN_CY8CTMG110 is not set
+# CONFIG_TOUCHSCREEN_CYTTSP_CORE is not set
+# CONFIG_TOUCHSCREEN_CYTTSP4_CORE is not set
+# CONFIG_TOUCHSCREEN_DYNAPRO is not set
+# CONFIG_TOUCHSCREEN_HAMPSHIRE is not set
+# CONFIG_TOUCHSCREEN_EETI is not set
+# CONFIG_TOUCHSCREEN_FUJITSU is not set
+# CONFIG_TOUCHSCREEN_ILI210X is not set
+# CONFIG_TOUCHSCREEN_GUNZE is not set
+# CONFIG_TOUCHSCREEN_ELO is not set
+# CONFIG_TOUCHSCREEN_WACOM_W8001 is not set
+# CONFIG_TOUCHSCREEN_WACOM_I2C is not set
+# CONFIG_TOUCHSCREEN_MAX11801 is not set
+# CONFIG_TOUCHSCREEN_MCS5000 is not set
+# CONFIG_TOUCHSCREEN_MMS114 is not set
+# CONFIG_TOUCHSCREEN_MTOUCH is not set
+# CONFIG_TOUCHSCREEN_INEXIO is not set
+# CONFIG_TOUCHSCREEN_MK712 is not set
+# CONFIG_TOUCHSCREEN_PENMOUNT is not set
+# CONFIG_TOUCHSCREEN_EDT_FT5X06 is not set
+# CONFIG_TOUCHSCREEN_TOUCHRIGHT is not set
+# CONFIG_TOUCHSCREEN_TOUCHWIN is not set
+# CONFIG_TOUCHSCREEN_PIXCIR is not set
+# CONFIG_TOUCHSCREEN_WM97XX is not set
+# CONFIG_TOUCHSCREEN_USB_COMPOSITE is not set
+# CONFIG_TOUCHSCREEN_TOUCHIT213 is not set
+# CONFIG_TOUCHSCREEN_TSC_SERIO is not set
+# CONFIG_TOUCHSCREEN_TSC2007 is not set
+# CONFIG_TOUCHSCREEN_ST1232 is not set
+# CONFIG_TOUCHSCREEN_SUR40 is not set
+# CONFIG_TOUCHSCREEN_TPS6507X is not set
+# CONFIG_TOUCHSCREEN_ZFORCE is not set
+CONFIG_INPUT_MISC=y
+# CONFIG_INPUT_AD714X is not set
+# CONFIG_INPUT_BMA150 is not set
+# CONFIG_INPUT_PCSPKR is not set
+# CONFIG_INPUT_MMA8450 is not set
+# CONFIG_INPUT_MPU3050 is not set
+# CONFIG_INPUT_APANEL is not set
+# CONFIG_INPUT_GP2A is not set
+# CONFIG_INPUT_GPIO_BEEPER is not set
+# CONFIG_INPUT_GPIO_TILT_POLLED is not set
+# CONFIG_INPUT_ATLAS_BTNS is not set
+# CONFIG_INPUT_ATI_REMOTE2 is not set
+# CONFIG_INPUT_KEYSPAN_REMOTE is not set
+# CONFIG_INPUT_KXTJ9 is not set
+# CONFIG_INPUT_POWERMATE is not set
+# CONFIG_INPUT_YEALINK is not set
+# CONFIG_INPUT_CM109 is not set
+CONFIG_INPUT_UINPUT=y
+# CONFIG_INPUT_PCF8574 is not set
+# CONFIG_INPUT_GPIO_ROTARY_ENCODER is not set
+# CONFIG_INPUT_ADXL34X is not set
+# CONFIG_INPUT_IMS_PCU is not set
+# CONFIG_INPUT_CMA3000 is not set
+# CONFIG_INPUT_IDEAPAD_SLIDEBAR is not set
+
+#
+# Hardware I/O ports
+#
+CONFIG_SERIO=y
+CONFIG_ARCH_MIGHT_HAVE_PC_SERIO=y
+CONFIG_SERIO_I8042=y
+CONFIG_SERIO_SERPORT=y
+# CONFIG_SERIO_CT82C710 is not set
+# CONFIG_SERIO_PARKBD is not set
+# CONFIG_SERIO_PCIPS2 is not set
+CONFIG_SERIO_LIBPS2=y
+# CONFIG_SERIO_RAW is not set
+# CONFIG_SERIO_ALTERA_PS2 is not set
+# CONFIG_SERIO_PS2MULT is not set
+# CONFIG_SERIO_ARC_PS2 is not set
+# CONFIG_GAMEPORT is not set
+
+#
+# Character devices
+#
+CONFIG_TTY=y
+CONFIG_VT=y
+CONFIG_CONSOLE_TRANSLATIONS=y
+CONFIG_VT_CONSOLE=y
+CONFIG_VT_CONSOLE_SLEEP=y
+CONFIG_HW_CONSOLE=y
+CONFIG_VT_HW_CONSOLE_BINDING=y
+CONFIG_UNIX98_PTYS=y
+CONFIG_DEVPTS_MULTIPLE_INSTANCES=y
+# CONFIG_LEGACY_PTYS is not set
+CONFIG_SERIAL_NONSTANDARD=y
+# CONFIG_ROCKETPORT is not set
+# CONFIG_CYCLADES is not set
+# CONFIG_MOXA_INTELLIO is not set
+# CONFIG_MOXA_SMARTIO is not set
+# CONFIG_SYNCLINK is not set
+# CONFIG_SYNCLINKMP is not set
+# CONFIG_SYNCLINK_GT is not set
+# CONFIG_NOZOMI is not set
+# CONFIG_ISI is not set
+# CONFIG_N_HDLC is not set
+# CONFIG_N_GSM is not set
+# CONFIG_TRACE_SINK is not set
+# CONFIG_DEVKMEM is not set
+
+#
+# Serial drivers
+#
+CONFIG_SERIAL_EARLYCON=y
+CONFIG_SERIAL_8250=y
+CONFIG_SERIAL_8250_DEPRECATED_OPTIONS=y
+CONFIG_SERIAL_8250_PNP=y
+CONFIG_SERIAL_8250_CONSOLE=y
+CONFIG_SERIAL_8250_DMA=y
+CONFIG_SERIAL_8250_PCI=y
+# CONFIG_SERIAL_8250_CS is not set
+CONFIG_SERIAL_8250_NR_UARTS=32
+CONFIG_SERIAL_8250_RUNTIME_UARTS=4
+CONFIG_SERIAL_8250_EXTENDED=y
+CONFIG_SERIAL_8250_MANY_PORTS=y
+CONFIG_SERIAL_8250_SHARE_IRQ=y
+CONFIG_SERIAL_8250_DETECT_IRQ=y
+CONFIG_SERIAL_8250_RSA=y
+# CONFIG_SERIAL_8250_DW is not set
+
+#
+# Non-8250 serial port support
+#
+# CONFIG_SERIAL_MFD_HSU is not set
+CONFIG_SERIAL_CORE=y
+CONFIG_SERIAL_CORE_CONSOLE=y
+# CONFIG_SERIAL_JSM is not set
+# CONFIG_SERIAL_SCCNXP is not set
+# CONFIG_SERIAL_SC16IS7XX is not set
+# CONFIG_SERIAL_ALTERA_JTAGUART is not set
+# CONFIG_SERIAL_ALTERA_UART is not set
+# CONFIG_SERIAL_ARC is not set
+# CONFIG_SERIAL_RP2 is not set
+# CONFIG_SERIAL_FSL_LPUART is not set
+# CONFIG_PRINTER is not set
+CONFIG_PPDEV=y
+# CONFIG_IPMI_HANDLER is not set
+CONFIG_HW_RANDOM=y
+# CONFIG_HW_RANDOM_TIMERIOMEM is not set
+# CONFIG_HW_RANDOM_INTEL is not set
+# CONFIG_HW_RANDOM_AMD is not set
+# CONFIG_HW_RANDOM_VIA is not set
+CONFIG_HW_RANDOM_TPM=y
+CONFIG_NVRAM=y
+# CONFIG_R3964 is not set
+# CONFIG_APPLICOM is not set
+
+#
+# PCMCIA character devices
+#
+# CONFIG_SYNCLINK_CS is not set
+# CONFIG_CARDMAN_4000 is not set
+# CONFIG_CARDMAN_4040 is not set
+# CONFIG_IPWIRELESS is not set
+# CONFIG_MWAVE is not set
+CONFIG_RAW_DRIVER=y
+CONFIG_MAX_RAW_DEVS=8192
+CONFIG_HPET=y
+# CONFIG_HPET_MMAP is not set
+# CONFIG_HANGCHECK_TIMER is not set
+CONFIG_TCG_TPM=y
+CONFIG_TCG_TIS=y
+# CONFIG_TCG_TIS_I2C_ATMEL is not set
+# CONFIG_TCG_TIS_I2C_INFINEON is not set
+# CONFIG_TCG_TIS_I2C_NUVOTON is not set
+# CONFIG_TCG_NSC is not set
+# CONFIG_TCG_ATMEL is not set
+# CONFIG_TCG_INFINEON is not set
+# CONFIG_TCG_ST33_I2C is not set
+# CONFIG_TELCLOCK is not set
+CONFIG_DEVPORT=y
+CONFIG_I2C=y
+CONFIG_I2C_BOARDINFO=y
+CONFIG_I2C_COMPAT=y
+# CONFIG_I2C_CHARDEV is not set
+# CONFIG_I2C_MUX is not set
+CONFIG_I2C_HELPER_AUTO=y
+CONFIG_I2C_ALGOBIT=y
+
+#
+# I2C Hardware Bus support
+#
+
+#
+# PC SMBus host controller drivers
+#
+# CONFIG_I2C_ALI1535 is not set
+# CONFIG_I2C_ALI1563 is not set
+# CONFIG_I2C_ALI15X3 is not set
+# CONFIG_I2C_AMD756 is not set
+# CONFIG_I2C_AMD8111 is not set
+CONFIG_I2C_I801=y
+# CONFIG_I2C_ISCH is not set
+# CONFIG_I2C_ISMT is not set
+# CONFIG_I2C_PIIX4 is not set
+# CONFIG_I2C_NFORCE2 is not set
+# CONFIG_I2C_SIS5595 is not set
+# CONFIG_I2C_SIS630 is not set
+# CONFIG_I2C_SIS96X is not set
+# CONFIG_I2C_VIA is not set
+# CONFIG_I2C_VIAPRO is not set
+
+#
+# ACPI drivers
+#
+# CONFIG_I2C_SCMI is not set
+
+#
+# I2C system bus drivers (mostly embedded / system-on-chip)
+#
+# CONFIG_I2C_CBUS_GPIO is not set
+# CONFIG_I2C_DESIGNWARE_PLATFORM is not set
+# CONFIG_I2C_DESIGNWARE_PCI is not set
+# CONFIG_I2C_GPIO is not set
+# CONFIG_I2C_OCORES is not set
+# CONFIG_I2C_PCA_PLATFORM is not set
+# CONFIG_I2C_PXA_PCI is not set
+# CONFIG_I2C_SIMTEC is not set
+# CONFIG_I2C_XILINX is not set
+
+#
+# External I2C/SMBus adapter drivers
+#
+# CONFIG_I2C_DIOLAN_U2C is not set
+# CONFIG_I2C_PARPORT is not set
+# CONFIG_I2C_PARPORT_LIGHT is not set
+# CONFIG_I2C_ROBOTFUZZ_OSIF is not set
+# CONFIG_I2C_TAOS_EVM is not set
+# CONFIG_I2C_TINY_USB is not set
+
+#
+# Other I2C/SMBus bus drivers
+#
+# CONFIG_I2C_STUB is not set
+# CONFIG_I2C_DEBUG_CORE is not set
+# CONFIG_I2C_DEBUG_ALGO is not set
+# CONFIG_I2C_DEBUG_BUS is not set
+# CONFIG_SPI is not set
+# CONFIG_SPMI is not set
+# CONFIG_HSI is not set
+
+#
+# PPS support
+#
+CONFIG_PPS=y
+# CONFIG_PPS_DEBUG is not set
+
+#
+# PPS clients support
+#
+# CONFIG_PPS_CLIENT_KTIMER is not set
+# CONFIG_PPS_CLIENT_LDISC is not set
+# CONFIG_PPS_CLIENT_PARPORT is not set
+# CONFIG_PPS_CLIENT_GPIO is not set
+
+#
+# PPS generators support
+#
+
+#
+# PTP clock support
+#
+CONFIG_PTP_1588_CLOCK=y
+
+#
+# Enable PHYLIB and NETWORK_PHY_TIMESTAMPING to see the additional clocks.
+#
+CONFIG_ARCH_WANT_OPTIONAL_GPIOLIB=y
+CONFIG_GPIOLIB=y
+CONFIG_GPIO_DEVRES=y
+CONFIG_GPIO_ACPI=y
+# CONFIG_DEBUG_GPIO is not set
+# CONFIG_GPIO_SYSFS is not set
+
+#
+# Memory mapped GPIO drivers:
+#
+# CONFIG_GPIO_GENERIC_PLATFORM is not set
+# CONFIG_GPIO_IT8761E is not set
+# CONFIG_GPIO_F7188X is not set
+# CONFIG_GPIO_SCH311X is not set
+# CONFIG_GPIO_SCH is not set
+# CONFIG_GPIO_ICH is not set
+# CONFIG_GPIO_VX855 is not set
+# CONFIG_GPIO_LYNXPOINT is not set
+
+#
+# I2C GPIO expanders:
+#
+# CONFIG_GPIO_MAX7300 is not set
+# CONFIG_GPIO_MAX732X is not set
+# CONFIG_GPIO_PCA953X is not set
+# CONFIG_GPIO_PCF857X is not set
+# CONFIG_GPIO_SX150X is not set
+# CONFIG_GPIO_ADP5588 is not set
+
+#
+# PCI GPIO expanders:
+#
+# CONFIG_GPIO_BT8XX is not set
+# CONFIG_GPIO_AMD8111 is not set
+# CONFIG_GPIO_INTEL_MID is not set
+# CONFIG_GPIO_ML_IOH is not set
+# CONFIG_GPIO_RDC321X is not set
+
+#
+# SPI GPIO expanders:
+#
+
+#
+# AC97 GPIO expanders:
+#
+
+#
+# LPC GPIO expanders:
+#
+
+#
+# MODULbus GPIO expanders:
+#
+
+#
+# USB GPIO expanders:
+#
+# CONFIG_W1 is not set
+CONFIG_POWER_SUPPLY=y
+# CONFIG_POWER_SUPPLY_DEBUG is not set
+# CONFIG_PDA_POWER is not set
+# CONFIG_TEST_POWER is not set
+# CONFIG_BATTERY_DS2780 is not set
+# CONFIG_BATTERY_DS2781 is not set
+# CONFIG_BATTERY_DS2782 is not set
+# CONFIG_BATTERY_SBS is not set
+# CONFIG_BATTERY_BQ27x00 is not set
+# CONFIG_BATTERY_MAX17040 is not set
+# CONFIG_BATTERY_MAX17042 is not set
+# CONFIG_CHARGER_MAX8903 is not set
+# CONFIG_CHARGER_LP8727 is not set
+# CONFIG_CHARGER_GPIO is not set
+# CONFIG_CHARGER_MANAGER is not set
+# CONFIG_CHARGER_BQ2415X is not set
+# CONFIG_CHARGER_BQ24190 is not set
+# CONFIG_CHARGER_BQ24735 is not set
+# CONFIG_CHARGER_SMB347 is not set
+# CONFIG_POWER_RESET is not set
+# CONFIG_POWER_AVS is not set
+CONFIG_HWMON=y
+# CONFIG_HWMON_VID is not set
+# CONFIG_HWMON_DEBUG_CHIP is not set
+
+#
+# Native drivers
+#
+# CONFIG_SENSORS_ABITUGURU is not set
+# CONFIG_SENSORS_ABITUGURU3 is not set
+# CONFIG_SENSORS_AD7414 is not set
+# CONFIG_SENSORS_AD7418 is not set
+# CONFIG_SENSORS_ADM1021 is not set
+# CONFIG_SENSORS_ADM1025 is not set
+# CONFIG_SENSORS_ADM1026 is not set
+# CONFIG_SENSORS_ADM1029 is not set
+# CONFIG_SENSORS_ADM1031 is not set
+# CONFIG_SENSORS_ADM9240 is not set
+# CONFIG_SENSORS_ADT7410 is not set
+# CONFIG_SENSORS_ADT7411 is not set
+# CONFIG_SENSORS_ADT7462 is not set
+# CONFIG_SENSORS_ADT7470 is not set
+# CONFIG_SENSORS_ADT7475 is not set
+# CONFIG_SENSORS_ASC7621 is not set
+# CONFIG_SENSORS_K8TEMP is not set
+# CONFIG_SENSORS_K10TEMP is not set
+# CONFIG_SENSORS_FAM15H_POWER is not set
+# CONFIG_SENSORS_APPLESMC is not set
+# CONFIG_SENSORS_ASB100 is not set
+# CONFIG_SENSORS_ATXP1 is not set
+# CONFIG_SENSORS_DS620 is not set
+# CONFIG_SENSORS_DS1621 is not set
+# CONFIG_SENSORS_I5K_AMB is not set
+# CONFIG_SENSORS_F71805F is not set
+# CONFIG_SENSORS_F71882FG is not set
+# CONFIG_SENSORS_F75375S is not set
+# CONFIG_SENSORS_FSCHMD is not set
+# CONFIG_SENSORS_GL518SM is not set
+# CONFIG_SENSORS_GL520SM is not set
+# CONFIG_SENSORS_G760A is not set
+# CONFIG_SENSORS_G762 is not set
+# CONFIG_SENSORS_GPIO_FAN is not set
+# CONFIG_SENSORS_HIH6130 is not set
+# CONFIG_SENSORS_CORETEMP is not set
+# CONFIG_SENSORS_IT87 is not set
+# CONFIG_SENSORS_JC42 is not set
+# CONFIG_SENSORS_LINEAGE is not set
+# CONFIG_SENSORS_LTC2945 is not set
+# CONFIG_SENSORS_LTC4151 is not set
+# CONFIG_SENSORS_LTC4215 is not set
+# CONFIG_SENSORS_LTC4222 is not set
+# CONFIG_SENSORS_LTC4245 is not set
+# CONFIG_SENSORS_LTC4260 is not set
+# CONFIG_SENSORS_LTC4261 is not set
+# CONFIG_SENSORS_MAX16065 is not set
+# CONFIG_SENSORS_MAX1619 is not set
+# CONFIG_SENSORS_MAX1668 is not set
+# CONFIG_SENSORS_MAX197 is not set
+# CONFIG_SENSORS_MAX6639 is not set
+# CONFIG_SENSORS_MAX6642 is not set
+# CONFIG_SENSORS_MAX6650 is not set
+# CONFIG_SENSORS_MAX6697 is not set
+# CONFIG_SENSORS_HTU21 is not set
+# CONFIG_SENSORS_MCP3021 is not set
+# CONFIG_SENSORS_LM63 is not set
+# CONFIG_SENSORS_LM73 is not set
+# CONFIG_SENSORS_LM75 is not set
+# CONFIG_SENSORS_LM77 is not set
+# CONFIG_SENSORS_LM78 is not set
+# CONFIG_SENSORS_LM80 is not set
+# CONFIG_SENSORS_LM83 is not set
+# CONFIG_SENSORS_LM85 is not set
+# CONFIG_SENSORS_LM87 is not set
+# CONFIG_SENSORS_LM90 is not set
+# CONFIG_SENSORS_LM92 is not set
+# CONFIG_SENSORS_LM93 is not set
+# CONFIG_SENSORS_LM95234 is not set
+# CONFIG_SENSORS_LM95241 is not set
+# CONFIG_SENSORS_LM95245 is not set
+# CONFIG_SENSORS_PC87360 is not set
+# CONFIG_SENSORS_PC87427 is not set
+# CONFIG_SENSORS_NTC_THERMISTOR is not set
+# CONFIG_SENSORS_NCT6683 is not set
+# CONFIG_SENSORS_NCT6775 is not set
+# CONFIG_SENSORS_PCF8591 is not set
+# CONFIG_PMBUS is not set
+# CONFIG_SENSORS_SHT15 is not set
+# CONFIG_SENSORS_SHT21 is not set
+# CONFIG_SENSORS_SHTC1 is not set
+# CONFIG_SENSORS_SIS5595 is not set
+# CONFIG_SENSORS_DME1737 is not set
+# CONFIG_SENSORS_EMC1403 is not set
+# CONFIG_SENSORS_EMC2103 is not set
+# CONFIG_SENSORS_EMC6W201 is not set
+# CONFIG_SENSORS_SMSC47M1 is not set
+# CONFIG_SENSORS_SMSC47M192 is not set
+# CONFIG_SENSORS_SMSC47B397 is not set
+# CONFIG_SENSORS_SCH56XX_COMMON is not set
+# CONFIG_SENSORS_SCH5627 is not set
+# CONFIG_SENSORS_SCH5636 is not set
+# CONFIG_SENSORS_SMM665 is not set
+# CONFIG_SENSORS_ADC128D818 is not set
+# CONFIG_SENSORS_ADS1015 is not set
+# CONFIG_SENSORS_ADS7828 is not set
+# CONFIG_SENSORS_AMC6821 is not set
+# CONFIG_SENSORS_INA209 is not set
+# CONFIG_SENSORS_INA2XX is not set
+# CONFIG_SENSORS_THMC50 is not set
+# CONFIG_SENSORS_TMP102 is not set
+# CONFIG_SENSORS_TMP401 is not set
+# CONFIG_SENSORS_TMP421 is not set
+# CONFIG_SENSORS_VIA_CPUTEMP is not set
+# CONFIG_SENSORS_VIA686A is not set
+# CONFIG_SENSORS_VT1211 is not set
+# CONFIG_SENSORS_VT8231 is not set
+# CONFIG_SENSORS_W83781D is not set
+# CONFIG_SENSORS_W83791D is not set
+# CONFIG_SENSORS_W83792D is not set
+# CONFIG_SENSORS_W83793 is not set
+# CONFIG_SENSORS_W83795 is not set
+# CONFIG_SENSORS_W83L785TS is not set
+# CONFIG_SENSORS_W83L786NG is not set
+# CONFIG_SENSORS_W83627HF is not set
+# CONFIG_SENSORS_W83627EHF is not set
+
+#
+# ACPI drivers
+#
+# CONFIG_SENSORS_ACPI_POWER is not set
+# CONFIG_SENSORS_ATK0110 is not set
+CONFIG_THERMAL=y
+CONFIG_THERMAL_HWMON=y
+CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE=y
+# CONFIG_THERMAL_DEFAULT_GOV_FAIR_SHARE is not set
+# CONFIG_THERMAL_DEFAULT_GOV_USER_SPACE is not set
+# CONFIG_THERMAL_GOV_FAIR_SHARE is not set
+CONFIG_THERMAL_GOV_STEP_WISE=y
+CONFIG_THERMAL_GOV_USER_SPACE=y
+# CONFIG_THERMAL_EMULATION is not set
+# CONFIG_INTEL_POWERCLAMP is not set
+CONFIG_X86_PKG_TEMP_THERMAL=m
+# CONFIG_ACPI_INT3403_THERMAL is not set
+# CONFIG_INTEL_SOC_DTS_THERMAL is not set
+
+#
+# Texas Instruments thermal drivers
+#
+CONFIG_WATCHDOG=y
+CONFIG_WATCHDOG_CORE=y
+# CONFIG_WATCHDOG_NOWAYOUT is not set
+
+#
+# Watchdog Device Drivers
+#
+# CONFIG_SOFT_WATCHDOG is not set
+# CONFIG_XILINX_WATCHDOG is not set
+# CONFIG_DW_WATCHDOG is not set
+# CONFIG_ACQUIRE_WDT is not set
+# CONFIG_ADVANTECH_WDT is not set
+# CONFIG_ALIM1535_WDT is not set
+# CONFIG_ALIM7101_WDT is not set
+# CONFIG_F71808E_WDT is not set
+# CONFIG_SP5100_TCO is not set
+# CONFIG_SBC_FITPC2_WATCHDOG is not set
+# CONFIG_EUROTECH_WDT is not set
+# CONFIG_IB700_WDT is not set
+# CONFIG_IBMASR is not set
+# CONFIG_WAFER_WDT is not set
+# CONFIG_I6300ESB_WDT is not set
+# CONFIG_IE6XX_WDT is not set
+CONFIG_ITCO_WDT=y
+CONFIG_ITCO_VENDOR_SUPPORT=y
+# CONFIG_IT8712F_WDT is not set
+# CONFIG_IT87_WDT is not set
+# CONFIG_HP_WATCHDOG is not set
+# CONFIG_SC1200_WDT is not set
+# CONFIG_PC87413_WDT is not set
+# CONFIG_NV_TCO is not set
+# CONFIG_60XX_WDT is not set
+# CONFIG_CPU5_WDT is not set
+# CONFIG_SMSC_SCH311X_WDT is not set
+# CONFIG_SMSC37B787_WDT is not set
+# CONFIG_VIA_WDT is not set
+# CONFIG_W83627HF_WDT is not set
+# CONFIG_W83877F_WDT is not set
+# CONFIG_W83977F_WDT is not set
+# CONFIG_MACHZ_WDT is not set
+# CONFIG_SBC_EPX_C3_WATCHDOG is not set
+# CONFIG_MEN_A21_WDT is not set
+
+#
+# PCI-based Watchdog Cards
+#
+# CONFIG_PCIPCWATCHDOG is not set
+# CONFIG_WDTPCI is not set
+
+#
+# USB-based Watchdog Cards
+#
+# CONFIG_USBPCWATCHDOG is not set
+CONFIG_SSB_POSSIBLE=y
+
+#
+# Sonics Silicon Backplane
+#
+# CONFIG_SSB is not set
+CONFIG_BCMA_POSSIBLE=y
+
+#
+# Broadcom specific AMBA
+#
+# CONFIG_BCMA is not set
+
+#
+# Multifunction device drivers
+#
+CONFIG_MFD_CORE=y
+# CONFIG_MFD_CS5535 is not set
+# CONFIG_MFD_AS3711 is not set
+# CONFIG_PMIC_ADP5520 is not set
+# CONFIG_MFD_AAT2870_CORE is not set
+# CONFIG_MFD_BCM590XX is not set
+# CONFIG_MFD_AXP20X is not set
+# CONFIG_MFD_CROS_EC is not set
+# CONFIG_PMIC_DA903X is not set
+# CONFIG_MFD_DA9052_I2C is not set
+# CONFIG_MFD_DA9055 is not set
+# CONFIG_MFD_DA9063 is not set
+# CONFIG_MFD_MC13XXX_I2C is not set
+# CONFIG_HTC_PASIC3 is not set
+# CONFIG_HTC_I2CPLD is not set
+CONFIG_LPC_ICH=y
+# CONFIG_LPC_SCH is not set
+# CONFIG_MFD_JANZ_CMODIO is not set
+# CONFIG_MFD_KEMPLD is not set
+# CONFIG_MFD_88PM800 is not set
+# CONFIG_MFD_88PM805 is not set
+# CONFIG_MFD_88PM860X is not set
+# CONFIG_MFD_MAX14577 is not set
+# CONFIG_MFD_MAX77686 is not set
+# CONFIG_MFD_MAX77693 is not set
+# CONFIG_MFD_MAX8907 is not set
+# CONFIG_MFD_MAX8925 is not set
+# CONFIG_MFD_MAX8997 is not set
+# CONFIG_MFD_MAX8998 is not set
+# CONFIG_MFD_VIPERBOARD is not set
+# CONFIG_MFD_RETU is not set
+# CONFIG_MFD_PCF50633 is not set
+# CONFIG_UCB1400_CORE is not set
+# CONFIG_MFD_RDC321X is not set
+# CONFIG_MFD_RTSX_PCI is not set
+# CONFIG_MFD_RTSX_USB is not set
+# CONFIG_MFD_RC5T583 is not set
+# CONFIG_MFD_SEC_CORE is not set
+# CONFIG_MFD_SI476X_CORE is not set
+# CONFIG_MFD_SM501 is not set
+# CONFIG_MFD_SMSC is not set
+# CONFIG_ABX500_CORE is not set
+# CONFIG_MFD_SYSCON is not set
+# CONFIG_MFD_TI_AM335X_TSCADC is not set
+# CONFIG_MFD_LP3943 is not set
+# CONFIG_MFD_LP8788 is not set
+# CONFIG_MFD_PALMAS is not set
+# CONFIG_TPS6105X is not set
+# CONFIG_TPS65010 is not set
+# CONFIG_TPS6507X is not set
+# CONFIG_MFD_TPS65090 is not set
+# CONFIG_MFD_TPS65217 is not set
+# CONFIG_MFD_TPS65218 is not set
+# CONFIG_MFD_TPS6586X is not set
+# CONFIG_MFD_TPS65910 is not set
+# CONFIG_MFD_TPS65912 is not set
+# CONFIG_MFD_TPS65912_I2C is not set
+# CONFIG_MFD_TPS80031 is not set
+# CONFIG_TWL4030_CORE is not set
+# CONFIG_TWL6040_CORE is not set
+# CONFIG_MFD_WL1273_CORE is not set
+# CONFIG_MFD_LM3533 is not set
+# CONFIG_MFD_TIMBERDALE is not set
+# CONFIG_MFD_TC3589X is not set
+# CONFIG_MFD_TMIO is not set
+# CONFIG_MFD_VX855 is not set
+# CONFIG_MFD_ARIZONA_I2C is not set
+# CONFIG_MFD_WM8400 is not set
+# CONFIG_MFD_WM831X_I2C is not set
+# CONFIG_MFD_WM8350_I2C is not set
+# CONFIG_MFD_WM8994 is not set
+CONFIG_REGULATOR=y
+# CONFIG_REGULATOR_DEBUG is not set
+# CONFIG_REGULATOR_FIXED_VOLTAGE is not set
+# CONFIG_REGULATOR_VIRTUAL_CONSUMER is not set
+# CONFIG_REGULATOR_USERSPACE_CONSUMER is not set
+# CONFIG_REGULATOR_ACT8865 is not set
+# CONFIG_REGULATOR_AD5398 is not set
+# CONFIG_REGULATOR_DA9210 is not set
+# CONFIG_REGULATOR_FAN53555 is not set
+# CONFIG_REGULATOR_GPIO is not set
+# CONFIG_REGULATOR_ISL6271A is not set
+# CONFIG_REGULATOR_LP3971 is not set
+# CONFIG_REGULATOR_LP3972 is not set
+# CONFIG_REGULATOR_LP872X is not set
+# CONFIG_REGULATOR_LP8755 is not set
+# CONFIG_REGULATOR_LTC3589 is not set
+# CONFIG_REGULATOR_MAX1586 is not set
+# CONFIG_REGULATOR_MAX8649 is not set
+# CONFIG_REGULATOR_MAX8660 is not set
+# CONFIG_REGULATOR_MAX8952 is not set
+# CONFIG_REGULATOR_MAX8973 is not set
+# CONFIG_REGULATOR_PFUZE100 is not set
+# CONFIG_REGULATOR_TPS51632 is not set
+# CONFIG_REGULATOR_TPS62360 is not set
+# CONFIG_REGULATOR_TPS65023 is not set
+# CONFIG_REGULATOR_TPS6507X is not set
+CONFIG_MEDIA_SUPPORT=y
+
+#
+# Multimedia core support
+#
+# CONFIG_MEDIA_CAMERA_SUPPORT is not set
+# CONFIG_MEDIA_ANALOG_TV_SUPPORT is not set
+# CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
+# CONFIG_MEDIA_RADIO_SUPPORT is not set
+# CONFIG_MEDIA_RC_SUPPORT is not set
+# CONFIG_VIDEO_ADV_DEBUG is not set
+# CONFIG_VIDEO_FIXED_MINOR_RANGES is not set
+# CONFIG_TTPCI_EEPROM is not set
+
+#
+# Media drivers
+#
+# CONFIG_MEDIA_USB_SUPPORT is not set
+# CONFIG_MEDIA_PCI_SUPPORT is not set
+
+#
+# Supported MMC/SDIO adapters
+#
+# CONFIG_CYPRESS_FIRMWARE is not set
+
+#
+# Media ancillary drivers (tuners, sensors, i2c, frontends)
+#
+
+#
+# Customise DVB Frontends
+#
+# CONFIG_DVB_TUNER_DIB0070 is not set
+# CONFIG_DVB_TUNER_DIB0090 is not set
+
+#
+# Tools to develop new frontends
+#
+# CONFIG_DVB_DUMMY_FE is not set
+
+#
+# Graphics support
+#
+CONFIG_AGP=y
+CONFIG_AGP_AMD64=y
+CONFIG_AGP_INTEL=y
+CONFIG_AGP_SIS=y
+CONFIG_AGP_VIA=y
+CONFIG_INTEL_GTT=y
+CONFIG_VGA_ARB=y
+CONFIG_VGA_ARB_MAX_GPUS=16
+# CONFIG_VGA_SWITCHEROO is not set
+
+#
+# Direct Rendering Manager
+#
+CONFIG_DRM=y
+CONFIG_DRM_KMS_HELPER=y
+CONFIG_DRM_KMS_FB_HELPER=y
+# CONFIG_DRM_LOAD_EDID_FIRMWARE is not set
+CONFIG_DRM_TTM=y
+
+#
+# I2C encoder or helper chips
+#
+# CONFIG_DRM_I2C_CH7006 is not set
+CONFIG_DRM_I2C_SIL164=m
+# CONFIG_DRM_I2C_NXP_TDA998X is not set
+# CONFIG_DRM_PTN3460 is not set
+# CONFIG_DRM_TDFX is not set
+# CONFIG_DRM_R128 is not set
+CONFIG_DRM_RADEON=y
+# CONFIG_DRM_RADEON_UMS is not set
+CONFIG_DRM_NOUVEAU=y
+CONFIG_NOUVEAU_DEBUG=5
+CONFIG_NOUVEAU_DEBUG_DEFAULT=3
+CONFIG_DRM_NOUVEAU_BACKLIGHT=y
+CONFIG_DRM_I915=y
+CONFIG_DRM_I915_KMS=y
+CONFIG_DRM_I915_FBDEV=y
+# CONFIG_DRM_I915_PRELIMINARY_HW_SUPPORT is not set
+# CONFIG_DRM_MGA is not set
+# CONFIG_DRM_SIS is not set
+# CONFIG_DRM_VIA is not set
+# CONFIG_DRM_SAVAGE is not set
+# CONFIG_DRM_VMWGFX is not set
+# CONFIG_DRM_GMA500 is not set
+# CONFIG_DRM_UDL is not set
+# CONFIG_DRM_AST is not set
+# CONFIG_DRM_MGAG200 is not set
+# CONFIG_DRM_CIRRUS_QEMU is not set
+# CONFIG_DRM_QXL is not set
+# CONFIG_DRM_BOCHS is not set
+
+#
+# Frame buffer Devices
+#
+CONFIG_FB=y
+# CONFIG_FIRMWARE_EDID is not set
+CONFIG_FB_DDC=y
+CONFIG_FB_BOOT_VESA_SUPPORT=y
+CONFIG_FB_CFB_FILLRECT=y
+CONFIG_FB_CFB_COPYAREA=y
+CONFIG_FB_CFB_IMAGEBLIT=y
+# CONFIG_FB_CFB_REV_PIXELS_IN_BYTE is not set
+# CONFIG_FB_SYS_FILLRECT is not set
+# CONFIG_FB_SYS_COPYAREA is not set
+# CONFIG_FB_SYS_IMAGEBLIT is not set
+# CONFIG_FB_FOREIGN_ENDIAN is not set
+# CONFIG_FB_SYS_FOPS is not set
+# CONFIG_FB_SVGALIB is not set
+# CONFIG_FB_MACMODES is not set
+CONFIG_FB_BACKLIGHT=y
+CONFIG_FB_MODE_HELPERS=y
+CONFIG_FB_TILEBLITTING=y
+
+#
+# Frame buffer hardware drivers
+#
+# CONFIG_FB_CIRRUS is not set
+# CONFIG_FB_PM2 is not set
+# CONFIG_FB_CYBER2000 is not set
+# CONFIG_FB_ARC is not set
+# CONFIG_FB_ASILIANT is not set
+# CONFIG_FB_IMSTT is not set
+# CONFIG_FB_VGA16 is not set
+# CONFIG_FB_UVESA is not set
+CONFIG_FB_VESA=y
+CONFIG_FB_EFI=y
+# CONFIG_FB_N411 is not set
+# CONFIG_FB_HGA is not set
+# CONFIG_FB_OPENCORES is not set
+# CONFIG_FB_S1D13XXX is not set
+CONFIG_FB_NVIDIA=y
+CONFIG_FB_NVIDIA_I2C=y
+# CONFIG_FB_NVIDIA_DEBUG is not set
+CONFIG_FB_NVIDIA_BACKLIGHT=y
+CONFIG_FB_RIVA=y
+# CONFIG_FB_RIVA_I2C is not set
+# CONFIG_FB_RIVA_DEBUG is not set
+CONFIG_FB_RIVA_BACKLIGHT=y
+# CONFIG_FB_I740 is not set
+# CONFIG_FB_LE80578 is not set
+CONFIG_FB_MATROX=y
+CONFIG_FB_MATROX_MILLENIUM=y
+CONFIG_FB_MATROX_MYSTIQUE=y
+CONFIG_FB_MATROX_G=y
+CONFIG_FB_MATROX_I2C=y
+# CONFIG_FB_MATROX_MAVEN is not set
+CONFIG_FB_RADEON=y
+CONFIG_FB_RADEON_I2C=y
+CONFIG_FB_RADEON_BACKLIGHT=y
+# CONFIG_FB_RADEON_DEBUG is not set
+CONFIG_FB_ATY128=y
+CONFIG_FB_ATY128_BACKLIGHT=y
+CONFIG_FB_ATY=y
+CONFIG_FB_ATY_CT=y
+CONFIG_FB_ATY_GENERIC_LCD=y
+CONFIG_FB_ATY_GX=y
+CONFIG_FB_ATY_BACKLIGHT=y
+# CONFIG_FB_S3 is not set
+CONFIG_FB_SAVAGE=y
+CONFIG_FB_SAVAGE_I2C=y
+CONFIG_FB_SAVAGE_ACCEL=y
+# CONFIG_FB_SIS is not set
+CONFIG_FB_VIA=y
+# CONFIG_FB_VIA_DIRECT_PROCFS is not set
+# CONFIG_FB_VIA_X_COMPATIBILITY is not set
+# CONFIG_FB_NEOMAGIC is not set
+# CONFIG_FB_KYRO is not set
+CONFIG_FB_3DFX=y
+CONFIG_FB_3DFX_ACCEL=y
+CONFIG_FB_3DFX_I2C=y
+# CONFIG_FB_VOODOO1 is not set
+# CONFIG_FB_VT8623 is not set
+# CONFIG_FB_TRIDENT is not set
+# CONFIG_FB_ARK is not set
+# CONFIG_FB_PM3 is not set
+# CONFIG_FB_CARMINE is not set
+# CONFIG_FB_SMSCUFX is not set
+# CONFIG_FB_UDL is not set
+# CONFIG_FB_VIRTUAL is not set
+# CONFIG_FB_METRONOME is not set
+# CONFIG_FB_MB862XX is not set
+# CONFIG_FB_BROADSHEET is not set
+# CONFIG_FB_AUO_K190X is not set
+# CONFIG_FB_SIMPLE is not set
+CONFIG_BACKLIGHT_LCD_SUPPORT=y
+# CONFIG_LCD_CLASS_DEVICE is not set
+CONFIG_BACKLIGHT_CLASS_DEVICE=y
+# CONFIG_BACKLIGHT_GENERIC is not set
+# CONFIG_BACKLIGHT_APPLE is not set
+# CONFIG_BACKLIGHT_SAHARA is not set
+# CONFIG_BACKLIGHT_ADP8860 is not set
+# CONFIG_BACKLIGHT_ADP8870 is not set
+# CONFIG_BACKLIGHT_LM3639 is not set
+# CONFIG_BACKLIGHT_GPIO is not set
+# CONFIG_BACKLIGHT_LV5207LP is not set
+# CONFIG_BACKLIGHT_BD6107 is not set
+CONFIG_VGASTATE=y
+CONFIG_HDMI=y
+
+#
+# Console display driver support
+#
+CONFIG_VGA_CONSOLE=y
+CONFIG_VGACON_SOFT_SCROLLBACK=y
+CONFIG_VGACON_SOFT_SCROLLBACK_SIZE=64
+CONFIG_DUMMY_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
+CONFIG_FRAMEBUFFER_CONSOLE_ROTATION=y
+CONFIG_LOGO=y
+# CONFIG_LOGO_LINUX_MONO is not set
+# CONFIG_LOGO_LINUX_VGA16 is not set
+CONFIG_LOGO_LINUX_CLUT224=y
+CONFIG_SOUND=y
+CONFIG_SOUND_OSS_CORE=y
+CONFIG_SOUND_OSS_CORE_PRECLAIM=y
+CONFIG_SND=y
+CONFIG_SND_TIMER=y
+CONFIG_SND_PCM=y
+CONFIG_SND_HWDEP=y
+CONFIG_SND_RAWMIDI=y
+CONFIG_SND_JACK=y
+CONFIG_SND_SEQUENCER=y
+# CONFIG_SND_SEQ_DUMMY is not set
+CONFIG_SND_OSSEMUL=y
+# CONFIG_SND_MIXER_OSS is not set
+CONFIG_SND_PCM_OSS=y
+CONFIG_SND_PCM_OSS_PLUGINS=y
+CONFIG_SND_SEQUENCER_OSS=y
+CONFIG_SND_HRTIMER=y
+CONFIG_SND_SEQ_HRTIMER_DEFAULT=y
+CONFIG_SND_DYNAMIC_MINORS=y
+CONFIG_SND_MAX_CARDS=32
+# CONFIG_SND_SUPPORT_OLD_API is not set
+CONFIG_SND_VERBOSE_PROCFS=y
+CONFIG_SND_VERBOSE_PRINTK=y
+CONFIG_SND_DEBUG=y
+# CONFIG_SND_DEBUG_VERBOSE is not set
+CONFIG_SND_PCM_XRUN_DEBUG=y
+CONFIG_SND_VMASTER=y
+CONFIG_SND_KCTL_JACK=y
+CONFIG_SND_DMA_SGBUF=y
+CONFIG_SND_RAWMIDI_SEQ=y
+CONFIG_SND_OPL3_LIB_SEQ=y
+# CONFIG_SND_OPL4_LIB_SEQ is not set
+# CONFIG_SND_SBAWE_SEQ is not set
+CONFIG_SND_EMU10K1_SEQ=y
+CONFIG_SND_MPU401_UART=y
+CONFIG_SND_OPL3_LIB=y
+CONFIG_SND_VX_LIB=y
+CONFIG_SND_AC97_CODEC=y
+CONFIG_SND_DRIVERS=y
+CONFIG_SND_PCSP=y
+CONFIG_SND_DUMMY=y
+# CONFIG_SND_ALOOP is not set
+CONFIG_SND_VIRMIDI=y
+# CONFIG_SND_MTPAV is not set
+# CONFIG_SND_MTS64 is not set
+# CONFIG_SND_SERIAL_U16550 is not set
+# CONFIG_SND_MPU401 is not set
+# CONFIG_SND_PORTMAN2X4 is not set
+CONFIG_SND_AC97_POWER_SAVE=y
+CONFIG_SND_AC97_POWER_SAVE_DEFAULT=0
+CONFIG_SND_SB_COMMON=y
+CONFIG_SND_PCI=y
+CONFIG_SND_AD1889=y
+CONFIG_SND_ALS300=y
+CONFIG_SND_ALS4000=y
+CONFIG_SND_ALI5451=y
+# CONFIG_SND_ASIHPI is not set
+CONFIG_SND_ATIIXP=y
+CONFIG_SND_ATIIXP_MODEM=y
+CONFIG_SND_AU8810=y
+CONFIG_SND_AU8820=y
+CONFIG_SND_AU8830=y
+# CONFIG_SND_AW2 is not set
+CONFIG_SND_AZT3328=y
+CONFIG_SND_BT87X=y
+# CONFIG_SND_BT87X_OVERCLOCK is not set
+CONFIG_SND_CA0106=y
+CONFIG_SND_CMIPCI=y
+CONFIG_SND_OXYGEN_LIB=y
+CONFIG_SND_OXYGEN=y
+CONFIG_SND_CS4281=y
+CONFIG_SND_CS46XX=y
+CONFIG_SND_CS46XX_NEW_DSP=y
+CONFIG_SND_CTXFI=y
+CONFIG_SND_DARLA20=y
+CONFIG_SND_GINA20=y
+CONFIG_SND_LAYLA20=y
+CONFIG_SND_DARLA24=y
+CONFIG_SND_GINA24=y
+CONFIG_SND_LAYLA24=y
+CONFIG_SND_MONA=y
+CONFIG_SND_MIA=y
+CONFIG_SND_ECHO3G=y
+CONFIG_SND_INDIGO=y
+CONFIG_SND_INDIGOIO=y
+CONFIG_SND_INDIGODJ=y
+CONFIG_SND_INDIGOIOX=y
+CONFIG_SND_INDIGODJX=y
+CONFIG_SND_EMU10K1=y
+CONFIG_SND_EMU10K1X=y
+CONFIG_SND_ENS1370=y
+CONFIG_SND_ENS1371=y
+CONFIG_SND_ES1938=y
+CONFIG_SND_ES1968=y
+# CONFIG_SND_ES1968_INPUT is not set
+CONFIG_SND_FM801=y
+CONFIG_SND_HDSP=y
+
+#
+# Don't forget to add built-in firmwares for HDSP driver
+#
+CONFIG_SND_HDSPM=y
+CONFIG_SND_ICE1712=y
+CONFIG_SND_ICE1724=y
+CONFIG_SND_INTEL8X0=y
+CONFIG_SND_INTEL8X0M=y
+CONFIG_SND_KORG1212=y
+# CONFIG_SND_LOLA is not set
+CONFIG_SND_LX6464ES=y
+CONFIG_SND_MAESTRO3=y
+# CONFIG_SND_MAESTRO3_INPUT is not set
+CONFIG_SND_MIXART=y
+CONFIG_SND_NM256=y
+CONFIG_SND_PCXHR=y
+CONFIG_SND_RIPTIDE=y
+CONFIG_SND_RME32=y
+CONFIG_SND_RME96=y
+CONFIG_SND_RME9652=y
+CONFIG_SND_SONICVIBES=y
+CONFIG_SND_TRIDENT=y
+CONFIG_SND_VIA82XX=y
+CONFIG_SND_VIA82XX_MODEM=y
+CONFIG_SND_VIRTUOSO=y
+CONFIG_SND_VX222=y
+CONFIG_SND_YMFPCI=y
+
+#
+# HD-Audio
+#
+CONFIG_SND_HDA=y
+CONFIG_SND_HDA_INTEL=y
+CONFIG_SND_HDA_PREALLOC_SIZE=64
+CONFIG_SND_HDA_HWDEP=y
+CONFIG_SND_HDA_RECONFIG=y
+CONFIG_SND_HDA_INPUT_BEEP=y
+CONFIG_SND_HDA_INPUT_BEEP_MODE=0
+CONFIG_SND_HDA_INPUT_JACK=y
+CONFIG_SND_HDA_PATCH_LOADER=y
+CONFIG_SND_HDA_CODEC_REALTEK=y
+CONFIG_SND_HDA_CODEC_ANALOG=y
+CONFIG_SND_HDA_CODEC_SIGMATEL=y
+CONFIG_SND_HDA_CODEC_VIA=y
+CONFIG_SND_HDA_CODEC_HDMI=y
+CONFIG_SND_HDA_I915=y
+CONFIG_SND_HDA_CODEC_CIRRUS=y
+CONFIG_SND_HDA_CODEC_CONEXANT=y
+CONFIG_SND_HDA_CODEC_CA0110=y
+# CONFIG_SND_HDA_CODEC_CA0132 is not set
+CONFIG_SND_HDA_CODEC_CMEDIA=y
+CONFIG_SND_HDA_CODEC_SI3054=y
+CONFIG_SND_HDA_GENERIC=y
+CONFIG_SND_HDA_POWER_SAVE_DEFAULT=0
+CONFIG_SND_USB=y
+CONFIG_SND_USB_AUDIO=y
+# CONFIG_SND_USB_UA101 is not set
+CONFIG_SND_USB_USX2Y=y
+CONFIG_SND_USB_CAIAQ=y
+CONFIG_SND_USB_CAIAQ_INPUT=y
+CONFIG_SND_USB_US122L=y
+# CONFIG_SND_USB_6FIRE is not set
+# CONFIG_SND_USB_HIFACE is not set
+# CONFIG_SND_BCD2000 is not set
+CONFIG_SND_FIREWIRE=y
+# CONFIG_SND_DICE is not set
+# CONFIG_SND_FIREWIRE_SPEAKERS is not set
+# CONFIG_SND_ISIGHT is not set
+# CONFIG_SND_SCS1X is not set
+# CONFIG_SND_FIREWORKS is not set
+# CONFIG_SND_BEBOB is not set
+CONFIG_SND_PCMCIA=y
+CONFIG_SND_VXPOCKET=y
+CONFIG_SND_PDAUDIOCF=y
+# CONFIG_SND_SOC is not set
+# CONFIG_SOUND_PRIME is not set
+CONFIG_AC97_BUS=y
+
+#
+# HID support
+#
+CONFIG_HID=y
+# CONFIG_HID_BATTERY_STRENGTH is not set
+CONFIG_HIDRAW=y
+# CONFIG_UHID is not set
+CONFIG_HID_GENERIC=y
+
+#
+# Special HID drivers
+#
+CONFIG_HID_A4TECH=y
+# CONFIG_HID_ACRUX is not set
+CONFIG_HID_APPLE=y
+# CONFIG_HID_APPLEIR is not set
+# CONFIG_HID_AUREAL is not set
+CONFIG_HID_BELKIN=y
+CONFIG_HID_CHERRY=y
+CONFIG_HID_CHICONY=y
+# CONFIG_HID_PRODIKEYS is not set
+# CONFIG_HID_CP2112 is not set
+CONFIG_HID_CYPRESS=y
+CONFIG_HID_DRAGONRISE=y
+CONFIG_DRAGONRISE_FF=y
+# CONFIG_HID_EMS_FF is not set
+# CONFIG_HID_ELECOM is not set
+# CONFIG_HID_ELO is not set
+CONFIG_HID_EZKEY=y
+# CONFIG_HID_HOLTEK is not set
+# CONFIG_HID_HUION is not set
+# CONFIG_HID_KEYTOUCH is not set
+CONFIG_HID_KYE=y
+# CONFIG_HID_UCLOGIC is not set
+# CONFIG_HID_WALTOP is not set
+CONFIG_HID_GYRATION=y
+# CONFIG_HID_ICADE is not set
+CONFIG_HID_TWINHAN=y
+CONFIG_HID_KENSINGTON=y
+# CONFIG_HID_LCPOWER is not set
+# CONFIG_HID_LENOVO_TPKBD is not set
+CONFIG_HID_LOGITECH=y
+# CONFIG_HID_LOGITECH_DJ is not set
+CONFIG_LOGITECH_FF=y
+CONFIG_LOGIRUMBLEPAD2_FF=y
+# CONFIG_LOGIG940_FF is not set
+CONFIG_LOGIWHEELS_FF=y
+# CONFIG_HID_MAGICMOUSE is not set
+CONFIG_HID_MICROSOFT=y
+CONFIG_HID_MONTEREY=y
+# CONFIG_HID_MULTITOUCH is not set
+CONFIG_HID_NTRIG=y
+# CONFIG_HID_ORTEK is not set
+CONFIG_HID_PANTHERLORD=y
+CONFIG_PANTHERLORD_FF=y
+CONFIG_HID_PETALYNX=y
+# CONFIG_HID_PICOLCD is not set
+# CONFIG_HID_PRIMAX is not set
+# CONFIG_HID_ROCCAT is not set
+# CONFIG_HID_SAITEK is not set
+CONFIG_HID_SAMSUNG=y
+CONFIG_HID_SONY=y
+# CONFIG_SONY_FF is not set
+# CONFIG_HID_SPEEDLINK is not set
+# CONFIG_HID_STEELSERIES is not set
+CONFIG_HID_SUNPLUS=y
+# CONFIG_HID_RMI is not set
+CONFIG_HID_GREENASIA=y
+CONFIG_GREENASIA_FF=y
+CONFIG_HID_SMARTJOYPLUS=y
+CONFIG_SMARTJOYPLUS_FF=y
+# CONFIG_HID_TIVO is not set
+CONFIG_HID_TOPSEED=y
+# CONFIG_HID_THINGM is not set
+CONFIG_HID_THRUSTMASTER=y
+CONFIG_THRUSTMASTER_FF=y
+# CONFIG_HID_WACOM is not set
+# CONFIG_HID_WIIMOTE is not set
+# CONFIG_HID_XINMO is not set
+CONFIG_HID_ZEROPLUS=y
+CONFIG_ZEROPLUS_FF=y
+# CONFIG_HID_ZYDACRON is not set
+# CONFIG_HID_SENSOR_HUB is not set
+
+#
+# USB HID support
+#
+CONFIG_USB_HID=y
+CONFIG_HID_PID=y
+CONFIG_USB_HIDDEV=y
+
+#
+# I2C HID support
+#
+# CONFIG_I2C_HID is not set
+CONFIG_USB_OHCI_LITTLE_ENDIAN=y
+CONFIG_USB_SUPPORT=y
+CONFIG_USB_COMMON=y
+CONFIG_USB_ARCH_HAS_HCD=y
+CONFIG_USB=y
+CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
+
+#
+# Miscellaneous USB options
+#
+CONFIG_USB_DEFAULT_PERSIST=y
+# CONFIG_USB_DYNAMIC_MINORS is not set
+# CONFIG_USB_OTG is not set
+# CONFIG_USB_OTG_FSM is not set
+CONFIG_USB_MON=y
+# CONFIG_USB_WUSB_CBAF is not set
+
+#
+# USB Host Controller Drivers
+#
+# CONFIG_USB_C67X00_HCD is not set
+# CONFIG_USB_XHCI_HCD is not set
+CONFIG_USB_EHCI_HCD=y
+CONFIG_USB_EHCI_ROOT_HUB_TT=y
+CONFIG_USB_EHCI_TT_NEWSCHED=y
+CONFIG_USB_EHCI_PCI=y
+# CONFIG_USB_EHCI_HCD_PLATFORM is not set
+# CONFIG_USB_OXU210HP_HCD is not set
+# CONFIG_USB_ISP116X_HCD is not set
+# CONFIG_USB_ISP1760_HCD is not set
+# CONFIG_USB_ISP1362_HCD is not set
+# CONFIG_USB_FUSBH200_HCD is not set
+# CONFIG_USB_FOTG210_HCD is not set
+CONFIG_USB_OHCI_HCD=y
+CONFIG_USB_OHCI_HCD_PCI=y
+# CONFIG_USB_OHCI_HCD_PLATFORM is not set
+CONFIG_USB_UHCI_HCD=y
+# CONFIG_USB_SL811_HCD is not set
+# CONFIG_USB_R8A66597_HCD is not set
+# CONFIG_USB_HCD_TEST_MODE is not set
+
+#
+# USB Device Class drivers
+#
+# CONFIG_USB_ACM is not set
+# CONFIG_USB_PRINTER is not set
+# CONFIG_USB_WDM is not set
+# CONFIG_USB_TMC is not set
+
+#
+# NOTE: USB_STORAGE depends on SCSI but BLK_DEV_SD may
+#
+
+#
+# also be needed; see USB_STORAGE Help for more info
+#
+# CONFIG_USB_STORAGE is not set
+
+#
+# USB Imaging devices
+#
+# CONFIG_USB_MDC800 is not set
+# CONFIG_USB_MICROTEK is not set
+# CONFIG_USB_MUSB_HDRC is not set
+# CONFIG_USB_DWC3 is not set
+# CONFIG_USB_DWC2 is not set
+# CONFIG_USB_CHIPIDEA is not set
+
+#
+# USB port drivers
+#
+# CONFIG_USB_USS720 is not set
+# CONFIG_USB_SERIAL is not set
+
+#
+# USB Miscellaneous drivers
+#
+# CONFIG_USB_EMI62 is not set
+# CONFIG_USB_EMI26 is not set
+# CONFIG_USB_ADUTUX is not set
+# CONFIG_USB_SEVSEG is not set
+# CONFIG_USB_RIO500 is not set
+# CONFIG_USB_LEGOTOWER is not set
+# CONFIG_USB_LCD is not set
+# CONFIG_USB_LED is not set
+# CONFIG_USB_CYPRESS_CY7C63 is not set
+# CONFIG_USB_CYTHERM is not set
+# CONFIG_USB_IDMOUSE is not set
+# CONFIG_USB_FTDI_ELAN is not set
+CONFIG_USB_APPLEDISPLAY=y
+# CONFIG_USB_SISUSBVGA is not set
+# CONFIG_USB_LD is not set
+# CONFIG_USB_TRANCEVIBRATOR is not set
+# CONFIG_USB_IOWARRIOR is not set
+# CONFIG_USB_TEST is not set
+# CONFIG_USB_EHSET_TEST_FIXTURE is not set
+# CONFIG_USB_ISIGHTFW is not set
+# CONFIG_USB_YUREX is not set
+# CONFIG_USB_EZUSB_FX2 is not set
+# CONFIG_USB_HSIC_USB3503 is not set
+
+#
+# USB Physical Layer drivers
+#
+# CONFIG_USB_PHY is not set
+# CONFIG_NOP_USB_XCEIV is not set
+# CONFIG_SAMSUNG_USB2PHY is not set
+# CONFIG_SAMSUNG_USB3PHY is not set
+# CONFIG_USB_GPIO_VBUS is not set
+# CONFIG_USB_ISP1301 is not set
+# CONFIG_USB_GADGET is not set
+# CONFIG_UWB is not set
+# CONFIG_MMC is not set
+# CONFIG_MEMSTICK is not set
+CONFIG_NEW_LEDS=y
+CONFIG_LEDS_CLASS=y
+
+#
+# LED drivers
+#
+# CONFIG_LEDS_LM3530 is not set
+# CONFIG_LEDS_LM3642 is not set
+# CONFIG_LEDS_PCA9532 is not set
+# CONFIG_LEDS_GPIO is not set
+# CONFIG_LEDS_LP3944 is not set
+# CONFIG_LEDS_LP5521 is not set
+# CONFIG_LEDS_LP5523 is not set
+# CONFIG_LEDS_LP5562 is not set
+# CONFIG_LEDS_LP8501 is not set
+# CONFIG_LEDS_CLEVO_MAIL is not set
+# CONFIG_LEDS_PCA955X is not set
+# CONFIG_LEDS_PCA963X is not set
+# CONFIG_LEDS_REGULATOR is not set
+# CONFIG_LEDS_BD2802 is not set
+# CONFIG_LEDS_INTEL_SS4200 is not set
+# CONFIG_LEDS_LT3593 is not set
+# CONFIG_LEDS_DELL_NETBOOKS is not set
+# CONFIG_LEDS_TCA6507 is not set
+# CONFIG_LEDS_LM355x is not set
+
+#
+# LED driver for blink(1) USB RGB LED is under Special HID drivers (HID_THINGM)
+#
+# CONFIG_LEDS_BLINKM is not set
+
+#
+# LED Triggers
+#
+CONFIG_LEDS_TRIGGERS=y
+# CONFIG_LEDS_TRIGGER_TIMER is not set
+# CONFIG_LEDS_TRIGGER_ONESHOT is not set
+# CONFIG_LEDS_TRIGGER_HEARTBEAT is not set
+# CONFIG_LEDS_TRIGGER_BACKLIGHT is not set
+# CONFIG_LEDS_TRIGGER_CPU is not set
+# CONFIG_LEDS_TRIGGER_GPIO is not set
+# CONFIG_LEDS_TRIGGER_DEFAULT_ON is not set
+
+#
+# iptables trigger is under Netfilter config (LED target)
+#
+# CONFIG_LEDS_TRIGGER_TRANSIENT is not set
+# CONFIG_LEDS_TRIGGER_CAMERA is not set
+CONFIG_ACCESSIBILITY=y
+CONFIG_A11Y_BRAILLE_CONSOLE=y
+# CONFIG_INFINIBAND is not set
+CONFIG_EDAC=y
+CONFIG_EDAC_LEGACY_SYSFS=y
+# CONFIG_EDAC_DEBUG is not set
+# CONFIG_EDAC_DECODE_MCE is not set
+# CONFIG_EDAC_MM_EDAC is not set
+CONFIG_RTC_LIB=y
+CONFIG_RTC_CLASS=y
+CONFIG_RTC_HCTOSYS=y
+CONFIG_RTC_SYSTOHC=y
+CONFIG_RTC_HCTOSYS_DEVICE="rtc0"
+# CONFIG_RTC_DEBUG is not set
+
+#
+# RTC interfaces
+#
+CONFIG_RTC_INTF_SYSFS=y
+CONFIG_RTC_INTF_PROC=y
+CONFIG_RTC_INTF_DEV=y
+# CONFIG_RTC_INTF_DEV_UIE_EMUL is not set
+# CONFIG_RTC_DRV_TEST is not set
+
+#
+# I2C RTC drivers
+#
+# CONFIG_RTC_DRV_DS1307 is not set
+# CONFIG_RTC_DRV_DS1374 is not set
+# CONFIG_RTC_DRV_DS1672 is not set
+# CONFIG_RTC_DRV_DS3232 is not set
+# CONFIG_RTC_DRV_MAX6900 is not set
+# CONFIG_RTC_DRV_RS5C372 is not set
+# CONFIG_RTC_DRV_ISL1208 is not set
+# CONFIG_RTC_DRV_ISL12022 is not set
+# CONFIG_RTC_DRV_ISL12057 is not set
+# CONFIG_RTC_DRV_X1205 is not set
+# CONFIG_RTC_DRV_PCF2127 is not set
+# CONFIG_RTC_DRV_PCF8523 is not set
+# CONFIG_RTC_DRV_PCF8563 is not set
+# CONFIG_RTC_DRV_PCF8583 is not set
+# CONFIG_RTC_DRV_M41T80 is not set
+# CONFIG_RTC_DRV_BQ32K is not set
+# CONFIG_RTC_DRV_S35390A is not set
+# CONFIG_RTC_DRV_FM3130 is not set
+# CONFIG_RTC_DRV_RX8581 is not set
+# CONFIG_RTC_DRV_RX8025 is not set
+# CONFIG_RTC_DRV_EM3027 is not set
+# CONFIG_RTC_DRV_RV3029C2 is not set
+
+#
+# SPI RTC drivers
+#
+
+#
+# Platform RTC drivers
+#
+CONFIG_RTC_DRV_CMOS=y
+# CONFIG_RTC_DRV_DS1286 is not set
+# CONFIG_RTC_DRV_DS1511 is not set
+# CONFIG_RTC_DRV_DS1553 is not set
+# CONFIG_RTC_DRV_DS1742 is not set
+# CONFIG_RTC_DRV_STK17TA8 is not set
+# CONFIG_RTC_DRV_M48T86 is not set
+# CONFIG_RTC_DRV_M48T35 is not set
+# CONFIG_RTC_DRV_M48T59 is not set
+# CONFIG_RTC_DRV_MSM6242 is not set
+# CONFIG_RTC_DRV_BQ4802 is not set
+# CONFIG_RTC_DRV_RP5C01 is not set
+# CONFIG_RTC_DRV_V3020 is not set
+# CONFIG_RTC_DRV_DS2404 is not set
+
+#
+# on-CPU RTC drivers
+#
+# CONFIG_RTC_DRV_MOXART is not set
+# CONFIG_RTC_DRV_XGENE is not set
+
+#
+# HID Sensor RTC drivers
+#
+# CONFIG_RTC_DRV_HID_SENSOR_TIME is not set
+CONFIG_DMADEVICES=y
+# CONFIG_DMADEVICES_DEBUG is not set
+
+#
+# DMA Devices
+#
+# CONFIG_INTEL_MID_DMAC is not set
+# CONFIG_INTEL_IOATDMA is not set
+# CONFIG_DW_DMAC_CORE is not set
+# CONFIG_DW_DMAC is not set
+# CONFIG_DW_DMAC_PCI is not set
+CONFIG_DMA_ACPI=y
+CONFIG_AUXDISPLAY=y
+# CONFIG_KS0108 is not set
+CONFIG_UIO=y
+# CONFIG_UIO_CIF is not set
+# CONFIG_UIO_PDRV_GENIRQ is not set
+# CONFIG_UIO_DMEM_GENIRQ is not set
+# CONFIG_UIO_AEC is not set
+# CONFIG_UIO_SERCOS3 is not set
+# CONFIG_UIO_PCI_GENERIC is not set
+# CONFIG_UIO_NETX is not set
+# CONFIG_UIO_MF624 is not set
+# CONFIG_VFIO is not set
+# CONFIG_VIRT_DRIVERS is not set
+
+#
+# Virtio drivers
+#
+# CONFIG_VIRTIO_PCI is not set
+# CONFIG_VIRTIO_MMIO is not set
+
+#
+# Microsoft Hyper-V guest support
+#
+# CONFIG_STAGING is not set
+CONFIG_X86_PLATFORM_DEVICES=y
+# CONFIG_ACER_WMI is not set
+# CONFIG_ACERHDF is not set
+# CONFIG_ALIENWARE_WMI is not set
+# CONFIG_ASUS_LAPTOP is not set
+# CONFIG_DELL_WMI is not set
+# CONFIG_DELL_WMI_AIO is not set
+# CONFIG_DELL_SMO8800 is not set
+# CONFIG_FUJITSU_LAPTOP is not set
+# CONFIG_FUJITSU_TABLET is not set
+# CONFIG_AMILO_RFKILL is not set
+# CONFIG_HP_ACCEL is not set
+# CONFIG_HP_WIRELESS is not set
+# CONFIG_HP_WMI is not set
+# CONFIG_MSI_LAPTOP is not set
+# CONFIG_PANASONIC_LAPTOP is not set
+# CONFIG_COMPAL_LAPTOP is not set
+# CONFIG_SONY_LAPTOP is not set
+# CONFIG_IDEAPAD_LAPTOP is not set
+CONFIG_THINKPAD_ACPI=y
+CONFIG_THINKPAD_ACPI_ALSA_SUPPORT=y
+# CONFIG_THINKPAD_ACPI_DEBUGFACILITIES is not set
+# CONFIG_THINKPAD_ACPI_DEBUG is not set
+# CONFIG_THINKPAD_ACPI_UNSAFE_LEDS is not set
+CONFIG_THINKPAD_ACPI_VIDEO=y
+CONFIG_THINKPAD_ACPI_HOTKEY_POLL=y
+# CONFIG_SENSORS_HDAPS is not set
+# CONFIG_INTEL_MENLOW is not set
+# CONFIG_EEEPC_LAPTOP is not set
+# CONFIG_ASUS_WMI is not set
+CONFIG_ACPI_WMI=y
+# CONFIG_MSI_WMI is not set
+# CONFIG_TOPSTAR_LAPTOP is not set
+# CONFIG_ACPI_TOSHIBA is not set
+# CONFIG_TOSHIBA_BT_RFKILL is not set
+# CONFIG_ACPI_CMPC is not set
+# CONFIG_INTEL_IPS is not set
+# CONFIG_IBM_RTL is not set
+# CONFIG_SAMSUNG_LAPTOP is not set
+CONFIG_MXM_WMI=y
+# CONFIG_INTEL_OAKTRAIL is not set
+# CONFIG_SAMSUNG_Q10 is not set
+# CONFIG_APPLE_GMUX is not set
+# CONFIG_INTEL_RST is not set
+# CONFIG_INTEL_SMARTCONNECT is not set
+# CONFIG_PVPANIC is not set
+# CONFIG_CHROME_PLATFORMS is not set
+
+#
+# SOC (System On Chip) specific Drivers
+#
+
+#
+# Hardware Spinlock drivers
+#
+CONFIG_CLKEVT_I8253=y
+CONFIG_I8253_LOCK=y
+CONFIG_CLKBLD_I8253=y
+# CONFIG_SH_TIMER_CMT is not set
+# CONFIG_SH_TIMER_MTU2 is not set
+# CONFIG_SH_TIMER_TMU is not set
+# CONFIG_EM_TIMER_STI is not set
+# CONFIG_MAILBOX is not set
+CONFIG_IOMMU_API=y
+CONFIG_IOMMU_SUPPORT=y
+CONFIG_AMD_IOMMU=y
+CONFIG_AMD_IOMMU_STATS=y
+# CONFIG_AMD_IOMMU_V2 is not set
+# CONFIG_INTEL_IOMMU is not set
+# CONFIG_IRQ_REMAP is not set
+
+#
+# Remoteproc drivers
+#
+# CONFIG_STE_MODEM_RPROC is not set
+
+#
+# Rpmsg drivers
+#
+# CONFIG_PM_DEVFREQ is not set
+# CONFIG_EXTCON is not set
+# CONFIG_MEMORY is not set
+# CONFIG_IIO is not set
+# CONFIG_NTB is not set
+# CONFIG_VME_BUS is not set
+# CONFIG_PWM is not set
+# CONFIG_IPACK_BUS is not set
+# CONFIG_RESET_CONTROLLER is not set
+# CONFIG_FMC is not set
+
+#
+# PHY Subsystem
+#
+# CONFIG_GENERIC_PHY is not set
+# CONFIG_BCM_KONA_USB2_PHY is not set
+# CONFIG_PHY_SAMSUNG_USB2 is not set
+# CONFIG_POWERCAP is not set
+# CONFIG_MCB is not set
+
+#
+# Firmware Drivers
+#
+# CONFIG_EDD is not set
+CONFIG_FIRMWARE_MEMMAP=y
+# CONFIG_DELL_RBU is not set
+# CONFIG_DCDBAS is not set
+CONFIG_DMIID=y
+# CONFIG_DMI_SYSFS is not set
+CONFIG_DMI_SCAN_MACHINE_NON_EFI_FALLBACK=y
+CONFIG_ISCSI_IBFT_FIND=y
+# CONFIG_ISCSI_IBFT is not set
+# CONFIG_GOOGLE_FIRMWARE is not set
+
+#
+# EFI (Extensible Firmware Interface) Support
+#
+CONFIG_EFI_VARS=y
+CONFIG_EFI_RUNTIME_MAP=y
+
+#
+# File systems
+#
+CONFIG_DCACHE_WORD_ACCESS=y
+# CONFIG_EXT2_FS is not set
+CONFIG_EXT3_FS=y
+CONFIG_EXT3_DEFAULTS_TO_ORDERED=y
+CONFIG_EXT3_FS_XATTR=y
+CONFIG_EXT3_FS_POSIX_ACL=y
+CONFIG_EXT3_FS_SECURITY=y
+CONFIG_EXT4_FS=y
+CONFIG_EXT4_USE_FOR_EXT23=y
+CONFIG_EXT4_FS_POSIX_ACL=y
+CONFIG_EXT4_FS_SECURITY=y
+# CONFIG_EXT4_DEBUG is not set
+CONFIG_JBD=y
+# CONFIG_JBD_DEBUG is not set
+CONFIG_JBD2=y
+# CONFIG_JBD2_DEBUG is not set
+CONFIG_FS_MBCACHE=y
+# CONFIG_REISERFS_FS is not set
+# CONFIG_JFS_FS is not set
+# CONFIG_XFS_FS is not set
+# CONFIG_GFS2_FS is not set
+# CONFIG_BTRFS_FS is not set
+# CONFIG_NILFS2_FS is not set
+CONFIG_FS_POSIX_ACL=y
+CONFIG_EXPORTFS=y
+CONFIG_FILE_LOCKING=y
+CONFIG_FSNOTIFY=y
+CONFIG_DNOTIFY=y
+CONFIG_INOTIFY_USER=y
+# CONFIG_FANOTIFY is not set
+CONFIG_QUOTA=y
+CONFIG_QUOTA_NETLINK_INTERFACE=y
+# CONFIG_PRINT_QUOTA_WARNING is not set
+# CONFIG_QUOTA_DEBUG is not set
+CONFIG_QUOTA_TREE=y
+# CONFIG_QFMT_V1 is not set
+CONFIG_QFMT_V2=y
+CONFIG_QUOTACTL=y
+CONFIG_QUOTACTL_COMPAT=y
+# CONFIG_AUTOFS4_FS is not set
+# CONFIG_FUSE_FS is not set
+
+#
+# Caches
+#
+# CONFIG_FSCACHE is not set
+
+#
+# CD-ROM/DVD Filesystems
+#
+CONFIG_ISO9660_FS=y
+CONFIG_JOLIET=y
+CONFIG_ZISOFS=y
+# CONFIG_UDF_FS is not set
+
+#
+# DOS/FAT/NT Filesystems
+#
+# CONFIG_MSDOS_FS is not set
+# CONFIG_VFAT_FS is not set
+# CONFIG_NTFS_FS is not set
+
+#
+# Pseudo filesystems
+#
+CONFIG_PROC_FS=y
+CONFIG_PROC_KCORE=y
+CONFIG_PROC_VMCORE=y
+CONFIG_PROC_SYSCTL=y
+CONFIG_PROC_PAGE_MONITOR=y
+CONFIG_KERNFS=y
+CONFIG_SYSFS=y
+CONFIG_TMPFS=y
+CONFIG_TMPFS_POSIX_ACL=y
+CONFIG_TMPFS_XATTR=y
+CONFIG_HUGETLBFS=y
+CONFIG_HUGETLB_PAGE=y
+# CONFIG_CONFIGFS_FS is not set
+CONFIG_MISC_FILESYSTEMS=y
+# CONFIG_ADFS_FS is not set
+# CONFIG_AFFS_FS is not set
+# CONFIG_ECRYPT_FS is not set
+# CONFIG_HFS_FS is not set
+# CONFIG_HFSPLUS_FS is not set
+# CONFIG_BEFS_FS is not set
+# CONFIG_BFS_FS is not set
+# CONFIG_EFS_FS is not set
+# CONFIG_LOGFS is not set
+# CONFIG_CRAMFS is not set
+# CONFIG_SQUASHFS is not set
+# CONFIG_VXFS_FS is not set
+# CONFIG_MINIX_FS is not set
+# CONFIG_OMFS_FS is not set
+# CONFIG_HPFS_FS is not set
+# CONFIG_QNX4FS_FS is not set
+# CONFIG_QNX6FS_FS is not set
+# CONFIG_ROMFS_FS is not set
+# CONFIG_PSTORE is not set
+# CONFIG_SYSV_FS is not set
+# CONFIG_UFS_FS is not set
+# CONFIG_F2FS_FS is not set
+# CONFIG_EFIVAR_FS is not set
+CONFIG_NETWORK_FILESYSTEMS=y
+CONFIG_NFS_FS=y
+CONFIG_NFS_V2=y
+CONFIG_NFS_V3=y
+CONFIG_NFS_V3_ACL=y
+CONFIG_NFS_V4=y
+# CONFIG_NFS_SWAP is not set
+CONFIG_NFS_V4_1=y
+# CONFIG_NFS_V4_2 is not set
+CONFIG_PNFS_FILE_LAYOUT=y
+CONFIG_PNFS_BLOCK=y
+CONFIG_NFS_V4_1_IMPLEMENTATION_ID_DOMAIN="kernel.org"
+# CONFIG_NFS_V4_1_MIGRATION is not set
+# CONFIG_NFS_USE_LEGACY_DNS is not set
+CONFIG_NFS_USE_KERNEL_DNS=y
+CONFIG_NFSD=y
+CONFIG_NFSD_V2_ACL=y
+CONFIG_NFSD_V3=y
+CONFIG_NFSD_V3_ACL=y
+CONFIG_NFSD_V4=y
+# CONFIG_NFSD_V4_SECURITY_LABEL is not set
+# CONFIG_NFSD_FAULT_INJECTION is not set
+CONFIG_LOCKD=y
+CONFIG_LOCKD_V4=y
+CONFIG_NFS_ACL_SUPPORT=y
+CONFIG_NFS_COMMON=y
+CONFIG_SUNRPC=y
+CONFIG_SUNRPC_GSS=y
+CONFIG_SUNRPC_BACKCHANNEL=y
+# CONFIG_SUNRPC_DEBUG is not set
+# CONFIG_CEPH_FS is not set
+# CONFIG_CIFS is not set
+# CONFIG_NCP_FS is not set
+# CONFIG_CODA_FS is not set
+# CONFIG_AFS_FS is not set
+CONFIG_NLS=y
+CONFIG_NLS_DEFAULT="utf8"
+CONFIG_NLS_CODEPAGE_437=y
+# CONFIG_NLS_CODEPAGE_737 is not set
+# CONFIG_NLS_CODEPAGE_775 is not set
+# CONFIG_NLS_CODEPAGE_850 is not set
+# CONFIG_NLS_CODEPAGE_852 is not set
+# CONFIG_NLS_CODEPAGE_855 is not set
+# CONFIG_NLS_CODEPAGE_857 is not set
+# CONFIG_NLS_CODEPAGE_860 is not set
+# CONFIG_NLS_CODEPAGE_861 is not set
+# CONFIG_NLS_CODEPAGE_862 is not set
+# CONFIG_NLS_CODEPAGE_863 is not set
+# CONFIG_NLS_CODEPAGE_864 is not set
+# CONFIG_NLS_CODEPAGE_865 is not set
+# CONFIG_NLS_CODEPAGE_866 is not set
+# CONFIG_NLS_CODEPAGE_869 is not set
+# CONFIG_NLS_CODEPAGE_936 is not set
+# CONFIG_NLS_CODEPAGE_950 is not set
+# CONFIG_NLS_CODEPAGE_932 is not set
+# CONFIG_NLS_CODEPAGE_949 is not set
+# CONFIG_NLS_CODEPAGE_874 is not set
+# CONFIG_NLS_ISO8859_8 is not set
+# CONFIG_NLS_CODEPAGE_1250 is not set
+# CONFIG_NLS_CODEPAGE_1251 is not set
+CONFIG_NLS_ASCII=y
+# CONFIG_NLS_ISO8859_1 is not set
+# CONFIG_NLS_ISO8859_2 is not set
+# CONFIG_NLS_ISO8859_3 is not set
+# CONFIG_NLS_ISO8859_4 is not set
+# CONFIG_NLS_ISO8859_5 is not set
+# CONFIG_NLS_ISO8859_6 is not set
+# CONFIG_NLS_ISO8859_7 is not set
+# CONFIG_NLS_ISO8859_9 is not set
+# CONFIG_NLS_ISO8859_13 is not set
+# CONFIG_NLS_ISO8859_14 is not set
+# CONFIG_NLS_ISO8859_15 is not set
+# CONFIG_NLS_KOI8_R is not set
+# CONFIG_NLS_KOI8_U is not set
+# CONFIG_NLS_MAC_ROMAN is not set
+# CONFIG_NLS_MAC_CELTIC is not set
+# CONFIG_NLS_MAC_CENTEURO is not set
+# CONFIG_NLS_MAC_CROATIAN is not set
+# CONFIG_NLS_MAC_CYRILLIC is not set
+# CONFIG_NLS_MAC_GAELIC is not set
+# CONFIG_NLS_MAC_GREEK is not set
+# CONFIG_NLS_MAC_ICELAND is not set
+# CONFIG_NLS_MAC_INUIT is not set
+# CONFIG_NLS_MAC_ROMANIAN is not set
+# CONFIG_NLS_MAC_TURKISH is not set
+# CONFIG_NLS_UTF8 is not set
+
+#
+# Kernel hacking
+#
+CONFIG_TRACE_IRQFLAGS_SUPPORT=y
+
+#
+# printk and dmesg options
+#
+# CONFIG_PRINTK_TIME is not set
+CONFIG_DEFAULT_MESSAGE_LOGLEVEL=4
+CONFIG_BOOT_PRINTK_DELAY=y
+CONFIG_DYNAMIC_DEBUG=y
+
+#
+# Compile-time checks and compiler options
+#
+CONFIG_DEBUG_INFO=y
+CONFIG_DEBUG_INFO_REDUCED=y
+# CONFIG_ENABLE_WARN_DEPRECATED is not set
+CONFIG_ENABLE_MUST_CHECK=y
+CONFIG_FRAME_WARN=2048
+CONFIG_STRIP_ASM_SYMS=y
+# CONFIG_READABLE_ASM is not set
+CONFIG_UNUSED_SYMBOLS=y
+CONFIG_DEBUG_FS=y
+CONFIG_HEADERS_CHECK=y
+# CONFIG_DEBUG_SECTION_MISMATCH is not set
+CONFIG_ARCH_WANT_FRAME_POINTERS=y
+CONFIG_FRAME_POINTER=y
+# CONFIG_DEBUG_FORCE_WEAK_PER_CPU is not set
+CONFIG_MAGIC_SYSRQ=y
+CONFIG_MAGIC_SYSRQ_DEFAULT_ENABLE=0x1
+CONFIG_DEBUG_KERNEL=y
+
+#
+# Memory Debugging
+#
+# CONFIG_DEBUG_PAGEALLOC is not set
+# CONFIG_DEBUG_OBJECTS is not set
+# CONFIG_SLUB_DEBUG_ON is not set
+# CONFIG_SLUB_STATS is not set
+CONFIG_HAVE_DEBUG_KMEMLEAK=y
+# CONFIG_DEBUG_KMEMLEAK is not set
+CONFIG_DEBUG_STACK_USAGE=y
+# CONFIG_DEBUG_VM is not set
+# CONFIG_DEBUG_VIRTUAL is not set
+CONFIG_DEBUG_MEMORY_INIT=y
+# CONFIG_DEBUG_PER_CPU_MAPS is not set
+CONFIG_HAVE_DEBUG_STACKOVERFLOW=y
+CONFIG_DEBUG_STACKOVERFLOW=y
+CONFIG_HAVE_ARCH_KMEMCHECK=y
+CONFIG_DEBUG_SHIRQ=y
+
+#
+# Debug Lockups and Hangs
+#
+CONFIG_LOCKUP_DETECTOR=y
+CONFIG_HARDLOCKUP_DETECTOR=y
+CONFIG_BOOTPARAM_HARDLOCKUP_PANIC=y
+CONFIG_BOOTPARAM_HARDLOCKUP_PANIC_VALUE=1
+CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC=y
+CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC_VALUE=1
+CONFIG_DETECT_HUNG_TASK=y
+CONFIG_DEFAULT_HUNG_TASK_TIMEOUT=120
+CONFIG_BOOTPARAM_HUNG_TASK_PANIC=y
+CONFIG_BOOTPARAM_HUNG_TASK_PANIC_VALUE=1
+# CONFIG_PANIC_ON_OOPS is not set
+CONFIG_PANIC_ON_OOPS_VALUE=0
+CONFIG_PANIC_TIMEOUT=0
+CONFIG_SCHED_DEBUG=y
+CONFIG_SCHEDSTATS=y
+CONFIG_TIMER_STATS=y
+CONFIG_DEBUG_PREEMPT=y
+
+#
+# Lock Debugging (spinlocks, mutexes, etc...)
+#
+CONFIG_DEBUG_RT_MUTEXES=y
+CONFIG_RT_MUTEX_TESTER=y
+CONFIG_DEBUG_SPINLOCK=y
+CONFIG_DEBUG_MUTEXES=y
+# CONFIG_DEBUG_WW_MUTEX_SLOWPATH is not set
+CONFIG_DEBUG_LOCK_ALLOC=y
+CONFIG_PROVE_LOCKING=y
+CONFIG_LOCKDEP=y
+# CONFIG_LOCK_STAT is not set
+# CONFIG_DEBUG_LOCKDEP is not set
+# CONFIG_DEBUG_ATOMIC_SLEEP is not set
+CONFIG_DEBUG_LOCKING_API_SELFTESTS=y
+# CONFIG_LOCK_TORTURE_TEST is not set
+CONFIG_TRACE_IRQFLAGS=y
+CONFIG_STACKTRACE=y
+CONFIG_DEBUG_KOBJECT=y
+CONFIG_DEBUG_BUGVERBOSE=y
+CONFIG_DEBUG_LIST=y
+CONFIG_DEBUG_PI_LIST=y
+# CONFIG_DEBUG_SG is not set
+CONFIG_DEBUG_NOTIFIERS=y
+CONFIG_DEBUG_CREDENTIALS=y
+
+#
+# RCU Debugging
+#
+# CONFIG_PROVE_RCU is not set
+# CONFIG_PROVE_RCU_DELAY is not set
+CONFIG_SPARSE_RCU_POINTER=y
+# CONFIG_TORTURE_TEST is not set
+# CONFIG_RCU_TORTURE_TEST is not set
+CONFIG_RCU_CPU_STALL_TIMEOUT=60
+CONFIG_RCU_CPU_STALL_VERBOSE=y
+# CONFIG_RCU_CPU_STALL_INFO is not set
+# CONFIG_RCU_TRACE is not set
+# CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
+# CONFIG_NOTIFIER_ERROR_INJECTION is not set
+# CONFIG_FAULT_INJECTION is not set
+CONFIG_LATENCYTOP=y
+CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS=y
+# CONFIG_DEBUG_STRICT_USER_COPY_CHECKS is not set
+CONFIG_USER_STACKTRACE_SUPPORT=y
+CONFIG_NOP_TRACER=y
+CONFIG_HAVE_FUNCTION_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST=y
+CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST=y
+CONFIG_HAVE_DYNAMIC_FTRACE=y
+CONFIG_HAVE_DYNAMIC_FTRACE_WITH_REGS=y
+CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
+CONFIG_HAVE_SYSCALL_TRACEPOINTS=y
+CONFIG_HAVE_FENTRY=y
+CONFIG_HAVE_C_RECORDMCOUNT=y
+CONFIG_TRACER_MAX_TRACE=y
+CONFIG_TRACE_CLOCK=y
+CONFIG_RING_BUFFER=y
+CONFIG_EVENT_TRACING=y
+CONFIG_CONTEXT_SWITCH_TRACER=y
+CONFIG_RING_BUFFER_ALLOW_SWAP=y
+CONFIG_TRACING=y
+CONFIG_GENERIC_TRACER=y
+CONFIG_TRACING_SUPPORT=y
+CONFIG_FTRACE=y
+CONFIG_FUNCTION_TRACER=y
+CONFIG_FUNCTION_GRAPH_TRACER=y
+CONFIG_IRQSOFF_TRACER=y
+CONFIG_PREEMPT_TRACER=y
+CONFIG_SCHED_TRACER=y
+CONFIG_FTRACE_SYSCALLS=y
+CONFIG_TRACER_SNAPSHOT=y
+CONFIG_TRACER_SNAPSHOT_PER_CPU_SWAP=y
+CONFIG_BRANCH_PROFILE_NONE=y
+# CONFIG_PROFILE_ANNOTATED_BRANCHES is not set
+# CONFIG_PROFILE_ALL_BRANCHES is not set
+CONFIG_STACK_TRACER=y
+CONFIG_BLK_DEV_IO_TRACE=y
+CONFIG_KPROBE_EVENT=y
+# CONFIG_UPROBE_EVENT is not set
+CONFIG_PROBE_EVENTS=y
+CONFIG_DYNAMIC_FTRACE=y
+CONFIG_DYNAMIC_FTRACE_WITH_REGS=y
+CONFIG_FUNCTION_PROFILER=y
+CONFIG_FTRACE_MCOUNT_RECORD=y
+CONFIG_FTRACE_SELFTEST=y
+CONFIG_FTRACE_STARTUP_TEST=y
+CONFIG_EVENT_TRACE_TEST_SYSCALLS=y
+CONFIG_MMIOTRACE=y
+CONFIG_MMIOTRACE_TEST=m
+CONFIG_TRACEPOINT_BENCHMARK=y
+CONFIG_RING_BUFFER_BENCHMARK=y
+CONFIG_RING_BUFFER_STARTUP_TEST=y
+
+#
+# Runtime Testing
+#
+# CONFIG_LKDTM is not set
+# CONFIG_TEST_LIST_SORT is not set
+CONFIG_KPROBES_SANITY_TEST=y
+# CONFIG_BACKTRACE_SELF_TEST is not set
+# CONFIG_RBTREE_TEST is not set
+# CONFIG_INTERVAL_TREE_TEST is not set
+# CONFIG_PERCPU_TEST is not set
+# CONFIG_ATOMIC64_SELFTEST is not set
+# CONFIG_TEST_STRING_HELPERS is not set
+# CONFIG_TEST_KSTRTOX is not set
+CONFIG_PROVIDE_OHCI1394_DMA_INIT=y
+CONFIG_BUILD_DOCSRC=y
+# CONFIG_DMA_API_DEBUG is not set
+# CONFIG_TEST_MODULE is not set
+# CONFIG_TEST_USER_COPY is not set
+# CONFIG_TEST_BPF is not set
+CONFIG_SAMPLES=y
+CONFIG_SAMPLE_TRACE_EVENTS=m
+CONFIG_SAMPLE_KOBJECT=m
+CONFIG_SAMPLE_KPROBES=m
+CONFIG_SAMPLE_KRETPROBES=m
+# CONFIG_SAMPLE_HW_BREAKPOINT is not set
+# CONFIG_SAMPLE_KFIFO is not set
+CONFIG_HAVE_ARCH_KGDB=y
+# CONFIG_KGDB is not set
+CONFIG_STRICT_DEVMEM=y
+# CONFIG_X86_VERBOSE_BOOTUP is not set
+CONFIG_EARLY_PRINTK=y
+CONFIG_EARLY_PRINTK_DBGP=y
+# CONFIG_EARLY_PRINTK_EFI is not set
+# CONFIG_X86_PTDUMP is not set
+CONFIG_DEBUG_RODATA=y
+CONFIG_DEBUG_RODATA_TEST=y
+# CONFIG_DEBUG_SET_MODULE_RONX is not set
+# CONFIG_DEBUG_NX_TEST is not set
+CONFIG_DOUBLEFAULT=y
+# CONFIG_DEBUG_TLBFLUSH is not set
+# CONFIG_IOMMU_DEBUG is not set
+# CONFIG_IOMMU_STRESS is not set
+CONFIG_HAVE_MMIOTRACE_SUPPORT=y
+CONFIG_X86_DECODER_SELFTEST=y
+CONFIG_IO_DELAY_TYPE_0X80=0
+CONFIG_IO_DELAY_TYPE_0XED=1
+CONFIG_IO_DELAY_TYPE_UDELAY=2
+CONFIG_IO_DELAY_TYPE_NONE=3
+CONFIG_IO_DELAY_0X80=y
+# CONFIG_IO_DELAY_0XED is not set
+# CONFIG_IO_DELAY_UDELAY is not set
+# CONFIG_IO_DELAY_NONE is not set
+CONFIG_DEFAULT_IO_DELAY_TYPE=0
+CONFIG_DEBUG_BOOT_PARAMS=y
+# CONFIG_CPA_DEBUG is not set
+CONFIG_OPTIMIZE_INLINING=y
+# CONFIG_DEBUG_NMI_SELFTEST is not set
+# CONFIG_X86_DEBUG_STATIC_CPU_HAS is not set
+
+#
+# Security options
+#
+CONFIG_KEYS=y
+# CONFIG_PERSISTENT_KEYRINGS is not set
+# CONFIG_BIG_KEYS is not set
+# CONFIG_TRUSTED_KEYS is not set
+# CONFIG_ENCRYPTED_KEYS is not set
+CONFIG_KEYS_DEBUG_PROC_KEYS=y
+# CONFIG_SECURITY_DMESG_RESTRICT is not set
+CONFIG_SECURITY=y
+CONFIG_SECURITYFS=y
+CONFIG_SECURITY_NETWORK=y
+# CONFIG_SECURITY_PATH is not set
+CONFIG_LSM_MMAP_MIN_ADDR=65536
+CONFIG_SECURITY_SELINUX=y
+CONFIG_SECURITY_SELINUX_BOOTPARAM=y
+CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=1
+CONFIG_SECURITY_SELINUX_DISABLE=y
+CONFIG_SECURITY_SELINUX_DEVELOP=y
+CONFIG_SECURITY_SELINUX_AVC_STATS=y
+CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=1
+# CONFIG_SECURITY_SELINUX_POLICYDB_VERSION_MAX is not set
+# CONFIG_SECURITY_SMACK is not set
+# CONFIG_SECURITY_TOMOYO is not set
+# CONFIG_SECURITY_APPARMOR is not set
+# CONFIG_SECURITY_YAMA is not set
+CONFIG_INTEGRITY=y
+# CONFIG_INTEGRITY_SIGNATURE is not set
+CONFIG_INTEGRITY_AUDIT=y
+CONFIG_IMA=y
+CONFIG_IMA_MEASURE_PCR_IDX=10
+CONFIG_IMA_LSM_RULES=y
+# CONFIG_IMA_TEMPLATE is not set
+CONFIG_IMA_NG_TEMPLATE=y
+# CONFIG_IMA_SIG_TEMPLATE is not set
+CONFIG_IMA_DEFAULT_TEMPLATE="ima-ng"
+CONFIG_IMA_DEFAULT_HASH_SHA1=y
+CONFIG_IMA_DEFAULT_HASH="sha1"
+# CONFIG_IMA_APPRAISE is not set
+# CONFIG_EVM is not set
+CONFIG_DEFAULT_SECURITY_SELINUX=y
+# CONFIG_DEFAULT_SECURITY_DAC is not set
+CONFIG_DEFAULT_SECURITY="selinux"
+CONFIG_CRYPTO=y
+
+#
+# Crypto core or helper
+#
+CONFIG_CRYPTO_ALGAPI=y
+CONFIG_CRYPTO_ALGAPI2=y
+CONFIG_CRYPTO_AEAD2=y
+CONFIG_CRYPTO_BLKCIPHER=y
+CONFIG_CRYPTO_BLKCIPHER2=y
+CONFIG_CRYPTO_HASH=y
+CONFIG_CRYPTO_HASH2=y
+CONFIG_CRYPTO_RNG2=y
+CONFIG_CRYPTO_PCOMP2=y
+CONFIG_CRYPTO_MANAGER=y
+CONFIG_CRYPTO_MANAGER2=y
+# CONFIG_CRYPTO_USER is not set
+CONFIG_CRYPTO_MANAGER_DISABLE_TESTS=y
+# CONFIG_CRYPTO_GF128MUL is not set
+# CONFIG_CRYPTO_NULL is not set
+# CONFIG_CRYPTO_PCRYPT is not set
+CONFIG_CRYPTO_WORKQUEUE=y
+CONFIG_CRYPTO_CRYPTD=y
+# CONFIG_CRYPTO_AUTHENC is not set
+# CONFIG_CRYPTO_TEST is not set
+
+#
+# Authenticated Encryption with Associated Data
+#
+# CONFIG_CRYPTO_CCM is not set
+# CONFIG_CRYPTO_GCM is not set
+# CONFIG_CRYPTO_SEQIV is not set
+
+#
+# Block modes
+#
+CONFIG_CRYPTO_CBC=y
+# CONFIG_CRYPTO_CTR is not set
+# CONFIG_CRYPTO_CTS is not set
+# CONFIG_CRYPTO_ECB is not set
+# CONFIG_CRYPTO_LRW is not set
+# CONFIG_CRYPTO_PCBC is not set
+# CONFIG_CRYPTO_XTS is not set
+
+#
+# Hash modes
+#
+# CONFIG_CRYPTO_CMAC is not set
+CONFIG_CRYPTO_HMAC=y
+# CONFIG_CRYPTO_XCBC is not set
+# CONFIG_CRYPTO_VMAC is not set
+
+#
+# Digest
+#
+CONFIG_CRYPTO_CRC32C=y
+# CONFIG_CRYPTO_CRC32C_INTEL is not set
+# CONFIG_CRYPTO_CRC32 is not set
+# CONFIG_CRYPTO_CRC32_PCLMUL is not set
+CONFIG_CRYPTO_CRCT10DIF=y
+# CONFIG_CRYPTO_CRCT10DIF_PCLMUL is not set
+# CONFIG_CRYPTO_GHASH is not set
+# CONFIG_CRYPTO_MD4 is not set
+CONFIG_CRYPTO_MD5=y
+# CONFIG_CRYPTO_MICHAEL_MIC is not set
+# CONFIG_CRYPTO_RMD128 is not set
+# CONFIG_CRYPTO_RMD160 is not set
+# CONFIG_CRYPTO_RMD256 is not set
+# CONFIG_CRYPTO_RMD320 is not set
+CONFIG_CRYPTO_SHA1=y
+# CONFIG_CRYPTO_SHA1_SSSE3 is not set
+# CONFIG_CRYPTO_SHA256_SSSE3 is not set
+# CONFIG_CRYPTO_SHA512_SSSE3 is not set
+# CONFIG_CRYPTO_SHA256 is not set
+# CONFIG_CRYPTO_SHA512 is not set
+# CONFIG_CRYPTO_TGR192 is not set
+# CONFIG_CRYPTO_WP512 is not set
+CONFIG_CRYPTO_GHASH_CLMUL_NI_INTEL=y
+
+#
+# Ciphers
+#
+CONFIG_CRYPTO_AES=y
+# CONFIG_CRYPTO_AES_X86_64 is not set
+# CONFIG_CRYPTO_AES_NI_INTEL is not set
+# CONFIG_CRYPTO_ANUBIS is not set
+# CONFIG_CRYPTO_ARC4 is not set
+# CONFIG_CRYPTO_BLOWFISH is not set
+# CONFIG_CRYPTO_BLOWFISH_X86_64 is not set
+# CONFIG_CRYPTO_CAMELLIA is not set
+# CONFIG_CRYPTO_CAMELLIA_X86_64 is not set
+# CONFIG_CRYPTO_CAMELLIA_AESNI_AVX_X86_64 is not set
+# CONFIG_CRYPTO_CAMELLIA_AESNI_AVX2_X86_64 is not set
+# CONFIG_CRYPTO_CAST5 is not set
+# CONFIG_CRYPTO_CAST5_AVX_X86_64 is not set
+# CONFIG_CRYPTO_CAST6 is not set
+# CONFIG_CRYPTO_CAST6_AVX_X86_64 is not set
+CONFIG_CRYPTO_DES=y
+# CONFIG_CRYPTO_FCRYPT is not set
+# CONFIG_CRYPTO_KHAZAD is not set
+# CONFIG_CRYPTO_SALSA20 is not set
+# CONFIG_CRYPTO_SALSA20_X86_64 is not set
+# CONFIG_CRYPTO_SEED is not set
+# CONFIG_CRYPTO_SERPENT is not set
+# CONFIG_CRYPTO_SERPENT_SSE2_X86_64 is not set
+# CONFIG_CRYPTO_SERPENT_AVX_X86_64 is not set
+# CONFIG_CRYPTO_SERPENT_AVX2_X86_64 is not set
+# CONFIG_CRYPTO_TEA is not set
+# CONFIG_CRYPTO_TWOFISH is not set
+# CONFIG_CRYPTO_TWOFISH_X86_64 is not set
+# CONFIG_CRYPTO_TWOFISH_X86_64_3WAY is not set
+# CONFIG_CRYPTO_TWOFISH_AVX_X86_64 is not set
+
+#
+# Compression
+#
+# CONFIG_CRYPTO_DEFLATE is not set
+# CONFIG_CRYPTO_ZLIB is not set
+# CONFIG_CRYPTO_LZO is not set
+# CONFIG_CRYPTO_LZ4 is not set
+# CONFIG_CRYPTO_LZ4HC is not set
+
+#
+# Random Number Generation
+#
+# CONFIG_CRYPTO_ANSI_CPRNG is not set
+# CONFIG_CRYPTO_USER_API_HASH is not set
+# CONFIG_CRYPTO_USER_API_SKCIPHER is not set
+CONFIG_CRYPTO_HASH_INFO=y
+CONFIG_CRYPTO_HW=y
+# CONFIG_CRYPTO_DEV_PADLOCK is not set
+# CONFIG_CRYPTO_DEV_CCP is not set
+# CONFIG_ASYMMETRIC_KEY_TYPE is not set
+CONFIG_HAVE_KVM=y
+CONFIG_VIRTUALIZATION=y
+# CONFIG_KVM is not set
+CONFIG_BINARY_PRINTF=y
+
+#
+# Library routines
+#
+CONFIG_BITREVERSE=y
+CONFIG_GENERIC_STRNCPY_FROM_USER=y
+CONFIG_GENERIC_STRNLEN_USER=y
+CONFIG_GENERIC_NET_UTILS=y
+CONFIG_GENERIC_FIND_FIRST_BIT=y
+CONFIG_GENERIC_PCI_IOMAP=y
+CONFIG_GENERIC_IOMAP=y
+CONFIG_GENERIC_IO=y
+CONFIG_ARCH_USE_CMPXCHG_LOCKREF=y
+# CONFIG_CRC_CCITT is not set
+CONFIG_CRC16=y
+CONFIG_CRC_T10DIF=y
+CONFIG_CRC_ITU_T=y
+CONFIG_CRC32=y
+# CONFIG_CRC32_SELFTEST is not set
+CONFIG_CRC32_SLICEBY8=y
+# CONFIG_CRC32_SLICEBY4 is not set
+# CONFIG_CRC32_SARWATE is not set
+# CONFIG_CRC32_BIT is not set
+# CONFIG_CRC7 is not set
+# CONFIG_LIBCRC32C is not set
+# CONFIG_CRC8 is not set
+# CONFIG_AUDIT_ARCH_COMPAT_GENERIC is not set
+# CONFIG_RANDOM32_SELFTEST is not set
+CONFIG_ZLIB_INFLATE=y
+CONFIG_LZO_COMPRESS=y
+CONFIG_LZO_DECOMPRESS=y
+CONFIG_LZ4_DECOMPRESS=y
+CONFIG_XZ_DEC=y
+CONFIG_XZ_DEC_X86=y
+CONFIG_XZ_DEC_POWERPC=y
+CONFIG_XZ_DEC_IA64=y
+CONFIG_XZ_DEC_ARM=y
+CONFIG_XZ_DEC_ARMTHUMB=y
+CONFIG_XZ_DEC_SPARC=y
+CONFIG_XZ_DEC_BCJ=y
+# CONFIG_XZ_DEC_TEST is not set
+CONFIG_DECOMPRESS_GZIP=y
+CONFIG_DECOMPRESS_BZIP2=y
+CONFIG_DECOMPRESS_LZMA=y
+CONFIG_DECOMPRESS_XZ=y
+CONFIG_DECOMPRESS_LZO=y
+CONFIG_DECOMPRESS_LZ4=y
+CONFIG_INTERVAL_TREE=y
+CONFIG_ASSOCIATIVE_ARRAY=y
+CONFIG_HAS_IOMEM=y
+CONFIG_HAS_IOPORT_MAP=y
+CONFIG_HAS_DMA=y
+CONFIG_CHECK_SIGNATURE=y
+CONFIG_CPU_RMAP=y
+CONFIG_DQL=y
+CONFIG_NLATTR=y
+CONFIG_ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE=y
+# CONFIG_AVERAGE is not set
+# CONFIG_CORDIC is not set
+# CONFIG_DDR is not set
+CONFIG_OID_REGISTRY=y
+CONFIG_UCS2_STRING=y
+CONFIG_FONT_SUPPORT=y
+# CONFIG_FONTS is not set
+CONFIG_FONT_8x8=y
+CONFIG_FONT_8x16=y
