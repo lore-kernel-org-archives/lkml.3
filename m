@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527AbaGAH7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 03:59:33 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:44946 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150AbaGAH7b (ORCPT
+	id S1757550AbaGAIBl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 04:01:41 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:56944 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753614AbaGAIBk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 03:59:31 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+VVI3vG7raxhi2iaY3OLkD
-Date: Tue, 1 Jul 2014 00:59:30 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Sricharan R <r.sricharan@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nm@ti.com, linux@arm.linux.org.uk,
-        rnayak@ti.com, santosh.shilimkar@ti.com, joe@perches.com,
-        tglx@linutronix.de
-Subject: Re: [PATCH V4 00/16] irqchip: crossbar: Driver fixes
-Message-ID: <20140701075930.GN28884@atomide.com>
-References: <1403766634-18543-1-git-send-email-r.sricharan@ti.com>
- <20140630192910.GA23978@titan.lakedaemon.net>
+	Tue, 1 Jul 2014 04:01:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140630192910.GA23978@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1404201524-7568-1-git-send-email-geert@linux-m68k.org>
+References: <1404201524-7568-1-git-send-email-geert@linux-m68k.org>
+Date: Tue, 1 Jul 2014 10:01:38 +0200
+X-Google-Sender-Auth: z8zDlgvLKss6mHH5rG5fPKWtvYw
+Message-ID: <CAMuHMdXrvFRRESU7T-nk8WkNgrTSvOvyywMjcRC=OQH7CbbQjw@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.16-rc3
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jason Cooper <jason@lakedaemon.net> [140630 12:30]:
-> 
-> Whole series applied to irqchip/crossbar, I'll give it a day or two in
-> -next, then I'll merge it into irqchip/core.
-> 
-> Tony: Right now, it's immutable unless you tell me I applied something
-> incorrectly.  Once it goes into irqchip/core, it's immutable no matter
-> what you say. ;-)
+On Tue, Jul 1, 2014 at 9:58 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> JFYI, when comparing v3.16-rc3[1]  to v3.16-rc2[3], the summaries are:
+>   - build errors: +5/-63
 
-Thanks, looks good to me. Sricharan and Nishant, can you please
-check that we can now apply the related .dts changes on top of
-Jason's branch at:
+  + /scratch/kisskb/src/kernel/bounds.c: error: -mcall-aixdesc must be
+big endian:  => 1:0
+  + /scratch/kisskb/src/scripts/mod/devicetable-offsets.c: error:
+-mcall-aixdesc must be big endianmake[3]: :  => 1:0
+  + /scratch/kisskb/src/scripts/mod/empty.c: error: -mcall-aixdesc
+must be big endian:  => 1:0
+  + <stdin>: error: -mcall-aixdesc must be big endian:  => 1:0
 
-git://git.infradead.org/users/jcooper/linux.git irqchip/crossbar
+powerpc-randconfig
 
-Regards,
+  + error: misc.c: undefined reference to `ftrace_likely_update':  =>
+.text+0x22c), .text+0x898)
 
-Tony
+sh-randconfig
+
+> [1] http://kisskb.ellerman.id.au/kisskb/head/7619/ (all 119 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/7595/ (all 119 configs)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
