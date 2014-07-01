@@ -1,109 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757888AbaGALOI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 07:14:08 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:60139 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757827AbaGALOF (ORCPT
+	id S1757961AbaGALO3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 07:14:29 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:52327 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757894AbaGALO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 07:14:05 -0400
+	Tue, 1 Jul 2014 07:14:26 -0400
+Message-ID: <53B2974A.6010809@linux.vnet.ibm.com>
+Date: Tue, 01 Jul 2014 16:41:06 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <CABGGiswMuofH5WRh4jgwh1=CV+fEXM_Ec3+WNwThbuMLVxsdcg@mail.gmail.com>
-References: <cover.1403684824.git.viresh.kumar@linaro.org>
-	<e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
-	<53AB1CC1.4010907@codeaurora.org>
-	<CAKohpo=Q7eWNwcK6KF9_U-zD0g=96QHW9hiQupLpV5GqoWE+mA@mail.gmail.com>
-	<53ACB568.4000903@codeaurora.org>
-	<20140627015354.32686.83046@quantum>
-	<CAKohponvN3rAvJrfi4TojFcq5gq7r2oNE4Q0_NtwBHmEZ8waBA@mail.gmail.com>
-	<CAKohpo=dgSW551yzqjAV2_opw_4naqFEWpwUz9ktkGgR5vCBZA@mail.gmail.com>
-	<CABGGiswMuofH5WRh4jgwh1=CV+fEXM_Ec3+WNwThbuMLVxsdcg@mail.gmail.com>
-Date: Tue, 1 Jul 2014 16:44:04 +0530
-Message-ID: <CAKohpokaVPn7yNPNAGrE6juGaOYuxZvVsbmkOZmyi9rDub6t7g@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: cpu0: Extend support beyond CPU0
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Rob Herring <rob.herring@linaro.org>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm@vger.kernel.org, Sachin Kamat <spk.linux@gmail.com>,
-        Thomas P Abraham <thomas.ab@samsung.com>, Nishanth Menon <nm@ti.com>,
-        Tomasz Figa <t.figa@samsung.com>, Mark Brown <broonie@kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        konrad.wilk@oracle.com, pbonzini@redhat.com, gleb@redhat.com,
+        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        waiman.long@hp.com, riel@redhat.com, davej@redhat.com, oleg@redhat.com,
+        x86@kernel.org, jeremy@goop.org, paul.gortmaker@windriver.com,
+        ak@linux.intel.com, jasowang@redhat.com, fernando_b1@lab.ntt.co.jp,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, mtosatti@redhat.com,
+        chegu_vinod@hp.com
+Subject: Re: [RFC PATCH v2] Implement Batched (group) ticket lock
+References: <1403947024-3193-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20140701080537.GH6758@twins.programming.kicks-ass.net> <53B282E9.6060806@linux.vnet.ibm.com> <20140701095521.GO6758@twins.programming.kicks-ass.net>
+In-Reply-To: <20140701095521.GO6758@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070111-5140-0000-0000-00000568E004
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 July 2014 00:03, Rob Herring <rob.herring@linaro.org> wrote:
->> What about comparing "clocks" property in cpu DT nodes?
+>>
+>> For baremetal we continue to have 'fully fair ticketlock' with this patch
+>> series.
+>>
 >
-> What if a different clock is selected for some reason.
-
-I don't know why that will happen for CPUs sharing clock line.
-
-> I think a clock api function would be better.
-
-@Mike: What do you think? I think we can get a clock API for
-this.
-
-> That being said, I don't really have any issue with such a function.
-> Some comments on the implementation.
-
->> +static int of_property_match(const struct device_node *np1,
->> +                             const struct device_node *np2,
->> +                             const char *list_name)
->> +{
->> +       const __be32 *list1, *list2, *list1_end;
+> But but but, we're looking at removing ticket locks. So why do we want
+> to invest in them now?
 >
-> s/list/prop/
->
-> Everywhere.
 
-Ok.
+I have nothing against qspinlock. I am happy to test it/add any bit to 
+it if I could.
 
->> +       int size1, size2;
->> +       phandle phandle1, phandle2;
->> +
->> +       /* Retrieve the list property */
->> +       list1 = of_get_property(np1, list_name, &size1);
->> +       if (!list1)
->> +               return -ENOENT;
->> +
->> +       list2 = of_get_property(np2, list_name, &size2);
->> +       if (!list2)
->> +               return -ENOENT;
->> +
->> +       if (size1 != size2)
->> +               return 0;
->> +
->> +       list1_end = list1 + size1 / sizeof(*list1);
->> +
->> +       /* Loop over the phandles */
->> +       while (list1 < list1_end) {
->> +               phandle1 = be32_to_cpup(list1++);
->> +               phandle2 = be32_to_cpup(list2++);
->> +
->> +               if (phandle1 != phandle2)
->> +                       return 0;
->> +       }
->
-> You can just do a memcmp here.
+With this patch we get excellent performance for guest with the
+unmodified kernel without affecting host.
 
-Yeah, that would be much better.
+My test on guest with batch_size =16,32 showed even better performance
+               bs=16      bs=32
+  ebizzy_0.5x   0.14       0.90
+  ebizzy_1.0x   3.57       7.52
+  ebizzy_1.5x  58.97      67.65
+  ebizzy_2.0x 121.55     136.45
 
-> This is wrong anyway because you don't know #clock-cells size.
 
-I was actually comparing all the clock-cells, whatever there number
-is to make sure "clocks" properties are exactly same. Anyway
-memcmp will still guarantee that.
 
-Thanks for your review.
+
