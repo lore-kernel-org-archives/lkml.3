@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759017AbaGAV5d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:57:33 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.163]:43838 "EHLO
+	id S964942AbaGAV6a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:58:30 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.162]:56698 "EHLO
 	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758881AbaGAVxw (ORCPT
+	with ESMTP id S1758873AbaGAVxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:53:52 -0400
+	Tue, 1 Jul 2014 17:53:51 -0400
 X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
 X-RZG-CLASS-ID: mo00
 From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 17/50] mars: add new file include/linux/brick/lib_limiter.h
-Date: Tue,  1 Jul 2014 23:46:57 +0200
-Message-Id: <1404251250-22992-18-git-send-email-tst@schoebel-theuer.de>
+Subject: [PATCH 05/50] mars: add new file include/linux/brick/brick_mem.h
+Date: Tue,  1 Jul 2014 23:46:45 +0200
+Message-Id: <1404251250-22992-6-git-send-email-tst@schoebel-theuer.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
@@ -23,47 +23,216 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 ---
- include/linux/brick/lib_limiter.h | 33 +++++++++++++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
- create mode 100644 include/linux/brick/lib_limiter.h
+ include/linux/brick/brick_mem.h | 202 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 202 insertions(+)
+ create mode 100644 include/linux/brick/brick_mem.h
 
-diff --git a/include/linux/brick/lib_limiter.h b/include/linux/brick/lib_limiter.h
+diff --git a/include/linux/brick/brick_mem.h b/include/linux/brick/brick_mem.h
 new file mode 100644
-index 0000000..87db968
+index 0000000..198bb05
 --- /dev/null
-+++ b/include/linux/brick/lib_limiter.h
-@@ -0,0 +1,33 @@
-+/*  (c) 2012 Thomas Schoebel-Theuer / 1&1 Internet AG */
-+#ifndef BRICK_LIB_LIMITER_H
-+#define BRICK_LIB_LIMITER_H
++++ b/include/linux/brick/brick_mem.h
+@@ -0,0 +1,202 @@
++/*  (c) 2011 Thomas Schoebel-Theuer / 1&1 Internet AG */
++#ifndef BRICK_MEM_H
++#define BRICK_MEM_H
 +
-+#include <linux/brick/brick.h>
++#include <linux/mm_types.h>
 +
-+#include <linux/utsname.h>
++#define BRICK_DEBUG_MEM			4096
 +
-+struct xio_limiter {
-+	/* hierarchy tree */
-+	struct xio_limiter *lim_father;
++#ifndef CONFIG_MARS_DEBUG_MEM
++#undef BRICK_DEBUG_MEM
++#endif
++#ifdef CONFIG_MARS_DEBUG_ORDER0
++#define BRICK_DEBUG_ORDER0
++#endif
 +
-+	/* tunables */
-+	int lim_max_rate;
-+	int lim_max_delay;
-+	int lim_min_window;
-+	int lim_max_window;
++#define CONFIG_MARS_MEM_PREALLOC	/* this is VITAL - disable only for experiments! */
 +
-+	/* readable */
-+	int lim_rate;
-+	int lim_cumul;
-+	int lim_count;
-+	long long lim_stamp;
++#define GFP_BRICK			GFP_NOIO
 +
-+	/* internal */
-+	long long lim_accu;
-+};
++extern long long brick_global_memavail;
++extern long long brick_global_memlimit;
++extern atomic64_t brick_global_block_used;
 +
-+extern int xio_limit(struct xio_limiter *lim, int amount);
++/* All brick memory allocations are guaranteed to succeed.
++ * In case of low memory, they will just retry (forever).
++ *
++ * We always prefer threads for concurrency.
++ * Therefore, in_interrupt() code does not occur, and we can
++ * always sleep in case of memory pressure.
++ *
++ * Resource deadlocks are avoided by the above memory limits.
++ * When exceeded, new memory is simply not allocated any more
++ * (except for vital memory, such as IO memory for which a
++ * low_mem_reserve must always exist, anyway).
++ */
 +
-+extern void xio_limit_sleep(struct xio_limiter *lim, int amount);
++/***********************************************************************/
++
++/*  compiler tweaking */
++
++/* Some functions are known to return non-null pointer values,
++ * at least under some Kconfig conditions.
++ *
++ * In code like...
++ *
++ * void *ptr = myfunction();
++ * if (unlikely(!ptr)) {
++ *	   printk("ERROR: this should not happen\n");
++ *	   goto fail;
++ * }
++ *
++ * ... the dead code elimination of gcc will not remove the if clause
++ * because the function might return a NULL value, even if a human
++ * would know that myfunction() does not return a NULL value.
++ *
++ * Unfortunately, the __attribute__((nonnull)) can only be applied
++ * to input parameters, but not to the return value.
++ *
++ * More unfortunately, a small inline wrapper does not help,
++ * because it seems that together with the elimination of the wrapper,
++ * its nonnull attribute seems to be eliminated alltogether.
++ * I don't know whether this is a bug or a feature (or just a weakness).
++ *
++ * Following is a small hack which solves the problem at least for gcc 4.7.
++ *
++ * In order to be useful, the -fdelete-null-pointer-checks must be set.
++ * Since XIO is superuser-only anyway, enabling this for MARS should not
++ * be a security risk
++ * (c.f. upstream kernel commit a3ca86aea507904148870946d599e07a340b39bf)
++ */
++extern inline
++void *brick_mark_nonnull(void *_ptr)
++{
++	char *ptr = _ptr;
++
++	/*  fool gcc to believe that the pointer were dereferenced... */
++	asm("" : : "X" (*ptr));
++	return ptr;
++}
++
++/***********************************************************************/
++
++/*  small memory allocation (use this only for len < PAGE_SIZE) */
++
++#define brick_mem_alloc(_len_)						\
++	({								\
++		void *_res_ = _brick_mem_alloc(_len_, __LINE__);	\
++		brick_mark_nonnull(_res_);				\
++	})
++
++#define brick_zmem_alloc(_len_)						\
++	({								\
++		void *_res_ = _brick_mem_alloc(_len_, __LINE__);	\
++		_res_ = brick_mark_nonnull(_res_);			\
++		memset(_res_, 0, _len_);				\
++		_res_;							\
++	})
++
++#define brick_mem_free(_data_)						\
++	do {								\
++		if (_data_) {						\
++			_brick_mem_free(_data_, __LINE__);		\
++		}							\
++	} while (0)
++
++/*  don't use the following directly */
++extern void *_brick_mem_alloc(int len, int line) __attribute__((malloc)) __attribute__((alloc_size(1)));
++extern void _brick_mem_free(void *data, int line);
++
++/***********************************************************************/
++
++/*  string memory allocation */
++
++#define BRICK_STRING_LEN		1024 /* default value when len == 0 */
++
++#define brick_string_alloc(_len_)					\
++	({								\
++		char *_res_ = _brick_string_alloc((_len_), __LINE__);	\
++		(char *)brick_mark_nonnull(_res_);			\
++	})
++
++#define brick_strndup(_orig_, _len_)					\
++	({								\
++		char *_res_ = _brick_string_alloc((_len_) + 1, __LINE__);\
++		_res_ = brick_mark_nonnull(_res_);			\
++		strncpy(_res_, (_orig_), (_len_) + 1);			\
++		/* always null-terminate for safety */			\
++		_res_[_len_] = '\0';					\
++		(char *)brick_mark_nonnull(_res_);			\
++	})
++
++#define brick_strdup(_orig_)						\
++	({								\
++		int _len_ = strlen(_orig_);				\
++		char *_res_ = _brick_string_alloc((_len_) + 1, __LINE__);\
++		_res_ = brick_mark_nonnull(_res_);			\
++		strncpy(_res_, (_orig_), (_len_) + 1);			\
++		(char *)brick_mark_nonnull(_res_);			\
++	})
++
++#define brick_string_free(_data_)					\
++	do {								\
++		if (_data_) {						\
++			_brick_string_free(_data_, __LINE__);		\
++		}							\
++	} while (0)
++
++/*  don't use the following directly */
++extern char *_brick_string_alloc(int len, int line) __attribute__((malloc));
++extern void _brick_string_free(const char *data, int line);
++
++/***********************************************************************/
++
++/*  block memory allocation (for aligned multiples of 512 resp PAGE_SIZE) */
++
++#define brick_block_alloc(_pos_, _len_)					\
++	({								\
++		void *_res_ = _brick_block_alloc((_pos_), (_len_), __LINE__);\
++		brick_mark_nonnull(_res_);				\
++	})
++
++#define brick_block_free(_data_, _len_)					\
++	do {								\
++		if (_data_) {						\
++			_brick_block_free((_data_), (_len_), __LINE__); \
++		}							\
++	} while (0)
++
++extern struct page *brick_iomap(void *data, int *offset, int *len);
++
++/*  don't use the following directly */
++extern void *_brick_block_alloc(loff_t pos, int len, int line) __attribute__((malloc)) __attribute__((alloc_size(2)));
++extern void _brick_block_free(void *data, int len, int cline);
++
++/***********************************************************************/
++
++/*  reservations / preallocation */
++
++#define BRICK_MAX_ORDER			11
++
++#ifdef CONFIG_MARS_MEM_PREALLOC
++extern int brick_allow_freelist;
++
++extern int brick_pre_reserve[BRICK_MAX_ORDER+1];
++extern int brick_mem_freelist_max[BRICK_MAX_ORDER+1];
++extern int brick_mem_alloc_count[BRICK_MAX_ORDER+1];
++extern int brick_mem_alloc_max[BRICK_MAX_ORDER+1];
++
++extern int brick_mem_reserve(void);
++
++#endif
++
++extern void brick_mem_statistics(bool final);
++
++/***********************************************************************/
++
++/*  init */
++
++extern int init_brick_mem(void);
++extern void exit_brick_mem(void);
 +
 +#endif
 -- 
