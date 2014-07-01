@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758212AbaGAPSq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 11:18:46 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:39996 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755522AbaGAPSm (ORCPT
+	id S1758069AbaGAP1y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 11:27:54 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:32905 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756680AbaGAP1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 11:18:42 -0400
-Message-ID: <53B2D151.60404@cogentembedded.com>
-Date: Tue, 01 Jul 2014 19:18:41 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 1 Jul 2014 11:27:53 -0400
+Message-ID: <53B2D378.7010006@infradead.org>
+Date: Tue, 01 Jul 2014 08:27:52 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Peter Chen <peter.chen@freescale.com>
-CC: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        =?ISO-8859-1?Q?Antoine_T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 07/12] usb: chipidea: add a generic driver
-References: <1403606121-6368-1-git-send-email-antoine.tenart@free-electrons.com> <1403606121-6368-8-git-send-email-antoine.tenart@free-electrons.com> <20140627032506.GA18039@shlinux1.ap.freescale.net> <20140630133313.GA11880@kwain> <20140701002112.GA26146@shlinux1.ap.freescale.net> <53B27789.3090509@gmail.com> <20140701083007.GB26146@shlinux1.ap.freescale.net> <20140701104254.GD3427@piout.net>
-In-Reply-To: <20140701104254.GD3427@piout.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Seunghun Lee <waydi1@gmail.com>, dedekind1@gmail.com,
+        adrian.hunter@intel.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] UBIFS: fix some comments
+References: <1404225925-3347-1-git-send-email-waydi1@gmail.com>
+In-Reply-To: <1404225925-3347-1-git-send-email-waydi1@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 07/01/14 07:45, Seunghun Lee wrote:
+> This patch fixes some comments about return type.
+> 
+> Signed-off-by: Seunghun Lee <waydi1@gmail.com>
+> ---
+>  fs/ubifs/recovery.c |    4 ++--
+>  fs/ubifs/scan.c     |    5 ++---
+>  2 files changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/ubifs/recovery.c b/fs/ubifs/recovery.c
+> index c14adb2..933dda5 100644
+> --- a/fs/ubifs/recovery.c
+> +++ b/fs/ubifs/recovery.c
+> @@ -629,8 +629,8 @@ static void drop_last_node(struct ubifs_scan_leb *sleb, int *offs)
+>   *
+>   * This function does a scan of a LEB, but caters for errors that might have
+>   * been caused by the unclean unmount from which we are attempting to recover.
+> - * Returns %0 in case of success, %-EUCLEAN if an unrecoverable corruption is
+> - * found, and a negative error code in case of failure.
+> + * Returns the scaned information on success and a negative error code on
 
-On 07/01/2014 02:42 PM, Alexandre Belloni wrote:
+                  scanned
 
->>>>> Well, there is nothing specific about the Berlin CI. Some subsystems
->>>>> use the 'generic' keyword in these cases. Do you see a particular reason
->>>>> I should use some Berlin related compatible here?
+> + * failure.
+>   */
+>  struct ubifs_scan_leb *ubifs_recover_leb(struct ubifs_info *c, int lnum,
+>  					 int offs, void *sbuf, int jhead)
+> diff --git a/fs/ubifs/scan.c b/fs/ubifs/scan.c
+> index 58aa05d..327d84a 100644
+> --- a/fs/ubifs/scan.c
+> +++ b/fs/ubifs/scan.c
+> @@ -131,7 +131,8 @@ int ubifs_scan_a_node(const struct ubifs_info *c, void *buf, int len, int lnum,
+>   * @offs: offset to start at (usually zero)
+>   * @sbuf: scan buffer (must be c->leb_size)
+>   *
+> - * This function returns %0 on success and a negative error code on failure.
+> + * This function returns the scaned information on success and a negative error
 
->>>> Not must, one suggestion is: can you change the compatible string
->>>> to "chipidea-usb-generic"?
+                                scanned
 
->>> I don't know about ChipIdea/ARC/DW's product portfolio but I guess
->>> the compatible should also carry '2.0' or 'usb2' in it. Or we just
->>> use some version number like 'chipidea,ci13000' or 'chipidea,ci13xxx'.
+> + * code on failure.
+>   */
+>  struct ubifs_scan_leb *ubifs_start_scan(const struct ubifs_info *c, int lnum,
+>  					int offs, void *sbuf)
 
->> The recommended format for compatible string is: "manufacturer,model",
->> I agree with "chipidea,ci13xxx", thanks.
 
-> I think we should probably avoid using wildcards in the compatible
-> string.
-
-    I'm sure wildcards shouldn't be allowed there. :-)
-
-WBR, Sergei
-
+-- 
+~Randy
