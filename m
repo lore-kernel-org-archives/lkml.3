@@ -1,121 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758805AbaGAUZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 16:25:10 -0400
-Received: from mout.gmx.net ([212.227.17.21]:57489 "EHLO mout.gmx.net"
+	id S1758672AbaGAU0V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 16:26:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5266 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754995AbaGAUZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 16:25:08 -0400
-Message-ID: <53B3191C.3050706@gmx.de>
-Date: Tue, 01 Jul 2014 22:25:00 +0200
-From: Hartmut Knaack <knaack.h@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26.1
+	id S1752100AbaGAU0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 16:26:20 -0400
+Date: Tue, 1 Jul 2014 16:25:40 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org,
+        greg@kroah.com, bp@alien8.de, dyoung@redhat.com, chaowang@redhat.com,
+        bhe@redhat.com
+Subject: Re: [PATCH 09/15] kexec: Implementation of new syscall
+ kexec_file_load
+Message-ID: <20140701202540.GC19352@redhat.com>
+References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
+ <1403814824-7587-10-git-send-email-vgoyal@redhat.com>
+ <20140626135826.d1679d6eb5b7bd0f82dd7deb@linux-foundation.org>
+ <20140627163141.GE13337@redhat.com>
 MIME-Version: 1.0
-To: Himangi Saraogi <himangi774@gmail.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio:trigger: Introduce the use of devm_kzalloc
-References: <20140701183858.GA2939@himangi-Dell>
-In-Reply-To: <20140701183858.GA2939@himangi-Dell>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:yo1kNxOArVZlOnqWwGoy1sQuxTpw3qPstHAmqZrGmcWuDIIxCBr
- DbwJ+ZPVj6p/nviWfgTv/On/+ZviUFE6QcwZJPcz+RyozEpnn6vIcdAHvG4gvIfH0PPK4Xh
- JoiGjVTmqjGOWRHAX+wNWAPfBfa+DesGGQJhuw2s3+F+xEW6KlLib4qJcLGg0cn3LqbLPhY
- 3OBJ3bg5Qo+6ZAIvhZvmg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140627163141.GE13337@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Himangi Saraogi schrieb:
-> This patch introduces the use of the managed version of kzalloc and
-> removes the kfrees in the probe and remove functions. Also, the labels
-> are renamed to order them.
-Since you are already on it, better drop label "out" and return the errorcode immediately after checking for errors.
->
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-> ---
->  drivers/staging/iio/trigger/iio-trig-bfin-timer.c | 19 ++++++++-----------
->  1 file changed, 8 insertions(+), 11 deletions(-)
->
-> diff --git a/drivers/staging/iio/trigger/iio-trig-bfin-timer.c b/drivers/staging/iio/trigger/iio-trig-bfin-timer.c
-> index 16f1a06..cc858aa 100644
-> --- a/drivers/staging/iio/trigger/iio-trig-bfin-timer.c
-> +++ b/drivers/staging/iio/trigger/iio-trig-bfin-timer.c
-> @@ -182,7 +182,7 @@ static int iio_bfin_tmr_trigger_probe(struct platform_device *pdev)
->  	unsigned int config;
->  	int ret;
->  
-> -	st = kzalloc(sizeof(*st), GFP_KERNEL);
-> +	st = devm_kzalloc(&pdev->dev, sizeof(*st), GFP_KERNEL);
->  	if (st == NULL) {
->  		ret = -ENOMEM;
->  		goto out;
-> @@ -192,12 +192,12 @@ static int iio_bfin_tmr_trigger_probe(struct platform_device *pdev)
->  	if (!st->irq) {
->  		dev_err(&pdev->dev, "No IRQs specified");
->  		ret = -ENODEV;
-> -		goto out1;
-> +		goto out;
->  	}
->  
->  	ret = iio_bfin_tmr_get_number(st->irq);
->  	if (ret < 0)
-> -		goto out1;
-> +		goto out;
->  
->  	st->timer_num = ret;
->  	st->t = &iio_bfin_timer_code[st->timer_num];
-> @@ -205,7 +205,7 @@ static int iio_bfin_tmr_trigger_probe(struct platform_device *pdev)
->  	st->trig = iio_trigger_alloc("bfintmr%d", st->timer_num);
->  	if (!st->trig) {
->  		ret = -ENOMEM;
-> -		goto out1;
-> +		goto out;
->  	}
->  
->  	st->trig->ops = &iio_bfin_tmr_trigger_ops;
-> @@ -213,14 +213,14 @@ static int iio_bfin_tmr_trigger_probe(struct platform_device *pdev)
->  	iio_trigger_set_drvdata(st->trig, st);
->  	ret = iio_trigger_register(st->trig);
->  	if (ret)
-> -		goto out2;
-> +		goto out1;
->  
->  	ret = request_irq(st->irq, iio_bfin_tmr_trigger_isr,
->  			  0, st->trig->name, st);
->  	if (ret) {
->  		dev_err(&pdev->dev,
->  			"request IRQ-%d failed", st->irq);
-> -		goto out4;
-> +		goto out2;
->  	}
->  
->  	config = PWM_OUT | PERIOD_CNT | IRQ_ENA;
-> @@ -260,12 +260,10 @@ static int iio_bfin_tmr_trigger_probe(struct platform_device *pdev)
->  	return 0;
->  out_free_irq:
->  	free_irq(st->irq, st);
-> -out4:
-> -	iio_trigger_unregister(st->trig);
->  out2:
-> -	iio_trigger_put(st->trig);
-> +	iio_trigger_unregister(st->trig);
->  out1:
-> -	kfree(st);
-> +	iio_trigger_put(st->trig);
->  out:
->  	return ret;
->  }
-> @@ -280,7 +278,6 @@ static int iio_bfin_tmr_trigger_remove(struct platform_device *pdev)
->  	free_irq(st->irq, st);
->  	iio_trigger_unregister(st->trig);
->  	iio_trigger_put(st->trig);
-> -	kfree(st);
->  
->  	return 0;
->  }
+On Fri, Jun 27, 2014 at 12:31:41PM -0400, Vivek Goyal wrote:
+> On Thu, Jun 26, 2014 at 01:58:26PM -0700, Andrew Morton wrote:
+> 
+> [..]
+> > > +	while (pos < stat.size) {
+> > > +		bytes = kernel_read(f.file, pos, (char *)(*buf) + pos,
+> > > +				    stat.size - pos);
+> > > +		if (bytes < 0) {
+> > > +			vfree(*buf);
+> > > +			ret = bytes;
+> > > +			goto out;
+> > > +		}
+> > > +
+> > > +		if (bytes == 0)
+> > > +			break;
+> > 
+> > Here we can get a short read: (pos < stat.size).  Seems to me that it
+> > is risky to return this result to the caller as if all is well.
+> 
+> Hi Andrew,
+> 
+> That's a good point. Please find attached the patch which fixes both
+> the issues.
+> 
+> Thanks
+> Vivek
+> 
+> 
+> 
 
+Hi Andrew,
+
+Based on your feedback, I wrote following patch. Does it look good to
+you. If yes, can you please include this one too. Do let me know if you
+want me to post it separately.
+
+Thanks
+Vivek
+
+> Subject: kexec: Return error if file bytes are less then file size 
+> 
+> If number of bytes read from file are not same as file size, return error.
+> 
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  kernel/kexec.c |    8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6/kernel/kexec.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/kexec.c	2014-06-27 09:55:41.826755422 -0400
+> +++ linux-2.6/kernel/kexec.c	2014-06-27 10:04:23.409024171 -0400
+> @@ -343,7 +343,7 @@ out_free_image:
+>  static int copy_file_from_fd(int fd, void **buf, unsigned long *buf_len)
+>  {
+>  	struct fd f = fdget(fd);
+> -	int ret = 0;
+> +	int ret;
+>  	struct kstat stat;
+>  	loff_t pos;
+>  	ssize_t bytes = 0;
+> @@ -387,6 +387,12 @@ static int copy_file_from_fd(int fd, voi
+>  		pos += bytes;
+>  	}
+>  
+> +	if (pos != stat.size) {
+> +		ret = -EBADF;
+> +		vfree(*buf);
+> +		goto out;
+> +	}
+> +
+>  	*buf_len = pos;
+>  out:
+>  	fdput(f);
