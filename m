@@ -1,162 +1,363 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477AbaGAGcV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 02:32:21 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60550 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751269AbaGAGcT convert rfc822-to-8bit (ORCPT
+	id S1752943AbaGAGcb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 02:32:31 -0400
+Received: from mail-ob0-f201.google.com ([209.85.214.201]:44337 "EHLO
+	mail-ob0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587AbaGAGc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 02:32:19 -0400
-Date: Tue, 1 Jul 2014 08:32:14 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: =?UTF-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Mike Turquette <mturquette@linaro.org>, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Uwe =?UTF-8?B?S2xlaW5lLUvDtm5p?= =?UTF-8?B?Zw==?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Michal Simek <michal.simek@xilinx.com>, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/4] clk: Introduce 'clk_find_nearest_rate()'
-Message-ID: <20140701083214.5b31295e@bbrezillon>
-In-Reply-To: <475a8ee0-11aa-4fad-94dc-9e5360f298d2@BL2FFO11FD028.protection.gbl>
-References: <1404147396-8041-1-git-send-email-soren.brinkmann@xilinx.com>
-	<1404147396-8041-2-git-send-email-soren.brinkmann@xilinx.com>
-	<20140630212707.1eb44db6@bbrezillon>
-	<475a8ee0-11aa-4fad-94dc-9e5360f298d2@BL2FFO11FD028.protection.gbl>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 1 Jul 2014 02:32:28 -0400
+From: Ben Chan <benchan@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Michalis Pappas <mpappas@fastmail.fm>
+Subject: [PATCH] staging: gdm72xx: clean up endianness conversions
+Date: Mon, 30 Jun 2014 23:32:27 -0700
+Message-Id: <1404196347-28460-1-git-send-email-benchan@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sören,
+This patch cleans up the endianness conversions in the gdm72xx driver:
+- Directly use the generic byte-reordering macros for endianness
+  conversion instead of some custom-defined macros.
+- Convert values on the constant side instead of the variable side when
+  appropriate.
+- Add endianness annotations.
 
-On Mon, 30 Jun 2014 17:12:23 -0700
-Sören Brinkmann <soren.brinkmann@xilinx.com> wrote:
+Signed-off-by: Ben Chan <benchan@chromium.org>
+---
+ drivers/staging/gdm72xx/gdm_qos.c   |  4 +--
+ drivers/staging/gdm72xx/gdm_sdio.c  |  5 +--
+ drivers/staging/gdm72xx/gdm_usb.c   | 12 +++----
+ drivers/staging/gdm72xx/gdm_wimax.c | 64 +++++++++++++++++++------------------
+ drivers/staging/gdm72xx/gdm_wimax.h | 10 ------
+ drivers/staging/gdm72xx/hci.h       |  6 ++--
+ drivers/staging/gdm72xx/usb_boot.c  | 10 +++---
+ 7 files changed, 49 insertions(+), 62 deletions(-)
 
-> Hi Boris,
-> 
-> On Mon, 2014-06-30 at 09:27PM +0200, Boris BREZILLON wrote:
-> > Hello Soren,
-> > 
-> > On Mon, 30 Jun 2014 09:56:33 -0700
-> > Soren Brinkmann <soren.brinkmann@xilinx.com> wrote:
-> > 
-> > > Introduce a new API function to find the rate a clock can provide
-> > > which is closest to a given rate.
-> > > 
-> > > clk_round_rate() leaves it to the clock driver how rounding is
-> > > done. Commonly implementations round down due to use-cases that
-> > > have a certain frequency maximum that must not be exceeded.
-> > 
-> > I had the same concern (how could a driver decide whether it should
-> > round up, down or to the closest value), but had a slightly
-> > different approach in mind.
-> > 
-> > AFAIU, you're assuming the clock is always a power of two (which is
-> > true most of the time, but some clock implementation might differ,
-> > i.e. a PLL accept any kind of multiplier not necessarily a power of
-> > 2).
-> 
-> No, the idea is to always work. There should not be any such
-> limitation. Where do you see that?
-
-My bad, I should have read the code more carefully.
-BTW, it could help readers if you add some comments to explain how you
-are finding the nearest rate.
-
-My main concern with this approach is that you can spend some time
-iterating to find the nearest rate where a clk driver would find it
-quite quickly (because it knows exactly how the clk works and what are
-the possible clk muxing and clk modifiers options).
-
-> 
-> > 
-> > How about improving the clk_ops interface instead by adding a new
-> > method
-> > 
-> > 	long (*round_rate_with_constraint)(struct clk_hw *hw,
-> > 					   unsigned long
-> > requested_rate, unsigned long *parent_rate,
-> > 					   enum clk_round_type
-> > type);
-> > 
-> > with
-> > 
-> > enum clk_round_type {
-> > 	CLK_ROUND_DOWN,
-> > 	CLK_ROUND_UP,
-> > 	CLK_ROUND_CLOSEST,
-> > };
-> 
-> I thought about that, but the find_nearest() did already exist more or
-> less and in the end it is not much of a difference, IMHO. If it turns
-> out that the others are needed as well and somebody implements it,
-> they could be added as another convenience function like I did,
-> and/or it could be wrapped in the function you propose here.
->
-> > 
-> > or just adding these 3 methods:
-> > 
-> > 	long (*round_rate_up)(struct clk_hw *hw,
-> > 			      unsigned long requested_rate,
-> > 			      unsigned long *parent_rate);
-> > 
-> > 	long (*round_rate_down)(struct clk_hw *hw,
-> > 				unsigned long requested_rate,
-> > 				unsigned long *parent_rate);
-> > 
-> > 	long (*round_rate_closest)(struct clk_hw *hw,
-> > 				   unsigned long requested_rate,
-> > 				   unsigned long *parent_rate);
-> 
-> That would be quite a change for clock drivers. So far, there are not
-> many restrictions on round_rate. I think there has already been a
-> discussion in this direction that went nowhere.
-> https://lkml.org/lkml/2010/7/14/260
-> 
-
-Not if we keep these (or this, depending on the solution you chose)
-functions optional, and return -ENOTSUP, if they're not implemented.
-
-> > 
-> > and let the round_rate method implement the default behaviour.
-> 
-> There is no real default. Rounding is not specified for the current
-> API.
-
-What I meant by default behavior is the behavior already implemented by
-the clock driver (either round up, down or closest).
-This way you do not introduce regressions with existing users, and can
-use new methods in new use cases.
-
-> 
-> > 
-> > This way you could add 3 functions to the API:
-> > 
-> > clk_round_closest (or clk_find_nearest_rate as you called it),
-> > clk_round_up and clk_round_down, and let the clk driver
-> > implementation return the appropriate rate.
-> 
-> I'd say the current patch set does kind of align with that, doesn't
-> it? We can add the find_nearest_rate() (there was a discussion on the
-> name, ane we decided against round_closest in favor of the current
-> proposal) now and the other functions could be added later if people
-> find them to be useful. And if they all get added we can think about
-> consolidating them if it made sense.
-
-Yes sure.
-
-Best Regards,
-
-Boris
-
+diff --git a/drivers/staging/gdm72xx/gdm_qos.c b/drivers/staging/gdm72xx/gdm_qos.c
+index b08c8e1..af24c57 100644
+--- a/drivers/staging/gdm72xx/gdm_qos.c
++++ b/drivers/staging/gdm72xx/gdm_qos.c
+@@ -24,8 +24,6 @@
+ #include "hci.h"
+ #include "gdm_qos.h"
+ 
+-#define B2H(x)	__be16_to_cpu(x)
+-
+ #define MAX_FREE_LIST_CNT		32
+ static struct {
+ 	struct list_head head;
+@@ -266,7 +264,7 @@ int gdm_qos_send_hci_pkt(struct sk_buff *skb, struct net_device *dev)
+ 
+ 	tcph = (struct tcphdr *)iph + iph->ihl*4;
+ 
+-	if (B2H(ethh->h_proto) == ETH_P_IP) {
++	if (ethh->h_proto == cpu_to_be16(ETH_P_IP)) {
+ 		if (qcb->qos_list_cnt && !qos_free_list.cnt) {
+ 			entry = alloc_qos_entry();
+ 			entry->skb = skb;
+diff --git a/drivers/staging/gdm72xx/gdm_sdio.c b/drivers/staging/gdm72xx/gdm_sdio.c
+index 9d2de6f..a903173 100644
+--- a/drivers/staging/gdm72xx/gdm_sdio.c
++++ b/drivers/staging/gdm72xx/gdm_sdio.c
+@@ -275,8 +275,9 @@ static void send_sdu(struct sdio_func *func, struct tx_cxt *tx)
+ 	aggr_len = pos;
+ 
+ 	hci = (struct hci_s *)(tx->sdu_buf + TYPE_A_HEADER_SIZE);
+-	hci->cmd_evt = H2B(WIMAX_TX_SDU_AGGR);
+-	hci->length = H2B(aggr_len - TYPE_A_HEADER_SIZE - HCI_HEADER_SIZE);
++	hci->cmd_evt = cpu_to_be16(WIMAX_TX_SDU_AGGR);
++	hci->length = cpu_to_be16(aggr_len - TYPE_A_HEADER_SIZE -
++				  HCI_HEADER_SIZE);
+ 
+ 	spin_unlock_irqrestore(&tx->lock, flags);
+ 
+diff --git a/drivers/staging/gdm72xx/gdm_usb.c b/drivers/staging/gdm72xx/gdm_usb.c
+index 971976c..5a6b86a 100644
+--- a/drivers/staging/gdm72xx/gdm_usb.c
++++ b/drivers/staging/gdm72xx/gdm_usb.c
+@@ -36,10 +36,6 @@ MODULE_DEVICE_TABLE(usb, id_table);
+ 
+ #define GDM7205_PADDING		256
+ 
+-#define H2B(x)		__cpu_to_be16(x)
+-#define B2H(x)		__be16_to_cpu(x)
+-#define DB2H(x)		__be32_to_cpu(x)
+-
+ #define DOWNLOAD_CONF_VALUE	0x21
+ 
+ #ifdef CONFIG_WIMAX_GDM72XX_K_MODE
+@@ -541,9 +537,9 @@ static int gdm_usb_probe(struct usb_interface *intf,
+ 	bConfigurationValue = usbdev->actconfig->desc.bConfigurationValue;
+ 
+ 	/*USB description is set up with Little-Endian*/
+-	idVendor = L2H(usbdev->descriptor.idVendor);
+-	idProduct = L2H(usbdev->descriptor.idProduct);
+-	bcdDevice = L2H(usbdev->descriptor.bcdDevice);
++	idVendor = le16_to_cpu(usbdev->descriptor.idVendor);
++	idProduct = le16_to_cpu(usbdev->descriptor.idProduct);
++	bcdDevice = le16_to_cpu(usbdev->descriptor.bcdDevice);
+ 
+ 	dev_info(&intf->dev, "Found GDM USB VID = 0x%04x PID = 0x%04x...\n",
+ 		 idVendor, idProduct);
+@@ -626,7 +622,7 @@ static void gdm_usb_disconnect(struct usb_interface *intf)
+ 	phy_dev = usb_get_intfdata(intf);
+ 
+ 	/*USB description is set up with Little-Endian*/
+-	idProduct = L2H(usbdev->descriptor.idProduct);
++	idProduct = le16_to_cpu(usbdev->descriptor.idProduct);
+ 
+ 	if (idProduct != EMERGENCY_PID &&
+ 	    bConfigurationValue != DOWNLOAD_CONF_VALUE &&
+diff --git a/drivers/staging/gdm72xx/gdm_wimax.c b/drivers/staging/gdm72xx/gdm_wimax.c
+index 4148013..cc3e80a 100644
+--- a/drivers/staging/gdm72xx/gdm_wimax.c
++++ b/drivers/staging/gdm72xx/gdm_wimax.c
+@@ -166,6 +166,7 @@ static void dump_eth_packet(struct net_device *dev, const char *title,
+ static inline int gdm_wimax_header(struct sk_buff **pskb)
+ {
+ 	u16 buf[HCI_HEADER_SIZE / sizeof(u16)];
++	struct hci_s *hci = (struct hci_s *)buf;
+ 	struct sk_buff *skb = *pskb;
+ 
+ 	if (unlikely(skb_headroom(skb) < HCI_HEADER_SIZE)) {
+@@ -181,8 +182,8 @@ static inline int gdm_wimax_header(struct sk_buff **pskb)
+ 	}
+ 
+ 	skb_push(skb, HCI_HEADER_SIZE);
+-	buf[0] = H2B(WIMAX_TX_SDU);
+-	buf[1] = H2B(skb->len - HCI_HEADER_SIZE);
++	hci->cmd_evt = cpu_to_be16(WIMAX_TX_SDU);
++	hci->length = cpu_to_be16(skb->len - HCI_HEADER_SIZE);
+ 	memcpy(skb->data, buf, HCI_HEADER_SIZE);
+ 
+ 	*pskb = skb;
+@@ -409,7 +410,7 @@ static int gdm_wimax_set_config(struct net_device *dev, struct ifmap *map)
+ static void __gdm_wimax_set_mac_addr(struct net_device *dev, char *mac_addr)
+ {
+ 	u16 hci_pkt_buf[32 / sizeof(u16)];
+-	u8 *pkt = (u8 *)&hci_pkt_buf[0];
++	struct hci_s *hci = (struct hci_s *)hci_pkt_buf;
+ 	struct nic *nic = netdev_priv(dev);
+ 
+ 	/* Since dev is registered as a ethernet device,
+@@ -420,13 +421,13 @@ static void __gdm_wimax_set_mac_addr(struct net_device *dev, char *mac_addr)
+ 	/* Let lower layer know of this change by sending
+ 	 * SetInformation(MAC Address)
+ 	 */
+-	hci_pkt_buf[0] = H2B(WIMAX_SET_INFO);	/* cmd_evt */
+-	hci_pkt_buf[1] = H2B(8);			/* size */
+-	pkt[4] = 0; /* T */
+-	pkt[5] = 6; /* L */
+-	memcpy(pkt + 6, mac_addr, dev->addr_len); /* V */
++	hci->cmd_evt = cpu_to_be16(WIMAX_SET_INFO);
++	hci->length = cpu_to_be16(8);
++	hci->data[0] = 0; /* T */
++	hci->data[1] = 6; /* L */
++	memcpy(&hci->data[2], mac_addr, dev->addr_len); /* V */
+ 
+-	gdm_wimax_send(nic, pkt, HCI_HEADER_SIZE + 8);
++	gdm_wimax_send(nic, hci, HCI_HEADER_SIZE + 8);
+ }
+ 
+ /* A driver function */
+@@ -608,6 +609,7 @@ static void gdm_wimax_prepare_device(struct net_device *dev)
+ 	struct hci_s *hci = (struct hci_s *)buf;
+ 	u16 len = 0;
+ 	u32 val = 0;
++	__be32 val_be32;
+ 
+ 	#define BIT_MULTI_CS	0
+ 	#define BIT_WIMAX		1
+@@ -616,9 +618,9 @@ static void gdm_wimax_prepare_device(struct net_device *dev)
+ 
+ 	/* GetInformation mac address */
+ 	len = 0;
+-	hci->cmd_evt = H2B(WIMAX_GET_INFO);
++	hci->cmd_evt = cpu_to_be16(WIMAX_GET_INFO);
+ 	hci->data[len++] = TLV_T(T_MAC_ADDRESS);
+-	hci->length = H2B(len);
++	hci->length = cpu_to_be16(len);
+ 	gdm_wimax_send(nic, hci, HCI_HEADER_SIZE+len);
+ 
+ 	val = (1<<BIT_WIMAX) | (1<<BIT_MULTI_CS);
+@@ -631,16 +633,16 @@ static void gdm_wimax_prepare_device(struct net_device *dev)
+ 
+ 	/* Set capability */
+ 	len = 0;
+-	hci->cmd_evt = H2B(WIMAX_SET_INFO);
++	hci->cmd_evt = cpu_to_be16(WIMAX_SET_INFO);
+ 	hci->data[len++] = TLV_T(T_CAPABILITY);
+ 	hci->data[len++] = TLV_L(T_CAPABILITY);
+-	val = DH2B(val);
+-	memcpy(&hci->data[len], &val, TLV_L(T_CAPABILITY));
++	val_be32 = cpu_to_be32(val);
++	memcpy(&hci->data[len], &val_be32, TLV_L(T_CAPABILITY));
+ 	len += TLV_L(T_CAPABILITY);
+-	hci->length = H2B(len);
++	hci->length = cpu_to_be16(len);
+ 	gdm_wimax_send(nic, hci, HCI_HEADER_SIZE+len);
+ 
+-	netdev_info(dev, "GDM WiMax Set CAPABILITY: 0x%08X\n", DB2H(val));
++	netdev_info(dev, "GDM WiMax Set CAPABILITY: 0x%08X\n", val);
+ }
+ 
+ static int gdm_wimax_hci_get_tlv(u8 *buf, u8 *T, u16 *L, u8 **V)
+@@ -650,7 +652,7 @@ static int gdm_wimax_hci_get_tlv(u8 *buf, u8 *T, u16 *L, u8 **V)
+ 
+ 	*T = buf[0];
+ 	if (buf[1] == 0x82) {
+-		*L = B2H(__U82U16(&buf[2]));
++		*L = be16_to_cpu(__U82U16(&buf[2]));
+ 		next_pos = 1/*type*/+3/*len*/;
+ 	} else {
+ 		*L = buf[1];
+@@ -670,8 +672,8 @@ static int gdm_wimax_get_prepared_info(struct net_device *dev, char *buf,
+ 	u16 cmd_evt, cmd_len;
+ 	int pos = HCI_HEADER_SIZE;
+ 
+-	cmd_evt = B2H(*(u16 *)&buf[0]);
+-	cmd_len = B2H(*(u16 *)&buf[2]);
++	cmd_evt = be16_to_cpup((const __be16 *)&buf[0]);
++	cmd_len = be16_to_cpup((const __be16 *)&buf[2]);
+ 
+ 	if (len < cmd_len + HCI_HEADER_SIZE) {
+ 		netdev_err(dev, "%s: invalid length [%d/%d]\n", __func__,
+@@ -744,13 +746,13 @@ static void gdm_wimax_transmit_aggr_pkt(struct net_device *dev, char *buf,
+ 	while (len > 0) {
+ 		hci = (struct hci_s *)buf;
+ 
+-		if (B2H(hci->cmd_evt) != WIMAX_RX_SDU) {
++		if (hci->cmd_evt != cpu_to_be16(WIMAX_RX_SDU)) {
+ 			netdev_err(dev, "Wrong cmd_evt(0x%04X)\n",
+-				   B2H(hci->cmd_evt));
++				   be16_to_cpu(hci->cmd_evt));
+ 			break;
+ 		}
+ 
+-		length = B2H(hci->length);
++		length = be16_to_cpu(hci->length);
+ 		gdm_wimax_netif_rx(dev, hci->data, length);
+ 
+ 		if (length & 0x3) {
+@@ -775,8 +777,8 @@ static void gdm_wimax_transmit_pkt(struct net_device *dev, char *buf, int len)
+ 	if (len == 0)
+ 		return;
+ 
+-	cmd_evt = B2H(*(u16 *)&buf[0]);
+-	cmd_len = B2H(*(u16 *)&buf[2]);
++	cmd_evt = be16_to_cpup((const __be16 *)&buf[0]);
++	cmd_len = be16_to_cpup((const __be16 *)&buf[2]);
+ 
+ 	if (len < cmd_len + HCI_HEADER_SIZE) {
+ 		if (len)
+@@ -816,14 +818,14 @@ static void gdm_wimax_transmit_pkt(struct net_device *dev, char *buf, int len)
+ static void gdm_wimax_ind_fsm_update(struct net_device *dev, struct fsm_s *fsm)
+ {
+ 	u16 buf[32 / sizeof(u16)];
+-	u8 *hci_pkt_buf = (u8 *)&buf[0];
++	struct hci_s *hci = (struct hci_s *)buf;
+ 
+ 	/* Indicate updating fsm */
+-	buf[0] = H2B(WIMAX_FSM_UPDATE);
+-	buf[1] = H2B(sizeof(struct fsm_s));
+-	memcpy(&hci_pkt_buf[HCI_HEADER_SIZE], fsm, sizeof(struct fsm_s));
++	hci->cmd_evt = cpu_to_be16(WIMAX_FSM_UPDATE);
++	hci->length = cpu_to_be16(sizeof(struct fsm_s));
++	memcpy(&hci->data[0], fsm, sizeof(struct fsm_s));
+ 
+-	gdm_wimax_event_send(dev, hci_pkt_buf,
++	gdm_wimax_event_send(dev, (char *)hci,
+ 			     HCI_HEADER_SIZE + sizeof(struct fsm_s));
+ }
+ 
+@@ -836,8 +838,8 @@ static void gdm_wimax_ind_if_updown(struct net_device *dev, int if_up)
+ 	up_down = if_up ? WIMAX_IF_UP : WIMAX_IF_DOWN;
+ 
+ 	/* Indicate updating fsm */
+-	hci->cmd_evt = H2B(WIMAX_IF_UPDOWN);
+-	hci->length = H2B(sizeof(up_down));
++	hci->cmd_evt = cpu_to_be16(WIMAX_IF_UPDOWN);
++	hci->length = cpu_to_be16(sizeof(up_down));
+ 	hci->data[0] = up_down;
+ 
+ 	gdm_wimax_event_send(dev, (char *)hci, HCI_HEADER_SIZE+sizeof(up_down));
+diff --git a/drivers/staging/gdm72xx/gdm_wimax.h b/drivers/staging/gdm72xx/gdm_wimax.h
+index c640d2c..ae852dd 100644
+--- a/drivers/staging/gdm72xx/gdm_wimax.h
++++ b/drivers/staging/gdm72xx/gdm_wimax.h
+@@ -23,16 +23,6 @@
+ 
+ #define DRIVER_VERSION		"3.2.3"
+ 
+-#define H2L(x)		__cpu_to_le16(x)
+-#define L2H(x)		__le16_to_cpu(x)
+-#define DH2L(x)		__cpu_to_le32(x)
+-#define DL2H(x)		__le32_to_cpu(x)
+-
+-#define H2B(x)		__cpu_to_be16(x)
+-#define B2H(x)		__be16_to_cpu(x)
+-#define DH2B(x)		__cpu_to_be32(x)
+-#define DB2H(x)		__be32_to_cpu(x)
+-
+ struct phy_dev {
+ 	void			*priv_dev;
+ 	struct net_device	*netdev;
+diff --git a/drivers/staging/gdm72xx/hci.h b/drivers/staging/gdm72xx/hci.h
+index ff6941e..dd2931d 100644
+--- a/drivers/staging/gdm72xx/hci.h
++++ b/drivers/staging/gdm72xx/hci.h
+@@ -199,9 +199,9 @@
+ #define T_DUPLEX_MODE			(0xdb	| (4 << 16))
+ 
+ struct hci_s {
+-	unsigned short cmd_evt;
+-	unsigned short length;
+-	unsigned char  data[0];
++	__be16	cmd_evt;
++	__be16	length;
++	u8	data[0];
+ } __packed;
+ 
+ #endif /* __GDM72XX_HCI_H__ */
+diff --git a/drivers/staging/gdm72xx/usb_boot.c b/drivers/staging/gdm72xx/usb_boot.c
+index d59bac8..3ccc447 100644
+--- a/drivers/staging/gdm72xx/usb_boot.c
++++ b/drivers/staging/gdm72xx/usb_boot.c
+@@ -36,8 +36,8 @@
+ #define FW_FS			"ramdisk.jffs2"
+ 
+ struct dn_header {
+-	u32	magic_num;
+-	u32	file_size;
++	__be32	magic_num;
++	__be32	file_size;
+ };
+ 
+ struct img_header {
+@@ -69,7 +69,7 @@ static void array_le32_to_cpu(u32 *arr, int num)
+ 	int i;
+ 
+ 	for (i = 0; i < num; i++, arr++)
+-		*arr = __le32_to_cpu(*arr);
++		le32_to_cpus(arr);
+ }
+ 
+ static u8 *tx_buf;
+@@ -115,8 +115,8 @@ static int download_image(struct usb_device *usbdev,
+ 	u32 size;
+ 
+ 	size = ALIGN(img_len, DOWNLOAD_SIZE);
+-	h.magic_num = __cpu_to_be32(magic_num);
+-	h.file_size = __cpu_to_be32(size);
++	h.magic_num = cpu_to_be32(magic_num);
++	h.file_size = cpu_to_be32(size);
+ 
+ 	ret = gdm_wibro_send(usbdev, &h, sizeof(h));
+ 	if (ret < 0)
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+2.0.0.526.g5318336
+
