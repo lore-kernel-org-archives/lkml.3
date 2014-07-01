@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112AbaGAVlM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:41:12 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:45715 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195AbaGAVlK (ORCPT
+	id S1754850AbaGAVrf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:47:35 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:32880 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676AbaGAVre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:41:10 -0400
-Date: Tue, 1 Jul 2014 17:41:06 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org,
-        "Jason J. Herne" <jjherne@linux.vnet.ibm.com>,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH 2/2] workqueue: stronger test in process_one_work()
-Message-ID: <20140701214106.GJ12459@htj.dyndns.org>
-References: <1401780809-12331-1-git-send-email-laijs@cn.fujitsu.com>
- <1401780809-12331-2-git-send-email-laijs@cn.fujitsu.com>
+	Tue, 1 Jul 2014 17:47:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401780809-12331-2-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CALCETrXy3ft8AipAm=_u9OJb-t+FF=AfvXBke4pTh5a25nTcFA@mail.gmail.com>
+References: <CALCETrXy3ft8AipAm=_u9OJb-t+FF=AfvXBke4pTh5a25nTcFA@mail.gmail.com>
+Date: Tue, 1 Jul 2014 14:47:33 -0700
+X-Google-Sender-Auth: 6bi9xYHtLHAHSCh2-w2rAOg7eR0
+Message-ID: <CAGXu5jJAdr8mJttE_7XrV0Dj2UEQ-LgyEwNs5txA_mC66Qgm6Q@mail.gmail.com>
+Subject: Re: Seccomp performance vs. asm complexity
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 03, 2014 at 03:33:28PM +0800, Lai Jiangshan wrote:
-> When POOL_DISASSOCIATED is cleared, the running worker's local CPU should
-> be the same as pool->cpu without any exception even during cpu-hotplug.
-> 
-> This fix changes "(proposition_A && proposition_B && proposition_C)"
-> to "(proposition_B && proposition_C)", so if the old compound proposition
-> is true, the new one must be true too. so this fix will not hide any
-> possible bug which can be hit by old test.
-> 
-> CC: Jason J. Herne <jjherne@linux.vnet.ibm.com>
-> CC: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+On Tue, Jul 1, 2014 at 1:18 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> This is a question about tradeoffs.  I'm playing with a couple of
+> approaches for an x86 seccomp fast path.
+>
+> It looks like populating struct seccomp_data in the syscall entry asm
+> code saves 4-5ns (83ns vs 87.7ns or so for getpid with seccomp
+> enabled).  Presumably this is because it avoids a branch and replaces
+> seven two-instruction memory copies with 6 register pushes and one
+> memory push.  It also keeps the code shorter, with corresponding
+> icache benefits.
+>
+> OTOH, populating struct seccomp_data in C keeps the asm code shorter
+> and simpler.  In fast, it ends up being a net deletion of asm code.
+>
+> Thoughts?  What's a line of assembly code worth?  Keep in mind that
+> someone will probably want to port this to the x86_32 and compat
+> entries.
 
-Oops, thought I applied them.
+My feeling is that keeping it maintainable/readable should probably
+take precedence over 5ns. The syscall entry points are already
+complex, and already very security-sensitive, so my
+(security-conservative) instincts are for robustness over speed.
 
-Applied to wq/for-3.17 w/ minor updates.
+> To keep this in perspective, this is down from >200ns in 3.16-rc3.
+>
+> My current code is here:
+>
+> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/log/?h=x86/seccomp-fastpath
+>
+> I think it's in pretty good shape, but I still want to play with it a
+> bit before sending it out.  This version uses the C approach.
 
-Thanks.
+This looks really great!
+
+-Kees
 
 -- 
-tejun
+Kees Cook
+Chrome OS Security
