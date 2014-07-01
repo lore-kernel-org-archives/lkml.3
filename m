@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758744AbaGAVxn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:53:43 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.220]:38912 "EHLO
+	id S1758811AbaGAVxs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:53:48 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.216]:53434 "EHLO
 	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757831AbaGAVxl (ORCPT
+	with ESMTP id S1757885AbaGAVxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:53:41 -0400
+	Tue, 1 Jul 2014 17:53:43 -0400
 X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
 X-RZG-CLASS-ID: mo00
 From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 14/50] mars: add new file drivers/block/mars/lib_rank.c
-Date: Tue,  1 Jul 2014 23:46:54 +0200
-Message-Id: <1404251250-22992-15-git-send-email-tst@schoebel-theuer.de>
+Subject: [PATCH 37/50] mars: add new file include/linux/xio/xio_trans_logger.h
+Date: Tue,  1 Jul 2014 23:47:17 +0200
+Message-Id: <1404251250-22992-38-git-send-email-tst@schoebel-theuer.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
@@ -23,89 +23,265 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 ---
- drivers/block/mars/lib_rank.c | 73 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 73 insertions(+)
- create mode 100644 drivers/block/mars/lib_rank.c
+ include/linux/xio/xio_trans_logger.h | 249 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 249 insertions(+)
+ create mode 100644 include/linux/xio/xio_trans_logger.h
 
-diff --git a/drivers/block/mars/lib_rank.c b/drivers/block/mars/lib_rank.c
+diff --git a/include/linux/xio/xio_trans_logger.h b/include/linux/xio/xio_trans_logger.h
 new file mode 100644
-index 0000000..384cb61
+index 0000000..f499f42
 --- /dev/null
-+++ b/drivers/block/mars/lib_rank.c
-@@ -0,0 +1,73 @@
++++ b/include/linux/xio/xio_trans_logger.h
+@@ -0,0 +1,249 @@
 +/*  (c) 2010 Thomas Schoebel-Theuer / 1&1 Internet AG */
-+/*  (c) 2012 Thomas Schoebel-Theuer */
++#ifndef XIO_TRANS_LOGGER_H
++#define XIO_TRANS_LOGGER_H
 +
-+#include <linux/kernel.h>
-+#include <linux/module.h>
++#define REGION_SIZE_BITS		(PAGE_SHIFT + 4)
++#define REGION_SIZE			(1 << REGION_SIZE_BITS)
++#define LOGGER_QUEUES			4
 +
-+#include <linux/brick/lib_rank.h>
++#include <linux/time.h>
 +
-+void ranking_compute(struct rank_data *rkd, const struct rank_info rki[], int x)
-+{
-+	int points = 0;
-+	int i;
++#include <linux/xio.h>
++#include <linux/lib_log.h>
++#include <linux/brick/lib_pairing_heap.h>
++#include <linux/brick/lib_queue.h>
++#include <linux/brick/lib_timing.h>
 +
-+	for (i = 0; ; i++) {
-+		int x0;
-+		int x1;
-+		int y0;
-+		int y1;
++/************************ global tuning ***********************/
 +
-+		x0 = rki[i].rki_x;
-+		if (x < x0)
-+			break;
++/* 0 = early completion of all writes
++ * 1 = early completion of non-sync
++ * 2 = late completion
++ */
++extern int trans_logger_completion_semantics;
++extern int trans_logger_do_crc;
++extern int trans_logger_mem_usage; /*  in KB */
++extern int trans_logger_max_interleave;
++extern int trans_logger_resume;
++extern int trans_logger_replay_timeout; /*  in s */
++extern atomic_t   global_mshadow_count;
++extern atomic64_t global_mshadow_used;
 +
-+		x1 = rki[i+1].rki_x;
++struct writeback_group {
++	rwlock_t lock;
++	struct trans_logger_brick *leader;
++	loff_t biggest;
++	struct list_head group_anchor;
 +
-+		if (unlikely(x1 == RKI_DUMMY)) {
-+			points = rki[i].rki_y;
-+			break;
-+		}
++	/*  tuning */
++	struct xio_limiter limiter;
++	int until_percent;
++};
 +
-+		if (x > x1)
-+			continue;
++extern struct writeback_group global_writeback;
 +
-+		y0 = rki[i].rki_y;
-+		y1 = rki[i+1].rki_y;
++/******************************************************************/
 +
-+		/*  linear interpolation */
-+		points = ((long long)(x - x0) * (long long)(y1 - y0)) / (x1 - x0) + y0;
-+		break;
-+	}
-+	rkd->rkd_tmp += points;
-+}
-+EXPORT_SYMBOL_GPL(ranking_compute);
++_PAIRING_HEAP_TYPEDEF(logger, /*empty*/)
 +
-+int ranking_select(struct rank_data rkd[], int rkd_count)
-+{
-+	int res = -1;
-+	long long max = LLONG_MIN / 2;
-+	int i;
++struct logger_queue {
++	QUEUE_ANCHOR(logger, loff_t, logger);
++	struct trans_logger_brick *q_brick;
++	const char *q_insert_info;
++	const char *q_pushback_info;
++	const char *q_fetch_info;
++	struct banning q_banning;
++	int no_progress_count;
++	int pushback_count;
++};
 +
-+	for (i = 0; i < rkd_count; i++) {
-+		struct rank_data *tmp = &rkd[i];
-+		long long rest = tmp->rkd_current_points;
++struct logger_head {
++	struct list_head lh_head;
++	loff_t *lh_pos;
++	struct pairing_heap_logger ph;
++};
 +
-+		if (rest <= 0)
-+			continue;
-+		/* rest -= tmp->rkd_got; */
-+		if (rest > max) {
-+			max = rest;
-+			res = i;
-+		}
-+	}
-+	/* Prevent underflow in the long term
-+	 * and reset the "clocks" after each round of
-+	 * weighted round-robin selection.
-+	 */
-+	if (max < 0 && res >= 0) {
-+		for (i = 0; i < rkd_count; i++)
-+			rkd[i].rkd_got += max;
-+	}
-+	return res;
-+}
-+EXPORT_SYMBOL_GPL(ranking_select);
++/******************************************************************/
++
++#define TL_INPUT_READ			0
++#define TL_INPUT_WRITEBACK		0
++#define TL_INPUT_LOG1			1
++#define TL_INPUT_LOG2			2
++#define TL_INPUT_NR			3
++
++struct writeback_info {
++	struct trans_logger_brick *w_brick;
++	struct logger_head w_lh;
++	loff_t w_pos;
++	int    w_len;
++	int    w_error;
++
++	struct list_head w_collect_list;   /*  list of collected orig requests */
++	struct list_head w_sub_read_list;  /*  for saving the old data before overwrite */
++	struct list_head w_sub_write_list; /*  for overwriting */
++	atomic_t w_sub_read_count;
++	atomic_t w_sub_write_count;
++	atomic_t w_sub_log_count;
++
++	/* make checkpatch.pl happy with a blank line - is this a false positive? */
++
++	void (*read_endio)(struct generic_callback *cb);
++	void (*write_endio)(struct generic_callback *cb);
++};
++
++struct trans_logger_aio_aspect {
++	GENERIC_ASPECT(aio);
++	struct trans_logger_brick *my_brick;
++	struct trans_logger_input *my_input;
++	struct trans_logger_input *log_input;
++	struct logger_head lh;
++	struct list_head hash_head;
++	struct list_head pos_head;
++	struct list_head replay_head;
++	struct list_head collect_head;
++	struct pairing_heap_logger ph;
++	struct trans_logger_aio_aspect *shadow_aio;
++	struct trans_logger_aio_aspect *orig_aio_a;
++	void  *shadow_data;
++	int    orig_rw;
++	int    wb_error;
++	bool   do_dealloc;
++	bool   do_buffered;
++	bool   is_hashed;
++	bool   is_stable;
++	bool   is_dirty;
++	bool   is_collected;
++	bool   is_fired;
++	bool   is_completed;
++	bool   is_persistent;
++	bool   is_emergency;
++	struct timespec stamp;
++	loff_t log_pos;
++	struct generic_callback cb;
++	struct writeback_info *wb;
++	struct list_head sub_list;
++	struct list_head sub_head;
++	int    total_sub_count;
++	int    alloc_len;
++	atomic_t current_sub_count;
++};
++
++struct trans_logger_hash_anchor;
++
++struct trans_logger_brick {
++	XIO_BRICK(trans_logger);
++	/*  parameters */
++	struct xio_limiter *replay_limiter;
++
++	int shadow_mem_limit; /*  max # master shadows */
++	bool replay_mode;   /*	mode of operation */
++	bool continuous_replay_mode;   /*  mode of operation */
++	bool log_reads;   /*  additionally log pre-images */
++	bool cease_logging; /*	direct IO without logging (only in case of EMERGENCY) */
++	loff_t replay_start_pos; /*  where to start replay */
++	loff_t replay_end_pos;	 /*  end of replay */
++	int new_input_nr;   /*	whereto we should switchover ASAP */
++	int replay_tolerance; /*  how many bytes to ignore at truncated logfiles */
++	/*  readonly from outside */
++	loff_t replay_current_pos;   /*  end of replay */
++	int log_input_nr;   /*	where we are currently logging to */
++	int old_input_nr;   /*	where old IO requests may be on the fly */
++	int replay_code;    /*	replay errors (if any) */
++	bool stopped_logging; /*  direct IO without logging (only in case of EMERGENCY) */
++	/*  private */
++	int disk_io_error;	   /*  replay errors from callbacks */
++	struct trans_logger_hash_anchor **hash_table;
++	struct list_head group_head;
++	loff_t old_margin;
++	spinlock_t replay_lock;
++	struct list_head replay_list;
++	struct task_struct *thread;
++
++	wait_queue_head_t worker_event;
++	wait_queue_head_t caller_event;
++	/*  statistics */
++	atomic64_t shadow_mem_used;
++	atomic_t replay_count;
++	atomic_t any_fly_count;
++	atomic_t log_fly_count;
++	atomic_t hash_count;
++	atomic_t mshadow_count;
++	atomic_t sshadow_count;
++	atomic_t outer_balance_count;
++	atomic_t inner_balance_count;
++	atomic_t sub_balance_count;
++	atomic_t wb_balance_count;
++	atomic_t total_hash_insert_count;
++	atomic_t total_hash_find_count;
++	atomic_t total_hash_extend_count;
++	atomic_t total_replay_count;
++	atomic_t total_replay_conflict_count;
++	atomic_t total_cb_count;
++	atomic_t total_read_count;
++	atomic_t total_write_count;
++	atomic_t total_flush_count;
++	atomic_t total_writeback_count;
++	atomic_t total_writeback_cluster_count;
++	atomic_t total_shortcut_count;
++	atomic_t total_mshadow_count;
++	atomic_t total_sshadow_count;
++	atomic_t total_mshadow_buffered_count;
++	atomic_t total_sshadow_buffered_count;
++	atomic_t total_round_count;
++	atomic_t total_restart_count;
++	atomic_t total_delay_count;
++
++	/*  queues */
++	struct logger_queue q_phase[LOGGER_QUEUES];
++	bool   delay_callers;
++};
++
++struct trans_logger_output {
++	XIO_OUTPUT(trans_logger);
++};
++
++#define MAX_HOST_LEN			32
++
++struct trans_logger_info {
++	/*  to be maintained / initialized from outside */
++	void (*inf_callback)(struct trans_logger_info *inf);
++	void  *inf_private;
++	char   inf_host[MAX_HOST_LEN];
++
++	int    inf_sequence;	 /*  logfile sequence number */
++
++	/*  maintained by trans_logger */
++	loff_t inf_min_pos;  /*  current replay position (both in replay mode and in logging mode) */
++	loff_t inf_max_pos;  /*  dito, indicating the "dirty" area which could be potentially "inconsistent" */
++	loff_t inf_log_pos; /*	position of transaction logging (may be ahead of replay position) */
++	struct timespec inf_min_pos_stamp; /*  when the data has been _successfully_ overwritten */
++/*  when the data has _started_ overwrite (maybe "trashed" in case of errors / aborts) */
++	struct timespec inf_max_pos_stamp;
++
++	struct timespec inf_log_pos_stamp; /*  stamp from transaction log */
++	bool inf_is_replaying;
++	bool inf_is_logging;
++};
++
++struct trans_logger_input {
++	XIO_INPUT(trans_logger);
++	/*  parameters */
++	/*  informational */
++	struct trans_logger_info inf;
++
++	/*  readonly from outside */
++	atomic_t log_obj_count;
++	atomic_t pos_count;
++	bool is_operating;
++	long long last_jiffies;
++
++	/*  private */
++	struct log_status logst;
++	struct list_head pos_list;
++	long long inf_last_jiffies;
++	struct semaphore inf_mutex;
++};
++
++XIO_TYPES(trans_logger);
++
++#endif
 -- 
 2.0.0
 
