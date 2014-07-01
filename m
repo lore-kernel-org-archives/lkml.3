@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357AbaGAMMS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 08:12:18 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42630 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171AbaGAMMP (ORCPT
+	id S1757406AbaGAMPK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 08:15:10 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:7759 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561AbaGAMPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 08:12:15 -0400
-Date: Tue, 1 Jul 2014 13:11:42 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, Alexandre Courbot <gnurou@gmail.com>
-Message-ID: <20140701121142.GM23300@sirena.org.uk>
-References: <1404215726-2480-1-git-send-email-broonie@kernel.org>
- <20140701120622.GJ32514@n2100.arm.linux.org.uk>
+	Tue, 1 Jul 2014 08:15:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 01 Jul 2014 05:08:35 -0700
+References: <1403815790-8548-1-git-send-email-thierry.reding@gmail.com>
+ <1403815790-8548-5-git-send-email-thierry.reding@gmail.com>
+User-agent: mu4e 0.9.9.6pre2; emacs 24.3.1
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
+        Will Deacon <will.deacon@arm.com>, "Joerg Roedel" <joro@8bytes.org>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        "Grant Grundler" <grundler@chromium.org>,
+        Dave Martin <Dave.Martin@arm.com>,
+        "Marc Zyngier" <marc.zyngier@arm.com>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Olav Haugan <ohaugan@codeaurora.org>,
+        Paul Walmsley <pwalmsley@nvidia.com>,
+        Rhyland Klein <rklein@nvidia.com>, Allen Martin <AMartin@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 04/10] memory: Add Tegra124 memory controller support
+In-Reply-To: <1403815790-8548-5-git-send-email-thierry.reding@gmail.com>
+Date: Tue, 1 Jul 2014 15:14:52 +0300
+Message-ID: <8761jh9sxv.fsf@nvidia.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="++AYaZ8Lu7KET2DY"
-Content-Disposition: inline
-In-Reply-To: <20140701120622.GJ32514@n2100.arm.linux.org.uk>
-X-Cookie: But it does move!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core: Still free GPIOs using gpio_free()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---++AYaZ8Lu7KET2DY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thierry Reding <thierry.reding@gmail.com> writes:
 
-On Tue, Jul 01, 2014 at 01:06:22PM +0100, Russell King - ARM Linux wrote:
-> On Tue, Jul 01, 2014 at 12:55:26PM +0100, Mark Brown wrote:
+> diff --git a/include/dt-bindings/memory/tegra124-mc.h b/include/dt-bindings/memory/tegra124-mc.h
+> new file mode 100644
+> index 000000000000..6b1617ce022f
+> --- /dev/null
+> +++ b/include/dt-bindings/memory/tegra124-mc.h
+> @@ -0,0 +1,30 @@
+> +#ifndef DT_BINDINGS_MEMORY_TEGRA124_MC_H
+> +#define DT_BINDINGS_MEMORY_TEGRA124_MC_H
+> +
+> +#define TEGRA_SWGROUP_DC       0
+> +#define TEGRA_SWGROUP_DCB      1
+> +#define TEGRA_SWGROUP_AFI      2
+> +#define TEGRA_SWGROUP_AVPC     3
+> +#define TEGRA_SWGROUP_HDA      4
+> +#define TEGRA_SWGROUP_HC       5
+> +#define TEGRA_SWGROUP_MSENC    6
+> +#define TEGRA_SWGROUP_PPCS     7
+> +#define TEGRA_SWGROUP_SATA     8
+> +#define TEGRA_SWGROUP_VDE      9
+> +#define TEGRA_SWGROUP_MPCORELP 10
+> +#define TEGRA_SWGROUP_MPCORE   11
+> +#define TEGRA_SWGROUP_ISP2     12
+> +#define TEGRA_SWGROUP_XUSB_HOST        13
+> +#define TEGRA_SWGROUP_XUSB_DEV 14
+> +#define TEGRA_SWGROUP_ISP2B    15
+> +#define TEGRA_SWGROUP_TSEC     16
+> +#define TEGRA_SWGROUP_A9AVP    17
+> +#define TEGRA_SWGROUP_GPU      18
+> +#define TEGRA_SWGROUP_SDMMC1A  19
+> +#define TEGRA_SWGROUP_SDMMC2A  20
+> +#define TEGRA_SWGROUP_SDMMC3A  21
+> +#define TEGRA_SWGROUP_SDMMC4A  22
+> +#define TEGRA_SWGROUP_VIC      23
+> +#define TEGRA_SWGROUP_VI       24
+> +
+> +#endif
 
-> > Even though we mostly use GPIO descriptors internally we still use
-> > gpio_request_one() to request so we need to pair that with gpio_free() to
-> > release the GPIO.
-
-> This doesn't explain the reason...  I see the current GPIO code doing this:
-
-> void gpio_free(unsigned gpio)
-> {
->         gpiod_free(gpio_to_desc(gpio));
-> }
-> EXPORT_SYMBOL_GPL(gpio_free);
-
-Huh, good point (though it still seems a bit neater to match up the
-request and release functions I guess).  Linus?
-
---++AYaZ8Lu7KET2DY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTsqV7AAoJELSic+t+oim9hx8P/A49uh67cTLXgee75EUJEsHd
-nBWG8NFCQHnQxWCcfNqNL38YJ+fZYkmfAcu7NYbJ38bF+40S0EZxGHMFjbwtAL4V
-ZASVDF5cB+/UR71lViItgsxD4Hxtm8X8fiQLwcAuwPphq8rAnplRJThmLngdc2Fx
-0Ks4Rppk0V2H4jFv3XWi5Tub/mOf+ZeY5gE7Era8AED/HpYFacYtbTaXY6GeK3E9
-j5Cha3nH++AMHprGdz8p+mvAaO9+bvgie60lqhyKiwdCi7wXJ9YnLz+62prgwaMh
-Yvwssxx2IMyT2e52q/gaq5NhkWV4oaZaSpWoV/LfzKrajaDwVIfiDZuG8C978vUe
-q60v+Yc0er3w2tm9ahPMAo687ybHTTitNhIDcVh9BQOrm7TvxXcYLy34T58MRcnr
-Q3l9Du7/lUN2slSK/7u211sr/vofajd64rZETzPvifdfK5aKzj4VpLL5ck4XFHrh
-s53rZ5Vmd4/q7mgGc+vug5QOtlwQLT6FOystbgCyKL0c646pwB757WtJvJD9gni6
-Kgr6ysjR3UvXj4IjaEqjlT9I987OgFXjHhFxBgjkUc11kkozr7dNn8SBg0g41rdT
-DqWD3SoRfLkNLPvYH3yMhRbxCDevvS9qIfIAMgleLV+C30mH+0j2iL6JEfLDhI20
-pCw4IniUNxkzqnMd9WQa
-=d5wr
------END PGP SIGNATURE-----
-
---++AYaZ8Lu7KET2DY--
+In the SMMUv8 patch series, I have assigned unique IDs for all those
+HWAs among Tegra SoC generations so that DT can provide which HWAs are
+attached to that SoC. The SMMUv8 driver would be unified among Tegra
+SoCs, then.
