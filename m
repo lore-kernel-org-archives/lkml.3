@@ -1,118 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757382AbaGATaS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 15:30:18 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:49769 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752100AbaGATaP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 15:30:15 -0400
+	id S1758422AbaGATdN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 15:33:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26033 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754850AbaGATdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 15:33:12 -0400
+Date: Tue, 1 Jul 2014 21:31:47 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Namhyung Kim <namhyung@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: probe_event_disable()->synchronize_sched() (Was: tracing/uprobes:
+	Revert "Support mix of ftrace and perf")
+Message-ID: <20140701193147.GA32492@redhat.com>
+References: <20140627170116.GA18298@redhat.com> <20140627170136.GA18319@redhat.com> <87k37z54lu.fsf@sejong.aot.lge.com> <20140630184828.GA24594@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAL-B5D3M9gmefaSkGnb13UtBHt857G-ixkmhjHawO5hW2AN9xA@mail.gmail.com>
-References: <20140617192734.30783.71260.stgit@amt.stowe> <CAErSpo7t2kXj2ZULLXCJSWb_awS+DCtCg51dnLbb8ztWmQdYog@mail.gmail.com>
- <CAL-B5D3M9gmefaSkGnb13UtBHt857G-ixkmhjHawO5hW2AN9xA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 1 Jul 2014 13:29:54 -0600
-Message-ID: <CAErSpo4_YEEU1q1ehT2oizLRwPe1_7qOMnXR=y7WmXOp=raSag@mail.gmail.com>
-Subject: Re: [PATCH] PCI: pciehp: Include the Data Link Layer State Changed
- bit when clearing the Slot Status register's event bits
-To: Myron Stowe <myron.stowe@gmail.com>
-Cc: Myron Stowe <myron.stowe@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajat Jain <rajatjain.linux@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140630184828.GA24594@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 10:49 AM, Myron Stowe <myron.stowe@gmail.com> wrote:
-> On Tue, Jun 17, 2014 at 3:07 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Tue, Jun 17, 2014 at 1:27 PM, Myron Stowe <myron.stowe@redhat.com> wrote:
->>> During PCIe hot-plug initialization - pciehp_probe - data structures
->>> related to slot capabilities are set up.  As part of this set up, ISRs are
->>> put in place to handle slot events and all event bits are cleared out.
->>>
->>> This patch adds the Data Link Layer State Changed (PCI_EXP_SLTSTA_DLLSC)
->>> Slot Status bit to the event bits that are cleared out during
->>> initialization.
->>
->> I think this is related to e48f1b67f668 ("PCI: pciehp: Use link change
->> notifications for hot-plug and removal").  Prior to that, pcie_isr()
->> didn't look at the PCI_EXP_SLTSTA_DLLSC bit.
->>
->> Apparently there's a non-public report of spurious messages like this
->> at boot-time, with no actual hotplug events:
->>
->>   pciehp 0000:82:04.0:pcie24: slot(4): Link Up event
->>   pciehp 0000:82:04.0:pcie24: Device 0000:83:00.0 already exists at
->> 0000:83:00, cannot hot-add
->>   pciehp 0000:82:04.0:pcie24: Cannot add device at 0000:83:00
->>
->> Device 0000:83:00.0 was enumerated previously, during the normal PCI
->> device enumeration.  I suspect DLLSC was set by the hardware when the
->> link came up after power-on, and it remained set until Linux booted.
->> Then when we take the first pciehp interrupt, we notice DLLSC is set
->> and think it's a new link state change.
->>
->> This might be system-specific, because some BIOSes might clear DLLSC
->> before handing off to the OS.  Or my theory might be all wet.
->>
->> But I think we should clear DLLSC in any case.  We clear all the other
->> RW1C bits in Slot Status, and I think we should clear DLLSC as well.
->>
->> I'd like to include a bugzilla or mailing list reference for the
->> spurious message, and I'd also like confirmation that this changes
->> actually fixes it.
+Namhyung, Masami,
+
+Please look at the question below. Perhaps we discussed this before,
+but I can recall nothing.
+
+
+On 06/30, Oleg Nesterov wrote:
 >
-> I just got confirmation from the reporter that the patch fixes the
-> issue they were encountering.
->
-> I've also asked them numerous time if I could make the bug public as I
-> expect others may be hitting it and could benefit from a BZ and
-> analysis/explanation.  I just repeated my request - if they reply
-> positively I'll follow through with some documentation.
+> Actually, I'll probably try to make the patch tomorrow. It looks simple
+> enough, the main complication is CONFIG_PERF. And, to keep this patch
+> simple, I won't try to optimize (say) the TP_FLAG_TRACE-comes-first
+> case which could avoid uprobe_apply().
 
-I'd be glad to merge this, as soon as we get more details about the
-problem it fixes.  I think it's good to include some specifics, e.g.,
-"Unexpected Link Up event," etc., because it helps other people with
-the same problem to find the solution.  It's OK if details about
-pre-production machines and so on are removed, but it's better if
-changes to generic code are supported by public evidence that
-everybody can evaluate.
+I regret very much I said this ;) OK, I'll probably try anyway, but...
 
-If you want to pull out the public stuff into a kernel.org bugzilla,
-that would be fine, too.  That would actually be better because then
-we don't have to depend on Red Hat maintaining it.
+> Yes, I still think it would be better to change the register/unregister
+> API first, but I do not know when I do this ;)
 
-Bjorn
+OK, we can do this later.
 
->>> Reference:
->>>   PCI-SIG.  PCI Express Base Specification Revision 4.0 Version 0.3
->>>   (PCI-SIG, 2014): 7.8.11. Slot Status Register (Offset 1Ah).
->>>
->>> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
->>> ---
->>>
->>>  drivers/pci/hotplug/pciehp_hpc.c |    2 +-
->>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
->>> index 42914e0..0568416 100644
->>> --- a/drivers/pci/hotplug/pciehp_hpc.c
->>> +++ b/drivers/pci/hotplug/pciehp_hpc.c
->>> @@ -794,7 +794,7 @@ struct controller *pcie_init(struct pcie_device *dev)
->>>         pcie_capability_write_word(pdev, PCI_EXP_SLTSTA,
->>>                 PCI_EXP_SLTSTA_ABP | PCI_EXP_SLTSTA_PFD |
->>>                 PCI_EXP_SLTSTA_MRLSC | PCI_EXP_SLTSTA_PDC |
->>> -               PCI_EXP_SLTSTA_CC);
->>> +               PCI_EXP_SLTSTA_CC | PCI_EXP_SLTSTA_DLLSC);
->>>
->>>         /* Disable software notification */
->>>         pcie_disable_notification(ctrl);
->>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+But it turns out that trace_uprobe.c needs other cleanups, and I simply
+can't uglify this code more without these cleanups... Starting from
+set/clear TP_FLAG_*. I'll recheck, but it seems that there is no reason
+to carefully set (say) TP_FLAG_TRACE before uprobe_register() and then
+clear it if _register() fails. And uprobe_dispatcher() is very ugly if
+is_ret_probe(). And more. So it needs a series.
+
+-------------------------------------------------------------------------
+And. I am puzzled by probe_event_disable()->synchronize_sched(). Why
+do we need it? I mean, why we can't use call_rcu() ? The comment says
+"synchronize with u{,ret}probe_trace_func" but it doesn't explain _why_
+do we need to sync.
+
+I thought that perhaps the caller needs to synch with the callbacks.
+Say, __trace_remove_event_call() can destroy the data which can be used
+by the callbacks. But no, this is only possible if we are going to call
+uprobe_unregister(), and this adds the necessary serialization.
+
+So why? Looks like, the only reason is instance_rmdir() which can do
+TRACE_REG_UNREGISTER and after that destroy this ftrace_event_file?
+But event_trace_del_tracer() also has synchronize_sched() right after
+__ftrace_set_clr_event_nolock() ?
+
+So please tell me why do we need this synchronize_sched ;) And imo
+this should be documented.
+
+Oleg.
+
