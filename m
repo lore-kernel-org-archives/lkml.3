@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932585AbaGAOWn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 10:22:43 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35579 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758056AbaGAONu (ORCPT
+	id S932636AbaGAOXR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 10:23:17 -0400
+Received: from mail.windriver.com ([147.11.1.11]:45515 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754297AbaGAOXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 10:13:50 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 06/33] ARM: at91: move at91rm9200 SoC to the CCF
-Date: Tue,  1 Jul 2014 16:12:15 +0200
-Message-Id: <1404223962-30471-7-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Tue, 1 Jul 2014 10:23:15 -0400
+Message-ID: <53B2C419.4090706@windriver.com>
+Date: Tue, 1 Jul 2014 09:22:17 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Daniel Thompson <daniel.thompson@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <patches@linaro.org>,
+        <linaro-kernel@lists.linaro.org>, Mike Travis <travis@sgi.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>, <kgdb-bugreport@lists.sourceforge.net>
+Subject: Re: [RFC PATCH] kgdb: Timeout if secondary CPUs ignore the roundup
+References: <1404224174-25024-1-git-send-email-daniel.thompson@linaro.org>
+In-Reply-To: <1404224174-25024-1-git-send-email-daniel.thompson@linaro.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the selection of AT91_USE_OLD_CLK when selecting at91rm9200
-SoC support. This will automatically enable COMMON_CLK_AT91 option and add
-support for at91 common clk implementation.
+On 07/01/2014 09:16 AM, Daniel Thompson wrote:
+> Currently if an active CPU fails to respond to a roundup request the
+> CPU that requested the roundup will become stuck. This needlessly
+> reduces the robustness of the debugger.
+>
+> This patch introduces a timeout allowing the system state to be examined
+> even when the system contains unresponsive processors. It also modifies
+> kdb's cpu command to make it censor attempts to switch to unresponsive
+> processors and to report their state as (D)ead.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/mach-at91/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 45b55e0f0db6..c818136a74b8 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -113,7 +113,6 @@ config SOC_AT91RM9200
- 	select HAVE_AT91_DBGU0
- 	select MULTI_IRQ_HANDLER
- 	select SPARSE_IRQ
--	select AT91_USE_OLD_CLK
- 	select HAVE_AT91_USB_CLK
- 
- config SOC_AT91SAM9260
--- 
-1.9.1
+It seems reasonable to allow entry on the master core because there certainly could be useful information to be had with respect to how you got there in the first place, but I wonder about the case for resuming the system.   In general if you couldn't sync in the the first place, the system is dead.  My opinion is that we probably should explicitly disallow a resume or single step at that point.
+
+Jason.
 
