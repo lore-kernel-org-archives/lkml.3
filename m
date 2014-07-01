@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470AbaGAVyC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:54:02 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.216]:43119 "EHLO
+	id S1758832AbaGAVzB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:55:01 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.220]:33659 "EHLO
 	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757885AbaGAVxt (ORCPT
+	with ESMTP id S932445AbaGAVyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:53:49 -0400
+	Tue, 1 Jul 2014 17:54:01 -0400
 X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
 X-RZG-CLASS-ID: mo00
 From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 11/50] mars: add new file include/linux/brick/lib_pairing_heap.h
-Date: Tue,  1 Jul 2014 23:46:51 +0200
-Message-Id: <1404251250-22992-12-git-send-email-tst@schoebel-theuer.de>
+Subject: [PATCH 15/50] mars: add new file include/linux/brick/lib_timing.h
+Date: Tue,  1 Jul 2014 23:46:55 +0200
+Message-Id: <1404251250-22992-16-git-send-email-tst@schoebel-theuer.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
@@ -23,108 +23,170 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 ---
- include/linux/brick/lib_pairing_heap.h | 94 ++++++++++++++++++++++++++++++++++
- 1 file changed, 94 insertions(+)
- create mode 100644 include/linux/brick/lib_pairing_heap.h
+ include/linux/brick/lib_timing.h | 156 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 156 insertions(+)
+ create mode 100644 include/linux/brick/lib_timing.h
 
-diff --git a/include/linux/brick/lib_pairing_heap.h b/include/linux/brick/lib_pairing_heap.h
+diff --git a/include/linux/brick/lib_timing.h b/include/linux/brick/lib_timing.h
 new file mode 100644
-index 0000000..f60d4e7
+index 0000000..af15f1a
 --- /dev/null
-+++ b/include/linux/brick/lib_pairing_heap.h
-@@ -0,0 +1,94 @@
-+/*  (c) 2010 Thomas Schoebel-Theuer / 1&1 Internet AG */
-+#ifndef PAIRING_HEAP_H
-+#define PAIRING_HEAP_H
++++ b/include/linux/brick/lib_timing.h
+@@ -0,0 +1,156 @@
++/*  (c) 2012 Thomas Schoebel-Theuer / 1&1 Internet AG */
++#ifndef BRICK_LIB_TIMING_H
++#define BRICK_LIB_TIMING_H
 +
-+/* Algorithm: see http://en.wikipedia.org/wiki/Pairing_heap
-+ * This is just an efficient translation from recursive to iterative form.
-+ *
-+ * Note: find_min() is so trivial that we don't implement it.
++#include <linux/brick/brick.h>
++
++#include <linux/sched.h>
++
++/* Simple infrastructure for timing of arbitrary operations and creation
++ * of some simple histogram statistics.
 + */
 +
-+/* generic version: KEYDEF is kept separate, allowing you to
-+ * embed this structure into other container structures already
-+ * possessing some key (just provide an empty KEYDEF in this case).
-+ */
-+#define _PAIRING_HEAP_TYPEDEF(KEYTYPE, KEYDEF)				\
-+									\
-+struct pairing_heap_##KEYTYPE {						\
-+	KEYDEF								\
-+	struct pairing_heap_##KEYTYPE *next;				\
-+	struct pairing_heap_##KEYTYPE *subheaps;			\
-+};									\
-+/* this comment is for keeping TRAILING_SEMICOLON happy */
++#define TIMING_MAX			24
 +
-+/* less generic version: define the key inside.
-+ */
-+#define PAIRING_HEAP_TYPEDEF(KEYTYPE)					\
-+	_PAIRING_HEAP_TYPEDEF(KEYTYPE, KEYTYPE key;)
++struct timing_stats {
++#ifdef CONFIG_MARS_DEBUG
++	int tim_count[TIMING_MAX];
 +
-+/* generic methods: allow arbitrary CMP() functions.
-+ */
-+#define _PAIRING_HEAP_FUNCTIONS(_STATIC, KEYTYPE, CMP)			\
++#endif
++};
++
++#define _TIME_THIS(_stamp1, _stamp2, _CODE)				\
++	({								\
++		(_stamp1) = cpu_clock(raw_smp_processor_id());		\
 +									\
-+_STATIC									\
-+struct pairing_heap_##KEYTYPE *_ph_merge_##KEYTYPE(struct pairing_heap_##KEYTYPE *heap1,\
-+	struct pairing_heap_##KEYTYPE *heap2)				\
-+{									\
-+	if (!heap1)							\
-+		return heap2;						\
-+	if (!heap2)							\
-+		return heap1;						\
-+	if (CMP(heap1, heap2) < 0) {					\
-+		heap2->next = heap1->subheaps;				\
-+		heap1->subheaps = heap2;				\
-+		return heap1;						\
-+	}								\
-+	heap1->next = heap2->subheaps;					\
-+	heap2->subheaps = heap1;					\
-+	return heap2;							\
-+}									\
++		_CODE;							\
 +									\
-+_STATIC									\
-+void ph_insert_##KEYTYPE(struct pairing_heap_##KEYTYPE **heap, struct pairing_heap_##KEYTYPE *new)\
-+{									\
-+	new->next = NULL;						\
-+	new->subheaps = NULL;						\
-+	*heap = _ph_merge_##KEYTYPE(*heap, new);			\
-+}									\
++		(_stamp2) = cpu_clock(raw_smp_processor_id());		\
++		(_stamp2) - (_stamp1);					\
++	})
++
++#define TIME_THIS(_CODE)						\
++	({								\
++		unsigned long long _stamp1;				\
++		unsigned long long _stamp2;				\
++		_TIME_THIS(_stamp1, _stamp2, _CODE);			\
++	})
++
++#ifdef CONFIG_MARS_DEBUG
++
++#define _TIME_STATS(_timing, _stamp1, _stamp2, _CODE)			\
++	({								\
++		unsigned long long _time;				\
++		unsigned long _tmp;					\
++		int _i;							\
 +									\
-+_STATIC									\
-+void ph_delete_min_##KEYTYPE(struct pairing_heap_##KEYTYPE **heap)	\
-+{									\
-+	struct pairing_heap_##KEYTYPE *tmplist = NULL;			\
-+	struct pairing_heap_##KEYTYPE *ptr;				\
-+	struct pairing_heap_##KEYTYPE *next;				\
-+	struct pairing_heap_##KEYTYPE *res;				\
-+	if (!*heap) {							\
-+		return;							\
-+	}								\
-+	for (ptr = (*heap)->subheaps; ptr; ptr = next) {		\
-+		struct pairing_heap_##KEYTYPE *p2 = ptr->next;		\
-+		next = p2;						\
-+		if (p2) {						\
-+			next = p2->next;				\
-+			ptr = _ph_merge_##KEYTYPE(ptr, p2);		\
++		_time = _TIME_THIS(_stamp1, _stamp2, _CODE);		\
++									\
++		_tmp = _time / 1000;	/* convert to us */		\
++		_i = 0;							\
++		while (_tmp > 0 && _i < TIMING_MAX - 1) {		\
++			_tmp >>= 1;					\
++			_i++;						\
 +		}							\
-+		ptr->next = tmplist;					\
-+		tmplist = ptr;						\
-+	}								\
-+	res = NULL;							\
-+	for (ptr = tmplist; ptr; ptr = next) {				\
-+		next = ptr->next;					\
-+		res = _ph_merge_##KEYTYPE(res, ptr);			\
-+	}								\
-+	*heap = res;							\
++		(_timing)->tim_count[_i]++;				\
++		_time;							\
++	})
++
++#define TIME_STATS(_timing, _CODE)					\
++	({								\
++		unsigned long long _stamp1;				\
++		unsigned long long _stamp2;				\
++		_TIME_STATS(_timing, _stamp1, _stamp2, _CODE);		\
++	})
++
++extern int report_timing(struct timing_stats *tim, char *str, int maxlen);
++
++#else  /*  CONFIG_MARS_DEBUG */
++
++#define _TIME_STATS(_timing, _stamp1, _stamp2, _CODE)			\
++	((void)_timing, (_stamp1) = (_stamp2) = cpu_clock(raw_smp_processor_id()), _CODE, 0)
++
++#define TIME_STATS(_timing, _CODE)					\
++	((void)_timing, _CODE, 0)
++
++#define report_timing(tim, str, maxlen)   ((void)tim, 0)
++
++#endif /*  CONFIG_MARS_DEBUG */
++
++/* A banning represents some overloaded resource.
++ *
++ * Whenever overload is detected, you should call banning_hit()
++ * telling that the overload is assumed / estimated to continue
++ * for some duration in time.
++ *
++ * ATTENTION! These operations are deliberately raceful.
++ * They are meant to deliver _hints_ (e.g. for IO scheduling
++ * decisions etc), not hard facts!
++ *
++ * If you need locking, just surround these operations
++ * with locking by yourself.
++ */
++struct banning {
++	long long ban_last_hit;
++
++	/*  statistical */
++	int ban_renew_count;
++	int ban_count;
++};
++
++extern inline
++bool banning_hit(struct banning *ban, long long duration)
++{
++	long long now = cpu_clock(raw_smp_processor_id());
++	bool hit = ban->ban_last_hit >= now;
++	long long new_hit = now + duration;
++
++	ban->ban_renew_count++;
++	if (!ban->ban_last_hit || ban->ban_last_hit < new_hit) {
++		ban->ban_last_hit = new_hit;
++		ban->ban_count++;
++	}
++	return hit;
 +}
 +
-+/* some default CMP() function */
-+#define PAIRING_HEAP_COMPARE(a, b) ((a)->key < (b)->key ? -1 : ((a)->key > (b)->key ? 1 : 0))
++extern inline
++bool banning_is_hit(struct banning *ban)
++{
++	long long now = cpu_clock(raw_smp_processor_id());
 +
-+/* less generic version: use the default CMP() function */
-+#define PAIRING_HEAP_FUNCTIONS(_STATIC, KEYTYPE)			\
-+	_PAIRING_HEAP_FUNCTIONS(_STATIC, KEYTYPE, PAIRING_HEAP_COMPARE)
++	return (ban->ban_last_hit && ban->ban_last_hit >= now);
++}
++
++extern inline
++void banning_reset(struct banning *ban)
++{
++	ban->ban_last_hit = 0;
++}
++
++/* Threshold: trigger a banning whenever some latency threshold
++ * is exceeded.
++ */
++struct threshold {
++	struct banning *thr_ban;
++
++	/*  tunables */
++	int  thr_limit;   /*  in us */
++	int  thr_factor;  /*  in % */
++	int  thr_plus;	  /*  in us */
++	/*  statistical */
++	int thr_triggered;
++	int thr_true_hit;
++};
++
++extern inline
++void threshold_check(struct threshold *thr, long long latency)
++{
++	if (thr->thr_limit &&
++	    latency > (long long)thr->thr_limit * 1000) {
++		thr->thr_triggered++;
++		if (!banning_hit(thr->thr_ban, latency * thr->thr_factor / 100 + thr->thr_plus * 1000))
++			thr->thr_true_hit++;
++	}
++}
 +
 +#endif
 -- 
