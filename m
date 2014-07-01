@@ -1,110 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030333AbaGAWRs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 18:17:48 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:28453 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753879AbaGAWRr (ORCPT
+	id S1030265AbaGAWV0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 18:21:26 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:62006 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752983AbaGAWVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 18:17:47 -0400
-Message-ID: <53B33381.3010702@oracle.com>
-Date: Tue, 01 Jul 2014 18:17:37 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 1 Jul 2014 18:21:22 -0400
 MIME-Version: 1.0
-To: acme@ghostprotocols.net, "David S. Miller" <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: net: llc: skb_panic in llc_sap_action_send_xid_cmd
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <alpine.LNX.2.00.1407010852160.1655@pobox.suse.cz>
+References: <1404180865-3681-1-git-send-email-xerofoify@gmail.com>
+	<alpine.LNX.2.00.1407010837370.1655@pobox.suse.cz>
+	<20140701065021.GA887@mguzik.redhat.com>
+	<alpine.LNX.2.00.1407010852160.1655@pobox.suse.cz>
+Date: Tue, 1 Jul 2014 18:21:21 -0400
+Message-ID: <CAPDOMVgWweKUgW29g=xWtNJTtqbm7BB27+prW11MC4v5xZeE6g@mail.gmail.com>
+Subject: Re: [PATCH v2] hid-appleir: Fix kernel panic due to null pointer
+From: Nick Krause <xerofoify@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Mateusz Guzik <mguzik@redhat.com>, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+So I am wondering them should I can it to sizeof(appleir_keymap)?
+Nick
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel I've stumbled on the following spew:
-
-[ 1307.646561] kernel BUG at net/core/skbuff.c:99!
-[ 1307.647152] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 1307.648080] Dumping ftrace buffer:
-[ 1307.648632]    (ftrace buffer empty)
-[ 1307.649287] Modules linked in:
-[ 1307.649832] CPU: 8 PID: 16428 Comm: trinity-c172 Not tainted 3.16.0-rc3-next-20140630-sasha-00023-g44434d4-dirty #758
-[ 1307.651669] task: ffff880361ef8000 ti: ffff880350c78000 task.ti: ffff880350c78000
-[ 1307.653824] RIP: skb_panic (net/core/skbuff.c:99)
-[ 1307.654677] RSP: 0018:ffff880350c7bbe8  EFLAGS: 00010296
-[ 1307.654677] RAX: 0000000000000083 RBX: ffff8802212661c0 RCX: 00000000e776e776
-[ 1307.654677] RDX: 0000000000000001 RSI: ffffffff9552561a RDI: ffffffff921e0537
-[ 1307.654677] RBP: ffff880350c7bc08 R08: 0000000000000000 R09: 0000000000000000
-[ 1307.662705] R10: 0000000000000001 R11: 65743a7665642030 R12: 00000000000000c8
-[ 1307.662705] R13: 0000000000000001 R14: 0000000000000001 R15: 0000000000000000
-[ 1307.662705] FS:  00007f5622bc7700(0000) GS:ffff880224e00000(0000) knlGS:0000000000000000
-[ 1307.662705] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 1307.662705] CR2: 00007f56213a6000 CR3: 0000000361ea6000 CR4: 00000000000006a0
-[ 1307.662705] Stack:
-[ 1307.662705]  ffff880210802498 00000000000000c2 00000000000000c0 ffff880224768000
-[ 1307.662705]  ffff880350c7bc18 ffffffff94f963d7 ffff880350c7bc48 ffffffff94fdc0d5
-[ 1307.662705]  ffff88021080249b ffffffff98141880 ffff8802212661c0 ffff88039fe537b0
-[ 1307.662705] Call Trace:
-[ 1307.662705] skb_put (net/core/skbuff.c:104 net/core/skbuff.c:1278)
-[ 1307.662705] llc_sap_action_send_xid_c (net/llc/llc_s_ac.c:83)
-[ 1307.662705] llc_sap_state_process (net/llc/llc_sap.c:153 net/llc/llc_sap.c:181 net/llc/llc_sap.c:212)
-[ 1307.662705] llc_build_and_send_xid_pkt (net/llc/llc_sap.c:277)
-[ 1307.662705] llc_ui_sendmsg (net/llc/af_llc.c:939)
-[ 1307.662705] ? lock_release_holdtime (kernel/locking/lockdep.c:273)
-[ 1307.662705] ? might_fault (mm/memory.c:3740)
-[ 1307.662705] ? lock_release_non_nested (kernel/locking/lockdep.c:3397)
-[ 1307.662705] sock_sendmsg (net/socket.c:654)
-[ 1307.662705] ? might_fault (mm/memory.c:3741)
-[ 1307.662705] ? might_fault (mm/memory.c:3740)
-[ 1307.662705] ? move_addr_to_kernel (./arch/x86/include/asm/uaccess.h:713 net/socket.c:197)
-[ 1307.662705] SYSC_sendto (net/socket.c:1812)
-[ 1307.662705] ? vtime_account_user (kernel/sched/cputime.c:687)
-[ 1307.662705] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
-[ 1307.662705] ? syscall_trace_enter (include/linux/context_tracking.h:27 arch/x86/kernel/ptrace.c:1461)
-[ 1307.662705] SyS_sendto (net/socket.c:1779)
-[ 1307.662705] tracesys (arch/x86/kernel/entry_64.S:542)
-[ 1307.662705] Code: 00 00 48 89 44 24 10 8b 87 c8 00 00 00 48 89 44 24 08 48 8b 87 d8 00 00 00 48 c7 c7 e8 4d cd 96 48 89 04 24 31 c0 e8 e2 4a fb ff <0f> 0b 66 66 66 66 90 55 48 89 e5 41 57 41 56 41 55 41 54 41 89
-All code
-========
-   0:	00 00                	add    %al,(%rax)
-   2:	48 89 44 24 10       	mov    %rax,0x10(%rsp)
-   7:	8b 87 c8 00 00 00    	mov    0xc8(%rdi),%eax
-   d:	48 89 44 24 08       	mov    %rax,0x8(%rsp)
-  12:	48 8b 87 d8 00 00 00 	mov    0xd8(%rdi),%rax
-  19:	48 c7 c7 e8 4d cd 96 	mov    $0xffffffff96cd4de8,%rdi
-  20:	48 89 04 24          	mov    %rax,(%rsp)
-  24:	31 c0                	xor    %eax,%eax
-  26:	e8 e2 4a fb ff       	callq  0xfffffffffffb4b0d
-  2b:*	0f 0b                	ud2    		<-- trapping instruction
-  2d:	66 66 66 66 90       	data32 data32 data32 xchg %ax,%ax
-  32:	55                   	push   %rbp
-  33:	48 89 e5             	mov    %rsp,%rbp
-  36:	41 57                	push   %r15
-  38:	41 56                	push   %r14
-  3a:	41 55                	push   %r13
-  3c:	41 54                	push   %r12
-  3e:	41 89 00             	mov    %eax,(%r8)
-
-Code starting with the faulting instruction
-===========================================
-   0:	0f 0b                	ud2
-   2:	66 66 66 66 90       	data32 data32 data32 xchg %ax,%ax
-   7:	55                   	push   %rbp
-   8:	48 89 e5             	mov    %rsp,%rbp
-   b:	41 57                	push   %r15
-   d:	41 56                	push   %r14
-   f:	41 55                	push   %r13
-  11:	41 54                	push   %r12
-  13:	41 89 00             	mov    %eax,(%r8)
-[ 1307.662705] RIP skb_panic (net/core/skbuff.c:99)
-[ 1307.662705]  RSP <ffff880350c7bbe8>
-
-
-Thanks,
-sasha
+On Tue, Jul 1, 2014 at 2:55 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Tue, 1 Jul 2014, Mateusz Guzik wrote:
+>
+>> > > Fixes a null pointer in appleir_input_configured due to reading
+>> > > into wrong size array. Changed the variable to input_dev->keycodemax.
+>> >
+>> > This is a stale changelog from the previous buggy version.
+>> >
+>> > > Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> > > ---
+>> > >  drivers/hid/hid-appleir.c | 2 +-
+>> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+>> > >
+>> > > diff --git a/drivers/hid/hid-appleir.c b/drivers/hid/hid-appleir.c
+>> > > index 0e6a42d..cc02df4 100644
+>> > > --- a/drivers/hid/hid-appleir.c
+>> > > +++ b/drivers/hid/hid-appleir.c
+>> > > @@ -272,7 +272,7 @@ static void appleir_input_configured(struct hid_device *hid,
+>> > >   input_dev->evbit[0] = BIT(EV_KEY) | BIT(EV_REP);
+>> > >
+>> > >   memcpy(appleir->keymap, appleir_key_table, sizeof(appleir->keymap));
+>> > > - for (i = 0; i < ARRAY_SIZE(appleir_key_table); i++)
+>> > > + for (i = 0; i < appleir->keymap; i++)
+>> >
+>> > This is wrong. appleir->keymap is an array, and you want to count its
+>> > elements.
+>> >
+>>
+>> But where the claim of 'null pointer' is coming from (or reading/writing
+>> past the array for that matter)?
+>>
+>> Replacing appleir_key_table with appleir->keymap is a noop anyway
+>> because:
+>> unsigned short keymap[ARRAY_SIZE(appleir_key_table)];
+>
+> It's not really equivalent. ARRAY_SIZE counts the number of short-sized
+> elements, sizeof() counts the number of bytes that fit into the data
+> structure (which is twice as much, as sizeof(unsigned short) == 2).
+>
+> --
+> Jiri Kosina
+> SUSE Labs
