@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116AbaGAVsD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:48:03 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.219]:35366 "EHLO
+	id S1757751AbaGAVsA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:48:00 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.220]:63933 "EHLO
 	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755468AbaGAVrl (ORCPT
+	with ESMTP id S1755328AbaGAVrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:47:41 -0400
+	Tue, 1 Jul 2014 17:47:39 -0400
 X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
 X-RZG-CLASS-ID: mo00
 From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 20/50] mars: add new file drivers/block/mars/xio_bricks/xio.c
-Date: Tue,  1 Jul 2014 23:47:00 +0200
-Message-Id: <1404251250-22992-21-git-send-email-tst@schoebel-theuer.de>
+Subject: [PATCH 16/50] mars: add new file drivers/block/mars/lib_timing.c
+Date: Tue,  1 Jul 2014 23:46:56 +0200
+Message-Id: <1404251250-22992-17-git-send-email-tst@schoebel-theuer.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
@@ -23,199 +23,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 ---
- drivers/block/mars/xio_bricks/xio.c | 183 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 183 insertions(+)
- create mode 100644 drivers/block/mars/xio_bricks/xio.c
+ drivers/block/mars/lib_timing.c | 51 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 51 insertions(+)
+ create mode 100644 drivers/block/mars/lib_timing.c
 
-diff --git a/drivers/block/mars/xio_bricks/xio.c b/drivers/block/mars/xio_bricks/xio.c
+diff --git a/drivers/block/mars/lib_timing.c b/drivers/block/mars/lib_timing.c
 new file mode 100644
-index 0000000..cc13478
+index 0000000..9221c0b
 --- /dev/null
-+++ b/drivers/block/mars/xio_bricks/xio.c
-@@ -0,0 +1,183 @@
-+/*  (c) 2010 Thomas Schoebel-Theuer / 1&1 Internet AG */
++++ b/drivers/block/mars/lib_timing.c
+@@ -0,0 +1,51 @@
++/*  (c) 2012 Thomas Schoebel-Theuer / 1&1 Internet AG */
++
++#include <linux/brick/lib_timing.h>
 +
 +#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/string.h>
-+#include <linux/uaccess.h>
-+#include <linux/file.h>
-+#include <linux/fs.h>
-+#include <linux/utsname.h>
 +
-+#include <linux/xio.h>
++#ifdef CONFIG_MARS_DEBUG
 +
-+/************************************************************/
-+
-+/*  infrastructure */
-+
-+struct banning xio_global_ban = {};
-+EXPORT_SYMBOL_GPL(xio_global_ban);
-+atomic_t xio_global_io_flying = ATOMIC_INIT(0);
-+EXPORT_SYMBOL_GPL(xio_global_io_flying);
-+
-+static char *id;
-+
-+/* TODO: better use MAC addresses (or motherboard IDs where available).
-+ * Or, at least, some checks for MAC addresses should be recorded / added.
-+ * When the nodename is misconfigured, data might be scrambled.
-+ * MAC addresses should be more secure.
-+ * In ideal case, further checks should be added to prohibit accidental
-+ * name clashes.
-+ */
-+char *my_id(void)
++int report_timing(struct timing_stats *tim, char *str, int maxlen)
 +{
-+	struct new_utsname *u;
++	int len = 0;
++	int time = 1;
++	int resol = 1;
 +
-+	if (!id) {
-+		/* down_read(&uts_sem); // FIXME: this is currenty not EXPORTed from the kernel! */
-+		u = utsname();
-+		if (u)
-+			id = brick_strdup(u->nodename);
-+		/* up_read(&uts_sem); */
-+	}
-+	return id;
-+}
-+EXPORT_SYMBOL_GPL(my_id);
-+
-+/************************************************************/
-+
-+/*  object stuff */
-+
-+const struct generic_object_type aio_type = {
-+	.object_type_name = "aio",
-+	.default_size = sizeof(struct aio_object),
-+	.object_type_nr = OBJ_TYPE_AIO,
-+};
-+EXPORT_SYMBOL_GPL(aio_type);
-+
-+/************************************************************/
-+
-+/*  brick stuff */
-+
-+/*******************************************************************/
-+
-+/*  meta descriptions */
-+
-+const struct meta xio_info_meta[] = {
-+	META_INI(current_size,	  struct xio_info, FIELD_INT),
-+	META_INI(tf_align,	  struct xio_info, FIELD_INT),
-+	META_INI(tf_min_size,	  struct xio_info, FIELD_INT),
-+	{}
-+};
-+EXPORT_SYMBOL_GPL(xio_info_meta);
-+
-+const struct meta xio_aio_meta[] = {
-+	META_INI(_object_cb.cb_error, struct aio_object, FIELD_INT),
-+	META_INI(io_pos,	   struct aio_object, FIELD_INT),
-+	META_INI(io_len,	   struct aio_object, FIELD_INT),
-+	META_INI(io_may_write,	  struct aio_object, FIELD_INT),
-+	META_INI(io_prio,	   struct aio_object, FIELD_INT),
-+	META_INI(io_cs_mode,	   struct aio_object, FIELD_INT),
-+	META_INI(io_timeout,	   struct aio_object, FIELD_INT),
-+	META_INI(io_total_size,   struct aio_object, FIELD_INT),
-+	META_INI(io_checksum,	   struct aio_object, FIELD_RAW),
-+	META_INI(io_flags,	   struct aio_object, FIELD_INT),
-+	META_INI(io_rw,    struct aio_object, FIELD_INT),
-+	META_INI(io_id,    struct aio_object, FIELD_INT),
-+	META_INI(io_skip_sync,	  struct aio_object, FIELD_INT),
-+	{}
-+};
-+EXPORT_SYMBOL_GPL(xio_aio_meta);
-+
-+const struct meta xio_timespec_meta[] = {
-+	META_INI_TRANSFER(tv_sec,  struct timespec, FIELD_UINT, 8),
-+	META_INI_TRANSFER(tv_nsec, struct timespec, FIELD_UINT, 4),
-+	{}
-+};
-+EXPORT_SYMBOL_GPL(xio_timespec_meta);
-+
-+/************************************************************/
-+
-+/*  crypto stuff */
-+
-+#include <linux/scatterlist.h>
-+#include <linux/crypto.h>
-+
-+static struct crypto_hash *xio_tfm;
-+static struct semaphore tfm_sem = __SEMAPHORE_INITIALIZER(tfm_sem, 1);
-+int xio_digest_size = 0;
-+EXPORT_SYMBOL_GPL(xio_digest_size);
-+
-+void xio_digest(unsigned char *digest, void *data, int len)
-+{
-+	struct hash_desc desc = {
-+		.tfm = xio_tfm,
-+		.flags = 0,
++	static const char * const units[] = {
++		"us",
++		"ms",
++		"s",
++		"ERROR"
 +	};
-+	struct scatterlist sg;
++	const char *unit = units[0];
++	int unit_index = 0;
++	int i;
 +
-+	memset(digest, 0, xio_digest_size);
++	for (i = 0; i < TIMING_MAX; i++) {
++		int this_len = scnprintf(str,
 +
-+	/*  TODO: use per-thread instance, omit locking */
-+	down(&tfm_sem);
-+
-+	crypto_hash_init(&desc);
-+	sg_init_table(&sg, 1);
-+	sg_set_buf(&sg, data, len);
-+	crypto_hash_update(&desc, &sg, sg.length);
-+	crypto_hash_final(&desc, digest);
-+	up(&tfm_sem);
-+}
-+EXPORT_SYMBOL_GPL(xio_digest);
-+
-+void aio_checksum(struct aio_object *aio)
-+{
-+	unsigned char checksum[xio_digest_size];
-+	int len;
-+
-+	if (aio->io_cs_mode <= 0 || !aio->io_data)
-+		goto out_return;
-+	xio_digest(checksum, aio->io_data, aio->io_len);
-+
-+	len = sizeof(aio->io_checksum);
-+	if (len > xio_digest_size)
-+		len = xio_digest_size;
-+	memcpy(&aio->io_checksum, checksum, len);
-+out_return:;
-+}
-+EXPORT_SYMBOL_GPL(aio_checksum);
-+
-+/*******************************************************************/
-+
-+/*  init stuff */
-+
-+int __init init_xio(void)
-+{
-+	XIO_INF("init_xio()\n");
-+
-+	xio_tfm = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
-+	if (!xio_tfm) {
-+		XIO_ERR("cannot alloc crypto hash\n");
-+		return -ENOMEM;
++			maxlen,
++			"<%d%s = %d (%lld) ",
++			resol,
++			unit,
++			tim->tim_count[i],
++			(long long)tim->tim_count[i] * time);
++		str += this_len;
++		len += this_len;
++		maxlen -= this_len;
++		if (maxlen <= 1)
++			break;
++		resol <<= 1;
++		time <<= 1;
++		if (resol >= 1000) {
++			resol = 1;
++			unit = units[++unit_index];
++		}
 +	}
-+	if (IS_ERR(xio_tfm)) {
-+		XIO_ERR("alloc crypto hash failed, status = %d\n", (int)PTR_ERR(xio_tfm));
-+		return PTR_ERR(xio_tfm);
-+	}
-+	xio_digest_size = crypto_hash_digestsize(xio_tfm);
-+	XIO_INF("digest_size = %d\n", xio_digest_size);
-+
-+	return 0;
++	return len;
 +}
++EXPORT_SYMBOL_GPL(report_timing);
 +
-+void exit_xio(void)
-+{
-+	XIO_INF("exit_xio()\n");
-+
-+	if (xio_tfm)
-+		crypto_free_hash(xio_tfm);
-+
-+	if (id) {
-+		brick_string_free(id);
-+		id = NULL;
-+	}
-+}
++#endif
 -- 
 2.0.0
 
