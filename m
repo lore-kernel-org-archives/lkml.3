@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756946AbaGASuW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 14:50:22 -0400
-Received: from puma-aaisp.mxtelecom.com ([81.187.36.3]:53024 "EHLO
-	puma.mxtelecom.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751371AbaGASuV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 14:50:21 -0400
-Date: Tue, 1 Jul 2014 19:50:15 +0100 (BST)
-From: Edward Allcutt <edward.allcutt@openmarket.com>
-To: David Miller <davem@davemloft.net>
-cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipv4: icmp: Fix pMTU handling for rare case
-In-Reply-To: <20140701.110510.2218293817137911715.davem@davemloft.net>
-Message-ID: <alpine.DEB.2.10.1407011912440.5997@tabini.allcutt.me.uk>
-References: <1404141362-21015-1-git-send-email-edward.allcutt@openmarket.com> <20140630.234843.985671994258957329.davem@davemloft.net> <alpine.DEB.2.10.1407010937120.5997@tabini.allcutt.me.uk> <20140701.110510.2218293817137911715.davem@davemloft.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1755607AbaGASul (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 14:50:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53942 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752119AbaGASuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 14:50:40 -0400
+Date: Tue, 1 Jul 2014 14:50:21 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Hillf Danton <dhillf@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH] rmap: fix pgoff calculation to handle hugepage correctly
+Message-ID: <20140701185021.GA10356@nhori.bos.redhat.com>
+References: <1404225982-22739-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20140701180739.GA4985@node.dhcp.inet.fi>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140701180739.GA4985@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jul 2014, David Miller wrote:
->> If it helps any, I've been running several production machines with
->> this patch for just about a year now (mostly running 3.10 stable
->> series).
->
-> I guess if OpenBSD can wait more than 2 decades to implement proper
-> path mtu handling, you can wait a year to post this bug fix :-)
+On Tue, Jul 01, 2014 at 09:07:39PM +0300, Kirill A. Shutemov wrote:
+> On Tue, Jul 01, 2014 at 10:46:22AM -0400, Naoya Horiguchi wrote:
+> > I triggered VM_BUG_ON() in vma_address() when I try to migrate an anonymous
+> > hugepage with mbind() in the kernel v3.16-rc3. This is because pgoff's
+> > calculation in rmap_walk_anon() fails to consider compound_order() only to
+> > have an incorrect value. So this patch fixes it.
+> > 
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > ---
+> >  mm/rmap.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git v3.16-rc3.orig/mm/rmap.c v3.16-rc3/mm/rmap.c
+> > index b7e94ebbd09e..8cc964c6bd8d 100644
+> > --- v3.16-rc3.orig/mm/rmap.c
+> > +++ v3.16-rc3/mm/rmap.c
+> > @@ -1639,7 +1639,7 @@ static struct anon_vma *rmap_walk_anon_lock(struct page *page,
+> >  static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
+> >  {
+> >  	struct anon_vma *anon_vma;
+> > -	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+> > +	pgoff_t pgoff = page->index << compound_order(page);
+> >  	struct anon_vma_chain *avc;
+> >  	int ret = SWAP_AGAIN;
+> 
+> Hm. It will not work with THP: ->index there is in PAGE_SIZE units.
 
-Sorry about that. :-/ Some of the systems on the other end of tunnels are 
-now starting to run distro kernels with this bug. I can't always convince 
-them to rebuild with a patch.. I should have gotten around to this sooner.
+I wrongly assumed that rmap is never used by thp, sorry.
 
-> I still think the OpenBSD thing can't be intentional, and it's some
-> bug they probably want to fix and it should therefore be investigated.
-> It means performance of connections going through such machines is
-> going to be crap even if I install your patch.
+> Why do we need this special case for hugetlb page ->index? Why not use
+> PAGE_SIZE units there too? Or I miss something?
 
-Making newer versions behave better won't help all the existing 
-deployments. Linux should be able to cope even if it's not optimal.
+hugetlb pages are never split, so we use larger page cache size for
+hugetlbfs file (to avoid large sparse page cache tree.) I'm not sure
+if we should do this for anonymous hugepages, but I guess that using
+different cache size in hugetlbfs makes code complicated.
 
-The performance impact of using minimum packet size vs. optimal sizing is 
-that you end up sending a bit under three times the number of packets. At 
-worst. It's not ideal but it's far less bad than stalling indefinitely.
+Anyway I'll do some generalization to handle any types of pages
+rmap_walk_anon() can called on. Maybe something similar to
+linear_page_index() will be added.
 
-The patch won't affect performance of the normal case where more useful 
-ICMP errors are received.
-
-I did look at trying to reintroduce the original function which guessed 
-the next smallest value. However since the routing cache has gone away I 
-don't think there's anywhere to find out the size of previously sent 
-packets without interrogating the upper protocol.. so handing the upper 
-protocol the 0 value and letting it handle it seems the best approach.
-
-Now perhaps the plateau-finding function should be reintroduced for tcp 
-and other stream-oriented protocols. Is "it could be done better" enough 
-reason to reject a patch that mitigates a real regression?
-
-Is there another reason you dislike this approach?
-
--- 
-Edward Allcutt
-Senior Systems Engineer
-OpenMarket | http://www.openmarket.com/
+Thanks,
+Naoya Horiguchi
