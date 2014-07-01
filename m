@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757649AbaGAIzo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 04:55:44 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:60667 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754703AbaGAIzm (ORCPT
+	id S1757668AbaGAI5L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 04:57:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54439 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755515AbaGAI5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 04:55:42 -0400
-Message-ID: <53B27789.3090509@gmail.com>
-Date: Tue, 01 Jul 2014 10:55:37 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-To: Peter Chen <peter.chen@freescale.com>,
-        =?ISO-8859-1?Q?Antoine_T=E9n?= =?ISO-8859-1?Q?art?= 
-	<antoine.tenart@free-electrons.com>
-CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, jszhang@marvell.com,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 07/12] usb: chipidea: add a generic driver
-References: <1403606121-6368-1-git-send-email-antoine.tenart@free-electrons.com> <1403606121-6368-8-git-send-email-antoine.tenart@free-electrons.com> <20140627032506.GA18039@shlinux1.ap.freescale.net> <20140630133313.GA11880@kwain> <20140701002112.GA26146@shlinux1.ap.freescale.net>
-In-Reply-To: <20140701002112.GA26146@shlinux1.ap.freescale.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 1 Jul 2014 04:57:09 -0400
+Date: Tue, 1 Jul 2014 10:56:58 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@linaro.org>,
+        Paul Turner <pjt@google.com>, Mel Gorman <mgorman@suse.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: select 'idle' cfs_rq per task-group to prevent
+ tg-internal imbalance
+Message-ID: <20140701085658.GM6758@twins.programming.kicks-ass.net>
+References: <53A11A89.5000602@linux.vnet.ibm.com>
+ <20140623094251.GS19860@laptop.programming.kicks-ass.net>
+ <53A8F1DE.2060908@linux.vnet.ibm.com>
+ <20140701082020.GL6758@twins.programming.kicks-ass.net>
+ <53B273A2.5050500@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Oaap7OtF9SpYl9KE"
+Content-Disposition: inline
+In-Reply-To: <53B273A2.5050500@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2014 02:21 AM, Peter Chen wrote:
-> On Mon, Jun 30, 2014 at 03:33:13PM +0200, Antoine Ténart wrote:
->> On Fri, Jun 27, 2014 at 11:25:07AM +0800, Peter Chen wrote:
->>> On Tue, Jun 24, 2014 at 12:35:16PM +0200, Antoine Ténart wrote:
->>>> +
->>>> +static const struct of_device_id ci_hdrc_generic_of_match[] = {
->>>> +	{ .compatible = "chipidea-usb" },
->>>> +	{ }
->>>> +};
->>>
->>> Even as a generic driver, you can also use your own compatible string.
->>
->> Well, there is nothing specific about the Berlin CI. Some subsystems
->> use the 'generic' keyword in these cases. Do you see a particular reason
->> I should use some Berlin related compatible here?
->
-> Not must, one suggestion is: can you change the compatible string
-> to "chipidea-usb-generic"?
 
-I don't know about ChipIdea/ARC/DW's product portfolio but I guess
-the compatible should also carry '2.0' or 'usb2' in it. Or we just
-use some version number like 'chipidea,ci13000' or 'chipidea,ci13xxx'.
+--Oaap7OtF9SpYl9KE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sebastian
+On Tue, Jul 01, 2014 at 04:38:58PM +0800, Michael wang wrote:
+> On 07/01/2014 04:20 PM, Peter Zijlstra wrote:
+> [snip]
+> >>
+> >> Just wondering could we make this another scheduler feature?
+> >=20
+> > No; sched_feat() is for debugging, BIG CLUE: its guarded by
+> > CONFIG_SCHED_DEBUG, anybody using it in production or anywhere else is
+> > broken.
+> >=20
+> > If people are using it, I should remove or at least randomize the
+> > interface.
+>=20
+> Fair enough... but is there any suggestions on how to handle this issue?
+>=20
+> Currently when dbench running with stress, it could only gain one CPU,
+> and cpu-cgroup cpu.shares is meaningless, is there any good methods to
+> address that?
 
+So as far as I understood this is because of 'other' tasks; these other
+tasks have never been fully qualified, but I suspect they're workqueue
+thingies. One solution would be to have work run in the same cgroup as
+the task creating it.
+
+The thing is, this is not a scheduler problem, so we should not fix it
+in the scheduler.
+
+--Oaap7OtF9SpYl9KE
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTsnfaAAoJEHZH4aRLwOS69AUP/2hGAyoJQRpc9Ri+BzqmQc0q
+I15CYWZy4M5P4s65ELC3f1OKbp4m0HiuPwjWlwG8NjgrLJ+hEGBMJPzHopqpF1dS
+l8x8xPAw4D9k/P2k4WzdzlLnAtMHrwNdzDdgqavwmQio8Zj1DEzxcvuFiriif6Em
+Xzb5Rn9KthJhoF2bTdgaEF6YZvol+IMEuOurvnJP+45AqrHB30w3iOsVMBfaR9jy
+tL6ndjTEaYrbAwrwI1Ypz/MXeuCSWEZ5pJMqV5v7l4M36zgZabJvxv35qmY/ZC2m
+3jhiTes2YufgnO6RFedthJfJ1OW+ugrojJuWTlXpJBSAqdRAErKukpSRsUylRHbZ
+PVLAlwuA0DbCbSi+09V27SgueUQEw+cWP6D3zxUnpxkZGe4K5VgAeKVUCJW+qF9B
+33hmX5pD8IC52DQB4yOFb2AeGbwNJ1aPnd0YgYclvOyhLFZNuw38gOYk7G476M7S
+H6S09Ut3JmMXOHyevnqpdGoGiwvUnuNgVTRDhs5HIqPpSp/wFJG29GYbaWZjlYQ3
+zhPYfjP2bpPt/KSKofoMTFh/jZhdcnGfmVuWq/XoY8eus2hGX06uSYI3IANTdKZT
+ghPGss5kxtL+FhIK9wl4PV4TLwdPcvFPWbBQun3SbMwaK08zDHcyUhUmUtkZpb/C
+wYTjiFZ4aSzi1Ze9I551
+=O9BK
+-----END PGP SIGNATURE-----
+
+--Oaap7OtF9SpYl9KE--
