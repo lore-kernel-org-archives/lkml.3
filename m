@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758158AbaGAPSl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 11:18:41 -0400
-Received: from mail.eperm.de ([89.247.134.16]:46447 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754932AbaGAPSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 11:18:40 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: herbert@gondor.apana.org.au
-Cc: Rafael Aquini <aquini@redhat.com>, aris@redhat.com,
-        Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4] DRBG: Fixes for code review comments
-Date: Tue, 01 Jul 2014 17:06:58 +0200
-Message-ID: <36957559.tbJt1gJF6I@myon.chronox.de>
-User-Agent: KMail/4.12.5 (Linux/3.14.9-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
+	id S1758212AbaGAPSq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 11:18:46 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:39996 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755522AbaGAPSm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 11:18:42 -0400
+Message-ID: <53B2D151.60404@cogentembedded.com>
+Date: Tue, 01 Jul 2014 19:18:41 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Peter Chen <peter.chen@freescale.com>
+CC: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 07/12] usb: chipidea: add a generic driver
+References: <1403606121-6368-1-git-send-email-antoine.tenart@free-electrons.com> <1403606121-6368-8-git-send-email-antoine.tenart@free-electrons.com> <20140627032506.GA18039@shlinux1.ap.freescale.net> <20140630133313.GA11880@kwain> <20140701002112.GA26146@shlinux1.ap.freescale.net> <53B27789.3090509@gmail.com> <20140701083007.GB26146@shlinux1.ap.freescale.net> <20140701104254.GD3427@piout.net>
+In-Reply-To: <20140701104254.GD3427@piout.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello.
 
-the following fixes cover comments from code reviewers. The patch set
-is an addition to the patch set offered several days ago [1].
+On 07/01/2014 02:42 PM, Alexandre Belloni wrote:
 
-[1] https://lkml.org/lkml/2014/6/28/497
+>>>>> Well, there is nothing specific about the Berlin CI. Some subsystems
+>>>>> use the 'generic' keyword in these cases. Do you see a particular reason
+>>>>> I should use some Berlin related compatible here?
 
-Stephan Mueller (4):
-  DRBG: Select correct DRBG core for stdrng
-  DRBG: Mix a time stamp into DRBG state
-  DRBG: fix memory corruption for AES192
-  DRBG: HMAC-SHA1 DRBG has crypto strength of 128 bits
+>>>> Not must, one suggestion is: can you change the compatible string
+>>>> to "chipidea-usb-generic"?
 
- crypto/drbg.c         | 77 ++++++++++++++++++++++++++++++++-------------------
- include/crypto/drbg.h |  2 +-
- 2 files changed, 49 insertions(+), 30 deletions(-)
+>>> I don't know about ChipIdea/ARC/DW's product portfolio but I guess
+>>> the compatible should also carry '2.0' or 'usb2' in it. Or we just
+>>> use some version number like 'chipidea,ci13000' or 'chipidea,ci13xxx'.
 
--- 
-1.9.3
+>> The recommended format for compatible string is: "manufacturer,model",
+>> I agree with "chipidea,ci13xxx", thanks.
 
+> I think we should probably avoid using wildcards in the compatible
+> string.
+
+    I'm sure wildcards shouldn't be allowed there. :-)
+
+WBR, Sergei
 
