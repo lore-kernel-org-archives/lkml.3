@@ -1,225 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881AbaGAUlK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 16:41:10 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:38444 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366AbaGAUlH (ORCPT
+	id S1755100AbaGAUnS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 16:43:18 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:58427 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752100AbaGAUnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 16:41:07 -0400
-Date: Tue, 1 Jul 2014 16:41:03 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jens Axboe <axboe@kernel.dk>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Josh Boyer <jwboyer@fedoraproject.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Brian Lane <bcl@redhat.com>, John McCutchan <john@johnmccutchan.com>,
-        Robert Love <rlove@rlove.org>, Eric Paris <eparis@parisplace.org>
-Subject: [PATCH driver-core-linus] kernfs: kernfs_notify() must be useable
- from non-sleepable contexts
-Message-ID: <20140701204103.GA12459@htj.dyndns.org>
-References: <CA+5PVA4h2hQJLrAm4eEZ8oUgGiAjq2y5eAyBcJWxK_FiQXnuQg@mail.gmail.com>
- <20140629082637.GA23942@redhat.com>
- <20140629193222.GA7030@lst.de>
- <20140629204710.GB11100@redhat.com>
- <53B07D48.60003@kernel.dk>
- <20140630201741.GA20853@htj.dyndns.org>
+	Tue, 1 Jul 2014 16:43:17 -0400
+Date: Tue, 1 Jul 2014 16:43:10 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [BUILD BUG][3.16-rc3] Error: too many copied sections (max =
+ 13)
+Message-ID: <20140701164310.34841e1d@gandalf.local.home>
+In-Reply-To: <CALCETrUJUvhGN3hrECf9A=vHkHSNqZ2KtMyDnmrhb-uTpgP6Nw@mail.gmail.com>
+References: <20140701000913.5ea51f77@gandalf.local.home>
+	<CALCETrUJUvhGN3hrECf9A=vHkHSNqZ2KtMyDnmrhb-uTpgP6Nw@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140630201741.GA20853@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-d911d9874801 ("kernfs: make kernfs_notify() trigger inotify events
-too") added fsnotify triggering to kernfs_notify() which requires a
-sleepable context.  There are already existing users of
-kernfs_notify() which invoke it from an atomic context and in general
-it's silly to require a sleepable context for triggering a
-notification.
+On Mon, 30 Jun 2014 22:09:18 -0700
+Andy Lutomirski <luto@amacapital.net> wrote:
 
-The following is an invalid context bug triggerd by md invoking
-sysfs_notify() from IO completion path.
+> 
+> for i in arch/x86/vdso/*.so.dbg; do echo $i; eu-readelf -S $i; done
+> 
+> after a failed build?
+> 
+> Let the game of section whack-a-mole begin.
 
- BUG: sleeping function called from invalid context at kernel/locking/mutex.c:586
- in_atomic(): 1, irqs_disabled(): 1, pid: 0, name: swapper/1
- 2 locks held by swapper/1/0:
-  #0:  (&(&vblk->vq_lock)->rlock){-.-...}, at: [<ffffffffa0039042>] virtblk_done+0x42/0xe0 [virtio_blk]
-  #1:  (&(&bitmap->counts.lock)->rlock){-.....}, at: [<ffffffff81633718>] bitmap_endwrite+0x68/0x240
- irq event stamp: 33518
- hardirqs last  enabled at (33515): [<ffffffff8102544f>] default_idle+0x1f/0x230
- hardirqs last disabled at (33516): [<ffffffff818122ed>] common_interrupt+0x6d/0x72
- softirqs last  enabled at (33518): [<ffffffff810a1272>] _local_bh_enable+0x22/0x50
- softirqs last disabled at (33517): [<ffffffff810a29e0>] irq_enter+0x60/0x80
- CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.16.0-0.rc2.git2.1.fc21.x86_64 #1
- Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-  0000000000000000 f90db13964f4ee05 ffff88007d403b80 ffffffff81807b4c
-  0000000000000000 ffff88007d403ba8 ffffffff810d4f14 0000000000000000
-  0000000000441800 ffff880078fa1780 ffff88007d403c38 ffffffff8180caf2
- Call Trace:
-  <IRQ>  [<ffffffff81807b4c>] dump_stack+0x4d/0x66
-  [<ffffffff810d4f14>] __might_sleep+0x184/0x240
-  [<ffffffff8180caf2>] mutex_lock_nested+0x42/0x440
-  [<ffffffff812d76a0>] kernfs_notify+0x90/0x150
-  [<ffffffff8163377c>] bitmap_endwrite+0xcc/0x240
-  [<ffffffffa00de863>] close_write+0x93/0xb0 [raid1]
-  [<ffffffffa00df029>] r1_bio_write_done+0x29/0x50 [raid1]
-  [<ffffffffa00e0474>] raid1_end_write_request+0xe4/0x260 [raid1]
-  [<ffffffff813acb8b>] bio_endio+0x6b/0xa0
-  [<ffffffff813b46c4>] blk_update_request+0x94/0x420
-  [<ffffffff813bf0ea>] blk_mq_end_io+0x1a/0x70
-  [<ffffffffa00392c2>] virtblk_request_done+0x32/0x80 [virtio_blk]
-  [<ffffffff813c0648>] __blk_mq_complete_request+0x88/0x120
-  [<ffffffff813c070a>] blk_mq_complete_request+0x2a/0x30
-  [<ffffffffa0039066>] virtblk_done+0x66/0xe0 [virtio_blk]
-  [<ffffffffa002535a>] vring_interrupt+0x3a/0xa0 [virtio_ring]
-  [<ffffffff81116177>] handle_irq_event_percpu+0x77/0x340
-  [<ffffffff8111647d>] handle_irq_event+0x3d/0x60
-  [<ffffffff81119436>] handle_edge_irq+0x66/0x130
-  [<ffffffff8101c3e4>] handle_irq+0x84/0x150
-  [<ffffffff818146ad>] do_IRQ+0x4d/0xe0
-  [<ffffffff818122f2>] common_interrupt+0x72/0x72
-  <EOI>  [<ffffffff8105f706>] ? native_safe_halt+0x6/0x10
-  [<ffffffff81025454>] default_idle+0x24/0x230
-  [<ffffffff81025f9f>] arch_cpu_idle+0xf/0x20
-  [<ffffffff810f5adc>] cpu_startup_entry+0x37c/0x7b0
-  [<ffffffff8104df1b>] start_secondary+0x25b/0x300
+As this is just a compile failure, I can work on this even while it
+builds for my test boxes.
 
-This patch fixes it by punting the notification delivery through a
-work item.  This ends up adding an extra pointer to kernfs_elem_attr
-enlarging kernfs_node by a pointer, which is not ideal but not a very
-big deal either.  If this turns out to be an actual issue, we can move
-kernfs_elem_attr->size to kernfs_node->iattr later.
+Here's the result after a build:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
----
- fs/kernfs/file.c       |   69 +++++++++++++++++++++++++++++++++++++++----------
- include/linux/kernfs.h |    1 
- 2 files changed, 56 insertions(+), 14 deletions(-)
+arch/x86/vdso/vdso32-int80.so.dbg
+There are 27 section headers, starting at offset 0x2f9c:
 
---- a/fs/kernfs/file.c
-+++ b/fs/kernfs/file.c
-@@ -39,6 +39,19 @@ struct kernfs_open_node {
- 	struct list_head	files; /* goes through kernfs_open_file.list */
- };
- 
-+/*
-+ * kernfs_notify() may be called from any context and bounces notifications
-+ * through a work item.  To minimize space overhead in kernfs_node, the
-+ * pending queue is implemented as a singly linked list of kernfs_nodes.
-+ * The list is terminated with the self pointer so that whether a
-+ * kernfs_node is on the list or not can be determined by testing the next
-+ * pointer for NULL.
-+ */
-+#define KERNFS_NOTIFY_EOL			((void *)&kernfs_notify_list)
-+
-+static DEFINE_SPINLOCK(kernfs_notify_lock);
-+static struct kernfs_node *kernfs_notify_list = KERNFS_NOTIFY_EOL;
-+
- static struct kernfs_open_file *kernfs_of(struct file *file)
- {
- 	return ((struct seq_file *)file->private_data)->private;
-@@ -783,24 +796,25 @@ static unsigned int kernfs_fop_poll(stru
- 	return DEFAULT_POLLMASK|POLLERR|POLLPRI;
- }
- 
--/**
-- * kernfs_notify - notify a kernfs file
-- * @kn: file to notify
-- *
-- * Notify @kn such that poll(2) on @kn wakes up.
-- */
--void kernfs_notify(struct kernfs_node *kn)
-+static void kernfs_notify_workfn(struct work_struct *work)
- {
--	struct kernfs_root *root = kernfs_root(kn);
-+	struct kernfs_node *kn;
- 	struct kernfs_open_node *on;
- 	struct kernfs_super_info *info;
--	unsigned long flags;
--
--	if (WARN_ON(kernfs_type(kn) != KERNFS_FILE))
-+repeat:
-+	/* pop one off the notify_list */
-+	spin_lock_irq(&kernfs_notify_lock);
-+	kn = kernfs_notify_list;
-+	if (kn == KERNFS_NOTIFY_EOL) {
-+		spin_unlock_irq(&kernfs_notify_lock);
- 		return;
-+	}
-+	kernfs_notify_list = kn->attr.notify_next;
-+	kn->attr.notify_next = NULL;
-+	spin_unlock_irq(&kernfs_notify_lock);
- 
- 	/* kick poll */
--	spin_lock_irqsave(&kernfs_open_node_lock, flags);
-+	spin_lock_irq(&kernfs_open_node_lock);
- 
- 	on = kn->attr.open;
- 	if (on) {
-@@ -808,12 +822,12 @@ void kernfs_notify(struct kernfs_node *k
- 		wake_up_interruptible(&on->poll);
- 	}
- 
--	spin_unlock_irqrestore(&kernfs_open_node_lock, flags);
-+	spin_unlock_irq(&kernfs_open_node_lock);
- 
- 	/* kick fsnotify */
- 	mutex_lock(&kernfs_mutex);
- 
--	list_for_each_entry(info, &root->supers, node) {
-+	list_for_each_entry(info, &kernfs_root(kn)->supers, node) {
- 		struct inode *inode;
- 		struct dentry *dentry;
- 
-@@ -833,6 +847,33 @@ void kernfs_notify(struct kernfs_node *k
- 	}
- 
- 	mutex_unlock(&kernfs_mutex);
-+	kernfs_put(kn);
-+	goto repeat;
-+}
-+
-+/**
-+ * kernfs_notify - notify a kernfs file
-+ * @kn: file to notify
-+ *
-+ * Notify @kn such that poll(2) on @kn wakes up.  Maybe be called from any
-+ * context.
-+ */
-+void kernfs_notify(struct kernfs_node *kn)
-+{
-+	static DECLARE_WORK(kernfs_notify_work, kernfs_notify_workfn);
-+	unsigned long flags;
-+
-+	if (WARN_ON(kernfs_type(kn) != KERNFS_FILE))
-+		return;
-+
-+	spin_lock_irqsave(&kernfs_notify_lock, flags);
-+	if (!kn->attr.notify_next) {
-+		kernfs_get(kn);
-+		kn->attr.notify_next = kernfs_notify_list;
-+		kernfs_notify_list = kn;
-+		schedule_work(&kernfs_notify_work);
-+	}
-+	spin_unlock_irqrestore(&kernfs_notify_lock, flags);
- }
- EXPORT_SYMBOL_GPL(kernfs_notify);
- 
---- a/include/linux/kernfs.h
-+++ b/include/linux/kernfs.h
-@@ -91,6 +91,7 @@ struct kernfs_elem_attr {
- 	const struct kernfs_ops	*ops;
- 	struct kernfs_open_node	*open;
- 	loff_t			size;
-+	struct kernfs_node	*notify_next;	/* for kernfs_notify() */
- };
- 
- /*
+Section Headers:
+[Nr] Name                 Type         Addr     Off    Size   ES Flags Lk Inf Al
+[ 0]                      NULL         00000000 000000 000000  0        0   0  0
+[ 1] .hash                HASH         000000b4 0000b4 000038  4 A      2   0  4
+[ 2] .dynsym              DYNSYM       000000ec 0000ec 000090 16 A      3   1  4
+[ 3] .dynstr              STRTAB       0000017c 00017c 000095  0 A      0   0  1
+[ 4] .gnu.version         GNU_versym   00000212 000212 000012  2 A      2   0  2
+[ 5] .gnu.version_d       GNU_verdef   00000224 000224 000054  0 A      3   3  4
+[ 6] .dynamic             DYNAMIC      00000278 000278 000080  8 WA     3   0  4
+[ 7] .rodata              PROGBITS     000002f8 0002f8 000228  4 WA     0   0  4
+[ 8] .fake_shstrtab       PROGBITS     00000520 000520 000076  0 A      0   0  4
+[ 9] .note                NOTE         00000598 000598 00003c  0 A      0   0  4
+[10] .eh_frame_hdr        PROGBITS     000005d4 0005d4 000024  0 A      0   0  4
+[11] .eh_frame            PROGBITS     000005f8 0005f8 0000f4  0 A      0   0  4
+[12] .text                PROGBITS     000006f0 0006f0 000373  0 AX     0   0 16
+[13] .altinstructions     PROGBITS     00000a63 000a63 000018  0 A      0   0  1
+[14] .altinstr_replacement PROGBITS     00000a7b 000a7b 000006  0 AX     0   0  1
+[15] .debug_info          PROGBITS     00000000 000a81 001161  0        0   0  1
+[16] .debug_abbrev        PROGBITS     00000000 001be2 0002b7  0        0   0  1
+[17] .debug_loc           PROGBITS     00000000 001e99 0000e0  0        0   0  1
+[18] .debug_aranges       PROGBITS     00000000 001f80 000040  0        0   0  8
+[19] .debug_ranges        PROGBITS     00000000 001fc0 000060  0        0   0  1
+[20] .debug_line          PROGBITS     00000000 002020 000633  0        0   0  1
+[21] .debug_str           PROGBITS     00000000 002653 000733  1 MS     0   0  1
+[22] .comment             PROGBITS     00000000 002d86 000011  1 MS     0   0  1
+[23] .debug_frame         PROGBITS     00000000 002d98 0000dc  0        0   0  4
+[24] .shstrtab            STRTAB       00000000 002e74 000127  0        0   0  1
+[25] .symtab              SYMTAB       00000000 0033d4 000340 16       26  44  4
+[26] .strtab              STRTAB       00000000 003714 0001e3  0        0   0  1
+
+arch/x86/vdso/vdso32-syscall.so.dbg
+There are 27 section headers, starting at offset 0x2fac:
+
+Section Headers:
+[Nr] Name                 Type         Addr     Off    Size   ES Flags Lk Inf Al
+[ 0]                      NULL         00000000 000000 000000  0        0   0  0
+[ 1] .hash                HASH         000000b4 0000b4 000038  4 A      2   0  4
+[ 2] .dynsym              DYNSYM       000000ec 0000ec 000090 16 A      3   1  4
+[ 3] .dynstr              STRTAB       0000017c 00017c 000095  0 A      0   0  1
+[ 4] .gnu.version         GNU_versym   00000212 000212 000012  2 A      2   0  2
+[ 5] .gnu.version_d       GNU_verdef   00000224 000224 000054  0 A      3   3  4
+[ 6] .dynamic             DYNAMIC      00000278 000278 000080  8 WA     3   0  4
+[ 7] .rodata              PROGBITS     000002f8 0002f8 000220  4 WA     0   0  4
+[ 8] .fake_shstrtab       PROGBITS     00000518 000518 000076  0 A      0   0  4
+[ 9] .note                NOTE         00000590 000590 00003c  0 A      0   0  4
+[10] .eh_frame_hdr        PROGBITS     000005cc 0005cc 000024  0 A      0   0  4
+[11] .eh_frame            PROGBITS     000005f0 0005f0 0000fc  0 A      0   0  4
+[12] .text                PROGBITS     000006f0 0006f0 000380  0 AX     0   0 16
+[13] .altinstructions     PROGBITS     00000a70 000a70 000018  0 A      0   0  1
+[14] .altinstr_replacement PROGBITS     00000a88 000a88 000006  0 AX     0   0  1
+[15] .debug_info          PROGBITS     00000000 000a8e 001161  0        0   0  1
+[16] .debug_abbrev        PROGBITS     00000000 001bef 0002b7  0        0   0  1
+[17] .debug_loc           PROGBITS     00000000 001ea6 0000e0  0        0   0  1
+[18] .debug_aranges       PROGBITS     00000000 001f88 000040  0        0   0  8
+[19] .debug_ranges        PROGBITS     00000000 001fc8 000060  0        0   0  1
+[20] .debug_line          PROGBITS     00000000 002028 00063b  0        0   0  1
+[21] .debug_str           PROGBITS     00000000 002663 000733  1 MS     0   0  1
+[22] .comment             PROGBITS     00000000 002d96 000011  1 MS     0   0  1
+[23] .debug_frame         PROGBITS     00000000 002da8 0000dc  0        0   0  4
+[24] .shstrtab            STRTAB       00000000 002e84 000127  0        0   0  1
+[25] .symtab              SYMTAB       00000000 0033e4 000340 16       26  44  4
+[26] .strtab              STRTAB       00000000 003724 0001e3  0        0   0  1
+
+arch/x86/vdso/vdso32-sysenter.so.dbg
+There are 27 section headers, starting at offset 0x2fb4:
+
+Section Headers:
+[Nr] Name                 Type         Addr     Off    Size   ES Flags Lk Inf Al
+[ 0]                      NULL         00000000 000000 000000  0        0   0  0
+[ 1] .hash                HASH         000000b4 0000b4 000038  4 A      2   0  4
+[ 2] .dynsym              DYNSYM       000000ec 0000ec 000090 16 A      3   1  4
+[ 3] .dynstr              STRTAB       0000017c 00017c 000095  0 A      0   0  1
+[ 4] .gnu.version         GNU_versym   00000212 000212 000012  2 A      2   0  2
+[ 5] .gnu.version_d       GNU_verdef   00000224 000224 000054  0 A      3   3  4
+[ 6] .dynamic             DYNAMIC      00000278 000278 000080  8 WA     3   0  4
+[ 7] .rodata              PROGBITS     000002f8 0002f8 000214  4 WA     0   0  4
+[ 8] .fake_shstrtab       PROGBITS     0000050c 00050c 000076  0 A      0   0  4
+[ 9] .note                NOTE         00000584 000584 00003c  0 A      0   0  4
+[10] .eh_frame_hdr        PROGBITS     000005c0 0005c0 000024  0 A      0   0  4
+[11] .eh_frame            PROGBITS     000005e4 0005e4 000108  0 A      0   0  4
+[12] .text                PROGBITS     000006f0 0006f0 000384  0 AX     0   0 16
+[13] .altinstructions     PROGBITS     00000a74 000a74 000018  0 A      0   0  1
+[14] .altinstr_replacement PROGBITS     00000a8c 000a8c 000006  0 AX     0   0  1
+[15] .debug_info          PROGBITS     00000000 000a92 001161  0        0   0  1
+[16] .debug_abbrev        PROGBITS     00000000 001bf3 0002b7  0        0   0  1
+[17] .debug_loc           PROGBITS     00000000 001eaa 0000e0  0        0   0  1
+[18] .debug_aranges       PROGBITS     00000000 001f90 000040  0        0   0  8
+[19] .debug_ranges        PROGBITS     00000000 001fd0 000060  0        0   0  1
+[20] .debug_line          PROGBITS     00000000 002030 00063c  0        0   0  1
+[21] .debug_str           PROGBITS     00000000 00266c 000733  1 MS     0   0  1
+[22] .comment             PROGBITS     00000000 002d9f 000011  1 MS     0   0  1
+[23] .debug_frame         PROGBITS     00000000 002db0 0000dc  0        0   0  4
+[24] .shstrtab            STRTAB       00000000 002e8c 000127  0        0   0  1
+[25] .symtab              SYMTAB       00000000 0033ec 000350 16       26  45  4
+[26] .strtab              STRTAB       00000000 00373c 0001fa  0        0   0  1
+
+arch/x86/vdso/vdso64.so.dbg
+There are 27 section headers, starting at offset 0x4460:
+
+Section Headers:
+[Nr] Name                 Type         Addr             Off      Size     ES Flags Lk Inf Al
+[ 0]                      NULL         0000000000000000 00000000 00000000  0        0   0  0
+[ 1] .hash                HASH         0000000000000120 00000120 00000040  4 A      2   0  8
+[ 2] .dynsym              DYNSYM       0000000000000160 00000160 00000108 24 A      3   2  8
+[ 3] .dynstr              STRTAB       0000000000000268 00000268 0000005e  0 A      0   0  1
+[ 4] .gnu.version         GNU_versym   00000000000002c6 000002c6 00000016  2 A      2   0  2
+[ 5] .gnu.version_d       GNU_verdef   00000000000002e0 000002e0 00000038  0 A      3   2  8
+[ 6] .dynamic             DYNAMIC      0000000000000318 00000318 00000100 16 WA     3   0  8
+[ 7] .rodata              PROGBITS     0000000000000418 00000418 00000340  8 WA     0   0  8
+[ 8] .fake_shstrtab       PROGBITS     0000000000000760 00000760 00000076  0 A      0   0 32
+[ 9] .note                NOTE         00000000000007d8 000007d8 0000003c  0 A      0   0  4
+[10] .eh_frame_hdr        PROGBITS     0000000000000814 00000814 00000034  0 A      0   0  4
+[11] .eh_frame            PROGBITS     0000000000000848 00000848 000000f8  0 A      0   0  8
+[12] .text                PROGBITS     0000000000000940 00000940 00000460  0 AX     0   0 16
+[13] .altinstructions     PROGBITS     0000000000000da0 00000da0 00000018  0 A      0   0  1
+[14] .altinstr_replacement PROGBITS     0000000000000db8 00000db8 00000006  0 AX     0   0  1
+[15] .rela.dyn            RELA         0000000000000dc0 00000dc0 00000000 24 A      2   0  8
+[16] .debug_info          PROGBITS     0000000000000000 00000dc0 0000171c  0        0   0  1
+[17] .debug_abbrev        PROGBITS     0000000000000000 000024dc 00000468  0        0   0  1
+[18] .debug_loc           PROGBITS     0000000000000000 00002944 0000026c  0        0   0  1
+[19] .debug_aranges       PROGBITS     0000000000000000 00002bb0 00000060  0        0   0  1
+[20] .debug_ranges        PROGBITS     0000000000000000 00002c10 000006e0  0        0   0  1
+[21] .debug_line          PROGBITS     0000000000000000 000032f0 0000085f  0        0   0  1
+[22] .debug_str           PROGBITS     0000000000000000 00003b4f 000007d5  1 MS     0   0  1
+[23] .comment             PROGBITS     0000000000000000 00004324 00000011  1 MS     0   0  1
+[24] .shstrtab            STRTAB       0000000000000000 00004335 00000124  0        0   0  1
+[25] .symtab              SYMTAB       0000000000000000 00004b20 00000468 24       26  38  8
+[26] .strtab              STRTAB       0000000000000000 00004f88 00000156  0        0   0  1
+
+arch/x86/vdso/vdso.so.dbg
+There are 24 section headers, starting at offset 0x4300:
+
+Section Headers:
+[Nr] Name                 Type         Addr             Off      Size     ES Flags Lk Inf Al
+[ 0]                      NULL         0000000000000000 00000000 00000000  0        0   0  0
+[ 1] .hash                HASH         0000000000000120 00000120 00000040  4 A      2   0  8
+[ 2] .dynsym              DYNSYM       0000000000000160 00000160 00000108 24 A      3   2  8
+[ 3] .dynstr              STRTAB       0000000000000268 00000268 0000005e  0 A      0   0  1
+[ 4] .gnu.version         GNU_versym   00000000000002c6 000002c6 00000016  2 A      2   0  2
+[ 5] .gnu.version_d       GNU_verdef   00000000000002e0 000002e0 00000038  0 A      3   2  8
+[ 6] .note                NOTE         0000000000000318 00000318 00000018  0 A      0   0  4
+[ 7] .eh_frame_hdr        PROGBITS     0000000000000330 00000330 00000034  0 A      0   0  4
+[ 8] .eh_frame            PROGBITS     0000000000000368 00000368 000000f8  0 A      0   0  8
+[ 9] .dynamic             DYNAMIC      0000000000000460 00000460 000000f0 16 WA     3   0  8
+[10] .altinstructions     PROGBITS     0000000000000550 00000550 00000018  0 A      0   0  1
+[11] .altinstr_replacement PROGBITS     0000000000000568 00000568 00000006  0 AX     0   0  1
+[12] .text                PROGBITS     0000000000000600 00000600 0000048d  0 AX     0   0 16
+[13] .debug_info          PROGBITS     0000000000000000 00000a8d 0000183b  0        0   0  1
+[14] .debug_abbrev        PROGBITS     0000000000000000 000022c8 00000481  0        0   0  1
+[15] .debug_loc           PROGBITS     0000000000000000 00002749 0000026c  0        0   0  1
+[16] .debug_aranges       PROGBITS     0000000000000000 000029b5 00000060  0        0   0  1
+[17] .debug_ranges        PROGBITS     0000000000000000 00002a15 000006e0  0        0   0  1
+[18] .debug_line          PROGBITS     0000000000000000 000030f5 00000810  0        0   0  1
+[19] .debug_str           PROGBITS     0000000000000000 00003905 000008e6  1 MS     0   0  1
+[20] .comment             PROGBITS     0000000000000000 000041eb 00000011  1 MS     0   0  1
+[21] .shstrtab            STRTAB       0000000000000000 000041fc 00000103  0        0   0  1
+[22] .symtab              SYMTAB       0000000000000000 00004900 00000360 24       23  27  8
+[23] .strtab              STRTAB       0000000000000000 00004c60 000000c8  0        0   0  1
+
+arch/x86/vdso/vdsox32.so.dbg
+There are 17 section headers, starting at offset 0xb78:
+
+Section Headers:
+[Nr] Name                 Type         Addr     Off    Size   ES Flags Lk Inf Al
+[ 0]                      NULL         00000000 000000 000000  0        0   0  0
+[ 1] .hash                HASH         000000b4 0000b4 000030  4 A      2   0  4
+[ 2] .dynsym              DYNSYM       000000e4 0000e4 000070 16 A      3   2  4
+[ 3] .dynstr              STRTAB       00000154 000154 00005e  0 A      0   0  1
+[ 4] .gnu.version         GNU_versym   000001b2 0001b2 00000e  2 A      2   0  2
+[ 5] .gnu.version_d       GNU_verdef   000001c0 0001c0 000038  0 A      3   2  4
+[ 6] .note                NOTE         000001f8 0001f8 000018  0 A      0   0  4
+[ 7] .eh_frame_hdr        PROGBITS     00000210 000210 00003c  0 A      0   0  4
+[ 8] .eh_frame            PROGBITS     00000250 000250 000110  0 A      0   0  8
+[ 9] .dynamic             DYNAMIC      00000360 000360 000080  8 WA     3   0  4
+[10] .altinstructions     PROGBITS     000003e0 0003e0 000048  0 A      0   0  1
+[11] .altinstr_replacement PROGBITS     00000428 000428 000012  0 AX     0   0  1
+[12] .text                PROGBITS     00000500 000500 0005bc  0 AX     0   0 16
+[13] .comment             PROGBITS     00000000 000abc 000011  1 MS     0   0  1
+[14] .shstrtab            STRTAB       00000000 000acd 0000aa  0        0   0  1
+[15] .symtab              SYMTAB       00000000 000e20 000230 16       16  30  4
+[16] .strtab              STRTAB       00000000 001050 00011e  0        0   0  1
+
+
+
+-- Steve
