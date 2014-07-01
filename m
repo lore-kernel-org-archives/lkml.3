@@ -1,97 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757128AbaGATXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 15:23:53 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44278 "EHLO mail.skyhub.de"
+	id S1758598AbaGATYk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 15:24:40 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44280 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751499AbaGATXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752064AbaGATXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Jul 2014 15:23:50 -0400
 From: Borislav Petkov <bp@alien8.de>
 To: linux-edac <linux-edac@vger.kernel.org>
 Cc: Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -v3 0/4] RAS: Correctable Errors Collector thing
-Date: Tue,  1 Jul 2014 21:23:39 +0200
-Message-Id: <1404242623-10094-1-git-send-email-bp@alien8.de>
+Subject: [PATCH -v3 4/4] MCE, CE: Add debugging glue
+Date: Tue,  1 Jul 2014 21:23:43 +0200
+Message-Id: <1404242623-10094-5-git-send-email-bp@alien8.de>
 X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1404242623-10094-1-git-send-email-bp@alien8.de>
+References: <1404242623-10094-1-git-send-email-bp@alien8.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <bp@suse.de>
 
-Ok,
+For testing purposes only.
 
-the next version.
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c | 28 +++++++++++++++++++++++++++-
+ drivers/ras/ce.c                 | 28 +++++++++++++++++++++++++++-
+ include/linux/ras.h              |  1 +
+ 3 files changed, 55 insertions(+), 2 deletions(-)
 
-Main changes from the last one are that we have a ce_ring now to which
-MCEs get logged in atomic context first and then, in process context,
-put into the CEC, just like this is done with the mce_ring.
-
-Also, the decay of the elements in the CEC happens not after CLEAN_ELEMS
-insertions of new elements only but the incrementation of an already
-inserted element counts too. We want to do that because otherwise we're
-not fair in aging the elements.
-
-Constructive feedback is, as always, appreciated.
-
-Thanks.
-
-Changelog:
-
-so here's v2 with the feedback from last time addressed (... hopefully).
-This is ontop of Gong's extlog stuff which is currently a moving target
-but I've based this stuff on it as we're starting slowly to relocate
-generic RAS stuff into drivers/ras/.
-
-A couple of points I was thinking about which we should talk about:
-
-* This version automatically removes the oldest element from the array
-when it gets full. With 512 PFNs max size, I think we should be ok.
-
-* If CEC (let's call this thing that) can perform all RAS actions
-needed/required, we should not forward correctable errors to userspace
-because it simply doesn't need to. Unless there is something more we
-want to do in userspace... we could make it configurable, dunno.
-This version simply collects the errors and does the soft offlining,
-thus issuing to dmesg something like this:
-
-[  520.872376] RAS: Soft-offlining pfn: 0xdead
-[  520.874384] soft offline: 0xdead page already poisoned
-
-I'm not sure what we want to do with this info - we need to think about
-it more but we're flexible there so... :-)
-
-My main reasoning behind not forwarding each single correctable error
-is that we don't want to upset the user unnecessarily and cause those
-expensive support calls.
-
-* Concerning policy and at which error count we should soft-offline a
-page and whether we should make it configurable or not and what the
-interface would be: we still don't know and we probably need to talk
-about it too. Right now, using 10 bits for that count feels right. The
-count gets decayed anyway.
-
-But, do we need to run it on lotsa live systems and hear feedback?
-Definitely.
-
-* As to why we're putting this in the kernel and enabling it by default:
-a userspace daemon is much more fragile than doing this in the kernel.
-And regardless of distro, everyone gets this.
-
-Borislav Petkov (4):
-  x86, MCE: Make the mce_ring explicit
-  RAS: Add a Corrected Errors Collector
-  MCE, CE: Wire in the CE collector
-  MCE, CE: Add debugging glue
-
- arch/x86/kernel/cpu/mcheck/mce.c | 132 +++++++++++++---
- drivers/ras/Kconfig              |  11 ++
- drivers/ras/Makefile             |   3 +-
- drivers/ras/ce.c                 | 322 +++++++++++++++++++++++++++++++++++++++
- include/linux/ras.h              |   3 +
- 5 files changed, 450 insertions(+), 21 deletions(-)
- create mode 100644 drivers/ras/ce.c
-
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index a15a09b29ed0..4a17e1d86ae7 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1418,6 +1418,8 @@ int mce_notify_irq(void)
+ 	/* Not more than two messages every minute */
+ 	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
+ 
++	mce_schedule_work();
++
+ 	if (test_and_clear_bit(0, &mce_need_notify)) {
+ 		/* wake processes polling /dev/mcelog */
+ 		wake_up_interruptible(&mce_chrdev_wait);
+@@ -2596,9 +2598,29 @@ static int fake_panic_set(void *data, u64 val)
+ DEFINE_SIMPLE_ATTRIBUTE(fake_panic_fops, fake_panic_get,
+ 			fake_panic_set, "%llu\n");
+ 
++static u64 cec_pfn;
++
++static int cec_pfn_get(void *data, u64 *val)
++{
++	*val = cec_pfn;
++
++	ce_dump_array();
++
++	return 0;
++}
++
++static int cec_pfn_set(void *data, u64 val)
++{
++	cec_pfn = val;
++
++	return ce_add_elem(val);
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(cec_pfn_ops, cec_pfn_get, cec_pfn_set, "0x%llx\n");
++
+ static int __init mcheck_debugfs_init(void)
+ {
+-	struct dentry *dmce, *ffake_panic;
++	struct dentry *dmce, *ffake_panic, *cec_pfn;
+ 
+ 	dmce = mce_get_debugfs_dir();
+ 	if (!dmce)
+@@ -2608,6 +2630,10 @@ static int __init mcheck_debugfs_init(void)
+ 	if (!ffake_panic)
+ 		return -ENOMEM;
+ 
++	cec_pfn = debugfs_create_file("cec_pfn", 0400, dmce, NULL, &cec_pfn_ops);
++	if (!cec_pfn)
++		return -ENOMEM;
++
+ 	return 0;
+ }
+ #else
+diff --git a/drivers/ras/ce.c b/drivers/ras/ce.c
+index 4cab8e8a4ef0..c3c7936527f1 100644
+--- a/drivers/ras/ce.c
++++ b/drivers/ras/ce.c
+@@ -94,6 +94,26 @@ static struct ce_array {
+ 
+ static DEFINE_MUTEX(ce_mutex);
+ 
++void ce_dump_array(void)
++{
++	struct ce_array *ca = &ce_arr;
++	u64 prev = 0;
++	int i;
++
++	pr_info("{ n: %d\n", ca->n);
++	for (i = 0; i < ca->n; i++) {
++		u64 this = PFN(ca->array[i]);
++
++		pr_info(" %03d: [%016llu|%03llx]\n", i, this, FULL_COUNT(ca->array[i]));
++
++		WARN_ON(prev > this);
++
++		prev = this;
++	}
++
++	pr_info("}\n");
++}
++
+ /*
+  * Decrement decay value. We're using DECAY_BITS bits to denote decay of an
+  * element in the array. On insertion and any access, it gets maxed
+@@ -180,6 +200,7 @@ static u64 del_lru_elem_unlocked(struct ce_array *ca)
+ {
+ 	unsigned int min = FULL_COUNT_MASK;
+ 	int i, min_idx = 0;
++	u64 pfn;
+ 
+ 	for (i = 0; i < ca->n; i++) {
+ 		unsigned int this = FULL_COUNT(ca->array[i]);
+@@ -189,9 +210,14 @@ static u64 del_lru_elem_unlocked(struct ce_array *ca)
+ 		}
+ 	}
+ 
++	pfn = PFN(ca->array[min_idx]);
++
++	pr_err("%s: Deleting ca[%d]: %016llu|%03x\n",
++		__func__, min_idx, pfn, min);
++
+ 	__del_elem(ca, min_idx);
+ 
+-	return PFN(ca->array[min_idx]);
++	return pfn;
+ }
+ 
+ /*
+diff --git a/include/linux/ras.h b/include/linux/ras.h
+index 24e82fb0fe99..a9aed3900453 100644
+--- a/include/linux/ras.h
++++ b/include/linux/ras.h
+@@ -13,4 +13,5 @@ static inline int ras_add_daemon_trace(void) { return 0; }
+ 
+ void __init ce_init(void);
+ int ce_add_elem(u64 pfn);
++void ce_dump_array(void);
+ #endif
 -- 
 2.0.0
 
