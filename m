@@ -1,409 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758827AbaGAVtd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:49:33 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.216]:43430 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755078AbaGAVry (ORCPT
+	id S1758842AbaGAVtv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:49:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55167 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752149AbaGAVtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:47:54 -0400
-X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
-X-RZG-CLASS-ID: mo00
-From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 48/50] mars: add new file drivers/block/mars/Kconfig
-Date: Tue,  1 Jul 2014 23:47:28 +0200
-Message-Id: <1404251250-22992-49-git-send-email-tst@schoebel-theuer.de>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
-References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
+	Tue, 1 Jul 2014 17:49:49 -0400
+Date: Tue, 1 Jul 2014 14:49:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: David Rientjes <rientjes@google.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Wei Yang <weiyang@linux.vnet.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: mm: slub: invalid memory access in setup_object
+Message-Id: <20140701144947.5ce3f93729759d8f38d7813a@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.11.1407010956470.5353@gentwo.org>
+References: <53AAFDF7.2010607@oracle.com>
+	<alpine.DEB.2.11.1406251228130.29216@gentwo.org>
+	<alpine.DEB.2.02.1406301500410.13545@chino.kir.corp.google.com>
+	<alpine.DEB.2.11.1407010956470.5353@gentwo.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
----
- drivers/block/mars/Kconfig | 371 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 371 insertions(+)
- create mode 100644 drivers/block/mars/Kconfig
+On Tue, 1 Jul 2014 09:58:52 -0500 (CDT) Christoph Lameter <cl@gentwo.org> wrote:
 
-diff --git a/drivers/block/mars/Kconfig b/drivers/block/mars/Kconfig
-new file mode 100644
-index 0000000..89765f2
---- /dev/null
-+++ b/drivers/block/mars/Kconfig
-@@ -0,0 +1,371 @@
-+#
-+# MARS configuration
-+#
-+
-+config MARS
-+	tristate "storage system MARS (EXPERIMENTAL)"
-+	depends on BLOCK && PROC_SYSCTL && HIGH_RES_TIMERS && !DEBUG_SLAB && !DEBUG_SG
-+	default n
-+	---help---
-+	  MARS is a long-distance replication of generic block devices.
-+	  It works asynchronously and tolerates network bottlenecks.
-+	  Please read the full documentation at
-+	    https://github.com/schoebel/mars/blob/master/docu/mars-manual.pdf?raw=true
-+	  Always compile MARS as a module!
-+
-+config MARS_CHECKS
-+	bool "enable simple runtime checks in MARS"
-+	depends on MARS
-+	default y
-+	---help---
-+	  These checks should be rather lightweight. Use them
-+	  for beta testing and for production systems where
-+	  safety is more important than performance.
-+	  In case of bugs in the reference counting, an automatic	repair
-+	  is attempted, which lowers the risk of memory corruptions.
-+	  Disable only if you need the absolutely last grain of
-+	  performance.
-+	  If unsure, say Y here.
-+
-+config MARS_DEBUG
-+	bool "enable full runtime checks and some tracing in MARS"
-+	depends on MARS
-+	default n
-+	---help---
-+	  Some of these checks and some additional error tracing may
-+	  consume noticable amounts of memory. However, this is extremely
-+	  valuable for finding bugs, even in production systems.
-+
-+	  OFF for production systems. ON for testing!
-+
-+	  If you encounter bugs in production systems, you
-+	  may / should use this also in production if you carefully
-+	  monitor your systems.
-+
-+config MARS_DEBUG_MEM
-+	bool "debug memory operations"
-+	depends on MARS_DEBUG
-+	default n
-+	---help---
-+	  This adds considerable space and time overhead, but catches
-+	  many errors (including some that are not caught by kmemleak).
-+
-+	  OFF for production systems. ON for testing!
-+	  Use only for development and thorough testing!
-+
-+config MARS_DEBUG_MEM_STRONG
-+	bool "intensified debugging of memory operations"
-+	depends on MARS_DEBUG_MEM
-+	default y
-+	---help---
-+	  Trace all block allocations, find more errors.
-+	  Adds some overhead.
-+
-+	  Use for debugging of new bricks or for intensified
-+	  regression testing.
-+
-+config MARS_DEBUG_ORDER0
-+	bool "also debug order0 operations"
-+	depends on MARS_DEBUG_MEM
-+	default n
-+	---help---
-+	  Turn even order 0 allocations into order 1 ones and provoke
-+	  heavy memory fragmentation problems from the buddy allocator,
-+	  but catch some additional memory problems.
-+	  Use only if you know what you are doing!
-+	  Normally OFF.
-+
-+config MARS_DEFAULT_PORT
-+	int "port number where MARS is listening"
-+	depends on MARS
-+	default 7777
-+	---help---
-+	  Best practice is to uniformly use the same port number
-+	  in a cluster. Therefore, this is a compiletime constant.
-+	  You may override this at insmod time via the mars_port= parameter.
-+
-+config MARS_SEPARATE_PORTS
-+	bool "use separate port numbers for traffic shaping"
-+	depends on MARS
-+	default y
-+	---help---
-+	  When enabled, the following port assignments will be used:
-+
-+	  CONFIG_MARS_DEFAULT_PORT     : updates of symlinks
-+	  CONFIG_MARS_DEFAULT_PORT + 1 : replication of logfiles
-+	  CONFIG_MARS_DEFAULT_PORT + 2 : (initial) sync traffic
-+
-+	  As a consequence, external traffic shaping may be used to
-+	  individually control the network speed for different types
-+	  of traffic.
-+
-+	  Please don't hinder the symlink updates in any way -- they are
-+	  most vital, and they produce no mass traffic at all
-+	  (it's only some kind of  meta-information traffic).
-+
-+	  Say Y if you have a big datacenter.
-+	  Say N if you cannot afford a bigger hole in your firefall.
-+	  If unsure, say Y.
-+
-+
-+config MARS_LOGDIR
-+	string "absolute path to the logging directory"
-+	depends on MARS
-+	default "/mars"
-+	---help---
-+	  Path to the directory where all MARS messages will reside.
-+	  Usually this is equal to the global /mars directory.
-+
-+	  Logfiles and status files obey the following naming conventions:
-+		0.debug.log
-+		1.info.log
-+		2.warn.log
-+		3.error.log
-+		4.fatal.log
-+		5.total.log
-+	  Logfiles must already exist in order to be appended.
-+	  Logiles can be rotated by renaming them and creating
-+	  a new empty file in place of the old one.
-+
-+	  Status files follow the same rules, but .log is replaced
-+	  by .status, and they are created automatically. Their content
-+	  is however limited to a few seconds or minutes.
-+
-+	  Leave this at the default unless you know what you are doing.
-+
-+config MARS_ROLLOVER_INTERVAL
-+	int "rollover time of logging status files (in seconds)"
-+	depends on MARS
-+	default 3
-+	---help---
-+	  This may influence the system load; dont use too low numbers.
-+
-+	  Leave this at the default unless you know what you are doing.
-+
-+config MARS_SCAN_INTERVAL
-+	int "re-scanning of symlinks in /mars/ (in seconds)"
-+	depends on MARS
-+	default 5
-+	---help---
-+	  This may influence the system load; dont use too low numbers.
-+
-+	  Leave this at the default unless you know what you are doing.
-+
-+config MARS_PROPAGATE_INTERVAL
-+	int "network propagation delay of changes in /mars/ (in seconds)"
-+	depends on MARS
-+	default 5
-+	---help---
-+	  This may influence the system load; dont use too low numbers.
-+
-+	  Leave this at the default unless you know what you are doing.
-+
-+config MARS_SYNC_FLIP_INTERVAL
-+	int "interrpt sync by logfile update after (seconds)"
-+	depends on MARS
-+	default 60
-+	---help---
-+	  0 = OFF. Normally ON.
-+	  When disabled, application of logfiles may wait for
-+	  a very time, until full sync has finished. As a
-+	  consequence, your /mars/ filesystem may run out
-+	  of space. When enabled, the applied logfiles can
-+	  be deleted, freeing space on /mars/. Therefore,
-+	  will usually want this. However, you may increase
-+	  the time interval to increase throughput in favour
-+	  of latency.
-+
-+	  Leave this at the default unless you know what you are doing.
-+
-+config MARS_NETIO_TIMEOUT
-+	int "timeout for remote IO operations (in seconds)"
-+	depends on MARS
-+	default 30
-+	---help---
-+	  In case of network hangs, don't wait forever, but rather
-+	  abort with -ENOTCONN
-+	  when == 0, wait forever (may lead to hanging operations
-+	  similar to NFS hard mounts)
-+
-+	  Leave this at the default unless you know what you are doing.
-+
-+config MARS_FAST_FULLSYNC
-+	bool "decrease network traffic at initial sync"
-+	depends on MARS
-+	default y
-+	---help---
-+	  Normally ON.
-+	  When on, both sides will read the data, compute a md5
-+	  checksum, and compare them. Only in case the checksum
-+	  mismatches, the data will be actually transferred over
-+	  the network. This may increase the IO traffic in favour
-+	  of network traffic. Usually it does no harm to re-read
-+	  the same data twice (only in case of mismatches) over bio
-+	  because RAID controllers will usually cache their data
-+	  for some time. In case of buffered aio reads from filesystems,
-+	  the data is cached by the kernel anyway.
-+
-+config MARS_MIN_SPACE_4
-+	int "absolutely necessary free space in /mars/ (hard limit in GB)"
-+	depends on MARS
-+	default 2
-+	---help---
-+	  HARDEST EMERGENCY LIMIT
-+
-+	  When free space in /mars/ drops under this limit,
-+	  transaction logging to /mars/ will stop at all,
-+	  even at all primary resources. All IO will directly go to the
-+	  underlying raw devices. The transaction logfile sequence numbers
-+	  will be disrupted, deliberately leaving holes in the sequence.
-+
-+	  This is a last-resort desperate action of the kernel.
-+
-+	  As a consequence, all secodaries will have no chance to
-+	  replay at that gap, even if they got the logfiles.
-+	  The secondaries will stop at the gap, left in an outdated,
-+	  but logically consistent state.
-+
-+	  After the problem has been fixed, the secondaries must
-+	  start a full-sync in order to continue replication at the
-+	  recent state.
-+
-+	  This is the hardest measure the kernel can take in order
-+	  to TRY to continue undisrupted operation at the primary side.
-+
-+	  In general, you should avoid such situations at the admin level.
-+
-+	  Please implement your own monitoring at the admin level,
-+	  which warns you and/or takes appropriate countermeasures
-+	  much earlier.
-+
-+	  Never rely on this emergency feature!
-+
-+config MARS_MIN_SPACE_3
-+	int "free space in /mars/ for primary logfiles (additional limit in GB)"
-+	depends on MARS
-+	default 2
-+	---help---
-+	  MEDIUM EMERGENCY LIMIT
-+
-+	  When free space in /mars/ drops under
-+	  MARS_MIN_SPACE_4 + MARS_MIN_SPACE_3,
-+	  elder transaction logfiles will be deleted at primary resources.
-+
-+	  As a consequence, the secondaries may no longer be able to
-+	  get a consecute series of copies of logfiles.
-+	  As a result, they may get stuck somewhere inbetween at an
-+	  outdated, but logically consistent state.
-+
-+	  This is a desperate action of the kernel.
-+
-+	  After the problem has been fixed, some secondaries may need to
-+	  start a full-sync in order to continue replication at the
-+	  recent state.
-+
-+	  In general, you should avoid such situations at the admin level.
-+
-+	  Please implement your own monitoring at the admin level,
-+	  which warns you and/or takes appropriate countermeasures
-+	  much earlier.
-+
-+	  Never rely on this emergency feature!
-+
-+config MARS_MIN_SPACE_2
-+	int "free space in /mars/ for secondary logfiles (additional limit in GB)"
-+	depends on MARS
-+	default 2
-+	---help---
-+	  MEDIUM EMERGENCY LIMIT
-+
-+	  When free space in /mars/ drops under
-+	  MARS_MIN_SPACE_4 + MARS_MIN_SPACE_3 + MARS_MIN_SPACE_2,
-+	  elder transaction logfiles will be deleted at secondary resources.
-+
-+	  As a consequence, some local secondary resources
-+	  may get stuck somewhere inbetween at an
-+	  outdated, but logically consistent state.
-+
-+	  This is a desperate action of the kernel.
-+
-+	  After the problem has been fixed and the free space becomes
-+	  larger than MARS_MIN_SPACE_4 + MARS_MIN_SPACE_3 + MARS_MIN_SPACE_2
-+	  + MARS_MIN_SPACE_2, the secondary tries to fetch the missing
-+	  logfiles from the primary again.
-+
-+	  However, if the necessary logfiles have been deleted at the
-+	  primary side in the meantime, this may fail.
-+
-+	  In general, you should avoid such situations at the admin level.
-+
-+	  Please implement your own monitoring at the admin level,
-+	  which warns you and/or takes appropriate countermeasures
-+	  much earlier.
-+
-+	  Never rely on this emergency feature!
-+
-+config MARS_MIN_SPACE_1
-+	int "free space in /mars/ for replication (additional limit in GB)"
-+	depends on MARS
-+	default 2
-+	---help---
-+	  LOWEST EMERGENCY LIMIT
-+
-+	  When free space in /mars/ drops under MARS_MIN_SPACE_4
-+	  + MARS_MIN_SPACE_3 + MARS_MIN_SPACE_2 + MARS_MIN_SPACE_1,
-+	  fetching of transaction logfiles will stop at local secondary
-+	  resources.
-+
-+	  As a consequence, some local secondary resources
-+	  may get stuck somewhere inbetween at an
-+	  outdated, but logically consistent state.
-+
-+	  This is a desperate action of the kernel.
-+
-+	  After the problem has been fixed and the free space becomes
-+	  larger than MARS_MIN_SPACE_4 + MARS_MIN_SPACE_3 + MARS_MIN_SPACE_2
-+	  + MARS_MIN_SPACE_2, the secondary will continue fetching its
-+	  copy of logfiles from the primary side.
-+
-+	  In general, you should avoid such situations at the admin level.
-+
-+	  Please implement your own monitoring at the admin level,
-+	  which warns you and/or takes appropriate countermeasures
-+	  much earlier.
-+
-+	  Never rely on this emergency feature!
-+
-+config MARS_MIN_SPACE_0
-+	int "total space needed in /mars/ for (additional limit in GB)"
-+	depends on MARS
-+	default 12
-+	---help---
-+	  Operational pre-requirement.
-+
-+	  In order to use MARS, the total space available in /mars/ must
-+	  be  at least MARS_MIN_SPACE_4 + MARS_MIN_SPACE_3 + MARS_MIN_SPACE_2
-+	  + MARS_MIN_SPACE_1 + MARS_MIN_SPACE_0.
-+
-+	  If you cannot afford that amount of storage space, please use
-+	  DRBD in place of MARS.
-+
-+config MARS_LOGROT_AUTO
-+	int "automatic logrotate when logfile exceeds size (in GB)"
-+	depends on MARS
-+	default 32
-+	---help---
-+	  You could switch this off by setting to 0. However, deletion
-+	  of really huge logfiles can take several minutes, or even substantial
-+	  fractions of hours (depending on the underlying filesystem).
-+	  Thus it is highly recommended to limit the logfile size to some
-+	  reasonable maximum size. Switch only off for experiments!
-+
-+## remove_this
-+config MARS_PREFER_SIO
-+	bool "prefer sio bricks instead of aio"
-+	depends on MARS_DEBUG
-+	default n
-+	---help---
-+	  Normally OFF for production systems.
-+	  Only use as alternative for testing.
-+
-+## end_remove_this
--- 
-2.0.0
+> On Mon, 30 Jun 2014, David Rientjes wrote:
+> 
+> > It's not at all clear to me that that patch is correct.  Wei?
+> 
+> Looks ok to me. But I do not like the convoluted code in new_slab() which
+> Wei's patch does not make easier to read. Makes it difficult for the
+> reader to see whats going on.
+> 
+> Lets drop the use of the variable named "last".
+> 
+> 
+> Subject: slub: Only call setup_object once for each object
+> 
+> Modify the logic for object initialization to be less convoluted
+> and initialize an object only once.
+> 
 
+Well, um.  Wei's changelog was much better:
+
+: When a kmem_cache is created with ctor, each object in the kmem_cache will
+: be initialized before use.  In the slub implementation, the first object
+: will be initialized twice.
+: 
+: This patch avoids the duplication of initialization of the first object.
+: 
+: Fixes commit 7656c72b5a63: ("SLUB: add macros for scanning objects in a
+: slab").
+
+I can copy that text over and add the reported-by etc (ho hum) but I
+have a tiny feeling that this patch hasn't been rigorously tested? 
+Perhaps someone (Wei?) can do that?
+
+And we still don't know why Sasha's kernel went oops.
