@@ -1,61 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757684AbaGAIXJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 04:23:09 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:32951 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757522AbaGAIWe (ORCPT
+	id S1757713AbaGAIXY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 04:23:24 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45012 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757689AbaGAIXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 04:22:34 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v3 9/9] slab: remove BAD_ALIEN_MAGIC
-Date: Tue,  1 Jul 2014 17:27:38 +0900
-Message-Id: <1404203258-8923-10-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404203258-8923-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1404203258-8923-1-git-send-email-iamjoonsoo.kim@lge.com>
+	Tue, 1 Jul 2014 04:23:17 -0400
+Date: Tue, 1 Jul 2014 10:23:02 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/4] clk: Introduce 'clk_find_nearest_rate()'
+Message-ID: <20140701082302.GL14781@pengutronix.de>
+References: <1404147396-8041-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1404147396-8041-2-git-send-email-soren.brinkmann@xilinx.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1404147396-8041-2-git-send-email-soren.brinkmann@xilinx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BAD_ALIEN_MAGIC value isn't used anymore. So remove it.
+On Mon, Jun 30, 2014 at 09:56:33AM -0700, Soren Brinkmann wrote:
+> Introduce a new API function to find the rate a clock can provide which
+> is closest to a given rate.
+> 
+> clk_round_rate() leaves it to the clock driver how rounding is done.
+> Commonly implementations round down due to use-cases that have a certain
+> frequency maximum that must not be exceeded.
+> 
+> The new API call enables use-cases where accuracy is preferred. E.g.
+> Ethernet clocks.
+> 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+> 
+>  drivers/clk/clk.c   | 57 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/clk.h |  9 +++++++++
+>  2 files changed, 66 insertions(+)
+> 
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 8b73edef151d..fce1165cd879 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -1030,6 +1030,63 @@ long clk_round_rate(struct clk *clk, unsigned long rate)
+>  EXPORT_SYMBOL_GPL(clk_round_rate);
+>  
+>  /**
+> + * clk_find_nearest_rate - round the given rate for a clk
+> + * @clk: the clk for which we are rounding a rate
+> + * @rate: the rate which is to be rounded
+> + *
+> + * Takes in a rate as input and finds the closest rate that the clk
+> + * can actually use which is then returned.
+> + * Note: This function relies on the clock's clk_round_rate() implementation.
+> + * For cases clk_round_rate() rounds up, not the closest but the rounded up
+> + * rate is found.
+> + */
+> +long clk_find_nearest_rate(struct clk *clk, unsigned long rate)
+> +{
+> +	long ret, lower, upper;
+> +	unsigned long tmp;
+> +
+> +	clk_prepare_lock();
+> +
+> +	lower = __clk_round_rate(clk, rate);
+> +	if (lower >= rate || lower < 0) {
+> +		ret = lower;
+> +		goto unlock;
+> +	}
+> +
+> +	tmp = rate + (rate - lower) - 1;
+> +	if (tmp > LONG_MAX)
+> +		upper = LONG_MAX;
+> +	else
+> +		upper = tmp;
+Consider rate = 0xf0000000, lower = 0x7fffffff (= LONG_MAX). Then tmp =
+(unsigned long)0x160000000 = 0x60000000. In this case you pick upper =
+0x60000000 while you should use upper = LONG_MAX.
 
-Acked-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
----
- mm/slab.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+I think you need
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 7820a45..60c9e11 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -470,8 +470,6 @@ static struct kmem_cache kmem_cache_boot = {
- 	.name = "kmem_cache",
- };
- 
--#define BAD_ALIEN_MAGIC 0x01020304ul
--
- static DEFINE_PER_CPU(struct delayed_work, slab_reap_work);
- 
- static inline struct array_cache *cpu_cache_get(struct kmem_cache *cachep)
-@@ -838,7 +836,7 @@ static int transfer_objects(struct array_cache *to,
- static inline struct alien_cache **alloc_alien_cache(int node,
- 						int limit, gfp_t gfp)
- {
--	return (struct alien_cache **)BAD_ALIEN_MAGIC;
-+	return NULL;
- }
- 
- static inline void free_alien_cache(struct alien_cache **ac_ptr)
+-	if (tmp > LONG_MAX)
++	if (tmp > LONG_MAX || tmp < rate)
+
+(and a comment)
+
+> +
+> +	upper = __clk_round_rate(clk, upper);
+> +	if (upper <= lower || upper < 0) {
+Is it an idea to do something like:
+
+		if (IS_ENABLED(CONFIG_CLK_SANITY_CHECKS))
+			WARN_ON(upper < lower && upper >= 0);
+
+here?
+
+> +		ret = lower;
+> +		goto unlock;
+> +	}
+> +
+> +	lower = rate + 1;
+> +	while (lower < upper) {
+> +		long rounded, mid;
+> +
+> +		mid = lower + ((upper - lower) >> 1);
+> +		rounded = __clk_round_rate(clk, mid);
+> +		if (rounded < lower)
+> +			lower = mid + 1;
+> +		else
+> +			upper = rounded;
+> +	}
+This is broken if you don't assume that __clk_round_rate rounds down.
+Consider an implementation that already does round_nearest and clk can
+assume the values 0x60000 and 0x85000 (and nothing in between), and rate
+= 0x70000. This results in
+
+	lower = 0x60000;
+	tmp = 0x7ffff;
+	upper = __clk_round_rate(clk, 0x7ffff) = 0x85000
+
+before the loop and the loop then doesn't even terminate.
+
+Best regards
+Uwe
+
 -- 
-1.7.9.5
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
