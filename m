@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600AbaGAIVV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 04:21:21 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:37196 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757397AbaGAIVS (ORCPT
+	id S1757644AbaGAIWh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 04:22:37 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:32857 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756240AbaGAIWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 04:21:18 -0400
-Message-ID: <53B26F44.7050404@linaro.org>
-Date: Tue, 01 Jul 2014 16:20:20 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Bjorn Helgaas <bhelgaas@google.com>,
-        "rric@kernel.org" <rric@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Al Stone <al.stone@linaro.org>
-Subject: Re: [PATCH v4 13/13] ARM64 / ACPI: Enable ARM64 in Kconfig
-References: <1403840976-7456-1-git-send-email-hanjun.guo@linaro.org> <1403840976-7456-14-git-send-email-hanjun.guo@linaro.org> <20140630104652.GG28951@arm.com> <53B2694F.7070501@linaro.org>
-In-Reply-To: <53B2694F.7070501@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Jul 2014 04:22:33 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v3 2/9] slab: move up code to get kmem_cache_node in free_block()
+Date: Tue,  1 Jul 2014 17:27:31 +0900
+Message-Id: <1404203258-8923-3-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1404203258-8923-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1404203258-8923-1-git-send-email-iamjoonsoo.kim@lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>
->>>  	depends on PCI
->>>  	select PNP
->>> -	default y
->>> +	default y if !ARM64
->>
->> For the benefit of single Image, I think you can default to y here.
-> 
-> It ok to me. if we default to y here, devicetree will not be unflattened
-> in default, is it ok to you? you can refer to "[PATCH 12/13] ARM64 / ACPI: if
-> we chose to boot from acpi then disable FDT".
+node isn't changed, so we don't need to retreive this structure
+everytime we move the object. Maybe compiler do this optimization,
+but making it explicitly is better.
 
-Ah, sorry I didn't describe it clearly. since there is no shipping board
-with ACPI tables, so ACPI will disabled in the very early stage and FDT
-still have chance to be unflattened, so will not break DT booting in
-this patchset.
+Acked-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ mm/slab.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Thanks
-Hanjun
+diff --git a/mm/slab.c b/mm/slab.c
+index f8a0ed1..19e2136 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -3417,7 +3417,7 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int nr_objects,
+ 		       int node)
+ {
+ 	int i;
+-	struct kmem_cache_node *n;
++	struct kmem_cache_node *n = get_node(cachep, node);
+ 
+ 	for (i = 0; i < nr_objects; i++) {
+ 		void *objp;
+@@ -3427,7 +3427,6 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int nr_objects,
+ 		objp = objpp[i];
+ 
+ 		page = virt_to_head_page(objp);
+-		n = get_node(cachep, node);
+ 		list_del(&page->lru);
+ 		check_spinlock_acquired_node(cachep, node);
+ 		slab_put_obj(cachep, page, objp, node);
+-- 
+1.7.9.5
 
