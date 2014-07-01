@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758583AbaGARHw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 13:07:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5301 "EHLO mx1.redhat.com"
+	id S1758642AbaGARIB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 13:08:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3799 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758555AbaGARHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 13:07:50 -0400
+	id S1758555AbaGARHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 13:07:55 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -13,50 +13,120 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         Jerome Marchand <jmarchan@redhat.com>, linux-kernel@vger.kernel.org,
         Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH v4 00/13] pagewalk: improve vma handling, apply to new users
-Date: Tue,  1 Jul 2014 13:07:18 -0400
-Message-Id: <1404234451-21695-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH v4 05/13] clear_refs: remove clear_refs_private->vma and introduce clear_refs_test_walk()
+Date: Tue,  1 Jul 2014 13:07:23 -0400
+Message-Id: <1404234451-21695-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1404234451-21695-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1404234451-21695-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is ver.4 of page table walker patchset.
-I reflected comments in the previous version (thanks Kirill, Jerome).
-And rebased onto v3.16-rc3. Recently code around queue_pages_range()
-is changed by commit d05f0cdcbe63 "mm: fix crashes from mbind() merging
-vma", which affects this series a little.
+clear_refs_write() has some prechecks to determine if we really walk over
+a given vma. Now we have a test_walk() callback to filter vmas, so let's
+utilize it.
 
-Thanks,
-Naoya Horiguchi
+ChangeLog v4:
+- use walk_page_range instead of walk_page_vma with for loop
 
-Tree: git@github.com:Naoya-Horiguchi/linux.git
-Branch: v3.16-rc3/page_table_walker.ver4
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
-Summary:
+ fs/proc/task_mmu.c | 54 ++++++++++++++++++++++++++----------------------------
+ 1 file changed, 26 insertions(+), 28 deletions(-)
 
-Kirill A. Shutemov (1):
-      mm: /proc/pid/clear_refs: avoid split_huge_page()
+diff --git v3.16-rc3.orig/fs/proc/task_mmu.c v3.16-rc3/fs/proc/task_mmu.c
+index 3067bf08393b..df9f368e01b7 100644
+--- v3.16-rc3.orig/fs/proc/task_mmu.c
++++ v3.16-rc3/fs/proc/task_mmu.c
+@@ -715,7 +715,6 @@ enum clear_refs_types {
+ };
+ 
+ struct clear_refs_private {
+-	struct vm_area_struct *vma;
+ 	enum clear_refs_types type;
+ };
+ 
+@@ -748,7 +747,7 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
+ 				unsigned long end, struct mm_walk *walk)
+ {
+ 	struct clear_refs_private *cp = walk->private;
+-	struct vm_area_struct *vma = cp->vma;
++	struct vm_area_struct *vma = walk->vma;
+ 	pte_t *pte, ptent;
+ 	spinlock_t *ptl;
+ 	struct page *page;
+@@ -782,6 +781,29 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
+ 	return 0;
+ }
+ 
++static int clear_refs_test_walk(unsigned long start, unsigned long end,
++				struct mm_walk *walk)
++{
++	struct clear_refs_private *cp = walk->private;
++	struct vm_area_struct *vma = walk->vma;
++
++	/*
++	 * Writing 1 to /proc/pid/clear_refs affects all pages.
++	 * Writing 2 to /proc/pid/clear_refs only affects anonymous pages.
++	 * Writing 3 to /proc/pid/clear_refs only affects file mapped pages.
++	 * Writing 4 to /proc/pid/clear_refs affects all pages.
++	 */
++	if (cp->type == CLEAR_REFS_ANON && vma->vm_file)
++		return 1;
++	if (cp->type == CLEAR_REFS_MAPPED && !vma->vm_file)
++		return 1;
++	if (cp->type == CLEAR_REFS_SOFT_DIRTY) {
++		if (vma->vm_flags & VM_SOFTDIRTY)
++			vma->vm_flags &= ~VM_SOFTDIRTY;
++	}
++	return 0;
++}
++
+ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+ 				size_t count, loff_t *ppos)
+ {
+@@ -822,38 +844,14 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+ 		};
+ 		struct mm_walk clear_refs_walk = {
+ 			.pmd_entry = clear_refs_pte_range,
++			.test_walk = clear_refs_test_walk,
+ 			.mm = mm,
+ 			.private = &cp,
+ 		};
+ 		down_read(&mm->mmap_sem);
+ 		if (type == CLEAR_REFS_SOFT_DIRTY)
+ 			mmu_notifier_invalidate_range_start(mm, 0, -1);
+-		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+-			cp.vma = vma;
+-			if (is_vm_hugetlb_page(vma))
+-				continue;
+-			/*
+-			 * Writing 1 to /proc/pid/clear_refs affects all pages.
+-			 *
+-			 * Writing 2 to /proc/pid/clear_refs only affects
+-			 * Anonymous pages.
+-			 *
+-			 * Writing 3 to /proc/pid/clear_refs only affects file
+-			 * mapped pages.
+-			 *
+-			 * Writing 4 to /proc/pid/clear_refs affects all pages.
+-			 */
+-			if (type == CLEAR_REFS_ANON && vma->vm_file)
+-				continue;
+-			if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
+-				continue;
+-			if (type == CLEAR_REFS_SOFT_DIRTY) {
+-				if (vma->vm_flags & VM_SOFTDIRTY)
+-					vma->vm_flags &= ~VM_SOFTDIRTY;
+-			}
+-			walk_page_range(vma->vm_start, vma->vm_end,
+-					&clear_refs_walk);
+-		}
++		walk_page_range(0, ~0UL, &clear_refs_walk);
+ 		if (type == CLEAR_REFS_SOFT_DIRTY)
+ 			mmu_notifier_invalidate_range_end(mm, 0, -1);
+ 		flush_tlb_mm(mm);
+-- 
+1.9.3
 
-Naoya Horiguchi (12):
-      mm/pagewalk: remove pgd_entry() and pud_entry()
-      pagewalk: improve vma handling
-      pagewalk: add walk_page_vma()
-      smaps: remove mem_size_stats->vma and use walk_page_vma()
-      clear_refs: remove clear_refs_private->vma and introduce clear_refs_test_walk()
-      pagemap: use walk->vma instead of calling find_vma()
-      numa_maps: fix typo in gather_hugetbl_stats
-      numa_maps: remove numa_maps->vma
-      memcg: cleanup preparation for page table walk
-      arch/powerpc/mm/subpage-prot.c: use walk->vma and walk_page_vma()
-      mempolicy: apply page table walker on queue_pages_range()
-      mincore: apply page table walker on do_mincore()
-
- arch/powerpc/mm/subpage-prot.c |   6 +-
- fs/proc/task_mmu.c             | 150 ++++++++++++++++-----------
- include/linux/mm.h             |  22 ++--
- mm/huge_memory.c               |  20 ----
- mm/memcontrol.c                |  49 +++------
- mm/mempolicy.c                 | 224 ++++++++++++++++------------------------
- mm/mincore.c                   | 173 +++++++++++--------------------
- mm/pagewalk.c                  | 228 ++++++++++++++++++++++++-----------------
- 8 files changed, 409 insertions(+), 463 deletions(-)
