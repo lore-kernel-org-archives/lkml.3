@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758324AbaGAQsu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 12:48:50 -0400
-Received: from mga11.intel.com ([192.55.52.93]:10634 "EHLO mga11.intel.com"
+	id S1758461AbaGAQtA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 12:49:00 -0400
+Received: from mga03.intel.com ([143.182.124.21]:5971 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756521AbaGAQss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 12:48:48 -0400
+	id S1756555AbaGAQsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 12:48:55 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,582,1400050800"; 
-   d="scan'208";a="563681571"
-Subject: [PATCH 1/7] x86: mm: clean up tlb flushing code
+   d="scan'208";a="452155289"
+Subject: [PATCH 3/7] x86: mm: fix missed global TLB flush stat
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
         x86@kernel.org, Dave Hansen <dave@sr71.net>,
         dave.hansen@linux.intel.com, riel@redhat.com, mgorman@suse.de
 From: Dave Hansen <dave@sr71.net>
-Date: Tue, 01 Jul 2014 09:48:47 -0700
+Date: Tue, 01 Jul 2014 09:48:50 -0700
 References: <20140701164845.8D1A5702@viggo.jf.intel.com>
 In-Reply-To: <20140701164845.8D1A5702@viggo.jf.intel.com>
-Message-Id: <20140701164847.02792946@viggo.jf.intel.com>
+Message-Id: <20140701164850.D00367A3@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,83 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
-The
+If we take the
 
-	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+	if (end == TLB_FLUSH_ALL || vmflag & VM_HUGETLB) {
+		local_flush_tlb();
+		goto out;
+	}
 
-line of code is not exactly the easiest to audit, especially when
-it ends up at two different indentation levels.  This eliminates
-one of the the copy-n-paste versions.  It also gives us a unified
-exit point for each path through this function.  We need this in
-a minute for our tracepoint.
+path out of flush_tlb_mm_range(), we will have flushed the tlb,
+but not incremented NR_TLB_LOCAL_FLUSH_ALL.  This unifies the
+way out of the function so that we always take a single path when
+doing a full tlb flush.
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 Acked-by: Rik van Riel <riel@redhat.com>
 Acked-by: Mel Gorman <mgorman@suse.de>
 ---
 
- b/arch/x86/mm/tlb.c |   23 +++++++++++------------
- 1 file changed, 11 insertions(+), 12 deletions(-)
+ b/arch/x86/mm/tlb.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-diff -puN arch/x86/mm/tlb.c~simplify-tlb-code arch/x86/mm/tlb.c
---- a/arch/x86/mm/tlb.c~simplify-tlb-code	2014-06-30 16:18:05.525535882 -0700
-+++ b/arch/x86/mm/tlb.c	2014-06-30 16:18:05.535536335 -0700
-@@ -161,23 +161,24 @@ void flush_tlb_current_task(void)
+diff -puN arch/x86/mm/tlb.c~fix-missed-global-flush-stat arch/x86/mm/tlb.c
+--- a/arch/x86/mm/tlb.c~fix-missed-global-flush-stat	2014-06-30 16:18:26.857507178 -0700
++++ b/arch/x86/mm/tlb.c	2014-06-30 16:18:26.864507497 -0700
+@@ -164,8 +164,9 @@ unsigned long tlb_single_page_flush_ceil
  void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
  				unsigned long end, unsigned long vmflag)
  {
-+	bool need_flush_others_all = true;
+-	int need_flush_others_all = 1;
  	unsigned long addr;
- 	unsigned act_entries, tlb_entries = 0;
- 	unsigned long nr_base_pages;
++	/* do a global flush by default */
++	unsigned long base_pages_to_flush = TLB_FLUSH_ALL;
  
  	preempt_disable();
  	if (current->active_mm != mm)
--		goto flush_all;
-+		goto out;
- 
- 	if (!current->mm) {
- 		leave_mm(smp_processor_id());
--		goto flush_all;
-+		goto out;
+@@ -176,16 +177,14 @@ void flush_tlb_mm_range(struct mm_struct
+ 		goto out;
  	}
  
- 	if (end == TLB_FLUSH_ALL || tlb_flushall_shift == -1
- 					|| vmflag & VM_HUGETLB) {
- 		local_flush_tlb();
--		goto flush_all;
-+		goto out;
- 	}
+-	if (end == TLB_FLUSH_ALL || vmflag & VM_HUGETLB) {
+-		local_flush_tlb();
+-		goto out;
+-	}
++	if ((end != TLB_FLUSH_ALL) && !(vmflag & VM_HUGETLB))
++		base_pages_to_flush = (end - start) >> PAGE_SHIFT;
  
- 	/* In modern CPU, last level tlb used for both data/ins */
-@@ -196,22 +197,20 @@ void flush_tlb_mm_range(struct mm_struct
+-	if ((end - start) > tlb_single_page_flush_ceiling * PAGE_SIZE) {
++	if (base_pages_to_flush > tlb_single_page_flush_ceiling) {
++		base_pages_to_flush = TLB_FLUSH_ALL;
  		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
  		local_flush_tlb();
  	} else {
-+		need_flush_others_all = false;
+-		need_flush_others_all = 0;
  		/* flush range by one by one 'invlpg' */
  		for (addr = start; addr < end;	addr += PAGE_SIZE) {
  			count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
- 			__flush_tlb_single(addr);
+@@ -193,7 +192,7 @@ void flush_tlb_mm_range(struct mm_struct
  		}
--
--		if (cpumask_any_but(mm_cpumask(mm),
--				smp_processor_id()) < nr_cpu_ids)
--			flush_tlb_others(mm_cpumask(mm), mm, start, end);
--		preempt_enable();
--		return;
  	}
--
--flush_all:
-+out:
-+	if (need_flush_others_all) {
-+		start = 0UL;
-+		end = TLB_FLUSH_ALL;
-+	}
- 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
--		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
-+		flush_tlb_others(mm_cpumask(mm), mm, start, end);
- 	preempt_enable();
- }
- 
+ out:
+-	if (need_flush_others_all) {
++	if (base_pages_to_flush == TLB_FLUSH_ALL) {
+ 		start = 0UL;
+ 		end = TLB_FLUSH_ALL;
+ 	}
 _
