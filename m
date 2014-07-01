@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932636AbaGAOXR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 10:23:17 -0400
-Received: from mail.windriver.com ([147.11.1.11]:45515 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754297AbaGAOXP (ORCPT
+	id S1758005AbaGAONk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 10:13:40 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35554 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757944AbaGAONi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 10:23:15 -0400
-Message-ID: <53B2C419.4090706@windriver.com>
-Date: Tue, 1 Jul 2014 09:22:17 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Daniel Thompson <daniel.thompson@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <patches@linaro.org>,
-        <linaro-kernel@lists.linaro.org>, Mike Travis <travis@sgi.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@suse.de>, <kgdb-bugreport@lists.sourceforge.net>
-Subject: Re: [RFC PATCH] kgdb: Timeout if secondary CPUs ignore the roundup
-References: <1404224174-25024-1-git-send-email-daniel.thompson@linaro.org>
-In-Reply-To: <1404224174-25024-1-git-send-email-daniel.thompson@linaro.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Jul 2014 10:13:38 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 02/33] ARM: at91/dt: ariag25: define crystals frequencies
+Date: Tue,  1 Jul 2014 16:12:11 +0200
+Message-Id: <1404223962-30471-3-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2014 09:16 AM, Daniel Thompson wrote:
-> Currently if an active CPU fails to respond to a roundup request the
-> CPU that requested the roundup will become stuck. This needlessly
-> reduces the robustness of the debugger.
->
-> This patch introduces a timeout allowing the system state to be examined
-> even when the system contains unresponsive processors. It also modifies
-> kdb's cpu command to make it censor attempts to switch to unresponsive
-> processors and to report their state as (D)ead.
+Define Acme Systems Aria G25 board main and slow crystals frequencies.
 
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/boot/dts/at91-ariag25.dts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-It seems reasonable to allow entry on the master core because there certainly could be useful information to be had with respect to how you got there in the first place, but I wonder about the case for resuming the system.   In general if you couldn't sync in the the first place, the system is dead.  My opinion is that we probably should explicitly disallow a resume or single step at that point.
-
-Jason.
+diff --git a/arch/arm/boot/dts/at91-ariag25.dts b/arch/arm/boot/dts/at91-ariag25.dts
+index 55ab6180e350..e9ced30159a7 100644
+--- a/arch/arm/boot/dts/at91-ariag25.dts
++++ b/arch/arm/boot/dts/at91-ariag25.dts
+@@ -42,6 +42,14 @@
+ 			compatible = "atmel,osc", "fixed-clock";
+ 			clock-frequency = <12000000>;
+ 		};
++
++		slow_xtal {
++			clock-frequency = <32768>;
++		};
++
++		main_xtal {
++			clock-frequency = <12000000>;
++		};
+ 	};
+ 
+ 	ahb {
+-- 
+1.9.1
 
