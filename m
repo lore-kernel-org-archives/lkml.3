@@ -1,168 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757938AbaGAJXG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 05:23:06 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:61023 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757911AbaGAJXC (ORCPT
+	id S1757678AbaGAJ1C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 05:27:02 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36849 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753177AbaGAJ1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 05:23:02 -0400
-Date: Tue, 1 Jul 2014 10:22:55 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Mark Brown <broonie@linaro.org>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Carlo Caione <carlo@caione.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH resend v2 1/3] mfd-core: Don't register supplies from
- add_device, add register_supply_aliases()
-Message-ID: <20140701092255.GF27971@lee--X1>
-References: <1404138369-23907-1-git-send-email-hdegoede@redhat.com>
- <1404138369-23907-2-git-send-email-hdegoede@redhat.com>
+	Tue, 1 Jul 2014 05:27:00 -0400
+Message-ID: <53B27ED7.4070401@canonical.com>
+Date: Tue, 01 Jul 2014 17:26:47 +0800
+From: Hui Wang <hui.wang@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1404138369-23907-2-git-send-email-hdegoede@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jan Kiszka <jan.kiszka@web.de>
+CC: Hui Wang <jason77.wang@gmail.com>, tiwai@suse.de,
+        alsa-devel@alsa-project.org, alex.hung@canonical.com, yk@canonical.com,
+        david.henningsson@canonical.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [V2 PATCH] ALSA: hda - Enable mute/mic-mute LEDs for more Thinkpads
+ with Conexant codec
+References: <1385534846-20829-1-git-send-email-hui.wang@canonical.com> <53AFF992.5030403@web.de> <53B0C596.6090007@canonical.com> <53B1078B.4090101@web.de> <53B219DF.6090807@canonical.com> <53B26575.1000003@web.de>
+In-Reply-To: <53B26575.1000003@web.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jun 2014, Hans de Goede wrote:
+On 07/01/2014 03:38 PM, Jan Kiszka wrote:
+> On 2014-07-01 04:15, Hui Wang wrote:
+>> On 06/30/2014 02:45 PM, Jan Kiszka wrote:
+>>> On 2014-06-30 04:04, Hui Wang wrote:
+>>>> On 06/29/2014 07:33 PM, Jan Kiszka wrote:
+>>>>> On 2013-11-27 07:47, Hui Wang wrote:
+>>>>>> Most Thinkpad Edge series laptops use conexant codec, so far although
+<snip>
+>>>>>>
+>>> Is there anything I can debug or any information I can collect from my
+>>> box to examine this?
+>> What is the linux distribution on your machine? And use showkey to catch
+>> the keycode of that button.
+> I'm running OpenSUSE 13.1. The reported keycode of the power button is 116.
+It seems the keycode is correct, it is power keycode rather the mute 
+keycode.
 
-> We cannot register supply alias in mfd_add_device before calling
-> platform_add_device because platform-dev's name must be set before registering
-> the aliases which happens from platform_add_device.
-> 
-> So stop registering supply aliases from mfd_add_device, and add a
-> mfd_register_supply_aliases helper functions for the cell's plaform driver
-> probe method to use.
-> 
-> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Could you please do some debug, let us find which line of code is the 
+root cause for this problem. for example:
 
-Didn't I already Ack this?
+after running the line, the problem shows up:
 
-> ---
->  drivers/mfd/mfd-core.c   | 37 +++++++++++++++++++++----------------
->  include/linux/mfd/core.h |  6 +++++-
->  2 files changed, 26 insertions(+), 17 deletions(-)
-> 
-> diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-> index 892d343..03f6fee 100644
-> --- a/drivers/mfd/mfd-core.c
-> +++ b/drivers/mfd/mfd-core.c
-> @@ -102,13 +102,6 @@ static int mfd_add_device(struct device *parent, int id,
->  	pdev->dev.dma_mask = parent->dma_mask;
->  	pdev->dev.dma_parms = parent->dma_parms;
->  
-> -	ret = regulator_bulk_register_supply_alias(
-> -			&pdev->dev, cell->parent_supplies,
-> -			parent, cell->parent_supplies,
-> -			cell->num_parent_supplies);
-> -	if (ret < 0)
-> -		goto fail_res;
-> -
->  	if (parent->of_node && cell->of_compatible) {
->  		for_each_child_of_node(parent->of_node, np) {
->  			if (of_device_is_compatible(np, cell->of_compatible)) {
-> @@ -122,12 +115,12 @@ static int mfd_add_device(struct device *parent, int id,
->  		ret = platform_device_add_data(pdev,
->  					cell->platform_data, cell->pdata_size);
->  		if (ret)
-> -			goto fail_alias;
-> +			goto fail_res;
->  	}
->  
->  	ret = mfd_platform_add_cell(pdev, cell, usage_count);
->  	if (ret)
-> -		goto fail_alias;
-> +		goto fail_res;
->  
->  	for (r = 0; r < cell->num_resources; r++) {
->  		res[r].name = cell->resources[r].name;
-> @@ -162,17 +155,17 @@ static int mfd_add_device(struct device *parent, int id,
->  		if (!cell->ignore_resource_conflicts) {
->  			ret = acpi_check_resource_conflict(&res[r]);
->  			if (ret)
-> -				goto fail_alias;
-> +				goto fail_res;
->  		}
->  	}
->  
->  	ret = platform_device_add_resources(pdev, res, cell->num_resources);
->  	if (ret)
-> -		goto fail_alias;
-> +		goto fail_res;
->  
->  	ret = platform_device_add(pdev);
->  	if (ret)
-> -		goto fail_alias;
-> +		goto fail_res;
->  
->  	if (cell->pm_runtime_no_callbacks)
->  		pm_runtime_no_callbacks(&pdev->dev);
-> @@ -181,10 +174,6 @@ static int mfd_add_device(struct device *parent, int id,
->  
->  	return 0;
->  
-> -fail_alias:
-> -	regulator_bulk_unregister_supply_alias(&pdev->dev,
-> -					       cell->parent_supplies,
-> -					       cell->num_parent_supplies);
->  fail_res:
->  	kfree(res);
->  fail_device:
-> @@ -289,5 +278,21 @@ int mfd_clone_cell(const char *cell, const char **clones, size_t n_clones)
->  }
->  EXPORT_SYMBOL(mfd_clone_cell);
->  
-> +int mfd_register_supply_aliases(struct platform_device *pdev)
-> +{
-> +	const struct mfd_cell *cell;
-> +
-> +	if (pdev->dev.type != &mfd_dev_type)
-> +		return -EINVAL;
-> +
-> +	cell = mfd_get_cell(pdev);
-> +
-> +	return devm_regulator_bulk_register_supply_alias(
-> +			&pdev->dev, cell->parent_supplies,
-> +			pdev->dev.parent, cell->parent_supplies,
-> +			cell->num_parent_supplies);
-> +}
-> +EXPORT_SYMBOL(mfd_register_supply_aliases);
-> +
->  MODULE_LICENSE("GPL");
->  MODULE_AUTHOR("Ian Molton, Dmitry Baryshkov");
-> diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
-> index f543de9..f05488e 100644
-> --- a/include/linux/mfd/core.h
-> +++ b/include/linux/mfd/core.h
-> @@ -61,7 +61,9 @@ struct mfd_cell {
->  	bool			pm_runtime_no_callbacks;
->  
->  	/* A list of regulator supplies that should be mapped to the MFD
-> -	 * device rather than the child device when requested
-> +	 * device rather than the child device when requested.
-> +	 * Drivers using this must call mfd_register_supply_aliases()
-> +	 * from their probe method.
->  	 */
->  	const char * const	*parent_supplies;
->  	int			num_parent_supplies;
-> @@ -110,4 +112,6 @@ extern int mfd_add_devices(struct device *parent, int id,
->  
->  extern void mfd_remove_devices(struct device *parent);
->  
-> +extern int mfd_register_supply_aliases(struct platform_device *pdev);
-> +
->  #endif
+1.     if (ACPI_SUCCESS(acpi_get_devices("LEN0068", acpi_check_cb, 
+&found, NULL)) && found) // in the sound/pci/hda/thinkpad_helper.c, 
+is_thinkpad()
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+2.     return ACPI_SUCCESS(acpi_get_devices("IBM0068", acpi_check_cb, 
+&found, NULL)) && found; // same as above
+
+3.         if (led_set_func(TPACPI_LED_MUTE, false) >= 0) { //in the 
+sound/pci/hda/thinkpad_helper.c, hda_fixup_thinkpad_acpi()
+
+4. if (led_set_func(TPACPI_LED_MICMUTE, false) >= 0) { // same as above
+
+
+>
+> Jan
+>
+>
+
