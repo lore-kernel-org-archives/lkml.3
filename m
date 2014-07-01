@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932672AbaGAOQi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 10:16:38 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:57098 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757595AbaGAOQg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 10:16:36 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Mike Travis <travis@sgi.com>, Randy Dunlap <rdunlap@infradead.org>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@suse.de>, kgdb-bugreport@lists.sourceforge.net
-Subject: [RFC PATCH] kgdb: Timeout if secondary CPUs ignore the roundup
-Date: Tue,  1 Jul 2014 15:16:14 +0100
-Message-Id: <1404224174-25024-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	id S1758128AbaGAOQr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 10:16:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37520 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756150AbaGAOQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 10:16:43 -0400
+Message-ID: <53B2C2A9.7030900@redhat.com>
+Date: Tue, 01 Jul 2014 10:16:09 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v9] mm: support madvise(MADV_FREE)
+References: <1404174975-22019-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <1404174975-22019-1-git-send-email-minchan@kernel.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently if an active CPU fails to respond to a roundup request the
-CPU that requested the roundup will become stuck. This needlessly
-reduces the robustness of the debugger.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-This patch introduces a timeout allowing the system state to be examined
-even when the system contains unresponsive processors. It also modifies
-kdb's cpu command to make it censor attempts to switch to unresponsive
-processors and to report their state as (D)ead.
+On 06/30/2014 08:36 PM, Minchan Kim wrote:
+> Linux doesn't have an ability to free pages lazy while other OS 
+> already have been supported that named by madvise(MADV_FREE).
+> 
+> The gain is clear that kernel can discard freed pages rather than 
+> swapping out or OOM if memory pressure happens.
+> 
+> Without memory pressure, freed pages would be reused by userspace 
+> without another additional overhead(ex, page fault + allocation +
+> zeroing).
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Mike Travis <travis@sgi.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Dimitri Sivanich <sivanich@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: kgdb-bugreport@lists.sourceforge.net
----
- kernel/debug/debug_core.c   | 9 +++++++--
- kernel/debug/kdb/kdb_main.c | 4 +++-
- 2 files changed, 10 insertions(+), 3 deletions(-)
+> Cc: Michael Kerrisk <mtk.manpages@gmail.com> Cc: Linux API
+> <linux-api@vger.kernel.org> Cc: Hugh Dickins <hughd@google.com> Cc:
+> Johannes Weiner <hannes@cmpxchg.org> Cc: Rik van Riel
+> <riel@redhat.com> Cc: KOSAKI Motohiro
+> <kosaki.motohiro@jp.fujitsu.com> Cc: Mel Gorman <mgorman@suse.de> 
+> Cc: Jason Evans <je@fb.com> Cc: Zhang Yanfei
+> <zhangyanfei@cn.fujitsu.com> Signed-off-by: Minchan Kim
+> <minchan@kernel.org>
 
-diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-index 1adf62b..acd7497 100644
---- a/kernel/debug/debug_core.c
-+++ b/kernel/debug/debug_core.c
-@@ -471,6 +471,7 @@ static int kgdb_cpu_enter(struct kgdb_state *ks, struct pt_regs *regs,
- 	int cpu;
- 	int trace_on = 0;
- 	int online_cpus = num_online_cpus();
-+	u64 time_left;
- 
- 	kgdb_info[ks->cpu].enter_kgdb++;
- 	kgdb_info[ks->cpu].exception_state |= exception_state;
-@@ -595,9 +596,13 @@ return_normal:
- 	/*
- 	 * Wait for the other CPUs to be notified and be waiting for us:
- 	 */
--	while (kgdb_do_roundup && (atomic_read(&masters_in_kgdb) +
--				atomic_read(&slaves_in_kgdb)) != online_cpus)
-+	time_left = loops_per_jiffy * HZ;
-+	while (kgdb_do_roundup && --time_left &&
-+	       (atomic_read(&masters_in_kgdb) + atomic_read(&slaves_in_kgdb)) !=
-+		   online_cpus)
- 		cpu_relax();
-+	if (!time_left)
-+		pr_crit("KGDB: Timed out waiting for secondary CPUs.\n");
- 
- 	/*
- 	 * At this point the primary processor is completely
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 2f7c760..49f2425 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -2157,6 +2157,8 @@ static void kdb_cpu_status(void)
- 	for (start_cpu = -1, i = 0; i < NR_CPUS; i++) {
- 		if (!cpu_online(i)) {
- 			state = 'F';	/* cpu is offline */
-+		} else if (!kgdb_info[i].enter_kgdb) {
-+			state = 'D';	/* cpu is online but unresponsive */
- 		} else {
- 			state = ' ';	/* cpu is responding to kdb */
- 			if (kdb_task_state_char(KDB_TSK(i)) == 'I')
-@@ -2210,7 +2212,7 @@ static int kdb_cpu(int argc, const char **argv)
- 	/*
- 	 * Validate cpunum
- 	 */
--	if ((cpunum > NR_CPUS) || !cpu_online(cpunum))
-+	if ((cpunum > NR_CPUS) || !kgdb_info[cpunum].enter_kgdb)
- 		return KDB_BADCPUNUM;
- 
- 	dbg_switch_cpu = cpunum;
--- 
-1.9.3
+Acked-by: Rik van Riel <riel@redhat.com>
 
+
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEcBAEBAgAGBQJTssKpAAoJEM553pKExN6DspUH/3fdn95zVIA6GGfmFG/g05Fm
+SYv82v0ee2gGM7yRGeVkFSVuj5qYCneyJeprERHBs43huafqqnWd9MMcZxxskNk7
+MpyVmRsCh54qC2Y6Rqu5E15jEKjCcxss1vCbHp0ExtZHnfU29re+JB0oRE9IKszW
+p2r6rsolHtNY4otTAQ6pAtA6ioH1E0xppK5mpqHAUpFJuq3PqXbSsptFdl6AJciw
+25zBB6iOdVgpciYwkn7yBvaZiY+sRuiRFSAH0klQVHlX0ZueIXYnJtybVhHSqGs/
+Nu1/zhrRrohOcj0Ka6cTJBBH2RyXTmgcurfTUlI4IZzcDqJWtuXjXBty0wkhIZQ=
+=RjYx
+-----END PGP SIGNATURE-----
