@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338AbaGAR4X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 13:56:23 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37955 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755115AbaGAR4V (ORCPT
+	id S1758139AbaGAR55 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 13:57:57 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:40752 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756743AbaGAR54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 13:56:21 -0400
-Date: Tue, 1 Jul 2014 19:56:01 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Gregory Hermant <gregory.hermant@calao-systems.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        Gael Portay <g.portay@overkiz.com>,
-        Joachim Eastwood <manabian@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Tim Schendekehl <tim.schendekehl@egnite.de>
-Subject: Re: [PATCH 00/33] ARM: at91: Switch remaining SoCs and boards to CCF
-Message-ID: <20140701175601.GJ3427@piout.net>
-References: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com>
- <5780166.MMf0Vhnnsu@wuerfel>
- <20140701164851.GI3427@piout.net>
- <8196570.1BaMSL4giB@wuerfel>
+	Tue, 1 Jul 2014 13:57:56 -0400
+Date: Tue, 1 Jul 2014 19:57:54 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
+        tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, dave.hansen@linux.intel.com,
+        Chen Yucong <slaoub@gmail.com>
+Subject: Re: [PATCH] hwpoison: Fix race with changing page during offlining
+Message-ID: <20140701175753.GL5714@two.firstfloor.org>
+References: <1403806972-14267-1-git-send-email-andi@firstfloor.org>
+ <20140626195036.GA5311@nhori.redhat.com>
+ <20140626125657.f1830a0b399cbe5a97071206@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8196570.1BaMSL4giB@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140626125657.f1830a0b399cbe5a97071206@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2014 at 19:01:12 +0200, Arnd Bergmann wrote :
-> On Tuesday 01 July 2014 18:48:51 Alexandre Belloni wrote:
-> > On 01/07/2014 at 18:35:50 +0200, Arnd Bergmann wrote :
-> > > If I read this right, disabling 'USE_OF' results in still using
-> > > the old clock interface. Is that intentional? If you want to always
-> > > use COMMON_CLK now, the above can probably be simplified to
-> > > 
-> > > config AT91_PMC_UNIT
-> > >         def_bool !ARCH_AT91X40
-> > >       select COMMON_CLK
-> > > 
-> > > and all references to AT91_USE_OLD_CLK, COMMON_CLK_AT91 and
-> > > OLD_CLK_AT91 be removed.
-> > 
-> > Yeah, this is intentional we still have 30 or so boards that we have to
-> > migrate to DT. Until then, we want to be able to boot a kernel without
-> > CCF. The next step in the migration is to switch those boards to DT,
-> > possibly using an hybrid DT/pdata approach until we can get rid of the
-> > board files. Then, we will be able to get rid of the old clk
-> > implementation (and a few other drivers still living in mach-at91).
-> 
-> Ok, I see. Do you expect those 30 boards to work if COMMON_CLK_AT91
-> is enabled, or are there known problems with that?
-> 
-> If you have reason to believe it doesn't work, maybe you can expose
-> the selection of the clock interface to users, e.g. like
-> 
+> Andi, can you please check that and test?  If the patch is good I'll
+> bump it into 3.16 with an enhanced changelog..
 
-We actually do the opposite, when a board without DT support is
-selected, the old clock support is also selected even when also
-selecting CONFIG_OF.
+I think the original problem was a race, so it is not easy to reproduce.
+I ran this patch in a loop over night with some stress plus 
+the mcelog test suite running in a loop. I cannot guarantee it hit it,
+but it should have given it a good beating.
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+The kernel survived with no messages, although the mcelog test suite
+got killed at some point because it couldn't fork anymore. Probably
+some unrelated problem.
+
+So the patch is ok for me for .16.
+
+-Andi
