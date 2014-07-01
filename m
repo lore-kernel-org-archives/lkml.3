@@ -1,40 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734AbaGAAcN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 20:32:13 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:52540 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaGAAcM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 20:32:12 -0400
-MIME-Version: 1.0
-Reply-To: webmailupgrade622@gmail.com
-Date: Tue, 1 Jul 2014 06:02:10 +0530
-Message-ID: <CAKHH67OwS5wDhNGJJg2QK62zSFgX+ZBJZ=z5nCWWE0Qt=cjr_w@mail.gmail.com>
-Subject: Email-Upgrade
-From: Helpdesk <ece.arpacioglu@ozyegin.edu.tr>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754889AbaGAAcZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 20:32:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:17894 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750996AbaGAAcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 20:32:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,578,1400050800"; 
+   d="scan'208";a="566321685"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH] hwpoison: Fix race with changing page during offlining v2
+Date: Mon, 30 Jun 2014 17:32:16 -0700
+Message-Id: <1404174736-17480-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WEBMAIL UPGRADE TEAM 2014
+From: Andi Kleen <ak@linux.intel.com>
 
-Dear user, your mailbox has exceeded it quota/limit you may not be
-able to receive or send new mails until you re-validate.To re-validate
-fill the below Details Thank you
+When a hwpoison page is locked it could change state
+due to parallel modifications.  Check after the lock
+if the page is still the same compound page.
 
-Email Address *
+[v2: Removed earlier non LRU check which should be already
+covered elsewhere]
 
-Username *
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ mm/memory-failure.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-Password *
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index cd8989c..99e5077 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1168,6 +1168,16 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+ 	lock_page(hpage);
+ 
+ 	/*
++	 * The page could have changed compound pages during the locking.
++	 * If this happens just bail out.
++	 */
++	if (compound_head(p) != hpage) {
++		action_result(pfn, "different compound page after locking", IGNORED);
++		res = -EBUSY;
++		goto out;
++	}
++
++	/*
+ 	 * We use page flags to determine what action should be taken, but
+ 	 * the flags can be modified by the error containment action.  One
+ 	 * example is an mlocked page, where PG_mlocked is cleared by
+-- 
+1.9.3
 
-Confirm Password *
-
-Date Of Birth *
-
-"Admin Center Support Team"
- © 2014 WEBMASTER
