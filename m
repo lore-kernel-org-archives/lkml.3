@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965102AbaGAWNx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 18:13:53 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:57688 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752150AbaGAWNw (ORCPT
+	id S1030306AbaGAWPt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 18:15:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55306 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752959AbaGAWPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 18:13:52 -0400
-Date: Tue, 1 Jul 2014 15:13:50 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Davidlohr Bueso <davidlohr@hp.com>
-cc: akpm@linux-foundation.org, aswin@hp.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mm,hugetlb: simplify error handling in
- hugetlb_cow()
-In-Reply-To: <1404246097-18810-2-git-send-email-davidlohr@hp.com>
-Message-ID: <alpine.DEB.2.02.1407011513180.4004@chino.kir.corp.google.com>
-References: <1404246097-18810-1-git-send-email-davidlohr@hp.com> <1404246097-18810-2-git-send-email-davidlohr@hp.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 1 Jul 2014 18:15:48 -0400
+Date: Tue, 1 Jul 2014 15:15:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Vladimir Davydov <vdavydov@parallels.com>
+Subject: Re: [PATCH v3 5/9] slab: introduce alien_cache
+Message-Id: <20140701151547.fa67354878399575c8eb4647@linux-foundation.org>
+In-Reply-To: <1404203258-8923-6-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1404203258-8923-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1404203258-8923-6-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jul 2014, Davidlohr Bueso wrote:
+On Tue,  1 Jul 2014 17:27:34 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
 
-> When returning from hugetlb_cow(), we always (1) put back the refcount
-> for each referenced page -- always 'old', and 'new' if allocation was
-> successful. And (2) retake the page table lock right before returning,
-> as the callers expects. This logic can be simplified and encapsulated,
-> as proposed in this patch. In addition to cleaner code, we also shave
-> a few bytes off in instruction text:
-> 
->    text    data     bss     dec     hex filename
->   28399     462   41328   70189   1122d mm/hugetlb.o-baseline
->   28367     462   41328   70157   1120d mm/hugetlb.o-patched
-> 
-> Passes libhugetlbfs testcases.
-> 
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> -static struct array_cache **alloc_alien_cache(int node, int limit, gfp_t gfp)
+> +static struct alien_cache *__alloc_alien_cache(int node, int entries,
+> +						int batch, gfp_t gfp)
+> +{
+> +	int memsize = sizeof(void *) * entries + sizeof(struct alien_cache);
 
-Acked-by: David Rientjes <rientjes@google.com>
+nit: all five memsizes in slab.c have type `int'.  size_t would be more
+appropriate.
 
-Not sure the extra indirection is clearer code, but I can't argue with the 
-difference in object size.
+> +	struct alien_cache *alc = NULL;
+> +
+> +	alc = kmalloc_node(memsize, gfp, node);
+> +	init_arraycache(&alc->ac, entries, batch);
+> +	return alc;
+> +}
