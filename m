@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104AbaGADQB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 23:16:01 -0400
-Received: from ozlabs.org ([103.22.144.67]:41281 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397AbaGADQA convert rfc822-to-8bit (ORCPT
+	id S1757373AbaGADQy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 23:16:54 -0400
+Received: from cluster-d.mailcontrol.com ([85.115.60.190]:53341 "EHLO
+	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757261AbaGADQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 23:16:00 -0400
-Message-ID: <1404184557.18325.32.camel@ale.ozlabs.ibm.com>
-Subject: Re: [PATCH] powerpc/powernv: Check for IRQHAPPENED before sleeping
-From: Michael Neuling <mikey@neuling.org>
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>, benh@kernel.crashing.org,
-        shreyas@linux.vnet.ibm.com, svaidy@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Date: Mon, 30 Jun 2014 22:15:57 -0500
-In-Reply-To: <1404175926.30002.1.camel@concordia>
-References: <20140630062404.29315.23382.stgit@preeti.in.ibm.com>
-	 <1404175926.30002.1.camel@concordia>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Mon, 30 Jun 2014 23:16:51 -0400
+X-Greylist: delayed 3348 seconds by postgrey-1.27 at vger.kernel.org; Mon, 30 Jun 2014 23:16:50 EDT
+X-PGP-Universal: processed;
+	by shaapppus01.asia.root.pri on Tue, 01 Jul 2014 10:20:40 +0800
+From: Rongjun Ying <rongjun.ying@csr.com>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Barry Song <baohua@kernel.org>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <Workgroup.linux@csr.com>
+CC: Rongjun Ying <rongjun.ying@csr.com>
+Subject: [PATCH 2/2] ASoC: sirf: Add device tree binding for the USP audio device
+Date: Tue, 1 Jul 2014 10:18:54 +0800
+Message-ID: <1404181134-21663-3-git-send-email-rongjun.ying@csr.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1404181134-21663-1-git-send-email-rongjun.ying@csr.com>
+References: <1404181134-21663-1-git-send-email-rongjun.ying@csr.com>
+MIME-Version: 1.0
+X-Originating-IP: [10.125.12.180]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-01 at 10:52 +1000, Michael Ellerman wrote:
-> On Mon, 2014-06-30 at 11:54 +0530, Preeti U Murthy wrote:
-> > Commit 8d6f7c5a: "powerpc/powernv: Make it possible to skip the IRQHAPPENED
-> > check in power7_nap()" added code that prevents even cores which enter sleep
-> > on idle, from checking for pending interrupts. Fix this.
-> 
-> To be clear, it is a bug in the original commit. Mikey and I pair programmed
-> that code, and he was *definitely* typing at that point ;)
+Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
+---
+ .../devicetree/bindings/sound/sirf-usp.txt         | 27 ++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/sound/sirf-usp.txt
 
-It's always nice to know that in battle a comrade will throw himself on
-a grenade to save you. :-P
+diff --git a/Documentation/devicetree/bindings/sound/sirf-usp.txt b/Documentation/devicetree/bindings/sound/sirf-usp.txt
+new file mode 100644
+index 0000000..02f85b3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/sound/sirf-usp.txt
+@@ -0,0 +1,27 @@
++* SiRF SoC USP module
++
++Required properties:
++- compatible: "sirf,prima2-usp-pcm"
++- reg: Base address and size entries:
++- dmas: List of DMA controller phandle and DMA request line ordered pairs.
++- dma-names: Identifier string for each DMA request line in the dmas property.
++  These strings correspond 1:1 with the ordered pairs in dmas.
++
++  One of the DMA channels will be responsible for transmission (should be
++  named "tx") and one for reception (should be named "rx").
++
++- clocks: USP controller clock source
++- pinctrl-names: Must contain a "default" entry.
++- pinctrl-NNN: One property must exist for each entry in pinctrl-names.
++
++Example:
++usp0: usp@b0080000 {
++	compatible = "sirf,prima2-usp-pcm";
++	reg = <0xb0080000 0x10000>;
++	clocks = <&clks 28>;
++	dmas = <&dmac1 1>, <&dmac1 2>;
++	dma-names = "rx", "tx";
++	pinctrl-names = "default";
++	pinctrl-0 = <&usp0_only_utfs_pins_a>;
++};
++
+-- 
+1.9.3
 
-Actually, I'm pretty sure this happened when you were away (probably on
-a beach somewhere), I was forward porting the patch set, hit a conflict
-and fucked it up.  
 
-Mikey
 
-> 
-> Can you please include in the changelog what the symptom of the bug is, and
-> have you seen it in practice?
-> 
-> The bad commit went into 3.16-rc1, so we don't need to backport this to any
-> stable release.
-> 
-> cheers
-> 
-> > diff --git a/arch/powerpc/kernel/idle_power7.S b/arch/powerpc/kernel/idle_power7.S
-> > index 2480256..5cf3d36 100644
-> > --- a/arch/powerpc/kernel/idle_power7.S
-> > +++ b/arch/powerpc/kernel/idle_power7.S
-> > @@ -131,7 +131,7 @@ _GLOBAL(power7_nap)
-> >  
-> >  _GLOBAL(power7_sleep)
-> >  	li	r3,1
-> > -	li	r4,0
-> > +	li	r4,1
-> >  	b	power7_powersave_common
-> >  	/* No return */
-> >  
-> > 
-> 
-> 
-> 
-> 
-> 
-
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Keep up to date with CSR on our technical blog, www.csr.com/blog, CSR people blog, www.csr.com/people, YouTube, www.youtube.com/user/CSRplc, Facebook, www.facebook.com/pages/CSR/191038434253534, or follow us on Twitter at www.twitter.com/CSR_plc.
+New for 2014, you can now access the wide range of products powered by aptX at www.aptx.com.
