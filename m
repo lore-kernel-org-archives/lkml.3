@@ -1,66 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758542AbaGAQyI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 12:54:08 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:51535 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758139AbaGAQyG (ORCPT
+	id S1758390AbaGAQ5A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 12:57:00 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:59320 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756555AbaGAQ45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 12:54:06 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: next-20140640 - fatal crash at boot time in sound drivers...
-In-Reply-To: Your message of "Tue, 01 Jul 2014 11:18:15 +0200."
-             <s5hlhsd8mjs.wl%tiwai@suse.de>
-From: Valdis.Kletnieks@vt.edu
-References: <11205.1404146754@turing-police.cc.vt.edu>
-            <s5hlhsd8mjs.wl%tiwai@suse.de>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1404233632_3099P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 01 Jul 2014 12:53:52 -0400
-Message-ID: <6331.1404233632@turing-police.cc.vt.edu>
+	Tue, 1 Jul 2014 12:56:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <4224745.HqdT4QrZdr@wuerfel>
+References: <1403183091-27876-1-git-send-email-ulf.hansson@linaro.org>
+	<1403183091-27876-2-git-send-email-ulf.hansson@linaro.org>
+	<4224745.HqdT4QrZdr@wuerfel>
+Date: Tue, 1 Jul 2014 18:56:55 +0200
+Message-ID: <CAPDyKFogpZWCc5v1--dqDO7wHvsRp-rKgP2qGZw+HwCuJKZ0zQ@mail.gmail.com>
+Subject: Re: [RFC 1/2] pwrseq: Add subsystem to handle complex power sequences
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Chris Ball <chris@printf.net>, Rob Herring <robh+dt@kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Chen-Yu Tsai <wens@csie.org>, Mark Brown <broonie@kernel.org>,
+        Arend van Spriel <arend@broadcom.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1404233632_3099P
-Content-Type: text/plain; charset=us-ascii
-
-On Tue, 01 Jul 2014 11:18:15 +0200, Takashi Iwai said:
-> At Mon, 30 Jun 2014 12:45:54 -0400, Valdis Kletnieks wrote:
-> >
-> > Seeing this on a Dell Latitude E6530 - kernel lives for just a few
-> > seconds before committing hari-kiri trying to initialize the sound chipset.
+On 20 June 2014 17:42, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 19 June 2014 15:04:50 Ulf Hansson wrote:
+>> +Power sequence DT bindings
+>> +
+>> +Each power sequence method has a corresponding "power-method" property string.
+>> +This property shall be set in a subnode for a device. That subnode should also
+>> +describe resourses which are specific to that power method.
+>> +
+>> +Do note, power sequences as such isn't encoded through DT. Instead those are
+>> +implemented by each power method.
+>> +
+>> +Required subnode properties:
+>> +- power-method: should contain the string for the power method to bind.
+>> +
+>> +       Supported power methods: None.
+>> +
+>> +Example:
+>> +
+>> +Note, the "clock" power method in this example isn't actually supported, but
+>> +used to visualize how a childnode could be described.
 >
-> The bug has been fixed yesterday, so today's next tree should work.
-> Let me know if you still see the issue.
+> I'm not too thrilled about adding another top-level concept for these.
 
-Confirming that next-20140701 boots without this issue, thanks...
+I agree, but when you collects the requirements from the discussions
+we have had around this topic - I don't think we can find another
+solution. But I might be wrong.
 
---==_Exmh_1404233632_3099P
-Content-Type: application/pgp-signature
+> This seems to duplicate some things that pm-domains do, but does them
+> in a somewhata different way. Would it be possible to instead integrate
+> it into the pm-domain code?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
+No, I don't think so.
 
-iQIVAwUBU7LnoAdmEQWDXROgAQIOyRAAmt1eGiXxz276ZZaHFBUgHj7nbO3XBzES
-i1TzXCllIPauSS7IECt0j8tI1QH5ATyDNGiBnEHtLNwPjXnMMdklFKpzLYXJk/uS
-oOyeZ24KyKgiT3sLMu4P4ggDZVCrL/diDQTCbdxtub5Jsf9O/X4qVRnI5gRXX0Z9
-9UYuPVtqnxaE9JM75bGi3jmBqenB1uB2Fl3Yce+PmQtCM8w1p01sWHpgBqXneUgt
-fCHq+oJItAwcfwt8aBfbWKVM/fAF/rET2hkfoTF47cIp2pJDtBpZ10uuV/2WVYFU
-f1zwyb84uF95Wgz1w1jCgx1MIZ9+pwGS7JGiMj+tNZCvlnxaKF8Phv6WhwXxwdfr
-KComtFvbtitFilAuMRn2FjQs7iK/zjz3O9vwu9yToyIJ1SqaS+C8U3SNLS/x2oso
-Jc5VFfcWblF4Q7pfJ3knkPJ+zS6rcqsWEKFpqElngZrKHdKWhxaTfWmhV3ErDeik
-IvEX/mSxafliMbr+1Qq4Tl2APd8TjOA9AHa3PRWf+37a+ivjJ/VrltjBLK4O2+5x
-n8BY/HexDdAYGb9vScXFPeMI5e4NW7bdu/0VzYPwHBUV6/5KXQXGMdEc5raaoiOX
-JpZKUe+UqS4l3j6o+9UvnbXDTiCaxZLOSkUMhbiPjkaLM3TIlj31VTWFgzq8NaCR
-I7vqfIPH99M=
-=iDQ4
------END PGP SIGNATURE-----
+That main argument would be that runtime PM is not fine grained
+enough, but there are several other reasons.
 
---==_Exmh_1404233632_3099P--
+Please refer to previous discussions.
+
+>
+> I also agree with Olof that having a standalone child device node is
+> not the best representation. If you want to represent an SDIO device
+> device that has some references to clocks, regulators, etc, then put
+> that device into the tree and give it those properties.
+
+Could you elaborate on why?
+
+Where would a card (SDIO/SD/MMC) be better placed - unless as a child
+node under a mmc host device?
+
+> That would also let you worry about the sequencing in driver code rather
+> than trying to come up with a completely generic model for it.
+
+So in principle your are suggesting to "pre-probe" all discoverable
+devices/buses, not just for SDIO ( aka mmc subsystem).
+
+Will that even work for modules?
+
+Kind regards
+Uffe
+
+>
+>         Arnd
