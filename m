@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758731AbaGATt0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 15:49:26 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:46389 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758637AbaGATtW (ORCPT
+	id S1757759AbaGAT4G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 15:56:06 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:36699 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756400AbaGAT4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 15:49:22 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArsHAAYQs1NbsGsk/2dsb2JhbABagw2sYwUBbplbgQ8XdYQxLyOBGjeIRgGzC5V1hW+JMB2ELQWaZotFiD6DRDs
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Roland Dreier <roland@kernel.org>,
-        Sean Hefty <sean.hefty@intel.com>, linux-rdma@vger.kernel.org
-Subject: [PATCH 1/1] IB/mlx4: use ARRAY_SIZE instead of sizeof/sizeof[0]
-Date: Tue,  1 Jul 2014 21:49:17 +0200
-Message-Id: <1404244157-24367-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	Tue, 1 Jul 2014 15:56:03 -0400
+From: Matt Kurz <matt@ninezulu.com>
+To: gregkh@linuxfoundation.org
+Cc: Matt Kurz <matt@ninezulu.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: wlan-ng/prism2fw.c: Add blank line after declarations
+Date: Wed,  2 Jul 2014 05:59:54 +1000
+Message-Id: <1404244794-15696-1-git-send-email-matt@ninezulu.com>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use macro definition
+Fix checkpatch.pl warnings due to missing blank line after declarations
 
-Cc: Roland Dreier <roland@kernel.org>
-Cc: Sean Hefty <sean.hefty@intel.com>
-Cc: linux-rdma@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Signed-off-by: Matt Kurz <matt@ninezulu.com>
 ---
- drivers/infiniband/hw/mlx4/main.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/staging/wlan-ng/prism2fw.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/infiniband/hw/mlx4/main.c b/drivers/infiniband/hw/mlx4/main.c
-index 0f7027e..0dc807f 100644
---- a/drivers/infiniband/hw/mlx4/main.c
-+++ b/drivers/infiniband/hw/mlx4/main.c
-@@ -910,8 +910,7 @@ static int __mlx4_ib_default_rules_match(struct ib_qp *qp,
- 	const struct default_rules *pdefault_rules = default_table;
- 	u8 link_layer = rdma_port_get_link_layer(qp->device, flow_attr->port);
- 
--	for (i = 0; i < sizeof(default_table)/sizeof(default_table[0]); i++,
--	     pdefault_rules++) {
-+	for (i = 0; i < ARRAY_SIZE(default_table); i++, pdefault_rules++) {
- 		__u32 field_types[IB_FLOW_SPEC_SUPPORT_LAYERS];
- 		memset(&field_types, 0, sizeof(field_types));
- 
-@@ -965,8 +964,7 @@ static int __mlx4_ib_create_default_rules(
- 	int size = 0;
+diff --git a/drivers/staging/wlan-ng/prism2fw.c b/drivers/staging/wlan-ng/prism2fw.c
+index f787035..42c14b0 100644
+--- a/drivers/staging/wlan-ng/prism2fw.c
++++ b/drivers/staging/wlan-ng/prism2fw.c
+@@ -445,6 +445,7 @@ static int crcimage(struct imgchunk *fchunk, unsigned int nfchunks,
+ static void free_chunks(struct imgchunk *fchunk, unsigned int *nfchunks)
+ {
  	int i;
++
+ 	for (i = 0; i < *nfchunks; i++)
+ 		kfree(fchunk[i].data);
  
--	for (i = 0; i < sizeof(pdefault_rules->rules_create_list)/
--			sizeof(pdefault_rules->rules_create_list[0]); i++) {
-+	for (i = 0; i < ARRAY_SIZE(pdefault_rules->rules_create_list); i++) {
- 		int ret;
- 		union ib_flow_spec ib_spec;
- 		switch (pdefault_rules->rules_create_list[i]) {
+@@ -1060,6 +1061,7 @@ static int writeimage(wlandevice_t *wlandev, struct imgchunk *fchunk,
+ 		for (j = 0; j < nwrites; j++) {
+ 			/* TODO Move this to a separate function */
+ 			int lenleft = fchunk[i].len - (WRITESIZE_MAX * j);
++
+ 			if (fchunk[i].len > WRITESIZE_MAX)
+ 				currlen = WRITESIZE_MAX;
+ 			else
 -- 
-1.9.1
+2.0.1
 
