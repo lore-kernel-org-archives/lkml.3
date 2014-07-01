@@ -1,166 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751393AbaGAFE6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 01:04:58 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:52659 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822AbaGAFE4 (ORCPT
+	id S1751541AbaGAFGm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 01:06:42 -0400
+Received: from mail-ie0-f202.google.com ([209.85.223.202]:42642 "EHLO
+	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350AbaGAFGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 01:04:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <1404144233-17222-4-git-send-email-agross@codeaurora.org>
-References: <1404144233-17222-1-git-send-email-agross@codeaurora.org> <1404144233-17222-4-git-send-email-agross@codeaurora.org>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 1 Jul 2014 00:04:35 -0500
-Message-ID: <CAL_JsqJTO4htxHMVtMG6mGLmgRtQ7igE1OCX_jXM4xabN76ntg@mail.gmail.com>
-Subject: Re: [Patch v7 3/3] usb: dwc3: qcom: Add device tree binding
-To: Andy Gross <agross@codeaurora.org>
-Cc: Felipe Balbi <balbi@ti.com>, jackp@codeaurora.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 1 Jul 2014 01:06:41 -0400
+From: Ben Chan <benchan@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Michalis Pappas <mpappas@fastmail.fm>
+Subject: [PATCH] staging: gdm72xx: use consistent style for header guards
+Date: Mon, 30 Jun 2014 22:06:39 -0700
+Message-Id: <1404191199-1893-1-git-send-email-benchan@chromium.org>
+X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 11:03 AM, Andy Gross <agross@codeaurora.org> wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+---
+ drivers/staging/gdm72xx/gdm_qos.h   | 6 +++---
+ drivers/staging/gdm72xx/gdm_sdio.h  | 6 +++---
+ drivers/staging/gdm72xx/gdm_usb.h   | 6 +++---
+ drivers/staging/gdm72xx/gdm_wimax.h | 6 +++---
+ drivers/staging/gdm72xx/hci.h       | 6 +++---
+ drivers/staging/gdm72xx/netlink_k.h | 7 ++++---
+ drivers/staging/gdm72xx/sdio_boot.h | 6 +++---
+ drivers/staging/gdm72xx/usb_boot.h  | 6 +++---
+ drivers/staging/gdm72xx/usb_ids.h   | 6 +++---
+ drivers/staging/gdm72xx/wm_ioctl.h  | 7 ++++---
+ 10 files changed, 32 insertions(+), 30 deletions(-)
 
-Please copy the right lists and maintainers.
+diff --git a/drivers/staging/gdm72xx/gdm_qos.h b/drivers/staging/gdm72xx/gdm_qos.h
+index 8f742f3..bbc8aab 100644
+--- a/drivers/staging/gdm72xx/gdm_qos.h
++++ b/drivers/staging/gdm72xx/gdm_qos.h
+@@ -11,8 +11,8 @@
+  * GNU General Public License for more details.
+  */
+ 
+-#if !defined(GDM_QOS_H_20090403)
+-#define GDM_QOS_H_20090403
++#ifndef __GDM72XX_GDM_QOS_H__
++#define __GDM72XX_GDM_QOS_H__
+ 
+ #include <linux/types.h>
+ #include <linux/usb.h>
+@@ -71,4 +71,4 @@ void gdm_qos_release_list(void *nic_ptr);
+ int gdm_qos_send_hci_pkt(struct sk_buff *skb, struct net_device *dev);
+ void gdm_recv_qos_hci_packet(void *nic_ptr, u8 *buf, int size);
+ 
+-#endif
++#endif /* __GDM72XX_GDM_QOS_H__ */
+diff --git a/drivers/staging/gdm72xx/gdm_sdio.h b/drivers/staging/gdm72xx/gdm_sdio.h
+index 0c0e2cb..77ad9d6 100644
+--- a/drivers/staging/gdm72xx/gdm_sdio.h
++++ b/drivers/staging/gdm72xx/gdm_sdio.h
+@@ -11,8 +11,8 @@
+  * GNU General Public License for more details.
+  */
+ 
+-#ifndef __GDM_SDIO_H__
+-#define __GDM_SDIO_H__
++#ifndef __GDM72XX_GDM_SDIO_H__
++#define __GDM72XX_GDM_SDIO_H__
+ 
+ #include <linux/types.h>
+ #include <linux/time.h>
+@@ -60,4 +60,4 @@ struct sdiowm_dev {
+ 	struct work_struct	ws;
+ };
+ 
+-#endif /* __GDM_SDIO_H__ */
++#endif /* __GDM72XX_GDM_SDIO_H__ */
+diff --git a/drivers/staging/gdm72xx/gdm_usb.h b/drivers/staging/gdm72xx/gdm_usb.h
+index 3050652..8e58a25 100644
+--- a/drivers/staging/gdm72xx/gdm_usb.h
++++ b/drivers/staging/gdm72xx/gdm_usb.h
+@@ -11,8 +11,8 @@
+  * GNU General Public License for more details.
+  */
+ 
+-#ifndef __GDM_USB_H__
+-#define __GDM_USB_H__
++#ifndef __GDM72XX_GDM_USB_H__
++#define __GDM72XX_GDM_USB_H__
+ 
+ #include <linux/types.h>
+ #include <linux/usb.h>
+@@ -75,4 +75,4 @@ struct usbwm_dev {
+ 	int			padding;
+ };
+ 
+-#endif /* __GDM_USB_H__ */
++#endif /* __GDM72XX_GDM_USB_H__ */
+diff --git a/drivers/staging/gdm72xx/gdm_wimax.h b/drivers/staging/gdm72xx/gdm_wimax.h
+index 7e2c888..c640d2c 100644
+--- a/drivers/staging/gdm72xx/gdm_wimax.h
++++ b/drivers/staging/gdm72xx/gdm_wimax.h
+@@ -11,8 +11,8 @@
+  * GNU General Public License for more details.
+  */
+ 
+-#ifndef __GDM_WIMAX_H__
+-#define __GDM_WIMAX_H__
++#ifndef __GDM72XX_GDM_WIMAX_H__
++#define __GDM72XX_GDM_WIMAX_H__
+ 
+ #include <linux/netdevice.h>
+ #include <linux/types.h>
+@@ -57,4 +57,4 @@ int register_wimax_device(struct phy_dev *phy_dev, struct device *pdev);
+ int gdm_wimax_send_tx(struct sk_buff *skb, struct net_device *dev);
+ void unregister_wimax_device(struct phy_dev *phy_dev);
+ 
+-#endif
++#endif /* __GDM72XX_GDM_WIMAX_H__ */
+diff --git a/drivers/staging/gdm72xx/hci.h b/drivers/staging/gdm72xx/hci.h
+index 059ba00..ff6941e 100644
+--- a/drivers/staging/gdm72xx/hci.h
++++ b/drivers/staging/gdm72xx/hci.h
+@@ -11,8 +11,8 @@
+  * GNU General Public License for more details.
+  */
+ 
+-#ifndef HCI_H_20080801
+-#define HCI_H_20080801
++#ifndef __GDM72XX_HCI_H__
++#define __GDM72XX_HCI_H__
+ 
+ #define HCI_HEADER_SIZE		4
+ #define HCI_VALUE_OFFS		(HCI_HEADER_SIZE)
+@@ -204,4 +204,4 @@ struct hci_s {
+ 	unsigned char  data[0];
+ } __packed;
+ 
+-#endif
++#endif /* __GDM72XX_HCI_H__ */
+diff --git a/drivers/staging/gdm72xx/netlink_k.h b/drivers/staging/gdm72xx/netlink_k.h
+index b6caac1..1fe7198 100644
+--- a/drivers/staging/gdm72xx/netlink_k.h
++++ b/drivers/staging/gdm72xx/netlink_k.h
+@@ -11,8 +11,9 @@
+  * GNU General Public License for more details.
+  */
+ 
+-#if !defined(NETLINK_H_20081202)
+-#define NETLINK_H_20081202
++#ifndef __GDM72XX_NETLINK_K_H__
++#define __GDM72XX_NETLINK_K_H__
++
+ #include <linux/netdevice.h>
+ #include <net/sock.h>
+ 
+@@ -21,4 +22,4 @@ struct sock *netlink_init(int unit, void (*cb)(struct net_device *dev, u16 type,
+ void netlink_exit(struct sock *sock);
+ int netlink_send(struct sock *sock, int group, u16 type, void *msg, int len);
+ 
+-#endif
++#endif /* __GDM72XX_NETLINK_K_H__ */
+diff --git a/drivers/staging/gdm72xx/sdio_boot.h b/drivers/staging/gdm72xx/sdio_boot.h
+index 045c1f4..e0800c6 100644
+--- a/drivers/staging/gdm72xx/sdio_boot.h
++++ b/drivers/staging/gdm72xx/sdio_boot.h
+@@ -11,11 +11,11 @@
+  * GNU General Public License for more details.
+  */
+ 
+-#ifndef __SDIO_BOOT_H__
+-#define __SDIO_BOOT_H__
++#ifndef __GDM72XX_SDIO_BOOT_H__
++#define __GDM72XX_SDIO_BOOT_H__
+ 
+ struct sdio_func;
+ 
+ int sdio_boot(struct sdio_func *func);
+ 
+-#endif /* __SDIO_BOOT_H__ */
++#endif /* __GDM72XX_SDIO_BOOT_H__ */
+diff --git a/drivers/staging/gdm72xx/usb_boot.h b/drivers/staging/gdm72xx/usb_boot.h
+index 05308e2..5bf7190 100644
+--- a/drivers/staging/gdm72xx/usb_boot.h
++++ b/drivers/staging/gdm72xx/usb_boot.h
+@@ -11,12 +11,12 @@
+  * GNU General Public License for more details.
+  */
+ 
+-#ifndef __USB_BOOT_H__
+-#define __USB_BOOT_H__
++#ifndef __GDM72XX_USB_BOOT_H__
++#define __GDM72XX_USB_BOOT_H__
+ 
+ struct usb_device;
+ 
+ int usb_boot(struct usb_device *usbdev, u16 pid);
+ int usb_emergency(struct usb_device *usbdev);
+ 
+-#endif /* __USB_BOOT_H__ */
++#endif /* __GDM72XX_USB_BOOT_H__ */
+diff --git a/drivers/staging/gdm72xx/usb_ids.h b/drivers/staging/gdm72xx/usb_ids.h
+index 1a61b35..8ce544d 100644
+--- a/drivers/staging/gdm72xx/usb_ids.h
++++ b/drivers/staging/gdm72xx/usb_ids.h
+@@ -11,8 +11,8 @@
+  * GNU General Public License for more details.
+  */
+ 
+-#ifndef __USB_IDS_H__
+-#define __USB_IDS_H__
++#ifndef __GDM72XX_USB_IDS_H__
++#define __GDM72XX_USB_IDS_H__
+ 
+ /*You can replace vendor-ID as yours.*/
+ #define GCT_VID			0x1076
+@@ -79,4 +79,4 @@ static const struct usb_device_id id_table[] = {
+ 	{ }
+ };
+ 
+-#endif /* __USB_IDS_H__ */
++#endif /* __GDM72XX_USB_IDS_H__ */
+diff --git a/drivers/staging/gdm72xx/wm_ioctl.h b/drivers/staging/gdm72xx/wm_ioctl.h
+index d022c6c..ed8f649 100644
+--- a/drivers/staging/gdm72xx/wm_ioctl.h
++++ b/drivers/staging/gdm72xx/wm_ioctl.h
+@@ -11,8 +11,9 @@
+  * GNU General Public License for more details.
+  */
+ 
+-#if !defined(WM_IOCTL_H_20080714)
+-#define WM_IOCTL_H_20080714
++#ifndef __GDM72XX_WM_IOCTL_H__
++#define __GDM72XX_WM_IOCTL_H__
++
+ #if !defined(__KERNEL__)
+ #include <net/if.h>
+ #endif
+@@ -92,4 +93,4 @@ struct wm_req_s {
+ #define ifr_name ifr_ifrn.ifrn_name
+ #endif
+ 
+-#endif
++#endif /* __GDM72XX_WM_IOCTL_H__ */
+-- 
+2.0.0.526.g5318336
 
->
-> QCOM USB3.0 core wrapper consist of USB3.0 IP from Synopsys
-> (SNPS) and HS, SS PHY's control and configuration registers.
->
-> It could operate in device mode (SS, HS, FS) and host
-> mode (SS, HS, FS, LS).
->
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> Signed-off-by: Andy Gross <agross@codeaurora.org>
-> ---
->  .../devicetree/bindings/usb/qcom,dwc3.txt          |  104 ++++++++++++++++++++
->  1 file changed, 104 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/usb/qcom,dwc3.txt
->
-> diff --git a/Documentation/devicetree/bindings/usb/qcom,dwc3.txt b/Documentation/devicetree/bindings/usb/qcom,dwc3.txt
-> new file mode 100644
-> index 0000000..105b6b7
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/usb/qcom,dwc3.txt
-> @@ -0,0 +1,104 @@
-> +Qualcomm SuperSpeed DWC3 USB SoC controller
-> +
-> +
-> +QCOM DWC3 Highspeed USB PHY
-> +========================
-> +Required properities:
-> +- compatible:  should contain "qcom,dwc3-hsphy";
-> +- reg:                 offset and length of the register set in the memory map
-> +- clocks:              A list of phandle + clock-specifier pairs for the
-> +                               clocks listed in clock-names
-> +- clock-names: Should contain the following:
-> +  "utmi"               UTMI clock
-> +- v1p8-supply: phandle to the regulator for the 1.8v supply to HSPHY.
-> +- v3p3-supply: phandle to the regulator for the 3.3v supply to HSPHY.
-> +- vbus-supply: phandle to the regulator for the vbus supply for host
-> +               mode.
-> +- vddcx-supply: phandle to the regulator for the vdd supply for HSPHY
-> +                digital circuit operation.
-> +
-> +Optional clocks:
-> +  "xo"                 External reference clock
-> +
-> +
-> +QCOM DWC3 Superspeed USB PHY
-> +=========================
-> +Required properities:
-> +- compatible:  should contain "qcom,dwc3-ssphy";
-> +- reg:                 offset and length of the register set in the memory map
-> +- clocks:              A list of phandle + clock-specifier pairs for the
-> +                               clocks listed in clock-names
-> +- clock-names: Should contain the following:
-> +  "ref"                        Reference clock used in host mode.
-> +- v1p8-supply: phandle to the regulator for the 1.8v supply to HSPHY.
-> +- vddcx-supply: phandle to the regulator for the vdd supply for HSPHY
-> +                digital circuit operation.
-> +
-> +Optional clocks:
-> +  "xo"                 External reference clock
-> +
-> +QCOM DWC3 controller wrapper
-> +===========================
-> +Required properties:
-> +- compatible:  should contain "qcom,dwc3"
-> +- clocks:              A list of phandle + clock-specifier pairs for the
-> +                               clocks listed in clock-names
-> +- clock-names: Should contain the following:
-> +  "core"               Master/Core clock, have to be >= 125 MHz for SS
-> +                               operation and >= 60MHz for HS operation
-> +
-> +Optional clocks:
-> +  "iface"              System bus AXI clock.  Not present on all platforms
-
-Really?, some platforms have a clockless bus?
-
-> +  "sleep"              Sleep clock, used when USB3 core goes into low
-> +                               power mode (U3).
-> +
-> +Optional regulator:
-> +- gdsc-supply: phandle to the regulator from globally distributed
-> +                               switch controller
-
-The name should reflect the name of the input, not the source.
-
-> +
-> +Required child node:
-> +A child node must exist to represent the core DWC3 IP block. The name of
-> +the node is not important. The content of the node is defined in dwc3.txt.
-> +
-> +Example device nodes:
-> +
-> +               hs_phy_0: phy@110f8800 {
-> +                       compatible = "qcom,dwc3-hsphy";
-> +                       reg = <0x110f8800 0x30>;
-> +                       clocks = <&gcc USB30_0_UTMI_CLK>;
-> +                       clock-names = "utmi";
-> +
-> +                       status = "disabled";
-> +               };
-> +
-> +               ss_phy_0: phy@110f8830 {
-> +                       compatible = "qcom,dwc3-ssphy";
-> +                       reg = <0x110f8830 0x30>;
-> +
-> +                       clocks = <&gcc USB30_0_MASTER_CLK>;
-> +                       clock-names = "ref";
-> +
-> +                       status = "disabled";
-> +               };
-> +
-> +               usb3_0: usb30@0 {
-> +                       compatible = "qcom,dwc3";
-> +                       #address-cells = <1>;
-> +                       #size-cells = <1>;
-> +                       clocks = <&gcc USB30_0_MASTER_CLK>;
-> +                       clock-names = "core";
-> +
-> +                       ranges;
-> +
-> +                       status = "disabled";
-> +
-> +                       dwc3@11000000 {
-> +                               compatible = "snps,dwc3";
-
-This sub-node is just wrong. Why can't you have a single node with '
-"qcom,dwc3", "snps,dwc3" ' for the compatible property? All you are
-adding here is clocks. Does the Synopsys block have no clocks?
-
-I guess this is copied from other broken dwc3 bindings... That doesn't
-mean you have to copy it.
-
-Rob
