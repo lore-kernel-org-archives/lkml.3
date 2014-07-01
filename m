@@ -1,150 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758792AbaGAUOX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 16:14:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54527 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758761AbaGAUOV (ORCPT
+	id S1758713AbaGAUOI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 16:14:08 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:37134 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754356AbaGAUOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 16:14:21 -0400
-Date: Tue, 1 Jul 2014 13:14:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org, ebiederm@xmission.com, hpa@zytor.com,
-        mjg59@srcf.ucam.org, greg@kroah.com, bp@alien8.de, dyoung@redhat.com,
-        chaowang@redhat.com, bhe@redhat.com, linux-efi@vger.kernel.org
-Subject: Re: [PATCH 15/15] kexec: Support kexec/kdump on EFI systems
-Message-Id: <20140701131419.454a3fc32fcc84a43b668c50@linux-foundation.org>
-In-Reply-To: <20140701194605.GJ7539@console-pimps.org>
-References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
-	<1403814824-7587-16-git-send-email-vgoyal@redhat.com>
-	<20140701194605.GJ7539@console-pimps.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Jul 2014 16:14:05 -0400
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+X-Google-Original-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>
+Subject: [PATCH v2 0/3] ima: use asynchronous hash API for hash calculation
+Date: Tue,  1 Jul 2014 23:12:48 +0300
+Message-Id: <cover.1404245510.git.d.kasatkin@samsung.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jul 2014 20:46:05 +0100 Matt Fleming <matt@console-pimps.org> wrote:
+Depending on the IMA policy, it might require to measure huge amount of files.
+It may be very important to speedup hash calculation or to reduce (bettery)
+energy required to do it. Currently IMA uses synchronous hash API (shash)
+which is CPU based. CPU based hash calculation is very CPU intensive and on the
+battery powered device will be also high energy consuming.
 
-> > +int get_efi_runtime_map_size(void)
-> > +{
-> > +	return nr_efi_runtime_map * efi_memdesc_size;
-> > +}
-> > +
-> > +int get_efi_runtime_map_desc_size(void)
-> > +{
-> > +	return efi_memdesc_size;
-> > +}
-> > +
-> > +int efi_runtime_map_copy(void *buf, size_t bufsz)
-> > +{
-> > +	size_t sz = get_efi_runtime_map_size();
-> > +
-> > +	if (sz > bufsz)
-> > +		sz = bufsz;
-> > +
-> > +	memcpy(buf, efi_runtime_map, sz);
-> > +	return 0;
-> > +}
-> 
-> Could we prefix these with efi_, e.g. efi_get_runtime_map_size() ?
+Many platforms provide cryptographic acceleration modules which allow speedup
+and/or reduce energy consumption, and provide asynchronous way to calculate
+hashes. Defacto way to implement drivers for such accelerators is using
+asynchronous hash API (ahash).
 
-This?
+The first patch adds use of ahash API to IMA. Performance of using HW
+acceleration depends very much on amount of data to hash and it depends
+on particular HW. It is usually inefficient for small data due to HW
+initialization overhead. In order to make it possible to optimize performance
+for particular system, the patch provides kernel parameter
+'ima_ahash=<min_file_size>', which allows to specify optimal file size
+when start using ahash. By default ahash is disabled until non-zero value
+with 'ima_ahash=' is provided.
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: kexec-support-kexec-kdump-on-efi-systems-fix
+Second patch introduces multi-page buffers which makes HW acceleration more
+efficient. It extends 'ima_ahash' kernel parameter to specify buffer size:
+'ima_ahash=<min_file_size>[,<bufsize>]'
 
-s/get_efi/efi_get/g, per Matt
+Third patch introduces double-buffering which allows to readahead next portion
+of data for hashing while calculating the hash.
 
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Matt Fleming <matt@console-pimps.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
+Changes to v1:
+- ima_ahash_size and ima_ahash_bufsize were combined as ima_ahash
+- ahash pre-allocation moved out from __init code to be able to use
+  ahash crypto modules. Ahash allocated once on the first use.
+- hash calculation falls back to sahsh if ahash allocation/calculation fails
+- complex initialization separated from variable declaration
+- improved comments
 
- arch/x86/kernel/kexec-bzimage64.c  |    4 ++--
- drivers/firmware/efi/runtime-map.c |    6 +++---
- include/linux/efi.h                |    8 ++++----
- 3 files changed, 9 insertions(+), 9 deletions(-)
+- Dmitry
 
-diff -puN arch/x86/kernel/kexec-bzimage64.c~kexec-support-kexec-kdump-on-efi-systems-fix arch/x86/kernel/kexec-bzimage64.c
---- a/arch/x86/kernel/kexec-bzimage64.c~kexec-support-kexec-kdump-on-efi-systems-fix
-+++ a/arch/x86/kernel/kexec-bzimage64.c
-@@ -181,7 +181,7 @@ setup_efi_state(struct boot_params *para
- 	ei->efi_systab_hi = current_ei->efi_systab_hi;
- 
- 	ei->efi_memdesc_version = current_ei->efi_memdesc_version;
--	ei->efi_memdesc_size = get_efi_runtime_map_desc_size();
-+	ei->efi_memdesc_size = efi_get_runtime_map_desc_size();
- 
- 	setup_efi_info_memmap(params, params_load_addr, efi_map_offset,
- 			      efi_map_sz);
-@@ -397,7 +397,7 @@ void *bzImage64_load(struct kimage *imag
- 	 * have to create separate segment for each. Keeps things
- 	 * little bit simple
- 	 */
--	efi_map_sz = get_efi_runtime_map_size();
-+	efi_map_sz = efi_get_runtime_map_size();
- 	efi_map_sz = ALIGN(efi_map_sz, 16);
- 	params_cmdline_sz = sizeof(struct boot_params) + cmdline_len +
- 				MAX_ELFCOREHDR_STR_LEN;
-diff -puN drivers/firmware/efi/runtime-map.c~kexec-support-kexec-kdump-on-efi-systems-fix drivers/firmware/efi/runtime-map.c
---- a/drivers/firmware/efi/runtime-map.c~kexec-support-kexec-kdump-on-efi-systems-fix
-+++ a/drivers/firmware/efi/runtime-map.c
-@@ -138,19 +138,19 @@ add_sysfs_runtime_map_entry(struct kobje
- 	return entry;
- }
- 
--int get_efi_runtime_map_size(void)
-+int efi_get_runtime_map_size(void)
- {
- 	return nr_efi_runtime_map * efi_memdesc_size;
- }
- 
--int get_efi_runtime_map_desc_size(void)
-+int efi_get_runtime_map_desc_size(void)
- {
- 	return efi_memdesc_size;
- }
- 
- int efi_runtime_map_copy(void *buf, size_t bufsz)
- {
--	size_t sz = get_efi_runtime_map_size();
-+	size_t sz = efi_get_runtime_map_size();
- 
- 	if (sz > bufsz)
- 		sz = bufsz;
-diff -puN include/linux/efi.h~kexec-support-kexec-kdump-on-efi-systems-fix include/linux/efi.h
---- a/include/linux/efi.h~kexec-support-kexec-kdump-on-efi-systems-fix
-+++ a/include/linux/efi.h
-@@ -1151,8 +1151,8 @@ int efivars_sysfs_init(void);
- #ifdef CONFIG_EFI_RUNTIME_MAP
- int efi_runtime_map_init(struct kobject *);
- void efi_runtime_map_setup(void *, int, u32);
--int get_efi_runtime_map_size(void);
--int get_efi_runtime_map_desc_size(void);
-+int efi_get_runtime_map_size(void);
-+int efi_get_runtime_map_desc_size(void);
- int efi_runtime_map_copy(void *buf, size_t bufsz);
- #else
- static inline int efi_runtime_map_init(struct kobject *kobj)
-@@ -1163,12 +1163,12 @@ static inline int efi_runtime_map_init(s
- static inline void
- efi_runtime_map_setup(void *map, int nr_entries, u32 desc_size) {}
- 
--static inline int get_efi_runtime_map_size(void)
-+static inline int efi_get_runtime_map_size(void)
- {
- 	return 0;
- }
- 
--static inline int get_efi_runtime_map_desc_size(void)
-+static inline int efi_get_runtime_map_desc_size(void)
- {
- 	return 0;
- }
-_
+
+Dmitry Kasatkin (3):
+  ima: use ahash API for file hash calculation
+  ima: introduce multi-page collect buffers
+  ima: provide double buffering for hash calculation
+
+ Documentation/kernel-parameters.txt |   6 +
+ security/integrity/ima/ima_crypto.c | 287 +++++++++++++++++++++++++++++++++++-
+ 2 files changed, 290 insertions(+), 3 deletions(-)
+
+-- 
+1.9.1
 
