@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751439AbaGAEKw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 00:10:52 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:36109 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195AbaGAEKt (ORCPT
+	id S1751213AbaGAEOE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 00:14:04 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:42773 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788AbaGAEOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 00:10:49 -0400
+	Tue, 1 Jul 2014 00:14:02 -0400
+Subject: [PATCH V2] powerpc/powernv: Check for IRQHAPPENED before sleeping
+To: benh@kernel.crashing.org, mikey@neuling.org, mpe@ellerman.id.au
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: shreyas@linux.vnet.ibm.com, svaidy@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Tue, 01 Jul 2014 09:39:14 +0530
+Message-ID: <20140701040808.6486.59805.stgit@preeti.in.ibm.com>
+User-Agent: StGit/0.16-38-g167d
 MIME-Version: 1.0
-In-Reply-To: <53B23362.7080103@samsung.com>
-References: <1404175210-9278-1-git-send-email-cw00.choi@samsung.com>
-	<CAK5sBcFJMK-y+MZPXCufKEmp=v1nFJHstvNTczsQ3ez3SUPbKw@mail.gmail.com>
-	<53B23362.7080103@samsung.com>
-Date: Tue, 1 Jul 2014 09:40:47 +0530
-Message-ID: <CAK5sBcER-rFmqe74b8uS=ZxKnTNGtkE0x6f7zaLphmyuHJz7Yg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: dts: Add TMU dt node to monitor the temperature for Exynos3250
-From: Sachin Kamat <spk.linux@gmail.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070104-0928-0000-0000-00000316BC5B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chanwoo,
+Commit 8d6f7c5a: "powerpc/powernv: Make it possible to skip the IRQHAPPENED
+check in power7_nap()" added code that prevents cpus from checking for pending
+interrupts just before entering sleep state, which is wrong. A cpu cannot enter
+any idle state with pending interrupts.
 
-On Tue, Jul 1, 2014 at 9:34 AM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> Hi Sachin,
->
-> On 07/01/2014 12:33 PM, Sachin Kamat wrote:
->> Hi Chanwoo,
->>
->> On Tue, Jul 1, 2014 at 6:10 AM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->>> This patch add TMU (Thermal Management Unit) dt node to monitor the high
->>> temperature for Exynos3250.
->>>
->>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->>> ---
->>> This patch has a dependency on following patch [1]:
->>>  [1] https://lkml.org/lkml/2014/6/30/805
->>>
->>>  arch/arm/boot/dts/exynos3250.dtsi | 10 ++++++++++
->>>  1 file changed, 10 insertions(+)
->>>
->>> diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
->>> index 3660cab..1e566af 100644
->>> --- a/arch/arm/boot/dts/exynos3250.dtsi
->>> +++ b/arch/arm/boot/dts/exynos3250.dtsi
->>> @@ -192,6 +192,16 @@
->>>                         status = "disabled";
->>>                 };
->>>
->>> +               tmu: tmu@100C0000 {
->>> +                       compatible = "samsung,exynos3250-tmu";
->>> +                       interrupt-parent = <&gic>;
->>> +                       reg = <0x100C0000 0x100>;
->>> +                       interrupts = <0 216 0>;
->>> +                       clocks = <&cmu CLK_TMU_APBIF>;
->>> +                       clock-names = "tmu_apbif";
->>> +                       status = "disabled";
->>
->> I don't think there would be any board specific properties needed. Hence
->> leave the status as enabled (by deleting the above line).
->>
->
-> I think that if specific board need TMU feature, dts file for specific board
-> should include tmu dt node with 'okay' status. The specific board based on
-> Exynos3250 might not need TMU feature.
+Possible consequences of a cpu entering an idle state without checking for pending
+interrupts could be a device timeout or a more serious consequence in case of
+Power8 would be if doorbell IPIs are delivered when cpus have interrupts soft
+disabled. Precisely the state that the cpus are in just before entering an
+idle state on PowerPC.
 
-The status field in DT node is not meant for stating the build configuration but
-represents the readiness of the hardware for usage on the platform. If
-a particular
-board does not need this feature it needs to be disabled in the build
-config and only
-for any special requirements disable it in board file.
+Interrupts delivered during soft disabled state are replayed when the interrupts
+are enabled again. Hence since a cpu goes to sleep with interrupts enabled
+again, it will receive any pending interrupts. However doorbell IPIs are not
+replayed even when the interrupts are re-enabled since they are edge triggered.Hence
+not checking for pending interrupts just before going to sleep state would mean
+that we will never take the doorbell IPI if it was delivered during the soft
+disabled state, unless some other interrupt wakes us up.This could result in the
+cpu that sent the doorbell IPI complaining that the sleeping cpu is stuck.
 
+This patch fixes these issues by ensuring that cpus check for pending interrupts
+just before entering any idle state as long as they are not in the path of split
+core operations.
 
--- 
-Regards,
-Sachin.
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Acked-by: Michael Neuling <mikey@neuling.org>
+---
+Changes from V1: Modified the changelog to add the details of the problem
+that this patch fixes.
+
+ arch/powerpc/kernel/idle_power7.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/powerpc/kernel/idle_power7.S b/arch/powerpc/kernel/idle_power7.S
+index 2480256..5cf3d36 100644
+--- a/arch/powerpc/kernel/idle_power7.S
++++ b/arch/powerpc/kernel/idle_power7.S
+@@ -131,7 +131,7 @@ _GLOBAL(power7_nap)
+ 
+ _GLOBAL(power7_sleep)
+ 	li	r3,1
+-	li	r4,0
++	li	r4,1
+ 	b	power7_powersave_common
+ 	/* No return */
+ 
+
