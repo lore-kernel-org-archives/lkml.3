@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757564AbaGAJyB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 05:54:01 -0400
-Received: from mail-wi0-f202.google.com ([209.85.212.202]:36441 "EHLO
-	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755541AbaGAJx6 (ORCPT
+	id S1754190AbaGAJz4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 05:55:56 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:34463 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409AbaGAJzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 05:53:58 -0400
-Date: Tue, 1 Jul 2014 10:53:56 +0100
-From: David Drysdale <drysdale@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>, linux-api@vger.kernel.org
-Subject: Re: [PATCH 01/11] fs: add O_BENEATH_ONLY flag to openat(2)
-Message-ID: <20140701095356.GC2242@google.com>
-References: <1404124096-21445-1-git-send-email-drysdale@google.com>
- <1404124096-21445-2-git-send-email-drysdale@google.com>
- <87mwcuw2pj.fsf@tassilo.jf.intel.com>
+	Tue, 1 Jul 2014 05:55:55 -0400
+Date: Tue, 1 Jul 2014 11:55:21 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        konrad.wilk@oracle.com, pbonzini@redhat.com, gleb@redhat.com,
+        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        waiman.long@hp.com, riel@redhat.com, davej@redhat.com, oleg@redhat.com,
+        x86@kernel.org, jeremy@goop.org, paul.gortmaker@windriver.com,
+        ak@linux.intel.com, jasowang@redhat.com, fernando_b1@lab.ntt.co.jp,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, mtosatti@redhat.com,
+        chegu_vinod@hp.com
+Subject: Re: [RFC PATCH v2] Implement Batched (group) ticket lock
+Message-ID: <20140701095521.GO6758@twins.programming.kicks-ass.net>
+References: <1403947024-3193-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+ <20140701080537.GH6758@twins.programming.kicks-ass.net>
+ <53B282E9.6060806@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87mwcuw2pj.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53B282E9.6060806@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 01:40:40PM -0700, Andi Kleen wrote:
-> David Drysdale <drysdale@google.com> writes:
+On Tue, Jul 01, 2014 at 03:14:09PM +0530, Raghavendra K T wrote:
+> On 07/01/2014 01:35 PM, Peter Zijlstra wrote:
+> >On Sat, Jun 28, 2014 at 02:47:04PM +0530, Raghavendra K T wrote:
+> >>In virtualized environment there are mainly three problems
+> >>related to spinlocks that affects performance.
+> >>1. LHP (lock holder preemption)
+> >>2. Lock Waiter Preemption (LWP)
+> >>3. Starvation/fairness
+> >>
+> >>Though Ticketlocks solve fairness problem it worsens LWP, LHP problems. Though
+> >>pv-ticketlocks tried to address these problems we can further improve at the
+> >>  cost of relaxed fairness. The following patch tries to achieve that by grouping
+> >>(batched) ticketlocks.
+> >
+> >And here I stop reading and ignore this patch, right?
+> >
+> >Why should I look at this?
+> >
 > 
-> > Add a new O_BENEATH_ONLY flag for openat(2) which restricts the
-> > provided path, rejecting (with -EACCES) paths that are not beneath
-> > the provided dfd.  In particular, reject:
-> >  - paths that contain .. components
-> >  - paths that begin with /
-> >  - symlinks that have paths as above.
+> For baremetal we continue to have 'fully fair ticketlock' with this patch
+> series.
 > 
-> How about bind mounts?
-> 
-> -Andi
-> 
-> -- 
-> ak@linux.intel.com -- Speaking for myself only
 
-Bind mounts won't get rejected because they just look like normal
-path components.  In other words, if dir/subdir is a bind mount to
-/root/dir then:
-  fd = openat(AT_FDCWD, "dir/subdir", O_RDONLY|O_BENEATH_ONLY);
-will work fine.
+But but but, we're looking at removing ticket locks. So why do we want
+to invest in them now?
