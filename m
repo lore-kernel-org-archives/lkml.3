@@ -1,53 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757820AbaGALN7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 07:13:59 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:37088 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756693AbaGALN5 (ORCPT
+	id S1757888AbaGALOI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 07:14:08 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:60139 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757827AbaGALOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 07:13:57 -0400
-From: Jerry Stralko <gerb.stralko@gmail.com>
-To: greg@kroah.com, linux-kernel@vger.kernel.org
-Cc: swetland@google.com, Jerry Stralko <gerb.stralko@gmail.com>
-Subject: [PATCH] staging: android: logger: fixed checkpatch.pl warnings.
-Date: Tue,  1 Jul 2014 07:13:18 -0400
-Message-Id: <1404213198-3675-1-git-send-email-gerb.stralko@gmail.com>
-X-Mailer: git-send-email 1.9.3
+	Tue, 1 Jul 2014 07:14:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABGGiswMuofH5WRh4jgwh1=CV+fEXM_Ec3+WNwThbuMLVxsdcg@mail.gmail.com>
+References: <cover.1403684824.git.viresh.kumar@linaro.org>
+	<e9c0eef07745e561b9d12dcb50c3e2f7eb3e8880.1403684824.git.viresh.kumar@linaro.org>
+	<53AB1CC1.4010907@codeaurora.org>
+	<CAKohpo=Q7eWNwcK6KF9_U-zD0g=96QHW9hiQupLpV5GqoWE+mA@mail.gmail.com>
+	<53ACB568.4000903@codeaurora.org>
+	<20140627015354.32686.83046@quantum>
+	<CAKohponvN3rAvJrfi4TojFcq5gq7r2oNE4Q0_NtwBHmEZ8waBA@mail.gmail.com>
+	<CAKohpo=dgSW551yzqjAV2_opw_4naqFEWpwUz9ktkGgR5vCBZA@mail.gmail.com>
+	<CABGGiswMuofH5WRh4jgwh1=CV+fEXM_Ec3+WNwThbuMLVxsdcg@mail.gmail.com>
+Date: Tue, 1 Jul 2014 16:44:04 +0530
+Message-ID: <CAKohpokaVPn7yNPNAGrE6juGaOYuxZvVsbmkOZmyi9rDub6t7g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] cpufreq: cpu0: Extend support beyond CPU0
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Rob Herring <rob.herring@linaro.org>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm@vger.kernel.org, Sachin Kamat <spk.linux@gmail.com>,
+        Thomas P Abraham <thomas.ab@samsung.com>, Nishanth Menon <nm@ti.com>,
+        Tomasz Figa <t.figa@samsung.com>, Mark Brown <broonie@kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jerry Stralko <gerb.stralko@gmail.com>
----
- drivers/staging/android/logger.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+On 1 July 2014 00:03, Rob Herring <rob.herring@linaro.org> wrote:
+>> What about comparing "clocks" property in cpu DT nodes?
+>
+> What if a different clock is selected for some reason.
 
-diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
-index 2772e01..9b47e66 100644
---- a/drivers/staging/android/logger.c
-+++ b/drivers/staging/android/logger.c
-@@ -110,8 +110,8 @@ static inline struct logger_log *file_get_log(struct file *file)
- 		struct logger_reader *reader = file->private_data;
- 
- 		return reader->log;
--	} else
--		return file->private_data;
-+	}
-+	return file->private_data;
- }
- 
- /*
-@@ -159,8 +159,7 @@ static size_t get_user_hdr_len(int ver)
- {
- 	if (ver < 2)
- 		return sizeof(struct user_logger_entry_compat);
--	else
--		return sizeof(struct logger_entry);
-+	return sizeof(struct logger_entry);
- }
- 
- static ssize_t copy_header_to_user(int ver, struct logger_entry *entry,
--- 
-1.9.3
+I don't know why that will happen for CPUs sharing clock line.
 
+> I think a clock api function would be better.
+
+@Mike: What do you think? I think we can get a clock API for
+this.
+
+> That being said, I don't really have any issue with such a function.
+> Some comments on the implementation.
+
+>> +static int of_property_match(const struct device_node *np1,
+>> +                             const struct device_node *np2,
+>> +                             const char *list_name)
+>> +{
+>> +       const __be32 *list1, *list2, *list1_end;
+>
+> s/list/prop/
+>
+> Everywhere.
+
+Ok.
+
+>> +       int size1, size2;
+>> +       phandle phandle1, phandle2;
+>> +
+>> +       /* Retrieve the list property */
+>> +       list1 = of_get_property(np1, list_name, &size1);
+>> +       if (!list1)
+>> +               return -ENOENT;
+>> +
+>> +       list2 = of_get_property(np2, list_name, &size2);
+>> +       if (!list2)
+>> +               return -ENOENT;
+>> +
+>> +       if (size1 != size2)
+>> +               return 0;
+>> +
+>> +       list1_end = list1 + size1 / sizeof(*list1);
+>> +
+>> +       /* Loop over the phandles */
+>> +       while (list1 < list1_end) {
+>> +               phandle1 = be32_to_cpup(list1++);
+>> +               phandle2 = be32_to_cpup(list2++);
+>> +
+>> +               if (phandle1 != phandle2)
+>> +                       return 0;
+>> +       }
+>
+> You can just do a memcmp here.
+
+Yeah, that would be much better.
+
+> This is wrong anyway because you don't know #clock-cells size.
+
+I was actually comparing all the clock-cells, whatever there number
+is to make sure "clocks" properties are exactly same. Anyway
+memcmp will still guarantee that.
+
+Thanks for your review.
