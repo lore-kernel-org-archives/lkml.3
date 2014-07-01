@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757550AbaGAIBl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 04:01:41 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:56944 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614AbaGAIBk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 04:01:40 -0400
+	id S1757569AbaGAICN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 04:02:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56722 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753614AbaGAICK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 04:02:10 -0400
+Date: Tue, 1 Jul 2014 09:02:05 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 4/4] mm: page_alloc: Reduce cost of the fair zone
+ allocation policy
+Message-ID: <20140701080205.GT10819@suse.de>
+References: <1404146883-21414-1-git-send-email-mgorman@suse.de>
+ <1404146883-21414-5-git-send-email-mgorman@suse.de>
+ <20140630141404.e09bdb5fa6a879d17c4556b1@linux-foundation.org>
+ <20140630215121.GQ10819@suse.de>
+ <20140630150914.6db3805c28c60283deb94206@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1404201524-7568-1-git-send-email-geert@linux-m68k.org>
-References: <1404201524-7568-1-git-send-email-geert@linux-m68k.org>
-Date: Tue, 1 Jul 2014 10:01:38 +0200
-X-Google-Sender-Auth: z8zDlgvLKss6mHH5rG5fPKWtvYw
-Message-ID: <CAMuHMdXrvFRRESU7T-nk8WkNgrTSvOvyywMjcRC=OQH7CbbQjw@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.16-rc3
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140630150914.6db3805c28c60283deb94206@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 1, 2014 at 9:58 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.16-rc3[1]  to v3.16-rc2[3], the summaries are:
->   - build errors: +5/-63
+On Mon, Jun 30, 2014 at 03:09:14PM -0700, Andrew Morton wrote:
+> On Mon, 30 Jun 2014 22:51:21 +0100 Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > > That's a large change in system time.  Does this all include kswapd
+> > > activity?
+> > > 
+> > 
+> > I don't have a profile to quantify that exactly. It takes 7 hours to
+> > complete a test on that machine in this configuration
+> 
+> That's nuts.  Why should measuring this require more than a few minutes?
 
-  + /scratch/kisskb/src/kernel/bounds.c: error: -mcall-aixdesc must be
-big endian:  => 1:0
-  + /scratch/kisskb/src/scripts/mod/devicetable-offsets.c: error:
--mcall-aixdesc must be big endianmake[3]: :  => 1:0
-  + /scratch/kisskb/src/scripts/mod/empty.c: error: -mcall-aixdesc
-must be big endian:  => 1:0
-  + <stdin>: error: -mcall-aixdesc must be big endian:  => 1:0
+That's how long the full test takes to complete for each part of the IO
+test. Profiling a subsection of it will miss some parts with no
+guarantee the sampled subset is representative. Profiling for smaller
+amounts of IO so the test completes quickly does not guarantee that the
+sample is representative. Reducing the size of memory of the machine
+using any tricks is also not representative etc.
 
-powerpc-randconfig
-
-  + error: misc.c: undefined reference to `ftrace_likely_update':  =>
-.text+0x22c), .text+0x898)
-
-sh-randconfig
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/7619/ (all 119 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/7595/ (all 119 configs)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Mel Gorman
+SUSE Labs
