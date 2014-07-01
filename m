@@ -1,111 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757898AbaGAIZA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 04:25:00 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:56653 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757876AbaGAIYz (ORCPT
+	id S1757809AbaGAIYB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 04:24:01 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:32916 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757513AbaGAIWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 04:24:55 -0400
-Message-ID: <53B27049.10302@arm.com>
-Date: Tue, 01 Jul 2014 09:24:41 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Anup Patel <anup@brainfault.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Eric Auger <eric.auger@linaro.org>,
-        Ian Campbell <ian.campbell@citrix.com>
-Subject: Re: [RFC PATCH 3/9] irqchip: GIC: Convert to EOImode == 1
-References: <1403688530-23273-1-git-send-email-marc.zyngier@arm.com> <1403688530-23273-4-git-send-email-marc.zyngier@arm.com> <CAAhSdy11HQtiOD6XLqQcZ+zf_Z9Mx0nPrJ0ECNNuRkZt=CfdpA@mail.gmail.com> <alpine.DEB.2.02.1406302006220.8923@kaball.uk.xensource.com>
-In-Reply-To: <alpine.DEB.2.02.1406302006220.8923@kaball.uk.xensource.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Jul 2014 04:22:33 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v3 6/9] slab: use the lock on alien_cache, instead of the lock on array_cache
+Date: Tue,  1 Jul 2014 17:27:35 +0900
+Message-Id: <1404203258-8923-7-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1404203258-8923-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1404203258-8923-1-git-send-email-iamjoonsoo.kim@lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefano,
+Now, we have separate alien_cache structure, so it'd be better to hold
+the lock on alien_cache while manipulating alien_cache. After that,
+we don't need the lock on array_cache, so remove it.
 
-On 30/06/14 20:09, Stefano Stabellini wrote:
-> On Wed, 25 Jun 2014, Anup Patel wrote:
->> Hi Marc,
->>
->> On Wed, Jun 25, 2014 at 2:58 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
->>> So far, GICv2 has been used in with EOImode == 0. The effect of this
->>> mode is to perform the priority drop and the deactivation of the
->>> interrupt at the same time.
->>>
->>> While this works perfectly for Linux (we only have a single priority),
->>> it causes issues when an interrupt is forwarded to a guest, and when
->>> we want the guest to perform the EOI itself.
->>>
->>> For this case, the GIC architecture provides EOImode == 1, where:
->>> - A write to the EOI register drops the priority of the interrupt and leaves
->>> it active. Other interrupts at the same priority level can now be taken,
->>> but the active interrupt cannot be taken again
->>> - A write to the DIR marks the interrupt as inactive, meaning it can
->>> now be taken again.
->>>
->>> We only enable this feature when booted in HYP mode. Also, as most device
->>> trees are broken (they report the CPU interface size to be 4kB, while
->>> the GICv2 CPU interface size is 8kB), output a warning if we're booted
->>> in HYP mode, and disable the feature.
->>>
->>> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
->>> ---
->>>  drivers/irqchip/irq-gic.c       | 61 +++++++++++++++++++++++++++++++++++++----
->>>  include/linux/irqchip/arm-gic.h |  4 +++
->>>  2 files changed, 59 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->>> index 508b815..9295bf2 100644
->>> --- a/drivers/irqchip/irq-gic.c
->>> +++ b/drivers/irqchip/irq-gic.c
->>> @@ -45,6 +45,7 @@
->>>  #include <asm/irq.h>
->>>  #include <asm/exception.h>
->>>  #include <asm/smp_plat.h>
->>> +#include <asm/virt.h>
->>>
->>>  #include "irq-gic-common.h"
->>>  #include "irqchip.h"
->>> @@ -94,6 +95,10 @@ struct irq_chip gic_arch_extn = {
->>>         .irq_set_wake   = NULL,
->>>  };
->>>
->>> +static struct irq_chip *gic_chip;
->>> +
->>> +static bool supports_deactivate = false;
->>> +
->>>  #ifndef MAX_GIC_NR
->>>  #define MAX_GIC_NR     1
->>>  #endif
->>> @@ -185,6 +190,12 @@ static void gic_eoi_irq(struct irq_data *d)
->>>         writel_relaxed(gic_irq(d), gic_cpu_base(d) + GIC_CPU_EOI);
->>>  }
->>>
->>> +static void gic_eoi_dir_irq(struct irq_data *d)
->>> +{
->>> +       gic_eoi_irq(d);
->>> +       writel_relaxed(gic_irq(d), gic_cpu_base(d) + GIC_CPU_DEACTIVATE);
->>> +}
-> 
-> Would it be better if you moved the gic_eoi_irq call earlier? Maybe
-> somewhere in gic_handle_irq?
+Acked-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ mm/slab.c |   25 ++++++++-----------------
+ 1 file changed, 8 insertions(+), 17 deletions(-)
 
-I'm not sure I see what we'd gain by doing so. Can you elaborate?
-
-Thanks,
-
-	M.
+diff --git a/mm/slab.c b/mm/slab.c
+index e1a473d..1c319ad 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -191,7 +191,6 @@ struct array_cache {
+ 	unsigned int limit;
+ 	unsigned int batchcount;
+ 	unsigned int touched;
+-	spinlock_t lock;
+ 	void *entry[];	/*
+ 			 * Must have this definition in here for the proper
+ 			 * alignment of array_cache. Also simplifies accessing
+@@ -512,7 +511,7 @@ static void slab_set_lock_classes(struct kmem_cache *cachep,
+ 		return;
+ 	for_each_node(r) {
+ 		if (alc[r])
+-			lockdep_set_class(&(alc[r]->ac.lock), alc_key);
++			lockdep_set_class(&(alc[r]->lock), alc_key);
+ 	}
+ }
+ 
+@@ -811,7 +810,6 @@ static void init_arraycache(struct array_cache *ac, int limit, int batch)
+ 		ac->limit = limit;
+ 		ac->batchcount = batch;
+ 		ac->touched = 0;
+-		spin_lock_init(&ac->lock);
+ 	}
+ }
+ 
+@@ -1010,6 +1008,7 @@ static struct alien_cache *__alloc_alien_cache(int node, int entries,
+ 
+ 	alc = kmalloc_node(memsize, gfp, node);
+ 	init_arraycache(&alc->ac, entries, batch);
++	spin_lock_init(&alc->lock);
+ 	return alc;
+ }
+ 
+@@ -1086,9 +1085,9 @@ static void reap_alien(struct kmem_cache *cachep, struct kmem_cache_node *n)
+ 
+ 		if (alc) {
+ 			ac = &alc->ac;
+-			if (ac->avail && spin_trylock_irq(&ac->lock)) {
++			if (ac->avail && spin_trylock_irq(&alc->lock)) {
+ 				__drain_alien_cache(cachep, ac, node);
+-				spin_unlock_irq(&ac->lock);
++				spin_unlock_irq(&alc->lock);
+ 			}
+ 		}
+ 	}
+@@ -1106,9 +1105,9 @@ static void drain_alien_cache(struct kmem_cache *cachep,
+ 		alc = alien[i];
+ 		if (alc) {
+ 			ac = &alc->ac;
+-			spin_lock_irqsave(&ac->lock, flags);
++			spin_lock_irqsave(&alc->lock, flags);
+ 			__drain_alien_cache(cachep, ac, i);
+-			spin_unlock_irqrestore(&ac->lock, flags);
++			spin_unlock_irqrestore(&alc->lock, flags);
+ 		}
+ 	}
+ }
+@@ -1136,13 +1135,13 @@ static inline int cache_free_alien(struct kmem_cache *cachep, void *objp)
+ 	if (n->alien && n->alien[nodeid]) {
+ 		alien = n->alien[nodeid];
+ 		ac = &alien->ac;
+-		spin_lock(&ac->lock);
++		spin_lock(&alien->lock);
+ 		if (unlikely(ac->avail == ac->limit)) {
+ 			STATS_INC_ACOVERFLOW(cachep);
+ 			__drain_alien_cache(cachep, ac, nodeid);
+ 		}
+ 		ac_put_obj(cachep, ac, objp);
+-		spin_unlock(&ac->lock);
++		spin_unlock(&alien->lock);
+ 	} else {
+ 		n = get_node(cachep, nodeid);
+ 		spin_lock(&n->list_lock);
+@@ -1619,10 +1618,6 @@ void __init kmem_cache_init(void)
+ 
+ 		memcpy(ptr, cpu_cache_get(kmem_cache),
+ 		       sizeof(struct arraycache_init));
+-		/*
+-		 * Do not assume that spinlocks can be initialized via memcpy:
+-		 */
+-		spin_lock_init(&ptr->lock);
+ 
+ 		kmem_cache->array[smp_processor_id()] = ptr;
+ 
+@@ -1632,10 +1627,6 @@ void __init kmem_cache_init(void)
+ 		       != &initarray_generic.cache);
+ 		memcpy(ptr, cpu_cache_get(kmalloc_caches[INDEX_AC]),
+ 		       sizeof(struct arraycache_init));
+-		/*
+-		 * Do not assume that spinlocks can be initialized via memcpy:
+-		 */
+-		spin_lock_init(&ptr->lock);
+ 
+ 		kmalloc_caches[INDEX_AC]->array[smp_processor_id()] = ptr;
+ 	}
 -- 
-Jazz is not dead. It just smells funny...
+1.7.9.5
+
