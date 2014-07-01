@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758612AbaGARH7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 13:07:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62988 "EHLO mx1.redhat.com"
+	id S964870AbaGARMA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 13:12:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41007 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758585AbaGARHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 13:07:55 -0400
+	id S1758569AbaGARHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 13:07:52 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -13,50 +13,66 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         Jerome Marchand <jmarchan@redhat.com>, linux-kernel@vger.kernel.org,
         Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH v4 06/13] pagemap: use walk->vma instead of calling find_vma()
-Date: Tue,  1 Jul 2014 13:07:24 -0400
-Message-Id: <1404234451-21695-7-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH v4 03/13] pagewalk: add walk_page_vma()
+Date: Tue,  1 Jul 2014 13:07:21 -0400
+Message-Id: <1404234451-21695-4-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1404234451-21695-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1404234451-21695-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Page table walker has the information of the current vma in mm_walk, so
-we don't have to call find_vma() in each pagemap_hugetlb_range() call.
+Introduces walk_page_vma(), which is useful for the callers which want to
+walk over a given vma.  It's used by later patches.
 
-NULL-vma check is omitted because we assume that we never run hugetlb_entry()
-callback on the address without vma. And even if it were broken, null pointer
-dereference would be detected, so we can get enough information for debugging.
+ChangeLog v3:
+- check walk_page_test's return value instead of walk->skip
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- fs/proc/task_mmu.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ include/linux/mm.h |  1 +
+ mm/pagewalk.c      | 18 ++++++++++++++++++
+ 2 files changed, 19 insertions(+)
 
-diff --git v3.16-rc3.orig/fs/proc/task_mmu.c v3.16-rc3/fs/proc/task_mmu.c
-index df9f368e01b7..5ebc238d1a38 100644
---- v3.16-rc3.orig/fs/proc/task_mmu.c
-+++ v3.16-rc3/fs/proc/task_mmu.c
-@@ -1080,15 +1080,12 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
- 				 struct mm_walk *walk)
- {
- 	struct pagemapread *pm = walk->private;
--	struct vm_area_struct *vma;
-+	struct vm_area_struct *vma = walk->vma;
- 	int err = 0;
- 	int flags2;
- 	pagemap_entry_t pme;
+diff --git v3.16-rc3.orig/include/linux/mm.h v3.16-rc3/include/linux/mm.h
+index 489a63a06a4a..7e9287750866 100644
+--- v3.16-rc3.orig/include/linux/mm.h
++++ v3.16-rc3/include/linux/mm.h
+@@ -1137,6 +1137,7 @@ struct mm_walk {
  
--	vma = find_vma(walk->mm, addr);
--	WARN_ON_ONCE(!vma);
--
--	if (vma && (vma->vm_flags & VM_SOFTDIRTY))
-+	if (vma->vm_flags & VM_SOFTDIRTY)
- 		flags2 = __PM_SOFT_DIRTY;
- 	else
- 		flags2 = 0;
+ int walk_page_range(unsigned long addr, unsigned long end,
+ 		struct mm_walk *walk);
++int walk_page_vma(struct vm_area_struct *vma, struct mm_walk *walk);
+ void free_pgd_range(struct mmu_gather *tlb, unsigned long addr,
+ 		unsigned long end, unsigned long floor, unsigned long ceiling);
+ int copy_page_range(struct mm_struct *dst, struct mm_struct *src,
+diff --git v3.16-rc3.orig/mm/pagewalk.c v3.16-rc3/mm/pagewalk.c
+index 91810ba875ea..65fb68df3aa2 100644
+--- v3.16-rc3.orig/mm/pagewalk.c
++++ v3.16-rc3/mm/pagewalk.c
+@@ -272,3 +272,21 @@ int walk_page_range(unsigned long start, unsigned long end,
+ 	} while (start = next, start < end);
+ 	return err;
+ }
++
++int walk_page_vma(struct vm_area_struct *vma, struct mm_walk *walk)
++{
++	int err;
++
++	if (!walk->mm)
++		return -EINVAL;
++
++	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
++	VM_BUG_ON(!vma);
++	walk->vma = vma;
++	err = walk_page_test(vma->vm_start, vma->vm_end, walk);
++	if (err > 0)
++		return 0;
++	if (err < 0)
++		return err;
++	return __walk_page_range(vma->vm_start, vma->vm_end, walk);
++}
 -- 
 1.9.3
 
