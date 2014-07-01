@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359AbaGAHqU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 03:46:20 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:57049 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752578AbaGAHqS (ORCPT
+	id S1757462AbaGAHtx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 03:49:53 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:17316 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886AbaGAHtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 03:46:18 -0400
-Date: Tue, 1 Jul 2014 11:46:02 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Christoph Lameter <cl@gentwo.org>
-CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>, <akpm@linux-foundation.org>,
-        <rientjes@google.com>, <penberg@kernel.org>, <hannes@cmpxchg.org>,
-        <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [PATCH -mm v3 8/8] slab: do not keep free objects/slabs on dead
- memcg caches
-Message-ID: <20140701074602.GC7365@esperanza>
-References: <cover.1402602126.git.vdavydov@parallels.com>
- <a985aec824cd35df381692fca83f7a8debc80305.1402602126.git.vdavydov@parallels.com>
- <20140624073840.GC4836@js1304-P5Q-DELUXE>
- <20140625134545.GB22340@esperanza>
- <20140627060534.GC9511@js1304-P5Q-DELUXE>
- <alpine.DEB.2.11.1406301048070.19422@gentwo.org>
+	Tue, 1 Jul 2014 03:49:51 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 01 Jul 2014 00:39:36 -0700
+Message-ID: <53B2681B.8020805@nvidia.com>
+Date: Tue, 1 Jul 2014 10:49:47 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1406301048070.19422@gentwo.org>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        "edubezval@gmail.com" <edubezval@gmail.com>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Matthew Longnecker <MLongnecker@nvidia.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 4/6] ARM: tegra: Add soctherm and thermal zones to Tegra124
+ device tree
+References: <1403856699-2140-1-git-send-email-mperttunen@nvidia.com> <1403856699-2140-5-git-send-email-mperttunen@nvidia.com> <53B1CD20.3010008@wwwdotorg.org>
+In-Reply-To: <53B1CD20.3010008@wwwdotorg.org>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 10:49:03AM -0500, Christoph Lameter wrote:
-> On Fri, 27 Jun 2014, Joonsoo Kim wrote:
-> 
-> > Christoph,
-> > Is it tolerable result for large scale system? Or do we need to find
-> > another solution?
-> 
-> 
-> The overhead is pretty intense but then this is a rare event I guess?
+Inline.
 
-Yes, provided cgroups are created/destroyed rarely.
+On 30/06/14 23:48, Stephen Warren wrote:
+> On 06/27/2014 02:11 AM, Mikko Perttunen wrote:
+>> This adds the soctherm thermal sensing and management unit to the
+>> Tegra124 device tree along with the four thermal zones it exports.
+>
+>> diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
+>
+>> +	thermal-zones {
+>> +		cpu {
+>> +			polling-delay-passive = <0>;
+>> +			polling-delay = <0>;
+>
+> I think we should still define a polling delay so that if there's SW
+> that doesn't support HW trip points/interrupts, it still knows how often
+> it should reasonably check the sensor.
+>
+> Perhaps a delay of 0 is used to determine whether to use HW trip points
+> vs polling (I haven't read patch 1 yet)? If so, I'd prefer not to do
+> that. Rather, the driver should advertize its ability to provide HW trip
+> points, and it would be up to the core to then make use of them. The DT
+> should just describe the HW, not assume it can influence SW's choice of
+> whether to use HW trip points.
 
-> It seems that it is much easier on the code and much faster to do the
-> periodic reaping. Why not simply go with that?
+Yes, a delay of 0 disables polling in the thermal core. (The hw trip 
+code doesn't do anything with it) One way to fix this would be to export 
+a rate changing function in the thermal core and have of-thermal set the 
+polling rate to 0 or the value from device tree depending on if hw trip 
+point programming succeeded or not. This would also be good for error 
+handling, since if hw trip poing programming failed for whatever reason, 
+we could still fall back to polling.
 
-A bad thing about the periodic reaping is that the time it may take
-isn't predictable, because the number of dead caches is, in fact, only
-limited by the amount of RAM.
+>
+>> +	soctherm: soctherm@0,700e2000 {
+> ...
+>> +		reset-names = "soctherm";
+>> +
+>> +		#thermal-sensor-cells = <1>;
+>
+> I don't see any real need for that blank line. If there was, there would
+> probably be more blank lines in the big list of properties above.
+>
 
-We can have hundreds, if not thousands, copies of dcaches/icaches left
-from cgroups destroyed some time ago. The dead caches will hang around
-until memory pressure evicts all the objects they host, which may take
-quite long on systems with a lot of memory.
-
-With periodic reaping, we will have to iterate over all dead caches
-trying to drain per cpu/node arrays each time, which might therefore
-result in slowing down the whole system unexpectedly.
-
-I'm not quite sure if such slowdowns are really a threat though.
-Actually, cache_reap will only do something (take locks, drain
-arrays/lists) only if there are free objects on the cache. Otherwise it
-will, in fact, only check cpu_cache->avail, alien->avail, shared->avail,
-and node->free_list, which shouldn't take much time, should it?
-
-Thanks.
+The reasoning was that #thermal-sensor-cells as a cells-property is a 
+bit different from the rest, so separate them. But I can remove the 
+blank line just as well.
