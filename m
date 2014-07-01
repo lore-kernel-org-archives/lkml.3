@@ -1,107 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759050AbaGAWcI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 18:32:08 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:35483 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951AbaGAWcG (ORCPT
+	id S1030264AbaGAWh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 18:37:29 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:33984 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454AbaGAWh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 18:32:06 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: qla2xxx-upstream@qlogic.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] [SCSI] qla2xxx: Remove duplicate __iomem annotation
-Date: Wed,  2 Jul 2014 00:31:54 +0200
-Message-Id: <1404253914-24400-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 1 Jul 2014 18:37:28 -0400
+Message-ID: <53B3381B.8000601@oracle.com>
+Date: Tue, 01 Jul 2014 18:37:15 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>
+CC: Vlastimil Babka <vbabka@suse.cz>, Konstantin Khlebnikov <koct9i@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: mm: shmem: hang in shmem_fault (WAS: mm: shm: hang in shmem_fallocate)
+References: <52AE7B10.2080201@oracle.com> <52F6898A.50101@oracle.com> <alpine.LSU.2.11.1402081841160.26825@eggly.anvils> <52F82E62.2010709@oracle.com> <539A0FC8.8090504@oracle.com> <alpine.LSU.2.11.1406151921070.2850@eggly.anvils> <53A9A7D8.2020703@suse.cz> <alpine.LSU.2.11.1406251152450.1580@eggly.anvils> <53AC383F.3010007@oracle.com> <alpine.LSU.2.11.1406262236370.27670@eggly.anvils> <53AD84CE.20806@oracle.com> <alpine.LSU.2.11.1406271043270.28744@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1406271043270.28744@eggly.anvils>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The device_reg_t type now has __iomem annotation.
+Hi Hugh,
 
-Sparse is warning about this:
-drivers/scsi/qla2xxx/qla_init.c:2040:22: warning: duplicate [noderef]
-drivers/scsi/qla2xxx/qla_iocb.c:477:22: warning: duplicate [noderef]
-drivers/scsi/qla2xxx/qla_iocb.c:1866:22: warning: duplicate [noderef]
-drivers/scsi/qla2xxx/qla_dbg.c:632:22: warning: duplicate [noderef]
-drivers/scsi/qla2xxx/qla_target.c:1435:22: warning: duplicate [noderef]
+I've been observing a very nonspecific hang involving some mutexes from fs/ but
+without any lockdep output or a concrete way to track it down.
 
-Introduced by commit:
-f73cb695d3eccd171f03ed194e72d67732b17487
-("[SCSI] qla2xxx: Add support for ISP2071.")
+It seems that today was my lucky day, and after enough tinkering I've managed
+to get output out of lockdep, which pointed me to shmem:
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
- drivers/scsi/qla2xxx/qla_dbg.c    |    2 +-
- drivers/scsi/qla2xxx/qla_init.c   |    2 +-
- drivers/scsi/qla2xxx/qla_iocb.c   |    4 ++--
- drivers/scsi/qla2xxx/qla_target.c |    2 +-
- 4 files changed, 5 insertions(+), 5 deletions(-)
+[ 1871.989131] =============================================
+[ 1871.990028] [ INFO: possible recursive locking detected ]
+[ 1871.992591] 3.16.0-rc3-next-20140630-sasha-00023-g44434d4-dirty #758 Tainted: G        W
+[ 1871.992591] ---------------------------------------------
+[ 1871.992591] trinity-c84/27757 is trying to acquire lock:
+[ 1871.992591] (&sb->s_type->i_mutex_key#17){+.+.+.}, at: shmem_fault (mm/shmem.c:1289)
+[ 1871.992591]
+[ 1871.992591] but task is already holding lock:
+[ 1871.992591] (&sb->s_type->i_mutex_key#17){+.+.+.}, at: generic_file_write_iter (mm/filemap.c:2633)
+[ 1871.992591]
+[ 1871.992591] other info that might help us debug this:
+[ 1871.992591]  Possible unsafe locking scenario:
+[ 1871.992591]
+[ 1871.992591]        CPU0
+[ 1871.992591]        ----
+[ 1871.992591]   lock(&sb->s_type->i_mutex_key#17);
+[ 1871.992591]   lock(&sb->s_type->i_mutex_key#17);
+[ 1872.013889]
+[ 1872.013889]  *** DEADLOCK ***
+[ 1872.013889]
+[ 1872.013889]  May be due to missing lock nesting notation
+[ 1872.013889]
+[ 1872.013889] 3 locks held by trinity-c84/27757:
+[ 1872.013889] #0: (&f->f_pos_lock){+.+.+.}, at: __fdget_pos (fs/file.c:714)
+[ 1872.030221] #1: (sb_writers#13){.+.+.+}, at: do_readv_writev (include/linux/fs.h:2264 fs/read_write.c:830)
+[ 1872.030221] #2: (&sb->s_type->i_mutex_key#17){+.+.+.}, at: generic_file_write_iter (mm/filemap.c:2633)
+[ 1872.030221]
+[ 1872.030221] stack backtrace:
+[ 1872.030221] CPU: 6 PID: 27757 Comm: trinity-c84 Tainted: G        W      3.16.0-rc3-next-20140630-sasha-00023-g44434d4-dirty #758
+[ 1872.030221]  ffffffff9fc112b0 ffff8803c844f5d8 ffffffff9c531022 0000000000000002
+[ 1872.030221]  ffffffff9fc112b0 ffff8803c844f6d8 ffffffff991d1a8d ffff8803c5da3000
+[ 1872.030221]  ffff8803c5da3d70 ffff880300000001 ffff8803c5da3000 ffff8803c5da3da8
+[ 1872.030221] Call Trace:
+[ 1872.030221] dump_stack (lib/dump_stack.c:52)
+[ 1872.030221] __lock_acquire (kernel/locking/lockdep.c:3034 kernel/locking/lockdep.c:3180)
+[ 1872.030221] lock_acquire (./arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+[ 1872.030221] ? shmem_fault (mm/shmem.c:1289)
+[ 1872.030221] mutex_lock_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:587)
+[ 1872.030221] ? shmem_fault (mm/shmem.c:1289)
+[ 1872.030221] ? shmem_fault (mm/shmem.c:1288)
+[ 1872.030221] ? shmem_fault (mm/shmem.c:1289)
+[ 1872.030221] shmem_fault (mm/shmem.c:1289)
+[ 1872.030221] __do_fault (mm/memory.c:2705)
+[ 1872.030221] ? _raw_spin_unlock (./arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183)
+[ 1872.030221] do_read_fault.isra.40 (mm/memory.c:2896)
+[ 1872.030221] ? get_parent_ip (kernel/sched/core.c:2550)
+[ 1872.030221] __handle_mm_fault (mm/memory.c:3037 mm/memory.c:3198 mm/memory.c:3322)
+[ 1872.030221] handle_mm_fault (mm/memory.c:3345)
+[ 1872.030221] __do_page_fault (arch/x86/mm/fault.c:1230)
+[ 1872.030221] ? retint_restore_args (arch/x86/kernel/entry_64.S:829)
+[ 1872.030221] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[ 1872.030221] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
+[ 1872.030221] ? context_tracking_user_exit (kernel/context_tracking.c:184)
+[ 1872.030221] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[ 1872.030221] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2638 (discriminator 2))
+[ 1872.030221] trace_do_page_fault (arch/x86/mm/fault.c:1313 include/linux/jump_label.h:115 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1314)
+[ 1872.030221] do_async_page_fault (arch/x86/kernel/kvm.c:264)
+[ 1872.030221] async_page_fault (arch/x86/kernel/entry_64.S:1322)
+[ 1872.030221] ? iov_iter_fault_in_readable (include/linux/pagemap.h:598 mm/iov_iter.c:267)
+[ 1872.030221] generic_perform_write (mm/filemap.c:2461)
+[ 1872.030221] ? __mnt_drop_write (./arch/x86/include/asm/preempt.h:98 fs/namespace.c:455)
+[ 1872.030221] __generic_file_write_iter (mm/filemap.c:2608)
+[ 1872.030221] ? generic_file_llseek (fs/read_write.c:467)
+[ 1872.030221] generic_file_write_iter (mm/filemap.c:2634)
+[ 1872.030221] do_iter_readv_writev (fs/read_write.c:666)
+[ 1872.030221] do_readv_writev (fs/read_write.c:834)
+[ 1872.030221] ? __generic_file_write_iter (mm/filemap.c:2627)
+[ 1872.030221] ? __generic_file_write_iter (mm/filemap.c:2627)
+[ 1872.030221] ? mutex_lock_nested (./arch/x86/include/asm/preempt.h:98 kernel/locking/mutex.c:570 kernel/locking/mutex.c:587)
+[ 1872.030221] ? __fdget_pos (fs/file.c:714)
+[ 1872.030221] ? __fdget_pos (fs/file.c:714)
+[ 1872.030221] ? __fget_light (include/linux/rcupdate.h:402 include/linux/fdtable.h:80 fs/file.c:684)
+[ 1872.101905] vfs_writev (fs/read_write.c:879)
+[ 1872.101905] SyS_writev (fs/read_write.c:912 fs/read_write.c:904)
+[ 1872.101905] tracesys (arch/x86/kernel/entry_64.S:542)
 
-diff --git a/drivers/scsi/qla2xxx/qla_dbg.c b/drivers/scsi/qla2xxx/qla_dbg.c
-index c72ee97b..47998b9 100644
---- a/drivers/scsi/qla2xxx/qla_dbg.c
-+++ b/drivers/scsi/qla2xxx/qla_dbg.c
-@@ -629,7 +629,7 @@ qla25xx_copy_mq(struct qla_hw_data *ha, void *ptr, uint32_t **last_chain)
- 	uint32_t cnt, que_idx;
- 	uint8_t que_cnt;
- 	struct qla2xxx_mq_chain *mq = ptr;
--	device_reg_t __iomem *reg;
-+	device_reg_t *reg;
- 
- 	if (!ha->mqenable || IS_QLA83XX(ha) || IS_QLA27XX(ha))
- 		return ptr;
-diff --git a/drivers/scsi/qla2xxx/qla_init.c b/drivers/scsi/qla2xxx/qla_init.c
-index e218441..8d4e368 100644
---- a/drivers/scsi/qla2xxx/qla_init.c
-+++ b/drivers/scsi/qla2xxx/qla_init.c
-@@ -2037,7 +2037,7 @@ void
- qla24xx_config_rings(struct scsi_qla_host *vha)
- {
- 	struct qla_hw_data *ha = vha->hw;
--	device_reg_t __iomem *reg = ISP_QUE_REG(ha, 0);
-+	device_reg_t *reg = ISP_QUE_REG(ha, 0);
- 	struct device_reg_2xxx __iomem *ioreg = &ha->iobase->isp;
- 	struct qla_msix_entry *msix;
- 	struct init_cb_24xx *icb;
-diff --git a/drivers/scsi/qla2xxx/qla_iocb.c b/drivers/scsi/qla2xxx/qla_iocb.c
-index 150529d..39ebf34 100644
---- a/drivers/scsi/qla2xxx/qla_iocb.c
-+++ b/drivers/scsi/qla2xxx/qla_iocb.c
-@@ -474,7 +474,7 @@ void
- qla2x00_start_iocbs(struct scsi_qla_host *vha, struct req_que *req)
- {
- 	struct qla_hw_data *ha = vha->hw;
--	device_reg_t __iomem *reg = ISP_QUE_REG(ha, req->id);
-+	device_reg_t *reg = ISP_QUE_REG(ha, req->id);
- 
- 	if (IS_P3P_TYPE(ha)) {
- 		qla82xx_start_iocbs(vha);
-@@ -1863,7 +1863,7 @@ qla2x00_alloc_iocbs(scsi_qla_host_t *vha, srb_t *sp)
- {
- 	struct qla_hw_data *ha = vha->hw;
- 	struct req_que *req = ha->req_q_map[0];
--	device_reg_t __iomem *reg = ISP_QUE_REG(ha, req->id);
-+	device_reg_t *reg = ISP_QUE_REG(ha, req->id);
- 	uint32_t index, handle;
- 	request_t *pkt;
- 	uint16_t cnt, req_cnt;
-diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
-index e632e14..6fc0702 100644
---- a/drivers/scsi/qla2xxx/qla_target.c
-+++ b/drivers/scsi/qla2xxx/qla_target.c
-@@ -1432,7 +1432,7 @@ static int qlt_check_reserve_free_req(struct scsi_qla_host *vha,
- 	uint32_t req_cnt)
- {
- 	struct qla_hw_data *ha = vha->hw;
--	device_reg_t __iomem *reg = ha->iobase;
-+	device_reg_t *reg = ha->iobase;
- 	uint32_t cnt;
- 
- 	if (vha->req->cnt < (req_cnt + 2)) {
--- 
-1.7.10.4
+It seems like it was introduced by your fix to the shmem_fallocate hang, and is
+triggered in shmem_fault():
 
++               if (shmem_falloc) {
++                       if ((vmf->flags & FAULT_FLAG_ALLOW_RETRY) &&
++                          !(vmf->flags & FAULT_FLAG_RETRY_NOWAIT)) {
++                               up_read(&vma->vm_mm->mmap_sem);
++                               mutex_lock(&inode->i_mutex);		<=== HERE
++                               mutex_unlock(&inode->i_mutex);
++                               return VM_FAULT_RETRY;
++                       }
++                       /* cond_resched? Leave that to GUP or return to user */
++                       return VM_FAULT_NOPAGE;
+
+
+Thanks,
+Sasha
