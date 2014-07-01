@@ -1,84 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758433AbaGAQs6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 12:48:58 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37429 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756521AbaGAQsz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758411AbaGAQs5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 12:48:57 -0400
+Received: from mga14.intel.com ([192.55.52.115]:57219 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758363AbaGAQsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Jul 2014 12:48:55 -0400
-Date: Tue, 1 Jul 2014 18:48:51 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Gregory Hermant <gregory.hermant@calao-systems.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Gael Portay <g.portay@overkiz.com>,
-        Joachim Eastwood <manabian@gmail.com>, linux-kernel@vger.kernel.org,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tim Schendekehl <tim.schendekehl@egnite.de>
-Subject: Re: [PATCH 00/33] ARM: at91: Switch remaining SoCs and boards to CCF
-Message-ID: <20140701164851.GI3427@piout.net>
-References: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com>
- <5780166.MMf0Vhnnsu@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5780166.MMf0Vhnnsu@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,582,1400050800"; 
+   d="scan'208";a="555938264"
+Subject: [PATCH 5/7] x86: mm: add tracepoints for TLB flushes
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
+        x86@kernel.org, Dave Hansen <dave@sr71.net>,
+        dave.hansen@linux.intel.com, riel@redhat.com, mgorman@suse.de
+From: Dave Hansen <dave@sr71.net>
+Date: Tue, 01 Jul 2014 09:48:54 -0700
+References: <20140701164845.8D1A5702@viggo.jf.intel.com>
+In-Reply-To: <20140701164845.8D1A5702@viggo.jf.intel.com>
+Message-Id: <20140701164854.89E7229B@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On 01/07/2014 at 18:35:50 +0200, Arnd Bergmann wrote :
-> On Tuesday 01 July 2014 16:12:09 Alexandre Belloni wrote:
-> Looks good overall, but I think this Kconfig snippet should be cleaned
-> up a little now:
-> 
-> config AT91_USE_OLD_CLK
->         bool
-> 
-> config AT91_PMC_UNIT
->         bool
->         default !ARCH_AT91X40
-> 
-> config COMMON_CLK_AT91
->         bool
->         default AT91_PMC_UNIT && USE_OF && !AT91_USE_OLD_CLK
->         select COMMON_CLK
-> 
-> config OLD_CLK_AT91
->         bool
->         default AT91_PMC_UNIT && AT91_USE_OLD_CLK
-> 
-> 
-> If I read this right, disabling 'USE_OF' results in still using
-> the old clock interface. Is that intentional? If you want to always
-> use COMMON_CLK now, the above can probably be simplified to
-> 
-> config AT91_PMC_UNIT
->         def_bool !ARCH_AT91X40
-> 	select COMMON_CLK
-> 
-> and all references to AT91_USE_OLD_CLK, COMMON_CLK_AT91 and
-> OLD_CLK_AT91 be removed.
+Changes from v3:
+ * remove trace_tlb.c and __print_symbolic() instead
+ * make sure to cover all cases in flush_tlb_func()
+ * remove _DONE "reason" since it was not precise enough
 
-Yeah, this is intentional we still have 30 or so boards that we have to
-migrate to DT. Until then, we want to be able to boot a kernel without
-CCF. The next step in the migration is to switch those boards to DT,
-possibly using an hybrid DT/pdata approach until we can get rid of the
-board files. Then, we will be able to get rid of the old clk
-implementation (and a few other drivers still living in mach-at91).
+--
 
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+We don't have any good way to figure out what kinds of flushes
+are being attempted.  Right now, we can try to use the vm
+counters, but those only tell us what we actually did with the
+hardware (one-by-one vs full) and don't tell us what was actually
+_requested_.
+
+This allows us to select out "interesting" TLB flushes that we
+might want to optimize (like the ranged ones) and ignore the ones
+that we have very little control over (the ones at context
+switch).
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+---
+
+ b/arch/x86/include/asm/mmu_context.h |    6 +++++
+ b/arch/x86/mm/init.c                 |    7 +++++
+ b/arch/x86/mm/tlb.c                  |   11 +++++++--
+ b/include/linux/mm_types.h           |    8 ++++++
+ b/include/trace/events/tlb.h         |   41 +++++++++++++++++++++++++++++++++++
+ 5 files changed, 71 insertions(+), 2 deletions(-)
+
+diff -puN arch/x86/include/asm/mmu_context.h~tlb-trace-flushes arch/x86/include/asm/mmu_context.h
+--- a/arch/x86/include/asm/mmu_context.h~tlb-trace-flushes	2014-06-30 16:18:33.294800281 -0700
++++ b/arch/x86/include/asm/mmu_context.h	2014-06-30 16:18:33.306800827 -0700
+@@ -3,6 +3,10 @@
+ 
+ #include <asm/desc.h>
+ #include <linux/atomic.h>
++#include <linux/mm_types.h>
++
++#include <trace/events/tlb.h>
++
+ #include <asm/pgalloc.h>
+ #include <asm/tlbflush.h>
+ #include <asm/paravirt.h>
+@@ -44,6 +48,7 @@ static inline void switch_mm(struct mm_s
+ 
+ 		/* Re-load page tables */
+ 		load_cr3(next->pgd);
++		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+ 
+ 		/* Stop flush ipis for the previous mm */
+ 		cpumask_clear_cpu(cpu, mm_cpumask(prev));
+@@ -71,6 +76,7 @@ static inline void switch_mm(struct mm_s
+ 			 * to make sure to use no freed page tables.
+ 			 */
+ 			load_cr3(next->pgd);
++			trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+ 			load_LDT_nolock(&next->context);
+ 		}
+ 	}
+diff -puN arch/x86/mm/init.c~tlb-trace-flushes arch/x86/mm/init.c
+--- a/arch/x86/mm/init.c~tlb-trace-flushes	2014-06-30 16:18:33.298800464 -0700
++++ b/arch/x86/mm/init.c	2014-06-30 16:18:37.515992478 -0700
+@@ -18,6 +18,13 @@
+ #include <asm/dma.h>		/* for MAX_DMA_PFN */
+ #include <asm/microcode.h>
+ 
++/*
++ * We need to define the tracepoints somewhere, and tlb.c
++ * is only compied when SMP=y.
++ */
++#define CREATE_TRACE_POINTS
++#include <trace/events/tlb.h>
++
+ #include "mm_internal.h"
+ 
+ static unsigned long __initdata pgt_buf_start;
+diff -puN arch/x86/mm/tlb.c~tlb-trace-flushes arch/x86/mm/tlb.c
+--- a/arch/x86/mm/tlb.c~tlb-trace-flushes	2014-06-30 16:18:33.301800600 -0700
++++ b/arch/x86/mm/tlb.c	2014-06-30 16:18:33.307800873 -0700
+@@ -49,6 +49,7 @@ void leave_mm(int cpu)
+ 	if (cpumask_test_cpu(cpu, mm_cpumask(active_mm))) {
+ 		cpumask_clear_cpu(cpu, mm_cpumask(active_mm));
+ 		load_cr3(swapper_pg_dir);
++		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(leave_mm);
+@@ -107,15 +108,19 @@ static void flush_tlb_func(void *info)
+ 
+ 	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
+ 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
+-		if (f->flush_end == TLB_FLUSH_ALL)
++		if (f->flush_end == TLB_FLUSH_ALL) {
+ 			local_flush_tlb();
+-		else {
++			trace_tlb_flush(TLB_REMOTE_SHOOTDOWN, TLB_FLUSH_ALL);
++		} else {
+ 			unsigned long addr;
++			unsigned long nr_pages =
++				f->flush_end - f->flush_start / PAGE_SIZE;
+ 			addr = f->flush_start;
+ 			while (addr < f->flush_end) {
+ 				__flush_tlb_single(addr);
+ 				addr += PAGE_SIZE;
+ 			}
++			trace_tlb_flush(TLB_REMOTE_SHOOTDOWN, nr_pages);
+ 		}
+ 	} else
+ 		leave_mm(smp_processor_id());
+@@ -153,6 +158,7 @@ void flush_tlb_current_task(void)
+ 
+ 	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 	local_flush_tlb();
++	trace_tlb_flush(TLB_LOCAL_SHOOTDOWN, TLB_FLUSH_ALL);
+ 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+ 		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
+ 	preempt_enable();
+@@ -191,6 +197,7 @@ void flush_tlb_mm_range(struct mm_struct
+ 			__flush_tlb_single(addr);
+ 		}
+ 	}
++	trace_tlb_flush(TLB_LOCAL_MM_SHOOTDOWN, base_pages_to_flush);
+ out:
+ 	if (base_pages_to_flush == TLB_FLUSH_ALL) {
+ 		start = 0UL;
+diff -puN include/linux/mm_types.h~tlb-trace-flushes include/linux/mm_types.h
+--- a/include/linux/mm_types.h~tlb-trace-flushes	2014-06-30 16:18:33.303800691 -0700
++++ b/include/linux/mm_types.h	2014-06-30 16:18:35.089882014 -0700
+@@ -516,4 +516,12 @@ struct vm_special_mapping
+ 	struct page **pages;
+ };
+ 
++enum tlb_flush_reason {
++	TLB_FLUSH_ON_TASK_SWITCH,
++	TLB_REMOTE_SHOOTDOWN,
++	TLB_LOCAL_SHOOTDOWN,
++	TLB_LOCAL_MM_SHOOTDOWN,
++	NR_TLB_FLUSH_REASONS,
++};
++
+ #endif /* _LINUX_MM_TYPES_H */
+diff -puN /dev/null include/trace/events/tlb.h
+--- /dev/null	2014-04-10 11:28:14.066815724 -0700
++++ b/include/trace/events/tlb.h	2014-06-30 16:18:37.476990703 -0700
+@@ -0,0 +1,41 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM tlb
++
++#if !defined(_TRACE_TLB_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_TLB_H
++
++#include <linux/mm_types.h>
++#include <linux/tracepoint.h>
++
++#define TLB_FLUSH_REASON	\
++	{ TLB_FLUSH_ON_TASK_SWITCH, 	"flush on task switch" },	\
++	{ TLB_REMOTE_SHOOTDOWN,		"remote shootdown" },		\
++	{ TLB_LOCAL_SHOOTDOWN, 		"local shootdown" },		\
++	{ TLB_LOCAL_MM_SHOOTDOWN,	"local mm shootdown" }
++
++TRACE_EVENT(tlb_flush,
++
++	TP_PROTO(int reason, unsigned long pages),
++	TP_ARGS(reason, pages),
++
++	TP_STRUCT__entry(
++		__field(	  int, reason)
++		__field(unsigned long,  pages)
++	),
++
++	TP_fast_assign(
++		__entry->reason = reason;
++		__entry->pages  = pages;
++	),
++
++	TP_printk("pages:%ld reason:%s (%d)",
++		__entry->pages,
++		__print_symbolic(__entry->reason, TLB_FLUSH_REASON),
++		__entry->reason)
++);
++
++#endif /* _TRACE_TLB_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
++
+_
