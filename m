@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260AbaGAB7T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 21:59:19 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:39663 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246AbaGAB7S (ORCPT
+	id S1754250AbaGACCs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 22:02:48 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:47300 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742AbaGACCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 21:59:18 -0400
+	Mon, 30 Jun 2014 22:02:46 -0400
+Message-ID: <53B216C5.8020503@codeaurora.org>
+Date: Mon, 30 Jun 2014 19:02:45 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140630094157.GT32514@n2100.arm.linux.org.uk>
-References: <1404096760-5239-1-git-send-email-xerofoify@gmail.com>
-	<20140630094157.GT32514@n2100.arm.linux.org.uk>
-Date: Mon, 30 Jun 2014 21:59:17 -0400
-Message-ID: <CAPDOMVjNU+XJnxqVsY5ZAh=VUx8RUf_Av0C8yVdaTczQWsh-ng@mail.gmail.com>
-Subject: Re: [PATCH] Fixes gemmi_idle in file idle.c
-From: Nick Krause <xerofoify@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: ulli.kroll@googlemail.com, linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Gioh Kim <gioh.kim@lge.com>, Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Mel Gorman <mgorman@suse.de>,
+        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC] CMA page migration failure due to buffers on bh_lru
+References: <53A8D092.4040801@lge.com> <xa1td2dvmznq.fsf@mina86.com> <53ACAB82.6020201@lge.com> <53B06DD0.8030106@codeaurora.org> <53B209BA.8010106@lge.com>
+In-Reply-To: <53B209BA.8010106@lge.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the good feedback on kernel development , I will delete this file
-in order to clean up race conditions caused by it.
-Cheers Nick
+On 6/30/2014 6:07 PM, Gioh Kim wrote:
+> Hi,Laura.
+> 
+> I have a question.
+> 
+> Does the __evict_bh_lru() not need bh_lru_lock()?
+> The get_cpu_var() has already preenpt_disable() and can prevent other thread.
+> But get_cpu_var cannot prevent IRQ context such like page-fault.
+> I think if a page-fault occured and a file is read in IRQ context it can change cpu-lru.
+> 
+> Is my concern correct?
+> 
+> 
 
-On Mon, Jun 30, 2014 at 5:41 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sun, Jun 29, 2014 at 10:52:40PM -0400, Nicholas Krause wrote:
->> disables the IRQ line in gemmi_idle before calling cpu_do_idle.
->> In addition, according to the Fixme message in this file fixes
->> races that may occur due to not disabling the IRQ before calling
->> cpu_do_idle.
->
-> 1) the idle method is called with interrupts already disabled.
-> 2) I wonder if you read the comment above the comment you removed, and
->    if so, why it wasn't removed.
-> 3) can you indicate how the hardware problem has been fixed, or give some
->    justification why this change should be accepted.
->
-> --
-> FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-> improving, and getting towards what was expected from it.
+__evict_bh_lru is called via on_each_cpu_cond which I believe will disable irqs.
+I based the code on the existing invalidate_bh_lru which did not take the bh_lru_lock
+either. It's possible I missed something though.
+
+Thanks,
+Laura
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
