@@ -1,103 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758759AbaGAUEp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 16:04:45 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:64198 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758707AbaGAUEm convert rfc822-to-8bit (ORCPT
+	id S1758781AbaGAUEw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 16:04:52 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:60883 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758707AbaGAUEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 16:04:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <53B26BB0.90209@redhat.com>
-References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
-	<1403913966-4927-9-git-send-email-ast@plumgrid.com>
-	<53B26BB0.90209@redhat.com>
-Date: Tue, 1 Jul 2014 13:04:41 -0700
-Message-ID: <CAMEtUuyc3+jrxG4r4=fk=Gc9OMhO8a2X1oyWPx1LsKzewVf01w@mail.gmail.com>
-Subject: Re: [PATCH RFC net-next 08/14] bpf: add eBPF verifier
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 1 Jul 2014 16:04:50 -0400
+Message-ID: <1404245087.2010.15.camel@x220>
+Subject: Re: [PATCH] direct-io: squelch maybe-uninitialized warning in
+ do_direct_IO()
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Markus Mayer <markus.mayer@linaro.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Linux Filesystem Mailing List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 01 Jul 2014 22:04:47 +0200
+In-Reply-To: <1403553248-16536-1-git-send-email-markus.mayer@linaro.org>
+References: <1403323139-12858-1-git-send-email-jason@lakedaemon.net>
+	 <1403553248-16536-1-git-send-email-markus.mayer@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 01 Jul 2014 20:04:47.0873 (UTC) FILETIME=[B5A58F10:01CF9567]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 1, 2014 at 1:05 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
-> On 06/28/2014 02:06 AM, Alexei Starovoitov wrote:
->>
->> Safety of eBPF programs is statically determined by the verifier, which
->> detects:
->> - loops
->> - out of range jumps
->> - unreachable instructions
->> - invalid instructions
->> - uninitialized register access
->> - uninitialized stack access
->> - misaligned stack access
->> - out of range stack access
->> - invalid calling convention
->
-> ...
->
->> More details in Documentation/networking/filter.txt
->>
->> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
->> ---
->
-> ...
->>
->>   kernel/bpf/verifier.c               | 1431
->> +++++++++++++++++++++++++++++++++++
->
->
-> Looking at classic BPF verifier which checks safety of BPF
-> user space programs, it's roughly 200 loc. :-/
+On Mon, 2014-06-23 at 12:54 -0700, Markus Mayer wrote:
+> I did a bit of digging on this and I am wondering if the initialization
+> of "to" and "from" to 0 should instead be done in dio_get_page().
+> 
+> The warning is caused by the return in dio_get_page():
+> 
+> 		ret = dio_refill_pages(dio, sdio);
+> 		if (ret)
+> 			return ERR_PTR(ret);
+> 
+> This code path would leave "to" and "from" uninitialized (even though the
+> caller currently never uses the variables in that case).
+> 
+> If both variables are initialized to 0 in dio_get_page(), it would
+> guarantee that any future callers of dio_get_page() also get to take
+> advantage of the initialization. If, however, the variables are only
+> initialized in do_direct_IO(), other callers would have to take care of
+> this themselves (or the same warnings will pop up there).
+> 
+> There aren't currently any other callers to dio_get_page(), so the
+> choice is probably not a terribly critical one right now, but I wanted
+> to at least point this out.
 
-I'm not sure what's your point comparing apples to oranges.
-For the record 1431 lines include ~200 lines worth of comments
-and 200 lines of verbose prints. Without them rejected eBPF
-program is black box. Users need a way to understand why
-verifier rejected it.
+I peeked at this a bit too.
 
->
->> diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
->> new file mode 100644
->
-> ...
->
->> +#define _(OP) ({ int ret = OP; if (ret < 0) return ret; })
->
-> ...
->>
->> +       _(get_map_info(env, map_id, &map));
->
-> ...
->>
->> +       _(size = bpf_size_to_bytes(bpf_size));
->
->
-> Nit: such macros should be removed, please.
+Maybe it's better to move initializing "to" and "from" out of
+dio_get_page(). That _might_ make it easier for both the the reader and
+the compiler to understand what's going on. Something like this:
 
-It may surely look unconventional, but alternative is to replace
-every usage of _ macro with:
-err = …
-if (err)
-  return err;
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index 98040ba388ac..2f024fc16a07 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -198,9 +198,8 @@ static inline int dio_refill_pages(struct dio *dio, struct dio_submit *sdio)
+  * L1 cache.
+  */
+ static inline struct page *dio_get_page(struct dio *dio,
+-		struct dio_submit *sdio, size_t *from, size_t *to)
++		struct dio_submit *sdio)
+ {
+-	int n;
+ 	if (dio_pages_present(sdio) == 0) {
+ 		int ret;
+ 
+@@ -209,10 +208,7 @@ static inline struct page *dio_get_page(struct dio *dio,
+ 			return ERR_PTR(ret);
+ 		BUG_ON(dio_pages_present(sdio) == 0);
+ 	}
+-	n = sdio->head++;
+-	*from = n ? 0 : sdio->from;
+-	*to = (n == sdio->tail - 1) ? sdio->to : PAGE_SIZE;
+-	return dio->pages[n];
++	return dio->pages[sdio->head];
+ }
+ 
+ /**
+@@ -911,11 +907,15 @@ static int do_direct_IO(struct dio *dio, struct dio_submit *sdio,
+ 	while (sdio->block_in_file < sdio->final_block_in_request) {
+ 		struct page *page;
+ 		size_t from, to;
+-		page = dio_get_page(dio, sdio, &from, &to);
++
++		page = dio_get_page(dio, sdio);
+ 		if (IS_ERR(page)) {
+ 			ret = PTR_ERR(page);
+ 			goto out;
+ 		}
++		from = sdio->head ? 0 : sdio->from;
++		to = (sdio->head == sdio->tail - 1) ? sdio->to : PAGE_SIZE;
++		sdio->head++;
+ 
+ 		while (from < to) {
+ 			unsigned this_chunk_bytes;	/* # of bytes mapped */
 
-and since this macro is used 38 times, it will add ~120 unnecessary
-lines that will only make code much harder to follow.
-I tried not using macro and results were not pleasing.
+This at least silences GCC.
+
+But do_direct_IO() and friends are complicated enough that I'll have to
+look at them for another day or two (or many, many more) before I'm
+confident that this doesn't actually change anything.
+
+
+Paul Bolle
+
