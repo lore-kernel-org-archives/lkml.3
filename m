@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722AbaGAG4A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 02:56:00 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:47258 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905AbaGAGz7 (ORCPT
+	id S1753272AbaGAHAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 03:00:37 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:64072 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930AbaGAHAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 02:55:59 -0400
-Date: Tue, 1 Jul 2014 08:55:55 +0200
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: hskinnemoen@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Remove memory start and memory end
-Message-ID: <20140701065554.GA20782@samfundet.no>
-References: <1404183899-5953-1-git-send-email-xerofoify@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404183899-5953-1-git-send-email-xerofoify@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 1 Jul 2014 03:00:36 -0400
+From: Anil Belur <askb23@gmail.com>
+X-Google-Original-From: Anil Belur
+To: shalinmehta85@gmail.com, dan.carpenter@oracle.com, daeseok.youn@gmail.com,
+        gregkh@linuxfoundation.org
+Cc: speakup@braille.uwo.ca, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Anil Belur <askb23@gmail.com>
+Subject: [PATCH 1/1] staging: speakup: main.c - use time_after()
+Date: Tue,  1 Jul 2014 12:30:22 +0530
+Message-Id: <1404198022-19083-1-git-send-email-askb23@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Mon 30 Jun 2014 23:04:59 -0400 or thereabout, Nicholas Krause wrote:
-> This patch removes the uneeded variables memory start and memory
-> stated in FIXME message before declaring this variables as extern
-> unsigned longs.
+From: Anil Belur <askb23@gmail.com>
 
-Thanks for cleaning, I will append it to my for-linus branch. Queuing it for
-3.17 most likely.
+- this patch fixes jiffies comparision with a safer function to prevent
+  any overflows
 
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->
+Signed-off-by: Anil Belur <askb23@gmail.com>
+---
+ drivers/staging/speakup/main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-
-> ---
->  arch/avr32/include/asm/page.h | 3 ---
->  1 file changed, 3 deletions(-)
-
-<snipp diff>
-
+diff --git a/drivers/staging/speakup/main.c b/drivers/staging/speakup/main.c
+index 7de79d5..0cd3cdb 100644
+--- a/drivers/staging/speakup/main.c
++++ b/drivers/staging/speakup/main.c
+@@ -2067,7 +2067,7 @@ speakup_key(struct vc_data *vc, int shift_state, int keycode, u_short keysym,
+ 			if (up_flag)
+ 				goto out;
+ 			if (last_keycode == keycode &&
+-			    last_spk_jiffy + MAX_DELAY > jiffies) {
++			    time_after(last_spk_jiffy + MAX_DELAY, jiffies)) {
+ 				spk_close_press = 1;
+ 				offset = spk_shift_table[shift_info + 32];
+ 				/* double press? */
 -- 
-mvh
-Hans-Christian Egtvedt
+1.9.1
+
