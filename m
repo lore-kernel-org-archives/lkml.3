@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757543AbaGAIiF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 04:38:05 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47688 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753510AbaGAIiB (ORCPT
+	id S1757596AbaGAIjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 04:39:12 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:36359 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756047AbaGAIjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 04:38:01 -0400
-Date: Tue, 1 Jul 2014 09:37:49 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Dan Murphy <dmurphy@ti.com>,
-        "linux-sound@vger.kernel.org" <linux-sound@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2] ASoC: tas2552: Support TI TAS2552 Amplifier
-Message-ID: <20140701083749.GH28740@leverpostej>
-References: <1404148259-17305-1-git-send-email-dmurphy@ti.com>
- <20140630172115.GE28740@leverpostej>
- <20140630214342.GI23300@sirena.org.uk>
+	Tue, 1 Jul 2014 04:39:08 -0400
+Message-ID: <53B273A2.5050500@linux.vnet.ibm.com>
+Date: Tue, 01 Jul 2014 16:38:58 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140630214342.GI23300@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Mike Galbraith <umgwanakikbuti@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@linaro.org>,
+        Paul Turner <pjt@google.com>, Mel Gorman <mgorman@suse.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: select 'idle' cfs_rq per task-group to prevent
+ tg-internal imbalance
+References: <53A11A89.5000602@linux.vnet.ibm.com> <20140623094251.GS19860@laptop.programming.kicks-ass.net> <53A8F1DE.2060908@linux.vnet.ibm.com> <20140701082020.GL6758@twins.programming.kicks-ass.net>
+In-Reply-To: <20140701082020.GL6758@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070108-9264-0000-0000-0000066DCEBA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 10:43:42PM +0100, Mark Brown wrote:
-> On Mon, Jun 30, 2014 at 06:21:15PM +0100, Mark Rutland wrote:
-> > On Mon, Jun 30, 2014 at 06:10:59PM +0100, Dan Murphy wrote:
+On 07/01/2014 04:20 PM, Peter Zijlstra wrote:
+[snip]
+>>
+>> Just wondering could we make this another scheduler feature?
 > 
-> > > +Optional properties:
+> No; sched_feat() is for debugging, BIG CLUE: its guarded by
+> CONFIG_SCHED_DEBUG, anybody using it in production or anywhere else is
+> broken.
 > 
-> > > +- power-gpio - gpio pin to enable/disable the device
-> 
-> > The code below seems to look for "enable-gpio". Searching for
-> > "power-gpio" only hits in the line above and the example below. I assume
-> > the code is in error?
-> 
-> It depends what this is for - if it's for an external regulator it
-> should be a regulator binding.  Also all GPIO properties
-> are supposed to be called -gpios because DT conventions.
+> If people are using it, I should remove or at least randomize the
+> interface.
 
-Sure. I was commenting on the mismatch between "enable" in the code and
-"power" in the documentation rather than the appropriateness of either
-"power-gpios" or "enable-gpios".
+Fair enough... but is there any suggestions on how to handle this issue?
 
-Mark.
+Currently when dbench running with stress, it could only gain one CPU,
+and cpu-cgroup cpu.shares is meaningless, is there any good methods to
+address that?
+
+Regards,
+Michael Wang
+
+> 
+
