@@ -1,83 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396AbaGABXY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 21:23:24 -0400
-Received: from relay-s04-hub005.domainlocalhost.com ([74.115.207.216]:36922
-	"EHLO relay-S04-HUB005.domainlocalhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752576AbaGABXW (ORCPT
+	id S1752117AbaGABgJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 21:36:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34131 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742AbaGABgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 21:23:22 -0400
-From: Dudley Du <dudl@cypress.com>
-To: Patrik Fimml <patrikf@chromium.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Benson Leung <bleung@google.com>, Lily Rui <lily@cypress.com>,
-        Daniel Kurtz <djkurtz@google.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2 0/14] input: cyapa: re-architecture driver to support
- multi-trackpads in one driver
-Thread-Topic: [PATCH v2 0/14] input: cyapa: re-architecture driver to
- support multi-trackpads in one driver
-Thread-Index: AQHPkmJ9t+T52SM2e0uifNVuU/yAn5uJBvZQgAFS9ICAABblcA==
-Date: Tue, 1 Jul 2014 01:23:07 +0000
-Message-ID: <77BC725C9062764F874D79F51E1F1A8F4C902ED4@S04-MBX01-01.s04.local>
-References: <CAEn7tidaRxbLwQti8joDgq48K2YCAVE3uG-q6ZR=jEWAgm2tPg@mail.gmail.com>
- <77BC725C9062764F874D79F51E1F1A8F4C902B3B@S04-MBX01-01.s04.local>
- <20140630195935.GA18256@google.com>
-In-Reply-To: <20140630195935.GA18256@google.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.30.12.155]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 30 Jun 2014 21:36:07 -0400
 MIME-Version: 1.0
+In-Reply-To: <CACVXFVMHPdEzai32jRmLt7qGMFcUqFb8OunF0tzySpKoLWWiwQ@mail.gmail.com>
+References: <1403775708-22244-1-git-send-email-ming.lei@canonical.com>
+	<CACVXFVMHPdEzai32jRmLt7qGMFcUqFb8OunF0tzySpKoLWWiwQ@mail.gmail.com>
+Date: Tue, 1 Jul 2014 09:36:03 +0800
+Message-ID: <CACVXFVMb4UXRYSp6nvjDQrDRcLP6rJ3_3QHYMzKv9MoogsU66w@mail.gmail.com>
+Subject: Re: [PATCH v3 0/2] block: virtio-blk: support multi vq per virtio-blk
+From: Ming Lei <ming.lei@canonical.com>
+To: Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-api@vger.kernel.org,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s611NTfC018420
 
-Hi Patrik,
+Hi Jens and Rusty,
 
-Thanks for your patient and detail instructions.
-I will try to fix these issues and resubmit again.
+On Thu, Jun 26, 2014 at 8:04 PM, Ming Lei <ming.lei@canonical.com> wrote:
+> On Thu, Jun 26, 2014 at 5:41 PM, Ming Lei <ming.lei@canonical.com> wrote:
+>> Hi,
+>>
+>> These patches try to support multi virtual queues(multi-vq) in one
+>> virtio-blk device, and maps each virtual queue(vq) to blk-mq's
+>> hardware queue.
+>>
+>> With this approach, both scalability and performance on virtio-blk
+>> device can get improved.
+>>
+>> For verifying the improvement, I implements virtio-blk multi-vq over
+>> qemu's dataplane feature, and both handling host notification
+>> from each vq and processing host I/O are still kept in the per-device
+>> iothread context, the change is based on qemu v2.0.0 release, and
+>> can be accessed from below tree:
+>>
+>>         git://kernel.ubuntu.com/ming/qemu.git #v2.0.0-virtblk-mq.1
+>>
+>> For enabling the multi-vq feature, 'num_queues=N' need to be added into
+>> '-device virtio-blk-pci ...' of qemu command line, and suggest to pass
+>> 'vectors=N+1' to keep one MSI irq vector per each vq, and the feature
+>> depends on x-data-plane.
+>>
+>> Fio(libaio, randread, iodepth=64, bs=4K, jobs=N) is run inside VM to
+>> verify the improvement.
+>>
+>> I just create a small quadcore VM and run fio inside the VM, and
+>> num_queues of the virtio-blk device is set as 2, but looks the
+>> improvement is still obvious. The host is 2 sockets, 8cores(16threads)
+>> server.
+>>
+>> 1), about scalability
+>> - jobs = 2, thoughput: +33%
+>> - jobs = 4, thoughput: +100%
+>>
+>> 2), about top thoughput: +39%
+>>
+>> So in my test, even for a quad-core VM, if the virtqueue number
+>> is increased from 1 to 2, both scalability and performance can
+>> get improved a lot.
+>>
+>> In above qemu implementation of virtio-blk-mq device, only one
+>> IOthread handles requests from all vqs, and the above throughput
+>> data has been very close to same fio test in host side with single
+>> job. So more improvement should be observed once more IOthreads are
+>> used for handling requests from multi vqs.
+>>
+>> TODO:
+>>         - adjust vq's irq smp_affinity according to blk-mq hw queue's cpumask
+>>
+>> V3:
+>>         - fix use-after-free on vq->name reported by Michael
+>>
+>> V2: (suggestions from Michael and Dave Chinner)
+>>         - allocate virtqueues' pointers dynamically
+>>         - make sure the per-queue spinlock isn't kept in same cache line
+>>         - make each queue's name different
+>>
+>> V1:
+>>         - remove RFC since no one objects
+>>         - add '__u8 unused' for pending as suggested by Rusty
+>>         - use virtio_cread_feature() directly, suggested by Rusty
+>
+> Sorry, please add Jens' reviewed-by.
+>
+>     Reviewed-by: Jens Axboe <axboe@kernel.dk>
+
+I appreciate very much that one of you may queue these two
+patches into your tree so that userspace work can be kicked off,
+since Michael has acked both patches and all comments have
+been addressed already.
+
 
 Thanks,
-Dudley
-
-> -----Original Message-----
-> From: Patrik Fimml [mailto:patrikf@chromium.org]
-> Sent: Tuesday, July 01, 2014 4:00 AM
-> To: Dudley Du
-> Cc: Dmitry Torokhov; Rafael J. Wysocki; Alan Stern; Benson Leung; Lily Rui;
-> Daniel Kurtz; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v2 0/14] input: cyapa: re-architecture driver to support
-> multi-trackpads in one driver
->
-> Hi Dudley,
->
-> On Mon, Jun 30, 2014 at 05:43:06AM +0000, Dudley Du wrote:
-> > Attached are the patches files, I sent it firstly.
->
-> Thanks for the response, I was able to apply the patches now.
->
-> The attached files lack headers and commit messages though, so I don't have
-> fine-grained history in my git tree for convenient later review. The file
-> names
-> suggest to me that you might just have copy-and-pasted the patches from
-> somewhere.
->
-> It would be great if you could attach them again in the format produced by
-> "git
-> format-patch", with no further modifications done by hand. (If you feel the
-> need to do modifications, you should modify the actual commits e.g. with "git
-> rebase -i" before using format-patch.) Others can then simply import your
-> changes - including commit messages - into their tree with "git am".
->
-> Thanks,
-> Patrik
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--
+Ming Lei
