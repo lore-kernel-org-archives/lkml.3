@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305AbaGAFj6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 01:39:58 -0400
-Received: from mga02.intel.com ([134.134.136.20]:46911 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750811AbaGAFj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 01:39:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,580,1400050800"; 
-   d="scan'208";a="536939263"
-Message-ID: <53B249A4.2040404@linux.intel.com>
-Date: Tue, 01 Jul 2014 13:39:48 +0800
-From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: chris@printf.net, ulf.hansson@linaro.org, jh80.chung@samsung.com,
-        tgih.jun@samsung.com, aaron.lu@intel.com, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jackey.shen@amd.com,
-        gregkh@linuxfoundation.org
-Subject: one doubt about mmc_sdio_init_card function
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751736AbaGAFlM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 01:41:12 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:44127 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822AbaGAFlL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 01:41:11 -0400
+Message-ID: <1404193267.5159.28.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched: select 'idle' cfs_rq per task-group to prevent
+ tg-internal imbalance
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Michael wang <wangyun@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@linaro.org>,
+        Paul Turner <pjt@google.com>, Mel Gorman <mgorman@suse.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 01 Jul 2014 07:41:07 +0200
+In-Reply-To: <53B223AE.10903@linux.vnet.ibm.com>
+References: <53A11A89.5000602@linux.vnet.ibm.com>
+	 <53B11387.9020001@linux.vnet.ibm.com>
+	 <1404115601.5132.156.camel@marge.simpson.net>
+	 <53B12417.9060904@linux.vnet.ibm.com>
+	 <1404120453.5132.194.camel@marge.simpson.net>
+	 <53B223AE.10903@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2014-07-01 at 10:57 +0800, Michael wang wrote:
 
-Hi, all
+> IMHO, currently the generic scheduler just try to take care both latency
+> and throughput, both will take a little damage but won't be damaged too
+> much, they just sacrificed for each other...
 
-The mmc_sdio_init_card(drivers/mmc/core/sdio.c) function calls mmc_alloc_card(drivers/mmc/core/bus.c) function to allocate a card structure. card->dev.bus is assigned with mmc_bus_type in mmc_alloc_card function. Why not assign sdio_bus_type to card->dev.bus?
+The cost can be large, so it's worth an occasional ponder.
 
+-Mike
 
-struct mmc_card *mmc_alloc_card(struct mmc_host *host, struct device_type *type)
-{
-    struct mmc_card *card;
-
-    card = kzalloc(sizeof(struct mmc_card), GFP_KERNEL);
-    if (!card)
-        return ERR_PTR(-ENOMEM);
-
-    card->host = host;
-
-    device_initialize(&card->dev);
-
-    card->dev.parent = mmc_classdev(host);
-    card->dev.bus = &mmc_bus_type;
-    card->dev.release = mmc_release_card;
-    card->dev.type = type;
-
-    return card;
-}
-
-
-Thanks,
-Zhonghui
