@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634AbaGAM4f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 08:56:35 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:56675 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667AbaGAM4e (ORCPT
+	id S1756614AbaGANAX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 09:00:23 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43580 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751513AbaGANAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 08:56:34 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
-Cc: DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH] drivers: message: fusion: Simplify rounding
-Date: Tue,  1 Jul 2014 14:56:20 +0200
-Message-Id: <1404219380-2712-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 1 Jul 2014 09:00:22 -0400
+X-Sasl-enc: WDOXj2xAQ0eGYzmpvF2n/6P0GE0nUuYtTaN2wLMuyjAB 1404219621
+From: Michalis Pappas <mpappas@fastmail.fm>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: gdm72xx: remove unused code
+Date: Tue,  1 Jul 2014 14:00:14 +0100
+Message-Id: <1404219616-1788-1-git-send-email-mpappas@fastmail.fm>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rounding up to a multiple of 4 should be done using the ALIGN
-macro. As a bonus, this also makes the generated code smaller.
+Remove code surrounded by otherwise unused #define LOOPBACK_TEST
 
-In GetIocFacts(), sz is assigned to a few lines below without being
-read in the meantime, so it is ok that it doesn't end up with the same
-value as facts->FWImageSize.
-
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Signed-off-by: Michalis Pappas <mpappas@fastmail.fm>
 ---
- drivers/message/fusion/mptbase.c | 7 +------
- drivers/message/fusion/mptctl.c  | 7 +------
- 2 files changed, 2 insertions(+), 12 deletions(-)
+ drivers/staging/gdm72xx/gdm_wimax.c | 18 ------------------
+ 1 file changed, 18 deletions(-)
 
-diff --git a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
-index ebc0af7..10b16a1 100644
---- a/drivers/message/fusion/mptbase.c
-+++ b/drivers/message/fusion/mptbase.c
-@@ -3175,12 +3175,7 @@ GetIocFacts(MPT_ADAPTER *ioc, int sleepFlag, int reason)
- 			facts->FWImageSize = le32_to_cpu(facts->FWImageSize);
- 		}
+diff --git a/drivers/staging/gdm72xx/gdm_wimax.c b/drivers/staging/gdm72xx/gdm_wimax.c
+index 4148013..c2e6bfe 100644
+--- a/drivers/staging/gdm72xx/gdm_wimax.c
++++ b/drivers/staging/gdm72xx/gdm_wimax.c
+@@ -368,8 +368,6 @@ int gdm_wimax_send_tx(struct sk_buff *skb, struct net_device *dev)
+ static int gdm_wimax_tx(struct sk_buff *skb, struct net_device *dev)
+ {
+ 	int ret = 0;
+-	struct nic *nic = netdev_priv(dev);
+-	struct fsm_s *fsm = (struct fsm_s *)nic->sdk_data[SIOC_DATA_FSM].buf;
  
--		sz = facts->FWImageSize;
--		if ( sz & 0x01 )
--			sz += 1;
--		if ( sz & 0x02 )
--			sz += 2;
--		facts->FWImageSize = sz;
-+		facts->FWImageSize = ALIGN(facts->FWImageSize, 4);
+ 	dump_eth_packet(dev, "TX", skb->data, skb->len);
  
- 		if (!facts->RequestFrameSize) {
- 			/*  Something is wrong!  */
-diff --git a/drivers/message/fusion/mptctl.c b/drivers/message/fusion/mptctl.c
-index 8a050e8..1004392 100644
---- a/drivers/message/fusion/mptctl.c
-+++ b/drivers/message/fusion/mptctl.c
-@@ -1749,12 +1749,7 @@ mptctl_replace_fw (unsigned long arg)
+@@ -379,17 +377,6 @@ static int gdm_wimax_tx(struct sk_buff *skb, struct net_device *dev)
+ 		return ret;
+ 	}
  
- 	/* Allocate memory for the new FW image
- 	 */
--	newFwSize = karg.newImageSize;
+-	#if !defined(LOOPBACK_TEST)
+-	if (!fsm) {
+-		netdev_err(dev, "ASSERTION ERROR: fsm is NULL!!\n");
+-	} else if (fsm->m_status != M_CONNECTED) {
+-		netdev_emerg(dev, "ASSERTION ERROR: Device is NOT ready. status=%d\n",
+-			     fsm->m_status);
+-		kfree_skb(skb);
+-		return 0;
+-	}
+-	#endif
 -
--	if (newFwSize & 0x01)
--		newFwSize += 1;
--	if (newFwSize & 0x02)
--		newFwSize += 2;
-+	newFwSize = ALIGN(karg.newImageSize, 4);
+ #if defined(CONFIG_WIMAX_GDM72XX_QOS)
+ 	ret = gdm_qos_send_hci_pkt(skb, dev);
+ #else
+@@ -919,12 +906,7 @@ int register_wimax_device(struct phy_dev *phy_dev, struct device *pdev)
+ 	if (ret)
+ 		goto cleanup;
  
- 	mpt_alloc_fw_memory(ioc, newFwSize);
- 	if (ioc->cached_fw == NULL)
+-	#if defined(LOOPBACK_TEST)
+-	netif_start_queue(dev);
+-	netif_carrier_on(dev);
+-	#else
+ 	netif_carrier_off(dev);
+-	#endif
+ 
+ #ifdef CONFIG_WIMAX_GDM72XX_QOS
+ 	gdm_qos_init(nic);
 -- 
-1.9.2
+1.8.4
 
