@@ -1,150 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754239AbaGAKcf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 06:32:35 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:53516 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751571AbaGAKce (ORCPT
+	id S1756882AbaGAKdm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 06:33:42 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36489 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756524AbaGAKdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 06:32:34 -0400
-Message-ID: <1404210751.2010.4.camel@x220>
-Subject: [PATCH] eeepc-laptop: simplify parse_arg()
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Cc: acpi4asus-user@lists.sourceforge.net, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 01 Jul 2014 12:32:31 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 01 Jul 2014 10:32:31.0394 (UTC) FILETIME=[C382A820:01CF9517]
-X-RcptDomain: vger.kernel.org
+	Tue, 1 Jul 2014 06:33:41 -0400
+Date: Tue, 1 Jul 2014 12:33:38 +0200
+From: Markus Pargmann <mpa@pengutronix.de>
+To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
+Cc: Mark Brown <broonie@kernel.org>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] regmap: Fix debugfs-file 'registers' mode
+Message-ID: <20140701103338.GG28033@pengutronix.de>
+References: <1403961791-15376-1-git-send-email-mpa@pengutronix.de>
+ <20140630054507.GX14781@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BXr400anF0jyguTS"
+Content-Disposition: inline
+In-Reply-To: <20140630054507.GX14781@pengutronix.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 12:31:51 up 69 days,  4:03, 70 users,  load average: 0.12, 0.14,
+ 0.14
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: mpa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-parse_arg() has three possible return values:
-    -EINVAL if sscanf(), in short, fails;
-    zero if "count" is zero; and
-    "count" in all other cases
 
-But "count" will never be zero. See, parse_arg() is called by the
-various store functions. And the callchain of these functions starts
-with sysfs_kf_write(). And that function checks for a zero "count". So
-we can stop checking for a zero "count", drop the "count" argument
-entirely, and transform parse_arg() into a function that returns zero on
-success or a negative error. That, in turn, allows to make those store
-functions just return "count" on success. The net effect is that the
-code becomes a bit easier to understand.
+--BXr400anF0jyguTS
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-A nice side effect is that this GCC warning is silenced too:
-    drivers/platform/x86/eeepc-laptop.c: In function ‘store_sys_acpi’:
-    drivers/platform/x86/eeepc-laptop.c:279:10: warning: ‘value’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-      int rv, value;
+Hi Uwe,
 
-Which is, of course, the reason to have a look at parse_arg().
+On Mon, Jun 30, 2014 at 07:45:07AM +0200, Uwe Kleine-K=C3=B6nig wrote:
+> Hi Markus,
+>=20
+> On Sat, Jun 28, 2014 at 03:23:11PM +0200, Markus Pargmann wrote:
+> > The macro "REGMAP_ALLOW_WRITE_DEBUGFS" can be used to enable write
+> minor nit: I'd not call it "macro", but "cpp symbol" because macro
+> sounds more function-like. (There is another "macro" at the end of the
+> commit log.)
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Compile tested. I don't own an eeepc.
+Okay.
 
-I do hope my reading of the code make sense. Ie, is it correct that
-sysfs_kf_write() is at the start of all the sysfs writes involved?
+>=20
+> > support on the registers file in the debugfs. The mode of the file is
+> > fixed to 0400 so it is not possible to write the file ever.
+> >=20
+> > This patch fixes the mode by setting it to the correct value depending
+> > on the macro.
+> >=20
+> > Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+> > Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+> > ---
+> >=20
+> > Hi,
+> >=20
+> > as the kconfig option will probably not be merged, I extracted the mode=
+ fix of
+> > my previous patch.
+> >=20
+> > Regards,
+> >=20
+> > Markus
+> >=20
+> >  drivers/base/regmap/regmap-debugfs.c | 9 ++++++++-
+> >  1 file changed, 8 insertions(+), 1 deletion(-)
+> >=20
+> > diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap=
+/regmap-debugfs.c
+> > index 45d812c0ea77..f45a0a0e0371 100644
+> > --- a/drivers/base/regmap/regmap-debugfs.c
+> > +++ b/drivers/base/regmap/regmap-debugfs.c
+> > @@ -512,7 +512,14 @@ void regmap_debugfs_init(struct regmap *map, const=
+ char *name)
+> >  			    map, &regmap_reg_ranges_fops);
+> > =20
+> >  	if (map->max_register || regmap_readable(map, 0)) {
+> > -		debugfs_create_file("registers", 0400, map->debugfs,
+> > +		unsigned int registers_mode;
+> > +
+> > +		if (IS_ENABLED(REGMAP_ALLOW_WRITE_DEBUGFS))
+> > +			registers_mode =3D 0600;
+> > +		else
+> > +			registers_mode =3D 0400;
+> > +
+> > +		debugfs_create_file("registers", registers_mode, map->debugfs,
+> >  				    map, &regmap_map_fops);
+> debugfs_create_file takes an umode_t as 2nd parameter. Maybe you should
+> pick that type for registers_mode here, too?
 
- drivers/platform/x86/eeepc-laptop.c | 34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+Yes that should be changed, thanks.
 
-diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-index 9b0c57cd1d4a..a7ef834ffa39 100644
---- a/drivers/platform/x86/eeepc-laptop.c
-+++ b/drivers/platform/x86/eeepc-laptop.c
-@@ -263,13 +263,11 @@ static int acpi_setter_handle(struct eeepc_laptop *eeepc, int cm,
- /*
-  * Sys helpers
-  */
--static int parse_arg(const char *buf, unsigned long count, int *val)
-+static int parse_arg(const char *buf, int *val)
- {
--	if (!count)
--		return 0;
- 	if (sscanf(buf, "%i", val) != 1)
- 		return -EINVAL;
--	return count;
-+	return 0;
- }
- 
- static ssize_t store_sys_acpi(struct device *dev, int cm,
-@@ -278,12 +276,13 @@ static ssize_t store_sys_acpi(struct device *dev, int cm,
- 	struct eeepc_laptop *eeepc = dev_get_drvdata(dev);
- 	int rv, value;
- 
--	rv = parse_arg(buf, count, &value);
--	if (rv > 0)
--		value = set_acpi(eeepc, cm, value);
-+	rv = parse_arg(buf, &value);
-+	if (rv < 0)
-+		return rv;
-+	value = set_acpi(eeepc, cm, value);
- 	if (value < 0)
- 		return -EIO;
--	return rv;
-+	return count;
- }
- 
- static ssize_t show_sys_acpi(struct device *dev, int cm, char *buf)
-@@ -377,13 +376,13 @@ static ssize_t store_cpufv(struct device *dev,
- 		return -EPERM;
- 	if (get_cpufv(eeepc, &c))
- 		return -ENODEV;
--	rv = parse_arg(buf, count, &value);
-+	rv = parse_arg(buf, &value);
- 	if (rv < 0)
- 		return rv;
--	if (!rv || value < 0 || value >= c.num)
-+	if (value < 0 || value >= c.num)
- 		return -EINVAL;
- 	set_acpi(eeepc, CM_ASL_CPUFV, value);
--	return rv;
-+	return count;
- }
- 
- static ssize_t show_cpufv_disabled(struct device *dev,
-@@ -402,7 +401,7 @@ static ssize_t store_cpufv_disabled(struct device *dev,
- 	struct eeepc_laptop *eeepc = dev_get_drvdata(dev);
- 	int rv, value;
- 
--	rv = parse_arg(buf, count, &value);
-+	rv = parse_arg(buf, &value);
- 	if (rv < 0)
- 		return rv;
- 
-@@ -412,7 +411,7 @@ static ssize_t store_cpufv_disabled(struct device *dev,
- 			pr_warn("cpufv enabled (not officially supported "
- 				"on this model)\n");
- 		eeepc->cpufv_disabled = false;
--		return rv;
-+		return count;
- 	case 1:
- 		return -EPERM;
- 	default:
-@@ -1042,10 +1041,11 @@ static ssize_t store_sys_hwmon(void (*set)(int), const char *buf, size_t count)
- {
- 	int rv, value;
- 
--	rv = parse_arg(buf, count, &value);
--	if (rv > 0)
--		set(value);
--	return rv;
-+	rv = parse_arg(buf, &value);
-+	if (rv < 0)
-+		return rv;
-+	set(value);
-+	return count;
- }
- 
- static ssize_t show_sys_hwmon(int (*get)(void), char *buf)
--- 
-1.9.3
+Regards,
 
+Markus
+
+--=20
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+
+--BXr400anF0jyguTS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTso6BAAoJEEpcgKtcEGQQ9BgQALIVgabBbSctem6SbXs0fNpR
+DU48/v+9kowpl/WR9XTvT63ykPf2GDScvX6uRAc+JqUgcd3nRnJ4R90SXewFNkXg
+prKiqhaad3FjzU6njkiVDDVrwo9EMqc56FqFV3P7uh3uf8+Qxvobl7cwzptpmgJL
+nqsFv2dHgaaFA9BkDghaADAkvNLD6ZJQ8pjC8BBu+K7/75Pp94fasP7WXRPweTM2
+Y+TrRWgLmLfdnqqoPy3F8hFO9LBQH4ZyUJdzsY+Grv1b8AZyOYZJowx6n0iCeGqI
+MHplwdjCb2mLCJ23amnEeFHagbX79dZlCkBdGLaSF5PPztEwgSipaqBfUWWn7Lv9
+cpM/aJO9nRkYm0CgXmnOuzBtFuiML+CEeeyiAjto4FxkXtpKPBHwQl4qqPsZlF1V
+DeuG33av8ZtLtjTtIm2h6LR84ffjBG8cvGS8Mha+GbGZQobHX4KO+q5IKzMvYkLn
+1qHQLtcstMdEZfGiKsFwAOU1P4QZicOSjHsKgdcLZSfoEcIRNagU8CU7O4DGq18X
+aek8qDiQMuuWx1zo31BWXcf2UezIZrCHu6AKYEr4q8IyoUYY00yc4aUu2H+Yfcyu
+lv2JrRQ8Dwcd1DahXNNB+bLd8/gfTUarE1IzIbj1iIZyS2dNubujujrWu/7vWqvZ
+aGouG9Jn5upwyuOV5CUb
+=qkaH
+-----END PGP SIGNATURE-----
+
+--BXr400anF0jyguTS--
