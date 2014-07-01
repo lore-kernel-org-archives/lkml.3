@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757328AbaGADLx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 23:11:53 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:35586 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757230AbaGADLw (ORCPT
+	id S1753104AbaGADQB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 23:16:01 -0400
+Received: from ozlabs.org ([103.22.144.67]:41281 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751397AbaGADQA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 23:11:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <1404184262-6178-1-git-send-email-xerofoify@gmail.com>
-References: <1404184262-6178-1-git-send-email-xerofoify@gmail.com>
-Date: Mon, 30 Jun 2014 23:11:51 -0400
-Message-ID: <CAPDOMVhBv58nNdGyDPw3xsZ3AwpsnkQRGYvcAjL27mjOn5fiRg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Deletes arch/arm/mach-gemini/idle.c
-From: Nick Krause <xerofoify@gmail.com>
-To: ulli.kroll@googlemail.com
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 30 Jun 2014 23:16:00 -0400
+Message-ID: <1404184557.18325.32.camel@ale.ozlabs.ibm.com>
+Subject: Re: [PATCH] powerpc/powernv: Check for IRQHAPPENED before sleeping
+From: Michael Neuling <mikey@neuling.org>
+To: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>, benh@kernel.crashing.org,
+        shreyas@linux.vnet.ibm.com, svaidy@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Mon, 30 Jun 2014 22:15:57 -0500
+In-Reply-To: <1404175926.30002.1.camel@concordia>
+References: <20140630062404.29315.23382.stgit@preeti.in.ibm.com>
+	 <1404175926.30002.1.camel@concordia>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is only one patch please disregard patch 1/2.
-Cheers Nick
+On Tue, 2014-07-01 at 10:52 +1000, Michael Ellerman wrote:
+> On Mon, 2014-06-30 at 11:54 +0530, Preeti U Murthy wrote:
+> > Commit 8d6f7c5a: "powerpc/powernv: Make it possible to skip the IRQHAPPENED
+> > check in power7_nap()" added code that prevents even cores which enter sleep
+> > on idle, from checking for pending interrupts. Fix this.
+> 
+> To be clear, it is a bug in the original commit. Mikey and I pair programmed
+> that code, and he was *definitely* typing at that point ;)
 
-On Mon, Jun 30, 2014 at 11:11 PM, Nicholas Krause <xerofoify@gmail.com> wrote:
-> This patch deletes the above file in order to remove the function
-> in this file that may cause races. In addition this function is
-> no longer needed due to commit 8182a34d85698 fixing this issue.
-> Therefore gemmi_idle is no longer needed and due to in being the
-> only function in this file I am removing it.
->
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->  arch/arm/mach-gemini/idle.c | 30 ------------------------------
->  1 file changed, 30 deletions(-)
->  delete mode 100644 arch/arm/mach-gemini/idle.c
->
-> diff --git a/arch/arm/mach-gemini/idle.c b/arch/arm/mach-gemini/idle.c
-> deleted file mode 100644
-> index 2880f5a..0000000
-> --- a/arch/arm/mach-gemini/idle.c
-> +++ /dev/null
-> @@ -1,30 +0,0 @@
-> -/*
-> - * arch/arm/mach-gemini/idle.c
-> - */
-> -
-> -#include <linux/init.h>
-> -#include <asm/system_misc.h>
-> -#include <asm/proc-fns.h>
-> -
-> -static void gemini_idle(void)
-> -{
-> -       /*
-> -        * Because of broken hardware we have to enable interrupts or the CPU
-> -        * will never wakeup... Acctualy it is not very good to enable
-> -        * interrupts first since scheduler can miss a tick, but there is
-> -        * no other way around this. Platforms that needs it for power saving
-> -        * should enable it in init code, since by default it is
-> -        * disabled.
-> -        */
-> -
-> -       local_irq_disable();
-> -       cpu_do_idle();
-> -}
-> -
-> -static int __init gemini_idle_init(void)
-> -{
-> -       arm_pm_idle = gemini_idle;
-> -       return 0;
-> -}
-> -
-> -arch_initcall(gemini_idle_init);
-> --
-> 1.9.1
->
+It's always nice to know that in battle a comrade will throw himself on
+a grenade to save you. :-P
+
+Actually, I'm pretty sure this happened when you were away (probably on
+a beach somewhere), I was forward porting the patch set, hit a conflict
+and fucked it up.  
+
+Mikey
+
+> 
+> Can you please include in the changelog what the symptom of the bug is, and
+> have you seen it in practice?
+> 
+> The bad commit went into 3.16-rc1, so we don't need to backport this to any
+> stable release.
+> 
+> cheers
+> 
+> > diff --git a/arch/powerpc/kernel/idle_power7.S b/arch/powerpc/kernel/idle_power7.S
+> > index 2480256..5cf3d36 100644
+> > --- a/arch/powerpc/kernel/idle_power7.S
+> > +++ b/arch/powerpc/kernel/idle_power7.S
+> > @@ -131,7 +131,7 @@ _GLOBAL(power7_nap)
+> >  
+> >  _GLOBAL(power7_sleep)
+> >  	li	r3,1
+> > -	li	r4,0
+> > +	li	r4,1
+> >  	b	power7_powersave_common
+> >  	/* No return */
+> >  
+> > 
+> 
+> 
+> 
+> 
+> 
+
