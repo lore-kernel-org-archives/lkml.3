@@ -1,100 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757089AbaGAKwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 06:52:31 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:33547 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756106AbaGAKw3 (ORCPT
+	id S1757548AbaGAK5m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 06:57:42 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:60168 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752804AbaGAK5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 06:52:29 -0400
-Date: Tue, 1 Jul 2014 12:52:50 +0200
-From: Quentin Casasnovas <quentin.casasnovas@oracle.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Richard Weinberger <richard@nod.at>,
-        X86 ML <x86@kernel.org>, Eric Paris <eparis@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, security@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@al>
-Subject: Re: [PATCH] x86_32,entry: Do syscall exit work on badsys
- (CVE-2014-4508)
-Message-ID: <20140701105250.GI5192@chrystal.home>
-References: <CA+5PVA70nFS8JZkL0-Q-1HjFHT5NA04275_M4WstjQMrpT+hrQ@mail.gmail.com>
- <e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net>
+	Tue, 1 Jul 2014 06:57:40 -0400
+Subject: [PATCH v2 0/9] Updated fence patch series
+To: gregkh@linuxfoundation.org
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: linux-arch@vger.kernel.org, thellstrom@vmware.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, robdclark@gmail.com,
+        thierry.reding@gmail.com, ccross@google.com, daniel@ffwll.ch,
+        sumit.semwal@linaro.org, linux-media@vger.kernel.org
+Date: Tue, 01 Jul 2014 12:57:02 +0200
+Message-ID: <20140701103432.12718.82795.stgit@patser>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 23, 2014 at 02:22:15PM -0700, Andy Lutomirski wrote:
-> The bad syscall nr paths are their own incomprehensible route
-> through the entry control flow.  Rearrange them to work just like
-> syscalls that return -ENOSYS.
-> 
-> This fixes an OOPS in the audit code when fast-path auditing is
-> enabled and sysenter gets a bad syscall nr (CVE-2014-4508).
-> 
-> This has probably been broken since Linux 2.6.27:
-> af0575bba0 i386 syscall audit fast-path
-> 
-> Cc: stable@vger.kernel.org
-> Cc: Roland McGrath <roland@redhat.com>
-> Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
-> 
-> I realize that the syscall audit fast path and badsys code, on 32-bit
-> x86 no less, is possibly one of the least fun things in the kernel to
-> review, but this is still a real security bug and should get fixed :(
-> 
-> So I'm cc-ing a bunch of people and maybe someone will review it.
-> 
->  arch/x86/kernel/entry_32.S | 10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> index a2a4f46..f4258a5 100644
-> --- a/arch/x86/kernel/entry_32.S
-> +++ b/arch/x86/kernel/entry_32.S
-> @@ -431,9 +431,10 @@ sysenter_past_esp:
->  	jnz sysenter_audit
->  sysenter_do_call:
->  	cmpl $(NR_syscalls), %eax
-> -	jae syscall_badsys
-> +	jae sysenter_badsys
->  	call *sys_call_table(,%eax,4)
->  	movl %eax,PT_EAX(%esp)
-> +sysenter_after_call:
->  	LOCKDEP_SYS_EXIT
->  	DISABLE_INTERRUPTS(CLBR_ANY)
->  	TRACE_IRQS_OFF
-> @@ -688,7 +689,12 @@ END(syscall_fault)
->  
->  syscall_badsys:
->  	movl $-ENOSYS,PT_EAX(%esp)
-> -	jmp resume_userspace
-> +	jmp syscall_exit
+So after some more hacking I've moved dma-buf to its own subdirectory,
+drivers/dma-buf and applied the fence patches to its new place. I believe that the
+first patch should be applied regardless, and the rest should be ready now.
+:-)
 
-We're workig on preparing Ksplice updates for the last Fedora20 released
-kernel and stumbled on this patch.
+Changes to the fence api:
+- release_fence -> fence_release etc.
+- __fence_init -> fence_init
+- __fence_signal -> fence_signal_locked
+- __fence_is_signaled -> fence_is_signaled_locked
+- Changing BUG_ON to WARN_ON in fence_later, and return NULL if it triggers.
 
-Apologies in advance if this is obvious, but would you mind explaining why
-the above change in 'syscall_badsys' is required? We're just concerned
-about doing the absolute minimum changes here if we can.
+Android can expose fences to userspace. It's possible to make the new fence
+mechanism expose the same fences to userspace by changing sync_fence_create
+to take a struct fence instead of a struct sync_pt. No other change is needed,
+because only the fence parts of struct sync_pt are used. But because the
+userspace fences are a separate problem and I haven't really looked at it yet
+I feel it should stay in staging, for now.
 
-> +END(syscall_badsys)
-> +
-> +sysenter_badsys:
-> +	movl $-ENOSYS,PT_EAX(%esp)
-> +	jmp sysenter_after_call
->  END(syscall_badsys)
+---
 
-Although it probably doesn't hurt, you may want to change the above
-'END(syscall_badsys)' to 'END(sysenter_badsys)'.
+Maarten Lankhorst (9):
+      dma-buf: move to drivers/dma-buf
+      fence: dma-buf cross-device synchronization (v18)
+      seqno-fence: Hardware dma-buf implementation of fencing (v6)
+      dma-buf: use reservation objects
+      android: convert sync to fence api, v6
+      reservation: add support for fences to enable cross-device synchronisation
+      dma-buf: add poll support, v3
+      reservation: update api and add some helpers
+      reservation: add suppport for read-only access using rcu
 
-Thanks,
-Quentin
+
+ Documentation/DocBook/device-drivers.tmpl      |    8 
+ MAINTAINERS                                    |    4 
+ drivers/Makefile                               |    1 
+ drivers/base/Kconfig                           |    9 
+ drivers/base/Makefile                          |    1 
+ drivers/base/dma-buf.c                         |  743 --------------------
+ drivers/base/reservation.c                     |   39 -
+ drivers/dma-buf/Makefile                       |    1 
+ drivers/dma-buf/dma-buf.c                      |  907 ++++++++++++++++++++++++
+ drivers/dma-buf/fence.c                        |  431 +++++++++++
+ drivers/dma-buf/reservation.c                  |  477 +++++++++++++
+ drivers/dma-buf/seqno-fence.c                  |   73 ++
+ drivers/gpu/drm/armada/armada_gem.c            |    2 
+ drivers/gpu/drm/drm_prime.c                    |    8 
+ drivers/gpu/drm/exynos/exynos_drm_dmabuf.c     |    2 
+ drivers/gpu/drm/i915/i915_gem_dmabuf.c         |    3 
+ drivers/gpu/drm/nouveau/nouveau_drm.c          |    1 
+ drivers/gpu/drm/nouveau/nouveau_gem.h          |    1 
+ drivers/gpu/drm/nouveau/nouveau_prime.c        |    7 
+ drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c      |    2 
+ drivers/gpu/drm/radeon/radeon_drv.c            |    2 
+ drivers/gpu/drm/radeon/radeon_prime.c          |    8 
+ drivers/gpu/drm/tegra/gem.c                    |    2 
+ drivers/gpu/drm/ttm/ttm_object.c               |    2 
+ drivers/media/v4l2-core/videobuf2-dma-contig.c |    2 
+ drivers/staging/android/Kconfig                |    1 
+ drivers/staging/android/Makefile               |    2 
+ drivers/staging/android/ion/ion.c              |    3 
+ drivers/staging/android/sw_sync.c              |    6 
+ drivers/staging/android/sync.c                 |  913 ++++++++----------------
+ drivers/staging/android/sync.h                 |   79 +-
+ drivers/staging/android/sync_debug.c           |  247 ++++++
+ drivers/staging/android/trace/sync.h           |   12 
+ include/drm/drmP.h                             |    3 
+ include/linux/dma-buf.h                        |   21 -
+ include/linux/fence.h                          |  360 +++++++++
+ include/linux/reservation.h                    |   82 ++
+ include/linux/seqno-fence.h                    |  116 +++
+ include/trace/events/fence.h                   |  128 +++
+ 39 files changed, 3258 insertions(+), 1451 deletions(-)
+ delete mode 100644 drivers/base/dma-buf.c
+ delete mode 100644 drivers/base/reservation.c
+ create mode 100644 drivers/dma-buf/Makefile
+ create mode 100644 drivers/dma-buf/dma-buf.c
+ create mode 100644 drivers/dma-buf/fence.c
+ create mode 100644 drivers/dma-buf/reservation.c
+ create mode 100644 drivers/dma-buf/seqno-fence.c
+ create mode 100644 drivers/staging/android/sync_debug.c
+ create mode 100644 include/linux/fence.h
+ create mode 100644 include/linux/seqno-fence.h
+ create mode 100644 include/trace/events/fence.h
+
+-- 
+Signature
