@@ -1,76 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409AbaGAVJE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:09:04 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:10756 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787AbaGAVI6 (ORCPT
+	id S1753230AbaGAVTR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:19:17 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:61558 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772AbaGAVTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:08:58 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 01 Jul 2014 14:02:27 -0700
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Felipe Balbi <balbi@ti.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>, <linux-usb@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tuomas.tynkkynen@iki.fi>, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH 0/3] Tegra USB probe order issue fix
-Date: Wed, 2 Jul 2014 00:08:40 +0300
-Message-ID: <1404248923-21086-1-git-send-email-ttynkkynen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	Tue, 1 Jul 2014 17:19:15 -0400
+Date: Wed, 2 Jul 2014 02:49:08 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH v2] iio:trigger: Introduce the use of devm_kzalloc
+Message-ID: <20140701211908.GA23193@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+This patch introduces the use of the managed version of kzalloc and
+removes the kfrees in the probe and remove functions. More return
+paths are added and the labels are renamed to order them.
 
-This series fixes a probe order issue with the Tegra EHCI driver.
-Basically, the register area of the 1st USB controller contains some
-registers that are global to all of the controllers, but that are also
-cleared when reset is asserted to the 1st controller. So if (say) the
-3rd controller would be the first one to finish probing successfully,
-then the reset that happens during the 1st controller's probe would
-result in broken USB. So the before doing anything with the USB HW,
-we should reset the 1st controller once, and then never ever reset
-it again.
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+---
+v2: add more return paths
+Not compile tested.
+ drivers/staging/iio/trigger/iio-trig-bfin-timer.c | 31 ++++++++---------------
+ 1 file changed, 11 insertions(+), 20 deletions(-)
 
-However, fixing this without breaking existing device trees is very
-complicated, as the 2nd and 3rd Tegra EHCI controllers don't have a
-phandle to the 1st controller's reset handle, so we have to find it
-the hard way. This is done in patch 2.
-
-Patch 1 is a prerequisite change to the reset control API, so that we
-can get a reset controller reference without a struct device *.
-
-While testing that the 1st USB controller still works without a reset
-when the driver is unbound and bound again, I discovered an unbalanced
-regulator_disable + clk_disable_unprepare in the PHY code if the EHCI
-driver is unbound and rebound. This is fixed in patch 3.
-
-Tested on the Jetson TK1 that the 3rd USB port still works when the
-1st controller is enabled and moved so that it's the last USB
-node in the DT. Also tested that the 1st controller still works
-after an unbind + rebind, even though it's not getting resetted
-during the probe.
-
-Thanks,
-Tuomas
-
-Tuomas Tynkkynen (3):
-  reset: Re-export of_reset_control_get
-  USB: EHCI: tegra: Fix probe order issue leading to broken USB
-  USB: PHY: tegra: Call tegra_usb_phy_close only on device removal
-
- drivers/usb/host/ehci-tegra.c   | 111 ++++++++++++++++++++++++++++++++++++++--
- drivers/usb/phy/phy-tegra-usb.c |   8 ++-
- include/linux/reset.h           |   8 +++
- 3 files changed, 119 insertions(+), 8 deletions(-)
-
+diff --git a/drivers/staging/iio/trigger/iio-trig-bfin-timer.c b/drivers/staging/iio/trigger/iio-trig-bfin-timer.c
+index 16f1a06..a21b7c5 100644
+--- a/drivers/staging/iio/trigger/iio-trig-bfin-timer.c
++++ b/drivers/staging/iio/trigger/iio-trig-bfin-timer.c
+@@ -182,45 +182,40 @@ static int iio_bfin_tmr_trigger_probe(struct platform_device *pdev)
+ 	unsigned int config;
+ 	int ret;
+ 
+-	st = kzalloc(sizeof(*st), GFP_KERNEL);
+-	if (st == NULL) {
+-		ret = -ENOMEM;
+-		goto out;
+-	}
++	st = devm_kzalloc(&pdev->dev, sizeof(*st), GFP_KERNEL);
++	if (st == NULL)
++		return -ENOMEM;
+ 
+ 	st->irq = platform_get_irq(pdev, 0);
+ 	if (!st->irq) {
+ 		dev_err(&pdev->dev, "No IRQs specified");
+-		ret = -ENODEV;
+-		goto out1;
++		return -ENODEV;
+ 	}
+ 
+ 	ret = iio_bfin_tmr_get_number(st->irq);
+ 	if (ret < 0)
+-		goto out1;
++		return ret;
+ 
+ 	st->timer_num = ret;
+ 	st->t = &iio_bfin_timer_code[st->timer_num];
+ 
+ 	st->trig = iio_trigger_alloc("bfintmr%d", st->timer_num);
+-	if (!st->trig) {
+-		ret = -ENOMEM;
+-		goto out1;
+-	}
++	if (!st->trig)
++		return -ENOMEM;
+ 
+ 	st->trig->ops = &iio_bfin_tmr_trigger_ops;
+ 	st->trig->dev.groups = iio_bfin_tmr_trigger_attr_groups;
+ 	iio_trigger_set_drvdata(st->trig, st);
+ 	ret = iio_trigger_register(st->trig);
+ 	if (ret)
+-		goto out2;
++		goto out;
+ 
+ 	ret = request_irq(st->irq, iio_bfin_tmr_trigger_isr,
+ 			  0, st->trig->name, st);
+ 	if (ret) {
+ 		dev_err(&pdev->dev,
+ 			"request IRQ-%d failed", st->irq);
+-		goto out4;
++		goto out1;
+ 	}
+ 
+ 	config = PWM_OUT | PERIOD_CNT | IRQ_ENA;
+@@ -260,13 +255,10 @@ static int iio_bfin_tmr_trigger_probe(struct platform_device *pdev)
+ 	return 0;
+ out_free_irq:
+ 	free_irq(st->irq, st);
+-out4:
+-	iio_trigger_unregister(st->trig);
+-out2:
+-	iio_trigger_put(st->trig);
+ out1:
+-	kfree(st);
++	iio_trigger_unregister(st->trig);
+ out:
++	iio_trigger_put(st->trig);
+ 	return ret;
+ }
+ 
+@@ -280,7 +272,6 @@ static int iio_bfin_tmr_trigger_remove(struct platform_device *pdev)
+ 	free_irq(st->irq, st);
+ 	iio_trigger_unregister(st->trig);
+ 	iio_trigger_put(st->trig);
+-	kfree(st);
+ 
+ 	return 0;
+ }
 -- 
-1.8.1.5
+1.9.1
 
