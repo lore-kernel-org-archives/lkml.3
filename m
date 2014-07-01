@@ -1,142 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758753AbaGAUOL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 16:14:11 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:64384 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758656AbaGAUOI (ORCPT
+	id S1758792AbaGAUOX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 16:14:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54527 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758761AbaGAUOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 16:14:08 -0400
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-X-Google-Original-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH v2 3/3] ima: provide double buffering for hash calculation
-Date: Tue,  1 Jul 2014 23:12:51 +0300
-Message-Id: <6ea50cc1ab984b5dd98e61be0c709a0b82d89dfb.1404245510.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <cover.1404245510.git.d.kasatkin@samsung.com>
-References: <cover.1404245510.git.d.kasatkin@samsung.com>
-In-Reply-To: <cover.1404245510.git.d.kasatkin@samsung.com>
-References: <cover.1404245510.git.d.kasatkin@samsung.com>
+	Tue, 1 Jul 2014 16:14:21 -0400
+Date: Tue, 1 Jul 2014 13:14:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org, ebiederm@xmission.com, hpa@zytor.com,
+        mjg59@srcf.ucam.org, greg@kroah.com, bp@alien8.de, dyoung@redhat.com,
+        chaowang@redhat.com, bhe@redhat.com, linux-efi@vger.kernel.org
+Subject: Re: [PATCH 15/15] kexec: Support kexec/kdump on EFI systems
+Message-Id: <20140701131419.454a3fc32fcc84a43b668c50@linux-foundation.org>
+In-Reply-To: <20140701194605.GJ7539@console-pimps.org>
+References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
+	<1403814824-7587-16-git-send-email-vgoyal@redhat.com>
+	<20140701194605.GJ7539@console-pimps.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Asynchronous hash API allows initiate hash calculation and perform
-other tasks while hash is calculated.
+On Tue, 1 Jul 2014 20:46:05 +0100 Matt Fleming <matt@console-pimps.org> wrote:
 
-This patch introduces usage of double buffering for simultaneous
-hashing and reading of the next chunk of data from the storage.
+> > +int get_efi_runtime_map_size(void)
+> > +{
+> > +	return nr_efi_runtime_map * efi_memdesc_size;
+> > +}
+> > +
+> > +int get_efi_runtime_map_desc_size(void)
+> > +{
+> > +	return efi_memdesc_size;
+> > +}
+> > +
+> > +int efi_runtime_map_copy(void *buf, size_t bufsz)
+> > +{
+> > +	size_t sz = get_efi_runtime_map_size();
+> > +
+> > +	if (sz > bufsz)
+> > +		sz = bufsz;
+> > +
+> > +	memcpy(buf, efi_runtime_map, sz);
+> > +	return 0;
+> > +}
+> 
+> Could we prefix these with efi_, e.g. efi_get_runtime_map_size() ?
 
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+This?
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: kexec-support-kexec-kdump-on-efi-systems-fix
+
+s/get_efi/efi_get/g, per Matt
+
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Matt Fleming <matt@console-pimps.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- security/integrity/ima/ima_crypto.c | 63 +++++++++++++++++++++++++++----------
- 1 file changed, 47 insertions(+), 16 deletions(-)
 
-diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-index 41f2695..69d55a7 100644
---- a/security/integrity/ima/ima_crypto.c
-+++ b/security/integrity/ima/ima_crypto.c
-@@ -239,12 +239,12 @@ static int ima_calc_file_hash_atfm(struct file *file,
- 				   struct crypto_ahash *tfm)
- {
- 	loff_t i_size, offset;
--	char *rbuf;
--	int rc, read = 0, rbuf_len;
-+	char *rbuf[2] = { NULL, };
-+	int rc, read = 0, rbuf_len, active = 0, ahash_rc = 0;
- 	struct ahash_request *req;
- 	struct scatterlist sg[1];
- 	struct ahash_completion res;
--	size_t rbuf_size;
-+	size_t rbuf_size[2];
+ arch/x86/kernel/kexec-bzimage64.c  |    4 ++--
+ drivers/firmware/efi/runtime-map.c |    6 +++---
+ include/linux/efi.h                |    8 ++++----
+ 3 files changed, 9 insertions(+), 9 deletions(-)
+
+diff -puN arch/x86/kernel/kexec-bzimage64.c~kexec-support-kexec-kdump-on-efi-systems-fix arch/x86/kernel/kexec-bzimage64.c
+--- a/arch/x86/kernel/kexec-bzimage64.c~kexec-support-kexec-kdump-on-efi-systems-fix
++++ a/arch/x86/kernel/kexec-bzimage64.c
+@@ -181,7 +181,7 @@ setup_efi_state(struct boot_params *para
+ 	ei->efi_systab_hi = current_ei->efi_systab_hi;
  
- 	hash->length = crypto_ahash_digestsize(tfm);
+ 	ei->efi_memdesc_version = current_ei->efi_memdesc_version;
+-	ei->efi_memdesc_size = get_efi_runtime_map_desc_size();
++	ei->efi_memdesc_size = efi_get_runtime_map_desc_size();
  
-@@ -270,36 +270,67 @@ static int ima_calc_file_hash_atfm(struct file *file,
- 	 * Try to allocate maximum size of memory, fail if not even single
- 	 * page cannot be allocated.
+ 	setup_efi_info_memmap(params, params_load_addr, efi_map_offset,
+ 			      efi_map_sz);
+@@ -397,7 +397,7 @@ void *bzImage64_load(struct kimage *imag
+ 	 * have to create separate segment for each. Keeps things
+ 	 * little bit simple
  	 */
--	rbuf = ima_alloc_pages(i_size, &rbuf_size, 1);
--	if (!rbuf) {
-+	rbuf[0] = ima_alloc_pages(i_size, &rbuf_size[0], 1);
-+	if (!rbuf[0]) {
- 		rc = -ENOMEM;
- 		goto out1;
- 	}
+-	efi_map_sz = get_efi_runtime_map_size();
++	efi_map_sz = efi_get_runtime_map_size();
+ 	efi_map_sz = ALIGN(efi_map_sz, 16);
+ 	params_cmdline_sz = sizeof(struct boot_params) + cmdline_len +
+ 				MAX_ELFCOREHDR_STR_LEN;
+diff -puN drivers/firmware/efi/runtime-map.c~kexec-support-kexec-kdump-on-efi-systems-fix drivers/firmware/efi/runtime-map.c
+--- a/drivers/firmware/efi/runtime-map.c~kexec-support-kexec-kdump-on-efi-systems-fix
++++ a/drivers/firmware/efi/runtime-map.c
+@@ -138,19 +138,19 @@ add_sysfs_runtime_map_entry(struct kobje
+ 	return entry;
+ }
  
-+	/* Only allocate one buffer if that is enough. */
-+	if (i_size > rbuf_size[0]) {
-+		/*
-+		 * Try to allocate secondary buffer if that fails fallback to
-+		 * using single buffering. Use previous memory allocation size
-+		 * as baseline for possible allocation size.
-+		 */
-+		rbuf[1] = ima_alloc_pages(i_size - rbuf_size[0],
-+					  &rbuf_size[1], 0);
-+	}
-+
- 	if (!(file->f_mode & FMODE_READ)) {
- 		file->f_mode |= FMODE_READ;
- 		read = 1;
- 	}
+-int get_efi_runtime_map_size(void)
++int efi_get_runtime_map_size(void)
+ {
+ 	return nr_efi_runtime_map * efi_memdesc_size;
+ }
  
- 	for (offset = 0; offset < i_size; offset += rbuf_len) {
--		rbuf_len = ima_kernel_read(file, offset, rbuf, PAGE_SIZE);
--		if (rbuf_len < 0) {
--			rc = rbuf_len;
--			break;
-+		if (!rbuf[1] && offset) {
-+			/* if we do not use second buffer and it is not the
-+			 * the first read/request, then wait for completion
-+			 */
-+			rc = ahash_wait(ahash_rc, &res);
-+			if (rc)
-+				goto out3;
-+		}
-+		/* read buffer */
-+		rbuf_len = min_t(loff_t, i_size - offset, rbuf_size[active]);
-+		rc = ima_kernel_read(file, offset, rbuf[active], rbuf_len);
-+		if (rc != rbuf_len)
-+			goto out3;
-+
-+		if (rbuf[1] && offset) {
-+			/* if we use second buffer and it is not the the first
-+			 * read/request, then wait for completion
-+			 */
-+			rc = ahash_wait(ahash_rc, &res);
-+			if (rc)
-+				goto out3;
- 		}
--		if (rbuf_len == 0)
--			break;
+-int get_efi_runtime_map_desc_size(void)
++int efi_get_runtime_map_desc_size(void)
+ {
+ 	return efi_memdesc_size;
+ }
  
--		sg_init_one(&sg[0], rbuf, rbuf_len);
-+		sg_init_one(&sg[0], rbuf[active], rbuf_len);
- 		ahash_request_set_crypt(req, sg, NULL, rbuf_len);
+ int efi_runtime_map_copy(void *buf, size_t bufsz)
+ {
+-	size_t sz = get_efi_runtime_map_size();
++	size_t sz = efi_get_runtime_map_size();
  
--		rc = ahash_wait(crypto_ahash_update(req), &res);
--		if (rc)
--			break;
-+		ahash_rc = crypto_ahash_update(req);
-+
-+		if (rbuf[1])
-+			active = !active; /* swap buffers, if we use two */
- 	}
-+	/* wait for the last request to complete */
-+	rc = ahash_wait(ahash_rc, &res);
-+out3:
- 	if (read)
- 		file->f_mode &= ~FMODE_READ;
--	ima_free_pages(rbuf, rbuf_size);
-+	ima_free_pages(rbuf[0], rbuf_size[0]);
-+	ima_free_pages(rbuf[1], rbuf_size[1]);
- out2:
- 	if (!rc) {
- 		ahash_request_set_crypt(req, NULL, hash->digest, 0);
--- 
-1.9.1
+ 	if (sz > bufsz)
+ 		sz = bufsz;
+diff -puN include/linux/efi.h~kexec-support-kexec-kdump-on-efi-systems-fix include/linux/efi.h
+--- a/include/linux/efi.h~kexec-support-kexec-kdump-on-efi-systems-fix
++++ a/include/linux/efi.h
+@@ -1151,8 +1151,8 @@ int efivars_sysfs_init(void);
+ #ifdef CONFIG_EFI_RUNTIME_MAP
+ int efi_runtime_map_init(struct kobject *);
+ void efi_runtime_map_setup(void *, int, u32);
+-int get_efi_runtime_map_size(void);
+-int get_efi_runtime_map_desc_size(void);
++int efi_get_runtime_map_size(void);
++int efi_get_runtime_map_desc_size(void);
+ int efi_runtime_map_copy(void *buf, size_t bufsz);
+ #else
+ static inline int efi_runtime_map_init(struct kobject *kobj)
+@@ -1163,12 +1163,12 @@ static inline int efi_runtime_map_init(s
+ static inline void
+ efi_runtime_map_setup(void *map, int nr_entries, u32 desc_size) {}
+ 
+-static inline int get_efi_runtime_map_size(void)
++static inline int efi_get_runtime_map_size(void)
+ {
+ 	return 0;
+ }
+ 
+-static inline int get_efi_runtime_map_desc_size(void)
++static inline int efi_get_runtime_map_desc_size(void)
+ {
+ 	return 0;
+ }
+_
 
