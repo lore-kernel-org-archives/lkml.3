@@ -1,63 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757961AbaGALO3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 07:14:29 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:52327 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757894AbaGALO0 (ORCPT
+	id S1756775AbaGALYm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 07:24:42 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:11866 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753191AbaGALYk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 07:14:26 -0400
-Message-ID: <53B2974A.6010809@linux.vnet.ibm.com>
-Date: Tue, 01 Jul 2014 16:41:06 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 1 Jul 2014 07:24:40 -0400
+Date: Tue, 1 Jul 2014 12:24:14 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [RFC PATCH 0/6] kernel: Add support for restart notifier call
+ chain
+Message-ID: <20140701112413.GQ18313@arm.com>
+References: <1404155499-21177-1-git-send-email-linux@roeck-us.net>
+ <20140630195946.GI32514@n2100.arm.linux.org.uk>
+ <20140630202851.GA12888@roeck-us.net>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        konrad.wilk@oracle.com, pbonzini@redhat.com, gleb@redhat.com,
-        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
-        waiman.long@hp.com, riel@redhat.com, davej@redhat.com, oleg@redhat.com,
-        x86@kernel.org, jeremy@goop.org, paul.gortmaker@windriver.com,
-        ak@linux.intel.com, jasowang@redhat.com, fernando_b1@lab.ntt.co.jp,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, mtosatti@redhat.com,
-        chegu_vinod@hp.com
-Subject: Re: [RFC PATCH v2] Implement Batched (group) ticket lock
-References: <1403947024-3193-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20140701080537.GH6758@twins.programming.kicks-ass.net> <53B282E9.6060806@linux.vnet.ibm.com> <20140701095521.GO6758@twins.programming.kicks-ass.net>
-In-Reply-To: <20140701095521.GO6758@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070111-5140-0000-0000-00000568E004
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140630202851.GA12888@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>
->> For baremetal we continue to have 'fully fair ticketlock' with this patch
->> series.
->>
->
-> But but but, we're looking at removing ticket locks. So why do we want
-> to invest in them now?
->
+On Mon, Jun 30, 2014 at 09:28:51PM +0100, Guenter Roeck wrote:
+> On Mon, Jun 30, 2014 at 08:59:47PM +0100, Russell King - ARM Linux wrote:
+> > On Mon, Jun 30, 2014 at 12:11:33PM -0700, Guenter Roeck wrote:
+> > > Various drivers implement architecture and/or device specific means
+> > > to restart (reset) the system. Various mechanisms have been implemented
+> > > to support those schemes. The best known mechanism is arm_pm_restart,
+> > > which is a function pointer to be set either from platform specific code
+> > > or from drivers. Another mechanism is to use hardware watchdogs to issue
+> > > a reset; this mechanism is used if there is no other method available
+> > > to reset a board or system. Two examples are alim7101_wdt, which currently
+> > > uses the reboot notifier to trigger a reset, and moxart_wdt, which registers
+> > > the arm_pm_restart function.
+> > > 
+> > > The existing mechanisms have a number of drawbacks. Typically only one scheme
+> > > to restart the system is supported (at least if arm_pm_restart is used).
+> > > At least in theory there can be mutliple means to restart the system, some of
+> > > which may be less desirable (for example one mechanism may only reset the CPU,
+> > > while another may reset the entire system). Using arm_pm_restart can also be
+> > > racy if the function pointer is set from a driver, as the driver may be in
+> > > the process of being unloaded when arm_pm_restart is called.
+> > > Using the reboot notifier is always racy, as it is unknown if and when
+> > > other functions using the reboot notifier have completed execution
+> > > by the time the watchdog fires.
+> > > 
+> > > To solve the problem, introduce a system restart notifier. This notifier
+> > > is expected to be called from the architecture specific machine_restart()
+> > > function. Drivers providing system restart functionality (such as the watchdog
+> > > drivers mentioned above) are expected to register with this notifier.
+> > > 
+> > > Patch 1 of this series implements the notifier function. Patches 2 and 3
+> > > implement calling the notifier chain from arm and arm64 restart code.
+> > > Patch 4 and 5 convert existing restart handlers in the watchdog subsystem
+> > > to use the restart notifier. Patch 6 unexports arm_pm_restart to ensure
+> > > that no one gets the idea to implement a restart handler as module.
+> > 
+> > I think you need to restructure stuff somewhat, because I think
+> > you've missed drivers/power/reset/ entirely, or at least you've
+> > missed drivers/power/reset/restart-poweroff.c which calls
+> > arm_pm_restart directly.  I'm not quite sure how we ended up with
+> > that...
+> 
+> Yes, guess I missed (and did not really expect) that arm_pm_restart
+> is called from multiple places.
 
-I have nothing against qspinlock. I am happy to test it/add any bit to 
-it if I could.
+Most of the ARM-specific code in drivers/power/reset/ consists of SoC
+power-off/restart back-ends (e.g. vexpress-poweroff.c). Since there is
+no generic pm_restart, we continued to use arm_pm_restart (also for
+arm64 since we share some of the drivers). Maybe some driver model here
+would help.
 
-With this patch we get excellent performance for guest with the
-unmodified kernel without affecting host.
+> What is restart-poweroff supposed to do in the first place, and why
+> doesn't it call machine_restart() ? If it is what I think it is, ie
+> a fallback for pm_power_off, it could be made generic and does not
+> really have to depend on ARM.
 
-My test on guest with batch_size =16,32 showed even better performance
-               bs=16      bs=32
-  ebizzy_0.5x   0.14       0.90
-  ebizzy_1.0x   3.57       7.52
-  ebizzy_1.5x  58.97      67.65
-  ebizzy_2.0x 121.55     136.45
+I think this one pretends to do a power-off via restart. It could call
+machine_restart() but this only passes the default reboot_mode to
+arm_pm_restart().
 
-
-
-
+-- 
+Catalin
