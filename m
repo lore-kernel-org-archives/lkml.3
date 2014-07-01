@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542AbaGAVr4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:47:56 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.217]:22109 "EHLO
+	id S1757443AbaGAVrz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:47:55 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.217]:30732 "EHLO
 	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755073AbaGAVrj (ORCPT
+	with ESMTP id S1755336AbaGAVrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Jul 2014 17:47:39 -0400
 X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
 X-RZG-CLASS-ID: mo00
 From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 10/50] mars: add new file drivers/block/mars/brick.c
-Date: Tue,  1 Jul 2014 23:46:50 +0200
-Message-Id: <1404251250-22992-11-git-send-email-tst@schoebel-theuer.de>
+Subject: [PATCH 09/50] mars: add new file include/linux/brick/brick.h
+Date: Tue,  1 Jul 2014 23:46:49 +0200
+Message-Id: <1404251250-22992-10-git-send-email-tst@schoebel-theuer.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
@@ -23,817 +23,648 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 ---
- drivers/block/mars/brick.c | 801 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 801 insertions(+)
- create mode 100644 drivers/block/mars/brick.c
+ include/linux/brick/brick.h | 632 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 632 insertions(+)
+ create mode 100644 include/linux/brick/brick.h
 
-diff --git a/drivers/block/mars/brick.c b/drivers/block/mars/brick.c
+diff --git a/include/linux/brick/brick.h b/include/linux/brick/brick.h
 new file mode 100644
-index 0000000..8826a0d
+index 0000000..14769b2
 --- /dev/null
-+++ b/drivers/block/mars/brick.c
-@@ -0,0 +1,801 @@
++++ b/include/linux/brick/brick.h
+@@ -0,0 +1,632 @@
 +/*  (c) 2010 Thomas Schoebel-Theuer / 1&1 Internet AG */
++#ifndef BRICK_H
++#define BRICK_H
 +
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/string.h>
++#include <linux/list.h>
++#include <linux/sched.h>
++#include <linux/wait.h>
++#include <linux/kthread.h>
 +
-+#define _STRATEGY
++#include <linux/atomic.h>
 +
-+#include <linux/brick/brick.h>
-+#include <linux/brick/brick_mem.h>
++#include <linux/brick/brick_say.h>
++#include <linux/brick/meta.h>
 +
-+/************************************************************/
++#define MAX_BRICK_TYPES			64
 +
-+/*  init / exit functions */
++#define brick_msleep(msecs) _brick_msleep(msecs, false)
++extern int _brick_msleep(int msecs, bool shorten);
++#define brick_yield() brick_msleep(0)
 +
-+void _generic_output_init(struct generic_brick *brick,
++/***********************************************************************/
++
++/*  printk() replacements */
++
++#define SAFE_STR(str) ((str) ? (str) : "NULL")
++
++#define _BRICK_MSG(_class, _dump, _fmt, _args...)			\
++	brick_say(_class, _dump, "BRICK", __BASE_FILE__, __LINE__, __func__, _fmt, ##_args)
++
++#define BRICK_FAT(_fmt, _args...) _BRICK_MSG(SAY_FATAL, true,  _fmt, ##_args)
++#define BRICK_ERR(_fmt, _args...) _BRICK_MSG(SAY_ERROR, false, _fmt, ##_args)
++#define BRICK_WRN(_fmt, _args...) _BRICK_MSG(SAY_WARN,	false, _fmt, ##_args)
++#define BRICK_INF(_fmt, _args...) _BRICK_MSG(SAY_INFO,	false, _fmt, ##_args)
++
++#ifdef BRICK_DEBUGGING
++#define BRICK_DBG(_fmt, _args...) _BRICK_MSG(SAY_DEBUG, false, _fmt, ##_args)
++#else
++#define BRICK_DBG(_args...) /**/
++#endif
++
++#include <linux/brick/brick_checking.h>
++
++/***********************************************************************/
++
++/*  number management helpers */
++
++extern int get_brick_nr(void);
++extern void put_brick_nr(int nr);
++
++/***********************************************************************/
++
++/*  definitions for generic objects with aspects */
++
++struct generic_object;
++struct generic_aspect;
++
++#define GENERIC_ASPECT_TYPE(OBJTYPE)					\
++	/* readonly from outside */					\
++	const char *aspect_type_name;					\
++	const struct generic_object_type *object_type;			\
++	/* private */							\
++	int  aspect_size;						\
++	int  (*init_fn)(struct OBJTYPE##_aspect *ini);			\
++	void (*exit_fn)(struct OBJTYPE##_aspect *ini);			\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct generic_aspect_type {
++	GENERIC_ASPECT_TYPE(generic);
++};
++
++#define GENERIC_OBJECT_TYPE(OBJTYPE)					\
++	/* readonly from outside */					\
++	const char *object_type_name;					\
++	/* private */							\
++	int default_size;						\
++	int object_type_nr;						\
++	int  (*init_fn)(struct OBJTYPE##_object *ini);			\
++	void (*exit_fn)(struct OBJTYPE##_object *ini);			\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct generic_object_type {
++	GENERIC_OBJECT_TYPE(generic);
++};
++
++#define GENERIC_OBJECT_LAYOUT(OBJTYPE)					\
++	/* private */							\
++	int size_hint;							\
++	atomic_t alloc_count;						\
++	atomic_t aspect_count;						\
++	atomic_t total_alloc_count;					\
++	atomic_t total_aspect_count;					\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct generic_object_layout {
++	GENERIC_OBJECT_LAYOUT(generic);
++};
++
++#define GENERIC_OBJECT(OBJTYPE)						\
++	/* maintenance, access by macros */				\
++	atomic_t obj_count;	  /* reference counter */		\
++	bool	 obj_initialized; /* internally used for checking */	\
++	/* readonly from outside */					\
++	const struct generic_object_type *object_type;			\
++	/* private */							\
++	struct generic_object_layout *object_layout;			\
++	struct OBJTYPE##_aspect **aspects;				\
++	int aspect_nr_max;						\
++	int free_offset;						\
++	int max_offset;							\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct generic_object {
++	GENERIC_OBJECT(generic);
++};
++
++#define GENERIC_ASPECT(OBJTYPE)						\
++	/* readonly from outside */					\
++	struct OBJTYPE##_object *object;				\
++	const struct generic_aspect_type *aspect_type;			\
++	/* private */							\
++	bool shortcut;							\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct generic_aspect {
++	GENERIC_ASPECT(generic);
++};
++
++#define GENERIC_ASPECT_CONTEXT(OBJTYPE)					\
++	/* private (for any layer) */					\
++	int brick_index; /* globally unique */				\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct generic_aspect_context {
++	GENERIC_ASPECT_CONTEXT(generic);
++};
++
++#define obj_check(aio)							\
++	({								\
++		if (unlikely(BRICK_CHECKING && !(aio)->obj_initialized)) {\
++			XIO_ERR("aio %p is not initialized\n", (aio));	\
++		}							\
++		CHECK_ATOMIC(&(aio)->obj_count, 1);			\
++	})
++
++#define obj_get_first(aio)						\
++	({								\
++		if (unlikely(BRICK_CHECKING && (aio)->obj_initialized)) {\
++			XIO_ERR("aio %p is already initialized\n", (aio));\
++		}							\
++		_CHECK_ATOMIC(&(aio)->obj_count, !=, 0);		\
++		(aio)->obj_initialized = true;				\
++		atomic_inc(&(aio)->obj_count);				\
++	})
++
++#define obj_get(aio)							\
++	({								\
++		obj_check(aio);						\
++		atomic_inc(&(aio)->obj_count);				\
++	})
++
++#define obj_put(aio)							\
++	({								\
++		obj_check(aio);						\
++		atomic_dec_and_test(&(aio)->obj_count);			\
++	})
++
++#define obj_free(aio)							\
++	({								\
++		if (likely(aio)) {					\
++			generic_free((struct generic_object *)(aio));	\
++		}							\
++	})
++
++/***********************************************************************/
++
++/*  definitions for asynchronous callback objects */
++
++#define GENERIC_CALLBACK(OBJTYPE)					\
++	/* set by macros, afterwards readonly from outside */		\
++	void (*cb_fn)(struct OBJTYPE##_callback *cb);			\
++	void  *cb_private;						\
++	int    cb_error;						\
++	/* private */							\
++	struct generic_callback *cb_next;				\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct generic_callback {
++	GENERIC_CALLBACK(generic);
++};
++
++#define CALLBACK_OBJECT(OBJTYPE)					\
++	GENERIC_OBJECT(OBJTYPE);					\
++	/* private, access by macros */					\
++	struct generic_callback *object_cb;				\
++	struct generic_callback _object_cb;				\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct callback_object {
++	CALLBACK_OBJECT(generic);
++};
++
++/* Initial setup of the callback chain
++ */
++#define _SETUP_CALLBACK(obj, fn, priv)					\
++do {									\
++	(obj)->_object_cb.cb_fn = (fn);					\
++	(obj)->_object_cb.cb_private = (priv);				\
++	(obj)->_object_cb.cb_error = 0;					\
++	(obj)->_object_cb.cb_next = NULL;				\
++	(obj)->object_cb = &(obj)->_object_cb;				\
++} while (0)
++
++#ifdef BRICK_DEBUGGING
++#define SETUP_CALLBACK(obj, fn, priv)					\
++do {									\
++	if (unlikely((obj)->_object_cb.cb_fn)) {			\
++		BRICK_ERR("callback function %p is already installed (new=%p)\n",\
++			  (obj)->_object_cb.cb_fn, (fn));		\
++	}								\
++	_SETUP_CALLBACK(obj, fn, priv)					\
++} while (0)
++#else
++#define SETUP_CALLBACK(obj, fn, priv) _SETUP_CALLBACK(obj, fn, priv)
++#endif
++
++/* Insert a new member into the callback chain
++ */
++#define _INSERT_CALLBACK(obj, new, fn, priv)				\
++do {									\
++	if (likely(!(new)->cb_fn)) {					\
++		(new)->cb_fn = (fn);					\
++		(new)->cb_private = (priv);				\
++		(new)->cb_error = 0;					\
++		(new)->cb_next = (obj)->object_cb;			\
++		(obj)->object_cb = (new);				\
++	}								\
++} while (0)
++
++#ifdef BRICK_DEBUGGING
++#define INSERT_CALLBACK(obj, new, fn, priv)				\
++do {									\
++	if (unlikely(!(obj)->_object_cb.cb_fn)) {			\
++		BRICK_ERR("initical callback function is missing\n");	\
++	}								\
++	if (unlikely((new)->cb_fn)) {					\
++		BRICK_ERR("new object %p is not pristine\n", (new)->cb_fn);\
++	}								\
++	_INSERT_CALLBACK(obj, new, fn, priv);				\
++} while (0)
++#else
++#define INSERT_CALLBACK(obj, new, fn, priv) _INSERT_CALLBACK(obj, new, fn, priv)
++#endif
++
++/* Call the first callback in the chain.
++ */
++#define SIMPLE_CALLBACK(obj, err)					\
++do {									\
++	if (likely(obj)) {						\
++		struct generic_callback *__cb = (obj)->object_cb;	\
++		if (likely(__cb)) {					\
++			__cb->cb_error = (err);				\
++			__cb->cb_fn(__cb);				\
++		} else {						\
++			BRICK_ERR("callback object_cb pointer is NULL\n");\
++		}							\
++	} else {							\
++		BRICK_ERR("callback obj pointer is NULL\n");		\
++	}								\
++} while (0)
++
++#define CHECKED_CALLBACK(obj, err, done)				\
++do {									\
++	struct generic_callback *__cb;					\
++	CHECK_PTR(obj, done);						\
++	__cb = (obj)->object_cb;					\
++	CHECK_PTR_NULL(__cb, done);					\
++	__cb->cb_error = (err);						\
++	__cb->cb_fn(__cb);						\
++} while (0)
++
++/* An intermediate callback handler must call this
++ * to continue the callback chain.
++ */
++#define NEXT_CHECKED_CALLBACK(cb, done)					\
++do {									\
++	struct generic_callback *__next_cb = (cb)->cb_next;		\
++	CHECK_PTR_NULL(__next_cb, done);				\
++	__next_cb->cb_error = (cb)->cb_error;				\
++	__next_cb->cb_fn(__next_cb);					\
++} while (0)
++
++/* The last callback handler in the chain should call this
++ * for checking whether the end of the chain has been reached
++ */
++#define LAST_CALLBACK(cb)						\
++do {									\
++	struct generic_callback *__next_cb = (cb)->cb_next;		\
++	if (unlikely(__next_cb)) {					\
++		BRICK_ERR("end of callback chain %p has not been reached, rest = %p\n", (cb), __next_cb);\
++	}								\
++} while (0)
++
++/* Query the callback status.
++ * This uses always the first member of the chain!
++ */
++#define CALLBACK_ERROR(obj)						\
++	((obj)->object_cb ? (obj)->object_cb->cb_error : -EINVAL)
++
++/***********************************************************************/
++
++/*  definitions for generic bricks */
++
++struct generic_input;
++struct generic_output;
++struct generic_brick_ops;
++struct generic_output_ops;
++struct generic_brick_type;
++
++struct generic_switch {
++	/* set by strategy layer, readonly from worker layer */
++	bool button;
++
++	/* set by worker layer, readonly from strategy layer */
++	bool on_led;
++	bool off_led;
++
++	/* private (for any layer) */
++	bool force_off;
++	int  percent_done;
++
++	wait_queue_head_t event;
++};
++
++#define GENERIC_BRICK(BRITYPE)						\
++	/* accessible */						\
++	struct generic_switch power;					\
++	/* set by strategy layer, readonly from worker layer */		\
++	const struct BRITYPE##_brick_type *type;			\
++	int nr_inputs;							\
++	int nr_outputs;							\
++	struct BRITYPE##_input **inputs;				\
++	struct BRITYPE##_output **outputs;				\
++	/* private (for any layer) */					\
++	struct BRITYPE##_brick_ops *ops;				\
++	struct generic_aspect_context aspect_context;			\
++	int (*free)(struct BRITYPE##_brick *del);			\
++	struct list_head tmp_head;					\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct generic_brick {
++	GENERIC_BRICK(generic);
++};
++
++#define GENERIC_INPUT(BRITYPE)						\
++	/* set by strategy layer, readonly from worker layer */		\
++	struct BRITYPE##_brick *brick;					\
++	const struct BRITYPE##_input_type *type;			\
++	/* private (for any layer) */					\
++	struct BRITYPE##_output *connect;				\
++	struct list_head input_head;					\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct generic_input {
++	GENERIC_INPUT(generic);
++};
++
++#define GENERIC_OUTPUT(BRITYPE)						\
++	/* set by strategy layer, readonly from worker layer */		\
++	struct BRITYPE##_brick *brick;					\
++	const struct BRITYPE##_output_type *type;			\
++	/* private (for any layer) */					\
++	struct BRITYPE##_output_ops *ops;				\
++	struct list_head output_head;					\
++	int nr_connected;						\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct generic_output {
++	GENERIC_OUTPUT(generic);
++};
++
++#define GENERIC_OUTPUT_CALL(OUTPUT, OP, ARGS...)			\
++	(								\
++		(OUTPUT) && (OUTPUT)->ops->OP ?				\
++		(OUTPUT)->ops->OP(OUTPUT, ##ARGS) :			\
++		-ENOSYS							\
++	)
++
++#define GENERIC_INPUT_CALL(INPUT, OP, ARGS...)				\
++	(								\
++		(INPUT) && (INPUT)->connect ?				\
++		GENERIC_OUTPUT_CALL((INPUT)->connect, OP, ##ARGS) :	\
++		-ENOTCONN						\
++	)
++
++#define GENERIC_BRICK_OPS(BRITYPE)					\
++	int (*brick_switch)(struct BRITYPE##_brick *brick);		\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct generic_brick_ops {
++	GENERIC_BRICK_OPS(generic);
++};
++
++#define GENERIC_OUTPUT_OPS(BRITYPE)					\
++	/*int (*output_start)(struct BRITYPE##_output *output);*/	\
++	/*int (*output_stop)(struct BRITYPE##_output *output);*/	\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct generic_output_ops {
++	GENERIC_OUTPUT_OPS(generic)
++};
++
++/*  although possible, *_type should never be extended */
++#define GENERIC_BRICK_TYPE(BRITYPE)					\
++	/* set by strategy layer, readonly from worker layer */		\
++	const char *type_name;						\
++	int max_inputs;							\
++	int max_outputs;						\
++	const struct BRITYPE##_input_type **default_input_types;	\
++	const char **default_input_names;				\
++	const struct BRITYPE##_output_type **default_output_types;	\
++	const char **default_output_names;				\
++	/* private (for any layer) */					\
++	int brick_size;							\
++	struct BRITYPE##_brick_ops *master_ops;				\
++	const struct generic_aspect_type **aspect_types;		\
++	const struct BRITYPE##_input_types **default_type;		\
++	int (*brick_construct)(struct BRITYPE##_brick *brick);		\
++	int (*brick_destruct)(struct BRITYPE##_brick *brick);		\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct generic_brick_type {
++	GENERIC_BRICK_TYPE(generic);
++};
++
++#define GENERIC_INPUT_TYPE(BRITYPE)					\
++	/* set by strategy layer, readonly from worker layer */		\
++	char *type_name;						\
++	/* private (for any layer) */					\
++	int input_size;							\
++	int (*input_construct)(struct BRITYPE##_input *input);		\
++	int (*input_destruct)(struct BRITYPE##_input *input);		\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct generic_input_type {
++	GENERIC_INPUT_TYPE(generic);
++};
++
++#define GENERIC_OUTPUT_TYPE(BRITYPE)					\
++	/* set by strategy layer, readonly from worker layer */		\
++	char *type_name;						\
++	/* private (for any layer) */					\
++	int output_size;						\
++	struct BRITYPE##_output_ops *master_ops;			\
++	int (*output_construct)(struct BRITYPE##_output *output);	\
++	int (*output_destruct)(struct BRITYPE##_output *output);	\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct generic_output_type {
++	GENERIC_OUTPUT_TYPE(generic);
++};
++
++int generic_register_brick_type(const struct generic_brick_type *new_type);
++int generic_unregister_brick_type(const struct generic_brick_type *old_type);
++
++extern void _generic_output_init(struct generic_brick *brick,
 +	const struct generic_output_type *type,
-+	struct generic_output *output)
-+{
-+	output->brick = brick;
-+	output->type = type;
-+	output->ops = type->master_ops;
-+	output->nr_connected = 0;
-+	INIT_LIST_HEAD(&output->output_head);
-+}
-+EXPORT_SYMBOL_GPL(_generic_output_init);
++	struct generic_output *output);
 +
-+void _generic_output_exit(struct generic_output *output)
-+{
-+	list_del_init(&output->output_head);
-+	output->brick = NULL;
-+	output->type = NULL;
-+	output->ops = NULL;
-+	output->nr_connected = 0;
-+}
-+EXPORT_SYMBOL_GPL(_generic_output_exit);
++extern void _generic_output_exit(struct generic_output *output);
 +
-+int generic_brick_init(const struct generic_brick_type *type, struct generic_brick *brick)
-+{
-+	brick->aspect_context.brick_index = get_brick_nr();
-+	brick->type = type;
-+	brick->ops = type->master_ops;
-+	brick->nr_inputs = 0;
-+	brick->nr_outputs = 0;
-+	brick->power.off_led = true;
-+	init_waitqueue_head(&brick->power.event);
-+	INIT_LIST_HEAD(&brick->tmp_head);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(generic_brick_init);
++#ifdef _STRATEGY /*  call this only in strategy bricks, never in ordinary bricks */
 +
-+void generic_brick_exit(struct generic_brick *brick)
-+{
-+	list_del_init(&brick->tmp_head);
-+	brick->type = NULL;
-+	brick->ops = NULL;
-+	brick->nr_inputs = 0;
-+	brick->nr_outputs = 0;
-+	put_brick_nr(brick->aspect_context.brick_index);
-+}
-+EXPORT_SYMBOL_GPL(generic_brick_exit);
++/*  you need this only if you circumvent generic_brick_init_full() */
++extern int generic_brick_init(const struct generic_brick_type *type, struct generic_brick *brick);
 +
-+int generic_input_init(struct generic_brick *brick,
++extern void generic_brick_exit(struct generic_brick *brick);
++
++extern int generic_input_init(struct generic_brick *brick,
 +	int index,
 +	const struct generic_input_type *type,
-+	struct generic_input *input)
-+{
-+	if (index < 0 || index >= brick->type->max_inputs)
-+		return -EINVAL;
-+	if (brick->inputs[index])
-+		return -EEXIST;
-+	input->brick = brick;
-+	input->type = type;
-+	input->connect = NULL;
-+	INIT_LIST_HEAD(&input->input_head);
-+	brick->inputs[index] = input;
-+	brick->nr_inputs++;
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(generic_input_init);
++	struct generic_input *input);
 +
-+void generic_input_exit(struct generic_input *input)
-+{
-+	list_del_init(&input->input_head);
-+	input->brick = NULL;
-+	input->type = NULL;
-+	input->connect = NULL;
-+}
-+EXPORT_SYMBOL_GPL(generic_input_exit);
++extern void generic_input_exit(struct generic_input *input);
 +
-+int generic_output_init(struct generic_brick *brick,
++extern int generic_output_init(struct generic_brick *brick,
 +	int index,
 +	const struct generic_output_type *type,
-+	struct generic_output *output)
-+{
-+	if (index < 0 || index >= brick->type->max_outputs)
-+		return -ENOMEM;
-+	if (brick->outputs[index])
-+		return -EEXIST;
-+	_generic_output_init(brick, type, output);
-+	brick->outputs[index] = output;
-+	brick->nr_outputs++;
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(generic_output_init);
++	struct generic_output *output);
 +
-+int generic_size(const struct generic_brick_type *brick_type)
-+{
-+	int size = brick_type->brick_size;
-+	int i;
++extern int generic_size(const struct generic_brick_type *brick_type);
 +
-+	size += brick_type->max_inputs * sizeof(void *);
-+	for (i = 0; i < brick_type->max_inputs; i++)
-+		size += brick_type->default_input_types[i]->input_size;
-+	size += brick_type->max_outputs * sizeof(void *);
-+	for (i = 0; i < brick_type->max_outputs; i++)
-+		size += brick_type->default_output_types[i]->output_size;
-+	return size;
-+}
-+EXPORT_SYMBOL_GPL(generic_size);
++extern int generic_connect(struct generic_input *input, struct generic_output *output);
 +
-+int generic_connect(struct generic_input *input, struct generic_output *output)
-+{
-+	BRICK_DBG("generic_connect(input=%p, output=%p)\n", input, output);
-+	if (unlikely(!input || !output))
-+		return -EINVAL;
-+	if (unlikely(input->connect))
-+		return -EEXIST;
-+	if (unlikely(!list_empty(&input->input_head)))
-+		return -EINVAL;
-+	/*  helps only against the most common errors */
-+	if (unlikely(input->brick == output->brick))
-+		return -EDEADLK;
++extern int generic_disconnect(struct generic_input *input);
 +
-+	input->connect = output;
-+	output->nr_connected++;
-+	list_add(&input->input_head, &output->output_head);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(generic_connect);
-+
-+int generic_disconnect(struct generic_input *input)
-+{
-+	struct generic_output *connect;
-+
-+	BRICK_DBG("generic_disconnect(input=%p)\n", input);
-+	if (!input)
-+		return -EINVAL;
-+	connect = input->connect;
-+	if (connect) {
-+		connect->nr_connected--;
-+		input->connect = NULL;
-+		list_del_init(&input->input_head);
-+	}
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(generic_disconnect);
-+
-+/************************************************************/
-+
-+/*  general */
-+
-+int _brick_msleep(int msecs, bool shorten)
-+{
-+	unsigned long timeout;
-+
-+	flush_signals(current);
-+	if (msecs <= 0) {
-+		schedule();
-+		return 0;
-+	}
-+	timeout = msecs_to_jiffies(msecs) + 1;
-+
-+	timeout = schedule_timeout_interruptible(timeout);
-+
-+	if (!shorten) {
-+		while ((long)timeout > 0)
-+			timeout = schedule_timeout_uninterruptible(timeout);
-+	}
-+
-+	return jiffies_to_msecs(timeout);
-+}
-+EXPORT_SYMBOL_GPL(_brick_msleep);
-+
-+struct kthread {
-+	unsigned long flags;
-+	unsigned int cpu;
-+	void *data;
-+	struct completion parked;
-+	struct completion exited;
-+};
-+
-+enum KTHREAD_BITS {
-+	KTHREAD_IS_PER_CPU = 0,
-+	KTHREAD_SHOULD_STOP,
-+	KTHREAD_SHOULD_PARK,
-+	KTHREAD_IS_PARKED,
-+};
-+
-+#define to_kthread(tsk)							\
-+	container_of((tsk)->vfork_done, struct kthread, exited)
-+
-+/**
-+ * kthread_stop_nowait - like kthread_stop(), but don't wait for termination.
-+ * @k: thread created by kthread_create().
-+ *
-+ * If threadfn() may call do_exit() itself, the caller must ensure
-+ * task_struct can't go away.
-+ *
-+ * Therefore, you must not call this twice (or after kthread_stop()), at least
-+ * if you don't get_task_struct() yourself.
++/* If possible, use this instead of generic_*_init().
++ * input_types and output_types may be NULL => use default_*_types
 + */
-+static struct kthread *task_get_live_kthread(struct task_struct *k)
-+{
-+	struct kthread *kthread;
-+
-+	get_task_struct(k);
-+	kthread = to_kthread(k);
-+	/* It might have exited */
-+	barrier();
-+	if (k->vfork_done != NULL)
-+		return kthread;
-+	return NULL;
-+}
-+
-+void kthread_stop_nowait(struct task_struct *k)
-+{
-+	struct kthread *kthread = task_get_live_kthread(k);
-+
-+	if (kthread) {
-+		set_bit(KTHREAD_SHOULD_STOP, &kthread->flags);
-+		clear_bit(KTHREAD_SHOULD_PARK, &kthread->flags);
-+		wake_up_process(k);
-+		wait_for_completion(&kthread->exited);
-+	}
-+
-+	put_task_struct(k);
-+}
-+EXPORT_SYMBOL_GPL(kthread_stop_nowait);
-+
-+void brick_thread_stop_nowait(struct task_struct *k)
-+{
-+	kthread_stop_nowait(k);
-+}
-+EXPORT_SYMBOL_GPL(brick_thread_stop_nowait);
-+
-+/************************************************************/
-+
-+/*  number management */
-+
-+static char *nr_table;
-+int nr_max = 256;
-+EXPORT_SYMBOL_GPL(nr_max);
-+
-+int get_brick_nr(void)
-+{
-+	char *new;
-+	int nr;
-+
-+	if (unlikely(!nr_table))
-+		nr_table = brick_zmem_alloc(nr_max);
-+
-+	for (;;) {
-+		for (nr = 1; nr < nr_max; nr++) {
-+			if (!nr_table[nr]) {
-+				nr_table[nr] = 1;
-+				return nr;
-+			}
-+		}
-+		new = brick_zmem_alloc(nr_max << 1);
-+		memcpy(new, nr_table, nr_max);
-+		brick_mem_free(nr_table);
-+		nr_table = new;
-+		nr_max <<= 1;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(get_brick_nr);
-+
-+void put_brick_nr(int nr)
-+{
-+	if (likely(nr_table && nr > 0 && nr < nr_max))
-+		nr_table[nr] = 0;
-+}
-+EXPORT_SYMBOL_GPL(put_brick_nr);
-+
-+/************************************************************/
-+
-+/*  object stuff */
-+
-+/************************************************************/
-+
-+/*  brick stuff */
-+
-+static int nr_brick_types;
-+static const struct generic_brick_type *brick_types[MAX_BRICK_TYPES];
-+
-+int generic_register_brick_type(const struct generic_brick_type *new_type)
-+{
-+	int i;
-+	int found = -1;
-+
-+	BRICK_DBG("generic_register_brick_type() name=%s\n", new_type->type_name);
-+	for (i = 0; i < nr_brick_types; i++) {
-+		if (!brick_types[i]) {
-+			found = i;
-+			continue;
-+		}
-+		if (!strcmp(brick_types[i]->type_name, new_type->type_name))
-+			return 0;
-+	}
-+	if (found < 0) {
-+		if (nr_brick_types >= MAX_BRICK_TYPES) {
-+			BRICK_ERR("sorry, cannot register bricktype %s.\n", new_type->type_name);
-+			return -ENOMEM;
-+		}
-+		found = nr_brick_types++;
-+	}
-+	brick_types[found] = new_type;
-+	BRICK_DBG("generic_register_brick_type() done.\n");
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(generic_register_brick_type);
-+
-+int generic_unregister_brick_type(const struct generic_brick_type *old_type)
-+{
-+	BRICK_DBG("generic_unregister_brick_type()\n");
-+	return -1; /*  NYI */
-+}
-+EXPORT_SYMBOL_GPL(generic_unregister_brick_type);
-+
 +int generic_brick_init_full(
 +	void *data,
 +	int size,
 +	const struct generic_brick_type *brick_type,
 +	const struct generic_input_type **input_types,
-+	const struct generic_output_type **output_types)
-+{
-+	struct generic_brick *brick = data;
-+	int status;
-+	int i;
++	const struct generic_output_type **output_types);
 +
-+	if (unlikely(!data)) {
-+		BRICK_ERR("invalid memory\n");
-+		return -EINVAL;
-+	}
++int generic_brick_exit_full(
++	struct generic_brick *brick);
 +
-+	/*  call the generic constructors */
++#endif /*  _STRATEGY */
 +
-+	status = generic_brick_init(brick_type, brick);
-+	if (status)
-+		return status;
-+	data += brick_type->brick_size;
-+	size -= brick_type->brick_size;
-+	if (size < 0) {
-+		BRICK_ERR("Not enough MEMORY\n");
-+		return -ENOMEM;
-+	}
-+	if (!input_types) {
-+		input_types = brick_type->default_input_types;
-+		if (unlikely(!input_types)) {
-+			BRICK_ERR("no input types specified\n");
-+			return -EINVAL;
-+		}
-+	}
-+	brick->inputs = data;
-+	data += sizeof(void *) * brick_type->max_inputs;
-+	size -= sizeof(void *) * brick_type->max_inputs;
-+	if (size < 0)
-+		return -ENOMEM;
-+	for (i = 0; i < brick_type->max_inputs; i++) {
-+		struct generic_input *input = data;
-+		const struct generic_input_type *type = *input_types++;
++/*  simple wrappers for type safety */
 +
-+		if (!type || type->input_size <= 0)
-+			return -EINVAL;
-+		BRICK_DBG("generic_brick_init_full: calling generic_input_init()\n");
-+		status = generic_input_init(brick, i, type, input);
-+		if (status < 0)
-+			return status;
-+		data += type->input_size;
-+		size -= type->input_size;
-+		if (size < 0)
-+			return -ENOMEM;
-+	}
-+	if (!output_types) {
-+		output_types = brick_type->default_output_types;
-+		if (unlikely(!output_types)) {
-+			BRICK_ERR("no output types specified\n");
-+			return -EINVAL;
-+		}
-+	}
-+	brick->outputs = data;
-+	data += sizeof(void *) * brick_type->max_outputs;
-+	size -= sizeof(void *) * brick_type->max_outputs;
-+	if (size < 0)
-+		return -ENOMEM;
-+	for (i = 0; i < brick_type->max_outputs; i++) {
-+		struct generic_output *output = data;
-+		const struct generic_output_type *type = *output_types++;
++#define DECLARE_BRICK_FUNCTIONS(BRITYPE)				\
++extern inline int BRITYPE##_register_brick_type(void)			\
++{									\
++	extern const struct BRITYPE##_brick_type BRITYPE##_brick_type;	\
++	extern int BRITYPE##_brick_nr;					\
++	if (unlikely(BRITYPE##_brick_nr >= 0)) {			\
++		BRICK_ERR("brick type " #BRITYPE " is already registered.\n");\
++		return -EEXIST;						\
++	}								\
++	BRITYPE##_brick_nr = generic_register_brick_type((const struct generic_brick_type *)&BRITYPE##_brick_type);\
++	return BRITYPE##_brick_nr < 0 ? BRITYPE##_brick_nr : 0;		\
++}									\
++									\
++extern inline int BRITYPE##_unregister_brick_type(void)			\
++{									\
++	extern const struct BRITYPE##_brick_type BRITYPE##_brick_type;	\
++	return generic_unregister_brick_type((const struct generic_brick_type *)&BRITYPE##_brick_type);\
++}									\
++									\
++extern const struct BRITYPE##_brick_type BRITYPE##_brick_type;		\
++extern const struct BRITYPE##_input_type BRITYPE##_input_type;		\
++extern const struct BRITYPE##_output_type BRITYPE##_output_type;	\
++/* this comment is for keeping TRAILING_SEMICOLON happy */
 +
-+		if (!type || type->output_size <= 0)
-+			return -EINVAL;
-+		BRICK_DBG("generic_brick_init_full: calling generic_output_init()\n");
-+		generic_output_init(brick, i, type, output);
-+		if (status < 0)
-+			return status;
-+		data += type->output_size;
-+		size -= type->output_size;
-+		if (size < 0)
-+			return -ENOMEM;
-+	}
++/*********************************************************************/
 +
-+	/*  call the specific constructors */
-+	if (brick_type->brick_construct) {
-+		BRICK_DBG("generic_brick_init_full: calling brick_construct()\n");
-+		status = brick_type->brick_construct(brick);
-+		if (status < 0)
-+			return status;
-+	}
-+	for (i = 0; i < brick_type->max_inputs; i++) {
-+		struct generic_input *input = brick->inputs[i];
++/*  default operations on objects / aspects */
 +
-+		if (!input)
-+			continue;
-+		if (!input->type) {
-+			BRICK_ERR("input has no associated type!\n");
-+			continue;
-+		}
-+		if (input->type->input_construct) {
-+			BRICK_DBG("generic_brick_init_full: calling input_construct()\n");
-+			status = input->type->input_construct(input);
-+			if (status < 0)
-+				return status;
-+		}
-+	}
-+	for (i = 0; i < brick_type->max_outputs; i++) {
-+		struct generic_output *output = brick->outputs[i];
++extern struct generic_object *generic_alloc(struct generic_object_layout *object_layout,
++	const struct generic_object_type *object_type);
 +
-+		if (!output)
-+			continue;
-+		if (!output->type) {
-+			BRICK_ERR("output has no associated type!\n");
-+			continue;
-+		}
-+		if (output->type->output_construct) {
-+			BRICK_DBG("generic_brick_init_full: calling output_construct()\n");
-+			status = output->type->output_construct(output);
-+			if (status < 0)
-+				return status;
-+		}
-+	}
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(generic_brick_init_full);
++extern void generic_free(struct generic_object *object);
++extern struct generic_aspect *generic_get_aspect(struct generic_brick *brick, struct generic_object *obj);
 +
-+int generic_brick_exit_full(struct generic_brick *brick)
-+{
-+	int i;
-+	int status;
-+
-+	/*  first, check all outputs */
-+	for (i = 0; i < brick->type->max_outputs; i++) {
-+		struct generic_output *output = brick->outputs[i];
-+
-+		if (!output)
-+			continue;
-+		if (!output->type) {
-+			BRICK_ERR("output has no associated type!\n");
-+			continue;
-+		}
-+		if (output->nr_connected) {
-+			BRICK_ERR("output is connected!\n");
-+			return -EPERM;
-+		}
-+	}
-+	/*  ok, test succeeded. start destruction... */
-+	for (i = 0; i < brick->type->max_outputs; i++) {
-+		struct generic_output *output = brick->outputs[i];
-+
-+		if (!output)
-+			continue;
-+		if (!output->type) {
-+			BRICK_ERR("output has no associated type!\n");
-+			continue;
-+		}
-+		if (output->type->output_destruct) {
-+			BRICK_DBG("generic_brick_exit_full: calling output_destruct()\n");
-+			status = output->type->output_destruct(output);
-+			if (status < 0)
-+				return status;
-+			_generic_output_exit(output);
-+			brick->outputs[i] = NULL; /*  others may remain leftover */
-+		}
-+	}
-+	for (i = 0; i < brick->type->max_inputs; i++) {
-+		struct generic_input *input = brick->inputs[i];
-+
-+		if (!input)
-+			continue;
-+		if (!input->type) {
-+			BRICK_ERR("input has no associated type!\n");
-+			continue;
-+		}
-+		if (input->type->input_destruct) {
-+			status = generic_disconnect(input);
-+			if (status < 0)
-+				return status;
-+			BRICK_DBG("generic_brick_exit_full: calling input_destruct()\n");
-+			status = input->type->input_destruct(input);
-+			if (status < 0)
-+				return status;
-+			brick->inputs[i] = NULL; /*  others may remain leftover */
-+			generic_input_exit(input);
-+		}
-+	}
-+	if (brick->type->brick_destruct) {
-+		BRICK_DBG("generic_brick_exit_full: calling brick_destruct()\n");
-+		status = brick->type->brick_destruct(brick);
-+		if (status < 0)
-+			return status;
-+	}
-+	generic_brick_exit(brick);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(generic_brick_exit_full);
-+
-+/**********************************************************************/
-+
-+/*  default implementations */
-+
-+struct generic_object *generic_alloc(struct generic_object_layout *object_layout,
-+	const struct generic_object_type *object_type)
-+{
-+	struct generic_object *object;
-+	void *data;
-+	int object_size;
-+	int aspect_nr_max;
-+	int total_size;
-+	int hint_size;
-+
-+	CHECK_PTR_NULL(object_type, err);
-+	CHECK_PTR(object_layout, err);
-+
-+	object_size = object_type->default_size;
-+	aspect_nr_max = nr_max;
-+	total_size = object_size + aspect_nr_max * sizeof(void *);
-+	hint_size = object_layout->size_hint;
-+	if (likely(total_size <= hint_size)) {
-+		total_size = hint_size;
-+	} else { /*  usually happens only at the first time */
-+		object_layout->size_hint = total_size;
-+	}
-+
-+	data = brick_zmem_alloc(total_size);
-+
-+	atomic_inc(&object_layout->alloc_count);
-+	atomic_inc(&object_layout->total_alloc_count);
-+
-+	object = data;
-+	object->object_type = object_type;
-+	object->object_layout = object_layout;
-+	object->aspects = data + object_size;
-+	object->aspect_nr_max = aspect_nr_max;
-+	object->free_offset = object_size + aspect_nr_max * sizeof(void *);
-+	object->max_offset = total_size;
-+
-+	if (object_type->init_fn) {
-+		int status = object_type->init_fn(object);
-+
-+		if (status < 0)
-+			goto err_free;
-+	}
-+
-+	return object;
-+
-+err_free:
-+	brick_mem_free(data);
-+err:
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(generic_alloc);
-+
-+void generic_free(struct generic_object *object)
-+{
-+	const struct generic_object_type *object_type;
-+	struct generic_object_layout *object_layout;
-+	int i;
-+
-+	CHECK_PTR(object, done);
-+	object_type = object->object_type;
-+	CHECK_PTR_NULL(object_type, done);
-+	object_layout = object->object_layout;
-+	CHECK_PTR(object_layout, done);
-+	_CHECK_ATOMIC(&object->obj_count, !=, 0);
-+
-+	atomic_dec(&object_layout->alloc_count);
-+	for (i = 0; i < object->aspect_nr_max; i++) {
-+		const struct generic_aspect_type *aspect_type;
-+		struct generic_aspect *aspect = object->aspects[i];
-+
-+		if (!aspect)
-+			continue;
-+		object->aspects[i] = NULL;
-+		aspect_type = aspect->aspect_type;
-+		CHECK_PTR_NULL(aspect_type, done);
-+		if (aspect_type->exit_fn)
-+			aspect_type->exit_fn(aspect);
-+		if (aspect->shortcut)
-+			continue;
-+		brick_mem_free(aspect);
-+		atomic_dec(&object_layout->aspect_count);
-+	}
-+	if (object_type->exit_fn)
-+		object_type->exit_fn(object);
-+	brick_mem_free(object);
-+done:;
-+}
-+EXPORT_SYMBOL_GPL(generic_free);
-+
-+static inline
-+struct generic_aspect *_new_aspect(const struct generic_aspect_type *aspect_type, struct generic_object *obj)
-+{
-+	struct generic_aspect *res = NULL;
-+	int size;
-+	int rest;
-+
-+	size = aspect_type->aspect_size;
-+	rest = obj->max_offset - obj->free_offset;
-+	if (likely(size <= rest)) {
-+		/* Optimisation: re-use single memory allocation for both
-+		 * the object and the new aspect.
-+		 */
-+		res = ((void *)obj) + obj->free_offset;
-+		obj->free_offset += size;
-+		res->shortcut = true;
-+	} else {
-+		struct generic_object_layout *object_layout = obj->object_layout;
-+
-+		CHECK_PTR(object_layout, done);
-+		/* Maintain the size hint.
-+		 * In future, only small aspects should be integrated into
-+		 * the same memory block, and the hint should not grow larger
-+		 * than PAGE_SIZE if it was smaller before.
-+		 */
-+		if (size < PAGE_SIZE / 2) {
-+			int max;
-+
-+			max = obj->free_offset + size;
-+			/* This is racy, but races won't do any harm because
-+			 * it is just a hint, not essential.
-+			 */
-+			if ((max < PAGE_SIZE || object_layout->size_hint > PAGE_SIZE) &&
-+			    object_layout->size_hint < max)
-+				object_layout->size_hint = max;
-+		}
-+
-+		res = brick_zmem_alloc(size);
-+		atomic_inc(&object_layout->aspect_count);
-+		atomic_inc(&object_layout->total_aspect_count);
-+	}
-+	res->object = obj;
-+	res->aspect_type = aspect_type;
-+
-+	if (aspect_type->init_fn) {
-+		int status = aspect_type->init_fn(res);
-+
-+		if (unlikely(status < 0)) {
-+			BRICK_ERR("aspect init %p %p %p status = %d\n", aspect_type, obj, res, status);
-+			goto done;
-+		}
-+	}
-+
-+done:
-+	return res;
++#define DECLARE_OBJECT_FUNCTIONS(OBJTYPE)				\
++extern inline struct OBJTYPE##_object *alloc_##OBJTYPE(struct generic_object_layout *layout)\
++{									\
++	return (void *)generic_alloc(layout, &OBJTYPE##_type);		\
 +}
 +
-+struct generic_aspect *generic_get_aspect(struct generic_brick *brick, struct generic_object *obj)
-+{
-+	struct generic_aspect *res = NULL;
-+	int nr;
-+
-+	CHECK_PTR(brick, done);
-+	CHECK_PTR(obj, done);
-+
-+	nr = brick->aspect_context.brick_index;
-+	if (unlikely(nr <= 0 || nr >= obj->aspect_nr_max)) {
-+		BRICK_ERR("bad nr = %d\n", nr);
-+		goto done;
-+	}
-+
-+	res = obj->aspects[nr];
-+	if (!res) {
-+		const struct generic_object_type *object_type = obj->object_type;
-+		const struct generic_brick_type *brick_type = brick->type;
-+		const struct generic_aspect_type *aspect_type;
-+		int object_type_nr;
-+
-+		CHECK_PTR_NULL(object_type, done);
-+		CHECK_PTR_NULL(brick_type, done);
-+		object_type_nr = object_type->object_type_nr;
-+		aspect_type = brick_type->aspect_types[object_type_nr];
-+		CHECK_PTR_NULL(aspect_type, done);
-+
-+		res = _new_aspect(aspect_type, obj);
-+
-+		obj->aspects[nr] = res;
-+	}
-+	CHECK_PTR(res, done);
-+	CHECK_PTR(res->object, done);
-+	_CHECK(res->object == obj, done);
-+
-+done:
-+	return res;
++#define DECLARE_ASPECT_FUNCTIONS(BRITYPE, OBJTYPE)			\
++									\
++extern inline struct OBJTYPE##_object *BRITYPE##_alloc_##OBJTYPE(struct BRITYPE##_brick *brick)\
++{									\
++	return alloc_##OBJTYPE(&brick->OBJTYPE##_object_layout);	\
++}									\
++									\
++extern inline struct BRITYPE##_##OBJTYPE##_aspect *BRITYPE##_##OBJTYPE##_get_aspect(struct BRITYPE##_brick *brick,\
++	struct OBJTYPE##_object *obj)					\
++{									\
++	return (void *)generic_get_aspect((struct generic_brick *)brick, (struct generic_object *)obj);\
 +}
-+EXPORT_SYMBOL_GPL(generic_get_aspect);
 +
-+/***************************************************************/
++/*********************************************************************/
 +
-+/*  helper stuff */
++/*  some general helpers */
 +
-+void set_button(struct generic_switch *sw, bool val, bool force)
-+{
-+	bool oldval = sw->button;
++#ifdef _STRATEGY /*  call this only from the strategy implementation */
 +
-+	sw->force_off |= force;
-+	if (sw->force_off)
-+		val = false;
-+	if (val != oldval) {
-+		sw->button = val;
-+		wake_up_interruptible(&sw->event);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(set_button);
++/* Generic interface to simple brick status changes.
++ */
++extern void set_button(struct generic_switch *sw, bool val, bool force);
++extern void set_on_led(struct generic_switch *sw, bool val);
++extern void set_off_led(struct generic_switch *sw, bool val);
++/*
++ * "Forced switch off" means that it cannot be switched on again.
++ */
++extern void set_button_wait(struct generic_brick *brick, bool val, bool force, int timeout);
 +
-+void set_on_led(struct generic_switch *sw, bool val)
-+{
-+	bool oldval = sw->on_led;
-+
-+	if (val != oldval) {
-+		sw->on_led = val;
-+		wake_up_interruptible(&sw->event);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(set_on_led);
-+
-+void set_off_led(struct generic_switch *sw, bool val)
-+{
-+	bool oldval = sw->off_led;
-+
-+	if (val != oldval) {
-+		sw->off_led = val;
-+		wake_up_interruptible(&sw->event);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(set_off_led);
-+
-+void set_button_wait(struct generic_brick *brick, bool val, bool force, int timeout)
-+{
-+	set_button(&brick->power, val, force);
-+	if (brick->ops)
-+		(void)brick->ops->brick_switch(brick);
-+	if (val)
-+		wait_event_interruptible_timeout(brick->power.event, brick->power.on_led, timeout);
-+	else
-+		wait_event_interruptible_timeout(brick->power.event, brick->power.off_led, timeout);
-+}
-+EXPORT_SYMBOL_GPL(set_button_wait);
-+
-+/***************************************************************/
-+
-+/*  meta stuff */
-+
-+const struct meta *find_meta(const struct meta *meta, const char *field_name)
-+{
-+	const struct meta *tmp;
-+
-+	for (tmp = meta; tmp->field_name; tmp++) {
-+		if (!strcmp(field_name, tmp->field_name))
-+			return tmp;
-+	}
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(find_meta);
++#endif
 +
 +/***********************************************************************/
 +
-+/*  module init stuff */
++/*  thread automation (avoid code duplication) */
 +
-+int __init init_brick(void)
-+{
-+	nr_table = brick_zmem_alloc(nr_max);
-+	return 0;
-+}
++#define brick_thread_create(_thread_fn, _data, _fmt, _args...)		\
++	({								\
++		struct task_struct *_thr = kthread_create(_thread_fn, _data, _fmt, ##_args);\
++		if (unlikely(IS_ERR(_thr))) {				\
++			int _err = PTR_ERR(_thr);			\
++			BRICK_ERR("cannot create thread '%s', status = %d\n", _fmt, _err);\
++			_thr = NULL;					\
++		} else {						\
++			struct say_channel *ch = get_binding(current);	\
++			if (likely(ch))					\
++				bind_to_channel(ch, _thr);		\
++			get_task_struct(_thr);				\
++			wake_up_process(_thr);				\
++		}							\
++		_thr;							\
++	})
 +
-+void exit_brick(void)
-+{
-+	if (nr_table) {
-+		brick_mem_free(nr_table);
-+		nr_table = NULL;
-+	}
-+}
++extern void brick_thread_stop_nowait(struct task_struct *k);
++
++#define brick_thread_stop(_thread)					\
++	do {								\
++		if (likely(_thread)) {					\
++			BRICK_DBG("stopping thread '%s'\n", (_thread)->comm);\
++			kthread_stop(_thread);				\
++			BRICK_DBG("thread '%s' finished.\n", (_thread)->comm);\
++			remove_binding(_thread);			\
++			put_task_struct(_thread);			\
++			_thread = NULL;					\
++		}							\
++	} while (0)
++
++#define brick_thread_should_stop()					\
++	({								\
++		brick_yield();						\
++		kthread_should_stop();					\
++	})
++
++/***********************************************************************/
++
++/*  init */
++
++extern int init_brick(void);
++extern void exit_brick(void);
++
++#endif
 -- 
 2.0.0
 
