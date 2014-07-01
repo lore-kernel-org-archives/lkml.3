@@ -1,283 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758816AbaGAUPL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 16:15:11 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:50587 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754850AbaGAUOH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 16:14:07 -0400
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-X-Google-Original-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH v2 1/3] ima: use ahash API for file hash calculation
-Date: Tue,  1 Jul 2014 23:12:49 +0300
-Message-Id: <72d68808fd8db2b896a459b120f3e550e5f976c1.1404245510.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <cover.1404245510.git.d.kasatkin@samsung.com>
-References: <cover.1404245510.git.d.kasatkin@samsung.com>
-In-Reply-To: <cover.1404245510.git.d.kasatkin@samsung.com>
-References: <cover.1404245510.git.d.kasatkin@samsung.com>
+	id S964784AbaGAUQD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 16:16:03 -0400
+Received: from mta-out1.inet.fi ([62.71.2.199]:55453 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756278AbaGAUQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 16:16:01 -0400
+Date: Tue, 1 Jul 2014 23:15:40 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Hillf Danton <dhillf@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH] rmap: fix pgoff calculation to handle hugepage correctly
+Message-ID: <20140701201540.GA5953@node.dhcp.inet.fi>
+References: <1404225982-22739-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20140701180739.GA4985@node.dhcp.inet.fi>
+ <20140701185021.GA10356@nhori.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140701185021.GA10356@nhori.bos.redhat.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Async hash API allows to use HW acceleration for hash calculation.
-It may give significant performance gain or/and reduce power consumption,
-which might be very beneficial for battery powered devices.
+On Tue, Jul 01, 2014 at 02:50:21PM -0400, Naoya Horiguchi wrote:
+> On Tue, Jul 01, 2014 at 09:07:39PM +0300, Kirill A. Shutemov wrote:
+> > Why do we need this special case for hugetlb page ->index? Why not use
+> > PAGE_SIZE units there too? Or I miss something?
+> 
+> hugetlb pages are never split, so we use larger page cache size for
+> hugetlbfs file (to avoid large sparse page cache tree.)
 
-This patch introduces hash calculation using ahash API.
+For transparent huge page cache I would like to have native support in
+page cache radix-tree: since huge pages are always naturally aligned we
+can create a leaf node for it several (RADIX_TREE_MAP_SHIFT -
+HPAGE_PMD_ORDER) levels up by tree, which would cover all indexes in the
+range the huge page represents. This approach should fit hugetlb too. And
+-1 special case for hugetlb.
+But I'm not sure when I'll get time to play with this...
 
-ahash performance depends on data size and particular HW. Under certain
-limit, depending on the system, shash performance may be better.
-
-This patch defines 'ima_ahash' kernel parameter which can be used to
-define minimal file size to use with ahash. When file size is not set
-or smaller than defined by the parameter, shash will be used.
-
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
----
- Documentation/kernel-parameters.txt |   5 +
- security/integrity/ima/ima_crypto.c | 185 +++++++++++++++++++++++++++++++++++-
- 2 files changed, 186 insertions(+), 4 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 5a214a3..b406f5c 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1291,6 +1291,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	ihash_entries=	[KNL]
- 			Set number of hash buckets for inode cache.
- 
-+	ima_ahash=	[IMA] Asynchronous hash usage parameters
-+			Format: <min_file_size>
-+			Set the minimal file size when use asynchronous hash.
-+			If ima_ahash is not provided, ahash usage is disabled.
-+
- 	ima_appraise=	[IMA] appraise integrity measurements
- 			Format: { "off" | "enforce" | "fix" }
- 			default: "enforce"
-diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-index f82d1d7..5eb19b4 100644
---- a/security/integrity/ima/ima_crypto.c
-+++ b/security/integrity/ima/ima_crypto.c
-@@ -25,7 +25,27 @@
- #include <crypto/hash_info.h>
- #include "ima.h"
- 
-+
-+struct ahash_completion {
-+	struct completion completion;
-+	int err;
-+};
-+
- static struct crypto_shash *ima_shash_tfm;
-+static struct crypto_ahash *ima_ahash_tfm;
-+
-+/* minimal file size for ahash use */
-+static loff_t ima_ahash_size;
-+
-+static int __init ima_ahash_setup(char *str)
-+{
-+	int rc;
-+
-+	rc = kstrtoll(str, 10, &ima_ahash_size);
-+
-+	return !rc;
-+}
-+__setup("ima_ahash=", ima_ahash_setup);
- 
- /**
-  * ima_kernel_read - read file content
-@@ -93,9 +113,146 @@ static void ima_free_tfm(struct crypto_shash *tfm)
- 		crypto_free_shash(tfm);
- }
- 
--/*
-- * Calculate the MD5/SHA1 file digest
-- */
-+static struct crypto_ahash *ima_alloc_atfm(enum hash_algo algo)
-+{
-+	struct crypto_ahash *tfm = ima_ahash_tfm;
-+	int rc;
-+
-+	if ((algo != ima_hash_algo && algo < HASH_ALGO__LAST) || !tfm) {
-+		tfm = crypto_alloc_ahash(hash_algo_name[algo], 0, 0);
-+		if (!IS_ERR(tfm)) {
-+			if (algo == ima_hash_algo)
-+				ima_ahash_tfm = tfm;
-+		} else {
-+			rc = PTR_ERR(tfm);
-+			pr_err("Can not allocate %s (reason: %d)\n",
-+			       hash_algo_name[algo], rc);
-+		}
-+	}
-+	return tfm;
-+}
-+
-+static void ima_free_atfm(struct crypto_ahash *tfm)
-+{
-+	if (tfm != ima_ahash_tfm)
-+		crypto_free_ahash(tfm);
-+}
-+
-+static void ahash_complete(struct crypto_async_request *req, int err)
-+{
-+	struct ahash_completion *res = req->data;
-+
-+	if (err == -EINPROGRESS)
-+		return;
-+	res->err = err;
-+	complete(&res->completion);
-+}
-+
-+static int ahash_wait(int err, struct ahash_completion *res)
-+{
-+	switch (err) {
-+	case 0:
-+		break;
-+	case -EINPROGRESS:
-+	case -EBUSY:
-+		wait_for_completion(&res->completion);
-+		reinit_completion(&res->completion);
-+		err = res->err;
-+		/* fall through */
-+	default:
-+		pr_crit("ahash calculation failed: err: %d\n", err);
-+	}
-+
-+	return err;
-+}
-+
-+static int ima_calc_file_hash_atfm(struct file *file,
-+				   struct ima_digest_data *hash,
-+				   struct crypto_ahash *tfm)
-+{
-+	loff_t i_size, offset;
-+	char *rbuf;
-+	int rc, read = 0, rbuf_len;
-+	struct ahash_request *req;
-+	struct scatterlist sg[1];
-+	struct ahash_completion res;
-+
-+	hash->length = crypto_ahash_digestsize(tfm);
-+
-+	req = ahash_request_alloc(tfm, GFP_KERNEL);
-+	if (!req)
-+		return -ENOMEM;
-+
-+	init_completion(&res.completion);
-+	ahash_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG |
-+				   CRYPTO_TFM_REQ_MAY_SLEEP,
-+				   ahash_complete, &res);
-+
-+	rc = ahash_wait(crypto_ahash_init(req), &res);
-+	if (rc)
-+		goto out1;
-+
-+	i_size = i_size_read(file_inode(file));
-+
-+	if (i_size == 0)
-+		goto out2;
-+
-+	rbuf = kzalloc(PAGE_SIZE, GFP_KERNEL);
-+	if (!rbuf) {
-+		rc = -ENOMEM;
-+		goto out1;
-+	}
-+
-+	if (!(file->f_mode & FMODE_READ)) {
-+		file->f_mode |= FMODE_READ;
-+		read = 1;
-+	}
-+
-+	for (offset = 0; offset < i_size; offset += rbuf_len) {
-+		rbuf_len = ima_kernel_read(file, offset, rbuf, PAGE_SIZE);
-+		if (rbuf_len < 0) {
-+			rc = rbuf_len;
-+			break;
-+		}
-+		if (rbuf_len == 0)
-+			break;
-+
-+		sg_init_one(&sg[0], rbuf, rbuf_len);
-+		ahash_request_set_crypt(req, sg, NULL, rbuf_len);
-+
-+		rc = ahash_wait(crypto_ahash_update(req), &res);
-+		if (rc)
-+			break;
-+	}
-+	if (read)
-+		file->f_mode &= ~FMODE_READ;
-+	kfree(rbuf);
-+out2:
-+	if (!rc) {
-+		ahash_request_set_crypt(req, NULL, hash->digest, 0);
-+		rc = ahash_wait(crypto_ahash_final(req), &res);
-+	}
-+out1:
-+	ahash_request_free(req);
-+	return rc;
-+}
-+
-+static int ima_calc_file_ahash(struct file *file, struct ima_digest_data *hash)
-+{
-+	struct crypto_ahash *tfm;
-+	int rc;
-+
-+	tfm = ima_alloc_atfm(hash->algo);
-+	if (IS_ERR(tfm))
-+		return PTR_ERR(tfm);
-+
-+	rc = ima_calc_file_hash_atfm(file, hash, tfm);
-+
-+	ima_free_atfm(tfm);
-+
-+	return rc;
-+}
-+
- static int ima_calc_file_hash_tfm(struct file *file,
- 				  struct ima_digest_data *hash,
- 				  struct crypto_shash *tfm)
-@@ -156,7 +313,7 @@ out:
- 	return rc;
- }
- 
--int ima_calc_file_hash(struct file *file, struct ima_digest_data *hash)
-+static int ima_calc_file_shash(struct file *file, struct ima_digest_data *hash)
- {
- 	struct crypto_shash *tfm;
- 	int rc;
-@@ -172,6 +329,26 @@ int ima_calc_file_hash(struct file *file, struct ima_digest_data *hash)
- 	return rc;
- }
- 
-+int ima_calc_file_hash(struct file *file, struct ima_digest_data *hash)
-+{
-+	loff_t i_size;
-+	int rc;
-+
-+	i_size = i_size_read(file_inode(file));
-+
-+	/* shash is more efficient for small data
-+	 * ahash performance depends on data size and particular HW
-+	 * ima_ahash_size allows to specify the best value for the system
-+	 */
-+	if (ima_ahash_size && i_size >= ima_ahash_size) {
-+		rc = ima_calc_file_ahash(file, hash);
-+		if (!rc)
-+			return 0;
-+	}
-+	/* fallback to shash if ahash failed */
-+	return ima_calc_file_shash(file, hash);
-+}
-+
- /*
-  * Calculate the hash of template data
-  */
 -- 
-1.9.1
-
+ Kirill A. Shutemov
