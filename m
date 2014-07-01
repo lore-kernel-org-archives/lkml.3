@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758063AbaGAPic (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 11:38:32 -0400
-Received: from smtp4-g21.free.fr ([212.27.42.4]:51531 "EHLO smtp4-g21.free.fr"
+	id S1758109AbaGAPj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 11:39:57 -0400
+Received: from mail1.skidata.com ([91.230.2.99]:31499 "EHLO mail1.skidata.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756622AbaGAPia convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 11:38:30 -0400
-Date: Tue, 1 Jul 2014 17:40:12 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
-        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] ARM: dts: dove: enable lcd0 on SolidRun CuBox
-Message-ID: <20140701174012.11c60043@armhf>
-In-Reply-To: <1404219871-18419-4-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1404219871-18419-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1404219871-18419-4-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; arm-unknown-linux-gnueabihf)
+	id S1754356AbaGAPj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 11:39:56 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtQFAG7VslOsEApK/2dsb2JhbABahCwBAQvGAQGBI3WEAwEBBAEnEz8FCwsNCAMJJQ9IBg4FG4gfDchzF48fB4RDAQSaZIczkBWCLg
+X-IPAS-Result: AtQFAG7VslOsEApK/2dsb2JhbABahCwBAQvGAQGBI3WEAwEBBAEnEz8FCwsNCAMJJQ9IBg4FG4gfDchzF48fB4RDAQSaZIczkBWCLg
+Date: Tue, 1 Jul 2014 17:39:51 +0200
+From: Richard Leitner <richard.leitner@skidata.com>
+To: Richard Leitner <richard.leitner@skidata.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Laight <David.Laight@ACULAB.COM>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2] usb: gadget: serial: replace hardcoded ttyGS with
+ PREFIX
+Message-ID: <20140701173951.410af386@lxbuild.skidata.net>
+In-Reply-To: <20140701093149.7bc71ff5@lxbuild.skidata.net>
+References: <20140627133721.10ca6cab@lxbuild.skidata.net>
+	<20140627174628.GA1449@kroah.com>
+	<20140630083205.596557f1@lxbuild.skidata.net>
+	<20140630103616.620a13a2@lxbuild.skidata.net>
+	<063D6719AE5E284EB5DD2968C1650D6D1726930B@AcuExch.aculab.com>
+	<20140630105609.66d4be83@lxbuild.skidata.net>
+	<063D6719AE5E284EB5DD2968C1650D6D1726935E@AcuExch.aculab.com>
+	<20140630132327.39b9d4d2@lxbuild.skidata.net>
+	<20140630144543.GA23566@kroah.com>
+	<20140701093149.7bc71ff5@lxbuild.skidata.net>
+Organization: SKIDATA AG
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.16.60.30]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  1 Jul 2014 15:04:30 +0200
-Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
+On Tue, 1 Jul 2014 09:31:49 +0200
+Richard Leitner <richard.leitner@skidata.com> wrote:
 
-> From: Russell King <rmk+kernel@arm.linux.org.uk>
+> On Mon, 30 Jun 2014 07:45:43 -0700
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
 > 
-> This enables lcd0 on SolidRun CuBox which is connected to TDA998x
-> HDMI transmitter. Also, set the external video clock connected to
-> Si5351 clock generator.
-> 
-> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Gregory Clement <gregory.clement@free-electrons.com>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/arm/boot/dts/dove-cubox.dts |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/dove-cubox.dts b/arch/arm/boot/dts/dove-cubox.dts
-> index 7a70f4c..303a354 100644
-> --- a/arch/arm/boot/dts/dove-cubox.dts
-> +++ b/arch/arm/boot/dts/dove-cubox.dts
-> @@ -134,3 +134,9 @@
->  	pinctrl-0 = <&pmx_audio1_i2s1_spdifo &pmx_audio1_extclk>;
->  	pinctrl-names = "default";
->  };
-> +
-> +&lcd0 {
-> +	status = "okay";
-> +	clocks = <&si5351 0>;
-> +	clock-names = "ext_ref_clk_1";
-> +};
+> > > > > > From: Of Richard Leitner
+> > > > > > > Replaces all hardcoded ttyGS strings with the PREFIX macro.
+> > > > > > > Due to the fact the strings are spread over different source files the
+> > > > > > > PREFIX definition is moved to u_serial.h
+> > > > > >
+> > > > > > Lots of changes like:
+> > > > > > > -		DBG(cdev, "acm ttyGS%d completion, err %d\n",
+> > > > > > > -				acm->port_num, req->status);
+> > > > > > > +		DBG(cdev, "acm %s%d completion, err %d\n",
+> > > > > > > +				PREFIX, acm->port_num, req->status);
+> > > > > >
+> > 
+> > Use the "proper" debug macros that the kernel provides you (i.e.
+> > dev_dbg() and family) and then you don't need to put the string in there
+> > at all, the kernel will do it automatically for you, in the correct
+> > format, so that all userspace tools can properly track what is going on.
+> > 
+> > So please remove the horrid DBG() macro entirely.
+I'll prepare a patch for that...
 
-My driver has "axiclk", "extclk0", "lcdpll" and "extclk1" as the clock
-names. It is a bit shorter.
+But that doesn't solve my original problem with the hardcoded "ttyGS"...
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+>
+> [...] where do I get the device struct for the ttyGS from?
+
+In u_serial with something like:
+
+-	pr_debug("gs_open: ttyGS%d (%p,%p)\n", port->port_num, tty, file);
++	pr_debug("gs_open: %s (%p,%p)\n", dev_name(tty->dev), tty, file);
+
+Or is there a better approach?
+
+What will be a good solution for f_acm/f_obex instead of PREFIX? Or should PREFIX be renamed and used?
+
+Thanks for your help and patience!
+
+regards,
+richard
