@@ -1,55 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757223AbaGACEN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 22:04:13 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:46061 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237AbaGACEM convert rfc822-to-8bit (ORCPT
+	id S1757283AbaGACHM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 22:07:12 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:35719 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752091AbaGACHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 22:04:12 -0400
+	Mon, 30 Jun 2014 22:07:08 -0400
+Message-ID: <53B217E3.2090100@oracle.com>
+Date: Tue, 01 Jul 2014 10:07:31 +0800
+From: Junxiao Bi <junxiao.bi@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1403920822-14488-5-git-send-email-j.glisse@gmail.com>
-References: <1403920822-14488-1-git-send-email-j.glisse@gmail.com>
-	<1403920822-14488-5-git-send-email-j.glisse@gmail.com>
-Date: Mon, 30 Jun 2014 19:04:11 -0700
-X-Google-Sender-Auth: 9SVeCbbr9vOsvImNi18Y4x7FIEQ
-Message-ID: <CA+55aFyrDNVcT3meKTaaXhh4q4z1=g7zO_==mFb5Lhh70haScg@mail.gmail.com>
-Subject: Re: [PATCH 4/6] mmu_notifier: pass through vma to invalidate_range
- and invalidate_page
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: =?UTF-8?B?SsOpcsO0bWUgR2xpc3Nl?= <j.glisse@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Peter Anvin <hpa@zytor.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Mark Hairgrove <mhairgrove@nvidia.com>,
-        Jatin Kumar <jakumar@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
-        Lucien Dunning <ldunning@nvidia.com>,
-        Cameron Buschardt <cabuschardt@nvidia.com>,
-        Arvind Gopalakrishnan <arvindg@nvidia.com>,
-        John Hubbard <jhubbard@nvidia.com>, Sherry Cheung <SCheung@nvidia.com>,
-        Duncan Poole <dpoole@nvidia.com>, Oded Gabbay <Oded.Gabbay@amd.com>,
-        Alexander Deucher <Alexander.Deucher@amd.com>,
-        Andrew Lewycky <Andrew.Lewycky@amd.com>,
-        =?UTF-8?B?SsOpcsO0bWUgR2xpc3Nl?= <jglisse@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: linux-kernel@vger.kernel.org
+CC: axboe@kernel.dk, joe.jin@oracle.com
+Subject: Re: [PATCH] block: fix uint overflow when merging io requests
+References: <1403853862-16565-1-git-send-email-junxiao.bi@oracle.com>
+In-Reply-To: <1403853862-16565-1-git-send-email-junxiao.bi@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 7:00 PM, Jérôme Glisse <j.glisse@gmail.com> wrote:
+On 06/27/2014 03:24 PM, Junxiao Bi wrote:
+> This uint overflow will cause req->__data_len < req->bio->bi_size,
+> this will confuse block layer and device driver.
 >
-> This needs small refactoring in memory.c to call invalidate_range on
-> vma boundary the overhead should be low enough.
+> I watched a panic caused by this when mkfs.ext4 a volume of a large
+> virtual disk on vm guest, blkdev_issue_discard() issue two bio with
+> a total size over UINT_MAX, but the check in ll_back_merge_fn() didn't
+> take affect due to the overflow and they were merged into one request.
+> After the request is done, in blk_end_request_all(), BUG_ON(pending)
+> was triggered and kernel panic. "pending" is true is because
+> blk_update_request() return ture when req->__data_len is less
+> than req->bio->bi_size.
+Any body help review this patch?
+blk_rq_sectors(), bio_sectors(), blk_rq_get_max_sectors() are all uint.
 
-.. and looking at it, doesn't that mean that the whole invalidate call
-should be moved inside unmap_single_vma() then, instead of being
-duplicated in all the callers?
+blk_rq_sectors(req) + bio_sectors(bio) > blk_rq_get_max_sectors(req)
 
-I really get the feeling that somebody needs to go over this
-patch-series with a fine comb to fix these kinds of ugly things.
+This checking is bypassed when overflow happen. It will cause an io
+request's
+length less than its child bio's size.
 
-                     Linus
+Thanks,
+Junxiao.
+>
+> Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+> ---
+>  block/blk-merge.c |   40 ++++++++++++++++++++++++++++++++++------
+>  1 file changed, 34 insertions(+), 6 deletions(-)
+>
+> diff --git a/block/blk-merge.c b/block/blk-merge.c
+> index b3bf0df..340c0a7 100644
+> --- a/block/blk-merge.c
+> +++ b/block/blk-merge.c
+> @@ -325,11 +325,41 @@ no_merge:
+>  	return 0;
+>  }
+>  
+> -int ll_back_merge_fn(struct request_queue *q, struct request *req,
+> +static inline bool ll_allow_merge_bio(struct request *req,
+>  		     struct bio *bio)
+>  {
+>  	if (blk_rq_sectors(req) + bio_sectors(bio) >
+> -	    blk_rq_get_max_sectors(req)) {
+> +		blk_rq_get_max_sectors(req))
+> +		return false;
+> +
+> +	/* check uint overflow */
+> +	if (blk_rq_sectors(req) + bio_sectors(bio) < blk_rq_sectors(req)
+> +		|| blk_rq_sectors(req) + bio_sectors(bio) < bio_sectors(bio))
+> +		return false;
+> +
+> +	return true;
+> +}
+> +
+> +static inline bool ll_allow_merge_req(struct request *req,
+> +		     struct request *next)
+> +{
+> +	if (blk_rq_sectors(req) + blk_rq_sectors(next) >
+> +		blk_rq_get_max_sectors(req))
+> +		return false;
+> +
+> +	/* check uint overflow */
+> +	if (blk_rq_sectors(req) + blk_rq_sectors(next) < blk_rq_sectors(req)
+> +		|| blk_rq_sectors(req) + blk_rq_sectors(next) <
+> +		blk_rq_sectors(next))
+> +		return false;
+> +
+> +	return true;
+> +}
+> +
+> +int ll_back_merge_fn(struct request_queue *q, struct request *req,
+> +		     struct bio *bio)
+> +{
+> +	if (!ll_allow_merge_bio(req, bio)) {
+>  		req->cmd_flags |= REQ_NOMERGE;
+>  		if (req == q->last_merge)
+>  			q->last_merge = NULL;
+> @@ -346,8 +376,7 @@ int ll_back_merge_fn(struct request_queue *q, struct request *req,
+>  int ll_front_merge_fn(struct request_queue *q, struct request *req,
+>  		      struct bio *bio)
+>  {
+> -	if (blk_rq_sectors(req) + bio_sectors(bio) >
+> -	    blk_rq_get_max_sectors(req)) {
+> +	if (!ll_allow_merge_bio(req, bio)) {
+>  		req->cmd_flags |= REQ_NOMERGE;
+>  		if (req == q->last_merge)
+>  			q->last_merge = NULL;
+> @@ -389,8 +418,7 @@ static int ll_merge_requests_fn(struct request_queue *q, struct request *req,
+>  	/*
+>  	 * Will it become too large?
+>  	 */
+> -	if ((blk_rq_sectors(req) + blk_rq_sectors(next)) >
+> -	    blk_rq_get_max_sectors(req))
+> +	if (!ll_allow_merge_req(req, next))
+>  		return 0;
+>  
+>  	total_phys_segments = req->nr_phys_segments + next->nr_phys_segments;
+
