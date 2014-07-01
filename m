@@ -1,90 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757668AbaGAI5L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 04:57:11 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54439 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755515AbaGAI5J (ORCPT
+	id S1757612AbaGAJBX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 05:01:23 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48071 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755813AbaGAJBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 04:57:09 -0400
-Date: Tue, 1 Jul 2014 10:56:58 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael wang <wangyun@linux.vnet.ibm.com>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@linaro.org>,
-        Paul Turner <pjt@google.com>, Mel Gorman <mgorman@suse.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: select 'idle' cfs_rq per task-group to prevent
- tg-internal imbalance
-Message-ID: <20140701085658.GM6758@twins.programming.kicks-ass.net>
-References: <53A11A89.5000602@linux.vnet.ibm.com>
- <20140623094251.GS19860@laptop.programming.kicks-ass.net>
- <53A8F1DE.2060908@linux.vnet.ibm.com>
- <20140701082020.GL6758@twins.programming.kicks-ass.net>
- <53B273A2.5050500@linux.vnet.ibm.com>
+	Tue, 1 Jul 2014 05:01:20 -0400
+Date: Tue, 1 Jul 2014 10:01:14 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: jianqun <xjq@rock-chips.com>
+Cc: "heiko@sntech.de" <heiko@sntech.de>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "zhangqing@rock-chips.com" <zhangqing@rock-chips.com>,
+        "hj@rock-chips.com" <hj@rock-chips.com>,
+        "kever.yang@rock-chips.com" <kever.yang@rock-chips.com>,
+        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
+        "zyw@rock-chips.com" <zyw@rock-chips.com>,
+        "yzq@rock-chips.com" <yzq@rock-chips.com>,
+        "zhenfu.fang@rock-chips.com" <zhenfu.fang@rock-chips.com>,
+        "cf@rock-chips.com" <cf@rock-chips.com>,
+        "kfx@rock-chips.com" <kfx@rock-chips.com>
+Subject: Re: [PATCH 2/2] ASoC: add driver for Rockchip RK3xxx I2S controller
+Message-ID: <20140701090114.GJ28740@leverpostej>
+References: <1404203860-30712-1-git-send-email-xjq@rock-chips.com>
+ <1404204458-30881-1-git-send-email-xjq@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Oaap7OtF9SpYl9KE"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53B273A2.5050500@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1404204458-30881-1-git-send-email-xjq@rock-chips.com>
+Thread-Topic: [PATCH 2/2] ASoC: add driver for Rockchip RK3xxx I2S controller
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 01, 2014 at 09:47:38AM +0100, jianqun wrote:
+> From: Jianqun Xu <xjq@rock-chips.com>
+>
+> Add driver for I2S controller in Rockchip RK3xxx SoCs.
+>
+> This driver patch has been tested on the RK3288 SDK board.
+>
+> Signed-off-by: Jianqun Xu <xjq@rock-chips.com>
+> ---
+>  sound/soc/Kconfig                 |    1 +
+>  sound/soc/Makefile                |    1 +
+>  sound/soc/rockchip/Kconfig        |   16 +
+>  sound/soc/rockchip/Makefile       |    6 +
+>  sound/soc/rockchip/i2s.h          |  222 +++++++++++++
+>  sound/soc/rockchip/pcm.h          |   14 +
+>  sound/soc/rockchip/rockchip_i2s.c |  622 +++++++++++++++++++++++++++++++++++++
+>  sound/soc/rockchip/rockchip_pcm.c |   64 ++++
+>  8 files changed, 946 insertions(+)
+>  create mode 100644 sound/soc/rockchip/Kconfig
+>  create mode 100644 sound/soc/rockchip/Makefile
+>  create mode 100644 sound/soc/rockchip/i2s.h
+>  create mode 100644 sound/soc/rockchip/pcm.h
+>  create mode 100644 sound/soc/rockchip/rockchip_i2s.c
+>  create mode 100644 sound/soc/rockchip/rockchip_pcm.c
 
---Oaap7OtF9SpYl9KE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[...]
 
-On Tue, Jul 01, 2014 at 04:38:58PM +0800, Michael wang wrote:
-> On 07/01/2014 04:20 PM, Peter Zijlstra wrote:
-> [snip]
-> >>
-> >> Just wondering could we make this another scheduler feature?
-> >=20
-> > No; sched_feat() is for debugging, BIG CLUE: its guarded by
-> > CONFIG_SCHED_DEBUG, anybody using it in production or anywhere else is
-> > broken.
-> >=20
-> > If people are using it, I should remove or at least randomize the
-> > interface.
->=20
-> Fair enough... but is there any suggestions on how to handle this issue?
->=20
-> Currently when dbench running with stress, it could only gain one CPU,
-> and cpu-cgroup cpu.shares is meaningless, is there any good methods to
-> address that?
+> +static int rockchip_i2s_probe(struct platform_device *pdev)
+> +{
+> +       struct device_node *np = pdev->dev.of_node;
+> +       struct rk_i2s_dev *i2s;
+> +       struct resource *res;
+> +       int ret;
+> +
+> +       i2s = devm_kzalloc(&pdev->dev, sizeof(struct rk_i2s_dev),
+> +                               GFP_KERNEL);
 
-So as far as I understood this is because of 'other' tasks; these other
-tasks have never been fully qualified, but I suspect they're workqueue
-thingies. One solution would be to have work run in the same cgroup as
-the task creating it.
+You can use sizeof(*i2s) here.
 
-The thing is, this is not a scheduler problem, so we should not fix it
-in the scheduler.
+[...]
 
---Oaap7OtF9SpYl9KE
-Content-Type: application/pgp-signature
+> +       /* Try to set the I2S Channel id from dt */
+> +       pdev->id = of_alias_get_id(np, "i2s");
+> +       dev_set_name(&pdev->dev, "%s.%d",
+> +                               pdev->dev.driver->name,
+> +                               pdev->id);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+This wasn't mentioned in the binding.
 
-iQIcBAEBAgAGBQJTsnfaAAoJEHZH4aRLwOS69AUP/2hGAyoJQRpc9Ri+BzqmQc0q
-I15CYWZy4M5P4s65ELC3f1OKbp4m0HiuPwjWlwG8NjgrLJ+hEGBMJPzHopqpF1dS
-l8x8xPAw4D9k/P2k4WzdzlLnAtMHrwNdzDdgqavwmQio8Zj1DEzxcvuFiriif6Em
-Xzb5Rn9KthJhoF2bTdgaEF6YZvol+IMEuOurvnJP+45AqrHB30w3iOsVMBfaR9jy
-tL6ndjTEaYrbAwrwI1Ypz/MXeuCSWEZ5pJMqV5v7l4M36zgZabJvxv35qmY/ZC2m
-3jhiTes2YufgnO6RFedthJfJ1OW+ugrojJuWTlXpJBSAqdRAErKukpSRsUylRHbZ
-PVLAlwuA0DbCbSi+09V27SgueUQEw+cWP6D3zxUnpxkZGe4K5VgAeKVUCJW+qF9B
-33hmX5pD8IC52DQB4yOFb2AeGbwNJ1aPnd0YgYclvOyhLFZNuw38gOYk7G476M7S
-H6S09Ut3JmMXOHyevnqpdGoGiwvUnuNgVTRDhs5HIqPpSp/wFJG29GYbaWZjlYQ3
-zhPYfjP2bpPt/KSKofoMTFh/jZhdcnGfmVuWq/XoY8eus2hGX06uSYI3IANTdKZT
-ghPGss5kxtL+FhIK9wl4PV4TLwdPcvFPWbBQun3SbMwaK08zDHcyUhUmUtkZpb/C
-wYTjiFZ4aSzi1Ze9I551
-=O9BK
------END PGP SIGNATURE-----
-
---Oaap7OtF9SpYl9KE--
+Cheers,
+Mark.
