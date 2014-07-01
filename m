@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932657AbaGAOPE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 10:15:04 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35723 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932638AbaGAOO6 (ORCPT
+	id S964787AbaGAOPn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 10:15:43 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:37835 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932573AbaGAOO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 10:14:58 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Gregory Hermant <gregory.hermant@calao-systems.com>
-Subject: [PATCH 33/33] ARM: at91/dt: usb_a9263: define crystals frequencies
-Date: Tue,  1 Jul 2014 16:12:42 +0200
-Message-Id: <1404223962-30471-34-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Tue, 1 Jul 2014 10:14:57 -0400
+Date: Tue, 1 Jul 2014 15:14:50 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Mark Brown <broonie@linaro.org>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Carlo Caione <carlo@caione.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCH resend v2 1/3] mfd-core: Don't register supplies from
+ add_device, add register_supply_aliases()
+Message-ID: <20140701141450.GL27971@lee--X1>
+References: <1404138369-23907-1-git-send-email-hdegoede@redhat.com>
+ <1404138369-23907-2-git-send-email-hdegoede@redhat.com>
+ <20140701092255.GF27971@lee--X1>
+ <53B2818F.8060705@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53B2818F.8060705@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define Calao USB-A9263 main and slow crystals frequencies.
+On Tue, 01 Jul 2014, Hans de Goede wrote:
+> On 07/01/2014 11:22 AM, Lee Jones wrote:
+> > On Mon, 30 Jun 2014, Hans de Goede wrote:
+> > 
+> >> We cannot register supply alias in mfd_add_device before calling
+> >> platform_add_device because platform-dev's name must be set before registering
+> >> the aliases which happens from platform_add_device.
+> >>
+> >> So stop registering supply aliases from mfd_add_device, and add a
+> >> mfd_register_supply_aliases helper functions for the cell's plaform driver
+> >> probe method to use.
+> >>
+> >> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+> > 
+> > Didn't I already Ack this?
+> 
+> Ah yes you did, but back then I expected the series to get picked up
+> immediately, so I did not add the ack to my local copy of it.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Gregory Hermant <gregory.hermant@calao-systems.com>
----
- arch/arm/boot/dts/usb_a9263.dts | 8 ++++++++
- 1 file changed, 8 insertions(+)
+When resubmitting, it's always a good idea to look at previous review
+in order to search for review comments to fix, or Acks to apply.
+Unfortunately the set couldn't go in without Mark's review - which is
+still the case.
 
-diff --git a/arch/arm/boot/dts/usb_a9263.dts b/arch/arm/boot/dts/usb_a9263.dts
-index 290e60383baf..68c0de36c339 100644
---- a/arch/arm/boot/dts/usb_a9263.dts
-+++ b/arch/arm/boot/dts/usb_a9263.dts
-@@ -29,6 +29,14 @@
- 			compatible = "atmel,osc", "fixed-clock";
- 			clock-frequency = <12000000>;
- 		};
-+
-+		slow_xtal {
-+			clock-frequency = <32768>;
-+		};
-+
-+		main_xtal {
-+			clock-frequency = <12000000>;
-+		};
- 	};
- 
- 	ahb {
 -- 
-1.9.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
