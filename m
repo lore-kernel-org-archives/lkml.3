@@ -1,64 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757377AbaGAJrd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 05:47:33 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:49410 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751961AbaGAJrb (ORCPT
+	id S1754465AbaGAJvn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 05:51:43 -0400
+Received: from smtp-out-145.synserver.de ([212.40.185.145]:1085 "EHLO
+	smtp-out-145.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417AbaGAJvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 05:47:31 -0400
-Message-ID: <53B282E9.6060806@linux.vnet.ibm.com>
-Date: Tue, 01 Jul 2014 15:14:09 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 1 Jul 2014 05:51:41 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 21551
+Message-ID: <53B284A9.6050608@metafoo.de>
+Date: Tue, 01 Jul 2014 11:51:37 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        konrad.wilk@oracle.com, pbonzini@redhat.com, gleb@redhat.com,
-        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
-        waiman.long@hp.com, riel@redhat.com, davej@redhat.com, oleg@redhat.com,
-        x86@kernel.org, jeremy@goop.org, paul.gortmaker@windriver.com,
-        ak@linux.intel.com, jasowang@redhat.com, fernando_b1@lab.ntt.co.jp,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, mtosatti@redhat.com,
-        chegu_vinod@hp.com
-Subject: Re: [RFC PATCH v2] Implement Batched (group) ticket lock
-References: <1403947024-3193-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20140701080537.GH6758@twins.programming.kicks-ass.net>
-In-Reply-To: <20140701080537.GH6758@twins.programming.kicks-ass.net>
+To: jianqun <xjq@rock-chips.com>, heiko@sntech.de, lgirdwood@gmail.com,
+        broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
+        grant.likely@linaro.org, robh+dt@kernel.org
+CC: huangtao@rock-chips.com, devicetree@vger.kernel.org,
+        alsa-devel@alsa-project.org, yzq@rock-chips.com,
+        zhangqing@rock-chips.com, linux-kernel@vger.kernel.org,
+        kever.yang@rock-chips.com, cf@rock-chips.com, kfx@rock-chips.com,
+        zyw@rock-chips.com, hj@rock-chips.com, zhenfu.fang@rock-chips.com
+Subject: Re: [alsa-devel] [PATCH 2/2] ASoC: add driver for Rockchip RK3xxx
+ I2S controller
+References: <1404203860-30712-1-git-send-email-xjq@rock-chips.com> <1404204458-30881-1-git-send-email-xjq@rock-chips.com>
+In-Reply-To: <1404204458-30881-1-git-send-email-xjq@rock-chips.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070109-0260-0000-0000-00000541C7D2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2014 01:35 PM, Peter Zijlstra wrote:
-> On Sat, Jun 28, 2014 at 02:47:04PM +0530, Raghavendra K T wrote:
->> In virtualized environment there are mainly three problems
->> related to spinlocks that affects performance.
->> 1. LHP (lock holder preemption)
->> 2. Lock Waiter Preemption (LWP)
->> 3. Starvation/fairness
->>
->> Though Ticketlocks solve fairness problem it worsens LWP, LHP problems. Though
->> pv-ticketlocks tried to address these problems we can further improve at the
->>   cost of relaxed fairness. The following patch tries to achieve that by grouping
->> (batched) ticketlocks.
->
-> And here I stop reading and ignore this patch, right?
->
-> Why should I look at this?
->
+On 07/01/2014 10:47 AM, jianqun wrote:
+[...]
+> new file mode 100644
+> index 0000000..946b60c
+> --- /dev/null
+> +++ b/sound/soc/rockchip/Kconfig
+> @@ -0,0 +1,16 @@
+> +config SND_SOC_ROCKCHIP
+> +	tristate "ASoC support for Rockchip"
+> +	depends on SND_SOC && ARCH_ROCKCHIP
 
-For baremetal we continue to have 'fully fair ticketlock' with this 
-patch series.
+No need for SND_SOC this is implicit for all drivers in sound/soc/. Also 
+allow the driver to be select when COMPILE_TEST is selected.
 
-Good thing about the patch is we do have upper bound on starvation and
-at the same time we solve Lock Waiter Preemption horror of strict
-serialization of ticketlocks in guest and combine definite advantages
-of unfair locks for guest.
+> +	select SND_SOC_GENERIC_DMAENGINE_PCM
+> +	select SND_ROCKCHIP_PCM
+> +	select SND_ROCKCHIP_I2S
+> +	help
+> +	  Say Y or M if you want to add support for codecs attached to
+> +	  the Rockchip SoCs' Audio interfaces. You will also need to
+> +	  select the audio interfaces to support below.
+> +
+[...]
+> +#include <linux/init.h>
+> +#include <linux/module.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/device.h>
+> +#include <linux/delay.h>
+> +#include <linux/clk.h>
+> +#include <linux/version.h>
+> +#include <linux/of.h>
+> +#include <linux/of_gpio.h>
+> +#include <linux/clk.h>
+> +#include <linux/io.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/pm_runtime.h>
+> +#include <linux/regmap.h>
+> +#include <linux/slab.h>
+> +#include <linux/io.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/workqueue.h>
+> +#include <asm/dma.h>
+> +#include <sound/core.h>
+> +#include <sound/pcm.h>
+> +#include <sound/pcm_params.h>
+> +#include <sound/initval.h>
+> +#include <sound/soc.h>
+> +#include <sound/dmaengine_pcm.h>
 
+Are you sure that you need all of these includes?
+
+> +
+[...]
+> +static struct snd_soc_dai_ops rockchip_i2s_dai_ops = {
+const
+> +	.trigger = rockchip_i2s_trigger,
+> +	.hw_params = rockchip_i2s_hw_params,
+> +	.set_fmt = rockchip_i2s_set_fmt,
+> +	.set_clkdiv = rockchip_i2s_set_clkdiv,
+> +	.set_sysclk = rockchip_i2s_set_sysclk,
+> +};
+[...]
+> +static int rockchip_i2s_probe(struct platform_device *pdev)
+> +{
+[...]
+> +	/* Try to set the I2S Channel id from dt */
+> +	pdev->id = of_alias_get_id(np, "i2s");
+> +	dev_set_name(&pdev->dev, "%s.%d",
+> +				pdev->dev.driver->name,
+> +				pdev->id);
+
+A device should not change its id or name.
+
+> +
+> +	i2s->dev = &pdev->dev;
+> +	dev_set_drvdata(&pdev->dev, i2s);
+> +
+> +	ret = devm_snd_soc_register_component(&pdev->dev,
+> +				&rockchip_i2s_component,
+> +				&rockchip_i2s_dai[pdev->id], 1);
+
+If those are two instances of the same I2S core just use one 
+snd_soc_dai_driver struct. There is no need for the driver to know or care 
+about how many instances of the core the system has.
+
+[...]
+> +
+> +static const struct snd_pcm_hardware rockchip_pcm_hardware = {
+> +	.info = SNDRV_PCM_INFO_INTERLEAVED |
+> +			SNDRV_PCM_INFO_BLOCK_TRANSFER |
+> +			SNDRV_PCM_INFO_MMAP |
+> +			SNDRV_PCM_INFO_MMAP_VALID |
+> +			SNDRV_PCM_INFO_PAUSE |
+> +			SNDRV_PCM_INFO_RESUME,
+> +	.formats = SNDRV_PCM_FMTBIT_S24_LE |
+> +			SNDRV_PCM_FMTBIT_S20_3LE |
+> +			SNDRV_PCM_FMTBIT_S16_LE,
+> +	.channels_min = 2,
+> +	.channels_max = 8,
+> +	.buffer_bytes_max = 128*1024,
+> +	.period_bytes_min = 64,
+> +	.period_bytes_max = 2048*4,
+> +	.periods_min = 3,
+> +	.periods_max = 128,
+> +	.fifo_size = 16,
+> +};
+> +
+> +static const struct snd_dmaengine_pcm_config rockchip_dmaengine_pcm_config = {
+> +	.pcm_hardware = &rockchip_pcm_hardware,
+> +	.prepare_slave_config = snd_dmaengine_pcm_prepare_slave_config,
+> +	.compat_filter_fn = NULL,
+> +	.prealloc_buffer_size = PAGE_SIZE * 8,
+> +};
+> +
+> +int rockchip_pcm_platform_register(struct device *dev)
+> +{
+> +	return snd_dmaengine_pcm_register(dev, &rockchip_dmaengine_pcm_config,
+> +			SND_DMAENGINE_PCM_FLAG_COMPAT|
+> +			SND_DMAENGINE_PCM_FLAG_NO_RESIDUE);
+
+We should try to avoid adding new users of the generic dmaengine pcm driver 
+that manually specify a snd_pcm_hardware struct. We now have the 
+infrastructure to autodiscover the capabilities of the DMA via the dmaengine 
+API.
+
+New drivers really should just do snd_dmaengine_pcm_register(dev, NULL, 0);
+
+- Lars
