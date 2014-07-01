@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758705AbaGASjr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 14:39:47 -0400
-Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:17775 "EHLO
-	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752065AbaGASjq (ORCPT
+	id S932310AbaGASmv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 14:42:51 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:45919 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754356AbaGASmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 14:39:46 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ar0HAN//slNbsGsk/2dsb2JhbABagw2sYwUBbpIbh0CBDRd1hAsCJC8jgQkRN4hGAbMClWIXhW+JMB2ELQWXfIJqi0WIPoNEOy8
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
-Subject: [PATCH 1/1] drm/i915: replace ALIGN(PAGE_SIZE) by PAGE_ALIGN
-Date: Tue,  1 Jul 2014 20:39:41 +0200
-Message-Id: <1404239981-14638-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	Tue, 1 Jul 2014 14:42:50 -0400
+Message-ID: <53B30118.8060507@ahsoftware.de>
+Date: Tue, 01 Jul 2014 20:42:32 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Alessandro Zummo <a.zummo@towertech.it>, Marc Dietrich <marvin24@gmx.de>
+CC: John Stultz <john.stultz@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        John Whitmore <arigead@gmail.com>
+Subject: Re: [PATCH 0/2][RFC] Try to handle hctosys w/ rtc modules
+References: <1403890031-26419-1-git-send-email-john.stultz@linaro.org>	<53AE6C3C.5090308@ahsoftware.de>	<53AE6FA2.7000808@ahsoftware.de>	<20140628205433.0ef4a8cf28a7fe4861a733dd@gmx.de> <20140630213716.36dd4227@linux.lan.towertech.it>
+In-Reply-To: <20140630213716.36dd4227@linux.lan.towertech.it>
+Content-Type: text/plain; charset=US-ASCII; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use mm.h definition
+Am 30.06.2014 21:37, schrieb Alessandro Zummo:
+> On Sat, 28 Jun 2014 20:54:33 +0200
+> Marc Dietrich <marvin24@gmx.de> wrote:
+>
+>>> Besides that the current hctosys-mechanism doesn't really work with
+>>> hot-plugable devices at all. Guess what N will be when you unplug and
+>>> plug in such a RTC again.
+>>
+>> We have a patch in the kernel which binds the rtc number to the
+>> hw device, so this even works for hotpluggable devices (at least on
+>> systems supporting device-tree). Not sure what your needs are.
+>
+>   I'm still not sure about how to solve this, maybe it would be better to
+>   identify the hctosys device that should be used at boot with
+>   a different identifier than rtcX (and move the option to the kernel command line)
 
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: intel-gfx@lists.freedesktop.org
-Cc: dri-devel@lists.freedesktop.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/gpu/drm/i915/intel_display.c | 10 +++++-----
- drivers/gpu/drm/i915/intel_fbdev.c   |  2 +-
- 2 files changed, 6 insertions(+), 6 deletions(-)
+Just in case some missunderstood me. I didn't talk about the userland 
+but the in-kernel stuff. Currently, it uses the N which was defined by 
+in the config (or zero) on resume to update the time. If you look at my 
+3. patch, you will see I have changed this there to use the driver (by 
+name) which was used at boot to set the time.
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 5f285fb..f07cb83 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -6116,8 +6116,8 @@ static void i9xx_get_plane_config(struct intel_crtc *crtc,
- 	aligned_height = intel_align_height(dev, crtc->base.primary->fb->height,
- 					    plane_config->tiled);
- 
--	plane_config->size = ALIGN(crtc->base.primary->fb->pitches[0] *
--				   aligned_height, PAGE_SIZE);
-+	plane_config->size = PAGE_ALIGN(crtc->base.primary->fb->pitches[0] *
-+					aligned_height);
- 
- 	DRM_DEBUG_KMS("pipe/plane %d/%d with fb: size=%dx%d@%d, offset=%x, pitch %d, size 0x%x\n",
- 		      pipe, plane, crtc->base.primary->fb->width,
-@@ -7136,8 +7136,8 @@ static void ironlake_get_plane_config(struct intel_crtc *crtc,
- 	aligned_height = intel_align_height(dev, crtc->base.primary->fb->height,
- 					    plane_config->tiled);
- 
--	plane_config->size = ALIGN(crtc->base.primary->fb->pitches[0] *
--				   aligned_height, PAGE_SIZE);
-+	plane_config->size = PAGE_ALIGN(crtc->base.primary->fb->pitches[0] *
-+					aligned_height);
- 
- 	DRM_DEBUG_KMS("pipe/plane %d/%d with fb: size=%dx%d@%d, offset=%x, pitch %d, size 0x%x\n",
- 		      pipe, plane, crtc->base.primary->fb->width,
-@@ -8233,7 +8233,7 @@ static u32
- intel_framebuffer_size_for_mode(struct drm_display_mode *mode, int bpp)
- {
- 	u32 pitch = intel_framebuffer_pitch_for_width(mode->hdisplay, bpp);
--	return ALIGN(pitch * mode->vdisplay, PAGE_SIZE);
-+	return PAGE_ALIGN(pitch * mode->vdisplay);
- }
- 
- static struct drm_framebuffer *
-diff --git a/drivers/gpu/drm/i915/intel_fbdev.c b/drivers/gpu/drm/i915/intel_fbdev.c
-index 088fe93..182fbc2 100644
---- a/drivers/gpu/drm/i915/intel_fbdev.c
-+++ b/drivers/gpu/drm/i915/intel_fbdev.c
-@@ -81,7 +81,7 @@ static int intelfb_alloc(struct drm_fb_helper *helper,
- 							  sizes->surface_depth);
- 
- 	size = mode_cmd.pitches[0] * mode_cmd.height;
--	size = ALIGN(size, PAGE_SIZE);
-+	size = PAGE_ALIGN(size);
- 	obj = i915_gem_object_create_stolen(dev, size);
- 	if (obj == NULL)
- 		obj = i915_gem_alloc_object(dev, size);
--- 
-1.9.1
+Fixing userspace would be easy too by just changing /dev/rtcN to 
+/dev/rtc_drivername. But I didn't that in my 3 patches in order to not 
+confuse maintainers (and userland people) with too much changes or new 
+stuff at once (unsucessfully, but ...).
 
+There still would be a problem about how to handle two RTCs which do use 
+the same driver, but I think this is fictitious scenario (and broken if 
+that should be for backup purposes) and therefor if someone would really 
+design such a system, he should solve this problem himself.
+
+Alexander Holler
