@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757789AbaGAIX7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 04:23:59 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:32902 "EHLO
+	id S1757773AbaGAIX6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 04:23:58 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:32938 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757512AbaGAIWd (ORCPT
+	with ESMTP id S1757518AbaGAIWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Jul 2014 04:22:33 -0400
 X-Original-SENDERIP: 10.177.220.145
@@ -16,9 +16,9 @@ Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
         linux-kernel@vger.kernel.org,
         Vladimir Davydov <vdavydov@parallels.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v3 5/9] slab: introduce alien_cache
-Date: Tue,  1 Jul 2014 17:27:34 +0900
-Message-Id: <1404203258-8923-6-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v3 8/9] slab: remove a useless lockdep annotation
+Date: Tue,  1 Jul 2014 17:27:37 +0900
+Message-Id: <1404203258-8923-9-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1404203258-8923-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1404203258-8923-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -26,254 +26,205 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we use array_cache for alien_cache. Although they are mostly
-similar, there is one difference, that is, need for spinlock.
-We don't need spinlock for array_cache itself, but to use array_cache for
-alien_cache, array_cache structure should have spinlock. This is needless
-overhead, so removing it would be better. This patch prepare it by
-introducing alien_cache and using it. In the following patch,
-we remove spinlock in array_cache.
+Now, there is no code to hold two lock simultaneously, since
+we don't call slab_destroy() with holding any lock. So, lockdep
+annotation is useless now. Remove it.
+
+v2: don't remove BAD_ALIEN_MAGIC in this patch. It will be removed
+    in the following patch.
 
 Acked-by: Christoph Lameter <cl@linux.com>
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 ---
- mm/slab.c |  108 ++++++++++++++++++++++++++++++++++++++-----------------------
- mm/slab.h |    2 +-
- 2 files changed, 68 insertions(+), 42 deletions(-)
+ mm/slab.c |  153 -------------------------------------------------------------
+ 1 file changed, 153 deletions(-)
 
 diff --git a/mm/slab.c b/mm/slab.c
-index 00b6bbc..e1a473d 100644
+index 854dfa0..7820a45 100644
 --- a/mm/slab.c
 +++ b/mm/slab.c
-@@ -203,6 +203,11 @@ struct array_cache {
- 			 */
- };
+@@ -472,139 +472,6 @@ static struct kmem_cache kmem_cache_boot = {
  
-+struct alien_cache {
-+	spinlock_t lock;
-+	struct array_cache ac;
-+};
-+
- #define SLAB_OBJ_PFMEMALLOC	1
- static inline bool is_obj_pfmemalloc(void *objp)
- {
-@@ -491,7 +496,7 @@ static void slab_set_lock_classes(struct kmem_cache *cachep,
- 		struct lock_class_key *l3_key, struct lock_class_key *alc_key,
- 		struct kmem_cache_node *n)
- {
--	struct array_cache **alc;
-+	struct alien_cache **alc;
- 	int r;
+ #define BAD_ALIEN_MAGIC 0x01020304ul
  
- 	lockdep_set_class(&n->list_lock, l3_key);
-@@ -507,7 +512,7 @@ static void slab_set_lock_classes(struct kmem_cache *cachep,
- 		return;
- 	for_each_node(r) {
- 		if (alc[r])
--			lockdep_set_class(&alc[r]->lock, alc_key);
-+			lockdep_set_class(&(alc[r]->ac.lock), alc_key);
- 	}
- }
- 
-@@ -965,12 +970,13 @@ static int transfer_objects(struct array_cache *to,
- #define drain_alien_cache(cachep, alien) do { } while (0)
- #define reap_alien(cachep, n) do { } while (0)
- 
--static inline struct array_cache **alloc_alien_cache(int node, int limit, gfp_t gfp)
-+static inline struct alien_cache **alloc_alien_cache(int node,
-+						int limit, gfp_t gfp)
- {
--	return (struct array_cache **)BAD_ALIEN_MAGIC;
-+	return (struct alien_cache **)BAD_ALIEN_MAGIC;
- }
- 
--static inline void free_alien_cache(struct array_cache **ac_ptr)
-+static inline void free_alien_cache(struct alien_cache **ac_ptr)
- {
- }
- 
-@@ -996,40 +1002,52 @@ static inline void *____cache_alloc_node(struct kmem_cache *cachep,
- static void *____cache_alloc_node(struct kmem_cache *, gfp_t, int);
- static void *alternate_node_alloc(struct kmem_cache *, gfp_t);
- 
--static struct array_cache **alloc_alien_cache(int node, int limit, gfp_t gfp)
-+static struct alien_cache *__alloc_alien_cache(int node, int entries,
-+						int batch, gfp_t gfp)
-+{
-+	int memsize = sizeof(void *) * entries + sizeof(struct alien_cache);
-+	struct alien_cache *alc = NULL;
-+
-+	alc = kmalloc_node(memsize, gfp, node);
-+	init_arraycache(&alc->ac, entries, batch);
-+	return alc;
-+}
-+
-+static struct alien_cache **alloc_alien_cache(int node, int limit, gfp_t gfp)
- {
--	struct array_cache **ac_ptr;
-+	struct alien_cache **alc_ptr;
- 	int memsize = sizeof(void *) * nr_node_ids;
- 	int i;
- 
- 	if (limit > 1)
- 		limit = 12;
--	ac_ptr = kzalloc_node(memsize, gfp, node);
--	if (ac_ptr) {
--		for_each_node(i) {
--			if (i == node || !node_online(i))
--				continue;
--			ac_ptr[i] = alloc_arraycache(node, limit, 0xbaadf00d, gfp);
--			if (!ac_ptr[i]) {
--				for (i--; i >= 0; i--)
--					kfree(ac_ptr[i]);
--				kfree(ac_ptr);
--				return NULL;
--			}
-+	alc_ptr = kzalloc_node(memsize, gfp, node);
-+	if (!alc_ptr)
-+		return NULL;
-+
-+	for_each_node(i) {
-+		if (i == node || !node_online(i))
-+			continue;
-+		alc_ptr[i] = __alloc_alien_cache(node, limit, 0xbaadf00d, gfp);
-+		if (!alc_ptr[i]) {
-+			for (i--; i >= 0; i--)
-+				kfree(alc_ptr[i]);
-+			kfree(alc_ptr);
-+			return NULL;
- 		}
- 	}
--	return ac_ptr;
-+	return alc_ptr;
- }
- 
--static void free_alien_cache(struct array_cache **ac_ptr)
-+static void free_alien_cache(struct alien_cache **alc_ptr)
- {
- 	int i;
- 
--	if (!ac_ptr)
-+	if (!alc_ptr)
- 		return;
- 	for_each_node(i)
--	    kfree(ac_ptr[i]);
--	kfree(ac_ptr);
-+	    kfree(alc_ptr[i]);
-+	kfree(alc_ptr);
- }
- 
- static void __drain_alien_cache(struct kmem_cache *cachep,
-@@ -1063,25 +1081,31 @@ static void reap_alien(struct kmem_cache *cachep, struct kmem_cache_node *n)
- 	int node = __this_cpu_read(slab_reap_node);
- 
- 	if (n->alien) {
--		struct array_cache *ac = n->alien[node];
+-#ifdef CONFIG_LOCKDEP
 -
--		if (ac && ac->avail && spin_trylock_irq(&ac->lock)) {
--			__drain_alien_cache(cachep, ac, node);
--			spin_unlock_irq(&ac->lock);
-+		struct alien_cache *alc = n->alien[node];
-+		struct array_cache *ac;
-+
-+		if (alc) {
-+			ac = &alc->ac;
-+			if (ac->avail && spin_trylock_irq(&ac->lock)) {
-+				__drain_alien_cache(cachep, ac, node);
-+				spin_unlock_irq(&ac->lock);
-+			}
- 		}
+-/*
+- * Slab sometimes uses the kmalloc slabs to store the slab headers
+- * for other slabs "off slab".
+- * The locking for this is tricky in that it nests within the locks
+- * of all other slabs in a few places; to deal with this special
+- * locking we put on-slab caches into a separate lock-class.
+- *
+- * We set lock class for alien array caches which are up during init.
+- * The lock annotation will be lost if all cpus of a node goes down and
+- * then comes back up during hotplug
+- */
+-static struct lock_class_key on_slab_l3_key;
+-static struct lock_class_key on_slab_alc_key;
+-
+-static struct lock_class_key debugobj_l3_key;
+-static struct lock_class_key debugobj_alc_key;
+-
+-static void slab_set_lock_classes(struct kmem_cache *cachep,
+-		struct lock_class_key *l3_key, struct lock_class_key *alc_key,
+-		struct kmem_cache_node *n)
+-{
+-	struct alien_cache **alc;
+-	int r;
+-
+-	lockdep_set_class(&n->list_lock, l3_key);
+-	alc = n->alien;
+-	/*
+-	 * FIXME: This check for BAD_ALIEN_MAGIC
+-	 * should go away when common slab code is taught to
+-	 * work even without alien caches.
+-	 * Currently, non NUMA code returns BAD_ALIEN_MAGIC
+-	 * for alloc_alien_cache,
+-	 */
+-	if (!alc || (unsigned long)alc == BAD_ALIEN_MAGIC)
+-		return;
+-	for_each_node(r) {
+-		if (alc[r])
+-			lockdep_set_class(&(alc[r]->lock), alc_key);
+-	}
+-}
+-
+-static void slab_set_debugobj_lock_classes_node(struct kmem_cache *cachep,
+-	struct kmem_cache_node *n)
+-{
+-	slab_set_lock_classes(cachep, &debugobj_l3_key, &debugobj_alc_key, n);
+-}
+-
+-static void slab_set_debugobj_lock_classes(struct kmem_cache *cachep)
+-{
+-	int node;
+-	struct kmem_cache_node *n;
+-
+-	for_each_kmem_cache_node(cachep, node, n)
+-		slab_set_debugobj_lock_classes_node(cachep, n);
+-}
+-
+-static void init_node_lock_keys(int q)
+-{
+-	int i;
+-
+-	if (slab_state < UP)
+-		return;
+-
+-	for (i = 1; i <= KMALLOC_SHIFT_HIGH; i++) {
+-		struct kmem_cache_node *n;
+-		struct kmem_cache *cache = kmalloc_caches[i];
+-
+-		if (!cache)
+-			continue;
+-
+-		n = get_node(cache, q);
+-		if (!n || OFF_SLAB(cache))
+-			continue;
+-
+-		slab_set_lock_classes(cache, &on_slab_l3_key,
+-				&on_slab_alc_key, n);
+-	}
+-}
+-
+-static void on_slab_lock_classes_node(struct kmem_cache *cachep,
+-	struct kmem_cache_node *n)
+-{
+-	slab_set_lock_classes(cachep, &on_slab_l3_key,
+-			&on_slab_alc_key, n);
+-}
+-
+-static inline void on_slab_lock_classes(struct kmem_cache *cachep)
+-{
+-	int node;
+-	struct kmem_cache_node *n;
+-
+-	VM_BUG_ON(OFF_SLAB(cachep));
+-	for_each_kmem_cache_node(cachep, node, n)
+-		on_slab_lock_classes_node(cachep, n);
+-}
+-
+-static inline void __init init_lock_keys(void)
+-{
+-	int node;
+-
+-	for_each_node(node)
+-		init_node_lock_keys(node);
+-}
+-#else
+-static void __init init_node_lock_keys(int q)
+-{
+-}
+-
+-static inline void init_lock_keys(void)
+-{
+-}
+-
+-static inline void on_slab_lock_classes(struct kmem_cache *cachep)
+-{
+-}
+-
+-static inline void on_slab_lock_classes_node(struct kmem_cache *cachep,
+-	struct kmem_cache_node *n)
+-{
+-}
+-
+-static void slab_set_debugobj_lock_classes_node(struct kmem_cache *cachep,
+-	struct kmem_cache_node *n)
+-{
+-}
+-
+-static void slab_set_debugobj_lock_classes(struct kmem_cache *cachep)
+-{
+-}
+-#endif
+-
+ static DEFINE_PER_CPU(struct delayed_work, slab_reap_work);
+ 
+ static inline struct array_cache *cpu_cache_get(struct kmem_cache *cachep)
+@@ -1354,13 +1221,7 @@ static int cpuup_prepare(long cpu)
+ 		spin_unlock_irq(&n->list_lock);
+ 		kfree(shared);
+ 		free_alien_cache(alien);
+-		if (cachep->flags & SLAB_DEBUG_OBJECTS)
+-			slab_set_debugobj_lock_classes_node(cachep, n);
+-		else if (!OFF_SLAB(cachep) &&
+-			 !(cachep->flags & SLAB_DESTROY_BY_RCU))
+-			on_slab_lock_classes_node(cachep, n);
  	}
+-	init_node_lock_keys(node);
+ 
+ 	return 0;
+ bad:
+@@ -1669,9 +1530,6 @@ void __init kmem_cache_init_late(void)
+ 			BUG();
+ 	mutex_unlock(&slab_mutex);
+ 
+-	/* Annotate slab for lockdep -- annotate the malloc caches */
+-	init_lock_keys();
+-
+ 	/* Done! */
+ 	slab_state = FULL;
+ 
+@@ -2452,17 +2310,6 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ 		return err;
+ 	}
+ 
+-	if (flags & SLAB_DEBUG_OBJECTS) {
+-		/*
+-		 * Would deadlock through slab_destroy()->call_rcu()->
+-		 * debug_object_activate()->kmem_cache_alloc().
+-		 */
+-		WARN_ON_ONCE(flags & SLAB_DESTROY_BY_RCU);
+-
+-		slab_set_debugobj_lock_classes(cachep);
+-	} else if (!OFF_SLAB(cachep) && !(flags & SLAB_DESTROY_BY_RCU))
+-		on_slab_lock_classes(cachep);
+-
+ 	return 0;
  }
  
- static void drain_alien_cache(struct kmem_cache *cachep,
--				struct array_cache **alien)
-+				struct alien_cache **alien)
- {
- 	int i = 0;
-+	struct alien_cache *alc;
- 	struct array_cache *ac;
- 	unsigned long flags;
- 
- 	for_each_online_node(i) {
--		ac = alien[i];
--		if (ac) {
-+		alc = alien[i];
-+		if (alc) {
-+			ac = &alc->ac;
- 			spin_lock_irqsave(&ac->lock, flags);
- 			__drain_alien_cache(cachep, ac, i);
- 			spin_unlock_irqrestore(&ac->lock, flags);
-@@ -1093,7 +1117,8 @@ static inline int cache_free_alien(struct kmem_cache *cachep, void *objp)
- {
- 	int nodeid = page_to_nid(virt_to_page(objp));
- 	struct kmem_cache_node *n;
--	struct array_cache *alien = NULL;
-+	struct alien_cache *alien = NULL;
-+	struct array_cache *ac;
- 	int node;
- 	LIST_HEAD(list);
- 
-@@ -1110,13 +1135,14 @@ static inline int cache_free_alien(struct kmem_cache *cachep, void *objp)
- 	STATS_INC_NODEFREES(cachep);
- 	if (n->alien && n->alien[nodeid]) {
- 		alien = n->alien[nodeid];
--		spin_lock(&alien->lock);
--		if (unlikely(alien->avail == alien->limit)) {
-+		ac = &alien->ac;
-+		spin_lock(&ac->lock);
-+		if (unlikely(ac->avail == ac->limit)) {
- 			STATS_INC_ACOVERFLOW(cachep);
--			__drain_alien_cache(cachep, alien, nodeid);
-+			__drain_alien_cache(cachep, ac, nodeid);
- 		}
--		ac_put_obj(cachep, alien, objp);
--		spin_unlock(&alien->lock);
-+		ac_put_obj(cachep, ac, objp);
-+		spin_unlock(&ac->lock);
- 	} else {
- 		n = get_node(cachep, nodeid);
- 		spin_lock(&n->list_lock);
-@@ -1193,7 +1219,7 @@ static void cpuup_canceled(long cpu)
- 	list_for_each_entry(cachep, &slab_caches, list) {
- 		struct array_cache *nc;
- 		struct array_cache *shared;
--		struct array_cache **alien;
-+		struct alien_cache **alien;
- 		LIST_HEAD(list);
- 
- 		/* cpu is dead; no one can alloc from it. */
-@@ -1275,7 +1301,7 @@ static int cpuup_prepare(long cpu)
- 	list_for_each_entry(cachep, &slab_caches, list) {
- 		struct array_cache *nc;
- 		struct array_cache *shared = NULL;
--		struct array_cache **alien = NULL;
-+		struct alien_cache **alien = NULL;
- 
- 		if (memcg_cache_dead(cachep))
- 			continue;
-@@ -3799,7 +3825,7 @@ static int alloc_kmem_cache_node(struct kmem_cache *cachep, gfp_t gfp)
- 	int node;
- 	struct kmem_cache_node *n;
- 	struct array_cache *new_shared;
--	struct array_cache **new_alien = NULL;
-+	struct alien_cache **new_alien = NULL;
- 
- 	for_each_online_node(node) {
- 
-diff --git a/mm/slab.h b/mm/slab.h
-index 4789ca4..84c160a 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -301,7 +301,7 @@ struct kmem_cache_node {
- 	unsigned int free_limit;
- 	unsigned int colour_next;	/* Per-node cache coloring */
- 	struct array_cache *shared;	/* shared per node */
--	struct array_cache **alien;	/* on other nodes */
-+	struct alien_cache **alien;	/* on other nodes */
- 	unsigned long next_reap;	/* updated without locking */
- 	int free_touched;		/* updated without locking */
- #endif
 -- 
 1.7.9.5
 
