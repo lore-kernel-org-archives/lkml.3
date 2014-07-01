@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982AbaGACVO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 22:21:14 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:55763 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbaGACVM (ORCPT
+	id S1757268AbaGACWM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 22:22:12 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:58416 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237AbaGACWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 22:21:12 -0400
-Message-ID: <53B21B0E.8010707@hitachi.com>
-Date: Tue, 01 Jul 2014 11:21:02 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 30 Jun 2014 22:22:11 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53B21B50.2010207@roeck-us.net>
+Date: Mon, 30 Jun 2014 19:22:08 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
-        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-tip-commits@vger.kernel.org,
-        akataria@vmware.com, anil.s.keshavamurthy@intel.com,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Kevin Hao <haokexin@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: Re: [PATCH v4] [BUGFIX] kprobes: Fix "Failed to find blacklist"
- error on ia64 and ppc64
-References: <20140620022307.23075.55858.stgit@kbuild-fedora.novalocal>  <53B0D61B.9010104@hitachi.com> <1404128176.7888.1.camel@concordia>
-In-Reply-To: <1404128176.7888.1.camel@concordia>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc: Disable RELOCATABLE for COMPILE_TEST with PPC64
+References: <1404153930-26568-1-git-send-email-linux@roeck-us.net> <20140701105510.75718b47@canb.auug.org.au>
+In-Reply-To: <20140701105510.75718b47@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/06/30 20:36), Michael Ellerman wrote:
-> On Mon, 2014-06-30 at 12:14 +0900, Masami Hiramatsu wrote:
->> Ping? :)
-> 
-> Yeah sorry. I started looking at this and got dragged into another mess.
-> 
-> You seem to have duplicated the functionality of arch_deref_entry_point(),
-> which was also added for kprobes, and for the same reason - ie. because some
-> arches have strange function pointers. Is there some reason you can't use it?
+On 06/30/2014 05:55 PM, Stephen Rothwell wrote:
+> Hi Guenter,
+>
+> On Mon, 30 Jun 2014 11:45:30 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
+>>
+>> powerpc:allmodconfig has been failing for some time with the following
+>> error.
+>>
+>> arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
+>> arch/powerpc/kernel/exceptions-64s.S:1312: Error: attempt to move .org backwards
+>> make[1]: *** [arch/powerpc/kernel/head_64.o] Error 1
+>>
+>> A number of attempts to fix the problem by moving around code have been
+>> unsuccessful and resulted in failed builds for some configurations and
+>> the discovery of toolchain bugs.
+>>
+>> Fix the problem by disabling RELOCATABLE for COMPILE_TEST builds instead.
 
-Ah, right! Hmm, it seems some more work to update it. but basically, we can do.
-BTW, is there any other users who need to access the actual function entry (for
-kallsyms case)?
+s/Fix/Work around/
 
-If so, I guess it'd better to merge this version and replace kprobe's local
-arch_deref_entry_point() with generic function_entry() macro.
+would probably be a better here.
 
-Thank you,
+>> While this is less than perfect, it avoids substantial code changes
+>> which would otherwise be necessary just to make COMPILE_TEST builds
+>> happy and might have undesired side effects.
+>>
+>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>
+> I'll dump this in my "fixes" tree today and see how it goes.
+>
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Would be great. Note that allyescconfig still fails with relocation errors
+after this patch has been applied.
 
+Thanks,
+Guenter
 
