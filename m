@@ -1,51 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757858AbaGATCL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 15:02:11 -0400
-Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:10391 "EHLO
-	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751508AbaGATCJ (ORCPT
+	id S1755896AbaGATHf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 15:07:35 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:34646 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371AbaGATHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 15:02:09 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ar0HAMEEs1NbsGsk/2dsb2JhbABagw2sYwUBbpIbh0CBDhd1hAsCUyOBAgcRN4guAxUBswaPSA2GCReFb4cJgUNkHYQtBZd8bIF+i0WCLIYSg0Q7gTE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, David Airlie <airlied@linux.ie>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH 1/1] drm/bochs: replace ALIGN(PAGE_SIZE) by PAGE_ALIGN
-Date: Tue,  1 Jul 2014 21:02:03 +0200
-Message-Id: <1404241323-15156-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	Tue, 1 Jul 2014 15:07:33 -0400
+Date: Tue, 01 Jul 2014 12:07:30 -0700 (PDT)
+Message-Id: <20140701.120730.2210532934459689553.davem@davemloft.net>
+To: edward.allcutt@openmarket.com
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipv4: icmp: Fix pMTU handling for rare case
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.DEB.2.10.1407011912440.5997@tabini.allcutt.me.uk>
+References: <alpine.DEB.2.10.1407010937120.5997@tabini.allcutt.me.uk>
+	<20140701.110510.2218293817137911715.davem@davemloft.net>
+	<alpine.DEB.2.10.1407011912440.5997@tabini.allcutt.me.uk>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 01 Jul 2014 12:07:32 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use mm.h definition
+From: Edward Allcutt <edward.allcutt@openmarket.com>
+Date: Tue, 1 Jul 2014 19:50:15 +0100 (BST)
 
-Cc: David Airlie <airlied@linux.ie>
-Cc: David Herrmann <dh.herrmann@gmail.com>
-Cc: dri-devel@lists.freedesktop.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/gpu/drm/bochs/bochs_mm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Is there another reason you dislike this approach?
 
-diff --git a/drivers/gpu/drm/bochs/bochs_mm.c b/drivers/gpu/drm/bochs/bochs_mm.c
-index b9a695d..1728a1b 100644
---- a/drivers/gpu/drm/bochs/bochs_mm.c
-+++ b/drivers/gpu/drm/bochs/bochs_mm.c
-@@ -387,7 +387,7 @@ int bochs_gem_create(struct drm_device *dev, u32 size, bool iskernel,
- 
- 	*obj = NULL;
- 
--	size = ALIGN(size, PAGE_SIZE);
-+	size = PAGE_ALIGN(size);
- 	if (size == 0)
- 		return -EINVAL;
- 
--- 
-1.9.1
-
+I didn't say I won't apply the patch, actually the email you are
+replying to is strictly about figuring out what's happening on
+the OpenBSD systems for their sake.
