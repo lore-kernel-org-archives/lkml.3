@@ -1,114 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030338AbaGAWn0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 18:43:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55435 "EHLO
+	id S1030376AbaGAWni (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 18:43:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55468 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965071AbaGAWnY (ORCPT
+	with ESMTP id S965072AbaGAWnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 18:43:24 -0400
-Date: Tue, 1 Jul 2014 13:51:48 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Josh Boyer <jwboyer@fedoraproject.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Brian Lane <bcl@redhat.com>, John McCutchan <john@johnmccutchan.com>,
-        Robert Love <rlove@rlove.org>, Eric Paris <eparis@parisplace.org>
-Subject: Re: [PATCH driver-core-linus] kernfs: kernfs_notify() must be
- useable from non-sleepable contexts
-Message-ID: <20140701205148.GA26542@kroah.com>
-References: <CA+5PVA4h2hQJLrAm4eEZ8oUgGiAjq2y5eAyBcJWxK_FiQXnuQg@mail.gmail.com>
- <20140629082637.GA23942@redhat.com>
- <20140629193222.GA7030@lst.de>
- <20140629204710.GB11100@redhat.com>
- <53B07D48.60003@kernel.dk>
- <20140630201741.GA20853@htj.dyndns.org>
- <20140701204103.GA12459@htj.dyndns.org>
+	Tue, 1 Jul 2014 18:43:25 -0400
+Date: Tue, 1 Jul 2014 15:36:44 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 49/50] mars: generic pre-patch for mars
+Message-ID: <20140701223644.GA30330@kroah.com>
+References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
+ <1404251250-22992-50-git-send-email-tst@schoebel-theuer.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140701204103.GA12459@htj.dyndns.org>
+In-Reply-To: <1404251250-22992-50-git-send-email-tst@schoebel-theuer.de>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 01, 2014 at 04:41:03PM -0400, Tejun Heo wrote:
-> d911d9874801 ("kernfs: make kernfs_notify() trigger inotify events
-> too") added fsnotify triggering to kernfs_notify() which requires a
-> sleepable context.  There are already existing users of
-> kernfs_notify() which invoke it from an atomic context and in general
-> it's silly to require a sleepable context for triggering a
-> notification.
+On Tue, Jul 01, 2014 at 11:47:29PM +0200, Thomas Schoebel-Theuer wrote:
+> From: Thomas Schoebel-Theuer <schoebel@bell.site>
 > 
-> The following is an invalid context bug triggerd by md invoking
-> sysfs_notify() from IO completion path.
+> Mostly introduces missing EXPORT_SYMBOL().
+> Should have no impact onto the kernel.
 > 
->  BUG: sleeping function called from invalid context at kernel/locking/mutex.c:586
->  in_atomic(): 1, irqs_disabled(): 1, pid: 0, name: swapper/1
->  2 locks held by swapper/1/0:
->   #0:  (&(&vblk->vq_lock)->rlock){-.-...}, at: [<ffffffffa0039042>] virtblk_done+0x42/0xe0 [virtio_blk]
->   #1:  (&(&bitmap->counts.lock)->rlock){-.....}, at: [<ffffffff81633718>] bitmap_endwrite+0x68/0x240
->  irq event stamp: 33518
->  hardirqs last  enabled at (33515): [<ffffffff8102544f>] default_idle+0x1f/0x230
->  hardirqs last disabled at (33516): [<ffffffff818122ed>] common_interrupt+0x6d/0x72
->  softirqs last  enabled at (33518): [<ffffffff810a1272>] _local_bh_enable+0x22/0x50
->  softirqs last disabled at (33517): [<ffffffff810a29e0>] irq_enter+0x60/0x80
->  CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.16.0-0.rc2.git2.1.fc21.x86_64 #1
->  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
->   0000000000000000 f90db13964f4ee05 ffff88007d403b80 ffffffff81807b4c
->   0000000000000000 ffff88007d403ba8 ffffffff810d4f14 0000000000000000
->   0000000000441800 ffff880078fa1780 ffff88007d403c38 ffffffff8180caf2
->  Call Trace:
->   <IRQ>  [<ffffffff81807b4c>] dump_stack+0x4d/0x66
->   [<ffffffff810d4f14>] __might_sleep+0x184/0x240
->   [<ffffffff8180caf2>] mutex_lock_nested+0x42/0x440
->   [<ffffffff812d76a0>] kernfs_notify+0x90/0x150
->   [<ffffffff8163377c>] bitmap_endwrite+0xcc/0x240
->   [<ffffffffa00de863>] close_write+0x93/0xb0 [raid1]
->   [<ffffffffa00df029>] r1_bio_write_done+0x29/0x50 [raid1]
->   [<ffffffffa00e0474>] raid1_end_write_request+0xe4/0x260 [raid1]
->   [<ffffffff813acb8b>] bio_endio+0x6b/0xa0
->   [<ffffffff813b46c4>] blk_update_request+0x94/0x420
->   [<ffffffff813bf0ea>] blk_mq_end_io+0x1a/0x70
->   [<ffffffffa00392c2>] virtblk_request_done+0x32/0x80 [virtio_blk]
->   [<ffffffff813c0648>] __blk_mq_complete_request+0x88/0x120
->   [<ffffffff813c070a>] blk_mq_complete_request+0x2a/0x30
->   [<ffffffffa0039066>] virtblk_done+0x66/0xe0 [virtio_blk]
->   [<ffffffffa002535a>] vring_interrupt+0x3a/0xa0 [virtio_ring]
->   [<ffffffff81116177>] handle_irq_event_percpu+0x77/0x340
->   [<ffffffff8111647d>] handle_irq_event+0x3d/0x60
->   [<ffffffff81119436>] handle_edge_irq+0x66/0x130
->   [<ffffffff8101c3e4>] handle_irq+0x84/0x150
->   [<ffffffff818146ad>] do_IRQ+0x4d/0xe0
->   [<ffffffff818122f2>] common_interrupt+0x72/0x72
->   <EOI>  [<ffffffff8105f706>] ? native_safe_halt+0x6/0x10
->   [<ffffffff81025454>] default_idle+0x24/0x230
->   [<ffffffff81025f9f>] arch_cpu_idle+0xf/0x20
->   [<ffffffff810f5adc>] cpu_startup_entry+0x37c/0x7b0
->   [<ffffffff8104df1b>] start_secondary+0x25b/0x300
+> This is the generic version which exports all sys_*() system
+> calls. This should not introduce any additional maintenance pain
+> because that interfaces has to be stable anyway due to POSIX etc.
 > 
-> This patch fixes it by punting the notification delivery through a
-> work item.  This ends up adding an extra pointer to kernfs_elem_attr
-> enlarging kernfs_node by a pointer, which is not ideal but not a very
-> big deal either.  If this turns out to be an actual issue, we can move
-> kernfs_elem_attr->size to kernfs_node->iattr later.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Josh Boyer <jwboyer@fedoraproject.org>
-> Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> Cc: Jens Axboe <axboe@kernel.dk>
+> Signed-off-by: Thomas Schoebel-Theuer <schoebel@bell.site>
 > ---
->  fs/kernfs/file.c       |   69 +++++++++++++++++++++++++++++++++++++++----------
->  include/linux/kernfs.h |    1 
->  2 files changed, 56 insertions(+), 14 deletions(-)
+>  fs/open.c                  | 1 -
+>  fs/utimes.c                | 2 ++
+>  include/linux/syscalls.h   | 3 +++
+>  include/uapi/linux/major.h | 1 +
+>  mm/page_alloc.c            | 3 +++
+>  5 files changed, 9 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/open.c b/fs/open.c
+> index 36662d0..3b21b76 100644
+> --- a/fs/open.c
+> +++ b/fs/open.c
+> @@ -1064,7 +1064,6 @@ SYSCALL_DEFINE1(close, unsigned int, fd)
+>  
+>  	return retval;
+>  }
+> -EXPORT_SYMBOL(sys_close);
+>  
+>  /*
+>   * This routine simulates a hangup on the tty, to arrange that users
+> diff --git a/fs/utimes.c b/fs/utimes.c
+> index aa138d6..4a1f4a8 100644
+> --- a/fs/utimes.c
+> +++ b/fs/utimes.c
+> @@ -1,3 +1,4 @@
+> +#include <linux/module.h>
+>  #include <linux/compiler.h>
+>  #include <linux/file.h>
+>  #include <linux/fs.h>
+> @@ -181,6 +182,7 @@ retry:
+>  out:
+>  	return error;
+>  }
+> +EXPORT_SYMBOL(do_utimes);
+>  
+>  SYSCALL_DEFINE4(utimensat, int, dfd, const char __user *, filename,
+>  		struct timespec __user *, utimes, int, flags)
+> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+> index b0881a0..c674309 100644
+> --- a/include/linux/syscalls.h
+> +++ b/include/linux/syscalls.h
+> @@ -75,6 +75,7 @@ struct sigaltstack;
+>  #include <linux/sem.h>
+>  #include <asm/siginfo.h>
+>  #include <linux/unistd.h>
+> +#include <linux/export.h>
+>  #include <linux/quota.h>
+>  #include <linux/key.h>
+>  #include <trace/syscall.h>
+> @@ -176,6 +177,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+>  
+>  #define SYSCALL_DEFINE0(sname)					\
+>  	SYSCALL_METADATA(_##sname, 0);				\
+> +	EXPORT_SYMBOL(sys_##sname);				\
+>  	asmlinkage long sys_##sname(void)
+>  
+>  #define SYSCALL_DEFINE1(name, ...) SYSCALL_DEFINEx(1, _##name, __VA_ARGS__)
+> @@ -202,6 +204,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+>  		__PROTECT(x, ret,__MAP(x,__SC_ARGS,__VA_ARGS__));	\
+>  		return ret;						\
+>  	}								\
+> +	EXPORT_SYMBOL(sys##name);					\
+>  	static inline long SYSC##name(__MAP(x,__SC_DECL,__VA_ARGS__))
+>  
 
-Looks good to me, do you want to take this with your other kernfs
-patches for 3.16-final?  Or if you don't have that, I can take it
-through my tree, it's your choice, either is fine for me.
+Heh, nice try, but no, we aren't going to export all syscalls, that's
+crazy.  And wrong on many levels, sorry.
 
-If you want it in your tree, feel free to add:
-	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Be explicit with your exports, and justify _why_ you need them.
+
+thanks,
+
+greg k-h
