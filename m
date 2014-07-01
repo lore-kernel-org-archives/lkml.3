@@ -1,64 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758723AbaGARJI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 13:09:08 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:51699 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758705AbaGARJE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 13:09:04 -0400
-Date: Tue, 1 Jul 2014 18:08:53 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [RFC PATCH 0/6] kernel: Add support for restart notifier call
- chain
-Message-ID: <20140701170853.GX18313@arm.com>
-References: <1404155499-21177-1-git-send-email-linux@roeck-us.net>
- <20140630195946.GI32514@n2100.arm.linux.org.uk>
- <20140630202851.GA12888@roeck-us.net>
- <20140701112413.GQ18313@arm.com>
- <53B2BB74.7050300@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B2BB74.7050300@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932385AbaGARIG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 13:08:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59040 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758555AbaGARIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 13:08:02 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Jerome Marchand <jmarchan@redhat.com>, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: [PATCH v4 08/13] numa_maps: remove numa_maps->vma
+Date: Tue,  1 Jul 2014 13:07:26 -0400
+Message-Id: <1404234451-21695-9-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1404234451-21695-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1404234451-21695-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 01, 2014 at 02:45:24PM +0100, Guenter Roeck wrote:
-> On 07/01/2014 04:24 AM, Catalin Marinas wrote:
-> > On Mon, Jun 30, 2014 at 09:28:51PM +0100, Guenter Roeck wrote:
-> >> What is restart-poweroff supposed to do in the first place, and why
-> >> doesn't it call machine_restart() ? If it is what I think it is, ie
-> >> a fallback for pm_power_off, it could be made generic and does not
-> >> really have to depend on ARM.
-> >
-> > I think this one pretends to do a power-off via restart. It could call
-> > machine_restart() but this only passes the default reboot_mode to
-> > arm_pm_restart().
-> 
-> Unless one sets reboot_mode first. See my proposed patch in
-> https://lkml.org/lkml/2014/6/30/792.
+pagewalk.c can handle vma in itself, so we don't have to pass vma via
+walk->private. And show_numa_map() walks pages on vma basis, so using
+walk_page_vma() is preferable.
 
-It looks fine to me.
+ChangeLog v4:
+- remove redundant vma
 
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ fs/proc/task_mmu.c | 29 +++++++++++++----------------
+ 1 file changed, 13 insertions(+), 16 deletions(-)
+
+diff --git v3.16-rc3.orig/fs/proc/task_mmu.c v3.16-rc3/fs/proc/task_mmu.c
+index 0d3d1ac32b2e..4ca28f401bb1 100644
+--- v3.16-rc3.orig/fs/proc/task_mmu.c
++++ v3.16-rc3/fs/proc/task_mmu.c
+@@ -1245,7 +1245,6 @@ const struct file_operations proc_pagemap_operations = {
+ #ifdef CONFIG_NUMA
+ 
+ struct numa_maps {
+-	struct vm_area_struct *vma;
+ 	unsigned long pages;
+ 	unsigned long anon;
+ 	unsigned long active;
+@@ -1314,18 +1313,17 @@ static struct page *can_gather_numa_stats(pte_t pte, struct vm_area_struct *vma,
+ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
+ 		unsigned long end, struct mm_walk *walk)
+ {
+-	struct numa_maps *md;
++	struct numa_maps *md = walk->private;
++	struct vm_area_struct *vma = walk->vma;
+ 	spinlock_t *ptl;
+ 	pte_t *orig_pte;
+ 	pte_t *pte;
+ 
+-	md = walk->private;
+-
+-	if (pmd_trans_huge_lock(pmd, md->vma, &ptl) == 1) {
++	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+ 		pte_t huge_pte = *(pte_t *)pmd;
+ 		struct page *page;
+ 
+-		page = can_gather_numa_stats(huge_pte, md->vma, addr);
++		page = can_gather_numa_stats(huge_pte, vma, addr);
+ 		if (page)
+ 			gather_stats(page, md, pte_dirty(huge_pte),
+ 				     HPAGE_PMD_SIZE/PAGE_SIZE);
+@@ -1337,7 +1335,7 @@ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
+ 		return 0;
+ 	orig_pte = pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
+ 	do {
+-		struct page *page = can_gather_numa_stats(*pte, md->vma, addr);
++		struct page *page = can_gather_numa_stats(*pte, vma, addr);
+ 		if (!page)
+ 			continue;
+ 		gather_stats(page, md, pte_dirty(*pte), 1);
+@@ -1385,7 +1383,12 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 	struct file *file = vma->vm_file;
+ 	struct task_struct *task = proc_priv->task;
+ 	struct mm_struct *mm = vma->vm_mm;
+-	struct mm_walk walk = {};
++	struct mm_walk walk = {
++		.hugetlb_entry = gather_hugetlb_stats,
++		.pmd_entry = gather_pte_stats,
++		.private = md,
++		.mm = mm,
++	};
+ 	struct mempolicy *pol;
+ 	char buffer[64];
+ 	int nid;
+@@ -1396,13 +1399,6 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 	/* Ensure we start with an empty set of numa_maps statistics. */
+ 	memset(md, 0, sizeof(*md));
+ 
+-	md->vma = vma;
+-
+-	walk.hugetlb_entry = gather_hugetlb_stats;
+-	walk.pmd_entry = gather_pte_stats;
+-	walk.private = md;
+-	walk.mm = mm;
+-
+ 	pol = get_vma_policy(task, vma, vma->vm_start);
+ 	mpol_to_str(buffer, sizeof(buffer), pol);
+ 	mpol_cond_put(pol);
+@@ -1432,7 +1428,8 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+ 	if (is_vm_hugetlb_page(vma))
+ 		seq_puts(m, " huge");
+ 
+-	walk_page_range(vma->vm_start, vma->vm_end, &walk);
++	/* mmap_sem is held by m_start */
++	walk_page_vma(vma, &walk);
+ 
+ 	if (!md->pages)
+ 		goto out;
 -- 
-Catalin
+1.9.3
+
