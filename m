@@ -1,169 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757917AbaGANCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 09:02:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64657 "EHLO mx1.redhat.com"
+	id S1758014AbaGANDJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 09:03:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54344 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757852AbaGANC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 09:02:28 -0400
+	id S1757611AbaGANDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 09:03:07 -0400
 From: "Jerome Marchand" <jmarchan@redhat.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 5/5] mm, shmem: Show location of non-resident shmem pages in smaps
-Date: Tue,  1 Jul 2014 15:02:01 +0200
-Message-Id: <1404219721-32241-6-git-send-email-jmarchan@redhat.com>
+Subject: [PATCH 2/5] mm, shmem: Add shmem_locate function
+Date: Tue,  1 Jul 2014 15:01:58 +0200
+Message-Id: <1404219721-32241-3-git-send-email-jmarchan@redhat.com>
 In-Reply-To: <1404219721-32241-1-git-send-email-jmarchan@redhat.com>
 References: <1404219721-32241-1-git-send-email-jmarchan@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds ShmOther, ShmOrphan, ShmSwapCache and ShmSwap lines to
-/proc/<pid>/smaps for shmem mappings.
-
-ShmOther: amount of memory that is currently resident in memory, not
-present in the page table of this process but present in the page
-table of an other process.
-ShmOrphan: amount of memory that is currently resident in memory but
-not present in any process page table. This can happens when a process
-unmaps a shared mapping it has accessed before or exits. Despite being
-resident, this memory is not currently accounted to any process.
-ShmSwapcache: amount of memory currently in swap cache
-ShmSwap: amount of memory that is paged out on disk.
+The shmem subsytem is kind of a black box: the generic mm code can't
+always know where a specific page physically is. This patch adds the
+shmem_locate() function to find out the physical location of shmem
+pages (resident, in swap or swapcache). If the optional argument count
+isn't NULL and the page is resident, it also returns the mapcount value
+of this page.
+This is intended to allow finer accounting of shmem/tmpfs pages.
 
 Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
 ---
- Documentation/filesystems/proc.txt | 11 ++++++++
- fs/proc/task_mmu.c                 | 56 +++++++++++++++++++++++++++++++++++++-
- 2 files changed, 66 insertions(+), 1 deletion(-)
+ include/linux/mm.h |  7 +++++++
+ mm/shmem.c         | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 36 insertions(+)
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index 1a15c56..a65ab59 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -422,6 +422,10 @@ Swap:                  0 kB
- KernelPageSize:        4 kB
- MMUPageSize:           4 kB
- Locked:              374 kB
-+ShmOther:            124 kB
-+ShmOrphan:             0 kB
-+ShmSwapCache:         12 kB
-+ShmSwap:              36 kB
- VmFlags: rd ex mr mw me de
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index e69ee9d..34099fa 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1066,6 +1066,13 @@ extern bool skip_free_areas_node(unsigned int flags, int nid);
  
- the first of these lines shows the same information as is displayed for the
-@@ -437,6 +441,13 @@ a mapping associated with a file may contain anonymous pages: when MAP_PRIVATE
- and a page is modified, the file page is replaced by a private anonymous copy.
- "Swap" shows how much would-be-anonymous memory is also used, but out on
- swap.
-+The ShmXXX lines only appears for shmem mapping. They show the amount of memory
-+from the mapping that is currently:
-+ - resident in RAM, not present in the page table of this process but present
-+ in the page table of an other process (ShmOther)
-+ - resident in RAM but not present in the page table of any process (ShmOrphan)
-+ - in swap cache (ShmSwapCache)
-+ - paged out on swap (ShmSwap).
- 
- "VmFlags" field deserves a separate description. This member represents the kernel
- flags associated with the particular virtual memory area in two letter encoded
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 73f0ce4..9b1de55 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -518,9 +518,33 @@ struct mem_size_stats {
- 	unsigned long anonymous_thp;
- 	unsigned long swap;
- 	unsigned long nonlinear;
-+	unsigned long shmem_resident_other;
-+	unsigned long shmem_swapcache;
-+	unsigned long shmem_swap;
-+	unsigned long shmem_orphan;
- 	u64 pss;
- };
- 
-+void update_shmem_stats(struct mem_size_stats *mss, struct vm_area_struct *vma,
-+			pgoff_t pgoff, unsigned long size)
-+{
-+	int count = 0;
+ int shmem_zero_setup(struct vm_area_struct *);
+ #ifdef CONFIG_SHMEM
 +
-+	switch (shmem_locate(vma, pgoff, &count)) {
-+	case SHMEM_RESIDENT:
-+		if (count)
-+			mss->shmem_resident_other += size;
-+		else
-+			mss->shmem_orphan += size;
-+		break;
-+	case SHMEM_SWAPCACHE:
-+		mss->shmem_swapcache += size;
-+		break;
-+	case SHMEM_SWAP:
-+		mss->shmem_swap += size;
-+		break;
-+	}
-+}
- 
- static void smaps_pte_entry(pte_t ptent, unsigned long addr,
- 		unsigned long ptent_size, struct mm_walk *walk)
-@@ -543,7 +567,8 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
- 	} else if (pte_file(ptent)) {
- 		if (pte_to_pgoff(ptent) != pgoff)
- 			mss->nonlinear += ptent_size;
--	}
-+	} else if (pte_none(ptent) && shmem_vma(vma))
-+		update_shmem_stats(mss, vma, pgoff, ptent_size);
- 
- 	if (!page)
- 		return;
-@@ -604,6 +629,21 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 	return 0;
++#define SHMEM_NOTPRESENT	1 /* page is not present in memory */
++#define SHMEM_RESIDENT		2 /* page is resident in RAM */
++#define SHMEM_SWAPCACHE		3 /* page is in swap cache */
++#define SHMEM_SWAP		4 /* page is paged out */
++
++extern int shmem_locate(struct vm_area_struct *vma, pgoff_t pgoff, int *count);
+ bool shmem_mapping(struct address_space *mapping);
+ #else
+ static inline bool shmem_mapping(struct address_space *mapping)
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 5e5d860..11b37a7 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1305,6 +1305,35 @@ static int shmem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	return ret;
  }
  
-+static int smaps_pte_hole(unsigned long addr, unsigned long end,
-+			  struct mm_walk *walk)
++int shmem_locate(struct vm_area_struct *vma, pgoff_t pgoff, int *count)
 +{
-+	struct mem_size_stats *mss = walk->private;
-+	struct vm_area_struct *vma = mss->vma;
-+	pgoff_t pgoff;
++	struct address_space *mapping = file_inode(vma->vm_file)->i_mapping;
++	struct page *page;
++	swp_entry_t swap;
++	int ret;
 +
-+	for (; addr != end; addr += PAGE_SIZE) {
-+		pgoff = linear_page_index(vma, addr);
-+		update_shmem_stats(mss, vma, pgoff, PAGE_SIZE);
++	page = find_get_entry(mapping, pgoff);
++	if (!page) /* Not yet initialised? */
++		return SHMEM_NOTPRESENT;
++
++	if (!radix_tree_exceptional_entry(page)) {
++		ret = SHMEM_RESIDENT;
++		if (count)
++			*count = page_mapcount(page);
++		goto out;
 +	}
 +
-+	return 0;
++	swap = radix_to_swp_entry(page);
++	page = find_get_page(swap_address_space(swap), swap.val);
++	if (!page)
++		return SHMEM_SWAP;
++	ret = SHMEM_SWAPCACHE;
++
++out:
++	page_cache_release(page);
++	return ret;
 +}
 +
- static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
+ #ifdef CONFIG_NUMA
+ static int shmem_set_policy(struct vm_area_struct *vma, struct mempolicy *mpol)
  {
- 	/*
-@@ -670,6 +710,10 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
- 		.private = &mss,
- 	};
- 
-+	/* Only walk the holes when it'a a shmem mapping */
-+	if (shmem_vma(vma))
-+		smaps_walk.pte_hole = smaps_pte_hole;
-+
- 	memset(&mss, 0, sizeof mss);
- 	mss.vma = vma;
- 	/* mmap_sem is held in m_start */
-@@ -712,6 +756,16 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
- 	if (vma->vm_flags & VM_NONLINEAR)
- 		seq_printf(m, "Nonlinear:      %8lu kB\n",
- 				mss.nonlinear >> 10);
-+	if (shmem_vma(vma))
-+		seq_printf(m,
-+			   "ShmOther:       %8lu kB\n"
-+			   "ShmOrphan:      %8lu kB\n"
-+			   "ShmSwapCache:   %8lu kB\n"
-+			   "ShmSwap:        %8lu kB\n",
-+			   mss.shmem_resident_other >> 10,
-+			   mss.shmem_orphan >> 10,
-+			   mss.shmem_swapcache >> 10,
-+			   mss.shmem_swap >> 10);
- 
- 	show_smap_vma_flags(m, vma);
- 
 -- 
 1.9.3
 
