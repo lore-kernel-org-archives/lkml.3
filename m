@@ -1,219 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758123AbaGAPPA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 11:15:00 -0400
-Received: from mail.eperm.de ([89.247.134.16]:46427 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754356AbaGAPO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 11:14:58 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: herbert@gondor.apana.org.au
-Cc: Rafael Aquini <aquini@redhat.com>, aris@redhat.com,
-        Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] DRBG: Mix a time stamp into DRBG state
-Date: Tue, 01 Jul 2014 17:07:59 +0200
-Message-ID: <54012953.aoTx2qNanx@myon.chronox.de>
-User-Agent: KMail/4.12.5 (Linux/3.14.9-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <36957559.tbJt1gJF6I@myon.chronox.de>
-References: <36957559.tbJt1gJF6I@myon.chronox.de>
+	id S1758143AbaGAPPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 11:15:31 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:62551 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755926AbaGAPP2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 11:15:28 -0400
+Date: Tue, 1 Jul 2014 16:15:19 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 07/14] mfd: Add driver for Maxim 77802 Power
+ Management IC
+Message-ID: <20140701151519.GM27971@lee--X1>
+References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1403806546-31122-8-git-send-email-javier.martinez@collabora.co.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1403806546-31122-8-git-send-email-javier.martinez@collabora.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current locking approach of the DRBG tries to keep the protected
-code paths very minimal. It is therefore possible that two threads query
-one DRBG instance at the same time. When thread A requests random
-numbers, a shadow copy of the DRBG state is created upon which the
-request for A is processed. After finishing the state for A's request is
-merged back into the DRBG state. If now thread B requests random numbers
-from the same DRBG after the request for thread A is received, but
-before A's shadow state is merged back, the random numbers for B will be
-identical to the ones for A. Please note that the time window is very
-small for this scenario.
+On Thu, 26 Jun 2014, Javier Martinez Canillas wrote:
 
-To prevent that there is even a theoretical chance for thread A and B
-having the same DRBG state, the current time stamp is provided as
-additional information string for each new request.
+> Maxim MAX77802 is a power management chip that contains 10 high
+> efficiency Buck regulators, 32 Low-dropout (LDO) regulators used
+> to power up application processors and peripherals, a 2-channel
+> 32kHz clock outputs, a Real-Time-Clock (RTC) and a I2C interface
+> to program the individual regulators, clocks outputs and the RTC.
+> 
+> This patch adds the core support for MAX77802 PMIC and is based
+> on a driver added by Simon Glass to the Chrome OS kernel 3.8 tree.
+> 
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Tested-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> ---
+> 
+> Changes since v4:
+>  - Use consistent expressions when checking for NULL values.
+>    Suggested by Krzysztof Kozlowski.
+>  - Remove unused defines. Suggested by Krzysztof Kozlowski.
+>  - Explain why IRQ is disabled on suspend. Suggested by Krzysztof Kozlowski.
+> 
+> Changes since v3:
+>  - Remove unnecessary OOM error message since the mm subsystem already logs it. 
+> 
+> Changes since v2:
+>  - Split the DT binding docs in a separate patch and improve the documentation.
+>    Suggested by Mark Brown.
+>  - Add all the devices in the MFD driver instead of doing in separate patches.
+>    Suggested by Mark Brown.
+> 
+> Changes since v1:
+>  - Convert max77{686,802} to regmap irq API and get rid of max77{686,802}-irq.c
+>    Suggested by Krzysztof Kozlowski.
+>  - Don't protect max77802 mfd_cells using Kconfig options since mfd core omits
+>    devices that don't match. Suggested by Lee Jones.
+>  - Change mfd driver to be tristate instead of boolean. Suggested by Mark Brown.
+>  - Change binding "voltage-regulators" property to "regulators" to be consistent
+>    with other PMIC drivers. Suggested by Mark Brown.
+>  - Use regulators node names instead of the deprecated "regulator-compatible"
+>    property. Suggested by Mark Brown.
+>  - Use the new descriptor-based GPIO interface instead of the deprecated
+>    integer based GPIO one. Suggested by Mark Brown.
+>  - Remove the type parameter from i2c_device_id table since was not used.
+>  - Fix device not found error message and remove unneeded device found message.
+> 
+>  drivers/mfd/Kconfig                  |  14 ++
+>  drivers/mfd/Makefile                 |   1 +
+>  drivers/mfd/max77802.c               | 366 ++++++++++++++++++++++++++++++++++
 
-The addition of the time stamp as additional information string implies
-that now all generate functions must be capable to process a linked
-list with additional information strings instead of a scalar.
+I don't think this needs it's own, brand new file.  You can just as
+easy slot the enablement into max77686, which I suggest you do.
 
-CC: Rafael Aquini <aquini@redhat.com>
-Signed-off-by: Stephan Mueller <smueller@chronox.de>
----
- crypto/drbg.c         | 59 
-++++++++++++++++++++++++++++++---------------------
- include/crypto/drbg.h |  2 +-
- 2 files changed, 36 insertions(+), 25 deletions(-)
+>  include/linux/mfd/max77802-private.h | 307 +++++++++++++++++++++++++++++
+>  include/linux/mfd/max77802.h         | 121 ++++++++++++
+>  5 files changed, 809 insertions(+)
+>  create mode 100644 drivers/mfd/max77802.c
+>  create mode 100644 include/linux/mfd/max77802-private.h
+>  create mode 100644 include/linux/mfd/max77802.h
 
-diff --git a/crypto/drbg.c b/crypto/drbg.c
-index 14495df..86d483f 100644
---- a/crypto/drbg.c
-+++ b/crypto/drbg.c
-@@ -649,7 +649,7 @@ out:
- /* Generate function of CTR DRBG as defined in 10.2.1.5.2 */
- static int drbg_ctr_generate(struct drbg_state *drbg,
- 			     unsigned char *buf, unsigned int buflen,
--			     struct drbg_string *addtl)
-+			     struct list_head *addtl)
- {
- 	int len = 0;
- 	int ret = 0;
-@@ -659,11 +659,8 @@ static int drbg_ctr_generate(struct drbg_state *drbg,
- 	memset(drbg->scratchpad, 0, drbg_blocklen(drbg));
- 
- 	/* 10.2.1.5.2 step 2 */
--	if (addtl && 0 < addtl->len) {
--		LIST_HEAD(addtllist);
--
--		list_add_tail(&addtl->list, &addtllist);
--		ret = drbg_ctr_update(drbg, &addtllist, 2);
-+	if (addtl && !list_empty(addtl)) {
-+		ret = drbg_ctr_update(drbg, addtl, 2);
- 		if (ret)
- 			return 0;
- 	}
-@@ -780,7 +777,7 @@ static int drbg_hmac_update(struct drbg_state *drbg, 
-struct list_head *seed,
- static int drbg_hmac_generate(struct drbg_state *drbg,
- 			      unsigned char *buf,
- 			      unsigned int buflen,
--			      struct drbg_string *addtl)
-+			      struct list_head *addtl)
- {
- 	int len = 0;
- 	int ret = 0;
-@@ -788,11 +785,8 @@ static int drbg_hmac_generate(struct drbg_state *drbg,
- 	LIST_HEAD(datalist);
- 
- 	/* 10.1.2.5 step 2 */
--	if (addtl && 0 < addtl->len) {
--		LIST_HEAD(addtllist);
--
--		list_add_tail(&addtl->list, &addtllist);
--		ret = drbg_hmac_update(drbg, &addtllist, 1);
-+	if (addtl && !list_empty(addtl)) {
-+		ret = drbg_hmac_update(drbg, addtl, 1);
- 		if (ret)
- 			return ret;
- 	}
-@@ -816,14 +810,10 @@ static int drbg_hmac_generate(struct drbg_state *drbg,
- 	}
- 
- 	/* 10.1.2.5 step 6 */
--	if (addtl && 0 < addtl->len) {
--		LIST_HEAD(addtllist);
--
--		list_add_tail(&addtl->list, &addtllist);
--		ret = drbg_hmac_update(drbg, &addtllist, 1);
--	} else {
-+	if (addtl && !list_empty(addtl))
-+		ret = drbg_hmac_update(drbg, addtl, 1);
-+	else
- 		ret = drbg_hmac_update(drbg, NULL, 1);
--	}
- 	if (ret)
- 		return ret;
- 
-@@ -947,7 +937,7 @@ out:
- 
- /* processing of additional information string for Hash DRBG */
- static int drbg_hash_process_addtl(struct drbg_state *drbg,
--				   struct drbg_string *addtl)
-+				   struct list_head *addtl)
- {
- 	int ret = 0;
- 	struct drbg_string data1, data2;
-@@ -958,7 +948,7 @@ static int drbg_hash_process_addtl(struct drbg_state 
-*drbg,
- 	memset(drbg->scratchpad, 0, drbg_blocklen(drbg));
- 
- 	/* 10.1.1.4 step 2 */
--	if (!addtl || 0 == addtl->len)
-+	if (!addtl || list_empty(addtl))
- 		return 0;
- 
- 	/* 10.1.1.4 step 2a */
-@@ -966,7 +956,7 @@ static int drbg_hash_process_addtl(struct drbg_state 
-*drbg,
- 	drbg_string_fill(&data2, drbg->V, drbg_statelen(drbg));
- 	list_add_tail(&data1.list, &datalist);
- 	list_add_tail(&data2.list, &datalist);
--	list_add_tail(&addtl->list, &datalist);
-+	list_splice_tail(addtl, &datalist);
- 	ret = drbg_kcapi_hash(drbg, NULL, drbg->scratchpad, &datalist);
- 	if (ret)
- 		goto out;
-@@ -1032,7 +1022,7 @@ out:
- /* generate function for Hash DRBG as defined in  10.1.1.4 */
- static int drbg_hash_generate(struct drbg_state *drbg,
- 			      unsigned char *buf, unsigned int buflen,
--			      struct drbg_string *addtl)
-+			      struct list_head *addtl)
- {
- 	int len = 0;
- 	int ret = 0;
-@@ -1350,6 +1340,12 @@ static int drbg_generate(struct drbg_state *drbg,
- {
- 	int len = 0;
- 	struct drbg_state *shadow = NULL;
-+	LIST_HEAD(addtllist);
-+	struct drbg_string timestamp;
-+	union {
-+		cycles_t cycles;
-+		unsigned char char_cycles[sizeof(cycles_t)];
-+	} now;
- 
- 	if (0 == buflen || !buf) {
- 		pr_devel("DRBG: no output buffer provided\n");
-@@ -1410,8 +1406,23 @@ static int drbg_generate(struct drbg_state *drbg,
- 		/* 9.3.1 step 7.4 */
- 		addtl = NULL;
- 	}
-+
-+	/*
-+	 * Mix the time stamp into the DRBG state if the DRBG is not in
-+	 * test mode. If there are two callers invoking the DRBG at the same
-+	 * time, i.e. before the first caller merges its shadow state back,
-+	 * both callers would obtain the same random number stream without
-+	 * changing the state here.
-+	 */
-+	if (!drbg->test_data) {
-+		now.cycles = random_get_entropy();
-+		drbg_string_fill(&timestamp, now.char_cycles, 
-sizeof(cycles_t));
-+		list_add_tail(&timestamp.list, &addtllist);
-+	}
-+	if (addtl && 0 < addtl->len)
-+		list_add_tail(&addtl->list, &addtllist);
- 	/* 9.3.1 step 8 and 10 */
--	len = shadow->d_ops->generate(shadow, buf, buflen, addtl);
-+	len = shadow->d_ops->generate(shadow, buf, buflen, &addtllist);
- 
- 	/* 10.1.1.4 step 6, 10.1.2.5 step 7, 10.2.1.5.2 step 7 */
- 	shadow->reseed_ctr++;
-diff --git a/include/crypto/drbg.h b/include/crypto/drbg.h
-index 4065dfc..831d786 100644
---- a/include/crypto/drbg.h
-+++ b/include/crypto/drbg.h
-@@ -102,7 +102,7 @@ struct drbg_state_ops {
- 		      int reseed);
- 	int (*generate)(struct drbg_state *drbg,
- 			unsigned char *buf, unsigned int buflen,
--			struct drbg_string *addtl);
-+			struct list_head *addtl);
- 	int (*crypto_init)(struct drbg_state *drbg);
- 	int (*crypto_fini)(struct drbg_state *drbg);
- 
+[...]
+
+> +#ifdef CONFIG_OF
+> +static struct of_device_id max77802_pmic_dt_match[] = {
+> +	{.compatible = "maxim,max77802", .data = NULL},
+
+Space before .compatible.
+
+No need to set .data to NULL, just omit it.
+
+> +	{},
+> +};
+> +
+> +static void max77802_dt_parse_dvs_gpio(struct device *dev,
+> +				       struct max77802_platform_data *pd,
+> +				       struct device_node *np)
+
+No need to overload these parameters by passing np, you can extract it
+from dev.  Same goes for pd if you populate platform_data _before_
+calling this function.
+
+> +{
+> +	int i;
+> +
+> +	/*
+> +	 * NOTE: we don't consider GPIO errors fatal; board may have some lines
+> +	 * directly pulled high or low and thus doesn't specify them.
+> +	 */
+> +	for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_dvs); i++)
+> +		pd->buck_gpio_dvs[i] =
+> +			devm_gpiod_get_index(dev, "max77802,pmic-buck-dvs", i);
+> +
+> +	for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_selb); i++)
+> +		pd->buck_gpio_selb[i] =
+> +			devm_gpiod_get_index(dev, "max77802,pmic-buck-selb", i);
+> +}
+> +
+> +static struct max77802_platform_data *max77802_i2c_parse_dt_pdata(struct device
+> +								  *dev)
+> +{
+> +	struct device_node *np = dev->of_node;
+> +	struct max77802_platform_data *pd;
+> +
+> +	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
+> +	if (!pd)
+> +		return NULL;
+> +
+> +	/* Read default index and ignore errors, since default is 0 */
+> +	of_property_read_u32(np, "max77802,pmic-buck-default-dvs-idx",
+> +			     &pd->buck_default_idx);
+> +
+> +	max77802_dt_parse_dvs_gpio(dev, pd, np);
+> +
+> +	dev->platform_data = pd;
+> +	return pd;
+> +}
+> +#else
+> +static struct max77802_platform_data *max77802_i2c_parse_dt_pdata(struct device
+> +								  *dev)
+> +{
+> +	return 0;
+> +}
+> +#endif
+
+No need for dummy functions.
+
+Use if (IS_ENABLED(CONFIG_OF) && i2c->dev.of_node) instead.
+
+> +static int max77802_i2c_probe(struct i2c_client *i2c,
+> +			      const struct i2c_device_id *id)
+> +{
+> +	struct max77802_dev *max77802 = NULL;
+> +	struct max77802_platform_data *pdata = dev_get_platdata(&i2c->dev);
+> +	unsigned int data;
+> +	int ret = 0;
+> +
+> +	if (i2c->dev.of_node)
+> +		pdata = max77802_i2c_parse_dt_pdata(&i2c->dev);
+
+DT should not over-rule platform data.  If the driver supports pdata
+and it's present, it should over-rule DT.
+
+> +	if (!pdata) {
+> +		dev_err(&i2c->dev, "No platform data found.\n");
+> +		return -EIO;
+
+-EIO is not the correct error code here.  Either -EINVAL or -ENODEV
+would be better.
+
+> +	}
+> +
+> +	max77802 = devm_kzalloc(&i2c->dev, sizeof(struct max77802_dev),
+> +				GFP_KERNEL);
+> +	if (max77802 == NULL)
+
+if (!max77802)
+
+> +		return -ENOMEM;
+> +
+> +	i2c_set_clientdata(i2c, max77802);
+> +
+> +	max77802->dev = &i2c->dev;
+> +	max77802->i2c = i2c;
+> +	max77802->type = id->driver_data;
+> +
+> +	max77802->wakeup = pdata->wakeup;
+> +	max77802->irq = i2c->irq;
+> +
+> +	max77802->regmap = devm_regmap_init_i2c(i2c, &max77802_regmap_config);
+> +	if (IS_ERR(max77802->regmap)) {
+> +		ret = PTR_ERR(max77802->regmap);
+> +		dev_err(max77802->dev, "Failed to allocate register map: %d\n",
+> +			ret);
+> +		return ret;
+> +	}
+> +
+> +	if (regmap_read(max77802->regmap,
+> +			 MAX77802_REG_DEVICE_ID, &data) < 0) {
+> +		dev_err(max77802->dev,
+> +			"device not found on this channel\n");
+> +		return -ENODEV;
+> +	}
+
+The return values for all other calls are first placed into a variable
+and _then_ evaluated.  For consistency can you do the same here
+please?
+
+> +	ret = regmap_add_irq_chip(max77802->regmap, max77802->irq,
+> +				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
+> +				  IRQF_SHARED, 0, &max77802_irq_chip,
+> +				  &max77802->irq_data);
+> +	if (ret != 0) {
+
+if (ret)
+
+> +		dev_err(&i2c->dev, "failed to add PMIC irq chip: %d\n", ret);
+> +		return ret;
+> +	}
+
+'\n'
+
+[...]
+
+> +static struct i2c_driver max77802_i2c_driver = {
+> +	.driver = {
+> +		   .name = "max77802",
+> +		   .owner = THIS_MODULE,
+> +		   .pm = &max77802_pm,
+> +		   .of_match_table = of_match_ptr(max77802_pmic_dt_match),
+
+This tabbing is off.
+
+> +	},
+> +	.probe = max77802_i2c_probe,
+> +	.remove = max77802_i2c_remove,
+> +	.id_table = max77802_i2c_id,
+> +};
+> +
+> +static int __init max77802_i2c_init(void)
+> +{
+> +	return i2c_add_driver(&max77802_i2c_driver);
+> +}
+> +/* init early so consumer devices can complete system boot */
+> +subsys_initcall(max77802_i2c_init);
+> +
+> +static void __exit max77802_i2c_exit(void)
+> +{
+> +	i2c_del_driver(&max77802_i2c_driver);
+> +}
+> +module_exit(max77802_i2c_exit);
+
 -- 
-1.9.3
-
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
