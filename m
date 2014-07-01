@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758132AbaGAP5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 11:57:10 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:35171 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751605AbaGAP5J (ORCPT
+	id S1758166AbaGAP6L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 11:58:11 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:49516 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755467AbaGAP6J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 11:57:09 -0400
-Message-ID: <53B2DA42.40604@arm.com>
-Date: Tue, 01 Jul 2014 16:56:50 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 1 Jul 2014 11:58:09 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?QWxleCBCZW5uw6ll?= <alex.bennee@linaro.org>
-CC: "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: KVM: export demux regids as KVM_REG_ARM64
-References: <1404229993-14522-1-git-send-email-alex.bennee@linaro.org>
-In-Reply-To: <1404229993-14522-1-git-send-email-alex.bennee@linaro.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <53B2D7A6.1040901@6wind.com>
+References: <1403687411-27059-1-git-send-email-nicolas.dichtel@6wind.com> <53B2D7A6.1040901@6wind.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Tue, 1 Jul 2014 17:57:48 +0200
+Message-ID: <CAKfTPtAz99C=XC-YFuxJN2Rw+vDYTKLOGEFVARDfkW01ycuMFA@mail.gmail.com>
+Subject: Re: [PATCH] sched: fix warnings in linux/sched.h
+To: nicolas.dichtel@6wind.com
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/14 16:53, Alex Bennée wrote:
-> I suspect this is a -ECUTPASTE fault from the initial implementation. If
-> we don't declare the register ID to be KVM_REG_ARM64 the KVM_GET_ONE_REG
-> implementation kvm_arm_get_reg() returns -EINVAL and hilarity ensues.
-> 
-> The kvm/api.txt document describes all arm64 registers as starting with
-> 0x60xx... (i.e KVM_REG_ARM64).
-> 
-> Signed-off-by: Alex Bennée <alex.bennee@linaro.org>
-> Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
-> ---
->  arch/arm64/kvm/sys_regs.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm64/kvm/sys_regs.c b/arch/arm64/kvm/sys_regs.c
-> index 0324458..5ee99e4 100644
-> --- a/arch/arm64/kvm/sys_regs.c
-> +++ b/arch/arm64/kvm/sys_regs.c
-> @@ -962,7 +962,7 @@ static unsigned int num_demux_regs(void)
->  
->  static int write_demux_regids(u64 __user *uindices)
->  {
-> -	u64 val = KVM_REG_ARM | KVM_REG_SIZE_U32 | KVM_REG_ARM_DEMUX;
-> +	u64 val = KVM_REG_ARM64 | KVM_REG_SIZE_U32 | KVM_REG_ARM_DEMUX;
->  	unsigned int i;
->  
->  	val |= KVM_REG_ARM_DEMUX_ID_CCSIDR;
-> 
+On 1 July 2014 17:45, Nicolas Dichtel <nicolas.dichtel@6wind.com> wrote:
+> Le 25/06/2014 11:10, Nicolas Dichtel a �crit :
+>
+>> Seen when compiling with W=1.
+>>
+>> Warnings were:
+>> In file included from arch/x86/kernel/asm-offsets.c:9:0:
+>> include/linux/sched.h:875:25: warning: type qualifiers ignored on function
+>> return type [-Wignored-qualifiers]
+>> include/linux/sched.h:882:25: warning: type qualifiers ignored on function
+>> return type [-Wignored-qualifiers]
+>> include/linux/sched.h:1002:21: warning: type qualifiers ignored on
+>> function return type [-Wignored-qualifiers]
+>>
+>> It was introduced by commit 143e1e28cb40 ("sched: Rework sched_domain
+>> topology
+>> definition").
+>>
+>> CC: Vincent Guittot <vincent.guittot@linaro.org>
+>> Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+>
+> Any comment or problem about this patch?
 
--EBROWNPAPERBAG.
+This patch looks quit similar to https://lkml.org/lkml/2014/6/24/956
 
-Acked-by: Marc Zyngier <marc.zyngier@arm.com>
-
-Thanks,
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
+Vincent
