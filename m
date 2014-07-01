@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758670AbaGAVsG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:48:06 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.220]:32536 "EHLO
+	id S932116AbaGAVsD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:48:03 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.219]:35366 "EHLO
 	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302AbaGAVrk (ORCPT
+	with ESMTP id S1755468AbaGAVrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:47:40 -0400
+	Tue, 1 Jul 2014 17:47:41 -0400
 X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
 X-RZG-CLASS-ID: mo00
 From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 23/50] mars: add new file include/linux/lib_mapfree.h
-Date: Tue,  1 Jul 2014 23:47:03 +0200
-Message-Id: <1404251250-22992-24-git-send-email-tst@schoebel-theuer.de>
+Subject: [PATCH 20/50] mars: add new file drivers/block/mars/xio_bricks/xio.c
+Date: Tue,  1 Jul 2014 23:47:00 +0200
+Message-Id: <1404251250-22992-21-git-send-email-tst@schoebel-theuer.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
@@ -23,81 +23,199 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 ---
- include/linux/lib_mapfree.h | 65 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 65 insertions(+)
- create mode 100644 include/linux/lib_mapfree.h
+ drivers/block/mars/xio_bricks/xio.c | 183 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 183 insertions(+)
+ create mode 100644 drivers/block/mars/xio_bricks/xio.c
 
-diff --git a/include/linux/lib_mapfree.h b/include/linux/lib_mapfree.h
+diff --git a/drivers/block/mars/xio_bricks/xio.c b/drivers/block/mars/xio_bricks/xio.c
 new file mode 100644
-index 0000000..416a901
+index 0000000..cc13478
 --- /dev/null
-+++ b/include/linux/lib_mapfree.h
-@@ -0,0 +1,65 @@
-+/*  (c) 2012 Thomas Schoebel-Theuer / 1&1 Internet AG */
-+#ifndef XIO_LIB_MAPFREE_H
-+#define XIO_LIB_MAPFREE_H
++++ b/drivers/block/mars/xio_bricks/xio.c
+@@ -0,0 +1,183 @@
++/*  (c) 2010 Thomas Schoebel-Theuer / 1&1 Internet AG */
 +
-+/* Mapfree infrastructure.
-+ *
-+ * Purposes:
-+ *
-+ * 1) Open files only once when possible, do ref-counting on struct mapfree_info
-+ *
-+ * 2) Automatically call invalidate_mapping_pages() in the background on
-+ *    "unused" areas to free resources.
-+ *    Used areas can be indicated by calling mapfree_set() frequently.
-+ *    Usage model: tailored to sequential logfiles.
-+ *
-+ * 3) Do it all in a completely decoupled manner, in order to prevent resource deadlocks.
-+ *
-+ * 4) Also to prevent deadlocks: always set mapping_set_gfp_mask() accordingly.
-+ */
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/string.h>
++#include <linux/uaccess.h>
++#include <linux/file.h>
++#include <linux/fs.h>
++#include <linux/utsname.h>
 +
 +#include <linux/xio.h>
 +
-+extern int mapfree_period_sec;
-+extern int mapfree_grace_keep_mb;
++/************************************************************/
 +
-+struct mapfree_info {
-+	struct list_head mf_head;
-+	struct list_head mf_dirty_anchor;
-+	char		*mf_name;
-+	struct file	*mf_filp;
-+	int		 mf_flags;
-+	atomic_t	 mf_count;
-+	spinlock_t	 mf_lock;
-+	loff_t		 mf_min[2];
-+	loff_t		 mf_last;
-+	loff_t		 mf_max;
-+	long long	 mf_jiffies;
++/*  infrastructure */
++
++struct banning xio_global_ban = {};
++EXPORT_SYMBOL_GPL(xio_global_ban);
++atomic_t xio_global_io_flying = ATOMIC_INIT(0);
++EXPORT_SYMBOL_GPL(xio_global_io_flying);
++
++static char *id;
++
++/* TODO: better use MAC addresses (or motherboard IDs where available).
++ * Or, at least, some checks for MAC addresses should be recorded / added.
++ * When the nodename is misconfigured, data might be scrambled.
++ * MAC addresses should be more secure.
++ * In ideal case, further checks should be added to prohibit accidental
++ * name clashes.
++ */
++char *my_id(void)
++{
++	struct new_utsname *u;
++
++	if (!id) {
++		/* down_read(&uts_sem); // FIXME: this is currenty not EXPORTed from the kernel! */
++		u = utsname();
++		if (u)
++			id = brick_strdup(u->nodename);
++		/* up_read(&uts_sem); */
++	}
++	return id;
++}
++EXPORT_SYMBOL_GPL(my_id);
++
++/************************************************************/
++
++/*  object stuff */
++
++const struct generic_object_type aio_type = {
++	.object_type_name = "aio",
++	.default_size = sizeof(struct aio_object),
++	.object_type_nr = OBJ_TYPE_AIO,
 +};
++EXPORT_SYMBOL_GPL(aio_type);
 +
-+struct dirty_info {
-+	struct list_head dirty_head;
-+	struct aio_object *dirty_aio;
-+	int dirty_stage;
++/************************************************************/
++
++/*  brick stuff */
++
++/*******************************************************************/
++
++/*  meta descriptions */
++
++const struct meta xio_info_meta[] = {
++	META_INI(current_size,	  struct xio_info, FIELD_INT),
++	META_INI(tf_align,	  struct xio_info, FIELD_INT),
++	META_INI(tf_min_size,	  struct xio_info, FIELD_INT),
++	{}
 +};
++EXPORT_SYMBOL_GPL(xio_info_meta);
 +
-+struct mapfree_info *mapfree_get(const char *filename, int flags);
++const struct meta xio_aio_meta[] = {
++	META_INI(_object_cb.cb_error, struct aio_object, FIELD_INT),
++	META_INI(io_pos,	   struct aio_object, FIELD_INT),
++	META_INI(io_len,	   struct aio_object, FIELD_INT),
++	META_INI(io_may_write,	  struct aio_object, FIELD_INT),
++	META_INI(io_prio,	   struct aio_object, FIELD_INT),
++	META_INI(io_cs_mode,	   struct aio_object, FIELD_INT),
++	META_INI(io_timeout,	   struct aio_object, FIELD_INT),
++	META_INI(io_total_size,   struct aio_object, FIELD_INT),
++	META_INI(io_checksum,	   struct aio_object, FIELD_RAW),
++	META_INI(io_flags,	   struct aio_object, FIELD_INT),
++	META_INI(io_rw,    struct aio_object, FIELD_INT),
++	META_INI(io_id,    struct aio_object, FIELD_INT),
++	META_INI(io_skip_sync,	  struct aio_object, FIELD_INT),
++	{}
++};
++EXPORT_SYMBOL_GPL(xio_aio_meta);
 +
-+void mapfree_put(struct mapfree_info *mf);
++const struct meta xio_timespec_meta[] = {
++	META_INI_TRANSFER(tv_sec,  struct timespec, FIELD_UINT, 8),
++	META_INI_TRANSFER(tv_nsec, struct timespec, FIELD_UINT, 4),
++	{}
++};
++EXPORT_SYMBOL_GPL(xio_timespec_meta);
 +
-+void mapfree_set(struct mapfree_info *mf, loff_t min, loff_t max);
++/************************************************************/
 +
-+/***************** dirty IOs on the fly  *****************/
++/*  crypto stuff */
 +
-+void mf_insert_dirty(struct mapfree_info *mf, struct dirty_info *di);
-+void mf_remove_dirty(struct mapfree_info *mf, struct dirty_info *di);
-+void mf_get_dirty(struct mapfree_info *mf, loff_t *min, loff_t *max, int min_stage, int max_stage);
-+void mf_get_any_dirty(const char *filename, loff_t *min, loff_t *max, int min_stage, int max_stage);
++#include <linux/scatterlist.h>
++#include <linux/crypto.h>
 +
-+/***************** module init stuff ************************/
++static struct crypto_hash *xio_tfm;
++static struct semaphore tfm_sem = __SEMAPHORE_INITIALIZER(tfm_sem, 1);
++int xio_digest_size = 0;
++EXPORT_SYMBOL_GPL(xio_digest_size);
 +
-+int __init init_xio_mapfree(void);
++void xio_digest(unsigned char *digest, void *data, int len)
++{
++	struct hash_desc desc = {
++		.tfm = xio_tfm,
++		.flags = 0,
++	};
++	struct scatterlist sg;
 +
-+void exit_xio_mapfree(void);
++	memset(digest, 0, xio_digest_size);
 +
-+#endif
++	/*  TODO: use per-thread instance, omit locking */
++	down(&tfm_sem);
++
++	crypto_hash_init(&desc);
++	sg_init_table(&sg, 1);
++	sg_set_buf(&sg, data, len);
++	crypto_hash_update(&desc, &sg, sg.length);
++	crypto_hash_final(&desc, digest);
++	up(&tfm_sem);
++}
++EXPORT_SYMBOL_GPL(xio_digest);
++
++void aio_checksum(struct aio_object *aio)
++{
++	unsigned char checksum[xio_digest_size];
++	int len;
++
++	if (aio->io_cs_mode <= 0 || !aio->io_data)
++		goto out_return;
++	xio_digest(checksum, aio->io_data, aio->io_len);
++
++	len = sizeof(aio->io_checksum);
++	if (len > xio_digest_size)
++		len = xio_digest_size;
++	memcpy(&aio->io_checksum, checksum, len);
++out_return:;
++}
++EXPORT_SYMBOL_GPL(aio_checksum);
++
++/*******************************************************************/
++
++/*  init stuff */
++
++int __init init_xio(void)
++{
++	XIO_INF("init_xio()\n");
++
++	xio_tfm = crypto_alloc_hash("md5", 0, CRYPTO_ALG_ASYNC);
++	if (!xio_tfm) {
++		XIO_ERR("cannot alloc crypto hash\n");
++		return -ENOMEM;
++	}
++	if (IS_ERR(xio_tfm)) {
++		XIO_ERR("alloc crypto hash failed, status = %d\n", (int)PTR_ERR(xio_tfm));
++		return PTR_ERR(xio_tfm);
++	}
++	xio_digest_size = crypto_hash_digestsize(xio_tfm);
++	XIO_INF("digest_size = %d\n", xio_digest_size);
++
++	return 0;
++}
++
++void exit_xio(void)
++{
++	XIO_INF("exit_xio()\n");
++
++	if (xio_tfm)
++		crypto_free_hash(xio_tfm);
++
++	if (id) {
++		brick_string_free(id);
++		id = NULL;
++	}
++}
 -- 
 2.0.0
 
