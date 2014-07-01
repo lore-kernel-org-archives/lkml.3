@@ -1,91 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758646AbaGATME (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 15:12:04 -0400
-Received: from mail-yh0-f74.google.com ([209.85.213.74]:62103 "EHLO
-	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752886AbaGATMA (ORCPT
+	id S1758694AbaGATNf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 15:13:35 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:43733 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752064AbaGATNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 15:12:00 -0400
-From: Filipe Brandenburger <filbranden@google.com>
-To: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andi Kleen <andi@firstfloor.org>, Zhengyu He <hzy@google.com>,
-        Greg Thelen <gthelen@google.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Filipe Brandenburger <filbranden@google.com>
-Subject: [PATCH] core: fix typo in percpu read_mostly section
-Date: Tue,  1 Jul 2014 12:11:47 -0700
-Message-Id: <1404241907-27093-1-git-send-email-filbranden@google.com>
-X-Mailer: git-send-email 2.0.0.526.g5318336
-In-Reply-To: <1403547365-13428-1-git-send-email-filbranden@google.com>
-References: <1403547365-13428-1-git-send-email-filbranden@google.com>
+	Tue, 1 Jul 2014 15:13:34 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArsHAJgHs1NbsGsk/2dsb2JhbABagw2sYwUBbplbgQ4XdYQxLyOBGjeIRgGzBpVfF4VviExkHYQtBZpmi0WIPoNEO4Ex
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Ming Lei <ming.lei@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 1/1] firmware: replace ALIGN(PAGE_SIZE) by PAGE_ALIGN
+Date: Tue,  1 Jul 2014 21:13:30 +0200
+Message-Id: <1404242010-19560-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhengyu He <hzy@google.com>
+use mm.h definition
 
-This fixes a typo that named the read_mostly section of percpu as
-readmostly. It works fine with SMP because the linker script specifies
-.data..percpu..readmostly. However, UP kernel builds don't have percpu
-sections defined and the non-percpu version of the section is called
-data..read_mostly, so .data..readmostly will float around and may break
-things unexpectedly.
-
-Looking at the original change that introduced data..percpu..readmostly
-(commit c957ef2c59e952803766ddc22e89981ab534606f), it looks like this
-was the original intention.
-
-Tested: Built UP kernel and confirmed the sections got merged.
-
-- Before the patch:
-$ objdump -h vmlinux.o  | grep '\.data\.\.read.*mostly'
-38 .data..read_mostly 00004418  0000000000000000  0000000000000000  00431ac0  2**6
-50 .data..readmostly 00000014  0000000000000000  0000000000000000  00444000  2**3
-
-- After the patch:
-$ objdump -h vmlinux.o  | grep '\.data\.\.read.*mostly'
-38 .data..read_mostly 00004438  0000000000000000  0000000000000000  00431ac0  2**6
-
-Signed-off-by: Zhengyu He <hzy@google.com>
-Signed-off-by: Filipe Brandenburger <filbranden@google.com>
+Cc: Ming Lei <ming.lei@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- include/asm-generic/vmlinux.lds.h | 2 +-
- include/linux/percpu-defs.h       | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/base/firmware_class.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 471ba48c7ae4..c1c0b0cf39b4 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -693,7 +693,7 @@
- 	. = ALIGN(PAGE_SIZE);						\
- 	*(.data..percpu..page_aligned)					\
- 	. = ALIGN(cacheline);						\
--	*(.data..percpu..readmostly)					\
-+	*(.data..percpu..read_mostly)					\
- 	. = ALIGN(cacheline);						\
- 	*(.data..percpu)						\
- 	*(.data..percpu..shared_aligned)				\
-diff --git a/include/linux/percpu-defs.h b/include/linux/percpu-defs.h
-index a5fc7d01aad6..dec01d6c3f80 100644
---- a/include/linux/percpu-defs.h
-+++ b/include/linux/percpu-defs.h
-@@ -146,10 +146,10 @@
-  * Declaration/definition used for per-CPU variables that must be read mostly.
-  */
- #define DECLARE_PER_CPU_READ_MOSTLY(type, name)			\
--	DECLARE_PER_CPU_SECTION(type, name, "..readmostly")
-+	DECLARE_PER_CPU_SECTION(type, name, "..read_mostly")
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index d276e33..bfe8086 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -718,7 +718,7 @@ out:
+ static int fw_realloc_buffer(struct firmware_priv *fw_priv, int min_size)
+ {
+ 	struct firmware_buf *buf = fw_priv->buf;
+-	int pages_needed = ALIGN(min_size, PAGE_SIZE) >> PAGE_SHIFT;
++	int pages_needed = PAGE_ALIGN(min_size) >> PAGE_SHIFT;
  
- #define DEFINE_PER_CPU_READ_MOSTLY(type, name)				\
--	DEFINE_PER_CPU_SECTION(type, name, "..readmostly")
-+	DEFINE_PER_CPU_SECTION(type, name, "..read_mostly")
- 
- /*
-  * Intermodule exports for per-CPU variables.  sparse forgets about
+ 	/* If the array of pages is too small, grow it... */
+ 	if (buf->page_array_size < pages_needed) {
 -- 
-2.0.0.526.g5318336
+1.9.1
 
