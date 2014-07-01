@@ -1,175 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758263AbaGAQRp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 12:17:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57856 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758248AbaGAQRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 12:17:43 -0400
-Date: Tue, 1 Jul 2014 09:09:27 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] mm, hugetlb: generalize writes to nr_hugepages
-Message-ID: <20140701130927.GA5417@nhori>
-References: <alpine.DEB.2.02.1406301655480.27587@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1406301655480.27587@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1758184AbaGAQQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 12:16:57 -0400
+Received: from zimbra13.linbit.com ([212.69.166.240]:53065 "EHLO
+	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755421AbaGAQQx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 12:16:53 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 01/20] drbd: drop wrong debugging aid
+Date: Tue,  1 Jul 2014 18:16:31 +0200
+Message-Id: <1404231410-29852-2-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404231410-29852-1-git-send-email-philipp.reisner@linbit.com>
+References: <1404231410-29852-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 04:57:06PM -0700, David Rientjes wrote:
-> Three different interfaces alter the maximum number of hugepages for an
-> hstate:
-> 
->  - /proc/sys/vm/nr_hugepages for global number of hugepages of the default
->    hstate,
-> 
->  - /sys/kernel/mm/hugepages/hugepages-X/nr_hugepages for global number of
->    hugepages for a specific hstate, and
-> 
->  - /sys/kernel/mm/hugepages/hugepages-X/nr_hugepages/mempolicy for number of
->    hugepages for a specific hstate over the set of allowed nodes.
-> 
-> Generalize the code so that a single function handles all of these writes 
-> instead of duplicating the code in two different functions.
-> 
-> This decreases the number of lines of code, but also reduces the size of
-> .text by about half a percent since set_max_huge_pages() can be inlined.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-Looks good to me.
+The textual representation of resync extents in /proc/drbd presented
+with proc_details >= 3 was wrong, it used bitnumbers as bitmasks.
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+It was not particularly useful either, and I doubt anyone has even tried
+to look at it in the last few years. Drop it.
 
-> ---
->  mm/hugetlb.c | 61 ++++++++++++++++++++++++++----------------------------------
->  1 file changed, 26 insertions(+), 35 deletions(-)
-> 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -1734,21 +1734,13 @@ static ssize_t nr_hugepages_show_common(struct kobject *kobj,
->  	return sprintf(buf, "%lu\n", nr_huge_pages);
->  }
->  
-> -static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
-> -			struct kobject *kobj, struct kobj_attribute *attr,
-> -			const char *buf, size_t len)
-> +static ssize_t __nr_hugepages_store_common(bool obey_mempolicy,
-> +					   struct hstate *h, int nid,
-> +					   unsigned long count, size_t len)
->  {
->  	int err;
-> -	int nid;
-> -	unsigned long count;
-> -	struct hstate *h;
->  	NODEMASK_ALLOC(nodemask_t, nodes_allowed, GFP_KERNEL | __GFP_NORETRY);
->  
-> -	err = kstrtoul(buf, 10, &count);
-> -	if (err)
-> -		goto out;
-> -
-> -	h = kobj_to_hstate(kobj, &nid);
->  	if (hstate_is_gigantic(h) && !gigantic_page_supported()) {
->  		err = -EINVAL;
->  		goto out;
-> @@ -1784,6 +1776,23 @@ out:
->  	return err;
->  }
->  
-> +static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
-> +					 struct kobject *kobj, const char *buf,
-> +					 size_t len)
-> +{
-> +	struct hstate *h;
-> +	unsigned long count;
-> +	int nid;
-> +	int err;
-> +
-> +	err = kstrtoul(buf, 10, &count);
-> +	if (err)
-> +		return err;
-> +
-> +	h = kobj_to_hstate(kobj, &nid);
-> +	return __nr_hugepages_store_common(obey_mempolicy, h, nid, count, len);
-> +}
-> +
->  static ssize_t nr_hugepages_show(struct kobject *kobj,
->  				       struct kobj_attribute *attr, char *buf)
->  {
-> @@ -1793,7 +1802,7 @@ static ssize_t nr_hugepages_show(struct kobject *kobj,
->  static ssize_t nr_hugepages_store(struct kobject *kobj,
->  	       struct kobj_attribute *attr, const char *buf, size_t len)
->  {
-> -	return nr_hugepages_store_common(false, kobj, attr, buf, len);
-> +	return nr_hugepages_store_common(false, kobj, buf, len);
->  }
->  HSTATE_ATTR(nr_hugepages);
->  
-> @@ -1812,7 +1821,7 @@ static ssize_t nr_hugepages_mempolicy_show(struct kobject *kobj,
->  static ssize_t nr_hugepages_mempolicy_store(struct kobject *kobj,
->  	       struct kobj_attribute *attr, const char *buf, size_t len)
->  {
-> -	return nr_hugepages_store_common(true, kobj, attr, buf, len);
-> +	return nr_hugepages_store_common(true, kobj, buf, len);
->  }
->  HSTATE_ATTR(nr_hugepages_mempolicy);
->  #endif
-> @@ -2248,36 +2257,18 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
->  			 void __user *buffer, size_t *length, loff_t *ppos)
->  {
->  	struct hstate *h = &default_hstate;
-> -	unsigned long tmp;
-> +	unsigned long tmp = h->max_huge_pages;
->  	int ret;
->  
-> -	if (!hugepages_supported())
-> -		return -ENOTSUPP;
-> -
-> -	tmp = h->max_huge_pages;
-> -
-> -	if (write && hstate_is_gigantic(h) && !gigantic_page_supported())
-> -		return -EINVAL;
-> -
->  	table->data = &tmp;
->  	table->maxlen = sizeof(unsigned long);
->  	ret = proc_doulongvec_minmax(table, write, buffer, length, ppos);
->  	if (ret)
->  		goto out;
->  
-> -	if (write) {
-> -		NODEMASK_ALLOC(nodemask_t, nodes_allowed,
-> -						GFP_KERNEL | __GFP_NORETRY);
-> -		if (!(obey_mempolicy &&
-> -			       init_nodemask_of_mempolicy(nodes_allowed))) {
-> -			NODEMASK_FREE(nodes_allowed);
-> -			nodes_allowed = &node_states[N_MEMORY];
-> -		}
-> -		h->max_huge_pages = set_max_huge_pages(h, tmp, nodes_allowed);
-> -
-> -		if (nodes_allowed != &node_states[N_MEMORY])
-> -			NODEMASK_FREE(nodes_allowed);
-> -	}
-> +	if (write)
-> +		ret = __nr_hugepages_store_common(obey_mempolicy, h,
-> +						  NUMA_NO_NODE, tmp, *length);
->  out:
->  	return ret;
->  }
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_proc.c | 17 -----------------
+ 1 file changed, 17 deletions(-)
+
+diff --git a/drivers/block/drbd/drbd_proc.c b/drivers/block/drbd/drbd_proc.c
+index f11e573..46bb8dd 100644
+--- a/drivers/block/drbd/drbd_proc.c
++++ b/drivers/block/drbd/drbd_proc.c
+@@ -188,16 +188,6 @@ static void drbd_syncer_progress(struct drbd_device *device, struct seq_file *se
+ 	}
+ }
+ 
+-static void resync_dump_detail(struct seq_file *seq, struct lc_element *e)
+-{
+-	struct bm_extent *bme = lc_entry(e, struct bm_extent, lce);
+-
+-	seq_printf(seq, "%5d %s %s\n", bme->rs_left,
+-		   bme->flags & BME_NO_WRITES ? "NO_WRITES" : "---------",
+-		   bme->flags & BME_LOCKED ? "LOCKED" : "------"
+-		   );
+-}
+-
+ static int drbd_seq_show(struct seq_file *seq, void *v)
+ {
+ 	int i, prev_i = -1;
+@@ -298,13 +288,6 @@ static int drbd_seq_show(struct seq_file *seq, void *v)
+ 			lc_seq_printf_stats(seq, device->act_log);
+ 			put_ldev(device);
+ 		}
+-
+-		if (proc_details >= 2) {
+-			if (device->resync) {
+-				lc_seq_dump_details(seq, device->resync, "rs_left",
+-					resync_dump_detail);
+-			}
+-		}
+ 	}
+ 	rcu_read_unlock();
+ 
+-- 
+1.9.1
+
