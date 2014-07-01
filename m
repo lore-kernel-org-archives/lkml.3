@@ -1,64 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030358AbaGAW1T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 18:27:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55329 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030325AbaGAW1S (ORCPT
+	id S1759050AbaGAWcI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 18:32:08 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:35483 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951AbaGAWcG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 18:27:18 -0400
-Date: Tue, 1 Jul 2014 15:27:16 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: Re: [PATCH] hwpoison: Fix race with changing page during offlining
- v2
-Message-Id: <20140701152716.b9b4b04ee67cf987844b1aa4@linux-foundation.org>
-In-Reply-To: <1404174736-17480-1-git-send-email-andi@firstfloor.org>
-References: <1404174736-17480-1-git-send-email-andi@firstfloor.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Jul 2014 18:32:06 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: qla2xxx-upstream@qlogic.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] [SCSI] qla2xxx: Remove duplicate __iomem annotation
+Date: Wed,  2 Jul 2014 00:31:54 +0200
+Message-Id: <1404253914-24400-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jun 2014 17:32:16 -0700 Andi Kleen <andi@firstfloor.org> wrote:
+The device_reg_t type now has __iomem annotation.
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> When a hwpoison page is locked it could change state
-> due to parallel modifications.  Check after the lock
-> if the page is still the same compound page.
-> 
-> ...
->
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -1168,6 +1168,16 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
->  	lock_page(hpage);
->  
->  	/*
-> +	 * The page could have changed compound pages during the locking.
-> +	 * If this happens just bail out.
-> +	 */
-> +	if (compound_head(p) != hpage) {
+Sparse is warning about this:
+drivers/scsi/qla2xxx/qla_init.c:2040:22: warning: duplicate [noderef]
+drivers/scsi/qla2xxx/qla_iocb.c:477:22: warning: duplicate [noderef]
+drivers/scsi/qla2xxx/qla_iocb.c:1866:22: warning: duplicate [noderef]
+drivers/scsi/qla2xxx/qla_dbg.c:632:22: warning: duplicate [noderef]
+drivers/scsi/qla2xxx/qla_target.c:1435:22: warning: duplicate [noderef]
 
-How can a 4k page change compound pages?  The original compound page
-was torn down and then this 4k page became part of a differently-sized
-compound page?
+Introduced by commit:
+f73cb695d3eccd171f03ed194e72d67732b17487
+("[SCSI] qla2xxx: Add support for ISP2071.")
 
-> +		action_result(pfn, "different compound page after locking", IGNORED);
-> +		res = -EBUSY;
-> +		goto out;
-> +	}
-> +
-> +	/*
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+ drivers/scsi/qla2xxx/qla_dbg.c    |    2 +-
+ drivers/scsi/qla2xxx/qla_init.c   |    2 +-
+ drivers/scsi/qla2xxx/qla_iocb.c   |    4 ++--
+ drivers/scsi/qla2xxx/qla_target.c |    2 +-
+ 4 files changed, 5 insertions(+), 5 deletions(-)
 
-I don't get it.  We just go and fail the poisoning attempt?  Shouldn't
-we go back, grab the new hpage and try again?
-
+diff --git a/drivers/scsi/qla2xxx/qla_dbg.c b/drivers/scsi/qla2xxx/qla_dbg.c
+index c72ee97b..47998b9 100644
+--- a/drivers/scsi/qla2xxx/qla_dbg.c
++++ b/drivers/scsi/qla2xxx/qla_dbg.c
+@@ -629,7 +629,7 @@ qla25xx_copy_mq(struct qla_hw_data *ha, void *ptr, uint32_t **last_chain)
+ 	uint32_t cnt, que_idx;
+ 	uint8_t que_cnt;
+ 	struct qla2xxx_mq_chain *mq = ptr;
+-	device_reg_t __iomem *reg;
++	device_reg_t *reg;
+ 
+ 	if (!ha->mqenable || IS_QLA83XX(ha) || IS_QLA27XX(ha))
+ 		return ptr;
+diff --git a/drivers/scsi/qla2xxx/qla_init.c b/drivers/scsi/qla2xxx/qla_init.c
+index e218441..8d4e368 100644
+--- a/drivers/scsi/qla2xxx/qla_init.c
++++ b/drivers/scsi/qla2xxx/qla_init.c
+@@ -2037,7 +2037,7 @@ void
+ qla24xx_config_rings(struct scsi_qla_host *vha)
+ {
+ 	struct qla_hw_data *ha = vha->hw;
+-	device_reg_t __iomem *reg = ISP_QUE_REG(ha, 0);
++	device_reg_t *reg = ISP_QUE_REG(ha, 0);
+ 	struct device_reg_2xxx __iomem *ioreg = &ha->iobase->isp;
+ 	struct qla_msix_entry *msix;
+ 	struct init_cb_24xx *icb;
+diff --git a/drivers/scsi/qla2xxx/qla_iocb.c b/drivers/scsi/qla2xxx/qla_iocb.c
+index 150529d..39ebf34 100644
+--- a/drivers/scsi/qla2xxx/qla_iocb.c
++++ b/drivers/scsi/qla2xxx/qla_iocb.c
+@@ -474,7 +474,7 @@ void
+ qla2x00_start_iocbs(struct scsi_qla_host *vha, struct req_que *req)
+ {
+ 	struct qla_hw_data *ha = vha->hw;
+-	device_reg_t __iomem *reg = ISP_QUE_REG(ha, req->id);
++	device_reg_t *reg = ISP_QUE_REG(ha, req->id);
+ 
+ 	if (IS_P3P_TYPE(ha)) {
+ 		qla82xx_start_iocbs(vha);
+@@ -1863,7 +1863,7 @@ qla2x00_alloc_iocbs(scsi_qla_host_t *vha, srb_t *sp)
+ {
+ 	struct qla_hw_data *ha = vha->hw;
+ 	struct req_que *req = ha->req_q_map[0];
+-	device_reg_t __iomem *reg = ISP_QUE_REG(ha, req->id);
++	device_reg_t *reg = ISP_QUE_REG(ha, req->id);
+ 	uint32_t index, handle;
+ 	request_t *pkt;
+ 	uint16_t cnt, req_cnt;
+diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
+index e632e14..6fc0702 100644
+--- a/drivers/scsi/qla2xxx/qla_target.c
++++ b/drivers/scsi/qla2xxx/qla_target.c
+@@ -1432,7 +1432,7 @@ static int qlt_check_reserve_free_req(struct scsi_qla_host *vha,
+ 	uint32_t req_cnt)
+ {
+ 	struct qla_hw_data *ha = vha->hw;
+-	device_reg_t __iomem *reg = ha->iobase;
++	device_reg_t *reg = ha->iobase;
+ 	uint32_t cnt;
+ 
+ 	if (vha->req->cnt < (req_cnt + 2)) {
+-- 
+1.7.10.4
 
