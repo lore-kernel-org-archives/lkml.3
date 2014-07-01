@@ -1,1353 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751236AbaGAEED (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 00:04:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45227 "EHLO
+	id S1751362AbaGAEEW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 00:04:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45242 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083AbaGAED5 (ORCPT
+	with ESMTP id S1751083AbaGAEES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 00:03:57 -0400
-Date: Mon, 30 Jun 2014 21:03:42 -0700
+	Tue, 1 Jul 2014 00:04:18 -0400
+Date: Mon, 30 Jun 2014 21:04:03 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.4.96
-Message-ID: <20140701040342.GB20260@kroah.com>
-References: <20140701040335.GA20260@kroah.com>
+Subject: Linux 3.10.46
+Message-ID: <20140701040403.GA21509@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="huq684BweRXVnRxX"
 Content-Disposition: inline
-In-Reply-To: <20140701040335.GA20260@kroah.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-diff --git a/Makefile b/Makefile
-index fda1dab589be..e4ecdedbfe27 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 4
--SUBLEVEL = 95
-+SUBLEVEL = 96
- EXTRAVERSION =
- NAME = Saber-toothed Squirrel
- 
-diff --git a/arch/arm/kernel/stacktrace.c b/arch/arm/kernel/stacktrace.c
-index af4e8c8a5422..6582c4adc182 100644
---- a/arch/arm/kernel/stacktrace.c
-+++ b/arch/arm/kernel/stacktrace.c
-@@ -83,13 +83,16 @@ static int save_trace(struct stackframe *frame, void *d)
- 	return trace->nr_entries >= trace->max_entries;
- }
- 
--void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
-+/* This must be noinline to so that our skip calculation works correctly */
-+static noinline void __save_stack_trace(struct task_struct *tsk,
-+	struct stack_trace *trace, unsigned int nosched)
- {
- 	struct stack_trace_data data;
- 	struct stackframe frame;
- 
- 	data.trace = trace;
- 	data.skip = trace->skip;
-+	data.no_sched_functions = nosched;
- 
- 	if (tsk != current) {
- #ifdef CONFIG_SMP
-@@ -102,7 +105,6 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- 			trace->entries[trace->nr_entries++] = ULONG_MAX;
- 		return;
- #else
--		data.no_sched_functions = 1;
- 		frame.fp = thread_saved_fp(tsk);
- 		frame.sp = thread_saved_sp(tsk);
- 		frame.lr = 0;		/* recovered from the stack */
-@@ -111,11 +113,12 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- 	} else {
- 		register unsigned long current_sp asm ("sp");
- 
--		data.no_sched_functions = 0;
-+		/* We don't want this function nor the caller */
-+		data.skip += 2;
- 		frame.fp = (unsigned long)__builtin_frame_address(0);
- 		frame.sp = current_sp;
- 		frame.lr = (unsigned long)__builtin_return_address(0);
--		frame.pc = (unsigned long)save_stack_trace_tsk;
-+		frame.pc = (unsigned long)__save_stack_trace;
- 	}
- 
- 	walk_stackframe(&frame, save_trace, &data);
-@@ -123,9 +126,14 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- 		trace->entries[trace->nr_entries++] = ULONG_MAX;
- }
- 
-+void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
-+{
-+	__save_stack_trace(tsk, trace, 1);
-+}
-+
- void save_stack_trace(struct stack_trace *trace)
- {
--	save_stack_trace_tsk(current, trace);
-+	__save_stack_trace(current, trace, 0);
- }
- EXPORT_SYMBOL_GPL(save_stack_trace);
- #endif
-diff --git a/arch/s390/include/asm/lowcore.h b/arch/s390/include/asm/lowcore.h
-index 47853debb3b9..025415e7346a 100644
---- a/arch/s390/include/asm/lowcore.h
-+++ b/arch/s390/include/asm/lowcore.h
-@@ -142,9 +142,9 @@ struct _lowcore {
- 	__u8	pad_0x02fc[0x0300-0x02fc];	/* 0x02fc */
- 
- 	/* Interrupt response block */
--	__u8	irb[64];			/* 0x0300 */
-+	__u8	irb[96];			/* 0x0300 */
- 
--	__u8	pad_0x0340[0x0e00-0x0340];	/* 0x0340 */
-+	__u8	pad_0x0360[0x0e00-0x0360];	/* 0x0360 */
- 
- 	/*
- 	 * 0xe00 contains the address of the IPL Parameter Information
-@@ -288,12 +288,13 @@ struct _lowcore {
- 	__u8	pad_0x03a0[0x0400-0x03a0];	/* 0x03a0 */
- 
- 	/* Interrupt response block. */
--	__u8	irb[64];			/* 0x0400 */
-+	__u8	irb[96];			/* 0x0400 */
-+	__u8	pad_0x0460[0x0480-0x0460];	/* 0x0460 */
- 
- 	/* Per cpu primary space access list */
--	__u32	paste[16];			/* 0x0440 */
-+	__u32	paste[16];			/* 0x0480 */
- 
--	__u8	pad_0x0480[0x0e00-0x0480];	/* 0x0480 */
-+	__u8	pad_0x04c0[0x0e00-0x04c0];	/* 0x04c0 */
- 
- 	/*
- 	 * 0xe00 contains the address of the IPL Parameter Information
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 2af4ccd88d16..e1e7f9c831da 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -426,9 +426,10 @@ sysenter_past_esp:
- 	jnz sysenter_audit
- sysenter_do_call:
- 	cmpl $(NR_syscalls), %eax
--	jae syscall_badsys
-+	jae sysenter_badsys
- 	call *sys_call_table(,%eax,4)
- 	movl %eax,PT_EAX(%esp)
-+sysenter_after_call:
- 	LOCKDEP_SYS_EXIT
- 	DISABLE_INTERRUPTS(CLBR_ANY)
- 	TRACE_IRQS_OFF
-@@ -550,11 +551,6 @@ ENTRY(iret_exc)
- 
- 	CFI_RESTORE_STATE
- ldt_ss:
--	larl PT_OLDSS(%esp), %eax
--	jnz restore_nocheck
--	testl $0x00400000, %eax		# returning to 32bit stack?
--	jnz restore_nocheck		# allright, normal return
--
- #ifdef CONFIG_PARAVIRT
- 	/*
- 	 * The kernel can't run on a non-flat stack if paravirt mode
-@@ -683,7 +679,12 @@ END(syscall_fault)
- 
- syscall_badsys:
- 	movl $-ENOSYS,PT_EAX(%esp)
--	jmp resume_userspace
-+	jmp syscall_exit
-+END(syscall_badsys)
-+
-+sysenter_badsys:
-+	movl $-ENOSYS,PT_EAX(%esp)
-+	jmp sysenter_after_call
- END(syscall_badsys)
- 	CFI_ENDPROC
- /*
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index fd1f10348130..b6c54909d361 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -212,10 +212,10 @@
- 203	common	sched_setaffinity	sys_sched_setaffinity
- 204	common	sched_getaffinity	sys_sched_getaffinity
- 205	64	set_thread_area
--206	common	io_setup		sys_io_setup
-+206	64	io_setup		sys_io_setup
- 207	common	io_destroy		sys_io_destroy
- 208	common	io_getevents		sys_io_getevents
--209	common	io_submit		sys_io_submit
-+209	64	io_submit		sys_io_submit
- 210	common	io_cancel		sys_io_cancel
- 211	64	get_thread_area
- 212	common	lookup_dcookie		sys_lookup_dcookie
-@@ -353,3 +353,5 @@
- 540	x32	process_vm_writev	compat_sys_process_vm_writev
- 541	x32	setsockopt		compat_sys_setsockopt
- 542	x32	getsockopt		compat_sys_getsockopt
-+543	x32	io_setup		compat_sys_io_setup
-+544	x32	io_submit		compat_sys_io_submit
-diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-index 0bf5ec2d5818..06d2d22281b2 100644
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -57,6 +57,12 @@ EXPORT_SYMBOL(acpi_root_dir);
- 
- 
- #ifdef CONFIG_X86
-+#ifdef CONFIG_ACPI_CUSTOM_DSDT
-+static inline int set_copy_dsdt(const struct dmi_system_id *id)
-+{
-+	return 0;
-+}
-+#else
- static int set_copy_dsdt(const struct dmi_system_id *id)
- {
- 	printk(KERN_NOTICE "%s detected - "
-@@ -64,6 +70,7 @@ static int set_copy_dsdt(const struct dmi_system_id *id)
- 	acpi_gbl_copy_dsdt_locally = 1;
- 	return 0;
- }
-+#endif
- 
- static struct dmi_system_id dsdt_dmi_table[] __initdata = {
- 	/*
-diff --git a/drivers/char/applicom.c b/drivers/char/applicom.c
-index 25373df1dcf8..5d069c79bd8b 100644
---- a/drivers/char/applicom.c
-+++ b/drivers/char/applicom.c
-@@ -345,7 +345,6 @@ out:
- 			free_irq(apbs[i].irq, &dummy);
- 		iounmap(apbs[i].RamIO);
- 	}
--	pci_disable_device(dev);
- 	return ret;
- }
- 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 230f435c7ad8..75fa2e7b87b5 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -861,7 +861,17 @@ struct hid_report *hid_validate_values(struct hid_device *hid,
- 	 * ->numbered being checked, which may not always be the case when
- 	 * drivers go to access report values.
- 	 */
--	report = hid->report_enum[type].report_id_hash[id];
-+	if (id == 0) {
-+		/*
-+		 * Validating on id 0 means we should examine the first
-+		 * report in the list.
-+		 */
-+		report = list_entry(
-+				hid->report_enum[type].report_list.next,
-+				struct hid_report, list);
-+	} else {
-+		report = hid->report_enum[type].report_id_hash[id];
-+	}
- 	if (!report) {
- 		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
- 		return NULL;
-diff --git a/drivers/net/can/sja1000/peak_pci.c b/drivers/net/can/sja1000/peak_pci.c
-index 5f92b865f64b..a28c5d312447 100644
---- a/drivers/net/can/sja1000/peak_pci.c
-+++ b/drivers/net/can/sja1000/peak_pci.c
-@@ -547,7 +547,7 @@ static int __devinit peak_pci_probe(struct pci_dev *pdev,
- {
- 	struct sja1000_priv *priv;
- 	struct peak_pci_chan *chan;
--	struct net_device *dev;
-+	struct net_device *dev, *prev_dev;
- 	void __iomem *cfg_base, *reg_base;
- 	u16 sub_sys_id, icr;
- 	int i, err, channels;
-@@ -681,11 +681,13 @@ failure_remove_channels:
- 	writew(0x0, cfg_base + PITA_ICR + 2);
- 
- 	chan = NULL;
--	for (dev = pci_get_drvdata(pdev); dev; dev = chan->prev_dev) {
--		unregister_sja1000dev(dev);
--		free_sja1000dev(dev);
-+	for (dev = pci_get_drvdata(pdev); dev; dev = prev_dev) {
- 		priv = netdev_priv(dev);
- 		chan = priv->priv;
-+		prev_dev = chan->prev_dev;
-+
-+		unregister_sja1000dev(dev);
-+		free_sja1000dev(dev);
- 	}
- 
- 	/* free any PCIeC resources too */
-@@ -719,10 +721,12 @@ static void __devexit peak_pci_remove(struct pci_dev *pdev)
- 
- 	/* Loop over all registered devices */
- 	while (1) {
-+		struct net_device *prev_dev = chan->prev_dev;
-+
- 		dev_info(&pdev->dev, "removing device %s\n", dev->name);
- 		unregister_sja1000dev(dev);
- 		free_sja1000dev(dev);
--		dev = chan->prev_dev;
-+		dev = prev_dev;
- 
- 		if (!dev) {
- 			/* do that only for first channel */
-diff --git a/drivers/staging/tidspbridge/core/dsp-clock.c b/drivers/staging/tidspbridge/core/dsp-clock.c
-index c7df34e6b60b..f82581428bb0 100644
---- a/drivers/staging/tidspbridge/core/dsp-clock.c
-+++ b/drivers/staging/tidspbridge/core/dsp-clock.c
-@@ -213,7 +213,7 @@ int dsp_clk_enable(enum dsp_clk_id clk_id)
- 	case GPT_CLK:
- 		status = omap_dm_timer_start(timer[clk_id - 1]);
- 		break;
--#ifdef CONFIG_OMAP_MCBSP
-+#ifdef CONFIG_SND_OMAP_SOC_MCBSP
- 	case MCBSP_CLK:
- 		omap_mcbsp_request(MCBSP_ID(clk_id));
- 		omap2_mcbsp_set_clks_src(MCBSP_ID(clk_id), MCBSP_CLKS_PAD_SRC);
-@@ -289,7 +289,7 @@ int dsp_clk_disable(enum dsp_clk_id clk_id)
- 	case GPT_CLK:
- 		status = omap_dm_timer_stop(timer[clk_id - 1]);
- 		break;
--#ifdef CONFIG_OMAP_MCBSP
-+#ifdef CONFIG_SND_OMAP_SOC_MCBSP
- 	case MCBSP_CLK:
- 		omap2_mcbsp_set_clks_src(MCBSP_ID(clk_id), MCBSP_CLKS_PRCM_SRC);
- 		omap_mcbsp_free(MCBSP_ID(clk_id));
-diff --git a/drivers/target/target_core_rd.c b/drivers/target/target_core_rd.c
-index 8b68f7b82631..fa4e21b882a0 100644
---- a/drivers/target/target_core_rd.c
-+++ b/drivers/target/target_core_rd.c
-@@ -177,7 +177,7 @@ static int rd_build_device_space(struct rd_dev *rd_dev)
- 						- 1;
- 
- 		for (j = 0; j < sg_per_table; j++) {
--			pg = alloc_pages(GFP_KERNEL, 0);
-+			pg = alloc_pages(GFP_KERNEL | __GFP_ZERO, 0);
- 			if (!pg) {
- 				pr_err("Unable to allocate scatterlist"
- 					" pages for struct rd_dev_sg_table\n");
-diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-index 8ed83b938a77..895497d42270 100644
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -531,6 +531,10 @@ static int __dwc3_gadget_ep_disable(struct dwc3_ep *dep)
- 
- 	dwc3_remove_requests(dwc, dep);
- 
-+	/* make sure HW endpoint isn't stalled */
-+	if (dep->flags & DWC3_EP_STALL)
-+		__dwc3_gadget_ep_set_halt(dep, 0);
-+
- 	reg = dwc3_readl(dwc->regs, DWC3_DALEPENA);
- 	reg &= ~DWC3_DALEPENA_EP(dep->number);
- 	dwc3_writel(dwc->regs, DWC3_DALEPENA, reg);
-diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
-index e58b16442971..d9eaaa3b3e44 100644
---- a/drivers/usb/gadget/inode.c
-+++ b/drivers/usb/gadget/inode.c
-@@ -1499,7 +1499,7 @@ gadgetfs_setup (struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
- 		}
- 		break;
- 
--#ifndef	CONFIG_USB_GADGET_PXA25X
-+#ifndef	CONFIG_USB_PXA25X
- 	/* PXA automagically handles this request too */
- 	case USB_REQ_GET_CONFIGURATION:
- 		if (ctrl->bRequestType != 0x80)
-diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
-index 78933512c18b..90dcf54cd7e8 100644
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -555,6 +555,14 @@ static const struct dmi_system_id __devinitconst ehci_dmi_nohandoff_table[] = {
- 			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
- 		},
- 	},
-+	{
-+		/* HASEE E200 */
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "HASEE"),
-+			DMI_MATCH(DMI_BOARD_NAME, "E210"),
-+			DMI_MATCH(DMI_BIOS_VERSION, "6.00"),
-+		},
-+	},
- 	{ }
- };
- 
-@@ -564,9 +572,14 @@ static void __devinit ehci_bios_handoff(struct pci_dev *pdev,
- {
- 	int try_handoff = 1, tried_handoff = 0;
- 
--	/* The Pegatron Lucid tablet sporadically waits for 98 seconds trying
--	 * the handoff on its unused controller.  Skip it. */
--	if (pdev->vendor == 0x8086 && pdev->device == 0x283a) {
-+	/*
-+	 * The Pegatron Lucid tablet sporadically waits for 98 seconds trying
-+	 * the handoff on its unused controller.  Skip it.
-+	 *
-+	 * The HASEE E200 hangs when the semaphore is set (bugzilla #77021).
-+	 */
-+	if (pdev->vendor == 0x8086 && (pdev->device == 0x283a ||
-+			pdev->device == 0x27cc)) {
- 		if (dmi_check_system(ehci_dmi_nohandoff_table))
- 			try_handoff = 0;
- 	}
-diff --git a/drivers/usb/misc/usbtest.c b/drivers/usb/misc/usbtest.c
-index 055b84adedac..174be05ba2c7 100644
---- a/drivers/usb/misc/usbtest.c
-+++ b/drivers/usb/misc/usbtest.c
-@@ -7,9 +7,10 @@
- #include <linux/moduleparam.h>
- #include <linux/scatterlist.h>
- #include <linux/mutex.h>
--
-+#include <linux/timer.h>
- #include <linux/usb.h>
- 
-+#define SIMPLE_IO_TIMEOUT	10000	/* in milliseconds */
- 
- /*-------------------------------------------------------------------------*/
- 
-@@ -355,6 +356,7 @@ static int simple_io(
- 	int			max = urb->transfer_buffer_length;
- 	struct completion	completion;
- 	int			retval = 0;
-+	unsigned long		expire;
- 
- 	urb->context = &completion;
- 	while (retval == 0 && iterations-- > 0) {
-@@ -367,9 +369,15 @@ static int simple_io(
- 		if (retval != 0)
- 			break;
- 
--		/* NOTE:  no timeouts; can't be broken out of by interrupt */
--		wait_for_completion(&completion);
--		retval = urb->status;
-+		expire = msecs_to_jiffies(SIMPLE_IO_TIMEOUT);
-+		if (!wait_for_completion_timeout(&completion, expire)) {
-+			usb_kill_urb(urb);
-+			retval = (urb->status == -ENOENT ?
-+				  -ETIMEDOUT : urb->status);
-+		} else {
-+			retval = urb->status;
-+		}
-+
- 		urb->dev = udev;
- 		if (retval == 0 && usb_pipein(urb->pipe))
- 			retval = simple_check_buf(tdev, urb);
-@@ -462,6 +470,14 @@ alloc_sglist(int nents, int max, int vary)
- 	return sg;
- }
- 
-+static void sg_timeout(unsigned long _req)
-+{
-+	struct usb_sg_request	*req = (struct usb_sg_request *) _req;
-+
-+	req->status = -ETIMEDOUT;
-+	usb_sg_cancel(req);
-+}
-+
- static int perform_sglist(
- 	struct usbtest_dev	*tdev,
- 	unsigned		iterations,
-@@ -473,6 +489,9 @@ static int perform_sglist(
- {
- 	struct usb_device	*udev = testdev_to_usbdev(tdev);
- 	int			retval = 0;
-+	struct timer_list	sg_timer;
-+
-+	setup_timer_on_stack(&sg_timer, sg_timeout, (unsigned long) req);
- 
- 	while (retval == 0 && iterations-- > 0) {
- 		retval = usb_sg_init(req, udev, pipe,
-@@ -483,7 +502,10 @@ static int perform_sglist(
- 
- 		if (retval)
- 			break;
-+		mod_timer(&sg_timer, jiffies +
-+				msecs_to_jiffies(SIMPLE_IO_TIMEOUT));
- 		usb_sg_wait(req);
-+		del_timer_sync(&sg_timer);
- 		retval = req->status;
- 
- 		/* FIXME check resulting data pattern */
-@@ -1135,6 +1157,11 @@ static int unlink1(struct usbtest_dev *dev, int pipe, int size, int async)
- 	urb->context = &completion;
- 	urb->complete = unlink1_callback;
- 
-+	if (usb_pipeout(urb->pipe)) {
-+		simple_fill_buf(urb);
-+		urb->transfer_flags |= URB_ZERO_PACKET;
-+	}
-+
- 	/* keep the endpoint busy.  there are lots of hc/hcd-internal
- 	 * states, and testing should get to all of them over time.
- 	 *
-@@ -1265,6 +1292,11 @@ static int unlink_queued(struct usbtest_dev *dev, int pipe, unsigned num,
- 				unlink_queued_callback, &ctx);
- 		ctx.urbs[i]->transfer_dma = buf_dma;
- 		ctx.urbs[i]->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
-+
-+		if (usb_pipeout(ctx.urbs[i]->pipe)) {
-+			simple_fill_buf(ctx.urbs[i]);
-+			ctx.urbs[i]->transfer_flags |= URB_ZERO_PACKET;
-+		}
- 	}
- 
- 	/* Submit all the URBs and then unlink URBs num - 4 and num - 2. */
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index def9ed02bf19..f7ccfbcdbf04 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1930,6 +1930,7 @@ static int option_send_setup(struct usb_serial_port *port)
- 	struct usb_wwan_port_private *portdata;
- 	int ifNum = serial->interface->cur_altsetting->desc.bInterfaceNumber;
- 	int val = 0;
-+	int res;
- 	dbg("%s", __func__);
- 
- 	if (is_blacklisted(ifNum, OPTION_BLACKLIST_SENDSETUP,
-@@ -1945,9 +1946,17 @@ static int option_send_setup(struct usb_serial_port *port)
- 	if (portdata->rts_state)
- 		val |= 0x02;
- 
--	return usb_control_msg(serial->dev,
--		usb_rcvctrlpipe(serial->dev, 0),
--		0x22, 0x21, val, ifNum, NULL, 0, USB_CTRL_SET_TIMEOUT);
-+	res = usb_autopm_get_interface(serial->interface);
-+	if (res)
-+		return res;
-+
-+	res = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
-+				0x22, 0x21, val, ifNum, NULL,
-+				0, USB_CTRL_SET_TIMEOUT);
-+
-+	usb_autopm_put_interface(serial->interface);
-+
-+	return res;
- }
- 
- MODULE_AUTHOR(DRIVER_AUTHOR);
-diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
-index 3f5e4a73ddd5..bd79d68b51c1 100644
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -59,6 +59,7 @@ struct sierra_intf_private {
- 	spinlock_t susp_lock;
- 	unsigned int suspended:1;
- 	int in_flight;
-+	unsigned int open_ports;
- };
- 
- static int sierra_set_power_state(struct usb_device *udev, __u16 swiState)
-@@ -801,6 +802,7 @@ static void sierra_close(struct usb_serial_port *port)
- 	struct usb_serial *serial = port->serial;
- 	struct sierra_port_private *portdata;
- 	struct sierra_intf_private *intfdata = port->serial->private;
-+	struct urb *urb;
- 
- 
- 	dev_dbg(&port->dev, "%s\n", __func__);
-@@ -812,7 +814,6 @@ static void sierra_close(struct usb_serial_port *port)
- 	if (serial->dev) {
- 		mutex_lock(&serial->disc_mutex);
- 		if (!serial->disconnected) {
--			serial->interface->needs_remote_wakeup = 0;
- 			/* odd error handling due to pm counters */
- 			if (!usb_autopm_get_interface(serial->interface))
- 				sierra_send_setup(port);
-@@ -823,8 +824,21 @@ static void sierra_close(struct usb_serial_port *port)
- 		mutex_unlock(&serial->disc_mutex);
- 		spin_lock_irq(&intfdata->susp_lock);
- 		portdata->opened = 0;
-+		if (--intfdata->open_ports == 0)
-+			serial->interface->needs_remote_wakeup = 0;
- 		spin_unlock_irq(&intfdata->susp_lock);
- 
-+		for (;;) {
-+			urb = usb_get_from_anchor(&portdata->delayed);
-+			if (!urb)
-+				break;
-+			kfree(urb->transfer_buffer);
-+			usb_free_urb(urb);
-+			usb_autopm_put_interface_async(serial->interface);
-+			spin_lock(&portdata->lock);
-+			portdata->outstanding_urbs--;
-+			spin_unlock(&portdata->lock);
-+		}
- 
- 		/* Stop reading urbs */
- 		sierra_stop_rx_urbs(port);
-@@ -867,23 +881,29 @@ static int sierra_open(struct tty_struct *tty, struct usb_serial_port *port)
- 			usb_sndbulkpipe(serial->dev, endpoint) | USB_DIR_IN);
- 
- 	err = sierra_submit_rx_urbs(port, GFP_KERNEL);
--	if (err) {
--		/* get rid of everything as in close */
--		sierra_close(port);
--		/* restore balance for autopm */
--		if (!serial->disconnected)
--			usb_autopm_put_interface(serial->interface);
--		return err;
--	}
-+	if (err)
-+		goto err_submit;
-+
- 	sierra_send_setup(port);
- 
--	serial->interface->needs_remote_wakeup = 1;
- 	spin_lock_irq(&intfdata->susp_lock);
- 	portdata->opened = 1;
-+	if (++intfdata->open_ports == 1)
-+		serial->interface->needs_remote_wakeup = 1;
- 	spin_unlock_irq(&intfdata->susp_lock);
- 	usb_autopm_put_interface(serial->interface);
- 
- 	return 0;
-+
-+err_submit:
-+	sierra_stop_rx_urbs(port);
-+
-+	for (i = 0; i < portdata->num_in_urbs; i++) {
-+		sierra_release_urb(portdata->in_urbs[i]);
-+		portdata->in_urbs[i] = NULL;
-+	}
-+
-+	return err;
- }
- 
- 
-@@ -994,6 +1014,7 @@ static void sierra_release(struct usb_serial *serial)
- 		portdata = usb_get_serial_port_data(port);
- 		if (!portdata)
- 			continue;
-+		usb_set_serial_port_data(port, NULL);
- 		kfree(portdata);
- 	}
- 	kfree(serial->private);
-@@ -1010,6 +1031,8 @@ static void stop_read_write_urbs(struct usb_serial *serial)
- 	for (i = 0; i < serial->num_ports; ++i) {
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
-+		if (!portdata)
-+			continue;
- 		sierra_stop_rx_urbs(port);
- 		usb_kill_anchored_urbs(&portdata->active);
- 	}
-@@ -1052,6 +1075,9 @@ static int sierra_resume(struct usb_serial *serial)
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
- 
-+		if (!portdata)
-+			continue;
-+
- 		while ((urb = usb_get_from_anchor(&portdata->delayed))) {
- 			usb_anchor_urb(urb, &portdata->active);
- 			intfdata->in_flight++;
-@@ -1059,8 +1085,12 @@ static int sierra_resume(struct usb_serial *serial)
- 			if (err < 0) {
- 				intfdata->in_flight--;
- 				usb_unanchor_urb(urb);
--				usb_scuttle_anchored_urbs(&portdata->delayed);
--				break;
-+				kfree(urb->transfer_buffer);
-+				usb_free_urb(urb);
-+				spin_lock(&portdata->lock);
-+				portdata->outstanding_urbs--;
-+				spin_unlock(&portdata->lock);
-+				continue;
- 			}
- 		}
- 
-diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
-index 820436ec60e9..7e92f50965f6 100644
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -236,8 +236,10 @@ int usb_wwan_write(struct tty_struct *tty, struct usb_serial_port *port,
- 		    usb_pipeendpoint(this_urb->pipe), i);
- 
- 		err = usb_autopm_get_interface_async(port->serial->interface);
--		if (err < 0)
-+		if (err < 0) {
-+			clear_bit(i, &portdata->out_busy);
- 			break;
-+		}
- 
- 		/* send the data */
- 		memcpy(this_urb->transfer_buffer, buf, todo);
-@@ -406,6 +408,14 @@ int usb_wwan_open(struct tty_struct *tty, struct usb_serial_port *port)
- 
- 	dbg("%s", __func__);
- 
-+	if (port->interrupt_in_urb) {
-+		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
-+		if (err) {
-+			dev_dbg(&port->dev, "%s: submit int urb failed: %d\n",
-+				__func__, err);
-+		}
-+	}
-+
- 	/* Start reading from the IN endpoint */
- 	for (i = 0; i < N_IN_URB; i++) {
- 		urb = portdata->in_urbs[i];
-@@ -432,12 +442,26 @@ int usb_wwan_open(struct tty_struct *tty, struct usb_serial_port *port)
- }
- EXPORT_SYMBOL(usb_wwan_open);
- 
-+static void unbusy_queued_urb(struct urb *urb,
-+					struct usb_wwan_port_private *portdata)
-+{
-+	int i;
-+
-+	for (i = 0; i < N_OUT_URB; i++) {
-+		if (urb == portdata->out_urbs[i]) {
-+			clear_bit(i, &portdata->out_busy);
-+			break;
-+		}
-+	}
-+}
-+
- void usb_wwan_close(struct usb_serial_port *port)
- {
- 	int i;
- 	struct usb_serial *serial = port->serial;
- 	struct usb_wwan_port_private *portdata;
- 	struct usb_wwan_intf_private *intfdata = port->serial->private;
-+	struct urb *urb;
- 
- 	dbg("%s", __func__);
- 	portdata = usb_get_serial_port_data(port);
-@@ -448,10 +472,19 @@ void usb_wwan_close(struct usb_serial_port *port)
- 		portdata->opened = 0;
- 		spin_unlock_irq(&intfdata->susp_lock);
- 
-+		for (;;) {
-+			urb = usb_get_from_anchor(&portdata->delayed);
-+			if (!urb)
-+				break;
-+			unbusy_queued_urb(urb, portdata);
-+			usb_autopm_put_interface_async(serial->interface);
-+		}
-+
- 		for (i = 0; i < N_IN_URB; i++)
- 			usb_kill_urb(portdata->in_urbs[i]);
- 		for (i = 0; i < N_OUT_URB; i++)
- 			usb_kill_urb(portdata->out_urbs[i]);
-+		usb_kill_urb(port->interrupt_in_urb);
- 		/* balancing - important as an error cannot be handled*/
- 		usb_autopm_get_interface_no_resume(serial->interface);
- 		serial->interface->needs_remote_wakeup = 0;
-@@ -527,7 +560,7 @@ static void usb_wwan_setup_urbs(struct usb_serial *serial)
- 
- int usb_wwan_startup(struct usb_serial *serial)
- {
--	int i, j, err;
-+	int i, j;
- 	struct usb_serial_port *port;
- 	struct usb_wwan_port_private *portdata;
- 	u8 *buffer;
-@@ -560,12 +593,6 @@ int usb_wwan_startup(struct usb_serial *serial)
- 		}
- 
- 		usb_set_serial_port_data(port, portdata);
--
--		if (!port->interrupt_in_urb)
--			continue;
--		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
--		if (err)
--			dbg("%s: submit irq_in urb failed %d", __func__, err);
- 	}
- 	usb_wwan_setup_urbs(serial);
- 	return 0;
-@@ -645,46 +672,32 @@ EXPORT_SYMBOL(usb_wwan_release);
- int usb_wwan_suspend(struct usb_serial *serial, pm_message_t message)
- {
- 	struct usb_wwan_intf_private *intfdata = serial->private;
--	int b;
- 
- 	dbg("%s entered", __func__);
- 
-+	spin_lock_irq(&intfdata->susp_lock);
- 	if (PMSG_IS_AUTO(message)) {
--		spin_lock_irq(&intfdata->susp_lock);
--		b = intfdata->in_flight;
--		spin_unlock_irq(&intfdata->susp_lock);
--
--		if (b)
-+		if (intfdata->in_flight) {
-+			spin_unlock_irq(&intfdata->susp_lock);
- 			return -EBUSY;
-+		}
- 	}
- 
--	spin_lock_irq(&intfdata->susp_lock);
- 	intfdata->suspended = 1;
- 	spin_unlock_irq(&intfdata->susp_lock);
-+
- 	stop_read_write_urbs(serial);
- 
- 	return 0;
- }
- EXPORT_SYMBOL(usb_wwan_suspend);
- 
--static void unbusy_queued_urb(struct urb *urb, struct usb_wwan_port_private *portdata)
--{
--	int i;
--
--	for (i = 0; i < N_OUT_URB; i++) {
--		if (urb == portdata->out_urbs[i]) {
--			clear_bit(i, &portdata->out_busy);
--			break;
--		}
--	}
--}
--
--static void play_delayed(struct usb_serial_port *port)
-+static int play_delayed(struct usb_serial_port *port)
- {
- 	struct usb_wwan_intf_private *data;
- 	struct usb_wwan_port_private *portdata;
- 	struct urb *urb;
--	int err;
-+	int err = 0;
- 
- 	portdata = usb_get_serial_port_data(port);
- 	data = port->serial->private;
-@@ -701,6 +714,8 @@ static void play_delayed(struct usb_serial_port *port)
- 			break;
- 		}
- 	}
-+
-+	return err;
- }
- 
- int usb_wwan_resume(struct usb_serial *serial)
-@@ -710,55 +725,53 @@ int usb_wwan_resume(struct usb_serial *serial)
- 	struct usb_wwan_intf_private *intfdata = serial->private;
- 	struct usb_wwan_port_private *portdata;
- 	struct urb *urb;
--	int err = 0;
-+	int err;
-+	int err_count = 0;
- 
- 	dbg("%s entered", __func__);
--	/* get the interrupt URBs resubmitted unconditionally */
--	for (i = 0; i < serial->num_ports; i++) {
--		port = serial->port[i];
--		if (!port->interrupt_in_urb) {
--			dbg("%s: No interrupt URB for port %d", __func__, i);
--			continue;
--		}
--		err = usb_submit_urb(port->interrupt_in_urb, GFP_NOIO);
--		dbg("Submitted interrupt URB for port %d (result %d)", i, err);
--		if (err < 0) {
--			err("%s: Error %d for interrupt URB of port%d",
--			    __func__, err, i);
--			goto err_out;
--		}
--	}
- 
-+	spin_lock_irq(&intfdata->susp_lock);
- 	for (i = 0; i < serial->num_ports; i++) {
- 		/* walk all ports */
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
- 
- 		/* skip closed ports */
--		spin_lock_irq(&intfdata->susp_lock);
--		if (!portdata->opened) {
--			spin_unlock_irq(&intfdata->susp_lock);
-+		if (!portdata || !portdata->opened)
- 			continue;
-+
-+		if (port->interrupt_in_urb) {
-+			err = usb_submit_urb(port->interrupt_in_urb,
-+					GFP_ATOMIC);
-+			if (err) {
-+				dev_err(&port->dev,
-+					"%s: submit int urb failed: %d\n",
-+					__func__, err);
-+				err_count++;
-+			}
- 		}
- 
-+		err = play_delayed(port);
-+		if (err)
-+			err_count++;
-+
- 		for (j = 0; j < N_IN_URB; j++) {
- 			urb = portdata->in_urbs[j];
- 			err = usb_submit_urb(urb, GFP_ATOMIC);
- 			if (err < 0) {
- 				err("%s: Error %d for bulk URB %d",
- 				    __func__, err, i);
--				spin_unlock_irq(&intfdata->susp_lock);
--				goto err_out;
-+				err_count++;
- 			}
- 		}
--		play_delayed(port);
--		spin_unlock_irq(&intfdata->susp_lock);
- 	}
--	spin_lock_irq(&intfdata->susp_lock);
- 	intfdata->suspended = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
--err_out:
--	return err;
-+
-+	if (err_count)
-+		return -EIO;
-+
-+	return 0;
- }
- EXPORT_SYMBOL(usb_wwan_resume);
- #endif
-diff --git a/drivers/video/matrox/matroxfb_base.h b/drivers/video/matrox/matroxfb_base.h
-index 556d96ce40bf..89a8a89a5eb2 100644
---- a/drivers/video/matrox/matroxfb_base.h
-+++ b/drivers/video/matrox/matroxfb_base.h
-@@ -698,7 +698,7 @@ void matroxfb_unregister_driver(struct matroxfb_driver* drv);
- 
- #define mga_fifo(n)	do {} while ((mga_inl(M_FIFOSTATUS) & 0xFF) < (n))
- 
--#define WaitTillIdle()	do {} while (mga_inl(M_STATUS) & 0x10000)
-+#define WaitTillIdle()	do { mga_inl(M_STATUS); do {} while (mga_inl(M_STATUS) & 0x10000); } while (0)
- 
- /* code speedup */
- #ifdef CONFIG_FB_MATROX_MILLENIUM
-diff --git a/fs/btrfs/backref.c b/fs/btrfs/backref.c
-index bcec06750232..9a6b24a73aae 100644
---- a/fs/btrfs/backref.c
-+++ b/fs/btrfs/backref.c
-@@ -1033,7 +1033,7 @@ static int __get_extent_inline_ref(unsigned long *ptr, struct extent_buffer *eb,
- 			*out_eiref = (struct btrfs_extent_inline_ref *)(ei + 1);
- 		}
- 		*ptr = (unsigned long)*out_eiref;
--		if ((void *)*ptr >= (void *)ei + item_size)
-+		if ((unsigned long)(*ptr) >= (unsigned long)ei + item_size)
- 			return -ENOENT;
- 	}
- 
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index d64fda541483..24b58c7f01ef 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -1551,6 +1551,7 @@ again:
- 		 * shortening the size of the delalloc range we're searching
- 		 */
- 		free_extent_state(cached_state);
-+		cached_state = NULL;
- 		if (!loops) {
- 			unsigned long offset = (*start) & (PAGE_CACHE_SIZE - 1);
- 			max_bytes = PAGE_CACHE_SIZE - offset;
-@@ -2244,7 +2245,7 @@ int end_extent_writepage(struct page *page, int err, u64 start, u64 end)
- {
- 	int uptodate = (err == 0);
- 	struct extent_io_tree *tree;
--	int ret;
-+	int ret = 0;
- 
- 	tree = &BTRFS_I(page->mapping->host)->io_tree;
- 
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 06744f1e91f4..d5dc63c6bb75 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -1446,11 +1446,12 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
- 		struct btrfs_fs_devices *fs_devices;
- 		fs_devices = root->fs_info->fs_devices;
- 		while (fs_devices) {
--			if (fs_devices->seed == cur_devices)
-+			if (fs_devices->seed == cur_devices) {
-+				fs_devices->seed = cur_devices->seed;
- 				break;
-+			}
- 			fs_devices = fs_devices->seed;
- 		}
--		fs_devices->seed = cur_devices->seed;
- 		cur_devices->seed = NULL;
- 		lock_chunks(root);
- 		__btrfs_close_devices(cur_devices);
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 2941ee6ef24f..cdfc763b313f 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -3015,7 +3015,7 @@ ext4_mb_normalize_request(struct ext4_allocation_context *ac,
- 	}
- 	BUG_ON(start + size <= ac->ac_o_ex.fe_logical &&
- 			start > ac->ac_o_ex.fe_logical);
--	BUG_ON(size <= 0 || size > EXT4_CLUSTERS_PER_GROUP(ac->ac_sb));
-+	BUG_ON(size <= 0 || size > EXT4_BLOCKS_PER_GROUP(ac->ac_sb));
- 
- 	/* now prepare goal request */
- 
-diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
-index 9a323d12de1c..1e1e41787cd9 100644
---- a/include/linux/irqdesc.h
-+++ b/include/linux/irqdesc.h
-@@ -27,6 +27,8 @@ struct module;
-  * @irq_count:		stats field to detect stalled irqs
-  * @last_unhandled:	aging timer for unhandled count
-  * @irqs_unhandled:	stats field for spurious unhandled interrupts
-+ * @threads_handled:	stats field for deferred spurious detection of threaded handlers
-+ * @threads_handled_last: comparator field for deferred spurious detection of theraded handlers
-  * @lock:		locking for SMP
-  * @affinity_hint:	hint to user space for preferred irq affinity
-  * @affinity_notify:	context for notification of affinity changes
-@@ -52,6 +54,8 @@ struct irq_desc {
- 	unsigned int		irq_count;	/* For detecting broken IRQs */
- 	unsigned long		last_unhandled;	/* Aging timer for unhandled count */
- 	unsigned int		irqs_unhandled;
-+	atomic_t		threads_handled;
-+	int			threads_handled_last;
- 	raw_spinlock_t		lock;
- 	struct cpumask		*percpu_enabled;
- #ifdef CONFIG_SMP
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 0884db3d315e..e22df7a4f1ab 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -1674,6 +1674,22 @@ static inline void skb_orphan(struct sk_buff *skb)
- }
- 
- /**
-+ *	skb_orphan_frags - orphan the frags contained in a buffer
-+ *	@skb: buffer to orphan frags from
-+ *	@gfp_mask: allocation mask for replacement pages
-+ *
-+ *	For each frag in the SKB which needs a destructor (i.e. has an
-+ *	owner) create a copy of that frag and release the original
-+ *	page by calling the destructor.
-+ */
-+static inline int skb_orphan_frags(struct sk_buff *skb, gfp_t gfp_mask)
-+{
-+	if (likely(!(skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY)))
-+		return 0;
-+	return skb_copy_ubufs(skb, gfp_mask);
-+}
-+
-+/**
-  *	__skb_queue_purge - empty a list
-  *	@list: list to empty
-  *
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 3d1bbbcc2923..9baa6315acf5 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -809,8 +809,8 @@ static int irq_thread(void *data)
- 		irq_thread_check_affinity(desc, action);
- 
- 		action_ret = handler_fn(desc, action);
--		if (!noirqdebug)
--			note_interrupt(action->irq, desc, action_ret);
-+		if (action_ret == IRQ_HANDLED)
-+			atomic_inc(&desc->threads_handled);
- 
- 		wake_threads_waitq(desc);
- 	}
-diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
-index 7b5f012bde9d..febcee3c2aa9 100644
---- a/kernel/irq/spurious.c
-+++ b/kernel/irq/spurious.c
-@@ -265,21 +265,119 @@ try_misrouted_irq(unsigned int irq, struct irq_desc *desc,
- 	return action && (action->flags & IRQF_IRQPOLL);
- }
- 
-+#define SPURIOUS_DEFERRED	0x80000000
-+
- void note_interrupt(unsigned int irq, struct irq_desc *desc,
- 		    irqreturn_t action_ret)
- {
- 	if (desc->istate & IRQS_POLL_INPROGRESS)
- 		return;
- 
--	/* we get here again via the threaded handler */
--	if (action_ret == IRQ_WAKE_THREAD)
--		return;
--
- 	if (bad_action_ret(action_ret)) {
- 		report_bad_irq(irq, desc, action_ret);
- 		return;
- 	}
- 
-+	/*
-+	 * We cannot call note_interrupt from the threaded handler
-+	 * because we need to look at the compound of all handlers
-+	 * (primary and threaded). Aside of that in the threaded
-+	 * shared case we have no serialization against an incoming
-+	 * hardware interrupt while we are dealing with a threaded
-+	 * result.
-+	 *
-+	 * So in case a thread is woken, we just note the fact and
-+	 * defer the analysis to the next hardware interrupt.
-+	 *
-+	 * The threaded handlers store whether they sucessfully
-+	 * handled an interrupt and we check whether that number
-+	 * changed versus the last invocation.
-+	 *
-+	 * We could handle all interrupts with the delayed by one
-+	 * mechanism, but for the non forced threaded case we'd just
-+	 * add pointless overhead to the straight hardirq interrupts
-+	 * for the sake of a few lines less code.
-+	 */
-+	if (action_ret & IRQ_WAKE_THREAD) {
-+		/*
-+		 * There is a thread woken. Check whether one of the
-+		 * shared primary handlers returned IRQ_HANDLED. If
-+		 * not we defer the spurious detection to the next
-+		 * interrupt.
-+		 */
-+		if (action_ret == IRQ_WAKE_THREAD) {
-+			int handled;
-+			/*
-+			 * We use bit 31 of thread_handled_last to
-+			 * denote the deferred spurious detection
-+			 * active. No locking necessary as
-+			 * thread_handled_last is only accessed here
-+			 * and we have the guarantee that hard
-+			 * interrupts are not reentrant.
-+			 */
-+			if (!(desc->threads_handled_last & SPURIOUS_DEFERRED)) {
-+				desc->threads_handled_last |= SPURIOUS_DEFERRED;
-+				return;
-+			}
-+			/*
-+			 * Check whether one of the threaded handlers
-+			 * returned IRQ_HANDLED since the last
-+			 * interrupt happened.
-+			 *
-+			 * For simplicity we just set bit 31, as it is
-+			 * set in threads_handled_last as well. So we
-+			 * avoid extra masking. And we really do not
-+			 * care about the high bits of the handled
-+			 * count. We just care about the count being
-+			 * different than the one we saw before.
-+			 */
-+			handled = atomic_read(&desc->threads_handled);
-+			handled |= SPURIOUS_DEFERRED;
-+			if (handled != desc->threads_handled_last) {
-+				action_ret = IRQ_HANDLED;
-+				/*
-+				 * Note: We keep the SPURIOUS_DEFERRED
-+				 * bit set. We are handling the
-+				 * previous invocation right now.
-+				 * Keep it for the current one, so the
-+				 * next hardware interrupt will
-+				 * account for it.
-+				 */
-+				desc->threads_handled_last = handled;
-+			} else {
-+				/*
-+				 * None of the threaded handlers felt
-+				 * responsible for the last interrupt
-+				 *
-+				 * We keep the SPURIOUS_DEFERRED bit
-+				 * set in threads_handled_last as we
-+				 * need to account for the current
-+				 * interrupt as well.
-+				 */
-+				action_ret = IRQ_NONE;
-+			}
-+		} else {
-+			/*
-+			 * One of the primary handlers returned
-+			 * IRQ_HANDLED. So we don't care about the
-+			 * threaded handlers on the same line. Clear
-+			 * the deferred detection bit.
-+			 *
-+			 * In theory we could/should check whether the
-+			 * deferred bit is set and take the result of
-+			 * the previous run into account here as
-+			 * well. But it's really not worth the
-+			 * trouble. If every other interrupt is
-+			 * handled we never trigger the spurious
-+			 * detector. And if this is just the one out
-+			 * of 100k unhandled ones which is handled
-+			 * then we merily delay the spurious detection
-+			 * by one hard interrupt. Not a real problem.
-+			 */
-+			desc->threads_handled_last &= ~SPURIOUS_DEFERRED;
-+		}
-+	}
-+
- 	if (unlikely(action_ret == IRQ_NONE)) {
- 		/*
- 		 * If we are seeing only the odd spurious IRQ caused by
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 2fe9bf640c71..97eec2174769 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -208,9 +208,9 @@ static int kill_proc(struct task_struct *t, unsigned long addr, int trapno,
- #endif
- 	si.si_addr_lsb = compound_trans_order(compound_head(page)) + PAGE_SHIFT;
- 
--	if ((flags & MF_ACTION_REQUIRED) && t == current) {
-+	if ((flags & MF_ACTION_REQUIRED) && t->mm == current->mm) {
- 		si.si_code = BUS_MCEERR_AR;
--		ret = force_sig_info(SIGBUS, &si, t);
-+		ret = force_sig_info(SIGBUS, &si, current);
- 	} else {
- 		/*
- 		 * Don't use force here, it's convenient if the signal
-@@ -382,10 +382,12 @@ static void kill_procs(struct list_head *to_kill, int forcekill, int trapno,
- 	}
- }
- 
--static int task_early_kill(struct task_struct *tsk)
-+static int task_early_kill(struct task_struct *tsk, int force_early)
- {
- 	if (!tsk->mm)
- 		return 0;
-+	if (force_early)
-+		return 1;
- 	if (tsk->flags & PF_MCE_PROCESS)
- 		return !!(tsk->flags & PF_MCE_EARLY);
- 	return sysctl_memory_failure_early_kill;
-@@ -395,7 +397,7 @@ static int task_early_kill(struct task_struct *tsk)
-  * Collect processes when the error hit an anonymous page.
-  */
- static void collect_procs_anon(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -409,7 +411,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
- 	for_each_process (tsk) {
- 		struct anon_vma_chain *vmac;
- 
--		if (!task_early_kill(tsk))
-+		if (!task_early_kill(tsk, force_early))
- 			continue;
- 		list_for_each_entry(vmac, &av->head, same_anon_vma) {
- 			vma = vmac->vma;
-@@ -427,7 +429,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
-  * Collect processes when the error hit a file mapped page.
-  */
- static void collect_procs_file(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -439,7 +441,7 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
- 	for_each_process(tsk) {
- 		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
- 
--		if (!task_early_kill(tsk))
-+		if (!task_early_kill(tsk, force_early))
- 			continue;
- 
- 		vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, pgoff,
-@@ -465,7 +467,8 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
-  * First preallocate one tokill structure outside the spin locks,
-  * so that we can kill at least one process reasonably reliable.
-  */
--static void collect_procs(struct page *page, struct list_head *tokill)
-+static void collect_procs(struct page *page, struct list_head *tokill,
-+				int force_early)
- {
- 	struct to_kill *tk;
- 
-@@ -476,9 +479,9 @@ static void collect_procs(struct page *page, struct list_head *tokill)
- 	if (!tk)
- 		return;
- 	if (PageAnon(page))
--		collect_procs_anon(page, tokill, &tk);
-+		collect_procs_anon(page, tokill, &tk, force_early);
- 	else
--		collect_procs_file(page, tokill, &tk);
-+		collect_procs_file(page, tokill, &tk, force_early);
- 	kfree(tk);
- }
- 
-@@ -948,7 +951,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
- 	 * there's nothing that can be done.
- 	 */
- 	if (kill)
--		collect_procs(ppage, &tokill);
-+		collect_procs(ppage, &tokill, flags & MF_ACTION_REQUIRED);
- 
- 	if (hpage != ppage)
- 		lock_page(ppage);
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 3ff473feafd4..6dc46f345dba 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -103,6 +103,7 @@ static inline void anon_vma_free(struct anon_vma *anon_vma)
- 	 * LOCK should suffice since the actual taking of the lock must
- 	 * happen _before_ what follows.
- 	 */
-+	might_sleep();
- 	if (mutex_is_locked(&anon_vma->root->mutex)) {
- 		anon_vma_lock(anon_vma);
- 		anon_vma_unlock(anon_vma);
-@@ -476,8 +477,9 @@ struct anon_vma *page_get_anon_vma(struct page *page)
- 	 * above cannot corrupt).
- 	 */
- 	if (!page_mapped(page)) {
-+		rcu_read_unlock();
- 		put_anon_vma(anon_vma);
--		anon_vma = NULL;
-+		return NULL;
- 	}
- out:
- 	rcu_read_unlock();
-@@ -527,9 +529,9 @@ struct anon_vma *page_lock_anon_vma(struct page *page)
- 	}
- 
- 	if (!page_mapped(page)) {
-+		rcu_read_unlock();
- 		put_anon_vma(anon_vma);
--		anon_vma = NULL;
--		goto out;
-+		return NULL;
- 	}
- 
- 	/* we pinned the anon_vma, its safe to sleep */
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 907c8b7c995e..357ada63772c 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3138,7 +3138,10 @@ static int kswapd(void *p)
- 		}
- 	}
- 
-+	tsk->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD);
- 	current->reclaim_state = NULL;
-+	lockdep_clear_current_reclaim_state();
-+
- 	return 0;
- }
- 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index fe42834df408..8de819475378 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -733,7 +733,7 @@ int skb_copy_ubufs(struct sk_buff *skb, gfp_t gfp_mask)
- 	skb_shinfo(skb)->tx_flags &= ~SKBTX_DEV_ZEROCOPY;
- 	return 0;
- }
--
-+EXPORT_SYMBOL_GPL(skb_copy_ubufs);
- 
- /**
-  *	skb_clone	-	duplicate an sk_buff
-@@ -2777,6 +2777,9 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
- 						 skb_put(nskb, hsize), hsize);
- 
- 		while (pos < offset + len && i < nfrags) {
-+			if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC)))
-+				goto err;
-+
- 			*frag = skb_shinfo(skb)->frags[i];
- 			__skb_frag_ref(frag);
- 			size = skb_frag_size(frag);
+--huq684BweRXVnRxX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 3.10.46 kernel.
+
+All users of the 3.10 kernel series must upgrade.
+
+The updated 3.10.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.10.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                     |    2=20
+ arch/arm/kernel/stacktrace.c                 |   18 ++-
+ arch/arm/mach-omap1/board-h2.c               |    2=20
+ arch/arm/mach-omap1/board-h3.c               |    2=20
+ arch/arm/mach-omap1/board-innovator.c        |    2=20
+ arch/arm/mach-omap1/board-osk.c              |    2=20
+ arch/arm/mm/proc-v7-3level.S                 |   18 ++-
+ arch/arm64/kernel/ptrace.c                   |    4=20
+ arch/s390/include/asm/lowcore.h              |   11 +-
+ arch/x86/kernel/entry_32.S                   |   15 +--
+ arch/x86/syscalls/syscall_64.tbl             |    6 -
+ drivers/acpi/acpica/utstring.c               |    2=20
+ drivers/acpi/bus.c                           |    7 +
+ drivers/bluetooth/hci_ldisc.c                |   24 ++++-
+ drivers/bluetooth/hci_uart.h                 |    1=20
+ drivers/char/applicom.c                      |    1=20
+ drivers/extcon/extcon-max8997.c              |    2=20
+ drivers/hid/hid-core.c                       |   12 ++
+ drivers/infiniband/ulp/isert/ib_isert.c      |   59 ++++++------
+ drivers/infiniband/ulp/isert/ib_isert.h      |    2=20
+ drivers/media/pci/ivtv/ivtv-alsa-pcm.c       |    6 +
+ drivers/media/usb/stk1160/stk1160-core.c     |   10 +-
+ drivers/media/usb/stk1160/stk1160.h          |    1=20
+ drivers/media/usb/uvc/uvc_video.c            |   15 ++-
+ drivers/net/can/sja1000/peak_pci.c           |   14 +--
+ drivers/net/ethernet/ti/cpsw.c               |    4=20
+ drivers/staging/tidspbridge/core/dsp-clock.c |    4=20
+ drivers/target/iscsi/iscsi_target.c          |    3=20
+ drivers/target/iscsi/iscsi_target_login.c    |    7 -
+ drivers/target/target_core_rd.c              |    2=20
+ drivers/target/target_core_sbc.c             |    4=20
+ drivers/target/target_core_spc.c             |    9 +
+ drivers/target/target_core_transport.c       |   29 +++++-
+ drivers/usb/dwc3/gadget.c                    |    4=20
+ drivers/usb/gadget/inode.c                   |    2=20
+ drivers/usb/host/pci-quirks.c                |   19 +++-
+ drivers/usb/misc/usbtest.c                   |   40 +++++++-
+ drivers/usb/phy/phy-isp1301-omap.c           |    2=20
+ drivers/usb/serial/bus.c                     |   14 ++-
+ drivers/usb/serial/option.c                  |   11 ++
+ drivers/usb/serial/qcserial.c                |   21 ++++
+ drivers/usb/serial/sierra.c                  |   55 +++++++++--
+ drivers/usb/serial/usb_wwan.c                |  125 ++++++++++++++--------=
+-----
+ drivers/video/matrox/matroxfb_base.h         |    2=20
+ fs/aio.c                                     |    6 -
+ fs/btrfs/backref.c                           |   32 ++++--
+ fs/btrfs/backref.h                           |    4=20
+ fs/btrfs/disk-io.c                           |    5 +
+ fs/btrfs/extent_io.c                         |    5 -
+ fs/btrfs/free-space-cache.c                  |    4=20
+ fs/btrfs/scrub.c                             |    5 -
+ fs/btrfs/send.c                              |    4=20
+ fs/btrfs/volumes.c                           |   32 +++++-
+ fs/ext4/mballoc.c                            |    2=20
+ fs/ext4/page-io.c                            |   24 ++---
+ include/linux/irqdesc.h                      |    4=20
+ include/linux/ptrace.h                       |   32 ++++++
+ include/target/target_core_backend.h         |    1=20
+ kernel/fork.c                                |   10 +-
+ kernel/irq/manage.c                          |    4=20
+ kernel/irq/spurious.c                        |  106 ++++++++++++++++++++++
+ lib/idr.c                                    |    8 -
+ mm/memory-failure.c                          |   25 +++--
+ mm/rmap.c                                    |    8 +
+ mm/vmscan.c                                  |   46 ++++++++-
+ net/bluetooth/l2cap_sock.c                   |    5 -
+ net/core/skbuff.c                            |    2=20
+ net/iucv/af_iucv.c                           |    2=20
+ 68 files changed, 709 insertions(+), 262 deletions(-)
+
+Alan Stern (2):
+      USB: usbtest: add a timeout for scatter-gather tests
+      USB: EHCI: avoid BIOS handover on the HASEE E200
+
+Aleksander Morgado (2):
+      usb: qcserial: add Netgear AirCard 341U
+      usb: qcserial: add additional Sierra Wireless QMI devices
+
+Andy Lutomirski (1):
+      x86_32, entry: Do syscall exit work on badsys (CVE-2014-4508)
+
+Benjamin LaHaise (2):
+      aio: fix aio request leak when events are reaped by userspace
+      aio: fix kernel memory disclosure in io_getevents() introduced in v3.=
+10
+
+Chris Mason (1):
+      Btrfs: fix double free in find_lock_delalloc_range
+
+Christian Borntraeger (1):
+      s390/lowcore: reserve 96 bytes for IRB in lowcore
+
+Dan Carpenter (1):
+      applicom: dereferencing NULL on error path
+
+David Binderman (1):
+      ACPICA: utstring: Check array index bound before use.
+
+Eric Sandeen (1):
+      btrfs: fix use of uninit "ret" in end_extent_writepage()
+
+Ezequiel Garcia (1):
+      media: stk1160: Avoid stack-allocated buffer for control URBs
+
+Felipe Balbi (2):
+      usb: dwc3: gadget: clear stall when disabling endpoint
+      bluetooth: hci_ldisc: fix deadlock condition
+
+Filipe Manana (1):
+      Btrfs: send, don't error in the presence of subvols/snapshots
+
+Greg Kroah-Hartman (1):
+      Linux 3.10.46
+
+H. Peter Anvin (1):
+      x86-32, espfix: Remove filter for espfix32 due to race
+
+Huang Rui (1):
+      usb: usbtest: fix unlink write error with pattern 1
+
+Hugh Dickins (1):
+      mm: fix sleeping function warning from __put_anon_vma
+
+Jan Kara (1):
+      ext4: fix zeroing of page during writeback
+
+Jianguo Wu (1):
+      ARM: 8037/1: mm: support big-endian page tables
+
+Johan Hovold (12):
+      net: cpsw: fix null dereference at probe
+      USB: option: fix runtime PM handling
+      USB: usb_wwan: fix write and suspend race
+      USB: usb_wwan: fix urb leak at shutdown
+      USB: usb_wwan: fix potential NULL-deref at resume
+      USB: usb_wwan: fix potential blocked I/O after resume
+      USB: sierra: fix AA deadlock in open error path
+      USB: sierra: fix use after free at suspend/resume
+      USB: sierra: fix urb and memory leak in resume error path
+      USB: sierra: fix urb and memory leak on disconnect
+      USB: sierra: fix remote wakeup
+      USB: serial: fix potential runtime pm imbalance at device remove
+
+Johannes Weiner (1):
+      mm: vmscan: clear kswapd's special reclaim powers before exiting
+
+Jukka Taimisto (1):
+      Bluetooth: Fix L2CAP deadlock
+
+Kees Cook (1):
+      HID: core: fix validation of report id 0
+
+Krzysztof Kozlowski (1):
+      extcon: max8997: Fix NULL pointer exception on missing pdata
+
+Lai Jiangshan (1):
+      idr: fix overflow bug during maximum ID calculation at maximum height
+
+Liu Bo (3):
+      Btrfs: mark mapping with error flag to report errors to userspace
+      Btrfs: use right type to get real comparison
+      Btrfs: fix scrub_print_warning to handle skinny metadata extents
+
+Lv Zheng (1):
+      ACPI: Fix conflict between customized DSDT and DSDT local copy
+
+Matthew Dempsky (1):
+      ptrace: fix fork event messages across pid namespaces
+
+Maurizio Lombardi (1):
+      ext4: fix wrong assert in ext4_mb_normalize_request()
+
+Mel Gorman (1):
+      mm: vmscan: do not throttle based on pfmemalloc reserves if node has =
+no ZONE_NORMAL
+
+Miao Xie (1):
+      Btrfs: output warning instead of error when loading free space cache =
+failed
+
+Michael S. Tsirkin (1):
+      skbuff: skb_segment: orphan frags before copying
+
+Mike Frysinger (1):
+      x86, x32: Use compat shims for io_{setup,submit}
+
+Mikulas Patocka (1):
+      matroxfb: perform a dummy read of M_STATUS
+
+Nicholas A. Bellinger (1):
+      target: Explicitly clear ramdisk_mcp backend pages
+
+Nicholas Bellinger (3):
+      target: Set CMD_T_ACTIVE bit for Task Management Requests
+      target: Use complete_all for se_cmd->t_transport_stop_comp
+      iscsi-target: Fix ABORT_TASK + connection reset iscsi_queue_req memor=
+y leak
+
+Olivier Langlois (1):
+      media: uvcvideo: Fix clock param realtime setting
+
+Paul Bolle (3):
+      staging: tidspbridge: check for CONFIG_SND_OMAP_SOC_MCBSP
+      usb: gadget: rename CONFIG_USB_GADGET_PXA25X
+      ARM: OMAP: replace checks for CONFIG_USB_GADGET_OMAP
+
+Qu Wenruo (1):
+      btrfs: Add ctime/mtime update for btrfs device add/remove.
+
+Rickard Strandqvist (1):
+      fs: btrfs: volumes.c: Fix for possible null pointer dereference
+
+Roger Quadros (1):
+      usb: usbtest: Add timetout to simple_io()
+
+Roland Dreier (2):
+      target: Report correct response length for some commands
+      iscsi-target: Re-add chunk from backport of upstream 79d59d08082d to =
+3.10
+
+Russell King (1):
+      ARM: stacktrace: avoid listing stacktrace functions in stacktrace
+
+Sagi Grimberg (4):
+      Target/iser: Bail from accept_np if np_thread is trying to close
+      Target/iser: Fix hangs in connection teardown
+      Target/iser: Improve cm events handling
+      Target/iser: Wait for proper cleanup before unloading
+
+Stephane Grosjean (1):
+      can: peak_pci: prevent use after free at netdev removal
+
+Takashi Iwai (1):
+      media: ivtv: Fix Oops when no firmware is loaded
+
+Thomas Gleixner (1):
+      genirq: Sanitize spurious interrupt detection of threaded irqs
+
+Tony Luck (2):
+      mm/memory-failure.c-failure: send right signal code to correct thread
+      mm/memory-failure.c: don't let collect_procs() skip over processes fo=
+r MF_ACTION_REQUIRED
+
+Ursula Braun (1):
+      af_iucv: wrong mapping of sent and confirmed skbs
+
+Wang Shilong (2):
+      Btrfs: make sure there are not any read requests before stopping work=
+ers
+      Btrfs: set right total device count for seeding support
+
+Will Deacon (1):
+      arm64: ptrace: change fs when passing kernel pointer to regset code
+
+xiao jin (2):
+      USB: usb_wwan: fix urb leak in write error path
+      USB: usb_wwan: fix race between write and resume
+
+
+--huq684BweRXVnRxX
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTsjMzAAoJEDjbvchgkmk+pp0P/2k/rPcQNjvMKv9gzWKtQDIB
+agZ4185VNTJeHfRJl6HsZhZiQdLwsVS1rgDN/+z7D54V19SoJk1dzMBYGNopeRDn
+jjVZB28OZdrrUd/z7BQZHEG3rsoPRpEpsnZkhZJLJyMj64yxBAI8WbOm0CLRqS+O
+No57lw5107WUb+EyK/YxyZwWQOSJsnlFA/wHTJeFQ7sryiF/hUy5lXJgHCVTlewT
+cTBtab2mHJ4oKBcfoLWSL2wqks3GsfKjASdf3V1PmfS/JhzdhzmxLigztHAV1l+r
+/ahjuWRfa6U/LaSuhidbI8MdMGKolGY2WuTmNJh7VYRizV/CKJTEa6KYxIbxJWT5
+erzNSo7b/dL4S1HAvhwlt7ZcIXfc2sjJdSCU0gfyT21tzXtYR3NuYFFST5koTcY0
+DpV/6afLX36AOCEMdDMO2+jl4TsU0s/T/0HP/ZVGiw/jQAc5q2Ezfy35PMFNK29G
+D7N6bh2NGTVAMKfRMg5u0+r59KMRlSpS3QpTUsb1LLHV8jxYFHS/QQGnhzFH2B79
+951+W0yHecl7im5W9dH1YadSxhjb1SoH8w/+vI10oqYiOzCWZbGV6XhSq5lNDQES
+h3DeCZ9lIDbY++v0Cq1L97O0c/pMeW2zROdHvGGKD1p1o65OQXe/VwK3qpovV7ju
+yJhZFsxtV3/j4/6sTzvM
+=Uk/u
+-----END PGP SIGNATURE-----
+
+--huq684BweRXVnRxX--
