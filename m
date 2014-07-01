@@ -1,104 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775AbaGALYm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 07:24:42 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:11866 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753191AbaGALYk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 07:24:40 -0400
-Date: Tue, 1 Jul 2014 12:24:14 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [RFC PATCH 0/6] kernel: Add support for restart notifier call
- chain
-Message-ID: <20140701112413.GQ18313@arm.com>
-References: <1404155499-21177-1-git-send-email-linux@roeck-us.net>
- <20140630195946.GI32514@n2100.arm.linux.org.uk>
- <20140630202851.GA12888@roeck-us.net>
+	id S1756106AbaGALb6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 07:31:58 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39820 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750929AbaGALb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 07:31:56 -0400
+Message-ID: <53B29C29.8020901@ti.com>
+Date: Tue, 1 Jul 2014 14:31:53 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140630202851.GA12888@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] fbdev fixes for 3.16
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="AQEJhRUGi73eC7PmcFU6hbheMup5HNX0A"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 09:28:51PM +0100, Guenter Roeck wrote:
-> On Mon, Jun 30, 2014 at 08:59:47PM +0100, Russell King - ARM Linux wrote:
-> > On Mon, Jun 30, 2014 at 12:11:33PM -0700, Guenter Roeck wrote:
-> > > Various drivers implement architecture and/or device specific means
-> > > to restart (reset) the system. Various mechanisms have been implemented
-> > > to support those schemes. The best known mechanism is arm_pm_restart,
-> > > which is a function pointer to be set either from platform specific code
-> > > or from drivers. Another mechanism is to use hardware watchdogs to issue
-> > > a reset; this mechanism is used if there is no other method available
-> > > to reset a board or system. Two examples are alim7101_wdt, which currently
-> > > uses the reboot notifier to trigger a reset, and moxart_wdt, which registers
-> > > the arm_pm_restart function.
-> > > 
-> > > The existing mechanisms have a number of drawbacks. Typically only one scheme
-> > > to restart the system is supported (at least if arm_pm_restart is used).
-> > > At least in theory there can be mutliple means to restart the system, some of
-> > > which may be less desirable (for example one mechanism may only reset the CPU,
-> > > while another may reset the entire system). Using arm_pm_restart can also be
-> > > racy if the function pointer is set from a driver, as the driver may be in
-> > > the process of being unloaded when arm_pm_restart is called.
-> > > Using the reboot notifier is always racy, as it is unknown if and when
-> > > other functions using the reboot notifier have completed execution
-> > > by the time the watchdog fires.
-> > > 
-> > > To solve the problem, introduce a system restart notifier. This notifier
-> > > is expected to be called from the architecture specific machine_restart()
-> > > function. Drivers providing system restart functionality (such as the watchdog
-> > > drivers mentioned above) are expected to register with this notifier.
-> > > 
-> > > Patch 1 of this series implements the notifier function. Patches 2 and 3
-> > > implement calling the notifier chain from arm and arm64 restart code.
-> > > Patch 4 and 5 convert existing restart handlers in the watchdog subsystem
-> > > to use the restart notifier. Patch 6 unexports arm_pm_restart to ensure
-> > > that no one gets the idea to implement a restart handler as module.
-> > 
-> > I think you need to restructure stuff somewhat, because I think
-> > you've missed drivers/power/reset/ entirely, or at least you've
-> > missed drivers/power/reset/restart-poweroff.c which calls
-> > arm_pm_restart directly.  I'm not quite sure how we ended up with
-> > that...
-> 
-> Yes, guess I missed (and did not really expect) that arm_pm_restart
-> is called from multiple places.
+--AQEJhRUGi73eC7PmcFU6hbheMup5HNX0A
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Most of the ARM-specific code in drivers/power/reset/ consists of SoC
-power-off/restart back-ends (e.g. vexpress-poweroff.c). Since there is
-no generic pm_restart, we continued to use arm_pm_restart (also for
-arm64 since we share some of the drivers). Maybe some driver model here
-would help.
+Hi Linus,
 
-> What is restart-poweroff supposed to do in the first place, and why
-> doesn't it call machine_restart() ? If it is what I think it is, ie
-> a fallback for pm_power_off, it could be made generic and does not
-> really have to depend on ARM.
+The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42=
+ee:
 
-I think this one pretends to do a power-off via restart. It could call
-machine_restart() but this only passes the default reboot_mode to
-arm_pm_restart().
+  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
 
--- 
-Catalin
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git tags/fbde=
+v-fixes-3.16
+
+for you to fetch changes up to 0b479c3db63303814c1d2f8e97497db6be1caaa4:
+
+  fb: adv7393: add missing semicolon (2014-07-01 13:18:38 +0300)
+
+----------------------------------------------------------------
+fbdev fixes for 3.16
+
+A few minor fbdev fixes for bfin_adv7393fb, omapdss, vt8500lcdfb, atmel_l=
+cdfb.
+
+----------------------------------------------------------------
+Emil Goode (1):
+      video: vt8500lcdfb: Remove kfree call since devm_kzalloc() is used
+
+Michael Welling (1):
+      drivers:video:fbdev atmel_lcdfb.c power GPIO registration bug
+
+Sachin Kamat (1):
+      video: omapdss: Fix potential null pointer dereference
+
+Scott Jiang (1):
+      fb: adv7393: add missing semicolon
+
+ drivers/video/fbdev/atmel_lcdfb.c                 | 2 ++
+ drivers/video/fbdev/bfin_adv7393fb.c              | 2 +-
+ drivers/video/fbdev/omap2/dss/omapdss-boot-init.c | 8 +++++---
+ drivers/video/fbdev/vt8500lcdfb.c                 | 2 --
+ 4 files changed, 8 insertions(+), 6 deletions(-)
+
+
+--AQEJhRUGi73eC7PmcFU6hbheMup5HNX0A
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTspwpAAoJEPo9qoy8lh71MvwP/R02QdsRonhHyZM0VdGNeJO+
+LIdiOJMmbPV2nKYyDgZ2vd7y0Vk6xyoBTJ6t6+89KbQaaeKCUSFd2ssmBDr8x7c7
+C1CzHYDly6tWRJFdoU0tZDqml6yCelDQn4wKZZrk+ajz0UUJreMa3Bjaz/h1fnG/
+Up/kS2L6UpdMXfrjKVWMK2BuHOLPLSTZlyb386BJCdfEZ63KiZzSuzUdD8vQkxmm
+x/t4cJqfNk1OL0vYCkgqKlEOp0SCwxQG9RBsKJ9xXa2DnRArinXlz6UB8IotKQYX
+3hClSktdGBBkabB4ok4HnLkpR1svIo3TWlCREQhqy6Iy2Qr1pRmmZFJhCY9vDCpM
+1ew/fn+S8jJitY1r6bLV4DBaFEa5AxCucfmhcNeSK0D5ix6j3Tp31u0cLbh5xaQi
+X2nGNA+vOMZ66Ne62jTs/qTy0jHH21uixLGMMGSZ3YAl2YV3EGDx5jBTZG9Bk/Dd
+/L8vv0asYjJrypFPD0LnEAkl3OTYETW4kge3xpKotzjZT0vnHoxVRRNaPr10pXRp
+X9ky3of9w4pacMT17c9kBIDHZLy+g8oyQkeOy+uY6CqtAzx4AGLP/cSqxFf5C67R
++5cMN+EysbaQ6pI4ZjAvw6qv7uRcaiN/DscKnIqv2M7uYn5MCXytdengnZT9elzV
+K5SHHHNWbe78PIFTLR0C
+=T+hv
+-----END PGP SIGNATURE-----
+
+--AQEJhRUGi73eC7PmcFU6hbheMup5HNX0A--
