@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030323AbaGAWiX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 18:38:23 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:45673 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753680AbaGAWiV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 18:38:21 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiNWAC83s1N5LHZ8PGdsb2JhbABagw2DSYUIpBIGmkkBgQwXBAEBAQE4NYQDAQEFOhwjEAgDDgoJJQ8FJQMHGhOIQcc7FxeFWIkwB4RDBZpll1gr
-Date: Wed, 2 Jul 2014 08:38:17 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] Improve sequential read throughput v4r8
-Message-ID: <20140701223817.GI4453@dastard>
-References: <1404146883-21414-1-git-send-email-mgorman@suse.de>
- <20140701171611.GB1369@cmpxchg.org>
- <20140701183915.GW10819@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140701183915.GW10819@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1030362AbaGAWih (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 18:38:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9591 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030261AbaGAWig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 18:38:36 -0400
+Date: Tue, 01 Jul 2014 15:38:06 -0700 (PDT)
+Message-Id: <20140701.153806.1074873302413556163.davem@redhat.com>
+To: boris.brezillon@free-electrons.com
+Cc: nicolas.ferre@atmel.com, plagnioj@jcrosoft.com,
+        alexandre.belloni@free-electrons.com, linux@maxim.org.za,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] ARM: at91: remove phy fixup for sama5d3xek
+ boards
+From: David Miller <davem@redhat.com>
+In-Reply-To: <1403777615-25685-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1403777615-25685-1-git-send-email-boris.brezillon@free-electrons.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 01, 2014 at 07:39:15PM +0100, Mel Gorman wrote:
-> On Tue, Jul 01, 2014 at 01:16:11PM -0400, Johannes Weiner wrote:
-> > On Mon, Jun 30, 2014 at 05:47:59PM +0100, Mel Gorman wrote:
-> > Seqread throughput is up, randread takes a small hit.  But allocation
-> > latency is badly screwed at higher concurrency levels:
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Date: Thu, 26 Jun 2014 12:13:33 +0200
+
+> This patch removes a board specific hook for sama5d3xek boards from the
+> sama5d3 generic DT board file.
 > 
-> So the results are roughly similar. You don't state which filesystem it is
-> but FWIW if it's the ext3 filesystem using the ext4 driver then throughput
-> at higher levels is also affected by filesystem fragmentation. The problem
-> was outside the scope of the series.
+> This hook (which register a phy fixup configuring board specific delays
+> in the ksz9021 ethernet phy) is now replaced by the appropriate DT
+> properties definitions in the sama5d3xcm.dtsi file.
+> 
+> Changes since v1:
+>  - fix txc-skew-ps and rxc-skew-ps delays
+>  - remove phy address info to handle Ronetix and Embest HW designs
 
-I'd suggest you're both going wrong that the "using ext3" point.
+These patches do not apply cleanly to 'net' nor 'net-next', in fact
+you did not even say which tree these changes are targetting.
 
-Use ext4 or XFS for your performance measurements because that's
-what everyone is using for the systems these days. iNot to mention
-they don'thave all the crappy allocation artifacts that ext3 has,
-nor the throughput limitations caused by the ext3 journal, and so
-on.
+Please respin these patches and explicitly say what tree you wish
+them to be applied to.
 
-Fundamentally, ext3 performance is simply not a relevant performance
-metric anymore - it's a legacy filesystem in maintenance mode and
-has been for a few years now...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Thanks.
