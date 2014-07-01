@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758278AbaGAQSA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 12:18:00 -0400
-Received: from zimbra13.linbit.com ([212.69.166.240]:53128 "EHLO
+	id S1758371AbaGAQTa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 12:19:30 -0400
+Received: from zimbra13.linbit.com ([212.69.166.240]:53119 "EHLO
 	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758149AbaGAQQ4 (ORCPT
+	with ESMTP id S1758008AbaGAQQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 12:16:56 -0400
+	Tue, 1 Jul 2014 12:16:55 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 20/20] drbd: also keep track of trim -> zero-out fallback peer_requests
-Date: Tue,  1 Jul 2014 18:16:50 +0200
-Message-Id: <1404231410-29852-21-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 14/20] drbd: clear CRASHED_PRIMARY only after successful resync
+Date: Tue,  1 Jul 2014 18:16:44 +0200
+Message-Id: <1404231410-29852-15-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404231410-29852-1-git-send-email-philipp.reisner@linbit.com>
 References: <1404231410-29852-1-git-send-email-philipp.reisner@linbit.com>
@@ -22,31 +22,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-To be able to find and present such zero-out fallback peer_requests
-in debugfs, we add those to "active_ee", once that list drained.
+If we lost a disk during the first resync after primary crash,
+we could have prematurely cleared the CRASHED_PRIMARY flag.
+Testing on C_CONNECTED is not what we meant there,
+but testing for both peers to become D_UP_TO_DATE.
 
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_receiver.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/block/drbd/drbd_state.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index db5c580..7a1078d 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -1370,6 +1370,11 @@ int drbd_submit_peer_request(struct drbd_device *device,
- 		/* wait for all pending IO completions, before we start
- 		 * zeroing things out. */
- 		conn_wait_active_ee_empty(first_peer_device(device)->connection);
-+		/* add it to the active list now,
-+		 * so we can find it to present it in debugfs */
-+		spin_lock_irq(&device->resource->req_lock);
-+		list_add_tail(&peer_req->w.list, &device->active_ee);
-+		spin_unlock_irq(&device->resource->req_lock);
- 		if (blkdev_issue_zeroout(device->ldev->backing_bdev,
- 			sector, ds >> 9, GFP_NOIO))
- 			peer_req->flags |= EE_WAS_ERROR;
+diff --git a/drivers/block/drbd/drbd_state.c b/drivers/block/drbd/drbd_state.c
+index 4a75b7a..c35c0f0 100644
+--- a/drivers/block/drbd/drbd_state.c
++++ b/drivers/block/drbd/drbd_state.c
+@@ -1238,7 +1238,8 @@ static void after_state_ch(struct drbd_device *device, union drbd_state os,
+ 	sib.os = os;
+ 	sib.ns = ns;
+ 
+-	if (os.conn != C_CONNECTED && ns.conn == C_CONNECTED) {
++	if ((os.disk != D_UP_TO_DATE || os.pdsk != D_UP_TO_DATE)
++	&&  (ns.disk == D_UP_TO_DATE && ns.pdsk == D_UP_TO_DATE)) {
+ 		clear_bit(CRASHED_PRIMARY, &device->flags);
+ 		if (device->p_uuid)
+ 			device->p_uuid[UI_FLAGS] &= ~((u64)2);
 -- 
 1.9.1
 
