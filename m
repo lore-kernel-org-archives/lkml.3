@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758811AbaGAVxs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:53:48 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.216]:53434 "EHLO
+	id S1758906AbaGAVyH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:54:07 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.218]:13210 "EHLO
 	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757885AbaGAVxn (ORCPT
+	with ESMTP id S1757565AbaGAVxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:53:43 -0400
+	Tue, 1 Jul 2014 17:53:53 -0400
 X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
 X-RZG-CLASS-ID: mo00
 From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 37/50] mars: add new file include/linux/xio/xio_trans_logger.h
-Date: Tue,  1 Jul 2014 23:47:17 +0200
-Message-Id: <1404251250-22992-38-git-send-email-tst@schoebel-theuer.de>
+Subject: [PATCH 19/50] mars: add new file include/linux/xio.h
+Date: Tue,  1 Jul 2014 23:46:59 +0200
+Message-Id: <1404251250-22992-20-git-send-email-tst@schoebel-theuer.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
@@ -23,263 +23,287 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 ---
- include/linux/xio/xio_trans_logger.h | 249 +++++++++++++++++++++++++++++++++++
- 1 file changed, 249 insertions(+)
- create mode 100644 include/linux/xio/xio_trans_logger.h
+ include/linux/xio.h | 273 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 273 insertions(+)
+ create mode 100644 include/linux/xio.h
 
-diff --git a/include/linux/xio/xio_trans_logger.h b/include/linux/xio/xio_trans_logger.h
+diff --git a/include/linux/xio.h b/include/linux/xio.h
 new file mode 100644
-index 0000000..f499f42
+index 0000000..33f125d
 --- /dev/null
-+++ b/include/linux/xio/xio_trans_logger.h
-@@ -0,0 +1,249 @@
++++ b/include/linux/xio.h
+@@ -0,0 +1,273 @@
 +/*  (c) 2010 Thomas Schoebel-Theuer / 1&1 Internet AG */
-+#ifndef XIO_TRANS_LOGGER_H
-+#define XIO_TRANS_LOGGER_H
++#ifndef XIO_H
++#define XIO_H
 +
-+#define REGION_SIZE_BITS		(PAGE_SHIFT + 4)
-+#define REGION_SIZE			(1 << REGION_SIZE_BITS)
-+#define LOGGER_QUEUES			4
++#include <linux/semaphore.h>
++#include <linux/rwsem.h>
 +
-+#include <linux/time.h>
++/***********************************************************************/
 +
-+#include <linux/xio.h>
-+#include <linux/lib_log.h>
-+#include <linux/brick/lib_pairing_heap.h>
-+#include <linux/brick/lib_queue.h>
++/*  include the generic brick infrastructure */
++
++#define OBJ_TYPE_AIO			0
++#define OBJ_TYPE_MAX			1
++
++#include <linux/brick/brick.h>
++#include <linux/brick/brick_mem.h>
++#include <linux/brick/lamport.h>
 +#include <linux/brick/lib_timing.h>
 +
-+/************************ global tuning ***********************/
++/***********************************************************************/
 +
-+/* 0 = early completion of all writes
-+ * 1 = early completion of non-sync
-+ * 2 = late completion
++/*  XIO-specific debugging helpers */
++
++#define _XIO_MSG(_class, _dump, _fmt, _args...)				\
++	brick_say(_class, _dump, "XIO", __BASE_FILE__, __LINE__, __func__, _fmt, ##_args)
++
++#define XIO_FAT(_fmt, _args...) _XIO_MSG(SAY_FATAL, true,  _fmt, ##_args)
++#define XIO_ERR(_fmt, _args...) _XIO_MSG(SAY_ERROR, false, _fmt, ##_args)
++#define XIO_WRN(_fmt, _args...) _XIO_MSG(SAY_WARN,  false, _fmt, ##_args)
++#define XIO_INF(_fmt, _args...) _XIO_MSG(SAY_INFO,  false, _fmt, ##_args)
++
++#ifdef XIO_DEBUGGING
++#define XIO_DBG(_fmt, _args...) _XIO_MSG(SAY_DEBUG, false, _fmt, ##_args)
++#else
++#define XIO_DBG(_args...) /**/
++#endif
++
++/***********************************************************************/
++
++/*  XIO-specific definitions */
++
++#define XIO_PRIO_HIGH			-1
++#define XIO_PRIO_NORMAL			0 /*  this is automatically used by memset() */
++#define XIO_PRIO_LOW			1
++#define XIO_PRIO_NR			3
++
++/*  object stuff */
++
++/* aio */
++
++#define AIO_UPTODATE			1
++#define AIO_READING			2
++#define AIO_WRITING			4
++
++extern const struct generic_object_type aio_type;
++
++#define XIO_CHECKSUM_SIZE		16
++
++#define AIO_OBJECT(OBJTYPE)						\
++	CALLBACK_OBJECT(OBJTYPE);					\
++	/* supplied by caller */					\
++	void  *io_data;  /* preset to NULL for buffered IO */		\
++	loff_t io_pos;							\
++	int    io_len;							\
++	int    io_may_write;						\
++	int    io_prio;							\
++	int    io_timeout;						\
++	int    io_cs_mode; /* 0 = off, 1 = checksum + data, 2 = checksum only */\
++	/* maintained by the aio implementation, readable for callers */\
++	loff_t io_total_size; /* just for info, need not be implemented */\
++	unsigned char io_checksum[XIO_CHECKSUM_SIZE];			\
++	int    io_flags;						\
++	int    io_rw;							\
++	int    io_id; /* not mandatory; may be used for identification */\
++	bool   io_skip_sync; /* skip sync for this particular aio */	\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct aio_object {
++	AIO_OBJECT(aio);
++};
++
++/*  internal helper structs */
++
++struct xio_info {
++	loff_t current_size;
++
++	int tf_align;	 /*  transfer alignment constraint */
++	int tf_min_size; /*  transfer is only possible in multiples of this */
++};
++
++/*  brick stuff */
++
++#define XIO_BRICK(BRITYPE)						\
++	GENERIC_BRICK(BRITYPE);						\
++	struct generic_object_layout aio_object_layout;			\
++	struct list_head global_brick_link;				\
++	struct list_head dent_brick_link;				\
++	const char *brick_name;						\
++	const char *brick_path;						\
++	struct mars_global *global;					\
++	void **kill_ptr;						\
++	int kill_round;							\
++	bool killme;							\
++	void (*show_status)(struct xio_brick *brick, bool shutdown);	\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct xio_brick {
++	XIO_BRICK(xio);
++};
++
++#define XIO_INPUT(BRITYPE)						\
++	GENERIC_INPUT(BRITYPE);						\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct xio_input {
++	XIO_INPUT(xio);
++};
++
++#define XIO_OUTPUT(BRITYPE)						\
++	GENERIC_OUTPUT(BRITYPE);					\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++struct xio_output {
++	XIO_OUTPUT(xio);
++};
++
++#define XIO_BRICK_OPS(BRITYPE)						\
++	GENERIC_BRICK_OPS(BRITYPE);					\
++	char *(*brick_statistics)(struct BRITYPE##_brick *brick, int verbose);\
++	void (*reset_statistics)(struct BRITYPE##_brick *brick);	\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++#define XIO_OUTPUT_OPS(BRITYPE)						\
++	GENERIC_OUTPUT_OPS(BRITYPE);					\
++	int  (*xio_get_info)(struct BRITYPE##_output *output, struct xio_info *info);\
++	/* aio */							\
++	int  (*aio_get)(struct BRITYPE##_output *output, struct aio_object *aio);\
++	void (*aio_io)(struct BRITYPE##_output *output, struct aio_object *aio);\
++	void (*aio_put)(struct BRITYPE##_output *output, struct aio_object *aio);\
++	/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++/*  all non-extendable types */
++
++#define _XIO_TYPES(BRITYPE)						\
++									\
++struct BRITYPE##_brick_ops {						\
++	XIO_BRICK_OPS(BRITYPE);						\
++};									\
++									\
++struct BRITYPE##_output_ops {						\
++	XIO_OUTPUT_OPS(BRITYPE);					\
++};									\
++									\
++struct BRITYPE##_brick_type {						\
++	GENERIC_BRICK_TYPE(BRITYPE);					\
++};									\
++									\
++struct BRITYPE##_input_type {						\
++	GENERIC_INPUT_TYPE(BRITYPE);					\
++};									\
++									\
++struct BRITYPE##_output_type {						\
++	GENERIC_OUTPUT_TYPE(BRITYPE);					\
++};									\
++									\
++struct BRITYPE##_callback {						\
++	GENERIC_CALLBACK(BRITYPE);					\
++};									\
++									\
++DECLARE_BRICK_FUNCTIONS(BRITYPE);					\
++/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++#define XIO_TYPES(BRITYPE)						\
++									\
++_XIO_TYPES(BRITYPE)							\
++									\
++DECLARE_ASPECT_FUNCTIONS(BRITYPE, aio);					\
++extern int init_xio_##BRITYPE(void);					\
++extern void exit_xio_##BRITYPE(void);					\
++/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++/*  instantiate pseudo base-classes */
++
++DECLARE_OBJECT_FUNCTIONS(aio);
++_XIO_TYPES(xio);
++DECLARE_ASPECT_FUNCTIONS(xio, aio);
++
++/***********************************************************************/
++
++/*  XIO-specific helpers */
++
++#define XIO_MAKE_STATICS(BRITYPE)					\
++									\
++/* checkpatch.pl: the EXPORT_SYMBOL warning appears to be false positive */\
++int BRITYPE##_brick_nr = -EEXIST;					\
++EXPORT_SYMBOL_GPL(BRITYPE##_brick_nr);					\
++									\
++static const struct generic_aspect_type BRITYPE##_aio_aspect_type = {	\
++	.aspect_type_name = #BRITYPE "_aio_aspect_type",		\
++	.object_type = &aio_type,					\
++	.aspect_size = sizeof(struct BRITYPE##_aio_aspect),		\
++	.init_fn = BRITYPE##_aio_aspect_init_fn,			\
++	.exit_fn = BRITYPE##_aio_aspect_exit_fn,			\
++};									\
++									\
++static const struct generic_aspect_type *BRITYPE##_aspect_types[OBJ_TYPE_MAX] = {\
++	[OBJ_TYPE_AIO] = &BRITYPE##_aio_aspect_type,			\
++};									\
++/* this comment is for keeping TRAILING_SEMICOLON happy */
++
++extern const struct meta xio_info_meta[];
++extern const struct meta xio_aio_meta[];
++extern const struct meta xio_timespec_meta[];
++
++/***********************************************************************/
++
++/* Some minimal upcalls from generic IO layer to the strategy layer.
++ * TODO: abstract away.
 + */
-+extern int trans_logger_completion_semantics;
-+extern int trans_logger_do_crc;
-+extern int trans_logger_mem_usage; /*  in KB */
-+extern int trans_logger_max_interleave;
-+extern int trans_logger_resume;
-+extern int trans_logger_replay_timeout; /*  in s */
-+extern atomic_t   global_mshadow_count;
-+extern atomic64_t global_mshadow_used;
 +
-+struct writeback_group {
-+	rwlock_t lock;
-+	struct trans_logger_brick *leader;
-+	loff_t biggest;
-+	struct list_head group_anchor;
++extern void xio_set_power_on_led(struct xio_brick *brick, bool val);
++extern void xio_set_power_off_led(struct xio_brick *brick, bool val);
 +
-+	/*  tuning */
-+	struct xio_limiter limiter;
-+	int until_percent;
-+};
++/* this should disappear!
++ */
++extern void (*_local_trigger)(void);
++extern void (*_remote_trigger)(void);
++#define local_trigger() do { if (_local_trigger) { XIO_DBG("trigger...\n"); _local_trigger(); } } while (0)
++#define remote_trigger()						\
++do { if (_remote_trigger) { XIO_DBG("remote_trigger...\n"); _remote_trigger(); } } while (0)
 +
-+extern struct writeback_group global_writeback;
++/***********************************************************************/
 +
-+/******************************************************************/
++/* Some global stuff.
++ */
 +
-+_PAIRING_HEAP_TYPEDEF(logger, /*empty*/)
++extern struct banning xio_global_ban;
 +
-+struct logger_queue {
-+	QUEUE_ANCHOR(logger, loff_t, logger);
-+	struct trans_logger_brick *q_brick;
-+	const char *q_insert_info;
-+	const char *q_pushback_info;
-+	const char *q_fetch_info;
-+	struct banning q_banning;
-+	int no_progress_count;
-+	int pushback_count;
-+};
++extern atomic_t xio_global_io_flying;
 +
-+struct logger_head {
-+	struct list_head lh_head;
-+	loff_t *lh_pos;
-+	struct pairing_heap_logger ph;
-+};
++extern int xio_throttle_start;
++extern int xio_throttle_end;
 +
-+/******************************************************************/
++/***********************************************************************/
 +
-+#define TL_INPUT_READ			0
-+#define TL_INPUT_WRITEBACK		0
-+#define TL_INPUT_LOG1			1
-+#define TL_INPUT_LOG2			2
-+#define TL_INPUT_NR			3
++/* Some special brick types for avoidance of cyclic references.
++ *
++ * The client/server network bricks use this for independent instantiation
++ * from the main instantiation logic (separate modprobe for xio_server
++ * is possible).
++ */
++extern const struct generic_brick_type *_client_brick_type;
++extern const struct generic_brick_type *_bio_brick_type;
++extern const struct generic_brick_type *_aio_brick_type;
++extern const struct generic_brick_type *_sio_brick_type;
 +
-+struct writeback_info {
-+	struct trans_logger_brick *w_brick;
-+	struct logger_head w_lh;
-+	loff_t w_pos;
-+	int    w_len;
-+	int    w_error;
++/***********************************************************************/
 +
-+	struct list_head w_collect_list;   /*  list of collected orig requests */
-+	struct list_head w_sub_read_list;  /*  for saving the old data before overwrite */
-+	struct list_head w_sub_write_list; /*  for overwriting */
-+	atomic_t w_sub_read_count;
-+	atomic_t w_sub_write_count;
-+	atomic_t w_sub_log_count;
++/* Crypto stuff
++ */
 +
-+	/* make checkpatch.pl happy with a blank line - is this a false positive? */
++extern int xio_digest_size;
++extern void xio_digest(unsigned char *digest, void *data, int len);
++extern void aio_checksum(struct aio_object *aio);
 +
-+	void (*read_endio)(struct generic_callback *cb);
-+	void (*write_endio)(struct generic_callback *cb);
-+};
++/***********************************************************************/
 +
-+struct trans_logger_aio_aspect {
-+	GENERIC_ASPECT(aio);
-+	struct trans_logger_brick *my_brick;
-+	struct trans_logger_input *my_input;
-+	struct trans_logger_input *log_input;
-+	struct logger_head lh;
-+	struct list_head hash_head;
-+	struct list_head pos_head;
-+	struct list_head replay_head;
-+	struct list_head collect_head;
-+	struct pairing_heap_logger ph;
-+	struct trans_logger_aio_aspect *shadow_aio;
-+	struct trans_logger_aio_aspect *orig_aio_a;
-+	void  *shadow_data;
-+	int    orig_rw;
-+	int    wb_error;
-+	bool   do_dealloc;
-+	bool   do_buffered;
-+	bool   is_hashed;
-+	bool   is_stable;
-+	bool   is_dirty;
-+	bool   is_collected;
-+	bool   is_fired;
-+	bool   is_completed;
-+	bool   is_persistent;
-+	bool   is_emergency;
-+	struct timespec stamp;
-+	loff_t log_pos;
-+	struct generic_callback cb;
-+	struct writeback_info *wb;
-+	struct list_head sub_list;
-+	struct list_head sub_head;
-+	int    total_sub_count;
-+	int    alloc_len;
-+	atomic_t current_sub_count;
-+};
++/*  init */
 +
-+struct trans_logger_hash_anchor;
-+
-+struct trans_logger_brick {
-+	XIO_BRICK(trans_logger);
-+	/*  parameters */
-+	struct xio_limiter *replay_limiter;
-+
-+	int shadow_mem_limit; /*  max # master shadows */
-+	bool replay_mode;   /*	mode of operation */
-+	bool continuous_replay_mode;   /*  mode of operation */
-+	bool log_reads;   /*  additionally log pre-images */
-+	bool cease_logging; /*	direct IO without logging (only in case of EMERGENCY) */
-+	loff_t replay_start_pos; /*  where to start replay */
-+	loff_t replay_end_pos;	 /*  end of replay */
-+	int new_input_nr;   /*	whereto we should switchover ASAP */
-+	int replay_tolerance; /*  how many bytes to ignore at truncated logfiles */
-+	/*  readonly from outside */
-+	loff_t replay_current_pos;   /*  end of replay */
-+	int log_input_nr;   /*	where we are currently logging to */
-+	int old_input_nr;   /*	where old IO requests may be on the fly */
-+	int replay_code;    /*	replay errors (if any) */
-+	bool stopped_logging; /*  direct IO without logging (only in case of EMERGENCY) */
-+	/*  private */
-+	int disk_io_error;	   /*  replay errors from callbacks */
-+	struct trans_logger_hash_anchor **hash_table;
-+	struct list_head group_head;
-+	loff_t old_margin;
-+	spinlock_t replay_lock;
-+	struct list_head replay_list;
-+	struct task_struct *thread;
-+
-+	wait_queue_head_t worker_event;
-+	wait_queue_head_t caller_event;
-+	/*  statistics */
-+	atomic64_t shadow_mem_used;
-+	atomic_t replay_count;
-+	atomic_t any_fly_count;
-+	atomic_t log_fly_count;
-+	atomic_t hash_count;
-+	atomic_t mshadow_count;
-+	atomic_t sshadow_count;
-+	atomic_t outer_balance_count;
-+	atomic_t inner_balance_count;
-+	atomic_t sub_balance_count;
-+	atomic_t wb_balance_count;
-+	atomic_t total_hash_insert_count;
-+	atomic_t total_hash_find_count;
-+	atomic_t total_hash_extend_count;
-+	atomic_t total_replay_count;
-+	atomic_t total_replay_conflict_count;
-+	atomic_t total_cb_count;
-+	atomic_t total_read_count;
-+	atomic_t total_write_count;
-+	atomic_t total_flush_count;
-+	atomic_t total_writeback_count;
-+	atomic_t total_writeback_cluster_count;
-+	atomic_t total_shortcut_count;
-+	atomic_t total_mshadow_count;
-+	atomic_t total_sshadow_count;
-+	atomic_t total_mshadow_buffered_count;
-+	atomic_t total_sshadow_buffered_count;
-+	atomic_t total_round_count;
-+	atomic_t total_restart_count;
-+	atomic_t total_delay_count;
-+
-+	/*  queues */
-+	struct logger_queue q_phase[LOGGER_QUEUES];
-+	bool   delay_callers;
-+};
-+
-+struct trans_logger_output {
-+	XIO_OUTPUT(trans_logger);
-+};
-+
-+#define MAX_HOST_LEN			32
-+
-+struct trans_logger_info {
-+	/*  to be maintained / initialized from outside */
-+	void (*inf_callback)(struct trans_logger_info *inf);
-+	void  *inf_private;
-+	char   inf_host[MAX_HOST_LEN];
-+
-+	int    inf_sequence;	 /*  logfile sequence number */
-+
-+	/*  maintained by trans_logger */
-+	loff_t inf_min_pos;  /*  current replay position (both in replay mode and in logging mode) */
-+	loff_t inf_max_pos;  /*  dito, indicating the "dirty" area which could be potentially "inconsistent" */
-+	loff_t inf_log_pos; /*	position of transaction logging (may be ahead of replay position) */
-+	struct timespec inf_min_pos_stamp; /*  when the data has been _successfully_ overwritten */
-+/*  when the data has _started_ overwrite (maybe "trashed" in case of errors / aborts) */
-+	struct timespec inf_max_pos_stamp;
-+
-+	struct timespec inf_log_pos_stamp; /*  stamp from transaction log */
-+	bool inf_is_replaying;
-+	bool inf_is_logging;
-+};
-+
-+struct trans_logger_input {
-+	XIO_INPUT(trans_logger);
-+	/*  parameters */
-+	/*  informational */
-+	struct trans_logger_info inf;
-+
-+	/*  readonly from outside */
-+	atomic_t log_obj_count;
-+	atomic_t pos_count;
-+	bool is_operating;
-+	long long last_jiffies;
-+
-+	/*  private */
-+	struct log_status logst;
-+	struct list_head pos_list;
-+	long long inf_last_jiffies;
-+	struct semaphore inf_mutex;
-+};
-+
-+XIO_TYPES(trans_logger);
++extern int init_xio(void);
++extern void exit_xio(void);
 +
 +#endif
 -- 
