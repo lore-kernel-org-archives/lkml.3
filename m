@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758665AbaGAQwV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 12:52:21 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:59029 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756521AbaGAQwS (ORCPT
+	id S1758459AbaGAQxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 12:53:33 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28021 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109AbaGAQxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 12:52:18 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Hans de Goede <hdegoede@redhat.com>, Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Alexandre Courbot <gnurou@gmail.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Chris Ball <chris@printf.net>,
-        Chen-Yu Tsai <wens@csie.org>, Russell King <linux@arm.linux.org.uk>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [RFC 1/2] pwrseq: Add subsystem to handle complex power sequences
-Date: Tue, 01 Jul 2014 18:51:24 +0200
-Message-ID: <4396181.E2W0ve8f6g@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAPDyKFqi2NH1r=Q13iOu2ruuvaj1xJeoERiy2WJBVbQ2b1tc_A@mail.gmail.com>
-References: <1403183091-27876-1-git-send-email-ulf.hansson@linaro.org> <53A3ED65.80605@redhat.com> <CAPDyKFqi2NH1r=Q13iOu2ruuvaj1xJeoERiy2WJBVbQ2b1tc_A@mail.gmail.com>
+	Tue, 1 Jul 2014 12:53:32 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18DNxBx2y8pCgt8Tn1onzo0xTqOHTS8f6o=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 1A21B59F8C2
+Date: Tue, 1 Jul 2014 12:53:19 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] ARM: mvebu: add armada drm init to Dove board setup
+Message-ID: <20140701165319.GH23978@titan.lakedaemon.net>
+References: <1404219871-18419-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1404219871-18419-5-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20140701131026.GO32514@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:juIrgT7H87Y50m6m7RtZqUN4zbKC9q3BBBqOxI5yEPJ
- QE9198n52ySgt31eHNM5yLz1Ieh1gHyRqJXILW1WYk6WVB85XQ
- yWiSO9FQSC7VP+7UYYEcgbcQJhyK787dSSTIGKq2RrEwThxFVL
- vkS9GjOIQG2YZcq4+d5DYA8ONRP/b5ilor+1pXAXNtdJOzHS1E
- p01aoj27Y51paucT6+a0KyhbPzC3B+q2HT/SOI5ZfmexRrYpmF
- EPj8qtn/8bc8ix21AsZiWpu8MxsLpdQI0x8XuxYOntxermGs5m
- 01b+eGjxHSzCRRaOxw4KYH7wnJ7XOCM6+Galv1XPgYDHafNdFu
- qbzAFhMe4eGOafxXey9k=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140701131026.GO32514@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 01 July 2014 18:42:51 Ulf Hansson wrote:
-> On 20 June 2014 10:14, Hans de Goede <hdegoede@redhat.com> wrote:
-> > On 06/20/2014 10:02 AM, Olof Johansson wrote:
-> >> On Fri, Jun 20, 2014 at 12:27 AM, Hans de Goede <hdegoede@redhat.com> wrote:
-> >> I disagree.
-> >>
-> >> The clock is the input to the module, and it is what needs to be
-> >> enabled for the module to work. It's not the input to some
-> >> power-sequence component on the module, or next to the module on the
-> >> bus.
-> >
-> > Right, it is an input to the sdio-module, not to the mmc-host, so its an
-> > input to a different piece of hardware (at different ends of the mmc bus),
-> > but since the mmc-bus normally is fully discoverable we've no node for the
-> > other end of the bus.
-> >
-> > So from the mmc-host pov, which is the one which needs to bind the pwrseq
-> > driver, as that needs to be done before it can probe its bus, this is
-> > a different piece of hardware, hence a subnode to the host makes perfect
-> > sense.  This is in no way part of the host, so certainly it does not belong
-> > inside the hosts subnode.
+Russell,
+
+On Tue, Jul 01, 2014 at 02:10:26PM +0100, Russell King - ARM Linux wrote:
+> On Tue, Jul 01, 2014 at 03:04:31PM +0200, Sebastian Hesselbarth wrote:
+> > +	pdev = platform_device_register_full(&armada_drm_dev_info);
+> > +	/* assign last found lcd node to drm device for clk lookup */
+> > +	pdev->dev.of_node = clknp;
 > 
-> I fully agree with you Hans here.
+> NAK.  This really isn't a good way to deal with this, even in a
+> temporary basis.  While assigning a DT node to a manually created
+> platform device does solve that problem, it also introduces the
+> problem that this platform device will now match any platform driver
+> which recognises the "marvell,dove-lcd" compatible type, which may
+> occur _before_ we find the driver to match using the legacy strings.
 > 
-> If we were to put this information in the host's DT node, that would
-> be a wrong description of the hardware. Currently, I can't think of
-> anything better than a subnode, but I am open to suggestions.
+> There really isn't an easy solution to this other than doing the thing
+> properly.
 
-The problem that I see with your approach is that you use a subnode
-to describe an abstract concept, which isn't really a better description
-of the hardware than putting the contents in the parent node itself.
+And this creates our current deadlock.
 
-It would be more sensible if the subnode was defined (in this case)
-as describing the attached device (sdio card or similar), and restructure
-the code around that concept.
+> The other problem in this series is that while you introduce some
+> bindings which may work today, they're not going to work tomorrow, and
+> that's a problem.  Don't do DT piecemeal like this and end up having to
+> break the bindings (which we will have to do to add the endpoints.)
 
-	Arnd
+Seriously, we've got to do something to get off of the X.  Why not just
+declare the binding Sebastian just sent as unstable?  Then we change it
+as needed until we get all the pieces in place.
+
+At KS2013, we discussed, and agreed upon the fact that we _can_ have
+unstable bindings to keep the bus moving.  Perfection being the enemy of
+getting it done and all.
+
+Once we reach the goal of how we want the bindings to look, then we
+declare it stable.  I know it's not ideal, but "plan it out perfectly
+before pushing anything" isn't realistic either.
+
+thx,
+
+Jason.
