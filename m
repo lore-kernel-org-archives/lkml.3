@@ -1,165 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758660AbaGARQT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 13:16:19 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:40984 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757209AbaGARQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 13:16:17 -0400
-Date: Tue, 1 Jul 2014 13:16:11 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] Improve sequential read throughput v4r8
-Message-ID: <20140701171611.GB1369@cmpxchg.org>
-References: <1404146883-21414-1-git-send-email-mgorman@suse.de>
+	id S1758667AbaGARQq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 13:16:46 -0400
+Received: from mx5-phx2.redhat.com ([209.132.183.37]:33693 "EHLO
+	mx5-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756862AbaGARQo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 13:16:44 -0400
+Date: Tue, 1 Jul 2014 13:16:32 -0400 (EDT)
+From: Bob Peterson <rpeterso@redhat.com>
+To: David Teigland <teigland@redhat.com>
+Cc: Jeff Layton <jlayton@poochiereds.net>, cluster-devel@redhat.com,
+        linux-nfs@vger.kernel.org,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        linux-fsdevel@vger.kernel.org, Joe Perches <joe@perches.com>
+Message-ID: <1781051691.1348978.1404234992108.JavaMail.zimbra@redhat.com>
+In-Reply-To: <20140701164652.GB32565@redhat.com>
+References: <1404220810.2717.39.camel@joe-AO725> <20140701104313.5317400a@tlielax.poochiereds.net> <20140701164652.GB32565@redhat.com>
+Subject: Re: [Cluster-devel] [RFC PATCH] dlm: Remove unused conf from
+	lm_grant
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404146883-21414-1-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.11]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF30 (Linux)/8.0.6_GA_5922)
+Thread-Topic: Remove unused conf from lm_grant
+Thread-Index: 9LOn03KdETa1QXSaa3dRrWLBGvhfig==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 05:47:59PM +0100, Mel Gorman wrote:
-> Changelog since V3
-> o Push down kwapd changes to cover the balance gap
-> o Drop drop page distribution patch
+----- Original Message -----
+> On Tue, Jul 01, 2014 at 10:43:13AM -0400, Jeff Layton wrote:
+> > On Tue, 01 Jul 2014 06:20:10 -0700
+> > Joe Perches <joe@perches.com> wrote:
+> > 
+> > > While doing a bit of adding argument names to fs.h,
+> > > I looked at lm_grant and it seems the 2nd argument
+> > > is always NULL.
+> > > 
+> > > How about removing it?
+> > > 
+> > > This doesn't apply as it depends on some other patches
+> > > but it should be clear enough...
+> > > 
+> > 
+> > ACK on the general idea from my standpoint. Anything that simplifies
+> > the file locking interfaces is a good thing, particularly the deferred
+> > locking code.
 > 
-> Changelog since V2
-> o Simply fair zone policy cost reduction
-> o Drop CFQ patch
+> Fine with me.  I'd be happy to remove all the deferred locking code from
+> dlm; it never really worked.
 > 
-> Changelog since v1
-> o Rebase to v3.16-rc2
-> o Move CFQ patch to end of series where it can be rejected easier if necessary
-> o Introduce page-reclaim related patch related to kswapd/fairzone interactions
-> o Rework fast zone policy patch
-> 
-> IO performance since 3.0 has been a mixed bag. In many respects we are
-> better and in some we are worse and one of those places is sequential
-> read throughput. This is visible in a number of benchmarks but I looked
-> at tiobench the closest. This is using ext3 on a mid-range desktop and
-> the series applied.
-> 
->                                       3.16.0-rc2                 3.0.0            3.16.0-rc2
->                                          vanilla               vanilla         fairzone-v4r5
-> Min    SeqRead-MB/sec-1         120.92 (  0.00%)      133.65 ( 10.53%)      140.68 ( 16.34%)
-> Min    SeqRead-MB/sec-2         100.25 (  0.00%)      121.74 ( 21.44%)      118.13 ( 17.84%)
-> Min    SeqRead-MB/sec-4          96.27 (  0.00%)      113.48 ( 17.88%)      109.84 ( 14.10%)
-> Min    SeqRead-MB/sec-8          83.55 (  0.00%)       97.87 ( 17.14%)       89.62 (  7.27%)
-> Min    SeqRead-MB/sec-16         66.77 (  0.00%)       82.59 ( 23.69%)       70.49 (  5.57%)
-> 
-> Overall system CPU usage is reduced
-> 
->           3.16.0-rc2       3.0.0  3.16.0-rc2
->              vanilla     vanilla fairzone-v4
-> User          390.13      251.45      396.13
-> System        404.41      295.13      389.61
-> Elapsed      5412.45     5072.42     5163.49
-> 
-> This series does not fully restore throughput performance to 3.0 levels
-> but it brings it close for lower thread counts. Higher thread counts are
-> known to be worse than 3.0 due to CFQ changes but there is no appetite
-> for changing the defaults there.
+> Dave
 
-I ran tiobench locally and here are the results:
+Hi,
 
-tiobench MB/sec
-                                        3.16-rc1              3.16-rc1
-                                                           seqreadv4r8
-Mean   SeqRead-MB/sec-1         129.66 (  0.00%)      156.16 ( 20.44%)
-Mean   SeqRead-MB/sec-2         115.74 (  0.00%)      138.50 ( 19.66%)
-Mean   SeqRead-MB/sec-4         110.21 (  0.00%)      127.08 ( 15.31%)
-Mean   SeqRead-MB/sec-8         101.70 (  0.00%)      108.47 (  6.65%)
-Mean   SeqRead-MB/sec-16         86.45 (  0.00%)       91.57 (  5.92%)
-Mean   RandRead-MB/sec-1          1.14 (  0.00%)        1.11 ( -2.35%)
-Mean   RandRead-MB/sec-2          1.30 (  0.00%)        1.25 ( -3.85%)
-Mean   RandRead-MB/sec-4          1.50 (  0.00%)        1.46 ( -2.23%)
-Mean   RandRead-MB/sec-8          1.72 (  0.00%)        1.60 ( -6.96%)
-Mean   RandRead-MB/sec-16         1.72 (  0.00%)        1.69 ( -2.13%)
+GFS2 uses deferred locks, at the very least in its direct_io path
+(gfs2_direct_IO in aops.c). So AFAIK we can't remove THAT without a certain
+amount of pain. Steve is on vacation / holiday this week, but he will
+be back on Thursday and Friday (which is a holiday).
 
-Seqread throughput is up, randread takes a small hit.  But allocation
-latency is badly screwed at higher concurrency levels:
+I'm all for getting rid of useless parameters, and I've done so on
+several occasions in GFS2.
 
-tiobench Maximum Latency
-                                            3.16-rc1              3.16-rc1
-                                                               seqreadv4r8
-Mean   SeqRead-MaxLatency-1          77.23 (  0.00%)       57.69 ( 25.30%)
-Mean   SeqRead-MaxLatency-2         228.80 (  0.00%)      218.50 (  4.50%)
-Mean   SeqRead-MaxLatency-4         329.58 (  0.00%)      325.93 (  1.11%)
-Mean   SeqRead-MaxLatency-8         485.13 (  0.00%)      475.35 (  2.02%)
-Mean   SeqRead-MaxLatency-16        599.10 (  0.00%)      637.89 ( -6.47%)
-Mean   RandRead-MaxLatency-1         66.98 (  0.00%)       18.21 ( 72.81%)
-Mean   RandRead-MaxLatency-2        132.88 (  0.00%)      119.61 (  9.98%)
-Mean   RandRead-MaxLatency-4        222.95 (  0.00%)      213.82 (  4.10%)
-Mean   RandRead-MaxLatency-8        982.99 (  0.00%)     1009.71 ( -2.72%)
-Mean   RandRead-MaxLatency-16       515.24 (  0.00%)     1883.82 (-265.62%)
-Mean   SeqWrite-MaxLatency-1        239.78 (  0.00%)      233.61 (  2.57%)
-Mean   SeqWrite-MaxLatency-2        517.85 (  0.00%)      413.39 ( 20.17%)
-Mean   SeqWrite-MaxLatency-4        249.10 (  0.00%)      416.33 (-67.14%)
-Mean   SeqWrite-MaxLatency-8        629.31 (  0.00%)      851.62 (-35.33%)
-Mean   SeqWrite-MaxLatency-16       987.05 (  0.00%)     1080.92 ( -9.51%)
-Mean   RandWrite-MaxLatency-1         0.01 (  0.00%)        0.01 (  0.00%)
-Mean   RandWrite-MaxLatency-2         0.02 (  0.00%)        0.02 (  0.00%)
-Mean   RandWrite-MaxLatency-4         0.02 (  0.00%)        0.02 (  0.00%)
-Mean   RandWrite-MaxLatency-8         1.83 (  0.00%)        1.96 ( -6.73%)
-Mean   RandWrite-MaxLatency-16        1.52 (  0.00%)        1.33 ( 12.72%)
+Regards,
 
-Zone fairness is completely gone.  The overall allocation distribution
-on this system goes from 40%/60% to 10%/90%, and during the workload
-the DMA32 zone is not used *at all*:
-
-                              3.16-rc1    3.16-rc1
-                                       seqreadv4r8
-Zone normal velocity         11358.492   17996.733
-Zone dma32 velocity           8213.852       0.000
-
-Both negative effects stem from kswapd suddenly ignoring the classzone
-index while the page allocator respects it: the page allocator will
-keep the low wmark + lowmem reserves in DMA32 free, but kswapd won't
-reclaim in there until it drops down to the high watermark.  The low
-watermark + lowmem reserve is usually bigger than the high watermark,
-so you effectively disable kswapd service in DMA32 for user requests.
-The zone is then no longer used until it fills with enough kernel
-pages to trigger kswapd, or the workload goes into direct reclaim.
-
-The classzone change is a non-sensical change IMO, and there is no
-useful description of it to be found in the changelog.  But for the
-given tests it appears to be the only change in the entire series to
-make a measurable difference; reverting it gets me back to baseline:
-
-tiobench MB/sec
-                                        3.16-rc1              3.16-rc1              3.16-rc1
-                                                           seqreadv4r8  seqreadv4r8classzone
-Mean   SeqRead-MB/sec-1         129.66 (  0.00%)      156.16 ( 20.44%)      129.72 (  0.05%)
-Mean   SeqRead-MB/sec-2         115.74 (  0.00%)      138.50 ( 19.66%)      115.61 ( -0.11%)
-Mean   SeqRead-MB/sec-4         110.21 (  0.00%)      127.08 ( 15.31%)      110.15 ( -0.06%)
-Mean   SeqRead-MB/sec-8         101.70 (  0.00%)      108.47 (  6.65%)      102.15 (  0.44%)
-Mean   SeqRead-MB/sec-16         86.45 (  0.00%)       91.57 (  5.92%)       86.63 (  0.20%)
-
-            3.16-rc1    3.16-rc1    3.16-rc1
-                     seqreadv4r8seqreadv4r8classzone
-User          272.45      277.17      272.23
-System        197.89      186.30      193.73
-Elapsed      4589.17     4356.23     4584.57
-
-                              3.16-rc1    3.16-rc1    3.16-rc1
-                                       seqreadv4r8seqreadv4r8classzone
-Zone normal velocity         11358.492   17996.733   12695.547
-Zone dma32 velocity           8213.852       0.000    6891.421
-
-Please stop making multiple logical changes in a single patch/testing
-unit.  This will make it easier to verify them, and hopefully make it
-also more obvious if individual changes are underdocumented.  As it
-stands, it's hard to impossible to verify the implementation when the
-intentions are not fully documented.  Performance results can only do
-so much.  They are meant to corroborate the model, not replace it.
-
-And again, if you change the way zone fairness works, please always
-include the zone velocity numbers or allocation numbers to show that
-your throughput improvements don't just come from completely wrecking
-fairness - or in this case from disabling an entire zone.
+Bob Peterson
+Red Hat File Systems
