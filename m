@@ -1,112 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914AbaGADBN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 23:01:13 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:37901 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635AbaGADBL (ORCPT
+	id S1757298AbaGADCK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 23:02:10 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:59969 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397AbaGADCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 23:01:11 -0400
-Message-ID: <53B22473.8010709@kernel.dk>
-Date: Mon, 30 Jun 2014 21:01:07 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 30 Jun 2014 23:02:07 -0400
 MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Rusty Russell <rusty@rustcorp.com.au>, linux-api@vger.kernel.org,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH v3 0/2] block: virtio-blk: support multi vq per virtio-blk
-References: <1403775708-22244-1-git-send-email-ming.lei@canonical.com>	<CACVXFVMHPdEzai32jRmLt7qGMFcUqFb8OunF0tzySpKoLWWiwQ@mail.gmail.com> <CACVXFVMb4UXRYSp6nvjDQrDRcLP6rJ3_3QHYMzKv9MoogsU66w@mail.gmail.com>
-In-Reply-To: <CACVXFVMb4UXRYSp6nvjDQrDRcLP6rJ3_3QHYMzKv9MoogsU66w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.10.1406271249510.5170@nanos>
+References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com>
+ <CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com>
+ <CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com>
+ <CANGgnMYVoP-Z0Bv-VDEkJnvfa7Fi4-zY2F4A0PhMewGvwo3VVw@mail.gmail.com>
+ <alpine.DEB.2.10.1406270027300.5170@nanos> <CANGgnMa+qtgJ3wwg_h5Rynw5vEvZpQZ6PvaUfXNQ8+Y3Yu5U0g@mail.gmail.com>
+ <alpine.DEB.2.10.1406271249510.5170@nanos>
+From: Austin Schuh <austin@peloton-tech.com>
+Date: Mon, 30 Jun 2014 20:01:46 -0700
+Message-ID: <CANGgnMZ8qemTgzoiq96=YvTnz-h945b8zSw1VtmDMSrbY3kcUg@mail.gmail.com>
+Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Richard Weinberger <richard.weinberger@gmail.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        rt-users <linux-rt-users@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-06-30 19:36, Ming Lei wrote:
-> Hi Jens and Rusty,
->
-> On Thu, Jun 26, 2014 at 8:04 PM, Ming Lei <ming.lei@canonical.com> wrote:
->> On Thu, Jun 26, 2014 at 5:41 PM, Ming Lei <ming.lei@canonical.com> wrote:
->>> Hi,
->>>
->>> These patches try to support multi virtual queues(multi-vq) in one
->>> virtio-blk device, and maps each virtual queue(vq) to blk-mq's
->>> hardware queue.
->>>
->>> With this approach, both scalability and performance on virtio-blk
->>> device can get improved.
->>>
->>> For verifying the improvement, I implements virtio-blk multi-vq over
->>> qemu's dataplane feature, and both handling host notification
->>> from each vq and processing host I/O are still kept in the per-device
->>> iothread context, the change is based on qemu v2.0.0 release, and
->>> can be accessed from below tree:
->>>
->>>          git://kernel.ubuntu.com/ming/qemu.git #v2.0.0-virtblk-mq.1
->>>
->>> For enabling the multi-vq feature, 'num_queues=N' need to be added into
->>> '-device virtio-blk-pci ...' of qemu command line, and suggest to pass
->>> 'vectors=N+1' to keep one MSI irq vector per each vq, and the feature
->>> depends on x-data-plane.
->>>
->>> Fio(libaio, randread, iodepth=64, bs=4K, jobs=N) is run inside VM to
->>> verify the improvement.
->>>
->>> I just create a small quadcore VM and run fio inside the VM, and
->>> num_queues of the virtio-blk device is set as 2, but looks the
->>> improvement is still obvious. The host is 2 sockets, 8cores(16threads)
->>> server.
->>>
->>> 1), about scalability
->>> - jobs = 2, thoughput: +33%
->>> - jobs = 4, thoughput: +100%
->>>
->>> 2), about top thoughput: +39%
->>>
->>> So in my test, even for a quad-core VM, if the virtqueue number
->>> is increased from 1 to 2, both scalability and performance can
->>> get improved a lot.
->>>
->>> In above qemu implementation of virtio-blk-mq device, only one
->>> IOthread handles requests from all vqs, and the above throughput
->>> data has been very close to same fio test in host side with single
->>> job. So more improvement should be observed once more IOthreads are
->>> used for handling requests from multi vqs.
->>>
->>> TODO:
->>>          - adjust vq's irq smp_affinity according to blk-mq hw queue's cpumask
->>>
->>> V3:
->>>          - fix use-after-free on vq->name reported by Michael
->>>
->>> V2: (suggestions from Michael and Dave Chinner)
->>>          - allocate virtqueues' pointers dynamically
->>>          - make sure the per-queue spinlock isn't kept in same cache line
->>>          - make each queue's name different
->>>
->>> V1:
->>>          - remove RFC since no one objects
->>>          - add '__u8 unused' for pending as suggested by Rusty
->>>          - use virtio_cread_feature() directly, suggested by Rusty
->>
->> Sorry, please add Jens' reviewed-by.
->>
->>      Reviewed-by: Jens Axboe <axboe@kernel.dk>
->
-> I appreciate very much that one of you may queue these two
-> patches into your tree so that userspace work can be kicked off,
-> since Michael has acked both patches and all comments have
-> been addressed already.
+On Fri, Jun 27, 2014 at 7:24 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Completely untested patch below.
 
-Given that Michael also acked it and Rusty is on his sabbatical, I'll 
-queue it up for 3.17.
+By chance, I found this in my boot logs.  I'll do some more startup
+testing tomorrow.
 
--- 
-Jens Axboe
-
+Jun 30 19:54:40 vpc5 kernel: [    0.670955] ------------[ cut here ]------------
+Jun 30 19:54:40 vpc5 kernel: [    0.670962] WARNING: CPU: 0 PID: 4 at
+kernel/workqueue.c:1604 worker_enter_idle+0x65/0x16b()
+Jun 30 19:54:40 vpc5 kernel: [    0.670970] Modules linked in:
+Jun 30 19:54:40 vpc5 kernel: [    0.670973] CPU: 0 PID: 4 Comm:
+kworker/0:0 Not tainted 3.14.3-rt4abs+ #8
+Jun 30 19:54:40 vpc5 kernel: [    0.670974] Hardware name: CompuLab
+Intense-PC/Intense-PC, BIOS CR_2.2.0.377 X64 04/10/2013
+Jun 30 19:54:40 vpc5 kernel: [    0.670983]  0000000000000009
+ffff88040ce75de8 ffffffff81510faf 0000000000000002
+Jun 30 19:54:40 vpc5 kernel: [    0.670985]  0000000000000000
+ffff88040ce75e28 ffffffff81042085 0000000000000001
+Jun 30 19:54:40 vpc5 kernel: [    0.670987]  ffffffff81057a60
+ffff88042d406900 ffff88042da63fc0 ffff88042da64030
+Jun 30 19:54:40 vpc5 kernel: [    0.670988] Call Trace:
+Jun 30 19:54:40 vpc5 kernel: [    0.670995]  [<ffffffff81510faf>]
+dump_stack+0x4f/0x7c
+Jun 30 19:54:40 vpc5 kernel: [    0.670999]  [<ffffffff81042085>]
+warn_slowpath_common+0x81/0x9c
+Jun 30 19:54:40 vpc5 kernel: [    0.671002]  [<ffffffff81057a60>] ?
+worker_enter_idle+0x65/0x16b
+Jun 30 19:54:40 vpc5 kernel: [    0.671005]  [<ffffffff810420ba>]
+warn_slowpath_null+0x1a/0x1c
+Jun 30 19:54:40 vpc5 kernel: [    0.671007]  [<ffffffff81057a60>]
+worker_enter_idle+0x65/0x16b
+Jun 30 19:54:40 vpc5 kernel: [    0.671010]  [<ffffffff8105a0a9>]
+worker_thread+0x1b3/0x22b
+Jun 30 19:54:40 vpc5 kernel: [    0.671013]  [<ffffffff81059ef6>] ?
+rescuer_thread+0x293/0x293
+Jun 30 19:54:40 vpc5 kernel: [    0.671015]  [<ffffffff81059ef6>] ?
+rescuer_thread+0x293/0x293
+Jun 30 19:54:40 vpc5 kernel: [    0.671018]  [<ffffffff8105f7ab>]
+kthread+0xdc/0xe4
+Jun 30 19:54:40 vpc5 kernel: [    0.671022]  [<ffffffff8105f6cf>] ?
+flush_kthread_worker+0xe1/0xe1
+Jun 30 19:54:40 vpc5 kernel: [    0.671025]  [<ffffffff8151586c>]
+ret_from_fork+0x7c/0xb0
+Jun 30 19:54:40 vpc5 kernel: [    0.671027]  [<ffffffff8105f6cf>] ?
+flush_kthread_worker+0xe1/0xe1
+Jun 30 19:54:40 vpc5 kernel: [    0.671029] ---[ end trace 0000000000000001 ]---
