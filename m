@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850AbaGAVrf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:47:35 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:32880 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676AbaGAVre (ORCPT
+	id S1756486AbaGAVrn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:47:43 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.216]:8125 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951AbaGAVrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:47:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrXy3ft8AipAm=_u9OJb-t+FF=AfvXBke4pTh5a25nTcFA@mail.gmail.com>
-References: <CALCETrXy3ft8AipAm=_u9OJb-t+FF=AfvXBke4pTh5a25nTcFA@mail.gmail.com>
-Date: Tue, 1 Jul 2014 14:47:33 -0700
-X-Google-Sender-Auth: 6bi9xYHtLHAHSCh2-w2rAOg7eR0
-Message-ID: <CAGXu5jJAdr8mJttE_7XrV0Dj2UEQ-LgyEwNs5txA_mC66Qgm6Q@mail.gmail.com>
-Subject: Re: Seccomp performance vs. asm complexity
-From: Kees Cook <keescook@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Will Drewry <wad@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 1 Jul 2014 17:47:37 -0400
+X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
+X-RZG-CLASS-ID: mo00
+From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 01/50] mars: add new file include/linux/brick/lamport.h
+Date: Tue,  1 Jul 2014 23:46:41 +0200
+Message-Id: <1404251250-22992-2-git-send-email-tst@schoebel-theuer.de>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
+References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 1, 2014 at 1:18 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> This is a question about tradeoffs.  I'm playing with a couple of
-> approaches for an x86 seccomp fast path.
->
-> It looks like populating struct seccomp_data in the syscall entry asm
-> code saves 4-5ns (83ns vs 87.7ns or so for getpid with seccomp
-> enabled).  Presumably this is because it avoids a branch and replaces
-> seven two-instruction memory copies with 6 register pushes and one
-> memory push.  It also keeps the code shorter, with corresponding
-> icache benefits.
->
-> OTOH, populating struct seccomp_data in C keeps the asm code shorter
-> and simpler.  In fast, it ends up being a net deletion of asm code.
->
-> Thoughts?  What's a line of assembly code worth?  Keep in mind that
-> someone will probably want to port this to the x86_32 and compat
-> entries.
+Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
+---
+ include/linux/brick/lamport.h | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+ create mode 100644 include/linux/brick/lamport.h
 
-My feeling is that keeping it maintainable/readable should probably
-take precedence over 5ns. The syscall entry points are already
-complex, and already very security-sensitive, so my
-(security-conservative) instincts are for robustness over speed.
-
-> To keep this in perspective, this is down from >200ns in 3.16-rc3.
->
-> My current code is here:
->
-> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/log/?h=x86/seccomp-fastpath
->
-> I think it's in pretty good shape, but I still want to play with it a
-> bit before sending it out.  This version uses the C approach.
-
-This looks really great!
-
--Kees
-
+diff --git a/include/linux/brick/lamport.h b/include/linux/brick/lamport.h
+new file mode 100644
+index 0000000..f567eee
+--- /dev/null
++++ b/include/linux/brick/lamport.h
+@@ -0,0 +1,10 @@
++/*  (c) 2010 Thomas Schoebel-Theuer / 1&1 Internet AG */
++#ifndef LAMPORT_H
++#define LAMPORT_H
++
++#include <linux/time.h>
++
++extern void get_lamport(struct timespec *now);
++extern void set_lamport(struct timespec *old);
++
++#endif
 -- 
-Kees Cook
-Chrome OS Security
+2.0.0
+
