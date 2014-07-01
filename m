@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758832AbaGAVzB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:55:01 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.220]:33659 "EHLO
+	id S1758846AbaGAVzf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:55:35 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.162]:21881 "EHLO
 	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932445AbaGAVyB (ORCPT
+	with ESMTP id S932444AbaGAVyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:54:01 -0400
+	Tue, 1 Jul 2014 17:54:00 -0400
 X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
 X-RZG-CLASS-ID: mo00
 From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 15/50] mars: add new file include/linux/brick/lib_timing.h
-Date: Tue,  1 Jul 2014 23:46:55 +0200
-Message-Id: <1404251250-22992-16-git-send-email-tst@schoebel-theuer.de>
+Subject: [PATCH 31/50] mars: add new file include/linux/xio/xio_client.h
+Date: Tue,  1 Jul 2014 23:47:11 +0200
+Message-Id: <1404251250-22992-32-git-send-email-tst@schoebel-theuer.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
@@ -23,170 +23,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 ---
- include/linux/brick/lib_timing.h | 156 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 156 insertions(+)
- create mode 100644 include/linux/brick/lib_timing.h
+ include/linux/xio/xio_client.h | 70 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 70 insertions(+)
+ create mode 100644 include/linux/xio/xio_client.h
 
-diff --git a/include/linux/brick/lib_timing.h b/include/linux/brick/lib_timing.h
+diff --git a/include/linux/xio/xio_client.h b/include/linux/xio/xio_client.h
 new file mode 100644
-index 0000000..af15f1a
+index 0000000..86f3eac
 --- /dev/null
-+++ b/include/linux/brick/lib_timing.h
-@@ -0,0 +1,156 @@
-+/*  (c) 2012 Thomas Schoebel-Theuer / 1&1 Internet AG */
-+#ifndef BRICK_LIB_TIMING_H
-+#define BRICK_LIB_TIMING_H
++++ b/include/linux/xio/xio_client.h
+@@ -0,0 +1,70 @@
++/*  (c) 2010 Thomas Schoebel-Theuer / 1&1 Internet AG */
++#ifndef XIO_CLIENT_H
++#define XIO_CLIENT_H
 +
-+#include <linux/brick/brick.h>
++#include <linux/xio_net.h>
++#include <linux/brick/lib_limiter.h>
 +
-+#include <linux/sched.h>
++extern struct xio_limiter client_limiter;
++extern int global_net_io_timeout;
++extern int xio_client_abort;
 +
-+/* Simple infrastructure for timing of arbitrary operations and creation
-+ * of some simple histogram statistics.
-+ */
-+
-+#define TIMING_MAX			24
-+
-+struct timing_stats {
-+#ifdef CONFIG_MARS_DEBUG
-+	int tim_count[TIMING_MAX];
-+
-+#endif
++struct client_aio_aspect {
++	GENERIC_ASPECT(aio);
++	struct list_head io_head;
++	struct list_head hash_head;
++	struct list_head tmp_head;
++	unsigned long submit_jiffies;
++	int alloc_len;
++	bool do_dealloc;
 +};
 +
-+#define _TIME_THIS(_stamp1, _stamp2, _CODE)				\
-+	({								\
-+		(_stamp1) = cpu_clock(raw_smp_processor_id());		\
-+									\
-+		_CODE;							\
-+									\
-+		(_stamp2) = cpu_clock(raw_smp_processor_id());		\
-+		(_stamp2) - (_stamp1);					\
-+	})
-+
-+#define TIME_THIS(_CODE)						\
-+	({								\
-+		unsigned long long _stamp1;				\
-+		unsigned long long _stamp2;				\
-+		_TIME_THIS(_stamp1, _stamp2, _CODE);			\
-+	})
-+
-+#ifdef CONFIG_MARS_DEBUG
-+
-+#define _TIME_STATS(_timing, _stamp1, _stamp2, _CODE)			\
-+	({								\
-+		unsigned long long _time;				\
-+		unsigned long _tmp;					\
-+		int _i;							\
-+									\
-+		_time = _TIME_THIS(_stamp1, _stamp2, _CODE);		\
-+									\
-+		_tmp = _time / 1000;	/* convert to us */		\
-+		_i = 0;							\
-+		while (_tmp > 0 && _i < TIMING_MAX - 1) {		\
-+			_tmp >>= 1;					\
-+			_i++;						\
-+		}							\
-+		(_timing)->tim_count[_i]++;				\
-+		_time;							\
-+	})
-+
-+#define TIME_STATS(_timing, _CODE)					\
-+	({								\
-+		unsigned long long _stamp1;				\
-+		unsigned long long _stamp2;				\
-+		_TIME_STATS(_timing, _stamp1, _stamp2, _CODE);		\
-+	})
-+
-+extern int report_timing(struct timing_stats *tim, char *str, int maxlen);
-+
-+#else  /*  CONFIG_MARS_DEBUG */
-+
-+#define _TIME_STATS(_timing, _stamp1, _stamp2, _CODE)			\
-+	((void)_timing, (_stamp1) = (_stamp2) = cpu_clock(raw_smp_processor_id()), _CODE, 0)
-+
-+#define TIME_STATS(_timing, _CODE)					\
-+	((void)_timing, _CODE, 0)
-+
-+#define report_timing(tim, str, maxlen)   ((void)tim, 0)
-+
-+#endif /*  CONFIG_MARS_DEBUG */
-+
-+/* A banning represents some overloaded resource.
-+ *
-+ * Whenever overload is detected, you should call banning_hit()
-+ * telling that the overload is assumed / estimated to continue
-+ * for some duration in time.
-+ *
-+ * ATTENTION! These operations are deliberately raceful.
-+ * They are meant to deliver _hints_ (e.g. for IO scheduling
-+ * decisions etc), not hard facts!
-+ *
-+ * If you need locking, just surround these operations
-+ * with locking by yourself.
-+ */
-+struct banning {
-+	long long ban_last_hit;
-+
-+	/*  statistical */
-+	int ban_renew_count;
-+	int ban_count;
-+};
-+
-+extern inline
-+bool banning_hit(struct banning *ban, long long duration)
-+{
-+	long long now = cpu_clock(raw_smp_processor_id());
-+	bool hit = ban->ban_last_hit >= now;
-+	long long new_hit = now + duration;
-+
-+	ban->ban_renew_count++;
-+	if (!ban->ban_last_hit || ban->ban_last_hit < new_hit) {
-+		ban->ban_last_hit = new_hit;
-+		ban->ban_count++;
-+	}
-+	return hit;
-+}
-+
-+extern inline
-+bool banning_is_hit(struct banning *ban)
-+{
-+	long long now = cpu_clock(raw_smp_processor_id());
-+
-+	return (ban->ban_last_hit && ban->ban_last_hit >= now);
-+}
-+
-+extern inline
-+void banning_reset(struct banning *ban)
-+{
-+	ban->ban_last_hit = 0;
-+}
-+
-+/* Threshold: trigger a banning whenever some latency threshold
-+ * is exceeded.
-+ */
-+struct threshold {
-+	struct banning *thr_ban;
-+
++struct client_brick {
++	XIO_BRICK(client);
 +	/*  tunables */
-+	int  thr_limit;   /*  in us */
-+	int  thr_factor;  /*  in % */
-+	int  thr_plus;	  /*  in us */
-+	/*  statistical */
-+	int thr_triggered;
-+	int thr_true_hit;
++	int max_flying; /*  limit on parallelism */
++	int io_timeout;    /*  > 0: report IO errors after timeout (in seconds) */
++	bool limit_mode;
++
++	/*  readonly from outside */
++	int connection_state; /*  0 = switched off, 1 = not connected, 2 = connected */
 +};
 +
-+extern inline
-+void threshold_check(struct threshold *thr, long long latency)
-+{
-+	if (thr->thr_limit &&
-+	    latency > (long long)thr->thr_limit * 1000) {
-+		thr->thr_triggered++;
-+		if (!banning_hit(thr->thr_ban, latency * thr->thr_factor / 100 + thr->thr_plus * 1000))
-+			thr->thr_true_hit++;
-+	}
-+}
++struct client_input {
++	XIO_INPUT(client);
++};
++
++struct client_threadinfo {
++	struct task_struct *thread;
++
++	wait_queue_head_t run_event;
++	int restart_count;
++};
++
++struct client_output {
++	XIO_OUTPUT(client);
++	atomic_t fly_count;
++	atomic_t timeout_count;
++	spinlock_t lock;
++	struct list_head aio_list;
++	struct list_head wait_list;
++
++	wait_queue_head_t event;
++	int  last_id;
++	int recv_error;
++	struct xio_socket socket;
++	char *host;
++	char *path;
++	struct client_threadinfo sender;
++	struct client_threadinfo receiver;
++	struct xio_info info;
++
++	wait_queue_head_t info_event;
++	bool get_info;
++	bool got_info;
++	struct list_head *hash_table;
++};
++
++XIO_TYPES(client);
 +
 +#endif
 -- 
