@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965092AbaGAWCB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 18:02:01 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.216]:49907 "EHLO
+	id S1759043AbaGAWCc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 18:02:32 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.163]:25349 "EHLO
 	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755609AbaGAVrm (ORCPT
+	with ESMTP id S1755665AbaGAVrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:47:42 -0400
+	Tue, 1 Jul 2014 17:47:41 -0400
 X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
 X-RZG-CLASS-ID: mo00
 From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 25/50] mars: add new file include/linux/lib_log.h
-Date: Tue,  1 Jul 2014 23:47:05 +0200
-Message-Id: <1404251250-22992-26-git-send-email-tst@schoebel-theuer.de>
+Subject: [PATCH 24/50] mars: add new file drivers/block/mars/xio_bricks/lib_mapfree.c
+Date: Tue,  1 Jul 2014 23:47:04 +0200
+Message-Id: <1404251250-22992-25-git-send-email-tst@schoebel-theuer.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
@@ -23,330 +23,372 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 ---
- include/linux/lib_log.h | 314 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 314 insertions(+)
- create mode 100644 include/linux/lib_log.h
+ drivers/block/mars/xio_bricks/lib_mapfree.c | 356 ++++++++++++++++++++++++++++
+ 1 file changed, 356 insertions(+)
+ create mode 100644 drivers/block/mars/xio_bricks/lib_mapfree.c
 
-diff --git a/include/linux/lib_log.h b/include/linux/lib_log.h
+diff --git a/drivers/block/mars/xio_bricks/lib_mapfree.c b/drivers/block/mars/xio_bricks/lib_mapfree.c
 new file mode 100644
-index 0000000..ead2a72
+index 0000000..99a5ce9
 --- /dev/null
-+++ b/include/linux/lib_log.h
-@@ -0,0 +1,314 @@
-+/*  (c) 2010 Thomas Schoebel-Theuer / 1&1 Internet AG */
++++ b/drivers/block/mars/xio_bricks/lib_mapfree.c
+@@ -0,0 +1,356 @@
++/*  (c) 2012 Thomas Schoebel-Theuer / 1&1 Internet AG */
 +
-+/* Definitions for logfile format.
-+ *
-+ * This is meant for sharing between different transaction logger variants,
-+ * and/or for sharing with userspace tools (e.g. logfile analyzers).
-+ * TODO: factor out some remaining kernelspace issues.
-+ */
++#include <linux/lib_mapfree.h>
 +
-+#ifndef LIB_LOG_H
-+#define LIB_LOG_H
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/string.h>
++#include <linux/list.h>
++#include <linux/types.h>
++#include <linux/blkdev.h>
++#include <linux/spinlock.h>
++#include <linux/wait.h>
++#include <linux/file.h>
 +
-+#ifdef __KERNEL__
-+#include <linux/xio.h>
++/*  time to wait between background mapfree operations */
++int mapfree_period_sec = 10;
++EXPORT_SYMBOL_GPL(mapfree_period_sec);
 +
-+extern atomic_t global_aio_flying;
-+#endif
++/*  some grace space where no regular cleanup should occur */
++int mapfree_grace_keep_mb = 16;
++EXPORT_SYMBOL_GPL(mapfree_grace_keep_mb);
 +
-+/* The following structure is memory-only.
-+ * Transfers to disk are indirectly via the
-+ * format conversion functions below.
-+ * The advantage is that even newer disk formats can be parsed
-+ * by old code (of course, not all information / features will be
-+ * available then).
-+ */
-+#define log_header log_header_v1
++static
++DECLARE_RWSEM(mapfree_mutex);
 +
-+struct log_header_v1 {
-+	struct timespec l_stamp;
-+	struct timespec l_written;
-+	loff_t l_pos;
++static
++LIST_HEAD(mapfree_list);
 +
-+	short  l_len;
-+	short  l_code;
-+	unsigned int l_seq_nr;
-+	int    l_crc;
-+};
-+
-+#define FORMAT_VERSION			1 /*  version of disk format, currently there is no other one */
-+
-+#define CODE_UNKNOWN			0
-+#define CODE_WRITE_NEW			1
-+#define CODE_WRITE_OLD			2
-+
-+#define START_MAGIC			0xa8f7e908d9177957ll
-+#define END_MAGIC			0x74941fb74ab5726dll
-+
-+#define START_OVERHEAD							\
-+	(								\
-+		sizeof(START_MAGIC) +					\
-+		sizeof(char) +						\
-+		sizeof(char) +						\
-+		sizeof(short) +						\
-+		sizeof(struct timespec) +				\
-+		sizeof(loff_t) +					\
-+		sizeof(int) +						\
-+		sizeof(int) +						\
-+		sizeof(short) +						\
-+		sizeof(short) +						\
-+		0							\
-+	)
-+
-+#define END_OVERHEAD							\
-+	(								\
-+		sizeof(END_MAGIC) +					\
-+		sizeof(int) +						\
-+		sizeof(char) +						\
-+		3 + 4 /*spare*/ +					\
-+		sizeof(struct timespec) +				\
-+		0							\
-+	)
-+
-+#define OVERHEAD			(START_OVERHEAD + END_OVERHEAD)
-+
-+/*  TODO: make this bytesex-aware. */
-+#define DATA_PUT(data, offset, val)					\
-+	do {								\
-+		*((typeof(val) *)((data)+offset)) = val;		\
-+		offset += sizeof(val);					\
-+	} while (0)
-+
-+#define DATA_GET(data, offset, val)					\
-+	do {								\
-+		val = *((typeof(val) *)((data)+offset));		\
-+		offset += sizeof(val);					\
-+	} while (0)
-+
-+#define SCAN_TXT							\
-+"at file_pos = %lld file_offset = %d scan_offset = %d (%lld) test_offset = %d (%lld) restlen = %d: "
-+#define SCAN_PAR							\
-+file_pos, file_offset, offset, file_pos + file_offset + offset, i, file_pos + file_offset + i, restlen
-+
-+static inline
-+int log_scan(void *buf,
-+	int len,
-+	loff_t file_pos,
-+	int file_offset,
-+	bool sloppy,
-+	struct log_header *lh,
-+	void **payload,
-+	int *payload_len,
-+	unsigned int *seq_nr)
++static
++void mapfree_pages(struct mapfree_info *mf, int grace_keep)
 +{
-+	bool dirty = false;
-+	int offset;
-+	int i;
++	struct address_space *mapping;
++	pgoff_t start;
++	pgoff_t end;
 +
-+	*payload = NULL;
-+	*payload_len = 0;
++	if (unlikely(!mf->mf_filp))
++		goto done;
 +
-+	for (i = 0; i < len && i <= len - OVERHEAD; i += sizeof(long)) {
-+		long long start_magic;
-+		char format_version;
-+		char valid_flag;
++	mapping = mf->mf_filp->f_mapping;
++	if (unlikely(!mapping))
++		goto done;
 +
-+		short total_len;
-+		long long end_magic;
-+		char valid_copy;
++	if (grace_keep < 0) { /*  force full flush */
++		start = 0;
++		end = -1;
++	} else {
++		loff_t tmp;
++		loff_t min;
 +
-+		int restlen = 0;
-+		int found_offset;
++		spin_lock(&mf->mf_lock);
 +
-+		offset = i;
-+		if (unlikely(i > 0 && !sloppy)) {
-+			XIO_ERR(SCAN_TXT "detected a hole / bad data\n", SCAN_PAR);
-+			return -EBADMSG;
++		min = tmp = mf->mf_min[0];
++		if (likely(mf->mf_min[1] < min))
++			min = mf->mf_min[1];
++		if (tmp) {
++			mf->mf_min[1] = tmp;
++			mf->mf_min[0] = 0;
 +		}
 +
-+		DATA_GET(buf, offset, start_magic);
-+		if (unlikely(start_magic != START_MAGIC)) {
-+			if (start_magic != 0)
-+				dirty = true;
-+			continue;
++		spin_unlock(&mf->mf_lock);
++
++		min -= (loff_t)grace_keep * (1024 * 1024); /*  megabytes */
++		end = 0;
++
++		if (min > 0 || mf->mf_last) {
++			start = mf->mf_last / PAGE_SIZE;
++			/*  add some grace overlapping */
++			if (likely(start > 0))
++				start--;
++			mf->mf_last = min;
++			end = min / PAGE_SIZE;
++		} else	{ /*  there was no progress for at least 2 rounds */
++			start = 0;
++			if (!grace_keep) /*  also flush thoroughly */
++				end = -1;
 +		}
 +
-+		restlen = len - i;
-+		if (unlikely(restlen < START_OVERHEAD)) {
-+			XIO_WRN(SCAN_TXT "magic found, but restlen is too small\n", SCAN_PAR);
-+			return -EAGAIN;
-+		}
-+
-+		DATA_GET(buf, offset, format_version);
-+		if (unlikely(format_version != FORMAT_VERSION)) {
-+			XIO_ERR(SCAN_TXT "found unknown data format %d\n", SCAN_PAR, (int)format_version);
-+			return -EBADMSG;
-+		}
-+		DATA_GET(buf, offset, valid_flag);
-+		if (unlikely(!valid_flag)) {
-+			XIO_WRN(SCAN_TXT "data is explicitly marked invalid (was there a short write?)\n", SCAN_PAR);
-+			continue;
-+		}
-+		DATA_GET(buf, offset, total_len);
-+		if (unlikely(total_len > restlen)) {
-+			XIO_WRN(SCAN_TXT "total_len = %d but available data restlen = %d. Was the logfile truncated?\n",
-+				SCAN_PAR,
-+				total_len,
-+				restlen);
-+			return -EAGAIN;
-+		}
-+
-+		memset(lh, 0, sizeof(struct log_header));
-+
-+		DATA_GET(buf, offset, lh->l_stamp.tv_sec);
-+		DATA_GET(buf, offset, lh->l_stamp.tv_nsec);
-+		DATA_GET(buf, offset, lh->l_pos);
-+		DATA_GET(buf, offset, lh->l_len);
-+		offset += 2; /*  skip spare */
-+		offset += 4; /*  skip spare */
-+		DATA_GET(buf, offset, lh->l_code);
-+		offset += 2; /*  skip spare */
-+
-+		found_offset = offset;
-+		offset += lh->l_len;
-+
-+		restlen = len - offset;
-+		if (unlikely(restlen < END_OVERHEAD)) {
-+			XIO_WRN(SCAN_TXT "restlen %d is too small\n", SCAN_PAR, restlen);
-+			return -EAGAIN;
-+		}
-+
-+		DATA_GET(buf, offset, end_magic);
-+		if (unlikely(end_magic != END_MAGIC)) {
-+			XIO_WRN(SCAN_TXT "bad end_magic 0x%llx, is the logfile truncated?\n", SCAN_PAR, end_magic);
-+			return -EBADMSG;
-+		}
-+		DATA_GET(buf, offset, lh->l_crc);
-+		DATA_GET(buf, offset, valid_copy);
-+
-+		if (unlikely(valid_copy != 1)) {
-+			XIO_WRN(SCAN_TXT "found data marked as uncompleted / invalid, len = %d, valid_flag = %d\n",
-+				SCAN_PAR,
-+				lh->l_len,
-+				(int)valid_copy);
-+			return -EBADMSG;
-+		}
-+
-+		/*  skip spares */
-+		offset += 3;
-+
-+		DATA_GET(buf, offset, lh->l_seq_nr);
-+		DATA_GET(buf, offset, lh->l_written.tv_sec);
-+		DATA_GET(buf, offset, lh->l_written.tv_nsec);
-+
-+		if (unlikely(lh->l_seq_nr > *seq_nr + 1 && lh->l_seq_nr && *seq_nr)) {
-+			XIO_ERR(SCAN_TXT "record sequence number %u mismatch, expected was %u\n",
-+				SCAN_PAR,
-+				lh->l_seq_nr,
-+				*seq_nr + 1);
-+			return -EBADMSG;
-+		} else if (unlikely(lh->l_seq_nr != *seq_nr + 1 && lh->l_seq_nr && *seq_nr)) {
-+			XIO_WRN(SCAN_TXT "record sequence number %u mismatch, expected was %u\n",
-+				SCAN_PAR,
-+				lh->l_seq_nr,
-+				*seq_nr + 1);
-+		}
-+		*seq_nr = lh->l_seq_nr;
-+
-+		if (lh->l_crc) {
-+			unsigned char checksum[xio_digest_size];
-+
-+			xio_digest(checksum, buf + found_offset, lh->l_len);
-+			if (unlikely(*(int *)checksum != lh->l_crc)) {
-+				XIO_ERR(SCAN_TXT "data checksumming mismatch, length = %d\n", SCAN_PAR, lh->l_len);
-+				return -EBADMSG;
-+			}
-+		}
-+
-+		/*  last check */
-+		if (unlikely(total_len != offset - i)) {
-+			XIO_ERR(SCAN_TXT "internal size mismatch: %d != %d\n", SCAN_PAR, total_len, offset - i);
-+			return -EBADMSG;
-+		}
-+
-+		/*  Success... */
-+		*payload = buf + found_offset;
-+		*payload_len = lh->l_len;
-+
-+		/*  don't cry when nullbytes have been skipped */
-+		if (i > 0 && dirty)
-+			XIO_WRN(SCAN_TXT "skipped %d dirty bytes to find valid data\n", SCAN_PAR, i);
-+
-+		return offset;
++		XIO_DBG("file = '%s' start = %lu end = %lu\n", SAFE_STR(mf->mf_name), start, end);
 +	}
 +
-+	XIO_ERR("could not find any useful data within len=%d bytes\n", len);
-+	return -EAGAIN;
++	if (end > start || end == -1)
++		invalidate_mapping_pages(mapping, start, end);
++
++done:;
 +}
 +
-+/**************************************************************************/
++static
++void _mapfree_put(struct mapfree_info *mf)
++{
++	if (atomic_dec_and_test(&mf->mf_count)) {
++		XIO_DBG("closing file '%s' filp = %p\n", mf->mf_name, mf->mf_filp);
++		list_del_init(&mf->mf_head);
++		CHECK_HEAD_EMPTY(&mf->mf_dirty_anchor);
++		if (likely(mf->mf_filp)) {
++			mapfree_pages(mf, -1);
++			filp_close(mf->mf_filp, NULL);
++		}
++		brick_string_free(mf->mf_name);
++		brick_mem_free(mf);
++	}
++}
 +
-+#ifdef __KERNEL__
++void mapfree_put(struct mapfree_info *mf)
++{
++	down_write(&mapfree_mutex);
++	_mapfree_put(mf);
++	up_write(&mapfree_mutex);
++}
++EXPORT_SYMBOL_GPL(mapfree_put);
 +
-+/* Bookkeeping status between calls
-+ */
-+struct log_status {
-+	/*  interfacing */
-+	wait_queue_head_t *signal_event;
-+	/*  tunables */
-+	loff_t start_pos;
-+	loff_t end_pos;
++struct mapfree_info *mapfree_get(const char *name, int flags)
++{
++	struct mapfree_info *mf = NULL;
++	struct list_head *tmp;
 +
-+	int align_size;   /*  alignment between requests */
-+	int chunk_size;   /*  must be at least 8K (better 64k) */
-+	int max_size;	  /*  max payload length */
-+	int io_prio;
-+	bool do_crc;
++	if (!(flags & O_DIRECT)) {
++		down_read(&mapfree_mutex);
++		for (tmp = mapfree_list.next; tmp != &mapfree_list; tmp = tmp->next) {
++			struct mapfree_info *_mf = container_of(tmp, struct mapfree_info, mf_head);
 +
-+	/*  informational */
-+	atomic_t aio_flying;
-+	int count;
-+	loff_t log_pos;
-+	struct timespec log_pos_stamp;
++			if (_mf->mf_flags == flags && !strcmp(_mf->mf_name, name)) {
++				mf = _mf;
++				atomic_inc(&mf->mf_count);
++				break;
++			}
++		}
++		up_read(&mapfree_mutex);
 +
-+	/*  internal */
-+	struct timespec tmp_pos_stamp;
-+	struct xio_input *input;
-+	struct xio_brick *brick;
-+	struct xio_info info;
-+	int offset;
-+	int validflag_offset;
-+	int reallen_offset;
-+	int payload_offset;
-+	int payload_len;
-+	unsigned int seq_nr;
-+	struct aio_object *log_aio;
-+	struct aio_object *read_aio;
++		if (mf)
++			goto done;
++	}
 +
-+	wait_queue_head_t event;
-+	int error_code;
-+	bool got;
-+	bool do_free;
-+	void *private;
-+};
++	for (;;) {
++		struct address_space *mapping;
++		struct inode *inode = NULL;
++		int ra = 1;
++		int prot = 0600;
 +
-+void init_logst(struct log_status *logst, struct xio_input *input, loff_t start_pos, loff_t end_pos);
-+void exit_logst(struct log_status *logst);
++		mm_segment_t oldfs;
 +
-+void log_flush(struct log_status *logst);
++		mf = brick_zmem_alloc(sizeof(struct mapfree_info));
 +
-+void *log_reserve(struct log_status *logst, struct log_header *lh);
++		mf->mf_name = brick_strdup(name);
 +
-+bool log_finalize(struct log_status *logst, int len, void (*endio)(void *private, int error), void *private);
++		mf->mf_flags = flags;
++		INIT_LIST_HEAD(&mf->mf_head);
++		INIT_LIST_HEAD(&mf->mf_dirty_anchor);
++		atomic_set(&mf->mf_count, 1);
++		spin_lock_init(&mf->mf_lock);
++		mf->mf_max = -1;
 +
-+int log_read(struct log_status *logst, bool sloppy, struct log_header *lh, void **payload, int *payload_len);
++		oldfs = get_fs();
++		set_fs(get_ds());
++		mf->mf_filp = filp_open(name, flags, prot);
++		set_fs(oldfs);
 +
-+/***********************************************************************/
++		XIO_DBG("file '%s' flags = %d prot = %d filp = %p\n", name, flags, prot, mf->mf_filp);
 +
-+/*  init */
++		if (unlikely(!mf->mf_filp || IS_ERR(mf->mf_filp))) {
++			int err = PTR_ERR(mf->mf_filp);
 +
-+extern int init_log_format(void);
-+extern void exit_log_format(void);
++			XIO_ERR("can't open file '%s' status=%d\n", name, err);
++			mf->mf_filp = NULL;
++			_mapfree_put(mf);
++			mf = NULL;
++			break;
++		}
 +
-+#endif
-+#endif
++		mapping = mf->mf_filp->f_mapping;
++		if (likely(mapping))
++			inode = mapping->host;
++		if (unlikely(!mapping || !inode)) {
++			XIO_ERR("file '%s' has no mapping\n", name);
++			mf->mf_filp = NULL;
++			_mapfree_put(mf);
++			mf = NULL;
++			break;
++		}
++
++		mapping_set_gfp_mask(mapping, mapping_gfp_mask(mapping) & ~(__GFP_IO | __GFP_FS));
++
++		mf->mf_max = i_size_read(inode);
++
++		if (S_ISBLK(inode->i_mode)) {
++			XIO_INF("changing blkdev readahead from %lu to %d\n",
++				inode->i_bdev->bd_disk->queue->backing_dev_info.ra_pages,
++				ra);
++			inode->i_bdev->bd_disk->queue->backing_dev_info.ra_pages = ra;
++		}
++
++		if (flags & O_DIRECT) { /*  never share them */
++			break;
++		}
++
++		/*  maintain global list of all open files */
++		down_write(&mapfree_mutex);
++		for (tmp = mapfree_list.next; tmp != &mapfree_list; tmp = tmp->next) {
++			struct mapfree_info *_mf = container_of(tmp, struct mapfree_info, mf_head);
++
++			if (unlikely(_mf->mf_flags == flags && !strcmp(_mf->mf_name, name))) {
++				XIO_WRN("race on creation of '%s' detected\n", name);
++				_mapfree_put(mf);
++				mf = _mf;
++				atomic_inc(&mf->mf_count);
++				goto leave;
++			}
++		}
++		list_add_tail(&mf->mf_head, &mapfree_list);
++leave:
++		up_write(&mapfree_mutex);
++		break;
++	}
++done:
++	return mf;
++}
++EXPORT_SYMBOL_GPL(mapfree_get);
++
++void mapfree_set(struct mapfree_info *mf, loff_t min, loff_t max)
++{
++	spin_lock(&mf->mf_lock);
++	if (!mf->mf_min[0] || mf->mf_min[0] > min)
++		mf->mf_min[0] = min;
++	if (max >= 0 && mf->mf_max < max)
++		mf->mf_max = max;
++	spin_unlock(&mf->mf_lock);
++}
++EXPORT_SYMBOL_GPL(mapfree_set);
++
++static
++int mapfree_thread(void *data)
++{
++	while (!brick_thread_should_stop()) {
++		struct mapfree_info *mf = NULL;
++		struct list_head *tmp;
++		long long eldest = 0;
++
++		brick_msleep(500);
++
++		if (mapfree_period_sec <= 0)
++			continue;
++
++		down_read(&mapfree_mutex);
++
++		for (tmp = mapfree_list.next; tmp != &mapfree_list; tmp = tmp->next) {
++			struct mapfree_info *_mf = container_of(tmp, struct mapfree_info, mf_head);
++
++			if (unlikely(!_mf->mf_jiffies)) {
++				_mf->mf_jiffies = jiffies;
++				continue;
++			}
++			if ((long long)jiffies - _mf->mf_jiffies > mapfree_period_sec * HZ &&
++			    (!mf || _mf->mf_jiffies < eldest)) {
++				mf = _mf;
++				eldest = _mf->mf_jiffies;
++			}
++		}
++		if (mf)
++			atomic_inc(&mf->mf_count);
++
++		up_read(&mapfree_mutex);
++
++		if (!mf)
++			continue;
++
++		mapfree_pages(mf, mapfree_grace_keep_mb);
++
++		mf->mf_jiffies = jiffies;
++		mapfree_put(mf);
++	}
++	return 0;
++}
++
++/***************** dirty IOs on the fly  *****************/
++
++void mf_insert_dirty(struct mapfree_info *mf, struct dirty_info *di)
++{
++	if (likely(di->dirty_aio)) {
++		spin_lock(&mf->mf_lock);
++		list_del(&di->dirty_head);
++		list_add(&di->dirty_head, &mf->mf_dirty_anchor);
++		spin_unlock(&mf->mf_lock);
++	}
++}
++EXPORT_SYMBOL_GPL(mf_insert_dirty);
++
++void mf_remove_dirty(struct mapfree_info *mf, struct dirty_info *di)
++{
++	if (!list_empty(&di->dirty_head)) {
++		spin_lock(&mf->mf_lock);
++		list_del_init(&di->dirty_head);
++		spin_unlock(&mf->mf_lock);
++	}
++}
++EXPORT_SYMBOL_GPL(mf_remove_dirty);
++
++void mf_get_dirty(struct mapfree_info *mf, loff_t *min, loff_t *max, int min_stage, int max_stage)
++{
++	struct list_head *tmp;
++
++	spin_lock(&mf->mf_lock);
++	for (tmp = mf->mf_dirty_anchor.next; tmp != &mf->mf_dirty_anchor; tmp = tmp->next) {
++		struct dirty_info *di = container_of(tmp, struct dirty_info, dirty_head);
++		struct aio_object *aio = di->dirty_aio;
++
++		if (unlikely(!aio))
++			continue;
++		if (di->dirty_stage < min_stage || di->dirty_stage > max_stage)
++			continue;
++		if (aio->io_pos < *min)
++			*min = aio->io_pos;
++		if (aio->io_pos + aio->io_len > *max)
++			*max = aio->io_pos + aio->io_len;
++	}
++	spin_unlock(&mf->mf_lock);
++}
++EXPORT_SYMBOL_GPL(mf_get_dirty);
++
++void mf_get_any_dirty(const char *filename, loff_t *min, loff_t *max, int min_stage, int max_stage)
++{
++	struct list_head *tmp;
++
++	down_read(&mapfree_mutex);
++	for (tmp = mapfree_list.next; tmp != &mapfree_list; tmp = tmp->next) {
++		struct mapfree_info *mf = container_of(tmp, struct mapfree_info, mf_head);
++
++		if (!strcmp(mf->mf_name, filename))
++			mf_get_dirty(mf, min, max, min_stage, max_stage);
++	}
++	up_read(&mapfree_mutex);
++}
++EXPORT_SYMBOL_GPL(mf_get_any_dirty);
++
++/***************** module init stuff ************************/
++
++static
++struct task_struct *mf_thread = NULL;
++
++int __init init_xio_mapfree(void)
++{
++	XIO_DBG("init_mapfree()\n");
++	mf_thread = brick_thread_create(mapfree_thread, NULL, "xio_mapfree");
++	if (unlikely(!mf_thread)) {
++		XIO_ERR("could not create mapfree thread\n");
++		return -ENOMEM;
++	}
++	return 0;
++}
++
++void exit_xio_mapfree(void)
++{
++	XIO_DBG("exit_mapfree()\n");
++	if (likely(mf_thread)) {
++		brick_thread_stop(mf_thread);
++		mf_thread = NULL;
++	}
++}
 -- 
 2.0.0
 
