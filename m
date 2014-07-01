@@ -1,94 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbaGAAqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 20:46:39 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:63946 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaGAAqi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 20:46:38 -0400
-Date: Mon, 30 Jun 2014 17:46:35 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [patch] mm, hugetlb: remove hugetlb_zero and hugetlb_infinity
-In-Reply-To: <alpine.DEB.2.02.1406301655480.27587@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1406301745200.7070@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1406301655480.27587@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752443AbaGAAwL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 20:52:11 -0400
+Received: from ozlabs.org ([103.22.144.67]:49335 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750996AbaGAAwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 20:52:09 -0400
+Message-ID: <1404175926.30002.1.camel@concordia>
+Subject: Re: [PATCH] powerpc/powernv: Check for IRQHAPPENED before sleeping
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: benh@kernel.crashing.org, mikey@neuling.org, shreyas@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 01 Jul 2014 10:52:06 +1000
+In-Reply-To: <20140630062404.29315.23382.stgit@preeti.in.ibm.com>
+References: <20140630062404.29315.23382.stgit@preeti.in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They are unnecessary: "zero" can be used in place of "hugetlb_zero" and 
-passing extra2 == NULL is equivalent to infinity.
+On Mon, 2014-06-30 at 11:54 +0530, Preeti U Murthy wrote:
+> Commit 8d6f7c5a: "powerpc/powernv: Make it possible to skip the IRQHAPPENED
+> check in power7_nap()" added code that prevents even cores which enter sleep
+> on idle, from checking for pending interrupts. Fix this.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- include/linux/hugetlb.h | 1 -
- kernel/sysctl.c         | 9 +++------
- mm/hugetlb.c            | 1 -
- 3 files changed, 3 insertions(+), 8 deletions(-)
+To be clear, it is a bug in the original commit. Mikey and I pair programmed
+that code, and he was *definitely* typing at that point ;)
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -86,7 +86,6 @@ pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud);
- #endif
- 
- extern unsigned long hugepages_treat_as_movable;
--extern const unsigned long hugetlb_zero, hugetlb_infinity;
- extern int sysctl_hugetlb_shm_group;
- extern struct list_head huge_boot_pages;
- 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1240,8 +1240,7 @@ static struct ctl_table vm_table[] = {
- 		.maxlen		= sizeof(unsigned long),
- 		.mode		= 0644,
- 		.proc_handler	= hugetlb_sysctl_handler,
--		.extra1		= (void *)&hugetlb_zero,
--		.extra2		= (void *)&hugetlb_infinity,
-+		.extra1		= &zero,
- 	},
- #ifdef CONFIG_NUMA
- 	{
-@@ -1250,8 +1249,7 @@ static struct ctl_table vm_table[] = {
- 		.maxlen         = sizeof(unsigned long),
- 		.mode           = 0644,
- 		.proc_handler   = &hugetlb_mempolicy_sysctl_handler,
--		.extra1		= (void *)&hugetlb_zero,
--		.extra2		= (void *)&hugetlb_infinity,
-+		.extra1		= &zero,
- 	},
- #endif
- 	 {
-@@ -1274,8 +1272,7 @@ static struct ctl_table vm_table[] = {
- 		.maxlen		= sizeof(unsigned long),
- 		.mode		= 0644,
- 		.proc_handler	= hugetlb_overcommit_handler,
--		.extra1		= (void *)&hugetlb_zero,
--		.extra2		= (void *)&hugetlb_infinity,
-+		.extra1		= &zero,
- 	},
- #endif
- 	{
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -35,7 +35,6 @@
- #include <linux/node.h>
- #include "internal.h"
- 
--const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
- unsigned long hugepages_treat_as_movable;
- 
- int hugetlb_max_hstate __read_mostly;
+Can you please include in the changelog what the symptom of the bug is, and
+have you seen it in practice?
+
+The bad commit went into 3.16-rc1, so we don't need to backport this to any
+stable release.
+
+cheers
+
+> diff --git a/arch/powerpc/kernel/idle_power7.S b/arch/powerpc/kernel/idle_power7.S
+> index 2480256..5cf3d36 100644
+> --- a/arch/powerpc/kernel/idle_power7.S
+> +++ b/arch/powerpc/kernel/idle_power7.S
+> @@ -131,7 +131,7 @@ _GLOBAL(power7_nap)
+>  
+>  _GLOBAL(power7_sleep)
+>  	li	r3,1
+> -	li	r4,0
+> +	li	r4,1
+>  	b	power7_powersave_common
+>  	/* No return */
+>  
+> 
+
+
+
+
+
