@@ -1,95 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106AbaGALb6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 07:31:58 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39820 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929AbaGALb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 07:31:56 -0400
-Message-ID: <53B29C29.8020901@ti.com>
-Date: Tue, 1 Jul 2014 14:31:53 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+	id S1756724AbaGALdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 07:33:21 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:37294 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291AbaGALdS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 07:33:18 -0400
+Message-ID: <53B29C73.9090509@linaro.org>
+Date: Tue, 01 Jul 2014 20:33:07 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] fbdev fixes for 3.16
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="AQEJhRUGi73eC7PmcFU6hbheMup5HNX0A"
+To: Will Deacon <will.deacon@arm.com>, Steven Rostedt <rostedt@goodmis.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Kosina <jkosina@suse.cz>,
+        Josh Poimboeuf <notifications@github.com>
+Subject: Re: [RFA][PATCH 25/27] arm64, ftrace: Remove check of obsolete variable
+ function_trace_stop
+References: <20140626165221.736847419@goodmis.org> <20140626165853.482575534@goodmis.org> <20140627124421.GP26276@arm.com>
+In-Reply-To: <20140627124421.GP26276@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---AQEJhRUGi73eC7PmcFU6hbheMup5HNX0A
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 06/27/2014 09:44 PM, Will Deacon wrote:
+> Hi Steve,
+>
+> On Thu, Jun 26, 2014 at 05:52:46PM +0100, Steven Rostedt wrote:
+>> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+>>
+>> Nothing sets function_trace_stop to disable function tracing anymore.
+>> Remove the check for it in the arch code.
+>>
+>> arm64 was broken anyway, as it had an ifdef testing
+>>   CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST which is only set if
+>> the arch supports the code (which it obviously did not), and
+>> it was testing a non existent ftrace_trace_stop instead of
+>> function_trace_stop.
+>
+> Yeah, the current code is total crap. Well spotted.
 
-Hi Linus,
+Thank you for fixing my bug :)
+I also exercised ftrace with sysfs interface, and it just works well.
 
-The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42=
-ee:
+-Takahiro AKASHI
 
-  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git tags/fbde=
-v-fixes-3.16
-
-for you to fetch changes up to 0b479c3db63303814c1d2f8e97497db6be1caaa4:
-
-  fb: adv7393: add missing semicolon (2014-07-01 13:18:38 +0300)
-
-----------------------------------------------------------------
-fbdev fixes for 3.16
-
-A few minor fbdev fixes for bfin_adv7393fb, omapdss, vt8500lcdfb, atmel_l=
-cdfb.
-
-----------------------------------------------------------------
-Emil Goode (1):
-      video: vt8500lcdfb: Remove kfree call since devm_kzalloc() is used
-
-Michael Welling (1):
-      drivers:video:fbdev atmel_lcdfb.c power GPIO registration bug
-
-Sachin Kamat (1):
-      video: omapdss: Fix potential null pointer dereference
-
-Scott Jiang (1):
-      fb: adv7393: add missing semicolon
-
- drivers/video/fbdev/atmel_lcdfb.c                 | 2 ++
- drivers/video/fbdev/bfin_adv7393fb.c              | 2 +-
- drivers/video/fbdev/omap2/dss/omapdss-boot-init.c | 8 +++++---
- drivers/video/fbdev/vt8500lcdfb.c                 | 2 --
- 4 files changed, 8 insertions(+), 6 deletions(-)
-
-
---AQEJhRUGi73eC7PmcFU6hbheMup5HNX0A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTspwpAAoJEPo9qoy8lh71MvwP/R02QdsRonhHyZM0VdGNeJO+
-LIdiOJMmbPV2nKYyDgZ2vd7y0Vk6xyoBTJ6t6+89KbQaaeKCUSFd2ssmBDr8x7c7
-C1CzHYDly6tWRJFdoU0tZDqml6yCelDQn4wKZZrk+ajz0UUJreMa3Bjaz/h1fnG/
-Up/kS2L6UpdMXfrjKVWMK2BuHOLPLSTZlyb386BJCdfEZ63KiZzSuzUdD8vQkxmm
-x/t4cJqfNk1OL0vYCkgqKlEOp0SCwxQG9RBsKJ9xXa2DnRArinXlz6UB8IotKQYX
-3hClSktdGBBkabB4ok4HnLkpR1svIo3TWlCREQhqy6Iy2Qr1pRmmZFJhCY9vDCpM
-1ew/fn+S8jJitY1r6bLV4DBaFEa5AxCucfmhcNeSK0D5ix6j3Tp31u0cLbh5xaQi
-X2nGNA+vOMZ66Ne62jTs/qTy0jHH21uixLGMMGSZ3YAl2YV3EGDx5jBTZG9Bk/Dd
-/L8vv0asYjJrypFPD0LnEAkl3OTYETW4kge3xpKotzjZT0vnHoxVRRNaPr10pXRp
-X9ky3of9w4pacMT17c9kBIDHZLy+g8oyQkeOy+uY6CqtAzx4AGLP/cSqxFf5C67R
-+5cMN+EysbaQ6pI4ZjAvw6qv7uRcaiN/DscKnIqv2M7uYn5MCXytdengnZT9elzV
-K5SHHHNWbe78PIFTLR0C
-=T+hv
------END PGP SIGNATURE-----
-
---AQEJhRUGi73eC7PmcFU6hbheMup5HNX0A--
+>
+>> Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>> Cc: Will Deacon <will.deacon@arm.com>
+>> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+>> ---
+>>   arch/arm64/kernel/entry-ftrace.S | 5 -----
+>>   1 file changed, 5 deletions(-)
+>
+>    Acked-by: Will Deacon <will.deacon@arm.com>
+>
+> I'm happy for you to take this via the ftrace tree, along with the rest of
+> the series.
+>
+> I successfully ran the ftrace self tests with this applied (on top of
+> "ftrace: Remove check for HAVE_FUNCTION_TRACE_MCOUNT_TEST"), but note
+> that I don't have a platform with working suspend/resume right now.
+>
+> Cheers,
+>
+> Will
+>
+>> diff --git a/arch/arm64/kernel/entry-ftrace.S b/arch/arm64/kernel/entry-ftrace.S
+>> index b051871f2965..1b1e330e6849 100644
+>> --- a/arch/arm64/kernel/entry-ftrace.S
+>> +++ b/arch/arm64/kernel/entry-ftrace.S
+>> @@ -96,11 +96,6 @@
+>>    *     - ftrace_graph_caller to set up an exit hook
+>>    */
+>>   ENTRY(_mcount)
+>> -#ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
+>> -	ldr	x0, =ftrace_trace_stop
+>> -	ldr	x0, [x0]		// if ftrace_trace_stop
+>> -	ret				//   return;
+>> -#endif
+>>   	mcount_enter
+>>
+>>   	ldr	x0, =ftrace_trace_function
+>> --
+>> 2.0.0
+>>
+>>
+>>
