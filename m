@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758128AbaGAOQr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 10:16:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37520 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756150AbaGAOQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 10:16:43 -0400
-Message-ID: <53B2C2A9.7030900@redhat.com>
-Date: Tue, 01 Jul 2014 10:16:09 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v9] mm: support madvise(MADV_FREE)
-References: <1404174975-22019-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1404174975-22019-1-git-send-email-minchan@kernel.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932554AbaGAOOo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 10:14:44 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35687 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932515AbaGAOOi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 10:14:38 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 25/33] ARM: at91/dt: sam9m10g45ek: define crystals frequencies
+Date: Tue,  1 Jul 2014 16:12:34 +0200
+Message-Id: <1404223962-30471-26-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Define at91sam9m10g45ek main and slow crystals frequencies.
 
-On 06/30/2014 08:36 PM, Minchan Kim wrote:
-> Linux doesn't have an ability to free pages lazy while other OS 
-> already have been supported that named by madvise(MADV_FREE).
-> 
-> The gain is clear that kernel can discard freed pages rather than 
-> swapping out or OOM if memory pressure happens.
-> 
-> Without memory pressure, freed pages would be reused by userspace 
-> without another additional overhead(ex, page fault + allocation +
-> zeroing).
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/boot/dts/at91sam9m10g45ek.dts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-> Cc: Michael Kerrisk <mtk.manpages@gmail.com> Cc: Linux API
-> <linux-api@vger.kernel.org> Cc: Hugh Dickins <hughd@google.com> Cc:
-> Johannes Weiner <hannes@cmpxchg.org> Cc: Rik van Riel
-> <riel@redhat.com> Cc: KOSAKI Motohiro
-> <kosaki.motohiro@jp.fujitsu.com> Cc: Mel Gorman <mgorman@suse.de> 
-> Cc: Jason Evans <je@fb.com> Cc: Zhang Yanfei
-> <zhangyanfei@cn.fujitsu.com> Signed-off-by: Minchan Kim
-> <minchan@kernel.org>
+diff --git a/arch/arm/boot/dts/at91sam9m10g45ek.dts b/arch/arm/boot/dts/at91sam9m10g45ek.dts
+index 9f5b0a674995..96ccc7de4f0a 100644
+--- a/arch/arm/boot/dts/at91sam9m10g45ek.dts
++++ b/arch/arm/boot/dts/at91sam9m10g45ek.dts
+@@ -31,6 +31,14 @@
+ 			compatible = "atmel,osc", "fixed-clock";
+ 			clock-frequency = <12000000>;
+ 		};
++
++		slow_xtal {
++		      clock-frequency = <32768>;
++		};
++
++		main_xtal {
++		      clock-frequency = <12000000>;
++		};
+ 	};
+ 
+ 	ahb {
+-- 
+1.9.1
 
-Acked-by: Rik van Riel <riel@redhat.com>
-
-
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEcBAEBAgAGBQJTssKpAAoJEM553pKExN6DspUH/3fdn95zVIA6GGfmFG/g05Fm
-SYv82v0ee2gGM7yRGeVkFSVuj5qYCneyJeprERHBs43huafqqnWd9MMcZxxskNk7
-MpyVmRsCh54qC2Y6Rqu5E15jEKjCcxss1vCbHp0ExtZHnfU29re+JB0oRE9IKszW
-p2r6rsolHtNY4otTAQ6pAtA6ioH1E0xppK5mpqHAUpFJuq3PqXbSsptFdl6AJciw
-25zBB6iOdVgpciYwkn7yBvaZiY+sRuiRFSAH0klQVHlX0ZueIXYnJtybVhHSqGs/
-Nu1/zhrRrohOcj0Ka6cTJBBH2RyXTmgcurfTUlI4IZzcDqJWtuXjXBty0wkhIZQ=
-=RjYx
------END PGP SIGNATURE-----
