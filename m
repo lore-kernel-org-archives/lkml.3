@@ -1,67 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758842AbaGAVtv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:49:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55167 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752149AbaGAVtt (ORCPT
+	id S1757265AbaGAVrx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:47:53 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.217]:42403 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755078AbaGAVrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:49:49 -0400
-Date: Tue, 1 Jul 2014 14:49:47 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: David Rientjes <rientjes@google.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Wei Yang <weiyang@linux.vnet.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: mm: slub: invalid memory access in setup_object
-Message-Id: <20140701144947.5ce3f93729759d8f38d7813a@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.11.1407010956470.5353@gentwo.org>
-References: <53AAFDF7.2010607@oracle.com>
-	<alpine.DEB.2.11.1406251228130.29216@gentwo.org>
-	<alpine.DEB.2.02.1406301500410.13545@chino.kir.corp.google.com>
-	<alpine.DEB.2.11.1407010956470.5353@gentwo.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Jul 2014 17:47:37 -0400
+X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
+X-RZG-CLASS-ID: mo00
+From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 03/50] mars: add new file include/linux/brick/brick_say.h
+Date: Tue,  1 Jul 2014 23:46:43 +0200
+Message-Id: <1404251250-22992-4-git-send-email-tst@schoebel-theuer.de>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
+References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jul 2014 09:58:52 -0500 (CDT) Christoph Lameter <cl@gentwo.org> wrote:
+Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
+---
+ include/linux/brick/brick_say.h | 80 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 80 insertions(+)
+ create mode 100644 include/linux/brick/brick_say.h
 
-> On Mon, 30 Jun 2014, David Rientjes wrote:
-> 
-> > It's not at all clear to me that that patch is correct.  Wei?
-> 
-> Looks ok to me. But I do not like the convoluted code in new_slab() which
-> Wei's patch does not make easier to read. Makes it difficult for the
-> reader to see whats going on.
-> 
-> Lets drop the use of the variable named "last".
-> 
-> 
-> Subject: slub: Only call setup_object once for each object
-> 
-> Modify the logic for object initialization to be less convoluted
-> and initialize an object only once.
-> 
+diff --git a/include/linux/brick/brick_say.h b/include/linux/brick/brick_say.h
+new file mode 100644
+index 0000000..9f240c8
+--- /dev/null
++++ b/include/linux/brick/brick_say.h
+@@ -0,0 +1,80 @@
++/*  (c) 2010 Thomas Schoebel-Theuer / 1&1 Internet AG */
++#ifndef BRICK_SAY_H
++#define BRICK_SAY_H
++
++/***********************************************************************/
++
++extern int brick_say_logging;
++extern int brick_say_debug;
++extern int brick_say_syslog_min;
++extern int brick_say_syslog_max;
++extern int brick_say_syslog_flood_class;
++extern int brick_say_syslog_flood_limit;
++extern int brick_say_syslog_flood_recovery;
++extern int delay_say_on_overflow;
++
++/*  printk() replacements */
++
++enum {
++	SAY_DEBUG,
++	SAY_INFO,
++	SAY_WARN,
++	SAY_ERROR,
++	SAY_FATAL,
++	SAY_TOTAL,
++	MAX_SAY_CLASS
++};
++
++extern const char *say_class[MAX_SAY_CLASS];
++
++struct say_channel;
++
++extern struct say_channel *default_channel;
++
++extern struct say_channel *make_channel(const char *name, bool must_exit);
++
++extern void del_channel(struct say_channel *ch);
++
++extern void bind_to_channel(struct say_channel *ch, struct task_struct *whom);
++
++#define bind_me(_name)							\
++	bind_to_channel(make_channel(_name), current)
++
++extern struct say_channel *get_binding(struct task_struct *whom);
++
++extern void remove_binding_from(struct say_channel *ch, struct task_struct *whom);
++extern void remove_binding(struct task_struct *whom);
++
++extern void rollover_channel(struct say_channel *ch);
++extern void rollover_all(void);
++
++extern void say_to(struct say_channel *ch, int class, const char *fmt, ...) __printf(3, 4);
++
++#define say(_class, _fmt, _args...)					\
++	say_to(NULL, _class, _fmt, ##_args)
++
++extern void brick_say_to(struct say_channel *ch,
++	int class,
++	bool dump,
++	const char *prefix,
++	const char *file,
++	int line,
++	const char *func,
++	const char *fmt,
++
++	...) __printf(8,
++	9);
++
++#define brick_say(_class, _dump, _prefix, _file, _line, _func, _fmt, _args...)\
++	brick_say_to(NULL, _class, _dump, _prefix, _file, _line, _func, _fmt, ##_args)
++
++extern void init_say(void);
++extern void exit_say(void);
++
++#ifdef CONFIG_MARS_DEBUG
++extern void brick_dump_stack(void);
++#else /*  CONFIG_MARS_DEBUG */
++#define brick_dump_stack() /*empty*/
++#endif /*  CONFIG_MARS_DEBUG */
++
++#endif
+-- 
+2.0.0
 
-Well, um.  Wei's changelog was much better:
-
-: When a kmem_cache is created with ctor, each object in the kmem_cache will
-: be initialized before use.  In the slub implementation, the first object
-: will be initialized twice.
-: 
-: This patch avoids the duplication of initialization of the first object.
-: 
-: Fixes commit 7656c72b5a63: ("SLUB: add macros for scanning objects in a
-: slab").
-
-I can copy that text over and add the reported-by etc (ho hum) but I
-have a tiny feeling that this patch hasn't been rigorously tested? 
-Perhaps someone (Wei?) can do that?
-
-And we still don't know why Sasha's kernel went oops.
