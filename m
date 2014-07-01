@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030253AbaGAV77 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:59:59 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.218]:34813 "EHLO
+	id S965059AbaGAV75 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:59:57 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.216]:12339 "EHLO
 	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757480AbaGAVxj (ORCPT
+	with ESMTP id S1754072AbaGAVxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:53:39 -0400
-X-Greylist: delayed 361 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Jul 2014 17:53:38 EDT
+	Tue, 1 Jul 2014 17:53:41 -0400
 X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
 X-RZG-CLASS-ID: mo00
 From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 43/50] mars: add new file drivers/block/mars/xio_bricks/xio_server.c
-Date: Tue,  1 Jul 2014 23:47:23 +0200
-Message-Id: <1404251250-22992-44-git-send-email-tst@schoebel-theuer.de>
+Subject: [PATCH 06/50] mars: add new file drivers/block/mars/brick_mem.c
+Date: Tue,  1 Jul 2014 23:46:46 +0200
+Message-Id: <1404251250-22992-7-git-send-email-tst@schoebel-theuer.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
@@ -24,816 +23,1096 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 ---
- drivers/block/mars/xio_bricks/xio_server.c | 801 +++++++++++++++++++++++++++++
- 1 file changed, 801 insertions(+)
- create mode 100644 drivers/block/mars/xio_bricks/xio_server.c
+ drivers/block/mars/brick_mem.c | 1081 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 1081 insertions(+)
+ create mode 100644 drivers/block/mars/brick_mem.c
 
-diff --git a/drivers/block/mars/xio_bricks/xio_server.c b/drivers/block/mars/xio_bricks/xio_server.c
+diff --git a/drivers/block/mars/brick_mem.c b/drivers/block/mars/brick_mem.c
 new file mode 100644
-index 0000000..0b87f9f
+index 0000000..ce682fc
 --- /dev/null
-+++ b/drivers/block/mars/xio_bricks/xio_server.c
-@@ -0,0 +1,801 @@
-+/*  (c) 2010 Thomas Schoebel-Theuer / 1&1 Internet AG */
-+
-+/*  Server brick (just for demonstration) */
++++ b/drivers/block/mars/brick_mem.c
+@@ -0,0 +1,1081 @@
++/*  (c) 2011 Thomas Schoebel-Theuer / 1&1 Internet AG */
 +
 +#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/string.h>
++#include <linux/mm.h>
++#include <linux/fs.h>
++#include <linux/slab.h>
++#include <linux/delay.h>
 +
-+#define _STRATEGY
-+#include <linux/brick/brick.h>
-+#include <linux/xio.h>
-+#include <linux/xio/xio_bio.h>
-+#include <linux/xio/xio_aio.h>
++#include <linux/atomic.h>
 +
-+#include <linux/mars_light/light_strategy.h>
++#include <linux/brick/brick_mem.h>
++#include <linux/brick/brick_say.h>
++#include <linux/brick/lamport.h>
 +
-+/************************ own type definitions ***********************/
++#define USE_KERNEL_PAGES		/*  currently mandatory (vmalloc does not work) */
 +
-+#include <linux/xio/xio_server.h>
++#define MAGIC_BLOCK			((int)0x8B395D7B)
++#define MAGIC_BEND			((int)0x8B395D7C)
++#define MAGIC_MEM1			((int)0x8B395D7D)
++#define MAGIC_MEM2			((int)0x9B395D8D)
++#define MAGIC_MEND1			((int)0x8B395D7E)
++#define MAGIC_MEND2			((int)0x9B395D8E)
++#define MAGIC_STR			((int)0x8B395D7F)
++#define MAGIC_SEND			((int)0x9B395D8F)
 +
-+#define NR_SOCKETS			3
++#define INT_ACCESS(ptr, offset) (*(int *)(((char *)(ptr)) + (offset)))
 +
-+static struct xio_socket server_socket[NR_SOCKETS];
-+static struct task_struct *server_thread[NR_SOCKETS];
++#define _BRICK_FMT(_fmt, _class)					\
++	"%ld.%09ld %ld.%09ld MEM_%-5s %s[%d] %s:%d %s(): "		\
++		_fmt,							\
++		_s_now.tv_sec, _s_now.tv_nsec,				\
++		_l_now.tv_sec, _l_now.tv_nsec,				\
++		say_class[_class],					\
++		current->comm, (int)smp_processor_id(),			\
++		__BASE_FILE__,						\
++		__LINE__,						\
++		__func__
 +
-+/************************ own helper functions ***********************/
++#define _BRICK_MSG(_class, _dump, _fmt, _args...)			\
++	do {								\
++		struct timespec _s_now = CURRENT_TIME;			\
++		struct timespec _l_now;					\
++		get_lamport(&_l_now);					\
++		say(_class, _BRICK_FMT(_fmt, _class), ##_args);		\
++		if (_dump)						\
++			dump_stack();					\
++	} while (0)
 +
-+static
-+int cb_thread(void *data)
++#define BRICK_ERR(_fmt, _args...) _BRICK_MSG(SAY_ERROR, true,  _fmt, ##_args)
++#define BRICK_WRN(_fmt, _args...) _BRICK_MSG(SAY_WARN,	false, _fmt, ##_args)
++#define BRICK_INF(_fmt, _args...) _BRICK_MSG(SAY_INFO,	false, _fmt, ##_args)
++
++/***********************************************************************/
++
++/*  limit handling */
++
++#include <linux/swap.h>
++
++long long brick_global_memavail = 0;
++EXPORT_SYMBOL_GPL(brick_global_memavail);
++long long brick_global_memlimit = 0;
++EXPORT_SYMBOL_GPL(brick_global_memlimit);
++atomic64_t brick_global_block_used = ATOMIC64_INIT(0);
++EXPORT_SYMBOL_GPL(brick_global_block_used);
++
++void get_total_ram(void)
 +{
-+	struct server_brick *brick = data;
-+	struct xio_socket *sock = &brick->handler_socket;
-+	bool aborted = false;
-+	bool ok = xio_get_socket(sock);
-+	int status = -EINVAL;
++	struct sysinfo i = {};
 +
-+	XIO_DBG("--------------- cb_thread starting on socket #%d, ok = %d\n", sock->s_debug_nr, ok);
-+	if (!ok)
-+		goto done;
++	si_meminfo(&i);
++	/* si_swapinfo(&i); */
++	brick_global_memavail = (long long)i.totalram * (PAGE_SIZE / 1024);
++	BRICK_INF("total RAM = %lld [KiB]\n", brick_global_memavail);
++}
 +
-+	brick->cb_running = true;
-+	wake_up_interruptible(&brick->startup_event);
++/***********************************************************************/
 +
-+	while (!brick_thread_should_stop() || !list_empty(&brick->cb_read_list) || !list_empty(&brick->cb_write_list) || atomic_read(&brick->in_flight) > 0) {
-+		struct server_aio_aspect *aio_a;
-+		struct aio_object *aio;
-+		struct list_head *tmp;
++/*  small memory allocation (use this only for len < PAGE_SIZE) */
 +
-+		wait_event_interruptible_timeout(
-+			brick->cb_event,
-+			!list_empty(&brick->cb_read_list) ||
-+			!list_empty(&brick->cb_write_list),
-+			1 * HZ);
++#ifdef BRICK_DEBUG_MEM
++static atomic_t phys_mem_alloc = ATOMIC_INIT(0);
++static atomic_t mem_redirect_alloc = ATOMIC_INIT(0);
++static atomic_t mem_count[BRICK_DEBUG_MEM];
++static atomic_t mem_free[BRICK_DEBUG_MEM];
++static int  mem_len[BRICK_DEBUG_MEM];
 +
-+		spin_lock(&brick->cb_lock);
-+		tmp = brick->cb_write_list.next;
-+		if (tmp == &brick->cb_write_list) {
-+			tmp = brick->cb_read_list.next;
-+			if (tmp == &brick->cb_read_list) {
-+				spin_unlock(&brick->cb_lock);
-+				brick_msleep(1000 / HZ);
-+				continue;
-+			}
++#define PLUS_SIZE			(6 * sizeof(int))
++#else
++#define PLUS_SIZE			(2 * sizeof(int))
++#endif
++
++static inline
++void *__brick_mem_alloc(int len)
++{
++	void *res;
++
++	if (len >= PAGE_SIZE) {
++#ifdef BRICK_DEBUG_MEM
++		atomic_inc(&mem_redirect_alloc);
++#endif
++		res = _brick_block_alloc(0, len, 0);
++	} else {
++		for (;;) {
++			res = kmalloc(len, GFP_BRICK);
++			if (likely(res))
++				break;
++			msleep(1000);
 +		}
-+		list_del_init(tmp);
-+		spin_unlock(&brick->cb_lock);
++#ifdef BRICK_DEBUG_MEM
++		atomic_inc(&phys_mem_alloc);
++#endif
++	}
++	return res;
++}
 +
-+		aio_a = container_of(tmp, struct server_aio_aspect, cb_head);
-+		aio = aio_a->object;
-+		status = -EINVAL;
-+		CHECK_PTR(aio, err);
++static inline
++void __brick_mem_free(void *data, int len)
++{
++	if (len >= PAGE_SIZE) {
++		_brick_block_free(data, len, 0);
++#ifdef BRICK_DEBUG_MEM
++		atomic_dec(&mem_redirect_alloc);
++#endif
++	} else {
++		kfree(data);
++#ifdef BRICK_DEBUG_MEM
++		atomic_dec(&phys_mem_alloc);
++#endif
++	}
++}
 +
-+		status = 0;
-+		if (!aborted) {
-+			down(&brick->socket_sem);
-+			status = xio_send_cb(sock, aio);
-+			up(&brick->socket_sem);
-+		}
++void *_brick_mem_alloc(int len, int line)
++{
++	void *res;
 +
-+err:
-+		if (unlikely(status < 0) && !aborted) {
-+			aborted = true;
-+			XIO_WRN("cannot send response, status = %d\n", status);
-+			/* Just shutdown the socket and forget all pending
-+			 * requests.
-+			 * The _client_ is responsible for resending
-+			 * any lost operations.
-+			 */
-+			xio_shutdown_socket(sock);
-+		}
++#ifdef CONFIG_MARS_DEBUG
++	might_sleep();
++#endif
 +
-+		if (aio_a->do_put) {
-+			GENERIC_INPUT_CALL(brick->inputs[0], aio_put, aio);
-+			atomic_dec(&brick->in_flight);
-+		} else {
-+			obj_free(aio);
-+		}
++	res = __brick_mem_alloc(len + PLUS_SIZE);
++
++#ifdef BRICK_DEBUG_MEM
++	if (unlikely(line < 0))
++		line = 0;
++	else if (unlikely(line >= BRICK_DEBUG_MEM))
++		line = BRICK_DEBUG_MEM - 1;
++	INT_ACCESS(res, 0 * sizeof(int)) = MAGIC_MEM1;
++	INT_ACCESS(res, 1 * sizeof(int)) = len;
++	INT_ACCESS(res, 2 * sizeof(int)) = line;
++	INT_ACCESS(res, 3 * sizeof(int)) = MAGIC_MEM2;
++	res += 4 * sizeof(int);
++	INT_ACCESS(res, len + 0 * sizeof(int)) = MAGIC_MEND1;
++	INT_ACCESS(res, len + 1 * sizeof(int)) = MAGIC_MEND2;
++	atomic_inc(&mem_count[line]);
++	mem_len[line] = len;
++#else
++	INT_ACCESS(res, 0 * sizeof(int)) = len;
++	res += PLUS_SIZE;
++#endif
++	return res;
++}
++EXPORT_SYMBOL_GPL(_brick_mem_alloc);
++
++void _brick_mem_free(void *data, int cline)
++{
++#ifdef BRICK_DEBUG_MEM
++	void *test = data - 4 * sizeof(int);
++	int magic1 = INT_ACCESS(test, 0 * sizeof(int));
++	int len = INT_ACCESS(test, 1 * sizeof(int));
++	int line = INT_ACCESS(test, 2 * sizeof(int));
++	int magic2 = INT_ACCESS(test, 3 * sizeof(int));
++
++	if (unlikely(magic1 != MAGIC_MEM1)) {
++		BRICK_ERR("line %d memory corruption: magix1 %08x != %08x, len = %d\n",
++			cline,
++			magic1,
++			MAGIC_MEM1,
++			len);
++		goto _out_return;
++	}
++	if (unlikely(magic2 != MAGIC_MEM2)) {
++		BRICK_ERR("line %d memory corruption: magix2 %08x != %08x, len = %d\n",
++			cline,
++			magic2,
++			MAGIC_MEM2,
++			len);
++		goto _out_return;
++	}
++	if (unlikely(line < 0 || line >= BRICK_DEBUG_MEM)) {
++		BRICK_ERR("line %d memory corruption: alloc line = %d, len = %d\n", cline, line, len);
++		goto _out_return;
++	}
++	INT_ACCESS(test, 0) = 0xffffffff;
++	magic1 = INT_ACCESS(data, len + 0 * sizeof(int));
++	if (unlikely(magic1 != MAGIC_MEND1)) {
++		BRICK_ERR("line %d memory corruption: magix1 %08x != %08x, len = %d\n",
++			cline,
++			magic1,
++			MAGIC_MEND1,
++			len);
++		goto _out_return;
++	}
++	magic2 = INT_ACCESS(data, len + 1 * sizeof(int));
++	if (unlikely(magic2 != MAGIC_MEND2)) {
++		BRICK_ERR("line %d memory corruption: magix2 %08x != %08x, len = %d\n",
++			cline,
++			magic2,
++			MAGIC_MEND2,
++			len);
++		goto _out_return;
++	}
++	INT_ACCESS(data, len) = 0xffffffff;
++	atomic_dec(&mem_count[line]);
++	atomic_inc(&mem_free[line]);
++#else
++	void *test = data - PLUS_SIZE;
++	int len = INT_ACCESS(test, 0 * sizeof(int));
++
++#endif
++	data = test;
++	__brick_mem_free(data, len + PLUS_SIZE);
++#ifdef BRICK_DEBUG_MEM
++_out_return:;
++#endif
++}
++EXPORT_SYMBOL_GPL(_brick_mem_free);
++
++/***********************************************************************/
++
++/*  string memory allocation */
++
++#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
++# define STRING_CANARY							\
++	"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
++	"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy" \
++	"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" \
++	"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
++	"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy" \
++	"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" \
++	"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
++	"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy" \
++	"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" \
++	" FILE = "	__FILE__					\
++	" DATE = "	__DATE__					\
++	" TIME = "	__TIME__					\
++	" VERSION = "	__VERSION__					\
++	" xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx STRING_error xxx\n"
++# define STRING_PLUS (sizeof(int) * 3 + sizeof(STRING_CANARY))
++#elif defined(BRICK_DEBUG_MEM)
++# define STRING_PLUS (sizeof(int) * 4)
++#else
++# define STRING_PLUS 0
++#endif
++
++#ifdef BRICK_DEBUG_MEM
++static atomic_t phys_string_alloc = ATOMIC_INIT(0);
++static atomic_t string_count[BRICK_DEBUG_MEM];
++static atomic_t string_free[BRICK_DEBUG_MEM];
++
++#endif
++
++char *_brick_string_alloc(int len, int line)
++{
++	char *res;
++
++#ifdef CONFIG_MARS_DEBUG
++	might_sleep();
++	if (unlikely(len > PAGE_SIZE))
++		BRICK_WRN("line = %d string too long: len = %d\n", line, len);
++#endif
++	if (len <= 0)
++		len = BRICK_STRING_LEN;
++
++	for (;;) {
++		res = kzalloc(len + STRING_PLUS, GFP_BRICK);
++		if (likely(res))
++			break;
++		msleep(1000);
 +	}
 +
-+	xio_shutdown_socket(sock);
-+	xio_put_socket(sock);
++#ifdef BRICK_DEBUG_MEM
++#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
++	memset(res + 1, '?', len - 1);
++#endif
++	atomic_inc(&phys_string_alloc);
++	if (unlikely(line < 0))
++		line = 0;
++	else if (unlikely(line >= BRICK_DEBUG_MEM))
++		line = BRICK_DEBUG_MEM - 1;
++	INT_ACCESS(res, 0) = MAGIC_STR;
++	INT_ACCESS(res, sizeof(int)) = len;
++	INT_ACCESS(res, sizeof(int) * 2) = line;
++	res += sizeof(int) * 3;
++#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
++	strcpy(res + len, STRING_CANARY);
++#else
++	INT_ACCESS(res, len) = MAGIC_SEND;
++#endif
++	atomic_inc(&string_count[line]);
++#endif
++	return res;
++}
++EXPORT_SYMBOL_GPL(_brick_string_alloc);
 +
-+done:
-+	XIO_DBG("---------- cb_thread terminating, status = %d\n", status);
-+	wake_up_interruptible(&brick->startup_event);
-+	return status;
++void _brick_string_free(const char *data, int cline)
++{
++#ifdef BRICK_DEBUG_MEM
++	int magic;
++	int len;
++	int line;
++	char *orig = (void *)data;
++
++	data -= sizeof(int) * 3;
++	magic = INT_ACCESS(data, 0);
++	if (unlikely(magic != MAGIC_STR)) {
++		BRICK_ERR("cline %d stringmem corruption: magix %08x != %08x\n", cline, magic, MAGIC_STR);
++		goto _out_return;
++	}
++	len = INT_ACCESS(data, sizeof(int));
++	line = INT_ACCESS(data, sizeof(int) * 2);
++	if (unlikely(len <= 0)) {
++		BRICK_ERR("cline %d stringmem corruption: line = %d len = %d\n", cline, line, len);
++		goto _out_return;
++	}
++	if (unlikely(len > PAGE_SIZE))
++		BRICK_ERR("cline %d string too long: line = %d len = %d string='%s'\n", cline, line, len, orig);
++	if (unlikely(line < 0 || line >= BRICK_DEBUG_MEM)) {
++		BRICK_ERR("cline %d stringmem corruption: line = %d (len = %d)\n", cline, line, len);
++		goto _out_return;
++	}
++#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
++	if (unlikely(strcmp(orig + len, STRING_CANARY))) {
++		BRICK_ERR("cline %d stringmem corruption: bad canary '%s', line = %d len = %d\n",
++			  cline, STRING_CANARY, line, len);
++		goto _out_return;
++	}
++	orig[len]--;
++	memset(orig, '!', len);
++#else
++	magic = INT_ACCESS(orig, len);
++	if (unlikely(magic != MAGIC_SEND)) {
++		BRICK_ERR("cline %d stringmem corruption: end_magix %08x != %08x, line = %d len = %d\n",
++			  cline, magic, MAGIC_SEND, line, len);
++		goto _out_return;
++	}
++	INT_ACCESS(orig, len) = 0xffffffff;
++#endif
++	atomic_dec(&string_count[line]);
++	atomic_inc(&string_free[line]);
++	atomic_dec(&phys_string_alloc);
++#endif
++	kfree(data);
++#ifdef BRICK_DEBUG_MEM
++_out_return:;
++#endif
++}
++EXPORT_SYMBOL_GPL(_brick_string_free);
++
++/***********************************************************************/
++
++/*  block memory allocation */
++
++static
++int len2order(int len)
++{
++	int order = 0;
++
++	if (unlikely(len <= 0)) {
++		BRICK_ERR("trying to use %d bytes\n", len);
++		return 0;
++	}
++
++	while ((PAGE_SIZE << order) < len)
++		order++;
++
++	if (unlikely(order > BRICK_MAX_ORDER)) {
++		BRICK_ERR("trying to use %d bytes (oder = %d, max = %d)\n", len, order, BRICK_MAX_ORDER);
++		return BRICK_MAX_ORDER;
++	}
++	return order;
++}
++
++#ifdef CONFIG_MARS_MEM_PREALLOC
++static atomic_t _alloc_count[BRICK_MAX_ORDER+1];
++int brick_mem_alloc_count[BRICK_MAX_ORDER+1] = {};
++EXPORT_SYMBOL_GPL(brick_mem_alloc_count);
++int brick_mem_alloc_max[BRICK_MAX_ORDER+1] = {};
++EXPORT_SYMBOL_GPL(brick_mem_alloc_max);
++int brick_mem_freelist_max[BRICK_MAX_ORDER+1] = {};
++EXPORT_SYMBOL_GPL(brick_mem_freelist_max);
++#endif
++
++#ifdef BRICK_DEBUG_MEM
++static atomic_t phys_block_alloc = ATOMIC_INIT(0);
++
++/*  indexed by line */
++static atomic_t block_count[BRICK_DEBUG_MEM];
++static atomic_t block_free[BRICK_DEBUG_MEM];
++static int  block_len[BRICK_DEBUG_MEM];
++
++/*  indexed by order */
++static atomic_t op_count[BRICK_MAX_ORDER+1];
++static atomic_t raw_count[BRICK_MAX_ORDER+1];
++static int alloc_line[BRICK_MAX_ORDER+1];
++static int alloc_len[BRICK_MAX_ORDER+1];
++
++#endif
++
++#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
++
++#define MAX_INFO_LISTS			1024
++
++#define INFO_LIST_HASH(addr) ((unsigned long)(addr) / (PAGE_SIZE * 2) % MAX_INFO_LISTS)
++
++struct mem_block_info {
++	struct list_head inf_head;
++	void *inf_data;
++	int inf_len;
++	int inf_line;
++	bool inf_used;
++};
++
++static struct list_head inf_anchor[MAX_INFO_LISTS];
++static rwlock_t inf_lock[MAX_INFO_LISTS];
++
++static
++void _new_block_info(void *data, int len, int cline)
++{
++	struct mem_block_info *inf;
++	int hash;
++
++	for (;;) {
++		inf = kmalloc(sizeof(struct mem_block_info), GFP_BRICK);
++		if (likely(inf))
++			break;
++		msleep(1000);
++	}
++	inf->inf_data = data;
++	inf->inf_len = len;
++	inf->inf_line = cline;
++	inf->inf_used = true;
++
++	hash = INFO_LIST_HASH(data);
++
++	write_lock(&inf_lock[hash]);
++	list_add(&inf->inf_head, &inf_anchor[hash]);
++	write_unlock(&inf_lock[hash]);
 +}
 +
 +static
-+void server_endio(struct generic_callback *cb)
++struct mem_block_info *_find_block_info(void *data, bool remove)
 +{
-+	struct server_aio_aspect *aio_a;
-+	struct aio_object *aio;
-+	struct server_brick *brick;
-+	int rw;
++	struct mem_block_info *res = NULL;
++	struct list_head *tmp;
++	int hash = INFO_LIST_HASH(data);
 +
-+	aio_a = cb->cb_private;
-+	CHECK_PTR(aio_a, err);
-+	aio = aio_a->object;
-+	CHECK_PTR(aio, err);
-+	LAST_CALLBACK(cb);
-+	if (unlikely(cb != &aio->_object_cb))
-+		XIO_ERR("bad cb pointer %p != %p\n", cb, &aio->_object_cb);
-+
-+	brick = aio_a->brick;
-+	if (unlikely(!brick)) {
-+		XIO_WRN("late IO callback -- cannot do anything\n");
-+		goto out_return;
-+	}
-+
-+	rw = aio->io_rw;
-+
-+	spin_lock(&brick->cb_lock);
-+	if (rw)
-+		list_add_tail(&aio_a->cb_head, &brick->cb_write_list);
++	if (remove)
++		write_lock(&inf_lock[hash]);
 +	else
-+		list_add_tail(&aio_a->cb_head, &brick->cb_read_list);
-+	spin_unlock(&brick->cb_lock);
++		read_lock(&inf_lock[hash]);
++	for (tmp = inf_anchor[hash].next; tmp != &inf_anchor[hash]; tmp = tmp->next) {
++		struct mem_block_info *inf = container_of(tmp, struct mem_block_info, inf_head);
 +
-+	wake_up_interruptible(&brick->cb_event);
-+	goto out_return;
-+err:
-+	XIO_FAT("cannot handle callback - giving up\n");
-+out_return:;
++		if (inf->inf_data != data)
++			continue;
++		if (remove)
++			list_del_init(tmp);
++		res = inf;
++		break;
++	}
++	if (remove)
++		write_unlock(&inf_lock[hash]);
++	else
++		read_unlock(&inf_lock[hash]);
++	return res;
 +}
 +
-+static
-+int server_io(struct server_brick *brick, struct xio_socket *sock, struct xio_cmd *cmd)
++#endif /*  CONFIG_MARS_DEBUG_MEM_STRONG */
++
++static inline
++void *__brick_block_alloc(gfp_t gfp, int order, int cline)
 +{
-+	struct aio_object *aio;
-+	struct server_aio_aspect *aio_a;
-+	int amount;
-+	int status = -ENOTRECOVERABLE;
++	void *res;
 +
-+	if (!brick->cb_running || !brick->handler_running || !xio_socket_is_alive(sock))
-+		goto done;
-+
-+	aio = server_alloc_aio(brick);
-+	status = -ENOMEM;
-+	aio_a = server_aio_get_aspect(brick, aio);
-+	if (unlikely(!aio_a)) {
-+		obj_free(aio);
-+		goto done;
++	for (;;) {
++#ifdef USE_KERNEL_PAGES
++		res = (void *)__get_free_pages(gfp, order);
++#else
++		res = __vmalloc(PAGE_SIZE << order, gfp, PAGE_KERNEL_IO);
++#endif
++		if (likely(res))
++			break;
++		msleep(1000);
 +	}
 +
-+	status = xio_recv_aio(sock, aio, cmd);
-+	if (status < 0) {
-+		obj_free(aio);
-+		goto done;
-+	}
-+
-+	aio_a->brick = brick;
-+	SETUP_CALLBACK(aio, server_endio, aio_a);
-+
-+	amount = 0;
-+	if (!aio->io_cs_mode < 2)
-+		amount = (aio->io_len - 1) / 1024 + 1;
-+	xio_limit_sleep(&server_limiter, amount);
-+
-+	status = GENERIC_INPUT_CALL(brick->inputs[0], aio_get, aio);
-+	if (unlikely(status < 0)) {
-+		XIO_WRN("aio_get execution error = %d\n", status);
-+		SIMPLE_CALLBACK(aio, status);
-+		status = 0; /*	continue serving requests */
-+		goto done;
-+	}
-+	aio_a->do_put = true;
-+	atomic_inc(&brick->in_flight);
-+	GENERIC_INPUT_CALL(brick->inputs[0], aio_io, aio);
-+
-+done:
-+	return status;
-+}
-+
-+static
-+int _set_server_aio_params(struct xio_brick *_brick, void *private)
-+{
-+	struct aio_brick *aio_brick = (void *)_brick;
-+
-+	if (_brick->type != (void *)_aio_brick_type) {
-+		XIO_ERR("bad brick type\n");
-+		return -EINVAL;
-+	}
-+	aio_brick->o_creat = false;
-+	aio_brick->o_direct = false;
-+	aio_brick->o_fdsync = false;
-+	XIO_INF("name = '%s' path = '%s'\n", _brick->brick_name, _brick->brick_path);
-+	return 1;
-+}
-+
-+static
-+int _set_server_bio_params(struct xio_brick *_brick, void *private)
-+{
-+	struct bio_brick *bio_brick;
-+
-+	if (_brick->type == (void *)_aio_brick_type)
-+		return _set_server_aio_params(_brick, private);
-+	if (_brick->type != (void *)_bio_brick_type) {
-+		XIO_ERR("bad brick type\n");
-+		return -EINVAL;
-+	}
-+	bio_brick = (void *)_brick;
-+	bio_brick->ra_pages = 0;
-+	bio_brick->do_noidle = true;
-+	bio_brick->do_sync = true;
-+	bio_brick->do_unplug = true;
-+	XIO_INF("name = '%s' path = '%s'\n", _brick->brick_name, _brick->brick_path);
-+	return 1;
-+}
-+
-+static
-+int dummy_worker(struct mars_global *global, struct mars_dent *dent, bool prepare, bool direction)
-+{
-+	return 0;
-+}
-+
-+static
-+int handler_thread(void *data)
-+{
-+	struct server_brick *brick = data;
-+	struct xio_socket *sock = &brick->handler_socket;
-+	bool ok = xio_get_socket(sock);
-+	int debug_nr;
-+	int status = -EINVAL;
-+
-+	XIO_DBG("#%d --------------- handler_thread starting on socket %p\n", sock->s_debug_nr, sock);
-+	if (!ok)
-+		goto done;
-+
-+	brick->handler_running = true;
-+	wake_up_interruptible(&brick->startup_event);
-+
-+	while (!brick_thread_should_stop() && xio_socket_is_alive(sock)) {
-+		struct xio_cmd cmd = {};
-+
-+		status = -EINTR;
-+		if (unlikely(!mars_global || !mars_global->global_power.button)) {
-+			XIO_DBG("system is not alive\n");
-+			break;
-+		}
-+
-+		status = xio_recv_struct(sock, &cmd, xio_cmd_meta);
-+		if (unlikely(status < 0)) {
-+			XIO_WRN("#%d recv cmd status = %d\n", sock->s_debug_nr, status);
-+			goto clean;
-+		}
-+		if (unlikely(!xio_socket_is_alive(sock))) {
-+			XIO_WRN("#%d is dead\n", sock->s_debug_nr);
-+			status = -EINTR;
-+			goto clean;
-+		}
-+
-+		status = -EPROTO;
-+		switch (cmd.cmd_code & CMD_FLAG_MASK) {
-+		case CMD_NOP:
-+			status = 0;
-+			XIO_DBG("#%d got NOP operation\n", sock->s_debug_nr);
-+			break;
-+		case CMD_NOTIFY:
-+			status = 0;
-+			from_remote_trigger();
-+			break;
-+		case CMD_GETINFO:
-+		{
-+			struct xio_info info = {};
-+
-+			status = GENERIC_INPUT_CALL(brick->inputs[0], xio_get_info, &info);
-+			if (status < 0)
-+				break;
-+			down(&brick->socket_sem);
-+			status = xio_send_struct(sock, &cmd, xio_cmd_meta);
-+			if (status >= 0)
-+				status = xio_send_struct(sock, &info, xio_info_meta);
-+			up(&brick->socket_sem);
-+			break;
-+		}
-+		case CMD_GETENTS:
-+		{
-+			struct mars_global local = {
-+				.dent_anchor = LIST_HEAD_INIT(local.dent_anchor),
-+				.brick_anchor = LIST_HEAD_INIT(local.brick_anchor),
-+				.global_power = {
-+					.button = true,
-+				},
-+				.main_event = __WAIT_QUEUE_HEAD_INITIALIZER(local.main_event),
-+			};
-+
-+			status = -EINVAL;
-+			if (unlikely(!cmd.cmd_str1))
-+				break;
-+
-+			init_rwsem(&local.dent_mutex);
-+			init_rwsem(&local.brick_mutex);
-+
-+			status = mars_dent_work(&local,
-+				"/mars",
-+				sizeof(struct mars_dent),
-+				external_checker,
-+				dummy_worker,
-+				&local,
-+				3);
-+
-+			down(&brick->socket_sem);
-+			status = xio_send_dent_list(sock, &local.dent_anchor);
-+			up(&brick->socket_sem);
-+
-+			if (status < 0) {
-+				XIO_WRN("#%d could not send dentry information, status = %d\n",
-+					sock->s_debug_nr,
-+					status);
-+			}
-+
-+			xio_free_dent_all(&local, &local.dent_anchor);
-+			break;
-+		}
-+		case CMD_CONNECT:
-+		{
-+			struct xio_brick *prev;
-+			const char *path = cmd.cmd_str1;
-+
-+			status = -EINVAL;
-+			CHECK_PTR(path, err);
-+			CHECK_PTR_NULL(_bio_brick_type, err);
-+
-+			if (!brick->global || !mars_global || !mars_global->global_power.button) {
-+				XIO_WRN("#%d system is not alive\n", sock->s_debug_nr);
-+				goto err;
-+			}
-+
-+			prev = make_brick_all(
-+				brick->global,
-+				NULL,
-+				_set_server_bio_params,
-+				NULL,
-+				path,
-+				(const struct generic_brick_type *)_bio_brick_type,
-+				(const struct generic_brick_type *[]){},
-+				2, /*  start always */
-+				path,
-+				(const char *[]){},
-+				0);
-+			if (likely(prev)) {
-+				status = generic_connect((void *)brick->inputs[0], (void *)prev->outputs[0]);
-+				if (unlikely(status < 0))
-+					XIO_ERR("#%d cannot connect to '%s'\n", sock->s_debug_nr, path);
-+				prev->killme = true;
-+			} else {
-+				XIO_ERR("#%d cannot find brick '%s'\n", sock->s_debug_nr, path);
-+			}
-+
-+err:
-+			cmd.cmd_int1 = status;
-+			down(&brick->socket_sem);
-+			status = xio_send_struct(sock, &cmd, xio_cmd_meta);
-+			up(&brick->socket_sem);
-+			break;
-+		}
-+		case CMD_AIO:
-+		{
-+			status = server_io(brick, sock, &cmd);
-+			break;
-+		}
-+		case CMD_CB:
-+			XIO_ERR("#%d oops, as a server I should never get CMD_CB; something is wrong here - attack attempt??\n",
-+				sock->s_debug_nr);
-+			break;
-+		default:
-+			XIO_ERR("#%d unknown command %d\n", sock->s_debug_nr, cmd.cmd_code);
-+		}
-+clean:
-+		brick_string_free(cmd.cmd_str1);
-+		if (status < 0)
-+			break;
-+	}
-+
-+	xio_shutdown_socket(sock);
-+	xio_put_socket(sock);
-+
-+done:
-+	XIO_DBG("#%d handler_thread terminating, status = %d\n", sock->s_debug_nr, status);
-+
-+	debug_nr = sock->s_debug_nr;
-+
-+	XIO_DBG("#%d done.\n", debug_nr);
-+	brick->killme = true;
-+	return status;
-+}
-+
-+/***************** own brick * input * output operations *****************/
-+
-+static int server_get_info(struct server_output *output, struct xio_info *info)
-+{
-+	struct server_input *input = output->brick->inputs[0];
-+
-+	return GENERIC_INPUT_CALL(input, xio_get_info, info);
-+}
-+
-+static int server_io_get(struct server_output *output, struct aio_object *aio)
-+{
-+	struct server_input *input = output->brick->inputs[0];
-+
-+	return GENERIC_INPUT_CALL(input, aio_get, aio);
-+}
-+
-+static void server_io_put(struct server_output *output, struct aio_object *aio)
-+{
-+	struct server_input *input = output->brick->inputs[0];
-+
-+	GENERIC_INPUT_CALL(input, aio_put, aio);
-+}
-+
-+static void server_io_io(struct server_output *output, struct aio_object *aio)
-+{
-+	struct server_input *input = output->brick->inputs[0];
-+
-+	GENERIC_INPUT_CALL(input, aio_io, aio);
-+}
-+
-+static int server_switch(struct server_brick *brick)
-+{
-+	struct xio_socket *sock = &brick->handler_socket;
-+	int status = 0;
-+
-+	if (brick->power.button) {
-+		static int version;
-+		bool ok;
-+
-+		if (brick->power.on_led)
-+			goto done;
-+
-+		ok = xio_get_socket(sock);
-+		if (unlikely(!ok)) {
-+			status = -ENOENT;
-+			goto err;
-+		}
-+
-+		xio_set_power_off_led((void *)brick, false);
-+
-+		brick->cb_thread = brick_thread_create(cb_thread, brick, "xio_cb%d", version);
-+		if (unlikely(!brick->cb_thread)) {
-+			XIO_ERR("cannot create cb thread\n");
-+			status = -ENOENT;
-+			goto err;
-+		}
-+
-+		brick->handler_thread = brick_thread_create(handler_thread, brick, "xio_handler%d", version++);
-+		if (unlikely(!brick->handler_thread)) {
-+			XIO_ERR("cannot create handler thread\n");
-+			brick_thread_stop(brick->cb_thread);
-+			brick->cb_thread = NULL;
-+			status = -ENOENT;
-+			goto err;
-+		}
-+
-+		xio_set_power_on_led((void *)brick, true);
-+	} else if (!brick->power.off_led) {
-+		struct task_struct *thread;
-+
-+		xio_set_power_on_led((void *)brick, false);
-+
-+		xio_shutdown_socket(sock);
-+
-+		thread = brick->handler_thread;
-+		if (thread) {
-+			brick->handler_thread = NULL;
-+			brick->handler_running = false;
-+			XIO_DBG("#%d stopping handler thread....\n", sock->s_debug_nr);
-+			brick_thread_stop(thread);
-+		}
-+		thread = brick->cb_thread;
-+		if (thread) {
-+			brick->cb_thread = NULL;
-+			brick->cb_running = false;
-+			XIO_DBG("#%d stopping callback thread....\n", sock->s_debug_nr);
-+			brick_thread_stop(thread);
-+		}
-+
-+		xio_put_socket(sock);
-+		XIO_DBG("#%d socket s_count = %d\n", sock->s_debug_nr, atomic_read(&sock->s_count));
-+
-+		xio_set_power_off_led((void *)brick, true);
-+	}
-+err:
-+	if (unlikely(status < 0)) {
-+		xio_set_power_off_led((void *)brick, true);
-+		xio_shutdown_socket(sock);
-+		xio_put_socket(sock);
-+	}
-+done:
-+	return status;
-+}
-+
-+/*************** informational * statistics **************/
-+
-+static
-+char *server_statistics(struct server_brick *brick, int verbose)
-+{
-+	char *res = brick_string_alloc(1024);
-+
-+	snprintf(res, 1024,
-+		 "cb_running = %d handler_running = %d in_flight = %d\n",
-+		 brick->cb_running,
-+		 brick->handler_running,
-+		 atomic_read(&brick->in_flight));
++#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
++	_new_block_info(res, PAGE_SIZE << order, cline);
++#endif
++#ifdef BRICK_DEBUG_MEM
++	atomic_inc(&phys_block_alloc);
++	atomic_inc(&raw_count[order]);
++#endif
++	atomic64_add((PAGE_SIZE/1024) << order, &brick_global_block_used);
 +
 +	return res;
 +}
 +
-+static
-+void server_reset_statistics(struct server_brick *brick)
++static inline
++void __brick_block_free(void *data, int order, int cline)
 +{
-+}
++#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
++	struct mem_block_info *inf = _find_block_info(data, true);
 +
-+/*************** object * aspect constructors * destructors **************/
++	if (likely(inf)) {
++		int inf_len = inf->inf_len;
++		int inf_line = inf->inf_line;
 +
-+static int server_aio_aspect_init_fn(struct generic_aspect *_ini)
-+{
-+	struct server_aio_aspect *ini = (void *)_ini;
-+
-+	INIT_LIST_HEAD(&ini->cb_head);
-+	return 0;
-+}
-+
-+static void server_aio_aspect_exit_fn(struct generic_aspect *_ini)
-+{
-+	struct server_aio_aspect *ini = (void *)_ini;
-+
-+	CHECK_HEAD_EMPTY(&ini->cb_head);
-+}
-+
-+XIO_MAKE_STATICS(server);
-+
-+/********************* brick constructors * destructors *******************/
-+
-+static int server_brick_construct(struct server_brick *brick)
-+{
-+	init_waitqueue_head(&brick->startup_event);
-+	init_waitqueue_head(&brick->cb_event);
-+	sema_init(&brick->socket_sem, 1);
-+	spin_lock_init(&brick->cb_lock);
-+	INIT_LIST_HEAD(&brick->cb_read_list);
-+	INIT_LIST_HEAD(&brick->cb_write_list);
-+	return 0;
-+}
-+
-+static int server_brick_destruct(struct server_brick *brick)
-+{
-+	CHECK_HEAD_EMPTY(&brick->cb_read_list);
-+	CHECK_HEAD_EMPTY(&brick->cb_write_list);
-+	return 0;
-+}
-+
-+static int server_output_construct(struct server_output *output)
-+{
-+	return 0;
-+}
-+
-+/************************ static structs ***********************/
-+
-+static struct server_brick_ops server_brick_ops = {
-+	.brick_switch = server_switch,
-+	.brick_statistics = server_statistics,
-+	.reset_statistics = server_reset_statistics,
-+};
-+
-+static struct server_output_ops server_output_ops = {
-+	.xio_get_info = server_get_info,
-+	.aio_get = server_io_get,
-+	.aio_put = server_io_put,
-+	.aio_io = server_io_io,
-+};
-+
-+const struct server_input_type server_input_type = {
-+	.type_name = "server_input",
-+	.input_size = sizeof(struct server_input),
-+};
-+
-+static const struct server_input_type *server_input_types[] = {
-+	&server_input_type,
-+};
-+
-+const struct server_output_type server_output_type = {
-+	.type_name = "server_output",
-+	.output_size = sizeof(struct server_output),
-+	.master_ops = &server_output_ops,
-+	.output_construct = &server_output_construct,
-+};
-+
-+static const struct server_output_type *server_output_types[] = {
-+	&server_output_type,
-+};
-+
-+const struct server_brick_type server_brick_type = {
-+	.type_name = "server_brick",
-+	.brick_size = sizeof(struct server_brick),
-+	.max_inputs = 1,
-+	.max_outputs = 0,
-+	.master_ops = &server_brick_ops,
-+	.aspect_types = server_aspect_types,
-+	.default_input_types = server_input_types,
-+	.default_output_types = server_output_types,
-+	.brick_construct = &server_brick_construct,
-+	.brick_destruct = &server_brick_destruct,
-+};
-+EXPORT_SYMBOL_GPL(server_brick_type);
-+
-+/*********************************************************************/
-+
-+/*  strategy layer */
-+
-+int server_show_statist = 0;
-+EXPORT_SYMBOL_GPL(server_show_statist);
-+
-+static int _server_thread(void *data)
-+{
-+	struct mars_global server_global = {
-+		.dent_anchor = LIST_HEAD_INIT(server_global.dent_anchor),
-+		.brick_anchor = LIST_HEAD_INIT(server_global.brick_anchor),
-+		.global_power = {
-+			.button = true,
-+		},
-+		.main_event = __WAIT_QUEUE_HEAD_INITIALIZER(server_global.main_event),
-+	};
-+	struct xio_socket *my_socket = data;
-+	char *id = my_id();
-+	int status = 0;
-+
-+	init_rwsem(&server_global.dent_mutex);
-+	init_rwsem(&server_global.brick_mutex);
-+
-+	XIO_INF("-------- server starting on host '%s' ----------\n", id);
-+
-+	while (!brick_thread_should_stop() &&
-+	      (!mars_global || !mars_global->global_power.button)) {
-+		XIO_DBG("system did not start up\n");
-+		brick_msleep(5000);
-+	}
-+
-+	XIO_INF("-------- server now working on host '%s' ----------\n", id);
-+
-+	while (!brick_thread_should_stop() || !list_empty(&server_global.brick_anchor)) {
-+		struct server_brick *brick = NULL;
-+		struct xio_socket handler_socket = {};
-+
-+		server_global.global_version++;
-+
-+		if (server_show_statist)
-+			show_statistics(&server_global, "server");
-+
-+		status = xio_kill_brick_when_possible(&server_global, &server_global.brick_anchor, false, NULL, true);
-+		XIO_DBG("kill server bricks (when possible) = %d\n", status);
-+
-+		if (!mars_global || !mars_global->global_power.button) {
-+			brick_msleep(1000);
-+			continue;
-+		}
-+
-+		status = xio_accept_socket(&handler_socket, my_socket);
-+		if (unlikely(status < 0 || !xio_socket_is_alive(&handler_socket))) {
-+			brick_msleep(500);
-+			if (status == -EAGAIN)
-+				continue; /*  without error message */
-+			XIO_WRN("accept status = %d\n", status);
-+			brick_msleep(1000);
-+			continue;
-+		}
-+		handler_socket.s_shutdown_on_err = true;
-+
-+		XIO_DBG("got new connection #%d\n", handler_socket.s_debug_nr);
-+
-+		brick = (void *)xio_make_brick(&server_global, NULL, &server_brick_type, "handler", "handler");
-+		if (!brick) {
-+			XIO_ERR("cannot create server instance\n");
-+			xio_shutdown_socket(&handler_socket);
-+			xio_put_socket(&handler_socket);
-+			brick_msleep(2000);
-+			continue;
-+		}
-+		memcpy(&brick->handler_socket, &handler_socket, sizeof(struct xio_socket));
-+
-+		/* TODO: check authorization.
-+		 */
-+
-+		brick->power.button = true;
-+		status = server_switch(brick);
-+		if (unlikely(status < 0)) {
-+			XIO_ERR("cannot switch on server brick, status = %d\n", status);
++		kfree(inf);
++		if (unlikely(inf_len != (PAGE_SIZE << order))) {
++			BRICK_ERR("line %d: address %p: bad freeing size %d (correct should be %d, previous line = %d)\n",
++				cline,
++				data,
++				(int)(PAGE_SIZE << order),
++				inf_len,
++				inf_line);
 +			goto err;
 +		}
-+
-+		/*  further references are usually held by the threads */
-+		xio_put_socket(&brick->handler_socket);
-+
-+		/* fire and forget....
-+		 * the new instance is now responsible for itself.
-+		 */
-+		brick = NULL;
-+		brick_msleep(100);
-+		continue;
-+
-+err:
-+		if (brick) {
-+			xio_shutdown_socket(&brick->handler_socket);
-+			xio_put_socket(&brick->handler_socket);
-+			status = xio_kill_brick((void *)brick);
-+			if (status < 0)
-+				BRICK_ERR("kill status = %d, giving up\n", status);
-+			brick = NULL;
-+		}
-+		brick_msleep(2000);
++	} else {
++		BRICK_ERR("line %d: trying to free non-existent address %p (order = %d)\n", cline, data, order);
++		goto err;
 +	}
++#endif
++#ifdef USE_KERNEL_PAGES
++	__free_pages(virt_to_page((unsigned long)data), order);
++#else
++	vfree(data);
++#endif
++#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
++err:
++#endif
++#ifdef BRICK_DEBUG_MEM
++	atomic_dec(&phys_block_alloc);
++	atomic_dec(&raw_count[order]);
++#endif
++	atomic64_sub((PAGE_SIZE/1024) << order, &brick_global_block_used);
++}
 +
-+	XIO_INF("-------- cleaning up ----------\n");
++#ifdef CONFIG_MARS_MEM_PREALLOC
++int brick_allow_freelist = 1;
++EXPORT_SYMBOL_GPL(brick_allow_freelist);
 +
-+	xio_kill_brick_all(&server_global, &server_global.brick_anchor, false);
++int brick_pre_reserve[BRICK_MAX_ORDER+1] = {};
++EXPORT_SYMBOL_GPL(brick_pre_reserve);
 +
-+	/* cleanup_mm(); */
++/* Note: we have no separate lists per CPU.
++ * This should not hurt because the freelists are only used
++ * for higher-order pages which should be rather low-frequency.
++ */
++static spinlock_t freelist_lock[BRICK_MAX_ORDER+1];
++static void *brick_freelist[BRICK_MAX_ORDER+1];
++static atomic_t freelist_count[BRICK_MAX_ORDER+1];
 +
-+	XIO_INF("-------- done status = %d ----------\n", status);
++static
++void *_get_free(int order, int cline)
++{
++	void *data;
++
++	spin_lock(&freelist_lock[order]);
++	data = brick_freelist[order];
++	if (likely(data)) {
++		void *next = *(void **)data;
++
++#ifdef BRICK_DEBUG_MEM /*  check for corruptions */
++		long pattern = *(((long *)data)+1);
++		void *copy = *(((void **)data)+2);
++
++		if (unlikely(pattern != 0xf0f0f0f0f0f0f0f0 || next != copy)) { /*  found a corruption */
++			/*  prevent further trouble by leaving a memleak */
++			brick_freelist[order] = NULL;
++			spin_unlock(&freelist_lock[order]);
++			BRICK_ERR("line %d:freelist corruption at %p (pattern = %lx next %p != %p, murdered = %d), order = %d\n",
++				  cline, data, pattern, next, copy, atomic_read(&freelist_count[order]), order);
++			return NULL;
++		}
++#endif
++		brick_freelist[order] = next;
++		atomic_dec(&freelist_count[order]);
++	}
++	spin_unlock(&freelist_lock[order]);
++#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
++	if (data) {
++		struct mem_block_info *inf = _find_block_info(data, false);
++
++		if (likely(inf)) {
++			if (unlikely(inf->inf_len != (PAGE_SIZE << order))) {
++				BRICK_ERR("line %d: address %p: bad freelist size %d (correct should be %d, previous line = %d)\n",
++					  cline, data, (int)(PAGE_SIZE << order), inf->inf_len, inf->inf_line);
++			}
++			inf->inf_line = cline;
++			inf->inf_used = true;
++		} else {
++			BRICK_ERR("line %d: freelist address %p is invalid (order = %d)\n", cline, data, order);
++		}
++	}
++#endif
++	return data;
++}
++
++static
++void _put_free(void *data, int order)
++{
++	void *next;
++
++#ifdef BRICK_DEBUG_MEM /*  fill with pattern */
++	memset(data, 0xf0, PAGE_SIZE << order);
++#endif
++
++	spin_lock(&freelist_lock[order]);
++	next = brick_freelist[order];
++	*(void **)data = next;
++#ifdef BRICK_DEBUG_MEM /*  insert redundant copy for checking */
++	*(((void **)data)+2) = next;
++#endif
++	brick_freelist[order] = data;
++	spin_unlock(&freelist_lock[order]);
++	atomic_inc(&freelist_count[order]);
++}
++
++static
++void _free_all(void)
++{
++	int order;
++
++	for (order = BRICK_MAX_ORDER; order >= 0; order--) {
++		for (;;) {
++			void *data = _get_free(order, __LINE__);
++
++			if (!data)
++				break;
++			__brick_block_free(data, order, __LINE__);
++		}
++	}
++}
++
++int brick_mem_reserve(void)
++{
++	int order;
++	int status = 0;
++
++	for (order = BRICK_MAX_ORDER; order >= 0; order--) {
++		int max = brick_pre_reserve[order];
++		int i;
++
++		brick_mem_freelist_max[order] += max;
++		BRICK_INF("preallocating %d at order %d (new maxlevel = %d)\n",
++			max,
++			order,
++			brick_mem_freelist_max[order]);
++
++		max = brick_mem_freelist_max[order] - atomic_read(&freelist_count[order]);
++		if (max >= 0) {
++			for (i = 0; i < max; i++) {
++				void *data = __brick_block_alloc(GFP_KERNEL, order, __LINE__);
++
++				if (likely(data))
++					_put_free(data, order);
++				else
++					status = -ENOMEM;
++			}
++		} else {
++			for (i = 0; i < -max; i++) {
++				void *data = _get_free(order, __LINE__);
++
++				if (likely(data))
++					__brick_block_free(data, order, __LINE__);
++			}
++		}
++	}
 +	return status;
 +}
++#else
++int brick_mem_reserve(struct mem_reservation *r)
++{
++	BRICK_INF("preallocation is not compiled in\n");
++	return 0;
++}
++#endif
++EXPORT_SYMBOL_GPL(brick_mem_reserve);
 +
-+/***************** module init stuff ************************/
++void *_brick_block_alloc(loff_t pos, int len, int line)
++{
++	void *data;
++	int count;
 +
-+struct xio_limiter server_limiter = {
-+	.lim_max_rate = 0,
-+};
-+EXPORT_SYMBOL_GPL(server_limiter);
++#ifdef BRICK_DEBUG_MEM
++#ifdef BRICK_DEBUG_ORDER0
++	const int plus0 = PAGE_SIZE;
 +
-+void exit_xio_server(void)
++#else
++	const int plus0 = 0;
++
++#endif
++	const int plus = len <= PAGE_SIZE ? plus0 : PAGE_SIZE * 2;
++
++#else
++	const int plus = 0;
++
++#endif
++	int order = len2order(len + plus);
++
++	if (unlikely(order < 0)) {
++		BRICK_ERR("trying to allocate %d bytes (max = %d)\n", len, (int)(PAGE_SIZE << order));
++		return NULL;
++	}
++
++#ifdef CONFIG_MARS_DEBUG
++	might_sleep();
++#endif
++
++#ifdef CONFIG_MARS_MEM_PREALLOC
++	count = atomic_add_return(1, &_alloc_count[order]);
++	brick_mem_alloc_count[order] = count;
++	if (count > brick_mem_alloc_max[order])
++		brick_mem_alloc_max[order] = count;
++#endif
++
++#ifdef BRICK_DEBUG_MEM
++	atomic_inc(&op_count[order]);
++	/*  statistics */
++	alloc_line[order] = line;
++	alloc_len[order] = len;
++#endif
++
++#ifdef CONFIG_MARS_MEM_PREALLOC
++	/* Dynamic increase of limits, in order to reduce
++	 * fragmentation on higher-order pages.
++	 * This comes on cost of higher memory usage.
++	 */
++	if (order > 0 && count > brick_mem_freelist_max[order])
++		brick_mem_freelist_max[order] = count;
++#endif
++
++#ifdef CONFIG_MARS_MEM_PREALLOC
++	data = _get_free(order, line);
++	if (!data)
++#endif
++		data = __brick_block_alloc(GFP_BRICK, order, line);
++
++#ifdef BRICK_DEBUG_MEM
++	if (order > 0) {
++		if (unlikely(line < 0))
++			line = 0;
++		else if (unlikely(line >= BRICK_DEBUG_MEM))
++			line = BRICK_DEBUG_MEM - 1;
++		atomic_inc(&block_count[line]);
++		block_len[line] = len;
++		if (order > 1) {
++			INT_ACCESS(data, 0 * sizeof(int)) = MAGIC_BLOCK;
++			INT_ACCESS(data, 1 * sizeof(int)) = line;
++			INT_ACCESS(data, 2 * sizeof(int)) = len;
++			data += PAGE_SIZE;
++			INT_ACCESS(data, -1 * sizeof(int)) = MAGIC_BLOCK;
++			INT_ACCESS(data, len) = MAGIC_BEND;
++		} else if (order == 1) {
++			INT_ACCESS(data, PAGE_SIZE + 0 * sizeof(int)) = MAGIC_BLOCK;
++			INT_ACCESS(data, PAGE_SIZE + 1 * sizeof(int)) = line;
++			INT_ACCESS(data, PAGE_SIZE + 2 * sizeof(int)) = len;
++		}
++	}
++#endif
++	return data;
++}
++EXPORT_SYMBOL_GPL(_brick_block_alloc);
++
++void _brick_block_free(void *data, int len, int cline)
++{
++	int order;
++
++#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
++	struct mem_block_info *inf;
++	char *real_data;
++
++#endif
++#ifdef BRICK_DEBUG_MEM
++	int prev_line = 0;
++
++#ifdef BRICK_DEBUG_ORDER0
++	const int plus0 = PAGE_SIZE;
++
++#else
++	const int plus0 = 0;
++
++#endif
++	const int plus = len <= PAGE_SIZE ? plus0 : PAGE_SIZE * 2;
++
++#else
++	const int plus = 0;
++
++#endif
++
++	order = len2order(len + plus);
++#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
++	real_data = data;
++	if (order > 1)
++		real_data -= PAGE_SIZE;
++	inf = _find_block_info(real_data, false);
++	if (likely(inf)) {
++		prev_line = inf->inf_line;
++		if (unlikely(inf->inf_len != (PAGE_SIZE << order))) {
++			BRICK_ERR("line %d: address %p: bad freeing size %d (correct should be %d, previous line = %d)\n",
++				  cline, data, (int)(PAGE_SIZE << order), inf->inf_len, prev_line);
++			goto _out_return;
++		}
++		if (unlikely(!inf->inf_used)) {
++			BRICK_ERR("line %d: address %p: double freeing (previous line = %d)\n",
++				cline,
++				data,
++				prev_line);
++			goto _out_return;
++		}
++		inf->inf_line = cline;
++		inf->inf_used = false;
++	} else {
++		BRICK_ERR("line %d: trying to free non-existent address %p (order = %d)\n", cline, data, order);
++		goto _out_return;
++	}
++#endif
++#ifdef BRICK_DEBUG_MEM
++	if (order > 1) {
++		void *test = data - PAGE_SIZE;
++		int magic = INT_ACCESS(test, 0);
++		int line = INT_ACCESS(test, sizeof(int));
++		int oldlen = INT_ACCESS(test, sizeof(int)*2);
++		int magic1 = INT_ACCESS(data, -1 * sizeof(int));
++		int magic2;
++
++		if (unlikely(magic1 != MAGIC_BLOCK)) {
++			BRICK_ERR("line %d memory corruption: %p magix1 %08x != %08x (previous line = %d)\n",
++				cline,
++				data,
++				magic1,
++				MAGIC_BLOCK,
++				prev_line);
++			goto _out_return;
++		}
++		if (unlikely(magic != MAGIC_BLOCK)) {
++			BRICK_ERR("line %d memory corruption: %p magix %08x != %08x (previous line = %d)\n",
++				cline,
++				data,
++				magic,
++				MAGIC_BLOCK,
++				prev_line);
++			goto _out_return;
++		}
++		if (unlikely(line < 0 || line >= BRICK_DEBUG_MEM)) {
++			BRICK_ERR("line %d memory corruption %p: alloc line = %d (previous line = %d)\n",
++				cline,
++				data,
++				line,
++				prev_line);
++			goto _out_return;
++		}
++		if (unlikely(oldlen != len)) {
++			BRICK_ERR("line %d memory corruption %p: len != oldlen (%d != %d, previous line = %d))\n",
++				cline,
++				data,
++				len,
++				oldlen,
++				prev_line);
++			goto _out_return;
++		}
++		magic2 = INT_ACCESS(data, len);
++		if (unlikely(magic2 != MAGIC_BEND)) {
++			BRICK_ERR("line %d memory corruption %p: magix %08x != %08x (previous line = %d)\n",
++				cline,
++				data,
++				magic,
++				MAGIC_BEND,
++				prev_line);
++			goto _out_return;
++		}
++		INT_ACCESS(test, 0) = 0xffffffff;
++		INT_ACCESS(data, len) = 0xffffffff;
++		data = test;
++		atomic_dec(&block_count[line]);
++		atomic_inc(&block_free[line]);
++	} else if (order == 1) {
++		void *test = data + PAGE_SIZE;
++		int magic = INT_ACCESS(test, 0 * sizeof(int));
++		int line = INT_ACCESS(test, 1 * sizeof(int));
++		int oldlen = INT_ACCESS(test, 2 * sizeof(int));
++
++		if (unlikely(magic != MAGIC_BLOCK)) {
++			BRICK_ERR("line %d memory corruption %p: magix %08x != %08x (previous line = %d)\n",
++				cline,
++				data,
++				magic,
++				MAGIC_BLOCK,
++				prev_line);
++			goto _out_return;
++		}
++		if (unlikely(line < 0 || line >= BRICK_DEBUG_MEM)) {
++			BRICK_ERR("line %d memory corruption %p: alloc line = %d (previous line = %d)\n",
++				cline,
++				data,
++				line,
++				prev_line);
++			goto _out_return;
++		}
++		if (unlikely(oldlen != len)) {
++			BRICK_ERR("line %d memory corruption %p: len != oldlen (%d != %d, previous line = %d))\n",
++				cline,
++				data,
++				len,
++				oldlen,
++				prev_line);
++			goto _out_return;
++		}
++		atomic_dec(&block_count[line]);
++		atomic_inc(&block_free[line]);
++	}
++#endif
++#ifdef CONFIG_MARS_MEM_PREALLOC
++	if (order > 0 && brick_allow_freelist && atomic_read(&freelist_count[order]) <= brick_mem_freelist_max[order]) {
++		_put_free(data, order);
++	} else
++#endif
++		__brick_block_free(data, order, cline);
++
++#ifdef CONFIG_MARS_MEM_PREALLOC
++	brick_mem_alloc_count[order] = atomic_dec_return(&_alloc_count[order]);
++#endif
++#ifdef BRICK_DEBUG_MEM
++_out_return:;
++#endif
++}
++EXPORT_SYMBOL_GPL(_brick_block_free);
++
++struct page *brick_iomap(void *data, int *offset, int *len)
++{
++	int _offset = ((unsigned long)data) & (PAGE_SIZE-1);
++	struct page *page;
++
++	*offset = _offset;
++	if (*len > PAGE_SIZE - _offset)
++		*len = PAGE_SIZE - _offset;
++	if (is_vmalloc_addr(data))
++		page = vmalloc_to_page(data);
++	else
++		page = virt_to_page(data);
++	return page;
++}
++EXPORT_SYMBOL_GPL(brick_iomap);
++
++/***********************************************************************/
++
++/*  module */
++
++void brick_mem_statistics(bool final)
++{
++#ifdef BRICK_DEBUG_MEM
++	int i;
++	int count = 0;
++	int places = 0;
++
++	BRICK_INF("======== page allocation:\n");
++#ifdef CONFIG_MARS_MEM_PREALLOC
++	for (i = 0; i <= BRICK_MAX_ORDER; i++) {
++		BRICK_INF("pages order = %2d operations = %9d freelist_count = %4d / %3d raw_count = %5d alloc_count = %5d alloc_len = %5d line = %5d max_count = %5d\n",
++			  i,
++			  atomic_read(&op_count[i]),
++			  atomic_read(&freelist_count[i]),
++			  brick_mem_freelist_max[i],
++			  atomic_read(&raw_count[i]),
++			  brick_mem_alloc_count[i],
++			  alloc_len[i],
++			  alloc_line[i],
++			  brick_mem_alloc_max[i]);
++	}
++#endif
++	for (i = 0; i < BRICK_DEBUG_MEM; i++) {
++		int val = atomic_read(&block_count[i]);
++
++		if (val) {
++			count += val;
++			places++;
++			BRICK_INF("line %4d: %6d allocated (last size = %4d, freed = %6d)\n",
++				  i,
++				  val,
++				  block_len[i],
++				  atomic_read(&block_free[i]));
++		}
++	}
++	if (!final || !count) {
++		BRICK_INF("======== %d block allocations in %d places (phys=%d)\n",
++			  count, places, atomic_read(&phys_block_alloc));
++	} else {
++		BRICK_ERR("======== %d block allocations in %d places (phys=%d)\n",
++			  count, places, atomic_read(&phys_block_alloc));
++	}
++	count = places = 0;
++	for (i = 0; i < BRICK_DEBUG_MEM; i++) {
++		int val = atomic_read(&mem_count[i]);
++
++		if (val) {
++			count += val;
++			places++;
++			BRICK_INF("line %4d: %6d allocated (last size = %4d, freed = %6d)\n",
++				  i,
++				  val,
++				  mem_len[i],
++				  atomic_read(&mem_free[i]));
++		}
++	}
++	if (!final || !count) {
++		BRICK_INF("======== %d memory allocations in %d places (phys=%d,redirect=%d)\n",
++			  count, places,
++			  atomic_read(&phys_mem_alloc), atomic_read(&mem_redirect_alloc));
++	} else {
++		BRICK_ERR("======== %d memory allocations in %d places (phys=%d,redirect=%d)\n",
++			  count, places,
++			  atomic_read(&phys_mem_alloc), atomic_read(&mem_redirect_alloc));
++	}
++	count = places = 0;
++	for (i = 0; i < BRICK_DEBUG_MEM; i++) {
++		int val = atomic_read(&string_count[i]);
++
++		if (val) {
++			count += val;
++			places++;
++			BRICK_INF("line %4d: %6d allocated (freed = %6d)\n",
++				  i,
++				  val,
++				  atomic_read(&string_free[i]));
++		}
++	}
++	if (!final || !count) {
++		BRICK_INF("======== %d string allocations in %d places (phys=%d)\n",
++			  count, places, atomic_read(&phys_string_alloc));
++	} else {
++		BRICK_ERR("======== %d string allocations in %d places (phys=%d)\n",
++			  count, places, atomic_read(&phys_string_alloc));
++	}
++#endif
++}
++EXPORT_SYMBOL_GPL(brick_mem_statistics);
++
++/*  module init stuff */
++
++int __init init_brick_mem(void)
 +{
 +	int i;
 +
-+	XIO_INF("exit_server()\n");
-+	server_unregister_brick_type();
-+
-+	for (i = 0; i < NR_SOCKETS; i++) {
-+		if (server_thread[i]) {
-+			XIO_INF("stopping server thread %d...\n", i);
-+			brick_thread_stop(server_thread[i]);
-+		}
-+		XIO_INF("closing server socket %d...\n", i);
-+		xio_put_socket(&server_socket[i]);
++#ifdef CONFIG_MARS_MEM_PREALLOC
++	for (i = BRICK_MAX_ORDER; i >= 0; i--)
++		spin_lock_init(&freelist_lock[i]);
++#endif
++#ifdef CONFIG_MARS_DEBUG_MEM_STRONG
++	for (i = 0; i < MAX_INFO_LISTS; i++) {
++		INIT_LIST_HEAD(&inf_anchor[i]);
++		rwlock_init(&inf_lock[i]);
 +	}
++#else
++	(void)i;
++#endif
++
++	get_total_ram();
++
++	return 0;
 +}
 +
-+int __init init_xio_server(void)
++void exit_brick_mem(void)
 +{
-+	int i;
++	BRICK_INF("deallocating memory...\n");
++#ifdef CONFIG_MARS_MEM_PREALLOC
++	_free_all();
++#endif
 +
-+	XIO_INF("init_server()\n");
-+
-+	for (i = 0; i < NR_SOCKETS; i++) {
-+		struct sockaddr_storage sockaddr = {};
-+		char tmp[16];
-+		int status;
-+
-+		sprintf(tmp, ":%d", xio_net_default_port + i);
-+		status = xio_create_sockaddr(&sockaddr, tmp);
-+		if (unlikely(status < 0)) {
-+			exit_xio_server();
-+			return status;
-+		}
-+
-+		status = xio_create_socket(&server_socket[i], &sockaddr, true);
-+		if (unlikely(status < 0)) {
-+			XIO_ERR("could not create server socket %d, status = %d\n", i, status);
-+			exit_xio_server();
-+			return status;
-+		}
-+
-+		server_thread[i] = brick_thread_create(_server_thread, &server_socket[i], "xio_server_%d", i);
-+		if (unlikely(!server_thread[i] || IS_ERR(server_thread[i]))) {
-+			XIO_ERR("could not create server thread %d\n", i);
-+			exit_xio_server();
-+			return -ENOENT;
-+		}
-+	}
-+
-+	return server_register_brick_type();
++	brick_mem_statistics(true);
 +}
 -- 
 2.0.0
