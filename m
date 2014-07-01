@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884AbaGAVv3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:51:29 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.220]:60077 "EHLO
+	id S964866AbaGAVv1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:51:27 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.219]:53459 "EHLO
 	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951AbaGAVrp (ORCPT
+	with ESMTP id S1753756AbaGAVrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Jul 2014 17:47:45 -0400
 X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
 X-RZG-CLASS-ID: mo00
 From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 39/50] mars: add new file include/linux/mars_light/light_strategy.h
-Date: Tue,  1 Jul 2014 23:47:19 +0200
-Message-Id: <1404251250-22992-40-git-send-email-tst@schoebel-theuer.de>
+Subject: [PATCH 45/50] mars: add new file drivers/block/mars/mars_light/mars_proc.c
+Date: Tue,  1 Jul 2014 23:47:25 +0200
+Message-Id: <1404251250-22992-46-git-send-email-tst@schoebel-theuer.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
@@ -23,240 +23,365 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 ---
- include/linux/mars_light/light_strategy.h | 224 ++++++++++++++++++++++++++++++
- 1 file changed, 224 insertions(+)
- create mode 100644 include/linux/mars_light/light_strategy.h
+ drivers/block/mars/mars_light/mars_proc.c | 349 ++++++++++++++++++++++++++++++
+ 1 file changed, 349 insertions(+)
+ create mode 100644 drivers/block/mars/mars_light/mars_proc.c
 
-diff --git a/include/linux/mars_light/light_strategy.h b/include/linux/mars_light/light_strategy.h
+diff --git a/drivers/block/mars/mars_light/mars_proc.c b/drivers/block/mars/mars_light/mars_proc.c
 new file mode 100644
-index 0000000..b483381
+index 0000000..fefa470
 --- /dev/null
-+++ b/include/linux/mars_light/light_strategy.h
-@@ -0,0 +1,224 @@
-+/*  (c) 2010 Thomas Schoebel-Theuer / 1&1 Internet AG */
-+/*  OLD CODE => will disappear! */
-+#ifndef _OLD_STRATEGY
-+#define _OLD_STRATEGY
++++ b/drivers/block/mars/mars_light/mars_proc.c
+@@ -0,0 +1,349 @@
++/*  (c) 2011 Thomas Schoebel-Theuer / 1&1 Internet AG */
 +
-+#define _STRATEGY			/*  call this only in strategy bricks, never in ordinary bricks */
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/string.h>
 +
-+#include <linux/xio.h>
++#include <linux/sysctl.h>
++#include <linux/uaccess.h>
 +
-+#define MARS_ARGV_MAX			4
++#include <linux/mars_light/light_strategy.h>
++#include <linux/mars_light/mars_proc.h>
++#include <linux/lib_mapfree.h>
++#include <linux/xio/xio_bio.h>
++#include <linux/xio/xio_aio.h>
++#include <linux/xio/xio_if.h>
++#include <linux/xio/xio_copy.h>
++#include <linux/xio/xio_client.h>
++#include <linux/xio/xio_server.h>
++#include <linux/xio/xio_trans_logger.h>
 +
-+extern loff_t global_total_space;
-+extern loff_t global_remaining_space;
++xio_info_fn xio_info = NULL;
 +
-+extern int global_logrot_auto;
-+extern int global_free_space_0;
-+extern int global_free_space_1;
-+extern int global_free_space_2;
-+extern int global_free_space_3;
-+extern int global_free_space_4;
-+extern int global_sync_want;
-+extern int global_sync_nr;
-+extern int global_sync_limit;
-+extern int mars_rollover_interval;
-+extern int mars_scan_interval;
-+extern int mars_propagate_interval;
-+extern int mars_sync_flip_interval;
-+extern int mars_peer_abort;
-+extern int mars_emergency_mode;
-+extern int mars_reset_emergency;
-+extern int mars_keep_msg;
++static
++int trigger_sysctl_handler(
++	ctl_table * table, /* checkpatch.pl insists on a space after "*" */
++	int write,
++	void __user *buffer,
++	size_t *length,
++	loff_t *ppos)
++{
++	ssize_t res = 0;
++	size_t len = *length;
 +
-+extern int mars_fast_fullsync;
++	XIO_DBG("write = %d len = %ld pos = %lld\n", write, len, *ppos);
 +
-+extern char *my_id(void);
++	if (!len || *ppos > 0)
++		goto done;
 +
-+#define MARS_DENT(TYPE)							\
-+	struct list_head dent_link;					\
-+	struct list_head brick_list;					\
-+	struct TYPE *d_parent;						\
-+	char *d_argv[MARS_ARGV_MAX];  /* for internal use, will be automatically deallocated*/\
-+	char *d_args; /* ditto uninterpreted */				\
-+	char *d_name; /* current path component */			\
-+	char *d_rest; /* some "meaningful" rest of d_name*/		\
-+	char *d_path; /* full absolute path */				\
-+	struct say_channel *d_say_channel; /* for messages */		\
-+	loff_t d_corr_A; /* logical size correction */			\
-+	loff_t d_corr_B; /* logical size correction */			\
-+	int   d_depth;							\
-+	unsigned int d_type; /* from readdir() => often DT_UNKNOWN => don't rely on it, use stat_val.mode instead */\
-+	int   d_class;	  /* for pre-grouping order */			\
-+	int   d_serial;   /* for pre-grouping order */			\
-+	int   d_version;  /* dynamic programming per call of mars_ent_work() */\
-+	int   d_child_count;						\
-+	bool d_killme;							\
-+	bool d_use_channel;						\
-+	struct kstat stat_val;						\
-+	char *link_val;							\
-+	struct mars_global *d_global;					\
-+	void (*d_private_destruct)(void *private);			\
-+	void *d_private;						\
-+	/* this comment is for keeping TRAILING_SEMICOLON happy */
++	if (write) {
++		char tmp[8] = {};
 +
-+struct mars_dent {
-+	MARS_DENT(mars_dent);
-+};
++		res = len; /*  fake consumption of all data */
 +
-+extern const struct meta mars_kstat_meta[];
-+extern const struct meta mars_dent_meta[];
++		if (len > 7)
++			len = 7;
++		if (!copy_from_user(tmp, buffer, len)) {
++			int code = 0;
++			int status = kstrtoint(tmp, 0, &code);
 +
-+struct mars_global {
-+	struct rw_semaphore dent_mutex;
-+	struct rw_semaphore brick_mutex;
-+	struct generic_switch global_power;
-+	struct list_head dent_anchor;
-+	struct list_head brick_anchor;
++			/* the return value from ssanf() does not matter */
++			(void)status;
++			if (code > 0)
++				local_trigger();
++			if (code > 1)
++				remote_trigger();
++		}
++	} else {
++		char *answer = "MARS module not operational\n";
++		char *tmp = NULL;
++		int mylen;
 +
-+	wait_queue_head_t main_event;
-+	int global_version;
-+	int deleted_my_border;
-+	int deleted_border;
-+	int deleted_min;
-+	bool main_trigger;
-+};
++		if (xio_info) {
++			answer = "internal error while determining xio_info\n";
++			tmp = xio_info();
++			if (tmp)
++				answer = tmp;
++		}
 +
-+extern void bind_to_dent(struct mars_dent *dent, struct say_channel **ch);
++		mylen = strlen(answer);
++		if (len > mylen)
++			len = mylen;
++		res = len;
++		if (copy_to_user(buffer, answer, len)) {
++			XIO_ERR("write %ld bytes at %p failed\n", len, buffer);
++			res = -EFAULT;
++		}
++		brick_string_free(tmp);
++	}
 +
-+typedef int (*mars_dent_checker_fn)(struct mars_dent *parent,
-+	const char *name,
-+	int namlen,
-+	unsigned int d_type,
-+	int *prefix,
-+	int *serial,
-+	bool *use_channel);
++done:
++	XIO_DBG("res = %ld\n", res);
++	*length = res;
++	if (res >= 0) {
++		*ppos += res;
++		return 0;
++	}
++	return res;
++}
 +
-+typedef int (*mars_dent_worker_fn)(struct mars_global *global, struct mars_dent *dent, bool prepare, bool direction);
++static
++int lamport_sysctl_handler(
++	ctl_table * table, /* checkpatch.pl insists on a space after "*" */
++	int write,
++	void __user *buffer,
++	size_t *length,
++	loff_t *ppos)
++{
++	ssize_t res = 0;
++	size_t len = *length;
 +
-+extern int mars_dent_work(struct mars_global *global,
-+	char *dirname,
-+	int allocsize,
++	XIO_DBG("write = %d len = %ld pos = %lld\n", write, len, *ppos);
 +
-+	mars_dent_checker_fn checker,
-+	mars_dent_worker_fn worker,
-+	void *buf,
-+	int maxdepth);
++	if (!len || *ppos > 0)
++		goto done;
 +
-+extern struct mars_dent *_mars_find_dent(struct mars_global *global, const char *path);
-+extern struct mars_dent *mars_find_dent(struct mars_global *global, const char *path);
-+extern int mars_find_dent_all(struct mars_global *global, char *prefix, struct mars_dent ***table);
-+extern void xio_kill_dent(struct mars_dent *dent);
-+extern void xio_free_dent(struct mars_dent *dent);
-+extern void xio_free_dent_all(struct mars_global *global, struct list_head *anchor);
++	if (write) {
++		return -EINVAL;
++	} else {
++		int my_len = 128;
++		char *tmp = brick_string_alloc(my_len);
++		struct timespec know = CURRENT_TIME;
++		struct timespec lnow;
 +
-+/*  low-level brick instantiation */
++		get_lamport(&lnow);
 +
-+extern struct xio_brick *mars_find_brick(struct mars_global *global, const void *brick_type, const char *path);
-+extern struct xio_brick *xio_make_brick(struct mars_global *global,
-+	struct mars_dent *belongs,
-+	const void *_brick_type,
-+	const char *path,
-+	const char *name);
++		res = scnprintf(tmp, my_len,
++			       "CURRENT_TIME=%ld.%09ld\nlamport_now=%ld.%09ld\n",
++			       know.tv_sec, know.tv_nsec,
++			       lnow.tv_sec, lnow.tv_nsec
++			);
 +
-+extern int xio_free_brick(struct xio_brick *brick);
-+extern int xio_kill_brick(struct xio_brick *brick);
-+extern int xio_kill_brick_all(struct mars_global *global, struct list_head *anchor, bool use_dent_link);
-+extern int xio_kill_brick_when_possible(struct mars_global *global,
-+	struct list_head *anchor,
-+	bool use_dent_link,
-+	const struct xio_brick_type *type,
-+	bool even_on);
++		if (copy_to_user(buffer, tmp, res)) {
++			XIO_ERR("write %ld bytes at %p failed\n", res, buffer);
++			res = -EFAULT;
++		}
++		brick_string_free(tmp);
++	}
 +
-+/*  mid-level brick instantiation (identity is based on path strings) */
++done:
++	XIO_DBG("res = %ld\n", res);
++	*length = res;
++	if (res >= 0) {
++		*ppos += res;
++		return 0;
++	}
++	return res;
++}
 +
-+extern char *_vpath_make(int line, const char *fmt, va_list *args);
-+extern char *_path_make(int line, const char *fmt, ...);
-+extern char *_backskip_replace(int line, const char *path, char delim, bool insert, const char *fmt, ...);
-+
-+#define vpath_make(_fmt, _args)						\
-+	_vpath_make(__LINE__, _fmt, _args)
-+#define path_make(_fmt, _args...)					\
-+	_path_make(__LINE__, _fmt, ##_args)
-+#define backskip_replace(_path, _delim, _insert, _fmt, _args...)	\
-+	_backskip_replace(__LINE__, _path, _delim, _insert, _fmt, ##_args)
-+
-+extern struct xio_brick *path_find_brick(struct mars_global *global, const void *brick_type, const char *fmt, ...);
-+
-+/* Create a new brick and connect its inputs to a set of predecessors.
-+ * When @timeout > 0, switch on the brick as well as its predecessors.
-+ */
-+extern struct xio_brick *make_brick_all(
-+	struct mars_global *global,
-+	struct mars_dent *belongs,
-+	int (*setup_fn)(struct xio_brick *brick, void *private),
-+	void *private,
-+	const char *new_name,
-+	const struct generic_brick_type *new_brick_type,
-+	const struct generic_brick_type *prev_brick_type[],
-+/*  -1 = off, 0 = leave in current state, +1 = create when necessary, +2 = create + switch on */
-+	int switch_override,
-+	const char *new_fmt,
-+	const char *prev_fmt[],
-+	int prev_count,
-+	...
-+	);
-+
-+/*  general MARS infrastructure */
-+
-+/* General fs wrappers (for abstraction)
-+ */
-+extern int mars_stat(const char *path, struct kstat *stat, bool use_lstat);
-+extern int mars_mkdir(const char *path);
-+extern int mars_rmdir(const char *path);
-+extern int mars_unlink(const char *path);
-+extern int mars_symlink(const char *oldpath, const char *newpath, const struct timespec *stamp, uid_t uid);
-+extern char *mars_readlink(const char *newpath);
-+extern int mars_rename(const char *oldpath, const char *newpath);
-+extern int mars_chmod(const char *path, mode_t mode);
-+extern int mars_lchown(const char *path, uid_t uid);
-+extern void mars_remaining_space(const char *fspath, loff_t *total, loff_t *remaining);
-+
-+/***********************************************************************/
-+
-+extern struct mars_global *mars_global;
-+
-+extern bool xio_check_inputs(struct xio_brick *brick);
-+extern bool xio_check_outputs(struct xio_brick *brick);
-+
-+extern int  mars_power_button(struct xio_brick *brick, bool val, bool force_off);
-+
-+/***********************************************************************/
-+
-+/*  statistics */
-+
-+extern int global_show_statist;
-+
-+void show_statistics(struct mars_global *global, const char *class);
-+
-+/***********************************************************************/
-+
-+/*  quirk */
-+
-+extern int mars_mem_percent;
-+
-+extern int external_checker(struct mars_dent *parent,
-+	const char *_name,
-+	int namlen,
-+	unsigned int d_type,
-+	int *prefix,
-+	int *serial,
-+	bool *use_channel);
-+
-+void from_remote_trigger(void);
-+
-+/***********************************************************************/
-+
-+/*  init */
-+
-+extern int init_sy(void);
-+extern void exit_sy(void);
-+
-+extern int init_sy_net(void);
-+extern void exit_sy_net(void);
-+
++#ifdef CTL_UNNUMBERED
++#define _CTL_NAME			.ctl_name = CTL_UNNUMBERED,
++#define _CTL_STRATEGY(handler)	.strategy	= &handler,
++#else
++#define _CTL_NAME			/*empty*/
++#define _CTL_STRATEGY(handler)	/*empty*/
 +#endif
++
++#define VEC_ENTRY(NAME, VAR, MODE, COUNT)				\
++	{								\
++		_CTL_NAME						\
++		.procname = NAME,					\
++		.data		= &(VAR),				\
++		.maxlen = sizeof(int) * (COUNT),			\
++		.mode = MODE,						\
++		.proc_handler	= &proc_dointvec,			\
++		_CTL_STRATEGY(sysctl_intvec)				\
++	}
++
++#define INT_ENTRY(NAME, VAR, MODE)					\
++	VEC_ENTRY(NAME, VAR, MODE, 1)
++
++/* checkpatch.pl: no, these complex values cannot be easily enclosed
++ * in parentheses. If { ... } were used inside the macro body, it would
++ * no longer be possible to add additional fields externally.
++ * I could inject further fields externally via parameters, but
++ * that would make it less understandable.
++ */
++#define LIMITER_ENTRIES(VAR, PREFIX, SUFFIX)				\
++	INT_ENTRY(PREFIX "_ratelimit_" SUFFIX, (VAR)->lim_max_rate, 0600),\
++	INT_ENTRY(PREFIX "_maxdelay_ms",   (VAR)->lim_max_delay, 0600), \
++	INT_ENTRY(PREFIX "_minwindow_ms",  (VAR)->lim_min_window, 0600),\
++	INT_ENTRY(PREFIX "_maxwindow_ms",  (VAR)->lim_max_window, 0600),\
++	INT_ENTRY(PREFIX "_cumul_" SUFFIX, (VAR)->lim_cumul,	0600),	\
++	INT_ENTRY(PREFIX "_count_ops",	   (VAR)->lim_count,	0600),	\
++	INT_ENTRY(PREFIX "_rate_"  SUFFIX, (VAR)->lim_rate,	0400)	\
++
++#define THRESHOLD_ENTRIES(VAR, PREFIX)					\
++	INT_ENTRY(PREFIX "_threshold_us",   (VAR)->thr_limit,	 0600), \
++	INT_ENTRY(PREFIX "_factor_percent", (VAR)->thr_factor,	 0600), \
++	INT_ENTRY(PREFIX "_plus_us",	    (VAR)->thr_plus,	 0600), \
++	INT_ENTRY(PREFIX "_triggered",	    (VAR)->thr_triggered, 0400),\
++	INT_ENTRY(PREFIX "_true_hit",	    (VAR)->thr_true_hit, 0400)	\
++
++static
++ctl_table traffic_tuning_table[] = {
++	LIMITER_ENTRIES(&client_limiter,    "client_role_traffic",    "kb"),
++	LIMITER_ENTRIES(&server_limiter,    "server_role_traffic",    "kb"),
++	{}
++};
++
++static
++ctl_table io_tuning_table[] = {
++	LIMITER_ENTRIES(&global_writeback.limiter, "writeback",       "kb"),
++	INT_ENTRY("writeback_until_percent", global_writeback.until_percent, 0600),
++	THRESHOLD_ENTRIES(&bio_submit_threshold, "bio_submit"),
++	THRESHOLD_ENTRIES(&bio_io_threshold[0],  "bio_io_r"),
++	THRESHOLD_ENTRIES(&bio_io_threshold[1],  "bio_io_w"),
++	THRESHOLD_ENTRIES(&aio_submit_threshold, "aio_submit"),
++	THRESHOLD_ENTRIES(&aio_io_threshold[0],  "aio_io_r"),
++	THRESHOLD_ENTRIES(&aio_io_threshold[1],  "aio_io_w"),
++	THRESHOLD_ENTRIES(&aio_sync_threshold,	 "aio_sync"),
++	{}
++};
++
++static
++ctl_table tcp_tuning_table[] = {
++	INT_ENTRY("ip_tos",	     default_tcp_params.ip_tos,		 0600),
++	INT_ENTRY("tcp_window_size", default_tcp_params.tcp_window_size, 0600),
++	INT_ENTRY("tcp_nodelay",     default_tcp_params.tcp_nodelay,	 0600),
++	INT_ENTRY("tcp_timeout",     default_tcp_params.tcp_timeout,	 0600),
++	INT_ENTRY("tcp_keepcnt",     default_tcp_params.tcp_keepcnt,	 0600),
++	INT_ENTRY("tcp_keepintvl",   default_tcp_params.tcp_keepintvl,	 0600),
++	INT_ENTRY("tcp_keepidle",    default_tcp_params.tcp_keepidle,	 0600),
++	{}
++};
++
++static
++ctl_table mars_table[] = {
++	{
++		_CTL_NAME
++		.procname	= "trigger",
++		.mode = 0200,
++		.proc_handler	= &trigger_sysctl_handler,
++	},
++	{
++		_CTL_NAME
++		.procname	= "info",
++		.mode = 0400,
++		.proc_handler	= &trigger_sysctl_handler,
++	},
++	{
++		_CTL_NAME
++		.procname	= "lamport_clock",
++		.mode = 0400,
++		.proc_handler	= &lamport_sysctl_handler,
++	},
++	INT_ENTRY("show_log_messages",	  brick_say_logging,	  0600),
++	INT_ENTRY("show_debug_messages",  brick_say_debug,	  0600),
++	INT_ENTRY("show_statistics_global", global_show_statist,  0600),
++	INT_ENTRY("show_statistics_server", server_show_statist,  0600),
++	INT_ENTRY("aio_sync_mode",	  aio_sync_mode,	  0600),
++	INT_ENTRY("logger_completion_semantics", trans_logger_completion_semantics, 0600),
++	INT_ENTRY("logger_do_crc",	  trans_logger_do_crc,	  0600),
++	INT_ENTRY("syslog_min_class",	  brick_say_syslog_min,   0600),
++	INT_ENTRY("syslog_max_class",	  brick_say_syslog_max,   0600),
++	INT_ENTRY("syslog_flood_class",   brick_say_syslog_flood_class, 0600),
++	INT_ENTRY("syslog_flood_limit",   brick_say_syslog_flood_limit, 0600),
++	INT_ENTRY("syslog_flood_recovery_s", brick_say_syslog_flood_recovery, 0600),
++	INT_ENTRY("delay_say_on_overflow", delay_say_on_overflow,  0600),
++	INT_ENTRY("mapfree_period_sec",   mapfree_period_sec,	  0600),
++	INT_ENTRY("mapfree_grace_keep_mb", mapfree_grace_keep_mb, 0600),
++	INT_ENTRY("logger_max_interleave", trans_logger_max_interleave, 0600),
++	INT_ENTRY("logger_resume",	  trans_logger_resume,	  0600),
++	INT_ENTRY("logger_replay_timeout_sec", trans_logger_replay_timeout, 0600),
++	INT_ENTRY("mem_limit_percent",	  mars_mem_percent,	  0600),
++	INT_ENTRY("logger_mem_used_kb",   trans_logger_mem_usage, 0400),
++	INT_ENTRY("mem_used_raw_kb",	  brick_global_block_used, 0400),
++#ifdef CONFIG_MARS_MEM_PREALLOC
++	INT_ENTRY("mem_allow_freelist",   brick_allow_freelist,   0600),
++	VEC_ENTRY("mem_freelist_max",	  brick_mem_freelist_max,  0600, BRICK_MAX_ORDER+1),
++	VEC_ENTRY("mem_alloc_count",	  brick_mem_alloc_count,  0400, BRICK_MAX_ORDER+1),
++	VEC_ENTRY("mem_alloc_max",	  brick_mem_alloc_count,  0600, BRICK_MAX_ORDER+1),
++#endif
++	INT_ENTRY("io_flying_count",	  xio_global_io_flying,  0400),
++	INT_ENTRY("copy_overlap",	  xio_copy_overlap,	  0600),
++	INT_ENTRY("copy_read_prio",	  xio_copy_read_prio,	  0600),
++	INT_ENTRY("copy_write_prio",	  xio_copy_write_prio,	 0600),
++	INT_ENTRY("copy_read_max_fly",	  xio_copy_read_max_fly, 0600),
++	INT_ENTRY("copy_write_max_fly",   xio_copy_write_max_fly, 0600),
++	INT_ENTRY("statusfiles_rollover_sec", mars_rollover_interval, 0600),
++	INT_ENTRY("scan_interval_sec",	  mars_scan_interval,	  0600),
++	INT_ENTRY("propagate_interval_sec", mars_propagate_interval, 0600),
++	INT_ENTRY("sync_flip_interval_sec", mars_sync_flip_interval, 0600),
++	INT_ENTRY("peer_abort",		  mars_peer_abort,	  0600),
++	INT_ENTRY("client_abort",	  xio_client_abort,	  0600),
++	INT_ENTRY("do_fast_fullsync",	  mars_fast_fullsync,	  0600),
++	INT_ENTRY("logrot_auto_gb",	  global_logrot_auto,	  0600),
++	INT_ENTRY("remaining_space_kb",   global_remaining_space, 0400),
++	INT_ENTRY("required_total_space_0_gb", global_free_space_0, 0600),
++	INT_ENTRY("required_free_space_1_gb", global_free_space_1, 0600),
++	INT_ENTRY("required_free_space_2_gb", global_free_space_2, 0600),
++	INT_ENTRY("required_free_space_3_gb", global_free_space_3, 0600),
++	INT_ENTRY("required_free_space_4_gb", global_free_space_4, 0600),
++	INT_ENTRY("sync_want",		  global_sync_want,	  0400),
++	INT_ENTRY("sync_nr",		  global_sync_nr,	  0400),
++	INT_ENTRY("sync_limit",		  global_sync_limit,	  0600),
++	INT_ENTRY("mars_emergency_mode",  mars_emergency_mode,	  0600),
++	INT_ENTRY("mars_reset_emergency", mars_reset_emergency,   0600),
++	INT_ENTRY("mars_keep_msg_s",	  mars_keep_msg,	  0600),
++	INT_ENTRY("write_throttle_start_percent", xio_throttle_start,	  0600),
++	INT_ENTRY("write_throttle_end_percent",   xio_throttle_end,	  0600),
++	INT_ENTRY("write_throttle_size_threshold_kb", if_throttle_start_size, 0400),
++	LIMITER_ENTRIES(&if_throttle,	  "write_throttle",	  "kb"),
++	/*  changing makes no sense because the server will immediately start upon modprobe */
++	INT_ENTRY("xio_port",		  xio_net_default_port,  0400),
++	INT_ENTRY("network_io_timeout",   global_net_io_timeout,  0600),
++	{
++		_CTL_NAME
++		.procname	= "traffic_tuning",
++		.mode = 0500,
++		.child = traffic_tuning_table,
++	},
++	{
++		_CTL_NAME
++		.procname	= "io_tuning",
++		.mode = 0500,
++		.child = io_tuning_table,
++	},
++	{
++		_CTL_NAME
++		.procname	= "tcp_tuning",
++		.mode = 0500,
++		.child = tcp_tuning_table,
++	},
++	{}
++};
++
++static
++ctl_table mars_root_table[] = {
++	{
++		_CTL_NAME
++		.procname	= "mars",
++		.mode = 0500,
++		.child = mars_table,
++	},
++	{}
++};
++
++/***************** module init stuff ************************/
++
++static struct ctl_table_header *header;
++
++int __init init_xio_proc(void)
++{
++
++	XIO_INF("init_proc()\n");
++
++	header = register_sysctl_table(mars_root_table);
++
++	return 0;
++}
++
++void exit_xio_proc(void)
++{
++	XIO_INF("exit_proc()\n");
++	if (header) {
++		unregister_sysctl_table(header);
++		header = NULL;
++	}
++}
 -- 
 2.0.0
 
