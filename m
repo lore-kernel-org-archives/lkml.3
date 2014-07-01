@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757741AbaGAImV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 04:42:21 -0400
-Received: from puma-aaisp.mxtelecom.com ([81.187.36.3]:57253 "EHLO
-	puma.mxtelecom.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753510AbaGAImT (ORCPT
+	id S1757785AbaGAIpR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 04:45:17 -0400
+Received: from regular2.263xmail.com ([211.157.152.3]:59941 "EHLO
+	regular2.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756318AbaGAIpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 04:42:19 -0400
-Date: Tue, 1 Jul 2014 09:42:14 +0100 (BST)
-From: Edward Allcutt <edward.allcutt@openmarket.com>
-To: David Miller <davem@davemloft.net>
-cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipv4: icmp: Fix pMTU handling for rare case
-In-Reply-To: <20140630.234843.985671994258957329.davem@davemloft.net>
-Message-ID: <alpine.DEB.2.10.1407010937120.5997@tabini.allcutt.me.uk>
-References: <1404141362-21015-1-git-send-email-edward.allcutt@openmarket.com> <20140630.234843.985671994258957329.davem@davemloft.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	Tue, 1 Jul 2014 04:45:12 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: xjq@rock-chips.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: xjq@rock-chips.com
+X-UNIQUE-TAG: <6393e883bad73cce047c7903ce871263>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: jianqun <xjq@rock-chips.com>
+To: heiko@sntech.de, lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz,
+        tiwai@suse.de, grant.likely@linaro.org, robh+dt@kernel.org
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        devicetree@vger.kernel.org, zhangqing@rock-chips.com,
+        hj@rock-chips.com, kever.yang@rock-chips.com, huangtao@rock-chips.com,
+        zyw@rock-chips.com, yzq@rock-chips.com, zhenfu.fang@rock-chips.com,
+        cf@rock-chips.com, kfx@rock-chips.com, Jianqun Xu <xjq@rock-chips.com>
+Subject: [PATCH 1/2] ASoC: dt-bindings: add rockchip i2s bindings
+Date: Tue,  1 Jul 2014 16:37:39 +0800
+Message-Id: <1404203860-30712-2-git-send-email-xjq@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1404203860-30712-1-git-send-email-xjq@rock-chips.com>
+References: <1404203860-30712-1-git-send-email-xjq@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jul 2014, David Miller wrote:
-> From: Edward Allcutt <edward.allcutt@openmarket.com>
-> Date: Mon, 30 Jun 2014 16:16:02 +0100
->
->> This is explicitly described as an eventuality that hosts must deal
->> with by the standard (RFC 1191) since older standards specified that
->> those bits must be zero.
-> ...
->> One example I have seen is an OpenBSD router terminating IPSec
->> tunnels.
->
-> Why doesn't OpenBSD implement RFC 1191?
+From: Jianqun Xu <xjq@rock-chips.com>
 
-Why do you think I know? :)
+Add devicetree bindings for i2s controller found on rk3066, rk3188 and rk3288
+processors from rockchip.
 
-However the standard says that you should interoperate with older 
-implementations, and I can't see any downside to doing so.
+Signed-off-by: Jianqun Xu <xjq@rock-chips.com>
+---
+ .../devicetree/bindings/sound/rockchip-i2s.txt     |   45 ++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/sound/rockchip-i2s.txt
 
-> I really don't want to allow for zero values.
-
-Why? I have had a look through all the higher level protocols and they 
-seem to handle this fine, if they are allowed to see the signal at all. 
-Most of them fall back to the minimum packet size, which isn't ideal but 
-it's much better than just stalling indefinitely.
-
-If it helps any, I've been running several production machines with this 
-patch for just about a year now (mostly running 3.10 stable series).
-
+diff --git a/Documentation/devicetree/bindings/sound/rockchip-i2s.txt b/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
+new file mode 100644
+index 0000000..e9ab122
+--- /dev/null
++++ b/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
+@@ -0,0 +1,45 @@
++* Rockchip I2S controller
++
++The I2S bus (Inter-IC sound bus) is a serial link for digital audio data transfer
++between devices in the system and be invented by Philips Semiconductor.
++
++Required properties:
++
++- compatible : should be one of the following.
++   "rockchip,rk3066-i2s": for rk3066
++   "rockchip,rk3188-i2s", "rockchip,rk3066-i2s" for rk3188
++   "rockchip,rk3288-i2s", "rockchip,rk3066-i2s" for rk3288
++- reg : physical base address of the controller and length of memory mapped
++  region.
++- interrupts : The interrupt number to the cpu. The interrupt specifier format
++  depends on the interrupt controller.
++- #address-cells : should be 1.
++- #size-cells : should be 0.
++- dmas : list of DMA controller phandle and DMA request line ordered pairs.
++- dma-names : identifier string for each DMA request line in the dmas property.
++  These strings correspond 1:1 with the ordered pairs in dmas.
++  Must include the following entries:
++  - rx:
++  - tx:
++- clocks : Handle to internal work clock and master clock output to IO.
++- clock-names :
++  - "i2s_hclk": support AHB bus interface
++  - "i2s_clk": work clock for i2s controller
++
++Example:
++
++aliases {
++	i2s0 = &i2s0;
++}
++
++i2s0: i2s@ff890000 {
++	compatible = "rockchip,rk3066-i2s";
++	reg = <0xff890000 0x10000>;
++	interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>;
++	#address-cells = <1>;
++	#size-cells = <0>;
++	dmas = <&pdma1 0>, <&pdma1 1>;
++	dma-names = "rx", "tx";
++	clock-names = "i2s_hclk", "i2s_clk";
++	clocks = <&cru HCLK_I2S0>, <&cru SCLK_I2S0>;
++};
 -- 
-Edward Allcutt
+1.7.9.5
+
+
