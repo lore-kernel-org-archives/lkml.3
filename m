@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766AbaGACbq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 22:31:46 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:55949 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237AbaGACbp (ORCPT
+	id S1752783AbaGACrm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 22:47:42 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:61022 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237AbaGACrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 22:31:45 -0400
+	Mon, 30 Jun 2014 22:47:41 -0400
 From: Nicholas Krause <xerofoify@gmail.com>
 To: benh@kernel.crashing.org
 Cc: paulus@samba.org, linuxppc-dev@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
 Subject: [PATCH] Remove FIXME messages in arch/powerpc/sysdev/uic.c
-Date: Mon, 30 Jun 2014 22:31:40 -0400
-Message-Id: <1404181900-4452-1-git-send-email-xerofoify@gmail.com>
+Date: Mon, 30 Jun 2014 22:47:36 -0400
+Message-Id: <1404182856-4945-1-git-send-email-xerofoify@gmail.com>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
