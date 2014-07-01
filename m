@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757986AbaGAJj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 05:39:28 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51083 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756376AbaGAJjX (ORCPT
+	id S1757377AbaGAJrd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 05:47:33 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:49410 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751961AbaGAJrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 05:39:23 -0400
-Message-ID: <53B28124.40509@ti.com>
-Date: Tue, 1 Jul 2014 15:06:36 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Tue, 1 Jul 2014 05:47:31 -0400
+Message-ID: <53B282E9.6060806@linux.vnet.ibm.com>
+Date: Tue, 01 Jul 2014 15:14:09 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Jason Cooper <jason@lakedaemon.net>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <nm@ti.com>, <linux@arm.linux.org.uk>,
-        <rnayak@ti.com>, <santosh.shilimkar@ti.com>, <joe@perches.com>,
-        <tglx@linutronix.de>
-Subject: Re: [PATCH V4 00/16] irqchip: crossbar: Driver fixes
-References: <1403766634-18543-1-git-send-email-r.sricharan@ti.com> <20140630192910.GA23978@titan.lakedaemon.net> <20140701075930.GN28884@atomide.com>
-In-Reply-To: <20140701075930.GN28884@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Peter Zijlstra <peterz@infradead.org>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        konrad.wilk@oracle.com, pbonzini@redhat.com, gleb@redhat.com,
+        paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
+        waiman.long@hp.com, riel@redhat.com, davej@redhat.com, oleg@redhat.com,
+        x86@kernel.org, jeremy@goop.org, paul.gortmaker@windriver.com,
+        ak@linux.intel.com, jasowang@redhat.com, fernando_b1@lab.ntt.co.jp,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, mtosatti@redhat.com,
+        chegu_vinod@hp.com
+Subject: Re: [RFC PATCH v2] Implement Batched (group) ticket lock
+References: <1403947024-3193-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20140701080537.GH6758@twins.programming.kicks-ass.net>
+In-Reply-To: <20140701080537.GH6758@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070109-0260-0000-0000-00000541C7D2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
-
-On Tuesday 01 July 2014 01:29 PM, Tony Lindgren wrote:
-> * Jason Cooper <jason@lakedaemon.net> [140630 12:30]:
+On 07/01/2014 01:35 PM, Peter Zijlstra wrote:
+> On Sat, Jun 28, 2014 at 02:47:04PM +0530, Raghavendra K T wrote:
+>> In virtualized environment there are mainly three problems
+>> related to spinlocks that affects performance.
+>> 1. LHP (lock holder preemption)
+>> 2. Lock Waiter Preemption (LWP)
+>> 3. Starvation/fairness
 >>
->> Whole series applied to irqchip/crossbar, I'll give it a day or two in
->> -next, then I'll merge it into irqchip/core.
->>
->> Tony: Right now, it's immutable unless you tell me I applied something
->> incorrectly.  Once it goes into irqchip/core, it's immutable no matter
->> what you say. ;-)
-> 
-> Thanks, looks good to me. Sricharan and Nishant, can you please
-> check that we can now apply the related .dts changes on top of
-> Jason's branch at:
-> 
-> git://git.infradead.org/users/jcooper/linux.git irqchip/crossbar
-> 
+>> Though Ticketlocks solve fairness problem it worsens LWP, LHP problems. Though
+>> pv-ticketlocks tried to address these problems we can further improve at the
+>>   cost of relaxed fairness. The following patch tries to achieve that by grouping
+>> (batched) ticketlocks.
+>
+> And here I stop reading and ignore this patch, right?
+>
+> Why should I look at this?
+>
 
-I applied the dts patches on top of this and it worked fine for
-me on dra72 evm
+For baremetal we continue to have 'fully fair ticketlock' with this 
+patch series.
 
-Regards,
- Sricharan
+Good thing about the patch is we do have upper bound on starvation and
+at the same time we solve Lock Waiter Preemption horror of strict
+serialization of ticketlocks in guest and combine definite advantages
+of unfair locks for guest.
+
