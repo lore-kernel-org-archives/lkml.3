@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981AbaGAAB7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 30 Jun 2014 20:01:59 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:36507 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaGAAB6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 30 Jun 2014 20:01:58 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [RFC PATCH] power/restart: Call machine_restart instead of arm_pm_restart
-Date: Mon, 30 Jun 2014 17:01:50 -0700
-Message-Id: <1404172910-21056-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
+	id S1753383AbaGAAFh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 30 Jun 2014 20:05:37 -0400
+Received: from mx1.scotdoyle.com ([69.85.92.149]:48341 "EHLO mx1.scotdoyle.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750815AbaGAAFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 30 Jun 2014 20:05:36 -0400
+Date: Tue, 1 Jul 2014 01:05:26 +0100 (BST)
+From: Scot Doyle <lkml14@scotdoyle.com>
+To: Olof Johansson <olof@lixom.net>
+cc: Benson Leung <bleung@chromium.org>, gene.chen@intel.com, moch@chromium.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] platform/chrome: chromeos_laptop - Add Haswell
+ Chromebooks
+In-Reply-To: <CANLzEksDfdb+RBtv8Kwe0KWpi23Nf7FS3-w+kXJXqV4n5XP=WQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1407010040410.29513@scotdoyle.com>
+References: <1401835464-15267-1-git-send-email-bleung@chromium.org> <CAOesGMiNhNavOMhBWcH_sEbNHxJ4OM3wjVt4qeK=aZFeVVxT_g@mail.gmail.com> <CANLzEksDfdb+RBtv8Kwe0KWpi23Nf7FS3-w+kXJXqV4n5XP=WQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-machine_restart is supported on non-ARM platforms, and ultimately calls
-arm_pm_restart, so dont call arm_pm_restart directly but use the more
-generic function.
+Hi Olof, did you apply these patches? I haven't seen them in 3.16-rc3, 
+linux-next, kernel/git/olof/chrome-platform, kernel/git/olof/misc, or 
+kernel/git/arm/arm-soc.
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/power/reset/restart-poweroff.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Thanks,
+Scot
 
-diff --git a/drivers/power/reset/restart-poweroff.c b/drivers/power/reset/restart-poweroff.c
-index 5758033..47f10eb 100644
---- a/drivers/power/reset/restart-poweroff.c
-+++ b/drivers/power/reset/restart-poweroff.c
-@@ -20,7 +20,8 @@
- 
- static void restart_poweroff_do_poweroff(void)
- {
--	arm_pm_restart(REBOOT_HARD, NULL);
-+	reboot_mode = REBOOT_HARD;
-+	machine_restart(NULL);
- }
- 
- static int restart_poweroff_probe(struct platform_device *pdev)
--- 
-1.9.1
-
+On Tue, 17 Jun 2014, Benson Leung wrote:
+> Looks like -rc1 is here, so I'll respin these and send them out again.
+>
+> On Tue, Jun 3, 2014 at 3:59 PM, Olof Johansson <olof@lixom.net> wrote:
+>> Hi,
+>>
+>> On Tue, Jun 3, 2014 at 3:44 PM, Benson Leung <bleung@chromium.org> wrote:
+>>> This patch series should be applied after Mika Westerberg's patch here:
+>>> https://patchwork.kernel.org/patch/4288591/
+>>>
+>>> It will add support for the cypress touchpads on the HP Chromebook 14,
+>>> Dell Chromebook 11, and Toshiba CB35.
+>>>
+>>> [PATCH 1/3] platform/chrome: chromeos_laptop - Add HP Chromebook 14
+>>> [PATCH 2/3] platform/chrome: chromeos_laptop - Add Dell Chromebook 11 Touch
+>>> [PATCH 3/3] platform/chrome: chromeos_laptop - Add Toshiba CB35 Touch
+>>
+>> The 3.16 merge window is open, please resend after -rc1 and I'll queue it up.
+>>
+>>
+>> -Olof
