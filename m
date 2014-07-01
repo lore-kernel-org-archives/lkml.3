@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076AbaGARBs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 13:01:48 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:59940 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753109AbaGARBr (ORCPT
+	id S932272AbaGARDO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 13:03:14 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:53972 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109AbaGARDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 13:01:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Gregory Hermant <gregory.hermant@calao-systems.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        Gael Portay <g.portay@overkiz.com>,
-        Joachim Eastwood <manabian@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Fabio Porcedda <fabio.porcedda@gmail.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Tim Schendekehl <tim.schendekehl@egnite.de>
-Subject: Re: [PATCH 00/33] ARM: at91: Switch remaining SoCs and boards to CCF
-Date: Tue, 01 Jul 2014 19:01:12 +0200
-Message-ID: <8196570.1BaMSL4giB@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140701164851.GI3427@piout.net>
-References: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com> <5780166.MMf0Vhnnsu@wuerfel> <20140701164851.GI3427@piout.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:PxLkBi9WuFV1dTTWHvejYPlt57odHxItBuQ9z+7shbC
- bt5k8VcsBIMw+0mD5nJHEvnXllQ01Zhvoq7g6K+chKWe5JNnDY
- OU2Hzt422jKWO3FyU3MERbNYddj0XC78DoUir4vfvJ6nYMi+tp
- Grtqt7Y4SFtHPAskhf0fJMdkTSFL+UAaygSZV0QE4qPo57wVdQ
- Upi3frtYGLyrm4S0ZycQur8HCS0xBQxNuR5PZr9Fq60bwgYYzi
- EO3dzIZGSnFXpbGvNXzsop0Uo7qinmn3vSLtS9JEOyacUJTfLu
- FRKfDw6AU8ouJUKs2BVSEyoGZBMzgeZuxnz5CrUmi4IQ6PwJJJ
- oxihqg5hqh8qQUe1R4wU=
+	Tue, 1 Jul 2014 13:03:12 -0400
+From: navin patidar <navin.patidar@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
+Subject: [PATCH 0/5] Remove non-standard ioctls
+Date: Tue,  1 Jul 2014 22:32:33 +0530
+Message-Id: <1404234158-21389-1-git-send-email-navin.patidar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 01 July 2014 18:48:51 Alexandre Belloni wrote:
-> On 01/07/2014 at 18:35:50 +0200, Arnd Bergmann wrote :
-> > If I read this right, disabling 'USE_OF' results in still using
-> > the old clock interface. Is that intentional? If you want to always
-> > use COMMON_CLK now, the above can probably be simplified to
-> > 
-> > config AT91_PMC_UNIT
-> >         def_bool !ARCH_AT91X40
-> >       select COMMON_CLK
-> > 
-> > and all references to AT91_USE_OLD_CLK, COMMON_CLK_AT91 and
-> > OLD_CLK_AT91 be removed.
-> 
-> Yeah, this is intentional we still have 30 or so boards that we have to
-> migrate to DT. Until then, we want to be able to boot a kernel without
-> CCF. The next step in the migration is to switch those boards to DT,
-> possibly using an hybrid DT/pdata approach until we can get rid of the
-> board files. Then, we will be able to get rid of the old clk
-> implementation (and a few other drivers still living in mach-at91).
+Driver implements many WEXT_PRIV (non-standard) ioctl handlers to provide
+userspace interface for following functionalities.
 
-Ok, I see. Do you expect those 30 boards to work if COMMON_CLK_AT91
-is enabled, or are there known problems with that?
+* WPS ( Not working )
+* Debugging ( Setting/Getting register's value, dumping information)
+* P2P mode
+* Mesh point MP (Mode)
 
-If you have reason to believe it doesn't work, maybe you can expose
-the selection of the clock interface to users, e.g. like
+I suggest we should remove all functionalities which are using non-standard
+ioctls, as a result of doing this the driver code complexity will reduce.
+And once the driver is switched to use mac80211 framework, we can reimplement
+functionalities mentioned above in a standard way.
 
-config COMMON_CLK_AT91
-        bool "Use common clock infrastructure"
-        depends on AT91_PMC_UNIT
-	default USE_OF
-        select COMMON_CLK
-	help
-	  The at91 platform is migrating to use the common clk infrastructure
-	  for all boards, but this has not been tested on some of the older
-	  machines that do not use DT yet.
-	  If you encounter problems on legacy boards, try disabling this option
-	  and report the problem to linux-arm-kernel@lists.infradead.org.
+navin patidar (5):
+  staging: rtl8188eu: Remove WEXT_PRIV private ioctl handlers
+  staging: rtl8188eu: Remove files rtw_mp_ioctl.[c,h]
+  staging: rtl8188eu: Remove usb_osintf.h header file.
+  staging: rtl8188eu: Remove mp( mesh point) mode support
+  staging: rtl8188eu: Remove P2P support
 
-	Arnd
+ drivers/staging/rtl8188eu/Makefile               |    4 -
+ drivers/staging/rtl8188eu/core/rtw_ap.c          |    8 -
+ drivers/staging/rtl8188eu/core/rtw_cmd.c         |   66 -
+ drivers/staging/rtl8188eu/core/rtw_ieee80211.c   |  208 +-
+ drivers/staging/rtl8188eu/core/rtw_ioctl_set.c   |    2 -
+ drivers/staging/rtl8188eu/core/rtw_mlme.c        |   18 +-
+ drivers/staging/rtl8188eu/core/rtw_mlme_ext.c    | 3157 +----------
+ drivers/staging/rtl8188eu/core/rtw_mp.c          |  995 ----
+ drivers/staging/rtl8188eu/core/rtw_mp_ioctl.c    | 1430 -----
+ drivers/staging/rtl8188eu/core/rtw_p2p.c         | 2015 -------
+ drivers/staging/rtl8188eu/core/rtw_pwrctrl.c     |   37 +-
+ drivers/staging/rtl8188eu/core/rtw_recv.c        |   27 -
+ drivers/staging/rtl8188eu/core/rtw_wlan_util.c   |    9 -
+ drivers/staging/rtl8188eu/core/rtw_xmit.c        |    1 -
+ drivers/staging/rtl8188eu/hal/HalPhyRf_8188e.c   |   11 -
+ drivers/staging/rtl8188eu/hal/rtl8188e_cmd.c     |   72 -
+ drivers/staging/rtl8188eu/hal/rtl8188e_mp.c      |  854 ---
+ drivers/staging/rtl8188eu/hal/rtl8188eu_xmit.c   |    3 -
+ drivers/staging/rtl8188eu/hal/usb_halinit.c      |   60 +-
+ drivers/staging/rtl8188eu/include/drv_types.h    |    8 -
+ drivers/staging/rtl8188eu/include/ieee80211.h    |   13 -
+ drivers/staging/rtl8188eu/include/osdep_intf.h   |    5 +-
+ drivers/staging/rtl8188eu/include/rtl8188e_cmd.h |    4 -
+ drivers/staging/rtl8188eu/include/rtl8188e_hal.h |    4 -
+ drivers/staging/rtl8188eu/include/rtw_cmd.h      |    3 -
+ drivers/staging/rtl8188eu/include/rtw_mlme_ext.h |   12 -
+ drivers/staging/rtl8188eu/include/rtw_mp.h       |  495 --
+ drivers/staging/rtl8188eu/include/rtw_mp_ioctl.h |  340 --
+ drivers/staging/rtl8188eu/include/rtw_p2p.h      |  135 -
+ drivers/staging/rtl8188eu/include/sta_info.h     |   15 -
+ drivers/staging/rtl8188eu/include/usb_osintf.h   |   38 -
+ drivers/staging/rtl8188eu/os_dep/ioctl_linux.c   | 6403 +++-------------------
+ drivers/staging/rtl8188eu/os_dep/os_intfs.c      |   37 +-
+ drivers/staging/rtl8188eu/os_dep/usb_intf.c      |   23 +-
+ drivers/staging/rtl8188eu/os_dep/xmit_linux.c    |    1 -
+ 35 files changed, 941 insertions(+), 15572 deletions(-)
+ delete mode 100644 drivers/staging/rtl8188eu/core/rtw_mp.c
+ delete mode 100644 drivers/staging/rtl8188eu/core/rtw_mp_ioctl.c
+ delete mode 100644 drivers/staging/rtl8188eu/core/rtw_p2p.c
+ delete mode 100644 drivers/staging/rtl8188eu/hal/rtl8188e_mp.c
+ delete mode 100644 drivers/staging/rtl8188eu/include/rtw_mp.h
+ delete mode 100644 drivers/staging/rtl8188eu/include/rtw_mp_ioctl.h
+ delete mode 100644 drivers/staging/rtl8188eu/include/rtw_p2p.h
+ delete mode 100644 drivers/staging/rtl8188eu/include/usb_osintf.h
+
+--
+1.7.10.4
+
