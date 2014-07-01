@@ -1,139 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758770AbaGAUVt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 16:21:49 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:17790 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756400AbaGAUVn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 16:21:43 -0400
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: akpm@linux-foundation.org
-Cc: davidlohr@hp.com, aswin@hp.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] mm,hugetlb: simplify error handling in hugetlb_cow()
-Date: Tue,  1 Jul 2014 13:21:37 -0700
-Message-Id: <1404246097-18810-2-git-send-email-davidlohr@hp.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1404246097-18810-1-git-send-email-davidlohr@hp.com>
-References: <1404246097-18810-1-git-send-email-davidlohr@hp.com>
+	id S1758793AbaGAUWg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 16:22:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62195 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754812AbaGAUWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 16:22:35 -0400
+Date: Tue, 1 Jul 2014 16:21:52 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org, ebiederm@xmission.com, hpa@zytor.com,
+        mjg59@srcf.ucam.org, greg@kroah.com, bp@alien8.de, dyoung@redhat.com,
+        chaowang@redhat.com, bhe@redhat.com, linux-efi@vger.kernel.org
+Subject: Re: [PATCH 15/15] kexec: Support kexec/kdump on EFI systems
+Message-ID: <20140701202152.GB19352@redhat.com>
+References: <1403814824-7587-1-git-send-email-vgoyal@redhat.com>
+ <1403814824-7587-16-git-send-email-vgoyal@redhat.com>
+ <20140701194605.GJ7539@console-pimps.org>
+ <20140701131419.454a3fc32fcc84a43b668c50@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140701131419.454a3fc32fcc84a43b668c50@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When returning from hugetlb_cow(), we always (1) put back the refcount
-for each referenced page -- always 'old', and 'new' if allocation was
-successful. And (2) retake the page table lock right before returning,
-as the callers expects. This logic can be simplified and encapsulated,
-as proposed in this patch. In addition to cleaner code, we also shave
-a few bytes off in instruction text:
+On Tue, Jul 01, 2014 at 01:14:19PM -0700, Andrew Morton wrote:
+> On Tue, 1 Jul 2014 20:46:05 +0100 Matt Fleming <matt@console-pimps.org> wrote:
+> 
+> > > +int get_efi_runtime_map_size(void)
+> > > +{
+> > > +	return nr_efi_runtime_map * efi_memdesc_size;
+> > > +}
+> > > +
+> > > +int get_efi_runtime_map_desc_size(void)
+> > > +{
+> > > +	return efi_memdesc_size;
+> > > +}
+> > > +
+> > > +int efi_runtime_map_copy(void *buf, size_t bufsz)
+> > > +{
+> > > +	size_t sz = get_efi_runtime_map_size();
+> > > +
+> > > +	if (sz > bufsz)
+> > > +		sz = bufsz;
+> > > +
+> > > +	memcpy(buf, efi_runtime_map, sz);
+> > > +	return 0;
+> > > +}
+> > 
+> > Could we prefix these with efi_, e.g. efi_get_runtime_map_size() ?
+> 
+> This?
+> 
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: kexec-support-kexec-kdump-on-efi-systems-fix
+> 
+> s/get_efi/efi_get/g, per Matt
+> 
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Cc: Matt Fleming <matt@console-pimps.org>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-   text    data     bss     dec     hex filename
-  28399     462   41328   70189   1122d mm/hugetlb.o-baseline
-  28367     462   41328   70157   1120d mm/hugetlb.o-patched
+Looks good to me. Thanks Andrew.
 
-Passes libhugetlbfs testcases.
+Vivek
 
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
----
- mm/hugetlb.c | 35 ++++++++++++++++-------------------
- 1 file changed, 16 insertions(+), 19 deletions(-)
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 3c4d535..172bc1d 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2807,7 +2807,7 @@ static int hugetlb_cow(struct mm_struct *mm, struct vm_area_struct *vma,
- {
- 	struct hstate *h = hstate_vma(vma);
- 	struct page *old_page, *new_page;
--	int outside_reserve = 0;
-+	int ret = 0, outside_reserve = 0;
- 	unsigned long mmun_start;	/* For mmu_notifiers */
- 	unsigned long mmun_end;		/* For mmu_notifiers */
- 
-@@ -2837,14 +2837,14 @@ retry_avoidcopy:
- 
- 	page_cache_get(old_page);
- 
--	/* Drop page table lock as buddy allocator may be called */
-+	/* 
-+	 * Drop page table lock as buddy allocator may be called. It will
-+	 * be acquired again before returning to the caller, as expected.
-+	 */
- 	spin_unlock(ptl);
- 	new_page = alloc_huge_page(vma, address, outside_reserve);
- 
- 	if (IS_ERR(new_page)) {
--		long err = PTR_ERR(new_page);
--		page_cache_release(old_page);
--
- 		/*
- 		 * If a process owning a MAP_PRIVATE mapping fails to COW,
- 		 * it is due to references held by a child and an insufficient
-@@ -2853,6 +2853,7 @@ retry_avoidcopy:
- 		 * may get SIGKILLed if it later faults.
- 		 */
- 		if (outside_reserve) {
-+			page_cache_release(old_page);
- 			BUG_ON(huge_pte_none(pte));
- 			unmap_ref_private(mm, vma, old_page, address);
- 			BUG_ON(huge_pte_none(pte));
-@@ -2868,12 +2869,9 @@ retry_avoidcopy:
- 			return 0;
- 		}
- 
--		/* Caller expects lock to be held */
--		spin_lock(ptl);
--		if (err == -ENOMEM)
--			return VM_FAULT_OOM;
--		else
--			return VM_FAULT_SIGBUS;
-+		ret = (PTR_ERR(new_page) == -ENOMEM) ?
-+			VM_FAULT_OOM : VM_FAULT_SIGBUS;
-+		goto out_release_old;
- 	}
- 
- 	/*
-@@ -2881,11 +2879,8 @@ retry_avoidcopy:
- 	 * anon_vma prepared.
- 	 */
- 	if (unlikely(anon_vma_prepare(vma))) {
--		page_cache_release(new_page);
--		page_cache_release(old_page);
--		/* Caller expects lock to be held */
--		spin_lock(ptl);
--		return VM_FAULT_OOM;
-+		ret = VM_FAULT_OOM;
-+		goto out_release_all;
- 	}
- 
- 	copy_user_huge_page(new_page, old_page, address, vma,
-@@ -2895,6 +2890,7 @@ retry_avoidcopy:
- 	mmun_start = address & huge_page_mask(h);
- 	mmun_end = mmun_start + huge_page_size(h);
- 	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
-+
- 	/*
- 	 * Retake the page table lock to check for racing updates
- 	 * before the page tables are altered
-@@ -2915,12 +2911,13 @@ retry_avoidcopy:
- 	}
- 	spin_unlock(ptl);
- 	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-+out_release_all:
- 	page_cache_release(new_page);
-+out_release_old:
- 	page_cache_release(old_page);
- 
--	/* Caller expects lock to be held */
--	spin_lock(ptl);
--	return 0;
-+	spin_lock(ptl); /* Caller expects lock to be held */
-+	return ret;
- }
- 
- /* Return the pagecache page at a given address within a VMA */
--- 
-1.8.1.4
-
+> ---
+> 
+>  arch/x86/kernel/kexec-bzimage64.c  |    4 ++--
+>  drivers/firmware/efi/runtime-map.c |    6 +++---
+>  include/linux/efi.h                |    8 ++++----
+>  3 files changed, 9 insertions(+), 9 deletions(-)
+> 
+> diff -puN arch/x86/kernel/kexec-bzimage64.c~kexec-support-kexec-kdump-on-efi-systems-fix arch/x86/kernel/kexec-bzimage64.c
+> --- a/arch/x86/kernel/kexec-bzimage64.c~kexec-support-kexec-kdump-on-efi-systems-fix
+> +++ a/arch/x86/kernel/kexec-bzimage64.c
+> @@ -181,7 +181,7 @@ setup_efi_state(struct boot_params *para
+>  	ei->efi_systab_hi = current_ei->efi_systab_hi;
+>  
+>  	ei->efi_memdesc_version = current_ei->efi_memdesc_version;
+> -	ei->efi_memdesc_size = get_efi_runtime_map_desc_size();
+> +	ei->efi_memdesc_size = efi_get_runtime_map_desc_size();
+>  
+>  	setup_efi_info_memmap(params, params_load_addr, efi_map_offset,
+>  			      efi_map_sz);
+> @@ -397,7 +397,7 @@ void *bzImage64_load(struct kimage *imag
+>  	 * have to create separate segment for each. Keeps things
+>  	 * little bit simple
+>  	 */
+> -	efi_map_sz = get_efi_runtime_map_size();
+> +	efi_map_sz = efi_get_runtime_map_size();
+>  	efi_map_sz = ALIGN(efi_map_sz, 16);
+>  	params_cmdline_sz = sizeof(struct boot_params) + cmdline_len +
+>  				MAX_ELFCOREHDR_STR_LEN;
+> diff -puN drivers/firmware/efi/runtime-map.c~kexec-support-kexec-kdump-on-efi-systems-fix drivers/firmware/efi/runtime-map.c
+> --- a/drivers/firmware/efi/runtime-map.c~kexec-support-kexec-kdump-on-efi-systems-fix
+> +++ a/drivers/firmware/efi/runtime-map.c
+> @@ -138,19 +138,19 @@ add_sysfs_runtime_map_entry(struct kobje
+>  	return entry;
+>  }
+>  
+> -int get_efi_runtime_map_size(void)
+> +int efi_get_runtime_map_size(void)
+>  {
+>  	return nr_efi_runtime_map * efi_memdesc_size;
+>  }
+>  
+> -int get_efi_runtime_map_desc_size(void)
+> +int efi_get_runtime_map_desc_size(void)
+>  {
+>  	return efi_memdesc_size;
+>  }
+>  
+>  int efi_runtime_map_copy(void *buf, size_t bufsz)
+>  {
+> -	size_t sz = get_efi_runtime_map_size();
+> +	size_t sz = efi_get_runtime_map_size();
+>  
+>  	if (sz > bufsz)
+>  		sz = bufsz;
+> diff -puN include/linux/efi.h~kexec-support-kexec-kdump-on-efi-systems-fix include/linux/efi.h
+> --- a/include/linux/efi.h~kexec-support-kexec-kdump-on-efi-systems-fix
+> +++ a/include/linux/efi.h
+> @@ -1151,8 +1151,8 @@ int efivars_sysfs_init(void);
+>  #ifdef CONFIG_EFI_RUNTIME_MAP
+>  int efi_runtime_map_init(struct kobject *);
+>  void efi_runtime_map_setup(void *, int, u32);
+> -int get_efi_runtime_map_size(void);
+> -int get_efi_runtime_map_desc_size(void);
+> +int efi_get_runtime_map_size(void);
+> +int efi_get_runtime_map_desc_size(void);
+>  int efi_runtime_map_copy(void *buf, size_t bufsz);
+>  #else
+>  static inline int efi_runtime_map_init(struct kobject *kobj)
+> @@ -1163,12 +1163,12 @@ static inline int efi_runtime_map_init(s
+>  static inline void
+>  efi_runtime_map_setup(void *map, int nr_entries, u32 desc_size) {}
+>  
+> -static inline int get_efi_runtime_map_size(void)
+> +static inline int efi_get_runtime_map_size(void)
+>  {
+>  	return 0;
+>  }
+>  
+> -static inline int get_efi_runtime_map_desc_size(void)
+> +static inline int efi_get_runtime_map_desc_size(void)
+>  {
+>  	return 0;
+>  }
+> _
