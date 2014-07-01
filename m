@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285AbaGASbb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 14:31:31 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:63225 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065AbaGASb3 (ORCPT
+	id S1758314AbaGASf6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 14:35:58 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:57558 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932288AbaGASf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 14:31:29 -0400
+	Tue, 1 Jul 2014 14:35:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140701182908.GD6358@tuxdriver.com>
-References: <20140630203849.GA4787@www.outflux.net>
-	<20140701182908.GD6358@tuxdriver.com>
-Date: Tue, 1 Jul 2014 11:31:28 -0700
-X-Google-Sender-Auth: D0oljNZxzPi8K5JMnNOeStWqMF4
-Message-ID: <CAGXu5jKKav6Nq3AL=oup9SWrgHTvLM9L8f2-AYo6vQr3hFyXtA@mail.gmail.com>
-Subject: Re: [RESEND][PATCH] rtlwifi: btcoexist: avoid format string in printk
-From: Kees Cook <keescook@chromium.org>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-wireless@vger.kernel.org,
-        Network Development <netdev@vger.kernel.org>
+In-Reply-To: <20140630224709.GA22024@google.com>
+References: <1402346730-2508-1-git-send-email-andreas.noever@gmail.com>
+	<20140617221620.GC30559@google.com>
+	<CAE9FiQXD7hvt0cUYMzvq0r6CbZn=iJZc7BHRaF2nACbG7qwuBQ@mail.gmail.com>
+	<CAMxnaaWWuNeNbnUe++N=2bBfs5JyKiq7tHH+_kiQZyQ9aakEHg@mail.gmail.com>
+	<CAE9FiQVQ657vDOhdhBq5VC044qt6TUF7FKP_-qy+35g71e56Yg@mail.gmail.com>
+	<20140630224709.GA22024@google.com>
+Date: Tue, 1 Jul 2014 11:35:56 -0700
+X-Google-Sender-Auth: qt3s5LPaSSIwRPLd5laiUZCP9SE
+Message-ID: <CAE9FiQWzFP_6AU1hLwKKxD2tu+OPjwXfQbLwW-yNT6pCW7JJZA@mail.gmail.com>
+Subject: Re: [PATCH] PCI: Do not touch siblings in pci_assign_unassigned_bridge_resources
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Andreas Noever <andreas.noever@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 1, 2014 at 11:29 AM, John W. Linville
-<linville@tuxdriver.com> wrote:
-> Please look in the git trees before reposting patches...
+On Mon, Jun 30, 2014 at 3:47 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> Should not be dangerous, just second try.
 >
-> commit 6437f51ec36af8ef1e3e2659439b35c37e5498e2
-> Author: Kees Cook <keescook@chromium.org>
-> Date:   Tue Jun 10 10:37:24 2014 -0700
->
->     rtlwifi: btcoexist: avoid format string in printk
->
->     Since CL_PRINTF only ever takes a single argument, make sure a format
->     string cannot leak into printk.
->
->     Signed-off-by: Kees Cook <keescook@chromium.org>
->     Signed-off-by: John W. Linville <linville@tuxdriver.com>
+> I still don't understand this.  Why do we set "res->flags = 0"?  That
+> clears out the resource type.  Where do we figure out the type of "res"
+> again?
 
-Ah! Thanks very much. I hadn't gotten any email about it getting
-applied, so I incorrectly assumed it hadn't been. :)
+pci_bridge_check_ranges()
 
--Kees
+>> Subject: [PATCH] pci: Add back missing MEM_64 check for hotplug path
+>>
+>> We miss that in
+>> |  commit 5b28541552ef5eeffc41d6936105f38c2508e566
+>> |    PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources
+>> for pci hotplug path.
+>
+> This changelog is useless.  I don't have time to spend a few hours
+> figuring out why we want this change.
 
->
-> On Mon, Jun 30, 2014 at 01:38:49PM -0700, Kees Cook wrote:
->> Since CL_PRINTF only ever takes a single argument, make sure a format
->> string cannot leak into printk.
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->>  .../net/wireless/rtlwifi/btcoexist/halbtcoutsrc.h  |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.h b/drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.h
->> index 871fc3c6d559..049f4c8d98a8 100644
->> --- a/drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.h
->> +++ b/drivers/net/wireless/rtlwifi/btcoexist/halbtcoutsrc.h
->> @@ -114,7 +114,7 @@ extern u32 btc_dbg_type[];
->>
->>
->>  #define      CL_SPRINTF      snprintf
->> -#define      CL_PRINTF       printk
->> +#define      CL_PRINTF(buf)  printk("%s", buf)
->>
->>  #define      BTC_PRINT(dbgtype, dbgflag, printstr, ...)              \
->>       do {                                                    \
->> --
->> 1.7.9.5
->>
->>
->> --
->> Kees Cook
->> Chrome OS Security
->>
->
-> --
-> John W. Linville                Someday the world will need a hero, and you
-> linville@tuxdriver.com                  might be all we have.  Be ready.
+We have MEM_64 in type_mask from pci_assign_unassigned_root_bus_resources().
+And I missed the same change for hotplug path.
 
 
+That is for exact type checking.
 
--- 
-Kees Cook
-Chrome OS Security
+Thanks
+
+Yinghai
