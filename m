@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477AbaGAV5h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:57:37 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.221]:19511 "EHLO
+	id S1759024AbaGAV5f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:57:35 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.217]:8238 "EHLO
 	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758877AbaGAVxw (ORCPT
+	with ESMTP id S1758880AbaGAVxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Jul 2014 17:53:52 -0400
 X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
 X-RZG-CLASS-ID: mo00
 From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 08/50] mars: add new file include/linux/brick/meta.h
-Date: Tue,  1 Jul 2014 23:46:48 +0200
-Message-Id: <1404251250-22992-9-git-send-email-tst@schoebel-theuer.de>
+Subject: [PATCH 18/50] mars: add new file drivers/block/mars/lib_limiter.c
+Date: Tue,  1 Jul 2014 23:46:58 +0200
+Message-Id: <1404251250-22992-19-git-send-email-tst@schoebel-theuer.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
@@ -23,106 +23,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 ---
- include/linux/brick/meta.h | 90 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 90 insertions(+)
- create mode 100644 include/linux/brick/meta.h
+ drivers/block/mars/lib_limiter.c | 103 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 103 insertions(+)
+ create mode 100644 drivers/block/mars/lib_limiter.c
 
-diff --git a/include/linux/brick/meta.h b/include/linux/brick/meta.h
+diff --git a/drivers/block/mars/lib_limiter.c b/drivers/block/mars/lib_limiter.c
 new file mode 100644
-index 0000000..44104fd
+index 0000000..e8984b7
 --- /dev/null
-+++ b/include/linux/brick/meta.h
-@@ -0,0 +1,90 @@
-+/*  (c) 2010 Thomas Schoebel-Theuer / 1&1 Internet AG */
-+#ifndef META_H
-+#define META_H
++++ b/drivers/block/mars/lib_limiter.c
+@@ -0,0 +1,103 @@
++/*  (c) 2012 Thomas Schoebel-Theuer / 1&1 Internet AG */
 +
-+/***********************************************************************/
++#include <linux/brick/lib_limiter.h>
 +
-+/*  metadata descriptions */
++#include <linux/kernel.h>
++#include <linux/module.h>
 +
-+/* The idea is to describe your C structures in such a way that
-+ * transfers to disk or over a network become self-describing.
-+ *
-+ * In essence, this is a kind of version-independent marshalling.
-+ *
-+ * Advantage:
-+ * When you extend your original C struct (and of course update the
-+ * corresponding meta structure), old data on disk (or network peers
-+ * running an old version of your program) will remain valid.
-+ * Upon read, newly added fields missing in the old version will be simply
-+ * not filled in and therefore remain zeroed (if you don't forget to
-+ * initially clear your structures via memset() / initializers / etc).
-+ * Note that this works only if you never rename or remove existing
-+ * fields; you should only add new ones.
-+ * [TODO: add macros for description of ignored / renamed fields to
-+ *  overcome this limitation]
-+ * You may increase the size of integers, for example from 32bit to 64bit
-+ * or even higher; sign extension will be automatically carried out
-+ * when necessary.
-+ * Also, you may change the order of fields, because the metadata interpreter
-+ * will check each field individually; field offsets are automatically
-+ * maintained.
-+ *
-+ * Disadvantage: this adds some (small) overhead.
-+ */
++#define LIMITER_TIME_RESOLUTION		NSEC_PER_SEC
 +
-+enum field_type {
-+	FIELD_DONE,
-+	FIELD_REF,
-+	FIELD_SUB,
-+	FIELD_STRING,
-+	FIELD_RAW,
-+	FIELD_INT,
-+	FIELD_UINT,
-+};
++int xio_limit(struct xio_limiter *lim, int amount)
++{
++	int delay = 0;
++	long long now;
 +
-+struct meta {
-+	/* char field_name[MAX_FIELD_LEN]; */
-+	char *field_name;
++	now = cpu_clock(raw_smp_processor_id());
 +
-+	short field_type;
-+	short field_data_size;
-+	short field_transfer_size;
-+	int   field_offset;
-+	const struct meta *field_ref;
-+};
++	/* Compute the maximum delay along the path
++	 * down to the root of the hierarchy tree.
++	 */
++	while (lim != NULL) {
++		long long window = now - lim->lim_stamp;
 +
-+#define _META_INI(NAME, STRUCT, TYPE, TSIZE)				\
-+	.field_name = #NAME,						\
-+	.field_type = TYPE,						\
-+	.field_data_size = sizeof(((STRUCT *)NULL)->NAME),		\
-+	.field_transfer_size = (TSIZE),					\
-+	.field_offset = offsetof(STRUCT, NAME)				\
++		/* Sometimes, raw CPU clocks may do weired things...
++		 * Smaller windows in the denominator than 1s could fake unrealistic rates.
++		 */
++		if (unlikely(lim->lim_min_window <= 0))
++			lim->lim_min_window = 1000;
++		if (unlikely(lim->lim_max_window <= lim->lim_min_window))
++			lim->lim_max_window = lim->lim_min_window + 8000;
++		if (unlikely(window < (long long)lim->lim_min_window * (LIMITER_TIME_RESOLUTION / 1000)))
++			window = (long long)lim->lim_min_window * (LIMITER_TIME_RESOLUTION / 1000);
 +
-+#define META_INI_TRANSFER(NAME, STRUCT, TYPE, TSIZE)			\
-+	{ _META_INI(NAME, STRUCT, TYPE, TSIZE) }
++		/* Only use incremental accumulation at repeated calls, but
++		 * never after longer pauses.
++		 */
++		if (likely(lim->lim_stamp &&
++			   window < (long long)lim->lim_max_window * (LIMITER_TIME_RESOLUTION / 1000))) {
++			long long rate_raw;
++			int rate;
 +
-+#define META_INI(NAME, STRUCT, TYPE)					\
-+	{ _META_INI(NAME, STRUCT, TYPE, 0) }
++			/* Races are possible, but taken into account.
++			 * There is no real harm from rarely lost updates.
++			 */
++			if (likely(amount > 0)) {
++				lim->lim_accu += amount;
++				lim->lim_cumul += amount;
++				lim->lim_count++;
++			}
 +
-+#define _META_INI_AIO(NAME, STRUCT, AIO)				\
-+	.field_name = #NAME,						\
-+	.field_type = FIELD_REF,					\
-+	.field_data_size = sizeof(*(((STRUCT *)NULL)->NAME)),		\
-+	.field_offset = offsetof(STRUCT, NAME),				\
-+	.field_ref = AIO
++			rate_raw = lim->lim_accu * LIMITER_TIME_RESOLUTION / window;
++			rate = rate_raw;
++			if (unlikely(rate_raw > INT_MAX))
++				rate = INT_MAX;
++			lim->lim_rate = rate;
 +
-+#define META_INI_AIO(NAME, STRUCT, AIO) { _META_INI_AIO(NAME, STRUCT, AIO) }
++			/*  limit exceeded? */
++			if (lim->lim_max_rate > 0 && rate > lim->lim_max_rate) {
++				int this_delay = (window * rate / lim->lim_max_rate - window) / (LIMITER_TIME_RESOLUTION / 1000);
 +
-+#define _META_INI_SUB(NAME, STRUCT, SUB)				\
-+	.field_name = #NAME,						\
-+	.field_type = FIELD_SUB,					\
-+	.field_data_size = sizeof(((STRUCT *)NULL)->NAME),		\
-+	.field_offset = offsetof(STRUCT, NAME),				\
-+	.field_ref = SUB
++				/*  compute maximum */
++				if (this_delay > delay && this_delay > 0)
++					delay = this_delay;
++			}
 +
-+#define META_INI_SUB(NAME, STRUCT, SUB) { _META_INI_SUB(NAME, STRUCT, SUB) }
++			/* Try to keep the next window below min_window
++			 */
++			window -= lim->lim_min_window * (LIMITER_TIME_RESOLUTION / 1000);
++			if (window > 0) {
++				long long used_up = (long long)lim->lim_rate * window / LIMITER_TIME_RESOLUTION;
 +
-+extern const struct meta *find_meta(const struct meta *meta, const char *field_name);
-+/* extern void free_meta(void *data, const struct meta *meta); */
++				if (used_up > 0) {
++					lim->lim_stamp += window;
++					lim->lim_accu -= used_up;
++					if (unlikely(lim->lim_accu < 0))
++						lim->lim_accu = 0;
++				}
++			}
++		} else { /*  reset, start over with new measurement cycle */
++			if (unlikely(amount < 0))
++				amount = 0;
++			lim->lim_accu = amount;
++			lim->lim_stamp = now - lim->lim_min_window * (LIMITER_TIME_RESOLUTION / 1000);
++			lim->lim_rate = 0;
++		}
++		lim = lim->lim_father;
++	}
++	return delay;
++}
++EXPORT_SYMBOL_GPL(xio_limit);
 +
-+#endif
++void xio_limit_sleep(struct xio_limiter *lim, int amount)
++{
++	int sleep = xio_limit(lim, amount);
++
++	if (sleep > 0) {
++		if (unlikely(lim->lim_max_delay <= 0))
++			lim->lim_max_delay = 1000;
++		if (sleep > lim->lim_max_delay)
++			sleep = lim->lim_max_delay;
++		brick_msleep(sleep);
++	}
++}
++EXPORT_SYMBOL_GPL(xio_limit_sleep);
 -- 
 2.0.0
 
