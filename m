@@ -1,49 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758733AbaGAUTB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 16:19:01 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:63308 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756220AbaGAUTA (ORCPT
+	id S1758707AbaGAUVo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 16:21:44 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:42089 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754356AbaGAUVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 16:19:00 -0400
-MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 1 Jul 2014 13:18:38 -0700
-Message-ID: <CALCETrXy3ft8AipAm=_u9OJb-t+FF=AfvXBke4pTh5a25nTcFA@mail.gmail.com>
-Subject: Seccomp performance vs. asm complexity
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        Will Drewry <wad@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 1 Jul 2014 16:21:42 -0400
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: akpm@linux-foundation.org
+Cc: davidlohr@hp.com, aswin@hp.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] mm,hugetlb: make unmap_ref_private() return void
+Date: Tue,  1 Jul 2014 13:21:36 -0700
+Message-Id: <1404246097-18810-1-git-send-email-davidlohr@hp.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a question about tradeoffs.  I'm playing with a couple of
-approaches for an x86 seccomp fast path.
+This function always returns 1, thus no need to check return value
+in hugetlb_cow(). By doing so, we can get rid of the unnecessary WARN_ON
+call. While this logic perhaps existed as a way of identifying future
+unmap_ref_private() mishandling, reality is it serves no apparent purpose.
 
-It looks like populating struct seccomp_data in the syscall entry asm
-code saves 4-5ns (83ns vs 87.7ns or so for getpid with seccomp
-enabled).  Presumably this is because it avoids a branch and replaces
-seven two-instruction memory copies with 6 register pushes and one
-memory push.  It also keeps the code shorter, with corresponding
-icache benefits.
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ mm/hugetlb.c | 32 ++++++++++++++------------------
+ 1 file changed, 14 insertions(+), 18 deletions(-)
 
-OTOH, populating struct seccomp_data in C keeps the asm code shorter
-and simpler.  In fast, it ends up being a net deletion of asm code.
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 2024bbd..3c4d535 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2753,8 +2753,8 @@ void unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+  * from other VMAs and let the children be SIGKILLed if they are faulting the
+  * same region.
+  */
+-static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+-				struct page *page, unsigned long address)
++static void unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
++			      struct page *page, unsigned long address)
+ {
+ 	struct hstate *h = hstate_vma(vma);
+ 	struct vm_area_struct *iter_vma;
+@@ -2793,8 +2793,6 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+ 					     address + huge_page_size(h), page);
+ 	}
+ 	mutex_unlock(&mapping->i_mmap_mutex);
+-
+-	return 1;
+ }
+ 
+ /*
+@@ -2856,20 +2854,18 @@ retry_avoidcopy:
+ 		 */
+ 		if (outside_reserve) {
+ 			BUG_ON(huge_pte_none(pte));
+-			if (unmap_ref_private(mm, vma, old_page, address)) {
+-				BUG_ON(huge_pte_none(pte));
+-				spin_lock(ptl);
+-				ptep = huge_pte_offset(mm, address & huge_page_mask(h));
+-				if (likely(ptep &&
+-					   pte_same(huge_ptep_get(ptep), pte)))
+-					goto retry_avoidcopy;
+-				/*
+-				 * race occurs while re-acquiring page table
+-				 * lock, and our job is done.
+-				 */
+-				return 0;
+-			}
+-			WARN_ON_ONCE(1);
++			unmap_ref_private(mm, vma, old_page, address);
++			BUG_ON(huge_pte_none(pte));
++			spin_lock(ptl);
++			ptep = huge_pte_offset(mm, address & huge_page_mask(h));
++			if (likely(ptep &&
++				   pte_same(huge_ptep_get(ptep), pte)))
++				goto retry_avoidcopy;
++			/*
++			 * race occurs while re-acquiring page table
++			 * lock, and our job is done.
++			 */
++			return 0;
+ 		}
+ 
+ 		/* Caller expects lock to be held */
+-- 
+1.8.1.4
 
-Thoughts?  What's a line of assembly code worth?  Keep in mind that
-someone will probably want to port this to the x86_32 and compat
-entries.
-
-To keep this in perspective, this is down from >200ns in 3.16-rc3.
-
-My current code is here:
-
-https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/log/?h=x86/seccomp-fastpath
-
-I think it's in pretty good shape, but I still want to play with it a
-bit before sending it out.  This version uses the C approach.
-
---Andy
