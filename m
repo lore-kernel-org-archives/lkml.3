@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932383AbaGAJgR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 05:36:17 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33637 "EHLO
+	id S932405AbaGAJgh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 05:36:37 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33633 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932254AbaGAJfW (ORCPT
+	with ESMTP id S932219AbaGAJfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 05:35:22 -0400
+	Tue, 1 Jul 2014 05:35:21 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -16,99 +16,83 @@ Cc: Boris Brezillon <boris@free-electrons.com>,
         Thomas Petazzoni <thomas@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v2 14/14] AT91: PIT: Move the driver to drivers/clocksource
-Date: Tue,  1 Jul 2014 11:33:27 +0200
-Message-Id: <1404207208-14513-15-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 00/14] AT91: PIT: Cleanups and move to drivers/clocksource
+Date: Tue,  1 Jul 2014 11:33:13 +0200
+Message-Id: <1404207208-14513-1-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404207208-14513-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1404207208-14513-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we don't depend on anyting in the mach-at91 directory, we can just
-move the driver to where it belongs.
+Hi everyone,
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/mach-at91/Kconfig                                          | 6 ------
- arch/arm/mach-at91/Makefile                                         | 1 -
- drivers/clocksource/Kconfig                                         | 4 ++++
- drivers/clocksource/Makefile                                        | 1 +
- .../at91sam926x_time.c => drivers/clocksource/timer-atmel-pit.c     | 0
- 5 files changed, 5 insertions(+), 7 deletions(-)
- rename arch/arm/mach-at91/at91sam926x_time.c => drivers/clocksource/timer-atmel-pit.c (100%)
+This series cleans up the PIT driver in order for it to not depend on
+anything in mach-at91 anymore, and in the end move it out of
+mach-at91.
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index a64412a020d3..1cd2a269ebbf 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -36,16 +36,11 @@ config AT91_SAM9G45_RESET
- 	bool
- 	default !ARCH_AT91X40
- 
--config AT91_SAM9_TIME
--	select CLKSRC_OF if OF
--	bool
--
- config HAVE_AT91_SMD
- 	bool
- 
- config SOC_AT91SAM9
- 	bool
--	select AT91_SAM9_TIME
- 	select CPU_ARM926T
- 	select GENERIC_CLOCKEVENTS
- 	select MULTI_IRQ_HANDLER
-@@ -53,7 +48,6 @@ config SOC_AT91SAM9
- 
- config SOC_SAMA5
- 	bool
--	select AT91_SAM9_TIME
- 	select CPU_V7
- 	select GENERIC_CLOCKEVENTS
- 	select MULTI_IRQ_HANDLER
-diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
-index 78e9cec282f4..1a916ececbfd 100644
---- a/arch/arm/mach-at91/Makefile
-+++ b/arch/arm/mach-at91/Makefile
-@@ -10,7 +10,6 @@ obj-		:=
- obj-$(CONFIG_OLD_CLK_AT91)	+= clock.o
- obj-$(CONFIG_AT91_SAM9_ALT_RESET) += at91sam9_alt_reset.o
- obj-$(CONFIG_AT91_SAM9G45_RESET) += at91sam9g45_reset.o
--obj-$(CONFIG_AT91_SAM9_TIME)	+= at91sam926x_time.o
- obj-$(CONFIG_SOC_AT91SAM9)	+= sam9_smc.o
- 
- # CPU-specific support
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index 065131cbfcc0..3e6fbfe7af5b 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -118,6 +118,10 @@ config CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
- 	help
- 	 Use ARM global timer clock source as sched_clock
- 
-+config ATMEL_PIT
-+	select CLKSRC_OF if OF
-+	def_bool SOC_AT91SAM9 || SOC_SAMA5
-+
- config CLKSRC_METAG_GENERIC
- 	def_bool y if METAG
- 	help
-diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-index 800b1303c236..98cf44e4b55a 100644
---- a/drivers/clocksource/Makefile
-+++ b/drivers/clocksource/Makefile
-@@ -1,4 +1,5 @@
- obj-$(CONFIG_CLKSRC_OF)	+= clksrc-of.o
-+obj-$(CONFIG_ATMEL_PIT)		+= timer-atmel-pit.o
- obj-$(CONFIG_ATMEL_TCB_CLKSRC)	+= tcb_clksrc.o
- obj-$(CONFIG_X86_PM_TIMER)	+= acpi_pm.o
- obj-$(CONFIG_SCx200HR_TIMER)	+= scx200_hrt.o
-diff --git a/arch/arm/mach-at91/at91sam926x_time.c b/drivers/clocksource/timer-atmel-pit.c
-similarity index 100%
-rename from arch/arm/mach-at91/at91sam926x_time.c
-rename to drivers/clocksource/timer-atmel-pit.c
+Along the way, these patches also do a bit of cleanup.
+
+This has been tested on a G45-EK without DT and an Xplained with DT.
+
+Thanks,
+Maxime
+
+Changes from v1:
+  - Changed Kconfig option to ATMEL_PIT
+  - Used DIV_ROUND_CLOSEST to compute the pit rate
+
+Maxime Ripard (14):
+  AT91: PIT: Follow the general coding rules
+  AT91: generic.h: Add include safe guards
+  AT91: PIT: Use DIV_ROUND_CLOSEST to compute the cycles
+  AT91: PIT: Use of_have_populated_dt instead of CONFIG_OF
+  AT91: PIT: Rework probe functions
+  AT91: dt: Remove init_time definitions
+  AT91: PIT: Use consistent exit path in probe
+  AT91: PIT: Use pr_fmt
+  AT91: PIT: use request_irq instead of setup_irq
+  AT91: PIT: (Almost) remove the global variables
+  AT91: soc: Add init_time callback
+  AT91: Convert the boards to the init_time callback
+  AT91: PIT: Convert to an early_platform_device
+  AT91: PIT: Move the driver to drivers/clocksource
+
+ arch/arm/mach-at91/Kconfig              |   5 -
+ arch/arm/mach-at91/Makefile             |   1 -
+ arch/arm/mach-at91/at91sam9260.c        |  34 +++-
+ arch/arm/mach-at91/at91sam9261.c        |  34 +++-
+ arch/arm/mach-at91/at91sam9263.c        |  34 +++-
+ arch/arm/mach-at91/at91sam926x_time.c   | 294 ------------------------------
+ arch/arm/mach-at91/at91sam9g45.c        |  35 +++-
+ arch/arm/mach-at91/at91sam9rl.c         |  34 +++-
+ arch/arm/mach-at91/board-afeb-9260v1.c  |   2 +-
+ arch/arm/mach-at91/board-cam60.c        |   2 +-
+ arch/arm/mach-at91/board-cpu9krea.c     |   2 +-
+ arch/arm/mach-at91/board-dt-sam9.c      |  10 --
+ arch/arm/mach-at91/board-dt-sama5.c     |   9 -
+ arch/arm/mach-at91/board-flexibity.c    |   2 +-
+ arch/arm/mach-at91/board-foxg20.c       |   2 +-
+ arch/arm/mach-at91/board-gsia18s.c      |   2 +-
+ arch/arm/mach-at91/board-pcontrol-g20.c |   2 +-
+ arch/arm/mach-at91/board-sam9-l9260.c   |   2 +-
+ arch/arm/mach-at91/board-sam9260ek.c    |   2 +-
+ arch/arm/mach-at91/board-sam9261ek.c    |   4 +-
+ arch/arm/mach-at91/board-sam9263ek.c    |   2 +-
+ arch/arm/mach-at91/board-sam9g20ek.c    |   4 +-
+ arch/arm/mach-at91/board-sam9m10g45ek.c |   2 +-
+ arch/arm/mach-at91/board-sam9rlek.c     |   2 +-
+ arch/arm/mach-at91/board-snapper9260.c  |   2 +-
+ arch/arm/mach-at91/board-stamp9g20.c    |   4 +-
+ arch/arm/mach-at91/generic.h            |   8 +-
+ arch/arm/mach-at91/setup.c              |   5 +
+ arch/arm/mach-at91/soc.h                |   1 +
+ drivers/clocksource/Kconfig             |   4 +
+ drivers/clocksource/Makefile            |   1 +
+ drivers/clocksource/timer-atmel-pit.c   | 304 ++++++++++++++++++++++++++++++++
+ 32 files changed, 506 insertions(+), 345 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/at91sam926x_time.c
+ create mode 100644 drivers/clocksource/timer-atmel-pit.c
+
 -- 
 2.0.0
 
