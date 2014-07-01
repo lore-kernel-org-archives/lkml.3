@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758610AbaGAQui (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 12:50:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29589 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758570AbaGAQug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 12:50:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,582,1400050800"; 
-   d="scan'208";a="537270730"
-Subject: [PATCH 4/7] x86: mm: unify remote invlpg code
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
-        x86@kernel.org, Dave Hansen <dave@sr71.net>,
-        dave.hansen@linux.intel.com, riel@redhat.com, mgorman@suse.de
-From: Dave Hansen <dave@sr71.net>
-Date: Tue, 01 Jul 2014 09:48:52 -0700
-References: <20140701164845.8D1A5702@viggo.jf.intel.com>
-In-Reply-To: <20140701164845.8D1A5702@viggo.jf.intel.com>
-Message-Id: <20140701164852.F61ED607@viggo.jf.intel.com>
+	id S1758627AbaGAQuw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 12:50:52 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:45816 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758219AbaGAQuu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 12:50:50 -0400
+Date: Tue, 1 Jul 2014 17:50:41 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Pinski, Andrew" <Andrew.Pinski@caviumnetworks.com>,
+        Andrew Pinski <apinski@cavium.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 22/24] ARM64:ILP32: Use a seperate syscall table as a few
+ syscalls need to be using the compat syscalls.
+Message-ID: <20140701165041.GU18313@arm.com>
+References: <1400914939-9708-1-git-send-email-apinski@cavium.com>
+ <20140701150539.GA18309@arm.com>
+ <800835FF-E10A-4C0C-A68F-0ED1434F1CE2@caviumnetworks.com>
+ <4268617.3t49DXZOBa@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4268617.3t49DXZOBa@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 01, 2014 at 05:38:12PM +0100, Arnd Bergmann wrote:
+> On Tuesday 01 July 2014 15:30:51 Pinski, Andrew wrote:
+> > > On Jul 1, 2014, at 8:07 AM, "Catalin Marinas" <catalin.marinas@arm.com> wrote:
+> > >> On Sat, May 24, 2014 at 12:02:17AM -0700, Andrew Pinski wrote:
+> > >> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+> > >> index 1e1ebfc..8241ffe 100644
+> > >> --- a/arch/arm64/kernel/entry.S
+> > >> +++ b/arch/arm64/kernel/entry.S
+> > >> @@ -620,9 +620,14 @@ ENDPROC(ret_from_fork)
+> > >>  */
+> > >>    .align    6
+> > >> el0_svc:
+> > >> -    adrp    stbl, sys_call_table        // load syscall table pointer
+> > >>    uxtw    scno, w8            // syscall number in w8
+> > >>    mov    sc_nr, #__NR_syscalls
+> > >> +#ifdef CONFIG_ARM64_ILP32
+> > >> +    get_thread_info tsk
+> > >> +    ldr    x16, [tsk, #TI_FLAGS]
+> > >> +    tbnz    x16, #TIF_32BIT_AARCH64, el0_ilp32_svc // We are using ILP32
+> > >> +#endif
+> > >> +    adrp    stbl, sys_call_table        // load syscall table pointer
+> > > 
+> > > This adds a slight penalty on the AArch64 SVC entry path. I can't tell
+> > > whether that's visible or not but I think the x86 guys decided to set an
+> > > extra bit to the syscall number to distinguish it from native calls.
+> 
+> IIRC the intention on x86 was that you should always be able to call
+> any of the three syscall ABIs (x86-32, x86-64, x32) from any process
+> by passing the right number, for flexibility.
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+I don't see how this is useful though. Do you happen to have more
+information?
 
-There are currently three paths through the remote flush code:
-
-1. full invalidation
-2. single page invalidation using invlpg
-3. ranged invalidation using invlpg
-
-This takes 2 and 3 and combines them in to a single path by
-making the single-page one just be the start and end be start
-plus a single page.  This makes placement of our tracepoint easier.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
----
-
- b/arch/x86/mm/tlb.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff -puN arch/x86/mm/tlb.c~x86-tlb-simplify-remote-flush-code arch/x86/mm/tlb.c
---- a/arch/x86/mm/tlb.c~x86-tlb-simplify-remote-flush-code	2014-06-30 16:18:28.009559635 -0700
-+++ b/arch/x86/mm/tlb.c	2014-06-30 16:18:28.013559817 -0700
-@@ -102,13 +102,13 @@ static void flush_tlb_func(void *info)
- 
- 	if (f->flush_mm != this_cpu_read(cpu_tlbstate.active_mm))
- 		return;
-+	if (!f->flush_end)
-+		f->flush_end = f->flush_start + PAGE_SIZE;
- 
- 	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
- 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
- 		if (f->flush_end == TLB_FLUSH_ALL)
- 			local_flush_tlb();
--		else if (!f->flush_end)
--			__flush_tlb_single(f->flush_start);
- 		else {
- 			unsigned long addr;
- 			addr = f->flush_start;
-_
+-- 
+Catalin
