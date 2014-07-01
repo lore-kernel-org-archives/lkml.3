@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580AbaGAMPy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 08:15:54 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:49580 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751605AbaGAMPw (ORCPT
+	id S1754774AbaGAMVn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 08:21:43 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:55583 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561AbaGAMVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 08:15:52 -0400
-Date: Tue, 1 Jul 2014 13:15:44 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alex Elder <elder@linaro.org>
-Cc: bcm@fixthebug.org, mporter@linaro.org,
+	Tue, 1 Jul 2014 08:21:42 -0400
+Message-ID: <53B2A7D4.4020007@linaro.org>
+Date: Tue, 01 Jul 2014 07:21:40 -0500
+From: Alex Elder <elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: bcm@fixthebug.org, mporter@linaro.org,
         bcm-kernel-feedback-list@broadcom.com, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
 Subject: Re: [PATCH] mach-bcm SMC: address clang inline asm incompatibility
-Message-ID: <20140701121544.GK32514@n2100.arm.linux.org.uk>
-References: <1404216339-6480-1-git-send-email-elder@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404216339-6480-1-git-send-email-elder@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+References: <1404216339-6480-1-git-send-email-elder@linaro.org> <20140701121544.GK32514@n2100.arm.linux.org.uk>
+In-Reply-To: <20140701121544.GK32514@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 01, 2014 at 07:05:39AM -0500, Alex Elder wrote:
-> My GCC-based build environment likes to call register r12 by the
-> name "ip" in inline asm.  Behan Webster informed me that his Clang-
-> based build environment likes "r12" instead.
+On 07/01/2014 07:15 AM, Russell King - ARM Linux wrote:
+> On Tue, Jul 01, 2014 at 07:05:39AM -0500, Alex Elder wrote:
+>> My GCC-based build environment likes to call register r12 by the
+>> name "ip" in inline asm.  Behan Webster informed me that his Clang-
+>> based build environment likes "r12" instead.
+> 
+> Two objections, one of which is an acceptable outcome:
+> 1. Why can't clang just learn these alternative names?
 
-Two objections, one of which is an acceptable outcome:
-1. Why can't clang just learn these alternative names?
-2. Why can't we just use "r12" here?
+I suggested that.  I don't know where to send that suggestion
+though.
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+> 2. Why can't we just use "r12" here?
+
+I don't recall the details, but when I wrote the code originally
+that way it gave me errors.  It's why I had the "Also called r12"
+comment next to the symbol declaration.
+
+I agree, I'd rather have either one of those than this #ifdef
+workaround.  I was supplying this as a potentially quicker fix
+for the problem Behan was hitting.
+
+					-Alex
