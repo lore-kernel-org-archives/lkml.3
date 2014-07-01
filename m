@@ -1,143 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426AbaGANUU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 09:20:20 -0400
-Received: from smtprelay0023.hostedemail.com ([216.40.44.23]:60377 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752920AbaGANUS (ORCPT
+	id S1757562AbaGANUz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 09:20:55 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51920 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753780AbaGANUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 09:20:18 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3308:3355:3865:3866:3867:3868:3871:3872:4250:4321:5007:6119:6120:7652:7903:10004:10026:10400:10848:11026:11658:11914:12043:12048:12296:12438:12517:12519:12555:13019:13618:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: lift69_76221c468ba0c
-X-Filterd-Recvd-Size: 4451
-Message-ID: <1404220810.2717.39.camel@joe-AO725>
-Subject: [RFC PATCH] dlm: Remove unused conf from lm_grant
-From: Joe Perches <joe@perches.com>
-To: Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Jeff Layton <jlayton@poochiereds.net>
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Date: Tue, 01 Jul 2014 06:20:10 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Jul 2014 09:20:53 -0400
+Date: Tue, 1 Jul 2014 14:18:59 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/4] ARM: dts: dove: enable lcd0 on SolidRun CuBox
+Message-ID: <20140701131858.GD6064@leverpostej>
+References: <1404219871-18419-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1404219871-18419-4-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404219871-18419-4-git-send-email-sebastian.hesselbarth@gmail.com>
+Thread-Topic: [PATCH 3/4] ARM: dts: dove: enable lcd0 on SolidRun CuBox
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While doing a bit of adding argument names to fs.h,
-I looked at lm_grant and it seems the 2nd argument
-is always NULL.
+On Tue, Jul 01, 2014 at 02:04:30PM +0100, Sebastian Hesselbarth wrote:
+> From: Russell King <rmk+kernel@arm.linux.org.uk>
+> 
+> This enables lcd0 on SolidRun CuBox which is connected to TDA998x
+> HDMI transmitter. Also, set the external video clock connected to
+> Si5351 clock generator.
+> 
+> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> Cc: Kumar Gala <galak@codeaurora.org>
+> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Gregory Clement <gregory.clement@free-electrons.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/boot/dts/dove-cubox.dts |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/dove-cubox.dts b/arch/arm/boot/dts/dove-cubox.dts
+> index 7a70f4c..303a354 100644
+> --- a/arch/arm/boot/dts/dove-cubox.dts
+> +++ b/arch/arm/boot/dts/dove-cubox.dts
+> @@ -134,3 +134,9 @@
+>  	pinctrl-0 = <&pmx_audio1_i2s1_spdifo &pmx_audio1_extclk>;
+>  	pinctrl-names = "default";
+>  };
+> +
+> +&lcd0 {
+> +	status = "okay";
+> +	clocks = <&si5351 0>;
+> +	clock-names = "ext_ref_clk_1";
 
-How about removing it?
+This clock wasn't mentioned in the binding document. Could you please
+amend that?
 
-This doesn't apply as it depends on some other patches
-but it should be clear enough...
-
----
- fs/dlm/plock.c     |  8 ++++----
- fs/lockd/svclock.c | 12 +++---------
- include/linux/fs.h |  2 +-
- 3 files changed, 8 insertions(+), 14 deletions(-)
-
-diff --git a/fs/dlm/plock.c b/fs/dlm/plock.c
-index e59d332..e0ab3a9 100644
---- a/fs/dlm/plock.c
-+++ b/fs/dlm/plock.c
-@@ -30,7 +30,7 @@ struct plock_op {
- 
- struct plock_xop {
- 	struct plock_op xop;
--	int (*callback)(struct file_lock *, struct file_lock *, int);
-+	int (*callback)(struct file_lock *fl, int result);
- 	void *fl;
- 	void *file;
- 	struct file_lock flc;
-@@ -190,7 +190,7 @@ static int dlm_plock_callback(struct plock_op *op)
- 	struct file *file;
- 	struct file_lock *fl;
- 	struct file_lock *flc;
--	int (*notify)(struct file_lock *fl, struct file_lock *cont, int result) = NULL;
-+	int (*notify)(struct file_lock *fl, int result) = NULL;
- 	struct plock_xop *xop = (struct plock_xop *)op;
- 	int rv = 0;
- 
-@@ -209,7 +209,7 @@ static int dlm_plock_callback(struct plock_op *op)
- 	notify = xop->callback;
- 
- 	if (op->info.rv) {
--		notify(fl, NULL, op->info.rv);
-+		notify(fl, op->info.rv);
- 		goto out;
- 	}
- 
-@@ -228,7 +228,7 @@ static int dlm_plock_callback(struct plock_op *op)
- 			  (unsigned long long)op->info.number, file, fl);
- 	}
- 
--	rv = notify(fl, NULL, 0);
-+	rv = notify(fl, 0);
- 	if (rv) {
- 		/* XXX: We need to cancel the fs lock here: */
- 		log_print("dlm_plock_callback: lock granted after lock request "
-diff --git a/fs/lockd/svclock.c b/fs/lockd/svclock.c
-index ab798a8..2a61701 100644
---- a/fs/lockd/svclock.c
-+++ b/fs/lockd/svclock.c
-@@ -667,22 +667,16 @@ nlmsvc_cancel_blocked(struct net *net, struct nlm_file *file, struct nlm_lock *l
-  * deferred rpc for GETLK and SETLK.
-  */
- static void
--nlmsvc_update_deferred_block(struct nlm_block *block, struct file_lock *conf,
--			     int result)
-+nlmsvc_update_deferred_block(struct nlm_block *block, int result)
- {
- 	block->b_flags |= B_GOT_CALLBACK;
- 	if (result == 0)
- 		block->b_granted = 1;
- 	else
- 		block->b_flags |= B_TIMED_OUT;
--	if (conf) {
--		if (block->b_fl)
--			__locks_copy_lock(block->b_fl, conf);
--	}
- }
- 
--static int nlmsvc_grant_deferred(struct file_lock *fl, struct file_lock *conf,
--					int result)
-+static int nlmsvc_grant_deferred(struct file_lock *fl, int result)
- {
- 	struct nlm_block *block;
- 	int rc = -ENOENT;
-@@ -697,7 +691,7 @@ static int nlmsvc_grant_deferred(struct file_lock *fl, struct file_lock *conf,
- 					rc = -ENOLCK;
- 					break;
- 				}
--				nlmsvc_update_deferred_block(block, conf, result);
-+				nlmsvc_update_deferred_block(block, result);
- 			} else if (result == 0)
- 				block->b_granted = 1;
- 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 36b8648..6150125 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -842,7 +842,7 @@ struct lock_manager_operations {
- 	int (*lm_compare_owner)(struct file_lock *fl1, struct file_lock *fl2);
- 	unsigned long (*lm_owner_key)(struct file_lock *fl);
- 	void (*lm_notify)(struct file_lock *fl);	/* unblock callback */
--	int (*lm_grant)(struct file_lock *fl, struct file_lock *conf, int result);
-+	int (*lm_grant)(struct file_lock *fl, int result);
- 	void (*lm_break)(struct file_lock *fl);
- 	int (*lm_change)(struct file_lock **fl, int type);
- };
--- 
-1.8.1.2.459.gbcd45b4.dirty
-
-
-
+Thanks,
+Mark.
