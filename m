@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410AbaGAINQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 04:13:16 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:52456 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150AbaGAINM (ORCPT
+	id S1757483AbaGAIOe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 04:14:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54251 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754052AbaGAIOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 04:13:12 -0400
-Date: Tue, 1 Jul 2014 01:13:11 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-api@vger.kernel.org,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH v3 0/2] block: virtio-blk: support multi vq per virtio-blk
-Message-ID: <20140701081311.GA21973@infradead.org>
-References: <1403775708-22244-1-git-send-email-ming.lei@canonical.com>
- <CACVXFVMHPdEzai32jRmLt7qGMFcUqFb8OunF0tzySpKoLWWiwQ@mail.gmail.com>
- <CACVXFVMb4UXRYSp6nvjDQrDRcLP6rJ3_3QHYMzKv9MoogsU66w@mail.gmail.com>
- <53B22473.8010709@kernel.dk>
+	Tue, 1 Jul 2014 04:14:31 -0400
+Date: Tue, 1 Jul 2014 10:14:13 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: "HATAYAMA, Daisuke" <d.hatayama@jp.fujitsu.com>, hpa@zytor.com,
+        Don Zickus <dzickus@redhat.com>, matt@console-pimps.org,
+        acme@kernel.org, mingo@redhat.com, paulus@samba.org,
+        tglx@linutronix.de, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] perf/x86/intel: ignore CondChgd bit to avoid false
+ NMI handling
+Message-ID: <20140701081413.GJ6758@twins.programming.kicks-ass.net>
+References: <20140613084437.12424.62294.stgit@localhost6.localdomain6>
+ <20140616153047.GJ177152@redhat.com>
+ <53B12CB3.5050508@jp.fujitsu.com>
+ <20140630222224.GH19781@tassilo.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53B22473.8010709@kernel.dk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20140630222224.GH19781@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 09:01:07PM -0600, Jens Axboe wrote:
-> >I appreciate very much that one of you may queue these two
-> >patches into your tree so that userspace work can be kicked off,
-> >since Michael has acked both patches and all comments have
-> >been addressed already.
+On Mon, Jun 30, 2014 at 03:22:24PM -0700, Andi Kleen wrote:
+> > 
+> > I'm also interested in the behaviour of CondChgd bit on Ivy Bridge processors.
 > 
-> Given that Michael also acked it and Rusty is on his sabbatical, I'll queue
-> it up for 3.17.
+> The intended meaning of CondChgd is that a hardware debugger has taken over the
+> PMU. It shouldn't really be set in other circumstances.
 
-So Rusty is offline?  Who is taking care of module/moduleparam patches
-in the meantime?
+The SDM utterly and totally fails to mention this, please fix that.
 
+> I think right now for perf it would be best to just ignore it.
+> 
+> In theory could stop using the PMU, but if some BIOS set it it would
+> completely disable perf there. So better to just ignore it.
+
+The even better option would be to kill off SMM mode, all that ever does
+is create problems.
