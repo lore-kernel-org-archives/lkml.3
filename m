@@ -1,305 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758533AbaGAUB4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 16:01:56 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:65266 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754745AbaGAUBz (ORCPT
+	id S1758688AbaGAUCR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 16:02:17 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:50431 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758639AbaGAUCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 16:01:55 -0400
-Date: Tue, 1 Jul 2014 23:01:50 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] headers: remove fs.h from poll.h
-Message-ID: <20140701200150.GA31103@p183.telecom.by>
+	Tue, 1 Jul 2014 16:02:15 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Gregory Hermant <gregory.hermant@calao-systems.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Gael Portay <g.portay@overkiz.com>,
+        Joachim Eastwood <manabian@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Fabio Porcedda <fabio.porcedda@gmail.com>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tim Schendekehl <tim.schendekehl@egnite.de>
+Subject: Re: [PATCH 00/33] ARM: at91: Switch remaining SoCs and boards to CCF
+Date: Tue, 01 Jul 2014 22:02:07 +0200
+Message-ID: <4737199.CfKe4Y859I@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140701175601.GJ3427@piout.net>
+References: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com> <8196570.1BaMSL4giB@wuerfel> <20140701175601.GJ3427@piout.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:BIsS6+rQ7AEk9WAJfHtzt0QMcmA1sOF4U1XvLO3ABOp
+ J2z3TJfq0Cct4sPjL9FRIf1lHDvCdoTWKjjtN5zfHxm2OVASd6
+ p7+1M+DG0R+X5aPaYw1PZzgbFzcPCfO8FP8AukFtFKWuBZOz6H
+ huDqjeJV6guEn8Vz1EK2/wPUlbVbYGECu4dq9wZKXf49EPPhKr
+ uhXXXiDeGwFLx5NiH5Jegg2akGme/emhN6vbagPz/7cRRFJF3V
+ 4+KRm0j09AL/92H5HOFYg94bD4PoqI33Vs7nrOVI7Pnm/L5rfp
+ AGXGzTq3zoy1erggUjujipjGgvKSKsloHwGTziq+v37SR/agux
+ WgFtJd1EiwwXZM/brpUA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fs.h is new sched.h!
+On Tuesday 01 July 2014 19:56:01 Alexandre Belloni wrote:
+> On 01/07/2014 at 19:01:12 +0200, Arnd Bergmann wrote :
+> > On Tuesday 01 July 2014 18:48:51 Alexandre Belloni wrote:
+> > > On 01/07/2014 at 18:35:50 +0200, Arnd Bergmann wrote :
+> > > > If I read this right, disabling 'USE_OF' results in still using
+> > > > the old clock interface. Is that intentional? If you want to always
+> > > > use COMMON_CLK now, the above can probably be simplified to
+> > > > 
+> > > > config AT91_PMC_UNIT
+> > > >         def_bool !ARCH_AT91X40
+> > > >       select COMMON_CLK
+> > > > 
+> > > > and all references to AT91_USE_OLD_CLK, COMMON_CLK_AT91 and
+> > > > OLD_CLK_AT91 be removed.
+> > > 
+> > > Yeah, this is intentional we still have 30 or so boards that we have to
+> > > migrate to DT. Until then, we want to be able to boot a kernel without
+> > > CCF. The next step in the migration is to switch those boards to DT,
+> > > possibly using an hybrid DT/pdata approach until we can get rid of the
+> > > board files. Then, we will be able to get rid of the old clk
+> > > implementation (and a few other drivers still living in mach-at91).
+> > 
+> > Ok, I see. Do you expect those 30 boards to work if COMMON_CLK_AT91
+> > is enabled, or are there known problems with that?
+> > 
+> > If you have reason to believe it doesn't work, maybe you can expose
+> > the selection of the clock interface to users, e.g. like
+> > 
+> 
+> We actually do the opposite, when a board without DT support is
+> selected, the old clock support is also selected even when also
+> selecting CONFIG_OF.
 
-Start removing unnecessary fs.h inclusions.
+Ok, got it now. Yes, that makes sense.
 
-In the end of the whole series ~2000 useless fs.h inclusions are gone
-(just need more comple testing).
+I guess we can start doing the actual multiplatform enablement now,
+which would be only for the DT-enabled boards -- all of Kconfig.non_dt
+still has to depend on !ARCH_MULTIPLATFORM but we can make at91
+either be built standalone (with board files) or multiplatform and
+still support all SAM9 and RM9200 SoCs but without board files.
 
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
----
-
- drivers/gpu/vga/vgaarb.c                    |    1 +
- drivers/input/serio/serio_raw.c             |    1 +
- drivers/misc/mic/host/mic_fops.c            |    1 +
- drivers/platform/goldfish/goldfish_pipe.c   |    1 +
- drivers/pps/pps.c                           |    1 +
- drivers/rtc/interface.c                     |    1 +
- drivers/rtc/rtc-dev.c                       |    1 +
- drivers/rtc/rtc-pcf8563.c                   |    1 +
- drivers/staging/comedi/drivers/serial2002.c |    1 +
- drivers/vfio/pci/vfio_pci_intrs.c           |    1 +
- include/linux/poll.h                        |    3 ++-
- include/sound/pcm.h                         |    1 +
- sound/core/control.c                        |    1 +
- sound/core/hwdep.c                          |    1 +
- sound/core/init.c                           |    1 +
- sound/core/oss/mixer_oss.c                  |    1 +
- sound/core/rawmidi.c                        |    1 +
- sound/core/seq/oss/seq_oss.c                |    1 +
- sound/core/seq/oss/seq_oss_init.c           |    1 +
- sound/core/seq/seq_clientmgr.c              |    1 +
- sound/core/sound.c                          |    1 +
- sound/core/timer.c                          |    1 +
- sound/isa/wavefront/wavefront_fx.c          |    1 +
- sound/isa/wavefront/wavefront_synth.c       |    1 +
- 24 files changed, 25 insertions(+), 1 deletion(-)
-
---- a/drivers/gpu/vga/vgaarb.c
-+++ b/drivers/gpu/vga/vgaarb.c
-@@ -29,6 +29,7 @@
-  *
-  */
- 
-+#include <linux/fs.h>
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/pci.h>
---- a/drivers/input/serio/serio_raw.c
-+++ b/drivers/input/serio/serio_raw.c
-@@ -9,6 +9,7 @@
-  * the Free Software Foundation.
-  */
- 
-+#include <linux/fs.h>
- #include <linux/kref.h>
- #include <linux/sched.h>
- #include <linux/slab.h>
---- a/drivers/misc/mic/host/mic_fops.c
-+++ b/drivers/misc/mic/host/mic_fops.c
-@@ -18,6 +18,7 @@
-  * Intel MIC Host driver.
-  *
-  */
-+#include <linux/fs.h>
- #include <linux/poll.h>
- #include <linux/pci.h>
- 
---- a/drivers/platform/goldfish/goldfish_pipe.c
-+++ b/drivers/platform/goldfish/goldfish_pipe.c
-@@ -45,6 +45,7 @@
-  * exchange is properly mapped during a transfer.
-  */
- 
-+#include <linux/fs.h>
- #include <linux/module.h>
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
---- a/drivers/pps/pps.c
-+++ b/drivers/pps/pps.c
-@@ -21,6 +21,7 @@
- 
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
-+#include <linux/fs.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/init.h>
---- a/drivers/rtc/interface.c
-+++ b/drivers/rtc/interface.c
-@@ -11,6 +11,7 @@
-  * published by the Free Software Foundation.
- */
- 
-+#include <linux/fs.h>
- #include <linux/rtc.h>
- #include <linux/sched.h>
- #include <linux/module.h>
---- a/drivers/rtc/rtc-dev.c
-+++ b/drivers/rtc/rtc-dev.c
-@@ -13,6 +13,7 @@
- 
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
-+#include <linux/fs.h>
- #include <linux/module.h>
- #include <linux/rtc.h>
- #include <linux/sched.h>
---- a/drivers/rtc/rtc-pcf8563.c
-+++ b/drivers/rtc/rtc-pcf8563.c
-@@ -14,6 +14,7 @@
-  * published by the Free Software Foundation.
-  */
- 
-+#include <linux/fs.h>
- #include <linux/i2c.h>
- #include <linux/bcd.h>
- #include <linux/rtc.h>
---- a/drivers/staging/comedi/drivers/serial2002.c
-+++ b/drivers/staging/comedi/drivers/serial2002.c
-@@ -26,6 +26,7 @@ Status: in development
- 
- */
- 
-+#include <linux/fs.h>
- #include <linux/module.h>
- #include "../comedidev.h"
- 
---- a/drivers/vfio/pci/vfio_pci_intrs.c
-+++ b/drivers/vfio/pci/vfio_pci_intrs.c
-@@ -14,6 +14,7 @@
-  */
- 
- #include <linux/device.h>
-+#include <linux/fs.h>
- #include <linux/interrupt.h>
- #include <linux/eventfd.h>
- #include <linux/pci.h>
---- a/include/linux/poll.h
-+++ b/include/linux/poll.h
-@@ -6,11 +6,12 @@
- #include <linux/ktime.h>
- #include <linux/wait.h>
- #include <linux/string.h>
--#include <linux/fs.h>
- #include <linux/sysctl.h>
- #include <asm/uaccess.h>
- #include <uapi/linux/poll.h>
- 
-+struct file;
-+
- extern struct ctl_table epoll_table[]; /* for sysctl */
- /* ~832 bytes of stack space used max in sys_select/sys_poll before allocating
-    additional memory. */
---- a/include/sound/pcm.h
-+++ b/include/sound/pcm.h
-@@ -26,6 +26,7 @@
- #include <sound/asound.h>
- #include <sound/memalloc.h>
- #include <sound/minors.h>
-+#include <linux/fs.h>
- #include <linux/poll.h>
- #include <linux/mm.h>
- #include <linux/bitops.h>
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -19,6 +19,7 @@
-  *
-  */
- 
-+#include <linux/fs.h>
- #include <linux/threads.h>
- #include <linux/interrupt.h>
- #include <linux/module.h>
---- a/sound/core/hwdep.c
-+++ b/sound/core/hwdep.c
-@@ -19,6 +19,7 @@
-  *
-  */
- 
-+#include <linux/fs.h>
- #include <linux/major.h>
- #include <linux/init.h>
- #include <linux/slab.h>
---- a/sound/core/init.c
-+++ b/sound/core/init.c
-@@ -19,6 +19,7 @@
-  *
-  */
- 
-+#include <linux/fs.h>
- #include <linux/init.h>
- #include <linux/sched.h>
- #include <linux/module.h>
---- a/sound/core/oss/mixer_oss.c
-+++ b/sound/core/oss/mixer_oss.c
-@@ -19,6 +19,7 @@
-  *
-  */
- 
-+#include <linux/fs.h>
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/time.h>
---- a/sound/core/rawmidi.c
-+++ b/sound/core/rawmidi.c
-@@ -20,6 +20,7 @@
-  */
- 
- #include <sound/core.h>
-+#include <linux/fs.h>
- #include <linux/major.h>
- #include <linux/init.h>
- #include <linux/sched.h>
---- a/sound/core/seq/oss/seq_oss.c
-+++ b/sound/core/seq/oss/seq_oss.c
-@@ -20,6 +20,7 @@
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-  */
- 
-+#include <linux/fs.h>
- #include <linux/init.h>
- #include <linux/module.h>
- #include <linux/mutex.h>
---- a/sound/core/seq/oss/seq_oss_init.c
-+++ b/sound/core/seq/oss/seq_oss_init.c
-@@ -27,6 +27,7 @@
- #include "seq_oss_readq.h"
- #include "seq_oss_timer.h"
- #include "seq_oss_event.h"
-+#include <linux/fs.h>
- #include <linux/init.h>
- #include <linux/export.h>
- #include <linux/moduleparam.h>
---- a/sound/core/seq/seq_clientmgr.c
-+++ b/sound/core/seq/seq_clientmgr.c
-@@ -21,6 +21,7 @@
-  *
-  */
- 
-+#include <linux/fs.h>
- #include <linux/init.h>
- #include <linux/export.h>
- #include <linux/slab.h>
---- a/sound/core/sound.c
-+++ b/sound/core/sound.c
-@@ -19,6 +19,7 @@
-  *
-  */
- 
-+#include <linux/fs.h>
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/time.h>
---- a/sound/core/timer.c
-+++ b/sound/core/timer.c
-@@ -20,6 +20,7 @@
-  */
- 
- #include <linux/delay.h>
-+#include <linux/fs.h>
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/time.h>
---- a/sound/isa/wavefront/wavefront_fx.c
-+++ b/sound/isa/wavefront/wavefront_fx.c
-@@ -17,6 +17,7 @@
-  */
- 
- #include <asm/io.h>
-+#include <linux/fs.h>
- #include <linux/init.h>
- #include <linux/time.h>
- #include <linux/wait.h>
---- a/sound/isa/wavefront/wavefront_synth.c
-+++ b/sound/isa/wavefront/wavefront_synth.c
-@@ -21,6 +21,7 @@
-  */
- 
- #include <asm/io.h>
-+#include <linux/fs.h>
- #include <linux/interrupt.h>
- #include <linux/init.h>
- #include <linux/delay.h>
+	Arnd
