@@ -1,119 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387AbaGASoW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 14:44:22 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:51023 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754356AbaGASoU (ORCPT
+	id S964849AbaGASoi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 14:44:38 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50168 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932437AbaGASoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 14:44:20 -0400
-Date: Wed, 2 Jul 2014 00:14:13 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Jonathan Cameron <jic23@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] staging: iio: Introduce the use of devm_ioremap_resource
-Message-ID: <20140701184413.GA2980@himangi-Dell>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 1 Jul 2014 14:44:34 -0400
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v8 0/9] Support for creating generic PCI host bridges from DT
+Date: Tue,  1 Jul 2014 19:43:25 +0100
+Message-Id: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the use of devm_ioremap_resource. It does away
-with call to request_mem_region and the error checking on
-platform_get_resource. Also, the calls to free the allocated resources
-like release_mem_region and iounmap are done away with. The ret variable
-in the probe function is also eliminated. Also, a bug is fixed as the
-goto in the error handling of request_mem_region should not have
-called release_mem_region which releases a resource that has not been
-allocated.
+This is my resurected attempt at adding support for generic PCI host
+bridge controllers that make use of device tree information to
+configure themselves. I've tagged it as v8 although the patches
+have now been reshuffled in order to ease adoption so referring to
+the older versions might be a bit of a hoop jumping exercise.
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/staging/iio/adc/ad7606_par.c | 37 ++++++------------------------------
- 1 file changed, 6 insertions(+), 31 deletions(-)
+Changes from v7:
+  - Reordered the patches so that fixes and non-controversial patches
+    from v7 can be accepted more easily. If agreed I can split the
+    series again into patches that can be upstreamed easily and ones
+    that still need discussion.
+  - Moved the of_create_host_bridge() function to drivers/of/of_pci.c
+    to better reflect its target use.
+  - Added the function to remap the bus I/O resources that used to be
+    provided in my arm64 patch series and (re)named it pci_remap_iospace()
+  - Removed error code checking from parsing and mapping of IRQ from DT
+    in recognition that some PCI devices will not have legacy IRQ mappings.
 
-diff --git a/drivers/staging/iio/adc/ad7606_par.c b/drivers/staging/iio/adc/ad7606_par.c
-index 8a48d18..7511839 100644
---- a/drivers/staging/iio/adc/ad7606_par.c
-+++ b/drivers/staging/iio/adc/ad7606_par.c
-@@ -53,7 +53,7 @@ static int ad7606_par_probe(struct platform_device *pdev)
- 	struct iio_dev *indio_dev;
- 	void __iomem *addr;
- 	resource_size_t remap_size;
--	int ret, irq;
-+	int irq;
- 
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0) {
-@@ -62,56 +62,31 @@ static int ad7606_par_probe(struct platform_device *pdev)
- 	}
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res)
--		return -ENODEV;
-+	addr = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(addr))
-+		return PTR_ERR(addr);
- 
- 	remap_size = resource_size(res);
- 
--	/* Request the regions */
--	if (!request_mem_region(res->start, remap_size, "iio-ad7606")) {
--		ret = -EBUSY;
--		goto out1;
--	}
--	addr = ioremap(res->start, remap_size);
--	if (!addr) {
--		ret = -ENOMEM;
--		goto out1;
--	}
--
- 	indio_dev = ad7606_probe(&pdev->dev, irq, addr,
- 			  platform_get_device_id(pdev)->driver_data,
- 			  remap_size > 1 ? &ad7606_par16_bops :
- 			  &ad7606_par8_bops);
- 
--	if (IS_ERR(indio_dev))  {
--		ret = PTR_ERR(indio_dev);
--		goto out2;
--	}
-+	if (IS_ERR(indio_dev))
-+		return PTR_ERR(indio_dev);
- 
- 	platform_set_drvdata(pdev, indio_dev);
- 
- 	return 0;
--
--out2:
--	iounmap(addr);
--out1:
--	release_mem_region(res->start, remap_size);
--
--	return ret;
- }
- 
- static int ad7606_par_remove(struct platform_device *pdev)
- {
- 	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
--	struct resource *res;
--	struct ad7606_state *st = iio_priv(indio_dev);
- 
- 	ad7606_remove(indio_dev, platform_get_irq(pdev, 0));
- 
--	iounmap(st->base_address);
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	release_mem_region(res->start, resource_size(res));
--
- 	return 0;
- }
- 
+v7 thread here with all the historic information: https://lkml.org/lkml/2014/3/14/279
+
+Best regards,
+Liviu
+
+
+Liviu Dudau (9):
+  Fix ioport_map() for !CONFIG_GENERIC_IOMAP cases.
+  pci: Export find_pci_host_bridge() function.
+  pci: Introduce pci_register_io_range() helper function.
+  pci: OF: Fix the conversion of IO ranges into IO resources.
+  pci: Create pci_host_bridge before its associated bus in pci_create_root_bus.
+  pci: Introduce a domain number for pci_host_bridge.
+  pci: of: Parse and map the IRQ when adding the PCI device.
+  pci: Add support for creating a generic host_bridge from device tree
+  pci: Remap I/O bus resources into CPU space with pci_remap_iospace()
+
+ drivers/of/address.c       | 108 ++++++++++++++++++++++++++++++++++++
+ drivers/of/of_pci.c        | 135 +++++++++++++++++++++++++++++++++++++++++++++
+ drivers/pci/host-bridge.c  |  21 ++++++-
+ drivers/pci/pci.c          |  37 +++++++++++++
+ drivers/pci/probe.c        |  68 ++++++++++++++++-------
+ include/asm-generic/io.h   |   2 +-
+ include/linux/of_address.h |  14 +----
+ include/linux/of_pci.h     |  10 ++++
+ include/linux/pci.h        |  15 +++++
+ 9 files changed, 376 insertions(+), 34 deletions(-)
+
 -- 
-1.9.1
+2.0.0
 
