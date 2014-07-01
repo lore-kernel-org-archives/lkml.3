@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758746AbaGAVsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:48:08 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.219]:43273 "EHLO
+	id S1758670AbaGAVsG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:48:06 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.220]:32536 "EHLO
 	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755369AbaGAVrk (ORCPT
+	with ESMTP id S1755302AbaGAVrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Jul 2014 17:47:40 -0400
 X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ejZCzW8NRdwTYefHi0JchBpEUIQvhemkXwbmc=
 X-RZG-CLASS-ID: mo00
 From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 27/50] mars: add new file include/linux/xio/xio_bio.h
-Date: Tue,  1 Jul 2014 23:47:07 +0200
-Message-Id: <1404251250-22992-28-git-send-email-tst@schoebel-theuer.de>
+Subject: [PATCH 23/50] mars: add new file include/linux/lib_mapfree.h
+Date: Tue,  1 Jul 2014 23:47:03 +0200
+Message-Id: <1404251250-22992-24-git-send-email-tst@schoebel-theuer.de>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
 References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
@@ -23,83 +23,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
 ---
- include/linux/xio/xio_bio.h | 69 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 69 insertions(+)
- create mode 100644 include/linux/xio/xio_bio.h
+ include/linux/lib_mapfree.h | 65 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
+ create mode 100644 include/linux/lib_mapfree.h
 
-diff --git a/include/linux/xio/xio_bio.h b/include/linux/xio/xio_bio.h
+diff --git a/include/linux/lib_mapfree.h b/include/linux/lib_mapfree.h
 new file mode 100644
-index 0000000..73fad4e
+index 0000000..416a901
 --- /dev/null
-+++ b/include/linux/xio/xio_bio.h
-@@ -0,0 +1,69 @@
-+/*  (c) 2010 Thomas Schoebel-Theuer / 1&1 Internet AG */
-+#ifndef XIO_BIO_H
-+#define XIO_BIO_H
++++ b/include/linux/lib_mapfree.h
+@@ -0,0 +1,65 @@
++/*  (c) 2012 Thomas Schoebel-Theuer / 1&1 Internet AG */
++#ifndef XIO_LIB_MAPFREE_H
++#define XIO_LIB_MAPFREE_H
 +
-+#define BIO_SUBMIT_MAX_LATENCY		250 /*	250 us */
-+#define BIO_IO_R_MAX_LATENCY		40000 /*   40 ms */
-+#define BIO_IO_W_MAX_LATENCY		100000 /*  100 ms */
++/* Mapfree infrastructure.
++ *
++ * Purposes:
++ *
++ * 1) Open files only once when possible, do ref-counting on struct mapfree_info
++ *
++ * 2) Automatically call invalidate_mapping_pages() in the background on
++ *    "unused" areas to free resources.
++ *    Used areas can be indicated by calling mapfree_set() frequently.
++ *    Usage model: tailored to sequential logfiles.
++ *
++ * 3) Do it all in a completely decoupled manner, in order to prevent resource deadlocks.
++ *
++ * 4) Also to prevent deadlocks: always set mapping_set_gfp_mask() accordingly.
++ */
 +
-+extern struct threshold bio_submit_threshold;
-+extern struct threshold bio_io_threshold[2];
++#include <linux/xio.h>
 +
-+#include <linux/blkdev.h>
++extern int mapfree_period_sec;
++extern int mapfree_grace_keep_mb;
 +
-+struct bio_aio_aspect {
-+	GENERIC_ASPECT(aio);
-+	struct list_head io_head;
-+	struct bio *bio;
-+	struct bio_output *output;
-+	unsigned long long start_stamp;
-+	int status_code;
-+	int hash_pos;
-+	int alloc_len;
-+	bool do_dealloc;
++struct mapfree_info {
++	struct list_head mf_head;
++	struct list_head mf_dirty_anchor;
++	char		*mf_name;
++	struct file	*mf_filp;
++	int		 mf_flags;
++	atomic_t	 mf_count;
++	spinlock_t	 mf_lock;
++	loff_t		 mf_min[2];
++	loff_t		 mf_last;
++	loff_t		 mf_max;
++	long long	 mf_jiffies;
 +};
 +
-+struct bio_brick {
-+	XIO_BRICK(bio);
-+	/*  tunables */
-+	int ra_pages;
-+	int bg_threshold;
-+	int bg_maxfly;
-+	bool do_noidle;
-+	bool do_sync;
-+	bool do_unplug;
-+
-+	/*  readonly */
-+	loff_t total_size;
-+	atomic_t fly_count[XIO_PRIO_NR];
-+	atomic_t queue_count[XIO_PRIO_NR];
-+	atomic_t completed_count;
-+	atomic_t total_completed_count[XIO_PRIO_NR];
-+
-+	/*  private */
-+	spinlock_t lock;
-+	struct list_head queue_list[XIO_PRIO_NR];
-+	struct list_head submitted_list[2];
-+	struct list_head completed_list;
-+
-+	wait_queue_head_t submit_event;
-+	wait_queue_head_t response_event;
-+	struct mapfree_info *mf;
-+	struct block_device *bdev;
-+	struct task_struct *submit_thread;
-+	struct task_struct *response_thread;
-+	int bvec_max;
-+	bool submitted;
++struct dirty_info {
++	struct list_head dirty_head;
++	struct aio_object *dirty_aio;
++	int dirty_stage;
 +};
 +
-+struct bio_input {
-+	XIO_INPUT(bio);
-+};
++struct mapfree_info *mapfree_get(const char *filename, int flags);
 +
-+struct bio_output {
-+	XIO_OUTPUT(bio);
-+};
++void mapfree_put(struct mapfree_info *mf);
 +
-+XIO_TYPES(bio);
++void mapfree_set(struct mapfree_info *mf, loff_t min, loff_t max);
++
++/***************** dirty IOs on the fly  *****************/
++
++void mf_insert_dirty(struct mapfree_info *mf, struct dirty_info *di);
++void mf_remove_dirty(struct mapfree_info *mf, struct dirty_info *di);
++void mf_get_dirty(struct mapfree_info *mf, loff_t *min, loff_t *max, int min_stage, int max_stage);
++void mf_get_any_dirty(const char *filename, loff_t *min, loff_t *max, int min_stage, int max_stage);
++
++/***************** module init stuff ************************/
++
++int __init init_xio_mapfree(void);
++
++void exit_xio_mapfree(void);
 +
 +#endif
 -- 
