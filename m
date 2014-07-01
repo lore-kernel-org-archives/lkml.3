@@ -1,135 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171AbaGAVH3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 17:07:29 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:43746 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654AbaGAVH1 (ORCPT
+	id S932215AbaGAVJH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 17:09:07 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:3866 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388AbaGAVJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 17:07:27 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-media@vger.kernel.org, Sakari Ailus <sakari.ailus@iki.fi>,
-        Katsuya MATSUBARA <matsu@igel.co.jp>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        linux-sh@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH v7] media: vb2: Take queue or device lock in mmap-related vb2 ioctl handlers
-Date: Tue, 01 Jul 2014 23:08:22 +0200
-Message-ID: <2051293.PjTd9YAWz0@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.12.21-gentoo-r1; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53AAFF9B.5000403@oracle.com>
-References: <201308061239.27188.hverkuil@xs4all.nl> <537F5315.8030705@xs4all.nl> <53AAFF9B.5000403@oracle.com>
+	Tue, 1 Jul 2014 17:09:04 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 01 Jul 2014 14:02:32 -0700
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, Felipe Balbi <balbi@ti.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>, <linux-usb@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tuomas.tynkkynen@iki.fi>, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: [PATCH 2/3] USB: EHCI: tegra: Fix probe order issue leading to broken USB
+Date: Wed, 2 Jul 2014 00:08:42 +0300
+Message-ID: <1404248923-21086-3-git-send-email-ttynkkynen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1404248923-21086-1-git-send-email-ttynkkynen@nvidia.com>
+References: <1404248923-21086-1-git-send-email-ttynkkynen@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 25 June 2014 12:58:03 Sasha Levin wrote:
-> Ping?
+The Tegra USB complex has a particularly annoying misdesign: some of the
+UTMI pad configuration registers are global for all the 3 USB controllers
+on the chip, but those registers are located in the first controller's
+register space and will be cleared when the reset to the first
+controller is asserted. Currently, this means that if the 1st controller
+were to finish probing after the 2nd or 3rd controller, USB would not
+work at all.
 
-Hans, I've replied to your previous e-mail with
+Fix this situation by always resetting the 1st controller before doing
+any other setup to any of the controllers, and then never ever reset the
+first controller again.
 
-I'm of course fine with a different way to solve the race condition, if we can 
-find a good one. Do you already know how you would like to solve this ?
+The really ugly part is that the EHCI controllers don't have a reset
+control phandle to the 1st controller, so we have to do some device tree
+groveling to find the phandle to the 1st controller.
 
-> On 05/23/2014 09:54 AM, Hans Verkuil wrote:
-> > Hi Laurent,
-> > 
-> > This patch caused a circular locking dependency as reported by Sasha
-> > Levin:
-> > 
-> > https://lkml.org/lkml/2014/5/5/366
-> > 
-> > The reason is that copy_to/from_user is called in video_usercopy() with
-> > the
-> > core lock held. The copy functions can fault which takes the mmap_sem. If
-> > it was just video_usercopy() then it would be fairly easy to solve this,
-> > but the copy_to_/from_user functions are also called from read and write
-> > and they can be used in other unexpected places.
-> > 
-> > I'm not sure if vb2_fop_get_unmapped_area() is a problem. I suspect (but
-> > I'm not sure) that when that one is called the mmap_sem isn't taken, in
-> > which case taking the lock is fine.
-> > 
-> > But taking the lock in vb2_fop_mmap() does cause lockdep problems.
-> > 
-> > Ideally I would like to drop taking that lock in vb2_fop_mmap and resolve
-> > the race condition that it intended to fix in a different way.
-> > 
-> > Regards,
-> > 
-> > 	Hans
-> > 
-> > On 08/06/2013 10:10 PM, Laurent Pinchart wrote:
-> >> The vb2_fop_mmap() and vb2_fop_get_unmapped_area() functions are plug-in
-> >> implementation of the mmap() and get_unmapped_area() file operations
-> >> that calls vb2_mmap() and vb2_get_unmapped_area() on the queue
-> >> associated with the video device. Neither the
-> >> vb2_fop_mmap/vb2_fop_get_unmapped_area nor the
-> >> v4l2_mmap/vb2_get_unmapped_area functions in the V4L2 core take any
-> >> lock, leading to race conditions between mmap/get_unmapped_area and
-> >> other buffer-related ioctls such as VIDIOC_REQBUFS.
-> >> 
-> >> Fix it by taking the queue or device lock around the vb2_mmap() and
-> >> vb2_get_unmapped_area() calls.
-> >> 
-> >> Signed-off-by: Laurent Pinchart
-> >> <laurent.pinchart+renesas@ideasonboard.com>
-> >> ---
-> >> 
-> >>  drivers/media/v4l2-core/videobuf2-core.c | 18 ++++++++++++++++--
-> >>  1 file changed, 16 insertions(+), 2 deletions(-)
-> >> 
-> >> diff --git a/drivers/media/v4l2-core/videobuf2-core.c
-> >> b/drivers/media/v4l2-core/videobuf2-core.c index 9fc4bab..c9b50c7 100644
-> >> --- a/drivers/media/v4l2-core/videobuf2-core.c
-> >> +++ b/drivers/media/v4l2-core/videobuf2-core.c
-> >> @@ -2578,8 +2578,15 @@ EXPORT_SYMBOL_GPL(vb2_ioctl_expbuf);
-> >>  int vb2_fop_mmap(struct file *file, struct vm_area_struct *vma)
-> >>  {
-> >>  	struct video_device *vdev = video_devdata(file);
-> >> +	struct mutex *lock = vdev->queue->lock ? vdev->queue->lock :
-> >> vdev->lock;
-> >> +	int err;
-> >> 
-> >> -	return vb2_mmap(vdev->queue, vma);
-> >> +	if (lock && mutex_lock_interruptible(lock))
-> >> +		return -ERESTARTSYS;
-> >> +	err = vb2_mmap(vdev->queue, vma);
-> >> +	if (lock)
-> >> +		mutex_unlock(lock);
-> >> +	return err;
-> >>  }
-> >>  EXPORT_SYMBOL_GPL(vb2_fop_mmap);
-> >> 
-> >> @@ -2685,8 +2692,15 @@ unsigned long vb2_fop_get_unmapped_area(struct
-> >> file *file, unsigned long addr,>> 
-> >>  		unsigned long len, unsigned long pgoff, unsigned long flags)
-> >>  {
-> >>  	struct video_device *vdev = video_devdata(file);
-> >> +	struct mutex *lock = vdev->queue->lock ? vdev->queue->lock :
-> >> vdev->lock;
-> >> +	int ret;
-> >> 
-> >> -	return vb2_get_unmapped_area(vdev->queue, addr, len, pgoff, flags);
-> >> +	if (lock && mutex_lock_interruptible(lock))
-> >> +		return -ERESTARTSYS;
-> >> +	ret = vb2_get_unmapped_area(vdev->queue, addr, len, pgoff, flags);
-> >> +	if (lock)
-> >> +		mutex_unlock(lock);
-> >> +	return ret;
-> >> 
-> >>  }
-> >>  EXPORT_SYMBOL_GPL(vb2_fop_get_unmapped_area);
-> >>  #endif
+Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+---
+ drivers/usb/host/ehci-tegra.c | 111 ++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 108 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+index 5590567..e3f362b 100644
+--- a/drivers/usb/host/ehci-tegra.c
++++ b/drivers/usb/host/ehci-tegra.c
+@@ -24,6 +24,7 @@
+ #include <linux/irq.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
++#include <linux/of_address.h>
+ #include <linux/of_device.h>
+ #include <linux/of_gpio.h>
+ #include <linux/platform_device.h>
+@@ -46,6 +47,7 @@
+ #define DRV_NAME "tegra-ehci"
+ 
+ static struct hc_driver __read_mostly tegra_ehci_hc_driver;
++static struct device_node *usb1_ehci_node;
+ 
+ struct tegra_ehci_soc_config {
+ 	bool has_hostpc;
+@@ -60,6 +62,108 @@ struct tegra_ehci_hcd {
+ 	enum tegra_usb_phy_port_speed port_speed;
+ };
+ 
++/*
++ * The 1st USB controller contains some PHY registers that are global for
++ * all the controllers on the chip. Those registers are also cleared when
++ * reset is asserted to the 1st controller. This means that the 1st controller
++ * can only be reset when no other controlled has finished probing. So we'll
++ * reset the 1st controller before doing any other setup on any of the
++ * controllers, and then never again.
++ *
++ * Sadly, the EHCI device tree nodes don't have the phandle to the first USB
++ * controller, so in order not to break the DT ABI, this hack is required to
++ * locate it.
++ */
++static struct device_node *tegra_find_usb1_node(struct platform_device *pdev)
++{
++	int err;
++	int num = 0;
++	const char *compatible;
++	struct device_node *np, *lowest_node = NULL;
++	u64 lowest_addr = U64_MAX;
++
++	/*
++	 * Find the node that has the same compatible string as &pdev->dev
++	 * and has the lowest register address.
++	 */
++	of_property_read_string(pdev->dev.of_node, "compatible",
++				&compatible);
++
++	for_each_compatible_node(np, NULL, compatible) {
++		u64 sz, address;
++		const __be32 *addr_cells;
++
++		addr_cells = of_get_address(np, 0, &sz, NULL);
++		if (!addr_cells) {
++			dev_err(&pdev->dev, "found EHCI node with no address");
++			of_node_put(np);
++			goto failed;
++		}
++
++		address = of_read_number(addr_cells, of_n_addr_cells(np));
++		if (address < lowest_addr) {
++			of_node_put(lowest_node);
++			lowest_node = np;
++			lowest_addr = address;
++		} else {
++			of_node_put(np);
++		}
++		num++;
++	}
++
++	if (num != 3) {
++		dev_err(&pdev->dev, "couldn't locate all 3 EHCI nodes");
++		err = -ENODEV;
++		goto failed;
++	}
++
++	return lowest_node;
++
++failed:
++	of_node_put(lowest_node);
++
++	return ERR_PTR(err);
++}
++
++static int tegra_reset_usb_controller(struct platform_device *pdev)
++{
++	struct usb_hcd *hcd = platform_get_drvdata(pdev);
++	struct tegra_ehci_hcd *tegra =
++		(struct tegra_ehci_hcd *)hcd_to_ehci(hcd)->priv;
++
++	if (!usb1_ehci_node) {
++		struct device_node *np;
++		struct reset_control *usb1_reset;
++
++		np = tegra_find_usb1_node(pdev);
++		if (!np)
++			return -ENODEV;
++
++		usb1_reset = of_reset_control_get(np, "usb");
++		if (IS_ERR(usb1_reset)) {
++			dev_err(&pdev->dev,
++				"couldn't get reset for 1st USB controller");
++			of_node_put(np);
++			return PTR_ERR(usb1_reset);
++		}
++
++		reset_control_assert(usb1_reset);
++		udelay(1);
++		reset_control_deassert(usb1_reset);
++
++		reset_control_put(usb1_reset);
++		usb1_ehci_node = np;
++	}
++
++	if (pdev->dev.of_node != usb1_ehci_node) {
++		reset_control_assert(tegra->rst);
++		udelay(1);
++		reset_control_deassert(tegra->rst);
++	}
++
++	return 0;
++}
++
+ static int tegra_ehci_internal_port_reset(
+ 	struct ehci_hcd	*ehci,
+ 	u32 __iomem	*portsc_reg
+@@ -389,9 +493,9 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 	if (err)
+ 		goto cleanup_hcd_create;
+ 
+-	reset_control_assert(tegra->rst);
+-	udelay(1);
+-	reset_control_deassert(tegra->rst);
++	err = tegra_reset_usb_controller(pdev);
++	if (err)
++		goto cleanup_clk_en;
+ 
+ 	u_phy = devm_usb_get_phy_by_phandle(&pdev->dev, "nvidia,phy", 0);
+ 	if (IS_ERR(u_phy)) {
+@@ -560,6 +664,7 @@ module_init(ehci_tegra_init);
+ 
+ static void __exit ehci_tegra_cleanup(void)
+ {
++	of_node_put(usb1_ehci_node);
+ 	platform_driver_unregister(&tegra_ehci_driver);
+ }
+ module_exit(ehci_tegra_cleanup);
 -- 
-Regards,
-
-Laurent Pinchart
+1.8.1.5
 
