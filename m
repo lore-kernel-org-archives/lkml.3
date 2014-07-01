@@ -1,99 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376AbaGAK02 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 06:26:28 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:39605 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752320AbaGAK0L (ORCPT
+	id S1754239AbaGAKcf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 06:32:35 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:53516 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751571AbaGAKce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 06:26:11 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH 2/2] staging: rtl8192ee: Pass large struct by const reference
-Date: Tue,  1 Jul 2014 12:25:45 +0200
-Message-Id: <1404210345-28181-2-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1404210345-28181-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1404210345-28181-1-git-send-email-linux@rasmusvillemoes.dk>
+	Tue, 1 Jul 2014 06:32:34 -0400
+Message-ID: <1404210751.2010.4.camel@x220>
+Subject: [PATCH] eeepc-laptop: simplify parse_arg()
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Cc: acpi4asus-user@lists.sourceforge.net, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 01 Jul 2014 12:32:31 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 01 Jul 2014 10:32:31.0394 (UTC) FILETIME=[C382A820:01CF9517]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct rtl_stats is rather huge (152 bytes), and since
-rtl92ee_rx_command_packet() does not modify it, it might as
-well be passed by const reference.
+parse_arg() has three possible return values:
+    -EINVAL if sscanf(), in short, fails;
+    zero if "count" is zero; and
+    "count" in all other cases
 
-Reported by Coverity: CID 1222131
+But "count" will never be zero. See, parse_arg() is called by the
+various store functions. And the callchain of these functions starts
+with sysfs_kf_write(). And that function checks for a zero "count". So
+we can stop checking for a zero "count", drop the "count" argument
+entirely, and transform parse_arg() into a function that returns zero on
+success or a negative error. That, in turn, allows to make those store
+functions just return "count" on success. The net effect is that the
+code becomes a bit easier to understand.
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+A nice side effect is that this GCC warning is silenced too:
+    drivers/platform/x86/eeepc-laptop.c: In function ‘store_sys_acpi’:
+    drivers/platform/x86/eeepc-laptop.c:279:10: warning: ‘value’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+      int rv, value;
+
+Which is, of course, the reason to have a look at parse_arg().
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- drivers/staging/rtl8192ee/pci.c           | 2 +-
- drivers/staging/rtl8192ee/rtl8192ee/trx.c | 4 ++--
- drivers/staging/rtl8192ee/rtl8192ee/trx.h | 2 +-
- drivers/staging/rtl8192ee/wifi.h          | 2 +-
- 4 files changed, 5 insertions(+), 5 deletions(-)
+Compile tested. I don't own an eeepc.
 
-diff --git a/drivers/staging/rtl8192ee/pci.c b/drivers/staging/rtl8192ee/pci.c
-index 3fe9b7b..f3abbcc 100644
---- a/drivers/staging/rtl8192ee/pci.c
-+++ b/drivers/staging/rtl8192ee/pci.c
-@@ -892,7 +892,7 @@ static void _rtl_pci_rx_interrupt(struct ieee80211_hw *hw)
- 		}
- 
- 		/* handle command packet here */
--		if (rtlpriv->cfg->ops->rx_command_packet(hw, stats, skb)) {
-+		if (rtlpriv->cfg->ops->rx_command_packet(hw, &stats, skb)) {
- 				dev_kfree_skb_any(skb);
- 				goto end;
- 		}
-diff --git a/drivers/staging/rtl8192ee/rtl8192ee/trx.c b/drivers/staging/rtl8192ee/rtl8192ee/trx.c
-index c930f52..1190c8b 100644
---- a/drivers/staging/rtl8192ee/rtl8192ee/trx.c
-+++ b/drivers/staging/rtl8192ee/rtl8192ee/trx.c
-@@ -1263,13 +1263,13 @@ bool rtl92ee_is_tx_desc_closed(struct ieee80211_hw *hw, u8 hw_queue, u16 index)
+I do hope my reading of the code make sense. Ie, is it correct that
+sysfs_kf_write() is at the start of all the sysfs writes involved?
+
+ drivers/platform/x86/eeepc-laptop.c | 34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+index 9b0c57cd1d4a..a7ef834ffa39 100644
+--- a/drivers/platform/x86/eeepc-laptop.c
++++ b/drivers/platform/x86/eeepc-laptop.c
+@@ -263,13 +263,11 @@ static int acpi_setter_handle(struct eeepc_laptop *eeepc, int cm,
+ /*
+  * Sys helpers
+  */
+-static int parse_arg(const char *buf, unsigned long count, int *val)
++static int parse_arg(const char *buf, int *val)
+ {
+-	if (!count)
+-		return 0;
+ 	if (sscanf(buf, "%i", val) != 1)
+ 		return -EINVAL;
+-	return count;
++	return 0;
  }
  
- u32 rtl92ee_rx_command_packet(struct ieee80211_hw *hw,
--			      struct rtl_stats status,
-+			      const struct rtl_stats *status,
- 			      struct sk_buff *skb)
- {
- 	u32 result = 0;
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+ static ssize_t store_sys_acpi(struct device *dev, int cm,
+@@ -278,12 +276,13 @@ static ssize_t store_sys_acpi(struct device *dev, int cm,
+ 	struct eeepc_laptop *eeepc = dev_get_drvdata(dev);
+ 	int rv, value;
  
--	switch (status.packet_report_type) {
-+	switch (status->packet_report_type) {
- 	case NORMAL_RX:
- 		result = 0;
- 		break;
-diff --git a/drivers/staging/rtl8192ee/rtl8192ee/trx.h b/drivers/staging/rtl8192ee/rtl8192ee/trx.h
-index c2cd581..e04ee7e 100644
---- a/drivers/staging/rtl8192ee/rtl8192ee/trx.h
-+++ b/drivers/staging/rtl8192ee/rtl8192ee/trx.h
-@@ -872,6 +872,6 @@ void rtl92ee_tx_fill_cmddesc(struct ieee80211_hw *hw, u8 *pdesc,
- 			     bool b_firstseg, bool b_lastseg,
- 			     struct sk_buff *skb);
- u32 rtl92ee_rx_command_packet(struct ieee80211_hw *hw,
--			      struct rtl_stats status,
-+			      const struct rtl_stats *status,
- 			      struct sk_buff *skb);
- #endif
-diff --git a/drivers/staging/rtl8192ee/wifi.h b/drivers/staging/rtl8192ee/wifi.h
-index 96fa261..a37176a 100644
---- a/drivers/staging/rtl8192ee/wifi.h
-+++ b/drivers/staging/rtl8192ee/wifi.h
-@@ -1946,7 +1946,7 @@ struct rtl_hal_ops {
- 			     u32 cmd_len, u8 *p_cmdbuffer);
- 	bool (*get_btc_status)(void);
- 	u32 (*rx_command_packet)(struct ieee80211_hw *hw,
--				 struct rtl_stats status, struct sk_buff *skb);
-+				 const struct rtl_stats *status, struct sk_buff *skb);
- 	void (*add_wowlan_pattern)(struct ieee80211_hw *hw,
- 				   struct rtl_wow_pattern *rtl_pattern,
- 				   u8 index);
+-	rv = parse_arg(buf, count, &value);
+-	if (rv > 0)
+-		value = set_acpi(eeepc, cm, value);
++	rv = parse_arg(buf, &value);
++	if (rv < 0)
++		return rv;
++	value = set_acpi(eeepc, cm, value);
+ 	if (value < 0)
+ 		return -EIO;
+-	return rv;
++	return count;
+ }
+ 
+ static ssize_t show_sys_acpi(struct device *dev, int cm, char *buf)
+@@ -377,13 +376,13 @@ static ssize_t store_cpufv(struct device *dev,
+ 		return -EPERM;
+ 	if (get_cpufv(eeepc, &c))
+ 		return -ENODEV;
+-	rv = parse_arg(buf, count, &value);
++	rv = parse_arg(buf, &value);
+ 	if (rv < 0)
+ 		return rv;
+-	if (!rv || value < 0 || value >= c.num)
++	if (value < 0 || value >= c.num)
+ 		return -EINVAL;
+ 	set_acpi(eeepc, CM_ASL_CPUFV, value);
+-	return rv;
++	return count;
+ }
+ 
+ static ssize_t show_cpufv_disabled(struct device *dev,
+@@ -402,7 +401,7 @@ static ssize_t store_cpufv_disabled(struct device *dev,
+ 	struct eeepc_laptop *eeepc = dev_get_drvdata(dev);
+ 	int rv, value;
+ 
+-	rv = parse_arg(buf, count, &value);
++	rv = parse_arg(buf, &value);
+ 	if (rv < 0)
+ 		return rv;
+ 
+@@ -412,7 +411,7 @@ static ssize_t store_cpufv_disabled(struct device *dev,
+ 			pr_warn("cpufv enabled (not officially supported "
+ 				"on this model)\n");
+ 		eeepc->cpufv_disabled = false;
+-		return rv;
++		return count;
+ 	case 1:
+ 		return -EPERM;
+ 	default:
+@@ -1042,10 +1041,11 @@ static ssize_t store_sys_hwmon(void (*set)(int), const char *buf, size_t count)
+ {
+ 	int rv, value;
+ 
+-	rv = parse_arg(buf, count, &value);
+-	if (rv > 0)
+-		set(value);
+-	return rv;
++	rv = parse_arg(buf, &value);
++	if (rv < 0)
++		return rv;
++	set(value);
++	return count;
+ }
+ 
+ static ssize_t show_sys_hwmon(int (*get)(void), char *buf)
 -- 
-1.9.2
+1.9.3
 
