@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662AbaGBXfj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 19:35:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48581 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaGBXfh (ORCPT
+	id S1751744AbaGBXqD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 19:46:03 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:34377 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaGBXqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 19:35:37 -0400
-From: Colin King <colin.king@canonical.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] ACPI / EC: Free saved_ec on error exit path
-Date: Thu,  3 Jul 2014 00:35:09 +0100
-Message-Id: <1404344109-30805-1-git-send-email-colin.king@canonical.com>
-X-Mailer: git-send-email 2.0.1
+	Wed, 2 Jul 2014 19:46:01 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCHSET cgroup/for-3.17] cgroup: remove sane_behavior support on non-default hierarchies
+Date: Wed,  2 Jul 2014 19:45:43 -0400
+Message-Id: <1404344747-7957-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Ian King <colin.king@canonical.com>
+Hello,
 
-Smatch detected two memory leaks on saved_ec:
+sane_behavior has been used as a development vehicle for the default
+unified hierarchy.  Now that the default hierarchy is in place, the
+flag became redundant and confusing as its usage is allowed on all
+hierarchies.  There are gonna be either the default hierarchy or
+legacy ones.  Let's make that clear by removing sane_behavior support
+on non-default hierarchies.
 
-drivers/acpi/ec.c:1070 acpi_ec_ecdt_probe() warn: possible
-  memory leak of 'saved_ec'
-drivers/acpi/ec.c:1109 acpi_ec_ecdt_probe() warn: possible
-  memory leak of 'saved_ec'
+This patchset contains the following four patches.
 
-Free saved_ec on these two error exit paths to stop the memory
-leak.  Note that saved_ec maybe null, but kfree on null is allowed.
+ 0001-cgroup-remove-CGRP_ROOT_OPTION_MASK.patch
+ 0002-cgroup-make-interface-file-cgroup.sane_behavior-lega.patch
+ 0003-cgroup-remove-sane_behavior-support-on-non-default-h.patch
+ 0004-cgroup-clean-up-sane_behavior-handling.patch
 
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
----
- drivers/acpi/ec.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+0001 is a trivial cleanup.
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index ad11ba4..9800f50 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -1066,8 +1066,10 @@ int __init acpi_ec_ecdt_probe(void)
- 	/* fall through */
- 	}
- 
--	if (EC_FLAGS_SKIP_DSDT_SCAN)
-+	if (EC_FLAGS_SKIP_DSDT_SCAN) {
-+		kfree(saved_ec);
- 		return -ENODEV;
-+	}
- 
- 	/* This workaround is needed only on some broken machines,
- 	 * which require early EC, but fail to provide ECDT */
-@@ -1105,6 +1107,7 @@ install:
- 	}
- error:
- 	kfree(boot_ec);
-+	kfree(saved_ec);
- 	boot_ec = NULL;
- 	return -ENODEV;
- }
--- 
-2.0.1
+0002 removes "cgroup.sane_behavior" from the default hierarchy.
 
+0003 removes sane_behavior support on non-default hierarchies.
+
+0004 cleans up sane_behavior handling.
+
+This patchset is on top of a497c3ba1d97 ("Linux 3.16-rc2") and
+available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-dfl-instead-of-sane
+
+diffstat follows.  Thanks.
+
+ block/blk-throttle.c   |    6 +-
+ include/linux/cgroup.h |  128 ++++++++++++++++++++-----------------------------
+ kernel/cgroup.c        |   96 +++++++++++++++---------------------
+ kernel/cpuset.c        |   33 +++++-------
+ mm/memcontrol.c        |    7 +-
+ 5 files changed, 117 insertions(+), 153 deletions(-)
+
+--
+tejun
