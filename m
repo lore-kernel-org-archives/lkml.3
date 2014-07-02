@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964967AbaGBQzd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 12:55:33 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:54047 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964946AbaGBQz2 (ORCPT
+	id S1756891AbaGBQzx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 12:55:53 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:45060 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S964867AbaGBQzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 12:55:28 -0400
-From: navin patidar <navin.patidar@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 48/48] staging: rtl8188eu: Remove dummy function rtw_free_cmd_priv()
-Date: Wed,  2 Jul 2014 22:17:44 +0530
-Message-Id: <1404319664-8327-48-git-send-email-navin.patidar@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
-References: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
+	Wed, 2 Jul 2014 12:55:31 -0400
+Date: Wed, 2 Jul 2014 18:55:28 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: "Alexandre Belloni" <alexandre.belloni@free-electrons.com>,
+        "Nicolas Ferre" <nicolas.ferre@atmel.com>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/33] clk: at91: main: warn when the main crystal
+ frequency is not set
+Message-ID: <20140702185528.5699843a@bbrezillon>
+In-Reply-To: <20140702163842.7440.73162@quantum>
+References: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com>
+	<1404223962-30471-4-git-send-email-alexandre.belloni@free-electrons.com>
+	<20140702101811.2f2a507e@bbrezillon>
+	<20140702163842.7440.73162@quantum>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: navin patidar <navin.patidar@gmail.com>
----
- drivers/staging/rtl8188eu/core/rtw_cmd.c    |    5 -----
- drivers/staging/rtl8188eu/include/rtw_cmd.h |    1 -
- drivers/staging/rtl8188eu/os_dep/os_intfs.c |    2 --
- 3 files changed, 8 deletions(-)
+On Wed, 02 Jul 2014 09:38:42 -0700
+Mike Turquette <mturquette@linaro.org> wrote:
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-index 0841de2..dd9ed74 100644
---- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-@@ -39,11 +39,6 @@ int rtw_init_cmd_priv(struct cmd_priv *pcmdpriv)
- 	return _SUCCESS;
- }
- 
--void rtw_free_cmd_priv(struct cmd_priv *pcmdpriv)
--{
--
--}
--
- /*
- Calling Context:
- 
-diff --git a/drivers/staging/rtl8188eu/include/rtw_cmd.h b/drivers/staging/rtl8188eu/include/rtw_cmd.h
-index e59d6d4..9e9f5f4 100644
---- a/drivers/staging/rtl8188eu/include/rtw_cmd.h
-+++ b/drivers/staging/rtl8188eu/include/rtw_cmd.h
-@@ -68,7 +68,6 @@ void rtw_free_cmd_obj(struct cmd_obj *pcmd);
- int rtw_cmd_thread(void *context);
- 
- int rtw_init_cmd_priv(struct cmd_priv *pcmdpriv);
--void rtw_free_cmd_priv(struct cmd_priv *pcmdpriv);
- 
- enum rtw_drvextra_cmd_id {
- 	NONE_WK_CID,
-diff --git a/drivers/staging/rtl8188eu/os_dep/os_intfs.c b/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-index f331aae..b0c38a4 100644
---- a/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-+++ b/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-@@ -932,8 +932,6 @@ u8 rtw_free_drv_sw(struct adapter *padapter)
- 
- 	free_mlme_ext_priv(&padapter->mlmeextpriv);
- 
--	rtw_free_cmd_priv(&padapter->cmdpriv);
--
- 	rtw_free_mlme_priv(&padapter->mlmepriv);
- 	_rtw_free_xmit_priv(&padapter->xmitpriv);
- 
+> Quoting Boris BREZILLON (2014-07-02 01:18:11)
+> > On Tue,  1 Jul 2014 16:12:12 +0200
+> > Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
+> > 
+> > > When the main crystal frequency is not set, the main clock is
+> > > approximated using the MAINF value in the CKGR_MCFR register. Warn
+> > > the user in that case.
+> > > 
+> > > Signed-off-by: Alexandre Belloni
+> > > <alexandre.belloni@free-electrons.com> ---
+> > 
+> > Acked-by: Boris BREZILLON <boris.brezillon@overkiz.com>
+> > 
+> > Mike, do you want me to take this patch and send you a pull request, or
+> > should I let you take this one directly ?
+> 
+> I've picked it up since it is just the one patch.
+> 
+
+Thanks.
+
 -- 
-1.7.10.4
-
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
