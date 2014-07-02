@@ -1,167 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071AbaGBEbW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 00:31:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32737 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750893AbaGBEbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 00:31:21 -0400
-Date: Wed, 2 Jul 2014 00:30:57 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH] rmap: fix pgoff calculation to handle hugepage correctly
-Message-ID: <20140702043057.GA19813@nhori.redhat.com>
-References: <1404225982-22739-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20140701180739.GA4985@node.dhcp.inet.fi>
- <20140701185021.GA10356@nhori.bos.redhat.com>
- <20140701201540.GA5953@node.dhcp.inet.fi>
+	id S1754522AbaGBEdy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 00:33:54 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:40570 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005AbaGBEdw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 00:33:52 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140701201540.GA5953@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        "Javier Martinez Canillas" <javier@dowhile0.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <53B0FC27.5040002@ti.com>
+Cc: "Grant Likely" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Linux Kernel" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        ldewangan@nvidia.com, linux-doc@vger.kernel.org,
+        "Nishanth Menon" <nm@ti.com>, "Rob Herring" <robh+dt@kernel.org>
+References: <1403848871-26519-1-git-send-email-peter.ujfalusi@ti.com>
+ <1403848871-26519-3-git-send-email-peter.ujfalusi@ti.com>
+ <CABxcv=metB4=eoT=fAh7S-b_mhAvHcJtn2wrV8v8koSyKMxNNw@mail.gmail.com>
+ <53B0FC27.5040002@ti.com>
+Message-ID: <20140702043338.23338.31600@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [RESEND 2/2] clk: Add driver for Palmas clk32kg and clk32kgaudio clocks
+Date: Tue, 01 Jul 2014 21:33:38 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 01, 2014 at 11:15:40PM +0300, Kirill A. Shutemov wrote:
-> On Tue, Jul 01, 2014 at 02:50:21PM -0400, Naoya Horiguchi wrote:
-> > On Tue, Jul 01, 2014 at 09:07:39PM +0300, Kirill A. Shutemov wrote:
-> > > Why do we need this special case for hugetlb page ->index? Why not use
-> > > PAGE_SIZE units there too? Or I miss something?
-> > 
-> > hugetlb pages are never split, so we use larger page cache size for
-> > hugetlbfs file (to avoid large sparse page cache tree.)
+Quoting Peter Ujfalusi (2014-06-29 22:56:55)
+> Hi Javier,
 > 
-> For transparent huge page cache I would like to have native support in
-> page cache radix-tree: since huge pages are always naturally aligned we
-> can create a leaf node for it several (RADIX_TREE_MAP_SHIFT -
-> HPAGE_PMD_ORDER) levels up by tree, which would cover all indexes in the
-> range the huge page represents. This approach should fit hugetlb too. And
-> -1 special case for hugetlb.
-> But I'm not sure when I'll get time to play with this...
+> On 06/27/2014 09:23 PM, Javier Martinez Canillas wrote:
+> > Hello Peter,
+> > 
+> > On Fri, Jun 27, 2014 at 8:01 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+> >> Palmas class of devices can provide 32K clock(s) to be used by other devices
+> >> on the board. Depending on the actual device the provided clocks can be:
+> >> CLK32K_KG and CLK32K_KGAUDIO
+> >> or only one:
+> >> CLK32K_KG (TPS659039 for example)
+> >>
+> >> Use separate compatible flags for the two 32K clock.
+> >> A system which needs or have only one of the 32k clock from
+> >> Palmas will need to add node(s) for each clock as separate section
+> >> in the dts file.
+> >> The two compatible property is:
+> >> "ti,palmas-clk32kg" for clk32kg clock
+> >> "ti,palmas-clk32kgaudio" for clk32kgaudio clock
+> >>
+> >> Apart from the register control of the clocks - which is done via
+> >> the clock API there is a posibility to enable the external sleep
+> >> control. In this way the clock can be enabled/disabled on demand by the
+> >> user of the clock.
+> >>
+> >> See the documentation for more details.
+> >>
+> >> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> >> Reviewed-by: Nishanth Menon <nm@ti.com>
+> 
+> >> +static unsigned long palmas_clks_recalc_rate(struct clk_hw *hw,
+> >> +                                            unsigned long parent_rate)
+> >> +{
+> >> +       return 32768;
+> >> +}
+> > 
+> > I see that other clock drivers using a constant rate return 0 if the
+> > clock has not been enabled.
+> 
+> and there are examples when similar fixed clock drivers returns only the clock
+> value, like clk-max77686. I can not find clear guidelines neither in the
+> documentation or around the header/c files for this.
+> Mike, what is the appropriate way of handling the recalc_rate?
 
-So I'm OK that hugetlb page should have ->index in PAGE_CACHE_SIZE
-when transparent huge page is merged. I may try to write patches
-on top of your tree after I've done a few series in my work queue.
+You are right that there are no guidelines stating, "don't do that", but
+please, "don't do that" ;-)
 
-In order to fix the current problem, I suggest a page_to_pgoff() as a
-short-term workaround. I found a few other call sites which can call
-on hugepage, so this function help us track such callers.
-The similar function seems to be introduced in your transparent huge
-page cache tree (page_cache_index()). So this function will be finally
-overwritten with it.
+clk_enable and clk_set_rate are entirely unrelated operations from the
+perspective of the Linux clock framework, and mixing these two classes
+of operations is a recipe for pain.
 
-Thanks,
-Naoya Horiguchi
----
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Date: Tue, 1 Jul 2014 21:38:22 -0400
-Subject: [PATCH v2] rmap: fix pgoff calculation to handle hugepage correctly
+> 
+> > So maybe is more correct to have something
+> > like the following?
+> > 
+> > if (__clk_is_enabled(hw->clk))
+> >         return 32768;
+> > else
+> >         return 0;
 
-I triggered VM_BUG_ON() in vma_address() when I try to migrate an anonymous
-hugepage with mbind() in the kernel v3.16-rc3. This is because pgoff's
-calculation in rmap_walk_anon() fails to consider compound_order() only to
-have an incorrect value.
+So what happens here if this is gateable clock and later on we call
+clk_enable on it? The clocks rate will still be zero since
+clk_enable/clk_disable do not touch the rate at all.
 
-This patch introduces page_to_pgoff(), which gets the page's offset in
-PAGE_CACHE_SIZE. Kirill pointed out that page cache tree should natively
-handle hugepages, and in order to make hugetlbfs fit it, page->index of
-hugetlbfs page should be in PAGE_CACHE_SIZE. This is beyond this patch,
-but page_to_pgoff() contains the point to be fixed in a single function.
+Regards,
+Mike
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- include/linux/pagemap.h | 12 ++++++++++++
- mm/memory-failure.c     |  4 ++--
- mm/rmap.c               | 10 +++-------
- 3 files changed, 17 insertions(+), 9 deletions(-)
-
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index 0a97b583ee8d..e1474ae18c88 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -399,6 +399,18 @@ static inline struct page *read_mapping_page(struct address_space *mapping,
- }
- 
- /*
-+ * Get the offset in PAGE_SIZE.
-+ * (TODO: hugepage should have ->index in PAGE_SIZE)
-+ */
-+static inline pgoff_t page_to_pgoff(struct page *page)
-+{
-+	if (unlikely(PageHeadHuge(page)))
-+		return page->index << compound_order(page);
-+	else
-+		return page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
-+}
-+
-+/*
-  * Return byte-offset into filesystem object for page.
-  */
- static inline loff_t page_offset(struct page *page)
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index cd8989c1027e..61f05d745e3d 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -435,7 +435,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
- 	if (av == NULL)	/* Not actually mapped anymore */
- 		return;
- 
--	pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
-+	pgoff = page_to_pgoff(page);
- 	read_lock(&tasklist_lock);
- 	for_each_process (tsk) {
- 		struct anon_vma_chain *vmac;
-@@ -469,7 +469,7 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
- 	mutex_lock(&mapping->i_mmap_mutex);
- 	read_lock(&tasklist_lock);
- 	for_each_process(tsk) {
--		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
-+		pgoff_t pgoff = page_to_pgoff(page);
- 		struct task_struct *t = task_early_kill(tsk, force_early);
- 
- 		if (!t)
-diff --git a/mm/rmap.c b/mm/rmap.c
-index b7e94ebbd09e..22a4a7699cdb 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -517,11 +517,7 @@ void page_unlock_anon_vma_read(struct anon_vma *anon_vma)
- static inline unsigned long
- __vma_address(struct page *page, struct vm_area_struct *vma)
- {
--	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
--
--	if (unlikely(is_vm_hugetlb_page(vma)))
--		pgoff = page->index << huge_page_order(page_hstate(page));
--
-+	pgoff_t pgoff = page_to_pgoff(page);
- 	return vma->vm_start + ((pgoff - vma->vm_pgoff) << PAGE_SHIFT);
- }
- 
-@@ -1639,7 +1635,7 @@ static struct anon_vma *rmap_walk_anon_lock(struct page *page,
- static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
- {
- 	struct anon_vma *anon_vma;
--	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
-+	pgoff_t pgoff = page_to_pgoff(page);
- 	struct anon_vma_chain *avc;
- 	int ret = SWAP_AGAIN;
- 
-@@ -1680,7 +1676,7 @@ static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
- static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
- {
- 	struct address_space *mapping = page->mapping;
--	pgoff_t pgoff = page->index << compound_order(page);
-+	pgoff_t pgoff = page_to_pgoff(page);
- 	struct vm_area_struct *vma;
- 	int ret = SWAP_AGAIN;
- 
--- 
-1.9.3
-
+> > 
+> > Best regards,
+> > Javier
+> > 
+> 
+> 
+> -- 
+> Péter
