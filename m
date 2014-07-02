@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaGBJJZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 05:09:25 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:49634 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707AbaGBJJY (ORCPT
+	id S1752844AbaGBJJl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 05:09:41 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:40330 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005AbaGBJJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 05:09:24 -0400
+	Wed, 2 Jul 2014 05:09:39 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s62997Ih028516, This message is accepted by code: ctloc85258
+Message-ID: <53B3CD60.80302@realsil.com.cn>
+Date: Wed, 2 Jul 2014 17:14:08 +0800
+From: micky <micky_ching@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1403760814-26148-1-git-send-email-acourbot@nvidia.com>
-References: <1403760814-26148-1-git-send-email-acourbot@nvidia.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Wed, 2 Jul 2014 18:09:03 +0900
-Message-ID: <CAAVeFu+O+Z7kQ3Sre=WKkcYoxXYUx4zCzZK8cVMj1WAtwA5eMg@mail.gmail.com>
-Subject: Re: [PATCH v3 0/3] drm/nouveau: support for probing platform devices
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Cc: Ben Skeggs <bskeggs@redhat.com>, Alexandre Courbot <acourbot@nvidia.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Lee Jones <lee.jones@linaro.org>, Ulf Hansson <ulf.hansson@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Chris Ball <chris@printf.net>,
+        <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Roger <rogerable@realtek.com>, Wei WANG <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH 1/2] mfd: rtsx: add dma transfer function
+References: <cover.1402037562.git.micky_ching@realsil.com.cn> <9021eae37d96aa027d00ae4a7b6cd84dbbd1b6b5.1402037564.git.micky_ching@realsil.com.cn> <20140616122032.GS14323@lee--X1> <CAPDyKFpJ5tToJOk6try-jrRCCzcKtJkszNE5Nuc3Uarhpta1BQ@mail.gmail.com> <20140618080056.GM21030@lee--X1>
+In-Reply-To: <20140618080056.GM21030@lee--X1>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 2:33 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> This series adds support for probing platform devices on Nouveau, as well as
-> the DT bindings for GK20A. It doesn't enable the GPU yet on Tegra boards since
-> a few extra things need to be supported before that.
+On 06/18/2014 04:00 PM, Lee Jones wrote:
+> On Mon, 16 Jun 2014, Ulf Hansson wrote:
 >
-> This version is mostly identical to v2 but fixes an important issue: the drvdata
-> must be set to the drm_device for sysfs to work, so the platform device
-> structure now includes the nouveau_device flattened into it to let us compute
-> the address of one from the other. Since the platform device resources (clocks,
-> regulators, ...) need to live longer than the nouveau_device, they are stored
-> into their own structure which is allocated separately.
+>> On 16 June 2014 14:20, Lee Jones <lee.jones@linaro.org> wrote:
+>>>> From: Micky Ching <micky_ching@realsil.com.cn>
+>>>>
+>>>> rtsx driver using a single function for transfer data, dma map/unmap are
+>>>> placed in one fix function. We need map/unmap dma in different place(for
+>>>> mmc async driver), so add three function for dma map, dma transfer and
+>>>> dma unmap.
+>>>>
+>>>> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+>>>> ---
+>>>>   drivers/mfd/rtsx_pcr.c       |   76 ++++++++++++++++++++++++++----------------
+>>>>   include/linux/mfd/rtsx_pci.h |    6 ++++
+>>>>   2 files changed, 54 insertions(+), 28 deletions(-)
+>>> I don't see any glaring issues with this patch.  Does it rely on the
+>>> first patch, or vise versa, or can it just be applied?
+>> The mmc part in patch2 relies on this one, but please go ahead and
+>> apply the mfd patch if you see it good.
+>>
+>> I can later provide my ack for the mmc parts, in patch2, when it's a
+>> reviewed properly and thus you can take it through your tree.
+> There's no rush.  Once you're happy with the MMC patch, Micky can
+> submit them both again with my Ack on the MFD part and I'll take them
+> as a set.
 >
-> Changes since v2:
-> * Allocate the nouveau_device flattened into the nouveau_platform_device to
->   be able to compute one from another easily, without having to ressort on the
->   drvdata which is required to store the drm_device.
-> * Only propose the platform driver if a supported arch (Tegra for now) is
->   enabled.
-> * Move structure definitions into their own header file as some subdevs (e.g.
->   clocks) will need to use them.
->
-> Changes since v1:
-> * Moved the platform device driver to its own module. This allows it to be more
->   self-contained and saves us the need to export too many functions from
->   nouveau_drm and nouveau_platform.
-> * Register the DRM device without using the platform helpers, which is made
->   possible by drm_dev_set_unique(). This allows us to catch and register the
->   DRM device during platform probe.
-> * Fixed the clock names in the DT bindings.
-> * Removed the patches enabling GK20A on Venice2 and Jetson TK1 as support
->   is not complete yet.
+Hi Lee,
 
-Stephen, Thierry,
+Can you pick this patch directly?  need resend it now?
 
-Ben has merged the first patch of this series into the Nouveau tree.
-Could you get patches 2 and 3 through the Tegra tree? Thanks!
+Thanks.
+
+Best Regards.
+micky.
