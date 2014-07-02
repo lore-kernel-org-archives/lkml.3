@@ -1,90 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072AbaGBDgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 23:36:21 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:52304 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771AbaGBDgU convert rfc822-to-8bit (ORCPT
+	id S1753059AbaGBDmq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 23:42:46 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:41810 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405AbaGBDmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 23:36:20 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Sachin Kamat <sachin.kamat@samsung.com>, linux-kernel@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1404195994-32354-1-git-send-email-sachin.kamat@samsung.com>
-Cc: spk.linux@gmail.com, "Peter De Schrijver" <pdeschrijver@nvidia.com>
-References: <1404195994-32354-1-git-send-email-sachin.kamat@samsung.com>
-Message-ID: <20140702033606.32686.67534@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v2 1/1] clk: Fix build warnings
-Date: Tue, 01 Jul 2014 20:36:06 -0700
+	Tue, 1 Jul 2014 23:42:45 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v2] x86: Find correct 64 bit ramdisk address for microcode early update
+Date: Tue,  1 Jul 2014 20:42:17 -0700
+Message-Id: <1404272537-14457-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4.5
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Sachin Kamat (2014-06-30 23:26:34)
-> ‘all_lists’ and ‘orphan_list’ is accessed only when DEBUG_FS is defined.
-> Thus, make their compilation conditional to fix the below warnings introduced
-> by commit 27b8d5f723 ("clk: flatten clk tree in debugfs"):
-> drivers/clk/clk.c:40:27: warning: ‘all_lists’ defined but not used [-Wunused-variable]
-> drivers/clk/clk.c:46:27: warning: ‘orphan_list’ defined but not used [-Wunused-variable]
-> 
-> Signed-off-by: Sachin Kamat <sachin.kamat@samsung.com>
-> Cc: Peter De Schrijver <pdeschrijver@nvidia.com>
+When using kexec with 64bit kernel, bzImage and ramdisk could be
+loaded above 4G. We need this to get correct ramdisk adress.
 
-Applied.
+Make get_ramdisk_image() global and use it for early microcode updating.
 
-Thanks,
-Mike
+-v2: update changelog.
 
-> ---
-> Changes since v1:
-> Moved the definitions under already existing #ifdefs.
-> ---
->  drivers/clk/clk.c |   22 +++++++++++-----------
->  1 file changed, 11 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index 7dfb2f308b35..958967d141ee 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -36,17 +36,6 @@ static HLIST_HEAD(clk_root_list);
->  static HLIST_HEAD(clk_orphan_list);
->  static LIST_HEAD(clk_notifier_list);
->  
-> -static struct hlist_head *all_lists[] = {
-> -       &clk_root_list,
-> -       &clk_orphan_list,
-> -       NULL,
-> -};
-> -
-> -static struct hlist_head *orphan_list[] = {
-> -       &clk_orphan_list,
-> -       NULL,
-> -};
-> -
->  /***           locking             ***/
->  static void clk_prepare_lock(void)
->  {
-> @@ -111,6 +100,17 @@ static void clk_enable_unlock(unsigned long flags)
->  static struct dentry *rootdir;
->  static int inited = 0;
->  
-> +static struct hlist_head *all_lists[] = {
-> +       &clk_root_list,
-> +       &clk_orphan_list,
-> +       NULL,
-> +};
-> +
-> +static struct hlist_head *orphan_list[] = {
-> +       &clk_orphan_list,
-> +       NULL,
-> +};
-> +
->  static void clk_summary_show_one(struct seq_file *s, struct clk *c, int level)
->  {
->         if (!c)
-> -- 
-> 1.7.9.5
-> 
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/x86/include/asm/setup.h                |    3 +++
+ arch/x86/kernel/cpu/microcode/amd_early.c   |   10 +++++-----
+ arch/x86/kernel/cpu/microcode/intel_early.c |    8 ++++----
+ arch/x86/kernel/setup.c                     |   28 ++++++++++++++--------------
+ 4 files changed, 26 insertions(+), 23 deletions(-)
+
+Index: linux-2.6/arch/x86/include/asm/setup.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/setup.h
++++ linux-2.6/arch/x86/include/asm/setup.h
+@@ -105,6 +105,9 @@ void *extend_brk(size_t size, size_t ali
+ 	RESERVE_BRK(name, sizeof(type) * entries)
+ 
+ extern void probe_roms(void);
++u64 get_ramdisk_image(struct boot_params *bp);
++u64 get_ramdisk_size(struct boot_params *bp);
++
+ #ifdef __i386__
+ 
+ asmlinkage void __init i386_start_kernel(void);
+Index: linux-2.6/arch/x86/kernel/cpu/microcode/amd_early.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/microcode/amd_early.c
++++ linux-2.6/arch/x86/kernel/cpu/microcode/amd_early.c
+@@ -51,12 +51,12 @@ static struct cpio_data __init find_ucod
+ 	 */
+ 	p       = (struct boot_params *)__pa_nodebug(&boot_params);
+ 	path    = (char *)__pa_nodebug(ucode_path);
+-	start   = (void *)p->hdr.ramdisk_image;
+-	size    = p->hdr.ramdisk_size;
++	start   = (void *)(unsigned long)get_ramdisk_image(p);
++	size    = get_ramdisk_size(p);
+ #else
+ 	path    = ucode_path;
+-	start   = (void *)(boot_params.hdr.ramdisk_image + PAGE_OFFSET);
+-	size    = boot_params.hdr.ramdisk_size;
++	start   = (void *)(get_ramdisk_image(&boot_params) + PAGE_OFFSET);
++	size    = get_ramdisk_size(&boot_params);
+ #endif
+ 
+ 	return find_cpio_data(path, start, size, &offset);
+@@ -371,7 +371,7 @@ int __init save_microcode_in_initrd_amd(
+ 	 */
+ 	if (relocated_ramdisk)
+ 		container = (u8 *)(__va(relocated_ramdisk) +
+-			     (cont - boot_params.hdr.ramdisk_image));
++			     (cont - get_ramdisk_size(&boot_params)));
+ 
+ 	if (ucode_new_rev)
+ 		pr_info("microcode: updated early to new patch_level=0x%08x\n",
+Index: linux-2.6/arch/x86/kernel/cpu/microcode/intel_early.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/microcode/intel_early.c
++++ linux-2.6/arch/x86/kernel/cpu/microcode/intel_early.c
+@@ -733,8 +733,8 @@ load_ucode_intel_bsp(void)
+ 	struct boot_params *boot_params_p;
+ 
+ 	boot_params_p = (struct boot_params *)__pa_nodebug(&boot_params);
+-	ramdisk_image = boot_params_p->hdr.ramdisk_image;
+-	ramdisk_size  = boot_params_p->hdr.ramdisk_size;
++	ramdisk_image = get_ramdisk_image(boot_params_p);
++	ramdisk_size  = get_ramdisk_size(boot_params_p);
+ 	initrd_start_early = ramdisk_image;
+ 	initrd_end_early = initrd_start_early + ramdisk_size;
+ 
+@@ -743,8 +743,8 @@ load_ucode_intel_bsp(void)
+ 		(unsigned long *)__pa_nodebug(&mc_saved_in_initrd),
+ 		initrd_start_early, initrd_end_early, &uci);
+ #else
+-	ramdisk_image = boot_params.hdr.ramdisk_image;
+-	ramdisk_size  = boot_params.hdr.ramdisk_size;
++	ramdisk_image = get_ramdisk_image(&boot_params);
++	ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	initrd_start_early = ramdisk_image + PAGE_OFFSET;
+ 	initrd_end_early = initrd_start_early + ramdisk_size;
+ 
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -299,19 +299,19 @@ u64 relocated_ramdisk;
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 
+-static u64 __init get_ramdisk_image(void)
++u64 __init get_ramdisk_image(struct boot_params *bp)
+ {
+-	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
++	u64 ramdisk_image = bp->hdr.ramdisk_image;
+ 
+-	ramdisk_image |= (u64)boot_params.ext_ramdisk_image << 32;
++	ramdisk_image |= (u64)bp->ext_ramdisk_image << 32;
+ 
+ 	return ramdisk_image;
+ }
+-static u64 __init get_ramdisk_size(void)
++u64 __init get_ramdisk_size(struct boot_params *bp)
+ {
+-	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
++	u64 ramdisk_size = bp->hdr.ramdisk_size;
+ 
+-	ramdisk_size |= (u64)boot_params.ext_ramdisk_size << 32;
++	ramdisk_size |= (u64)bp->ext_ramdisk_size << 32;
+ 
+ 	return ramdisk_size;
+ }
+@@ -320,8 +320,8 @@ static u64 __init get_ramdisk_size(void)
+ static void __init relocate_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = get_ramdisk_image();
+-	u64 ramdisk_size  = get_ramdisk_size();
++	u64 ramdisk_image = get_ramdisk_image(&boot_params);
++	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
+ 	unsigned long slop, clen, mapaddr;
+ 	char *p, *q;
+@@ -359,8 +359,8 @@ static void __init relocate_initrd(void)
+ 		ramdisk_size  -= clen;
+ 	}
+ 
+-	ramdisk_image = get_ramdisk_image();
+-	ramdisk_size  = get_ramdisk_size();
++	ramdisk_image = get_ramdisk_image(&boot_params);
++	ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
+ 		" [mem %#010llx-%#010llx]\n",
+ 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
+@@ -370,8 +370,8 @@ static void __init relocate_initrd(void)
+ static void __init early_reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = get_ramdisk_image();
+-	u64 ramdisk_size  = get_ramdisk_size();
++	u64 ramdisk_image = get_ramdisk_image(&boot_params);
++	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 
+ 	if (!boot_params.hdr.type_of_loader ||
+@@ -383,8 +383,8 @@ static void __init early_reserve_initrd(
+ static void __init reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = get_ramdisk_image();
+-	u64 ramdisk_size  = get_ramdisk_size();
++	u64 ramdisk_image = get_ramdisk_image(&boot_params);
++	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 	u64 mapped_size;
+ 
