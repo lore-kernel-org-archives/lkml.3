@@ -1,34 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751162AbaGBHAf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 03:00:35 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:59356 "EHLO
+	id S1751481AbaGBHAn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 03:00:43 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:59426 "EHLO
 	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742AbaGBHAe (ORCPT
+	with ESMTP id S1751205AbaGBHAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 03:00:34 -0400
-Subject: [PATCH v5 1/2] kprobes/powerpc: Fix arch_deref_entry_point to
- support ABIv2
+	Wed, 2 Jul 2014 03:00:40 -0400
+Subject: [PATCH v5 2/2] [BUGFIX] kprobes: Fix "Failed to find blacklist"
+ error on ia64 and ppc64
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, rdunlap@infradead.org,
-        Anoop Thomas Mathew <atm@profoundis.com>,
-        Arnd Bergmann <arnd@arndb.de>, akataria@vmware.com,
-        yrl.pp-manager.tt@hitachi.com,
-        Linus Torvalds <torvalds@linux-foundation.org>, sparse@chrisli.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-tip-commits@vger.kernel.org,
+        Michael Ellerman <mpe@ellerman.id.au>, akataria@vmware.com,
         anil.s.keshavamurthy@intel.com,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Wright <chrisw@sous-sol.org>, linux-tip-commits@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, dl9pf@gmx.de,
-        Jiri Kosina <jkosina@suse.cz>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
         Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org, Ingo Molnar <mingo@kernel.org>
-Date: Wed, 02 Jul 2014 07:00:22 +0000
-Message-ID: <20140702070022.14689.7254.stgit@kbuild-fedora.novalocal>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Wed, 02 Jul 2014 07:00:29 +0000
+Message-ID: <20140702070029.14689.18485.stgit@kbuild-fedora.novalocal>
 In-Reply-To: <1404276081.7254.1.camel@concordia>
 References: <1404276081.7254.1.camel@concordia>
 User-Agent: StGit/0.17-dirty
@@ -39,37 +41,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since PowerPC64 ABIv2 doesn't have function descriptor
-any more, arch_deref_entry_point(), which returns function
-entry point from function descriptor, should be updated.
+On ia64 and ppc64, the function pointer does not point the
+entry address of the function, but the address of function
+discriptor (which contains the entry address and misc
+data.) Since the kprobes passes the function pointer stored
+by NOKPROBE_SYMBOL() to kallsyms_lookup_size_offset() for
+initalizing its blacklist, it fails and reports many errors
+as below.
+
+  Failed to find blacklist 0001013168300000
+  Failed to find blacklist 0001013000f0a000
+  Failed to find blacklist 000101315f70a000
+  Failed to find blacklist 000101324c80a000
+  Failed to find blacklist 0001013063f0a000
+  Failed to find blacklist 000101327800a000
+  Failed to find blacklist 0001013277f0a000
+  Failed to find blacklist 000101315a70a000
+  Failed to find blacklist 0001013277e0a000
+  Failed to find blacklist 000101305a20a000
+  Failed to find blacklist 0001013277d0a000
+  Failed to find blacklist 00010130bdc0a000
+  Failed to find blacklist 00010130dc20a000
+  Failed to find blacklist 000101309a00a000
+  Failed to find blacklist 0001013277c0a000
+  Failed to find blacklist 0001013277b0a000
+  Failed to find blacklist 0001013277a0a000
+  Failed to find blacklist 000101327790a000
+  Failed to find blacklist 000101303140a000
+  Failed to find blacklist 0001013a3280a000
+
+To fix this bug, this introduces function_entry() macro to
+retrieve the entry address from the given function pointer,
+and uses for kallsyms_lookup_size_offset() while initializing
+blacklist.
+
+Changes in v5:
+ - Use arch_deref_entry_point() instead of function_entry().
+
+Changes in v4:
+ - Add kernel_text_address() check for verifying the address.
+ - Moved on the latest linus tree.
+
+Changes in v3:
+ - Fix a bug to get blacklist address based on function entry
+   instead of function descriptor. (Suzuki's work, Thanks!)
+
+Changes in V2:
+ - Use function_entry() macro when lookin up symbols instead
+   of storing it.
+ - Update for the latest -next.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Reported-by: Tony Luck <tony.luck@gmail.com>
+Tested-by: Tony Luck <tony.luck@intel.com>
+Cc: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Suzuki K. Poulose <suzuki@in.ibm.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Anoop Thomas Mathew <atm@profoundis.com>
-Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Kevin Hao <haokexin@gmail.com>
+Cc: linux-ia64@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 Cc: linuxppc-dev@lists.ozlabs.org
 ---
- arch/powerpc/kernel/kprobes.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ kernel/kprobes.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/arch/powerpc/kernel/kprobes.c b/arch/powerpc/kernel/kprobes.c
-index 90fab64..72a1034 100644
---- a/arch/powerpc/kernel/kprobes.c
-+++ b/arch/powerpc/kernel/kprobes.c
-@@ -491,7 +491,12 @@ int __kprobes kprobe_exceptions_notify(struct notifier_block *self,
- 	return ret;
- }
- 
--#ifdef CONFIG_PPC64
-+#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
-+/*
-+ * On PPC64 ABIv1 the function pointer actually points to the
-+ * function's descriptor. The first entry in the descriptor is the
-+ * address of the function text.
-+ */
- unsigned long arch_deref_entry_point(void *entry)
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 3214289..ec370cc 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -32,6 +32,7 @@
+  *		<prasanna@in.ibm.com> added function-return probes.
+  */
+ #include <linux/kprobes.h>
++#include <linux/types.h>
+ #include <linux/hash.h>
+ #include <linux/init.h>
+ #include <linux/slab.h>
+@@ -2037,19 +2038,23 @@ static int __init populate_kprobe_blacklist(unsigned long *start,
  {
- 	return ((func_descr_t *)entry)->entry;
+ 	unsigned long *iter;
+ 	struct kprobe_blacklist_entry *ent;
+-	unsigned long offset = 0, size = 0;
++	unsigned long entry, offset = 0, size = 0;
+ 
+ 	for (iter = start; iter < end; iter++) {
+-		if (!kallsyms_lookup_size_offset(*iter, &size, &offset)) {
+-			pr_err("Failed to find blacklist %p\n", (void *)*iter);
++		entry = arch_deref_entry_point((void *)*iter);
++
++		if (!kernel_text_address(entry) ||
++		    !kallsyms_lookup_size_offset(entry, &size, &offset)) {
++			pr_err("Failed to find blacklist at %p\n",
++				(void *)entry);
+ 			continue;
+ 		}
+ 
+ 		ent = kmalloc(sizeof(*ent), GFP_KERNEL);
+ 		if (!ent)
+ 			return -ENOMEM;
+-		ent->start_addr = *iter;
+-		ent->end_addr = *iter + size;
++		ent->start_addr = entry;
++		ent->end_addr = entry + size;
+ 		INIT_LIST_HEAD(&ent->list);
+ 		list_add_tail(&ent->list, &kprobe_blacklist);
+ 	}
 
 
