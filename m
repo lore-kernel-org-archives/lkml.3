@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339AbaGBSth (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 14:49:37 -0400
-Received: from foo.stuge.se ([212.116.89.98]:45377 "EHLO foo.stuge.se"
+	id S1757344AbaGBSxK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 14:53:10 -0400
+Received: from mga09.intel.com ([134.134.136.24]:58513 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754104AbaGBStg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 14:49:36 -0400
-Message-ID: <20140702184933.7464.qmail@stuge.se>
-Date: Wed, 2 Jul 2014 20:49:33 +0200
-From: Peter Stuge <peter@stuge.se>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Stefan Klug <stefan.klug@baslerweb.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][RFC] USB: zerocopy support for usbfs
-Mail-Followup-To: Alan Stern <stern@rowland.harvard.edu>,
-	Stefan Klug <stefan.klug@baslerweb.com>, linux-usb@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <53B42B14.7010303@baslerweb.com> <Pine.LNX.4.44L0.1407021355060.874-100000@iolanthe.rowland.org>
+	id S1754536AbaGBSxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 14:53:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,589,1400050800"; 
+   d="scan'208";a="537906005"
+Message-ID: <53B45505.5070507@intel.com>
+Date: Wed, 02 Jul 2014 11:52:53 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1407021355060.874-100000@iolanthe.rowland.org>
+To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+CC: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-ima-devel@lists.sourceforge.net,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>
+Subject: Re: [PATCH v2 1/3] ima: use ahash API for file hash calculation
+References: <cover.1404245510.git.d.kasatkin@samsung.com>	<72d68808fd8db2b896a459b120f3e550e5f976c1.1404245510.git.d.kasatkin@samsung.com>	<53B45095.80102@intel.com> <CACE9dm_S-a-ifJN4J+uU4GNy=-oP5h1PrU9x14CY1f0mnPZ-XA@mail.gmail.com>
+In-Reply-To: <CACE9dm_S-a-ifJN4J+uU4GNy=-oP5h1PrU9x14CY1f0mnPZ-XA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you very much for working on this, Stefan.
+On 07/02/2014 11:40 AM, Dmitry Kasatkin wrote:
+>> > We should reserve command-line parameters for things that really need
+>> > tweaking in early boot or are _needed_ to boot.
+...
+> Is module param good enough or it should be sysctl?
 
-Alan Stern wrote:
-> Also, many host controllers cannot handle arbitrary alignment.  
-> It would be best to require that the buffer start at a page boundary.
-
-This requires a bit of negotiation with userspace, maybe per-URB but
-it seems better to negotiate per-claim or even per-open. What about
-large control transfers?
-
-
-> Using a global module parameter to control the use of zerocopy (for
-> anything other than debugging or testing) is a bad idea.
-
-I agree.
-
-
-> If you think people will have a reason for avoiding zerocopy then
-> you should make it possible to decide for each URB, by adding a new
-> flag to struct usbdevfs_urb.
-
-People might want to use zerocopy always, but have buffers in
-userspace which make that impossible with the given hardware.
-
-It's important that the kernel gives userspace enough information
-about the constraints, if userspace wants zerocopy.
-
-
-> People will want to use zerocopy with isochronous transfers as well as 
-> bulk.  Implementing that isn't going to be quite so easy; it will be 
-> necessary for the user to set up a memory mapping.  In fact, once 
-> that's done the same mechanism could be used for bulk transfers too.
-
-Indeed I think userspace wants to be involved in choosing memory also
-with bulk, in order to ensure that zerocopy will always work when
-userspace cares about that.
-
-Is it enough to expose the DMA mask of the host controller?
-
-
-//Peter
+Doesn't matter to me much.  sysctls seem to be the easiest things to
+configure and make persistent.  I'm not sure if the normal
+/etc/modprobe.d things work for built-in features, but if they do I'd
+say a modparam is fine.
