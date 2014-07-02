@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281AbaGBKSZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 06:18:25 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54593 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753119AbaGBKSV (ORCPT
+	id S1753320AbaGBKTG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 06:19:06 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:58782 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991AbaGBKTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 06:18:21 -0400
-X-Sasl-enc: u9W0CL2UAUJ7cTwKJqThFOCq6d3Fv+OYbyYEBBqUPLvJ 1404296299
-From: Michalis Pappas <mpappas@fastmail.fm>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V2] staging: gdm72xx: move T_CAPABILITY definitions to hci.h
-Date: Wed,  2 Jul 2014 11:18:07 +0100
-Message-Id: <1404296287-3970-1-git-send-email-mpappas@fastmail.fm>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1404219616-1788-3-git-send-email-mpappas@fastmail.fm>
-References: <1404219616-1788-3-git-send-email-mpappas@fastmail.fm>
+	Wed, 2 Jul 2014 06:19:03 -0400
+Date: Wed, 2 Jul 2014 12:18:52 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
+        eranian@google.com, andi@firstfloor.org
+Subject: Re: [PATCH V4 05/16] perf, core: pmu specific data for perf task
+ context
+Message-ID: <20140702101852.GX6758@twins.programming.kicks-ass.net>
+References: <1404118253-19532-1-git-send-email-zheng.z.yan@intel.com>
+ <1404118253-19532-6-git-send-email-zheng.z.yan@intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9cIZjEJojpWZsxxj"
+Content-Disposition: inline
+In-Reply-To: <1404118253-19532-6-git-send-email-zheng.z.yan@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Michalis Pappas <mpappas@fastmail.fm>
----
- drivers/staging/gdm72xx/gdm_wimax.c | 11 ++++-------
- drivers/staging/gdm72xx/hci.h       |  6 ++++++
- 2 files changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/gdm72xx/gdm_wimax.c b/drivers/staging/gdm72xx/gdm_wimax.c
-index 4148013..50b7bf0 100644
---- a/drivers/staging/gdm72xx/gdm_wimax.c
-+++ b/drivers/staging/gdm72xx/gdm_wimax.c
-@@ -609,10 +609,7 @@ static void gdm_wimax_prepare_device(struct net_device *dev)
- 	u16 len = 0;
- 	u32 val = 0;
- 
--	#define BIT_MULTI_CS	0
--	#define BIT_WIMAX		1
--	#define BIT_QOS			2
--	#define BIT_AGGREGATION	3
-+
- 
- 	/* GetInformation mac address */
- 	len = 0;
-@@ -621,12 +618,12 @@ static void gdm_wimax_prepare_device(struct net_device *dev)
- 	hci->length = H2B(len);
- 	gdm_wimax_send(nic, hci, HCI_HEADER_SIZE+len);
- 
--	val = (1<<BIT_WIMAX) | (1<<BIT_MULTI_CS);
-+	val = (1 << T_CAPABILITY_WIMAX) | (1 << T_CAPABILITY_MULTI_CS);
- 	#if defined(CONFIG_WIMAX_GDM72XX_QOS)
--	val |= (1<<BIT_QOS);
-+	val |= (1 << T_CAPABILITY_QOS);
- 	#endif
- 	#if defined(CONFIG_WIMAX_GDM72XX_WIMAX2)
--	val |= (1<<BIT_AGGREGATION);
-+	val |= (1 << T_CAPABILITY_AGGREGATION);
- 	#endif
- 
- 	/* Set capability */
-diff --git a/drivers/staging/gdm72xx/hci.h b/drivers/staging/gdm72xx/hci.h
-index 059ba00..4dd253d 100644
---- a/drivers/staging/gdm72xx/hci.h
-+++ b/drivers/staging/gdm72xx/hci.h
-@@ -198,6 +198,12 @@
- #define T_FFTSIZE			(0xda	| (4 << 16))
- #define T_DUPLEX_MODE			(0xdb	| (4 << 16))
- 
-+/* T_CAPABILITY */
-+#define T_CAPABILITY_MULTI_CS		(1 << 0)
-+#define T_CAPABILITY_WIMAX		(1 << 1)
-+#define T_CAPABILITY_QOS		(1 << 2)
-+#define T_CAPABILITY_AGGREGATION	(1 << 3)
-+
- struct hci_s {
- 	unsigned short cmd_evt;
- 	unsigned short length;
--- 
-1.8.4
+--9cIZjEJojpWZsxxj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Mon, Jun 30, 2014 at 04:50:42PM +0800, Yan, Zheng wrote:
+
+> @@ -3068,6 +3077,14 @@ alloc_perf_context(struct pmu *pmu, struct task_st=
+ruct *task)
+>  	if (!ctx)
+>  		return NULL;
+> =20
+> +	if (task && pmu->task_ctx_size > 0) {
+> +		ctx->task_ctx_data =3D kzalloc(pmu->task_ctx_size, GFP_KERNEL);
+> +		if (!ctx->task_ctx_data) {
+> +			kfree(ctx);
+> +			return NULL;
+> +		}
+> +	}
+
+Can we delay this allocation until such time as that its actually
+needed? Otherwise we're wasting all this memory..
+
+--9cIZjEJojpWZsxxj
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTs9yMAAoJEHZH4aRLwOS6fNIP/jJh6pWda/oJAe2TJVmjcxE1
+4mfv7/6n8GidDSeKo2Kv5NS0JDU2k/IrbFCtdckOMwEbjbZaFwiCdEv1ndwdtv60
+k5SJFTX1w1GzM3pod8q5Og8XBQ/5ykyOzUV6bP51xOMZvOTvymI3eFcES5baEcn0
+rt+ykNq/HksjPqpIMrShwVBdWtYANQIodEZTs4EStlH3eMwuYHp08PI1y10FtLYQ
+iLamL2VCZoYYJjUdjc7GpWzSvXphHtXqZMrs6iGNwdkjGfriYbEA218aLe4JtZE4
+MXEGzWN90CiJFPZrk1l3oxczArIRlFD8Nsewvfjn8MwTNXvlly1KBEoerQC9ZxHh
+Ixf6cjk1xYQHyuFg1HvYOncR7IfuD1EoRm4/eKYp077QYsNGSZbubSaTBuVaaMVi
+7EklFeG1vUDYy6L7AMWYobmk1MWJFFyCIVHV0lk8Tb55mBH9WaLi40TUEaTeuHel
+c4t8bbworkWUntxR4t05GBSohz7NKyMsbZszAgmcmzOY9QW/DQSy1n6Zxc8O+7EM
+8Rwaf6GVCT+XShRCAzac7rOV5BqnezoUzkw3Y5ReXfpir452IeSFPzMMqhEW6A1a
+CZkrGfqtZE0r+1N5t05DP3h3+1emXOSnXwEDPRjwKmvKraLqrnU49WLxQxkx7aut
+PHLSXHyvQax/c7RdEhz+
+=qzew
+-----END PGP SIGNATURE-----
+
+--9cIZjEJojpWZsxxj--
