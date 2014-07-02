@@ -1,350 +1,576 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160AbaGBOCo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 10:02:44 -0400
-Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:36892 "EHLO
-	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751708AbaGBOCm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 10:02:42 -0400
-Date: Wed, 2 Jul 2014 15:50:33 +0200
-From: Josef Gajdusek <atx@atalax.net>
-To: linux-iio@vger.kernel.org
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, jic23@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] staging:iio:hmc5843: Added regmap support
-Message-ID: <20140702135033.GB15493@dashie>
-References: <20140702134840.GA15493@dashie>
+	id S1754223AbaGBOCy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 10:02:54 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:2941 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752060AbaGBOCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 10:02:51 -0400
+X-IronPort-AV: E=Sophos;i="5.01,588,1400025600"; 
+   d="scan'208";a="149264824"
+Date: Wed, 2 Jul 2014 15:01:59 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Daniel Kiper <daniel.kiper@oracle.com>
+CC: <linux-efi@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <x86@kernel.org>,
+        <xen-devel@lists.xenproject.org>, <andrew.cooper3@citrix.com>,
+        <boris.ostrovsky@oracle.com>, <david.vrabel@citrix.com>,
+        <eshelton@pobox.com>, <fenghua.yu@intel.com>, <hpa@zytor.com>,
+        <ian.campbell@citrix.com>, <jbeulich@suse.com>, <jeremy@goop.org>,
+        <konrad.wilk@oracle.com>, <matt.fleming@intel.com>, <mingo@redhat.com>,
+        <mjg59@srcf.ucam.org>, <stefano.stabellini@eu.citrix.com>,
+        <tglx@linutronix.de>, <tony.luck@intel.com>
+Subject: Re: [PATCH v7 08/10] xen: Put EFI machinery in place
+In-Reply-To: <1404150784-27921-9-git-send-email-daniel.kiper@oracle.com>
+Message-ID: <alpine.DEB.2.02.1407021501480.8923@kaball.uk.xensource.com>
+References: <1404150784-27921-1-git-send-email-daniel.kiper@oracle.com> <1404150784-27921-9-git-send-email-daniel.kiper@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140702134840.GA15493@dashie>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes hmc5843.c to use regmap. This provides transparent caching
-to the code as well as abstraction necessary to add support for SPI-based
-hmc5983.
+On Mon, 30 Jun 2014, Daniel Kiper wrote:
+> This patch enables EFI usage under Xen dom0. Standard EFI Linux
+> Kernel infrastructure cannot be used because it requires direct
+> access to EFI data and code. However, in dom0 case it is not possible
+> because above mentioned EFI stuff is fully owned and controlled
+> by Xen hypervisor. In this case all calls from dom0 to EFI must
+> be requested via special hypercall which in turn executes relevant
+> EFI code in behalf of dom0.
+> 
+> When dom0 kernel boots it checks for EFI availability on a machine.
+> If it is detected then artificial EFI system table is filled.
+> Native EFI callas are replaced by functions which mimics them
+> by calling relevant hypercall. Later pointer to EFI system table
+> is passed to standard EFI machinery and it continues EFI subsystem
+> initialization taking into account that there is no direct access
+> to EFI boot services, runtime, tables, structures, etc. After that
+> system runs as usual.
+> 
+> This patch is based on Jan Beulich and Tang Liang work.
+> 
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> Signed-off-by: Tang Liang <liang.tang@oracle.com>
+> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 
-Signed-off-by: Josef Gajdusek <atx@atx.name>
----
- drivers/staging/iio/magnetometer/Kconfig   |   1 +
- drivers/staging/iio/magnetometer/hmc5843.c | 145 +++++++++++++++++++----------
- 2 files changed, 98 insertions(+), 48 deletions(-)
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-diff --git a/drivers/staging/iio/magnetometer/Kconfig b/drivers/staging/iio/magnetometer/Kconfig
-index 34634da..ad88d61 100644
---- a/drivers/staging/iio/magnetometer/Kconfig
-+++ b/drivers/staging/iio/magnetometer/Kconfig
-@@ -8,6 +8,7 @@ config SENSORS_HMC5843
- 	depends on I2C
- 	select IIO_BUFFER
- 	select IIO_TRIGGERED_BUFFER
-+	select REGMAP_I2C
- 	help
- 	  Say Y here to add support for the Honeywell HMC5843, HMC5883 and
- 	  HMC5883L 3-Axis Magnetometer (digital compass).
-diff --git a/drivers/staging/iio/magnetometer/hmc5843.c b/drivers/staging/iio/magnetometer/hmc5843.c
-index d4f4dd9..cc12308 100644
---- a/drivers/staging/iio/magnetometer/hmc5843.c
-+++ b/drivers/staging/iio/magnetometer/hmc5843.c
-@@ -21,6 +21,7 @@
- 
- #include <linux/module.h>
- #include <linux/i2c.h>
-+#include <linux/regmap.h>
- #include <linux/iio/iio.h>
- #include <linux/iio/sysfs.h>
- #include <linux/iio/trigger_consumer.h>
-@@ -34,6 +35,7 @@
- #define HMC5843_DATA_OUT_MSB_REGS		0x03
- #define HMC5843_STATUS_REG			0x09
- #define HMC5843_ID_REG				0x0a
-+#define HMC5843_ID_END				0x0c
- 
- enum hmc5843_ids {
- 	HMC5843_ID,
-@@ -49,6 +51,7 @@ enum hmc5843_ids {
- #define HMC5843_RANGE_GAIN_OFFSET		0x05
- #define HMC5843_RANGE_GAIN_DEFAULT		0x01
- #define HMC5843_RANGE_GAINS			8
-+#define HMC5843_RANGE_GAIN_MASK		0xe0
- 
- /* Device status */
- #define HMC5843_DATA_READY			0x01
-@@ -68,6 +71,7 @@ enum hmc5843_ids {
- #define HMC5843_RATE_OFFSET			0x02
- #define HMC5843_RATE_DEFAULT			0x04
- #define HMC5843_RATES				7
-+#define HMC5843_RATE_MASK		0x1c
- 
- /* Device measurement configuration */
- #define HMC5843_MEAS_CONF_NORMAL		0x00
-@@ -121,10 +125,7 @@ struct hmc5843_chip_info {
- struct hmc5843_data {
- 	struct i2c_client *client;
- 	struct mutex lock;
--	u8 rate;
--	u8 meas_conf;
--	u8 operating_mode;
--	u8 range;
-+	struct regmap *regmap;
- 	const struct hmc5843_chip_info *variant;
- 	__be16 buffer[8]; /* 3x 16-bit channels + padding + 64-bit timestamp */
- };
-@@ -135,10 +136,8 @@ static s32 hmc5843_set_mode(struct hmc5843_data *data, u8 operating_mode)
- 	int ret;
- 
- 	mutex_lock(&data->lock);
--	ret = i2c_smbus_write_byte_data(data->client, HMC5843_MODE_REG,
--					operating_mode & HMC5843_MODE_MASK);
--	if (ret >= 0)
--		data->operating_mode = operating_mode;
-+	ret = regmap_update_bits(data->regmap, HMC5843_MODE_REG,
-+			HMC5843_MODE_MASK, operating_mode);
- 	mutex_unlock(&data->lock);
- 
- 	return ret;
-@@ -146,15 +145,15 @@ static s32 hmc5843_set_mode(struct hmc5843_data *data, u8 operating_mode)
- 
- static int hmc5843_wait_measurement(struct hmc5843_data *data)
- {
--	s32 result;
- 	int tries = 150;
-+	int val;
-+	int ret;
- 
- 	while (tries-- > 0) {
--		result = i2c_smbus_read_byte_data(data->client,
--			HMC5843_STATUS_REG);
--		if (result < 0)
--			return result;
--		if (result & HMC5843_DATA_READY)
-+		ret = regmap_read(data->regmap, HMC5843_STATUS_REG, &val);
-+		if (ret < 0)
-+			return ret;
-+		if (val & HMC5843_DATA_READY)
- 			break;
- 		msleep(20);
- 	}
-@@ -171,20 +170,20 @@ static int hmc5843_wait_measurement(struct hmc5843_data *data)
- static int hmc5843_read_measurement(struct hmc5843_data *data,
- 				    int idx, int *val)
- {
--	s32 result;
- 	__be16 values[3];
-+	int ret;
- 
- 	mutex_lock(&data->lock);
--	result = hmc5843_wait_measurement(data);
--	if (result < 0) {
-+	ret = hmc5843_wait_measurement(data);
-+	if (ret < 0) {
- 		mutex_unlock(&data->lock);
--		return result;
-+		return ret;
- 	}
--	result = i2c_smbus_read_i2c_block_data(data->client,
--		HMC5843_DATA_OUT_MSB_REGS, sizeof(values), (u8 *) values);
-+	ret = regmap_bulk_read(data->regmap, HMC5843_DATA_OUT_MSB_REGS,
-+			values, sizeof(values));
- 	mutex_unlock(&data->lock);
--	if (result < 0)
--		return -EINVAL;
-+	if (ret < 0)
-+		return ret;
- 
- 	*val = sign_extend32(be16_to_cpu(values[idx]), 15);
- 	return IIO_VAL_INT;
-@@ -208,16 +207,13 @@ static int hmc5843_read_measurement(struct hmc5843_data *data,
-  *     and BN.
-  *
-  */
--static s32 hmc5843_set_meas_conf(struct hmc5843_data *data, u8 meas_conf)
-+static int hmc5843_set_meas_conf(struct hmc5843_data *data, u8 meas_conf)
- {
- 	int ret;
- 
- 	mutex_lock(&data->lock);
--	ret = i2c_smbus_write_byte_data(data->client, HMC5843_CONFIG_REG_A,
--		(meas_conf & HMC5843_MEAS_CONF_MASK) |
--		(data->rate << HMC5843_RATE_OFFSET));
--	if (ret >= 0)
--		data->meas_conf = meas_conf;
-+	ret = regmap_update_bits(data->regmap, HMC5843_CONFIG_REG_A,
-+			HMC5843_MEAS_CONF_MASK, meas_conf);
- 	mutex_unlock(&data->lock);
- 
- 	return ret;
-@@ -228,7 +224,15 @@ static ssize_t hmc5843_show_measurement_configuration(struct device *dev,
- 						char *buf)
- {
- 	struct hmc5843_data *data = iio_priv(dev_to_iio_dev(dev));
--	return sprintf(buf, "%d\n", data->meas_conf);
-+	int val;
-+	int ret;
-+
-+	ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_A, &val);
-+	if (ret)
-+		return ret;
-+	val &= HMC5843_MEAS_CONF_MASK;
-+
-+	return sprintf(buf, "%d\n", val);
- }
- 
- static ssize_t hmc5843_set_measurement_configuration(struct device *dev,
-@@ -282,10 +286,8 @@ static int hmc5843_set_samp_freq(struct hmc5843_data *data, u8 rate)
- 	int ret;
- 
- 	mutex_lock(&data->lock);
--	ret = i2c_smbus_write_byte_data(data->client, HMC5843_CONFIG_REG_A,
--		data->meas_conf | (rate << HMC5843_RATE_OFFSET));
--	if (ret >= 0)
--		data->rate = rate;
-+	ret = regmap_update_bits(data->regmap, HMC5843_CONFIG_REG_A,
-+			HMC5843_RATE_MASK, rate << HMC5843_RATE_OFFSET);
- 	mutex_unlock(&data->lock);
- 
- 	return ret;
-@@ -309,10 +311,9 @@ static int hmc5843_set_range_gain(struct hmc5843_data *data, u8 range)
- 	int ret;
- 
- 	mutex_lock(&data->lock);
--	ret = i2c_smbus_write_byte_data(data->client, HMC5843_CONFIG_REG_B,
--		range << HMC5843_RANGE_GAIN_OFFSET);
--	if (ret >= 0)
--		data->range = range;
-+	ret = regmap_update_bits(data->regmap, HMC5843_CONFIG_REG_B,
-+			HMC5843_RANGE_GAIN_MASK,
-+			range << HMC5843_RANGE_GAIN_OFFSET);
- 	mutex_unlock(&data->lock);
- 
- 	return ret;
-@@ -358,17 +359,26 @@ static int hmc5843_read_raw(struct iio_dev *indio_dev,
- 			    int *val, int *val2, long mask)
- {
- 	struct hmc5843_data *data = iio_priv(indio_dev);
-+	int rval;
-+	int ret;
- 
- 	switch (mask) {
- 	case IIO_CHAN_INFO_RAW:
- 		return hmc5843_read_measurement(data, chan->scan_index, val);
- 	case IIO_CHAN_INFO_SCALE:
-+		ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_B, &rval);
-+		if (ret < 0)
-+			return ret;
- 		*val = 0;
--		*val2 = data->variant->regval_to_nanoscale[data->range];
-+		*val2 = data->variant->regval_to_nanoscale[rval >> HMC5843_RANGE_GAIN_OFFSET];
- 		return IIO_VAL_INT_PLUS_NANO;
- 	case IIO_CHAN_INFO_SAMP_FREQ:
--		*val = data->variant->regval_to_samp_freq[data->rate][0];
--		*val2 = data->variant->regval_to_samp_freq[data->rate][1];
-+		ret = regmap_read(data->regmap, HMC5843_CONFIG_REG_A, &rval);
-+		if (ret < 0)
-+			return ret;
-+		rval &= HMC5843_RATE_MASK;
-+		*val = data->variant->regval_to_samp_freq[rval][0];
-+		*val2 = data->variant->regval_to_samp_freq[rval][1];
- 		return IIO_VAL_INT_PLUS_MICRO;
- 	}
- 	return -EINVAL;
-@@ -426,9 +436,9 @@ static irqreturn_t hmc5843_trigger_handler(int irq, void *p)
- 		goto done;
- 	}
- 
--	ret = i2c_smbus_read_i2c_block_data(data->client,
--		HMC5843_DATA_OUT_MSB_REGS, 3 * sizeof(__be16),
--			(u8 *) data->buffer);
-+	ret = regmap_bulk_read(data->regmap, HMC5843_DATA_OUT_MSB_REGS,
-+			data->buffer, 3 * sizeof(__be16));
-+
- 	mutex_unlock(&data->lock);
- 	if (ret < 0)
- 		goto done;
-@@ -508,8 +518,8 @@ static int hmc5843_init(struct hmc5843_data *data)
- 	int ret;
- 	u8 id[3];
- 
--	ret = i2c_smbus_read_i2c_block_data(data->client, HMC5843_ID_REG,
--		sizeof(id), id);
-+	ret = regmap_bulk_read(data->regmap, HMC5843_ID_REG,
-+			id, ARRAY_SIZE(id));
- 	if (ret < 0)
- 		return ret;
- 	if (id[0] != 'H' || id[1] != '4' || id[2] != '3') {
-@@ -539,6 +549,44 @@ static const struct iio_info hmc5843_info = {
- 
- static const unsigned long hmc5843_scan_masks[] = {0x7, 0};
- 
-+static const struct regmap_range hmc5843_readable_ranges[] = {
-+		regmap_reg_range(0, HMC5843_ID_END),
-+};
-+
-+static struct regmap_access_table hmc5843_readable_table = {
-+		.yes_ranges = hmc5843_readable_ranges,
-+		.n_yes_ranges = ARRAY_SIZE(hmc5843_readable_ranges),
-+};
-+
-+static const struct regmap_range hmc5843_writable_ranges[] = {
-+		regmap_reg_range(0, HMC5843_MODE_REG),
-+};
-+
-+static struct regmap_access_table hmc5843_writable_table = {
-+		.yes_ranges = hmc5843_writable_ranges,
-+		.n_yes_ranges = ARRAY_SIZE(hmc5843_writable_ranges),
-+};
-+
-+static const struct regmap_range hmc5843_volatile_ranges[] = {
-+		regmap_reg_range(HMC5843_DATA_OUT_MSB_REGS, HMC5843_STATUS_REG),
-+};
-+
-+static struct regmap_access_table hmc5843_volatile_table = {
-+		.yes_ranges = hmc5843_volatile_ranges,
-+		.n_yes_ranges = ARRAY_SIZE(hmc5843_volatile_ranges),
-+};
-+
-+static struct regmap_config hmc5843_regmap_config = {
-+		.reg_bits = 8,
-+		.val_bits = 8,
-+
-+		.rd_table = &hmc5843_readable_table,
-+		.wr_table = &hmc5843_writable_table,
-+		.volatile_table = &hmc5843_volatile_table,
-+
-+		.cache_type = REGCACHE_RBTREE,
-+};
-+
- static int hmc5843_probe(struct i2c_client *client,
- 			 const struct i2c_device_id *id)
- {
-@@ -554,6 +602,7 @@ static int hmc5843_probe(struct i2c_client *client,
- 	data = iio_priv(indio_dev);
- 	data->client = client;
- 	data->variant = &hmc5843_chip_info_tbl[id->driver_data];
-+	data->regmap = devm_regmap_init_i2c(client, &hmc5843_regmap_config);
- 	mutex_init(&data->lock);
- 
- 	i2c_set_clientdata(client, indio_dev);
-@@ -589,12 +638,12 @@ static int hmc5843_remove(struct i2c_client *client)
- {
- 	struct iio_dev *indio_dev = i2c_get_clientdata(client);
- 
--	iio_device_unregister(indio_dev);
--	iio_triggered_buffer_cleanup(indio_dev);
--
- 	/*  sleep mode to save power */
- 	hmc5843_set_mode(iio_priv(indio_dev), HMC5843_MODE_SLEEP);
- 
-+	iio_device_unregister(indio_dev);
-+	iio_triggered_buffer_cleanup(indio_dev);
-+
- 	return 0;
- }
- 
--- 
-1.8.5.5
 
+
+> v7 - suggestions/fixes:
+>    - move xen_efi_probe() declaration to include/xen/xen-ops.h
+>      (suggested by Stefano Stabellini).
+> 
+> v6 - suggestions/fixes:
+>    - remove unneeded BUG() call
+>      (suggested by Stefano Stabellini).
+> 
+> v5 - suggestions/fixes:
+>    - improve macro usage readability
+>      (suggested by Andrew Cooper and David Vrabel),
+>    - conditions cleanup
+>      (suggested by David Vrabel),
+>    - use -fshort-wchar option
+>      (suggested by Jan Beulich),
+>    - Kconfig rule cleanup
+>      (suggested by Jan Beulich),
+>    - forward port fixes from SUSE kernel
+>      (suggested by Jan Beulich),
+>    - improve commit message
+>      (suggested by David Vrabel).
+> 
+> v4 - suggestions/fixes:
+>    - "just populate an efi_system_table_t object"
+>      (suggested by Matt Fleming).
+> ---
+>  arch/x86/xen/enlighten.c |   15 ++
+>  drivers/xen/Kconfig      |    4 +
+>  drivers/xen/Makefile     |    3 +
+>  drivers/xen/efi.c        |  368 ++++++++++++++++++++++++++++++++++++++++++++++
+>  include/xen/xen-ops.h    |   11 ++
+>  5 files changed, 401 insertions(+)
+>  create mode 100644 drivers/xen/efi.c
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index ffb101e..e27d2fe 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/gfp.h>
+>  #include <linux/memblock.h>
+>  #include <linux/edd.h>
+> +#include <linux/efi.h>
+>  
+>  #include <xen/xen.h>
+>  #include <xen/events.h>
+> @@ -1520,6 +1521,7 @@ asmlinkage __visible void __init xen_start_kernel(void)
+>  {
+>  	struct physdev_set_iopl set_iopl;
+>  	int rc;
+> +	efi_system_table_t *efi_systab_xen;
+>  
+>  	if (!xen_start_info)
+>  		return;
+> @@ -1718,6 +1720,19 @@ asmlinkage __visible void __init xen_start_kernel(void)
+>  
+>  	xen_setup_runstate_info(0);
+>  
+> +	efi_systab_xen = xen_efi_probe();
+> +
+> +	if (efi_systab_xen) {
+> +		strncpy((char *)&boot_params.efi_info.efi_loader_signature, "Xen",
+> +				sizeof(boot_params.efi_info.efi_loader_signature));
+> +		boot_params.efi_info.efi_systab = (__u32)__pa(efi_systab_xen);
+> +		boot_params.efi_info.efi_systab_hi = (__u32)(__pa(efi_systab_xen) >> 32);
+> +
+> +		set_bit(EFI_BOOT, &efi.flags);
+> +		set_bit(EFI_PARAVIRT, &efi.flags);
+> +		set_bit(EFI_64BIT, &efi.flags);
+> +	}
+> +
+>  	/* Start the world */
+>  #ifdef CONFIG_X86_32
+>  	i386_start_kernel();
+> diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+> index 38fb36e..8bc0183 100644
+> --- a/drivers/xen/Kconfig
+> +++ b/drivers/xen/Kconfig
+> @@ -240,4 +240,8 @@ config XEN_MCE_LOG
+>  config XEN_HAVE_PVMMU
+>         bool
+>  
+> +config XEN_EFI
+> +	def_bool y
+> +	depends on X86_64 && EFI
+> +
+>  endmenu
+> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+> index 45e00af..84044b5 100644
+> --- a/drivers/xen/Makefile
+> +++ b/drivers/xen/Makefile
+> @@ -9,6 +9,8 @@ obj-y	+= xenbus/
+>  nostackp := $(call cc-option, -fno-stack-protector)
+>  CFLAGS_features.o			:= $(nostackp)
+>  
+> +CFLAGS_efi.o				+= -fshort-wchar
+> +
+>  dom0-$(CONFIG_PCI) += pci.o
+>  dom0-$(CONFIG_USB_SUPPORT) += dbgp.o
+>  dom0-$(CONFIG_ACPI) += acpi.o $(xen-pad-y)
+> @@ -33,6 +35,7 @@ obj-$(CONFIG_XEN_STUB)			+= xen-stub.o
+>  obj-$(CONFIG_XEN_ACPI_HOTPLUG_MEMORY)	+= xen-acpi-memhotplug.o
+>  obj-$(CONFIG_XEN_ACPI_HOTPLUG_CPU)	+= xen-acpi-cpuhotplug.o
+>  obj-$(CONFIG_XEN_ACPI_PROCESSOR)	+= xen-acpi-processor.o
+> +obj-$(CONFIG_XEN_EFI)			+= efi.o
+>  xen-evtchn-y				:= evtchn.o
+>  xen-gntdev-y				:= gntdev.o
+>  xen-gntalloc-y				:= gntalloc.o
+> diff --git a/drivers/xen/efi.c b/drivers/xen/efi.c
+> new file mode 100644
+> index 0000000..31f618a
+> --- /dev/null
+> +++ b/drivers/xen/efi.c
+> @@ -0,0 +1,368 @@
+> +/*
+> + * EFI support for Xen.
+> + *
+> + * Copyright (C) 1999 VA Linux Systems
+> + * Copyright (C) 1999 Walt Drummond <drummond@valinux.com>
+> + * Copyright (C) 1999-2002 Hewlett-Packard Co.
+> + *	David Mosberger-Tang <davidm@hpl.hp.com>
+> + *	Stephane Eranian <eranian@hpl.hp.com>
+> + * Copyright (C) 2005-2008 Intel Co.
+> + *	Fenghua Yu <fenghua.yu@intel.com>
+> + *	Bibo Mao <bibo.mao@intel.com>
+> + *	Chandramouli Narayanan <mouli@linux.intel.com>
+> + *	Huang Ying <ying.huang@intel.com>
+> + * Copyright (C) 2011 Novell Co.
+> + *	Jan Beulich <JBeulich@suse.com>
+> + * Copyright (C) 2011-2012 Oracle Co.
+> + *	Liang Tang <liang.tang@oracle.com>
+> + * Copyright (c) 2014 Oracle Co., Daniel Kiper
+> + */
+> +
+> +#include <linux/bug.h>
+> +#include <linux/efi.h>
+> +#include <linux/init.h>
+> +#include <linux/string.h>
+> +
+> +#include <xen/interface/xen.h>
+> +#include <xen/interface/platform.h>
+> +#include <xen/xen.h>
+> +
+> +#include <asm/xen/hypercall.h>
+> +
+> +#define INIT_EFI_OP(name) \
+> +	{.cmd = XENPF_efi_runtime_call, \
+> +	 .u.efi_runtime_call.function = XEN_EFI_##name, \
+> +	 .u.efi_runtime_call.misc = 0}
+> +
+> +#define efi_data(op)	(op.u.efi_runtime_call)
+> +
+> +static efi_status_t xen_efi_get_time(efi_time_t *tm, efi_time_cap_t *tc)
+> +{
+> +	struct xen_platform_op op = INIT_EFI_OP(get_time);
+> +
+> +	if (HYPERVISOR_dom0_op(&op) < 0)
+> +		return EFI_UNSUPPORTED;
+> +
+> +	if (tm) {
+> +		BUILD_BUG_ON(sizeof(*tm) != sizeof(efi_data(op).u.get_time.time));
+> +		memcpy(tm, &efi_data(op).u.get_time.time, sizeof(*tm));
+> +	}
+> +
+> +	if (tc) {
+> +		tc->resolution = efi_data(op).u.get_time.resolution;
+> +		tc->accuracy = efi_data(op).u.get_time.accuracy;
+> +		tc->sets_to_zero = !!(efi_data(op).misc &
+> +				      XEN_EFI_GET_TIME_SET_CLEARS_NS);
+> +	}
+> +
+> +	return efi_data(op).status;
+> +}
+> +
+> +static efi_status_t xen_efi_set_time(efi_time_t *tm)
+> +{
+> +	struct xen_platform_op op = INIT_EFI_OP(set_time);
+> +
+> +	BUILD_BUG_ON(sizeof(*tm) != sizeof(efi_data(op).u.set_time));
+> +	memcpy(&efi_data(op).u.set_time, tm, sizeof(*tm));
+> +
+> +	if (HYPERVISOR_dom0_op(&op) < 0)
+> +		return EFI_UNSUPPORTED;
+> +
+> +	return efi_data(op).status;
+> +}
+> +
+> +static efi_status_t xen_efi_get_wakeup_time(efi_bool_t *enabled,
+> +					    efi_bool_t *pending,
+> +					    efi_time_t *tm)
+> +{
+> +	struct xen_platform_op op = INIT_EFI_OP(get_wakeup_time);
+> +
+> +	if (HYPERVISOR_dom0_op(&op) < 0)
+> +		return EFI_UNSUPPORTED;
+> +
+> +	if (tm) {
+> +		BUILD_BUG_ON(sizeof(*tm) != sizeof(efi_data(op).u.get_wakeup_time));
+> +		memcpy(tm, &efi_data(op).u.get_wakeup_time, sizeof(*tm));
+> +	}
+> +
+> +	if (enabled)
+> +		*enabled = !!(efi_data(op).misc & XEN_EFI_GET_WAKEUP_TIME_ENABLED);
+> +
+> +	if (pending)
+> +		*pending = !!(efi_data(op).misc & XEN_EFI_GET_WAKEUP_TIME_PENDING);
+> +
+> +	return efi_data(op).status;
+> +}
+> +
+> +static efi_status_t xen_efi_set_wakeup_time(efi_bool_t enabled, efi_time_t *tm)
+> +{
+> +	struct xen_platform_op op = INIT_EFI_OP(set_wakeup_time);
+> +
+> +	BUILD_BUG_ON(sizeof(*tm) != sizeof(efi_data(op).u.set_wakeup_time));
+> +	if (enabled)
+> +		efi_data(op).misc = XEN_EFI_SET_WAKEUP_TIME_ENABLE;
+> +	if (tm)
+> +		memcpy(&efi_data(op).u.set_wakeup_time, tm, sizeof(*tm));
+> +	else
+> +		efi_data(op).misc |= XEN_EFI_SET_WAKEUP_TIME_ENABLE_ONLY;
+> +
+> +	if (HYPERVISOR_dom0_op(&op) < 0)
+> +		return EFI_UNSUPPORTED;
+> +
+> +	return efi_data(op).status;
+> +}
+> +
+> +static efi_status_t xen_efi_get_variable(efi_char16_t *name,
+> +					 efi_guid_t *vendor,
+> +					 u32 *attr,
+> +					 unsigned long *data_size,
+> +					 void *data)
+> +{
+> +	struct xen_platform_op op = INIT_EFI_OP(get_variable);
+> +
+> +	set_xen_guest_handle(efi_data(op).u.get_variable.name, name);
+> +	BUILD_BUG_ON(sizeof(*vendor) !=
+> +		     sizeof(efi_data(op).u.get_variable.vendor_guid));
+> +	memcpy(&efi_data(op).u.get_variable.vendor_guid, vendor, sizeof(*vendor));
+> +	efi_data(op).u.get_variable.size = *data_size;
+> +	set_xen_guest_handle(efi_data(op).u.get_variable.data, data);
+> +
+> +	if (HYPERVISOR_dom0_op(&op) < 0)
+> +		return EFI_UNSUPPORTED;
+> +
+> +	*data_size = efi_data(op).u.get_variable.size;
+> +	if (attr)
+> +		*attr = efi_data(op).misc;
+> +
+> +	return efi_data(op).status;
+> +}
+> +
+> +static efi_status_t xen_efi_get_next_variable(unsigned long *name_size,
+> +					      efi_char16_t *name,
+> +					      efi_guid_t *vendor)
+> +{
+> +	struct xen_platform_op op = INIT_EFI_OP(get_next_variable_name);
+> +
+> +	efi_data(op).u.get_next_variable_name.size = *name_size;
+> +	set_xen_guest_handle(efi_data(op).u.get_next_variable_name.name, name);
+> +	BUILD_BUG_ON(sizeof(*vendor) !=
+> +		     sizeof(efi_data(op).u.get_next_variable_name.vendor_guid));
+> +	memcpy(&efi_data(op).u.get_next_variable_name.vendor_guid, vendor,
+> +	       sizeof(*vendor));
+> +
+> +	if (HYPERVISOR_dom0_op(&op) < 0)
+> +		return EFI_UNSUPPORTED;
+> +
+> +	*name_size = efi_data(op).u.get_next_variable_name.size;
+> +	memcpy(vendor, &efi_data(op).u.get_next_variable_name.vendor_guid,
+> +	       sizeof(*vendor));
+> +
+> +	return efi_data(op).status;
+> +}
+> +
+> +static efi_status_t xen_efi_set_variable(efi_char16_t *name,
+> +					 efi_guid_t *vendor,
+> +					 u32 attr,
+> +					 unsigned long data_size,
+> +					 void *data)
+> +{
+> +	struct xen_platform_op op = INIT_EFI_OP(set_variable);
+> +
+> +	set_xen_guest_handle(efi_data(op).u.set_variable.name, name);
+> +	efi_data(op).misc = attr;
+> +	BUILD_BUG_ON(sizeof(*vendor) !=
+> +		     sizeof(efi_data(op).u.set_variable.vendor_guid));
+> +	memcpy(&efi_data(op).u.set_variable.vendor_guid, vendor, sizeof(*vendor));
+> +	efi_data(op).u.set_variable.size = data_size;
+> +	set_xen_guest_handle(efi_data(op).u.set_variable.data, data);
+> +
+> +	if (HYPERVISOR_dom0_op(&op) < 0)
+> +		return EFI_UNSUPPORTED;
+> +
+> +	return efi_data(op).status;
+> +}
+> +
+> +static efi_status_t xen_efi_query_variable_info(u32 attr,
+> +						u64 *storage_space,
+> +						u64 *remaining_space,
+> +						u64 *max_variable_size)
+> +{
+> +	struct xen_platform_op op = INIT_EFI_OP(query_variable_info);
+> +
+> +	if (efi.runtime_version < EFI_2_00_SYSTEM_TABLE_REVISION)
+> +		return EFI_UNSUPPORTED;
+> +
+> +	efi_data(op).u.query_variable_info.attr = attr;
+> +
+> +	if (HYPERVISOR_dom0_op(&op) < 0)
+> +		return EFI_UNSUPPORTED;
+> +
+> +	*storage_space = efi_data(op).u.query_variable_info.max_store_size;
+> +	*remaining_space = efi_data(op).u.query_variable_info.remain_store_size;
+> +	*max_variable_size = efi_data(op).u.query_variable_info.max_size;
+> +
+> +	return efi_data(op).status;
+> +}
+> +
+> +static efi_status_t xen_efi_get_next_high_mono_count(u32 *count)
+> +{
+> +	struct xen_platform_op op = INIT_EFI_OP(get_next_high_monotonic_count);
+> +
+> +	if (HYPERVISOR_dom0_op(&op) < 0)
+> +		return EFI_UNSUPPORTED;
+> +
+> +	*count = efi_data(op).misc;
+> +
+> +	return efi_data(op).status;
+> +}
+> +
+> +static efi_status_t xen_efi_update_capsule(efi_capsule_header_t **capsules,
+> +					   unsigned long count,
+> +					   unsigned long sg_list)
+> +{
+> +	struct xen_platform_op op = INIT_EFI_OP(update_capsule);
+> +
+> +	if (efi.runtime_version < EFI_2_00_SYSTEM_TABLE_REVISION)
+> +		return EFI_UNSUPPORTED;
+> +
+> +	set_xen_guest_handle(efi_data(op).u.update_capsule.capsule_header_array,
+> +			     capsules);
+> +	efi_data(op).u.update_capsule.capsule_count = count;
+> +	efi_data(op).u.update_capsule.sg_list = sg_list;
+> +
+> +	if (HYPERVISOR_dom0_op(&op) < 0)
+> +		return EFI_UNSUPPORTED;
+> +
+> +	return efi_data(op).status;
+> +}
+> +
+> +static efi_status_t xen_efi_query_capsule_caps(efi_capsule_header_t **capsules,
+> +					       unsigned long count,
+> +					       u64 *max_size,
+> +					       int *reset_type)
+> +{
+> +	struct xen_platform_op op = INIT_EFI_OP(query_capsule_capabilities);
+> +
+> +	if (efi.runtime_version < EFI_2_00_SYSTEM_TABLE_REVISION)
+> +		return EFI_UNSUPPORTED;
+> +
+> +	set_xen_guest_handle(efi_data(op).u.query_capsule_capabilities.capsule_header_array,
+> +					capsules);
+> +	efi_data(op).u.query_capsule_capabilities.capsule_count = count;
+> +
+> +	if (HYPERVISOR_dom0_op(&op) < 0)
+> +		return EFI_UNSUPPORTED;
+> +
+> +	*max_size = efi_data(op).u.query_capsule_capabilities.max_capsule_size;
+> +	*reset_type = efi_data(op).u.query_capsule_capabilities.reset_type;
+> +
+> +	return efi_data(op).status;
+> +}
+> +
+> +static efi_char16_t vendor[100] __initdata;
+> +
+> +static efi_system_table_t efi_systab_xen __initdata = {
+> +	.hdr = {
+> +		.signature	= EFI_SYSTEM_TABLE_SIGNATURE,
+> +		.revision	= 0, /* Initialized later. */
+> +		.headersize	= 0, /* Ignored by Linux Kernel. */
+> +		.crc32		= 0, /* Ignored by Linux Kernel. */
+> +		.reserved	= 0
+> +	},
+> +	.fw_vendor	= EFI_INVALID_TABLE_ADDR, /* Initialized later. */
+> +	.fw_revision	= 0,			  /* Initialized later. */
+> +	.con_in_handle	= EFI_INVALID_TABLE_ADDR, /* Not used under Xen. */
+> +	.con_in		= EFI_INVALID_TABLE_ADDR, /* Not used under Xen. */
+> +	.con_out_handle	= EFI_INVALID_TABLE_ADDR, /* Not used under Xen. */
+> +	.con_out	= EFI_INVALID_TABLE_ADDR, /* Not used under Xen. */
+> +	.stderr_handle	= EFI_INVALID_TABLE_ADDR, /* Not used under Xen. */
+> +	.stderr		= EFI_INVALID_TABLE_ADDR, /* Not used under Xen. */
+> +	.runtime	= (efi_runtime_services_t *)EFI_INVALID_TABLE_ADDR,
+> +						  /* Not used under Xen. */
+> +	.boottime	= (efi_boot_services_t *)EFI_INVALID_TABLE_ADDR,
+> +						  /* Not used under Xen. */
+> +	.nr_tables	= 0,			  /* Initialized later. */
+> +	.tables		= EFI_INVALID_TABLE_ADDR  /* Initialized later. */
+> +};
+> +
+> +static const struct efi efi_xen __initconst = {
+> +	.systab                   = NULL, /* Initialized later. */
+> +	.runtime_version	  = 0,    /* Initialized later. */
+> +	.mps                      = EFI_INVALID_TABLE_ADDR,
+> +	.acpi                     = EFI_INVALID_TABLE_ADDR,
+> +	.acpi20                   = EFI_INVALID_TABLE_ADDR,
+> +	.smbios                   = EFI_INVALID_TABLE_ADDR,
+> +	.sal_systab               = EFI_INVALID_TABLE_ADDR,
+> +	.boot_info                = EFI_INVALID_TABLE_ADDR,
+> +	.hcdp                     = EFI_INVALID_TABLE_ADDR,
+> +	.uga                      = EFI_INVALID_TABLE_ADDR,
+> +	.uv_systab                = EFI_INVALID_TABLE_ADDR,
+> +	.fw_vendor                = EFI_INVALID_TABLE_ADDR,
+> +	.runtime                  = EFI_INVALID_TABLE_ADDR,
+> +	.config_table             = EFI_INVALID_TABLE_ADDR,
+> +	.get_time                 = xen_efi_get_time,
+> +	.set_time                 = xen_efi_set_time,
+> +	.get_wakeup_time          = xen_efi_get_wakeup_time,
+> +	.set_wakeup_time          = xen_efi_set_wakeup_time,
+> +	.get_variable             = xen_efi_get_variable,
+> +	.get_next_variable        = xen_efi_get_next_variable,
+> +	.set_variable             = xen_efi_set_variable,
+> +	.query_variable_info      = xen_efi_query_variable_info,
+> +	.update_capsule           = xen_efi_update_capsule,
+> +	.query_capsule_caps       = xen_efi_query_capsule_caps,
+> +	.get_next_high_mono_count = xen_efi_get_next_high_mono_count,
+> +	.reset_system             = NULL, /* Functionality provided by Xen. */
+> +	.set_virtual_address_map  = NULL, /* Not used under Xen. */
+> +	.memmap                   = NULL, /* Not used under Xen. */
+> +	.flags			  = 0     /* Initialized later. */
+> +};
+> +
+> +efi_system_table_t __init *xen_efi_probe(void)
+> +{
+> +	struct xen_platform_op op = {
+> +		.cmd = XENPF_firmware_info,
+> +		.u.firmware_info = {
+> +			.type = XEN_FW_EFI_INFO,
+> +			.index = XEN_FW_EFI_CONFIG_TABLE
+> +		}
+> +	};
+> +	union xenpf_efi_info *info = &op.u.firmware_info.u.efi_info;
+> +
+> +	if (!xen_initial_domain() || HYPERVISOR_dom0_op(&op) < 0)
+> +		return NULL;
+> +
+> +	/* Here we know that Xen runs on EFI platform. */
+> +
+> +	efi = efi_xen;
+> +
+> +	efi_systab_xen.tables = info->cfg.addr;
+> +	efi_systab_xen.nr_tables = info->cfg.nent;
+> +
+> +	op.cmd = XENPF_firmware_info;
+> +	op.u.firmware_info.type = XEN_FW_EFI_INFO;
+> +	op.u.firmware_info.index = XEN_FW_EFI_VENDOR;
+> +	info->vendor.bufsz = sizeof(vendor);
+> +	set_xen_guest_handle(info->vendor.name, vendor);
+> +
+> +	if (HYPERVISOR_dom0_op(&op) == 0) {
+> +		efi_systab_xen.fw_vendor = __pa_symbol(vendor);
+> +		efi_systab_xen.fw_revision = info->vendor.revision;
+> +	} else
+> +		efi_systab_xen.fw_vendor = __pa_symbol(L"UNKNOWN");
+> +
+> +	op.cmd = XENPF_firmware_info;
+> +	op.u.firmware_info.type = XEN_FW_EFI_INFO;
+> +	op.u.firmware_info.index = XEN_FW_EFI_VERSION;
+> +
+> +	if (HYPERVISOR_dom0_op(&op) == 0)
+> +		efi_systab_xen.hdr.revision = info->version;
+> +
+> +	op.cmd = XENPF_firmware_info;
+> +	op.u.firmware_info.type = XEN_FW_EFI_INFO;
+> +	op.u.firmware_info.index = XEN_FW_EFI_RT_VERSION;
+> +
+> +	if (HYPERVISOR_dom0_op(&op) == 0)
+> +		efi.runtime_version = info->version;
+> +
+> +	return &efi_systab_xen;
+> +}
+> diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
+> index 0b3149e..771bbba 100644
+> --- a/include/xen/xen-ops.h
+> +++ b/include/xen/xen-ops.h
+> @@ -3,6 +3,7 @@
+>  
+>  #include <linux/percpu.h>
+>  #include <linux/notifier.h>
+> +#include <linux/efi.h>
+>  #include <asm/xen/interface.h>
+>  
+>  DECLARE_PER_CPU(struct vcpu_info *, xen_vcpu);
+> @@ -35,4 +36,14 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
+>  			       int numpgs, struct page **pages);
+>  
+>  bool xen_running_on_version_or_later(unsigned int major, unsigned int minor);
+> +
+> +#ifdef CONFIG_XEN_EFI
+> +extern efi_system_table_t *xen_efi_probe(void);
+> +#else
+> +static efi_system_table_t __init *xen_efi_probe(void)
+> +{
+> +	return NULL;
+> +}
+> +#endif
+> +
+>  #endif /* INCLUDE_XEN_OPS_H */
+> -- 
+> 1.7.10.4
+> 
