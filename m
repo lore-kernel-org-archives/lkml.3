@@ -1,296 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757861AbaGBCJt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 22:09:49 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:43054 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752046AbaGBCJr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 22:09:47 -0400
-Message-ID: <53B369E7.7050202@gmail.com>
-Date: Wed, 02 Jul 2014 10:09:43 +0800
-From: Zhou Wang <wangzhou.bry@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1751808AbaGBCex (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 22:34:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44888 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751243AbaGBCew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 22:34:52 -0400
+Date: Wed, 2 Jul 2014 04:34:49 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tom Gundersen <teg@jklm.no>, Abhay Salunke <Abhay_Salunke@dell.com>,
+        Stefan Roese <sr@denx.de>, Arnd Bergmann <arnd@arndb.de>,
+        Kay Sievers <kay@vrfy.org>
+Subject: Re: [PATCH] firmware loader: inform direct failure when udev
+	loader is disabled
+Message-ID: <20140702023449.GT27687@wotan.suse.de>
+References: <1404171017-28064-1-git-send-email-mcgrof@do-not-panic.com> <CACVXFVMgNa6RM6GdtNbbNOG0zn29WVRSfD8xdM983-x8sGnp4g@mail.gmail.com> <s5hk37x8mdc.wl%tiwai@suse.de> <20140702010117.GS27687@wotan.suse.de> <CACVXFVNKc7i1CiyY=6cG+xv9joTFgthwBwMZMyTfTN9Z-+XqfA@mail.gmail.com>
 MIME-Version: 1.0
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Pekon Gupta <pekon@ti.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        Joern Engel <joern@logfs.org>, Randy Dunlap <rdunlap@infradead.org>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-mtd@lists.infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, wangzhou1@hisilicon.com,
-        caizhiyong@huawei.com
-Subject: Re: [PATCH 2/3] mtd: hisilicon: add a new nand controller driver
- for hisilicon hip04 Soc
-References: <1404115409-20200-1-git-send-email-wangzhou.bry@gmail.com> <1404115409-20200-3-git-send-email-wangzhou.bry@gmail.com> <53B131AF.2040501@ti.com>
-In-Reply-To: <53B131AF.2040501@ti.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVNKc7i1CiyY=6cG+xv9joTFgthwBwMZMyTfTN9Z-+XqfA@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014年06月30日 17:45, Ivan Khoronzhuk wrote:
->
-> On 06/30/2014 11:03 AM, Zhou Wang wrote:
->> Signed-off-by: Zhou Wang <wangzhou.bry@gmail.com>
->> ---
->>   drivers/mtd/nand/Kconfig     |    5 +
->>   drivers/mtd/nand/Makefile    |    1 +
->>   drivers/mtd/nand/hisi_nand.c |  847
->> ++++++++++++++++++++++++++++++++++++++++++
->>   3 files changed, 853 insertions(+)
->>   create mode 100644 drivers/mtd/nand/hisi_nand.c
->>
->> diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
->> index 90ff447..253f8c8 100644
->> --- a/drivers/mtd/nand/Kconfig
->> +++ b/drivers/mtd/nand/Kconfig
->> @@ -510,4 +510,9 @@ config MTD_NAND_XWAY
->>         Enables support for NAND Flash chips on Lantiq XWAY SoCs. NAND
->> is attached
->>         to the External Bus Unit (EBU).
->> +config MTD_NAND_HISI
->> +    tristate "Support for NAND controller on Hisilicon SoC"
->> +    help
->> +      Enables support for NAND controller on Hisilicon SoC.
->> +
->>   endif # MTD_NAND
->> diff --git a/drivers/mtd/nand/Makefile b/drivers/mtd/nand/Makefile
->> index 542b568..d0881cf 100644
->> --- a/drivers/mtd/nand/Makefile
->> +++ b/drivers/mtd/nand/Makefile
->> @@ -49,5 +49,6 @@ obj-$(CONFIG_MTD_NAND_JZ4740)        += jz4740_nand.o
->>   obj-$(CONFIG_MTD_NAND_GPMI_NAND)    += gpmi-nand/
->>   obj-$(CONFIG_MTD_NAND_XWAY)        += xway_nand.o
->>   obj-$(CONFIG_MTD_NAND_BCM47XXNFLASH)    += bcm47xxnflash/
->> +obj-$(CONFIG_MTD_NAND_HISI)            += hisi_nand.o
->>   nand-objs := nand_base.o nand_bbt.o
->> diff --git a/drivers/mtd/nand/hisi_nand.c b/drivers/mtd/nand/hisi_nand.c
->> new file mode 100644
->> index 0000000..fbcb065
->> --- /dev/null
->> +++ b/drivers/mtd/nand/hisi_nand.c
->> @@ -0,0 +1,847 @@
->> +/*
->> + * Hisilicon NAND Flash controller driver
->> + *
->> + * Copyright © 2012-2014 HiSilicon Technologies Co., Ltd.
->> + *              http://www.hisilicon.com
->> + *
->> + * Author: Zhou Wang <wangzhou.bry@gmail.com>
->> + * The initial developer of the original code is Zhiyong Cai
->> + * <caizhiyong@huawei.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License as published by
->> + * the Free Software Foundation; either version 2 of the License, or
->> + * (at your option) any later version.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +#include <linux/of.h>
->> +#include <linux/of_mtd.h>
->> +#include <linux/mtd/mtd.h>
->> +#include <linux/sizes.h>
->> +#include <linux/clk.h>
->> +#include <linux/slab.h>
->> +#include <linux/module.h>
->> +#include <linux/delay.h>
->> +#include <linux/interrupt.h>
->> +#include <linux/mtd/nand.h>
->> +#include <linux/dma-mapping.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/mtd/partitions.h>
->> +
->> +#define HINFC504_MAX_CHIP                               (4)
->> +#define HINFC504_W_LATCH                                (5)
->> +#define HINFC504_R_LATCH                                (7)
->> +#define HINFC504_RW_LATCH                               (3)
->> +
->> +#define HINFC504_NFC_TIMEOUT                (2 * HZ)
->> +#define HINFC504_NFC_DMA_TIMEOUT            (5 * HZ)
->> +#define HINFC504_CHIP_DELAY                (25)
->> +
->> +#define HINFC504_REG_BASE_ADDRESS_LEN            (0x100)
->> +#define HINFC504_BUFFER_BASE_ADDRESS_LEN        (2048 + 128)
->> +
->> +#define HINFC504_ADDR_CYCLE_MASK            0x4
->> +
->> +#define HINFC504_CON                    0x00
->> +#define HINFC504_CON_OP_MODE_NORMAL            (1U << 0)
->> +#define HINFC504_CON_PAGEISZE_SHIFT            (1)
->> +#define HINFC504_CON_PAGESIZE_MASK            (0x07)
->> +#define HINFC504_CON_BUS_WIDTH                (1U << 4)
->> +#define HINFC504_CON_READY_BUSY_SEL            (1U << 8)
->> +#define HINFC504_CON_ECCTYPE_SHIFT            (9)
->> +#define HINFC504_CON_ECCTYPE_MASK            (0x07)
->> +
->> +#define HINFC504_PWIDTH                    0x04
->> +#define SET_HINFC504_PWIDTH(_w_lcnt, _r_lcnt, _rw_hcnt) \
->> +    ((_w_lcnt) | (((_r_lcnt) & 0x0F) << 4) | (((_rw_hcnt) & 0x0F) << 8))
->> +
->> +#define HINFC504_CMD                    0x0C
->> +#define HINFC504_ADDRL                    0x10
->> +#define HINFC504_ADDRH                    0x14
->> +#define HINFC504_DATA_NUM                0x18
->> +
->> +#define HINFC504_OP                    0x1C
->> +#define HINFC504_OP_READ_DATA_EN            (1U << 1)
->> +#define HINFC504_OP_WAIT_READY_EN            (1U << 2)
->> +#define HINFC504_OP_CMD2_EN                (1U << 3)
->> +#define HINFC504_OP_WRITE_DATA_EN            (1U << 4)
->> +#define HINFC504_OP_ADDR_EN                (1U << 5)
->> +#define HINFC504_OP_CMD1_EN                (1U << 6)
->> +#define HINFC504_OP_NF_CS_SHIFT                (7)
->> +#define HINFC504_OP_NF_CS_MASK                (3)
->> +#define HINFC504_OP_ADDR_CYCLE_SHIFT            (9)
->> +#define HINFC504_OP_ADDR_CYCLE_MASK            (7)
->> +
->> +#define HINFC504_STATUS                    0x20
->> +#define HINFC504_READY                    (1U << 0)
->> +
->> +#define HINFC504_INTEN                    0x24
->> +#define HINFC504_INTEN_DMA                (1U << 9)
->> +#define HINFC504_INTEN_UE                (1U << 6)
->> +#define HINFC504_INTEN_CE                (1U << 5)
->> +
->> +#define HINFC504_INTS                    0x28
->> +#define HINFC504_INTS_DMA                (1U << 9)
->> +#define HINFC504_INTS_UE                (1U << 6)
->> +#define HINFC504_INTS_CE                (1U << 5)
->> +
->> +#define HINFC504_INTCLR                    0x2C
->> +#define HINFC504_INTCLR_DMA                (1U << 9)
->> +#define HINFC504_INTCLR_UE                (1U << 6)
->> +#define HINFC504_INTCLR_CE                (1U << 5)
->> +
->> +#define HINFC504_ECC_STATUS                             0x5C
->> +#define HINFC504_ECC_1_BIT_SHIFT                        16
->> +#define HINFC504_ECC_16_BIT_SHIFT                       12
->> +
->> +#define HINFC504_DMA_CTRL                0x60
->> +#define HINFC504_DMA_CTRL_DMA_START            (1U << 0)
->> +#define HINFC504_DMA_CTRL_WE                (1U << 1)
->> +#define HINFC504_DMA_CTRL_DATA_AREA_EN            (1U << 2)
->> +#define HINFC504_DMA_CTRL_OOB_AREA_EN            (1U << 3)
->> +#define HINFC504_DMA_CTRL_BURST4_EN            (1U << 4)
->> +#define HINFC504_DMA_CTRL_BURST8_EN            (1U << 5)
->> +#define HINFC504_DMA_CTRL_BURST16_EN            (1U << 6)
->> +#define HINFC504_DMA_CTRL_ADDR_NUM_SHIFT        (7)
->> +#define HINFC504_DMA_CTRL_ADDR_NUM_MASK            (1)
->> +#define HINFC504_DMA_CTRL_CS_SHIFT            (8)
->> +#define HINFC504_DMA_CTRL_CS_MASK            (0x03)
->> +
->> +#define HINFC504_DMA_ADDR_DATA                0x64
->> +#define HINFC504_DMA_ADDR_OOB                0x68
->> +
->> +#define HINFC504_DMA_LEN                0x6C
->> +#define HINFC504_DMA_LEN_OOB_SHIFT            (16)
->> +#define HINFC504_DMA_LEN_OOB_MASK            (0xFFF)
->> +
->> +#define HINFC504_DMA_PARA                0x70
->> +#define HINFC504_DMA_PARA_DATA_RW_EN            (1U << 0)
->> +#define HINFC504_DMA_PARA_OOB_RW_EN            (1U << 1)
->> +#define HINFC504_DMA_PARA_DATA_EDC_EN            (1U << 2)
->> +#define HINFC504_DMA_PARA_OOB_EDC_EN            (1U << 3)
->> +#define HINFC504_DMA_PARA_DATA_ECC_EN            (1U << 4)
->> +#define HINFC504_DMA_PARA_OOB_ECC_EN            (1U << 5)
->> +
->> +#define HINFC_VERSION                                   0x74
->> +#define HINFC504_LOG_READ_ADDR                0x7C
->> +#define HINFC504_LOG_READ_LEN                0x80
->> +
->> +#define HINFC504_NANDINFO_LEN                0x10
->> +
->> +#define hinfc_read(_host, _reg)    readl(_host->iobase + (_reg))
->> +#define hinfc_write(_host, _value, _reg)\
->> +    writel((_value), _host->iobase + (_reg))
->> +
->> +struct hinfc_host {
->> +    struct nand_chip    *chip;
->> +    struct mtd_info        *mtd;
->> +    struct device        *dev;
->> +    void __iomem        *iobase;
->> +    struct completion       cmd_complete;
->> +    unsigned int        offset;
->> +    unsigned int        command;
->> +    int            chipselect;
->> +    unsigned int        addr_cycle;
->> +    unsigned int        addr_value[2];
->> +    unsigned int        cache_addr_value[2];
->> +    char            *buffer;
->> +    dma_addr_t        dma_buffer;
->> +    dma_addr_t        dma_oob;
->> +    int            version;
->> +    unsigned int            ecc_bits;
->> +    unsigned int            irq_status; /* interrupt status */
->> +
->> +    int (*send_cmd_pageprog)(struct hinfc_host *host);
->> +    int (*send_cmd_status)(struct hinfc_host *host);
->> +    int (*send_cmd_readstart)(struct hinfc_host *host);
->> +    int (*send_cmd_erase)(struct hinfc_host *host);
->> +    int (*send_cmd_readid)(struct hinfc_host *host);
->> +    int (*send_cmd_reset)(struct hinfc_host *host, int chipselect);
->> +};
->> +
->> +void wait_controller_finished(struct hinfc_host *host)
->> +{
->> +    unsigned long timeout = jiffies + HINFC504_NFC_TIMEOUT;
->> +    int val;
->> +
->> +    while (time_before(jiffies, timeout)) {
->> +        val = hinfc_read(host, HINFC504_STATUS);
->> +        if (host->command == NAND_CMD_ERASE2) {
->> +            /* nfc is ready */
->> +            while (!(val & HINFC504_READY))    {
->> +                usleep_range(500, 1000);
->> +                val = hinfc_read(host, HINFC504_STATUS);
->> +            }
->> +            return;
->> +        } else {
->> +            if (val & HINFC504_READY)
->> +                return;
->> +        }
->> +    }
->> +
->> +    /* wait cmd timeout */
->> +    dev_err(host->dev, "Wait NAND controller exec cmd timeout.\n");
->> +}
->> +
->> +static void hisi_nfc_dma_transfer(struct hinfc_host *host, int todev)
->> +{
->> +    struct mtd_info    *mtd = host->mtd;
->> +    struct nand_chip *chip = mtd->priv;
->> +    unsigned long val;
->> +    int ret;
->> +
->> +    hinfc_write(host, host->dma_buffer, HINFC504_DMA_ADDR_DATA);
->> +    hinfc_write(host, host->dma_oob, HINFC504_DMA_ADDR_OOB);
->> +
->> +    if (chip->ecc.mode == NAND_ECC_NONE) {
->> +        hinfc_write(host, ((mtd->oobsize & HINFC504_DMA_LEN_OOB_MASK)
->> +            << HINFC504_DMA_LEN_OOB_SHIFT), HINFC504_DMA_LEN);
->> +
->> +        hinfc_write(host, HINFC504_DMA_PARA_DATA_RW_EN
->> +            | HINFC504_DMA_PARA_OOB_RW_EN, HINFC504_DMA_PARA);
->> +    } else
->
-> Add {} for else also
-> ./scripts/checkpatch.pl.
->
-ok, I will add them, thanks.
+On Wed, Jul 02, 2014 at 09:51:36AM +0800, Ming Lei wrote:
+> On Wed, Jul 2, 2014 at 9:01 AM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
+> > On Tue, Jul 01, 2014 at 11:22:07AM +0200, Takashi Iwai wrote:
+> >> At Tue, 1 Jul 2014 11:54:24 +0800,
+> >> Ming Lei wrote:
+> >> >
+> >> > On Tue, Jul 1, 2014 at 7:30 AM, Luis R. Rodriguez
+> >> > <mcgrof@do-not-panic.com> wrote:
+> >> > > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> >> > >
+> >> > > Now that the udev firmware loader is optional request_firmware()
+> >> > > will not provide any information on the kernel ring buffer if
+> >> > > direct firmware loading failed and udev firmware loading is disabled.
+> >> > > If no information is needed request_firmware_direct() should be used
+> >> > > for optional firmware, at which point drivers can take on the onus
+> >> > > over informing of any failures, if udev firmware loading is disabled
+> >> > > though we should at the very least provide some sort of information
+> >> > > as when the udev loader was enabled by default back in the days.
+> >> > >
+> >> > > With this change with a simple firmware load test module [0]:
+> >> > >
+> >> > > Example output without FW_LOADER_USER_HELPER_FALLBACK
+> >> > >
+> >> > > platform fake-dev.0: Direct firmware load for fake.bin failed with error -2
+> >> > >
+> >> > > Example without FW_LOADER_USER_HELPER_FALLBACK
+> >> > >
+> >> > > platform fake-dev.0: Direct firmware load for fake.bin failed with error -2
+> >> > > platform fake-dev.0: Falling back to user helper
+> >> > >
+> >> > > Without this change without FW_LOADER_USER_HELPER_FALLBACK we get no output
+> >> > > logged upon failure.
+> >> > >
+> >> > > [0] https://github.com/mcgrof/fake-firmware-test.git
+> >> > >
+> >> > > Cc: Tom Gundersen <teg@jklm.no>
+> >> > > Cc: Ming Lei <ming.lei@canonical.com>
+> >> > > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >> > > Cc: Abhay Salunke <Abhay_Salunke@dell.com>
+> >> > > Cc: Stefan Roese <sr@denx.de>
+> >> > > Cc: Arnd Bergmann <arnd@arndb.de>
+> >> > > Cc: Kay Sievers <kay@vrfy.org>
+> >> > > Cc: Takashi Iwai <tiwai@suse.de>
+> >> > > Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> >> > > ---
+> >> > >
+> >> > >  drivers/base/firmware_class.c | 12 ++++++++----
+> >> > >  1 file changed, 8 insertions(+), 4 deletions(-)
+> >> > >
+> >> > > diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> >> > > index 46ea5f4..23274d8 100644
+> >> > > --- a/drivers/base/firmware_class.c
+> >> > > +++ b/drivers/base/firmware_class.c
+> >> > > @@ -101,8 +101,10 @@ static inline long firmware_loading_timeout(void)
+> >> > >  #define FW_OPT_NOWAIT  (1U << 1)
+> >> > >  #ifdef CONFIG_FW_LOADER_USER_HELPER
+> >> > >  #define FW_OPT_USERHELPER      (1U << 2)
+> >> > > +#define FW_OPT_FAIL_WARN       0
+> >> > >  #else
+> >> > >  #define FW_OPT_USERHELPER      0
+> >> > > +#define FW_OPT_FAIL_WARN       (1U << 3)
+> >> > >  #endif
+> >> > >  #ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK
+> >> > >  #define FW_OPT_FALLBACK                FW_OPT_USERHELPER
+> >> > > @@ -1116,10 +1118,11 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
+> >> > >
+> >> > >         ret = fw_get_filesystem_firmware(device, fw->priv);
+> >> > >         if (ret) {
+> >> > > -               if (opt_flags & FW_OPT_USERHELPER) {
+> >> > > +               if (opt_flags & (FW_OPT_FAIL_WARN | FW_OPT_USERHELPER))
+> >> > >                         dev_warn(device,
+> >> > > -                                "Direct firmware load failed with error %d\n",
+> >> > > -                                ret);
+> >> > > +                                "Direct firmware load for %s failed with error %d\n",
+> >> > > +                                name, ret);
+> >> >
+> >> > Maybe the warning can be always printed out since
+> >> > (FW_OPT_FAIL_WARN | FW_OPT_USERHELPER) should be
+> >> > always true.
+> >>
+> >> Yes, it'd be simpler.  Let's reduce lines! :)
+> >
+> > Actually we don't want to warn when request_firmware_direct() is used right? That's really what
+> 
+> Yes, that is for the CPU microcode update in which it is common to
+> fail in direct loading, and x86 guys hate the warning.
+
+I've extended use of request_firmware_direct() to drivers that also load
+non-firmware but optional config files, EEPROM override, etc.
+
+> > I meant to upkeep while adding a warning when _direct() is not used. So how about
+> > this as an ammendment:
+> 
+> Yes, the idea is right, and it is good to make request_firmware_direct()
+> not depend on CONFIG_FW_LOADER_USER_HELPER, and with
+> one FW_OPT_DIRECT_ONLY flag together it should work.
+
+OK.
+
+> > diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> > index 23274d8..4f6adf3 100644
+> > --- a/drivers/base/firmware_class.c
+> > +++ b/drivers/base/firmware_class.c
+> > @@ -66,13 +68,12 @@ static inline void release_firmware(const struct firmware *fw)
+> >  {
+> >  }
+> >
+> > -#endif
+> > +static inline int request_firmware_direct(const struct firmware **fw,
+> > +                                         const char *name,
+> > +                                         struct device *device)
+> > +{
+> > +       return -EINVAL;
+> > +}
+> 
+> You define two request_firmware_direct?
+
+This is the negative of
+
+#if defined(CONFIG_FW_LOADER) || (defined(CONFIG_FW_LOADER_MODULE) && defined(MODULE))
+
+We have two also for request_firmware().
+
+Will send out a v2.
+
+  Luis
