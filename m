@@ -1,80 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523AbaGBN1D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 09:27:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45609 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744AbaGBN1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 09:27:00 -0400
-Date: Wed, 2 Jul 2014 18:56:35 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Kees Cook <keescook@chromium.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>, stable@vger.kernel.org
-Subject: Re: [PATCH 1/2 v2] hwrng: Allow drivers to disable reading during
- probe
-Message-ID: <20140702132635.GD7505@grmbl.mre>
-References: <cover.1404296679.git.amit.shah@redhat.com>
- <1404306020-24916-1-git-send-email-jason@lakedaemon.net>
+	id S1753593AbaGBN1M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 09:27:12 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:53035 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744AbaGBN1K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 09:27:10 -0400
+Date: Wed, 2 Jul 2014 06:27:08 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>,
+        linux-kernel@vger.kernel.org, Thomas Sch?bel-Theuer <tst@1und1.de>
+Subject: Re: [PATCH 49/50] mars: generic pre-patch for mars
+Message-ID: <20140702132708.GA26732@infradead.org>
+References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
+ <1404251250-22992-50-git-send-email-tst@schoebel-theuer.de>
+ <20140701223644.GA30330@kroah.com>
+ <53B3B283.7050800@schoebel-theuer.de>
+ <20140702082400.GB10971@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404306020-24916-1-git-send-email-jason@lakedaemon.net>
+In-Reply-To: <20140702082400.GB10971@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
-
-On (Wed) 02 Jul 2014 [13:00:19], Jason Cooper wrote:
-> Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
-> added a call to rng_get_data() from the hwrng_register() function.
-> However, some rng devices need initialization before data can be read
-> from them.
+On Wed, Jul 02, 2014 at 01:24:00AM -0700, Greg KH wrote:
+> > I will prepare a new version ASAP.
+> > 
+> > Is the asmlinkage one of the reasons?
 > 
-> Also, the virtio-rng device does not behave properly when this call is
-> made in its probe() routine - the virtio core sets the DRIVER_OK status
-> bit only on a successful probe, which means the host ignores all
-> communication from the guest, and the guest insmod or boot process just
-> sits there doing nothing.
-> 
-> [ jac: Modify the API to allow drivers to disable reading at probe, new
-> patch, copied Amit's commit message. ]
-> 
-> CC: Kees Cook <keescook@chromium.org>
-> CC: Jason Cooper <jason@lakedaemon.net>
-> CC: Herbert Xu <herbert@gondor.apana.org.au>
-> CC: <stable@vger.kernel.org> # v3.15+
-> Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> Signed-off-by: Jason Cooper <jason@lakedaemon.net>
-> ---
->  drivers/char/hw_random/core.c | 8 +++++---
->  include/linux/hw_random.h     | 4 ++++
->  2 files changed, 9 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-> index 334601cc81cf..b7b6c48ca682 100644
-> --- a/drivers/char/hw_random/core.c
-> +++ b/drivers/char/hw_random/core.c
-> @@ -347,9 +347,11 @@ int hwrng_register(struct hwrng *rng)
->  	INIT_LIST_HEAD(&rng->list);
->  	list_add_tail(&rng->list, &rng_list);
->  
-> -	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
-> -	if (bytes_read > 0)
-> -		add_device_randomness(bytes, bytes_read);
-> +	if (!(rng->flags & HWRNG_NO_READ_AT_PROBE)) {
-> +		bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
-> +		if (bytes_read > 0)
-> +			add_device_randomness(bytes, bytes_read);
-> +	}
+> No.  The wholesale exporting of all 300+ syscall functions for no
+> apparent reasoning is the reason.
 
-But this has the inverse problem: if there are two hwrngs in the
-system, one will be initialized and probed.  The other will not be
-initialized, but still be probed.
+Using syscalls or syscall-like functionality from kernel code generally
+is a bad idea.  Every single use needs a clear rationale in the patch
+description.  Which do not seem to exist at all for the series, so in
+it's current form it'll go straight to the trash bin anyway.
 
-My version was more conservative while this one keeps the bug from the
-current kernels.
-
-		Amit
