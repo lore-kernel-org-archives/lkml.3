@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757452AbaGBSFU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 14:05:20 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:51934 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211AbaGBSDs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 14:03:48 -0400
-From: Laura Abbott <lauraa@codeaurora.org>
-To: Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Cc: Laura Abbott <lauraa@codeaurora.org>,
-        David Riley <davidriley@chromium.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Ritesh Harjain <ritesh.harjani@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv4 2/5] lib/genalloc.c: Add genpool range check function
-Date: Wed,  2 Jul 2014 11:03:35 -0700
-Message-Id: <1404324218-4743-3-git-send-email-lauraa@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
-References: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
+	id S1757472AbaGBSFt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 14:05:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39910 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752211AbaGBSFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 14:05:47 -0400
+Date: Wed, 2 Jul 2014 14:05:14 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Sagi Grimberg <sagig@mellanox.com>
+cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: Crash on WRITE SAME
+Message-ID: <alpine.LRH.2.02.1407021338550.20183@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Sagi
 
-After allocating an address from a particular genpool,
-there is no good way to verify if that address actually
-belongs to a genpool. Introduce addr_in_gen_pool which
-will return if an address plus size falls completely
-within the genpool range.
+Your commit d77e65350f2d82dfa0557707d505711f5a43c8fd causes crash on SCSI 
+WRITE SAME command (it can be triggered by issuing the BLKZEROOUT ioctl). 
+The crash happens in iscsi_tcp_segment_done because sg_next returns NULL.
 
-Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
----
- include/linux/genalloc.h |  3 +++
- lib/genalloc.c           | 29 +++++++++++++++++++++++++++++
- 2 files changed, 32 insertions(+)
+Before that commit, there was this code in iscsi_prep_scsi_cmd_pdu:
+	unsigned out_len = scsi_out(sc)->length;
+after the commit, there is this:
+	transfer_length = scsi_transfer_length(sc);
+	... scsi_transfer_length(struct scsi_cmnd *scmd) returns 
+	    blk_rq_bytes(scmd->request);
 
-diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
-index 3cd0934..1ccaab4 100644
---- a/include/linux/genalloc.h
-+++ b/include/linux/genalloc.h
-@@ -121,6 +121,9 @@ extern struct gen_pool *devm_gen_pool_create(struct device *dev,
- 		int min_alloc_order, int nid);
- extern struct gen_pool *dev_get_gen_pool(struct device *dev);
- 
-+bool addr_in_gen_pool(struct gen_pool *pool, unsigned long start,
-+			size_t size);
-+
- #ifdef CONFIG_OF
- extern struct gen_pool *of_get_named_gen_pool(struct device_node *np,
- 	const char *propname, int index);
-diff --git a/lib/genalloc.c b/lib/genalloc.c
-index c2b3ad7..6f03722 100644
---- a/lib/genalloc.c
-+++ b/lib/genalloc.c
-@@ -403,6 +403,35 @@ void gen_pool_for_each_chunk(struct gen_pool *pool,
- EXPORT_SYMBOL(gen_pool_for_each_chunk);
- 
- /**
-+ * addr_in_gen_pool - checks if an address falls within the range of a pool
-+ * @pool:	the generic memory pool
-+ * @start:	start address
-+ * @size:	size of the region
-+ *
-+ * Check if the range of addresses falls within the specified pool. Takes
-+ * the rcu_read_lock for the duration of the check.
-+ */
-+bool addr_in_gen_pool(struct gen_pool *pool, unsigned long start,
-+			size_t size)
-+{
-+	bool found = false;
-+	unsigned long end = start + size;
-+	struct gen_pool_chunk *chunk;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(chunk, &(pool)->chunks, next_chunk) {
-+		if (start >= chunk->start_addr && start <= chunk->end_addr) {
-+			if (end <= chunk->end_addr) {
-+				found = true;
-+				break;
-+			}
-+		}
-+	}
-+	rcu_read_unlock();
-+	return found;
-+}
-+
-+/**
-  * gen_pool_avail - get available free space of the pool
-  * @pool: pool to get available free space
-  *
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+The problem is this: suppose that we have WRITE_SAME command that writes 
+two 512-byte sectors. blk_rq_bytes(scmd->request) returns 1024 (because 
+1024 bytes are written to the disk), but scsi_out(sc)->length contains the 
+value 512 (because only 512 bytes are transferred as data for the SCSI 
+command).
 
+Your patch changes that from 512 to 1024 and it causes the crash in 
+iscsi_tcp_segment_done due to mismatching size.
+
+
+
+I'm not exactly sure how to fix this bug in order to not break something 
+else.
+
+I'd like to know what was your intention for the function 
+scsi_transfer_length? Is it supposed to return the size of data 
+transferred on the SCSI bus? What should it return for bidirectional 
+commands?
+
+scsi_transfer_length tries to add 8 for each transferred sector depending 
+on prot_op. What should it do with commands that transfer only part of a 
+sector? (for example the UNMAP command only transfers 24 bytes of data). 
+Should it add 8 for a partial sector tranferred or not?
+
+Mikulas
