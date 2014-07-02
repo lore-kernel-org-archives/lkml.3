@@ -1,113 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312AbaGBJWv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 05:22:51 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:36748 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525AbaGBJWt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 05:22:49 -0400
-Message-ID: <53B3CF62.2020205@collabora.co.uk>
-Date: Wed, 02 Jul 2014 11:22:42 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1752238AbaGBJZe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 05:25:34 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41492 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751622AbaGBJZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 05:25:32 -0400
+Message-ID: <53B3CFDD.5090504@ti.com>
+Date: Wed, 2 Jul 2014 14:54:45 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Tushar Behera <trblinux@gmail.com>, Lee Jones <lee.jones@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 14/14] ARM: dts: Add max77802 to exynos5420-peach-pit
- and exynos5800-peach-pi
-References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk> <1403806546-31122-15-git-send-email-javier.martinez@collabora.co.uk> <53B3CED8.4020808@gmail.com>
-In-Reply-To: <53B3CED8.4020808@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <kernel@stlinux.com>
+Subject: Re: [PATCH 1/5] phy: miphy365x: Add Device Tree bindings for the
+ MiPHY365x
+References: <1404133317-25953-1-git-send-email-lee.jones@linaro.org> <1404133317-25953-2-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1404133317-25953-2-git-send-email-lee.jones@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tushar,
+Hi,
 
-Thanks a lot for your feedback.
+On Monday 30 June 2014 06:31 PM, Lee Jones wrote:
+> The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+> devices. It has 2 ports which it can use for either; both SATA, both
+> PCIe or one of each in any configuration.
+> 
+> Cc: Kishon Vijay Abraham I <kishon@ti.com>
+> Acked-by: Mark Rutland <mark.rutland@arm.com>
+> Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  .../devicetree/bindings/phy/phy-miphy365x.txt      | 76 ++++++++++++++++++++++
+>  1 file changed, 76 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy365x.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/phy/phy-miphy365x.txt b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
+> new file mode 100644
+> index 0000000..d75f300
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
+> @@ -0,0 +1,76 @@
+> +STMicroelectronics STi MIPHY365x PHY binding
+> +============================================
+> +
+> +This binding describes a miphy device that is used to control PHY hardware
+> +for SATA and PCIe.
+> +
+> +Required properties:
+> +- compatible :	Should be "st,miphy365x-phy"
+> +- #phy-cells :	Should be 2 (See second example)
+> +		First cell is the port number from:
+> +			- MIPHY_PORT_0
+> +			- MIPHY_PORT_1
 
-On 07/02/2014 11:20 AM, Tushar Behera wrote:
-> On 06/26/2014 11:45 PM, Javier Martinez Canillas wrote:
->> Peach pit and pi boards uses a Maxim 77802 power management
->> IC to drive regulators and its Real Time Clock. This patch
->> adds support for this chip.
->> 
->> These are the device nodes and pinctrl configuration that
->> are present on the Peach pit DeviceTree source file in the
->> the Chrome OS kernel 3.8 tree.
->> 
->> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->> Tested-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->> ---
-> 
-> [ ... ]
-> 
->> +
->> +		regulators {
->> +			buck1_reg: BUCK1 {
->> +				regulator-name = "vdd_mif";
->> +				regulator-min-microvolt = <800000>;
->> +				regulator-max-microvolt = <1300000>;
->> +				regulator-always-on;
->> +				regulator-boot-on;
->> +				regulator-ramp-delay = <12500>;
->> +			};
-> 
-> IMO, adding a blank line between sub-nodes would be better.
-> 
+I'm just thinking if we can directly give phandle to the sub-node
+(channel0/channel1 or port0/port1) we won't need this information in the PHY
+specifier. This might need some modification in the phy-core but that can be done.
+> +		Second cell is device type from:
+> +			- MIPHY_TYPE_SATA
+> +			- MIPHY_TYPE_PCI
+> +- reg       :	Address and length of register sets for each device in
+> +		"reg-names"
+> +- reg-names : 	The names of the register addresses corresponding to the
+> +		registers filled in "reg", from:
+> +			- sata0: For SATA port 0 registers
+> +			- sata1: For SATA port 1 registers
+> +			- pcie0: For PCIE port 0 registers
+> +			- pcie1: For PCIE port 1 registers
 
-Ok
+this information should be in the documentation of sub-nodes.
 
->> +			buck2_reg: BUCK2 {
->> +				regulator-name = "vdd_arm_real";
->> +				regulator-min-microvolt = <800000>;
->> +				regulator-max-microvolt = <1500000>;
->> +				regulator-always-on;
->> +				regulator-boot-on;
->> +				regulator-ramp-delay = <12500>;
->> +			};
-> 
-> [ ... ]
-> 
->> +			vqmmc_sdcard: ldo4_reg: LDO4 {
->> +				regulator-name = "vdd_sd";
->> +				regulator-min-microvolt = <1800000>;
->> +				regulator-max-microvolt = <2800000>;
->> +				regulator-always-on;
->> +
-> 
-> Blank line, can be removed.
->
-
-Ok
-
->> +			};
-> 
-> [ ... ]
->> +			ldo23_reg: LDO23 {
->> +				regulator-name = "ld0_23";
-> 
-> ldo_23, 'o' in place of '0'.
->
-
-Right, missed that. Thanks for pointing out.
-
-> Similar comments for peach-pi DTS file.
-> 
-
-Best regards,
-Javier
+Cheers
+Kishon
