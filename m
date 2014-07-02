@@ -1,86 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814AbaGBJbf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 05:31:35 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51466 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752655AbaGBJbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 05:31:33 -0400
-Date: Wed, 2 Jul 2014 02:31:26 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [PATCH] f2fs: check bdi->dirty_exceeded when trying to skip data
- writes
-Message-ID: <20140702093126.GA25404@jmac.local>
-References: <1403956718-17575-1-git-send-email-jaegeuk@kernel.org>
- <20140701225420.6cc94fb5.akpm@linux-foundation.org>
+	id S1751815AbaGBJg6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 05:36:58 -0400
+Received: from smtp129.dfw.emailsrvr.com ([67.192.241.129]:55760 "EHLO
+	smtp129.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991AbaGBJg5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 05:36:57 -0400
+X-Broken-By: aardmail-smtpc (http://bwachter.lart.info/projects/aardmail/)
+From: Bernd Wachter <bernd.wachter@jolla.com>
+To: linux-usb@vger.kernel.org
+Subject: [PATCH] usb: option: Add ID for Telewell TW-LTE 4G v2
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+CC: linux-kernel@vger.kernel.org
+X-use-pgp: no
+X-personality: jolla
+X-Zippy-Says: Yow!  Legally-imposed CULTURE-reduction is CABBAGE-BRAINED!
+Date: Wed, 02 Jul 2014 12:36:48 +0300
+Message-ID: <87ha30yudr.fsf@bwachter.lart.info>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140701225420.6cc94fb5.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 01, 2014 at 10:54:20PM -0700, Andrew Morton wrote:
-> On Sat, 28 Jun 2014 20:58:38 +0900 Jaegeuk Kim <jaegeuk@kernel.org> wrote:
-> 
-> > If we don't check the current backing device status, balance_dirty_pages can
-> > fall into infinite pausing routine.
-> > 
-> > This can be occurred when a lot of directories make a small number of dirty
-> > dentry pages including files.
-> > 
-> > ...
-> >
-> > --- a/fs/f2fs/node.c
-> > +++ b/fs/f2fs/node.c
-> > @@ -43,6 +43,8 @@ bool available_free_memory(struct f2fs_sb_info *sbi, int type)
-> >  		mem_size = (nm_i->nat_cnt * sizeof(struct nat_entry)) >> 12;
-> >  		res = mem_size < ((val.totalram * nm_i->ram_thresh / 100) >> 2);
-> >  	} else if (type == DIRTY_DENTS) {
-> > +		if (sbi->sb->s_bdi->dirty_exceeded)
-> > +			return false;
-> >  		mem_size = get_pages(sbi, F2FS_DIRTY_DENTS);
-> >  		res = mem_size < ((val.totalram * nm_i->ram_thresh / 100) >> 1);
-> >  	}
-> 
-> err, filesystems should not be playing around with this.
-> 
-> Perhaps VFS changes are needed.  Please tell us much much more about
-> what is going on here.
 
-The f2fs has a feature which throttles IOs to merge bios in the fs level as much
-as possible by bypassing writepages in some cases.
+Add ID of the Telewell 4G v2 hardware to option driver to get legacy
+serial interface working
 
-One of the cases is related to the dentry pages.
-If a direcotry has a small number of dirty dentry pages and there is an amount
-of free memory, f2fs skips writepages.
 
-The code in f2fs_write_data_pages is:
+Signed-off-by: Bernd Wachter <bernd.wachter@jolla.com>
+---
+--- linux-3.15.3/drivers/usb/serial/option.c.orig	2014-07-02 12:23:28.000000000 +0300
++++ linux-3.15.3/drivers/usb/serial/option.c	2014-07-02 12:25:16.000000000 +0300
+@@ -1480,6 +1480,8 @@ static const struct usb_device_id option
+ 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1426, 0xff, 0xff, 0xff),  /* ZTE MF91 */
+ 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1428, 0xff, 0xff, 0xff),  /* Telewell TW-LTE 4G v2 */
++		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1533, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1534, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1535, 0xff, 0xff, 0xff) },
 
-	if (S_ISDIR(inode->i_mode) && wbc->sync_mode == WB_SYNC_NONE &&
-			get_dirty_dents(inode) < nr_pages_to_skip(sbi, DATA) &&
-			available_free_memory(sbi, DIRTY_DENTS))
-		goto skip_write;
-
-However, if many many directories have been created and all of each directories
-has a small number of dirty pages in a very short time, it makes an effect on
-balance_dirty_pages.
-
-In such the case, balance_dirty_pages waits for decreasing dirty pages but f2fs
-starts to skip flushing the dirty pages continuously.
-So, this patch adds a condition to avoid that behavior by checking bdi's
-dirty_exceeded.
-
-So, any recommendation instead of this kinda workaround?
-
-IMHO, how about setting wbc->sync_mode with WB_SYNC_ALL when detecting the case?
-
-Thanks,
-
--- 
-Jaegeuk Kim
