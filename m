@@ -1,73 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049AbaGBLt3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 07:49:29 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:13385 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005AbaGBLt1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 07:49:27 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 02 Jul 2014 04:42:53 -0700
-Date: Wed, 2 Jul 2014 14:49:24 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Tomasz Figa <t.figa@samsung.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomasz =?utf-8?Q?Stanis=C5=82awski?= <t.stanislaws@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Andrzej Hajda <a.hajda@samsung.com>,
-        Mark Brown <broonie@kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: ABBA deadlock in Common Clock Framework
-Message-ID: <20140702114924.GC3679@tbergstrom-lnx.Nvidia.com>
-References: <53B3E5F8.80501@samsung.com>
+	id S1752196AbaGBLvJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 07:51:09 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46847 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751134AbaGBLvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 07:51:07 -0400
+Message-ID: <53B3F225.5020303@ti.com>
+Date: Wed, 2 Jul 2014 14:51:01 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <53B3E5F8.80501@samsung.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tero Kristo <t-kristo@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Nishanth Menon <nm@ti.com>
+CC: <rnayak@ti.com>, <balbi@ti.com>, <nsekhar@ti.com>, <kishon@ti.com>,
+        <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: DRA7-evm: Enable SATA PHY and USB PHY power supplies
+References: <1403700996-27105-1-git-send-email-rogerq@ti.com> <53AB4CE0.6020705@ti.com> <20140626073115.GD28884@atomide.com> <53ABE9AD.1000100@ti.com> <53AC2CA7.30800@ti.com> <53AC36ED.2000309@ti.com> <53B117F9.6080004@ti.com>
+In-Reply-To: <53B117F9.6080004@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 12:59:04PM +0200, Tomasz Figa wrote:
-> Hi All,
+On 06/30/2014 10:55 AM, Roger Quadros wrote:
+> On 06/26/2014 06:06 PM, Tero Kristo wrote:
+>> On 06/26/2014 05:22 PM, Roger Quadros wrote:
+>>> +Tero
+>>>
+>>> On 06/26/2014 12:36 PM, Roger Quadros wrote:
+>>>> On 06/26/2014 10:31 AM, Tony Lindgren wrote:
+>>>>> * Nishanth Menon <nm@ti.com> [140625 15:29]:
+>>>>>> On 06/25/2014 07:56 AM, Roger Quadros wrote:
+>>>>>>> The SATA and USB PHYs need the 1.8V and 3.3V supplies.
+>>>>>>> The PHY drivers/framework don't yet support regulator
+>>>>>>> supply so we have to keep these regulators always-on till
+>>>>>>> then.
+>>>>>>>
+>>>>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>>>>>> ---
+>>>>>>>   arch/arm/boot/dts/dra7-evm.dts | 2 ++
+>>>>>>>   1 file changed, 2 insertions(+)
+>>>>>>>
+>>>>>>> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
+>>>>>>> index 4adc280..99a1f79 100644
+>>>>>>> --- a/arch/arm/boot/dts/dra7-evm.dts
+>>>>>>> +++ b/arch/arm/boot/dts/dra7-evm.dts
+>>>>>>> @@ -241,6 +241,7 @@
+>>>>>>>                       regulator-min-microvolt = <1800000>;
+>>>>>>>                       regulator-max-microvolt = <1800000>;
+>>>>>>>                       regulator-boot-on;
+>>>>>>> +                    regulator-always-on;
+
+There was a confirmation from the TI hardware team that this 1.8V regulator can't be powered down while the SoC is Active. So we need to have regulator-always-on here.
+
+>>>>>>>                   };
+>>>>>>>
+>>>>>>>                   ldo9_reg: ldo9 {
+>>>>>>> @@ -266,6 +267,7 @@
+>>>>>>>                       regulator-min-microvolt = <3300000>;
+>>>>>>>                       regulator-max-microvolt = <3300000>;
+>>>>>>>                       regulator-boot-on;
+>>>>>>> +                    regulator-always-on;
+
+This ldousb_reg 3.3V regulator can be turned off when the PHY is not in use. The PHY driver will manage this.
+
+cheers,
+-roger
+
+>>>>>>>                   };
+>>>>>>>               };
+>>>>>>>           };
+>>>>>>>
+>>>>>>
+>>>>>> Why not fix phy driver/framework as needed? the trouble is people
+>>>>>> always forget to remove always-on... who actually audits old logs and
+>>>>>> fixes stuff back up?
+>>>>>
+>>>>> Yes I agree let's not play with the regulator-always-on unless
+>>>>> absolutely necessary.
+>>>>>
+>>>> Agreed. PHY framework must deal with this. Till then USB, SATA and most likely PCIe as well will not work on DRA7-evm.
+>>>>
+>>>
+>>> I tried the below patch to enable the relevant regulators in the PHY drivers but still couldn't manage to get USB to work. The same 1.8V regulator is used to supply 3 pins
+>>> -vdda_usb1: DPLL_USB and HS_USB1 analog supply
+>>> -vdda_usb2: HS_USB2 analog supply
+>>> -vdda_usb3: DPLL_USB_OTG_SS and USB3.0 Rx/Tx analog supply
+>>>
+>>> It seems that the regulator auto disable kicks in before the phy driver enables the regulator thus causing some kind of malfunction. I'm not sure whether this is due to DPLL_USB supply glitch or HS_USB1 analog supply glitch.
+>>>
+>>> In any case, the DPLL_USB (clock driver?) needs to enable the 1.8V regulator in addition to the HS_USB PHY driver to prevent this supply glitch.
+>>>
+>>> Tero, any suggestions about this? If we are not concerned about disabling DPLL_USB anytime then the regulator might just as well be always-on. Alternatively can we place a regulator_get(), regulator_enable() in drivers/clk/ti/dpll.c?
+>>
+>> I believe dpll_usb needs to go down for the core to idle. Also, we are working on getting suspend-resume working on this platform, so having the regulator always on is a no-no.
+>>
+>> Also, I am heavily against adding regulator tweaks within the clock driver, there needs to be another way.
 > 
-> While testing linux-next (next-20140625) on Exynos4412-based TRATS2
-> board, from time to time I hit a deadlock between clk_disable_unused()
-> of Common Clock Framework and parallel clk_prepare() from s3c24xx-i2c
-> driver.
+> Fair enough. There is not much information about controlling the power on vdda_usbx pins except the power-up and power-down sequence diagrams in Fig. 3.1 and 3.2 in the Data Manual (DRA75x_74x_ES1.1_DM_Early_Preliminary_vJ.pdf).
 > 
-> I believe the following is happening (in processes 1 and 2):
->  1: clk_disable_unused()
->  1: clk_prepare_lock()
->  1: mutex_lock(clk prepare mutex) // lock A
->  1: max77686_clk_is_prepared()
->  1: regmap_read()
->  2: regulator_set_voltage()
->  2: regmap_read()
->  2: mutex_lock(max77686 regmap mutex) // lock B
->  2: i2c_transfer()
->  2: s3c24xx_i2c_xfer()
->  2: clk_unprepare()
->  2: clk_prepare_lock()
->  2: mutex_lock(clk prepare mutex) // lock A
->  1: mutex_lock(max77686 regmap mutex) // lock B
->  1,2: BOOM!
-> 
-> I suppose this is a general problem affecting any MFD device that is
-> also a clock provider, but I clearly don't have a good idea what to do
-> about it.
+> Can the regulator be dealt with in the OMAP PM core driver, along with the vdd_mpu and vdd_core stuff?
 > 
 
-Or if you use notifiers which use i2c... See also
-http://comments.gmane.org/gmane.linux.kernel/1553699. One workaround is to
-always leave the clock of the i2c controller in a prepared state.
 
-Cheers,
 
-Peter.
