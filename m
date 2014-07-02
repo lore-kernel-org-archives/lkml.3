@@ -1,237 +1,333 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964793AbaGBU02 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 16:26:28 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:38220 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571AbaGBU00 (ORCPT
+	id S964847AbaGBU0i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 16:26:38 -0400
+Received: from p01c11o148.mxlogic.net ([208.65.144.71]:34712 "EHLO
+	p01c11o148.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753487AbaGBU0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 16:26:26 -0400
+	Wed, 2 Jul 2014 16:26:35 -0400
+X-MXL-Hash: 53b46afa6bf0099f-5c7249cc5698a359ead8690c458a940066b6e1ef
+Date: Wed, 2 Jul 2014 16:26:26 -0400
+From: Joe Lawrence <joe.lawrence@stratus.com>
+To: Joe Lawrence <joe.lawrence@stratus.com>
+CC: <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        "Jiri Kosina" <jkosina@suse.cz>, Jeff Moyer <jmoyer@redhat.com>,
+        Boaz Harrosh <bharrosh@panasas.com>
+Subject: Re: [PATCH v3 0/2] block,scsi: fixup blk_get_request dead queue
+ scenarios
+Message-ID: <20140702162626.5fcaf2a1@jlaw-desktop.mno.stratus.com>
+In-Reply-To: <1404329718-19367-1-git-send-email-joe.lawrence@stratus.com>
+References: <1404329718-19367-1-git-send-email-joe.lawrence@stratus.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1404332484.596.98.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <cover.1404245510.git.d.kasatkin@samsung.com>
-	<2ca2519809a1c99c061ebdb960f83614b72b0c59.1404245510.git.d.kasatkin@samsung.com>
-	<1404332484.596.98.camel@dhcp-9-2-203-236.watson.ibm.com>
-Date: Wed, 2 Jul 2014 23:26:24 +0300
-Message-ID: <CACE9dm8aoKiVqxoom=VC+tyz9b-TO0Uzpsc-mouAU1STQVwkGw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] ima: introduce multi-page collect buffers
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-ima-devel@lists.sourceforge.net,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-AnalysisOut: [v=2.1 cv=bv/CBSqi c=1 sm=1 tr=0 a=o2bo05G+d1rlxuoNbFVhCw==]
+X-AnalysisOut: [:117 a=o2bo05G+d1rlxuoNbFVhCw==:17 a=2KTiUk5DT3cA:10 a=_KQ]
+X-AnalysisOut: [qW7t0BisA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=uelBKuK]
+X-AnalysisOut: [pAAAA:8 a=YlVTAMxIAAAA:8 a=zUH0V0KGEoIccrHwrzMA:9 a=CjuIK1]
+X-AnalysisOut: [q_8ugA:10]
+X-Spam: [F=0.6000000000; CM=0.500; MH=0.600(2014070216); S=0.200(2014051901)]
+X-MAIL-FROM: <joe.lawrence@stratus.com>
+X-SOURCE-IP: [134.111.1.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 July 2014 23:21, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> On Tue, 2014-07-01 at 23:12 +0300, Dmitry Kasatkin wrote:
->> Use of multiple-page collect buffers reduces:
->> 1) the number of block IO requests
->> 2) the number of asynchronous hash update requests
->>
->> Second is important for HW accelerated hashing, because significant
->> amount of time is spent for preparation of hash update operation,
->> which includes configuring acceleration HW, DMA engine, etc...
->> Thus, HW accelerators are more efficient when working on large
->> chunks of data.
->>
->> This patch introduces usage of multi-page collect buffers. Buffer size
->> can be specified by providing additional option to the 'ima_ahash='
->> kernel parameter. 'ima_ahash=2048,16384' specifies that minimal file
->> size to use ahash is 2048 byes and buffer size is 16384 bytes.
->> Default buffer size is 4096 bytes.
->>
->> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
->> ---
->>  Documentation/kernel-parameters.txt |  3 +-
->>  security/integrity/ima/ima_crypto.c | 85 ++++++++++++++++++++++++++++++++++---
->>  2 files changed, 81 insertions(+), 7 deletions(-)
->>
->> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->> index b406f5c..529ba58 100644
->> --- a/Documentation/kernel-parameters.txt
->> +++ b/Documentation/kernel-parameters.txt
->> @@ -1292,9 +1292,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>                       Set number of hash buckets for inode cache.
->>
->>       ima_ahash=      [IMA] Asynchronous hash usage parameters
->> -                     Format: <min_file_size>
->> +                     Format: <min_file_size>[,<bufsize>]
->>                       Set the minimal file size when use asynchronous hash.
->>                       If ima_ahash is not provided, ahash usage is disabled.
->> +                     bufsize - hashing buffer size. 4k if not specified.
->>
->>       ima_appraise=   [IMA] appraise integrity measurements
->>                       Format: { "off" | "enforce" | "fix" }
->> diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
->> index 5eb19b4..41f2695 100644
->> --- a/security/integrity/ima/ima_crypto.c
->> +++ b/security/integrity/ima/ima_crypto.c
->> @@ -25,7 +25,6 @@
->>  #include <crypto/hash_info.h>
->>  #include "ima.h"
->>
->> -
->>  struct ahash_completion {
->>       struct completion completion;
->>       int err;
->> @@ -36,14 +35,24 @@ static struct crypto_ahash *ima_ahash_tfm;
->>
->>  /* minimal file size for ahash use */
->>  static loff_t ima_ahash_size;
->> +/* default is 0 - 1 page. */
->> +static int ima_max_order;
->>
->>  static int __init ima_ahash_setup(char *str)
->>  {
->> -     int rc;
->> +     int ints[3] = { 0, };
->> +
->> +     str = get_options(str, ARRAY_SIZE(ints), ints);
->> +     if (!ints[0])
->> +             return 0;
->> +
->> +     ima_ahash_size = ints[1];
->> +     ima_max_order = get_order(ints[2]);
->
-> get_options() returns the number of options processed in ints[0].
-> Before assigning ima_max_order, we normally check to see if it exists.
-> I guess in this case it doesn't matter since it would return 0 anyway.
->
-> Should there be any value checking here?  Should the values be some
-> multiple of 1024?
->
+FWIW, I spent some time looking at blk_get_request callers and as far as
+I can tell, most should be able to gracefully handle additional errno
+values of -ENODEV and -EWOULDBLOCK.  I didn't chase down the pktcdvd or
+osd paths, however Jiri and Boaz ack'd the earlier patch version that
+added -ENODEV.
 
-It is a goo question. I was looking how get_options is used. Here as
-ints initialized to 0, get_order returns the same value for anyhing
-which is rounded up to PAGE_SIZE. So it works in all cases.
-
-But if we now go to module param or sysctl, then this can be discarded?
-
-Thanks for reviewing.
+Here are my wide-screen notes from the cscope goose-chase...
 
 
->>
->> -     rc = kstrtoll(str, 10, &ima_ahash_size);
->> +     pr_info("ima_ahash: minsize=%lld, bufsize=%lu\n",
->> +             ima_ahash_size, (PAGE_SIZE << ima_max_order));
->>
->> -     return !rc;
->> +     return 1;
->>  }
->>  __setup("ima_ahash=", ima_ahash_setup);
->>
->> @@ -166,6 +175,65 @@ static int ahash_wait(int err, struct ahash_completion *res)
->>       return err;
->>  }
->>
->> +/**
->> + * ima_alloc_pages() - Allocated contiguous pages.
->> + * @max_size:       Maximum amount of memory to allocate.
->> + * @allocated_size: Returned size of actual allocation.
->> + * @last_warn:      Should the min_size allocation warn or not.
->> + *
->> + * Tries to do opportunistic allocation for memory first trying to allocate
->> + * max_size amount of memory and then splitting that until zero order is
->> + * reached. Allocation is tried without generating allocation warnings unless
->> + * last_warn is set. Last_warn set affects only last allocation of zero order.
->> + *
->> + * Return pointer to allocated memory, or NULL on failure.
->> + */
->> +static void *ima_alloc_pages(loff_t max_size, size_t *allocated_size,
->> +                          int last_warn)
->> +{
->> +     void *ptr;
->> +     unsigned int order;
->> +     gfp_t gfp_mask = __GFP_NOWARN | __GFP_WAIT | __GFP_NORETRY;
->> +
->> +     order = min(get_order(max_size), ima_max_order);
->> +
->> +     for (; order; order--) {
->> +             ptr = (void *)__get_free_pages(gfp_mask, order);
->> +             if (ptr) {
->> +                     *allocated_size = PAGE_SIZE << order;
->> +                     return ptr;
->> +             }
->> +     }
->> +
->> +     /* order is zero - one page */
->> +
->> +     gfp_mask = GFP_KERNEL;
->> +
->> +     if (!last_warn)
->> +             gfp_mask |= __GFP_NOWARN;
->> +
->> +     ptr = (void *)__get_free_pages(gfp_mask, 0);
->> +     if (ptr) {
->> +             *allocated_size = PAGE_SIZE;
->> +             return ptr;
->> +     }
->> +
->> +     *allocated_size = 0;
->> +     return NULL;
->> +}
->> +
->> +/**
->> + * ima_free_pages() - Free pages allocated by ima_alloc_pages().
->> + * @ptr:  Pointer to allocated pages.
->> + * @size: Size of allocated buffer.
->> + */
->> +static void ima_free_pages(void *ptr, size_t size)
->> +{
->> +     if (!ptr)
->> +             return;
->> +     free_pages((unsigned long)ptr, get_order(size));
->> +}
->> +
->>  static int ima_calc_file_hash_atfm(struct file *file,
->>                                  struct ima_digest_data *hash,
->>                                  struct crypto_ahash *tfm)
->> @@ -176,6 +244,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
->>       struct ahash_request *req;
->>       struct scatterlist sg[1];
->>       struct ahash_completion res;
->> +     size_t rbuf_size;
->>
->>       hash->length = crypto_ahash_digestsize(tfm);
->>
->> @@ -197,7 +266,11 @@ static int ima_calc_file_hash_atfm(struct file *file,
->>       if (i_size == 0)
->>               goto out2;
->>
->> -     rbuf = kzalloc(PAGE_SIZE, GFP_KERNEL);
->> +     /*
->> +      * Try to allocate maximum size of memory, fail if not even single
->> +      * page cannot be allocated.
->> +      */
->
-> The comment is nice explanation, but might be unnecessary if there was a
-> function comment.
->
-> Mimi
->
->> +     rbuf = ima_alloc_pages(i_size, &rbuf_size, 1);
->>       if (!rbuf) {
->>               rc = -ENOMEM;
->>               goto out1;
->> @@ -226,7 +299,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
->>       }
->>       if (read)
->>               file->f_mode &= ~FMODE_READ;
->> -     kfree(rbuf);
->> +     ima_free_pages(rbuf, rbuf_size);
->>  out2:
->>       if (!rc) {
->>               ahash_request_set_crypt(req, NULL, hash->digest, 0);
->
->
+Functions calling this function: blk_get_request
+
+  File                Function              Line                                                                                 Return value handling
+0 blk-core.c          blk_make_request      1217 struct request *rq = blk_get_request(q, bio_data_dir(bio), gfp_mask);           ERR_PTR propagated, see callers below, TODO
+1 bsg.c               bsg_map_hdr            272 rq = blk_get_request(q, rw, GFP_KERNEL);                                        ERR_PTR propagated, see callers below
+2 bsg.c               bsg_map_hdr            287 next_rq = blk_get_request(q, READ, GFP_KERNEL);                                 ERR_PTR propagated, see callers below
+3 scsi_ioctl.c        sg_io                  310 rq = blk_get_request(q, writing ? WRITE : READ, GFP_KERNEL);                    PTR_ERR propagated, see callers below
+4 scsi_ioctl.c        sg_scsi_ioctl          440 rq = blk_get_request(q, in_len ? WRITE : READ, __GFP_WAIT);                     PTR_ERR propagated, see callers below
+5 scsi_ioctl.c        __blk_send_generic     526 rq = blk_get_request(q, WRITE, __GFP_WAIT);                                     PTR_ERR propagated, see callers below
+6 pd.c                action                 724 rq = blk_get_request(disk->gd->queue, READ, __GFP_WAIT);                        caller is actually "pd_special_command", PTR_ERR propagated, see callers below
+7 pktcdvd.c           pkt_generic_packet     705 rq = blk_get_request(q, (cgc->data_direction == CGC_DATA_WRITE) ?               PTR_ERR propagated, see callers below, TODO
+8 sx8.c               carm_get_special       570 rq = blk_get_request(host->oob_q, WRITE , GFP_KERNEL);                          return code is NULL
+9 cdrom.c             cdrom_read_cdda_bpc   2182 rq = blk_get_request(q, READ, GFP_KERNEL);                                      filters out -EIO, PTR_ERR propagated, see callers below
+a ide-atapi.c         ide_queue_pc_tail       95 rq = blk_get_request(drive->queue, READ, __GFP_WAIT);                           don't care, deprecated driver
+b ide-cd.c            ide_cd_queue_pc        444 rq = blk_get_request(drive->queue, write, __GFP_WAIT);                          don't care, deprecated driver
+c ide-cd_ioctl.c      ide_cdrom_reset        306 rq = blk_get_request(drive->queue, READ, __GFP_WAIT);                           don't care, deprecated driver
+d ide-devsets.c       ide_devset_execute     168 rq = blk_get_request(q, READ, __GFP_WAIT);                                      don't care, deprecated driver
+e ide-disk.c          set_multcount          480 rq = blk_get_request(drive->queue, READ, __GFP_WAIT);                           don't care, deprecated driver
+f ide-ioctls.c        ide_cmd_ioctl          128 rq = blk_get_request(drive->queue, READ, __GFP_WAIT);                           don't care, deprecated driver
+g ide-ioctls.c        generic_drive_reset    224 rq = blk_get_request(drive->queue, READ, __GFP_WAIT);                           don't care, deprecated driver
+h ide-park.c          issue_park_cmd          34 rq = blk_get_request(q, READ, __GFP_WAIT);                                      caller is void
+i ide-park.c          issue_park_cmd          48 rq = blk_get_request(q, READ, GFP_NOWAIT);                                      don't care, deprecated driver
+j ide-pm.c            generic_ide_suspend     21 rq = blk_get_request(drive->queue, READ, __GFP_WAIT);                           don't care, deprecated driver
+k ide-pm.c            generic_ide_resume      61 rq = blk_get_request(drive->queue, READ, __GFP_WAIT);                           don't care, deprecated driver
+l ide-tape.c          idetape_queue_rw_tail  855 rq = blk_get_request(drive->queue, READ, __GFP_WAIT);                           don't care, deprecated driver
+m ide-taskfile.c      ide_raw_taskfile       433 rq = blk_get_request(drive->queue, rw, __GFP_WAIT);                             don't care, deprecated driver
+n scsi_dh_alua.c      get_alua_req           116 rq = blk_get_request(q, rw, GFP_NOIO);                                          return code is NULL
+o scsi_dh_emc.c       get_req                276 rq = blk_get_request(sdev->request_queue,                                       return code is NULL
+p scsi_dh_hp_sw.c     hp_sw_tur              119 req = blk_get_request(sdev->request_queue, WRITE, GFP_NOIO);                    return code is driver/core specific
+q scsi_dh_hp_sw.c     hp_sw_start_stop       249 req = blk_get_request(h->sdev->request_queue, WRITE, GFP_ATOMIC);               return code is driver/core specific
+r scsi_dh_rdac.c      get_rdac_req           275 rq = blk_get_request(q, rw, GFP_NOIO);                                          return code is NULL
+s osd_initiator.c     _make_request         1569 req = blk_get_request(q, has_write ? WRITE : READ, flags);                      ERR_PTR propagated, see callers below, TODO
+t osst.c              osst_execute           364 req = blk_get_request(SRpnt->stp->device->request_queue, write, GFP_KERNEL);    return code is driver/core specific
+u scsi_error.c        scsi_eh_lock_door     1953 req = blk_get_request(sdev->request_queue, READ, GFP_KERNEL);                   caller is void
+v scsi_lib.c          scsi_execute           195 req = blk_get_request(sdev->request_queue, write, __GFP_WAIT);                  return code is driver/core specific
+w scsi_tgt_lib.c      scsi_host_get_command   99 rq = blk_get_request(shost->uspace_req_q, !write, gfp_mask);                    return code is NULL
+x sg.c                sg_start_req          1652 rq = blk_get_request(q, rw, GFP_ATOMIC);                                        PTR_ERR propagated, see callers below
+y st.c                st_scsi_execute        482 req = blk_get_request(SRpnt->stp->device->request_queue, write,                 return code is driver/core specific
+z target_core_pscsi.c pscsi_execute_cmd     1050 req = blk_get_request(pdv->pdv_sd->request_queue,                               return code is driver/core specific
 
 
+Functions calling this function: blk_make_request
 
--- 
-Thanks,
-Dmitry
+  File                Function          Line
+0 virtio_blk.c        virtblk_get_id     241 req = blk_make_request(vblk->disk->queue, bio, GFP_KERNEL);                         PTR_ERR propagated, see callers below
+1 osd_initiator.c     _make_request     1565 return blk_make_request(q, oii->bio, flags);                                        ERR_PTR propagated, see callers below, TODO
+2 target_core_pscsi.c pscsi_execute_cmd 1067 req = blk_make_request(pdv->pdv_sd->request_queue, hbio,                            return code is driver/core specific
+
+
+Functions calling this function: virtblk_get_id
+
+  File         Function            Line
+0 virtio_blk.c virtblk_serial_show 318 err = virtblk_get_id(disk, buf);                                                          Filters out -EIO, others propagated, caller is a DEVICE_ATTR
+
+
+Functions calling this function: _make_request
+
+  File            Function          Line
+0 osd_initiator.c _init_blk_request 1587 req = _make_request(q, has_out, has_out ? &or->out : &or->in, flags);                   PTR_ERR propagated, see callers below, TDOO
+1 osd_initiator.c _init_blk_request 1605 req = _make_request(q, false, &or->in, flags);                                          PTR_ERR propagated, see callers below, TODO
+
+
+Functions calling this function: _init_blk_request
+
+  File            Function             Line
+0 osd_initiator.c osd_finalize_request 1654 ret = _init_blk_request(or, has_in, has_out);                                        PTR_ERR propagated, see callers below
+
+
+Functions calling this function: osd_finalize_request
+
+  File            Function                   Line
+0 osdblk.c        osd_sync_op                151 ret = osd_finalize_request(or, 0, credential, NULL);                            PTR_ERR propagated, see callers below, TODO
+1 osdblk.c        osd_async_op               169 ret = osd_finalize_request(or, 0, cred, NULL);                                  PTR_ERR propagated, see callers below, TODO
+2 osd_initiator.c _osd_get_print_system_info 109 ret = osd_finalize_request(or, 0, caps, NULL);                                  PTR_ERR propagated, see callers below, TODO
+3 ore.c           ore_io_execute             376 ret = osd_finalize_request(or, 0, _ios_cred(ios, i), NULL);                     PTR_ERR propagated, see callers below, TODO
+4 super.c         exofs_read_kern            242 ret = osd_finalize_request(or, 0, cred, NULL);                                  PTR_ERR propagated, see callers below, TODO
+
+
+Functions calling this function: bsg_map_hdr
+
+  File  Function    Line
+0 bsg.c __bsg_write 649 rq = bsg_map_hdr(bd, &bc->hdr, has_write_perm, bc->sense);                                               PTR_ERR propagated, see callers below
+1 bsg.c bsg_ioctl   937 rq = bsg_map_hdr(bd, &hdr, file->f_mode & FMODE_WRITE, sense);                                           PTR_ERR propagated, caller is a file_operations.unlocked_ioctl method
+
+
+Functions calling this function: __bsg_write
+
+  File  Function  Line
+0 bsg.c bsg_write 682 ret = __bsg_write(bd, buf, count, &bytes_written,                                                          PTR_ERR propagated, caller is a file_operations.write method
+
+
+Functions calling this function: sg_io
+
+  File         Function       Line
+0 scsi_ioctl.c scsi_cmd_ioctl 586 err = sg_io(q, bd_disk, &hdr, mode);                                                           If !EFAULT, calls copy_to_user and sets -EFAULT
+1 scsi_ioctl.c scsi_cmd_ioctl 634 err = sg_io(q, bd_disk, &hdr, mode);
+
+
+Functions calling this function: sg_scsi_ioctl
+
+  File         Function       Line
+0 scsi_ioctl.c scsi_cmd_ioctl  658 err = sg_scsi_ioctl(q, bd_disk, mode, arg);                                                   PTR_ERR propagated, see callers below
+1 scsi_ioctl.c scsi_ioctl      247 return sg_scsi_ioctl(sdev->request_queue, NULL, 0, arg);                                      PTR_ERR propagated, see callers below
+2 sg.c         sg_ioctl       1083 return sg_scsi_ioctl(sdp->device->request_queue, NULL, filp->f_mode, p);                      PTR_ERR propagated, caller is a file_operations .unlocked_ioctl method
+3 blkdev.h     sg_ioctl        820 extern int sg_scsi_ioctl(struct request_queue *, struct gendisk *, fmode_t,                   not a function
+
+
+Functions calling this function: scsi_cmd_ioctl
+
+  File         Function           Line
+0 bsg.c        bsg_ioctl           925 return scsi_cmd_ioctl(bd->queue, NULL, file->f_mode, cmd, uarg);                          PTR_ERR propagated, see callers above
+1 scsi_ioctl.c scsi_cmd_blk_ioctl  724 return scsi_cmd_ioctl(bd->bd_disk->queue, bd->bd_disk, mode, cmd, arg);                   PTR_ERR propagated, see callers below
+2 skd_main.c   skd_bdev_ioctl     1277 rc = scsi_cmd_ioctl(disk->queue, disk, mode, cmd_in, p);                                  PTR_ERR propagated, caller is a block_device_operations .compat_ioctl method
+3 st.c         st_ioctl           3662 i = scsi_cmd_ioctl(STp->disk->queue, STp->disk,                                           PTR_ERR propagated, caller is a file_operations .compat_ioctl method
+4 blkdev.h     st_ioctl            818 extern int scsi_cmd_ioctl(struct request_queue *, struct gendisk *, fmode_t,              not a function
+
+
+Functions calling this function: scsi_cmd_blk_ioctl
+
+  File               Function         Line
+0 cciss.c            cciss_ioctl      1753 return scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);                                     PTR_ERR propagated, see callers below
+1 virtio_blk.c       virtblk_ioctl     266 return scsi_cmd_blk_ioctl(bdev, mode, cmd,                                            PTR_ERR propagated, caller is a block_device_operations .ioctl method
+2 cdrom.c            cdrom_ioctl      3314 ret = scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);                                      PTR_ERR propagated, see callers below
+3 ide-floppy_ioctl.c ide_floppy_ioctl  295 err = scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);                                      PTR_ERR propagated, caller is a ide_disk_ops .compat_ioctl method
+4 sd.c               sd_ioctl         1304 error = scsi_cmd_blk_ioctl(bdev, mode, cmd, p);                                       PTR_ERR propagated, caller is a block_device_operations .compat_ioctl method
+5 blkdev.h           sd_ioctl          816 extern int scsi_cmd_blk_ioctl(struct block_device *, fmode_t,                         not a function
+
+
+Functions calling this function: cciss_ioctl
+
+  File    Function                   Line
+0 cciss.c cciss_compat_ioctl         1170 return cciss_ioctl(bdev, mode, cmd, arg);                                              PTR_ERR propagated, caller is a block_device_operations .compat_ioctl method
+1 cciss.c cciss_ioctl32_passthru     1211 err = cciss_ioctl(bdev, mode, CCISS_PASSTHRU, (unsigned long )p);                      PTR_ERR propagated, see callers below
+2 cciss.c cciss_ioctl32_big_passthru 1253 err = cciss_ioctl(bdev, mode, CCISS_BIG_PASSTHRU, (unsigned long )p);                  PTR_ERR propagated, see callers below
+
+
+Functions calling this function: cciss_ioctl32_passthru
+
+  File    Function           Line
+0 cciss.c cciss_compat_ioctl 1173 return cciss_ioctl32_passthru(bdev, mode, cmd, arg);                                           PTR_ERR propagated, see callers above
+
+
+Functions calling this function: cciss_ioctl32_big_passthru
+
+  File    Function           Line
+0 cciss.c cciss_compat_ioctl 1175 return cciss_ioctl32_big_passthru(bdev, mode, cmd, arg);                                       PTR_ERR propagated, see callers above
+
+
+Functions calling this function: cdrom_ioctl
+
+  File     Function           Line
+0 pcd.c    pcd_block_ioctl     254 ret = cdrom_ioctl(&cd->info, bdev, mode, cmd, arg);                                           PTR_ERR propagated, caller is a block_device_operations .ioctl method
+1 gdrom.c  gdrom_bdops_ioctl   525 ret = cdrom_ioctl(gd.cd_info, bdev, mode, cmd, arg);                                          PTR_ERR propagated, caller is a block_device_operations .ioctl method
+2 ide-cd.c idecd_locked_ioctl 1676 err = cdrom_ioctl(&info->devinfo, bdev, mode, cmd, arg);                                      PTR_ERR propagated, see callers below
+3 sr.c     sr_block_ioctl      564 ret = cdrom_ioctl(&cd->cdi, bdev, mode, cmd, arg);                                            PTR_ERR propagated, caller is a block_device_operations .ioctl method
+
+
+Functions calling this function: idecd_locked_ioctl
+
+  File     Function    Line
+0 ide-cd.c idecd_ioctl 1687 ret = idecd_locked_ioctl(bdev, mode, cmd, arg);                                                      PTR_ERR propagated, caller is a block_device_operations .ioctl method
+
+
+Functions calling this function: scsi_ioctl
+
+  File   Function       Line
+0 ch.c   ch_ioctl        842 return scsi_ioctl(ch->device, cmd, argp);                                                           PTR_ERR propagated, see callers below
+1 osst.c do_door_lock   3334 retval = scsi_ioctl(STp->device, cmd, NULL);                                                        PTR_ERR propagated, see callers below
+2 osst.c osst_ioctl     5264 retval = scsi_ioctl(STp->device, cmd_in, p);                                                        PTR_ERR propagated, caller is a file_operations .compat_ioctl method
+3 sd.c   sd_ioctl       1301 error = scsi_ioctl(sdp, cmd, p);                                                                    PTR_ERR propagated, caller is a file_operations .compat_ioctl method
+4 sd.c   sd_ioctl       1307 error = scsi_ioctl(sdp, cmd, p);                                                                    PTR_ERR propagated, caller is a file_operations .compat_ioctl method 
+5 sg.c   sg_ioctl       1096 return scsi_ioctl(sdp->device, cmd_in, p);                                                          PTR_ERR propagated, caller is a file_operations .unlocked_ioctl method
+6 sg.c   sg_ioctl       1115 return scsi_ioctl(sdp->device, cmd_in, p);                                                          PTR_ERR propagated, caller is a file_operations .unlocked_ioctl method
+7 sr.c   sr_block_ioctl  560 ret = scsi_ioctl(sdev, cmd, argp);                                                                  PTR_ERR propagated, caller is a block_device_operations .ioctl method
+8 sr.c   sr_block_ioctl  578 ret = scsi_ioctl(sdev, cmd, argp);                                                                  PTR_ERR propagated, caller is a block_device_operations .ioctl method
+9 st.c   do_door_lock    853 retval = scsi_ioctl(STp->device, cmd, NULL);                                                        PTR_ERR propagated, see callers below
+a st.c   st_ioctl       3668 retval = scsi_ioctl(STp->device, cmd_in, p);                                                        PTR_ERR propagated, caller is a file_operations .compat_ioctl method
+
+
+Functions calling this function: ch_ioctl
+
+  File Function        Line
+0 ch.c ch_ioctl_compat 870 return ch_ioctl(file, cmd, arg);                                                                      PTR_ERR propagated, caller is a file_operations .compat_ioctl method
+
+
+Functions calling this function: do_door_lock
+
+  File   Function            Line
+0 osst.c osst_write          3447 if (STp->do_auto_lock && STp->door_locked == ST_UNLOCKED && !do_door_lock(STp, 1))             return value checked, but not propagated
+1 osst.c osst_read           3740 if (STp->do_auto_lock && STp->door_locked == ST_UNLOCKED && !do_door_lock(STp, 1))             return value checked, but not propagated
+2 osst.c __os_scsi_tape_open 4640 if (do_door_lock(STp, 1))                                                                      return value checked, but not propagated
+3 osst.c __os_scsi_tape_open 4783 if (do_door_lock(STp, 1))                                                                      return value checked, but not propagated
+4 osst.c os_scsi_tape_close  4920 do_door_lock(STp, 0);                                                                          return value ignored
+5 osst.c osst_ioctl          5097 do_door_lock(STp, 0);                                                                          return value ignored
+6 osst.c osst_ioctl          5149 retval = do_door_lock(STp, (mtc.mt_op == MTLOCK));                                             PTR_ERR propagated, caller is a file_operations .compat_ioctl method
+7 st.c   st_release          1396 do_door_lock(STp, 0);                                                                          return value ignored
+8 st.c   rw_checks           1468 !do_door_lock(STp, 1))                                                                         return value checked, but not propagated
+9 st.c   st_ioctl            3466 do_door_lock(STp, 0);                                                                          return value ignored
+a st.c   st_ioctl            3535 retval = do_door_lock(STp, (mtc.mt_op == MTLOCK));                                             PTR_ERR propagated, caller is a file_operations .compat_ioctl method
+
+
+Functions calling this function: __blk_send_generic
+
+  File         Function            Line
+0 scsi_ioctl.c blk_send_start_stop 541 return __blk_send_generic(q, bd_disk, GPCMD_START_STOP_UNIT, data);                       PTR_ERR propagated, see callers below
+
+
+Functions calling this function: blk_send_start_stop
+
+  File         Function       Line
+0 scsi_ioctl.c scsi_cmd_ioctl 661 err = blk_send_start_stop(q, bd_disk, 0x03);                                                   PTR_ERR propagated, see callers above
+1 scsi_ioctl.c scsi_cmd_ioctl 664 err = blk_send_start_stop(q, bd_disk, 0x02);                                                   PTR_ERR propagated, see callers above
+
+
+Functions calling this function: pd_special_command
+
+  File Function        Line
+0 pd.c pd_open         745 pd_special_command(disk, pd_media_check);                                                             return value ignored
+1 pd.c pd_open         746 pd_special_command(disk, pd_door_lock);                                                               return value ignored
+2 pd.c pd_ioctl        778 pd_special_command(disk, pd_eject);                                                                   return value ignored
+3 pd.c pd_release      792 pd_special_command(disk, pd_door_unlock);                                                             return value ignored
+4 pd.c pd_check_events 802 pd_special_command(disk, pd_media_check);                                                             return value ignored
+5 pd.c pd_revalidate   811 if (pd_special_command(disk, pd_identify) == 0)                                                       return value checked, but not propagated
+6 pd.c pd_probe_drive  845 if (pd_special_command(disk, pd_identify) == 0)                                                       return value checked, but not propagated
+7 pd.c pd_probe_drive  847 } else if (pd_special_command(disk, pd_identify) == 0)                                                return value checked, but not propagated
+
+
+Functions calling this function: pkt_generic_packet
+
+  File      Function           Line
+0 pktcdvd.c pkt_flush_cache     778 return pkt_generic_packet(pd, &cgc);
+1 pktcdvd.c pkt_set_speed       799 if ((ret = pkt_generic_packet(pd, &cgc)))                                                    PTR_ERR propagated, see callers below TODO
+2 pktcdvd.c pkt_mode_sense     1573 return pkt_generic_packet(pd, cgc);                                                          PTR_ERR propagated, see callers below TODO
+3 pktcdvd.c pkt_mode_select    1585 return pkt_generic_packet(pd, cgc);                                                          PTR_ERR propagated, see callers below TODO
+4 pktcdvd.c pkt_get_disc_info  1599 if ((ret = pkt_generic_packet(pd, &cgc)))                                                    PTR_ERR propagated, see callers below TODO
+5 pktcdvd.c pkt_get_disc_info  1612 return pkt_generic_packet(pd, &cgc);                                                         PTR_ERR propagated, see callers below TODO
+6 pktcdvd.c pkt_get_track_info 1628 if ((ret = pkt_generic_packet(pd, &cgc)))                                                    PTR_ERR propagated, see callers below TODO
+7 pktcdvd.c pkt_get_track_info 1638 return pkt_generic_packet(pd, &cgc);                                                         PTR_ERR propagated, see callers below TODO
+8 pktcdvd.c pkt_probe_settings 1850 ret = pkt_generic_packet(pd, &cgc);                                                          PTR_ERR propagated, see callers below TODO
+9 pktcdvd.c pkt_lock_door      1977 return pkt_generic_packet(pd, &cgc);                                                         PTR_ERR propagated, see callers below TODO
+a pktcdvd.c pkt_media_speed    2059 ret = pkt_generic_packet(pd, &cgc);                                                          PTR_ERR propagated, see callers below TODO
+b pktcdvd.c pkt_media_speed    2074 ret = pkt_generic_packet(pd, &cgc);                                                          PTR_ERR propagated, see callers below TODO
+c pktcdvd.c pkt_perform_opc    2130 if ((ret = pkt_generic_packet(pd, &cgc)))                                                    PTR_ERR propagated, see callers below TODO
+
+
+Functions calling this function: cdrom_read_cdda_bpc
+
+  File    Function        Line
+0 cdrom.c cdrom_read_cdda 2243 ret = cdrom_read_cdda_bpc(cdi, ubuf, lba, nframes);                                               PTR_ERR propagated, see callers below
+
+
+Functions calling this function: cdrom_read_cdda
+
+  File    Function                   Line
+0 cdrom.c mmc_ioctl_cdrom_read_audio 3009 return cdrom_read_cdda(cdi, ra.buf, lba, ra.nframes);                                  PTR_ERR propagated, see callers below
+
+
+Functions calling this function: mmc_ioctl_cdrom_read_audio
+
+  File    Function  Line
+0 cdrom.c mmc_ioctl 3271 return mmc_ioctl_cdrom_read_audio(cdi, userptr);                                                        PTR_ERR propagated, see callers below
+
+
+Functions calling this function: mmc_ioctl
+
+  File    Function    Line
+0 cdrom.c cdrom_ioctl 3362 ret = mmc_ioctl(cdi, cmd, arg);                                                                       filters out -ENOTTY, PTR_ERR propagated, see callers above
+
+
+Functions calling this function: sg_start_req
+
+  File Function        Line
+0 sg.c sg_common_write 761 k = sg_start_req(srp, cmnd);                                                                          PTR_ERR propagated, see callers below
+
+
+Functions calling this function: sg_common_write
+
+  File Function     Line
+0 sg.c sg_write     666 k = sg_common_write(sfp, srp, cmnd, sfp->timeout, blocking);                                             PTR_ERR propagated, caller is a file_operations .write method
+1 sg.c sg_new_write 734 k = sg_common_write(sfp, srp, cmnd, timeout, blocking);                                                  PTR_ERR propagated, see callers below
+
+
+Functions calling this function: sg_new_write
+
+  File Function Line
+0 sg.c sg_write 589 return sg_new_write(sfp, filp, buf, count,                                                                   PTR_ERR propagated, caller is a file_operations .write method
+1 sg.c sg_ioctl 835 result = sg_new_write(sfp, filp, p, SZ_SG_IO_HDR,                                                            PTR_ERR propagated, caller is a file_operations .unlocked_ioctl method
