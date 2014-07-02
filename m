@@ -1,104 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752291AbaGBJU2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 05:20:28 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:60002 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226AbaGBJU1 (ORCPT
+	id S1752937AbaGBJUf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 05:20:35 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:47699 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454AbaGBJUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 05:20:27 -0400
-Message-ID: <53B3CEAC.9080609@windriver.com>
-Date: Wed, 2 Jul 2014 17:19:40 +0800
-From: "Yang,Wei" <Wei.Yang@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Wed, 2 Jul 2014 05:20:32 -0400
+Message-ID: <53B3CED8.4020808@gmail.com>
+Date: Wed, 02 Jul 2014 14:50:24 +0530
+From: Tushar Behera <trblinux@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: <Wei.Yang@windriver.com>, <mroberto@cpti.cetuc.puc-rio.br>,
-        <rmk+kernel@arm.linux.org.uk>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v1] ARM:sa1100: Remove a redundant spin lock
-References: <1404200488-7809-1-git-send-email-Wei.Yang@windriver.com>
-In-Reply-To: <1404200488-7809-1-git-send-email-Wei.Yang@windriver.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Lee Jones <lee.jones@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Daniel Stone <daniels@collabora.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 14/14] ARM: dts: Add max77802 to exynos5420-peach-pit
+ and exynos5800-peach-pi
+References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk> <1403806546-31122-15-git-send-email-javier.martinez@collabora.co.uk>
+In-Reply-To: <1403806546-31122-15-git-send-email-javier.martinez@collabora.co.uk>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.162.170]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guys,
-
-What about this patch?
-
-Thanks
-Wei
-On 07/01/2014 03:41 PM, Wei.Yang@windriver.com wrote:
-> From: Yang Wei <Wei.Yang@windriver.com>
->
-> The pair read/write of accessing pci confiuration space function
-> has already protected by pci_lock. so remove nano_lock.
->
-> Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
+On 06/26/2014 11:45 PM, Javier Martinez Canillas wrote:
+> Peach pit and pi boards uses a Maxim 77802 power management
+> IC to drive regulators and its Real Time Clock. This patch
+> adds support for this chip.
+> 
+> These are the device nodes and pinctrl configuration that
+> are present on the Peach pit DeviceTree source file in the
+> the Chrome OS kernel 3.8 tree.
+> 
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Tested-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 > ---
->   arch/arm/mach-sa1100/pci-nanoengine.c |    9 ---------
->   1 file changed, 9 deletions(-)
->
-> diff --git a/arch/arm/mach-sa1100/pci-nanoengine.c b/arch/arm/mach-sa1100/pci-nanoengine.c
-> index ff02e2d..b944c99 100644
-> --- a/arch/arm/mach-sa1100/pci-nanoengine.c
-> +++ b/arch/arm/mach-sa1100/pci-nanoengine.c
-> @@ -30,7 +30,6 @@
->   #include <mach/nanoengine.h>
->   #include <mach/hardware.h>
->   
-> -static DEFINE_SPINLOCK(nano_lock);
->   
->   static int nanoengine_get_pci_address(struct pci_bus *bus,
->   	unsigned int devfn, int where, unsigned long *address)
-> @@ -52,7 +51,6 @@ static int nanoengine_read_config(struct pci_bus *bus, unsigned int devfn, int w
->   {
->   	int ret;
->   	unsigned long address;
-> -	unsigned long flags;
->   	u32 v;
->   
->   	/* nanoEngine PCI bridge does not return -1 for a non-existing
-> @@ -64,15 +62,12 @@ static int nanoengine_read_config(struct pci_bus *bus, unsigned int devfn, int w
->   		goto exit_function;
->   	}
->   
-> -	spin_lock_irqsave(&nano_lock, flags);
->   
->   	ret = nanoengine_get_pci_address(bus, devfn, where, &address);
->   	if (ret != PCIBIOS_SUCCESSFUL)
->   		return ret;
->   	v = __raw_readl(address);
->   
-> -	spin_unlock_irqrestore(&nano_lock, flags);
-> -
->   	v >>= ((where & 3) * 8);
->   	v &= (unsigned long)(-1) >> ((4 - size) * 8);
->   
-> @@ -86,13 +81,11 @@ static int nanoengine_write_config(struct pci_bus *bus, unsigned int devfn, int
->   {
->   	int ret;
->   	unsigned long address;
-> -	unsigned long flags;
->   	unsigned shift;
->   	u32 v;
->   
->   	shift = (where & 3) * 8;
->   
-> -	spin_lock_irqsave(&nano_lock, flags);
->   
->   	ret = nanoengine_get_pci_address(bus, devfn, where, &address);
->   	if (ret != PCIBIOS_SUCCESSFUL)
-> @@ -113,8 +106,6 @@ static int nanoengine_write_config(struct pci_bus *bus, unsigned int devfn, int
->   	}
->   	__raw_writel(v, address);
->   
-> -	spin_unlock_irqrestore(&nano_lock, flags);
-> -
->   	return PCIBIOS_SUCCESSFUL;
->   }
->   
 
+[ ... ]
+
+> +
+> +		regulators {
+> +			buck1_reg: BUCK1 {
+> +				regulator-name = "vdd_mif";
+> +				regulator-min-microvolt = <800000>;
+> +				regulator-max-microvolt = <1300000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +				regulator-ramp-delay = <12500>;
+> +			};
+
+IMO, adding a blank line between sub-nodes would be better.
+
+> +			buck2_reg: BUCK2 {
+> +				regulator-name = "vdd_arm_real";
+> +				regulator-min-microvolt = <800000>;
+> +				regulator-max-microvolt = <1500000>;
+> +				regulator-always-on;
+> +				regulator-boot-on;
+> +				regulator-ramp-delay = <12500>;
+> +			};
+
+[ ... ]
+
+> +			vqmmc_sdcard: ldo4_reg: LDO4 {
+> +				regulator-name = "vdd_sd";
+> +				regulator-min-microvolt = <1800000>;
+> +				regulator-max-microvolt = <2800000>;
+> +				regulator-always-on;
+> +
+
+Blank line, can be removed.
+
+> +			};
+
+[ ... ]
+> +			ldo23_reg: LDO23 {
+> +				regulator-name = "ld0_23";
+
+ldo_23, 'o' in place of '0'.
+
+Similar comments for peach-pi DTS file.
+
+-- 
+Tushar Behera
