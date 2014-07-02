@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926AbaGBQJN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 12:09:13 -0400
-Received: from helium.waldemar-brodkorb.de ([89.238.66.15]:52628 "EHLO
-	helium.waldemar-brodkorb.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754759AbaGBQJM (ORCPT
+	id S1756079AbaGBQJd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 12:09:33 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49444 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756014AbaGBQJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 12:09:12 -0400
-Date: Wed, 2 Jul 2014 18:09:08 +0200
-From: Waldemar Brodkorb <wbx@openadk.org>
-To: Linux MIPS Mailing List <linux-mips@linux-mips.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
-        florian@openwrt.org
-Subject: [PATCH] fix reregistering of serial console
-Message-ID: <20140702160908.GA12510@waldemar-brodkorb.de>
+	Wed, 2 Jul 2014 12:09:32 -0400
+Date: Wed, 2 Jul 2014 12:09:31 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Stephen Warren <swarren@wwwdotorg.org>
+cc: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, Philipp Zabel <p.zabel@pengutronix.de>,
+        <linux-usb@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <tuomas.tynkkynen@iki.fi>
+Subject: Re: [PATCH 0/3] Tegra USB probe order issue fix
+In-Reply-To: <53B42920.8080700@wwwdotorg.org>
+Message-ID: <Pine.LNX.4.44L0.1407021204570.874-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-X-Operating-System: Linux 3.2.0-4-amd64 x86_64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Runtime tested on Mikrotik RB532 board.
-Thanks goes to Geert Uytterhoeven for the explanation of the problem.
+On Wed, 2 Jul 2014, Stephen Warren wrote:
 
-"I'm afraid this is not gonna help. When the port is unregistered,
-its type will be reset to PORT_UNKNOWN.
-So before registering it again, its type must be set again the actual
-serial driver, cfr. the change to of_serial.c."
+> On 07/02/2014 08:02 AM, Alan Stern wrote:
+> > On Wed, 2 Jul 2014, Tuomas Tynkkynen wrote:
+> > 
+> >> Hi all,
+> >>
+> >> This series fixes a probe order issue with the Tegra EHCI driver.
+> >> Basically, the register area of the 1st USB controller contains some
+> >> registers that are global to all of the controllers, but that are also
+> >> cleared when reset is asserted to the 1st controller. So if (say) the
+> >> 3rd controller would be the first one to finish probing successfully,
+> >> then the reset that happens during the 1st controller's probe would
+> >> result in broken USB. So the before doing anything with the USB HW,
+> >> we should reset the 1st controller once, and then never ever reset
+> >> it again.
+> > 
+> > This sounds very much like the sort of thing that ought to be described 
+> > in DT.  It is a hardware dependence, and DT exists for the purpose of 
+> > describing the hardware.
+> 
+> DT is more about describing the HW, not how SW has to use the HW.
 
-Signed-off-by: Waldemar Brodkorb <wbx@openadk.org>
----
- arch/mips/rb532/devices.c |    1 +
- 1 file changed, 1 insertion(+)
+Tuomas wrote: "the register area of the 1st USB controller contains
+some registers that are global to all of the controllers, but that are
+also cleared when reset is asserted to the 1st controller."  That is
+very much an attribute of the hardware and so DT should describe it.
 
-diff --git a/arch/mips/rb532/devices.c b/arch/mips/rb532/devices.c
-index 3af00b2..ba61268 100644
---- a/arch/mips/rb532/devices.c
-+++ b/arch/mips/rb532/devices.c
-@@ -223,6 +223,7 @@ static struct platform_device rb532_wdt = {
- 
- static struct plat_serial8250_port rb532_uart_res[] = {
- 	{
-+		.type           = PORT_16550A,
- 		.membase	= (char *)KSEG1ADDR(REGBASE + UART0BASE),
- 		.irq		= UART0_IRQ,
- 		.regshift	= 2,
--- 
-1.7.10.4
+> probe() ordering is a SW issue, not a HW description. It's driver
+> knowledge that the HW resets have to run in a certain order, and if the
+> driver didn't actually reset the HW ever (but rather, re-programmed all
+> registers so reset was never needed), then order wouldn't be relevant
+> 
+> DT certainly doesn't have any mechanism for describing probe order or
+> anything like that, although you can fake it out by adding phandles
+> between nodes, and having SW wait for the driver for the referenced node
+> to probe first. That won't work here though, since there's no guarantee
+> that the USB1 node will actually be enabled (that USB port might not be
+> hooked up on the board, hence the DT node will be disabled), so we can't
+> rely on a driver for it ever appearing.
+
+I wasn't talking about probe order; I was talking about the fact that 
+registers pertinent to the later controllers are in the reset domain of 
+the first controller.
+
+Alan Stern
 
