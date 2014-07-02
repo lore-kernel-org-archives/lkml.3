@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676AbaGBMCp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 08:02:45 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:33338 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991AbaGBMCo (ORCPT
+	id S1752280AbaGBMEK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 08:04:10 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35063 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524AbaGBMEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 08:02:44 -0400
-Date: Wed, 2 Jul 2014 13:02:38 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com
-Subject: Re: [PATCH 2/5] phy: miphy365x: Add MiPHY365x header file for DT x
- Driver defines
-Message-ID: <20140702120238.GC16724@lee--X1>
-References: <1404133317-25953-1-git-send-email-lee.jones@linaro.org>
- <1404133317-25953-3-git-send-email-lee.jones@linaro.org>
- <53B3D0BE.9090708@ti.com>
+	Wed, 2 Jul 2014 08:04:06 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>, <kishon@ti.com>, <balbi@ti.com>
+CC: <nsekhar@ti.com>, <nm@ti.com>, <george.cherian@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH 0/6] omap: phy: dra7-evm PHY fixes for 3.16
+Date: Wed, 2 Jul 2014 15:03:52 +0300
+Message-ID: <1404302638-3003-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53B3D0BE.9090708@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 02 Jul 2014, Kishon Vijay Abraham I wrote:
-> On Monday 30 June 2014 06:31 PM, Lee Jones wrote:
-> > This provides the shared header file which will be reference from both
-> > the MiPHY365x driver and its associated Device Tree node(s).
-> > 
-> > Cc: Kishon Vijay Abraham I <kishon@ti.com>
-> > Acked-by: Mark Rutland <mark.rutland@arm.com>
-> > Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  include/dt-bindings/phy/phy-miphy365x.h | 25 +++++++++++++++++++++++++
-> >  1 file changed, 25 insertions(+)
-> >  create mode 100644 include/dt-bindings/phy/phy-miphy365x.h
+Hi,
 
-[...]
+On DRA7-evm, the VDDA_1V8_PHY supply must be always-on for proper functioning
+of the PHYs on the SoC.
 
-> > +#define MIPHY_SATA_PORT0		(MIPHY_TYPE_SATA) | (MIPHY_PORT_0)
-> > +#define MIPHY_SATA_PORT1		(MIPHY_TYPE_SATA) | (MIPHY_PORT_1)
-> > +#define MIPHY_PCIE_PORT0		(MIPHY_TYPE_PCIE) | (MIPHY_PORT_0)
-> > +#define MIPHY_PCIE_PORT1		(MIPHY_TYPE_PCIE) | (MIPHY_PORT_1)
-> 
-> As Sergei pointed in your previous version it should be (X | Y).
+The 3.3V USB supply (ldousb_reg) can be turned OFF when the High Speed USB PHYs
+are not in use. We add regulator support in the PHY framework core to manage
+the PHY's regulator during PHY power on/off.
 
-Hmm, yes.  I even have his email marked as 'important' and to fix that
-up.  Sorry about that, will fix.
+Finally we add the 3.3V regulator information to the USB2 PHYs.
+
+This series should get the USB and SATA working again on 3.16 on DRA7-evm.
+
+cheers,
+-roger
+
+---
+Roger Quadros (6):
+  ARM: dts: dra7-evm: Make VDDA_1V8_PHY supply always on
+  phy: core: Fix error path in phy_create()
+  phy: core: Support regulator supply for PHY power
+  phy: core: Add phy-supply to DT binding documentation
+  phy: omap-usb2: Balance pm_runtime_enable() on probe failure
+  ARM: dts: dra7-evm: Add regulator information to USB2 PHYs
+
+ .../devicetree/bindings/phy/phy-bindings.txt       |  4 +++
+ arch/arm/boot/dts/dra7-evm.dts                     |  9 +++++
+ drivers/phy/phy-core.c                             | 39 ++++++++++++++++++++--
+ drivers/phy/phy-omap-usb2.c                        |  8 +++--
+ include/linux/phy/phy.h                            |  2 ++
+ 5 files changed, 57 insertions(+), 5 deletions(-)
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.3.2
+
