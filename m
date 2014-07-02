@@ -1,53 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221AbaGAXyJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 19:54:09 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:40340 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752046AbaGAXyH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 19:54:07 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhFSAMVIs1N5LHZ8PGdsb2JhbABagw2DSYUIpBMGmkkBgQ4XBAEBAQE4NYQDAQEFOhwjEAgDDgoJJQ8FJQMHGhOIQcUOFxeFWIkwB4RDAQSaZYZSkQYr
-Date: Wed, 2 Jul 2014 09:53:59 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: stable@vger.kernel.org, linux@roeck-us.net, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 000/181] 3.12.24-stable review
-Message-ID: <20140701235359.GJ4453@dastard>
-References: <cover.1404128997.git.jslaby@suse.cz>
+	id S1758656AbaGBABY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 20:01:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43970 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753141AbaGBABX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 20:01:23 -0400
+Date: Wed, 2 Jul 2014 02:01:21 +0200
+From: David Sterba <dsterba@suse.cz>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, Chris Mason <clm@fb.com>,
+        Josef Bacik <jbacik@fb.com>, linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 1/1] FS/BTRFS: replace count*size kzalloc by kcalloc
+Message-ID: <20140702000121.GW1553@twin.jikos.cz>
+Reply-To: dsterba@suse.cz
+Mail-Followup-To: dsterba@suse.cz, Fabian Frederick <fabf@skynet.be>,
+	linux-kernel@vger.kernel.org, Chris Mason <clm@fb.com>,
+	Josef Bacik <jbacik@fb.com>, linux-btrfs@vger.kernel.org
+References: <1403721343-19383-1-git-send-email-fabf@skynet.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1404128997.git.jslaby@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1403721343-19383-1-git-send-email-fabf@skynet.be>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 01:51:22PM +0200, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.24 release.
-> There are 181 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-.....
-> Dave Chinner (3):
->   xfs: prevent deadlock trying to cover an active log
->   xfs: prevent stack overflows from page cache allocation
->   xfs: xfs_remove deadlocks due to inverted AGF vs AGI lock ordering
+On Wed, Jun 25, 2014 at 08:35:43PM +0200, Fabian Frederick wrote:
+> kcalloc manages count*sizeof overflow.
+> 
+> Cc: Chris Mason <clm@fb.com>
+> Cc: Josef Bacik <jbacik@fb.com>
+> Cc: linux-btrfs@vger.kernel.org
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 
-None of the XFS patches you're backporting were marked for stable.
-What criteria did you choose them by, and how are you testing the
-result?
-
-Randomly picked XFS backports have a nasty habit of causing
-regressions, and it's always me that is on the pointy end of having
-to triage problems users report with those backports...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Reviewed-by: David Sterba <dsterba@suse.cz>
