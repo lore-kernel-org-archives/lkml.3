@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757472AbaGBSFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 14:05:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39910 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752211AbaGBSFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 14:05:47 -0400
-Date: Wed, 2 Jul 2014 14:05:14 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Sagi Grimberg <sagig@mellanox.com>
-cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Crash on WRITE SAME
-Message-ID: <alpine.LRH.2.02.1407021338550.20183@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1757492AbaGBSGl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 14:06:41 -0400
+Received: from exprod5og105.obsmtp.com ([64.18.0.180]:60480 "HELO
+	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756237AbaGBSGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 14:06:39 -0400
+X-Greylist: delayed 732 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Jul 2014 14:06:39 EDT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1404240214-9804-3-git-send-email-Liviu.Dudau@arm.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+	<1404240214-9804-3-git-send-email-Liviu.Dudau@arm.com>
+Date: Wed, 2 Jul 2014 11:06:38 -0700
+Message-ID: <CACoXjck+aU33=kSy=KCGABNXNR7tj2KndAiBqEDK7wQ_Qei80Q@mail.gmail.com>
+Subject: Re: [PATCH v8 2/9] pci: Export find_pci_host_bridge() function.
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        patches <patches@apm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sagi
+Hi,
 
-Your commit d77e65350f2d82dfa0557707d505711f5a43c8fd causes crash on SCSI 
-WRITE SAME command (it can be triggered by issuing the BLKZEROOUT ioctl). 
-The crash happens in iscsi_tcp_segment_done because sg_next returns NULL.
+On Tue, Jul 1, 2014 at 11:43 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> This is a useful function and we should make it visible outside the
+> generic PCI code. Export it as a GPL symbol.
+>
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> Tested-by: Tanmay Inamdar <tinamdar@apm.com>
+> ---
+>  drivers/pci/host-bridge.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+> index 0e5f3c9..36c669e 100644
+> --- a/drivers/pci/host-bridge.c
+> +++ b/drivers/pci/host-bridge.c
+> @@ -16,12 +16,13 @@ static struct pci_bus *find_pci_root_bus(struct pci_bus *bus)
+>         return bus;
+>  }
+>
+> -static struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
+> +struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
+>  {
+>         struct pci_bus *root_bus = find_pci_root_bus(bus);
+>
+>         return to_pci_host_bridge(root_bus->bridge);
+>  }
+> +EXPORT_SYMBOL_GPL(find_pci_host_bridge);
 
-Before that commit, there was this code in iscsi_prep_scsi_cmd_pdu:
-	unsigned out_len = scsi_out(sc)->length;
-after the commit, there is this:
-	transfer_length = scsi_transfer_length(sc);
-	... scsi_transfer_length(struct scsi_cmnd *scmd) returns 
-	    blk_rq_bytes(scmd->request);
+Is there any specific reason behind making this symbol GPL? I think
+the other functions in this file are just EXPORT_SYMBOL. Ultimately
+companies which have non gpl Linux modules (nvidia) will face issue
+using this API.
 
-The problem is this: suppose that we have WRITE_SAME command that writes 
-two 512-byte sectors. blk_rq_bytes(scmd->request) returns 1024 (because 
-1024 bytes are written to the disk), but scsi_out(sc)->length contains the 
-value 512 (because only 512 bytes are transferred as data for the SCSI 
-command).
-
-Your patch changes that from 512 to 1024 and it causes the crash in 
-iscsi_tcp_segment_done due to mismatching size.
-
-
-
-I'm not exactly sure how to fix this bug in order to not break something 
-else.
-
-I'd like to know what was your intention for the function 
-scsi_transfer_length? Is it supposed to return the size of data 
-transferred on the SCSI bus? What should it return for bidirectional 
-commands?
-
-scsi_transfer_length tries to add 8 for each transferred sector depending 
-on prot_op. What should it do with commands that transfer only part of a 
-sector? (for example the UNMAP command only transfers 24 bytes of data). 
-Should it add 8 for a partial sector tranferred or not?
-
-Mikulas
+The same applies to 'of_create_pci_host_bridge'.
+>
+>  void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
+>                                  void (*release_fn)(struct pci_host_bridge *),
+> --
+> 2.0.0
+>
