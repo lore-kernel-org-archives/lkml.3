@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751542AbaGBIn7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 04:43:59 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:55158 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750982AbaGBIn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 04:43:57 -0400
-Message-ID: <1404290605.3622.6.camel@iivanov-dev>
-Subject: Re: [Patch v7 3/3] usb: dwc3: qcom: Add device tree binding
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Andy Gross <agross@codeaurora.org>, jackp@codeaurora.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Kumar Gala <galak@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 02 Jul 2014 11:43:25 +0300
-In-Reply-To: <CAL_JsqLjjDV50x5LCDeySvV0u4U1om-3KDkFHMd5WouC=eV8kw@mail.gmail.com>
-References: <1404144233-17222-1-git-send-email-agross@codeaurora.org>
-	 <1404144233-17222-4-git-send-email-agross@codeaurora.org>
-	 <CAL_JsqJTO4htxHMVtMG6mGLmgRtQ7igE1OCX_jXM4xabN76ntg@mail.gmail.com>
-	 <20140701180114.GA2082@qualcomm.com>
-	 <CAL_JsqLjjDV50x5LCDeySvV0u4U1om-3KDkFHMd5WouC=eV8kw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751851AbaGBIoU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 04:44:20 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:48372 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164AbaGBIoR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 04:44:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <53997989.5050406@ti.com>
+References: <1401345049-14779-1-git-send-email-sachin.kamat@linaro.org>
+	<005201cf7e0a$11d1d250$357576f0$%han@samsung.com>
+	<CAK5sBcGS5w3V7oD0kfTgr2uAFR=joSVS+x3Vi+2Qii7xZJS1yg@mail.gmail.com>
+	<53997989.5050406@ti.com>
+Date: Wed, 2 Jul 2014 14:14:15 +0530
+Message-ID: <CAK5sBcH-bOMyqGJhsKxNG6VK02sQ97eJ88iQRjBZOp7i_D6bsA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] phy: exynos-dp-video: Use PTR_ERR_OR_ZERO
+From: Sachin Kamat <spk.linux@gmail.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 12, 2014 at 3:27 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>
+>
+> On Thursday 12 June 2014 03:19 PM, Sachin Kamat wrote:
+>> Hi Kishon,
+>>
+>> On Mon, Jun 2, 2014 at 7:56 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+>>> On Thursday, May 29, 2014 3:31 PM, Sachin Kamat wrote:
+>>>>
+>>>> PTR_ERR_OR_ZERO simplifies the code.
+>>>>
+>>>> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+>>>> Cc: Jingoo Han <jg1.han@samsung.com>
+>>>
+>>> Acked-by: Jingoo Han <jg1.han@samsung.com>
+>>>
+>>> Best regards,
+>>> Jingoo Han
+>>>
+>>>> ---
+>>>>  drivers/phy/phy-exynos-dp-video.c |    5 ++---
+>>>>  1 file changed, 2 insertions(+), 3 deletions(-)
+>>>>
+>>>> diff --git a/drivers/phy/phy-exynos-dp-video.c b/drivers/phy/phy-exynos-dp-video.c
+>>>> index 0786fef842e7..098f822a2fa4 100644
+>>>> --- a/drivers/phy/phy-exynos-dp-video.c
+>>>> +++ b/drivers/phy/phy-exynos-dp-video.c
+>>>> @@ -9,6 +9,7 @@
+>>>>   * published by the Free Software Foundation.
+>>>>   */
+>>>>
+>>>> +#include <linux/err.h>
+>>>>  #include <linux/io.h>
+>>>>  #include <linux/kernel.h>
+>>>>  #include <linux/module.h>
+>>>> @@ -84,10 +85,8 @@ static int exynos_dp_video_phy_probe(struct platform_device *pdev)
+>>>>       phy_set_drvdata(phy, state);
+>>>>
+>>>>       phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
+>>>> -     if (IS_ERR(phy_provider))
+>>>> -             return PTR_ERR(phy_provider);
+>>>>
+>>>> -     return 0;
+>>>> +     return PTR_ERR_OR_ZERO(phy_provider);
+>>>>  }
+>>>>
+>>>>  static const struct of_device_id exynos_dp_video_phy_of_match[] = {
+>>>> --
+>>>> 1.7.9.5
+>>>
+>>>
+>>
+>> ping on this series.
+>
+> I'll queue to -next once -rc1 is tagged.
 
-Hi, 
+Gentle ping..
 
-On Tue, 2014-07-01 at 14:47 -0500, Rob Herring wrote:
-> On Tue, Jul 1, 2014 at 1:01 PM, Andy Gross <agross@codeaurora.org> wrote:
-> > On Tue, Jul 01, 2014 at 12:04:35AM -0500, Rob Herring wrote:
 
-<snip>
-
-> > <snip>
-> >
-> >> > +
-> >> > +                       ranges;
-> >> > +
-> >> > +                       status = "disabled";
-> >> > +
-> >> > +                       dwc3@11000000 {
-> >> > +                               compatible = "snps,dwc3";
-> >>
-> >> This sub-node is just wrong. Why can't you have a single node with '
-> >> "qcom,dwc3", "snps,dwc3" ' for the compatible property? All you are
-> >> adding here is clocks. Does the Synopsys block have no clocks?
-> >>
-> >> I guess this is copied from other broken dwc3 bindings... That doesn't
-> >> mean you have to copy it.
-> >
-> > The dwc3 core does not deal with clocks.  That is why everyone has a wrapper.
-> > That, in addition to pm, has to be handled from the wrapper.  That's my take
-> > anyway.  I am sure Felipe can speak more to this.
-> 
-> That is a Linux driver issue which is irrelevant to the binding.
-
-DWC3 IP core from Synopsys is the same across SoC's (OMAP, Exynos..),
-vendors are adding glue IP to provide necessary clocks and voltages. 
-I think that the DT bindings properly reflect this fact.
-
+-- 
 Regards,
-Ivan 
-
-> 
-> Rob
-
-
+Sachin.
