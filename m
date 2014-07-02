@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419AbaGBOgM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 10:36:12 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49382 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752264AbaGBOgK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 10:36:10 -0400
-Date: Wed, 2 Jul 2014 10:36:09 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Paul Bolle <pebolle@tiscali.nl>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-api@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] Documentation: sysfs-bus-usb: update power/persist
- description
-In-Reply-To: <1404295845.12021.29.camel@x220>
-Message-ID: <Pine.LNX.4.44L0.1407021035480.874-100000@iolanthe.rowland.org>
+	id S1754740AbaGBOhI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 10:37:08 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54095 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752249AbaGBOhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 10:37:06 -0400
+Message-ID: <53B4190C.6040709@ti.com>
+Date: Wed, 2 Jul 2014 17:37:00 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Nishanth Menon <nm@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
+        <balbi@ti.com>
+CC: <nsekhar@ti.com>, <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Rajendra Nayak <rnayak@ti.com>, Tero Kristo <t-kristo@ti.com>
+Subject: Re: [PATCH 1/6] ARM: dts: dra7-evm: Make VDDA_1V8_PHY supply always
+ on
+References: <1404302638-3003-1-git-send-email-rogerq@ti.com> <1404302638-3003-2-git-send-email-rogerq@ti.com> <53B403AF.60505@ti.com>
+In-Reply-To: <53B403AF.60505@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jul 2014, Paul Bolle wrote:
+On 07/02/2014 04:05 PM, Nishanth Menon wrote:
+> On 07/02/2014 07:03 AM, Roger Quadros wrote:
+>> After clarification from the hardware team it was found that
+>> this 1.8V PHY supply can't be switched OFF when SoC is Active.
+>> It can only be switched off when in PORz (power on reset).
+> 
+> I dont think folks know the reasoning why hardware team decided that
+> the voltage rail cannot be switched off -> I suggest adding the
+> following information as well.
+> 
+> Since isolation is not present in the design for these PHY IPs to
+> allow for the PHY rail to be switched off, there is a very high risk
+> of IP reliability and additional leakage paths which can result in
+> additional power consumption.
+> 
+> Only scenario where this rail can be switched off is part of Power on
+> reset sequencing, but it needs to be kept always-on during operation.
 
-> There's no power/persist file for hubs. And CONFIG_USB_PERSIST was
-> removed in v2.6.26. Update the description of power/persist accordingly.
-> Also remove the line on its default value. It is not entirely correct, as
-> CONFIG_USB_DEFAULT_PERSIST and the USB_QUIRK_RESET flag influence the
-> default. It is not needed to understand this file anyhow.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> v2: incorporate Alan's feedback. The clearest way to do that was to not
-> mention the default value at all. Trying to do handle the default
-> correctly made the text way too complicated. I hope Alan agrees.
-> 
-> Perhaps the line on hubs should not be added, as the text now states
-> that device directories "can" contain this file.
-> 
->  Documentation/ABI/stable/sysfs-bus-usb | 14 +++++++-------
->  1 file changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/Documentation/ABI/stable/sysfs-bus-usb b/Documentation/ABI/stable/sysfs-bus-usb
-> index a6b685724740..e2bc700a6f9c 100644
-> --- a/Documentation/ABI/stable/sysfs-bus-usb
-> +++ b/Documentation/ABI/stable/sysfs-bus-usb
-> @@ -3,13 +3,13 @@ Date:		May 2007
->  KernelVersion:	2.6.23
->  Contact:	Alan Stern <stern@rowland.harvard.edu>
->  Description:
-> -		If CONFIG_USB_PERSIST is set, then each USB device directory
-> -		will contain a file named power/persist.  The file holds a
-> -		boolean value (0 or 1) indicating whether or not the
-> -		"USB-Persist" facility is enabled for the device.  Since the
-> -		facility is inherently dangerous, it is disabled by default
-> -		for all devices except hubs.  For more information, see
-> -		Documentation/usb/persist.txt.
-> +		USB device directories can contain a file named power/persist.
-> +		The file holds a boolean value (0 or 1) indicating whether or
-> +		not the "USB-Persist" facility is enabled for the device.  For
-> +		hubs this facility is always enabled and their device
-> +		directories will not contain this file.
-> +
-> +		For more information, see Documentation/usb/persist.txt.
->  
->  What:		/sys/bus/usb/devices/.../power/autosuspend
->  Date:		March 2007
-> 
+This sort of information should be in the TRM instead, but doesn't harm to be in the commit message so I'll do that.
+Thanks.
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+cheers,
+-roger
+> 
+>>
+>> This patch is required for proper functionality of USB, SATA
+>> and PCIe on DRA7-evm.
+>>
+>> CC: Rajendra Nayak <rnayak@ti.com>
+>> CC: Tero Kristo <t-kristo@ti.com>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> ---
+>>  arch/arm/boot/dts/dra7-evm.dts | 1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
+>> index 4adc280..8308954 100644
+>> --- a/arch/arm/boot/dts/dra7-evm.dts
+>> +++ b/arch/arm/boot/dts/dra7-evm.dts
+>> @@ -240,6 +240,7 @@
+>>  					regulator-name = "ldo3";
+>>  					regulator-min-microvolt = <1800000>;
+>>  					regulator-max-microvolt = <1800000>;
+>> +					regulator-always-on;
+>>  					regulator-boot-on;
+>>  				};
+>>  
+>>
+> 
+> 
 
