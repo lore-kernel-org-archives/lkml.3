@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757686AbaGBTm0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 15:42:26 -0400
-Received: from foo.stuge.se ([212.116.89.98]:45431 "EHLO foo.stuge.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756736AbaGBTmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 15:42:24 -0400
-Message-ID: <20140702194222.11771.qmail@stuge.se>
-Date: Wed, 2 Jul 2014 21:42:22 +0200
-From: Peter Stuge <peter@stuge.se>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Stefan Klug <stefan.klug@baslerweb.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][RFC] USB: zerocopy support for usbfs
-Mail-Followup-To: Alan Stern <stern@rowland.harvard.edu>,
-	Stefan Klug <stefan.klug@baslerweb.com>, linux-usb@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20140702184933.7464.qmail@stuge.se> <Pine.LNX.4.44L0.1407021457320.874-100000@iolanthe.rowland.org>
+	id S1757846AbaGBTnN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 15:43:13 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44025 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754918AbaGBTnL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 15:43:11 -0400
+Date: Wed, 2 Jul 2014 20:42:52 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
+        lgirdwood@gmail.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
+        Dave Airlie <airlied@gmail.com>, linux-arm-kernel@lists.infradead.org
+Message-ID: <20140702194252.GN410@sirena.org.uk>
+References: <20140702183841.7c964832@armhf>
+ <20140702165628.GO20799@lunn.ch>
+ <20140702195154.47d6f6b4@armhf>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QGBKWVSgmlsIyJ+t"
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1407021457320.874-100000@iolanthe.rowland.org>
+In-Reply-To: <20140702195154.47d6f6b4@armhf>
+X-Cookie: Semper Fi, dude.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: tda998x: add a codec to the HDMI transmitter
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Stern wrote:
-> > > Also, many host controllers cannot handle arbitrary alignment.  
-> > > It would be best to require that the buffer start at a page boundary.
-> > 
-> > This requires a bit of negotiation with userspace, maybe per-URB but
-> 
-> I don't follow.  What negotiation is needed?  All that needs to happen 
-> is the user program submits a transfer where the buffer is aligned on a 
-> page boundary.
 
-The negotiation needed would be for userspace to learn what alignment
-is required, so that it can make sure to provide only such buffers.
-But see below on mmap..
+--QGBKWVSgmlsIyJ+t
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Wed, Jul 02, 2014 at 07:51:54PM +0200, Jean-Francois Moine wrote:
 
-> > it seems better to negotiate per-claim or even per-open. What about
-> > large control transfers?
-> 
-> The kernel doesn't support scatter-gather for control transfers, only 
-> bulk.
+> I tested this CODEC with both DAPM and DPCM. If the audio subsystem
+> asks for streaming on both I2S and S/PDIF, only the last call is served
+> (this depends on the order of the DAI links in the audio card creation
+> table).
 
-That could possibly change, right, and then it would be nice to have
-zerocopy for free there as well?
+I'd expect this to return an error for the busy DAI rather than just
+silently ignore it failing to start or (better) implement some control
+to let the user select which of the DAIs is active.
 
+--QGBKWVSgmlsIyJ+t
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> > It's important that the kernel gives userspace enough information
-> > about the constraints, if userspace wants zerocopy.
-> 
-> I don't know of any way for the kernel to give userspace any
-> information about constraints of this sort.  Do you?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-I don't know of any at the moment, no. It might be done through an
-ioctl into usbfs, but if sysfs already has all neccessary information
-then no ioctl is needed. Anyway...
+iQIcBAEBAgAGBQJTtGC5AAoJELSic+t+oim9tb0QAJt+FzWAKa03Dm0MUFuXQ2DN
+no9KhfaolUNuxddftKE0sacoTgbDZNBMmNQ0HcIc8IbdDOPHscw4VplNB8Iie1JK
+aatHjwpQ98DWVlFAv7PZDp3dhOc/1TkUTwQCJkw6XuUMiodexdDEUn+aGw9Rn2Lu
+pSBZXr3lQ/GnHj/P2L2wqBeuMXB+6jokh6mzi6djQrjCtu0/BeznrOmWEVtagUMM
+nqa0lM+0ek1c4oznGvs9qhSBsBNTUt7YQGns6VMsVTqgnE2/ukIaezM2wbuMUH3n
+unhGNok+CO07nJeFj/TAoHBPZhFsyIQdFJJVFu7q/TdP3dPFGc0yquQt8fuTavZM
+PN9daXR1sUBUHO0LEiKrei0Q7E7tlWTLbIudHFLTduuIkJiry15xDE5XmXvDdH5U
+kdpWpJDBaaocK/c3WGgCQ5/BKuvmUfsfRozCWU5a+PcZ0V2kcMAgi7zWCJte25Uf
+bWlgGLQnh2qMLBKypIAoNMakEx5RThZEOqebJoRH4oOuPirXMiGn2GbvBF+uqa5W
+gP4vw787P/WbJsEq8PTJnNSw0Sk+sQ+q9l2OpJkuxv4gVsFLjNN2Igi77I8XtpQ+
+5HknLAsmKqvMXQRUfAxeTog+y5jFtBrQ4wMxQm6Gbzr9Unq1hXWO83kwcNeGzno/
+aHO3BAG3Q9pHezd5dkyx
+=0sKu
+-----END PGP SIGNATURE-----
 
-
-> > Indeed I think userspace wants to be involved in choosing memory also
-> > with bulk, in order to ensure that zerocopy will always work when
-> > userspace cares about that.
-> > 
-> > Is it enough to expose the DMA mask of the host controller?
-> 
-> It doesn't need to be exposed, since the mmap(2) call would be handled
-> by the kernel's USB stack (and besides, the user program can't request
-> that the mapped memory be located in any particular physical address
-> region).
-
-Since alignment isn't the only issue I don't think there's a way to
-avoid it. I was just hoping to be able to avoid allocating zerocopy
-buffers with mmap().
-
-
-> Furthermore, the DMA mask already is exposed in sysfs.
-> For example, the DMA mask for the host controller on bus 2 is
-> given in /sys/bus/usb/devices/usb2/../dma_mask_bits.
-
-I realize that this doesn't help much, since userspace can't get the
-physical address for its virtual addresses anyway.
-
-
-//Peter
+--QGBKWVSgmlsIyJ+t--
