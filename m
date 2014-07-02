@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751656AbaGBMLu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 08:11:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47980 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750869AbaGBMLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 08:11:49 -0400
-Date: Wed, 2 Jul 2014 17:41:20 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: linux-kernel@vger.kernel.org,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
-        keescook@chromium.org, stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] hwrng: don't fetch rng from sources without init
-Message-ID: <20140702121120.GB7505@grmbl.mre>
-References: <cover.1404296679.git.amit.shah@redhat.com>
- <c911b7944f2d05f5c6f5cf5dc37b8dbb99fd0b14.1404296679.git.amit.shah@redhat.com>
- <20140702115823.GJ23978@titan.lakedaemon.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140702115823.GJ23978@titan.lakedaemon.net>
+	id S1752851AbaGBMMY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 08:12:24 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45499 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375AbaGBMMV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 08:12:21 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH] net: arcnet: Remove "#define bool int"
+Date: Wed,  2 Jul 2014 14:12:01 +0200
+Message-Id: <1404303121-2548-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Wed) 02 Jul 2014 [07:58:23], Jason Cooper wrote:
-> On Wed, Jul 02, 2014 at 03:58:15PM +0530, Amit Shah wrote:
-> > Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
-> > added a call to rng_get_data() from the hwrng_register() function.
-> > However, some rng devices need initialization before data can be read
-> > from them.
-> > 
-> > Also, the virtio-rng device does not behave properly when this call is
-> > made in its probe() routine - the virtio core sets the DRIVER_OK status
-> > bit only on a successful probe, which means the host ignores all
-> > communication from the guest, and the guest insmod or boot process just
-> > sits there doing nothing.
-> > 
-> > This commit makes the call to rng_get_data() depend on no init fn
-> > pointer being registered by the device.  If an init function is
-> > registered, this call isn't made.
-> > 
-> > CC: Kees Cook <keescook@chromium.org>
-> > CC: Jason Cooper <jason@lakedaemon.net>
-> > CC: Herbert Xu <herbert@gondor.apana.org.au>
-> > CC: <stable@vger.kernel.org> # For 3.15 only
-> 
-> # v3.15+ should be fine here.
-> 
-> > Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> > ---
-> >  drivers/char/hw_random/core.c | 8 +++++---
-> >  1 file changed, 5 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-> > index 334601c..3f3941d 100644
-> > --- a/drivers/char/hw_random/core.c
-> > +++ b/drivers/char/hw_random/core.c
-> > @@ -347,9 +347,11 @@ int hwrng_register(struct hwrng *rng)
-> >  	INIT_LIST_HEAD(&rng->list);
-> >  	list_add_tail(&rng->list, &rng_list);
-> >  
-> > -	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
-> > -	if (bytes_read > 0)
-> > -		add_device_randomness(bytes, bytes_read);
-> > +	if (!rng->init) {
-> > +		bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
-> > +		if (bytes_read > 0)
-> > +			add_device_randomness(bytes, bytes_read);
-> > +	}
-> 
-> afaict, this is redundant at initialization time.  current_rng shouldn't
-> be set yet, so hwrng_init(rng) will get called at line 333.  Or, am I
-> missing something?
+The header file include/linux/arcdevice.h #defines bool to int, if
+bool is not already #defined. However, the files which use that header
+file seem to rely on that #define (unconditionally) being in effect:
+the prototypes for the functions arcrimi_reset, com20020_reset,
+com90io_reset, com90xx_reset (whose addresses are assigned to the
+hw.reset member of struct arcnet_local) use int explicitly.
 
-You're right -- the device will have been initialized if it's the
-first hwrng device to be registered.  And in that case, this device
-won't contribute to the initial pool (and that's the only case).
+Moreover, that #define is an accident waiting to happen (scenario:
+inclusion of arcdevice.h followed by inclusion of some header which
+declares function prototypes using bool). Also, #include
+<linux/types.h> must appear before #include <linux/arcdevice.h> (the
+compiler wouldn't like "typedef _Bool int").
 
-Can someone think of a better way to handle this for that case, then?
+Since none of the files using arcdevice.h declare variables of type
+"bool", the patch is actually quite simple, unlike the commit message.
 
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ include/linux/arcdevice.h | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-		Amit
+diff --git a/include/linux/arcdevice.h b/include/linux/arcdevice.h
+index 7216b0d..df03562 100644
+--- a/include/linux/arcdevice.h
++++ b/include/linux/arcdevice.h
+@@ -22,10 +22,6 @@
+ #ifdef __KERNEL__
+ #include  <linux/irqreturn.h>
+ 
+-#ifndef bool
+-#define bool int
+-#endif
+-
+ /*
+  * RECON_THRESHOLD is the maximum number of RECON messages to receive
+  * within one minute before printing a "cabling problem" warning. The
+@@ -285,9 +281,9 @@ struct arcnet_local {
+ 	unsigned long first_recon; /* time of "first" RECON message to count */
+ 	unsigned long last_recon;  /* time of most recent RECON */
+ 	int num_recons;		/* number of RECONs between first and last. */
+-	bool network_down;	/* do we think the network is down? */
++	int network_down;	/* do we think the network is down? */
+ 
+-	bool excnak_pending;    /* We just got an excesive nak interrupt */
++	int excnak_pending;    /* We just got an excesive nak interrupt */
+ 
+ 	struct {
+ 		uint16_t sequence;	/* sequence number (incs with each packet) */
+@@ -305,7 +301,7 @@ struct arcnet_local {
+ 		void (*command) (struct net_device * dev, int cmd);
+ 		int (*status) (struct net_device * dev);
+ 		void (*intmask) (struct net_device * dev, int mask);
+-		bool (*reset) (struct net_device * dev, bool really_reset);
++		int (*reset) (struct net_device * dev, int really_reset);
+ 		void (*open) (struct net_device * dev);
+ 		void (*close) (struct net_device * dev);
+ 
+-- 
+1.9.2
+
