@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756399AbaGBQtH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 12:49:07 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:33792 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756300AbaGBQtF (ORCPT
+	id S1756507AbaGBQtR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 12:49:17 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:34685 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756407AbaGBQtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 12:49:05 -0400
+	Wed, 2 Jul 2014 12:49:14 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 02/48] staging: rtl8188eu: Remove function c2h_evt_hdl()
-Date: Wed,  2 Jul 2014 22:16:58 +0530
-Message-Id: <1404319664-8327-2-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 03/48] staging: rtl8188eu: Remove unused function c2h_evt_read()
+Date: Wed,  2 Jul 2014 22:16:59 +0530
+Message-Id: <1404319664-8327-3-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
 References: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
@@ -21,60 +21,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-c2h_evt_hdl() calls a dummy function rtw_hal_c2h_handler() to handle events,
-so no use of keeping it.
-
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_cmd.c |   28 ----------------------------
- 1 file changed, 28 deletions(-)
+ drivers/staging/rtl8188eu/hal/hal_com.c     |   49 ---------------------------
+ drivers/staging/rtl8188eu/include/hal_com.h |    2 --
+ 2 files changed, 51 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-index 293fda4..a2b355c 100644
---- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-@@ -1808,31 +1808,6 @@ exit:
- 	return res;
+diff --git a/drivers/staging/rtl8188eu/hal/hal_com.c b/drivers/staging/rtl8188eu/hal/hal_com.c
+index baefb46..c91a58c 100644
+--- a/drivers/staging/rtl8188eu/hal/hal_com.c
++++ b/drivers/staging/rtl8188eu/hal/hal_com.c
+@@ -330,52 +330,3 @@ void c2h_evt_clear(struct adapter *adapter)
+ {
+ 	usb_write8(adapter, REG_C2HEVT_CLEAR, C2H_EVT_HOST_CLOSE);
  }
- 
--static s32 c2h_evt_hdl(struct adapter *adapter, struct c2h_evt_hdr *c2h_evt, c2h_id_filter filter)
+-
+-s32 c2h_evt_read(struct adapter *adapter, u8 *buf)
 -{
 -	s32 ret = _FAIL;
--	u8 buf[16];
+-	struct c2h_evt_hdr *c2h_evt;
+-	int i;
+-	u8 trigger;
 -
--	if (!c2h_evt) {
--		/* No c2h event in cmd_obj, read c2h event before handling*/
--		if (c2h_evt_read(adapter, buf) == _SUCCESS) {
--			c2h_evt = (struct c2h_evt_hdr *)buf;
+-	if (buf == NULL)
+-		goto exit;
 -
--			if (filter && filter(c2h_evt->id) == false)
--				goto exit;
+-	trigger = usb_read8(adapter, REG_C2HEVT_CLEAR);
 -
--			ret = rtw_hal_c2h_handler(adapter, c2h_evt);
--		}
--	} else {
--		if (filter && filter(c2h_evt->id) == false)
--			goto exit;
+-	if (trigger == C2H_EVT_HOST_CLOSE)
+-		goto exit; /* Not ready */
+-	else if (trigger != C2H_EVT_FW_CLOSE)
+-		goto clear_evt; /* Not a valid value */
 -
--		ret = rtw_hal_c2h_handler(adapter, c2h_evt);
--	}
+-	c2h_evt = (struct c2h_evt_hdr *)buf;
+-
+-	memset(c2h_evt, 0, 16);
+-
+-	*buf = usb_read8(adapter, REG_C2HEVT_MSG_NORMAL);
+-	*(buf+1) = usb_read8(adapter, REG_C2HEVT_MSG_NORMAL + 1);
+-
+-	RT_PRINT_DATA(_module_hal_init_c_, _drv_info_, "c2h_evt_read(): ",
+-		      &c2h_evt , sizeof(c2h_evt));
+-
+-	/* Read the content */
+-	for (i = 0; i < c2h_evt->plen; i++)
+-		c2h_evt->payload[i] = usb_read8(adapter, REG_C2HEVT_MSG_NORMAL +
+-						sizeof(*c2h_evt) + i);
+-
+-	RT_PRINT_DATA(_module_hal_init_c_, _drv_info_,
+-		      "c2h_evt_read(): Command Content:\n",
+-		      c2h_evt->payload, c2h_evt->plen);
+-
+-	ret = _SUCCESS;
+-
+-clear_evt:
+-	/*
+-	* Clear event to notify FW we have read the command.
+-	* If this field isn't clear, the FW won't update the next
+-	* command message.
+-	*/
+-	c2h_evt_clear(adapter);
 -exit:
 -	return ret;
 -}
+diff --git a/drivers/staging/rtl8188eu/include/hal_com.h b/drivers/staging/rtl8188eu/include/hal_com.h
+index 81c2709..1527efa 100644
+--- a/drivers/staging/rtl8188eu/include/hal_com.h
++++ b/drivers/staging/rtl8188eu/include/hal_com.h
+@@ -168,6 +168,4 @@ bool Hal_MappingOutPipe(struct adapter *pAdapter, u8 NumOutPipe);
+ void hal_init_macaddr(struct adapter *adapter);
+ 
+ void c2h_evt_clear(struct adapter *adapter);
+-s32 c2h_evt_read(struct adapter *adapter, u8 *buf);
 -
- u8 rtw_drvextra_cmd_hdl(struct adapter *padapter, unsigned char *pbuf)
- {
- 	struct drvextra_cmd_parm *pdrvextra_cmd;
-@@ -1863,9 +1838,6 @@ u8 rtw_drvextra_cmd_hdl(struct adapter *padapter, unsigned char *pbuf)
- 		rtw_chk_hi_queue_hdl(padapter);
- 		break;
- #endif /* CONFIG_88EU_AP_MODE */
--	case C2H_WK_CID:
--		c2h_evt_hdl(padapter, (struct c2h_evt_hdr *)pdrvextra_cmd->pbuf, NULL);
--		break;
- 	default:
- 		break;
- 	}
+ #endif /* __HAL_COMMON_H__ */
 -- 
 1.7.10.4
 
