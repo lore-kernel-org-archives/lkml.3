@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118AbaGBXUw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 19:20:52 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:52965 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687AbaGBXUu (ORCPT
+	id S1753389AbaGBXVL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 19:21:11 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:48882 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175AbaGBXVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 19:20:50 -0400
-Date: Wed, 2 Jul 2014 16:20:47 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Luiz Capitulino <lcapitulino@redhat.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org, riel@redhat.com,
-        andi@firstfloor.org, akpm@linux-foundation.org
-Subject: Re: [PATCH] x86: numa: setup_node_data(): drop dead code and rename
- function
-In-Reply-To: <20140702133358.0b4262cd@redhat.com>
-Message-ID: <alpine.DEB.2.02.1407021615550.5931@chino.kir.corp.google.com>
-References: <20140619222019.3db6ad7e@redhat.com> <alpine.DEB.2.02.1406301639390.1327@chino.kir.corp.google.com> <20140702133358.0b4262cd@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 2 Jul 2014 19:21:08 -0400
+Message-ID: <53B493E2.2030905@infradead.org>
+Date: Wed, 02 Jul 2014 16:21:06 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: mmotm 2014-07-02-15-07 uploaded (stack protector)
+References: <53b482d3.gR7nYB/K7hPREviI%akpm@linux-foundation.org>
+In-Reply-To: <53b482d3.gR7nYB/K7hPREviI%akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jul 2014, Luiz Capitulino wrote:
-
-> > With this patch, the dmesg changes break one of my scripts that we use to 
-> > determine the start and end address of a node (doubly bad because there's 
-> > no sysfs interface to determine this otherwise and we have to do this at 
-> > boot to acquire the system topology).
-> > 
-> > Specifically, the removal of the
-> > 
-> > 	"Initmem setup node X [mem 0xstart-0xend]"
-> > 
-> > lines that are replaced when each node is onlined to
-> > 
-> > 	"Node 0 memory range 0xstart-0xend"
-> > 
-> > And if I just noticed this breakage when booting the latest -mm kernel, 
-> > I'm assuming I'm not the only person who is going to run into it.  Is it 
-> > possible to not change the dmesg output?
+On 07/02/14 15:08, akpm@linux-foundation.org wrote:
+> The mm-of-the-moment snapshot 2014-07-02-15-07 has been uploaded to
 > 
-> Sure. I can add back the original text. The only detail is that with this
-> patch that line is now printed a little bit later during boot and the
-> NODA_DATA lines also changed. Are you OK with that?
+>    http://www.ozlabs.org/~akpm/mmotm/
 > 
-
-Yes, please.  I think it should be incremental on your patch since it's 
-already in -mm with " fix" appended so the title of the patch would be 
-"x86: numa: setup_node_data(): drop dead code and rename function fix" and 
-then Andrew can fold it into the original when sending it to the x86 
-maintainers.
-
-> What's the guidelines on changing what's printed in dmesg?
+> mmotm-readme.txt says
 > 
+> README for mm-of-the-moment:
+> 
+> http://www.ozlabs.org/~akpm/mmotm/
+> 
+> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+> more than once a week.
 
-That's the scary part, there doesn't seem to be any.  It's especially 
-crucial for things that only get printed once and aren't available 
-anywhere else at runtime; there was talk of adding a sysfs interface that 
-defines the start and end addresses of nodes but it's complicated because 
-nodes can overlap each other.  If that had been available years ago then I 
-don't think anybody would raise their hand about this issue.
+Hi Andi,
 
-These lines went under a smaller change a few years ago for 
-s/Bootmem/Initmem/.  I don't even have to look at the git history to know 
-that because it broke our scripts back then as well.  You just happened to 
-touch lines that I really care about and breaks my topology information :)  
-I wouldn't complain if it was just my userspace, but I have no doubt 
-others have parsed their dmesg in a similar way because people have 
-provided me with data that they retrieved by scraping the kernel log.
+Here is an extract from 10 randconfig builds:
+
+
+$ grep STACKPROTECTOR_STRONG config-r*
+config-r8735:CONFIG_CC_STACKPROTECTOR_STRONG=y
+config-r8736:CONFIG_CC_STACKPROTECTOR_STRONG=y
+config-r8737:# CONFIG_CC_STACKPROTECTOR_STRONG is not set
+config-r8738:# CONFIG_CC_STACKPROTECTOR_STRONG is not set
+config-r8739:CONFIG_CC_STACKPROTECTOR_STRONG=y
+config-r8740:CONFIG_CC_STACKPROTECTOR_STRONG=y
+config-r8741:CONFIG_CC_STACKPROTECTOR_STRONG=y
+config-r8742:# CONFIG_CC_STACKPROTECTOR_STRONG is not set
+config-r8743:# CONFIG_CC_STACKPROTECTOR_STRONG is not set
+config-r8744:# CONFIG_CC_STACKPROTECTOR_STRONG is not set
+
+
+but the captured output for each one says:
+
+grep STACKPROTECTOR_STRONG  build*.out
+build-r8735.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+build-r8736.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+build-r8736.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+build-r8737.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+build-r8739.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+build-r8740.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+build-r8740.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+build-r8741.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+build-r8741.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+build-r8742.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+
+
+then the build goes on to produce many errors like this one:
+
+  CC      init/do_mounts.o
+gcc: error: unrecognized command line option '-fstack-protector-strong'
+
+
+Can you explain this, please?  or even better yet, fix it.
+
+thanks,
+
+-- 
+~Randy
