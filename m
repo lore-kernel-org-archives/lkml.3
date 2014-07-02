@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668AbaGBWSl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 18:18:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30627 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751303AbaGBWSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 18:18:40 -0400
-Date: Wed, 2 Jul 2014 18:18:22 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jingoo Han <jg1.han@samsung.com>, Alexandru Juncu <alexj@rosedu.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Joe Perches <joe@perches.com>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] video: fbdev: matrox: matroxfb_base.c:  Fix for possible
- null pointer dereference
-In-Reply-To: <1404337551-6499-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Message-ID: <alpine.LRH.2.02.1407021815130.17688@file01.intranet.prod.int.rdu2.redhat.com>
-References: <1404337551-6499-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1755910AbaGBWUX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 18:20:23 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:62318 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752212AbaGBWUT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 18:20:19 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAF4BF-SZp64iD_imNH42qXaENWbNzgBOiVaSeUMMBScrSc6VEw@mail.gmail.com>
+References: <1395967502-71219-1-git-send-email-chrisfriedt@gmail.com>
+ <CAPM=9tx4hdU0PZqdZcCd-x3HMu+6ZsGibeOHZPLe3OpW9Wsa0g@mail.gmail.com>
+ <533A8E52.5050304@vmware.com> <CAF4BF-Rmxqbbd_xroQbRTWeE2NfKAZm=Jm7SG2bNppHV2odYNA@mail.gmail.com>
+ <53B14E9E.3040505@vmware.com> <CAF4BF-T4VZQtd_3wWfNQ_==KJE0z0N5XonG4jcy=Ys5x_XxJ=w@mail.gmail.com>
+ <53B15A94.3010402@vmware.com> <CAF4BF-TiHkaaOejH6p1QnnepfOxmvirds3vQD2YdXih_6kkUpQ@mail.gmail.com>
+ <CAF4BF-T8a_Y=uW7r_g0WKpABHFH=GhX0hNAQMsG9o=DX4JF6qg@mail.gmail.com>
+ <53B16492.6040006@vmware.com> <CAF4BF-R_b0_7tzqsMu0UENYtdQ7P=2x6ELLhMB38_4u9Fc58RQ@mail.gmail.com>
+ <53B38780.5020808@vmware.com> <CAF4BF-SZp64iD_imNH42qXaENWbNzgBOiVaSeUMMBScrSc6VEw@mail.gmail.com>
+From: Christopher Friedt <chrisfriedt@gmail.com>
+Date: Wed, 2 Jul 2014 18:19:58 -0400
+Message-ID: <CAF4BF-RD1uyRz66XRHhQ_vFjwESFS+ptuGxhfitcasB1BH2Viw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] drm/vmwgfx: correct fb_fix_screeninfo.line_length
+To: Thomas Hellstrom <thellstrom@vmware.com>
+Cc: dri-devel <dri-devel@lists.freedesktop.org>,
+        linux-graphics-maintainer@vmware.com, Dave Airlie <airlied@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+At least one source has reported that vmwgfx_fb.c::vmw_fb_check_var()
+is not even a code path that is traversed when the bug occurs (i.e.
+inserted unique log message -> never seen in logs).
 
+Also, everyone encountering the bug seems to be on a slightly older
+version of VMWare Player. It does not seem to occur with "modern"
+versions of VMWare Player, and might even be limited to Windows hosts.
 
-On Wed, 2 Jul 2014, Rickard Strandqvist wrote:
+So I think at this point, I can conclusively say It Wasn't Me™.
+However, I am a bit concerned with this bug, so I'm going to follow up
+on it within the Ubuntu community and help out in any way that I can.
 
-> Fix a possible null pointer dereference, there is otherwise a risk of a 
-> possible null pointer dereference
-> 
-> This was found using a static code analysis program called cppcheck
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/video/fbdev/matrox/matroxfb_base.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/video/fbdev/matrox/matroxfb_base.c b/drivers/video/fbdev/matrox/matroxfb_base.c
-> index 7116c53..85ef84b 100644
-> --- a/drivers/video/fbdev/matrox/matroxfb_base.c
-> +++ b/drivers/video/fbdev/matrox/matroxfb_base.c
-> @@ -1971,9 +1971,9 @@ static void matroxfb_register_device(struct matrox_fb_info* minfo) {
->  	int i = 0;
->  	list_add(&minfo->next_fb, &matroxfb_list);
->  	for (drv = matroxfb_driver_l(matroxfb_driver_list.next);
-> -	     drv != matroxfb_driver_l(&matroxfb_driver_list);
-> +	     drv && drv != matroxfb_driver_l(&matroxfb_driver_list);
+In any case... I do have a pretty cool patch that enables (something
+like) double-buffering on vmwgfx_fb - care to see it!!??
 
-The "drv" check is pointless because drv can't be NULL - use the patch 
-below.
+Hehehe... I'm serious! :-)
 
->  	     drv = matroxfb_driver_l(drv->node.next)) {
-> -		if (drv && drv->probe) {
-> +		if (drv->probe) {
->  			void *p = drv->probe(minfo);
->  			if (p) {
->  				minfo->drivers_data[i] = p;
-> -- 
-> 1.7.10.4
+Cheers,
 
-matroxfb: delete pointless NULL-pointer check
-
-The for loop walks a double-linked list, so drv cannot be NULL.
-
-This patch deletes the pointless NULL-pointer check. cppcheck warned about
-it.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-
----
- drivers/video/fbdev/matrox/matroxfb_base.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6/drivers/video/fbdev/matrox/matroxfb_base.c
-===================================================================
---- linux-2.6.orig/drivers/video/fbdev/matrox/matroxfb_base.c	2014-06-19 16:41:45.048259897 +0200
-+++ linux-2.6/drivers/video/fbdev/matrox/matroxfb_base.c	2014-07-03 00:13:04.299380130 +0200
-@@ -1973,7 +1973,7 @@ static void matroxfb_register_device(str
- 	for (drv = matroxfb_driver_l(matroxfb_driver_list.next);
- 	     drv != matroxfb_driver_l(&matroxfb_driver_list);
- 	     drv = matroxfb_driver_l(drv->node.next)) {
--		if (drv && drv->probe) {
-+		if (drv->probe) {
- 			void *p = drv->probe(minfo);
- 			if (p) {
- 				minfo->drivers_data[i] = p;
+C
