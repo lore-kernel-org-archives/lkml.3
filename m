@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386AbaGBNyO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 09:54:14 -0400
-Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:39931 "EHLO
+	id S1753655AbaGBNyz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 09:54:55 -0400
+Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:45426 "EHLO
 	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751708AbaGBNyM (ORCPT
+	with ESMTP id S1753423AbaGBNyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 09:54:12 -0400
-X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Jul 2014 09:54:11 EDT
-Date: Wed, 2 Jul 2014 15:54:10 +0200
+	Wed, 2 Jul 2014 09:54:54 -0400
+Date: Wed, 2 Jul 2014 15:52:50 +0200
 From: Josef Gajdusek <atx@atalax.net>
 To: linux-iio@vger.kernel.org
 Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, jic23@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] staging:iio:hmc5843: Add support for spi hmc5983
-Message-ID: <20140702135410.GF15493@dashie>
+Subject: [PATCH 3/5] staging:iio:hmc5843: register <-> value arrays now can
+ have different lengths
+Message-ID: <20140702135250.GD15493@dashie>
 References: <20140702134840.GA15493@dashie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,170 +25,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the hmc5983 spi interface.
-This chip is almost identical to the hmc5883. The difference being added
-temperature compensation, additional available sample rate (220Hz) and an SPI
-interface.
+Changed structure of struct hmc5843_chip_info to include length of translation
+arrays. Code previously using #defined constant has been changed accordingly.
+This allows to integrate devices which do have different amounts of available
+rates/scales.
 
 Signed-off-by: Josef Gajdusek <atx@atx.name>
 ---
- drivers/staging/iio/magnetometer/Kconfig       |   8 ++
- drivers/staging/iio/magnetometer/Makefile      |   1 +
- drivers/staging/iio/magnetometer/hmc5843_spi.c | 105 +++++++++++++++++++++++++
- 3 files changed, 114 insertions(+)
- create mode 100644 drivers/staging/iio/magnetometer/hmc5843_spi.c
+ drivers/staging/iio/magnetometer/hmc5843_core.c | 34 +++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/staging/iio/magnetometer/Kconfig b/drivers/staging/iio/magnetometer/Kconfig
-index 32c69c0..bc5c355 100644
---- a/drivers/staging/iio/magnetometer/Kconfig
-+++ b/drivers/staging/iio/magnetometer/Kconfig
-@@ -9,6 +9,7 @@ config SENSORS_HMC5843
- 	select IIO_BUFFER
- 	select IIO_TRIGGERED_BUFFER
- 	select SENSORS_HMC5843_I2C if (I2C)
-+	select SENSORS_HMC5843_SPI if (SPI_MASTER)
- 	help
- 	  Say Y here to add support for the Honeywell HMC5843, HMC5883 and
- 	  HMC5883L 3-Axis Magnetometer (digital compass).
-@@ -17,6 +18,7 @@ config SENSORS_HMC5843
- 	  If so, these modules will be created:
- 	  - hmc5843_core (core functions)
- 	  - hmc5843_i2c (support for HMC5843, HMC5883, HMC5883L and HMC5983)
-+	  - hmc5843_spi (support for HMC5983)
+diff --git a/drivers/staging/iio/magnetometer/hmc5843_core.c b/drivers/staging/iio/magnetometer/hmc5843_core.c
+index 4ad309b..b26ac9f 100644
+--- a/drivers/staging/iio/magnetometer/hmc5843_core.c
++++ b/drivers/staging/iio/magnetometer/hmc5843_core.c
+@@ -39,7 +39,6 @@
+  */
+ #define HMC5843_RANGE_GAIN_OFFSET		0x05
+ #define HMC5843_RANGE_GAIN_DEFAULT		0x01
+-#define HMC5843_RANGE_GAINS			8
+ #define HMC5843_RANGE_GAIN_MASK		0xe0
  
- config SENSORS_HMC5843_I2C
- 	tristate
-@@ -24,4 +26,10 @@ config SENSORS_HMC5843_I2C
- 	depends on SENSORS_HMC5843
- 	select REGMAP_I2C
+ /* Device status */
+@@ -59,7 +58,6 @@
+  */
+ #define HMC5843_RATE_OFFSET			0x02
+ #define HMC5843_RATE_DEFAULT			0x04
+-#define HMC5843_RATES				7
+ #define HMC5843_RATE_MASK		0x1c
  
-+config SENSORS_HMC5843_SPI
-+	tristate
-+	depends on SPI_MASTER
-+	depends on SENSORS_HMC5843
-+	select REGMAP_SPI
-+
- endmenu
-diff --git a/drivers/staging/iio/magnetometer/Makefile b/drivers/staging/iio/magnetometer/Makefile
-index 65baf1c..33761a1 100644
---- a/drivers/staging/iio/magnetometer/Makefile
-+++ b/drivers/staging/iio/magnetometer/Makefile
-@@ -4,3 +4,4 @@
+ /* Device measurement configuration */
+@@ -69,15 +67,15 @@
+ #define HMC5843_MEAS_CONF_MASK			0x03
  
- obj-$(CONFIG_SENSORS_HMC5843)		+= hmc5843_core.o
- obj-$(CONFIG_SENSORS_HMC5843_I2C)	+= hmc5843_i2c.o
-+obj-$(CONFIG_SENSORS_HMC5843_SPI)	+= hmc5843_spi.o
-diff --git a/drivers/staging/iio/magnetometer/hmc5843_spi.c b/drivers/staging/iio/magnetometer/hmc5843_spi.c
-new file mode 100644
-index 0000000..3f71ee0
---- /dev/null
-+++ b/drivers/staging/iio/magnetometer/hmc5843_spi.c
-@@ -0,0 +1,105 @@
-+/*
-+ * SPI driver for hmc5983
-+ *
-+ * Copyright (C) Josef Gajdusek <atx@atx.name>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * */
-+
-+#include <linux/module.h>
-+#include <linux/spi/spi.h>
-+#include <linux/iio/iio.h>
-+
-+#include "hmc5843.h"
-+
-+struct regmap_config hmc5843_spi_regmap_config = {
-+		.reg_bits = 8,
-+		.val_bits = 8,
-+
-+		.rd_table = &hmc5843_readable_table,
-+		.wr_table = &hmc5843_writable_table,
-+		.volatile_table = &hmc5843_volatile_table,
-+
-+		/* Autoincrement address pointer */
-+		.read_flag_mask = 0xc0,
-+
-+		.cache_type = REGCACHE_RBTREE,
-+};
-+
-+static int hmc5843_spi_probe(struct spi_device *spi)
-+{
-+	struct hmc5843_data *data;
-+	struct iio_dev *indio_dev;
-+	int ret;
-+
-+	indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(*data));
-+	if (indio_dev == NULL)
-+		return -ENOMEM;
-+
-+	spi->mode = SPI_MODE_3;
-+	spi->max_speed_hz = 8000000;
-+	spi->bits_per_word = 8;
-+	ret = spi_setup(spi);
-+	if (ret)
-+		return ret;
-+
-+	spi_set_drvdata(spi, indio_dev);
-+
-+	data = iio_priv(indio_dev);
-+	data->dev = &spi->dev;
-+	data->regmap = devm_regmap_init_spi(spi, &hmc5843_spi_regmap_config);
-+
-+	indio_dev->dev.parent = &spi->dev;
-+
-+	return hmc5843_common_probe(indio_dev, HMC5983_ID);
-+}
-+
-+static int hmc5843_spi_remove(struct spi_device *spi)
-+{
-+	struct iio_dev *indio_dev = spi_get_drvdata(spi);
-+	return hmc5843_common_remove(indio_dev);
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int hmc5843_spi_suspend(struct device *dev)
-+{
-+	return hmc5843_common_suspend(spi_get_drvdata(to_spi_device(dev)));
-+}
-+
-+static int hmc5843_spi_resume(struct device *dev)
-+{
-+	return hmc5843_common_resume(spi_get_drvdata(to_spi_device(dev)));
-+}
-+
-+static SIMPLE_DEV_PM_OPS(hmc5843_pm_ops,
-+		hmc5843_spi_suspend, hmc5843_spi_resume);
-+#define HMC5843_PM_OPS (&hmc5843_pm_ops)
-+#else
-+#define HMC5843_PM_OPS NULL
-+#endif
-+
-+
-+static const struct spi_device_id hmc5843_id[] = {
-+	{ "hmc5983", HMC5983_ID },
-+	{ }
-+};
-+
-+static struct spi_driver hmc5843_driver = {
-+		.driver = {
-+				.name = "hmc5843",
-+				.pm = HMC5843_PM_OPS,
-+				.owner = THIS_MODULE,
-+		},
-+		.id_table = hmc5843_id,
-+		.probe = hmc5843_spi_probe,
-+		.remove = hmc5843_spi_remove,
-+};
-+
-+module_spi_driver(hmc5843_driver);
-+
-+MODULE_AUTHOR("Josef Gajdusek <atx@atx.name>");
-+MODULE_DESCRIPTION("HMC5983 SPI driver");
-+MODULE_LICENSE("GPL");
+ /* Scaling factors: 10000000/Gain */
+-static const int hmc5843_regval_to_nanoscale[HMC5843_RANGE_GAINS] = {
++static const int hmc5843_regval_to_nanoscale[] = {
+ 	6173, 7692, 10309, 12821, 18868, 21739, 25641, 35714
+ };
+ 
+-static const int hmc5883_regval_to_nanoscale[HMC5843_RANGE_GAINS] = {
++static const int hmc5883_regval_to_nanoscale[] = {
+ 	7812, 9766, 13021, 16287, 24096, 27701, 32573, 45662
+ };
+ 
+-static const int hmc5883l_regval_to_nanoscale[HMC5843_RANGE_GAINS] = {
++static const int hmc5883l_regval_to_nanoscale[] = {
+ 	7299, 9174, 12195, 15152, 22727, 25641, 30303, 43478
+ };
+ 
+@@ -94,11 +92,11 @@ static const int hmc5883l_regval_to_nanoscale[HMC5843_RANGE_GAINS] = {
+  * 6		| 50			| 75
+  * 7		| Not used		| Not used
+  */
+-static const int hmc5843_regval_to_samp_freq[7][2] = {
++static const int hmc5843_regval_to_samp_freq[][2] = {
+ 	{0, 500000}, {1, 0}, {2, 0}, {5, 0}, {10, 0}, {20, 0}, {50, 0}
+ };
+ 
+-static const int hmc5883_regval_to_samp_freq[7][2] = {
++static const int hmc5883_regval_to_samp_freq[][2] = {
+ 	{0, 750000}, {1, 500000}, {3, 0}, {7, 500000}, {15, 0}, {30, 0},
+ 	{75, 0}
+ };
+@@ -107,7 +105,9 @@ static const int hmc5883_regval_to_samp_freq[7][2] = {
+ struct hmc5843_chip_info {
+ 	const struct iio_chan_spec *channels;
+ 	const int (*regval_to_samp_freq)[2];
++	const int n_regval_to_samp_freq;
+ 	const int *regval_to_nanoscale;
++	const int n_regval_to_nanoscale;
+ };
+ 
+ /* The lower two bits contain the current conversion mode */
+@@ -248,7 +248,7 @@ static ssize_t hmc5843_show_samp_freq_avail(struct device *dev,
+ 	size_t len = 0;
+ 	int i;
+ 
+-	for (i = 0; i < HMC5843_RATES; i++)
++	for (i = 0; i < data->variant->n_regval_to_samp_freq; i++)
+ 		len += scnprintf(buf + len, PAGE_SIZE - len,
+ 			"%d.%d ", data->variant->regval_to_samp_freq[i][0],
+ 			data->variant->regval_to_samp_freq[i][1]);
+@@ -278,7 +278,7 @@ static int hmc5843_get_samp_freq_index(struct hmc5843_data *data,
+ {
+ 	int i;
+ 
+-	for (i = 0; i < HMC5843_RATES; i++)
++	for (i = 0; i < data->variant->n_regval_to_samp_freq; i++)
+ 		if (val == data->variant->regval_to_samp_freq[i][0] &&
+ 			val2 == data->variant->regval_to_samp_freq[i][1])
+ 			return i;
+@@ -307,7 +307,7 @@ static ssize_t hmc5843_show_scale_avail(struct device *dev,
+ 	size_t len = 0;
+ 	int i;
+ 
+-	for (i = 0; i < HMC5843_RANGE_GAINS; i++)
++	for (i = 0; i < data->variant->n_regval_to_nanoscale; i++)
+ 		len += scnprintf(buf + len, PAGE_SIZE - len,
+ 			"0.%09d ", data->variant->regval_to_nanoscale[i]);
+ 
+@@ -327,7 +327,7 @@ static int hmc5843_get_scale_index(struct hmc5843_data *data, int val, int val2)
+ 	if (val != 0)
+ 		return -EINVAL;
+ 
+-	for (i = 0; i < HMC5843_RANGE_GAINS; i++)
++	for (i = 0; i < data->variant->n_regval_to_nanoscale; i++)
+ 		if (val2 == data->variant->regval_to_nanoscale[i])
+ 			return i;
+ 
+@@ -480,17 +480,29 @@ static const struct hmc5843_chip_info hmc5843_chip_info_tbl[] = {
+ 	[HMC5843_ID] = {
+ 		.channels = hmc5843_channels,
+ 		.regval_to_samp_freq = hmc5843_regval_to_samp_freq,
++		.n_regval_to_samp_freq =
++				ARRAY_SIZE(hmc5843_regval_to_samp_freq),
+ 		.regval_to_nanoscale = hmc5843_regval_to_nanoscale,
++		.n_regval_to_nanoscale =
++				ARRAY_SIZE(hmc5843_regval_to_nanoscale),
+ 	},
+ 	[HMC5883_ID] = {
+ 		.channels = hmc5883_channels,
+ 		.regval_to_samp_freq = hmc5883_regval_to_samp_freq,
++		.n_regval_to_samp_freq =
++				ARRAY_SIZE(hmc5883_regval_to_samp_freq),
+ 		.regval_to_nanoscale = hmc5883_regval_to_nanoscale,
++		.n_regval_to_nanoscale =
++				ARRAY_SIZE(hmc5883_regval_to_nanoscale),
+ 	},
+ 	[HMC5883L_ID] = {
+ 		.channels = hmc5883_channels,
+ 		.regval_to_samp_freq = hmc5883_regval_to_samp_freq,
++		.n_regval_to_samp_freq =
++				ARRAY_SIZE(hmc5883_regval_to_samp_freq),
+ 		.regval_to_nanoscale = hmc5883l_regval_to_nanoscale,
++		.n_regval_to_nanoscale =
++				ARRAY_SIZE(hmc5883l_regval_to_nanoscale),
+ 	},
+ };
+ 
 -- 
 1.8.5.5
 
