@@ -1,148 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394AbaGBFCy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 01:02:54 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:58684 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbaGBFCw convert rfc822-to-8bit (ORCPT
+	id S1754395AbaGBFGD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 01:06:03 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:33425 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017AbaGBFF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 01:02:52 -0400
-Content-Type: text/plain; charset="utf-8"
+	Wed, 2 Jul 2014 01:05:59 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC net-next 08/14] bpf: add eBPF verifier
+References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
+	<1403913966-4927-9-git-send-email-ast@plumgrid.com>
+Date: Wed, 02 Jul 2014 14:05:56 +0900
+In-Reply-To: <1403913966-4927-9-git-send-email-ast@plumgrid.com> (Alexei
+	Starovoitov's message of "Fri, 27 Jun 2014 17:06:00 -0700")
+Message-ID: <87y4wc4aff.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1403871670-19344-1-git-send-email-k.kozlowski@samsung.com>
-Cc: "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        "Bartlomiej Zolnierkiewicz" <b.zolnierkie@samsung.com>,
-        "Tomasz Figa" <t.figa@samsung.com>,
-        "Yadwinder Singh Brar" <yadi.brar@samsung.com>,
-        "Tushar Behera" <tushar.behera@linaro.org>,
-        "Krzysztof Kozlowski" <k.kozlowski@samsung.com>,
-        stable@vger.kernel.org
-References: <1403871670-19344-1-git-send-email-k.kozlowski@samsung.com>
-Message-ID: <20140702050237.23338.2033@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v2] clk: s2mps11: Fix double free corruption during driver unbind
-Date: Tue, 01 Jul 2014 22:02:37 -0700
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Krzysztof Kozlowski (2014-06-27 05:21:10)
-> After unbinding the driver memory was corrupted by double free of
-> clk_lookup structure. This lead to OOPS when re-binding the driver
-> again.
-> 
-> The driver allocated memory for 'clk_lookup' with devm_kzalloc. During
-> driver removal this memory was freed twice: once by clkdev_drop() and
-> second by devm code.
+Mostly questions and few nitpicks.. :)
 
-Applied to clk-fixes.
+On Fri, 27 Jun 2014 17:06:00 -0700, Alexei Starovoitov wrote:
+> +/* types of values:
+> + * - stored in an eBPF register
+> + * - passed into helper functions as an argument
+> + * - returned from helper functions
+> + */
+> +enum bpf_reg_type {
+> +	INVALID_PTR,			/* reg doesn't contain a valid pointer */
+
+I don't think it's a good name.  The INVALID_PTR can be read as it
+contains a "pointer" which is invalid.  Maybe INTEGER, NUMBER or
+something different can be used.  And I think the struct reg_state->ptr
+should be renamed also.
+
+
+> +	PTR_TO_CTX,			/* reg points to bpf_context */
+> +	PTR_TO_MAP,			/* reg points to map element value */
+> +	PTR_TO_MAP_CONDITIONAL,		/* points to map element value or NULL */
+> +	PTR_TO_STACK,			/* reg == frame_pointer */
+> +	PTR_TO_STACK_IMM,		/* reg == frame_pointer + imm */
+> +	PTR_TO_STACK_IMM_MAP_KEY,	/* pointer to stack used as map key */
+> +	PTR_TO_STACK_IMM_MAP_VALUE,	/* pointer to stack used as map elem */
+
+So, these PTR_TO_STACK_IMM[_*] types are only for function argument,
+right?  I guessed it could be used to access memory in general too, but
+then I thought it'd make verification complicated..
+
+And I also agree that it'd better splitting reg types and function
+argument constraints.
+
+
+> +	RET_INTEGER,			/* function returns integer */
+> +	RET_VOID,			/* function returns void */
+> +	CONST_ARG,			/* function expects integer constant argument */
+> +	CONST_ARG_MAP_ID,		/* int const argument that is used as map_id */
+
+That means a map id should always be a constant (for verification), right?
+
+
+> +	/* int const argument indicating number of bytes accessed from stack
+> +	 * previous function argument must be ptr_to_stack_imm
+> +	 */
+> +	CONST_ARG_STACK_IMM_SIZE,
+> +};
+
+[SNIP]
+> +
+> +/* check read/write into map element returned by bpf_table_lookup() */
+> +static int check_table_access(struct verifier_env *env, int regno, int off,
+> +			      int size)
+
+I guess the "table" is an old name of the "map"?
+
+
+> +{
+> +	struct bpf_map *map;
+> +	int map_id = env->cur_state.regs[regno].imm;
+> +
+> +	_(get_map_info(env, map_id, &map));
+> +
+> +	if (off < 0 || off + size > map->value_size) {
+> +		verbose("invalid access to map_id=%d leaf_size=%d off=%d size=%d\n",
+> +			map_id, map->value_size, off, size);
+> +		return -EACCES;
+> +	}
+> +	return 0;
+> +}
+
+
+[SNIP]
+> +static int check_mem_access(struct verifier_env *env, int regno, int off,
+> +			    int bpf_size, enum bpf_access_type t,
+> +			    int value_regno)
+> +{
+> +	struct verifier_state *state = &env->cur_state;
+> +	int size;
+> +
+> +	_(size = bpf_size_to_bytes(bpf_size));
+> +
+> +	if (off % size != 0) {
+> +		verbose("misaligned access off %d size %d\n", off, size);
+> +		return -EACCES;
+> +	}
+> +
+> +	if (state->regs[regno].ptr == PTR_TO_MAP) {
+> +		_(check_table_access(env, regno, off, size));
+> +		if (t == BPF_READ)
+> +			mark_reg_no_ptr(state->regs, value_regno);
+> +	} else if (state->regs[regno].ptr == PTR_TO_CTX) {
+> +		_(check_ctx_access(env, off, size, t));
+> +		if (t == BPF_READ)
+> +			mark_reg_no_ptr(state->regs, value_regno);
+> +	} else if (state->regs[regno].ptr == PTR_TO_STACK) {
+> +		if (off >= 0 || off < -MAX_BPF_STACK) {
+> +			verbose("invalid stack off=%d size=%d\n", off, size);
+> +			return -EACCES;
+> +		}
+
+So memory (stack) access is only allowed for a stack base regsiter and a
+constant offset, right?
+
+
+> +		if (t == BPF_WRITE)
+> +			_(check_stack_write(state, off, size, value_regno));
+> +		else
+> +			_(check_stack_read(state, off, size, value_regno));
+> +	} else {
+> +		verbose("R%d invalid mem access '%s'\n",
+> +			regno, reg_type_str[state->regs[regno].ptr]);
+> +		return -EACCES;
+> +	}
+> +	return 0;
+> +}
+
+[SNIP]
+> +static int check_call(struct verifier_env *env, int func_id)
+> +{
+> +	struct verifier_state *state = &env->cur_state;
+> +	const struct bpf_func_proto *fn = NULL;
+> +	struct reg_state *regs = state->regs;
+> +	struct bpf_map *map = NULL;
+> +	struct reg_state *reg;
+> +	int map_id = -1;
+> +	int i;
+> +
+> +	/* find function prototype */
+> +	if (func_id <= 0 || func_id >= __BPF_FUNC_MAX_ID) {
+> +		verbose("invalid func %d\n", func_id);
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (env->prog->info->ops->get_func_proto)
+> +		fn = env->prog->info->ops->get_func_proto(func_id);
+> +
+> +	if (!fn || (fn->ret_type != RET_INTEGER &&
+> +		    fn->ret_type != PTR_TO_MAP_CONDITIONAL &&
+> +		    fn->ret_type != RET_VOID)) {
+> +		verbose("unknown func %d\n", func_id);
+> +		return -EINVAL;
+> +	}
+> +
+> +	/* check args */
+> +	_(check_func_arg(env, BPF_REG_1, fn->arg1_type, &map_id, &map));
+> +	_(check_func_arg(env, BPF_REG_2, fn->arg2_type, &map_id, &map));
+> +	_(check_func_arg(env, BPF_REG_3, fn->arg3_type, &map_id, &map));
+> +	_(check_func_arg(env, BPF_REG_4, fn->arg4_type, &map_id, &map));
+
+Missing BPF_REG_5?
+
+
+> +
+> +	/* reset caller saved regs */
+> +	for (i = 0; i < CALLER_SAVED_REGS; i++) {
+> +		reg = regs + caller_saved[i];
+> +		reg->read_ok = false;
+> +		reg->ptr = INVALID_PTR;
+> +		reg->imm = 0xbadbad;
+> +	}
+> +
+> +	/* update return register */
+> +	reg = regs + BPF_REG_0;
+> +	if (fn->ret_type == RET_INTEGER) {
+> +		reg->read_ok = true;
+> +		reg->ptr = INVALID_PTR;
+> +	} else if (fn->ret_type != RET_VOID) {
+> +		reg->read_ok = true;
+> +		reg->ptr = fn->ret_type;
+> +		if (fn->ret_type == PTR_TO_MAP_CONDITIONAL)
+> +			/*
+> +			 * remember map_id, so that check_table_access()
+> +			 * can check 'value_size' boundary of memory access
+> +			 * to map element returned from bpf_table_lookup()
+> +			 */
+> +			reg->imm = map_id;
+> +	}
+> +	return 0;
+> +}
+
+[SNIP]
+> +#define PEAK_INT() \
+
+s/PEAK/PEEK/ ?
 
 Thanks,
-Mike
+Namhyung
 
-> 
-> Kernel panic log:
-> [   30.839284] Unable to handle kernel paging request at virtual address 5f343173
-> [   30.846476] pgd = dee14000
-> [   30.849165] [5f343173] *pgd=00000000
-> [   30.852703] Internal error: Oops: 805 [#1] PREEMPT SMP ARM
-> [   30.858166] Modules linked in:
-> [   30.861208] CPU: 0 PID: 1 Comm: bash Not tainted 3.16.0-rc2-00239-g94bdf617b07e-dirty #40
-> [   30.869364] task: df478000 ti: df480000 task.ti: df480000
-> [   30.874752] PC is at clkdev_add+0x2c/0x38
-> [   30.878738] LR is at clkdev_add+0x18/0x38
-> [   30.882732] pc : [<c0350908>]    lr : [<c03508f4>]    psr: 60000013
-> [   30.882732] sp : df481e78  ip : 00000001  fp : c0700ed8
-> [   30.894187] r10: 0000000c  r9 : 00000000  r8 : c07b0e3c
-> [   30.899396] r7 : 00000002  r6 : df45f9d0  r5 : df421390  r4 : c0700d6c
-> [   30.905906] r3 : 5f343173  r2 : c0700d84  r1 : 60000013  r0 : c0700d6c
-> [   30.912417] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-> [   30.919534] Control: 10c53c7d  Table: 5ee1406a  DAC: 00000015
-> [   30.925262] Process bash (pid: 1, stack limit = 0xdf480240)
-> [   30.930817] Stack: (0xdf481e78 to 0xdf482000)
-> [   30.935159] 1e60:                                                       00001000 df6de610
-> [   30.943321] 1e80: df7f4558 c0355650 c05ec6ec c0700eb0 df6de600 df7f4510 dec9d69c 00000014
-> [   30.951480] 1ea0: 00167b48 df6de610 c0700e30 c0713518 00000000 c0700e30 dec9d69c 00000006
-> [   30.959639] 1ec0: 00167b48 c02c1b7c c02c1b64 df6de610 c07aff48 c02c0420 c06fb150 c047cc20
-> [   30.967798] 1ee0: df6de610 df6de610 c0700e30 df6de644 c06fb150 0000000c dec9d690 c02bef90
-> [   30.975957] 1f00: dec9c6c0 dece4c00 df481f80 dece4c00 0000000c c02be73c 0000000c c016ca8c
-> [   30.984116] 1f20: c016ca48 00000000 00000000 c016c1f4 00000000 00000000 b6f18000 df481f80
-> [   30.992276] 1f40: df7f66c0 0000000c df480000 df480000 b6f18000 c011094c df47839c 60000013
-> [   31.000435] 1f60: 00000000 00000000 df7f66c0 df7f66c0 0000000c df480000 b6f18000 c0110dd4
-> [   31.008594] 1f80: 00000000 00000000 0000000c b6ec05d8 0000000c b6f18000 00000004 c000f2a8
-> [   31.016753] 1fa0: 00001000 c000f0e0 b6ec05d8 0000000c 00000001 b6f18000 0000000c 00000000
-> [   31.024912] 1fc0: b6ec05d8 0000000c b6f18000 00000004 0000000c 00000001 00000000 00167b48
-> [   31.033071] 1fe0: 00000000 bed83a80 b6e004f0 b6e5122c 60000010 00000001 ffffffff ffffffff
-> [   31.041248] [<c0350908>] (clkdev_add) from [<c0355650>] (s2mps11_clk_probe+0x2b4/0x3b4)
-> [   31.049223] [<c0355650>] (s2mps11_clk_probe) from [<c02c1b7c>] (platform_drv_probe+0x18/0x48)
-> [   31.057728] [<c02c1b7c>] (platform_drv_probe) from [<c02c0420>] (driver_probe_device+0x13c/0x384)
-> [   31.066579] [<c02c0420>] (driver_probe_device) from [<c02bef90>] (bind_store+0x88/0xd8)
-> [   31.074564] [<c02bef90>] (bind_store) from [<c02be73c>] (drv_attr_store+0x20/0x2c)
-> [   31.082118] [<c02be73c>] (drv_attr_store) from [<c016ca8c>] (sysfs_kf_write+0x44/0x48)
-> [   31.090016] [<c016ca8c>] (sysfs_kf_write) from [<c016c1f4>] (kernfs_fop_write+0xc0/0x17c)
-> [   31.098176] [<c016c1f4>] (kernfs_fop_write) from [<c011094c>] (vfs_write+0xa0/0x1c4)
-> [   31.105899] [<c011094c>] (vfs_write) from [<c0110dd4>] (SyS_write+0x40/0x8c)
-> [   31.112931] [<c0110dd4>] (SyS_write) from [<c000f0e0>] (ret_fast_syscall+0x0/0x3c)
-> [   31.120481] Code: e2842018 e584501c e1a00004 e885000c (e5835000)
-> [   31.126596] ---[ end trace efad45bfa3a61b05 ]---
-> [   31.131181] Kernel panic - not syncing: Fatal exception
-> [   31.136368] CPU1: stopping
-> [   31.139054] CPU: 1 PID: 0 Comm: swapper/1 Tainted: G      D       3.16.0-rc2-00239-g94bdf617b07e-dirty #40
-> [   31.148697] [<c0016480>] (unwind_backtrace) from [<c0012950>] (show_stack+0x10/0x14)
-> [   31.156419] [<c0012950>] (show_stack) from [<c0480db8>] (dump_stack+0x80/0xcc)
-> [   31.163622] [<c0480db8>] (dump_stack) from [<c001499c>] (handle_IPI+0x130/0x15c)
-> [   31.170998] [<c001499c>] (handle_IPI) from [<c000862c>] (gic_handle_irq+0x60/0x68)
-> [   31.178549] [<c000862c>] (gic_handle_irq) from [<c0013480>] (__irq_svc+0x40/0x70)
-> [   31.186009] Exception stack(0xdf4bdf88 to 0xdf4bdfd0)
-> [   31.191046] df80:                   ffffffed 00000000 00000000 00000000 df4bc000 c06d042c
-> [   31.199207] dfa0: 00000000 ffffffed c06d03c0 00000000 c070c288 00000000 00000000 df4bdfd0
-> [   31.207363] dfc0: c0010324 c0010328 60000013 ffffffff
-> [   31.212402] [<c0013480>] (__irq_svc) from [<c0010328>] (arch_cpu_idle+0x28/0x30)
-> [   31.219783] [<c0010328>] (arch_cpu_idle) from [<c005f150>] (cpu_startup_entry+0x2c4/0x3f0)
-> [   31.228027] [<c005f150>] (cpu_startup_entry) from [<400086c4>] (0x400086c4)
-> [   31.234968] ---[ end Kernel panic - not syncing: Fatal exception
-> 
-> Fixes: 7cc560dea415 ("clk: s2mps11: Add support for s2mps11")
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> 
-> ---
-> 
-> Changes since v1:
-> 1. Allocate memory for clk_lookup with clkdev_alloc() instead of
->    kzalloc(). Suggested by Yadwinder Singh Brar.
-> ---
->  drivers/clk/clk-s2mps11.c | 7 ++-----
->  1 file changed, 2 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
-> index 9b7b5859a420..3757e9e72d37 100644
-> --- a/drivers/clk/clk-s2mps11.c
-> +++ b/drivers/clk/clk-s2mps11.c
-> @@ -230,16 +230,13 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
->                         goto err_reg;
->                 }
->  
-> -               s2mps11_clk->lookup = devm_kzalloc(&pdev->dev,
-> -                                       sizeof(struct clk_lookup), GFP_KERNEL);
-> +               s2mps11_clk->lookup = clkdev_alloc(s2mps11_clk->clk,
-> +                                       s2mps11_name(s2mps11_clk), NULL);
->                 if (!s2mps11_clk->lookup) {
->                         ret = -ENOMEM;
->                         goto err_lup;
->                 }
->  
-> -               s2mps11_clk->lookup->con_id = s2mps11_name(s2mps11_clk);
-> -               s2mps11_clk->lookup->clk = s2mps11_clk->clk;
-> -
->                 clkdev_add(s2mps11_clk->lookup);
->         }
->  
-> -- 
-> 1.9.1
-> 
+
+> +	({ \
+> +		int _ret; \
+> +		if (cur_stack == 0) \
+> +			_ret = -1; \
+> +		else \
+> +			_ret = stack[cur_stack - 1]; \
+> +		_ret; \
+> +	 })
+> +
+> +#define POP_INT() \
+> +	({ \
+> +		int _ret; \
+> +		if (cur_stack == 0) \
+> +			_ret = -1; \
+> +		else \
+> +			_ret = stack[--cur_stack]; \
+> +		_ret; \
+> +	 })
