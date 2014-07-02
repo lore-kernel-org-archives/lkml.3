@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323AbaGBNBV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 09:01:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42677 "EHLO mx2.suse.de"
+	id S1753077AbaGBNFy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 09:05:54 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49791 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751538AbaGBNBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 09:01:19 -0400
-Date: Wed, 2 Jul 2014 15:01:16 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-cc: Tejun Heo <tj@kernel.org>, Jiri Slaby <jslaby@suse.cz>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, mingo@redhat.com, akpm@linux-foundation.org,
-        andi@firstfloor.org, paulmck@linux.vnet.ibm.com, pavel@ucw.cz,
-        jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
-        Michael Matz <matz@suse.de>
-Subject: Re: kGraft to -next [was: 00/21 kGraft]
-In-Reply-To: <20140702134721.00163886@alan.etchedpixels.co.uk>
-Message-ID: <alpine.LNX.2.00.1407021459330.1655@pobox.suse.cz>
-References: <1403694329-3064-1-git-send-email-jslaby@suse.cz> <53B3F556.7050002@suse.cz> <20140702123002.GA20071@mtj.dyndns.org> <20140702134721.00163886@alan.etchedpixels.co.uk>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751770AbaGBNFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 09:05:53 -0400
+Message-ID: <53B403AF.60505@ti.com>
+Date: Wed, 2 Jul 2014 08:05:51 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
+        <balbi@ti.com>
+CC: <nsekhar@ti.com>, <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Rajendra Nayak <rnayak@ti.com>, Tero Kristo <t-kristo@ti.com>
+Subject: Re: [PATCH 1/6] ARM: dts: dra7-evm: Make VDDA_1V8_PHY supply always
+ on
+References: <1404302638-3003-1-git-send-email-rogerq@ti.com> <1404302638-3003-2-git-send-email-rogerq@ti.com>
+In-Reply-To: <1404302638-3003-2-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jul 2014, One Thousand Gnomes wrote:
+On 07/02/2014 07:03 AM, Roger Quadros wrote:
+> After clarification from the hardware team it was found that
+> this 1.8V PHY supply can't be switched OFF when SoC is Active.
+> It can only be switched off when in PORz (power on reset).
 
-> > > > https://git.kernel.org/cgit/linux/kernel/git/jirislaby/kgraft.git/log/?h=kgraft
-> > > 
-> > > Stephen,
-> > > 
-> > > may I ask you to add the kGraft tree to -next?
-> > > 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/jirislaby/kgraft.git#kgraft
-> > 
-> > Do we have consensus on the approach?  I personally really don't like
-> > the fact that it's adding another aspect to kthread management which
-> > is difficult to get right and nearly impossible to verify
-> > automatically.
+I dont think folks know the reasoning why hardware team decided that
+the voltage rail cannot be switched off -> I suggest adding the
+following information as well.
+
+Since isolation is not present in the design for these PHY IPs to
+allow for the PHY rail to be switched off, there is a very high risk
+of IP reliability and additional leakage paths which can result in
+additional power consumption.
+
+Only scenario where this rail can be switched off is part of Power on
+reset sequencing, but it needs to be kept always-on during operation.
+
 > 
-> Nor me. I don't see why it can't use the kernel freeze functionality ?
+> This patch is required for proper functionality of USB, SATA
+> and PCIe on DRA7-evm.
+> 
+> CC: Rajendra Nayak <rnayak@ti.com>
+> CC: Tero Kristo <t-kristo@ti.com>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  arch/arm/boot/dts/dra7-evm.dts | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
+> index 4adc280..8308954 100644
+> --- a/arch/arm/boot/dts/dra7-evm.dts
+> +++ b/arch/arm/boot/dts/dra7-evm.dts
+> @@ -240,6 +240,7 @@
+>  					regulator-name = "ldo3";
+>  					regulator-min-microvolt = <1800000>;
+>  					regulator-max-microvolt = <1800000>;
+> +					regulator-always-on;
+>  					regulator-boot-on;
+>  				};
+>  
+> 
 
-Well, we are, see the patch no. 9. It all boils down basically to
-
-[ ... ]
-diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index 7fd81b8c4897..e08c3bef251b 100644
---- a/include/linux/freezer.h
-+++ b/include/linux/freezer.h
-@@ -61,6 +61,8 @@ static inline bool try_to_freeze_unsafe(void)
- 
- static inline bool try_to_freeze(void)
- {
-+       kgr_task_safe(current);
-+
-        if (!(current->flags & PF_NOFREEZE))
-                debug_check_no_locks_held();
-        return try_to_freeze_unsafe();
-[ ... ]
-
-
-Then there are non-freezable kernel threads. We are currently handling 
-those explicitly, but I agree it can be argued that they might not require 
-any special handling at all, given they claimed themselves explicitly 
-non-freezable.
 
 -- 
-Jiri Kosina
-SUSE Labs
+Regards,
+Nishanth Menon
