@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061AbaGBK25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 06:28:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23021 "EHLO mx1.redhat.com"
+	id S1753219AbaGBK3B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 06:29:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59387 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852AbaGBK2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 06:28:54 -0400
+	id S1751228AbaGBK27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 06:28:59 -0400
 From: Amit Shah <amit.shah@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
         Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
         keescook@chromium.org, jason@lakedaemon.net,
         Amit Shah <amit.shah@redhat.com>, <stable@vger.kernel.org>
-Subject: [PATCH 1/2] hwrng: don't fetch rng from sources without init
-Date: Wed,  2 Jul 2014 15:58:15 +0530
-Message-Id: <c911b7944f2d05f5c6f5cf5dc37b8dbb99fd0b14.1404296679.git.amit.shah@redhat.com>
+Subject: [PATCH 2/2] virtio: rng: introduce an init fn for hwrng core
+Date: Wed,  2 Jul 2014 15:58:16 +0530
+Message-Id: <5308626c48a1d16982bf6626a2a0b4cd5e4ade4d.1404296679.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1404296679.git.amit.shah@redhat.com>
 References: <cover.1404296679.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1404296679.git.amit.shah@redhat.com>
@@ -23,20 +23,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
-added a call to rng_get_data() from the hwrng_register() function.
-However, some rng devices need initialization before data can be read
-from them.
+The hwrng core asks for random data in the hwrng_register() call itself
+from commit d9e7972619.  This doesn't play well with virtio -- the
+DRIVER_OK bit is only set by virtio core on a successful probe, and
+we're not yet out of our probe routine when this call is made.  This
+causes the host to not acknowledge any requests we put in the virtqueue,
+and the insmod or kernel boot process just waits for data to arrive from
+the host, which never happens.
 
-Also, the virtio-rng device does not behave properly when this call is
-made in its probe() routine - the virtio core sets the DRIVER_OK status
-bit only on a successful probe, which means the host ignores all
-communication from the guest, and the guest insmod or boot process just
-sits there doing nothing.
-
-This commit makes the call to rng_get_data() depend on no init fn
-pointer being registered by the device.  If an init function is
-registered, this call isn't made.
+The previous commit makes the hwrng core check for on an init function
+in the hwrng struct that's registered.  If such a fn exists, the request
+for random data isn't made, and the stall when loading the module
+doesn't happen.
 
 CC: Kees Cook <keescook@chromium.org>
 CC: Jason Cooper <jason@lakedaemon.net>
@@ -44,28 +42,38 @@ CC: Herbert Xu <herbert@gondor.apana.org.au>
 CC: <stable@vger.kernel.org> # For 3.15 only
 Signed-off-by: Amit Shah <amit.shah@redhat.com>
 ---
- drivers/char/hw_random/core.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/char/hw_random/virtio-rng.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-index 334601c..3f3941d 100644
---- a/drivers/char/hw_random/core.c
-+++ b/drivers/char/hw_random/core.c
-@@ -347,9 +347,11 @@ int hwrng_register(struct hwrng *rng)
- 	INIT_LIST_HEAD(&rng->list);
- 	list_add_tail(&rng->list, &rng_list);
+diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
+index f3e7150..c8471ef 100644
+--- a/drivers/char/hw_random/virtio-rng.c
++++ b/drivers/char/hw_random/virtio-rng.c
+@@ -93,6 +93,16 @@ static void virtio_cleanup(struct hwrng *rng)
+ 		wait_for_completion(&vi->have_data);
+ }
  
--	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
--	if (bytes_read > 0)
--		add_device_randomness(bytes, bytes_read);
-+	if (!rng->init) {
-+		bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
-+		if (bytes_read > 0)
-+			add_device_randomness(bytes, bytes_read);
-+	}
- out_unlock:
- 	mutex_unlock(&rng_mutex);
- out:
++int virtio_init(struct hwrng *rng)
++{
++	/*
++	 * Empty function to ensure hwrandom core does not ask us for
++	 * randomness during hwrng_register phase.  This prevents us
++	 * from exiting to host without VIRTIO_CONFIG_S_DRIVER_OK set.
++	 */
++	return 0;
++}
++
+ static int probe_common(struct virtio_device *vdev)
+ {
+ 	int err, index;
+@@ -111,6 +121,7 @@ static int probe_common(struct virtio_device *vdev)
+ 	init_completion(&vi->have_data);
+ 
+ 	vi->hwrng = (struct hwrng) {
++		.init = virtio_init,
+ 		.read = virtio_read,
+ 		.cleanup = virtio_cleanup,
+ 		.priv = (unsigned long)vi,
 -- 
 1.9.3
 
