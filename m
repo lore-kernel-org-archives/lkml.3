@@ -1,52 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685AbaGBLU6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 07:20:58 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:45904 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751228AbaGBLU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 07:20:56 -0400
-Message-ID: <53B3EAE2.4040101@ti.com>
-Date: Wed, 2 Jul 2014 16:50:02 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753227AbaGBLVN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 07:21:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44809 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612AbaGBLVK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 07:21:10 -0400
 MIME-Version: 1.0
-To: Zhangfei Gao <zhangfei.gao@linaro.org>, <arnd@arndb.de>,
-        <mark.rutland@arm.com>, <haifeng.yan@linaro.org>, <jchxue@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, Jiancheng Xue <xuejiancheng@huawei.com>
-Subject: Re: [PATCH v2 1/2] Documentation: Document Hisilicon hix5hd2 sata
- PHY
-References: <1403687648-29082-1-git-send-email-zhangfei.gao@linaro.org> <1403687648-29082-2-git-send-email-zhangfei.gao@linaro.org>
-In-Reply-To: <1403687648-29082-2-git-send-email-zhangfei.gao@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <s5hha3058j2.wl%tiwai@suse.de>
+References: <1404270473-4285-1-git-send-email-mcgrof@do-not-panic.com>
+	<s5hha3058j2.wl%tiwai@suse.de>
+Date: Wed, 2 Jul 2014 19:21:07 +0800
+Message-ID: <CACVXFVOSLVPFanNavDVoPLM9YBrxxNm_PCuZwBahVY74+1=niw@mail.gmail.com>
+Subject: Re: [PATCH v2] firmware loader: inform direct failure when udev
+ loader is disabled
+From: Ming Lei <ming.lei@canonical.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>, Tom Gundersen <teg@jklm.no>,
+        Abhay Salunke <Abhay_Salunke@dell.com>, Stefan Roese <sr@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Kay Sievers <kay@vrfy.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jul 2, 2014 at 7:01 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Tue,  1 Jul 2014 20:07:53 -0700,
+> Luis R. Rodriguez wrote:
+>>
+>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>>
+>> Now that the udev firmware loader is optional request_firmware()
+>> will not provide any information on the kernel ring buffer if
+>> direct firmware loading failed and udev firmware loading is disabled.
+>> If no information is needed request_firmware_direct() should be used
+>> for optional firmware, at which point drivers can take on the onus
+>> over informing of any failures, if udev firmware loading is disabled
+>> though we should at the very least provide some sort of information
+>> as when the udev loader was enabled by default back in the days.
+>>
+>> With this change with a simple firmware load test module [0]:
+>>
+>> Example output without FW_LOADER_USER_HELPER_FALLBACK
+>>
+>> platform fake-dev.0: Direct firmware load for fake.bin failed
+>> with error -2
+>>
+>> Example with FW_LOADER_USER_HELPER_FALLBACK
+>>
+>> platform fake-dev.0: Direct firmware load for fake.bin failed with error -2
+>> platform fake-dev.0: Falling back to user helper
+>>
+>> Without this change without FW_LOADER_USER_HELPER_FALLBACK we
+>> get no output logged upon failure.
+>>
+>> Cc: Tom Gundersen <teg@jklm.no>
+>> Cc: Ming Lei <ming.lei@canonical.com>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Cc: Abhay Salunke <Abhay_Salunke@dell.com>
+>> Cc: Stefan Roese <sr@denx.de>
+>> Cc: Arnd Bergmann <arnd@arndb.de>
+>> Cc: Kay Sievers <kay@vrfy.org>
+>> Cc: Takashi Iwai <tiwai@suse.de>
+>> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+>> ---
+>>
+>> This v2 modifies the error to always be called and only in the
+>> request_firmware_direct case do we not send smoke signals.
+>>
+>>  drivers/base/firmware_class.c | 13 +++++++------
+>>  include/linux/firmware.h      | 15 ++++++++-------
+>>  2 files changed, 15 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+>> index 46ea5f4..60d0e53 100644
+>> --- a/drivers/base/firmware_class.c
+>> +++ b/drivers/base/firmware_class.c
+>> @@ -109,6 +109,7 @@ static inline long firmware_loading_timeout(void)
+>>  #else
+>>  #define FW_OPT_FALLBACK              0
+>>  #endif
+>> +#define FW_OPT_DIRECT_ONLY (1U << 3)
+>
+> I'd name it like FW_OPT_NO_WARN or such.
+> Other than that, looks good to me.
 
-On Wednesday 25 June 2014 02:44 PM, Zhangfei Gao wrote:
-> From: Jiancheng Xue <xuejiancheng@huawei.com>
-> 
-> Add necessary binding documentation SATA PHY on Hisilicon hix5hd2 soc.
-> 
-> Signed-off-by: Jiancheng Xue <xuejiancheng@huawei.com>
-> Signed-off-by: Zhangfei Gao <zhangfei.gao@linaro.org>
-> ---
->  .../devicetree/bindings/phy/hix5hd2-sata-phy.txt   |   22 ++++++++++++++++++++
->  1 file changed, 22 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/phy/hix5hd2-sata-phy.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/phy/hix5hd2-sata-phy.txt b/Documentation/devicetree/bindings/phy/hix5hd2-sata-phy.txt
-> new file mode 100644
-> index 0000000..296168b
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/phy/hix5hd2-sata-phy.txt
+IMO, DIRECT_ONLY is better because it can be
+extend to other usages in future.
 
-Generally we have a single file for a SoC while adding phy binding
-documentation. So just make it hix5hd2-phy.txt.
-
-Thanks
-Kishon
+Thanks,
+--
+Ming Lei
