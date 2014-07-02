@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751409AbaGBIFG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 04:05:06 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41209 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751110AbaGBIFA (ORCPT
+	id S1751539AbaGBIJo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 04:09:44 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:62253 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaGBIJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 04:05:00 -0400
-Date: Wed, 2 Jul 2014 10:04:46 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/33] ARM: at91/dt: rm9200: define clocks
-Message-ID: <20140702100446.14910191@bbrezillon>
-In-Reply-To: <1404223962-30471-6-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com>
-	<1404223962-30471-6-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 2 Jul 2014 04:09:40 -0400
+Message-ID: <53B3BE3E.3080802@suse.cz>
+Date: Wed, 02 Jul 2014 10:09:34 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: stable@vger.kernel.org, linux@roeck-us.net, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.12 000/181] 3.12.24-stable review
+References: <cover.1404128997.git.jslaby@suse.cz> <20140701235359.GJ4453@dastard>
+In-Reply-To: <20140701235359.GJ4453@dastard>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Alexandre,
-
-On Tue,  1 Jul 2014 16:12:14 +0200
-Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
-
-> Signed-off-by: Alexandre Belloni
-> <alexandre.belloni@free-electrons.com> ---
->  arch/arm/boot/dts/at91rm9200.dtsi | 304
-> ++++++++++++++++++++++++++++++++++++++ 1 file changed, 304
-> insertions(+)
+On 07/02/2014 01:53 AM, Dave Chinner wrote:
+> On Mon, Jun 30, 2014 at 01:51:22PM +0200, Jiri Slaby wrote:
+>> This is the start of the stable review cycle for the 3.12.24 release.
+>> There are 181 patches in this series, all will be posted as a response
+>> to this one.  If anyone has any issues with these being applied, please
+>> let me know.
+> .....
+>> Dave Chinner (3):
+>>   xfs: prevent deadlock trying to cover an active log
+>>   xfs: prevent stack overflows from page cache allocation
+>>   xfs: xfs_remove deadlocks due to inverted AGF vs AGI lock ordering
 > 
-> diff --git a/arch/arm/boot/dts/at91rm9200.dtsi
-> b/arch/arm/boot/dts/at91rm9200.dtsi index c61b16fba79b..477cfe570f47
-> 100644 --- a/arch/arm/boot/dts/at91rm9200.dtsi
-> +++ b/arch/arm/boot/dts/at91rm9200.dtsi
-> @@ -14,6 +14,7 @@
->  #include <dt-bindings/pinctrl/at91.h>
->  #include <dt-bindings/interrupt-controller/irq.h>
->  #include <dt-bindings/gpio/gpio.h>
-> +#include <dt-bindings/clock/at91.h>
->  
->  / {
->  	model = "Atmel AT91RM9200 family SoC";
-> @@ -51,6 +52,20 @@
->  		reg = <0x20000000 0x04000000>;
->  	};
->  
-> +	clocks {
+> None of the XFS patches you're backporting were marked for stable.
+> What criteria did you choose them by, and how are you testing the
+> result?
 
-[...]
+Hi Dave,
 
-> +
-> +					tcb0_clk: tcb0_clk {
-> +						#clock-cells = <0>;
-> +						reg = <17>;
-> +					};
-> +
-> +					tcb1_clk: tcb1_clk {
-> +						#clock-cells = <0>;
-> +						reg = <18>;
-> +					};
-> +
-> +					tcb2_clk: tcb2_clk {
-> +						#clock-cells = <0>;
-> +						reg = <19>;
-> +					};
-> +
-> +					tcb3_clk: tcb3_clk {
-> +						#clock-cells = <0>;
-> +						reg = <20>;
-> +					};
-> +
-> +					tcb4_clk: tcb4_clk {
-> +						#clock-cells = <0>;
-> +						reg = <21>;
-> +					};
-> +
-> +					tcb5_clk: tcb5_clk {
-> +						#clock-cells = <0>;
-> +						reg = <22>;
-> +					};
+these patches are in SUSE's enterprise linux based on 3.12. So I picked
+them from there. Testing is covered by our QA, but of course, with some
+additional patches on the top of them which do not satisfy the stable
+rules (because they add features).
 
-Just a nitpick, but the names defined in at91rm9200.c and in the
-datasheet are tcX_clk and not tcbX_clk.
+> Randomly picked XFS backports have a nasty habit of causing
+> regressions, and it's always me that is on the pointy end of having
+> to triage problems users report with those backports...
 
-Best Regards,
+Despite the patches fix real problems, if you prefer me not to take such
+patches, I will drop them and will apply no more.
 
-Boris
-
-
-
+thanks,
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+js
+suse labs
