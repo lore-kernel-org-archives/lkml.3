@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675AbaGBVp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 17:45:57 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:59753 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228AbaGBVp4 (ORCPT
+	id S932444AbaGBVqD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 17:46:03 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:57116 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932418AbaGBVqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 17:45:56 -0400
+	Wed, 2 Jul 2014 17:46:00 -0400
 From: Dan Streetman <ddstreet@ieee.org>
 To: Seth Jennings <sjennings@variantweb.net>, Minchan Kim <minchan@kernel.org>,
         Weijie Yang <weijie.yang@samsung.com>, Nitin Gupta <ngupta@vflare.org>
@@ -18,80 +18,73 @@ Cc: Dan Streetman <ddstreet@ieee.org>,
         Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
         Linux-MM <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCHv5 0/4] mm/zpool: add common api for zswap to use zbud/zsmalloc
-Date: Wed,  2 Jul 2014 17:45:32 -0400
-Message-Id: <1404337536-11037-1-git-send-email-ddstreet@ieee.org>
+Subject: [PATCHv2 1/4] mm/zbud: change zbud_alloc size type to size_t
+Date: Wed,  2 Jul 2014 17:45:33 -0400
+Message-Id: <1404337536-11037-2-git-send-email-ddstreet@ieee.org>
 X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1401747586-11861-1-git-send-email-ddstreet@ieee.org>
+In-Reply-To: <1404337536-11037-1-git-send-email-ddstreet@ieee.org>
 References: <1401747586-11861-1-git-send-email-ddstreet@ieee.org>
+ <1404337536-11037-1-git-send-email-ddstreet@ieee.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to allow zswap users to choose between zbud and zsmalloc for
-the compressed storage pool, this patch set adds a new api "zpool" that
-provides an interface to both zbud and zsmalloc.  This does not include
-implementing shrinking in zsmalloc, which will be sent separately.
+Change the type of the zbud_alloc() size param from unsigned int
+to size_t.
 
-I believe Seth originally was using zsmalloc for swap, but there were
-concerns about how significant the impact of shrinking zsmalloc would
-be when zswap had to start reclaiming pages.  That still may be an
-issue, but this at least allows users to choose themselves whether
-they want a lower-density or higher-density compressed storage medium.
-At least for situations where zswap reclaim is never or rarely reached,
-it probably makes sense to use the higher density of zsmalloc.
+Technically, this should not make any difference, as the zbud
+implementation already restricts the size to well within either
+type's limits; but as zsmalloc (and kmalloc) use size_t, and
+zpool will use size_t, this brings the size parameter type
+in line with zsmalloc/zpool.
 
-Note this patch set does not change zram to use zpool, although that
-change should be possible as well.
-
+Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+Acked-by: Seth Jennings <sjennings@variantweb.net>
+Cc: Weijie Yang <weijie.yang@samsung.com>
 ---
-Changes since v4 : https://lkml.org/lkml/2014/6/2/711
-  -omit first patch, that removed gfp_t param from zpool_malloc()
-  -move function doc from zpool.h to zpool.c
-  -move module usage refcounting into patch that adds zpool
-  -add extra refcounting to prevent driver unregister if in use
-  -add doc clarifying concurrency usage
-  -make zbud/zsmalloc zpool functions static
-  -typo corrections
 
-Changes since v3 : https://lkml.org/lkml/2014/5/24/130
-  -In zpool_shrink() use # pages instead of # bytes
-  -Add reclaimed param to zpool_shrink() to indicate to caller
-   # pages actually reclaimed
-  -move module usage counting to zpool, from zbud/zsmalloc
-  -update zbud_zpool_shrink() to call zbud_reclaim_page() in a
-   loop until requested # pages have been reclaimed (or error)
+Changes since v1 : https://lkml.org/lkml/2014/5/7/757
+  -context change due to omitting patch to remove gfp_t param
 
-Changes since v2 : https://lkml.org/lkml/2014/5/7/927
-  -Change zpool to use driver registration instead of hardcoding
-   implementations
-  -Add module use counting in zbud/zsmalloc
+ include/linux/zbud.h | 2 +-
+ mm/zbud.c            | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-Changes since v1 https://lkml.org/lkml/2014/4/19/97
- -remove zsmalloc shrinking
- -change zbud size param type from unsigned int to size_t
- -remove zpool fallback creation
- -zswap manually falls back to zbud if specified type fails
-
-
-Dan Streetman (4):
-  mm/zbud: change zbud_alloc size type to size_t
-  mm/zpool: implement common zpool api to zbud/zsmalloc
-  mm/zpool: zbud/zsmalloc implement zpool
-  mm/zpool: update zswap to use zpool
-
- include/linux/zbud.h  |   2 +-
- include/linux/zpool.h | 106 +++++++++++++++
- mm/Kconfig            |  43 +++---
- mm/Makefile           |   1 +
- mm/zbud.c             |  98 +++++++++++++-
- mm/zpool.c            | 364 ++++++++++++++++++++++++++++++++++++++++++++++++++
- mm/zsmalloc.c         |  84 ++++++++++++
- mm/zswap.c            |  75 ++++++-----
- 8 files changed, 722 insertions(+), 51 deletions(-)
- create mode 100644 include/linux/zpool.h
- create mode 100644 mm/zpool.c
-
+diff --git a/include/linux/zbud.h b/include/linux/zbud.h
+index 13af0d4..f9d41a6 100644
+--- a/include/linux/zbud.h
++++ b/include/linux/zbud.h
+@@ -11,7 +11,7 @@ struct zbud_ops {
+ 
+ struct zbud_pool *zbud_create_pool(gfp_t gfp, struct zbud_ops *ops);
+ void zbud_destroy_pool(struct zbud_pool *pool);
+-int zbud_alloc(struct zbud_pool *pool, unsigned int size, gfp_t gfp,
++int zbud_alloc(struct zbud_pool *pool, size_t size, gfp_t gfp,
+ 	unsigned long *handle);
+ void zbud_free(struct zbud_pool *pool, unsigned long handle);
+ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries);
+diff --git a/mm/zbud.c b/mm/zbud.c
+index 01df13a..d012261 100644
+--- a/mm/zbud.c
++++ b/mm/zbud.c
+@@ -122,7 +122,7 @@ enum buddy {
+ };
+ 
+ /* Converts an allocation size in bytes to size in zbud chunks */
+-static int size_to_chunks(int size)
++static int size_to_chunks(size_t size)
+ {
+ 	return (size + CHUNK_SIZE - 1) >> CHUNK_SHIFT;
+ }
+@@ -247,7 +247,7 @@ void zbud_destroy_pool(struct zbud_pool *pool)
+  * gfp arguments are invalid or -ENOMEM if the pool was unable to allocate
+  * a new page.
+  */
+-int zbud_alloc(struct zbud_pool *pool, unsigned int size, gfp_t gfp,
++int zbud_alloc(struct zbud_pool *pool, size_t size, gfp_t gfp,
+ 			unsigned long *handle)
+ {
+ 	int chunks, i, freechunks;
 -- 
 1.8.3.1
 
