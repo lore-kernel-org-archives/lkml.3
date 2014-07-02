@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382AbaGBK4M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 06:56:12 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:39694 "EHLO SMTP.CITRIX.COM"
+	id S1752805AbaGBK5D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 06:57:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38431 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751536AbaGBK4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 06:56:10 -0400
-X-IronPort-AV: E=Sophos;i="5.01,587,1400025600"; 
-   d="scan'208";a="149210309"
-Message-ID: <1404298567.5562.13.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH net-next] xen-netback: Adding debugfs "io_ring_qX" files
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: Wei Liu <wei.liu2@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Date: Wed, 2 Jul 2014 11:56:07 +0100
-In-Reply-To: <1404160411-23747-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1404160411-23747-1-git-send-email-zoltan.kiss@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
+	id S1752630AbaGBK5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 06:57:01 -0400
+Subject: [PATCH] Fix compiler message generation
+From: David Howells <dhowells@redhat.com>
+To: torvalds@linux-foundation.org
+Cc: dhowells@redhat.com, mmarek@suse.cz, sam@ravnborg.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Date: Wed, 02 Jul 2014 11:56:46 +0100
+Message-ID: <20140702105645.17220.92338.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-06-30 at 21:33 +0100, Zoltan Kiss wrote:
-> This patch adds debugfs capabilities to netback. There used to be a similar
-> patch floating around for classic kernel, but it used procfs. It is based on a
-> very similar blkback patch.
-> It creates xen-netback/[vifname]/io_ring_q[queueno] files, reading them output
-> various ring variables etc. Writing "kick" into it imitates an interrupt
-> happened, it can be useful to check whether the ring is just stalled due to a
-> missed interrupt.
+The following commit:
 
-Shouldn't there be some CONFIG_XEN_DEBUG_FS ifdefs sprinkled around
-here?
+	commit 9da0763bdd82572be243fcf5161734f11568960f
+	Author: Michal Marek <mmarek@suse.cz>
+	Date:   Fri Apr 25 23:25:18 2014 +0200
+	Subject: kbuild: Use relative path when building in a subdir of the source tree
 
-> 	if (tx_ring->sring) {
-> +		struct xen_netif_tx_sring *sring = tx_ring->sring;
-> +
-> +		err = snprintf(buf + rv, XEN_NETBACK_DBG_IORING_BUF_SIZE - rv,
-> +			       "TX queue %d: nr_ents %u\n", i,
-> +			       tx_ring->nr_ents);
-> +		if (err >= XEN_NETBACK_DBG_IORING_BUF_SIZE - rv)
-> +			return XEN_NETBACK_DBG_IORING_BUF_SIZE;
-> +		else
-> +			rv += err;
+makes compiler messages relative to the *build* tree if the build tree is a
+subdirectory at the root of the source tree.
 
-Does debugfs not provide helpers which let this be done in some more
-palatable way?
+This is the wrong thing to do since the make command is issued in the *source*
+tree and so any editor or IDE that issues the make command will likely expect
+paths in warnings and errors to be relative either to the current directory at
+the time the make was issued or to the directory in which make was run.
 
-arch/x86/xen/p2m.c seems to use some useful seq_*/single_* helpers for
-something very similar and it looks much cleaner.
+Certainly, this is something I'm seeing with emacs.  I do:
 
-> +	if (vif->xenvif_dbg_root)
+	LANG=C nice -19 make O=build -C /data/fs/linux-2.6-fscache -j4
 
-No IS_ERR check?
+And then I get error messages that look like:
 
-And in backend_disconnect/connect too.
+	../fs/namei.c: In function 'SYSC_linkat':
+	../fs/namei.c:4836:57: error: expected declaration specifiers before 'x'
+		int, newdfd, const char __user *, newname, int, flags)x
 
-Ian.
+which emacs can't find the source for because it doesn't relate to anything
+emacs knows about.
+
+As a temporary measure, fix this by substituting the full path of the source
+as make knows it.
+
+I suspect the correct fix from make's point of view is to issue the build
+command in the build tree and use VPATH to refer to the source, but that would
+likely involve making a lot of Makefiles and would involve a step equivalent
+to autoconf - which is probably not what we want.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Michal Marek <mmarek@suse.cz>
+cc: Sam Ravnborg <sam@ravnborg.org>
+---
+
+ Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+
+diff --git a/Makefile b/Makefile
+index 1317563..def4a75 100644
+--- a/Makefile
++++ b/Makefile
+@@ -155,7 +155,7 @@ ifeq ($(KBUILD_SRC),)
+ else
+         ifeq ($(KBUILD_SRC)/,$(dir $(CURDIR)))
+                 # building in a subdirectory of the source tree
+-                srctree := ..
++                srctree := $(realpath ..)
+         else
+                 srctree := $(KBUILD_SRC)
+         endif
 
