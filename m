@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724AbaGBP3u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 11:29:50 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:56482 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755653AbaGBP3r (ORCPT
+	id S1755880AbaGBPaS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 11:30:18 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:47198 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755584AbaGBP3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 11:29:47 -0400
+	Wed, 2 Jul 2014 11:29:45 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: sameo@linux.intel.com, linus.walleij@linaro.org,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 12/12] mfd: ab8500-core: Resolve code style issues
-Date: Wed,  2 Jul 2014 16:28:44 +0100
-Message-Id: <1404314924-23564-13-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 11/12] mfd: ab3100-core: Correct code sytle problems
+Date: Wed,  2 Jul 2014 16:28:43 +0100
+Message-Id: <1404314924-23564-12-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1404314924-23564-1-git-send-email-lee.jones@linaro.org>
 References: <1404314924-23564-1-git-send-email-lee.jones@linaro.org>
@@ -21,236 +21,251 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Soothes the following checkpatch warnings:
+Corrects the following checkpatch gripes:
 
-    WARNING: line over 80 characters
-    #151: FILE: drivers/mfd/ab8500-core.c:151:
-    +	0, 1, 2, 3, 4, -1, -1, -1, -1, 11, 18, 19, 20, 21, 12, 13, 24, 5, 22, 23,
+    WARNING: quoted string split across lines
+    #95: FILE: drivers/mfd/ab3100-core.c:95:
+    +			"write error (write register) "
+    +			"%d bytes transferred (expected 2)\n",
 
-    ERROR: spaces required around that '=' (ctx:VxW)
-    #325: FILE: drivers/mfd/ab8500-core.c:325:
-    +	ret= mask_and_set_register_interruptible(ab8500, bank, reg,
-     	   ^
+    WARNING: quoted string split across lines
+    #139: FILE: drivers/mfd/ab3100-core.c:139:
+    +			"write error (write test register) "
+    +			"%d bytes transferred (expected 2)\n",
 
-    WARNING: line over 80 characters
-    #418: FILE: drivers/mfd/ab8500-core.c:418:
-    +		else if (offset >= AB9540_INT_GPIO50R && offset <= AB9540_INT_GPIO54R)
+    WARNING: quoted string split across lines
+    #175: FILE: drivers/mfd/ab3100-core.c:175:
+    +			"write error (send register address) "
+    +			"%d bytes transferred (expected 1)\n",
 
-    WARNING: line over 80 characters
-    #420: FILE: drivers/mfd/ab8500-core.c:420:
-    +		else if (offset == AB8540_INT_GPIO43R || offset == AB8540_INT_GPIO44R)
+    WARNING: quoted string split across lines
+    #193: FILE: drivers/mfd/ab3100-core.c:193:
+    +			"write error (read register) "
+    +			"%d bytes transferred (expected 1)\n",
 
-    ERROR: spaces required around that '==' (ctx:VxV)
-    #454: FILE: drivers/mfd/ab8500-core.c:454:
-    +	if ((i==3) && (*offset >= 24))
-     	      ^
+    WARNING: quoted string split across lines
+    #241: FILE: drivers/mfd/ab3100-core.c:241:
+    +			"write error (send first register address) "
+    +			"%d bytes transferred (expected 1)\n",
 
-    ERROR: code indent should use tabs where possible
-    #576: FILE: drivers/mfd/ab8500-core.c:576:
-    +        .map    = ab8500_irq_map,$
+    WARNING: quoted string split across lines
+    #256: FILE: drivers/mfd/ab3100-core.c:256:
+    +			"write error (read register page) "
+    +			"%d bytes transferred (expected %d)\n",
+
+    WARNING: quoted string split across lines
+    #299: FILE: drivers/mfd/ab3100-core.c:299:
+    +			"write error (maskset send address) "
+    +			"%d bytes transferred (expected 1)\n",
+
+    WARNING: quoted string split across lines
+    #314: FILE: drivers/mfd/ab3100-core.c:314:
+    +			"write error (maskset read register) "
+    +			"%d bytes transferred (expected 1)\n",
+
+    WARNING: quoted string split across lines
+    #334: FILE: drivers/mfd/ab3100-core.c:334:
+    +			"write error (write register) "
+    +			"%d bytes transferred (expected 2)\n",
 
     WARNING: please, no spaces at the start of a line
-    #576: FILE: drivers/mfd/ab8500-core.c:576:
-    +        .map    = ab8500_irq_map,$
+    #374: FILE: drivers/mfd/ab3100-core.c:374:
+    +  return blocking_notifier_chain_unregister(&ab3100->event_subscribers,$
 
-    ERROR: code indent should use tabs where possible
-    #577: FILE: drivers/mfd/ab8500-core.c:577:
-    +        .xlate  = irq_domain_xlate_twocell,$
+    WARNING: Prefer seq_puts to seq_printf
+    #458: FILE: drivers/mfd/ab3100-core.c:458:
+    +	seq_printf(s, "AB3100 registers:\n");
 
-    WARNING: please, no spaces at the start of a line
-    #577: FILE: drivers/mfd/ab8500-core.c:577:
-    +        .xlate  = irq_domain_xlate_twocell,$
+    WARNING: quoted string split across lines
+    #564: FILE: drivers/mfd/ab3100-core.c:564:
+    +			 "debug write reg[0x%02x] with 0x%02x, "
+    +			 "after readback: 0x%02x\n",
 
-    WARNING: char * array declaration might be better as static const
-    #1554: FILE: drivers/mfd/ab8500-core.c:1554:
-    +	static char *switch_off_status[] = {
+    WARNING: quoted string split across lines
+    #723: FILE: drivers/mfd/ab3100-core.c:723:
+    +			 "AB3100 P1E variant detected, "
+    +			 "forcing chip to 32KHz\n");
 
-    WARNING: char * array declaration might be better as static const
-    #1563: FILE: drivers/mfd/ab8500-core.c:1563:
-    +	static char *turn_on_status[] = {
+    WARNING: quoted string split across lines
+    #882: FILE: drivers/mfd/ab3100-core.c:882:
+    +			"could not communicate with the AB3100 analog "
+    +			"baseband chip\n");
 
-    WARNING: sizeof *ab8500 should be sizeof(*ab8500)
-    #1582: FILE: drivers/mfd/ab8500-core.c:1582:
-    +	ab8500 = devm_kzalloc(&pdev->dev, sizeof *ab8500, GFP_KERNEL);
+    WARNING: quoted string split across lines
+    #906: FILE: drivers/mfd/ab3100-core.c:906:
+    +		dev_err(&client->dev, "accepting it anyway. Please update "
+    +			"the driver.\n");
 
-    ERROR: space required after that close brace '}'
-    #1639: FILE: drivers/mfd/ab8500-core.c:1639:
-    +	}/* Configure AB8500 or AB9540 IRQ */
-
-    WARNING: line over 80 characters
-    #1652: FILE: drivers/mfd/ab8500-core.c:1652:
-    +	ab8500->oldmask = devm_kzalloc(&pdev->dev, ab8500->mask_size, GFP_KERNEL);
-
-    WARNING: Prefer [subsystem eg: netdev]_cont([subsystem]dev, ... then dev_cont(dev, ... then pr_cont(...  to printk(KERN_CONT ...
-    #1677: FILE: drivers/mfd/ab8500-core.c:1677:
-    +				printk(KERN_CONT " \"%s\"",
-
-    WARNING: Prefer [subsystem eg: netdev]_cont([subsystem]dev, ... then dev_cont(dev, ... then pr_cont(...  to printk(KERN_CONT ...
-    #1682: FILE: drivers/mfd/ab8500-core.c:1682:
-    +		printk(KERN_CONT "\n");
-
-    WARNING: Prefer [subsystem eg: netdev]_cont([subsystem]dev, ... then dev_cont(dev, ... then pr_cont(...  to printk(KERN_CONT ...
-    #1684: FILE: drivers/mfd/ab8500-core.c:1684:
-    +		printk(KERN_CONT " None\n");
-
-    WARNING: printk() should include KERN_ facility level
-    #1695: FILE: drivers/mfd/ab8500-core.c:1695:
-    +				printk("\"%s\" ", turn_on_status[i]);
-
-    WARNING: printk() should include KERN_ facility level
-    #1700: FILE: drivers/mfd/ab8500-core.c:1700:
-    +		printk("None\n");
-
-    total: 5 errors, 14 warnings, 1869 lines checked
+    total: 0 errors, 15 warnings, 999 lines checked
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/ab8500-core.c | 45 ++++++++++++++++++++++++---------------------
- 1 file changed, 24 insertions(+), 21 deletions(-)
+ drivers/mfd/ab3100-core.c | 54 +++++++++++++++++++++++------------------------
+ 1 file changed, 26 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
-index 857f19a..ce48aa7 100644
---- a/drivers/mfd/ab8500-core.c
-+++ b/drivers/mfd/ab8500-core.c
-@@ -148,8 +148,8 @@ static const int ab9540_irq_regoffset[AB9540_NUM_IRQ_REGS] = {
- 
- /* AB8540 support */
- static const int ab8540_irq_regoffset[AB8540_NUM_IRQ_REGS] = {
--	0, 1, 2, 3, 4, -1, -1, -1, -1, 11, 18, 19, 20, 21, 12, 13, 24, 5, 22, 23,
--	25, 26, 27, 28, 29, 30, 31,
-+	0, 1, 2, 3, 4, -1, -1, -1, -1, 11, 18, 19, 20, 21, 12, 13, 24, 5, 22,
-+	23, 25, 26, 27, 28, 29, 30, 31,
- };
- 
- static const char ab8500_version_str[][7] = {
-@@ -322,7 +322,7 @@ static int ab8500_mask_and_set_register(struct device *dev,
- 	struct ab8500 *ab8500 = dev_get_drvdata(dev->parent);
- 
- 	atomic_inc(&ab8500->transfer_ongoing);
--	ret= mask_and_set_register_interruptible(ab8500, bank, reg,
-+	ret = mask_and_set_register_interruptible(ab8500, bank, reg,
- 						 bitmask, bitvalues);
- 	atomic_dec(&ab8500->transfer_ongoing);
- 	return ret;
-@@ -415,9 +415,11 @@ static void ab8500_irq_unmask(struct irq_data *data)
- 	if (type & IRQ_TYPE_EDGE_FALLING) {
- 		if (offset >= AB8500_INT_GPIO6R && offset <= AB8500_INT_GPIO41R)
- 			ab8500->mask[index + 2] &= ~mask;
--		else if (offset >= AB9540_INT_GPIO50R && offset <= AB9540_INT_GPIO54R)
-+		else if (offset >= AB9540_INT_GPIO50R &&
-+			 offset <= AB9540_INT_GPIO54R)
- 			ab8500->mask[index + 1] &= ~mask;
--		else if (offset == AB8540_INT_GPIO43R || offset == AB8540_INT_GPIO44R)
-+		else if (offset == AB8540_INT_GPIO43R ||
-+			 offset == AB8540_INT_GPIO44R)
- 			/* Here the falling IRQ is one bit lower */
- 			ab8500->mask[index] &= ~(mask << 1);
- 		else
-@@ -451,7 +453,7 @@ static void update_latch_offset(u8 *offset, int i)
- 	/* Fix inconsistent ab8540 bit mapping... */
- 	if (unlikely(*offset == 16))
- 			*offset = 25;
--	if ((i==3) && (*offset >= 24))
-+	if ((i == 3) && (*offset >= 24))
- 			*offset += 2;
- }
- 
-@@ -573,8 +575,8 @@ static int ab8500_irq_map(struct irq_domain *d, unsigned int virq,
- }
- 
- static struct irq_domain_ops ab8500_irq_ops = {
--        .map    = ab8500_irq_map,
--        .xlate  = irq_domain_xlate_twocell,
-+	.map    = ab8500_irq_map,
-+	.xlate  = irq_domain_xlate_twocell,
- };
- 
- static int ab8500_irq_init(struct ab8500 *ab8500, struct device_node *np)
-@@ -1551,7 +1553,7 @@ static struct attribute_group ab9540_attr_group = {
- 
- static int ab8500_probe(struct platform_device *pdev)
+diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
+index b348ae5..4659ac1 100644
+--- a/drivers/mfd/ab3100-core.c
++++ b/drivers/mfd/ab3100-core.c
+@@ -91,8 +91,8 @@ static int ab3100_set_register_interruptible(struct ab3100 *ab3100,
+ 			err);
+ 	} else if (err != 2) {
+ 		dev_err(ab3100->dev,
+-			"write error (write register) "
+-			"%d bytes transferred (expected 2)\n",
++			"write error (write register)\n"
++			"  %d bytes transferred (expected 2)\n",
+ 			err);
+ 		err = -EIO;
+ 	} else {
+@@ -135,8 +135,8 @@ static int ab3100_set_test_register_interruptible(struct ab3100 *ab3100,
+ 			err);
+ 	} else if (err != 2) {
+ 		dev_err(ab3100->dev,
+-			"write error (write test register) "
+-			"%d bytes transferred (expected 2)\n",
++			"write error (write test register)\n"
++			"  %d bytes transferred (expected 2)\n",
+ 			err);
+ 		err = -EIO;
+ 	} else {
+@@ -171,8 +171,8 @@ static int ab3100_get_register_interruptible(struct ab3100 *ab3100,
+ 		goto get_reg_out_unlock;
+ 	} else if (err != 1) {
+ 		dev_err(ab3100->dev,
+-			"write error (send register address) "
+-			"%d bytes transferred (expected 1)\n",
++			"write error (send register address)\n"
++			"  %d bytes transferred (expected 1)\n",
+ 			err);
+ 		err = -EIO;
+ 		goto get_reg_out_unlock;
+@@ -189,8 +189,8 @@ static int ab3100_get_register_interruptible(struct ab3100 *ab3100,
+ 		goto get_reg_out_unlock;
+ 	} else if (err != 1) {
+ 		dev_err(ab3100->dev,
+-			"write error (read register) "
+-			"%d bytes transferred (expected 1)\n",
++			"write error (read register)\n"
++			"  %d bytes transferred (expected 1)\n",
+ 			err);
+ 		err = -EIO;
+ 		goto get_reg_out_unlock;
+@@ -237,8 +237,8 @@ static int ab3100_get_register_page_interruptible(struct ab3100 *ab3100,
+ 		goto get_reg_page_out_unlock;
+ 	} else if (err != 1) {
+ 		dev_err(ab3100->dev,
+-			"write error (send first register address) "
+-			"%d bytes transferred (expected 1)\n",
++			"write error (send first register address)\n"
++			"  %d bytes transferred (expected 1)\n",
+ 			err);
+ 		err = -EIO;
+ 		goto get_reg_page_out_unlock;
+@@ -252,8 +252,8 @@ static int ab3100_get_register_page_interruptible(struct ab3100 *ab3100,
+ 		goto get_reg_page_out_unlock;
+ 	} else if (err != numregs) {
+ 		dev_err(ab3100->dev,
+-			"write error (read register page) "
+-			"%d bytes transferred (expected %d)\n",
++			"write error (read register page)\n"
++			"  %d bytes transferred (expected %d)\n",
+ 			err, numregs);
+ 		err = -EIO;
+ 		goto get_reg_page_out_unlock;
+@@ -295,8 +295,8 @@ static int ab3100_mask_and_set_register_interruptible(struct ab3100 *ab3100,
+ 		goto get_maskset_unlock;
+ 	} else if (err != 1) {
+ 		dev_err(ab3100->dev,
+-			"write error (maskset send address) "
+-			"%d bytes transferred (expected 1)\n",
++			"write error (maskset send address)\n"
++			"  %d bytes transferred (expected 1)\n",
+ 			err);
+ 		err = -EIO;
+ 		goto get_maskset_unlock;
+@@ -310,8 +310,8 @@ static int ab3100_mask_and_set_register_interruptible(struct ab3100 *ab3100,
+ 		goto get_maskset_unlock;
+ 	} else if (err != 1) {
+ 		dev_err(ab3100->dev,
+-			"write error (maskset read register) "
+-			"%d bytes transferred (expected 1)\n",
++			"write error (maskset read register)\n"
++			"  %d bytes transferred (expected 1)\n",
+ 			err);
+ 		err = -EIO;
+ 		goto get_maskset_unlock;
+@@ -330,8 +330,8 @@ static int ab3100_mask_and_set_register_interruptible(struct ab3100 *ab3100,
+ 		goto get_maskset_unlock;
+ 	} else if (err != 2) {
+ 		dev_err(ab3100->dev,
+-			"write error (write register) "
+-			"%d bytes transferred (expected 2)\n",
++			"write error (write register)\n"
++			"  %d bytes transferred (expected 2)\n",
+ 			err);
+ 		err = -EIO;
+ 		goto get_maskset_unlock;
+@@ -371,7 +371,7 @@ EXPORT_SYMBOL(ab3100_event_register);
+ int ab3100_event_unregister(struct ab3100 *ab3100,
+ 			    struct notifier_block *nb)
  {
--	static char *switch_off_status[] = {
-+	static const char *switch_off_status[] = {
- 		"Swoff bit programming",
- 		"Thermal protection activation",
- 		"Vbat lower then BattOk falling threshold",
-@@ -1560,7 +1562,7 @@ static int ab8500_probe(struct platform_device *pdev)
- 		"Battery level lower than power on reset threshold",
- 		"Power on key 1 pressed longer than 10 seconds",
- 		"DB8500 thermal shutdown"};
--	static char *turn_on_status[] = {
-+	static const char *turn_on_status[] = {
- 		"Battery rising (Vbat)",
- 		"Power On Key 1 dbF",
- 		"Power On Key 2 dbF",
-@@ -1579,7 +1581,7 @@ static int ab8500_probe(struct platform_device *pdev)
- 	int i;
+-  return blocking_notifier_chain_unregister(&ab3100->event_subscribers,
++	return blocking_notifier_chain_unregister(&ab3100->event_subscribers,
+ 					    nb);
+ }
+ EXPORT_SYMBOL(ab3100_event_unregister);
+@@ -455,7 +455,7 @@ static int ab3100_registers_print(struct seq_file *s, void *p)
  	u8 value;
+ 	u8 reg;
  
--	ab8500 = devm_kzalloc(&pdev->dev, sizeof *ab8500, GFP_KERNEL);
-+	ab8500 = devm_kzalloc(&pdev->dev, sizeof(*ab8500), GFP_KERNEL);
- 	if (!ab8500)
- 		return -ENOMEM;
+-	seq_printf(s, "AB3100 registers:\n");
++	seq_puts(s, "AB3100 registers:\n");
  
-@@ -1636,7 +1638,7 @@ static int ab8500_probe(struct platform_device *pdev)
- 		ab8500->mask_size = AB8540_NUM_IRQ_REGS;
- 		ab8500->irq_reg_offset = ab8540_irq_regoffset;
- 		ab8500->it_latchhier_num = AB8540_IT_LATCHHIER_NUM;
--	}/* Configure AB8500 or AB9540 IRQ */
-+	} /* Configure AB8500 or AB9540 IRQ */
- 	else if (is_ab9540(ab8500) || is_ab8505(ab8500)) {
- 		ab8500->mask_size = AB9540_NUM_IRQ_REGS;
- 		ab8500->irq_reg_offset = ab9540_irq_regoffset;
-@@ -1646,10 +1648,12 @@ static int ab8500_probe(struct platform_device *pdev)
- 		ab8500->irq_reg_offset = ab8500_irq_regoffset;
- 		ab8500->it_latchhier_num = AB8500_IT_LATCHHIER_NUM;
+ 	for (reg = 0; reg < 0xff; reg++) {
+ 		ab3100_get_register_interruptible(ab3100, reg, &value);
+@@ -560,8 +560,8 @@ static ssize_t ab3100_get_set_reg(struct file *file,
+ 		ab3100_get_register_interruptible(ab3100, user_reg, &regvalue);
+ 
+ 		dev_info(ab3100->dev,
+-			 "debug write reg[0x%02x] with 0x%02x, "
+-			 "after readback: 0x%02x\n",
++			 "debug write reg[0x%02x]\n"
++			 "  with 0x%02x, after readback: 0x%02x\n",
+ 			 user_reg, user_value, regvalue);
  	}
--	ab8500->mask = devm_kzalloc(&pdev->dev, ab8500->mask_size, GFP_KERNEL);
-+	ab8500->mask = devm_kzalloc(&pdev->dev, ab8500->mask_size,
-+				    GFP_KERNEL);
- 	if (!ab8500->mask)
- 		return -ENOMEM;
--	ab8500->oldmask = devm_kzalloc(&pdev->dev, ab8500->mask_size, GFP_KERNEL);
-+	ab8500->oldmask = devm_kzalloc(&pdev->dev, ab8500->mask_size,
-+				       GFP_KERNEL);
- 	if (!ab8500->oldmask)
- 		return -ENOMEM;
- 
-@@ -1674,14 +1678,13 @@ static int ab8500_probe(struct platform_device *pdev)
- 	if (value) {
- 		for (i = 0; i < ARRAY_SIZE(switch_off_status); i++) {
- 			if (value & 1)
--				printk(KERN_CONT " \"%s\"",
--				       switch_off_status[i]);
-+				pr_cont(" \"%s\"", switch_off_status[i]);
- 			value = value >> 1;
- 
- 		}
--		printk(KERN_CONT "\n");
-+		pr_cont("\n");
- 	} else {
--		printk(KERN_CONT " None\n");
-+		pr_cont(" None\n");
+ 	return buf_size;
+@@ -719,8 +719,7 @@ static int ab3100_setup(struct ab3100 *ab3100)
+ 	 */
+ 	if (ab3100->chip_id == 0xc4) {
+ 		dev_warn(ab3100->dev,
+-			 "AB3100 P1E variant detected, "
+-			 "forcing chip to 32KHz\n");
++			 "AB3100 P1E variant detected forcing chip to 32KHz\n");
+ 		err = ab3100_set_test_register_interruptible(ab3100,
+ 			0x02, 0x08);
  	}
- 	ret = get_register_interruptible(ab8500, AB8500_SYS_CTRL1_BLOCK,
- 		AB8500_TURN_ON_STATUS, &value);
-@@ -1692,12 +1695,12 @@ static int ab8500_probe(struct platform_device *pdev)
- 	if (value) {
- 		for (i = 0; i < ARRAY_SIZE(turn_on_status); i++) {
- 			if (value & 1)
--				printk("\"%s\" ", turn_on_status[i]);
-+				pr_cont("\"%s\" ", turn_on_status[i]);
- 			value = value >> 1;
- 		}
--		printk("\n");
-+		pr_cont("\n");
- 	} else {
--		printk("None\n");
-+		pr_cont("None\n");
+@@ -878,8 +877,7 @@ static int ab3100_probe(struct i2c_client *client,
+ 						&ab3100->chip_id);
+ 	if (err) {
+ 		dev_err(&client->dev,
+-			"could not communicate with the AB3100 analog "
+-			"baseband chip\n");
++			"failed to communicate with AB3100 chip\n");
+ 		goto exit_no_detect;
  	}
  
- 	if (plat && plat->init)
+@@ -902,8 +900,8 @@ static int ab3100_probe(struct i2c_client *client,
+ 	if (ids[i].id == 0x0) {
+ 		dev_err(&client->dev, "unknown analog baseband chip id: 0x%x\n",
+ 			ab3100->chip_id);
+-		dev_err(&client->dev, "accepting it anyway. Please update "
+-			"the driver.\n");
++		dev_err(&client->dev,
++			"accepting it anyway. Please update the driver.\n");
+ 		goto exit_no_detect;
+ 	}
+ 
 -- 
 1.8.3.2
 
