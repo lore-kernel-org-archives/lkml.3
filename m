@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757387AbaGBQwF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 12:52:05 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:61018 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757329AbaGBQwC (ORCPT
+	id S1757435AbaGBQwP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 12:52:15 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:46860 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757329AbaGBQwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 12:52:02 -0400
+	Wed, 2 Jul 2014 12:52:12 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 22/48] staging: rtl8188eu: rtw_cmd.h: Remove unused function declaration
-Date: Wed,  2 Jul 2014 22:17:18 +0530
-Message-Id: <1404319664-8327-22-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 23/48] staging: rtl8188eu: rtw_cmd.h: Remove unused macros
+Date: Wed,  2 Jul 2014 22:17:19 +0530
+Message-Id: <1404319664-8327-23-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
 References: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
@@ -23,33 +23,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/include/rtw_cmd.h |    6 ------
- 1 file changed, 6 deletions(-)
+ drivers/staging/rtl8188eu/include/rtw_cmd.h |   15 ---------------
+ 1 file changed, 15 deletions(-)
 
 diff --git a/drivers/staging/rtl8188eu/include/rtw_cmd.h b/drivers/staging/rtl8188eu/include/rtw_cmd.h
-index d356cf4..1e3161e 100644
+index 1e3161e..0803742 100644
 --- a/drivers/staging/rtl8188eu/include/rtw_cmd.h
 +++ b/drivers/staging/rtl8188eu/include/rtw_cmd.h
-@@ -731,11 +731,6 @@ u8 rtw_disassoc_cmd(struct adapter *padapter, u32 deauth_timeout_ms,
- u8 rtw_setopmode_cmd(struct adapter *padapter,
- 		     enum ndis_802_11_network_infra networktype);
- u8 rtw_setdatarate_cmd(struct adapter *padapter, u8 *rateset);
--u8 rtw_setrfintfs_cmd(struct adapter *padapter, u8 mode);
+@@ -24,16 +24,11 @@
+ #include <rtw_rf.h>
+ #include <rtw_led.h>
+ 
+-#define C2H_MEM_SZ (16*1024)
 -
--u8 rtw_gettssi_cmd(struct adapter *padapter, u8 offset, u8 *pval);
--u8 rtw_setfwdig_cmd(struct adapter *padapter, u8 type);
--u8 rtw_setfwra_cmd(struct adapter *padapter, u8 type);
+ #include <osdep_service.h>
+ #include <ieee80211.h> /*  <ieee80211/ieee80211.h> */
  
- u8 rtw_addbareq_cmd(struct adapter *padapter, u8 tid, u8 *addr);
- 
-@@ -752,7 +747,6 @@ u8 rtw_chk_hi_queue_cmd(struct adapter *padapter);
- #endif
- 
- u8 rtw_set_chplan_cmd(struct adapter *padapter, u8 chplan, u8 enqueue);
+-#define FREE_CMDOBJ_SZ	128
 -
- u8 rtw_drvextra_cmd_hdl(struct adapter *padapter, unsigned char *pbuf);
+ #define MAX_CMDSZ	1024
+ #define MAX_RSPSZ	512
+-#define MAX_EVTSZ	1024
  
- void rtw_survey_cmd_callback(struct adapter *padapter, struct cmd_obj *pcmd);
+ #define CMDBUFF_ALIGN_SZ 512
+ 
+@@ -707,16 +702,11 @@ Result:
+ 
+ */
+ 
+-#define H2C_RSP_OFFSET		512
+-
+ #define H2C_SUCCESS		0x00
+ #define H2C_SUCCESS_RSP		0x01
+-#define H2C_DUPLICATED		0x02
+ #define H2C_DROPPED		0x03
+ #define H2C_PARAMETERS_ERROR	0x04
+ #define H2C_REJECTED		0x05
+-#define H2C_CMD_OVERFLOW	0x06
+-#define H2C_RESERVED		0x07
+ 
+ u8 rtw_sitesurvey_cmd(struct adapter *padapter, struct ndis_802_11_ssid *ssid,
+ 		      int ssid_num, struct rtw_ieee80211_channel *ch,
+@@ -841,11 +831,6 @@ enum rtw_h2c_cmd {
+ 	MAX_H2CCMD
+ };
+ 
+-#define _GetBBReg_CMD_		_Read_BBREG_CMD_
+-#define _SetBBReg_CMD_		_Write_BBREG_CMD_
+-#define _GetRFReg_CMD_		_Read_RFREG_CMD_
+-#define _SetRFReg_CMD_		_Write_RFREG_CMD_
+-
+ #ifdef _RTW_CMD_C_
+ static struct _cmd_callback	rtw_cmd_callback[] = {
+ 	{GEN_CMD_CODE(_Read_MACREG), NULL}, /*0*/
 -- 
 1.7.10.4
 
