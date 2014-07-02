@@ -1,54 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522AbaGBH4k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 03:56:40 -0400
-Received: from [207.46.163.141] ([207.46.163.141]:23192 "EHLO
-	na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750895AbaGBH4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 03:56:39 -0400
-Message-ID: <53B3B8B9.30400@Freescale.com>
-Date: Wed, 2 Jul 2014 02:46:01 -0500
-From: Emil Medve <Emilian.Medve@Freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Varun Sethi <Varun.Sethi@Freescale.com>,
-        <iommu@lists.linux-foundation.org>, <joro@8bytes.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <alex.williamson@redhat.com>
-Subject: Re: [PATCH 1/3] iommu/fsl: Fix PAMU window size check.
-References: <1403618237-26248-1-git-send-email-Varun.Sethi@freescale.com>
- <1403618237-26248-2-git-send-email-Varun.Sethi__13822.953499812$1403630309$gmane$org@freescale.com>
-In-Reply-To: <1403618237-26248-2-git-send-email-Varun.Sethi__13822.953499812$1403630309$gmane$org@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1751409AbaGBIFG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 04:05:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:41209 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751110AbaGBIFA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 04:05:00 -0400
+Date: Wed, 2 Jul 2014 10:04:46 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/33] ARM: at91/dt: rm9200: define clocks
+Message-ID: <20140702100446.14910191@bbrezillon>
+In-Reply-To: <1404223962-30471-6-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com>
+	<1404223962-30471-6-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(979002)(6009001)(377454003)(479174003)(24454002)(189002)(199002)(51704005)(107886001)(83072002)(107046002)(69596002)(104016002)(84676001)(2201001)(44976005)(92726001)(83322001)(4396001)(85306003)(95666004)(33656002)(68736004)(19580395003)(80022001)(65806001)(19580405001)(50466002)(105606002)(76482001)(21056001)(106466001)(81156004)(79102001)(74662001)(65816999)(46102001)(20776003)(102836001)(47776003)(87936001)(81542001)(6806004)(50986999)(83506001)(54356999)(76176999)(36756003)(23676002)(86362001)(97736001)(31966008)(74502001)(26826002)(77982001)(64706001)(64126003)(92566001)(85852003)(65956001)(99396002)(81342001)(2101003)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB480;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0260457E99
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Emilian.Medve@freescale.com; 
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2014 08:57 AM, Varun Sethi wrote:
-> is_power_of_2 requires an unsigned long parameter which would
-> lead to truncation of 64 bit values on 32 bit architectures.
+Hello Alexandre,
+
+On Tue,  1 Jul 2014 16:12:14 +0200
+Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
+
+> Signed-off-by: Alexandre Belloni
+> <alexandre.belloni@free-electrons.com> ---
+>  arch/arm/boot/dts/at91rm9200.dtsi | 304
+> ++++++++++++++++++++++++++++++++++++++ 1 file changed, 304
+> insertions(+)
 > 
-> __ffs also expects an unsigned long parameter thus won't work
-> for 64 bit values on 32 bit architectures.
-> 
-> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
-> ---
->  drivers/iommu/fsl_pamu.c        |    8 ++++----
->  drivers/iommu/fsl_pamu_domain.c |    2 +-
->  2 files changed, 5 insertions(+), 5 deletions(-)
+> diff --git a/arch/arm/boot/dts/at91rm9200.dtsi
+> b/arch/arm/boot/dts/at91rm9200.dtsi index c61b16fba79b..477cfe570f47
+> 100644 --- a/arch/arm/boot/dts/at91rm9200.dtsi
+> +++ b/arch/arm/boot/dts/at91rm9200.dtsi
+> @@ -14,6 +14,7 @@
+>  #include <dt-bindings/pinctrl/at91.h>
+>  #include <dt-bindings/interrupt-controller/irq.h>
+>  #include <dt-bindings/gpio/gpio.h>
+> +#include <dt-bindings/clock/at91.h>
+>  
+>  / {
+>  	model = "Atmel AT91RM9200 family SoC";
+> @@ -51,6 +52,20 @@
+>  		reg = <0x20000000 0x04000000>;
+>  	};
+>  
+> +	clocks {
 
-Tested-by: Emil Medve <Emilian.Medve@Freescale.com>
+[...]
 
-On a P4080 DS (i.e. 32-bit SoC)
+> +
+> +					tcb0_clk: tcb0_clk {
+> +						#clock-cells = <0>;
+> +						reg = <17>;
+> +					};
+> +
+> +					tcb1_clk: tcb1_clk {
+> +						#clock-cells = <0>;
+> +						reg = <18>;
+> +					};
+> +
+> +					tcb2_clk: tcb2_clk {
+> +						#clock-cells = <0>;
+> +						reg = <19>;
+> +					};
+> +
+> +					tcb3_clk: tcb3_clk {
+> +						#clock-cells = <0>;
+> +						reg = <20>;
+> +					};
+> +
+> +					tcb4_clk: tcb4_clk {
+> +						#clock-cells = <0>;
+> +						reg = <21>;
+> +					};
+> +
+> +					tcb5_clk: tcb5_clk {
+> +						#clock-cells = <0>;
+> +						reg = <22>;
+> +					};
+
+Just a nitpick, but the names defined in at91rm9200.c and in the
+datasheet are tcX_clk and not tcbX_clk.
+
+Best Regards,
+
+Boris
 
 
-Cheers,
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
