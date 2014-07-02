@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148AbaGBXT6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 19:19:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25553 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751344AbaGBXT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 19:19:56 -0400
-Message-ID: <1404343175.1862.74.camel@ul30vt.home>
-Subject: Re: [PATCH 3.15 099/139] libiscsi, iser: Adjust data_length to
- include protection information
-From: Alex Williamson <alex.williamson@redhat.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Mike Christie <michaelc@cs.wisc.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        SCSI Mailing List <linux-scsi@vger.kernel.org>
-Date: Wed, 02 Jul 2014 17:19:35 -0600
-In-Reply-To: <1404341555.16066.19.camel@dabdike>
-References: <20140628174605.352098823@linuxfoundation.org>
-	 <20140628174609.930049472@linuxfoundation.org>
-	 <1404339330.1862.69.camel@ul30vt.home> <53B48B37.4000608@cs.wisc.edu>
-	 <1404341555.16066.19.camel@dabdike>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753118AbaGBXUw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 19:20:52 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:52965 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687AbaGBXUu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 19:20:50 -0400
+Date: Wed, 2 Jul 2014 16:20:47 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Luiz Capitulino <lcapitulino@redhat.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org, riel@redhat.com,
+        andi@firstfloor.org, akpm@linux-foundation.org
+Subject: Re: [PATCH] x86: numa: setup_node_data(): drop dead code and rename
+ function
+In-Reply-To: <20140702133358.0b4262cd@redhat.com>
+Message-ID: <alpine.DEB.2.02.1407021615550.5931@chino.kir.corp.google.com>
+References: <20140619222019.3db6ad7e@redhat.com> <alpine.DEB.2.02.1406301639390.1327@chino.kir.corp.google.com> <20140702133358.0b4262cd@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-02 at 15:52 -0700, James Bottomley wrote:
-> On Wed, 2014-07-02 at 17:44 -0500, Mike Christie wrote:
-> > On 07/02/2014 05:15 PM, Alex Williamson wrote:
-> > > On Sat, 2014-06-28 at 10:47 -0700, Greg Kroah-Hartman wrote:
-> > >> > 3.15-stable review patch.  If anyone has any objections, please let me know.
-> > >> > 
-> > >> > ------------------
-> > >> > 
-> > >> > From: Sagi Grimberg <sagig@mellanox.com>
-> > >> > 
-> > >> > commit d77e65350f2d82dfa0557707d505711f5a43c8fd upstream.
-> > >> > 
-> > >> > In case protection information exists over the wire
-> > >> > iscsi header data length is required to include it.
-> > >> > Use protection information aware scsi helpers to set
-> > >> > the correct transfer length.
-> > >> > 
-> > >> > In order to avoid breakage, remove iser transfer length
-> > >> > checks for each task as they are not always true and
-> > >> > somewhat redundant anyway.
-> > >> > 
-> > >> > Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-> > >> > Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
-> > >> > Acked-by: Mike Christie <michaelc@cs.wisc.edu>
-> > >> > Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-> > >> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > >> > 
-> > >> > ---
-> > >> >  drivers/infiniband/ulp/iser/iser_initiator.c |   34 +++++++--------------------
-> > >> >  drivers/scsi/libiscsi.c                      |   18 +++++++-------
-> > >> >  2 files changed, 19 insertions(+), 33 deletions(-)
-> > > I'm a bit late to object, but this is causing a regression for me on
-> > > 3.15.3 and 3.16-rc.  Using an iscsi_tcp rootfs, I'm seeing the NULL
+On Wed, 2 Jul 2014, Luiz Capitulino wrote:
+
+> > With this patch, the dmesg changes break one of my scripts that we use to 
+> > determine the start and end address of a node (doubly bad because there's 
+> > no sysfs interface to determine this otherwise and we have to do this at 
+> > boot to acquire the system topology).
 > > 
+> > Specifically, the removal of the
 > > 
-> > A fix for this is in Christoph's tree. Here is the status of the patch.
+> > 	"Initmem setup node X [mem 0xstart-0xend]"
 > > 
-> > http://marc.info/?l=linux-kernel&m=140432482527273&w=2
+> > lines that are replaced when each node is onlined to
+> > 
+> > 	"Node 0 memory range 0xstart-0xend"
+> > 
+> > And if I just noticed this breakage when booting the latest -mm kernel, 
+> > I'm assuming I'm not the only person who is going to run into it.  Is it 
+> > possible to not change the dmesg output?
 > 
-> I assume it's this fix:
+> Sure. I can add back the original text. The only detail is that with this
+> patch that line is now printed a little bit later during boot and the
+> NODA_DATA lines also changed. Are you OK with that?
 > 
-> commit 7bafc240e126c37f60b040fa429ae4a710b88ab5
-> Author: Martin K. Petersen <martin.petersen@oracle.com>
-> Date:   Tue Jun 24 16:59:35 2014 +0200
+
+Yes, please.  I think it should be incremental on your patch since it's 
+already in -mm with " fix" appended so the title of the patch would be 
+"x86: numa: setup_node_data(): drop dead code and rename function fix" and 
+then Andrew can fold it into the original when sending it to the x86 
+maintainers.
+
+> What's the guidelines on changing what's printed in dmesg?
 > 
->     scsi: use the scsi data buffer length to extract transfer size
->  
-> In which case it's not marked for stable backport ... I assume it should
-> be?
 
-Yes, that's the one.  It definitely needs a 3.15 stable backport.
-Thanks,
+That's the scary part, there doesn't seem to be any.  It's especially 
+crucial for things that only get printed once and aren't available 
+anywhere else at runtime; there was talk of adding a sysfs interface that 
+defines the start and end addresses of nodes but it's complicated because 
+nodes can overlap each other.  If that had been available years ago then I 
+don't think anybody would raise their hand about this issue.
 
-Alex
-
-
+These lines went under a smaller change a few years ago for 
+s/Bootmem/Initmem/.  I don't even have to look at the git history to know 
+that because it broke our scripts back then as well.  You just happened to 
+touch lines that I really care about and breaks my topology information :)  
+I wouldn't complain if it was just my userspace, but I have no doubt 
+others have parsed their dmesg in a similar way because people have 
+provided me with data that they retrieved by scraping the kernel log.
