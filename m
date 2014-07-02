@@ -1,75 +1,491 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259AbaGBO1K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 10:27:10 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49356 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751540AbaGBO1H (ORCPT
+	id S1754379AbaGBOaZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 10:30:25 -0400
+Received: from mail-pd0-f202.google.com ([209.85.192.202]:46848 "EHLO
+	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753933AbaGBOaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 10:27:07 -0400
-Date: Wed, 2 Jul 2014 10:27:06 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Allen Yu <alleny@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Add "rpm_not_supported" flag
-In-Reply-To: <3135210.ApPvOPL31q@vostro.rjw.lan>
-Message-ID: <Pine.LNX.4.44L0.1407021002380.874-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 2 Jul 2014 10:30:23 -0400
+From: Binder Makin <merimus@google.com>
+To: tj@kernel.org, viro@zeniv.linux.org.uk
+Cc: linux-kernel@vger.kernel.org, dmj@google.com, merimus@google.com
+Subject: [RFC] cgroups: Resource controller for open files.
+Date: Wed,  2 Jul 2014 10:30:07 -0400
+Message-Id: <1404311407-4851-1-git-send-email-merimus@google.com>
+X-Mailer: git-send-email 2.0.0.526.g5318336
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jul 2014, Rafael J. Wysocki wrote:
+Add a resource controller for limiting the number of open
+file handles.  This allows us to catch misbehaving processes
+and return EMFILE instead of ENOMEM for kernel memory limits.
 
-> > Then you have no other objections to the patch?
-> 
-> My concern still is that it will be confusing, because people won't read the
-> documentation carefully enough and will confuse "runtime PM never used" with
-> "hardware can't do PM".  I'm not sure how to make that more clear, though.
+Signed-off-by: Binder Makin <merimus@google.com>
+---
+ fs/Makefile                   |   1 +
+ fs/file.c                     |  44 ++++++++
+ fs/filescontrol.c             | 247 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/cgroup_subsys.h |   5 +
+ include/linux/fdtable.h       |   3 +
+ include/linux/filescontrol.h  |  32 ++++++
+ init/Kconfig                  |   7 ++
+ 7 files changed, 339 insertions(+)
+ create mode 100644 fs/filescontrol.c
+ create mode 100644 include/linux/filescontrol.h
 
-I could emphasize that distinction a little more strongly in the 
-documentation.
-
-> Also we have the no_callbacks flag and I wonder if/how it is related to the
-> new one.  Do we still need both?
-
-They mean different things.  The no_callbacks flag is used when we want 
-the PM core to think the device can be in RPM_SUSPENDED at times (it is 
-"logically suspended").  rpm_not_supported is used when we want the PM 
-core to think the device must always be in RPM_ACTIVE.
-
-> In addition to that, I think that "hardware can't do PM" should apply to the
-> handling of system suspend resume too.
-
-Maybe.  For the use case Dan Williams and I are working on, it doesn't 
-matter; for other cases it might matter.  That's why I named the flag 
-"rpm_not_supported" -- it applies specifically to runtime PM, not 
-system PM.
-
-Here's a brief summary of the story behind this patch...
-
-At one point, I suggested to Dan that instead of doing something
-special for these devices, we could simply have the runtime_suspend()
-routine always return -EBUSY.  He didn't like that idea because then
-the user would see the device was never powering down but would have no
-idea why.  The rpm_not_supported flag provides this information to the
-user by causing the power/runtime_status attribute to say "not
-supported".  (Although to be entirely fair, we could just put a message
-in the kernel log during probe if the hardware doesn't support runtime
-suspend.)
-
-Instead, Dan introduced a messy PM QoS mechanism in commit
-e3d105055525.  I didn't like that approach, but Greg merged it before I
-objected.
-
-Do you have any suggestions?
-
-Alan Stern
+diff --git a/fs/Makefile b/fs/Makefile
+index f9cb987..0615027 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -48,6 +48,7 @@ obj-$(CONFIG_COREDUMP)		+= coredump.o
+ obj-$(CONFIG_SYSCTL)		+= drop_caches.o
+ 
+ obj-$(CONFIG_FHANDLE)		+= fhandle.o
++obj-$(CONFIG_CGROUP_FILES)	+= filescontrol.o
+ 
+ obj-y				+= quota/
+ 
+diff --git a/fs/file.c b/fs/file.c
+index 8f294cf..dd5ed51 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -22,6 +22,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/rcupdate.h>
+ #include <linux/workqueue.h>
++#include <linux/filescontrol.h>
+ 
+ int sysctl_nr_open __read_mostly = 1024*1024;
+ int sysctl_nr_open_min = BITS_PER_LONG;
+@@ -267,6 +268,9 @@ struct files_struct *dup_fd(struct files_struct *oldf, int *errorp)
+ 	new_fdt->close_on_exec = newf->close_on_exec_init;
+ 	new_fdt->open_fds = newf->open_fds_init;
+ 	new_fdt->fd = &newf->fd_array[0];
++#ifdef CONFIG_CGROUP_FILES
++	files_cgroup_assign(newf);
++#endif
+ 
+ 	spin_lock(&oldf->file_lock);
+ 	old_fdt = files_fdtable(oldf);
+@@ -343,9 +347,28 @@ struct files_struct *dup_fd(struct files_struct *oldf, int *errorp)
+ 
+ 	rcu_assign_pointer(newf->fdt, new_fdt);
+ 
++#ifdef CONFIG_CGROUP_FILES
++	if (!files_cgroup_alloc_fd(newf, files_cgroup_count_fds(newf)))
++		return newf;
++
++/* could not get enough FD resources.  Need to clean up. */
++	new_fds = new_fdt->fd;
++	for (i = open_files; i != 0; i--) {
++		struct file *f = *new_fds++;
++		if (f)
++			fput(f);
++	}
++	if (new_fdt != &newf->fdtab)
++		__free_fdtable(new_fdt);
++	*errorp = -EMFILE;
++#else
+ 	return newf;
++#endif
+ 
+ out_release:
++#ifdef CONFIG_CGROUP_FILES
++	files_cgroup_remove(newf);
++#endif
+ 	kmem_cache_free(files_cachep, newf);
+ out:
+ 	return NULL;
+@@ -371,6 +394,9 @@ static struct fdtable *close_files(struct files_struct * files)
+ 			if (set & 1) {
+ 				struct file * file = xchg(&fdt->fd[i], NULL);
+ 				if (file) {
++#ifdef CONFIG_CGROUP_FILES
++					files_cgroup_unalloc_fd(files, 1);
++#endif
+ 					filp_close(file, files);
+ 					cond_resched();
+ 				}
+@@ -483,6 +509,13 @@ repeat:
+ 	if (error)
+ 		goto repeat;
+ 
++#ifdef CONFIG_CGROUP_FILES
++	if (files_cgroup_alloc_fd(files, 1)) {
++		error = -EMFILE;
++		goto out;
++	}
++#endif
++
+ 	if (start <= files->next_fd)
+ 		files->next_fd = fd + 1;
+ 
+@@ -519,6 +552,10 @@ EXPORT_SYMBOL(get_unused_fd_flags);
+ static void __put_unused_fd(struct files_struct *files, unsigned int fd)
+ {
+ 	struct fdtable *fdt = files_fdtable(files);
++#ifdef CONFIG_CGROUP_FILES
++	if (test_bit(fd, fdt->open_fds))
++		files_cgroup_unalloc_fd(files, 1);
++#endif
+ 	__clear_open_fd(fd, fdt);
+ 	if (fd < files->next_fd)
+ 		files->next_fd = fd;
+@@ -777,6 +814,13 @@ static int do_dup2(struct files_struct *files,
+ 	tofree = fdt->fd[fd];
+ 	if (!tofree && fd_is_open(fd, fdt))
+ 		goto Ebusy;
++
++#ifdef CONFIG_CGROUP_FILES
++	if (!tofree)
++		if (!files_cgroup_alloc_fd(files, 1))
++			goto Ebusy;
++#endif
++
+ 	get_file(file);
+ 	rcu_assign_pointer(fdt->fd[fd], file);
+ 	__set_open_fd(fd, fdt);
+diff --git a/fs/filescontrol.c b/fs/filescontrol.c
+new file mode 100644
+index 0000000..c532d02
+--- /dev/null
++++ b/fs/filescontrol.c
+@@ -0,0 +1,247 @@
++/* filescontrol.c - Cgroup controller for open file handles.
++ *
++ * Copyright 2014 Google Inc.
++ * Author: Brian Makin <merimus@google.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/res_counter.h>
++#include <linux/filescontrol.h>
++#include <linux/cgroup.h>
++#include <linux/export.h>
++#include <linux/printk.h>
++#include <linux/slab.h>
++#include <linux/fs.h>
++#include <linux/fdtable.h>
++
++struct cgroup_subsys files_cgrp_subsys __read_mostly;
++EXPORT_SYMBOL(files_cgrp_subsys);
++
++struct files_cgroup {
++	struct cgroup_subsys_state css;
++	struct res_counter open_handles;
++};
++
++static inline struct files_cgroup *css_fcg(struct cgroup_subsys_state *css)
++{
++	return css ? container_of(css, struct files_cgroup, css) : NULL;
++}
++
++static inline struct res_counter *
++css_res_open_handles(struct cgroup_subsys_state *css)
++{
++	return &css_fcg(css)->open_handles;
++}
++
++static inline struct files_cgroup *
++files_cgroup_from_files(struct files_struct *files)
++{
++	return files->files_cgroup;
++}
++
++static struct cgroup_subsys_state *
++files_cgroup_css_alloc(struct cgroup_subsys_state *parent_css)
++{
++	struct files_cgroup *fcg;
++
++	fcg = kzalloc(sizeof(*fcg), GFP_KERNEL);
++	if (!fcg)
++		goto out;
++
++	if (!parent_css) {
++		res_counter_init(&fcg->open_handles, NULL);
++		res_counter_set_limit(&fcg->open_handles, get_max_files());
++	} else {
++		struct files_cgroup *parent_fcg = css_fcg(parent_css);
++		res_counter_init(&fcg->open_handles, &parent_fcg->open_handles);
++		res_counter_set_limit(&fcg->open_handles,
++				res_counter_read_u64(&parent_fcg->open_handles,
++						RES_LIMIT));
++	}
++	return &fcg->css;
++
++out:
++	return ERR_PTR(-ENOMEM);
++}
++
++static void files_cgroup_css_free(struct cgroup_subsys_state *css)
++{
++	kfree(css_fcg(css));
++}
++
++u64 files_cgroup_count_fds(struct files_struct *files)
++{
++	int i;
++	struct fdtable *fdt;
++	int retval = 0;
++
++	fdt = files_fdtable(files);
++	for (i = 0; i < DIV_ROUND_UP(fdt->max_fds, BITS_PER_LONG); i++)
++		retval += hweight64((__u64)fdt->open_fds[i]);
++	return retval;
++}
++
++static u64 files_in_taskset(struct cgroup_taskset *tset)
++{
++	struct task_struct *task;
++	u64 files = 0;
++	cgroup_taskset_for_each(task, tset) {
++		if (!thread_group_leader(task))
++			continue;
++
++		task_lock(task);
++		files += files_cgroup_count_fds(task->files);
++		task_unlock(task);
++	}
++	return files;
++}
++
++/*
++ * If attaching this cgroup would overcommit the resource then deny
++ * the attach.
++ */
++static int files_cgroup_can_attach(struct cgroup_subsys_state *css,
++				struct cgroup_taskset *tset)
++{
++	u64 files = files_in_taskset(tset);
++	if (res_counter_margin(css_res_open_handles(css)) < files)
++		return -ENOMEM;
++	return 0;
++}
++
++/*
++ * If resource counts have gone up between can_attach and attach then
++ * this may overcommit resources.  In that case just deny further allocation
++ * until the resource usage drops.
++ */
++static void files_cgroup_attach(struct cgroup_subsys_state *to_css,
++				struct cgroup_taskset *tset)
++{
++	u64 num_files;
++	struct task_struct *task = cgroup_taskset_first(tset);
++	struct cgroup_subsys_state *from_css;
++	struct res_counter *from_res;
++	struct res_counter *to_res = css_res_open_handles(to_css);
++	struct res_counter *fail_res;
++	struct files_struct *files;
++
++	task_lock(task);
++	files = task->files;
++	if (!files) {
++		task_unlock(task);
++		return;
++	}
++
++	from_css = &files_cgroup_from_files(files)->css;
++	from_res = css_res_open_handles(from_css);
++
++	spin_lock(&files->file_lock);
++	num_files = files_cgroup_count_fds(files);
++	res_counter_uncharge(from_res, num_files);
++	css_put(from_css);
++
++	if (res_counter_charge(to_res, num_files, &fail_res))
++		pr_err("Open files limit overcommited\n");
++	css_get(to_css);
++
++	task->files->files_cgroup = css_fcg(to_css);
++	spin_unlock(&files->file_lock);
++	task_unlock(task);
++}
++
++int files_cgroup_alloc_fd(struct files_struct *files, u64 n)
++{
++	struct res_counter *fail_res;
++	struct files_cgroup *files_cgroup = files_cgroup_from_files(files);
++
++	if (res_counter_charge(&files_cgroup->open_handles, n, &fail_res))
++		return -ENOMEM;
++
++	return 0;
++}
++EXPORT_SYMBOL(files_cgroup_alloc_fd);
++
++void files_cgroup_unalloc_fd(struct files_struct *files, u64 n)
++{
++	struct files_cgroup *files_cgroup = files_cgroup_from_files(files);
++
++	res_counter_uncharge(&files_cgroup->open_handles, n);
++}
++EXPORT_SYMBOL(files_cgroup_unalloc_fd);
++
++static u64 files_limit_read(struct cgroup_subsys_state *css,
++			struct cftype *cft)
++{
++	struct files_cgroup *fcg = css_fcg(css);
++	return res_counter_read_u64(&fcg->open_handles, RES_LIMIT);
++}
++
++static int files_limit_write(struct cgroup_subsys_state *css,
++			struct cftype *cft, u64 value)
++{
++	struct files_cgroup *fcg = css_fcg(css);
++	return res_counter_set_limit(&fcg->open_handles, value);
++}
++
++static u64 files_usage_read(struct cgroup_subsys_state *css,
++			struct cftype *cft)
++{
++	struct files_cgroup *fcg = css_fcg(css);
++	return res_counter_read_u64(&fcg->open_handles, RES_USAGE);
++}
++
++static struct cftype files[] = {
++	{
++		.name = "limit",
++		.read_u64 = files_limit_read,
++		.write_u64 = files_limit_write,
++	},
++	{
++		.name = "usage",
++		.read_u64 = files_usage_read,
++	},
++	{ }
++};
++
++struct cgroup_subsys files_cgrp_subsys = {
++	.name = "files",
++	.css_alloc = files_cgroup_css_alloc,
++	.css_free = files_cgroup_css_free,
++	.can_attach = files_cgroup_can_attach,
++	.attach = files_cgroup_attach,
++	.base_cftypes = files,
++};
++
++void files_cgroup_assign(struct files_struct *files)
++{
++	struct task_struct *tsk = current;
++	struct cgroup_subsys_state *css;
++
++	task_lock(tsk);
++	css = task_css(tsk, files_cgrp_id);
++	css_get(css);
++	files->files_cgroup = container_of(css, struct files_cgroup, css);
++	task_unlock(tsk);
++}
++
++void files_cgroup_remove(struct files_struct *files)
++{
++	struct task_struct *tsk = current;
++	struct files_cgroup *fcg;
++
++	task_lock(tsk);
++	spin_lock(&files->file_lock);
++	fcg = files_cgroup_from_files(files);
++	css_put(&fcg->css);
++	spin_unlock(&files->file_lock);
++	task_unlock(tsk);
++}
+diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
+index 768fe44..747945c 100644
+--- a/include/linux/cgroup_subsys.h
++++ b/include/linux/cgroup_subsys.h
+@@ -50,6 +50,11 @@ SUBSYS(net_prio)
+ #if IS_ENABLED(CONFIG_CGROUP_HUGETLB)
+ SUBSYS(hugetlb)
+ #endif
++
++#if IS_ENABLED(CONFIG_CGROUP_FILES)
++SUBSYS(files)
++#endif
++
+ /*
+  * DO NOT ADD ANY SUBSYSTEM WITHOUT EXPLICIT ACKS FROM CGROUP MAINTAINERS.
+  */
+diff --git a/include/linux/fdtable.h b/include/linux/fdtable.h
+index 230f87b..03ef3cd 100644
+--- a/include/linux/fdtable.h
++++ b/include/linux/fdtable.h
+@@ -57,6 +57,9 @@ struct files_struct {
+ 	unsigned long close_on_exec_init[1];
+ 	unsigned long open_fds_init[1];
+ 	struct file __rcu * fd_array[NR_OPEN_DEFAULT];
++#ifdef CONFIG_CGROUP_FILES
++	struct files_cgroup *files_cgroup;
++#endif
+ };
+ 
+ struct file_operations;
+diff --git a/include/linux/filescontrol.h b/include/linux/filescontrol.h
+new file mode 100644
+index 0000000..e39ed2a
+--- /dev/null
++++ b/include/linux/filescontrol.h
+@@ -0,0 +1,32 @@
++/* filescontrol.h - Files Controller
++ *
++ * Copyright 2014 Google Inc.
++ * Author: Brian Makin <merimus@google.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef _LINUX_FILESCONTROL_H
++#define _LINUX_FILESCONTROL_H
++
++#include <linux/fdtable.h>
++
++#ifdef CONFIG_CGROUP_FILES
++
++extern int files_cgroup_alloc_fd(struct files_struct *files, u64 n);
++extern void files_cgroup_unalloc_fd(struct files_struct *files, u64 n);
++extern u64 files_cgroup_count_fds(struct files_struct *files);
++
++void files_cgroup_assign(struct files_struct *files);
++void files_cgroup_remove(struct files_struct *files);
++
++#endif /* CONFIG_CGROUP_FILES */
++#endif /* _LINUX_FILESCONTROL_H */
+diff --git a/init/Kconfig b/init/Kconfig
+index 9d3585b..8d0bbe8 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1089,6 +1089,13 @@ config DEBUG_BLK_CGROUP
+ 	Enable some debugging help. Currently it exports additional stat
+ 	files in a cgroup which can be useful for debugging.
+ 
++config CGROUP_FILES
++	bool "Files Resource Controller for Control Groups"
++	default n
++	help
++	  Provides a cgroup resource controller that limits number of open
++	  file handles within a cgroup.
++
+ endif # CGROUPS
+ 
+ config CHECKPOINT_RESTORE
+-- 
+2.0.0.526.g5318336
 
