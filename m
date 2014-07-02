@@ -1,134 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552AbaGBHTf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 03:19:35 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.160]:22383 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991AbaGBHTe (ORCPT
+	id S1751696AbaGBHUr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 03:20:47 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:51208 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaGBHUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 03:19:34 -0400
-X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ekfyrejs0ialTxoYXnIEza2FTPybMoi18A
-X-RZG-CLASS-ID: mo00
-Message-ID: <53B3B283.7050800@schoebel-theuer.de>
-Date: Wed, 02 Jul 2014 09:19:31 +0200
-From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 2 Jul 2014 03:20:45 -0400
+Date: Wed, 2 Jul 2014 10:20:39 +0300
+From: Dan Aloni <dan@kernelim.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
+        kadlec@blackhole.kfki.hu, "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org
+Subject: Re: net: pretty odd panic in netfilter
+Message-ID: <20140702072039.GA15488@gmail.com>
+References: <53B37B61.3020901@oracle.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?Thomas_Sch=F6bel-Theue?= =?ISO-8859-1?Q?r?= 
-	<tst@1und1.de>
-Subject: Re: [PATCH 49/50] mars: generic pre-patch for mars
-References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de> <1404251250-22992-50-git-send-email-tst@schoebel-theuer.de> <20140701223644.GA30330@kroah.com>
-In-Reply-To: <20140701223644.GA30330@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53B37B61.3020901@oracle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I will prepare a new version ASAP.
+On Tue, Jul 01, 2014 at 11:24:17PM -0400, Sasha Levin wrote:
+> Hi all,
+> 
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel I've stumbled on a pretty odd corruption(?) in the code - a pretty odd
+> one.
+> 
+> Here's the issue I've hit:
+> 
+> [ 3640.805823] BUG: unable to handle kernel paging request at ffffffffffffff84
+>[..]
+> [ 3640.840752] Code: 4c 89 65 e8 49 89 cc 0f 97 c1 83 fa 01 0f 95 c0 48 89 5d e0 31 db 83 fa 04 4c 89 6d f0 0f 95 c3 4c 89 75 f8 21 55 55 fb 01 48 19 <d2> 48 83 e2 f0 48 83 c2 20 48 89 d0 48 83 f0 30 84 c9 48 0f 45
+> [ 3640.840752] RIP nf_nat_packet (net/netfilter/nf_nat_core.c:482)
+> [ 3640.840752]  RSP <ffff88014608b958>
+> [ 3640.840752] CR2: ffffffffffffff84
+> 
+> Two odd things here:
+> 
+> 1. The code section seems to point mid-instruction:
+> 
+>     19dc:       0f 95 c3                setne  %bl
+>     19df:       4c 89 75 f8             mov    %r14,-0x8(%rbp)
+>     19e3:       21 c3                   and    %eax,%ebx
+>     19e5:       83 fb 01                cmp    $0x1,%ebx
+>     19e8:       48 19 d2                sbb    %rdx,%rdx  <=== The end of this (0xd2)
+>     19eb:       48 83 e2 f0             and    $0xfffffffffffffff0,%rdx
+>     19ef:       48 83 c2 20             add    $0x20,%rdx
+>     19f3:       48 89 d0                mov    %rdx,%rax
+>     19f6:       48 83 f0 30             xor    $0x30,%rax
+> 
+> 2. There isn't anything in that area that dereferences memory:
+> 
+>         enum nf_nat_manip_type mtype = HOOK2MANIP(hooknum);
+> 
+>         if (mtype == NF_NAT_MANIP_SRC)
+>                 statusbit = IPS_SRC_NAT;
+>         else
+>                 statusbit = IPS_DST_NAT;
 
-Is the asmlinkage one of the reasons?
+Hi Sasha,
 
-If so, some additional wrappers like vfs_* or kernel_* would have to be
-written. This would also complicate portability between the out-of-tree
-and the in-tree version of MARS (which I have to maintain in parallel at
-least for some years).
+The fault registers are consistent with the 'rorb %cl,-0x7d(%rax)' starting
+at the place where you have 0xd2. But the problem started earlier:
 
-It would be great if I just could make the exports of sys_* explicitly.
+    "75 f8 21 55 55 fb 01 48 19 <d2> 48 83 e2 f0"
 
-Thanks and cheers,
+What should have been according to objdump:
 
-Thomas
+    "75 f8 21 c3 83 fb 01 48 19 <d2> 48 83 e2 f0"
+              ^^^^^ 
+These instructions should not have been modified, even by relocation. 
+So we only need to figure out what overwrote with '0x5555'.
 
-On 07/02/2014 12:36 AM, Greg KH wrote:
-> On Tue, Jul 01, 2014 at 11:47:29PM +0200, Thomas Schoebel-Theuer wrote:
->> From: Thomas Schoebel-Theuer <schoebel@bell.site>
->>
->> Mostly introduces missing EXPORT_SYMBOL().
->> Should have no impact onto the kernel.
->>
->> This is the generic version which exports all sys_*() system
->> calls. This should not introduce any additional maintenance pain
->> because that interfaces has to be stable anyway due to POSIX etc.
->>
->> Signed-off-by: Thomas Schoebel-Theuer <schoebel@bell.site>
->> ---
->>  fs/open.c                  | 1 -
->>  fs/utimes.c                | 2 ++
->>  include/linux/syscalls.h   | 3 +++
->>  include/uapi/linux/major.h | 1 +
->>  mm/page_alloc.c            | 3 +++
->>  5 files changed, 9 insertions(+), 1 deletion(-)
->>
->> diff --git a/fs/open.c b/fs/open.c
->> index 36662d0..3b21b76 100644
->> --- a/fs/open.c
->> +++ b/fs/open.c
->> @@ -1064,7 +1064,6 @@ SYSCALL_DEFINE1(close, unsigned int, fd)
->>  
->>  	return retval;
->>  }
->> -EXPORT_SYMBOL(sys_close);
->>  
->>  /*
->>   * This routine simulates a hangup on the tty, to arrange that users
->> diff --git a/fs/utimes.c b/fs/utimes.c
->> index aa138d6..4a1f4a8 100644
->> --- a/fs/utimes.c
->> +++ b/fs/utimes.c
->> @@ -1,3 +1,4 @@
->> +#include <linux/module.h>
->>  #include <linux/compiler.h>
->>  #include <linux/file.h>
->>  #include <linux/fs.h>
->> @@ -181,6 +182,7 @@ retry:
->>  out:
->>  	return error;
->>  }
->> +EXPORT_SYMBOL(do_utimes);
->>  
->>  SYSCALL_DEFINE4(utimensat, int, dfd, const char __user *, filename,
->>  		struct timespec __user *, utimes, int, flags)
->> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
->> index b0881a0..c674309 100644
->> --- a/include/linux/syscalls.h
->> +++ b/include/linux/syscalls.h
->> @@ -75,6 +75,7 @@ struct sigaltstack;
->>  #include <linux/sem.h>
->>  #include <asm/siginfo.h>
->>  #include <linux/unistd.h>
->> +#include <linux/export.h>
->>  #include <linux/quota.h>
->>  #include <linux/key.h>
->>  #include <trace/syscall.h>
->> @@ -176,6 +177,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
->>  
->>  #define SYSCALL_DEFINE0(sname)					\
->>  	SYSCALL_METADATA(_##sname, 0);				\
->> +	EXPORT_SYMBOL(sys_##sname);				\
->>  	asmlinkage long sys_##sname(void)
->>  
->>  #define SYSCALL_DEFINE1(name, ...) SYSCALL_DEFINEx(1, _##name, __VA_ARGS__)
->> @@ -202,6 +204,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
->>  		__PROTECT(x, ret,__MAP(x,__SC_ARGS,__VA_ARGS__));	\
->>  		return ret;						\
->>  	}								\
->> +	EXPORT_SYMBOL(sys##name);					\
->>  	static inline long SYSC##name(__MAP(x,__SC_DECL,__VA_ARGS__))
->>  
-> Heh, nice try, but no, we aren't going to export all syscalls, that's
-> crazy.  And wrong on many levels, sorry.
->
-> Be explicit with your exports, and justify _why_ you need them.
->
-> thanks,
->
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+-- 
+Dan Aloni
