@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756901AbaGBSDr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 14:03:47 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:51914 "EHLO
+	id S1757452AbaGBSFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 14:05:20 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51934 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211AbaGBSDq (ORCPT
+	with ESMTP id S1752211AbaGBSDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 14:03:46 -0400
+	Wed, 2 Jul 2014 14:03:48 -0400
 From: Laura Abbott <lauraa@codeaurora.org>
 To: Will Deacon <will.deacon@arm.com>,
         Catalin Marinas <catalin.marinas@arm.com>
@@ -14,60 +14,84 @@ Cc: Laura Abbott <lauraa@codeaurora.org>,
         David Riley <davidriley@chromium.org>,
         linux-arm-kernel@lists.infradead.org,
         Ritesh Harjain <ritesh.harjani@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>
-Subject: [PATCHv4 0/5] DMA Atomic pool for arm64
-Date: Wed,  2 Jul 2014 11:03:33 -0700
-Message-Id: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv4 2/5] lib/genalloc.c: Add genpool range check function
+Date: Wed,  2 Jul 2014 11:03:35 -0700
+Message-Id: <1404324218-4743-3-git-send-email-lauraa@codeaurora.org>
 X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
+References: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-This is the latest in a series to add support for atomic DMA allocations
-for non-coherent/CMA code paths in arm64. I did some refactoring to have
-arm also use genalloc and pull out some of the remapping code.
+After allocating an address from a particular genpool,
+there is no good way to verify if that address actually
+belongs to a genpool. Introduce addr_in_gen_pool which
+will return if an address plus size falls completely
+within the genpool range.
 
-This could probably use more testing on other platforms, especially those
-that have CONFIG_ARM_DMA_USE_IOMMU set.
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+---
+ include/linux/genalloc.h |  3 +++
+ lib/genalloc.c           | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 32 insertions(+)
 
-Thanks,
-Laura
-
-v4: Simplified the logic in gen_pool_first_fit_order_align which makes the
-data argument actually unused.
-
-v3: Now a patch series due to refactoring of arm code. arm and arm64 now both
-use genalloc for atomic pool management. genalloc extensions added.
-DMA remapping code factored out as well.
-
-v2: Various bug fixes pointed out by David and Ritesh (CMA dependency, swapping
-coherent, noncoherent). I'm still not sure how to address the devicetree
-suggestion by Will [1][2]. I added the devicetree mailing list this time around
-to get more input on this.
-
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/249180.html
-[2] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-April/249528.html
-
-
-Laura Abbott (5):
-  lib/genalloc.c: Add power aligned algorithm
-  lib/genalloc.c: Add genpool range check function
-  common: dma-mapping: Introduce common remapping functions
-  arm: use genalloc for the atomic pool
-  arm64: Add atomic pool for non-coherent and CMA allocations.
-
- arch/arm/Kconfig                         |   1 +
- arch/arm/mm/dma-mapping.c                | 200 ++++++++-----------------------
- arch/arm64/Kconfig                       |   1 +
- arch/arm64/mm/dma-mapping.c              | 154 +++++++++++++++++++++---
- drivers/base/dma-mapping.c               |  67 +++++++++++
- include/asm-generic/dma-mapping-common.h |   9 ++
- include/linux/genalloc.h                 |   7 ++
- lib/genalloc.c                           |  49 ++++++++
- 8 files changed, 323 insertions(+), 165 deletions(-)
-
+diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
+index 3cd0934..1ccaab4 100644
+--- a/include/linux/genalloc.h
++++ b/include/linux/genalloc.h
+@@ -121,6 +121,9 @@ extern struct gen_pool *devm_gen_pool_create(struct device *dev,
+ 		int min_alloc_order, int nid);
+ extern struct gen_pool *dev_get_gen_pool(struct device *dev);
+ 
++bool addr_in_gen_pool(struct gen_pool *pool, unsigned long start,
++			size_t size);
++
+ #ifdef CONFIG_OF
+ extern struct gen_pool *of_get_named_gen_pool(struct device_node *np,
+ 	const char *propname, int index);
+diff --git a/lib/genalloc.c b/lib/genalloc.c
+index c2b3ad7..6f03722 100644
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -403,6 +403,35 @@ void gen_pool_for_each_chunk(struct gen_pool *pool,
+ EXPORT_SYMBOL(gen_pool_for_each_chunk);
+ 
+ /**
++ * addr_in_gen_pool - checks if an address falls within the range of a pool
++ * @pool:	the generic memory pool
++ * @start:	start address
++ * @size:	size of the region
++ *
++ * Check if the range of addresses falls within the specified pool. Takes
++ * the rcu_read_lock for the duration of the check.
++ */
++bool addr_in_gen_pool(struct gen_pool *pool, unsigned long start,
++			size_t size)
++{
++	bool found = false;
++	unsigned long end = start + size;
++	struct gen_pool_chunk *chunk;
++
++	rcu_read_lock();
++	list_for_each_entry_rcu(chunk, &(pool)->chunks, next_chunk) {
++		if (start >= chunk->start_addr && start <= chunk->end_addr) {
++			if (end <= chunk->end_addr) {
++				found = true;
++				break;
++			}
++		}
++	}
++	rcu_read_unlock();
++	return found;
++}
++
++/**
+  * gen_pool_avail - get available free space of the pool
+  * @pool: pool to get available free space
+  *
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
