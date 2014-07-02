@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322AbaGBRuO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 13:50:14 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:41846 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756711AbaGBRuJ convert rfc822-to-8bit (ORCPT
+	id S1755560AbaGBRzN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 13:55:13 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:44748 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752211AbaGBRzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 13:50:09 -0400
-Date: Wed, 2 Jul 2014 19:51:54 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Mark Brown <broonie@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
-        lgirdwood@gmail.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        Dave Airlie <airlied@gmail.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ASoC: tda998x: add a codec to the HDMI transmitter
-Message-ID: <20140702195154.47d6f6b4@armhf>
-In-Reply-To: <20140702165628.GO20799@lunn.ch>
-References: <20140702183841.7c964832@armhf>
-	<20140702165628.GO20799@lunn.ch>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; arm-unknown-linux-gnueabihf)
+	Wed, 2 Jul 2014 13:55:11 -0400
+Date: Wed, 2 Jul 2014 10:55:01 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
+ wakeups
+Message-ID: <20140702175501.GW4603@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140627142038.GA22942@linux.vnet.ibm.com>
+ <20140702123412.GD19379@twins.programming.kicks-ass.net>
+ <20140702153915.GQ4603@linux.vnet.ibm.com>
+ <20140702160412.GO19379@twins.programming.kicks-ass.net>
+ <20140702170838.GS4603@linux.vnet.ibm.com>
+ <20140702172600.GR19379@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140702172600.GR19379@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070217-8236-0000-0000-0000038CE281
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jul 2014 18:56:28 +0200
-Andrew Lunn <andrew@lunn.ch> wrote:
+On Wed, Jul 02, 2014 at 07:26:00PM +0200, Peter Zijlstra wrote:
+> On Wed, Jul 02, 2014 at 10:08:38AM -0700, Paul E. McKenney wrote:
+> > As were others, not that long ago.  Today is the first hint that I got
+> > that you feel otherwise.  But it does look like the softirq approach to
+> > callback processing needs to stick around for awhile longer.  Nice to
+> > hear that softirq is now "sane and normal" again, I guess.  ;-)
+> 
+> Nah, softirqs are still totally annoying :-)
 
-> How well will this work with Russell concept of a front end and two
-> backends? Can you uses your CODEC twice, once with the I2S backend and
-> a second time with the S/PDIF backend?
+Name me one thing that isn't annoying.  ;-)
 
-Hi Andrew,
+> So I've lost detail again, but it seems to me that on all CPUs that are
+> actually getting ticks, waking tasks to process the RCU state is
+> entirely over doing it. Might as well keep processing their RCU state
+> from the tick as was previously done.
 
-The TDA998x CODEC has two functions:
-- it sets the possible formats and rates when the screen connects and
-- it sets the audio input port when audio streaming starts.
+And that is in fact the approach taken by my patch.  For which I just
+kicked off testing, so expect an update later today.  (And that -is-
+optimistic!  A pessimistic viewpoint would hold that the patch would
+turn out to be so broken that it would take -weeks- to get a fix!)
 
-I tested this CODEC with both DAPM and DPCM. If the audio subsystem
-asks for streaming on both I2S and S/PDIF, only the last call is served
-(this depends on the order of the DAI links in the audio card creation
-table).
+							Thanx, Paul
 
-As I told to Russell, DPCM just asks for a 'system' DAI (front-end),
-but it also asks for some additional code in the kirkwood DMA driver
-because all PCMs are activated on streaming start.
-
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
