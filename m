@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753107AbaGBKSH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 06:18:07 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:36795 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083AbaGBKSE (ORCPT
+	id S1753281AbaGBKSZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 06:18:25 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54593 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753119AbaGBKSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 06:18:04 -0400
-Message-ID: <53B3DC52.7040803@collabora.co.uk>
-Date: Wed, 02 Jul 2014 12:17:54 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>, Lee Jones <lee.jones@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Stone <daniels@collabora.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 04/14] clk: max77686: Improve Maxim 77686 PMIC clocks
- binding
-References: <1403806546-31122-1-git-send-email-javier.martinez@collabora.co.uk> <1403806546-31122-5-git-send-email-javier.martinez@collabora.co.uk> <20140701172959.32686.9863@quantum>
-In-Reply-To: <20140701172959.32686.9863@quantum>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jul 2014 06:18:21 -0400
+X-Sasl-enc: u9W0CL2UAUJ7cTwKJqThFOCq6d3Fv+OYbyYEBBqUPLvJ 1404296299
+From: Michalis Pappas <mpappas@fastmail.fm>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH V2] staging: gdm72xx: move T_CAPABILITY definitions to hci.h
+Date: Wed,  2 Jul 2014 11:18:07 +0100
+Message-Id: <1404296287-3970-1-git-send-email-mpappas@fastmail.fm>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1404219616-1788-3-git-send-email-mpappas@fastmail.fm>
+References: <1404219616-1788-3-git-send-email-mpappas@fastmail.fm>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mike,
+Signed-off-by: Michalis Pappas <mpappas@fastmail.fm>
+---
+ drivers/staging/gdm72xx/gdm_wimax.c | 11 ++++-------
+ drivers/staging/gdm72xx/hci.h       |  6 ++++++
+ 2 files changed, 10 insertions(+), 7 deletions(-)
 
-On 07/01/2014 07:29 PM, Mike Turquette wrote:
-> Quoting Javier Martinez Canillas (2014-06-26 11:15:36)
->> Like most clock drivers, the Maxim 77686 PMIC clock binding
->> follows the convention that the "#clock-cells" property is
->> used to specify the number of cells in a clock provider.
->> 
->> But the binding document is not clear enough that it shall
->> be set to 1 since the PMIC support multiple clocks outputs.
->> 
->> Also, explain that the clocks identifiers are defined in a
->> header file that can be included by Device Tree source with
->> client nodes to avoid using magic numbers.
->> 
->> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
->> Reviewed-by: Doug Anderson <dianders@chromium.org>
-> 
-> Looks good to me.
-> 
-> Regards,
-> Mike
-> 
-
-Thanks a lot, an Acked-by or Reviewed-by tags for this patch and 03/14 will be
-great as well so I can carry those on the next version of the series.
-
-Best regards,
-Javier
+diff --git a/drivers/staging/gdm72xx/gdm_wimax.c b/drivers/staging/gdm72xx/gdm_wimax.c
+index 4148013..50b7bf0 100644
+--- a/drivers/staging/gdm72xx/gdm_wimax.c
++++ b/drivers/staging/gdm72xx/gdm_wimax.c
+@@ -609,10 +609,7 @@ static void gdm_wimax_prepare_device(struct net_device *dev)
+ 	u16 len = 0;
+ 	u32 val = 0;
+ 
+-	#define BIT_MULTI_CS	0
+-	#define BIT_WIMAX		1
+-	#define BIT_QOS			2
+-	#define BIT_AGGREGATION	3
++
+ 
+ 	/* GetInformation mac address */
+ 	len = 0;
+@@ -621,12 +618,12 @@ static void gdm_wimax_prepare_device(struct net_device *dev)
+ 	hci->length = H2B(len);
+ 	gdm_wimax_send(nic, hci, HCI_HEADER_SIZE+len);
+ 
+-	val = (1<<BIT_WIMAX) | (1<<BIT_MULTI_CS);
++	val = (1 << T_CAPABILITY_WIMAX) | (1 << T_CAPABILITY_MULTI_CS);
+ 	#if defined(CONFIG_WIMAX_GDM72XX_QOS)
+-	val |= (1<<BIT_QOS);
++	val |= (1 << T_CAPABILITY_QOS);
+ 	#endif
+ 	#if defined(CONFIG_WIMAX_GDM72XX_WIMAX2)
+-	val |= (1<<BIT_AGGREGATION);
++	val |= (1 << T_CAPABILITY_AGGREGATION);
+ 	#endif
+ 
+ 	/* Set capability */
+diff --git a/drivers/staging/gdm72xx/hci.h b/drivers/staging/gdm72xx/hci.h
+index 059ba00..4dd253d 100644
+--- a/drivers/staging/gdm72xx/hci.h
++++ b/drivers/staging/gdm72xx/hci.h
+@@ -198,6 +198,12 @@
+ #define T_FFTSIZE			(0xda	| (4 << 16))
+ #define T_DUPLEX_MODE			(0xdb	| (4 << 16))
+ 
++/* T_CAPABILITY */
++#define T_CAPABILITY_MULTI_CS		(1 << 0)
++#define T_CAPABILITY_WIMAX		(1 << 1)
++#define T_CAPABILITY_QOS		(1 << 2)
++#define T_CAPABILITY_AGGREGATION	(1 << 3)
++
+ struct hci_s {
+ 	unsigned short cmd_evt;
+ 	unsigned short length;
+-- 
+1.8.4
 
