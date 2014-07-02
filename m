@@ -1,266 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145AbaGBPOg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 11:14:36 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:58559 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264AbaGBPOe (ORCPT
+	id S1754397AbaGBPTy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 11:19:54 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:65114 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125AbaGBPTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 11:14:34 -0400
+	Wed, 2 Jul 2014 11:19:52 -0400
+Message-ID: <53B42311.5010009@linaro.org>
+Date: Wed, 02 Jul 2014 23:19:45 +0800
+From: zhangfei <zhangfei.gao@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-In-Reply-To: <1403910612-8754-2-git-send-email-andi@firstfloor.org>
-References: <1403910612-8754-1-git-send-email-andi@firstfloor.org>
-	<1403910612-8754-2-git-send-email-andi@firstfloor.org>
-Date: Wed, 2 Jul 2014 17:14:33 +0200
-Message-ID: <CABPqkBT1XC=mG-ZhjAcMOksdCgP-p3TSSAefi7XBOajMugBYZQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] perf, x86: Revamp PEBS event selection
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Kishon Vijay Abraham I <kishon@ti.com>, arnd@arndb.de,
+        mark.rutland@arm.com, haifeng.yan@linaro.org, jchxue@gmail.com
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Jiancheng Xue <xuejiancheng@huawei.com>
+Subject: Re: [PATCH v2 2/2] phy: add hix5hd2-sata-phy driver
+References: <1403687648-29082-1-git-send-email-zhangfei.gao@linaro.org> <1403687648-29082-3-git-send-email-zhangfei.gao@linaro.org> <53B3EC18.5020509@ti.com> <53B3EC62.80202@ti.com>
+In-Reply-To: <53B3EC62.80202@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi,
 
+Hi, Kishon
 
-On Sat, Jun 28, 2014 at 1:10 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> As already discussed earlier in email.
->
-> The basic idea is that it does not make sense to list all PEBS
-> events individually. The list is very long, sometimes outdated
-> and the hardware doesn't need it. If an event does not support
-> PEBS it will just not count, there is no security issue.
->
-> This vastly simplifies the PEBS event selection.
->
-> Bugs fixed:
-> - We do not allow setting forbidden flags with PEBS anymore
-> (SDM 18.9.4), except for the special cycle event.
-> This is done using a new constraint macro that also
-> matches on the event flags.
-> - We now allow DataLA on all Haswell events, not just
-> a small subset. In general all PEBS events that tag memory
-> accesses support DataLA on Haswell. Otherwise the reported
-> address is just zero. This allows address profiling
-> on vastly more events.
-> - We did not allow all PEBS events on Haswell.
->
-> This includes the changes proposed by Stephane earlier and obsoletes
-> his patchkit.
->
-> I only did Sandy Bridge and Silvermont and later so far, mostly because these
-> are the parts I could directly confirm the hardware behavior with hardware
-> architects.
->
-This patch still does not work as expected on any platforms. See below
+On 07/02/2014 07:26 PM, Kishon Vijay Abraham I wrote:
 
-> Cc: eranian@google.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/include/asm/perf_event.h         |  8 +++
->  arch/x86/kernel/cpu/perf_event.h          | 18 ++++--
->  arch/x86/kernel/cpu/perf_event_intel_ds.c | 96 +++++++------------------------
->  3 files changed, 43 insertions(+), 79 deletions(-)
->
-> diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-> index 8249df4..8dfc9fd 100644
-> --- a/arch/x86/include/asm/perf_event.h
-> +++ b/arch/x86/include/asm/perf_event.h
-> @@ -51,6 +51,14 @@
->          ARCH_PERFMON_EVENTSEL_EDGE  |  \
->          ARCH_PERFMON_EVENTSEL_INV   |  \
->          ARCH_PERFMON_EVENTSEL_CMASK)
-> +#define X86_ALL_EVENT_FLAGS                    \
-> +       (ARCH_PERFMON_EVENTSEL_EDGE |           \
-> +        ARCH_PERFMON_EVENTSEL_INV |            \
-> +        ARCH_PERFMON_EVENTSEL_CMASK |          \
-> +        ARCH_PERFMON_EVENTSEL_ANY |            \
-> +        ARCH_PERFMON_EVENTSEL_PIN_CONTROL |    \
-> +        HSW_IN_TX |                            \
-> +        HSW_IN_TX_CHECKPOINTED)
->  #define AMD64_RAW_EVENT_MASK           \
->         (X86_RAW_EVENT_MASK          |  \
->          AMD64_EVENTSEL_EVENT)
-> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-> index 3b2f9bd..9907759 100644
-> --- a/arch/x86/kernel/cpu/perf_event.h
-> +++ b/arch/x86/kernel/cpu/perf_event.h
-> @@ -252,16 +252,24 @@ struct cpu_hw_events {
->         EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
->
->  #define INTEL_PLD_CONSTRAINT(c, n)     \
-> -       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
-> +       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
->                            HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LDLAT)
->
->  #define INTEL_PST_CONSTRAINT(c, n)     \
-> -       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
-> +       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
->                           HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST)
->
-> -/* DataLA version of store sampling without extra enable bit. */
-> -#define INTEL_PST_HSW_CONSTRAINT(c, n) \
-> -       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
-> +/* Event constraint, but match on all event flags too. */
-> +#define INTEL_FLAGS_EVENT_CONSTRAINT(c, n) \
-> +       EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS)
-> +
-> +/* Check only flags, but allow all event/umask */
-> +#define INTEL_ALL_EVENT_CONSTRAINT(flags, n)   \
-> +       EVENT_CONSTRAINT(flags, n, X86_ALL_EVENT_FLAGS)
-> +
-> +/* Same as above, but enable DataLA */
-> +#define INTEL_ALL_EVENT_CONSTRAINT_DATALA(flags, n) \
-> +       __EVENT_CONSTRAINT(flags, n, X86_ALL_EVENT_FLAGS, \
->                           HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST_HSW)
->
->  /*
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> index 980970c..d50142e 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> @@ -567,28 +567,10 @@ struct event_constraint intel_atom_pebs_event_constraints[] = {
->  };
->
->  struct event_constraint intel_slm_pebs_event_constraints[] = {
-> -       INTEL_UEVENT_CONSTRAINT(0x0103, 0x1), /* REHABQ.LD_BLOCK_ST_FORWARD_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x0803, 0x1), /* REHABQ.LD_SPLITS_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x0204, 0x1), /* MEM_UOPS_RETIRED.L2_HIT_LOADS_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x0404, 0x1), /* MEM_UOPS_RETIRED.L2_MISS_LOADS_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x0804, 0x1), /* MEM_UOPS_RETIRED.DTLB_MISS_LOADS_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x2004, 0x1), /* MEM_UOPS_RETIRED.HITM_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x00c0, 0x1), /* INST_RETIRED.ANY_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x00c4, 0x1), /* BR_INST_RETIRED.ALL_BRANCHES_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x7ec4, 0x1), /* BR_INST_RETIRED.JCC_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xbfc4, 0x1), /* BR_INST_RETIRED.FAR_BRANCH_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xebc4, 0x1), /* BR_INST_RETIRED.NON_RETURN_IND_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xf7c4, 0x1), /* BR_INST_RETIRED.RETURN_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xf9c4, 0x1), /* BR_INST_RETIRED.CALL_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xfbc4, 0x1), /* BR_INST_RETIRED.IND_CALL_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xfdc4, 0x1), /* BR_INST_RETIRED.REL_CALL_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xfec4, 0x1), /* BR_INST_RETIRED.TAKEN_JCC_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_MISP_RETIRED.ALL_BRANCHES_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x7ec5, 0x1), /* BR_INST_MISP_RETIRED.JCC_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xebc5, 0x1), /* BR_INST_MISP_RETIRED.NON_RETURN_IND_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xf7c5, 0x1), /* BR_INST_MISP_RETIRED.RETURN_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xfbc5, 0x1), /* BR_INST_MISP_RETIRED.IND_CALL_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xfec5, 0x1), /* BR_INST_MISP_RETIRED.TAKEN_JCC_PS */
-> +       /* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
-> +       INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
-> +       /* Allow all events as PEBS with no flags */
-> +       INTEL_ALL_EVENT_CONSTRAINT(0xffff, 0x1),
+>>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+>>> index 16a2f06..782953d 100644
+>>> --- a/drivers/phy/Kconfig
+>>> +++ b/drivers/phy/Kconfig
+>>> @@ -109,6 +109,14 @@ config PHY_EXYNOS5250_SATA
+>>>   	  SATA 3.0 Gb/s, SATA 6.0 Gb/s speeds. It supports one SATA host
+>>>   	  port to accept one SATA device.
+>>>
+>>> +config PHY_HIX5HD2_SATA
+>>> +	tristate "HIX5HD2 SATA PHY Driver"
+>>> +	depends on ARCH_HIX5HD2 && OF
+>>
+>> depends on HAS_IOMEM?
 
-No, still needs to be INTEL_ALL_EVENT_CONSTRAINT(0x0, 0x1)
-otherwise the get_event_constraint() test I mentioned previously will
-fail, event with your ALL_FILTER mask.
+Yes, will add it.
+HAS_IOMEM is select by default and not notice it at all.
+>>> +	select GENERIC_PHY
+>>> +	select MFD_SYSCON
+>>> +	help
+>>> +	  Support for SATA PHY on Hisilicon hix5hd2 Soc.
+>>> +
+>>>   config PHY_SUN4I_USB
+>>>   	tristate "Allwinner sunxi SoC USB PHY driver"
+>>>   	depends on ARCH_SUNXI && HAS_IOMEM && OF
+>>> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+>>> index b4f1d57..54f04d0 100644
+>>> --- a/drivers/phy/Makefile
+>>> +++ b/drivers/phy/Makefile
+>>> @@ -12,6 +12,7 @@ obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
+>>>   obj-$(CONFIG_TI_PIPE3)			+= phy-ti-pipe3.o
+>>>   obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
+>>>   obj-$(CONFIG_PHY_EXYNOS5250_SATA)	+= phy-exynos5250-sata.o
+>>> +obj-$(CONFIG_PHY_HIX5HD2_SATA)		+= phy-hix5hd2-sata.o
+>>>   obj-$(CONFIG_PHY_SUN4I_USB)		+= phy-sun4i-usb.o
+>>>   obj-$(CONFIG_PHY_SAMSUNG_USB2)		+= phy-exynos-usb2.o
+>>>   phy-exynos-usb2-y			+= phy-samsung-usb2.o
+>>> diff --git a/drivers/phy/phy-hix5hd2-sata.c b/drivers/phy/phy-hix5hd2-sata.c
+>>> new file mode 100644
+>>> index 0000000..6f1e3ea
+>>> --- /dev/null
+>>> +++ b/drivers/phy/phy-hix5hd2-sata.c
+>>> @@ -0,0 +1,192 @@
+>>> +/*
+>>> + * Copyright (c) 2014 Linaro Ltd.
+>>> + * Copyright (c) 2014 Hisilicon Limited.
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or modify
+>>> + * it under the terms of the GNU General Public License as published by
+>>> + * the Free Software Foundation; either version 2 of the License, or
+>>> + * (at your option) any later version.
+>>> + */
+>>> +
+>>> +#include <linux/module.h>
+>>> +#include <linux/mfd/syscon.h>
+>>> +#include <linux/regmap.h>
+>>> +#include <linux/phy/phy.h>
+>>> +#include <linux/io.h>
+>>> +#include <linux/platform_device.h>
+>>> +#include <linux/delay.h>
+>>
+>> can this be arranged alphabetically? Helps while adding new header files.
+Sure
 
->         EVENT_CONSTRAINT_END
->  };
+>>> +static int hix5hd2_sata_phy_probe(struct platform_device *pdev)
+>>> +{
+>>> +	struct phy_provider *phy_provider;
+>>> +	struct device *dev = &pdev->dev;
+>>> +	struct resource *res;
+>>> +	struct phy *phy;
+>>> +	struct hix5hd2_priv *priv;
+>>> +
+>>> +	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
+>>> +	if (!priv)
+>>> +		return -ENOMEM;
+>>> +
+>>> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>> +	priv->base = devm_ioremap(dev, res->start, resource_size(res));
 >
-> @@ -624,68 +606,34 @@ struct event_constraint intel_westmere_pebs_event_constraints[] = {
->
->  struct event_constraint intel_snb_pebs_event_constraints[] = {
->         INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-> -       INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
-> -       INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
-> -       INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-> -       INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
-> -       INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
-> -       INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
-> -       INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
-> -       INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
-> -       INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-> -       INTEL_EVENT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
-> -       INTEL_UEVENT_CONSTRAINT(0x02d4, 0xf), /* MEM_LOAD_UOPS_MISC_RETIRED.LLC_MISS */
-> +       INTEL_PLD_CONSTRAINT(0x01cd, 0xf),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
-> +       INTEL_PST_CONSTRAINT(0x02cd, 0xf),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+> It should be devm_ioremap_resource().
+Since these memory region shared by other device, devm_ioremap_resource 
+will fail, since devm_request_mem_region.
 
-No, precise stores only work on counter 3, keep 0x8 here
-
-> +       /* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
-> +       INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
-> +       /* Allow all events as PEBS with no flags */
-> +       INTEL_ALL_EVENT_CONSTRAINT(0xffff, 0xf),
-Ditto
->         EVENT_CONSTRAINT_END
->  };
 >
->  struct event_constraint intel_ivb_pebs_event_constraints[] = {
->          INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-> -        INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
-> -        INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
-> -        INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-> -        INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
-> -        INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
-> -       INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
-> -        INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
-> -        INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
-> -        INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-> -        INTEL_EVENT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
-> +        INTEL_PLD_CONSTRAINT(0x01cd, 0xf),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
-> +       INTEL_PST_CONSTRAINT(0x02cd, 0xf),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
-Must be 0x8
-> +       /* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
-> +       INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
-> +       /* Allow all events as PEBS with no flags */
-> +       INTEL_ALL_EVENT_CONSTRAINT(0xffff, 0xf),
-Ditto
->          EVENT_CONSTRAINT_END
->  };
->
->  struct event_constraint intel_hsw_pebs_event_constraints[] = {
->         INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-> -       INTEL_PST_HSW_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
-> -       INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
-> -       INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-> -       INTEL_UEVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
-> -       INTEL_UEVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
-> -       INTEL_UEVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.NEAR_TAKEN */
-> -       INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.* */
-> -       /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
-> -       INTEL_UEVENT_CONSTRAINT(0x11d0, 0xf),
-> -       /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
-> -       INTEL_UEVENT_CONSTRAINT(0x12d0, 0xf),
-> -       INTEL_UEVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
-> -       INTEL_UEVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
-> -       /* MEM_UOPS_RETIRED.SPLIT_STORES */
-> -       INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf),
-> -       INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
-> -       INTEL_PST_HSW_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
-> -       INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
-> -       INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
-> -       INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
-> -       /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
-> -       INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf),
-> -       /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
-> -       INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf),
-> -       /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
-> -       INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf),
-> -       /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
-> -       INTEL_UEVENT_CONSTRAINT(0x01d3, 0xf),
-> -       INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
-> -       INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
-> -
-> +       INTEL_PLD_CONSTRAINT(0x01cd, 0xf),    /* MEM_TRANS_RETIRED.* */
-> +       /* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
-> +       INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
-> +       /* Allow all events as PEBS with no flags */
-> +       /* We allow DATALA for all PEBS events, will be 0 if not supported */
-> +       INTEL_ALL_EVENT_CONSTRAINT_DATALA(0, 0xf),
+> -Kishon
+>>> +	if (!priv->base)
+>>> +		return -ENOMEM;
+>>> +
+>>> +	priv->peri_ctrl = syscon_regmap_lookup_by_phandle(dev->of_node,
+>>> +						"hisilicon,peripheral-syscon");
+>>> +	if (IS_ERR(priv->peri_ctrl))
+>>> +		priv->peri_ctrl = NULL;
+>>
+>> if syscon_regmap_lookup_by_phandle returns EPROBE_DEFER, you have to return
+>> EPROBE_DEFER no?
+Sure,
+However, postcore_initcall(syscon_init) is bound to init before 
+module_platform_driver probe, so EPROBE_DEFER will not occur.
 
-Missing the catch-all constraint here.
-
->         EVENT_CONSTRAINT_END
->  };
->
-Also add the NHM, WSM, Core2, Atom as well.
-For the last two, you only have the catch-all constraint with counter0.
-
-> --
-> 1.9.3
->
+>>
+>> Rest looks fine to me.
+>>
+>> Thanks
+>> Kishon
+>>
