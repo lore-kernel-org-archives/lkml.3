@@ -1,170 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634AbaGBL1T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 07:27:19 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46184 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750991AbaGBL1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 07:27:17 -0400
-Message-ID: <53B3EC62.80202@ti.com>
-Date: Wed, 2 Jul 2014 16:56:26 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751513AbaGBL3s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 07:29:48 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33798 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869AbaGBL3r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 07:29:47 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>, <lars@metafoo.de>,
+        <tiwai@suse.de>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, <joelf@ti.com>, <nsekhar@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        <dmaengine@vger.kernel.org>
+Subject: [PATCH 0/4] ALSA/dmaengine: Fix 3 bytes physical sample support
+Date: Wed, 2 Jul 2014 14:29:26 +0300
+Message-ID: <1404300570-14082-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 2.0.0
 MIME-Version: 1.0
-To: Zhangfei Gao <zhangfei.gao@linaro.org>, <arnd@arndb.de>,
-        <mark.rutland@arm.com>, <haifeng.yan@linaro.org>, <jchxue@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, Jiancheng Xue <xuejiancheng@huawei.com>
-Subject: Re: [PATCH v2 2/2] phy: add hix5hd2-sata-phy driver
-References: <1403687648-29082-1-git-send-email-zhangfei.gao@linaro.org> <1403687648-29082-3-git-send-email-zhangfei.gao@linaro.org> <53B3EC18.5020509@ti.com>
-In-Reply-To: <53B3EC18.5020509@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Wednesday 02 July 2014 04:55 PM, Kishon Vijay Abraham I wrote:
-> Hi,
-> 
-> On Wednesday 25 June 2014 02:44 PM, Zhangfei Gao wrote:
->> From: Jiancheng Xue <xuejiancheng@huawei.com>
->>
->> Add hix5hd2-sata-phy driver on Hisilicon hix5hd2 soc.
->>
->> Signed-off-by: Jiancheng Xue <xuejiancheng@huawei.com>
->> Signed-off-by: Zhangfei Gao <zhangfei.gao@linaro.org>
->> ---
->>  drivers/phy/Kconfig            |    8 ++
->>  drivers/phy/Makefile           |    1 +
->>  drivers/phy/phy-hix5hd2-sata.c |  192 ++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 201 insertions(+)
->>  create mode 100644 drivers/phy/phy-hix5hd2-sata.c
->>
->> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
->> index 16a2f06..782953d 100644
->> --- a/drivers/phy/Kconfig
->> +++ b/drivers/phy/Kconfig
->> @@ -109,6 +109,14 @@ config PHY_EXYNOS5250_SATA
->>  	  SATA 3.0 Gb/s, SATA 6.0 Gb/s speeds. It supports one SATA host
->>  	  port to accept one SATA device.
->>  
->> +config PHY_HIX5HD2_SATA
->> +	tristate "HIX5HD2 SATA PHY Driver"
->> +	depends on ARCH_HIX5HD2 && OF
-> 
-> depends on HAS_IOMEM?
->> +	select GENERIC_PHY
->> +	select MFD_SYSCON
->> +	help
->> +	  Support for SATA PHY on Hisilicon hix5hd2 Soc.
->> +
->>  config PHY_SUN4I_USB
->>  	tristate "Allwinner sunxi SoC USB PHY driver"
->>  	depends on ARCH_SUNXI && HAS_IOMEM && OF
->> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
->> index b4f1d57..54f04d0 100644
->> --- a/drivers/phy/Makefile
->> +++ b/drivers/phy/Makefile
->> @@ -12,6 +12,7 @@ obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
->>  obj-$(CONFIG_TI_PIPE3)			+= phy-ti-pipe3.o
->>  obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
->>  obj-$(CONFIG_PHY_EXYNOS5250_SATA)	+= phy-exynos5250-sata.o
->> +obj-$(CONFIG_PHY_HIX5HD2_SATA)		+= phy-hix5hd2-sata.o
->>  obj-$(CONFIG_PHY_SUN4I_USB)		+= phy-sun4i-usb.o
->>  obj-$(CONFIG_PHY_SAMSUNG_USB2)		+= phy-exynos-usb2.o
->>  phy-exynos-usb2-y			+= phy-samsung-usb2.o
->> diff --git a/drivers/phy/phy-hix5hd2-sata.c b/drivers/phy/phy-hix5hd2-sata.c
->> new file mode 100644
->> index 0000000..6f1e3ea
->> --- /dev/null
->> +++ b/drivers/phy/phy-hix5hd2-sata.c
->> @@ -0,0 +1,192 @@
->> +/*
->> + * Copyright (c) 2014 Linaro Ltd.
->> + * Copyright (c) 2014 Hisilicon Limited.
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License as published by
->> + * the Free Software Foundation; either version 2 of the License, or
->> + * (at your option) any later version.
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/mfd/syscon.h>
->> +#include <linux/regmap.h>
->> +#include <linux/phy/phy.h>
->> +#include <linux/io.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/delay.h>
-> 
-> can this be arranged alphabetically? Helps while adding new header files.
->> +
->> +#define SATA_PHY0_CTLL		0xa0
->> +#define MPLL_MULTIPLIER_SHIFT	1
->> +#define MPLL_MULTIPLIER_MASK	0xfe
->> +#define MPLL_MULTIPLIER_50M	0x3c
->> +#define MPLL_MULTIPLIER_100M	0x1e
->> +#define PHY_RESET		BIT(0)
->> +#define REF_SSP_EN		BIT(9)
->> +#define SSC_EN			BIT(10)
->> +#define REF_USE_PAD		BIT(23)
->> +
->> +#define SATA_PORT_PHYCTL	0x174
->> +#define SPEED_MODE_MASK		0x6f0000
->> +#define HALF_RATE_SHIFT		16
->> +#define PHY_CONFIG_SHIFT	18
->> +#define GEN2_EN_SHIFT		21
->> +#define SPEED_CTRL		BIT(20)
->> +
->> +#define SATA_PORT_PHYCTL1	0x148
->> +#define AMPLITUDE_MASK		0x3ffffe
->> +#define AMPLITUDE_GEN3		0x68
->> +#define AMPLITUDE_GEN3_SHIFT	15
->> +#define AMPLITUDE_GEN2		0x56
->> +#define AMPLITUDE_GEN2_SHIFT	8
->> +#define AMPLITUDE_GEN1		0x56
->> +#define AMPLITUDE_GEN1_SHIFT	1
->> +
-> .
-> .
-> <snip>
-> .
-> .
->> +
->> +static int hix5hd2_sata_phy_probe(struct platform_device *pdev)
->> +{
->> +	struct phy_provider *phy_provider;
->> +	struct device *dev = &pdev->dev;
->> +	struct resource *res;
->> +	struct phy *phy;
->> +	struct hix5hd2_priv *priv;
->> +
->> +	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
->> +	if (!priv)
->> +		return -ENOMEM;
->> +
->> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +	priv->base = devm_ioremap(dev, res->start, resource_size(res));
+I have noticed while switching the daVinci audio to dmaengine_pcm that the _3LE
+and _3BE support is not working correctly via dmaengine_pcm:
+In case of _3LE/_3BE formats the samples are stored in 3 consecutive bytes
+without padding it to 4 bytes. This means that the DMA needs to be able to
+support 3 bytes word length in order to read/write the samples from memory
+correctly. Originally the code treated 24 bits physical length samples as
+they were 32 bits which leads to corruption when playing or recording audio.
 
-It should be devm_ioremap_resource().
+To fix the support for 3 bytes physical samples the dma driver also need to have
+support for such data arrangement. eDMA does have support for it in HW and the
+legacy davinci-pcm platform driver w/o dmaengine was able to support such
+formats.
 
--Kishon
->> +	if (!priv->base)
->> +		return -ENOMEM;
->> +
->> +	priv->peri_ctrl = syscon_regmap_lookup_by_phandle(dev->of_node,
->> +						"hisilicon,peripheral-syscon");
->> +	if (IS_ERR(priv->peri_ctrl))
->> +		priv->peri_ctrl = NULL;
-> 
-> if syscon_regmap_lookup_by_phandle returns EPROBE_DEFER, you have to return
-> EPROBE_DEFER no?
-> 
-> Rest looks fine to me.
-> 
-> Thanks
-> Kishon
-> 
+First step is to add DMA_SLAVE_BUSWIDTH_3_BYTES to dma_slave_buswidth for
+engines and users to select 3 bytes as bus width.
+
+Followed by:
+In snd_dmaengine_pcm_open() we should check the slave_caps of the dma if it
+supports DMA_SLAVE_BUSWIDTH_3_BYTES. Based on this information we initialize
+the runtime->hw.formats: if DMA_SLAVE_BUSWIDTH_3_BYTES is not supported or
+the slave_caps is not provided by the driver we mask out the 24 bits
+physical width sample formats so they will be not available for user space
+to pick. If the DMA_SLAVE_BUSWIDTH_3_BYTES is supported _3LE/_3BE formats
+will not be masked so later on they can be valid if both CPU and codec dai
+supports them.
+
+Regards,
+Peter
+---
+Peter Ujfalusi (4):
+  dma: Support for 3 bytes word size
+  dma: edma: Declare DMA_SLAVE_BUSWIDTH_3_BYTES as supported buswidth
+  ALSA: pcm_dmaengine: Use the available wrapper to get physical width
+  ALSA: pcm_dmaengine: Correct support for 3 physical bytes samples
+
+ drivers/dma/edma.c         |  1 +
+ include/linux/dmaengine.h  |  1 +
+ sound/core/pcm_dmaengine.c | 41 +++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 41 insertions(+), 2 deletions(-)
+
+-- 
+2.0.0
+
