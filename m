@@ -1,74 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556AbaGBXvD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 19:51:03 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:42373 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969AbaGBXu7 (ORCPT
+	id S1753204AbaGBXvG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 19:51:06 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:35776 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752629AbaGBXvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 19:50:59 -0400
+	Wed, 2 Jul 2014 19:51:03 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHSET cgroup/for-3.17] cgroup: distinguish the default and legacy hierarchies when handling cftypes
-Date: Wed,  2 Jul 2014 19:50:50 -0400
-Message-Id: <1404345055-8196-1-git-send-email-tj@kernel.org>
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Neil Horman <nhorman@tuxdriver.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH 3/5] cgroup: replace cgroup_add_cftypes() with cgroup_add_legacy_cftypes()
+Date: Wed,  2 Jul 2014 19:50:53 -0400
+Message-Id: <1404345055-8196-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1404345055-8196-1-git-send-email-tj@kernel.org>
+References: <1404345055-8196-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Currently, cftypes added by cgroup_add_cftypes() are used for both the
+unified default hierarchy and legacy ones and subsystems can mark each
+file with either CFTYPE_ONLY_ON_DFL or CFTYPE_INSANE if it has to
+appear only on one of them.  This is quite hairy and error-prone.
+Also, we may end up exposing interface files to the default hierarchy
+without thinking it through.
 
-Until now, cftype arrays carried files for both the default and legacy
-hierarchies and the files which needed to be used on only one of them
-were flagged with either CFTYPE_ONLY_ON_DFL or CFTYPE_INSANE.  This
-gets confusing very quickly and we may end up exposing interface files
-to the default hierarchy without thinking it through.
+cgroup_subsys will grow two separate cftype addition functions and
+apply each only on the hierarchies of the matching type.  This will
+allow organizing cftypes in a lot clearer way and encourage subsystems
+to scrutinize the interface which is being exposed in the new default
+hierarchy.
 
-This patchset makes cgroup core provide separate sets of interfaces
-for cftype handling so that the cftypes for the default and legacy
-hierarchies are clearly distinguished.  This makes all the existing
-subsystem interface files legacy-only by default and all subsystems
-will have no interface file created when enabled on the default
-hierarchy.  Each subsystem should explicitly review and compose the
-interface for the default hierarchy.
+In preparation, this patch adds cgroup_add_legacy_cftypes() which
+currently is a simple wrapper around cgroup_add_cftypes() and replaces
+all cgroup_add_cftypes() usages with it.
 
-This patchset contains the following five patches.
+While at it, this patch drops a completely spurious return from
+__hugetlb_cgroup_file_init().
 
- 0001-cgroup-split-cgroup_base_files-into-cgroup_-dfl-lega.patch
- 0002-cgroup-rename-cgroup_subsys-base_cftypes-to-legacy_c.patch
- 0003-cgroup-replace-cgroup_add_cftypes-with-cgroup_add_le.patch
- 0004-cgroup-distinguish-the-default-and-legacy-hierarchie.patch
- 0005-cgroup-make-CFTYPE_ONLY_ON_DFL-and-CFTYPE_NO_-intern.patch
+This patch doesn't introduce any functional differences.
 
-This patchset is on top of
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ block/blk-cgroup.c        | 3 ++-
+ include/linux/cgroup.h    | 2 +-
+ kernel/cgroup.c           | 7 ++++++-
+ mm/hugetlb_cgroup.c       | 5 ++---
+ mm/memcontrol.c           | 3 ++-
+ net/ipv4/tcp_memcontrol.c | 2 +-
+ 6 files changed, 14 insertions(+), 8 deletions(-)
 
-  a497c3ba1d97 ("Linux 3.16-rc2")
-+ [1] [PATCHSET cgroup/for-3.17] cgroup: remove sane_behavior support on non-default hierarchies
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index d8a331d..3885775 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -1116,7 +1116,8 @@ int __init blkcg_policy_register(struct blkcg_policy *pol)
+ 
+ 	/* everything is in place, add intf files for the new policy */
+ 	if (pol->cftypes)
+-		WARN_ON(cgroup_add_cftypes(&blkio_cgrp_subsys, pol->cftypes));
++		WARN_ON(cgroup_add_legacy_cftypes(&blkio_cgrp_subsys,
++						  pol->cftypes));
+ 	ret = 0;
+ out_unlock:
+ 	mutex_unlock(&blkcg_pol_mutex);
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index c75742c..a75a37f 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -582,7 +582,7 @@ static inline void pr_cont_cgroup_path(struct cgroup *cgrp)
+ 
+ char *task_cgroup_path(struct task_struct *task, char *buf, size_t buflen);
+ 
+-int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
++int cgroup_add_legacy_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
+ int cgroup_rm_cftypes(struct cftype *cfts);
+ 
+ bool cgroup_is_descendant(struct cgroup *cgrp, struct cgroup *ancestor);
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 51b67fc..311d42b 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3060,7 +3060,7 @@ int cgroup_rm_cftypes(struct cftype *cfts)
+  * function currently returns 0 as long as @cfts registration is successful
+  * even if some file creation attempts on existing cgroups fail.
+  */
+-int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
++static int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
+ {
+ 	int ret;
+ 
+@@ -3085,6 +3085,11 @@ int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
+ 	return ret;
+ }
+ 
++int cgroup_add_legacy_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
++{
++	return cgroup_add_cftypes(ss, cfts);
++}
++
+ /**
+  * cgroup_task_count - count the number of tasks in a cgroup.
+  * @cgrp: the cgroup in question
+diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+index 493f758..9aae6f4 100644
+--- a/mm/hugetlb_cgroup.c
++++ b/mm/hugetlb_cgroup.c
+@@ -358,9 +358,8 @@ static void __init __hugetlb_cgroup_file_init(int idx)
+ 	cft = &h->cgroup_files[4];
+ 	memset(cft, 0, sizeof(*cft));
+ 
+-	WARN_ON(cgroup_add_cftypes(&hugetlb_cgrp_subsys, h->cgroup_files));
+-
+-	return;
++	WARN_ON(cgroup_add_legacy_cftypes(&hugetlb_cgrp_subsys,
++					  h->cgroup_files));
+ }
+ 
+ void __init hugetlb_cgroup_file_init(void)
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 0dd9378..a629611 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -7041,7 +7041,8 @@ __setup("swapaccount=", enable_swap_account);
+ 
+ static void __init memsw_file_init(void)
+ {
+-	WARN_ON(cgroup_add_cftypes(&memory_cgrp_subsys, memsw_cgroup_files));
++	WARN_ON(cgroup_add_legacy_cftypes(&memory_cgrp_subsys,
++					  memsw_cgroup_files));
+ }
+ 
+ static void __init enable_swap_cgroup(void)
+diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
+index f7a2ec3..3af5226 100644
+--- a/net/ipv4/tcp_memcontrol.c
++++ b/net/ipv4/tcp_memcontrol.c
+@@ -222,7 +222,7 @@ static struct cftype tcp_files[] = {
+ 
+ static int __init tcp_memcontrol_init(void)
+ {
+-	WARN_ON(cgroup_add_cftypes(&memory_cgrp_subsys, tcp_files));
++	WARN_ON(cgroup_add_legacy_cftypes(&memory_cgrp_subsys, tcp_files));
+ 	return 0;
+ }
+ __initcall(tcp_memcontrol_init);
+-- 
+1.9.3
 
-and available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-dfl_files
-
-diffstat follows.  Thanks.
-
- block/blk-cgroup.c           |    5 -
- include/linux/cgroup.h       |   17 +++--
- kernel/cgroup.c              |  146 ++++++++++++++++++++++++++++++++-----------
- kernel/cgroup_freezer.c      |    2
- kernel/cpuset.c              |    2
- kernel/sched/core.c          |    2
- kernel/sched/cpuacct.c       |    2
- mm/hugetlb_cgroup.c          |    5 -
- mm/memcontrol.c              |    6 -
- net/core/netclassid_cgroup.c |    2
- net/core/netprio_cgroup.c    |    2
- net/ipv4/tcp_memcontrol.c    |    2
- security/device_cgroup.c     |    2
- 13 files changed, 139 insertions(+), 56 deletions(-)
-
---
-tejun
-
-[1] http://lkml.kernel.org/g/1404344747-7957-1-git-send-email-tj@kernel.org
