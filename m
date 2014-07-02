@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308AbaGBSAQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 14:00:16 -0400
-Received: from exprod5og108.obsmtp.com ([64.18.0.186]:58907 "HELO
-	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751540AbaGBSAO (ORCPT
+	id S1756803AbaGBSCZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 14:02:25 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:51746 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754536AbaGBSCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 14:00:14 -0400
+	Wed, 2 Jul 2014 14:02:23 -0400
+Date: Wed, 2 Jul 2014 19:02:12 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Andrew Lunn <andrew@lunn.ch>, Mark Brown <broonie@kernel.org>,
+        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
+        lgirdwood@gmail.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
+        Dave Airlie <airlied@gmail.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ASoC: tda998x: add a codec to the HDMI transmitter
+Message-ID: <20140702180212.GS32514@n2100.arm.linux.org.uk>
+References: <20140702183841.7c964832@armhf> <20140702165628.GO20799@lunn.ch> <20140702195154.47d6f6b4@armhf>
 MIME-Version: 1.0
-In-Reply-To: <805EF793-7CA2-4F4A-B7D2-0AF2582EFFAA@codeaurora.org>
-References: <1382529163-31968-1-git-send-email-tinamdar@apm.com>
-	<1382531997.14960.8.camel@mbp>
-	<CACoXjcmJPHdkrGRng8oWosgo9V_pLDNYw5Z3R_yN6w_rUe=G8Q@mail.gmail.com>
-	<805EF793-7CA2-4F4A-B7D2-0AF2582EFFAA@codeaurora.org>
-Date: Wed, 2 Jul 2014 10:54:26 -0700
-Message-ID: <CACoXjckS50sQGF54Go-FeoN3MfiX=SXb7s6wYKynBr8BoH8a8g@mail.gmail.com>
-Subject: Re: [RFC PATCH] arm64: Add arch support for PCI
-From: Tanmay Inamdar <tinamdar@apm.com>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140702195154.47d6f6b4@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 21, 2014 at 11:57 AM, Kumar Gala <galak@codeaurora.org> wrote:
->
-> On Nov 21, 2013, at 7:38 AM, Tanmay Inamdar <tinamdar@apm.com> wrote:
->
->> This patch adds the PCI(e) arch support in arm64. The files are
->> based on PCI(e) support in 32bit arm.
->>
->>
->> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
->> ---
->> arch/arm64/Kconfig               |   19 ++
->> arch/arm64/include/asm/dma.h     |   18 +
->> arch/arm64/include/asm/pci.h     |   74 ++++
->> arch/arm64/include/asm/pcibios.h |   98 ++++++
->> arch/arm64/kernel/Makefile       |    1 +
->> arch/arm64/kernel/pcibios.c      |  689 ++++++++++++++++++++++++++++++++++++++
->> arch/arm64/mm/Makefile           |    2 +-
->> arch/arm64/mm/iomap.c            |   31 ++
->> drivers/pci/Makefile             |    1 +
->> 9 files changed, 932 insertions(+), 1 deletion(-)
->>
->> create mode 100644 arch/arm64/include/asm/dma.h
->> create mode 100644 arch/arm64/include/asm/pci.h
->> create mode 100644 arch/arm64/include/asm/pcibios.h
->> create mode 100644 arch/arm64/kernel/pcibios.c
->> create mode 100644 arch/arm64/mm/iomap.c
->
-> Do you mind reposting this, the version I can find on mailing list archives seems corrupt.  This is at least useful until we get something merged upstream for arm64 pci work.
+On Wed, Jul 02, 2014 at 07:51:54PM +0200, Jean-Francois Moine wrote:
+> On Wed, 2 Jul 2014 18:56:28 +0200
+> Andrew Lunn <andrew@lunn.ch> wrote:
+> 
+> > How well will this work with Russell concept of a front end and two
+> > backends? Can you uses your CODEC twice, once with the I2S backend and
+> > a second time with the S/PDIF backend?
+> 
+> Hi Andrew,
+> 
+> The TDA998x CODEC has two functions:
+> - it sets the possible formats and rates when the screen connects and
+> - it sets the audio input port when audio streaming starts.
+> 
+> I tested this CODEC with both DAPM and DPCM. If the audio subsystem
+> asks for streaming on both I2S and S/PDIF, only the last call is served
+> (this depends on the order of the DAI links in the audio card creation
+> table).
+> 
+> As I told to Russell, DPCM just asks for a 'system' DAI (front-end),
+> but it also asks for some additional code in the kirkwood DMA driver
+> because all PCMs are activated on streaming start.
 
-Sure. I have a patch that applies to 3.13 Linux Kernel. I will post that out.
+Well, as far as I'm concerned right now, it's for Mark to sort out this
+situation, and tell us what he wants to do with the Kirkwood stuff.  I
+suspect he's keeping quiet because he doesn't care about it.
 
->
-> thanks
->
-> - k
->
->
-> --
-> Employee of Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
->
+Given that he's the one with the knowledge of DPCM, and he's the maintainer
+of ASoC, he has the ultimate responsibility for sorting out this and
+giving direction as to how he wants to proceed.
+
+As I understand it though, my solution is the full and proper DPCM solution,
+and I believe that what's currently in mainline is not a DPCM solution.
+
+Mark needs to correct that, because he is one of the few who knows this
+stuff.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
