@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075AbaGBUmS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 16:42:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35421 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877AbaGBUmR (ORCPT
+	id S1757563AbaGBUnp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 16:43:45 -0400
+Received: from exprod5og102.obsmtp.com ([64.18.0.143]:60326 "HELO
+	exprod5og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753373AbaGBUnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 16:42:17 -0400
-Date: Wed, 2 Jul 2014 13:42:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH v3 0/3] free reclaimed pages by paging out instantly
-Message-Id: <20140702134215.2bf830dcb904c34bd2e2b9e8@linux-foundation.org>
-In-Reply-To: <1404260029-11525-1-git-send-email-minchan@kernel.org>
-References: <1404260029-11525-1-git-send-email-minchan@kernel.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jul 2014 16:43:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <7101568.8DVJFku5jp@wuerfel>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+	<1404240214-9804-3-git-send-email-Liviu.Dudau@arm.com>
+	<CACoXjck+aU33=kSy=KCGABNXNR7tj2KndAiBqEDK7wQ_Qei80Q@mail.gmail.com>
+	<7101568.8DVJFku5jp@wuerfel>
+Date: Wed, 2 Jul 2014 13:43:41 -0700
+Message-ID: <CACoXjcn5wdOwQx6PSfhTyuo-FQqBL62o-MNj3i6EfENRnUNt6g@mail.gmail.com>
+Subject: Re: [PATCH v8 2/9] pci: Export find_pci_host_bridge() function.
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, linux-pci <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        patches <patches@apm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  2 Jul 2014 09:13:46 +0900 Minchan Kim <minchan@kernel.org> wrote:
+On Wed, Jul 2, 2014 at 12:12 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 02 July 2014 11:06:38 Tanmay Inamdar wrote:
+>> On Tue, Jul 1, 2014 at 11:43 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+>> > This is a useful function and we should make it visible outside the
+>> > generic PCI code. Export it as a GPL symbol.
+>> >
+>> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+>> > Tested-by: Tanmay Inamdar <tinamdar@apm.com>
+>> > ---
+>> >  drivers/pci/host-bridge.c | 3 ++-
+>> >  1 file changed, 2 insertions(+), 1 deletion(-)
+>> >
+>> > diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+>> > index 0e5f3c9..36c669e 100644
+>> > --- a/drivers/pci/host-bridge.c
+>> > +++ b/drivers/pci/host-bridge.c
+>> > @@ -16,12 +16,13 @@ static struct pci_bus *find_pci_root_bus(struct pci_bus *bus)
+>> >         return bus;
+>> >  }
+>> >
+>> > -static struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
+>> > +struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
+>> >  {
+>> >         struct pci_bus *root_bus = find_pci_root_bus(bus);
+>> >
+>> >         return to_pci_host_bridge(root_bus->bridge);
+>> >  }
+>> > +EXPORT_SYMBOL_GPL(find_pci_host_bridge);
+>>
+>> Is there any specific reason behind making this symbol GPL? I think
+>> the other functions in this file are just EXPORT_SYMBOL. Ultimately
+>> companies which have non gpl Linux modules (nvidia) will face issue
+>> using this API.
+>>
+>> The same applies to 'of_create_pci_host_bridge'.
+>
+> I think EXPORT_SYMBOL_GPL() is better here. The new symbols are unlikely
+> to be used by a peripheral device driver, and PCI host controllers are
+> already restricted by EXPORT_SYMBOL_GPL.
+>
 
-> Normally, I/O completed pages for reclaim would be rotated into
-> inactive LRU tail without freeing. The why it works is we can't free
-> page from atomic context(ie, end_page_writeback) due to vaious locks
-> isn't aware of atomic context.
-> 
-> So for reclaiming the I/O completed pages, we need one more iteration
-> of reclaim and it could make unnecessary aging as well as CPU overhead.
-> 
-> Long time ago, at the first trial, most concern was memcg locking
-> but recently, Johnannes tried amazing effort to make memcg lock simple
-> and got merged into mmotm so I coded up based on mmotm tree.
-> (Kudos to Johannes)
-> 
-> On 1G, 12 CPU kvm guest, build kernel 5 times and result was
-> 
-> allocstall
-> vanilla: records: 5 avg: 4733.80 std: 913.55(19.30%) max: 6442.00 min: 3719.00
-> improve: records: 5 avg: 1514.20 std: 441.69(29.17%) max: 1974.00 min: 863.00
+You are right as long as the functions are not used directly. But what
+if GPL functions are called indirectly.  For example, 'pci_domain_nr'
+implementation in Liviu's V7 series calls 'find_pci_host_bridge'.
 
-Well yes.  We're now doing unaccounted, impact-a-random-process work in
-irq context which was previously being done in process context,
-accounted to the process which was allocating the memory.  Some would
-call this a regression ;)
-
-> pgrotated
-> vanilla: records: 5 avg: 873313.80 std: 40999.20(4.69%) max: 954722.00 min: 845903.00
-> improve: records: 5 avg: 28406.40 std: 3296.02(11.60%) max: 34552.00 min: 25047.00
-
-Still a surprisingly high amount of rotation going on.
-
-> Most of field in vmstat are not changed too much but things I can notice
-> is allocstall and pgrotated. We could save allocstall(ie, direct relcaim)
-> and pgrotated very much.
-> 
-> Welcome testing, review and any feedback!
-
-Well, it will worsen IRQ latencies and it's all more code for us to
-maintain.  I think I'd like to see a better story about the end-user
-benefits before proceeding.
-
+> nvidia will certainly not do a PCI host controller driver that is not
+> upstream or not GPL-compatible.
+>
+>         Arnd
