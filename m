@@ -1,182 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221AbaGBE65 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 00:58:57 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:61768 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186AbaGBE6x (ORCPT
+	id S1752394AbaGBFCy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 01:02:54 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:58684 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917AbaGBFCw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 00:58:53 -0400
-From: Konstantinos Tsimpoukas <kostaslinuxxx@gmail.com>
-To: Konstantinos Tsimpoukas <kostaslinuxxx@gmail.com>,
-        <alsa-devel@alsa-project.org>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        <linux-sound@vger.kernel.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] ice1712: Aligning definitions in header file
-Date: Tue,  1 Jul 2014 23:58:45 -0500
-Message-Id: <1404277125-10064-1-git-send-email-kostaslinuxxx@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 2 Jul 2014 01:02:52 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1403871670-19344-1-git-send-email-k.kozlowski@samsung.com>
+Cc: "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        "Bartlomiej Zolnierkiewicz" <b.zolnierkie@samsung.com>,
+        "Tomasz Figa" <t.figa@samsung.com>,
+        "Yadwinder Singh Brar" <yadi.brar@samsung.com>,
+        "Tushar Behera" <tushar.behera@linaro.org>,
+        "Krzysztof Kozlowski" <k.kozlowski@samsung.com>,
+        stable@vger.kernel.org
+References: <1403871670-19344-1-git-send-email-k.kozlowski@samsung.com>
+Message-ID: <20140702050237.23338.2033@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v2] clk: s2mps11: Fix double free corruption during driver unbind
+Date: Tue, 01 Jul 2014 22:02:37 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aligning #defines in ice1712.h file.
+Quoting Krzysztof Kozlowski (2014-06-27 05:21:10)
+> After unbinding the driver memory was corrupted by double free of
+> clk_lookup structure. This lead to OOPS when re-binding the driver
+> again.
+> 
+> The driver allocated memory for 'clk_lookup' with devm_kzalloc. During
+> driver removal this memory was freed twice: once by clkdev_drop() and
+> second by devm code.
 
-Signed-off-by: Konstantinos Tsimpoukas <kostaslinuxxx@gmail.com>
----
- sound/pci/ice1712/ice1712.h | 84 ++++++++++++++++++++++-----------------------
- 1 file changed, 42 insertions(+), 42 deletions(-)
+Applied to clk-fixes.
 
-diff --git a/sound/pci/ice1712/ice1712.h b/sound/pci/ice1712/ice1712.h
-index b209fc3..f88800a 100644
---- a/sound/pci/ice1712/ice1712.h
-+++ b/sound/pci/ice1712/ice1712.h
-@@ -41,18 +41,18 @@
- #define ICEREG(ice, x) ((ice)->port + ICE1712_REG_##x)
- 
- #define ICE1712_REG_CONTROL		0x00	/* byte */
--#define   ICE1712_RESET			0x80	/* reset whole chip */
--#define   ICE1712_SERR_LEVEL		0x04	/* SERR# level otherwise edge */
--#define   ICE1712_NATIVE		0x01	/* native mode otherwise SB */
-+#define ICE1712_RESET			0x80	/* reset whole chip */
-+#define ICE1712_SERR_LEVEL		0x04	/* SERR# level otherwise edge */
-+#define ICE1712_NATIVE			0x01	/* native mode otherwise SB */
- #define ICE1712_REG_IRQMASK		0x01	/* byte */
--#define   ICE1712_IRQ_MPU1		0x80
--#define   ICE1712_IRQ_TIMER		0x40
--#define   ICE1712_IRQ_MPU2		0x20
--#define   ICE1712_IRQ_PROPCM		0x10
--#define   ICE1712_IRQ_FM		0x08	/* FM/MIDI - legacy */
--#define   ICE1712_IRQ_PBKDS		0x04	/* playback DS channels */
--#define   ICE1712_IRQ_CONCAP		0x02	/* consumer capture */
--#define   ICE1712_IRQ_CONPBK		0x01	/* consumer playback */
-+#define ICE1712_IRQ_MPU1		0x80
-+#define ICE1712_IRQ_TIMER		0x40
-+#define ICE1712_IRQ_MPU2		0x20
-+#define ICE1712_IRQ_PROPCM		0x10
-+#define ICE1712_IRQ_FM			0x08	/* FM/MIDI - legacy */
-+#define ICE1712_IRQ_PBKDS		0x04	/* playback DS channels */
-+#define ICE1712_IRQ_CONCAP		0x02	/* consumer capture */
-+#define ICE1712_IRQ_CONPBK		0x01	/* consumer playback */
- #define ICE1712_REG_IRQSTAT		0x02	/* byte */
- /* look to ICE1712_IRQ_* */
- #define ICE1712_REG_INDEX		0x03	/* byte - indirect CCIxx regs */
-@@ -62,23 +62,23 @@
- #define ICE1712_REG_NMI_INDEX		0x07	/* byte */
- #define ICE1712_REG_AC97_INDEX		0x08	/* byte */
- #define ICE1712_REG_AC97_CMD		0x09	/* byte */
--#define   ICE1712_AC97_COLD		0x80	/* cold reset */
--#define   ICE1712_AC97_WARM		0x40	/* warm reset */
--#define   ICE1712_AC97_WRITE		0x20	/* W: write, R: write in progress */
--#define   ICE1712_AC97_READ		0x10	/* W: read, R: read in progress */
--#define   ICE1712_AC97_READY		0x08	/* codec ready status bit */
--#define   ICE1712_AC97_PBK_VSR		0x02	/* playback VSR */
--#define   ICE1712_AC97_CAP_VSR		0x01	/* capture VSR */
-+#define ICE1712_AC97_COLD		0x80	/* cold reset */
-+#define ICE1712_AC97_WARM		0x40	/* warm reset */
-+#define ICE1712_AC97_WRITE		0x20	/* W: write, R: write in progress */
-+#define ICE1712_AC97_READ		0x10	/* W: read, R: read in progress */
-+#define ICE1712_AC97_READY		0x08	/* codec ready status bit */
-+#define ICE1712_AC97_PBK_VSR		0x02	/* playback VSR */
-+#define ICE1712_AC97_CAP_VSR		0x01	/* capture VSR */
- #define ICE1712_REG_AC97_DATA		0x0a	/* word (little endian) */
- #define ICE1712_REG_MPU1_CTRL		0x0c	/* byte */
- #define ICE1712_REG_MPU1_DATA		0x0d	/* byte */
- #define ICE1712_REG_I2C_DEV_ADDR	0x10	/* byte */
--#define   ICE1712_I2C_WRITE		0x01	/* write direction */
-+#define ICE1712_I2C_WRITE		0x01	/* write direction */
- #define ICE1712_REG_I2C_BYTE_ADDR	0x11	/* byte */
- #define ICE1712_REG_I2C_DATA		0x12	/* byte */
- #define ICE1712_REG_I2C_CTRL		0x13	/* byte */
--#define   ICE1712_I2C_EEPROM		0x80	/* EEPROM exists */
--#define   ICE1712_I2C_BUSY		0x01	/* busy bit */
-+#define ICE1712_I2C_EEPROM		0x80	/* EEPROM exists */
-+#define ICE1712_I2C_BUSY		0x01	/* busy bit */
- #define ICE1712_REG_CONCAP_ADDR		0x14	/* dword - consumer capture */
- #define ICE1712_REG_CONCAP_COUNT	0x18	/* word - current/base count */
- #define ICE1712_REG_SERR_SHADOW		0x1b	/* byte */
-@@ -128,14 +128,14 @@
- #define ICE1712_DSC_ADDR1		0x02	/* dword - base address 1 */
- #define ICE1712_DSC_COUNT1		0x03	/* word - count 1 */
- #define ICE1712_DSC_CONTROL		0x04	/* byte - control & status */
--#define   ICE1712_BUFFER1		0x80	/* buffer1 is active */
--#define   ICE1712_BUFFER1_AUTO		0x40	/* buffer1 auto init */
--#define   ICE1712_BUFFER0_AUTO		0x20	/* buffer0 auto init */
--#define   ICE1712_FLUSH			0x10	/* flush FIFO */
--#define   ICE1712_STEREO		0x08	/* stereo */
--#define   ICE1712_16BIT			0x04	/* 16-bit data */
--#define   ICE1712_PAUSE			0x02	/* pause */
--#define   ICE1712_START			0x01	/* start */
-+#define ICE1712_BUFFER1			0x80	/* buffer1 is active */
-+#define ICE1712_BUFFER1_AUTO		0x40	/* buffer1 auto init */
-+#define ICE1712_BUFFER0_AUTO		0x20	/* buffer0 auto init */
-+#define ICE1712_FLUSH			0x10	/* flush FIFO */
-+#define ICE1712_STEREO			0x08	/* stereo */
-+#define ICE1712_16BIT			0x04	/* 16-bit data */
-+#define ICE1712_PAUSE			0x02	/* pause */
-+#define ICE1712_START			0x01	/* start */
- #define ICE1712_DSC_RATE		0x05	/* dword - rate */
- #define ICE1712_DSC_VOLUME		0x06	/* word - volume control */
- 
-@@ -146,12 +146,12 @@
- #define ICEMT(ice, x) ((ice)->profi_port + ICE1712_MT_##x)
- 
- #define ICE1712_MT_IRQ			0x00	/* byte - interrupt mask */
--#define   ICE1712_MULTI_CAPTURE		0x80	/* capture IRQ */
--#define   ICE1712_MULTI_PLAYBACK	0x40	/* playback IRQ */
--#define   ICE1712_MULTI_CAPSTATUS	0x02	/* capture IRQ status */
--#define   ICE1712_MULTI_PBKSTATUS	0x01	/* playback IRQ status */
-+#define ICE1712_MULTI_CAPTURE		0x80	/* capture IRQ */
-+#define ICE1712_MULTI_PLAYBACK		0x40	/* playback IRQ */
-+#define ICE1712_MULTI_CAPSTATUS		0x02	/* capture IRQ status */
-+#define ICE1712_MULTI_PBKSTATUS		0x01	/* playback IRQ status */
- #define ICE1712_MT_RATE			0x01	/* byte - sampling rate select */
--#define   ICE1712_SPDIF_MASTER		0x10	/* S/PDIF input is master clock */
-+#define ICE1712_SPDIF_MASTER		0x10	/* S/PDIF input is master clock */
- #define ICE1712_MT_I2S_FORMAT		0x02	/* byte - I2S data format */
- #define ICE1712_MT_AC97_INDEX		0x04	/* byte - AC'97 index */
- #define ICE1712_MT_AC97_CMD		0x05	/* byte - AC'97 command & status */
-@@ -161,14 +161,14 @@
- #define ICE1712_MT_PLAYBACK_SIZE	0x14	/* word - playback size */
- #define ICE1712_MT_PLAYBACK_COUNT	0x16	/* word - playback count */
- #define ICE1712_MT_PLAYBACK_CONTROL	0x18	/* byte - control */
--#define   ICE1712_CAPTURE_START_SHADOW	0x04	/* capture start */
--#define   ICE1712_PLAYBACK_PAUSE	0x02	/* playback pause */
--#define   ICE1712_PLAYBACK_START	0x01	/* playback start */
-+#define ICE1712_CAPTURE_START_SHADOW	0x04	/* capture start */
-+#define ICE1712_PLAYBACK_PAUSE		0x02	/* playback pause */
-+#define ICE1712_PLAYBACK_START		0x01	/* playback start */
- #define ICE1712_MT_CAPTURE_ADDR		0x20	/* dword - capture address */
- #define ICE1712_MT_CAPTURE_SIZE		0x24	/* word - capture size */
- #define ICE1712_MT_CAPTURE_COUNT	0x26	/* word - capture count */
- #define ICE1712_MT_CAPTURE_CONTROL	0x28	/* byte - control */
--#define   ICE1712_CAPTURE_START		0x01	/* capture start */
-+#define ICE1712_CAPTURE_START		0x01	/* capture start */
- #define ICE1712_MT_ROUTE_PSDOUT03	0x30	/* word */
- #define ICE1712_MT_ROUTE_SPDOUT		0x32	/* word */
- #define ICE1712_MT_ROUTE_CAPTURE	0x34	/* dword */
-@@ -176,7 +176,7 @@
- #define ICE1712_MT_MONITOR_INDEX	0x3a	/* byte */
- #define ICE1712_MT_MONITOR_RATE		0x3b	/* byte */
- #define ICE1712_MT_MONITOR_ROUTECTRL	0x3c	/* byte */
--#define   ICE1712_ROUTE_AC97		0x01	/* route digital mixer output to AC'97 */
-+#define ICE1712_ROUTE_AC97		0x01	/* route digital mixer output to AC'97 */
- #define ICE1712_MT_MONITOR_PEAKINDEX	0x3e	/* byte */
- #define ICE1712_MT_MONITOR_PEAKDATA	0x3f	/* byte */
- 
-@@ -186,9 +186,9 @@
- 
- /* PCI[60] System Configuration */
- #define ICE1712_CFG_CLOCK	0xc0
--#define   ICE1712_CFG_CLOCK512	0x00	/* 22.5692Mhz, 44.1kHz*512 */
--#define   ICE1712_CFG_CLOCK384  0x40	/* 16.9344Mhz, 44.1kHz*384 */
--#define   ICE1712_CFG_EXT	0x80	/* external clock */
-+#define ICE1712_CFG_CLOCK512	0x00	/* 22.5692Mhz, 44.1kHz*512 */
-+#define ICE1712_CFG_CLOCK384    0x40	/* 16.9344Mhz, 44.1kHz*384 */
-+#define ICE1712_CFG_EXT		0x80	/* external clock */
- #define ICE1712_CFG_2xMPU401	0x20	/* two MPU401 UARTs */
- #define ICE1712_CFG_NO_CON_AC97 0x10	/* consumer AC'97 codec is not present */
- #define ICE1712_CFG_ADC_MASK	0x0c	/* one, two, three, four stereo ADCs */
--- 
-1.9.1
+Thanks,
+Mike
 
+> 
+> Kernel panic log:
+> [   30.839284] Unable to handle kernel paging request at virtual address 5f343173
+> [   30.846476] pgd = dee14000
+> [   30.849165] [5f343173] *pgd=00000000
+> [   30.852703] Internal error: Oops: 805 [#1] PREEMPT SMP ARM
+> [   30.858166] Modules linked in:
+> [   30.861208] CPU: 0 PID: 1 Comm: bash Not tainted 3.16.0-rc2-00239-g94bdf617b07e-dirty #40
+> [   30.869364] task: df478000 ti: df480000 task.ti: df480000
+> [   30.874752] PC is at clkdev_add+0x2c/0x38
+> [   30.878738] LR is at clkdev_add+0x18/0x38
+> [   30.882732] pc : [<c0350908>]    lr : [<c03508f4>]    psr: 60000013
+> [   30.882732] sp : df481e78  ip : 00000001  fp : c0700ed8
+> [   30.894187] r10: 0000000c  r9 : 00000000  r8 : c07b0e3c
+> [   30.899396] r7 : 00000002  r6 : df45f9d0  r5 : df421390  r4 : c0700d6c
+> [   30.905906] r3 : 5f343173  r2 : c0700d84  r1 : 60000013  r0 : c0700d6c
+> [   30.912417] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+> [   30.919534] Control: 10c53c7d  Table: 5ee1406a  DAC: 00000015
+> [   30.925262] Process bash (pid: 1, stack limit = 0xdf480240)
+> [   30.930817] Stack: (0xdf481e78 to 0xdf482000)
+> [   30.935159] 1e60:                                                       00001000 df6de610
+> [   30.943321] 1e80: df7f4558 c0355650 c05ec6ec c0700eb0 df6de600 df7f4510 dec9d69c 00000014
+> [   30.951480] 1ea0: 00167b48 df6de610 c0700e30 c0713518 00000000 c0700e30 dec9d69c 00000006
+> [   30.959639] 1ec0: 00167b48 c02c1b7c c02c1b64 df6de610 c07aff48 c02c0420 c06fb150 c047cc20
+> [   30.967798] 1ee0: df6de610 df6de610 c0700e30 df6de644 c06fb150 0000000c dec9d690 c02bef90
+> [   30.975957] 1f00: dec9c6c0 dece4c00 df481f80 dece4c00 0000000c c02be73c 0000000c c016ca8c
+> [   30.984116] 1f20: c016ca48 00000000 00000000 c016c1f4 00000000 00000000 b6f18000 df481f80
+> [   30.992276] 1f40: df7f66c0 0000000c df480000 df480000 b6f18000 c011094c df47839c 60000013
+> [   31.000435] 1f60: 00000000 00000000 df7f66c0 df7f66c0 0000000c df480000 b6f18000 c0110dd4
+> [   31.008594] 1f80: 00000000 00000000 0000000c b6ec05d8 0000000c b6f18000 00000004 c000f2a8
+> [   31.016753] 1fa0: 00001000 c000f0e0 b6ec05d8 0000000c 00000001 b6f18000 0000000c 00000000
+> [   31.024912] 1fc0: b6ec05d8 0000000c b6f18000 00000004 0000000c 00000001 00000000 00167b48
+> [   31.033071] 1fe0: 00000000 bed83a80 b6e004f0 b6e5122c 60000010 00000001 ffffffff ffffffff
+> [   31.041248] [<c0350908>] (clkdev_add) from [<c0355650>] (s2mps11_clk_probe+0x2b4/0x3b4)
+> [   31.049223] [<c0355650>] (s2mps11_clk_probe) from [<c02c1b7c>] (platform_drv_probe+0x18/0x48)
+> [   31.057728] [<c02c1b7c>] (platform_drv_probe) from [<c02c0420>] (driver_probe_device+0x13c/0x384)
+> [   31.066579] [<c02c0420>] (driver_probe_device) from [<c02bef90>] (bind_store+0x88/0xd8)
+> [   31.074564] [<c02bef90>] (bind_store) from [<c02be73c>] (drv_attr_store+0x20/0x2c)
+> [   31.082118] [<c02be73c>] (drv_attr_store) from [<c016ca8c>] (sysfs_kf_write+0x44/0x48)
+> [   31.090016] [<c016ca8c>] (sysfs_kf_write) from [<c016c1f4>] (kernfs_fop_write+0xc0/0x17c)
+> [   31.098176] [<c016c1f4>] (kernfs_fop_write) from [<c011094c>] (vfs_write+0xa0/0x1c4)
+> [   31.105899] [<c011094c>] (vfs_write) from [<c0110dd4>] (SyS_write+0x40/0x8c)
+> [   31.112931] [<c0110dd4>] (SyS_write) from [<c000f0e0>] (ret_fast_syscall+0x0/0x3c)
+> [   31.120481] Code: e2842018 e584501c e1a00004 e885000c (e5835000)
+> [   31.126596] ---[ end trace efad45bfa3a61b05 ]---
+> [   31.131181] Kernel panic - not syncing: Fatal exception
+> [   31.136368] CPU1: stopping
+> [   31.139054] CPU: 1 PID: 0 Comm: swapper/1 Tainted: G      D       3.16.0-rc2-00239-g94bdf617b07e-dirty #40
+> [   31.148697] [<c0016480>] (unwind_backtrace) from [<c0012950>] (show_stack+0x10/0x14)
+> [   31.156419] [<c0012950>] (show_stack) from [<c0480db8>] (dump_stack+0x80/0xcc)
+> [   31.163622] [<c0480db8>] (dump_stack) from [<c001499c>] (handle_IPI+0x130/0x15c)
+> [   31.170998] [<c001499c>] (handle_IPI) from [<c000862c>] (gic_handle_irq+0x60/0x68)
+> [   31.178549] [<c000862c>] (gic_handle_irq) from [<c0013480>] (__irq_svc+0x40/0x70)
+> [   31.186009] Exception stack(0xdf4bdf88 to 0xdf4bdfd0)
+> [   31.191046] df80:                   ffffffed 00000000 00000000 00000000 df4bc000 c06d042c
+> [   31.199207] dfa0: 00000000 ffffffed c06d03c0 00000000 c070c288 00000000 00000000 df4bdfd0
+> [   31.207363] dfc0: c0010324 c0010328 60000013 ffffffff
+> [   31.212402] [<c0013480>] (__irq_svc) from [<c0010328>] (arch_cpu_idle+0x28/0x30)
+> [   31.219783] [<c0010328>] (arch_cpu_idle) from [<c005f150>] (cpu_startup_entry+0x2c4/0x3f0)
+> [   31.228027] [<c005f150>] (cpu_startup_entry) from [<400086c4>] (0x400086c4)
+> [   31.234968] ---[ end Kernel panic - not syncing: Fatal exception
+> 
+> Fixes: 7cc560dea415 ("clk: s2mps11: Add support for s2mps11")
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> 
+> ---
+> 
+> Changes since v1:
+> 1. Allocate memory for clk_lookup with clkdev_alloc() instead of
+>    kzalloc(). Suggested by Yadwinder Singh Brar.
+> ---
+>  drivers/clk/clk-s2mps11.c | 7 ++-----
+>  1 file changed, 2 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
+> index 9b7b5859a420..3757e9e72d37 100644
+> --- a/drivers/clk/clk-s2mps11.c
+> +++ b/drivers/clk/clk-s2mps11.c
+> @@ -230,16 +230,13 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
+>                         goto err_reg;
+>                 }
+>  
+> -               s2mps11_clk->lookup = devm_kzalloc(&pdev->dev,
+> -                                       sizeof(struct clk_lookup), GFP_KERNEL);
+> +               s2mps11_clk->lookup = clkdev_alloc(s2mps11_clk->clk,
+> +                                       s2mps11_name(s2mps11_clk), NULL);
+>                 if (!s2mps11_clk->lookup) {
+>                         ret = -ENOMEM;
+>                         goto err_lup;
+>                 }
+>  
+> -               s2mps11_clk->lookup->con_id = s2mps11_name(s2mps11_clk);
+> -               s2mps11_clk->lookup->clk = s2mps11_clk->clk;
+> -
+>                 clkdev_add(s2mps11_clk->lookup);
+>         }
+>  
+> -- 
+> 1.9.1
+> 
