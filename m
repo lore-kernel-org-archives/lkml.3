@@ -1,99 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692AbaGBGOr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 02:14:47 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:49882 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615AbaGBGOp (ORCPT
+	id S1756958AbaGBGPX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 02:15:23 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:42363 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888AbaGBGPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 02:14:45 -0400
+	Wed, 2 Jul 2014 02:15:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <87tx70496q.fsf@sejong.aot.lge.com>
-References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
-	<1403913966-4927-12-git-send-email-ast@plumgrid.com>
-	<87tx70496q.fsf@sejong.aot.lge.com>
-Date: Tue, 1 Jul 2014 23:14:43 -0700
-Message-ID: <CAMEtUuzHakFzJYRR0WgwRBnsQL24KGsNax5DTfRNMJrGhvfQMA@mail.gmail.com>
-Subject: Re: [PATCH RFC net-next 11/14] tracing: allow eBPF programs to be
- attached to events
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1402866165-17408-1-git-send-email-minipli@googlemail.com>
+References: <1402866165-17408-1-git-send-email-minipli@googlemail.com>
+Date: Wed, 2 Jul 2014 08:15:20 +0200
+Message-ID: <CA+rthh-CYWjUCji4GXNeZV5CcLd3_DNaV9zFDc_DznYbyw6T+A@mail.gmail.com>
+Subject: Re: [PATCH] agp: remove read/write stubs
+From: Mathias Krause <minipli@googlemail.com>
+To: David Airlie <airlied@linux.ie>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mathias Krause <minipli@googlemail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 1, 2014 at 10:32 PM, Namhyung Kim <namhyung@gmail.com> wrote:
-> On Fri, 27 Jun 2014 17:06:03 -0700, Alexei Starovoitov wrote:
->> User interface:
->> cat bpf_123 > /sys/kernel/debug/tracing/__event__/filter
->>
->> where 123 is an id of the eBPF program priorly loaded.
->> __event__ is static tracepoint event.
->> (kprobe events will be supported in the future patches)
->>
->> eBPF programs can call in-kernel helper functions to:
->> - lookup/update/delete elements in maps
->> - memcmp
->> - trace_printk
+On 15 June 2014 23:02, Mathias Krause <minipli@googlemail.com> wrote:
+> The VFS layer handles those in the very same way, if unset. No need for
+> additional stubs.
 >
-> ISTR Steve doesn't like to use trace_printk() (at least for production
-> kernels) anymore.  And I'm not sure it'd work if there's no existing
-> trace_printk() on a system.
-
-yes. I saw big warning that trace_printk_init_buffers() emits.
-The idea here is to use eBPF programs for live kernel debugging.
-Instead of adding printk() and recompiling, just write a program,
-attach it to some event, and printk whatever is interesting.
-My only concern about printk() was that it dumps things into trace
-buffers (which is still better than dumping stuff to syslog), but now
-(since Andy almost convinced me to switch to 'fd' based interface)
-we can have seq_printk-like that prints into special buffer. So that
-user space does 'read(ufd)' and receives whatever program has
-printed. I think that would be much cleaner.
-
->> +     if (unlikely(ftrace_file->flags & FTRACE_EVENT_FL_FILTERED) &&  \
->> +         unlikely(ftrace_file->event_call->flags & TRACE_EVENT_FL_BPF)) { \
->> +             struct bpf_context __ctx;                               \
->> +                                                                     \
->> +             populate_bpf_context(&__ctx, args, 0, 0, 0, 0, 0);      \
->> +             trace_filter_call_bpf(ftrace_file->filter, &__ctx);     \
->> +             return;                                                 \
->> +     }                                                               \
->> +                                                                     \
+> Signed-off-by: Mathias Krause <minipli@googlemail.com>
+> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> ---
+>  drivers/char/agp/frontend.c |   15 ---------------
+>  1 file changed, 15 deletions(-)
 >
-> Hmm..  But it seems the eBPF prog is not a filter - it'd always drop the
-> event.  And I think it's better to use a recorded entry rather then args
-> as a bpf_context so that tools like perf can manipulate it at compile
-> time based on the event format.
+> diff --git a/drivers/char/agp/frontend.c b/drivers/char/agp/frontend.c
+> index b29703324e..09f17eb734 100644
+> --- a/drivers/char/agp/frontend.c
+> +++ b/drivers/char/agp/frontend.c
+> @@ -710,19 +710,6 @@ static int agp_open(struct inode *inode, struct file *file)
+>         return 0;
+>  }
+>
+> -
+> -static ssize_t agp_read(struct file *file, char __user *buf,
+> -                       size_t count, loff_t * ppos)
+> -{
+> -       return -EINVAL;
+> -}
+> -
+> -static ssize_t agp_write(struct file *file, const char __user *buf,
+> -                        size_t count, loff_t * ppos)
+> -{
+> -       return -EINVAL;
+> -}
+> -
+>  static int agpioc_info_wrap(struct agp_file_private *priv, void __user *arg)
+>  {
+>         struct agp_info userinfo;
+> @@ -1047,8 +1034,6 @@ static const struct file_operations agp_fops =
+>  {
+>         .owner          = THIS_MODULE,
+>         .llseek         = no_llseek,
+> -       .read           = agp_read,
+> -       .write          = agp_write,
+>         .unlocked_ioctl = agp_ioctl,
+>  #ifdef CONFIG_COMPAT
+>         .compat_ioctl   = compat_agp_ioctl,
+> --
+> 1.7.10.4
+>
 
-Can manipulate what at compile time? Entry records of tracepoints are
-hard coded based on the event. For verifier it's easier to treat all
-tracepoint events as they received the same 'struct bpf_context'
-of N arguments then the same program can be attached to multiple
-tracepoint events at the same time.
-I thought about making verifier specific for _every_ tracepoint event,
-but it complicates the user interface, since 'bpf_context' is now different
-for every program. I think args are much easier to deal with from C
-programming point of view, since program can go a fetch the same
-fields that tracepoint 'fast_assign' macro does.
-Also skipping buffer allocation and fast_assign gives very sizable
-performance boost, since the program will access only what it needs to.
-
-The return value of eBPF program is ignored, since I couldn't think
-of use case for it. We can change it to be more 'filter' like and interpret
-return value as true/false, whether to record this event or not. Thoughts?
+Ping. Any objections, comments? David?
