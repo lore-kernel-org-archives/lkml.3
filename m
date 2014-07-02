@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705AbaGBOdH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 10:33:07 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:44153 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547AbaGBOdE (ORCPT
+	id S1754058AbaGBOfY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 10:35:24 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49375 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752091AbaGBOfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 10:33:04 -0400
-Date: Wed, 2 Jul 2014 10:33:00 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Binder Makin <merimus@google.com>
-Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org, dmj@google.com,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org
-Subject: Re: [RFC] cgroups: Resource controller for open files.
-Message-ID: <20140702143300.GB23275@htj.dyndns.org>
-References: <1404311407-4851-1-git-send-email-merimus@google.com>
+	Wed, 2 Jul 2014 10:35:22 -0400
+Date: Wed, 2 Jul 2014 10:35:21 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Paul Bolle <pebolle@tiscali.nl>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Randy Dunlap <rdunlap@infradead.org>, <linux-usb@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] USB: remove CONFIG_USB_PERSIST from Documentation
+In-Reply-To: <1404291956.12021.23.camel@x220>
+Message-ID: <Pine.LNX.4.44L0.1407021028270.874-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404311407-4851-1-git-send-email-merimus@google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 2 Jul 2014, Paul Bolle wrote:
 
-On Wed, Jul 02, 2014 at 10:30:07AM -0400, Binder Makin wrote:
-> Add a resource controller for limiting the number of open
-> file handles.  This allows us to catch misbehaving processes
-> and return EMFILE instead of ENOMEM for kernel memory limits.
+> On Tue, 2014-06-24 at 13:19 -0400, Alan Stern wrote:
+> > On Tue, 24 Jun 2014, Paul Bolle wrote:
+> > > On Tue, 2014-06-24 at 10:25 -0400, Alan Stern wrote:
+> > > > Also, that "Later kernels" thing has already arrived.  I believe it was 
+> > > > implemented in 2.6.35.
+> > > 
+> > > How does the kernel currently call the disconnect method? I can't yet
+> > > say for sure, and it seems silly to send a v2 dropping those lines
+> > > without actually knowing why they can be dropped.
+> > 
+> > In drivers/usb/core/driver.c:usb_resume_complete(), which is called 
+> > during the final "complete" phase of system suspend, interfaces that 
+> > were marked for rebinding (because their drivers didn't have proper PM 
+> > support) get rebound.
+> > 
+> > Is that what you wanted to know?
+> 
+> I haven't yet discovered what the link is between rebinding and the
+> "disconnect" method. I'll have to study that. This is far from urgent,
+> so that might take me quite some time.
 
-cc'ing memcg people.  Isn't kmemcg supposed to cover this by
-controlling kernel memory usage?
+Rebinding means unbinding followed by binding.  The disconnect method 
+gets called during unbinding.  The detailed call chain is:
 
-Thanks.
+	usb_resume_complete ->
+	rebind_marked_interfaces -> 
+	usb_rebind_intf ->
+	usb_forced_unbind_intf ->
+	usb_driver_release_interface ->
+	device_release_driver ->
+	__device_release_driver ->
+	usb_unbind_interface ->
+	disconnect.
 
--- 
-tejun
+Alan Stern
+
