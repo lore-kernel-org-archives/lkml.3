@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757155AbaGBSWD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 14:22:03 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:35885 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756635AbaGBSWA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 14:22:00 -0400
+	id S1757288AbaGBSYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 14:24:18 -0400
+Received: from www.sr71.net ([198.145.64.142]:42745 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754536AbaGBSYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 14:24:16 -0400
+Message-ID: <53B44E4E.6020706@sr71.net>
+Date: Wed, 02 Jul 2014 11:24:14 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1404323065.596.65.camel@dhcp-9-2-203-236.watson.ibm.com>
-References: <cover.1404245510.git.d.kasatkin@samsung.com>
-	<72d68808fd8db2b896a459b120f3e550e5f976c1.1404245510.git.d.kasatkin@samsung.com>
-	<1404323065.596.65.camel@dhcp-9-2-203-236.watson.ibm.com>
-Date: Wed, 2 Jul 2014 21:21:59 +0300
-Message-ID: <CACE9dm8vx9b-n4b+0NAvp=9Er4uPWGwa8eYSGtkiAPv5ahve4A@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] ima: use ahash API for file hash calculation
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-ima-devel@lists.sourceforge.net,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: David Nellans <david@nellans.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "dave.hansen@linux.intel.com" <dave.hansen@linux.intel.com>,
+        "riel@redhat.com" <riel@redhat.com>,
+        "mgorman@suse.de" <mgorman@suse.de>
+Subject: Re: [PATCH 7/7] x86: mm: set TLB flush tunable to sane value (33)
+References: <20140701164845.8D1A5702@viggo.jf.intel.com> <20140701164856.3020D644@viggo.jf.intel.com> <53B44C9A.9070808@nellans.org>
+In-Reply-To: <53B44C9A.9070808@nellans.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 July 2014 20:44, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> On Tue, 2014-07-01 at 23:12 +0300, Dmitry Kasatkin wrote:
->
->> -/*
->> - * Calculate the MD5/SHA1 file digest
->> - */
->> +static struct crypto_ahash *ima_alloc_atfm(enum hash_algo algo)
->> +{
->> +     struct crypto_ahash *tfm = ima_ahash_tfm;
->> +     int rc;
->> +
->> +     if ((algo != ima_hash_algo && algo < HASH_ALGO__LAST) || !tfm) {
->> +             tfm = crypto_alloc_ahash(hash_algo_name[algo], 0, 0);
->
-> In the case where algo isn't the same as ima_hash_algo, won't this
-> replace the existing ima_ahash_tfm without freeing it?
->
+On 07/02/2014 11:16 AM, David Nellans wrote:
+> Intuition here is that invalidate caused refills will almost always
+> be serviced from the L2 or better since we've recently walked to
+> modify the page needing flush and thus pre-warmed the caches for any
+> refill? Or is this an artifact of the flush/refill test setup?
 
-Look to next comment...
+There are lots of caches in place, not just the CPU's normal L1/2/3
+memory caches.  See "4.10.3 Paging-Structure Caches" in the Intel SDM.
+I _believe_ TLB misses can be serviced from these caches and their
+purpose is to avoid going out to memory (or the memory caches).
 
-> Mimi
->
->> +             if (!IS_ERR(tfm)) {
->> +                     if (algo == ima_hash_algo)
->> +                             ima_ahash_tfm = tfm;
-
-Above will set only new tfm for default ima_hash_algo...
-
-Dmitry
-
->> +             } else {
->> +                     rc = PTR_ERR(tfm);
->> +                     pr_err("Can not allocate %s (reason: %d)\n",
->> +                            hash_algo_name[algo], rc);
->> +             }
->> +     }
->> +     return tfm;
->> +}
->> +
->> +static void ima_free_atfm(struct crypto_ahash *tfm)
->> +{
->> +     if (tfm != ima_ahash_tfm)
->> +             crypto_free_ahash(tfm);
->> +}
->
->
->
-
-
-
--- 
-Thanks,
-Dmitry
+So I think the effect that we're seeing is from _all_ of the caches,
+plus prefetching.  If you start a prefetch for a TLB miss before you
+actually start to run the instruction needing the TLB entry, you will
+pay less than the entire cost of going out to memory (or the memory caches).
