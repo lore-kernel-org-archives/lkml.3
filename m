@@ -1,134 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256AbaGBO1E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 10:27:04 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:50724 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750869AbaGBO1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 10:27:01 -0400
-Message-ID: <1404311191.3622.22.camel@iivanov-dev>
-Subject: Re: [PATCH] spi: qup: Add DMA capabilities
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Andy Gross <agross@codeaurora.org>
-Cc: Mark Brown <broonie@kernel.org>, linux-spi@vger.kernel.org,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        Daniel Sneddon <dsneddon@codeaurora.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org
-Date: Wed, 02 Jul 2014 17:26:31 +0300
-In-Reply-To: <1403816781-31008-1-git-send-email-agross@codeaurora.org>
-References: <1403816781-31008-1-git-send-email-agross@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754259AbaGBO1K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 10:27:10 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49356 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751540AbaGBO1H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 10:27:07 -0400
+Date: Wed, 2 Jul 2014 10:27:06 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Allen Yu <alleny@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Add "rpm_not_supported" flag
+In-Reply-To: <3135210.ApPvOPL31q@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1407021002380.874-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2 Jul 2014, Rafael J. Wysocki wrote:
 
-Hi Andy,
-
-Just few comments.
-
-On Thu, 2014-06-26 at 16:06 -0500, Andy Gross wrote:
-> This patch adds DMA capabilities to the spi-qup driver.  If DMA channels are
-> present, the QUP will use DMA instead of block mode for transfers to/from SPI
-> peripherals for transactions larger than the length of a block.
+> > Then you have no other objections to the patch?
 > 
-> Signed-off-by: Andy Gross <agross@codeaurora.org>
-> ---
->  .../devicetree/bindings/spi/qcom,spi-qup.txt       |   10 +
->  drivers/spi/spi-qup.c                              |  361 ++++++++++++++++++--
->  2 files changed, 350 insertions(+), 21 deletions(-)
-> 
+> My concern still is that it will be confusing, because people won't read the
+> documentation carefully enough and will confuse "runtime PM never used" with
+> "hardware can't do PM".  I'm not sure how to make that more clear, though.
 
-<snip>
- 
-> diff --git a/drivers/spi/spi-qup.c b/drivers/spi/spi-qup.c
-> index fc1de86..9b01db5 100644
-> --- a/drivers/spi/spi-qup.c
-> +++ b/drivers/spi/spi-qup.c
-> @@ -22,6 +22,8 @@
->  #include <linux/platform_device.h>
->  #include <linux/pm_runtime.h>
->  #include <linux/spi/spi.h>
-> +#include <linux/dmaengine.h>
-> +#include <linux/dma-mapping.h>
->  
->  #define QUP_CONFIG			0x0000
->  #define QUP_STATE			0x0004
-> @@ -116,6 +118,8 @@
->  
->  #define SPI_NUM_CHIPSELECTS		4
->  
-> +#define SPI_MAX_XFER			(SZ_64K - 64)
-> +
->  /* high speed mode is when bus rate is greater then 26MHz */
->  #define SPI_HS_MIN_RATE			26000000
->  #define SPI_MAX_RATE			50000000
-> @@ -142,6 +146,17 @@ struct spi_qup {
->  	int			w_size;	/* bytes per SPI word */
->  	int			tx_bytes;
->  	int			rx_bytes;
-> +
-> +	int			use_dma;
-> +
-> +	struct dma_chan		*rx_chan;
-> +	struct dma_slave_config	rx_conf;
-> +	struct dma_chan		*tx_chan;
-> +	struct dma_slave_config tx_conf;
-> +	dma_addr_t		rx_dma;
-> +	dma_addr_t		tx_dma;
+I could emphasize that distinction a little more strongly in the 
+documentation.
 
-DMA addresses seems unused.
+> Also we have the no_callbacks flag and I wonder if/how it is related to the
+> new one.  Do we still need both?
 
-> +	void			*dummy;
+They mean different things.  The no_callbacks flag is used when we want 
+the PM core to think the device can be in RPM_SUSPENDED at times (it is 
+"logically suspended").  rpm_not_supported is used when we want the PM 
+core to think the device must always be in RPM_ACTIVE.
 
-This is not so dummy, probably 'spare'.
+> In addition to that, I think that "hardware can't do PM" should apply to the
+> handling of system suspend resume too.
 
-> +	atomic_t		dma_outstanding;
->  };
+Maybe.  For the use case Dan Williams and I are working on, it doesn't 
+matter; for other cases it might matter.  That's why I named the flag 
+"rpm_not_supported" -- it applies specifically to runtime PM, not 
+system PM.
 
-<snip>
+Here's a brief summary of the story behind this patch...
 
->  
->  
-> @@ -632,6 +896,56 @@ static int spi_qup_probe(struct platform_device *pdev)
->  	writel_relaxed(SPI_ERROR_CLK_UNDER_RUN | SPI_ERROR_CLK_OVER_RUN,
->  		       base + SPI_ERROR_FLAGS_EN);
->  
-> +	/* allocate dma resources, if available */
-> +	controller->rx_chan = dma_request_slave_channel(&pdev->dev, "rx");
-> +	if (controller->rx_chan) {
-> +		controller->tx_chan =
-> +			dma_request_slave_channel(&pdev->dev, "tx");
-> +
-> +		if (!controller->tx_chan) {
-> +			dev_err(&pdev->dev, "Failed to allocate dma tx chan");
-> +			dma_release_channel(controller->rx_chan);
+At one point, I suggested to Dan that instead of doing something
+special for these devices, we could simply have the runtime_suspend()
+routine always return -EBUSY.  He didn't like that idea because then
+the user would see the device was never powering down but would have no
+idea why.  The rpm_not_supported flag provides this information to the
+user by causing the power/runtime_status attribute to say "not
+supported".  (Although to be entirely fair, we could just put a message
+in the kernel log during probe if the hardware doesn't support runtime
+suspend.)
 
+Instead, Dan introduced a messy PM QoS mechanism in commit
+e3d105055525.  I didn't like that approach, but Greg merged it before I
+objected.
 
-There is no point to go further with DMA configuration
-if there are no channels, right?
+Do you have any suggestions?
 
-> +		}
-> +
-> +		/* set DMA parameters */
-> +		controller->rx_conf.device_fc = 1;
-> +		controller->rx_conf.src_addr = res->start + QUP_INPUT_FIFO;
-> +		controller->rx_conf.src_maxburst = controller->in_blk_sz;
-> +
-> +		controller->tx_conf.device_fc = 1;
-> +		controller->tx_conf.dst_addr = res->start + QUP_OUTPUT_FIFO;
-> +		controller->tx_conf.dst_maxburst = controller->out_blk_sz;
-> +
-
-
-Please, could you share blsp2_bam device node configuration? 
-I would like to test these changes.
-
-Regards,
-Ivan
+Alan Stern
 
