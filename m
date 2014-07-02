@@ -1,122 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965195AbaGBAlH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 20:41:07 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:53730 "EHLO
+	id S1758886AbaGBAnK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 20:43:10 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:54596 "EHLO
 	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753567AbaGBAlE (ORCPT
+	with ESMTP id S1753567AbaGBAnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 20:41:04 -0400
+	Tue, 1 Jul 2014 20:43:08 -0400
 X-Original-SENDERIP: 10.177.220.145
 X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Wed, 2 Jul 2014 09:46:15 +0900
+Date: Wed, 2 Jul 2014 09:48:19 +0900
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
         Vladimir Davydov <vdavydov@parallels.com>
-Subject: Re: [PATCH v3 4/9] slab: factor out initialization of arracy cache
-Message-ID: <20140702004615.GC9972@js1304-P5Q-DELUXE>
+Subject: Re: [PATCH v3 5/9] slab: introduce alien_cache
+Message-ID: <20140702004819.GD9972@js1304-P5Q-DELUXE>
 References: <1404203258-8923-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1404203258-8923-5-git-send-email-iamjoonsoo.kim@lge.com>
- <alpine.DEB.2.02.1407011525350.4004@chino.kir.corp.google.com>
+ <1404203258-8923-6-git-send-email-iamjoonsoo.kim@lge.com>
+ <20140701151547.fa67354878399575c8eb4647@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1407011525350.4004@chino.kir.corp.google.com>
+In-Reply-To: <20140701151547.fa67354878399575c8eb4647@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 01, 2014 at 03:26:26PM -0700, David Rientjes wrote:
-> On Tue, 1 Jul 2014, Joonsoo Kim wrote:
+On Tue, Jul 01, 2014 at 03:15:47PM -0700, Andrew Morton wrote:
+> On Tue,  1 Jul 2014 17:27:34 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
 > 
-> > Factor out initialization of array cache to use it in following patch.
-> > 
-> > Acked-by: Christoph Lameter <cl@linux.com>
-> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > -static struct array_cache **alloc_alien_cache(int node, int limit, gfp_t gfp)
+> > +static struct alien_cache *__alloc_alien_cache(int node, int entries,
+> > +						int batch, gfp_t gfp)
+> > +{
+> > +	int memsize = sizeof(void *) * entries + sizeof(struct alien_cache);
 > 
-> Not sure what happened to my
+> nit: all five memsizes in slab.c have type `int'.  size_t would be more
+> appropriate.
 > 
-> Acked-by: David Rientjes <rientjes@google.com>
-> 
-> from http://marc.info/?l=linux-mm&m=139951195724487 and my comment still 
-> stands about s/arracy/array/ in the patch title.
 
-This is new one with applying your comment.
+Hello,
+
+As my inspection, there are 4 memsize. Can you confirm that?
+Anyway, here goes the patch you suggested.
 
 Thanks.
 
---------------8<--------------
->From 5d4f47d839ae4fc0796b633d41858d9c87fd235d Mon Sep 17 00:00:00 2001
+----------8<-----------------
+>From e9ae011804f3d90375b2e50c0dbd95e708afc509 Mon Sep 17 00:00:00 2001
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Date: Fri, 30 Aug 2013 14:34:38 +0900
-Subject: [PATCH v4 4/9] slab: factor out initialization of array cache
+Date: Wed, 2 Jul 2014 09:23:05 +0900
+Subject: [PATCH] slab: change int to size_t for representing allocation size
 
-Factor out initialization of array cache to use it in following patch.
+It is better to represent allocation size in size_t rather than int.
+So change it.
 
-Acked-by: Christoph Lameter <cl@linux.com>
-Acked-by: David Rientjes <rientjes@google.com>
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
----
- mm/slab.c |   33 +++++++++++++++++++--------------
- 1 file changed, 19 insertions(+), 14 deletions(-)
 
 diff --git a/mm/slab.c b/mm/slab.c
-index 8f9e176..6fa3fdf 100644
+index 5b0224c..e7763db 100644
 --- a/mm/slab.c
 +++ b/mm/slab.c
-@@ -791,13 +791,8 @@ static void start_cpu_timer(int cpu)
- 	}
- }
- 
--static struct array_cache *alloc_arraycache(int node, int entries,
--					    int batchcount, gfp_t gfp)
-+static void init_arraycache(struct array_cache *ac, int limit, int batch)
+@@ -681,7 +681,7 @@ static void init_arraycache(struct array_cache *ac, int limit, int batch)
+ static struct array_cache *alloc_arraycache(int node, int entries,
+ 					    int batchcount, gfp_t gfp)
  {
 -	int memsize = sizeof(void *) * entries + sizeof(struct array_cache);
--	struct array_cache *nc = NULL;
--
--	nc = kmalloc_node(memsize, gfp, node);
- 	/*
- 	 * The array_cache structures contain pointers to free object.
- 	 * However, when such objects are allocated or transferred to another
-@@ -805,15 +800,25 @@ static struct array_cache *alloc_arraycache(int node, int entries,
- 	 * valid references during a kmemleak scan. Therefore, kmemleak must
- 	 * not scan such objects.
- 	 */
--	kmemleak_no_scan(nc);
--	if (nc) {
--		nc->avail = 0;
--		nc->limit = entries;
--		nc->batchcount = batchcount;
--		nc->touched = 0;
--		spin_lock_init(&nc->lock);
-+	kmemleak_no_scan(ac);
-+	if (ac) {
-+		ac->avail = 0;
-+		ac->limit = limit;
-+		ac->batchcount = batch;
-+		ac->touched = 0;
-+		spin_lock_init(&ac->lock);
- 	}
--	return nc;
-+}
-+
-+static struct array_cache *alloc_arraycache(int node, int entries,
-+					    int batchcount, gfp_t gfp)
-+{
-+	int memsize = sizeof(void *) * entries + sizeof(struct array_cache);
-+	struct array_cache *ac = NULL;
-+
-+	ac = kmalloc_node(memsize, gfp, node);
-+	init_arraycache(ac, entries, batchcount);
-+	return ac;
- }
++	size_t memsize = sizeof(void *) * entries + sizeof(struct array_cache);
+ 	struct array_cache *ac = NULL;
  
- static inline bool is_slab_pfmemalloc(struct page *page)
+ 	ac = kmalloc_node(memsize, gfp, node);
+@@ -868,7 +868,7 @@ static void *alternate_node_alloc(struct kmem_cache *, gfp_t);
+ static struct alien_cache *__alloc_alien_cache(int node, int entries,
+ 						int batch, gfp_t gfp)
+ {
+-	int memsize = sizeof(void *) * entries + sizeof(struct alien_cache);
++	size_t memsize = sizeof(void *) * entries + sizeof(struct alien_cache);
+ 	struct alien_cache *alc = NULL;
+ 
+ 	alc = kmalloc_node(memsize, gfp, node);
+@@ -880,7 +880,7 @@ static struct alien_cache *__alloc_alien_cache(int node, int entries,
+ static struct alien_cache **alloc_alien_cache(int node, int limit, gfp_t gfp)
+ {
+ 	struct alien_cache **alc_ptr;
+-	int memsize = sizeof(void *) * nr_node_ids;
++	size_t memsize = sizeof(void *) * nr_node_ids;
+ 	int i;
+ 
+ 	if (limit > 1)
+@@ -1037,7 +1037,7 @@ static int init_cache_node_node(int node)
+ {
+ 	struct kmem_cache *cachep;
+ 	struct kmem_cache_node *n;
+-	const int memsize = sizeof(struct kmem_cache_node);
++	const size_t memsize = sizeof(struct kmem_cache_node);
+ 
+ 	list_for_each_entry(cachep, &slab_caches, list) {
+ 		/*
 -- 
 1.7.9.5
 
