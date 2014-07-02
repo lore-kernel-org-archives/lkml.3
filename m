@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320AbaGBKTG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 06:19:06 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:58782 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991AbaGBKTD (ORCPT
+	id S1753394AbaGBKTe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 06:19:34 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50929 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753326AbaGBKTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 06:19:03 -0400
-Date: Wed, 2 Jul 2014 12:18:52 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
-        eranian@google.com, andi@firstfloor.org
-Subject: Re: [PATCH V4 05/16] perf, core: pmu specific data for perf task
- context
-Message-ID: <20140702101852.GX6758@twins.programming.kicks-ass.net>
-References: <1404118253-19532-1-git-send-email-zheng.z.yan@intel.com>
- <1404118253-19532-6-git-send-email-zheng.z.yan@intel.com>
+	Wed, 2 Jul 2014 06:19:32 -0400
+Date: Wed, 2 Jul 2014 11:19:26 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Yang,Wei" <Wei.Yang@windriver.com>
+Cc: mroberto@cpti.cetuc.puc-rio.br, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v1] ARM:sa1100: Remove a redundant spin lock
+Message-ID: <20140702101925.GE32514@n2100.arm.linux.org.uk>
+References: <1404200488-7809-1-git-send-email-Wei.Yang@windriver.com> <53B3CEAC.9080609@windriver.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9cIZjEJojpWZsxxj"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404118253-19532-6-git-send-email-zheng.z.yan@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <53B3CEAC.9080609@windriver.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 02, 2014 at 05:19:40PM +0800, Yang,Wei wrote:
+> Hi Guys,
+>
+> What about this patch?
 
---9cIZjEJojpWZsxxj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The only concern on the face of it is that it removes mutual exclusion
+from the pci config write path, where a read-modifiy-write operation is
+performed.
 
-On Mon, Jun 30, 2014 at 04:50:42PM +0800, Yan, Zheng wrote:
+However, the PCI code already gives that guarantee (drivers/pci/access.c)
+so this should be safe.
 
-> @@ -3068,6 +3077,14 @@ alloc_perf_context(struct pmu *pmu, struct task_st=
-ruct *task)
->  	if (!ctx)
->  		return NULL;
-> =20
-> +	if (task && pmu->task_ctx_size > 0) {
-> +		ctx->task_ctx_data =3D kzalloc(pmu->task_ctx_size, GFP_KERNEL);
-> +		if (!ctx->task_ctx_data) {
-> +			kfree(ctx);
-> +			return NULL;
-> +		}
-> +	}
+As this is fairly old code, it would be useful to know what the motivation
+is behind this change.  Is it purely clean up, or is it something that
+you've tested, or is this a change that you require for something else?
 
-Can we delay this allocation until such time as that its actually
-needed? Otherwise we're wasting all this memory..
+Thanks.
 
---9cIZjEJojpWZsxxj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTs9yMAAoJEHZH4aRLwOS6fNIP/jJh6pWda/oJAe2TJVmjcxE1
-4mfv7/6n8GidDSeKo2Kv5NS0JDU2k/IrbFCtdckOMwEbjbZaFwiCdEv1ndwdtv60
-k5SJFTX1w1GzM3pod8q5Og8XBQ/5ykyOzUV6bP51xOMZvOTvymI3eFcES5baEcn0
-rt+ykNq/HksjPqpIMrShwVBdWtYANQIodEZTs4EStlH3eMwuYHp08PI1y10FtLYQ
-iLamL2VCZoYYJjUdjc7GpWzSvXphHtXqZMrs6iGNwdkjGfriYbEA218aLe4JtZE4
-MXEGzWN90CiJFPZrk1l3oxczArIRlFD8Nsewvfjn8MwTNXvlly1KBEoerQC9ZxHh
-Ixf6cjk1xYQHyuFg1HvYOncR7IfuD1EoRm4/eKYp077QYsNGSZbubSaTBuVaaMVi
-7EklFeG1vUDYy6L7AMWYobmk1MWJFFyCIVHV0lk8Tb55mBH9WaLi40TUEaTeuHel
-c4t8bbworkWUntxR4t05GBSohz7NKyMsbZszAgmcmzOY9QW/DQSy1n6Zxc8O+7EM
-8Rwaf6GVCT+XShRCAzac7rOV5BqnezoUzkw3Y5ReXfpir452IeSFPzMMqhEW6A1a
-CZkrGfqtZE0r+1N5t05DP3h3+1emXOSnXwEDPRjwKmvKraLqrnU49WLxQxkx7aut
-PHLSXHyvQax/c7RdEhz+
-=qzew
------END PGP SIGNATURE-----
-
---9cIZjEJojpWZsxxj--
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
