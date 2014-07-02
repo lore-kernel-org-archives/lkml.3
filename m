@@ -1,119 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648AbaGBWgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 18:36:09 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:61612 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737AbaGBWgH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 18:36:07 -0400
-Content-Type: text/plain; charset="utf-8"
+	id S1755263AbaGBWh6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 18:37:58 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:41555 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751535AbaGBWh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 18:37:57 -0400
+Date: Wed, 2 Jul 2014 18:37:50 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH mmotm/next] mm: memcontrol: rewrite charge API: fix
+ shmem_unuse
+Message-ID: <20140702223750.GA910@cmpxchg.org>
+References: <alpine.LSU.2.11.1406301541420.4349@eggly.anvils>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Chen-Yu Tsai <wens@csie.org>,
-        "Maxime Ripard" <maxime.ripard@free-electrons.com>,
-        "Emilio Lopez" <emilio@elopez.com.ar>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1403798144-32188-1-git-send-email-wens@csie.org>
-Cc: "Chen-Yu Tsai" <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com
-References: <1403798144-32188-1-git-send-email-wens@csie.org>
-Message-ID: <20140702223552.7440.60829@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v4 0/6] clk: sunxi: fixes, cleanups and A23 basic clocks
-Date: Wed, 02 Jul 2014 15:35:52 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1406301541420.4349@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Chen-Yu Tsai (2014-06-26 08:55:38)
-> Hi everyone,
+On Mon, Jun 30, 2014 at 03:48:39PM -0700, Hugh Dickins wrote:
+> Under shmem swapping and swapoff load, I sometimes hit the
+> VM_BUG_ON_PAGE(!page->mapping) in mem_cgroup_commit_charge() at
+> mm/memcontrol.c:6502!  Each time it has been a call from shmem_unuse().
 > 
-> This is v4 of the sun8i clock series, which adds basic clock
-> support for the A23 SoC. It is based on my initial sun8i bring
-> up series [1]. This series was split up from the original A23
-> series [2]. Yet to come are more clocks, reset controllers,
-> prcm, pinctrl, and mmc.
+> Yes, there are some cases (most commonly when the page being unswapped
+> is in a file being unlinked and evicted at that time) when the charge
+> should not be committed.  In the old scheme, the page got uncharged
+> again on release; but in the new scheme, it hits that BUG beforehand.
+> 
+> It's a useful BUG, so adapt shmem_unuse() to allow for it.  Which needs
+> more info from shmem_unuse_inode(): so abuse -EAGAIN internally to
+> replace the previous !found state (-ENOENT would be a more natural
+> code, but that's exactly what you get when the swap has been evicted).
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 
-Hello Chen-Yu,
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
-This series looks good to me.
-
-Maxime,
-
-I see that you Acked it already. Are you planning to roll this into a
-pull request later on?
-
-Regards,
-Mike
-
-> 
-> The first patch fixes the reworked clock protection code merged in
-> 3.16-rc1, which unintentionally made clock gates unprotectable.
-> 
-> The second patch moves the remaining "ahb_sdram" clock to the
-> protected clock list, now that it works.
-> 
-> The third patch adds support for factor clocks that have an N factor
-> not starting from 0. This is found on some PLLs in A31/A23.
-> 
-> The fourth patch adds table-based dividers for div clocks, as some
-> clocks, such as apb0 divider on sun4/5/7i, apb1 on sun6/8i and axi
-> on sun8i.
-> 
-> The fifth patch adds support for the basic clocks in the A23, just
-> PLL1 for cpus, and the system bus clocks and gates.
-> 
-> The last patch adds the DT nodes for the newly added clocks, and
-> updates clock phandles for existing peripherals, the uarts.
-> 
-> Originally I intended for patch 1 to be merged as a fix for 3.16.
-> However, the only user of the affected code, sun6i's "ahb1_sdram"
-> clock, doesn't seem to result in any runtime issues. So this whole
-> series can go into 3.17.
-> 
-> 
-> Related changes since v3:
-> 
->   - Dropped fields with default values from sun8i_a23_axi_div_data
->   - Added Maxime's Acked-by
->   - Fixed incorrect compatible string for axi clock node
->   - Updated clock phandles for uarts in dtsi
-> 
-> Related changes since v2:
-> 
->   - Rewrote factor clocks to support any (0~255) N factor starting value
-> 
-> Related changes since v1:
-> 
->   - Added "clk: sunxi: Add support for table-based divider clocks"
->   - Added table-based divider axi clock
->   - Fixed incorrectly squashed fixups
-> 
-> 
-> Cheers
-> ChenYu
-> 
-> 
->   [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-June/265211.html
->   [2] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-May/259097.html
-> 
-> Chen-Yu Tsai (6):
->   clk: sunxi: register clock gates with clkdev
->   clk: sunxi: move "ahb_sdram" to protected clock list
->   clk: sunxi: Support factor clocks with N factor starting not from 0
->   clk: sunxi: Add support for table-based divider clocks
->   clk: sunxi: Add A23 clocks support
->   ARM: sun8i: Add basic clock nodes to the DTSI
-> 
->  Documentation/devicetree/bindings/clock/sunxi.txt |   5 +
->  arch/arm/boot/dts/sun8i-a23.dtsi                  | 125 +++++++++++++++++++++-
->  drivers/clk/sunxi/clk-factors.c                   |   2 +-
->  drivers/clk/sunxi/clk-factors.h                   |   1 +
->  drivers/clk/sunxi/clk-sunxi.c                     | 119 ++++++++++++++++++--
->  5 files changed, 237 insertions(+), 15 deletions(-)
-> 
-> -- 
-> 2.0.0
-> 
+Thanks, Hugh!
