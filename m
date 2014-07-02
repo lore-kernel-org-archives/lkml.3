@@ -1,100 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403AbaGBXSB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 19:18:01 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:42857 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaGBXR7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 19:17:59 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "Peter De Schrijver" <pdeschrijver@nvidia.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1403794853-16928-1-git-send-email-pdeschrijver@nvidia.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1403794853-16928-1-git-send-email-pdeschrijver@nvidia.com>
-Message-ID: <20140702231745.7440.489@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v3] clk: define and export clk_debugs_add_file
-Date: Wed, 02 Jul 2014 16:17:45 -0700
+	id S1752148AbaGBXT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 19:19:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25553 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751344AbaGBXT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 19:19:56 -0400
+Message-ID: <1404343175.1862.74.camel@ul30vt.home>
+Subject: Re: [PATCH 3.15 099/139] libiscsi, iser: Adjust data_length to
+ include protection information
+From: Alex Williamson <alex.williamson@redhat.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Mike Christie <michaelc@cs.wisc.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        SCSI Mailing List <linux-scsi@vger.kernel.org>
+Date: Wed, 02 Jul 2014 17:19:35 -0600
+In-Reply-To: <1404341555.16066.19.camel@dabdike>
+References: <20140628174605.352098823@linuxfoundation.org>
+	 <20140628174609.930049472@linuxfoundation.org>
+	 <1404339330.1862.69.camel@ul30vt.home> <53B48B37.4000608@cs.wisc.edu>
+	 <1404341555.16066.19.camel@dabdike>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Peter De Schrijver (2014-06-26 08:00:53)
-> Define and export a new function clk_debugs_add_file which adds a file
-> to a existing clock's debugfs directory. This can be used by clock
-> providers to add debugfs entries which are not related to a specific clock
-> type. Examples include the ability to measure the rate of a clock. It can
-> also be used by modules to create new debugfs entries. This is useful if you
-> want to expose features for testing which can potentially cause system
-> instability such as allowing to change a clock's rate from userspace.
+On Wed, 2014-07-02 at 15:52 -0700, James Bottomley wrote:
+> On Wed, 2014-07-02 at 17:44 -0500, Mike Christie wrote:
+> > On 07/02/2014 05:15 PM, Alex Williamson wrote:
+> > > On Sat, 2014-06-28 at 10:47 -0700, Greg Kroah-Hartman wrote:
+> > >> > 3.15-stable review patch.  If anyone has any objections, please let me know.
+> > >> > 
+> > >> > ------------------
+> > >> > 
+> > >> > From: Sagi Grimberg <sagig@mellanox.com>
+> > >> > 
+> > >> > commit d77e65350f2d82dfa0557707d505711f5a43c8fd upstream.
+> > >> > 
+> > >> > In case protection information exists over the wire
+> > >> > iscsi header data length is required to include it.
+> > >> > Use protection information aware scsi helpers to set
+> > >> > the correct transfer length.
+> > >> > 
+> > >> > In order to avoid breakage, remove iser transfer length
+> > >> > checks for each task as they are not always true and
+> > >> > somewhat redundant anyway.
+> > >> > 
+> > >> > Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+> > >> > Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
+> > >> > Acked-by: Mike Christie <michaelc@cs.wisc.edu>
+> > >> > Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+> > >> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > >> > 
+> > >> > ---
+> > >> >  drivers/infiniband/ulp/iser/iser_initiator.c |   34 +++++++--------------------
+> > >> >  drivers/scsi/libiscsi.c                      |   18 +++++++-------
+> > >> >  2 files changed, 19 insertions(+), 33 deletions(-)
+> > > I'm a bit late to object, but this is causing a regression for me on
+> > > 3.15.3 and 3.16-rc.  Using an iscsi_tcp rootfs, I'm seeing the NULL
+> > 
+> > 
+> > A fix for this is in Christoph's tree. Here is the status of the patch.
+> > 
+> > http://marc.info/?l=linux-kernel&m=140432482527273&w=2
 > 
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-
-Applied to clk-next. If you have some useful examples of how you use
-this in downstream kernels or in out-of-tree modules then it would be
-great to post them to the list. Others might find them helpful.
-
-Regards,
-Mike
-
+> I assume it's this fix:
 > 
-> ---
-> Changes in v3:
->  * export a function to create a new file in a clock's debugfs directory
->    instead of exposing the clock's debugfs dentry pointer
+> commit 7bafc240e126c37f60b040fa429ae4a710b88ab5
+> Author: Martin K. Petersen <martin.petersen@oracle.com>
+> Date:   Tue Jun 24 16:59:35 2014 +0200
 > 
-> Changes in v2:
->  * fix function name in description
->  * export function in header file
-> ---
->  drivers/clk/clk.c            |   12 ++++++++++++
->  include/linux/clk-provider.h |    5 +++++
->  2 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index 8b73ede..c1e2fab 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -403,6 +403,18 @@ static void clk_debug_reparent(struct clk *clk, struct clk *new_parent)
->                                 __func__, clk->name);
->  }
+>     scsi: use the scsi data buffer length to extract transfer size
 >  
-> +struct dentry *clk_debugfs_add_file(struct clk *clk, char *name, umode_t mode,
-> +                               void *data, const struct file_operations *fops)
-> +{
-> +       struct dentry *d = NULL;
-> +
-> +       if (clk->dentry)
-> +               d = debugfs_create_file(name, mode, clk->dentry, data, fops);
-> +
-> +       return d;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_debugfs_add_file);
-> +
->  /**
->   * clk_debug_init - lazily create the debugfs clk tree visualization
->   *
-> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-> index 0c287db..411dd7e 100644
-> --- a/include/linux/clk-provider.h
-> +++ b/include/linux/clk-provider.h
-> @@ -619,5 +619,10 @@ static inline void clk_writel(u32 val, u32 __iomem *reg)
->  
->  #endif /* platform dependent I/O accessors */
->  
-> +#ifdef CONFIG_DEBUG_FS
-> +struct dentry *clk_debugfs_add_file(struct clk *clk, char *name, umode_t mode,
-> +                               void *data, const struct file_operations *fops);
-> +#endif
-> +
->  #endif /* CONFIG_COMMON_CLK */
->  #endif /* CLK_PROVIDER_H */
-> -- 
-> 1.7.7.rc0.72.g4b5ea.dirty
-> 
+> In which case it's not marked for stable backport ... I assume it should
+> be?
+
+Yes, that's the one.  It definitely needs a 3.15 stable backport.
+Thanks,
+
+Alex
+
+
