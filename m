@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757528AbaGBTwe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 15:52:34 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:28983 "EHLO
+	id S1757853AbaGBTxW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 15:53:22 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:42781 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752632AbaGBTwc (ORCPT
+	by vger.kernel.org with ESMTP id S1754863AbaGBTwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 15:52:32 -0400
-Message-Id: <20140702195231.476379359@goodmis.org>
+	Wed, 2 Jul 2014 15:52:33 -0400
+Message-Id: <20140702195231.674381938@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Wed, 02 Jul 2014 15:52:21 -0400
+Date: Wed, 02 Jul 2014 15:52:22 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -17,13 +17,14 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        stable-rt@vger.kernel.org
-Subject: [PATCH RT 1/3] timer: do not spin_trylock() on UP
+        stable-rt@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
+Subject: [PATCH RT 2/3] Fix latency histogram after "hrtimer: Set expiry time before
+ switch_hrtimer_base()"
 References: <20140702195220.872585955@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0001-timer-do-not-spin_trylock-on-UP.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0002-Fix-latency-histogram-after-hrtimer-Set-expiry-time-.patch
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,42 +35,48 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-This will void a warning comming from the spin-lock debugging code. The
-lock avoiding idea is from Steven Rostedt.
+In an rt-kernel with CONFIG_MISSED_TIMER_OFFSETS_HIST enabled,
+__hrtimer_start_range_ns() now crashes, as new_base is not assigned
+before it is used.
 
+Tested-by: Carsten Emde <C.Emde@osadl.org>
 Cc: stable-rt@vger.kernel.org
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/timer.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ kernel/hrtimer.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 26cca8b924e7..40cfa14131ca 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1461,6 +1461,19 @@ void run_local_timers(void)
- 	 * the timer softirq.
- 	 */
- #ifdef CONFIG_PREEMPT_RT_FULL
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index f7a3a7a5a61b..1defbda1def8 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1102,6 +1102,11 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ #endif
+ 	}
+ 
++	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
 +
-+#ifndef CONFIG_SMP
-+	/*
-+	 * The spin_do_trylock() later may fail as the lock may be hold before
-+	 * the interrupt arrived. The spin-lock debugging code will raise a
-+	 * warning if the try_lock fails on UP. Since this is only an
-+	 * optimization for the FULL_NO_HZ case (not to run the timer softirq on
-+	 * an nohz_full CPU) we don't really care and shedule the softirq.
-+	 */
-+	raise_softirq(TIMER_SOFTIRQ);
-+	return;
-+#endif
++	/* Switch the timer base, if necessary: */
++	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
 +
- 	/* On RT, irq work runs from softirq */
- 	if (irq_work_needs_cpu()) {
- 		raise_softirq(TIMER_SOFTIRQ);
+ #ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
+ 	{
+ 		ktime_t now = new_base->get_time();
+@@ -1113,11 +1118,6 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 	}
+ #endif
+ 
+-	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
+-
+-	/* Switch the timer base, if necessary: */
+-	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
+-
+ 	timer_stats_hrtimer_set_start_info(timer);
+ 
+ 	leftmost = enqueue_hrtimer(timer, new_base);
 -- 
 2.0.0
 
