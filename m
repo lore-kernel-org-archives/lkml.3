@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077AbaGBNFy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 09:05:54 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49791 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751770AbaGBNFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 09:05:53 -0400
-Message-ID: <53B403AF.60505@ti.com>
-Date: Wed, 2 Jul 2014 08:05:51 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753271AbaGBNHc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 09:07:32 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:65111 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030AbaGBNHb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 09:07:31 -0400
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
-        <balbi@ti.com>
-CC: <nsekhar@ti.com>, <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Rajendra Nayak <rnayak@ti.com>, Tero Kristo <t-kristo@ti.com>
-Subject: Re: [PATCH 1/6] ARM: dts: dra7-evm: Make VDDA_1V8_PHY supply always
- on
-References: <1404302638-3003-1-git-send-email-rogerq@ti.com> <1404302638-3003-2-git-send-email-rogerq@ti.com>
-In-Reply-To: <1404302638-3003-2-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1403910612-8754-3-git-send-email-andi@firstfloor.org>
+References: <1403910612-8754-1-git-send-email-andi@firstfloor.org>
+	<1403910612-8754-3-git-send-email-andi@firstfloor.org>
+Date: Wed, 2 Jul 2014 15:07:30 +0200
+Message-ID: <CABPqkBSemE1bAnWANO4fnejV8iGXkF5f3+orgBvoN5jqd_jueA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] perf, x86, ivb: Allow leaking events with ANY bit set
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2014 07:03 AM, Roger Quadros wrote:
-> After clarification from the hardware team it was found that
-> this 1.8V PHY supply can't be switched OFF when SoC is Active.
-> It can only be switched off when in PORz (power on reset).
+Andi,
 
-I dont think folks know the reasoning why hardware team decided that
-the voltage rail cannot be switched off -> I suggest adding the
-following information as well.
+On Sat, Jun 28, 2014 at 1:10 AM, Andi Kleen <andi@firstfloor.org> wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> Currently the leaking IVB events cannot be scheduled at all,
+> to avoid leaking information about other process.
+> When the ANY bit is set this does not matter: the process
+> already has all the needed priviledges and "leaking" is expected.
+> So allow these events with any bit set.
+>
+Does not make any sense.
+This is not the problem.
 
-Since isolation is not present in the design for these PHY IPs to
-allow for the PHY rail to be switched off, there is a very high risk
-of IP reliability and additional leakage paths which can result in
-additional power consumption.
+It is not about leaking information to another hyper-thread, i.e.,
+leaking private info.
 
-Only scenario where this rail can be switched off is part of Power on
-reset sequencing, but it needs to be kept always-on during operation.
+It is about corrupting the other thread's counter regardless of what
+it measures.
 
-> 
-> This patch is required for proper functionality of USB, SATA
-> and PCIe on DRA7-evm.
-> 
-> CC: Rajendra Nayak <rnayak@ti.com>
-> CC: Tero Kristo <t-kristo@ti.com>
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+The events black-listed here could as well be black-listed on SNB
+and HSW. Yet, they are useful events. The patch series we posted
+with Maria address the corruption aspect. I will post a V2 next week.
+
+
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 > ---
->  arch/arm/boot/dts/dra7-evm.dts | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
-> index 4adc280..8308954 100644
-> --- a/arch/arm/boot/dts/dra7-evm.dts
-> +++ b/arch/arm/boot/dts/dra7-evm.dts
-> @@ -240,6 +240,7 @@
->  					regulator-name = "ldo3";
->  					regulator-min-microvolt = <1800000>;
->  					regulator-max-microvolt = <1800000>;
-> +					regulator-always-on;
->  					regulator-boot-on;
->  				};
->  
-> 
-
-
--- 
-Regards,
-Nishanth Menon
+>  arch/x86/kernel/cpu/perf_event_intel.c | 9 ++++++---
+>  1 file changed, 6 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index adb02aa..db5cec3 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -116,6 +116,8 @@ static struct event_constraint intel_snb_event_constraints[] __read_mostly =
+>         EVENT_CONSTRAINT_END
+>  };
+>
+> +#define FLAGS_NOT_ANY (X86_ALL_EVENT_FLAGS & ~ARCH_PERFMON_EVENTSEL_ANY)
+> +
+>  static struct event_constraint intel_ivb_event_constraints[] __read_mostly =
+>  {
+>         FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
+> @@ -135,11 +137,12 @@ static struct event_constraint intel_ivb_event_constraints[] __read_mostly =
+>          * Errata BV98 -- MEM_*_RETIRED events can leak between counters of SMT
+>          * siblings; disable these events because they can corrupt unrelated
+>          * counters.
+> +        * But allow them with the ANY bit set.
+>          */
+>         INTEL_EVENT_CONSTRAINT(0xd0, 0x0), /* MEM_UOPS_RETIRED.* */
+> -       INTEL_EVENT_CONSTRAINT(0xd1, 0x0), /* MEM_LOAD_UOPS_RETIRED.* */
+> -       INTEL_EVENT_CONSTRAINT(0xd2, 0x0), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+> -       INTEL_EVENT_CONSTRAINT(0xd3, 0x0), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
+> +       INTEL_FLAGS_EVENT_CONSTRAINT(FLAGS_NOT_ANY|0xd1, 0x0), /* MEM_LOAD_UOPS_RETIRED.* */
+> +       INTEL_FLAGS_EVENT_CONSTRAINT(FLAGS_NOT_ANY|0xd2, 0x0), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+> +       INTEL_FLAGS_EVENT_CONSTRAINT(FLAGS_NOT_ANY|0xd3, 0x0), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
+>         EVENT_CONSTRAINT_END
+>  };
+>
+> --
+> 1.9.3
+>
