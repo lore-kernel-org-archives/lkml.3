@@ -1,46 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454AbaGBNZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 09:25:16 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:64235 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226AbaGBNZO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 09:25:14 -0400
-Date: Wed, 2 Jul 2014 14:25:10 +0100
-From: Peter Griffin <peter.griffin@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        p.zabel@pengutronix.de, srinivas.kandagatla@gmail.com,
-        maxime.coquelin@st.com, patrice.chotard@st.com,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 2/3] ARM: sti: Add STiH407 Kconfig entry to select
- STIH407_RESET
-Message-ID: <20140702132510.GA32342@griffinp-ThinkPad-X1-Carbon-2nd>
-References: <1404225047-9495-1-git-send-email-peter.griffin@linaro.org>
- <1404225047-9495-3-git-send-email-peter.griffin@linaro.org>
- <20140702085403.GG10311@lee--X1>
+	id S1753523AbaGBN1D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 09:27:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45609 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751744AbaGBN1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 09:27:00 -0400
+Date: Wed, 2 Jul 2014 18:56:35 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        Kees Cook <keescook@chromium.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>, stable@vger.kernel.org
+Subject: Re: [PATCH 1/2 v2] hwrng: Allow drivers to disable reading during
+ probe
+Message-ID: <20140702132635.GD7505@grmbl.mre>
+References: <cover.1404296679.git.amit.shah@redhat.com>
+ <1404306020-24916-1-git-send-email-jason@lakedaemon.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140702085403.GG10311@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1404306020-24916-1-git-send-email-jason@lakedaemon.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+Hi Jason,
 
-Thanks for reviewing.
-
-On Wed, 02 Jul 2014, Lee Jones wrote:
-> Looks okay, although could probably do with a few words in the commit
-> message about what the STiH407 is; yada, yada, yada ...
-
-Fixed in V2.
+On (Wed) 02 Jul 2014 [13:00:19], Jason Cooper wrote:
+> Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
+> added a call to rng_get_data() from the hwrng_register() function.
+> However, some rng devices need initialization before data can be read
+> from them.
 > 
-> Acked-by: Lee Jones <lee.jones@linaro.org>
+> Also, the virtio-rng device does not behave properly when this call is
+> made in its probe() routine - the virtio core sets the DRIVER_OK status
+> bit only on a successful probe, which means the host ignores all
+> communication from the guest, and the guest insmod or boot process just
+> sits there doing nothing.
+> 
+> [ jac: Modify the API to allow drivers to disable reading at probe, new
+> patch, copied Amit's commit message. ]
+> 
+> CC: Kees Cook <keescook@chromium.org>
+> CC: Jason Cooper <jason@lakedaemon.net>
+> CC: Herbert Xu <herbert@gondor.apana.org.au>
+> CC: <stable@vger.kernel.org> # v3.15+
+> Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+> ---
+>  drivers/char/hw_random/core.c | 8 +++++---
+>  include/linux/hw_random.h     | 4 ++++
+>  2 files changed, 9 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+> index 334601cc81cf..b7b6c48ca682 100644
+> --- a/drivers/char/hw_random/core.c
+> +++ b/drivers/char/hw_random/core.c
+> @@ -347,9 +347,11 @@ int hwrng_register(struct hwrng *rng)
+>  	INIT_LIST_HEAD(&rng->list);
+>  	list_add_tail(&rng->list, &rng_list);
+>  
+> -	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
+> -	if (bytes_read > 0)
+> -		add_device_randomness(bytes, bytes_read);
+> +	if (!(rng->flags & HWRNG_NO_READ_AT_PROBE)) {
+> +		bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
+> +		if (bytes_read > 0)
+> +			add_device_randomness(bytes, bytes_read);
+> +	}
 
-Thanks, regards,
+But this has the inverse problem: if there are two hwrngs in the
+system, one will be initialized and probed.  The other will not be
+initialized, but still be probed.
 
-Peter.
+My version was more conservative while this one keeps the bug from the
+current kernels.
+
+		Amit
