@@ -1,168 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965212AbaGBBBW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 21:01:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44385 "EHLO mx2.suse.de"
+	id S1758888AbaGBBEq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 21:04:46 -0400
+Received: from mga11.intel.com ([192.55.52.93]:3745 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753865AbaGBBBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 21:01:20 -0400
-Date: Wed, 2 Jul 2014 03:01:17 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Ming Lei <ming.lei@canonical.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tom Gundersen <teg@jklm.no>, Abhay Salunke <Abhay_Salunke@dell.com>,
-        Stefan Roese <sr@denx.de>, Arnd Bergmann <arnd@arndb.de>,
-        Kay Sievers <kay@vrfy.org>
-Subject: Re: [PATCH] firmware loader: inform direct failure when udev
-	loader is disabled
-Message-ID: <20140702010117.GS27687@wotan.suse.de>
-References: <1404171017-28064-1-git-send-email-mcgrof@do-not-panic.com> <CACVXFVMgNa6RM6GdtNbbNOG0zn29WVRSfD8xdM983-x8sGnp4g@mail.gmail.com> <s5hk37x8mdc.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hk37x8mdc.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1754154AbaGBBEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 21:04:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,585,1400050800"; 
+   d="scan'208";a="556150700"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Boon Leong Ong <boon.leong.ong@intel.com>
+Subject: [PATCH v5] USB: ehci-pci: USB host controller support for Intel Quark X1000
+Date: Wed,  2 Jul 2014 01:58:18 -0700
+Message-Id: <1404291498-28841-1-git-send-email-alvin.chen@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 01, 2014 at 11:22:07AM +0200, Takashi Iwai wrote:
-> At Tue, 1 Jul 2014 11:54:24 +0800,
-> Ming Lei wrote:
-> > 
-> > On Tue, Jul 1, 2014 at 7:30 AM, Luis R. Rodriguez
-> > <mcgrof@do-not-panic.com> wrote:
-> > > From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> > >
-> > > Now that the udev firmware loader is optional request_firmware()
-> > > will not provide any information on the kernel ring buffer if
-> > > direct firmware loading failed and udev firmware loading is disabled.
-> > > If no information is needed request_firmware_direct() should be used
-> > > for optional firmware, at which point drivers can take on the onus
-> > > over informing of any failures, if udev firmware loading is disabled
-> > > though we should at the very least provide some sort of information
-> > > as when the udev loader was enabled by default back in the days.
-> > >
-> > > With this change with a simple firmware load test module [0]:
-> > >
-> > > Example output without FW_LOADER_USER_HELPER_FALLBACK
-> > >
-> > > platform fake-dev.0: Direct firmware load for fake.bin failed with error -2
-> > >
-> > > Example without FW_LOADER_USER_HELPER_FALLBACK
-> > >
-> > > platform fake-dev.0: Direct firmware load for fake.bin failed with error -2
-> > > platform fake-dev.0: Falling back to user helper
-> > >
-> > > Without this change without FW_LOADER_USER_HELPER_FALLBACK we get no output
-> > > logged upon failure.
-> > >
-> > > [0] https://github.com/mcgrof/fake-firmware-test.git
-> > >
-> > > Cc: Tom Gundersen <teg@jklm.no>
-> > > Cc: Ming Lei <ming.lei@canonical.com>
-> > > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > > Cc: Abhay Salunke <Abhay_Salunke@dell.com>
-> > > Cc: Stefan Roese <sr@denx.de>
-> > > Cc: Arnd Bergmann <arnd@arndb.de>
-> > > Cc: Kay Sievers <kay@vrfy.org>
-> > > Cc: Takashi Iwai <tiwai@suse.de>
-> > > Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
-> > > ---
-> > >
-> > >  drivers/base/firmware_class.c | 12 ++++++++----
-> > >  1 file changed, 8 insertions(+), 4 deletions(-)
-> > >
-> > > diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> > > index 46ea5f4..23274d8 100644
-> > > --- a/drivers/base/firmware_class.c
-> > > +++ b/drivers/base/firmware_class.c
-> > > @@ -101,8 +101,10 @@ static inline long firmware_loading_timeout(void)
-> > >  #define FW_OPT_NOWAIT  (1U << 1)
-> > >  #ifdef CONFIG_FW_LOADER_USER_HELPER
-> > >  #define FW_OPT_USERHELPER      (1U << 2)
-> > > +#define FW_OPT_FAIL_WARN       0
-> > >  #else
-> > >  #define FW_OPT_USERHELPER      0
-> > > +#define FW_OPT_FAIL_WARN       (1U << 3)
-> > >  #endif
-> > >  #ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK
-> > >  #define FW_OPT_FALLBACK                FW_OPT_USERHELPER
-> > > @@ -1116,10 +1118,11 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
-> > >
-> > >         ret = fw_get_filesystem_firmware(device, fw->priv);
-> > >         if (ret) {
-> > > -               if (opt_flags & FW_OPT_USERHELPER) {
-> > > +               if (opt_flags & (FW_OPT_FAIL_WARN | FW_OPT_USERHELPER))
-> > >                         dev_warn(device,
-> > > -                                "Direct firmware load failed with error %d\n",
-> > > -                                ret);
-> > > +                                "Direct firmware load for %s failed with error %d\n",
-> > > +                                name, ret);
-> > 
-> > Maybe the warning can be always printed out since
-> > (FW_OPT_FAIL_WARN | FW_OPT_USERHELPER) should be
-> > always true.
-> 
-> Yes, it'd be simpler.  Let's reduce lines! :)
+From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
 
-Actually we don't want to warn when request_firmware_direct() is used right? That's really what
-I meant to upkeep while adding a warning when _direct() is not used. So how about
-this as an ammendment:
+The EHCI packet buffer in/out threshold is programmable for Intel Quark X1000
+USB host controller, and the default value is 0x20 dwords. The in/out threshold
+can be programmed to 0x80 dwords (512 Bytes) to maximize the perfomrance,
+but only when isochronous/interrupt transactions are not initiated by the USB
+host controller. This patch is to reconfigure the packet buffer in/out
+threshold as maximal as possible to maximize the performance, and 0x7F dwords
+(508 Bytes) should be used because the USB host controller initiates
+isochronous/interrupt transactions.
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 23274d8..4f6adf3 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -1180,7 +1180,6 @@ request_firmware(const struct firmware **firmware_p, const char *name,
- }
- EXPORT_SYMBOL(request_firmware);
+Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+---
+Changlog v5:
+* Correct the wrong comment style.
+
+ drivers/usb/host/ehci-pci.c |   25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
+index 3e86bf4..ca7b964 100644
+--- a/drivers/usb/host/ehci-pci.c
++++ b/drivers/usb/host/ehci-pci.c
+@@ -35,6 +35,21 @@ static const char hcd_name[] = "ehci-pci";
+ #define PCI_DEVICE_ID_INTEL_CE4100_USB	0x2e70
  
--#ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK
- /**
-  * request_firmware: - load firmware directly without usermode helper
-  * @firmware_p: pointer to firmware image
-@@ -1202,7 +1201,6 @@ int request_firmware_direct(const struct firmware **firmware_p,
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(request_firmware_direct);
--#endif
- 
- /**
-  * release_firmware: - release the resource associated with a firmware image
-diff --git a/include/linux/firmware.h b/include/linux/firmware.h
-index 67e5b80..5c41c5e 100644
---- a/include/linux/firmware.h
-+++ b/include/linux/firmware.h
-@@ -45,6 +45,8 @@ int request_firmware_nowait(
- 	struct module *module, bool uevent,
- 	const char *name, struct device *device, gfp_t gfp, void *context,
- 	void (*cont)(const struct firmware *fw, void *context));
-+int request_firmware_direct(const struct firmware **fw, const char *name,
-+			    struct device *device);
- 
- void release_firmware(const struct firmware *fw);
- #else
-@@ -66,13 +68,12 @@ static inline void release_firmware(const struct firmware *fw)
- {
- }
- 
--#endif
-+static inline int request_firmware_direct(const struct firmware **fw,
-+					  const char *name,
-+					  struct device *device)
+ /*-------------------------------------------------------------------------*/
++#define PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC		0x0939
++static inline bool is_intel_quark_x1000(struct pci_dev *pdev)
 +{
-+	return -EINVAL;
++	return pdev->vendor == PCI_VENDOR_ID_INTEL &&
++		pdev->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC;
 +}
++
++/*
++ * 0x84 is the offset of in/out threshold register,
++ * and it is the same offset as the register of 'hostpc'.
++ */
++#define	intel_quark_x1000_insnreg01	hostpc
++
++/* Maximum usable threshold value is 0x7f dwords for both IN and OUT */
++#define INTEL_QUARK_X1000_EHCI_MAX_THRESHOLD	0x007f007f
  
--#ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK
--int request_firmware_direct(const struct firmware **fw, const char *name,
--			    struct device *device);
--#else
--#define request_firmware_direct	request_firmware
- #endif
--
- #endif
+ /* called after powerup, by probe or system-pm "wakeup" */
+ static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
+@@ -50,6 +65,16 @@ static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
+ 	if (!retval)
+ 		ehci_dbg(ehci, "MWI active\n");
+ 
++	/* Reset the threshold limit */
++	if (is_intel_quark_x1000(pdev)) {
++		/*
++		 * For the Intel QUARK X1000, raise the I/O threshold to the
++		 * maximum usable value in order to improve performance.
++		 */
++		ehci_writel(ehci, INTEL_QUARK_X1000_EHCI_MAX_THRESHOLD,
++			ehci->regs->intel_quark_x1000_insnreg01);
++	}
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
+
