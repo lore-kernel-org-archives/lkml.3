@@ -1,107 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758886AbaGBAnK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 20:43:10 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:54596 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753567AbaGBAnI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 20:43:08 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Wed, 2 Jul 2014 09:48:19 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: Re: [PATCH v3 5/9] slab: introduce alien_cache
-Message-ID: <20140702004819.GD9972@js1304-P5Q-DELUXE>
-References: <1404203258-8923-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1404203258-8923-6-git-send-email-iamjoonsoo.kim@lge.com>
- <20140701151547.fa67354878399575c8eb4647@linux-foundation.org>
+	id S965212AbaGBBBW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 21:01:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44385 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753865AbaGBBBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 21:01:20 -0400
+Date: Wed, 2 Jul 2014 03:01:17 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Ming Lei <ming.lei@canonical.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tom Gundersen <teg@jklm.no>, Abhay Salunke <Abhay_Salunke@dell.com>,
+        Stefan Roese <sr@denx.de>, Arnd Bergmann <arnd@arndb.de>,
+        Kay Sievers <kay@vrfy.org>
+Subject: Re: [PATCH] firmware loader: inform direct failure when udev
+	loader is disabled
+Message-ID: <20140702010117.GS27687@wotan.suse.de>
+References: <1404171017-28064-1-git-send-email-mcgrof@do-not-panic.com> <CACVXFVMgNa6RM6GdtNbbNOG0zn29WVRSfD8xdM983-x8sGnp4g@mail.gmail.com> <s5hk37x8mdc.wl%tiwai@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140701151547.fa67354878399575c8eb4647@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5hk37x8mdc.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 01, 2014 at 03:15:47PM -0700, Andrew Morton wrote:
-> On Tue,  1 Jul 2014 17:27:34 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+On Tue, Jul 01, 2014 at 11:22:07AM +0200, Takashi Iwai wrote:
+> At Tue, 1 Jul 2014 11:54:24 +0800,
+> Ming Lei wrote:
+> > 
+> > On Tue, Jul 1, 2014 at 7:30 AM, Luis R. Rodriguez
+> > <mcgrof@do-not-panic.com> wrote:
+> > > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+> > >
+> > > Now that the udev firmware loader is optional request_firmware()
+> > > will not provide any information on the kernel ring buffer if
+> > > direct firmware loading failed and udev firmware loading is disabled.
+> > > If no information is needed request_firmware_direct() should be used
+> > > for optional firmware, at which point drivers can take on the onus
+> > > over informing of any failures, if udev firmware loading is disabled
+> > > though we should at the very least provide some sort of information
+> > > as when the udev loader was enabled by default back in the days.
+> > >
+> > > With this change with a simple firmware load test module [0]:
+> > >
+> > > Example output without FW_LOADER_USER_HELPER_FALLBACK
+> > >
+> > > platform fake-dev.0: Direct firmware load for fake.bin failed with error -2
+> > >
+> > > Example without FW_LOADER_USER_HELPER_FALLBACK
+> > >
+> > > platform fake-dev.0: Direct firmware load for fake.bin failed with error -2
+> > > platform fake-dev.0: Falling back to user helper
+> > >
+> > > Without this change without FW_LOADER_USER_HELPER_FALLBACK we get no output
+> > > logged upon failure.
+> > >
+> > > [0] https://github.com/mcgrof/fake-firmware-test.git
+> > >
+> > > Cc: Tom Gundersen <teg@jklm.no>
+> > > Cc: Ming Lei <ming.lei@canonical.com>
+> > > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > Cc: Abhay Salunke <Abhay_Salunke@dell.com>
+> > > Cc: Stefan Roese <sr@denx.de>
+> > > Cc: Arnd Bergmann <arnd@arndb.de>
+> > > Cc: Kay Sievers <kay@vrfy.org>
+> > > Cc: Takashi Iwai <tiwai@suse.de>
+> > > Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> > > ---
+> > >
+> > >  drivers/base/firmware_class.c | 12 ++++++++----
+> > >  1 file changed, 8 insertions(+), 4 deletions(-)
+> > >
+> > > diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> > > index 46ea5f4..23274d8 100644
+> > > --- a/drivers/base/firmware_class.c
+> > > +++ b/drivers/base/firmware_class.c
+> > > @@ -101,8 +101,10 @@ static inline long firmware_loading_timeout(void)
+> > >  #define FW_OPT_NOWAIT  (1U << 1)
+> > >  #ifdef CONFIG_FW_LOADER_USER_HELPER
+> > >  #define FW_OPT_USERHELPER      (1U << 2)
+> > > +#define FW_OPT_FAIL_WARN       0
+> > >  #else
+> > >  #define FW_OPT_USERHELPER      0
+> > > +#define FW_OPT_FAIL_WARN       (1U << 3)
+> > >  #endif
+> > >  #ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK
+> > >  #define FW_OPT_FALLBACK                FW_OPT_USERHELPER
+> > > @@ -1116,10 +1118,11 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
+> > >
+> > >         ret = fw_get_filesystem_firmware(device, fw->priv);
+> > >         if (ret) {
+> > > -               if (opt_flags & FW_OPT_USERHELPER) {
+> > > +               if (opt_flags & (FW_OPT_FAIL_WARN | FW_OPT_USERHELPER))
+> > >                         dev_warn(device,
+> > > -                                "Direct firmware load failed with error %d\n",
+> > > -                                ret);
+> > > +                                "Direct firmware load for %s failed with error %d\n",
+> > > +                                name, ret);
+> > 
+> > Maybe the warning can be always printed out since
+> > (FW_OPT_FAIL_WARN | FW_OPT_USERHELPER) should be
+> > always true.
 > 
-> > -static struct array_cache **alloc_alien_cache(int node, int limit, gfp_t gfp)
-> > +static struct alien_cache *__alloc_alien_cache(int node, int entries,
-> > +						int batch, gfp_t gfp)
-> > +{
-> > +	int memsize = sizeof(void *) * entries + sizeof(struct alien_cache);
-> 
-> nit: all five memsizes in slab.c have type `int'.  size_t would be more
-> appropriate.
-> 
+> Yes, it'd be simpler.  Let's reduce lines! :)
 
-Hello,
+Actually we don't want to warn when request_firmware_direct() is used right? That's really what
+I meant to upkeep while adding a warning when _direct() is not used. So how about
+this as an ammendment:
 
-As my inspection, there are 4 memsize. Can you confirm that?
-Anyway, here goes the patch you suggested.
-
-Thanks.
-
-----------8<-----------------
->From e9ae011804f3d90375b2e50c0dbd95e708afc509 Mon Sep 17 00:00:00 2001
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Date: Wed, 2 Jul 2014 09:23:05 +0900
-Subject: [PATCH] slab: change int to size_t for representing allocation size
-
-It is better to represent allocation size in size_t rather than int.
-So change it.
-
-Suggested-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-diff --git a/mm/slab.c b/mm/slab.c
-index 5b0224c..e7763db 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -681,7 +681,7 @@ static void init_arraycache(struct array_cache *ac, int limit, int batch)
- static struct array_cache *alloc_arraycache(int node, int entries,
- 					    int batchcount, gfp_t gfp)
- {
--	int memsize = sizeof(void *) * entries + sizeof(struct array_cache);
-+	size_t memsize = sizeof(void *) * entries + sizeof(struct array_cache);
- 	struct array_cache *ac = NULL;
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 23274d8..4f6adf3 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -1180,7 +1180,6 @@ request_firmware(const struct firmware **firmware_p, const char *name,
+ }
+ EXPORT_SYMBOL(request_firmware);
  
- 	ac = kmalloc_node(memsize, gfp, node);
-@@ -868,7 +868,7 @@ static void *alternate_node_alloc(struct kmem_cache *, gfp_t);
- static struct alien_cache *__alloc_alien_cache(int node, int entries,
- 						int batch, gfp_t gfp)
- {
--	int memsize = sizeof(void *) * entries + sizeof(struct alien_cache);
-+	size_t memsize = sizeof(void *) * entries + sizeof(struct alien_cache);
- 	struct alien_cache *alc = NULL;
+-#ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK
+ /**
+  * request_firmware: - load firmware directly without usermode helper
+  * @firmware_p: pointer to firmware image
+@@ -1202,7 +1201,6 @@ int request_firmware_direct(const struct firmware **firmware_p,
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(request_firmware_direct);
+-#endif
  
- 	alc = kmalloc_node(memsize, gfp, node);
-@@ -880,7 +880,7 @@ static struct alien_cache *__alloc_alien_cache(int node, int entries,
- static struct alien_cache **alloc_alien_cache(int node, int limit, gfp_t gfp)
- {
- 	struct alien_cache **alc_ptr;
--	int memsize = sizeof(void *) * nr_node_ids;
-+	size_t memsize = sizeof(void *) * nr_node_ids;
- 	int i;
+ /**
+  * release_firmware: - release the resource associated with a firmware image
+diff --git a/include/linux/firmware.h b/include/linux/firmware.h
+index 67e5b80..5c41c5e 100644
+--- a/include/linux/firmware.h
++++ b/include/linux/firmware.h
+@@ -45,6 +45,8 @@ int request_firmware_nowait(
+ 	struct module *module, bool uevent,
+ 	const char *name, struct device *device, gfp_t gfp, void *context,
+ 	void (*cont)(const struct firmware *fw, void *context));
++int request_firmware_direct(const struct firmware **fw, const char *name,
++			    struct device *device);
  
- 	if (limit > 1)
-@@ -1037,7 +1037,7 @@ static int init_cache_node_node(int node)
+ void release_firmware(const struct firmware *fw);
+ #else
+@@ -66,13 +68,12 @@ static inline void release_firmware(const struct firmware *fw)
  {
- 	struct kmem_cache *cachep;
- 	struct kmem_cache_node *n;
--	const int memsize = sizeof(struct kmem_cache_node);
-+	const size_t memsize = sizeof(struct kmem_cache_node);
+ }
  
- 	list_for_each_entry(cachep, &slab_caches, list) {
- 		/*
--- 
-1.7.9.5
-
+-#endif
++static inline int request_firmware_direct(const struct firmware **fw,
++					  const char *name,
++					  struct device *device)
++{
++	return -EINVAL;
++}
+ 
+-#ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK
+-int request_firmware_direct(const struct firmware **fw, const char *name,
+-			    struct device *device);
+-#else
+-#define request_firmware_direct	request_firmware
+ #endif
+-
+ #endif
