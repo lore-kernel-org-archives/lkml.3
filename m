@@ -1,68 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573AbaGBIyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 04:54:11 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:58275 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729AbaGBIyI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 04:54:08 -0400
-Date: Wed, 2 Jul 2014 09:54:03 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Peter Griffin <peter.griffin@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        p.zabel@pengutronix.de, srinivas.kandagatla@gmail.com,
-        maxime.coquelin@st.com, patrice.chotard@st.com,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 2/3] ARM: sti: Add STiH407 Kconfig entry to select
- STIH407_RESET
-Message-ID: <20140702085403.GG10311@lee--X1>
-References: <1404225047-9495-1-git-send-email-peter.griffin@linaro.org>
- <1404225047-9495-3-git-send-email-peter.griffin@linaro.org>
+	id S1752661AbaGBI4w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 04:56:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35771 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751854AbaGBI4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 04:56:50 -0400
+Date: Wed, 2 Jul 2014 10:56:47 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Bryan Wu <cooloney@gmail.com>
+cc: Johan Hovold <johan@kernel.org>,
+        Janne Kanniainen <janne.kanniainen@gmail.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        =?ISO-8859-15?Q?Bj=F8rn_Mork?= <bjorn@mork.no>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        linux-usb@vger.kernel.org,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+Subject: Re: [PATCH 2/2 v2] HID: leds: Use attribute-groups in MSI GT683R
+ driver
+In-Reply-To: <CAK5ve-JYjDRfoyTYcc5zRNds-UF=MzK5Jc+31NQYCsEQp5ZHoA@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1407021054580.1655@pobox.suse.cz>
+References: <20140625115541.GA1409@localhost> <1403711966-13003-1-git-send-email-janne.kanniainen@gmail.com> <20140625174109.GE1409@localhost> <alpine.LNX.2.00.1406252107070.15939@pobox.suse.cz> <CAK5ve-JnqpogKaG1V=mfvKEHMPb8ma4Zeyz9rF4kT-W2Gj=p0A@mail.gmail.com>
+ <20140630104744.GB2486@localhost> <alpine.LNX.2.00.1406301330240.28307@pobox.suse.cz> <CAK5ve-+-wkiG6n2Z5aPXQ7gYEDPwcAtPzjOLB+wyi+7h+8=8Hg@mail.gmail.com> <20140701084832.GC1162@localhost>
+ <CAK5ve-JYjDRfoyTYcc5zRNds-UF=MzK5Jc+31NQYCsEQp5ZHoA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1404225047-9495-3-git-send-email-peter.griffin@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 01 Jul 2014, Peter Griffin wrote:
+On Tue, 1 Jul 2014, Bryan Wu wrote:
 
-> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-> ---
->  arch/arm/mach-sti/Kconfig | 10 ++++++++++
->  1 file changed, 10 insertions(+)
+> Great, I just cherry-picked and applied to my tree
+> http://git.kernel.org/cgit/linux/kernel/git/cooloney/linux-leds.git/commit/?h=for-next&id=f471d9480275796dea2ac7ec249b050e70a2888d
 
-Looks okay, although could probably do with a few words in the commit
-message about what the STiH407 is; yada, yada, yada ...
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
-> diff --git a/arch/arm/mach-sti/Kconfig b/arch/arm/mach-sti/Kconfig
-> index 878e9ec..8825bc9 100644
-> --- a/arch/arm/mach-sti/Kconfig
-> +++ b/arch/arm/mach-sti/Kconfig
-> @@ -42,4 +42,14 @@ config SOC_STIH416
->  	  and other digital audio/video applications using Flattened Device
->  	  Trees.
->  
-> +config SOC_STIH407
-> +	bool "STiH407 STMicroelectronics Consumer Electronics family"
-> +	default y
-> +	select STIH407_RESET
-> +	help
-> +	  This enables support for STMicroelectronics Digital Consumer
-> +	  Electronics family StiH407 parts, targetted at set-top-box
-> +	  and other digital audio/video applications using Flattened Device
-> +	  Trees.
-> +
->  endif
+Ok, perfect, thanks. I am marking my 'for-3.17/hid-gt683r' so that it 
+wouldn't be contained in the for-linus merge window pile.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Jiri Kosina
+SUSE Labs
