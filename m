@@ -1,62 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758894AbaGBBNu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 21:13:50 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:60530 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608AbaGBBNt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 21:13:49 -0400
-X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Jul 2014 21:13:49 EDT
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219
-Date: Wed, 02 Jul 2014 10:07:14 +0900 (JST)
-Message-Id: <20140702.100714.29478419.d.hatayama@jp.fujitsu.com>
-To: ak@linux.intel.com
-Cc: hpa@zytor.com, dzickus@redhat.com, matt@console-pimps.org,
-        peterz@infradead.org, acme@kernel.org, mingo@redhat.com,
-        paulus@samba.org, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] perf/x86/intel: ignore CondChgd bit to avoid false
- NMI handling
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <20140630222224.GH19781@tassilo.jf.intel.com>
-References: <20140616153047.GJ177152@redhat.com>
-	<53B12CB3.5050508@jp.fujitsu.com>
-	<20140630222224.GH19781@tassilo.jf.intel.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
+	id S1758913AbaGBBRW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 21:17:22 -0400
+Received: from ozlabs.org ([103.22.144.67]:48472 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752165AbaGBBRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 21:17:21 -0400
+Date: Wed, 2 Jul 2014 11:17:08 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: linux-next: manual merge of the arm-perf tree with the arm tree
+Message-ID: <20140702111708.0a209b87@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/tZDx5G3tJTSjOIFc2lGlE9E"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v2] perf/x86/intel: ignore CondChgd bit to avoid false NMI handling
-Date: Mon, 30 Jun 2014 15:22:24 -0700
+--Sig_/tZDx5G3tJTSjOIFc2lGlE9E
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
->> 
->> I'm also interested in the behaviour of CondChgd bit on Ivy Bridge processors.
-> 
-> The intended meaning of CondChgd is that a hardware debugger has taken over the
-> PMU. It shouldn't really be set in other circumstances.
-> 
+Hi Will,
 
-Thanks for your explanation.
+Today's linux-next merge of the arm-perf tree got a conflict in
+arch/arm/kernel/perf_event_cpu.c between commit 324bbc0804ac ("ARM:
+make it easier to check the CPU part number correctly") from the arm
+tree and commit 6f73e8ababdd ("arm: perf: clean up PMU names") from the
+arm-perf tree.
 
-The hardware debugger you mean is a kind of ITP?
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> I think right now for perf it would be best to just ignore it.
-> 
-> In theory could stop using the PMU, but if some BIOS set it it would
-> completely disable perf there. So better to just ignore it.
-> 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+diff --cc arch/arm/kernel/perf_event_cpu.c
+index c02c2e8c877d,c63dc4201a7f..000000000000
+--- a/arch/arm/kernel/perf_event_cpu.c
++++ b/arch/arm/kernel/perf_event_cpu.c
+@@@ -254,35 -259,38 +257,39 @@@ static int probe_current_pmu(struct arm
+ =20
+  	pr_info("probing PMU on CPU %d\n", cpu);
+ =20
+ +	switch (read_cpuid_part()) {
+  	/* ARM Ltd CPUs. */
+ -	if (implementor =3D=3D ARM_CPU_IMP_ARM) {
+ -		switch (part_number) {
+ -		case ARM_CPU_PART_ARM1136:
+ -			ret =3D armv6_1136_pmu_init(pmu);
+ -			break;
+ -		case ARM_CPU_PART_ARM1156:
+ -			ret =3D armv6_1156_pmu_init(pmu);
+ -			break;
+ -		case ARM_CPU_PART_ARM1176:
+ -			ret =3D armv6_1176_pmu_init(pmu);
+ -			break;
+ -		case ARM_CPU_PART_ARM11MPCORE:
+ -			ret =3D armv6mpcore_pmu_init(pmu);
+ -			break;
+ -		case ARM_CPU_PART_CORTEX_A8:
+ -			ret =3D armv7_a8_pmu_init(pmu);
+ -			break;
+ -		case ARM_CPU_PART_CORTEX_A9:
+ -			ret =3D armv7_a9_pmu_init(pmu);
+ -			break;
+ -		}
+ -	/* Intel CPUs [xscale]. */
+ -	} else if (implementor =3D=3D ARM_CPU_IMP_INTEL) {
+ -		switch (xscale_cpu_arch_version()) {
+ -		case ARM_CPU_XSCALE_ARCH_V1:
+ -			ret =3D xscale1pmu_init(pmu);
+ -			break;
+ -		case ARM_CPU_XSCALE_ARCH_V2:
+ -			ret =3D xscale2pmu_init(pmu);
+ -			break;
+ +	case ARM_CPU_PART_ARM1136:
+++		ret =3D armv6_1136_pmu_init(pmu);
+++		break;
+ +	case ARM_CPU_PART_ARM1156:
+++		ret =3D armv6_1156_pmu_init(pmu);
+++		break;
+ +	case ARM_CPU_PART_ARM1176:
+- 		ret =3D armv6pmu_init(pmu);
+++		ret =3D armv6_1176_pmu_init(pmu);
+ +		break;
+ +	case ARM_CPU_PART_ARM11MPCORE:
+ +		ret =3D armv6mpcore_pmu_init(pmu);
+ +		break;
+ +	case ARM_CPU_PART_CORTEX_A8:
+ +		ret =3D armv7_a8_pmu_init(pmu);
+ +		break;
+ +	case ARM_CPU_PART_CORTEX_A9:
+ +		ret =3D armv7_a9_pmu_init(pmu);
+ +		break;
+ +
+ +	default:
+ +		if (read_cpuid_implementor() =3D=3D ARM_CPU_IMP_INTEL) {
+ +			switch (xscale_cpu_arch_version()) {
+ +			case ARM_CPU_XSCALE_ARCH_V1:
+ +				ret =3D xscale1pmu_init(pmu);
+ +				break;
+ +			case ARM_CPU_XSCALE_ARCH_V2:
+ +				ret =3D xscale2pmu_init(pmu);
+ +				break;
+ +			}
+  		}
+ +		break;
+  	}
+ =20
+  	put_cpu();
 
-I'll reflect this information in the patch description.
+--Sig_/tZDx5G3tJTSjOIFc2lGlE9E
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
---
-Thanks.
-HATAYAMA, Daisuke
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBCAAGBQJTs12eAAoJEMDTa8Ir7ZwVFjcP/214L4ZSNZLnxWH0B75+LHeM
+L8+pfvuwO3n2RY35x8U6VlJq9EGrUNWt/YMyckwp5XqP7f6CEMSyJJ5sdgO0QVja
++dxnVpv1LbBmJMgZlJyqtFD1RBVUgN6N6Eq5R7vwwlzLKiI/QC7a/4fvP4qKS7Am
+2TAt0H4Zc10Yq0u1M5wuncoE99uRt8mfhGQxSvEzrPcWpqu3gqh2bleTr9c/9XKf
+0lipGubPL3b2svv+RJhxIffSEb0IWihoaA2DYVtPWHoriSzgvUl1L+F0k6EMJIIw
+kmEyxnZl0ghYOG7epvn91kwG8ZYAh/GSQVcE2b5pIBvqttBfY5kM1aP2vIFhMT6F
+mNDrYRs2dGftiUpPnyuPUp84AjF1BomFhwyshIpmCIXEvrcsFbbu79yCNgFirTn3
+hJBH6tk4C8ofPMHwjoFM17LWrgdk2UeejuXeMpzqBWlPOyLILAgXTgoq8Yh6Am8s
+GHDLj5XmVNQ+ppadJz2xlmyNzSZt/SYDkvwTdzR/dzisxkCc7dKrGeF5ym5szBFG
+jMtaHcjre+6XI6jlTmXDkyPRY8tAjtbxVaeerP9prwaKYT+aG5kISWGnINkfsbr6
+ASCaZu6y4L7/iDVw3RYi8X3fRyNWty041j4QOS2pqCLfVLnjmSZbj4S49ggRuczG
+H6iBiX0BeWhO/sADbFWr
+=+2NS
+-----END PGP SIGNATURE-----
+
+--Sig_/tZDx5G3tJTSjOIFc2lGlE9E--
