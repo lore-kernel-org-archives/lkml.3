@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaGBI4w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 04:56:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35771 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751854AbaGBI4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 04:56:50 -0400
-Date: Wed, 2 Jul 2014 10:56:47 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Bryan Wu <cooloney@gmail.com>
-cc: Johan Hovold <johan@kernel.org>,
-        Janne Kanniainen <janne.kanniainen@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        =?ISO-8859-15?Q?Bj=F8rn_Mork?= <bjorn@mork.no>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        linux-usb@vger.kernel.org,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: [PATCH 2/2 v2] HID: leds: Use attribute-groups in MSI GT683R
- driver
-In-Reply-To: <CAK5ve-JYjDRfoyTYcc5zRNds-UF=MzK5Jc+31NQYCsEQp5ZHoA@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1407021054580.1655@pobox.suse.cz>
-References: <20140625115541.GA1409@localhost> <1403711966-13003-1-git-send-email-janne.kanniainen@gmail.com> <20140625174109.GE1409@localhost> <alpine.LNX.2.00.1406252107070.15939@pobox.suse.cz> <CAK5ve-JnqpogKaG1V=mfvKEHMPb8ma4Zeyz9rF4kT-W2Gj=p0A@mail.gmail.com>
- <20140630104744.GB2486@localhost> <alpine.LNX.2.00.1406301330240.28307@pobox.suse.cz> <CAK5ve-+-wkiG6n2Z5aPXQ7gYEDPwcAtPzjOLB+wyi+7h+8=8Hg@mail.gmail.com> <20140701084832.GC1162@localhost>
- <CAK5ve-JYjDRfoyTYcc5zRNds-UF=MzK5Jc+31NQYCsEQp5ZHoA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752188AbaGBI71 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 04:59:27 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:17660 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751375AbaGBI7Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 04:59:25 -0400
+X-IronPort-AV: E=Sophos;i="5.00,818,1396972800"; 
+   d="scan'208";a="32730429"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: <gleb@kernel.org>, <mtosatti@redhat.com>
+CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/4] kvm, mem-hotplug: Do not pin ept identity pagetable and apic access page.
+Date: Wed, 2 Jul 2014 17:00:12 +0800
+Message-ID: <1404291616-15007-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jul 2014, Bryan Wu wrote:
+Hi Gleb, Marcelo,
 
-> Great, I just cherry-picked and applied to my tree
-> http://git.kernel.org/cgit/linux/kernel/git/cooloney/linux-leds.git/commit/?h=for-next&id=f471d9480275796dea2ac7ec249b050e70a2888d
+Please help to review this patch-set.
 
-Ok, perfect, thanks. I am marking my 'for-3.17/hid-gt683r' so that it 
-wouldn't be contained in the for-linus merge window pile.
+NOTE: This patch-set doesn't work properly.
+
+
+ept identity pagetable and apic access page in kvm are pinned in memory.
+As a result, they cannot be migrated/hot-removed.
+
+But actually they don't need to be pinned in memory.
+
+This patch-set introduces two new vcpu requests: KVM_REQ_MIGRATE_EPT and KVM_REQ_MIGRATE_APIC.
+These two requests are made when the two pages are migrated by the mmu_notifier
+to reset the related variable to unusable value. And will also be made when
+ept violation happens to reset new pages.
+
+
+[Known problem]
+After this patch-set applied, the two pages can be migrated/hot-removed.
+But after migrating apic access page, the guest died.
+
+The host physical address of apic access page is stored in VMCS. I reset
+it to 0 to stop guest from accessing it when it is unmapped by
+kvm_mmu_notifier_invalidate_page(). And reset it to new page's host physical
+address in tdp_page_fault(). But it seems that guest will access apic page
+directly by the host physical address.
+
+
+Tang Chen (4):
+  kvm: Add gfn_to_page_no_pin()
+  kvm: Add macro VMX_APIC_ACCESS_PAGE_ADDR
+  kvm, memory-hotplug: Update ept identity pagetable when it is
+    migrated.
+  kvm, mem-hotplug: Update apic access page when it is migrated.
+
+ arch/x86/include/asm/kvm_host.h |  3 +++
+ arch/x86/include/asm/vmx.h      |  2 +-
+ arch/x86/kvm/mmu.c              | 26 ++++++++++++++++++++++++++
+ arch/x86/kvm/svm.c              |  3 ++-
+ arch/x86/kvm/vmx.c              | 17 +++++++++++++----
+ arch/x86/kvm/x86.c              | 36 ++++++++++++++++++++++++++++++++++++
+ include/linux/kvm_host.h        |  3 +++
+ virt/kvm/kvm_main.c             | 38 +++++++++++++++++++++++++++++++++++++-
+ 8 files changed, 121 insertions(+), 7 deletions(-)
 
 -- 
-Jiri Kosina
-SUSE Labs
+1.8.3.1
+
