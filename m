@@ -1,114 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaGBLcR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 07:32:17 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:39661 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091AbaGBLcO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 07:32:14 -0400
+	id S1752267AbaGBLdD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 07:33:03 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42986 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750955AbaGBLdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 07:33:01 -0400
+Date: Wed, 2 Jul 2014 13:32:53 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        toshi.kani@hp.com, imammedo@redhat.com, huawei.libin@huawei.com,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Subject: Re: [PATCH] x86,cpu-hotplug: clear llc_shared_mask at CPU hotplug
+Message-ID: <20140702113253.GD1318@pd.tnic>
+References: <53B3A991.2070502@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKohpomzPHRghqHD7-tDbj0gXzc=ANEb3qLv2kRKOZUyqatBew@mail.gmail.com>
-References: <cover.1404231535.git.viresh.kumar@linaro.org>
-	<eb6df0f1f2c82db0d516b9b63820cfe0c0c97d5c.1404231535.git.viresh.kumar@linaro.org>
-	<20140702055330.GA3454@dragon>
-	<CAKohpomzPHRghqHD7-tDbj0gXzc=ANEb3qLv2kRKOZUyqatBew@mail.gmail.com>
-Date: Wed, 2 Jul 2014 17:02:13 +0530
-Message-ID: <CAKohpomk-pyv6Risyq_b8h3DJNGxBoUWu1Y9cApvoz3CwOtL=w@mail.gmail.com>
-Subject: Re: [PATCH 06/14] cpufreq: cpu0: defer probe if clock isn't
- registered yet
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        Sachin Kamat <spk.linux@gmail.com>,
-        Thomas P Abraham <thomas.ab@samsung.com>, Nishanth Menon <nm@ti.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53B3A991.2070502@jp.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 July 2014 11:25, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 2 July 2014 11:23, Shawn Guo <shawn.guo@linaro.org> wrote:
->> On Tue, Jul 01, 2014 at 10:02:35PM +0530, Viresh Kumar wrote:
->
->>> diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
->>> index 4273a5f..b5b8e1c 100644
->>> --- a/drivers/cpufreq/cpufreq-cpu0.c
->>> +++ b/drivers/cpufreq/cpufreq-cpu0.c
->>> @@ -150,8 +150,17 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
->>>
->>>       cpu_clk = clk_get(cpu_dev, NULL);
->>>       if (IS_ERR(cpu_clk)) {
->>> -             ret = PTR_ERR(cpu_clk);
->>
->> If you keep this ...
->>
->>> -             pr_err("failed to get cpu0 clock: %d\n", ret);
->>> +             /*
->>> +              * If cpu's clk node is present, but clock is not yet
->>> +              * registered, we should try defering probe.
->>> +              */
->>> +             if (PTR_ERR(cpu_clk) == -EPROBE_DEFER) {
->>
->> ... you can use 'ret' here ...
->>
->>> +                     dev_err(cpu_dev, "cpu0 clock not ready, retry\n");
->>> +                     ret = -EPROBE_DEFER;
->>
->> ... this can be saved ...
->>
->>> +             } else {
->>> +                     ret = PTR_ERR(cpu_clk);
->>
->> ... and this as well.
->
-> All accepted. Thanks.
+On Wed, Jul 02, 2014 at 03:41:21PM +0900, Yasuaki Ishimatsu wrote:
+> llc_shared_mask is not cleared even if cpu is offline or hot removed.
+> So when hot-plugging CPU, the mask has wrong value. The mask is used
+> by CSF schduler. So it breaks CFS scheduler.
+> 
+> Here is a example on my system.
+> My system has 4 sockets and each socket has 15 cores and HT is enabled.
+> In this case, each core of sockes is numbered as follows:
+> 
+>          | CPU#
+> Socket#0 | 0-14 , 60-74
+> Socket#1 | 15-29, 75-89
+> Socket#2 | 30-44, 90-104
+> Socket#3 | 45-59, 105-119
+> 
+> Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
+> It means that cache of Socket#2 is shared with CPU#30-44 and 90-104.
+> 
+> When hot-removing socket#2 and #3, each core of sockets is numbered
+> as follows:
+> 
+>          | CPU#
+> Socket#0 | 0-14 , 60-74
+> Socket#1 | 15-29, 75-89
+> 
+> But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
+> having 0x3fff80000001fffc0000000.
+> 
+> After that, when hot-adding socket#2 and #3, each core of sockets is
+> numbered as follows:
+> 
+>          | CPU#
+> Socket#0 | 0-14 , 60-74
+> Socket#1 | 15-29, 75-89
+> Socket#2 | 30-59
+> Socket#3 | 90-119
 
-The motive of this patch is changed completely after what you suggested
-and so logs are updated as well:
+Ok, this doesn't make too much sense to me. Why would the readded cores
+have new numbers?
 
-    cpufreq: cpu0: print relevant error when we defer probe
+Because if they kept their old numbers, you wouldn't have to correct the
+LLC mask.
 
-    Currently, we defer probe if regulator_get() returned -EPROBE_DEFER, i.e.
-    regulator isn't registered yet.
+Shouldn't the hotplug code keep stable core ids based on APIC id and
+node and whatever across physical hotplug operations?
 
-    The same is true for clock as well and should be done there.
+-- 
+Regards/Gruss,
+    Boris.
 
-    Current code already does it, but it wasn't intentional probably.
-Its just that
-    we are returning the right error with wrong print message.
-
-    Fix print message to convey right error.
-
-    Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq-cpu0.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index 4273a5f..0c16b2f 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -151,7 +151,16 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
-        cpu_clk = clk_get(cpu_dev, NULL);
-        if (IS_ERR(cpu_clk)) {
-                ret = PTR_ERR(cpu_clk);
--               pr_err("failed to get cpu0 clock: %d\n", ret);
-+
-+               /*
-+                * If cpu's clk node is present, but clock is not yet
-+                * registered, we should try defering probe.
-+                */
-+               if (ret == -EPROBE_DEFER)
-+                       dev_err(cpu_dev, "cpu0 clock not ready, retry\n");
-+               else
-+                       dev_err(cpu_dev, "failed to get cpu0 clock: %d\n", ret);
-+
-                goto out_put_reg;
-        }
+Sent from a fat crate under my desk. Formatting is fine.
+--
