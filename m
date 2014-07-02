@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499AbaGBOpD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 10:45:03 -0400
-Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:42330 "EHLO
-	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751538AbaGBOpB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 10:45:01 -0400
-Date: Wed, 2 Jul 2014 09:44:57 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Wei Yang <weiyang@linux.vnet.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: mm: slub: invalid memory access in setup_object
-In-Reply-To: <53B32D80.8000601@oracle.com>
-Message-ID: <alpine.DEB.2.11.1407020935450.17773@gentwo.org>
-References: <53AAFDF7.2010607@oracle.com> <alpine.DEB.2.11.1406251228130.29216@gentwo.org> <alpine.DEB.2.02.1406301500410.13545@chino.kir.corp.google.com> <alpine.DEB.2.11.1407010956470.5353@gentwo.org> <20140701144947.5ce3f93729759d8f38d7813a@linux-foundation.org>
- <53B32D80.8000601@oracle.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753898AbaGBOqM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 10:46:12 -0400
+Received: from moi001.1and1.com ([212.227.126.208]:60869 "EHLO moi.1and1.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751547AbaGBOqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 10:46:10 -0400
+X-Greylist: delayed 544 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Jul 2014 10:46:10 EDT
+Message-ID: <53B418FA.80600@1und1.de>
+Date: Wed, 02 Jul 2014 16:36:42 +0200
+From: =?ISO-8859-1?Q?Thomas_Sch=F6bel-Theuer?= <tst@1und1.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+CC: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 49/50] mars: generic pre-patch for mars
+References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de> <1404251250-22992-50-git-send-email-tst@schoebel-theuer.de> <20140701223644.GA30330@kroah.com> <53B3B283.7050800@schoebel-theuer.de> <20140702082400.GB10971@kroah.com> <20140702132708.GA26732@infradead.org>
+In-Reply-To: <20140702132708.GA26732@infradead.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jul 2014, Sasha Levin wrote:
+> Using syscalls or syscall-like functionality from kernel code
+> generally is a bad idea. Every single use needs a clear rationale in
+> the patch description. Which do not seem to exist at all for the
+> series, so in it's current form it'll go straight to the trash bin anyway.
 
-> Is there a better way to stress test slub?
+Thanks, Christoph, for the explanation. I have been so long away from
+the community that I don't remember all conventions / preferences any more.
 
-The typical way to test is by stressing the network subsystem
-with small packets that require small allocations. Or do a filesystem
-test that requires lots of metadata (file creations, removal, renames
-etc).
+Please, could you kindly advise me in the following dilemma:
 
-But I also posted some in kernel benchmarks a while back
+Now there exists a vfs_rmdir() which I would gladly prefer in order to
+avoid EXPORT_SYMBOL(sys_rmdir).
 
-https://lkml.org/lkml/2009/10/13/459
+However, I probably would have to "borrow" large parts of the
+sys_rmdir() implementation from fs/namei.c (the only real difference
+appears to me that the pathname is not in userspace).
 
-Pekka had a project going to get these merged.
+So, what is worse: copying relatively large pieces of code, or using
+sys_rmdir()?
 
-https://lkml.org/lkml/2009/11/29/17
+Thanks,
 
+Thomas
 
