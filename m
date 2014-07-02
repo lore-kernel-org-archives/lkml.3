@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573AbaGBOOF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 10:14:05 -0400
-Received: from smtp-out-155.synserver.de ([212.40.185.155]:1042 "EHLO
-	smtp-out-155.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753976AbaGBOOB (ORCPT
+	id S1754852AbaGBOOW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 10:14:22 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:47558 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754469AbaGBOOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 10:14:01 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 14206
-Message-ID: <53B413A7.6070301@metafoo.de>
-Date: Wed, 02 Jul 2014 16:13:59 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+	Wed, 2 Jul 2014 10:14:20 -0400
+Date: Wed, 2 Jul 2014 10:14:16 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jens Axboe <axboe@kernel.dk>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Josh Boyer <jwboyer@fedoraproject.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Brian Lane <bcl@redhat.com>, John McCutchan <john@johnmccutchan.com>,
+        Robert Love <rlove@rlove.org>, Eric Paris <eparis@parisplace.org>
+Subject: Re: [PATCH driver-core-linus] kernfs: kernfs_notify() must be
+ useable from non-sleepable contexts
+Message-ID: <20140702141416.GA23275@htj.dyndns.org>
+References: <CA+5PVA4h2hQJLrAm4eEZ8oUgGiAjq2y5eAyBcJWxK_FiQXnuQg@mail.gmail.com>
+ <20140629082637.GA23942@redhat.com>
+ <20140629193222.GA7030@lst.de>
+ <20140629204710.GB11100@redhat.com>
+ <53B07D48.60003@kernel.dk>
+ <20140630201741.GA20853@htj.dyndns.org>
+ <20140701204103.GA12459@htj.dyndns.org>
+ <20140701205148.GA26542@kroah.com>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, alsa-devel@alsa-project.org,
-        vinod.koul@intel.com, nsekhar@ti.com,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        joelf@ti.com, Mark Brown <broonie@kernel.org>,
-        dmaengine@vger.kernel.org, dan.j.williams@intel.com
-Subject: Re: [alsa-devel] [PATCH v2 3/5] ASoC: generic-dmaengine-pcm: Prepare
- formats mask for valid physical sample sizes
-References: <1404307763-30557-1-git-send-email-peter.ujfalusi@ti.com>	<1404307763-30557-4-git-send-email-peter.ujfalusi@ti.com>	<s5h61jf6fec.wl%tiwai@suse.de>	<53B412C1.20406@metafoo.de> <s5h38ej6e8y.wl%tiwai@suse.de>
-In-Reply-To: <s5h38ej6e8y.wl%tiwai@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140701205148.GA26542@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2014 04:12 PM, Takashi Iwai wrote:
-> At Wed, 02 Jul 2014 16:10:09 +0200,
-> Lars-Peter Clausen wrote:
->>
->> On 07/02/2014 03:47 PM, Takashi Iwai wrote:
->> [...]
->>>> +	/*
->>>> +	 * Prepare formats mask for valid/allowed sample types. If the dma does
->>>> +	 * not have support for the given physical word size, it needs to be
->>>> +	 * masked out so user space can not use the format which produces
->>>> +	 * corrupted audio.
->>>> +	 * In case the dma driver does not implement the slave_caps the default
->>>> +	 * assumption is that it supports 1, 2 and 4 bytes widths.
->>>> +	 */
->>>> +	for (i = 0; i <= SNDRV_PCM_FORMAT_LAST; i++) {
->>>> +		int bits = snd_pcm_format_physical_width(i);
->>>
->>> Better to add a negative value check.  Some formats return -EINVAL.
->>>
->>
->> So what should we do with those formats? Not support them?
->
-> Yes, these are special formats that can't be handled generically.
->
+Hello,
 
-Looking through the list in pcm_misc.c there are also some formats where the 
-physical width is not a multiple of 8. We should probably also skip those.
+On Tue, Jul 01, 2014 at 01:51:48PM -0700, Greg Kroah-Hartman wrote:
+> Looks good to me, do you want to take this with your other kernfs
+> patches for 3.16-final?  Or if you don't have that, I can take it
+> through my tree, it's your choice, either is fine for me.
+> 
+> If you want it in your tree, feel free to add:
+> 	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-- Lars
+The other kernfs changes are cgroup specific and in
+cgroup/for-3.16-fixes.  I think this one fits better in the driver
+core tree.  Can you please route it?
 
+Thanks!
+
+-- 
+tejun
