@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757610AbaGBQxM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 12:53:12 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:61119 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755862AbaGBQxD (ORCPT
+	id S1757640AbaGBQxU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 12:53:20 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:48420 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754729AbaGBQxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 12:53:03 -0400
+	Wed, 2 Jul 2014 12:53:17 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 29/48] staging: rtl8188eu: Remove wrapper function power_saving_wk_hdl()
-Date: Wed,  2 Jul 2014 22:17:25 +0530
-Message-Id: <1404319664-8327-29-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 31/48] staging: rtl8188eu: Rename _rtw_free_cmd_priv() to rtw_free_cmd_priv()
+Date: Wed,  2 Jul 2014 22:17:27 +0530
+Message-Id: <1404319664-8327-31-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
 References: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
@@ -23,34 +23,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_cmd.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_cmd.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
 diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-index 5a1ee87..b9c61e3 100644
+index e26a582..81f4b94 100644
 --- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
 +++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-@@ -1191,11 +1191,6 @@ exit:
+@@ -71,7 +71,7 @@ exit:
  	return res;
  }
  
--static void power_saving_wk_hdl(struct adapter *padapter, u8 *pbuf, int sz)
+-void _rtw_free_cmd_priv(struct cmd_priv *pcmdpriv)
++void rtw_free_cmd_priv(struct cmd_priv *pcmdpriv)
+ {
+ 
+ 	if (pcmdpriv) {
+@@ -130,12 +130,6 @@ struct	cmd_obj	*_rtw_dequeue_cmd(struct __queue *queue)
+ 	return obj;
+ }
+ 
+-void rtw_free_cmd_priv(struct cmd_priv *pcmdpriv)
 -{
--	 rtw_ps_processor(padapter);
+-	RT_TRACE(_module_rtl871x_cmd_c_, _drv_info_, ("rtw_free_cmd_priv\n"));
+-	_rtw_free_cmd_priv(pcmdpriv);
 -}
 -
- u8 rtw_ps_cmd(struct adapter *padapter)
+ static int rtw_cmd_filter(struct cmd_priv *pcmdpriv, struct cmd_obj *cmd_obj)
  {
- 	struct cmd_obj		*ppscmd;
-@@ -1317,7 +1312,7 @@ u8 rtw_drvextra_cmd_hdl(struct adapter *padapter, unsigned char *pbuf)
- 		dynamic_chk_wk_hdl(padapter, pdrvextra_cmd->pbuf, pdrvextra_cmd->type_size);
- 		break;
- 	case POWER_SAVING_CTRL_WK_CID:
--		power_saving_wk_hdl(padapter, pdrvextra_cmd->pbuf, pdrvextra_cmd->type_size);
-+		rtw_ps_processor(padapter);
- 		break;
- 	case LPS_CTRL_WK_CID:
- 		lps_ctrl_wk_hdl(padapter, (u8)pdrvextra_cmd->type_size);
+ 	u8 bAllow = false; /* set to true to allow enqueuing cmd when hw_init_completed is false */
 -- 
 1.7.10.4
 
