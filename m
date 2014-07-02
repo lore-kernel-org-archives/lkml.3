@@ -1,115 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196AbaGBDXT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 23:23:19 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53995 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751607AbaGBDXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 23:23:18 -0400
-Date: Tue, 1 Jul 2014 22:22:49 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Paul Walmsley <paul@pwsan.com>
-CC: Felipe Balbi <balbi@ti.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Sathya Prakash M R <sathyap@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RESEND PATCH 1/2] ARM: AM43xx: hwmod: add DSS hwmod data
-Message-ID: <20140702032249.GA26010@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1402676147-3711-1-git-send-email-balbi@ti.com>
- <1402676147-3711-2-git-send-email-balbi@ti.com>
- <20140613162323.GH8319@saruman.home>
- <alpine.DEB.2.02.1406131910060.340@utopia.booyaka.com>
+	id S1754154AbaGBD3D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 23:29:03 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:38416 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364AbaGBD3A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 23:29:00 -0400
+Message-ID: <53B37B61.3020901@oracle.com>
+Date: Tue, 01 Jul 2014 23:24:17 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="x+6KMIRAuhnl3hBn"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1406131910060.340@utopia.booyaka.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
+        kadlec@blackhole.kfki.hu, "David S. Miller" <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org
+Subject: net: pretty odd panic in netfilter
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---x+6KMIRAuhnl3hBn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi all,
 
-Hi,
+While fuzzing with trinity inside a KVM tools guest running the latest -next
+kernel I've stumbled on a pretty odd corruption(?) in the code - a pretty odd
+one.
 
-On Fri, Jun 13, 2014 at 07:11:58PM +0000, Paul Walmsley wrote:
-> Hi Felipe, Tomi,
->=20
-> On Fri, 13 Jun 2014, Felipe Balbi wrote:
->=20
-> > On Fri, Jun 13, 2014 at 11:15:46AM -0500, Felipe Balbi wrote:
-> > > From: Sathya Prakash M R <sathyap@ti.com>
-> > >=20
-> > > Add DSS hwmod data for AM43xx.
-> > >=20
-> > > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > > Acked-by: Rajendra Nayak <rnayak@ti.com>
-> > > Signed-off-by: Sathya Prakash M R <sathyap@ti.com>
-> > > Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> > > Signed-off-by: Felipe Balbi <balbi@ti.com>
-> > > ---
-> > >=20
-> > > Note that this patch was originally send on May 9th [1], changes were=
- requested
-> > > and a new version was sent on May 19th [2], then on May 27th [3] Tomi=
- pinged
-> > > maintainer again and go no response.
-> > >=20
-> > > Without this patch, we cannot get display working on any AM437x devic=
-es.
-> > >=20
-> > > [1] http://marc.info/?l=3Dlinux-arm-kernel&m=3D139963677925227&w=3D2
-> > > [2] http://marc.info/?l=3Dlinux-arm-kernel&m=3D140049799425512&w=3D2
-> > > [3] http://marc.info/?l=3Dlinux-arm-kernel&m=3D140117232826754&w=3D2
-> > >=20
-> > >  arch/arm/mach-omap2/omap_hwmod_43xx_data.c | 98 ++++++++++++++++++++=
-++++++++++
-> > >  arch/arm/mach-omap2/prcm43xx.h             |  1 +
-> > >  2 files changed, 99 insertions(+)
->=20
-> Sorry for the delay on this.  Have been corresponding with TI management=
-=20
-> to figure out what to do about patches for AM43xx.  I don't have boards o=
-r=20
-> public documentation for these devices, so it's impossible for me to=20
+Here's the issue I've hit:
 
-documentation is now available publicly
+[ 3640.805823] BUG: unable to handle kernel paging request at ffffffffffffff84
+[ 3640.808115] IP: nf_nat_packet (net/netfilter/nf_nat_core.c:482)
+[ 3640.810049] PGD 22031067 PUD 22033067 PMD 0
+[ 3640.810120] Oops: 0002 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 3640.810120] Dumping ftrace buffer:
+[ 3640.810120]    (ftrace buffer empty)
+[ 3640.810120] Modules linked in:
+[ 3640.810120] CPU: 4 PID: 5017 Comm: trinity-c192 Tainted: G        W      3.16.0-rc3-next-20140701-sasha-00023-g4eb2544-dirty #759
+[ 3640.810120] task: ffff88014d5a3000 ti: ffff880146088000 task.ti: ffff880146088000
+[ 3640.810120] RIP: nf_nat_packet (net/netfilter/nf_nat_core.c:482)
+[ 3640.810120] RSP: 0018:ffff88014608b958  EFLAGS: 00010206
+[ 3640.810120] RAX: 0000000000000001 RBX: 0000000000000001 RCX: ffff8801548a7a00
+[ 3640.810120] RDX: 0000000000000003 RSI: 0000000000000002 RDI: ffff880131080000
+[ 3640.810120] RBP: ffff88014608b9a8 R08: 0000000000000000 R09: 0000000000000002
+[ 3640.810120] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8801548a7a80
+[ 3640.810120] R13: ffff880131080000 R14: ffffffffa32e8d50 R15: ffff8803346b1160
+[ 3640.810120] FS:  00007f7e56497700(0000) GS:ffff880144e00000(0000) knlGS:0000000000000000
+[ 3640.810120] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 3640.840752] CR2: ffffffffffffff84 CR3: 000000016a997000 CR4: 00000000000006a0
+[ 3640.840752] Stack:
+[ 3640.840752]  0000000000000000 ffff8803346b1160 0000001400000000 0000000019e906c0
+[ 3640.840752]  0000000000000002 0000000019e906c0 ffff8801548a7a80 0000000000000001
+[ 3640.840752]  ffff880131080000 ffffffffa32e8d50 ffff88014608ba28 ffffffffa00ffb7e
+[ 3640.840752] Call Trace:
+[ 3640.840752] nf_nat_ipv4_fn (net/ipv4/netfilter/iptable_nat.c:136)
+[ 3640.840752] nf_nat_ipv4_local_fn (net/ipv4/netfilter/iptable_nat.c:219)
+[ 3640.840752] ? __ip_append_data.isra.33 (include/net/dst.h:461)
+[ 3640.840752] nf_iterate (net/netfilter/core.c:150)
+[ 3640.840752] ? __ip_append_data.isra.33 (include/net/dst.h:461)
+[ 3640.840752] nf_hook_slow (net/netfilter/core.c:185)
+[ 3640.840752] ? __ip_append_data.isra.33 (include/net/dst.h:461)
+[ 3640.840752] __ip_local_out (net/ipv4/ip_output.c:102)
+[ 3640.840752] ip_local_out_sk (net/ipv4/ip_output.c:109)
+[ 3640.840752] ip_send_skb (net/ipv4/ip_output.c:1411)
+[ 3640.840752] ip_push_pending_frames (net/ipv4/ip_output.c:1431)
+[ 3640.840752] raw_sendmsg (net/ipv4/raw.c:619)
+[ 3640.840752] ? sched_clock (./arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
+[ 3640.840752] ? get_parent_ip (kernel/sched/core.c:2550)
+[ 3640.840752] ? get_parent_ip (kernel/sched/core.c:2550)
+[ 3640.840752] ? inet_sendmsg (include/linux/rcupdate.h:906 include/net/sock.h:833 include/net/sock.h:852 net/ipv4/af_inet.c:730)
+[ 3640.840752] ? inet_sendmsg (include/linux/rcupdate.h:906 include/net/sock.h:833 include/net/sock.h:852 net/ipv4/af_inet.c:730)
+[ 3640.840752] inet_sendmsg (net/ipv4/af_inet.c:737)
+[ 3640.840752] sock_sendmsg (net/socket.c:654)
+[ 3640.840752] ? might_fault (mm/memory.c:3741)
+[ 3640.840752] ? might_fault (mm/memory.c:3740)
+[ 3640.840752] ? vtime_account_user (kernel/sched/cputime.c:687)
+[ 3640.840752] ? move_addr_to_kernel (./arch/x86/include/asm/uaccess.h:713 net/socket.c:197)
+[ 3640.840752] SYSC_sendto (net/socket.c:1812)
+[ 3640.840752] ? vtime_account_user (kernel/sched/cputime.c:687)
+[ 3640.840752] ? check_preemption_disabled (lib/smp_processor_id.c:42)
+[ 3640.840752] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
+[ 3640.840752] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
+[ 3640.840752] ? syscall_trace_enter (include/linux/context_tracking.h:27 arch/x86/kernel/ptrace.c:1461)
+[ 3640.840752] SyS_sendto (net/socket.c:1779)
+[ 3640.840752] tracesys (arch/x86/kernel/entry_64.S:542)
+[ 3640.840752] Code: 4c 89 65 e8 49 89 cc 0f 97 c1 83 fa 01 0f 95 c0 48 89 5d e0 31 db 83 fa 04 4c 89 6d f0 0f 95 c3 4c 89 75 f8 21 55 55 fb 01 48 19 <d2> 48 83 e2 f0 48 83 c2 20 48 89 d0 48 83 f0 30 84 c9 48 0f 45
+[ 3640.840752] RIP nf_nat_packet (net/netfilter/nf_nat_core.c:482)
+[ 3640.840752]  RSP <ffff88014608b958>
+[ 3640.840752] CR2: ffffffffffffff84
 
-http://www.ti.com/product/AM4379
+Two odd things here:
 
---=20
-balbi
+1. The code section seems to point mid-instruction:
 
---x+6KMIRAuhnl3hBn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+    19dc:       0f 95 c3                setne  %bl
+    19df:       4c 89 75 f8             mov    %r14,-0x8(%rbp)
+    19e3:       21 c3                   and    %eax,%ebx
+    19e5:       83 fb 01                cmp    $0x1,%ebx
+    19e8:       48 19 d2                sbb    %rdx,%rdx  <=== The end of this (0xd2)
+    19eb:       48 83 e2 f0             and    $0xfffffffffffffff0,%rdx
+    19ef:       48 83 c2 20             add    $0x20,%rdx
+    19f3:       48 89 d0                mov    %rdx,%rax
+    19f6:       48 83 f0 30             xor    $0x30,%rax
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+2. There isn't anything in that area that dereferences memory:
 
-iQIcBAEBAgAGBQJTs3sJAAoJEIaOsuA1yqRErJkP/0IUeyJWfszabOTT5qEemT4r
-WoZLGpEPgkdttLrFFg6XSFwFTXYWPLGchPTnqS1l521n9nYpWS+duf5Z9rkyq7VZ
-J+UdysY0k1RfwNpDg1gfbDMBKO9PIXBNfaK5FRfGpW+r7WA7W36/jIi+4YH8qdMA
-yO24nxXoP/OtJH8QrTnzjZ8Z7L7cv5krdmMXUqS/AlYpLZyKXRgZMWZFFfq4anpr
-Wqqis2jSRa7p7Lr0wrB+lCDiV6gzxqwQ/7nO0uAD/VuwG0CoxlGWb7thjr8yYODv
-Lu+ieq/E8P3/q/IITPO0/IzcUmt89DSHbzur+ZCIfoenHfMeb2sB9X9K1frUZOhJ
-LNUmBmQAADw6QwGCSz/Op4qnD4qNtgvneUfDbySSVQAnf5ihLg+AXuBNCfp/GeCv
-AwjYwNvVgUuV2mqP9iOVoHReDzmZJMXVqn5jUiZMYIvqu43Ka2LXZb1CvUhjU8Fr
-sBadYqmppfIvJdQ3nXIOy/YXVBW1ewEBbwvaSDY8koeSG00Cq4LeimIzwa9A/Qf5
-yE5gXonA/ATZUO4nSD3XVTJFEm6KB2qWggd/liLCOzFv1RvS+v0BFz2R46W4Xf2Z
-5iYlmcPzX/YB8bVXudr4+636Kke04ejQo1c0FetTZ50ennc0H6Tv+ZMBUZr2cB4c
-L47l6y44dpynS3x8vVyW
-=qBjV
------END PGP SIGNATURE-----
+        enum nf_nat_manip_type mtype = HOOK2MANIP(hooknum);
 
---x+6KMIRAuhnl3hBn--
+        if (mtype == NF_NAT_MANIP_SRC)
+                statusbit = IPS_SRC_NAT;
+        else
+                statusbit = IPS_DST_NAT;
+
+
+Help?
+
+
+Thanks,
+Sasha
