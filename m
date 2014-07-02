@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105AbaGBFyp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 01:54:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57346 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861AbaGBFyo (ORCPT
+	id S1754683AbaGBFzk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 01:55:40 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:46822 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753941AbaGBFzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 01:54:44 -0400
-Date: Tue, 1 Jul 2014 22:54:20 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jaegeuk Kim <jaegeuk@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [PATCH] f2fs: check bdi->dirty_exceeded when trying to skip
- data writes
-Message-Id: <20140701225420.6cc94fb5.akpm@linux-foundation.org>
-In-Reply-To: <1403956718-17575-1-git-send-email-jaegeuk@kernel.org>
-References: <1403956718-17575-1-git-send-email-jaegeuk@kernel.org>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jul 2014 01:55:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140702055330.GA3454@dragon>
+References: <cover.1404231535.git.viresh.kumar@linaro.org>
+	<eb6df0f1f2c82db0d516b9b63820cfe0c0c97d5c.1404231535.git.viresh.kumar@linaro.org>
+	<20140702055330.GA3454@dragon>
+Date: Wed, 2 Jul 2014 11:25:38 +0530
+Message-ID: <CAKohpomzPHRghqHD7-tDbj0gXzc=ANEb3qLv2kRKOZUyqatBew@mail.gmail.com>
+Subject: Re: [PATCH 06/14] cpufreq: cpu0: defer probe if clock isn't
+ registered yet
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        Sachin Kamat <spk.linux@gmail.com>,
+        Thomas P Abraham <thomas.ab@samsung.com>, Nishanth Menon <nm@ti.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 28 Jun 2014 20:58:38 +0900 Jaegeuk Kim <jaegeuk@kernel.org> wrote:
+On 2 July 2014 11:23, Shawn Guo <shawn.guo@linaro.org> wrote:
+> On Tue, Jul 01, 2014 at 10:02:35PM +0530, Viresh Kumar wrote:
 
-> If we don't check the current backing device status, balance_dirty_pages can
-> fall into infinite pausing routine.
-> 
-> This can be occurred when a lot of directories make a small number of dirty
-> dentry pages including files.
-> 
-> ...
+>> diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+>> index 4273a5f..b5b8e1c 100644
+>> --- a/drivers/cpufreq/cpufreq-cpu0.c
+>> +++ b/drivers/cpufreq/cpufreq-cpu0.c
+>> @@ -150,8 +150,17 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
+>>
+>>       cpu_clk = clk_get(cpu_dev, NULL);
+>>       if (IS_ERR(cpu_clk)) {
+>> -             ret = PTR_ERR(cpu_clk);
 >
-> --- a/fs/f2fs/node.c
-> +++ b/fs/f2fs/node.c
-> @@ -43,6 +43,8 @@ bool available_free_memory(struct f2fs_sb_info *sbi, int type)
->  		mem_size = (nm_i->nat_cnt * sizeof(struct nat_entry)) >> 12;
->  		res = mem_size < ((val.totalram * nm_i->ram_thresh / 100) >> 2);
->  	} else if (type == DIRTY_DENTS) {
-> +		if (sbi->sb->s_bdi->dirty_exceeded)
-> +			return false;
->  		mem_size = get_pages(sbi, F2FS_DIRTY_DENTS);
->  		res = mem_size < ((val.totalram * nm_i->ram_thresh / 100) >> 1);
->  	}
+> If you keep this ...
+>
+>> -             pr_err("failed to get cpu0 clock: %d\n", ret);
+>> +             /*
+>> +              * If cpu's clk node is present, but clock is not yet
+>> +              * registered, we should try defering probe.
+>> +              */
+>> +             if (PTR_ERR(cpu_clk) == -EPROBE_DEFER) {
+>
+> ... you can use 'ret' here ...
+>
+>> +                     dev_err(cpu_dev, "cpu0 clock not ready, retry\n");
+>> +                     ret = -EPROBE_DEFER;
+>
+> ... this can be saved ...
+>
+>> +             } else {
+>> +                     ret = PTR_ERR(cpu_clk);
+>
+> ... and this as well.
 
-err, filesystems should not be playing around with this.
-
-Perhaps VFS changes are needed.  Please tell us much much more about
-what is going on here.
+All accepted. Thanks.
