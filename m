@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964830AbaGBTHm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 15:07:42 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:57248 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932333AbaGBTHk (ORCPT
+	id S1757085AbaGBTJz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 15:09:55 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:42203 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751809AbaGBTJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 15:07:40 -0400
+	Wed, 2 Jul 2014 15:09:53 -0400
+Date: Wed, 2 Jul 2014 22:09:44 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [RFC PATCH] tty: serial: Add 8250-core based omap driver
+Message-ID: <20140702190944.GA567@drone.musicnaut.iki.fi>
+References: <1404316809-20637-1-git-send-email-bigeasy@linutronix.de>
+ <20140702160932.GF5541@saruman.home>
 MIME-Version: 1.0
-In-Reply-To: <x49tx6ztx9d.fsf@segfault.boston.devel.redhat.com>
-References: <53B3D3AA.3000408@samsung.com>
-	<x49y4wbu54y.fsf@segfault.boston.devel.redhat.com>
-	<20140702184050.GA24583@infradead.org>
-	<x49tx6ztx9d.fsf@segfault.boston.devel.redhat.com>
-Date: Wed, 2 Jul 2014 22:07:38 +0300
-Message-ID: <CACE9dm-NZqC_qz8ip-9wUamwK7daOnKs_dTKQrT+zG4E2BJ=Jw@mail.gmail.com>
-Subject: Re: IMA: kernel reading files opened with O_DIRECT
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        akpm@linux-foundation.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140702160932.GF5541@saruman.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 July 2014 21:45, Jeff Moyer <jmoyer@redhat.com> wrote:
-> Christoph Hellwig <hch@infradead.org> writes:
->
->> On Wed, Jul 02, 2014 at 11:55:41AM -0400, Jeff Moyer wrote:
->>> It's acceptable.
->>
->> It's not because it will then also affect other reads going on at the
->> same time.
->
+Hi,
 
-> OK, that part I was fuzzy on.  I wasn't sure if they were preventing
-> other reads/writes to the same file somehow.  I should have mentioned
-> that.
->
-> Cheers,
-> Jeff
+On Wed, Jul 02, 2014 at 11:09:32AM -0500, Felipe Balbi wrote:
+> > It has been only tested as console UART.
+> > The tty name is ttyS based instead of ttyO. How big is the pain here,
+> > what could be the easiest way to provide compatibility?
+> 
+> have been considering that myself for months. You could pass an optional
+> argument to serial8250_register_8250_port() but that only solves part of
+> the problem :-(
 
+When ttyS -> ttyO change was done on OMAP, compatibility was not an issue.
+Why should we care about it now?
 
-What Christoph says is not very correct.
-
-At open there cannot be any reads going on at the same time. IMA
-reading is guarded by mutex. Following opens do not perform any IMA
-readings and do not do what he says...
-
-If file was modified with direct-io, VFS code itself always invalidate
-pages before and after any write. It is basically what Christoph says.
-But that is not IMA problem but direct-io itself. As it is stupid
-interface. I would be more looking to kind of fadvise interface to
-control amount of page caching...
-
-So I think what Jeff suggest suites well to IMA.
-
--- 
-Thanks,
-Dmitry
+A.
