@@ -1,163 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170AbaGBJAo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 05:00:44 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:28751 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752857AbaGBI74 (ORCPT
+	id S1753237AbaGBJA5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 05:00:57 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:33598 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752861AbaGBJAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 04:59:56 -0400
-X-IronPort-AV: E=Sophos;i="5.00,818,1396972800"; 
-   d="scan'208";a="32730467"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: <gleb@kernel.org>, <mtosatti@redhat.com>
-CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
-Subject: [PATCH 3/4] kvm, memory-hotplug: Update ept identity pagetable when it is migrated.
-Date: Wed, 2 Jul 2014 17:00:36 +0800
-Message-ID: <1404291637-15048-4-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1404291637-15048-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1404291637-15048-1-git-send-email-tangchen@cn.fujitsu.com>
+	Wed, 2 Jul 2014 05:00:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.99]
+In-Reply-To: <1403618196-7366-2-git-send-email-alvin.chen@intel.com>
+References: <1403618196-7366-1-git-send-email-alvin.chen@intel.com>
+	<1403618196-7366-2-git-send-email-alvin.chen@intel.com>
+Date: Wed, 2 Jul 2014 11:00:53 +0200
+Message-ID: <CAPDyKFq8cQHhadSAcaMG6XTKKaZ3XjX5PQyxsRteqhbcMaYZ0A@mail.gmail.com>
+Subject: Re: [PATCH v2] mmc: sdhci-pci: SDIO host controller support for Intel
+ Quark X1000
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: "Chen, Alvin" <alvin.chen@intel.com>
+Cc: Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Boon Leong Ong <boon.leong.ong@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ept identity pagetable is pinned in memory, and as a result it cannot be
-migrated/hot-removed.
+On 24 June 2014 15:56, Chen, Alvin <alvin.chen@intel.com> wrote:
+> From: Derek Browne <Derek.Browne@intel.com>
+>
+> This patch is to enable SDIO host controller for Intel Quark X1000.
+>
+> Signed-off-by: Derek Browne <Derek.Browne@intel.com>
+> Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
 
-But actually it doesn't need to be pinned in memory.
+Thanks! Applied for next.
 
-This patch introduces a new vcpu request: KVM_REQ_MIGRATE_EPT to reset ept
-indetity pagetable related variable. This request will be made when
-kvm_mmu_notifier_invalidate_page() is called when the page is unmapped
-from the qemu user space to reset kvm->arch.ept_identity_pagetable to NULL.
-And will also be made when ept violation happens to reset
-kvm->arch.ept_identity_pagetable to the new page.
----
- arch/x86/include/asm/kvm_host.h |  1 +
- arch/x86/kvm/mmu.c              | 11 +++++++++++
- arch/x86/kvm/vmx.c              |  3 ++-
- arch/x86/kvm/x86.c              | 16 ++++++++++++++++
- include/linux/kvm_host.h        |  1 +
- virt/kvm/kvm_main.c             |  6 ++++++
- 6 files changed, 37 insertions(+), 1 deletion(-)
+Kind regards
+Uffe
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 4931415..8771c0f 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -581,6 +581,7 @@ struct kvm_arch {
- 	struct page *ept_identity_pagetable;
- 	bool ept_identity_pagetable_done;
- 	gpa_t ept_identity_map_addr;
-+	bool ept_identity_pagetable_migrated;
- 
- 	unsigned long irq_sources_bitmap;
- 	s64 kvmclock_offset;
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 9314678..c0d72f6 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -3425,6 +3425,17 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
- 		transparent_hugepage_adjust(vcpu, &gfn, &pfn, &level);
- 	r = __direct_map(vcpu, gpa, write, map_writable,
- 			 level, gfn, pfn, prefault);
-+
-+	/*
-+	 * Update ept identity pagetable page and apic access page if
-+	 * they are migrated.
-+	 */
-+	if (gpa == vcpu->kvm->arch.ept_identity_map_addr &&
-+	    vcpu->kvm->arch.ept_identity_pagetable_migrated) {
-+		vcpu->kvm->arch.ept_identity_pagetable_migrated = false;
-+		kvm_make_request(KVM_REQ_MIGRATE_EPT, vcpu);
-+	}
-+
- 	spin_unlock(&vcpu->kvm->mmu_lock);
- 
- 	return r;
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 366b5b3..c336cb3 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -4018,7 +4018,8 @@ static int alloc_identity_pagetable(struct kvm *kvm)
- 	if (r)
- 		goto out;
- 
--	page = gfn_to_page(kvm, kvm->arch.ept_identity_map_addr >> PAGE_SHIFT);
-+	page = gfn_to_page_no_pin(kvm,
-+			kvm->arch.ept_identity_map_addr >> PAGE_SHIFT);
- 	if (is_error_page(page)) {
- 		r = -EFAULT;
- 		goto out;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index f32a025..a26524f 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5929,6 +5929,20 @@ static void vcpu_scan_ioapic(struct kvm_vcpu *vcpu)
- 	kvm_apic_update_tmr(vcpu, tmr);
- }
- 
-+static void vcpu_migrated_page_update_ept(struct kvm_vcpu *vcpu)
-+{
-+	struct kvm *kvm = vcpu->kvm;
-+
-+	if (kvm->arch.ept_identity_pagetable_migrated)
-+		kvm->arch.ept_identity_pagetable = NULL;
-+	else {
-+		struct page *page;
-+		page = gfn_to_page_no_pin(kvm,
-+				kvm->arch.ept_identity_map_addr >> PAGE_SHIFT);
-+		kvm->arch.ept_identity_pagetable = page;
-+	}
-+}
-+
- /*
-  * Returns 1 to let __vcpu_run() continue the guest execution loop without
-  * exiting to the userspace.  Otherwise, the value will be returned to the
-@@ -5989,6 +6003,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
- 			kvm_deliver_pmi(vcpu);
- 		if (kvm_check_request(KVM_REQ_SCAN_IOAPIC, vcpu))
- 			vcpu_scan_ioapic(vcpu);
-+		if (kvm_check_request(KVM_REQ_MIGRATE_EPT, vcpu))
-+			vcpu_migrated_page_update_ept(vcpu);
- 	}
- 
- 	if (kvm_check_request(KVM_REQ_EVENT, vcpu) || req_int_win) {
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 7c58d9d..4b7e51a 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -136,6 +136,7 @@ static inline bool is_error_page(struct page *page)
- #define KVM_REQ_GLOBAL_CLOCK_UPDATE 22
- #define KVM_REQ_ENABLE_IBS        23
- #define KVM_REQ_DISABLE_IBS       24
-+#define KVM_REQ_MIGRATE_EPT       25
- 
- #define KVM_USERSPACE_IRQ_SOURCE_ID		0
- #define KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID	1
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 6091849..d271e89 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -294,6 +294,12 @@ static void kvm_mmu_notifier_invalidate_page(struct mmu_notifier *mn,
- 	if (need_tlb_flush)
- 		kvm_flush_remote_tlbs(kvm);
- 
-+	if (address ==
-+	    gfn_to_hva(kvm, kvm->arch.ept_identity_map_addr >> PAGE_SHIFT)) {
-+		kvm->arch.ept_identity_pagetable_migrated = true;
-+		kvm_make_request(KVM_REQ_MIGRATE_EPT, kvm->vcpus[0]);
-+	}
-+
- 	spin_unlock(&kvm->mmu_lock);
- 	srcu_read_unlock(&kvm->srcu, idx);
- }
--- 
-1.8.3.1
-
+> ---
+> changelog v2:
+> *Delete '#define PCI_DEVICE_ID_INTEL_QUARK_ILB 0x095E' from 'include/linux/pci_ids.h'.
+> *Move '#define PCI_DEVICE_ID_INTEL_QRK_SD 0x08A7' from 'include/linux/pci_ids.h'
+>  to 'driver/mmc/host/sdhci-pci.h'.
+> *Update the subject and description.
+>
+>  drivers/mmc/host/sdhci-pci.c |   12 ++++++++++++
+>  drivers/mmc/host/sdhci-pci.h |    1 +
+>  2 files changed, 13 insertions(+)
+>
+> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+> index 52c42fc..1aeeefc 100644
+> --- a/drivers/mmc/host/sdhci-pci.c
+> +++ b/drivers/mmc/host/sdhci-pci.c
+> @@ -103,6 +103,10 @@ static const struct sdhci_pci_fixes sdhci_cafe = {
+>                           SDHCI_QUIRK_BROKEN_TIMEOUT_VAL,
+>  };
+>
+> +static const struct sdhci_pci_fixes sdhci_intel_qrk = {
+> +       .quirks         = SDHCI_QUIRK_NO_HISPD_BIT,
+> +};
+> +
+>  static int mrst_hc_probe_slot(struct sdhci_pci_slot *slot)
+>  {
+>         slot->host->mmc->caps |= MMC_CAP_8_BIT_DATA;
+> @@ -753,6 +757,14 @@ static const struct pci_device_id pci_ids[] = {
+>
+>         {
+>                 .vendor         = PCI_VENDOR_ID_INTEL,
+> +               .device         = PCI_DEVICE_ID_INTEL_QRK_SD,
+> +               .subvendor      = PCI_ANY_ID,
+> +               .subdevice      = PCI_ANY_ID,
+> +               .driver_data    = (kernel_ulong_t)&sdhci_intel_qrk,
+> +       },
+> +
+> +       {
+> +               .vendor         = PCI_VENDOR_ID_INTEL,
+>                 .device         = PCI_DEVICE_ID_INTEL_MRST_SD0,
+>                 .subvendor      = PCI_ANY_ID,
+>                 .subdevice      = PCI_ANY_ID,
+> diff --git a/drivers/mmc/host/sdhci-pci.h b/drivers/mmc/host/sdhci-pci.h
+> index 6d71871..c101477 100644
+> --- a/drivers/mmc/host/sdhci-pci.h
+> +++ b/drivers/mmc/host/sdhci-pci.h
+> @@ -17,6 +17,7 @@
+>  #define PCI_DEVICE_ID_INTEL_CLV_SDIO2  0x08fb
+>  #define PCI_DEVICE_ID_INTEL_CLV_EMMC0  0x08e5
+>  #define PCI_DEVICE_ID_INTEL_CLV_EMMC1  0x08e6
+> +#define PCI_DEVICE_ID_INTEL_QRK_SD     0x08A7
+>
+>  /*
+>   * PCI registers
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
