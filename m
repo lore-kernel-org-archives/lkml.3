@@ -1,27 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876AbaGBWtE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 18:49:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30716 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920AbaGBWtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 18:49:02 -0400
-Message-ID: <1404341317.1862.71.camel@ul30vt.home>
+	id S1753513AbaGBWwk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 18:52:40 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56636 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751150AbaGBWwh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 18:52:37 -0400
+Message-ID: <1404341555.16066.19.camel@dabdike>
 Subject: Re: [PATCH 3.15 099/139] libiscsi, iser: Adjust data_length to
  include protection information
-From: Alex Williamson <alex.williamson@redhat.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
 To: Mike Christie <michaelc@cs.wisc.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         Sagi Grimberg <sagig@mellanox.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>,
         SCSI Mailing List <linux-scsi@vger.kernel.org>
-Date: Wed, 02 Jul 2014 16:48:37 -0600
+Date: Wed, 02 Jul 2014 15:52:35 -0700
 In-Reply-To: <53B48B37.4000608@cs.wisc.edu>
 References: <20140628174605.352098823@linuxfoundation.org>
 	  <20140628174609.930049472@linuxfoundation.org>
 	 <1404339330.1862.69.camel@ul30vt.home> <53B48B37.4000608@cs.wisc.edu>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.2 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -66,6 +69,17 @@ On Wed, 2014-07-02 at 17:44 -0500, Mike Christie wrote:
 > 
 > http://marc.info/?l=linux-kernel&m=140432482527273&w=2
 
-Thanks for the pointer.  It's curious why there was no objection to this
-going into stable if it's been known to be broken for a week.
+I assume it's this fix:
+
+commit 7bafc240e126c37f60b040fa429ae4a710b88ab5
+Author: Martin K. Petersen <martin.petersen@oracle.com>
+Date:   Tue Jun 24 16:59:35 2014 +0200
+
+    scsi: use the scsi data buffer length to extract transfer size
+ 
+In which case it's not marked for stable backport ... I assume it should
+be?
+
+James
+
 
