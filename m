@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968AbaGBPay (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 11:30:54 -0400
-Received: from michel.telenet-ops.be ([195.130.137.88]:37148 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148AbaGBPaw (ORCPT
+	id S932199AbaGBPbN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 11:31:13 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:55163 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755527AbaGBP3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 11:30:52 -0400
-Message-ID: <53B425A3.9090404@acm.org>
-Date: Wed, 02 Jul 2014 17:30:43 +0200
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>, Paul Mackerras <paulus@samba.org>
-CC: dm-devel@redhat.com, linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Regression in 3.15 on POWER8 with multipath SCSI
-References: <20140630103058.GA17747@iris.ozlabs.ibm.com> <20140701193907.GA15306@redhat.com>
-In-Reply-To: <20140701193907.GA15306@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jul 2014 11:29:41 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, linus.walleij@linaro.org,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 09/12] mfd: 88pm860x-i2c: Repair 'space before tab' warning
+Date: Wed,  2 Jul 2014 16:28:41 +0100
+Message-Id: <1404314924-23564-10-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1404314924-23564-1-git-send-email-lee.jones@linaro.org>
+References: <1404314924-23564-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/14 21:39, Mike Snitzer wrote:
-> (btw, Bart Van Assche also has issues with commit e8099177 due to hangs
-> during cable pull testing of mpath devices -- Bart: curious to know if
-> your cable pull tests pass if you just revert bcccff93).
+Fixes checkpatch warning:
 
-Sorry but even with bcccff93 reverted after a few iterations my cable
-pull simulation test still causes several tasks to hang in sleep_on_page().
+    WARNING: please, no space before tabs
+    #5: FILE: drivers/mfd/88pm860x-i2c.c:5:
+    + * ^IHaojian Zhuang <haojian.zhuang@marvell.com>$
 
-Bart.
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mfd/88pm860x-i2c.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mfd/88pm860x-i2c.c b/drivers/mfd/88pm860x-i2c.c
+index ff8f803..a93b4d0 100644
+--- a/drivers/mfd/88pm860x-i2c.c
++++ b/drivers/mfd/88pm860x-i2c.c
+@@ -2,7 +2,8 @@
+  * I2C driver for Marvell 88PM860x
+  *
+  * Copyright (C) 2009 Marvell International Ltd.
+- * 	Haojian Zhuang <haojian.zhuang@marvell.com>
++ *
++ * Author: Haojian Zhuang <haojian.zhuang@marvell.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+-- 
+1.8.3.2
 
