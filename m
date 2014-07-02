@@ -1,79 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757492AbaGBSGl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 14:06:41 -0400
-Received: from exprod5og105.obsmtp.com ([64.18.0.180]:60480 "HELO
-	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756237AbaGBSGj (ORCPT
+	id S1756566AbaGBSMH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 14:12:07 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:57190 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411AbaGBSME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 14:06:39 -0400
-X-Greylist: delayed 732 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Jul 2014 14:06:39 EDT
+	Wed, 2 Jul 2014 14:12:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <1404240214-9804-3-git-send-email-Liviu.Dudau@arm.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
-	<1404240214-9804-3-git-send-email-Liviu.Dudau@arm.com>
-Date: Wed, 2 Jul 2014 11:06:38 -0700
-Message-ID: <CACoXjck+aU33=kSy=KCGABNXNR7tj2KndAiBqEDK7wQ_Qei80Q@mail.gmail.com>
-Subject: Re: [PATCH v8 2/9] pci: Export find_pci_host_bridge() function.
-From: Tanmay Inamdar <tinamdar@apm.com>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        patches <patches@apm.com>
+In-Reply-To: <x49y4wbu54y.fsf@segfault.boston.devel.redhat.com>
+References: <53B3D3AA.3000408@samsung.com>
+	<x49y4wbu54y.fsf@segfault.boston.devel.redhat.com>
+Date: Wed, 2 Jul 2014 21:12:03 +0300
+Message-ID: <CACE9dm_YF+aYSDXQg=JV2b4i7Uw9AcpsTt4DRCC+F7zUt_qO-w@mail.gmail.com>
+Subject: Re: IMA: kernel reading files opened with O_DIRECT
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        akpm@linux-foundation.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Jeff,
 
-On Tue, Jul 1, 2014 at 11:43 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> This is a useful function and we should make it visible outside the
-> generic PCI code. Export it as a GPL symbol.
->
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> Tested-by: Tanmay Inamdar <tinamdar@apm.com>
-> ---
->  drivers/pci/host-bridge.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
-> index 0e5f3c9..36c669e 100644
-> --- a/drivers/pci/host-bridge.c
-> +++ b/drivers/pci/host-bridge.c
-> @@ -16,12 +16,13 @@ static struct pci_bus *find_pci_root_bus(struct pci_bus *bus)
->         return bus;
->  }
->
-> -static struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
-> +struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
->  {
->         struct pci_bus *root_bus = find_pci_root_bus(bus);
->
->         return to_pci_host_bridge(root_bus->bridge);
->  }
-> +EXPORT_SYMBOL_GPL(find_pci_host_bridge);
+Thanks for reply.
 
-Is there any specific reason behind making this symbol GPL? I think
-the other functions in this file are just EXPORT_SYMBOL. Ultimately
-companies which have non gpl Linux modules (nvidia) will face issue
-using this API.
+On 2 July 2014 18:55, Jeff Moyer <jmoyer@redhat.com> wrote:
+> Hi, Dmitry,
+>
+> Dmitry Kasatkin <d.kasatkin@samsung.com> writes:
+>
+>> Hi,
+>>
+>> We are looking for advice on reading files opened for direct_io.
+>
+> [snip]
+>
+>> 2. Temporarily clear O_DIRECT in file->f_flags.
+>
+> [snip]
+>
+>> 3. Open another instance of the file with 'dentry_open'
+>
+> [snip]
+>
+>> Is temporarily clearing O_DIRECT flag really unacceptable or not?
+>
+> It's acceptable.  However, what you're proposing to do is read the
+> entire file into the page cache to calculate your checksum.  Then, when
+> the application goes to read the file using O_DIRECT, it will ignore the
+> cached copy and re-read the portions of the file it wants from disk.  So
+> yes, you can do that, but it's not going to be fast.  If you want to
+> avoid polluting the cache, you can call invalidate_inode_pages2_range
+> after you're done calculating your checksum.
+>
 
-The same applies to 'of_create_pci_host_bridge'.
+Ok. If I understand correctly, after reading chunck/range like
+kernel_read(offset, len),
+just always drop loaded pages like
+
+invalidate_inode_pages2_range(inode->i_mapping, offset, offset + len);
+
+I see that generic_file_direct_write() calls this function too, before
+doing direct IO and after...
+
+Thanks!
+
+>> Or may be there is a way to allocate "special" user-space like buffer
+>> for kernel and use it with O_DIRECT?
 >
->  void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
->                                  void (*release_fn)(struct pci_host_bridge *),
-> --
-> 2.0.0
+> In-kernel O_DIRECT support has been proposed in the past, but there is
+> no solution for that yet.
 >
+> Cheers,
+> Jeff
+
+
+
+-- 
+Thanks,
+Dmitry
