@@ -1,140 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932389AbaGBRBV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 13:01:21 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:46891 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932069AbaGBRBS convert rfc822-to-8bit (ORCPT
+	id S932420AbaGBRCv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 13:02:51 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:63897 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254AbaGBQt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 13:01:18 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Karol Wrona <k.wrona@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1404234839-6005-1-git-send-email-k.wrona@samsung.com>
-Cc: "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Marek Szyprowski" <m.szyprowski@samsung.com>,
-        "Bartlomiej Zolnierkiewicz" <b.zolnierkie@samsung.com>,
-        "Tomasz Figa" <t.figa@samsung.com>,
-        "Karol Wrona" <k.wrona@samsung.com>
-References: <1404234839-6005-1-git-send-email-k.wrona@samsung.com>
-Message-ID: <20140702170104.7440.66617@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v2] clk: s2mps11: Fix clk_ops
-Date: Wed, 02 Jul 2014 10:01:04 -0700
+	Wed, 2 Jul 2014 12:49:56 -0400
+From: navin patidar <navin.patidar@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
+Subject: [PATCH 08/48] staging: rtl8188eu: Remove unused function rtw_getrttbl_cmd()
+Date: Wed,  2 Jul 2014 22:17:04 +0530
+Message-Id: <1404319664-8327-8-git-send-email-navin.patidar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
+References: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Karol Wrona (2014-07-01 10:13:59)
-> s2mps11 clocks had registered callbacks for prepare ,unprepare and is_enabled.
-> During disabling unused clocks the lack of is_prepared caused that unused
-> s2mps11 clocks were not unprepared and stayed active.
-> 
-> Regmap_read is cached so it can be called in is_prepare callback
-> to achieve this information. Enabled field was removed from struct s2mps11_clk.
-> 
-> Signed-off-by: Karol Wrona <k.wrona@samsung.com>
+Signed-off-by: navin patidar <navin.patidar@gmail.com>
+---
+ drivers/staging/rtl8188eu/core/rtw_cmd.c    |   34 ---------------------------
+ drivers/staging/rtl8188eu/include/rtw_cmd.h |    8 -------
+ 2 files changed, 42 deletions(-)
 
-Applied to clk-next. I didn't take it into clk-fixes since I don't think
-the disable_unused bug was introduced any time recently.
+diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
+index a2b355c..294c9e2 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
++++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
+@@ -1122,40 +1122,6 @@ exit:
+ 	return res;
+ }
+ 
+-u8 rtw_getrttbl_cmd(struct adapter  *padapter, struct getratable_rsp *pval)
+-{
+-	struct cmd_obj *ph2c;
+-	struct getratable_parm *pgetrttblparm;
+-	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+-	u8	res = _SUCCESS;
+-
+-	ph2c = kzalloc(sizeof(struct cmd_obj), GFP_KERNEL);
+-	if (ph2c == NULL) {
+-		res = _FAIL;
+-		goto exit;
+-	}
+-	pgetrttblparm = kzalloc(sizeof(struct getratable_parm), GFP_KERNEL);
+-
+-	if (pgetrttblparm == NULL) {
+-		kfree(ph2c);
+-		res = _FAIL;
+-		goto exit;
+-	}
+-
+-	INIT_LIST_HEAD(&ph2c->list);
+-	ph2c->cmdcode = GEN_CMD_CODE(_GetRaTable);
+-	ph2c->parmbuf = (unsigned char *)pgetrttblparm;
+-	ph2c->cmdsz =  sizeof(struct getratable_parm);
+-	ph2c->rsp = (u8 *)pval;
+-	ph2c->rspsz = sizeof(struct getratable_rsp);
+-
+-	pgetrttblparm->rsvd = 0x0;
+-
+-	res = rtw_enqueue_cmd(pcmdpriv, ph2c);
+-exit:
+-	return res;
+-}
+-
+ u8 rtw_setassocsta_cmd(struct adapter  *padapter, u8 *mac_addr)
+ {
+ 	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+diff --git a/drivers/staging/rtl8188eu/include/rtw_cmd.h b/drivers/staging/rtl8188eu/include/rtw_cmd.h
+index 049e112..bb1f8f0 100644
+--- a/drivers/staging/rtl8188eu/include/rtw_cmd.h
++++ b/drivers/staging/rtl8188eu/include/rtw_cmd.h
+@@ -601,13 +601,6 @@ struct getratable_parm {
+ 	uint rsvd;
+ };
+ 
+-struct getratable_rsp {
+-	u8 ss_ForceUp[NumRates];
+-	u8 ss_ULevel[NumRates];
+-	u8 ss_DLevel[NumRates];
+-	u8 count_judge[NumRates];
+-};
+-
+ /* to get TX,RX retry count */
+ 
+ struct gettxretrycnt_parm {
+@@ -758,7 +751,6 @@ u8 rtw_getrfreg_cmd(struct adapter *padapter, u8 offset, u8 *pval);
+ u8 rtw_setrfintfs_cmd(struct adapter *padapter, u8 mode);
+ u8 rtw_setrttbl_cmd(struct adapter *padapter,
+ 		    struct setratable_parm *prate_table);
+-u8 rtw_getrttbl_cmd(struct adapter *padapter, struct getratable_rsp *pval);
+ 
+ u8 rtw_gettssi_cmd(struct adapter *padapter, u8 offset, u8 *pval);
+ u8 rtw_setfwdig_cmd(struct adapter *padapter, u8 type);
+-- 
+1.7.10.4
 
-Regards,
-Mike
-
-> ---
->  drivers/clk/clk-s2mps11.c |   33 +++++++++++----------------------
->  1 file changed, 11 insertions(+), 22 deletions(-)
-> 
-> diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
-> index b5274a9..5df99a4 100644
-> --- a/drivers/clk/clk-s2mps11.c
-> +++ b/drivers/clk/clk-s2mps11.c
-> @@ -45,7 +45,6 @@ struct s2mps11_clk {
->         struct clk *clk;
->         struct clk_lookup *lookup;
->         u32 mask;
-> -       bool enabled;
->         unsigned int reg;
->  };
->  
-> @@ -62,8 +61,6 @@ static int s2mps11_clk_prepare(struct clk_hw *hw)
->         ret = regmap_update_bits(s2mps11->iodev->regmap_pmic,
->                                  s2mps11->reg,
->                                  s2mps11->mask, s2mps11->mask);
-> -       if (!ret)
-> -               s2mps11->enabled = true;
->  
->         return ret;
->  }
-> @@ -75,32 +72,32 @@ static void s2mps11_clk_unprepare(struct clk_hw *hw)
->  
->         ret = regmap_update_bits(s2mps11->iodev->regmap_pmic, s2mps11->reg,
->                            s2mps11->mask, ~s2mps11->mask);
-> -
-> -       if (!ret)
-> -               s2mps11->enabled = false;
->  }
->  
-> -static int s2mps11_clk_is_enabled(struct clk_hw *hw)
-> +static int s2mps11_clk_is_prepared(struct clk_hw *hw)
->  {
-> +       int ret;
-> +       u32 val;
->         struct s2mps11_clk *s2mps11 = to_s2mps11_clk(hw);
->  
-> -       return s2mps11->enabled;
-> +       ret = regmap_read(s2mps11->iodev->regmap_pmic,
-> +                               s2mps11->reg, &val);
-> +       if (ret < 0)
-> +               return -EINVAL;
-> +
-> +       return val & s2mps11->mask;
->  }
->  
->  static unsigned long s2mps11_clk_recalc_rate(struct clk_hw *hw,
->                                              unsigned long parent_rate)
->  {
-> -       struct s2mps11_clk *s2mps11 = to_s2mps11_clk(hw);
-> -       if (s2mps11->enabled)
-> -               return 32768;
-> -       else
-> -               return 0;
-> +       return 32768;
->  }
->  
->  static struct clk_ops s2mps11_clk_ops = {
->         .prepare        = s2mps11_clk_prepare,
->         .unprepare      = s2mps11_clk_unprepare,
-> -       .is_enabled     = s2mps11_clk_is_enabled,
-> +       .is_prepared    = s2mps11_clk_is_prepared,
->         .recalc_rate    = s2mps11_clk_recalc_rate,
->  };
->  
-> @@ -174,7 +171,6 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
->         unsigned int s2mps11_reg;
->         struct clk_init_data *clks_init;
->         int i, ret = 0;
-> -       u32 val;
->  
->         s2mps11_clks = devm_kzalloc(&pdev->dev, sizeof(*s2mps11_clk) *
->                                         S2MPS11_CLKS_NUM, GFP_KERNEL);
-> @@ -213,13 +209,6 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
->                 s2mps11_clk->mask = 1 << i;
->                 s2mps11_clk->reg = s2mps11_reg;
->  
-> -               ret = regmap_read(s2mps11_clk->iodev->regmap_pmic,
-> -                                 s2mps11_clk->reg, &val);
-> -               if (ret < 0)
-> -                       goto err_reg;
-> -
-> -               s2mps11_clk->enabled = val & s2mps11_clk->mask;
-> -
->                 s2mps11_clk->clk = devm_clk_register(&pdev->dev,
->                                                         &s2mps11_clk->hw);
->                 if (IS_ERR(s2mps11_clk->clk)) {
-> -- 
-> 1.7.9.5
-> 
