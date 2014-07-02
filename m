@@ -1,110 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485AbaGBHTO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 03:19:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45588 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751361AbaGBHTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 03:19:13 -0400
-Date: Wed, 2 Jul 2014 09:21:04 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tiejun Chen <tiejun.chen@intel.com>
-Cc: daniel.vetter@ffwll.ch, jani.nikula@linux.intel.com, airlied@linux.ie,
-        intel-gfx@lists.freedesktop.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        qemu-devel@nongnu.org
-Subject: Re: [RFC][PATCH] gpu:drm:i915:intel_detect_pch: back to check devfn
- instead of check class type
-Message-ID: <20140702062104.GA3874@redhat.com>
-References: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com>
+	id S1751552AbaGBHTf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 03:19:35 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.160]:22383 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991AbaGBHTe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 03:19:34 -0400
+X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ekfyrejs0ialTxoYXnIEza2FTPybMoi18A
+X-RZG-CLASS-ID: mo00
+Message-ID: <53B3B283.7050800@schoebel-theuer.de>
+Date: Wed, 02 Jul 2014 09:19:31 +0200
+From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?Thomas_Sch=F6bel-Theue?= =?ISO-8859-1?Q?r?= 
+	<tst@1und1.de>
+Subject: Re: [PATCH 49/50] mars: generic pre-patch for mars
+References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de> <1404251250-22992-50-git-send-email-tst@schoebel-theuer.de> <20140701223644.GA30330@kroah.com>
+In-Reply-To: <20140701223644.GA30330@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 19, 2014 at 05:53:51PM +0800, Tiejun Chen wrote:
-> Originally the reason to probe ISA bridge instead of Dev31:Fun0
-> is to make graphics device passthrough work easy for VMM, that
-> only need to expose ISA bridge to let driver know the real
-> hardware underneath. This is a requirement from virtualization
-> team. Especially in that virtualized environments, XEN, there
-> is irrelevant ISA bridge in the system with that legacy qemu
-> version specific to xen, qemu-xen-traditional. So to work
-> reliably, we should scan through all the ISA bridge devices
-> and check for the first match, instead of only checking the
-> first one.
-> 
-> But actually, qemu-xen-traditional, is always enumerated with
-> Dev31:Fun0, 00:1f.0 as follows:
-> 
-> hw/pt-graphics.c:
-> 
-> intel_pch_init()
->     |
->     + pci_isa_bridge_init(bus, PCI_DEVFN(0x1f, 0), ...);
-> 
-> so this mean that isa bridge is still represented with Dev31:Func0
-> like the native OS. Furthermore, currently we're pushing VGA
-> passthrough support into qemu upstream, and with some discussion,
-> we wouldn't set the bridge class type and just expose this devfn.
-> 
-> So we just go back to check devfn to make life normal.
-> 
-> Signed-off-by: Tiejun Chen <tiejun.chen@intel.com>
+I will prepare a new version ASAP.
 
-Making sure all relevant people are Cc'd.
+Is the asmlinkage one of the reasons?
 
-I think we should wait for the hypervisor to settle
-on what it wants to implement before making guest
-changes. Otherwise we'll just add more guest configurations
-that need to be supported.
+If so, some additional wrappers like vfs_* or kernel_* would have to be
+written. This would also complicate portability between the out-of-tree
+and the in-tree version of MARS (which I have to maintain in parallel at
+least for some years).
 
+It would be great if I just could make the exports of sys_* explicitly.
 
+Thanks and cheers,
 
-> ---
->  drivers/gpu/drm/i915/i915_drv.c | 19 +++----------------
->  1 file changed, 3 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-> index 651e65e..cb2526e 100644
-> --- a/drivers/gpu/drm/i915/i915_drv.c
-> +++ b/drivers/gpu/drm/i915/i915_drv.c
-> @@ -417,18 +417,8 @@ void intel_detect_pch(struct drm_device *dev)
->  		return;
->  	}
->  
-> -	/*
-> -	 * The reason to probe ISA bridge instead of Dev31:Fun0 is to
-> -	 * make graphics device passthrough work easy for VMM, that only
-> -	 * need to expose ISA bridge to let driver know the real hardware
-> -	 * underneath. This is a requirement from virtualization team.
-> -	 *
-> -	 * In some virtualized environments (e.g. XEN), there is irrelevant
-> -	 * ISA bridge in the system. To work reliably, we should scan trhough
-> -	 * all the ISA bridge devices and check for the first match, instead
-> -	 * of only checking the first one.
-> -	 */
-> -	while ((pch = pci_get_class(PCI_CLASS_BRIDGE_ISA << 8, pch))) {
-> +	pch = pci_get_bus_and_slot(0, PCI_DEVFN(0x1f, 0));
-> +	if (pch) {
->  		if (pch->vendor == PCI_VENDOR_ID_INTEL) {
->  			unsigned short id = pch->device & INTEL_PCH_DEVICE_ID_MASK;
->  			dev_priv->pch_id = id;
-> @@ -462,10 +452,7 @@ void intel_detect_pch(struct drm_device *dev)
->  				DRM_DEBUG_KMS("Found LynxPoint LP PCH\n");
->  				WARN_ON(!IS_HASWELL(dev));
->  				WARN_ON(!IS_ULT(dev));
-> -			} else
-> -				continue;
-> -
-> -			break;
-> +			}
->  		}
->  	}
->  	if (!pch)
-> -- 
-> 1.9.1
-> 
+Thomas
+
+On 07/02/2014 12:36 AM, Greg KH wrote:
+> On Tue, Jul 01, 2014 at 11:47:29PM +0200, Thomas Schoebel-Theuer wrote:
+>> From: Thomas Schoebel-Theuer <schoebel@bell.site>
+>>
+>> Mostly introduces missing EXPORT_SYMBOL().
+>> Should have no impact onto the kernel.
+>>
+>> This is the generic version which exports all sys_*() system
+>> calls. This should not introduce any additional maintenance pain
+>> because that interfaces has to be stable anyway due to POSIX etc.
+>>
+>> Signed-off-by: Thomas Schoebel-Theuer <schoebel@bell.site>
+>> ---
+>>  fs/open.c                  | 1 -
+>>  fs/utimes.c                | 2 ++
+>>  include/linux/syscalls.h   | 3 +++
+>>  include/uapi/linux/major.h | 1 +
+>>  mm/page_alloc.c            | 3 +++
+>>  5 files changed, 9 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/fs/open.c b/fs/open.c
+>> index 36662d0..3b21b76 100644
+>> --- a/fs/open.c
+>> +++ b/fs/open.c
+>> @@ -1064,7 +1064,6 @@ SYSCALL_DEFINE1(close, unsigned int, fd)
+>>  
+>>  	return retval;
+>>  }
+>> -EXPORT_SYMBOL(sys_close);
+>>  
+>>  /*
+>>   * This routine simulates a hangup on the tty, to arrange that users
+>> diff --git a/fs/utimes.c b/fs/utimes.c
+>> index aa138d6..4a1f4a8 100644
+>> --- a/fs/utimes.c
+>> +++ b/fs/utimes.c
+>> @@ -1,3 +1,4 @@
+>> +#include <linux/module.h>
+>>  #include <linux/compiler.h>
+>>  #include <linux/file.h>
+>>  #include <linux/fs.h>
+>> @@ -181,6 +182,7 @@ retry:
+>>  out:
+>>  	return error;
+>>  }
+>> +EXPORT_SYMBOL(do_utimes);
+>>  
+>>  SYSCALL_DEFINE4(utimensat, int, dfd, const char __user *, filename,
+>>  		struct timespec __user *, utimes, int, flags)
+>> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+>> index b0881a0..c674309 100644
+>> --- a/include/linux/syscalls.h
+>> +++ b/include/linux/syscalls.h
+>> @@ -75,6 +75,7 @@ struct sigaltstack;
+>>  #include <linux/sem.h>
+>>  #include <asm/siginfo.h>
+>>  #include <linux/unistd.h>
+>> +#include <linux/export.h>
+>>  #include <linux/quota.h>
+>>  #include <linux/key.h>
+>>  #include <trace/syscall.h>
+>> @@ -176,6 +177,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+>>  
+>>  #define SYSCALL_DEFINE0(sname)					\
+>>  	SYSCALL_METADATA(_##sname, 0);				\
+>> +	EXPORT_SYMBOL(sys_##sname);				\
+>>  	asmlinkage long sys_##sname(void)
+>>  
+>>  #define SYSCALL_DEFINE1(name, ...) SYSCALL_DEFINEx(1, _##name, __VA_ARGS__)
+>> @@ -202,6 +204,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+>>  		__PROTECT(x, ret,__MAP(x,__SC_ARGS,__VA_ARGS__));	\
+>>  		return ret;						\
+>>  	}								\
+>> +	EXPORT_SYMBOL(sys##name);					\
+>>  	static inline long SYSC##name(__MAP(x,__SC_DECL,__VA_ARGS__))
+>>  
+> Heh, nice try, but no, we aren't going to export all syscalls, that's
+> crazy.  And wrong on many levels, sorry.
+>
+> Be explicit with your exports, and justify _why_ you need them.
+>
+> thanks,
+>
+> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
