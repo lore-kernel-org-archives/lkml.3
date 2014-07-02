@@ -1,85 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255AbaGBH3r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 03:29:47 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:54582 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796AbaGBH3q (ORCPT
+	id S1751397AbaGBHzk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 03:55:40 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:46831 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaGBHzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 03:29:46 -0400
+	Wed, 2 Jul 2014 03:55:39 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-media@vger.kernel.org, Sakari Ailus <sakari.ailus@iki.fi>,
+        Katsuya MATSUBARA <matsu@igel.co.jp>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        linux-sh@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH v7] media: vb2: Take queue or device lock in mmap-related vb2 ioctl handlers
+Date: Wed, 02 Jul 2014 09:56:33 +0200
+Message-ID: <10104979.PzNG1tgbGn@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.12.21-gentoo-r1; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53B3A7CB.8020901@xs4all.nl>
+References: <201308061239.27188.hverkuil@xs4all.nl> <2051293.PjTd9YAWz0@avalon> <53B3A7CB.8020901@xs4all.nl>
 MIME-Version: 1.0
-In-Reply-To: <CAM9d7cisUq9nJbSXZMtD+nQ_g+ZCKSsu_ghRDZY9vvkq51oiKQ@mail.gmail.com>
-References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
-	<1403913966-4927-12-git-send-email-ast@plumgrid.com>
-	<87tx70496q.fsf@sejong.aot.lge.com>
-	<CAMEtUuzHakFzJYRR0WgwRBnsQL24KGsNax5DTfRNMJrGhvfQMA@mail.gmail.com>
-	<CAM9d7cisUq9nJbSXZMtD+nQ_g+ZCKSsu_ghRDZY9vvkq51oiKQ@mail.gmail.com>
-Date: Wed, 2 Jul 2014 00:29:44 -0700
-Message-ID: <CAMEtUuyUqUsQbdvCWQvGjD5kuUQ8OzXzf7-7v+UJq+dDsBMv8A@mail.gmail.com>
-Subject: Re: [PATCH RFC net-next 11/14] tracing: allow eBPF programs to be
- attached to events
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 1, 2014 at 11:39 PM, Namhyung Kim <namhyung@kernel.org> wrote:
-> On Wed, Jul 2, 2014 at 3:14 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->>
->> Can manipulate what at compile time? Entry records of tracepoints are
->> hard coded based on the event. For verifier it's easier to treat all
->> tracepoint events as they received the same 'struct bpf_context'
->> of N arguments then the same program can be attached to multiple
->> tracepoint events at the same time.
->
-> I was thinking about perf creates a bpf program for filtering some
-> events like recording kfree_skb if protocol == xx.  So perf can
-> calculate the offset and size of the protocol field and make
-> appropriate insns for the filter.
+Hi Hans,
 
-When I'm saying 'tracing filter' in patch 11/14, I really mean
-stap/dtrace-like facility for live debugging, where tracing infra plays
-a key role. At the end the programs are written in C with annotations
-and perf orchestrates compilation, insertion, attaching, printing results.
-Your meaning of 'tracing filter' is canonical: a filter that says whether
-event should be recorded or not. And it makes sense.
-When perf sees 'protocol==xx' on command line it can generate
-ebpf program for it. In such case my earlier proposal for replacing
-predicate tree walker with ebpf programs in kernel becomes obsolete?
-If I understood correctly, you're proposing to teach perf to generate
-ebpf programs for existing command line interface and use it instead
-of predicate tree. This way predicate tree can be removed, right?
-In such case programs would need to access event records.
+On Wednesday 02 July 2014 08:33:47 Hans Verkuil wrote:
+> For now it is -ENOTIME for me. It's on my TODO list, but there are a number
+> of other things I want to finish first.
 
-> Maybe it needs to pass the event format to the verifier somehow then.
+No worries, I know how it feels. I just wanted to make sure you hadn't missed 
+my e-mail.
 
-The integer fields are easy to verify. dynamic_array part is tricky, since
-16-bit offset  + 16-bit length accessors are very tracing specific.
-I need to think it through.
+-- 
+Regards,
 
-> Your scenario looks like just calling a bpf program when it hits a
-> event.  It could use event triggering for that purpose IMHO.
+Laurent Pinchart
 
-Sure. Calling ebpf program can be one of even trigger types.
-On the other side ebpf programs themselves can replace the whole
-triggering, filtering, recording code. We can have events that
-do nothing or call ebpf programs. Then programs walk all necessary
-data structures, store stuff into a maps, etc Just look at amount of
-events that perf processes. Some of it can be done in kernel by
-dynamic program.
