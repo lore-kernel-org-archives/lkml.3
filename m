@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826AbaGBOUZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 10:20:25 -0400
-Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:37258
-	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752876AbaGBOUY (ORCPT
+	id S1754114AbaGBOWO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 10:22:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:30826 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751708AbaGBOWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 10:20:24 -0400
-Date: Wed, 2 Jul 2014 09:20:20 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-cc: David Rientjes <rientjes@google.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: mm: slub: invalid memory access in setup_object
-In-Reply-To: <20140702020454.GA6961@richard>
-Message-ID: <alpine.DEB.2.11.1407020918130.17773@gentwo.org>
-References: <53AAFDF7.2010607@oracle.com> <alpine.DEB.2.11.1406251228130.29216@gentwo.org> <alpine.DEB.2.02.1406301500410.13545@chino.kir.corp.google.com> <alpine.DEB.2.11.1407010956470.5353@gentwo.org> <20140702020454.GA6961@richard>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 2 Jul 2014 10:22:13 -0400
+Date: Wed, 2 Jul 2014 10:22:11 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
+Subject: Re: [RFA][PATCH 23/27] metag: ftrace: Remove check of obsolete
+ variable function_trace_stop
+Message-ID: <20140702102211.7a8956a2@gandalf.local.home>
+In-Reply-To: <53B40A4F.7060102@imgtec.com>
+References: <20140626165221.736847419@goodmis.org>
+	<20140626165853.049120840@goodmis.org>
+	<20140626133848.0567e365@gandalf.local.home>
+	<53B40A4F.7060102@imgtec.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jul 2014, Wei Yang wrote:
+On Wed, 2 Jul 2014 14:34:07 +0100
+James Hogan <james.hogan@imgtec.com> wrote:
 
-> My patch is somewhat convoluted since I wanted to preserve the original logic
-> and make minimal change. And yes, it looks not that nice to audience.
+> This patch is pretty much the inverse of the original patch that added
+> it, so looks good to me (and it didn't seem to break anything).
+> 
+> So, for both this patch and the "ftrace: Remove check for
+> HAVE_FUNCTION_TRACE_MCOUNT_TEST" one:
+> 
+> Acked-by: James Hogan <james.hogan@imgtec.com>
 
-Well I was the author of the initial "convoluted" logic.
+Thanks!
 
-> I feel a little hurt by this patch. What I found and worked is gone with this
-> patch.
+-- Steve
 
-Ok how about giving this one additional revision. Maybe you can make the
-function even easier to read? F.e. the setting of the NULL pointer at the
-end of the loop is ugly.
