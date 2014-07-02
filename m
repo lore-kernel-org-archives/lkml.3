@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046AbaGBEkd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 00:40:33 -0400
-Received: from mail-oa0-f74.google.com ([209.85.219.74]:41613 "EHLO
-	mail-oa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbaGBEkb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 00:40:31 -0400
-From: Loic Prylli <loicp@google.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>,
-        Jiri Pirko <jiri@resnulli.us>, Loic Prylli <loicp@google.com>
-Subject: [PATCH] net: Fix NETDEV_CHANGE notifier usage causing spurious arp flush
-Date: Tue,  1 Jul 2014 21:39:43 -0700
-Message-Id: <1404275983-7908-1-git-send-email-loicp@google.com>
-X-Mailer: git-send-email 2.0.0.526.g5318336
+	id S1752882AbaGBElZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 00:41:25 -0400
+Received: from ozlabs.org ([103.22.144.67]:60775 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752148AbaGBElX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 00:41:23 -0400
+Message-ID: <1404276081.7254.1.camel@concordia>
+Subject: Re: Re: [PATCH v4] [BUGFIX] kprobes: Fix "Failed to find blacklist"
+ error on ia64 and ppc64
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, linux-ia64@vger.kernel.org,
+        sparse@chrisli.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-tip-commits@vger.kernel.org,
+        akataria@vmware.com, anil.s.keshavamurthy@intel.com,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Chris Wright <chrisw@sous-sol.org>, yrl.pp-manager.tt@hitachi.com,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Kevin Hao <haokexin@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, dl9pf@gmx.de,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Wed, 02 Jul 2014 14:41:21 +1000
+In-Reply-To: <53B21B0E.8010707@hitachi.com>
+References: <20140620022307.23075.55858.stgit@kbuild-fedora.novalocal>
+	  <53B0D61B.9010104@hitachi.com> <1404128176.7888.1.camel@concordia>
+	 <53B21B0E.8010707@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A bug was introduced in NETDEV_CHANGE notifier sequence causing the
-arp table to be sometimes spuriously cleared (including manual arp
-entries marked permanent), upon network link carrier changes.
+On Tue, 2014-07-01 at 11:21 +0900, Masami Hiramatsu wrote:
+> (2014/06/30 20:36), Michael Ellerman wrote:
+> > On Mon, 2014-06-30 at 12:14 +0900, Masami Hiramatsu wrote:
+> >> Ping? :)
+> > 
+> > Yeah sorry. I started looking at this and got dragged into another mess.
+> > 
+> > You seem to have duplicated the functionality of arch_deref_entry_point(),
+> > which was also added for kprobes, and for the same reason - ie. because some
+> > arches have strange function pointers. Is there some reason you can't use it?
+> 
+> Ah, right! Hmm, it seems some more work to update it. but basically, we can do.
+> BTW, is there any other users who need to access the actual function entry (for
+> kallsyms case)?
 
-The changed argument for the notifier was applied only to a single
-caller of NETDEV_CHANGE, missing among others netdev_state_change().
-So upon net_carrier events induced by the network, which are
-triggering a call to netdev_state_change(), arp_netdev_event() would
-decide whether to clear or not arp cache based on random/junk stack
-values (a kind of read buffer overflow).
+Not that I'm aware of. We have had function descriptors on 64-bit powerpc for
+ever, so in theory by now we should have already found any cases where we need
+that sort of wrapper.
 
-Fixes: be9efd365328 ("net: pass changed flags along with NETDEV_CHANGE event")
-Fixes: 6c8b4e3ff81b ("arp: flush arp cache on IFF_NOARP change")
-Signed-off-by: Loic Prylli <loicp@google.com>
----
- net/core/dev.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+cheers
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 30eedf6..63129d4 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -148,6 +148,9 @@ struct list_head ptype_all __read_mostly;	/* Taps */
- static struct list_head offload_base __read_mostly;
- 
- static int netif_rx_internal(struct sk_buff *skb);
-+static int call_netdevice_notifiers_info(unsigned long val,
-+					 struct net_device *dev,
-+					 struct netdev_notifier_info *info);
- 
- /*
-  * The @dev_base_head list is protected by @dev_base_lock and the rtnl
-@@ -1207,7 +1210,11 @@ EXPORT_SYMBOL(netdev_features_change);
- void netdev_state_change(struct net_device *dev)
- {
- 	if (dev->flags & IFF_UP) {
--		call_netdevice_notifiers(NETDEV_CHANGE, dev);
-+		struct netdev_notifier_change_info change_info;
-+
-+		change_info.flags_changed = 0;
-+		call_netdevice_notifiers_info(NETDEV_CHANGE, dev,
-+					      &change_info.info);
- 		rtmsg_ifinfo(RTM_NEWLINK, dev, 0, GFP_KERNEL);
- 	}
- }
--- 
-2.0.0.526.g5318336
 
