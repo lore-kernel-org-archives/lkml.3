@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933AbaGBR5a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 13:57:30 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:49878 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448AbaGBR53 (ORCPT
+	id S1756308AbaGBSAQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 14:00:16 -0400
+Received: from exprod5og108.obsmtp.com ([64.18.0.186]:58907 "HELO
+	exprod5og108.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751540AbaGBSAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 13:57:29 -0400
-Date: Wed, 2 Jul 2014 10:57:22 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
- wakeups
-Message-ID: <20140702175722.GX4603@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140627142038.GA22942@linux.vnet.ibm.com>
- <20140702123412.GD19379@twins.programming.kicks-ass.net>
- <20140702153915.GQ4603@linux.vnet.ibm.com>
- <20140702160412.GO19379@twins.programming.kicks-ass.net>
- <20140702170838.GS4603@linux.vnet.ibm.com>
- <20140702172600.GR19379@twins.programming.kicks-ass.net>
- <53B44182.4090107@redhat.com>
+	Wed, 2 Jul 2014 14:00:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B44182.4090107@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070217-6688-0000-0000-00000300E341
+In-Reply-To: <805EF793-7CA2-4F4A-B7D2-0AF2582EFFAA@codeaurora.org>
+References: <1382529163-31968-1-git-send-email-tinamdar@apm.com>
+	<1382531997.14960.8.camel@mbp>
+	<CACoXjcmJPHdkrGRng8oWosgo9V_pLDNYw5Z3R_yN6w_rUe=G8Q@mail.gmail.com>
+	<805EF793-7CA2-4F4A-B7D2-0AF2582EFFAA@codeaurora.org>
+Date: Wed, 2 Jul 2014 10:54:26 -0700
+Message-ID: <CACoXjckS50sQGF54Go-FeoN3MfiX=SXb7s6wYKynBr8BoH8a8g@mail.gmail.com>
+Subject: Re: [RFC PATCH] arm64: Add arch support for PCI
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 01:29:38PM -0400, Rik van Riel wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
-> 
-> On 07/02/2014 01:26 PM, Peter Zijlstra wrote:
-> > On Wed, Jul 02, 2014 at 10:08:38AM -0700, Paul E. McKenney wrote:
-> >> As were others, not that long ago.  Today is the first hint that
-> >> I got that you feel otherwise.  But it does look like the softirq
-> >> approach to callback processing needs to stick around for awhile
-> >> longer.  Nice to hear that softirq is now "sane and normal"
-> >> again, I guess.  ;-)
-> > 
-> > Nah, softirqs are still totally annoying :-)
-> > 
-> > So I've lost detail again, but it seems to me that on all CPUs that
-> > are actually getting ticks, waking tasks to process the RCU state
-> > is entirely over doing it. Might as well keep processing their RCU
-> > state from the tick as was previously done.
-> 
-> For CPUs that are not getting ticks (eg. because they are idle),
-> is it worth waking up anything on that CPU, or would it make more
-> sense to simply process their RCU callbacks on a different CPU,
-> if there aren't too many pending?
+On Wed, May 21, 2014 at 11:57 AM, Kumar Gala <galak@codeaurora.org> wrote:
+>
+> On Nov 21, 2013, at 7:38 AM, Tanmay Inamdar <tinamdar@apm.com> wrote:
+>
+>> This patch adds the PCI(e) arch support in arm64. The files are
+>> based on PCI(e) support in 32bit arm.
+>>
+>>
+>> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
+>> ---
+>> arch/arm64/Kconfig               |   19 ++
+>> arch/arm64/include/asm/dma.h     |   18 +
+>> arch/arm64/include/asm/pci.h     |   74 ++++
+>> arch/arm64/include/asm/pcibios.h |   98 ++++++
+>> arch/arm64/kernel/Makefile       |    1 +
+>> arch/arm64/kernel/pcibios.c      |  689 ++++++++++++++++++++++++++++++++++++++
+>> arch/arm64/mm/Makefile           |    2 +-
+>> arch/arm64/mm/iomap.c            |   31 ++
+>> drivers/pci/Makefile             |    1 +
+>> 9 files changed, 932 insertions(+), 1 deletion(-)
+>>
+>> create mode 100644 arch/arm64/include/asm/dma.h
+>> create mode 100644 arch/arm64/include/asm/pci.h
+>> create mode 100644 arch/arm64/include/asm/pcibios.h
+>> create mode 100644 arch/arm64/kernel/pcibios.c
+>> create mode 100644 arch/arm64/mm/iomap.c
+>
+> Do you mind reposting this, the version I can find on mailing list archives seems corrupt.  This is at least useful until we get something merged upstream for arm64 pci work.
 
-Give or take the number of wakeups generated...  ;-)
+Sure. I have a patch that applies to 3.13 Linux Kernel. I will post that out.
 
-							Thanx, Paul
-
+>
+> thanks
+>
+> - k
+>
+>
+> --
+> Employee of Qualcomm Innovation Center, Inc.
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+>
