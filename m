@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264AbaGBS3z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 14:29:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53470 "EHLO mx1.redhat.com"
+	id S1757211AbaGBSeA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 14:34:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:55538 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752211AbaGBS3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 14:29:54 -0400
-Date: Wed, 2 Jul 2014 14:29:05 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Christoph Hellwig <hch@infradead.org>
-cc: Sagi Grimberg <sagig@mellanox.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: Crash on WRITE SAME
-In-Reply-To: <20140702181333.GA15792@infradead.org>
-Message-ID: <alpine.LRH.2.02.1407021423240.20183@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1407021338550.20183@file01.intranet.prod.int.rdu2.redhat.com> <20140702181333.GA15792@infradead.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1754033AbaGBSd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 14:33:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,589,1400050800"; 
+   d="scan'208";a="537898492"
+Message-ID: <53B45095.80102@intel.com>
+Date: Wed, 02 Jul 2014 11:33:57 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>, zohar@linux.vnet.ibm.com,
+        linux-ima-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>
+Subject: Re: [PATCH v2 1/3] ima: use ahash API for file hash calculation
+References: <cover.1404245510.git.d.kasatkin@samsung.com> <72d68808fd8db2b896a459b120f3e550e5f976c1.1404245510.git.d.kasatkin@samsung.com>
+In-Reply-To: <72d68808fd8db2b896a459b120f3e550e5f976c1.1404245510.git.d.kasatkin@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/01/2014 01:12 PM, Dmitry Kasatkin wrote:
+> +	ima_ahash=	[IMA] Asynchronous hash usage parameters
+> +			Format: <min_file_size>
+> +			Set the minimal file size when use asynchronous hash.
+> +			If ima_ahash is not provided, ahash usage is disabled.
 
+<groan> ... another boot option...
 
-On Wed, 2 Jul 2014, Christoph Hellwig wrote:
+Can we just set this to something sane, and then make a sysctl or
+something else at runtime to tweak it?  The kernel won't use IMA much
+before userspace comes up, and it can surely live with a slightly
+suboptimal tuning until the boot scripts have a chance to go bang the
+tunable.
 
-> On Wed, Jul 02, 2014 at 02:05:14PM -0400, Mikulas Patocka wrote:
-> > Hi Sagi
-> > 
-> > Your commit d77e65350f2d82dfa0557707d505711f5a43c8fd causes crash on SCSI 
-> > WRITE SAME command (it can be triggered by issuing the BLKZEROOUT ioctl). 
-> > The crash happens in iscsi_tcp_segment_done because sg_next returns NULL.
-> 
-> Martin already fixes this over a week ago, we're just waiting for James
-> to send a pull request to Linus.
-> 
-> Get this fix from the core-for-3.16 branch of
-> git.infradead.org/users/hch/scsi-queue.git for now.
-
-I see.
-
-And what about protection information for commands that transfer partial 
-sectors? (for example, UMAP transfers 24 bytes). Should 
-scsi_transfer_length return 24 or 32 in this case?
-
-Mikulas
+We should reserve command-line parameters for things that really need
+tweaking in early boot or are _needed_ to boot.
