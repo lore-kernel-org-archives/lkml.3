@@ -1,108 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091AbaGBRXp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 13:23:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33566 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491AbaGBRXn (ORCPT
+	id S1756328AbaGBRYC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 13:24:02 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:37514 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754228AbaGBRYA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 13:23:43 -0400
-Date: Wed, 2 Jul 2014 19:23:33 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        mingo@kernel.org, Waiman.Long@hp.com, davidlohr@hp.com,
-        linux-kernel@vger.kernel.org, riel@redhat.com,
-        akpm@linux-foundation.org, hpa@zytor.com, andi@firstfloor.org,
-        James.Bottomley@hansenpartnership.com, rostedt@goodmis.org,
-        tim.c.chen@linux.intel.com, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [RFC] Cancellable MCS spinlock rework
-Message-ID: <20140702172333.GQ19379@twins.programming.kicks-ass.net>
-References: <1404318070-2856-1-git-send-email-jason.low2@hp.com>
- <20140702162749.GP19379@twins.programming.kicks-ass.net>
- <1404320356.3170.12.camel@j-VirtualBox>
+	Wed, 2 Jul 2014 13:24:00 -0400
+Date: Wed, 2 Jul 2014 18:23:55 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 8/9] pci: Add support for creating a generic
+ host_bridge from device tree
+Message-ID: <20140702172355.GQ2173@e106497-lin.cambridge.arm.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+ <1404240214-9804-9-git-send-email-Liviu.Dudau@arm.com>
+ <20140702112230.GL18731@arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CbqR2XcyIs6OSP+I"
+In-Reply-To: <20140702112230.GL18731@arm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 02 Jul 2014 17:23:57.0244 (UTC) FILETIME=[67D62FC0:01CF961A]
+X-MC-Unique: 114070218235700401
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1404320356.3170.12.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 02, 2014 at 12:22:30PM +0100, Will Deacon wrote:
+> Hi Liviu,
+> 
+> On Tue, Jul 01, 2014 at 07:43:33PM +0100, Liviu Dudau wrote:
+> > Several platforms use a rather generic version of parsing
+> > the device tree to find the host bridge ranges. Move the common code
+> > into the generic PCI code and use it to create a pci_host_bridge
+> > structure that can be used by arch code.
+> > 
+> > Based on early attempts by Andrew Murray to unify the code.
+> > Used powerpc and microblaze PCI code as starting point.
+> 
+> I just had a quick look at this to see how it differs from the parsing in
+> pci-host-generic.c and there a few small differences worth discussing.
+> 
+> > +static int pci_host_bridge_of_get_ranges(struct device_node *dev,
+> > +		struct list_head *resources, resource_size_t *io_base)
+> > +{
+> > +	struct resource *res;
+> > +	struct of_pci_range range;
+> > +	struct of_pci_range_parser parser;
+> > +	int err;
+> > +
+> > +	pr_info("PCI host bridge %s ranges:\n", dev->full_name);
+> > +
+> > +	/* Check for ranges property */
+> > +	err = of_pci_range_parser_init(&parser, dev);
+> > +	if (err)
+> > +		return err;
+> > +
+> > +	pr_debug("Parsing ranges property...\n");
+> > +	for_each_of_pci_range(&parser, &range) {
+> > +		/* Read next ranges element */
+> > +		pr_debug("pci_space: 0x%08x pci_addr:0x%016llx cpu_addr:0x%016llx size:0x%016llx\n",
+> > +			range.pci_space, range.pci_addr, range.cpu_addr, range.size);
+> > +
+> > +		/*
+> > +		 * If we failed translation or got a zero-sized region
+> > +		 * then skip this range
+> > +		 */
+> > +		if (range.cpu_addr == OF_BAD_ADDR || range.size == 0)
+> > +			continue;
+> > +
+> > +		res = kzalloc(sizeof(struct resource), GFP_KERNEL);
+> > +		if (!res)
+> > +			return -ENOMEM;
+> > +
+> > +		err = of_pci_range_to_resource(&range, dev, res);
+> > +		if (err)
+> > +			return err;
+> > +
+> > +		if (resource_type(res) == IORESOURCE_IO)
+> > +			*io_base = range.cpu_addr;
+> > +
+> > +		pci_add_resource_offset(resources, res,
+> > +				res->start - range.pci_addr);
+> 
+> Where do you request_resource before adding it?
 
---CbqR2XcyIs6OSP+I
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I don't, because I'm expecting that arch code might filter the list. When 
+the host bridge code calls pci_scan_root_bus() the resources will be
+requested then.
 
-On Wed, Jul 02, 2014 at 09:59:16AM -0700, Jason Low wrote:
-> On Wed, 2014-07-02 at 18:27 +0200, Peter Zijlstra wrote:
-> > On Wed, Jul 02, 2014 at 09:21:10AM -0700, Jason Low wrote:
-> > > The cancellable MCS spinlock is currently used to queue threads that =
-are
-> > > doing optimistic spinning. It uses per-cpu nodes, where a thread obta=
-ining
-> > > the lock would access and queue the local node corresponding to the C=
-PU that
-> > > it's running on. Currently, the cancellable MCS lock is implemented b=
-y using
-> > > pointers to these nodes.
-> > >=20
-> > > In this RFC patch, instead of operating on pointers to the per-cpu no=
-des, we
-> > > store the CPU numbers in which the per-cpu nodes correspond to in ato=
-mic_t.
-> > > A similar concept is used with the qspinlock.
-> > >=20
-> > > We add 1 to the CPU number to retrive an "encoded value" representing=
- the node
-> > > of that CPU. By doing this, 0 can represent "no CPU", which allows us=
- to
-> > > keep the simple "if (CPU)" and "if (!CPU)" checks. In this patch, the=
- next and
-> > > prev pointers in each node were also modified to store encoded CPU va=
-lues.
-> > >=20
-> > > By operating on the CPU # of the nodes using atomic_t instead of poin=
-ters
-> > > to those nodes, this can reduce the overhead of the cancellable MCS s=
-pinlock
-> > > by 32 bits (on 64 bit systems).
-> >=20
-> > Still struggling to figure out why you did this.
->=20
-> Why I converted pointers to atomic_t?
->=20
-> This would avoid the potentially racy ACCESS_ONCE stores + cmpxchg while
-> also using less overhead, since atomic_t is often only 32 bits while
-> pointers could be 64 bits.
+> 
+> > +	}
+> > +
+> > +	/* Apply architecture specific fixups for the ranges */
+> > +	return pcibios_fixup_bridge_ranges(resources);
+> 
+> I currently mandate at least one non-prefetchable resource in the
+> device-tree. Should I simply drop this restriction, or do I have to somehow
+> hook this into the pcibios callback?
 
-So no real good reason.. The ACCESS_ONCE stores + cmpxchg stuff is
-likely broken all over the place, and 'fixing' this one place doesn't
-cure the problem.
+Don't think I understand why you need at least one non-prefetcheable resource
+but if you want to mandate that then the pcibios_fixup_bridge_ranges() would
+be the place to put that check.
 
---CbqR2XcyIs6OSP+I
-Content-Type: application/pgp-signature
+> 
+> > +}
+> > +
+> > +static atomic_t domain_nr = ATOMIC_INIT(-1);
+> > +
+> > +/**
+> > + * of_create_pci_host_bridge - Create a PCI host bridge structure using
+> > + * information passed in the DT.
+> > + * @parent: device owning this host bridge
+> > + * @ops: pci_ops associated with the host controller
+> > + * @host_data: opaque data structure used by the host controller.
+> > + *
+> > + * returns a pointer to the newly created pci_host_bridge structure, or
+> > + * NULL if the call failed.
+> > + *
+> > + * This function will try to obtain the host bridge domain number by
+> > + * using of_alias_get_id() call with "pci-domain" as a stem. If that
+> > + * fails, a local allocator will be used that will put each host bridge
+> > + * in a new domain.
+> > + */
+> > +struct pci_host_bridge *
+> > +of_create_pci_host_bridge(struct device *parent, struct pci_ops *ops, void *host_data)
+> > +{
+> > +	int err, domain, busno;
+> > +	struct resource *bus_range;
+> > +	struct pci_bus *root_bus;
+> > +	struct pci_host_bridge *bridge;
+> > +	resource_size_t io_base;
+> > +	LIST_HEAD(res);
+> > +
+> > +	bus_range = kzalloc(sizeof(*bus_range), GFP_KERNEL);
+> > +	if (!bus_range)
+> > +		return ERR_PTR(-ENOMEM);
+> > +
+> > +	domain = of_alias_get_id(parent->of_node, "pci-domain");
+> > +	if (domain == -ENODEV)
+> > +		domain = atomic_inc_return(&domain_nr);
+> > +
+> > +	err = of_pci_parse_bus_range(parent->of_node, bus_range);
+> > +	if (err) {
+> > +		dev_info(parent, "No bus range for %s, using default [0-255]\n",
+> > +			parent->of_node->full_name);
+> > +		bus_range->start = 0;
+> > +		bus_range->end = 255;
+> > +		bus_range->flags = IORESOURCE_BUS;
+> 
+> What about bus_range->name?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Don't know! Is anyone using it?
 
-iQIcBAEBAgAGBQJTtEAVAAoJEHZH4aRLwOS6tf4QAJX18449C9JFqmXOn+nm2GC3
-S2h1SYOhcmfhfiUhFobEKZrlskrjoKiUxHgj7lfLy7cHO27QlMrtVJHVypmDADtB
-LojAT+XDmQxfyJ9SK5+wOA79xqK67pbNtEIGY3fnLCm49YNuuS+DIT5qVYAicl4l
-ClISi4j1Nael+imDX94Z8G9lP6uJz1DfG9VdwBnZbJbQFZWJrH6cDPAJ4rL2t5ld
-6aDIkvQatPQ80EtSc+5y2r+QFK35JhsK0ULM6iUI2lb2TFudkZfAx68IYT89SBhE
-DMnl8WTAdV2pK5tPgEH0yJeqZ8bO0cgY9ar9a7DMx+aRjprVaNsVPdluJYfS5VNr
-C4fBZj4bMjIVeGiFsXMkmrtX+2FMLue+7KE04qfXfiCzs8tmk5i8wFccqbQ0nsyb
-elK5ASEsyEoCObGDeg7SUCY4/CJYneOyZOLylG7ATEcxFHpDkFjXBEtkzLQYZI61
-/oDOjmhXRrZ7io8yOAT3mcxpb+y7hZpayPajkLeQNi8oKwB1AmbfwIEVZGpC08U5
-w8iY2RMwLEQcyHZ6C/sPf3qV0rkLSHtXoMv1NBWGaKSZj5NTx4tFOZWzEKrgPyXF
-a21VSHsNtYi4Yeut51mTnDE1a1hGkURYoAPNCB9B3adAXPqznMCaz/07IGHhlv7u
-0jRwR93UCh3hq0sHeYQF
-=KdwU
------END PGP SIGNATURE-----
+> 
+> > +	}
+> > +	busno = bus_range->start;
+> > +	pci_add_resource(&res, bus_range);
+> 
+> I currently truncate the bus range to fit inside the Configuration Space
+> window I have (in the reg property). How can I continue to do that with this
+> patch?
 
---CbqR2XcyIs6OSP+I--
+Not easily. Unless I add an argument to this function that will allow you to
+pass in the max number for the bus range, then the code becomes:
+
++	err = of_pci_parse_bus_range(parent->of_node, bus_range);
++	if (err) {
++		dev_info(parent, "No bus range for %s, using default [0-%d]\n",
++			parent->of_node->full_name, max_range);
++		bus_range->start = 0;
++		bus_range->end = max_range;
++		bus_range->flags = IORESOURCE_BUS;
++	} else {
++		if (bus_range->end > bus_range->start + max_range) {
++			bus_range->end = bus_range->start + max_range;
++		}
++	}
+
+Or something like that.
+
+Best regards,
+Liviu
+
+> 
+> Will
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
+
