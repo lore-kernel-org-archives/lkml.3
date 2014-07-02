@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636AbaGBFR1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 01:17:27 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:58643 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751585AbaGBFRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 01:17:24 -0400
-Message-ID: <53B3957B.40006@ti.com>
-Date: Wed, 2 Jul 2014 10:45:39 +0530
-From: Keerthy <a0393675@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1752017AbaGBFTz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 01:19:55 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:56128 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808AbaGBFTx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 01:19:53 -0400
+Message-ID: <53B39672.7050301@gmail.com>
+Date: Wed, 02 Jul 2014 12:19:46 +0700
+From: Lars Melin <larsm17@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Keerthy J <j-keerthy@ti.com>, Tero Kristo <t-kristo@ti.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH V2 0/6] regulator: palmas: cleanup and fixes
-References: <1404143859-8160-1-git-send-email-nm@ti.com>
-In-Reply-To: <1404143859-8160-1-git-send-email-nm@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Bernd Wachter <bernd.wachter@jolla.com>, netdev@vger.kernel.org
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: qmi_wwan: Add ID for Telewell TW-LTE 4G v2
+References: <87vbrgewei.fsf@bwachter.lart.info>
+In-Reply-To: <87vbrgewei.fsf@bwachter.lart.info>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 30 June 2014 09:27 PM, Nishanth Menon wrote:
-> Hi,
-> 	Original thread (v1): http://marc.info/?t=140380766500004&r=1&w=2
-> This series is based on: git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git
-> branch: topic/palmas (4c0c9ca Merge remote-tracking branch 'regulator/fix/palmas' into regulator-palmas)
+On 2014-07-02 02:01, Bernd Wachter wrote:
+> There's a new version of the Telewell 4G modem working with, but not
+> recognized by this driver.
 >
-> This series does a few cleanups to help ensure we dont make typo mistakes and finally provides a fix as attempted by (v1).
+> Signed-off-by: Bernd Wachter <bernd.wachter@jolla.com>
+> ---
+> --- linux-3.15.3/drivers/net/usb/qmi_wwan.c.orig	2014-07-01 21:31:07.000000000 +0300
+> +++ linux-3.15.3/drivers/net/usb/qmi_wwan.c	2014-07-01 20:39:30.000000000 +0300
+> @@ -741,6 +741,7 @@ static const struct usb_device_id produc
+>   	{QMI_FIXED_INTF(0x19d2, 0x1424, 2)},
+>   	{QMI_FIXED_INTF(0x19d2, 0x1425, 2)},
+>   	{QMI_FIXED_INTF(0x19d2, 0x1426, 2)},	/* ZTE MF91 */
+> +	{QMI_FIXED_INTF(0x19d2, 0x1428, 2)},	/* Telewell TW-LTE 4G v2 */
+>   	{QMI_FIXED_INTF(0x19d2, 0x2002, 4)},	/* ZTE (Vodafone) K3765-Z */
+>   	{QMI_FIXED_INTF(0x0f3d, 0x68a2, 8)},    /* Sierra Wireless MC7700 */
+>   	{QMI_FIXED_INTF(0x114f, 0x68a2, 8)},    /* Sierra Wireless MC7750 */
 >
-> Basic cpufreq tests performed on OMAP5uEVM, DRA7-evm, DRA72-evm all of which are palmas variants.
->
-> The patches are also available here: https://github.com/nmenon/linux-2.6-playground/commits/broonie-topic-palmas-fixes
-> 		
-For the series:
-
-  Acked-by: Keerthy <j-keerthy@ti.com>
->       
-> Nishanth Menon (6):
->    regulator: palmas: Squelch sparse warnings
->    regulator: palmas: Rename reg_info to palmas_reg_info
->    regulator: palmas: Simplify code by using pointer to palmas_reg_info
->    regulator: palmas: Rename palmas_regs_info to
->      palmas_generic_regs_info
->    regulator: palmas: Simplify code by not indexing regulator_desc
->      unnecessarily
->    regulator: palmas: Fix SMPS enable/disable/is_enable for tps65917
->
->   drivers/regulator/palmas-regulator.c |  344 ++++++++++++++++------------------
->   include/linux/mfd/palmas.h           |    4 +-
->   2 files changed, 166 insertions(+), 182 deletions(-)
->
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+For completeness (full device support) please create a patch for the 
+serial interfaces in the option driver, see the entry for ZTE pid 1426 
+in option.c as example.
