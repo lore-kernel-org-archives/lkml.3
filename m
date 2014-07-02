@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261AbaGBPeK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 11:34:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:17561 "EHLO mga11.intel.com"
+	id S932265AbaGBPeT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 11:34:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62963 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753793AbaGBPeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 11:34:09 -0400
+	id S1752845AbaGBPeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 11:34:16 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,588,1400050800"; 
-   d="scan'208";a="564222679"
-Date: Wed, 2 Jul 2014 08:34:07 -0700
+   d="scan'208";a="567323918"
+Date: Wed, 2 Jul 2014 08:33:00 -0700
 From: Andi Kleen <ak@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, eranian@google.com,
-        linux-kernel@vger.kernel.org
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH 1/2] perf, x86: Revamp PEBS event selection
-Message-ID: <20140702153407.GN19781@tassilo.jf.intel.com>
+Message-ID: <20140702153300.GM19781@tassilo.jf.intel.com>
 References: <1403910612-8754-1-git-send-email-andi@firstfloor.org>
  <1403910612-8754-2-git-send-email-andi@firstfloor.org>
- <20140702122902.GC19379@twins.programming.kicks-ass.net>
+ <CABPqkBT1XC=mG-ZhjAcMOksdCgP-p3TSSAefi7XBOajMugBYZQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140702122902.GC19379@twins.programming.kicks-ass.net>
+In-Reply-To: <CABPqkBT1XC=mG-ZhjAcMOksdCgP-p3TSSAefi7XBOajMugBYZQ@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 02:29:02PM +0200, Peter Zijlstra wrote:
-> On Fri, Jun 27, 2014 at 04:10:11PM -0700, Andi Kleen wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > As already discussed earlier in email.
-> 
-> Is an entirely inappropriate start for a Changelog. Do not assume prior
-> knowledge. If its relevant include it here without reference.
+> No, still needs to be INTEL_ALL_EVENT_CONSTRAINT(0x0, 0x1)
+> otherwise the get_event_constraint() test I mentioned previously will
+> fail, event with your ALL_FILTER mask.
 
-Thanks. Do you have any other comments?
+What events should fail? I verified all PEBS events and they work as expected.
+
+> > -       INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+> > -       INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
+> > -       INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
+> > -       INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+> > -       INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
+> > -       INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+> > -       INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+> > -       INTEL_EVENT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
+> > -       INTEL_UEVENT_CONSTRAINT(0x02d4, 0xf), /* MEM_LOAD_UOPS_MISC_RETIRED.LLC_MISS */
+> > +       INTEL_PLD_CONSTRAINT(0x01cd, 0xf),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
+> > +       INTEL_PST_CONSTRAINT(0x02cd, 0xf),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+> 
+> No, precise stores only work on counter 3, keep 0x8 here
+
+Good point.
+
+
 
 -Andi
-
 -- 
 ak@linux.intel.com -- Speaking for myself only
