@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757640AbaGBQxU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 12:53:20 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:48420 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729AbaGBQxR (ORCPT
+	id S1757672AbaGBQx3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 12:53:29 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:65263 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756493AbaGBQxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 12:53:17 -0400
+	Wed, 2 Jul 2014 12:53:25 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 31/48] staging: rtl8188eu: Rename _rtw_free_cmd_priv() to rtw_free_cmd_priv()
-Date: Wed,  2 Jul 2014 22:17:27 +0530
-Message-Id: <1404319664-8327-31-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 32/48] staging: rtl8188eu: Rename _rtw_dequeue_cmd() to rtw_dequeue_cmd()
+Date: Wed,  2 Jul 2014 22:17:28 +0530
+Message-Id: <1404319664-8327-32-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
 References: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
@@ -23,35 +23,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_cmd.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_cmd.c    |   16 +++-------------
+ drivers/staging/rtl8188eu/include/rtw_cmd.h |    2 +-
+ 2 files changed, 4 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-index e26a582..81f4b94 100644
+index 81f4b94..1e6e52e 100644
 --- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
 +++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-@@ -71,7 +71,7 @@ exit:
+@@ -110,7 +110,7 @@ exit:
+ 	return _SUCCESS;
+ }
+ 
+-struct	cmd_obj	*_rtw_dequeue_cmd(struct __queue *queue)
++struct	cmd_obj	* rtw_dequeue_cmd(struct __queue *queue)
+ {
+ 	unsigned long irqL;
+ 	struct cmd_obj *obj;
+@@ -181,16 +181,6 @@ exit:
  	return res;
  }
  
--void _rtw_free_cmd_priv(struct cmd_priv *pcmdpriv)
-+void rtw_free_cmd_priv(struct cmd_priv *pcmdpriv)
- {
- 
- 	if (pcmdpriv) {
-@@ -130,12 +130,6 @@ struct	cmd_obj	*_rtw_dequeue_cmd(struct __queue *queue)
- 	return obj;
- }
- 
--void rtw_free_cmd_priv(struct cmd_priv *pcmdpriv)
+-struct cmd_obj	*rtw_dequeue_cmd(struct cmd_priv *pcmdpriv)
 -{
--	RT_TRACE(_module_rtl871x_cmd_c_, _drv_info_, ("rtw_free_cmd_priv\n"));
--	_rtw_free_cmd_priv(pcmdpriv);
+-	struct cmd_obj *cmd_obj;
+-
+-
+-	cmd_obj = _rtw_dequeue_cmd(&pcmdpriv->cmd_queue);
+-
+-	return cmd_obj;
 -}
 -
- static int rtw_cmd_filter(struct cmd_priv *pcmdpriv, struct cmd_obj *cmd_obj)
+ void rtw_free_cmd_obj(struct cmd_obj *pcmd)
  {
- 	u8 bAllow = false; /* set to true to allow enqueuing cmd when hw_init_completed is false */
+ 
+@@ -248,7 +238,7 @@ _next:
+ 			break;
+ 		}
+ 
+-		pcmd = rtw_dequeue_cmd(pcmdpriv);
++		pcmd = rtw_dequeue_cmd(&pcmdpriv->cmd_queue);
+ 		if (!pcmd)
+ 			continue;
+ 
+@@ -304,7 +294,7 @@ post_process:
+ 
+ 	/*  free all cmd_obj resources */
+ 	do {
+-		pcmd = rtw_dequeue_cmd(pcmdpriv);
++		pcmd = rtw_dequeue_cmd(&pcmdpriv->cmd_queue);
+ 		if (pcmd == NULL)
+ 			break;
+ 
+diff --git a/drivers/staging/rtl8188eu/include/rtw_cmd.h b/drivers/staging/rtl8188eu/include/rtw_cmd.h
+index cc75c7d..b3529da 100644
+--- a/drivers/staging/rtl8188eu/include/rtw_cmd.h
++++ b/drivers/staging/rtl8188eu/include/rtw_cmd.h
+@@ -70,7 +70,7 @@ do {\
+ } while (0)
+ 
+ u32 rtw_enqueue_cmd(struct cmd_priv *pcmdpriv, struct cmd_obj *obj);
+-struct cmd_obj *rtw_dequeue_cmd(struct cmd_priv *pcmdpriv);
++struct cmd_obj *rtw_dequeue_cmd(struct __queue *queue);
+ void rtw_free_cmd_obj(struct cmd_obj *pcmd);
+ 
+ int rtw_cmd_thread(void *context);
 -- 
 1.7.10.4
 
