@@ -1,70 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163AbaGBCwJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 22:52:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3968 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751243AbaGBCwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 22:52:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,586,1400050800"; 
-   d="scan'208";a="563925325"
-Message-ID: <53B373D2.7000306@intel.com>
-Date: Wed, 02 Jul 2014 10:52:02 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1751940AbaGBDBz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 23:01:55 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:58985 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607AbaGBDBx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 23:01:53 -0400
 MIME-Version: 1.0
-To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>, chris@printf.net,
-        ulf.hansson@linaro.org, jh80.chung@samsung.com, tgih.jun@samsung.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jackey.shen@amd.com, gregkh@linuxfoundation.org
-Subject: Re: one doubt about mmc_sdio_init_card function
-References: <53B249A4.2040404@linux.intel.com>
-In-Reply-To: <53B249A4.2040404@linux.intel.com>
+In-Reply-To: <53B16492.6040006@vmware.com>
+References: <1395967502-71219-1-git-send-email-chrisfriedt@gmail.com>
+ <CAPM=9tx4hdU0PZqdZcCd-x3HMu+6ZsGibeOHZPLe3OpW9Wsa0g@mail.gmail.com>
+ <533A8E52.5050304@vmware.com> <CAF4BF-Rmxqbbd_xroQbRTWeE2NfKAZm=Jm7SG2bNppHV2odYNA@mail.gmail.com>
+ <53B14E9E.3040505@vmware.com> <CAF4BF-T4VZQtd_3wWfNQ_==KJE0z0N5XonG4jcy=Ys5x_XxJ=w@mail.gmail.com>
+ <53B15A94.3010402@vmware.com> <CAF4BF-TiHkaaOejH6p1QnnepfOxmvirds3vQD2YdXih_6kkUpQ@mail.gmail.com>
+ <CAF4BF-T8a_Y=uW7r_g0WKpABHFH=GhX0hNAQMsG9o=DX4JF6qg@mail.gmail.com> <53B16492.6040006@vmware.com>
+From: Christopher Friedt <chrisfriedt@gmail.com>
+Date: Tue, 1 Jul 2014 23:01:32 -0400
+Message-ID: <CAF4BF-R_b0_7tzqsMu0UENYtdQ7P=2x6ELLhMB38_4u9Fc58RQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] drm/vmwgfx: correct fb_fix_screeninfo.line_length
+To: Thomas Hellstrom <thellstrom@vmware.com>
+Cc: dri-devel <dri-devel@lists.freedesktop.org>, linux-kernel@vger.kernel.org,
+        Dave Airlie <airlied@gmail.com>, linux-graphics-maintainer@vmware.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2014 01:39 PM, Fu, Zhonghui wrote:
-> 
-> Hi, all
-> 
-> The mmc_sdio_init_card(drivers/mmc/core/sdio.c) function calls mmc_alloc_card(drivers/mmc/core/bus.c) function to allocate a card structure. card->dev.bus is assigned with mmc_bus_type in mmc_alloc_card function. Why not assign sdio_bus_type to card->dev.bus?
+I have been unable to reproduce this issue in a plethora of test
+cases, although granted, I do not have access to a Win7 machine. For
+that, I have asked an Ubuntu tester to run through some tests for me.
 
-sdio card, mmc card, sd card are all devices on the mmc bus, hence their
-bus type is set to mmc_bus_type.
+https://bugs.launchpad.net/ubuntu/+source/xserver-xorg-video-vmware/+bug/1328898/comments/8
 
-sdio function device is a device on the sdio bus, hence its bus type is
-sdio_bus_type.
-
-Hope this helps,
-Aaron
-
-> 
-> 
-> struct mmc_card *mmc_alloc_card(struct mmc_host *host, struct device_type *type)
-> {
->     struct mmc_card *card;
-> 
->     card = kzalloc(sizeof(struct mmc_card), GFP_KERNEL);
->     if (!card)
->         return ERR_PTR(-ENOMEM);
-> 
->     card->host = host;
-> 
->     device_initialize(&card->dev);
-> 
->     card->dev.parent = mmc_classdev(host);
->     card->dev.bus = &mmc_bus_type;
->     card->dev.release = mmc_release_card;
->     card->dev.type = type;
-> 
->     return card;
-> }
-> 
-> 
-> Thanks,
-> Zhonghui
-> 
-
+Will post updates as I receive them.
