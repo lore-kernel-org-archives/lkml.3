@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876AbaGBVOn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 17:14:43 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56645 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752595AbaGBVOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 17:14:41 -0400
-Message-ID: <53B47621.6090307@ti.com>
-Date: Wed, 2 Jul 2014 16:14:09 -0500
+	id S1754609AbaGBVOs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 17:14:48 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60272 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918AbaGBVOo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 17:14:44 -0400
+Message-ID: <53B47626.4040506@ti.com>
+Date: Wed, 2 Jul 2014 16:14:14 -0500
 From: Suman Anna <s-anna@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
-        Kumar Gala <galak@codeaurora.org>
-CC: Tony Lindgren <tony@atomide.com>, Josh Cartwright <joshc@codeaurora.org>,
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
         Bjorn Andersson <bjorn@kryo.se>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv5 03/15] hwspinlock/core: maintain a list of registered
- hwspinlock banks
-References: <1398904476-26200-1-git-send-email-s-anna@ti.com> <1398904476-26200-4-git-send-email-s-anna@ti.com> <CAK=WgbakGbTaYz+4K24aT3vyRkDYwPKCm6XrcJvH667NMMfTTA@mail.gmail.com>
-In-Reply-To: <CAK=WgbakGbTaYz+4K24aT3vyRkDYwPKCm6XrcJvH667NMMfTTA@mail.gmail.com>
+Subject: Re: [PATCHv5 04/15] hwspinlock/core: add common OF helpers
+References: <1398904476-26200-1-git-send-email-s-anna@ti.com> <1398904476-26200-5-git-send-email-s-anna@ti.com> <CAK=WgbbZvBLT7U638fBfPjF7-MJaP=4WJcrT_fEg6Uu3cXRAyg@mail.gmail.com>
+In-Reply-To: <CAK=WgbbZvBLT7U638fBfPjF7-MJaP=4WJcrT_fEg6Uu3cXRAyg@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,80 +32,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Ohad,
 
-On 07/01/2014 07:26 AM, Ohad Ben-Cohen wrote:
-> Hi Suman,
-> 
+>
 > On Thu, May 1, 2014 at 3:34 AM, Suman Anna <s-anna@ti.com> wrote:
->>
->> The hwspinlock_device structure is used for registering a bank of
->> locks with the driver core. The structure already contains the
->> necessary members to identify the bank of locks. The core does not
->> maintain the hwspinlock_devices itself, but maintains only a radix
->> tree for all the registered locks. A specific lock can be requested
->> by users using a global lock id, and any device-specific fields
->> can be retrieved through a reference to the hwspinlock_device in
->> each lock.
->>
->> The global lock id, however, is not friendly to be requested for
->> users using the device-tree model. The device-tree representation
->> will typically have each of the hwspinlock devices represented as
->> a DT node, and a specific lock can be requested using the device's
->> phandle and a lock specifier. Add support to the core therefore to
->> maintain all the registered hwspinlock_devices, so that a device
->> can be looked up and a specific lock belonging to the device
->> requested through a phandle + args approach.
->>
->> Signed-off-by: Suman Anna <s-anna@ti.com>
+>> 2. The of_hwspin_lock_simple_xlate() is a simple default
+>>    translator function for hwspinlock provider implementations
+>>    that use a single cell number for requesting a specific lock
+>>    (relatively indexed) within a hwlock bank.
 > 
-> I'm not sure we need this patch.
-
-This patch is needed if we use the controller-phandle + args specifier
-for requesting hwlocks by a client, as we need to translate
-controller-phandle to the corresponding hwspinlock_device.
-
-Looks like we still don't have a closure on the semantics of how
-clients have to request a lock in DT. You are suggesting something like
-    hwlocks = <global_lock1 global_lock2 ...>;
-
-whereas this patch is built to support based on comments from
-DT-maintainers,
-    hwlocks = <controller-phandle lock-specifier1>, <controller-phandle
-lock-specifier2>...;
-
-Mark, Kumar,
-We need your input here as DT maintainers. Some of the discussion is on
-the v4 cover-letter thread [1].
-
-Kumar, Josh,
-How does this fit with the MSM spinlock driver?
-
-> It seems to me that the global lock id can be the base_id + lock
-> index, where the former should be a property of the parent dt node,
-> and the latter can just be the phandle argument. Then, with the global
-> lock id in hand, drivers could just use the existing
-> hwspin_lock_request_specific API.
+> Do we have a use case today that require the xlate() method?
 > 
-> If future hardware will bring a more complex scenario, we could then
-> introduce the xlate proposal to resolve it. As long as we're not
-> changing the dt data, and this is all handled by kernel code, 
+> If not, let's remove it as we could always add it back if some new
+> hardware shows up that needs it.
 
-Once we define dt data one way, how can we support a different mechanism
-later on? Are you implying that we support both controller-phandle +
-specifier and global-lock convention somehow through driver changes?
+The xlate() method is to support the phandle + args specifier way of
+requesting hwlocks, platform implementations are free to implement their
+own xlate functions, but the above supports the simplest case of
+controller + relative lock index within controller.
 
-> then I'd
-> prefer opting for less code now as long as it addresses the
-> requirements.
 > 
-> Please let me know if currently there is a use case that can't be
-> addressed using this simpler model.
+> As long as the dt data is unchanged, we should generally only add
+> kernel code that we really need.
+> 
+>> 3. The of_hwspin_lock_request_specific() API can be used by
+>>    hwspinlock clients to request a specific lock using the
+>>    phandle + args specifier. This function relies on the
+>>    implementation providing back a relative hwlock id within
+>>    the bank from the args specifier.
+> 
+> It seems to me we can just introduce a of_hwspin_lock_get_id() method
+> which will provide the global lock id to dt users, with which they
+> could just invoke the existing hwspin_lock_request_specific(). This
+> way we will have more common code between dt users and users who get
+> the lock id from a remote processor.
 
-This is just a question of DT semantics for the longer term, it can be
-done both ways. I have started out the series with exactly what you are
-suggesting here.
+This function again is to support the phandle + args specifier way of
+requesting hwlocks, the hwspin_lock_request_specific() is invoked
+internally within this function, so we are still reusing the actual
+request code other than handling the DT parsing portion. If we go back
+to using global locks in client hwlocks property, we don't need a
+of_hwspin_lock_get_id(), the same can be achieved using the existing DT
+function, of_property_read_u32_index().
 
 regards
 Suman
-
-[1] https://lkml.org/lkml/2014/3/17/576
-
