@@ -1,38 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758656AbaGBABY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 20:01:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43970 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753141AbaGBABX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 20:01:23 -0400
-Date: Wed, 2 Jul 2014 02:01:21 +0200
-From: David Sterba <dsterba@suse.cz>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, Chris Mason <clm@fb.com>,
-        Josef Bacik <jbacik@fb.com>, linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 1/1] FS/BTRFS: replace count*size kzalloc by kcalloc
-Message-ID: <20140702000121.GW1553@twin.jikos.cz>
-Reply-To: dsterba@suse.cz
-Mail-Followup-To: dsterba@suse.cz, Fabian Frederick <fabf@skynet.be>,
-	linux-kernel@vger.kernel.org, Chris Mason <clm@fb.com>,
-	Josef Bacik <jbacik@fb.com>, linux-btrfs@vger.kernel.org
-References: <1403721343-19383-1-git-send-email-fabf@skynet.be>
+	id S1758868AbaGBACt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 20:02:49 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:41782 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753059AbaGBACr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 20:02:47 -0400
+Date: Wed, 2 Jul 2014 02:02:45 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: Re: [PATCH] hwpoison: Fix race with changing page during offlining
+ v2
+Message-ID: <20140702000245.GM5714@two.firstfloor.org>
+References: <1404174736-17480-1-git-send-email-andi@firstfloor.org>
+ <20140701152716.b9b4b04ee67cf987844b1aa4@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403721343-19383-1-git-send-email-fabf@skynet.be>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+In-Reply-To: <20140701152716.b9b4b04ee67cf987844b1aa4@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 08:35:43PM +0200, Fabian Frederick wrote:
-> kcalloc manages count*sizeof overflow.
+> > --- a/mm/memory-failure.c
+> > +++ b/mm/memory-failure.c
+> > @@ -1168,6 +1168,16 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+> >  	lock_page(hpage);
+> >  
+> >  	/*
+> > +	 * The page could have changed compound pages during the locking.
+> > +	 * If this happens just bail out.
+> > +	 */
+> > +	if (compound_head(p) != hpage) {
 > 
-> Cc: Chris Mason <clm@fb.com>
-> Cc: Josef Bacik <jbacik@fb.com>
-> Cc: linux-btrfs@vger.kernel.org
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> How can a 4k page change compound pages?  The original compound page
+> was torn down and then this 4k page became part of a differently-size
+> compound page?
 
-Reviewed-by: David Sterba <dsterba@suse.cz>
+Yes or it was torn down and now it's its own page.
+
+> 
+> > +		action_result(pfn, "different compound page after locking", IGNORED);
+> > +		res = -EBUSY;
+> > +		goto out;
+> > +	}
+> > +
+> > +	/*
+> 
+> I don't get it.  We just go and fail the poisoning attempt?  Shouldn't
+> we go back, grab the new hpage and try again?
+
+It should be quite rare, so I thought this was safest. An retry loop
+would be more difficult to test and may have more side effects.
+
+The hwpoison code by design only tries to handle cases that are
+reasonably common in workloads, as visible in page-flags.
+
+I'm not really that concerned about handling this (likely rare case),
+just not crashing on it.
+
+-Andi
