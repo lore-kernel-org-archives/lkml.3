@@ -1,103 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341AbaGBHSY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 03:18:24 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:35513 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005AbaGBHSW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 03:18:22 -0400
-Message-ID: <53B3B233.5000307@hitachi.com>
-Date: Wed, 02 Jul 2014 16:18:11 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1751485AbaGBHTO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 03:19:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45588 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751361AbaGBHTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 03:19:13 -0400
+Date: Wed, 2 Jul 2014 09:21:04 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Tiejun Chen <tiejun.chen@intel.com>
+Cc: daniel.vetter@ffwll.ch, jani.nikula@linux.intel.com, airlied@linux.ie,
+        intel-gfx@lists.freedesktop.org, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        qemu-devel@nongnu.org
+Subject: Re: [RFC][PATCH] gpu:drm:i915:intel_detect_pch: back to check devfn
+ instead of check class type
+Message-ID: <20140702062104.GA3874@redhat.com>
+References: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@gmail.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, rdunlap@infradead.org,
-        Anoop Thomas Mathew <atm@profoundis.com>,
-        Arnd Bergmann <arnd@arndb.de>, akataria@vmware.com,
-        yrl.pp-manager.tt@hitachi.com,
-        Linus Torvalds <torvalds@linux-foundation.org>, sparse@chrisli.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        anil.s.keshavamurthy@intel.com,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Wright <chrisw@sous-sol.org>, linux-tip-commits@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, dl9pf@gmx.de,
-        Jiri Kosina <jkosina@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH v5 1/2] kprobes/powerpc: Fix arch_deref_entry_point
- to support ABIv2
-References: <1404276081.7254.1.camel@concordia> <20140702070022.14689.7254.stgit@kbuild-fedora.novalocal>
-In-Reply-To: <20140702070022.14689.7254.stgit@kbuild-fedora.novalocal>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/07/02 16:00), Masami Hiramatsu wrote:
-> Since PowerPC64 ABIv2 doesn't have function descriptor
-> any more, arch_deref_entry_point(), which returns function
-> entry point from function descriptor, should be updated.
-
-Please ignore this patch, since it is already fixed by Michael
-
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=2f0143c91d30823f6f6e7d94d7fa818f7ab18a18
-
-We only need 2/2.
-
-Thank you,
-
-
-
+On Thu, Jun 19, 2014 at 05:53:51PM +0800, Tiejun Chen wrote:
+> Originally the reason to probe ISA bridge instead of Dev31:Fun0
+> is to make graphics device passthrough work easy for VMM, that
+> only need to expose ISA bridge to let driver know the real
+> hardware underneath. This is a requirement from virtualization
+> team. Especially in that virtualized environments, XEN, there
+> is irrelevant ISA bridge in the system with that legacy qemu
+> version specific to xen, qemu-xen-traditional. So to work
+> reliably, we should scan through all the ISA bridge devices
+> and check for the first match, instead of only checking the
+> first one.
 > 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Anoop Thomas Mathew <atm@profoundis.com>
-> Cc: Jiri Kosina <jkosina@suse.cz>
-> Cc: linuxppc-dev@lists.ozlabs.org
+> But actually, qemu-xen-traditional, is always enumerated with
+> Dev31:Fun0, 00:1f.0 as follows:
+> 
+> hw/pt-graphics.c:
+> 
+> intel_pch_init()
+>     |
+>     + pci_isa_bridge_init(bus, PCI_DEVFN(0x1f, 0), ...);
+> 
+> so this mean that isa bridge is still represented with Dev31:Func0
+> like the native OS. Furthermore, currently we're pushing VGA
+> passthrough support into qemu upstream, and with some discussion,
+> we wouldn't set the bridge class type and just expose this devfn.
+> 
+> So we just go back to check devfn to make life normal.
+> 
+> Signed-off-by: Tiejun Chen <tiejun.chen@intel.com>
+
+Making sure all relevant people are Cc'd.
+
+I think we should wait for the hypervisor to settle
+on what it wants to implement before making guest
+changes. Otherwise we'll just add more guest configurations
+that need to be supported.
+
+
+
 > ---
->  arch/powerpc/kernel/kprobes.c |    7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
+>  drivers/gpu/drm/i915/i915_drv.c | 19 +++----------------
+>  1 file changed, 3 insertions(+), 16 deletions(-)
 > 
-> diff --git a/arch/powerpc/kernel/kprobes.c b/arch/powerpc/kernel/kprobes.c
-> index 90fab64..72a1034 100644
-> --- a/arch/powerpc/kernel/kprobes.c
-> +++ b/arch/powerpc/kernel/kprobes.c
-> @@ -491,7 +491,12 @@ int __kprobes kprobe_exceptions_notify(struct notifier_block *self,
->  	return ret;
->  }
+> diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
+> index 651e65e..cb2526e 100644
+> --- a/drivers/gpu/drm/i915/i915_drv.c
+> +++ b/drivers/gpu/drm/i915/i915_drv.c
+> @@ -417,18 +417,8 @@ void intel_detect_pch(struct drm_device *dev)
+>  		return;
+>  	}
 >  
-> -#ifdef CONFIG_PPC64
-> +#if defined(CONFIG_PPC64) && (!defined(_CALL_ELF) || _CALL_ELF == 1)
-> +/*
-> + * On PPC64 ABIv1 the function pointer actually points to the
-> + * function's descriptor. The first entry in the descriptor is the
-> + * address of the function text.
-> + */
->  unsigned long arch_deref_entry_point(void *entry)
->  {
->  	return ((func_descr_t *)entry)->entry;
+> -	/*
+> -	 * The reason to probe ISA bridge instead of Dev31:Fun0 is to
+> -	 * make graphics device passthrough work easy for VMM, that only
+> -	 * need to expose ISA bridge to let driver know the real hardware
+> -	 * underneath. This is a requirement from virtualization team.
+> -	 *
+> -	 * In some virtualized environments (e.g. XEN), there is irrelevant
+> -	 * ISA bridge in the system. To work reliably, we should scan trhough
+> -	 * all the ISA bridge devices and check for the first match, instead
+> -	 * of only checking the first one.
+> -	 */
+> -	while ((pch = pci_get_class(PCI_CLASS_BRIDGE_ISA << 8, pch))) {
+> +	pch = pci_get_bus_and_slot(0, PCI_DEVFN(0x1f, 0));
+> +	if (pch) {
+>  		if (pch->vendor == PCI_VENDOR_ID_INTEL) {
+>  			unsigned short id = pch->device & INTEL_PCH_DEVICE_ID_MASK;
+>  			dev_priv->pch_id = id;
+> @@ -462,10 +452,7 @@ void intel_detect_pch(struct drm_device *dev)
+>  				DRM_DEBUG_KMS("Found LynxPoint LP PCH\n");
+>  				WARN_ON(!IS_HASWELL(dev));
+>  				WARN_ON(!IS_ULT(dev));
+> -			} else
+> -				continue;
+> -
+> -			break;
+> +			}
+>  		}
+>  	}
+>  	if (!pch)
+> -- 
+> 1.9.1
 > 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
