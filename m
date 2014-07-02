@@ -1,62 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300AbaGBMmC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 08:42:02 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:45513 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297AbaGBMl7 (ORCPT
+	id S1752002AbaGBMoz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 08:44:55 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36770 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226AbaGBMoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 08:41:59 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-f5-53b3fe1504b6
-Message-id: <53B3FE12.3000608@samsung.com>
-Date: Wed, 02 Jul 2014 14:41:54 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?VG9tYXN6IFN0YW5pc8WCYXdza2k=?= <t.stanislaws@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Andrzej Hajda <a.hajda@samsung.com>,
-        Mark Brown <broonie@kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: ABBA deadlock in Common Clock Framework
-References: <53B3E5F8.80501@samsung.com>
- <20140702114924.GC3679@tbergstrom-lnx.Nvidia.com>
-In-reply-to: <20140702114924.GC3679@tbergstrom-lnx.Nvidia.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t/xK7qi/zYHGzTfEbG4te4cq8XUh0/Y
-	LO5/PcposenxNVaLy7vmsFnMOL+PyeLphItsFpPWTmW0WD/jNYvFvPaXrBYrT8xiduD22LSq
-	k83jzrU9bB6bl9R79Da/Y/Po27KK0ePkqScsHp83yQWwR3HZpKTmZJalFunbJXBl/Hk8n7Vg
-	FkvF8x2/WBsYtzB3MXJySAiYSJw8eBXKFpO4cG89WxcjF4eQwFJGiT97mxghnE+MEv1Nrewg
-	VbwCWhIPDs4F62ARUJX43D4JzGYTMJToPdrHCGKLCkRIHOh7xgpRLyjxY/I9FhBbRCBEovV2
-	LzvIUGaBO8wSu5ZfAWsWBjpj9aNtQDYH0LYYiXfNCiBhTgE7ies3u8FmMguoS0yat4gZwpaX
-	2LzmLfMERoFZSFbMQlI2C0nZAkbmVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxghEfJ1B+PS
-	Y1aHGAU4GJV4eF/obwoWYk0sK67MPcQowcGsJMLbf2NzsBBvSmJlVWpRfnxRaU5q8SFGJg5O
-	qQZGqQn9H/5ePcEg9Pc0a96OlaqfWrSeFDLen2YesiXsx6IZy4OUEoSkHPbHPz6hLp2+4cq8
-	0HXOSeIdpr9XV+xVal7wtGNf0yeJ6i8nmbt3BaXWWT2qfKr1dfW9XZbsrT3Gapf33W9kzlof
-	v5LDRIm/4e2jw0Fzv/240RajyFF9z9k3wUcu0lBbiaU4I9FQi7moOBEAFTb7B24CAAA=
+	Wed, 2 Jul 2014 08:44:54 -0400
+Message-ID: <53B3FEB5.1040508@ti.com>
+Date: Wed, 2 Jul 2014 15:44:37 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>, <lars@metafoo.de>,
+        <tiwai@suse.de>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, <joelf@ti.com>, <nsekhar@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        <dmaengine@vger.kernel.org>
+Subject: Re: [PATCH 4/4] ALSA: pcm_dmaengine: Correct support for 3 physical
+ bytes samples
+References: <1404300570-14082-1-git-send-email-peter.ujfalusi@ti.com> <1404300570-14082-5-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1404300570-14082-5-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/14 13:49, Peter De Schrijver wrote:
-> Or if you use notifiers which use i2c... See also
-> http://comments.gmane.org/gmane.linux.kernel/1553699. One workaround is to
-> always leave the clock of the i2c controller in a prepared state.
+On 07/02/2014 02:29 PM, Peter Ujfalusi wrote:
+> In case of _3LE/_3BE formats the samples are stored in 3 consecutive bytes
+> without padding it to 4 bytes. This means that the DMA needs to be able to
+> support 3 bytes word length in order to read/write the samples from memory
+> correctly. Originally the code treated 24 bits physical length samples as
+> they were 32 bits which leads to corruption when playing or recording audio.
+> 
+> In snd_dmaengine_pcm_open() we should check the slave_caps of the dma if it
+> supports DMA_SLAVE_BUSWIDTH_3_BYTES. Based on this information we initialize
+> the runtime->hw.formats: if DMA_SLAVE_BUSWIDTH_3_BYTES is not supported or
+> the slave_caps is not provided by the driver we mask out the 24 bits
+> physical width sample formats so they will be not available for user space
+> to pick. If the DMA_SLAVE_BUSWIDTH_3_BYTES is supported _3LE/_3BE formats
+> will not be masked so later on they can be valid if both CPU and codec dai
+> supports them.
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> ---
+>  sound/core/pcm_dmaengine.c | 39 ++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 38 insertions(+), 1 deletion(-)
+> 
+> diff --git a/sound/core/pcm_dmaengine.c b/sound/core/pcm_dmaengine.c
+> index d5611ec80381..519b500c5669 100644
+> --- a/sound/core/pcm_dmaengine.c
+> +++ b/sound/core/pcm_dmaengine.c
+> @@ -72,6 +72,8 @@ int snd_hwparams_to_dma_slave_config(const struct snd_pcm_substream *substream,
+>  		buswidth = DMA_SLAVE_BUSWIDTH_1_BYTE;
+>  	else if (bits == 16)
+>  		buswidth = DMA_SLAVE_BUSWIDTH_2_BYTES;
+> +	else if (bits == 24)
+> +		buswidth = DMA_SLAVE_BUSWIDTH_3_BYTES;
+>  	else if (bits <= 32)
+>  		buswidth = DMA_SLAVE_BUSWIDTH_4_BYTES;
+>  	else
+> @@ -292,8 +294,12 @@ EXPORT_SYMBOL_GPL(snd_dmaengine_pcm_request_channel);
+>  int snd_dmaengine_pcm_open(struct snd_pcm_substream *substream,
+>  	struct dma_chan *chan)
+>  {
+> +	struct snd_pcm_runtime *runtime = substream->runtime;
+>  	struct dmaengine_pcm_runtime_data *prtd;
+> -	int ret;
+> +	struct dma_slave_caps dma_caps;
+> +	bool dma_3bytes_supported = false;
+> +	u64 fmt_mask = 0;
+> +	int i, ret;
+>  
+>  	if (!chan)
+>  		return -ENXIO;
+> @@ -311,6 +317,37 @@ int snd_dmaengine_pcm_open(struct snd_pcm_substream *substream,
+>  
+>  	substream->runtime->private_data = prtd;
+>  
+> +	/*
+> +	 * Prepare formats mask for valid/allowed sample types. If the dma does
+> +	 * not support 3bytes word size, it needs to be masked out so user space
+> +	 * can not use the format which produces corrupted audio.
+> +	 * If the dma driver does not implement get_slave_caps callback, treat
+> +	 * it as no 3bytes word support.
+> +	 */
+> +	if (!dma_get_slave_caps(prtd->dma_chan, &dma_caps)) {
+> +		u32 addr_widths;
+> +
+> +		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+> +			addr_widths = dma_caps.dstn_addr_widths;
+> +		else
+> +			addr_widths = dma_caps.src_addr_widths;
+> +
+> +		if (addr_widths & BIT(DMA_SLAVE_BUSWIDTH_3_BYTES))
+> +			dma_3bytes_supported = true;
+> +	}
+> +
+> +	for (i = 0; i <= SNDRV_PCM_FORMAT_LAST; i++) {
+> +		int bits = snd_pcm_format_physical_width(i);
+> +
+> +		if (bits == 24 && !dma_3bytes_supported)
+> +			fmt_mask |= (1LL << i);
+> +	}
 
-Keeping the clock always prepared might not be that bad, given
-prepare/unprepare ops are empty on Exynos and I'd say chances
-this ever changes are very low. Now we have just an overhead
-of calling to the clock core before and after each single I2C
-transfer.
+per discussion over the irc with Lars we could extend the masking to other
+widths as well, which would look something like this:
+u32 addr_widths = BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) |
+		  BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) |
+		  BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
+...
+/*
+ * Prepare formats mask for valid/allowed sample types. If the dma does
+ * not have support for the given physical word size, it needs to be
+ * masked out so user space can not use the format which produces
+ * corrupted audio.
+ * In case the dma driver does not implement the slave_caps the default
+ * assumption is that it supports 1, 2 and 4 bytes widths.
+ */
+if (!dma_get_slave_caps(prtd->dma_chan, &dma_caps)) {
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		addr_widths = dma_caps.dstn_addr_widths;
+	else
+		addr_widths = dma_caps.src_addr_widths;
+}
 
---
-Regards,
-Sylwester
+for (i = 0; i <= SNDRV_PCM_FORMAT_LAST; i++) {
+	int bits = snd_pcm_format_physical_width(i);
+
+	switch (bits) {
+	case 8:
+		if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_1_BYTE)))
+			fmt_mask |= (1LL << i);
+		break;
+	case 16:
+		if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_2_BYTES)))
+			fmt_mask |= (1LL << i);
+		break;
+	case 24:
+		if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_3_BYTES)))
+			fmt_mask |= (1LL << i);
+		break;
+	case 32:
+		if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_4_BYTES)))
+			fmt_mask |= (1LL << i);
+		break;
+	case 64:
+		if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_8_BYTES)))
+			fmt_mask |= (1LL << i);
+		break;
+	default:
+		fmt_mask |= (1LL << i);
+		break;
+	}
+}
+
+Is this sounds better?
+
+
+> +
+> +	if (runtime->hw.formats)
+> +		runtime->hw.formats &= ~fmt_mask;
+> +	else
+> +		runtime->hw.formats = ~fmt_mask;
+> +
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(snd_dmaengine_pcm_open);
+> 
+
+
