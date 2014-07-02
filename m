@@ -1,55 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751287AbaGBXaK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 19:30:10 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:35783 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818AbaGBXaI (ORCPT
+	id S1751858AbaGBXdZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 19:33:25 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:61001 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822AbaGBXdX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 19:30:08 -0400
-Date: Wed, 2 Jul 2014 16:30:05 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Stephane Eranian <eranian@google.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>, x86 <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] x86, perf: avoid spamming kernel log for bts buffer
- failure
-In-Reply-To: <20140702133105.GG19379@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.02.1407021623380.5931@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1406301600460.26302@chino.kir.corp.google.com> <20140701093442.GN6758@twins.programming.kicks-ass.net> <CABPqkBT9zT6Qejc3hin5yLO4x8bxkZqrXTS-VNana8MhtWC0XA@mail.gmail.com>
- <20140702133105.GG19379@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 2 Jul 2014 19:33:23 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1404163586-29582-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1404163586-29582-1-git-send-email-benjamin.tissoires@redhat.com>
+Date: Wed, 2 Jul 2014 16:33:21 -0700
+Message-ID: <CANRwn3S9NwAET06sttcniN2391fY5+W-ZGAmvOqr1c_6AJ=J6g@mail.gmail.com>
+Subject: Re: [PATCH 00/15] Input - Wacom: switch from an USB to a HID driver
+From: Jason Gerecke <killertofu@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ping Cheng <pinglinux@gmail.com>,
+        Linux Input <linux-input@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        linuxwacom-devel <linuxwacom-devel@lists.sourceforge.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jul 2014, Peter Zijlstra wrote:
+On Mon, Jun 30, 2014 at 2:26 PM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> Hi guys,
+>
+> this patch series is a cleanup for the Wacom USB driver.
+>
+> I started working on this topic when I saw patches floating around which
+> implemented a report descriptor parser within the wacom.ko module.
+> However, we already have a nice HID subsystem which is more generic than the
+> HID implementation we can find in this USB driver.
+> Further details of the benefits (code reduction, regression tests) are hopefully
+> explained in the commit messages of the corresponding patches.
+>
+> Also, I am working on a way to handle the new Wacom tablets in a more generic
+> way in the hid tree, so consider this patch series as a first step in this
+> direction.
+>
+> This patch series transfers the wacom.ko driver from the input tree into the hid
+> tree. I did not made the corresponding move of the files in the series hoping
+> that we will find a way to achieve it if this step is validated.
+>
+> IMO, the smoothest path would be that Jiri takes care of the wacom driver
+> in the input tree (and that we move into into the hid subfolder). This can be
+> achieve if the current pending wacom patches are applied in the hid tree too.
+>
+> Another solution could be to keep the wacom changes in the input tree and put the
+> hid changes in the hid tree by using separate commits. Once 3.17 is out, we can
+> then change the module into the hid subfolder.
+>
+> I wanted to send this patch series right now so we can figure out how we will
+> handle the transition.
+>
+> I am pretty confident the patch series does not break any existing device
+> (except for the required user space changes which can be handled correctly if
+> we tackle them right now). The USB commands are executed in the same way,
+> and the protocol handling is also done in the same way.
+>
+> Anyway, the net difference in lines of code (-307) should be enough to be of
+> interest.
+>
+> Note: This patch series requires the current pending wacom patches to be applied.
+> I set up a tree with all the patch applied if anyone wants to give a try:
+> https://github.com/bentiss/linux/commits/hid-wacom-legacy-3.16-rc3
+>
+> Cheers,
+> Benjamin
+>
+> Benjamin Tissoires (15):
+>   Input - wacom: include and use linux/hid.h
+>   Input - wacom: switch from an USB driver to a HID driver
+>   Input - wacom: use hid communication instead of plain usb
+>   Input - wacom: use HID core to actually fetch the report descriptor
+>   Input - wacom: compute the HID report size to get the actual packet
+>     size
+>   Input - wacom: install LED/OLED sysfs files in the HID device instead
+>     of USB
+>   Input - wacom: register the input devices on top of the HID one
+>   Input - wacom: remove usb dependency for siblings devices
+>   Input - wacom: register power device at the HID level
+>   Input - wacom: use hid_info instead of plain dev_info
+>   HID: uhid: add and set HID_TYPE_UHID for uhid devices
+>   Input - wacom: use in-kernel HID parser
+>   Input - wacom: use hidinput_calc_abs_res instead of duplicating its
+>     code
+>   Input - wacom: remove field pktlen declaration in the list of devices
+>   Input - wacom: keep wacom_ids ordered
+>
+>  drivers/hid/hid-core.c           |  15 +-
+>  drivers/hid/hid-wacom.c          |   2 +-
+>  drivers/hid/uhid.c               |   2 +
+>  drivers/input/tablet/wacom.h     |   7 +-
+>  drivers/input/tablet/wacom_sys.c | 908 +++++++++++++--------------------------
+>  drivers/input/tablet/wacom_wac.c | 647 ++++++++++++++--------------
+>  drivers/input/tablet/wacom_wac.h |  10 +-
+>  include/linux/hid.h              |   4 +-
+>  8 files changed, 644 insertions(+), 951 deletions(-)
+>
+> --
+> 2.0.0
+>
 
-> > David and I discussed this. He can probably add more background
-> > info, if needed.
-> 
-> It would still be good to see why compaction etc is failing.
-> 
+*cracks knuckles*
 
-"Why compaction is failing" has been the story of my life for the past few 
-weeks, unfortunately.  One person ran into this and here is the breakdown 
-at the time of the page allocation failure:
+Well, guess I better get to work poking and prodding at these and the
+pad patches. A very quick review doesn't raise any significant flags,
+though I do have a question or two that I might have for you in the
+next few days (need to read through the code more carefully to be sure
+I understand it correctly). My 24HDT is having some trouble
+initializing with the patches applied, but I'll need some time to
+track down the cause. Not sure how much I'll get done this week
+(holiday weekend) but next week I should have some feedback.
 
-Node 0 DMA32: 12478*4kB 7595*8kB 2087*16kB 26*32kB 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB = 144896kB
-Node 0 Normal: 55037*4kB 0*8kB 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 1*2048kB 0*4096kB = 222196kB
-Node 1 Normal: 165860*4kB 18*8kB 1*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB = 663600kB
-
-So we really don't have any order-4 or higher memory and if compaction and 
-reclaim fails, then the allocation failure is printed every time.  This is 
-what the patch is trying to address and we can't guarantee order-4 is 
-always allocatable even with GFP_KERNEL.  This allocation is just outside 
-the PAGE_ALLOC_COSTLY_ORDER == 3 threshold that would have oom killed 
-something and retried; the oom killer is deferred for this case because 
-there's no guarantee killing a process would have resulted in order-4 
-memory being available (and nobody wants killing when they are 902MB above 
-the per-zone min watermarks like this poor guy).
+Jason
+---
+Now instead of four in the eights place /
+you’ve got three, ‘Cause you added one  /
+(That is to say, eight) to the two,     /
+But you can’t take seven from three,    /
+So you look at the sixty-fours....
