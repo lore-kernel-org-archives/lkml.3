@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757514AbaGBQwi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 12:52:38 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:58573 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754084AbaGBQwg (ORCPT
+	id S1757553AbaGBQwt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 12:52:49 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:57081 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756380AbaGBQwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 12:52:36 -0400
+	Wed, 2 Jul 2014 12:52:46 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 26/48] staging: rtl8188eu: rtw_cmd.h: Remove struct [join,create]bss_parm
-Date: Wed,  2 Jul 2014 22:17:22 +0530
-Message-Id: <1404319664-8327-26-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 27/48] staging: rtl8188eu: rtw_cmd.h: Remove struct Tx_Beacon_param
+Date: Wed,  2 Jul 2014 22:17:23 +0530
+Message-Id: <1404319664-8327-27-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
 References: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
@@ -21,117 +21,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These two structures have only one member.
+struct Tx_Beacon_param has only one member.
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_mlme_ext.c    |   10 +++++-----
- drivers/staging/rtl8188eu/include/rtw_cmd.h      |   23 ----------------------
- drivers/staging/rtl8188eu/include/rtw_mlme_ext.h |    4 ++--
- 3 files changed, 7 insertions(+), 30 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_mlme_ext.c    |   12 ++++++------
+ drivers/staging/rtl8188eu/include/rtw_cmd.h      |    4 ----
+ drivers/staging/rtl8188eu/include/rtw_mlme_ext.h |    2 +-
+ 3 files changed, 7 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c b/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
-index c4888b1..3bd3962 100644
+index 3bd3962..b4dd14e 100644
 --- a/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
 +++ b/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
-@@ -4959,11 +4959,11 @@ u8 createbss_hdl(struct adapter *padapter, u8 *pbuf)
+@@ -5416,7 +5416,7 @@ u8 add_ba_hdl(struct adapter *padapter, unsigned char *pbuf)
+ u8 set_tx_beacon_cmd(struct adapter *padapter)
+ {
+ 	struct cmd_obj	*ph2c;
+-	struct Tx_Beacon_param	*ptxBeacon_parm;
++	struct wlan_bssid_ex	*ptxBeacon_parm;
+ 	struct cmd_priv	*pcmdpriv = &(padapter->cmdpriv);
  	struct mlme_ext_priv	*pmlmeext = &padapter->mlmeextpriv;
  	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);
- 	struct wlan_bssid_ex *pnetwork = (struct wlan_bssid_ex *)(&(pmlmeinfo->network));
--	struct joinbss_parm *pparm = (struct joinbss_parm *)pbuf;
-+	struct wlan_bssid_ex *pparm = (struct wlan_bssid_ex *)pbuf;
- 	/* u32	initialgain; */
- 
- 
--	if (pparm->network.InfrastructureMode == Ndis802_11APMode) {
-+	if (pparm->InfrastructureMode == Ndis802_11APMode) {
- #ifdef CONFIG_88EU_AP_MODE
- 
- 		if (pmlmeinfo->state == WIFI_FW_AP_STATE) {
-@@ -4974,7 +4974,7 @@ u8 createbss_hdl(struct adapter *padapter, u8 *pbuf)
+@@ -5430,19 +5430,19 @@ u8 set_tx_beacon_cmd(struct adapter *padapter)
+ 		goto exit;
  	}
  
- 	/* below is for ad-hoc master */
--	if (pparm->network.InfrastructureMode == Ndis802_11IBSS) {
-+	if (pparm->InfrastructureMode == Ndis802_11IBSS) {
- 		rtw_joinbss_reset(padapter);
- 
- 		pmlmeext->cur_bwmode = HT_CHANNEL_WIDTH_20;
-@@ -5023,7 +5023,7 @@ u8 join_cmd_hdl(struct adapter *padapter, u8 *pbuf)
- 	struct mlme_ext_priv	*pmlmeext = &padapter->mlmeextpriv;
- 	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);
- 	struct wlan_bssid_ex *pnetwork = (struct wlan_bssid_ex *)(&(pmlmeinfo->network));
--	struct joinbss_parm	*pparm = (struct joinbss_parm *)pbuf;
-+	struct wlan_bssid_ex *pparm = (struct wlan_bssid_ex *)pbuf;
- 	u32 i;
- 
- 	/* check already connecting to AP or not */
-@@ -5045,7 +5045,7 @@ u8 join_cmd_hdl(struct adapter *padapter, u8 *pbuf)
- 		rtw_hal_set_hwreg(padapter, HW_VAR_MLME_DISCONNECT, NULL);
+-	ptxBeacon_parm = kzalloc(sizeof(struct Tx_Beacon_param), GFP_KERNEL);
++	ptxBeacon_parm = kzalloc(sizeof(struct wlan_bssid_ex), GFP_KERNEL);
+ 	if (ptxBeacon_parm == NULL) {
+ 		kfree(ph2c);
+ 		res = _FAIL;
+ 		goto exit;
  	}
  
--	rtw_antenna_select_cmd(padapter, pparm->network.PhyInfo.Optimum_antenna, false);
-+	rtw_antenna_select_cmd(padapter, pparm->PhyInfo.Optimum_antenna, false);
+-	memcpy(&(ptxBeacon_parm->network), &(pmlmeinfo->network), sizeof(struct wlan_bssid_ex));
++	memcpy(ptxBeacon_parm, &(pmlmeinfo->network), sizeof(struct wlan_bssid_ex));
  
- 	rtw_joinbss_reset(padapter);
+-	len_diff = update_hidden_ssid(ptxBeacon_parm->network.IEs+_BEACON_IE_OFFSET_,
+-				      ptxBeacon_parm->network.IELength-_BEACON_IE_OFFSET_,
++	len_diff = update_hidden_ssid(ptxBeacon_parm->IEs+_BEACON_IE_OFFSET_,
++				      ptxBeacon_parm->IELength-_BEACON_IE_OFFSET_,
+ 				      pmlmeinfo->hidden_ssid_mode);
+-	ptxBeacon_parm->network.IELength += len_diff;
++	ptxBeacon_parm->IELength += len_diff;
+ 
+ 	init_h2fwcmd_w_parm_no_rsp(ph2c, ptxBeacon_parm, GEN_CMD_CODE(_TX_Beacon));
  
 diff --git a/drivers/staging/rtl8188eu/include/rtw_cmd.h b/drivers/staging/rtl8188eu/include/rtw_cmd.h
-index bfd7eaf..6ff500c 100644
+index 6ff500c..d6b8724 100644
 --- a/drivers/staging/rtl8188eu/include/rtw_cmd.h
 +++ b/drivers/staging/rtl8188eu/include/rtw_cmd.h
-@@ -111,18 +111,6 @@ enum RFINTFS {
+@@ -353,10 +353,6 @@ struct	getphy_parm {
+ 
  };
  
+-struct Tx_Beacon_param {
+-	struct wlan_bssid_ex network;
+-};
+-
  /*
--Caller Mode: Infra, Ad-Hoc
--
--Notes: To join the specified bss
--
--Command Event Mode
--
--*/
--struct joinbss_parm {
--	struct wlan_bssid_ex network;
--};
--
--/*
- Caller Mode: Infra, Ad-HoC(C)
+ 	Notes: This command is used for H2C/C2H loopback testing
  
- Notes: To disconnect the current associated BSS
-@@ -134,17 +122,6 @@ struct disconnect_parm {
- 	u32 deauth_timeout_ms;
- };
- 
--/*
--Caller Mode: AP, Ad-HoC(M)
--
--Notes: To create a BSS
--
--Command Mode
--*/
--struct createbss_parm {
--	struct wlan_bssid_ex network;
--};
--
- struct	setopmode_parm {
- 	u8	mode;
- 	u8	rsvd[3];
 diff --git a/drivers/staging/rtl8188eu/include/rtw_mlme_ext.h b/drivers/staging/rtl8188eu/include/rtw_mlme_ext.h
-index 17c680f..1fdd1f8 100644
+index 1fdd1f8..2a32caa 100644
 --- a/drivers/staging/rtl8188eu/include/rtw_mlme_ext.h
 +++ b/drivers/staging/rtl8188eu/include/rtw_mlme_ext.h
-@@ -722,9 +722,9 @@ static struct cmd_hdl wlancmds[] = {
+@@ -764,7 +764,7 @@ static struct cmd_hdl wlancmds[] = {
  	GEN_MLME_EXT_HANDLER(0, NULL)
  	GEN_MLME_EXT_HANDLER(0, NULL)
  	GEN_MLME_EXT_HANDLER(0, NULL)
--	GEN_MLME_EXT_HANDLER(sizeof (struct joinbss_parm), join_cmd_hdl) /*14*/
-+	GEN_MLME_EXT_HANDLER(sizeof (struct wlan_bssid_ex), join_cmd_hdl) /*14*/
- 	GEN_MLME_EXT_HANDLER(sizeof (struct disconnect_parm), disconnect_hdl)
--	GEN_MLME_EXT_HANDLER(sizeof (struct createbss_parm), createbss_hdl)
-+	GEN_MLME_EXT_HANDLER(sizeof (struct wlan_bssid_ex), createbss_hdl)
- 	GEN_MLME_EXT_HANDLER(sizeof (struct setopmode_parm), setopmode_hdl)
- 	GEN_MLME_EXT_HANDLER(sizeof (struct sitesurvey_parm),
- 			     sitesurvey_cmd_hdl) /*18*/
+-	GEN_MLME_EXT_HANDLER(sizeof(struct Tx_Beacon_param),
++	GEN_MLME_EXT_HANDLER(sizeof(struct wlan_bssid_ex),
+ 			     tx_beacon_hdl) /*55*/
+ 
+ 	GEN_MLME_EXT_HANDLER(0, mlme_evt_hdl) /*56*/
 -- 
 1.7.10.4
 
