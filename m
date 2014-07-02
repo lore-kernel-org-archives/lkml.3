@@ -1,89 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234AbaGBMeo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 08:34:44 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:43052 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297AbaGBMen (ORCPT
+	id S1751952AbaGBMjJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 08:39:09 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:44350 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226AbaGBMjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 08:34:43 -0400
-Date: Wed, 2 Jul 2014 14:34:12 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
- wakeups
-Message-ID: <20140702123412.GD19379@twins.programming.kicks-ass.net>
-References: <20140627142038.GA22942@linux.vnet.ibm.com>
+	Wed, 2 Jul 2014 08:39:07 -0400
+Date: Wed, 2 Jul 2014 20:38:50 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Jarod Wilson <jarod@redhat.com>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] crypto/fips: only panic on bad/missing crypto mod
+ signatures
+Message-ID: <20140702123849.GA2206@gondor.apana.org.au>
+References: <1403896374-62781-1-git-send-email-jarod@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eqp4TxRxnD4KrmFZ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140627142038.GA22942@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1403896374-62781-1-git-send-email-jarod@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 27, 2014 at 03:12:54PM -0400, Jarod Wilson wrote:
+> Per further discussion with NIST, the requirements for FIPS state that
+> we only need to panic the system on failed kernel module signature checks
+> for crypto subsystem modules. This moves the fips-mode-only module
+> signature check out of the generic module loading code, into the crypto
+> subsystem, at points where we can catch both algorithm module loads and
+> mode module loads. At the same time, make CONFIG_CRYPTO_FIPS dependent on
+> CONFIG_MODULE_SIG, as this is entirely necessary for FIPS mode.
+> 
+> CC: Herbert Xu <herbert@gondor.apana.org.au>
+> CC: "David S. Miller" <davem@davemloft.net>
+> CC: Rusty Russell <rusty@rustcorp.com.au>
+> CC: Stephan Mueller <stephan.mueller@atsec.com>
+> CC: linux-crypto@vger.kernel.org
+> Signed-off-by: Jarod Wilson <jarod@redhat.com>
+> ---
+>  crypto/Kconfig  |  1 +
+>  crypto/algapi.c | 13 +++++++++++++
+>  kernel/module.c |  3 ---
+>  3 files changed, 14 insertions(+), 3 deletions(-)
+> 
+> diff --git a/crypto/Kconfig b/crypto/Kconfig
+> index ce4012a..36402e5 100644
+> --- a/crypto/Kconfig
+> +++ b/crypto/Kconfig
+> @@ -24,6 +24,7 @@ comment "Crypto core or helper"
+>  config CRYPTO_FIPS
+>  	bool "FIPS 200 compliance"
+>  	depends on CRYPTO_ANSI_CPRNG && !CRYPTO_MANAGER_DISABLE_TESTS
+> +	depends on MODULE_SIG
+>  	help
+>  	  This options enables the fips boot option which is
+>  	  required if you want to system to operate in a FIPS 200
+> diff --git a/crypto/algapi.c b/crypto/algapi.c
+> index 7a1ae87..7d228ff 100644
+> --- a/crypto/algapi.c
+> +++ b/crypto/algapi.c
+> @@ -43,6 +43,12 @@ static inline int crypto_set_driver_name(struct crypto_alg *alg)
+>  
+>  static int crypto_check_alg(struct crypto_alg *alg)
+>  {
+> +#ifdef CONFIG_CRYPTO_FIPS
+> +	if (fips_enabled && alg->cra_module && !alg->cra_module->sig_ok)
+> +		panic("Module %s signature verification failed in FIPS mode\n",
+> +		      alg->cra_module->name);
+> +#endif
 
---eqp4TxRxnD4KrmFZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Please hide the ugly ifdef in a helper inline function.
 
-On Fri, Jun 27, 2014 at 07:20:38AM -0700, Paul E. McKenney wrote:
-> An 80-CPU system with a context-switch-heavy workload can require so
-> many NOCB kthread wakeups that the RCU grace-period kthreads spend several
-> tens of percent of a CPU just awakening things.  This clearly will not
-> scale well: If you add enough CPUs, the RCU grace-period kthreads would
-> get behind, increasing grace-period latency.
->=20
-> To avoid this problem, this commit divides the NOCB kthreads into leaders
-> and followers, where the grace-period kthreads awaken the leaders each of
-> whom in turn awakens its followers.  By default, the number of groups of
-> kthreads is the square root of the number of CPUs, but this default may
-> be overridden using the rcutree.rcu_nocb_leader_stride boot parameter.
-> This reduces the number of wakeups done per grace period by the RCU
-> grace-period kthread by the square root of the number of CPUs, but of
-> course by shifting those wakeups to the leaders.  In addition, because
-> the leaders do grace periods on behalf of their respective followers,
-> the number of wakeups of the followers decreases by up to a factor of two.
-> Instead of being awakened once when new callbacks arrive and again
-> at the end of the grace period, the followers are awakened only at
-> the end of the grace period.
->=20
-> For a numerical example, in a 4096-CPU system, the grace-period kthread
-> would awaken 64 leaders, each of which would awaken its 63 followers
-> at the end of the grace period.  This compares favorably with the 79
-> wakeups for the grace-period kthread on an 80-CPU system.
+> @@ -437,6 +449,7 @@ int crypto_register_template(struct crypto_template *tmpl)
+>  
+>  	list_add(&tmpl->list, &crypto_template_list);
+>  	crypto_notify(CRYPTO_MSG_TMPL_REGISTER, tmpl);
+> +
+>  	err = 0;
+>  out:
+>  	up_write(&crypto_alg_sem);
 
-Urgh, how about we kill the entire nocb nonsense and try again? This is
-getting quite rediculous.
+While I have no problems with you adding a blank line please don't
+mix such additions with changes of substance.
 
---eqp4TxRxnD4KrmFZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTs/xDAAoJEHZH4aRLwOS6VNwQAJISEsHOEtpwS+Ca6hrOxopk
-lHC9q/zPkVH3amSEkQqNzX+11bgcmnipxr+prwVzkfebDX3tUUkvWMs213dxVoMI
-sxU2Ltuc74I4VqLOGnAgWMzBzSlBGlx8CVysESlxuuzYEi3pCWtesr2Yg59nQBLK
-Z55pUWuIlcCCzieIvrGXyJZPxQP1LolB6EkcIDXufYzvsn24kqlLv0rwsjlHRjnI
-Kbjij81Rl5HHuhCAEdeJMCZqIIytggJvTCuORoNLY0UZOXU4oUOwtNkxK+MeC81t
-eb7zDdrLSo0gNrF6mQjaLwDn2jmtv9avPkLb5MZWOLrss21oB4WDcPR3wvib3cIu
-gs1OXEZu6roMGxo7fnpx3e+FQvgi2ofusBhITjo0qUs2kzU3ioaxO/tos6cgPMTG
-Onjp/pf0cyg6LpGAPXZtXjPBpKUhNLTR772ChhGTn465tNHgGDYghOsXW+VANsY9
-SA+HGJfsg3aBQqBn+xlTdKQn7kQm4C1DiwgwJPbwaPIA3Nj3qnVCH+ZsAHwSfm4y
-hmKmy9SgRMVAH6x0kI+iUDXwV31UA1I5DXOS27zIcUK6vRWjQgC/Zda+07QPo2MW
-ogkCOC306GnBHvtr/fYMoT8j5VTF/Q2/d4gk4Flz5xp8mkk29BElbRmjWyr7r9wc
-qmgQ9FxB7qA78YheXXQO
-=ce6A
------END PGP SIGNATURE-----
-
---eqp4TxRxnD4KrmFZ--
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
