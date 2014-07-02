@@ -1,105 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157AbaGBPLe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 11:11:34 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:58663 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627AbaGBPLb (ORCPT
+	id S1754145AbaGBPOg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 11:14:36 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:58559 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264AbaGBPOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 11:11:31 -0400
+	Wed, 2 Jul 2014 11:14:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140702134156.GL23978@titan.lakedaemon.net>
-References: <cover.1404296679.git.amit.shah@redhat.com>
-	<1404306020-24916-1-git-send-email-jason@lakedaemon.net>
-	<20140702132635.GD7505@grmbl.mre>
-	<20140702134156.GL23978@titan.lakedaemon.net>
-Date: Wed, 2 Jul 2014 08:11:30 -0700
-X-Google-Sender-Auth: LlDxW0ugps9ku30oFXcDvloA2yY
-Message-ID: <CAGXu5j+sbiK9zdkwWh_MD1fk4aFs-Na4ZO=3tRosGtqjFvWnDg@mail.gmail.com>
-Subject: Re: [PATCH 1/2 v2] hwrng: Allow drivers to disable reading during probe
-From: Kees Cook <keescook@chromium.org>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Amit Shah <amit.shah@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "# 3.4.x" <stable@vger.kernel.org>
+In-Reply-To: <1403910612-8754-2-git-send-email-andi@firstfloor.org>
+References: <1403910612-8754-1-git-send-email-andi@firstfloor.org>
+	<1403910612-8754-2-git-send-email-andi@firstfloor.org>
+Date: Wed, 2 Jul 2014 17:14:33 +0200
+Message-ID: <CABPqkBT1XC=mG-ZhjAcMOksdCgP-p3TSSAefi7XBOajMugBYZQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] perf, x86: Revamp PEBS event selection
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 2, 2014 at 6:41 AM, Jason Cooper <jason@lakedaemon.net> wrote:
-> On Wed, Jul 02, 2014 at 06:56:35PM +0530, Amit Shah wrote:
->> Hi Jason,
->>
->> On (Wed) 02 Jul 2014 [13:00:19], Jason Cooper wrote:
->> > Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
->> > added a call to rng_get_data() from the hwrng_register() function.
->> > However, some rng devices need initialization before data can be read
->> > from them.
->> >
->> > Also, the virtio-rng device does not behave properly when this call is
->> > made in its probe() routine - the virtio core sets the DRIVER_OK status
->> > bit only on a successful probe, which means the host ignores all
->> > communication from the guest, and the guest insmod or boot process just
->> > sits there doing nothing.
->> >
->> > [ jac: Modify the API to allow drivers to disable reading at probe, new
->> > patch, copied Amit's commit message. ]
->> >
->> > CC: Kees Cook <keescook@chromium.org>
->> > CC: Jason Cooper <jason@lakedaemon.net>
->> > CC: Herbert Xu <herbert@gondor.apana.org.au>
->> > CC: <stable@vger.kernel.org> # v3.15+
->> > Signed-off-by: Amit Shah <amit.shah@redhat.com>
->> > Signed-off-by: Jason Cooper <jason@lakedaemon.net>
->> > ---
->> >  drivers/char/hw_random/core.c | 8 +++++---
->> >  include/linux/hw_random.h     | 4 ++++
->> >  2 files changed, 9 insertions(+), 3 deletions(-)
->> >
->> > diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
->> > index 334601cc81cf..b7b6c48ca682 100644
->> > --- a/drivers/char/hw_random/core.c
->> > +++ b/drivers/char/hw_random/core.c
->> > @@ -347,9 +347,11 @@ int hwrng_register(struct hwrng *rng)
->> >     INIT_LIST_HEAD(&rng->list);
->> >     list_add_tail(&rng->list, &rng_list);
->> >
->> > -   bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
->> > -   if (bytes_read > 0)
->> > -           add_device_randomness(bytes, bytes_read);
->> > +   if (!(rng->flags & HWRNG_NO_READ_AT_PROBE)) {
->> > +           bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
->> > +           if (bytes_read > 0)
->> > +                   add_device_randomness(bytes, bytes_read);
->> > +   }
->>
->> But this has the inverse problem: if there are two hwrngs in the
->> system, one will be initialized and probed.  The other will not be
->> initialized, but still be probed.
+Andi,
+
+
+On Sat, Jun 28, 2014 at 1:10 AM, Andi Kleen <andi@firstfloor.org> wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 >
-> That's a problem outside the scope of this patch.  You're basically
-> saying the ->init() should be called unconditionally for each hwrng.  If
-> that's what driver authors assumed, that's not what is happening if
-> there is more than one driver in the system.
+> As already discussed earlier in email.
+>
+> The basic idea is that it does not make sense to list all PEBS
+> events individually. The list is very long, sometimes outdated
+> and the hardware doesn't need it. If an event does not support
+> PEBS it will just not count, there is no security issue.
+>
+> This vastly simplifies the PEBS event selection.
+>
+> Bugs fixed:
+> - We do not allow setting forbidden flags with PEBS anymore
+> (SDM 18.9.4), except for the special cycle event.
+> This is done using a new constraint macro that also
+> matches on the event flags.
+> - We now allow DataLA on all Haswell events, not just
+> a small subset. In general all PEBS events that tag memory
+> accesses support DataLA on Haswell. Otherwise the reported
+> address is just zero. This allows address profiling
+> on vastly more events.
+> - We did not allow all PEBS events on Haswell.
+>
+> This includes the changes proposed by Stephane earlier and obsoletes
+> his patchkit.
+>
+> I only did Sandy Bridge and Silvermont and later so far, mostly because these
+> are the parts I could directly confirm the hardware behavior with hardware
+> architects.
+>
+This patch still does not work as expected on any platforms. See below
 
-My intent with the patch was to get randomness added when a hwrng was
-available. Perhaps instead of skipping this call, it can be done
-either during probe (for devices that support it or lack an init
-function), or done after initialization?
+> Cc: eranian@google.com
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/include/asm/perf_event.h         |  8 +++
+>  arch/x86/kernel/cpu/perf_event.h          | 18 ++++--
+>  arch/x86/kernel/cpu/perf_event_intel_ds.c | 96 +++++++------------------------
+>  3 files changed, 43 insertions(+), 79 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+> index 8249df4..8dfc9fd 100644
+> --- a/arch/x86/include/asm/perf_event.h
+> +++ b/arch/x86/include/asm/perf_event.h
+> @@ -51,6 +51,14 @@
+>          ARCH_PERFMON_EVENTSEL_EDGE  |  \
+>          ARCH_PERFMON_EVENTSEL_INV   |  \
+>          ARCH_PERFMON_EVENTSEL_CMASK)
+> +#define X86_ALL_EVENT_FLAGS                    \
+> +       (ARCH_PERFMON_EVENTSEL_EDGE |           \
+> +        ARCH_PERFMON_EVENTSEL_INV |            \
+> +        ARCH_PERFMON_EVENTSEL_CMASK |          \
+> +        ARCH_PERFMON_EVENTSEL_ANY |            \
+> +        ARCH_PERFMON_EVENTSEL_PIN_CONTROL |    \
+> +        HSW_IN_TX |                            \
+> +        HSW_IN_TX_CHECKPOINTED)
+>  #define AMD64_RAW_EVENT_MASK           \
+>         (X86_RAW_EVENT_MASK          |  \
+>          AMD64_EVENTSEL_EVENT)
+> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+> index 3b2f9bd..9907759 100644
+> --- a/arch/x86/kernel/cpu/perf_event.h
+> +++ b/arch/x86/kernel/cpu/perf_event.h
+> @@ -252,16 +252,24 @@ struct cpu_hw_events {
+>         EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
+>
+>  #define INTEL_PLD_CONSTRAINT(c, n)     \
+> -       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
+> +       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
+>                            HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LDLAT)
+>
+>  #define INTEL_PST_CONSTRAINT(c, n)     \
+> -       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
+> +       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
+>                           HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST)
+>
+> -/* DataLA version of store sampling without extra enable bit. */
+> -#define INTEL_PST_HSW_CONSTRAINT(c, n) \
+> -       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
+> +/* Event constraint, but match on all event flags too. */
+> +#define INTEL_FLAGS_EVENT_CONSTRAINT(c, n) \
+> +       EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS)
+> +
+> +/* Check only flags, but allow all event/umask */
+> +#define INTEL_ALL_EVENT_CONSTRAINT(flags, n)   \
+> +       EVENT_CONSTRAINT(flags, n, X86_ALL_EVENT_FLAGS)
+> +
+> +/* Same as above, but enable DataLA */
+> +#define INTEL_ALL_EVENT_CONSTRAINT_DATALA(flags, n) \
+> +       __EVENT_CONSTRAINT(flags, n, X86_ALL_EVENT_FLAGS, \
+>                           HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST_HSW)
+>
+>  /*
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> index 980970c..d50142e 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+> @@ -567,28 +567,10 @@ struct event_constraint intel_atom_pebs_event_constraints[] = {
+>  };
+>
+>  struct event_constraint intel_slm_pebs_event_constraints[] = {
+> -       INTEL_UEVENT_CONSTRAINT(0x0103, 0x1), /* REHABQ.LD_BLOCK_ST_FORWARD_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x0803, 0x1), /* REHABQ.LD_SPLITS_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x0204, 0x1), /* MEM_UOPS_RETIRED.L2_HIT_LOADS_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x0404, 0x1), /* MEM_UOPS_RETIRED.L2_MISS_LOADS_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x0804, 0x1), /* MEM_UOPS_RETIRED.DTLB_MISS_LOADS_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x2004, 0x1), /* MEM_UOPS_RETIRED.HITM_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x00c0, 0x1), /* INST_RETIRED.ANY_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x00c4, 0x1), /* BR_INST_RETIRED.ALL_BRANCHES_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x7ec4, 0x1), /* BR_INST_RETIRED.JCC_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xbfc4, 0x1), /* BR_INST_RETIRED.FAR_BRANCH_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xebc4, 0x1), /* BR_INST_RETIRED.NON_RETURN_IND_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xf7c4, 0x1), /* BR_INST_RETIRED.RETURN_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xf9c4, 0x1), /* BR_INST_RETIRED.CALL_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xfbc4, 0x1), /* BR_INST_RETIRED.IND_CALL_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xfdc4, 0x1), /* BR_INST_RETIRED.REL_CALL_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xfec4, 0x1), /* BR_INST_RETIRED.TAKEN_JCC_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_MISP_RETIRED.ALL_BRANCHES_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0x7ec5, 0x1), /* BR_INST_MISP_RETIRED.JCC_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xebc5, 0x1), /* BR_INST_MISP_RETIRED.NON_RETURN_IND_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xf7c5, 0x1), /* BR_INST_MISP_RETIRED.RETURN_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xfbc5, 0x1), /* BR_INST_MISP_RETIRED.IND_CALL_PS */
+> -       INTEL_UEVENT_CONSTRAINT(0xfec5, 0x1), /* BR_INST_MISP_RETIRED.TAKEN_JCC_PS */
+> +       /* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
+> +       INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
+> +       /* Allow all events as PEBS with no flags */
+> +       INTEL_ALL_EVENT_CONSTRAINT(0xffff, 0x1),
 
-> I think you should be changing the code a few lines up to make sure
-> hwrng_init() is called once for each driver.
+No, still needs to be INTEL_ALL_EVENT_CONSTRAINT(0x0, 0x1)
+otherwise the get_event_constraint() test I mentioned previously will
+fail, event with your ALL_FILTER mask.
 
-Is that really how it should work? I'd be for the "always-init"
-approach since it gains us access to the entropy, but I have to play
-devil's advocate: would one expect "probe" to just probe, not
-initialize? That seems more like a function of enabling the device.
+>         EVENT_CONSTRAINT_END
+>  };
+>
+> @@ -624,68 +606,34 @@ struct event_constraint intel_westmere_pebs_event_constraints[] = {
+>
+>  struct event_constraint intel_snb_pebs_event_constraints[] = {
+>         INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
+> -       INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
+> -       INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
+> -       INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+> -       INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
+> -       INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
+> -       INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+> -       INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
+> -       INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+> -       INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+> -       INTEL_EVENT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
+> -       INTEL_UEVENT_CONSTRAINT(0x02d4, 0xf), /* MEM_LOAD_UOPS_MISC_RETIRED.LLC_MISS */
+> +       INTEL_PLD_CONSTRAINT(0x01cd, 0xf),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
+> +       INTEL_PST_CONSTRAINT(0x02cd, 0xf),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
 
--Kees
+No, precise stores only work on counter 3, keep 0x8 here
 
--- 
-Kees Cook
-Chrome OS Security
+> +       /* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
+> +       INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
+> +       /* Allow all events as PEBS with no flags */
+> +       INTEL_ALL_EVENT_CONSTRAINT(0xffff, 0xf),
+Ditto
+>         EVENT_CONSTRAINT_END
+>  };
+>
+>  struct event_constraint intel_ivb_pebs_event_constraints[] = {
+>          INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
+> -        INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
+> -        INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
+> -        INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+> -        INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
+> -        INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
+> -       INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+> -        INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
+> -        INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+> -        INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+> -        INTEL_EVENT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
+> +        INTEL_PLD_CONSTRAINT(0x01cd, 0xf),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
+> +       INTEL_PST_CONSTRAINT(0x02cd, 0xf),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+Must be 0x8
+> +       /* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
+> +       INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
+> +       /* Allow all events as PEBS with no flags */
+> +       INTEL_ALL_EVENT_CONSTRAINT(0xffff, 0xf),
+Ditto
+>          EVENT_CONSTRAINT_END
+>  };
+>
+>  struct event_constraint intel_hsw_pebs_event_constraints[] = {
+>         INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
+> -       INTEL_PST_HSW_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
+> -       INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
+> -       INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+> -       INTEL_UEVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
+> -       INTEL_UEVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
+> -       INTEL_UEVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.NEAR_TAKEN */
+> -       INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.* */
+> -       /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
+> -       INTEL_UEVENT_CONSTRAINT(0x11d0, 0xf),
+> -       /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
+> -       INTEL_UEVENT_CONSTRAINT(0x12d0, 0xf),
+> -       INTEL_UEVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
+> -       INTEL_UEVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
+> -       /* MEM_UOPS_RETIRED.SPLIT_STORES */
+> -       INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf),
+> -       INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
+> -       INTEL_PST_HSW_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
+> -       INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
+> -       INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
+> -       INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
+> -       /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
+> -       INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf),
+> -       /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
+> -       INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf),
+> -       /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
+> -       INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf),
+> -       /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
+> -       INTEL_UEVENT_CONSTRAINT(0x01d3, 0xf),
+> -       INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
+> -       INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
+> -
+> +       INTEL_PLD_CONSTRAINT(0x01cd, 0xf),    /* MEM_TRANS_RETIRED.* */
+> +       /* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
+> +       INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
+> +       /* Allow all events as PEBS with no flags */
+> +       /* We allow DATALA for all PEBS events, will be 0 if not supported */
+> +       INTEL_ALL_EVENT_CONSTRAINT_DATALA(0, 0xf),
+
+Missing the catch-all constraint here.
+
+>         EVENT_CONSTRAINT_END
+>  };
+>
+Also add the NHM, WSM, Core2, Atom as well.
+For the last two, you only have the catch-all constraint with counter0.
+
+> --
+> 1.9.3
+>
