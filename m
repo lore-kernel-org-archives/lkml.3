@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457AbaGBJCR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 05:02:17 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.163]:41731 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037AbaGBJCN (ORCPT
+	id S1753295AbaGBJDk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 05:03:40 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:58394 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375AbaGBJDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 05:02:13 -0400
-X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ekfyrejs0ialTxoYXnIEza2FTPybMoi18A
-X-RZG-CLASS-ID: mo00
-Message-ID: <53B3CA91.5000002@schoebel-theuer.de>
-Date: Wed, 02 Jul 2014 11:02:09 +0200
-From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 2 Jul 2014 05:03:39 -0400
+Message-ID: <53B3CADD.3000504@siemens.com>
+Date: Wed, 02 Jul 2014 11:03:25 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?Thomas_Sch=F6bel-Theue?= =?ISO-8859-1?Q?r?= 
-	<tst@1und1.de>
-Subject: Re: [PATCH 49/50] mars: generic pre-patch for mars
-References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de> <1404251250-22992-50-git-send-email-tst@schoebel-theuer.de> <20140701223644.GA30330@kroah.com> <53B3B283.7050800@schoebel-theuer.de> <20140702082400.GB10971@kroah.com>
-In-Reply-To: <20140702082400.GB10971@kroah.com>
+To: "Hu, Robert" <robert.hu@intel.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since
+ race
+References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com> <9E79D1C9A97CFD4097BCE431828FDD31983416@SHSMSX103.ccr.corp.intel.com>
+In-Reply-To: <9E79D1C9A97CFD4097BCE431828FDD31983416@SHSMSX103.ccr.corp.intel.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Maintaining out of tree code is not our problem, sorry. thanks, greg k-h 
+On 2014-07-02 09:20, Hu, Robert wrote:
+>> -----Original Message-----
+>> From: Wanpeng Li [mailto:wanpeng.li@linux.intel.com]
+>> Sent: Wednesday, July 2, 2014 2:54 PM
+>> To: Paolo Bonzini; Jan Kiszka; Gleb Natapov
+>> Cc: Hu, Robert; kvm@vger.kernel.org; linux-kernel@vger.kernel.org; Wanpeng Li
+>> Subject: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since race
+>>
+>> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=72381
+>>
+>> If we didn't inject a still-pending event to L1 since nested_run_pending,
+>> KVM_REQ_EVENT should be requested after the vmexit in order to inject the
+>> event to L1. However, current log blindly request a KVM_REQ_EVENT even if
+>> there is no still-pending event to L1 which blocked by nested_run_pending.
+>> There is a race which lead to an interrupt will be injected to L2 which
+>> belong to L1 if L0 send an interrupt to L1 during this window.
+>>
+>>                VCPU0                               another thread
+>>
+>> L1 intr not blocked on L2 first entry
+>> vmx_vcpu_run req event
+>> kvm check request req event
+>> check_nested_events don't have any intr
+>> not nested exit
+>>                                             intr occur (8254, lapic timer
+>> etc)
+>> inject_pending_event now have intr
+>> inject interrupt
+>>
+>> This patch fix this race by introduced a l1_events_blocked field in nested_vmx
+>> which indicates there is still-pending event which blocked by
+>> nested_run_pending,
+>> and smart request a KVM_REQ_EVENT if there is a still-pending event which
+>> blocked
+>> by nested_run_pending.
+>>
+>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> Tested-by: Robert Hu<robert.hu@intel.com>
 
-OK, I just noticed that in the meantime many vfs_*() are present now
-which were missing when I started the project on very old kernels (or
-maybe I missed something, sorry for any potential mistakes).
+Do you happen to have a kvm-unit-test for this race? Or how did you
+test? Just curious, and if there is a test, it would be good to
+integrate it.
 
-So I will happily make a new version which has the lowest possible
-footprint in the kernel, but nevertheless is _internally_ portable (just
-for me and the needs of 1&1 users).
+Jan
 
-This will incur many changes in many places in the patchset. Is it OK to
-re-submit the _whole_ patchset again after that?
-
-I will have to re-run the full testsuite on the new version in order to
-be sure that no bad things happen, so this will take at least 24h (if
-not several days).
-
-Cheers,
-
-Thomas
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
