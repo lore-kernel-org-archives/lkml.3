@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaGBXf0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 19:35:26 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:33764 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134AbaGBXfY (ORCPT
+	id S1752662AbaGBXfj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 19:35:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48581 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaGBXfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 19:35:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMEtUuxfrAUDDQVGNsNV2PeDii-6LAwQCbB2XGEHTJDwkkvyWg@mail.gmail.com>
-References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
-	<1403913966-4927-9-git-send-email-ast@plumgrid.com>
-	<CA+ZOOTODDPN=6SECq1uPPD7AGP1zgBJ+bfYaX9o3YhnaCTiHYQ@mail.gmail.com>
-	<CAMEtUuxfrAUDDQVGNsNV2PeDii-6LAwQCbB2XGEHTJDwkkvyWg@mail.gmail.com>
-Date: Wed, 2 Jul 2014 16:35:23 -0700
-Message-ID: <CA+ZOOTM9KkOYJ5Nf25_x1fT+f76xMsdJRkqjYaABiNK9y3FNXA@mail.gmail.com>
-Subject: Re: [PATCH RFC net-next 08/14] bpf: add eBPF verifier
-From: Chema Gonzalez <chema@google.com>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 2 Jul 2014 19:35:37 -0400
+From: Colin King <colin.king@canonical.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] ACPI / EC: Free saved_ec on error exit path
+Date: Thu,  3 Jul 2014 00:35:09 +0100
+Message-Id: <1404344109-30805-1-git-send-email-colin.king@canonical.com>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 2, 2014 at 4:04 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->>> +       reg = regs + BPF_REG_1; /* 1st arg to a function */
->>> +       reg->ptr = PTR_TO_CTX;
->> Wait, doesn't this depend on doing "BPF_MOV64_REG(BPF_REG_CTX,
->> BPF_REG_ARG1)" (the bpf-to-ebpf prologue), which is only enforced on
->> filters converted from bpf? In fact, shouldn't this set
->> regs[BPF_REG_CTX] instead of regs[BPF_REG_1] ?
->
-> nope. it's REG_1.
-> as you said r6=r1 is only emitted by converted classic filters.
-> Verifier will see this 'r6=r1' assignment and will copy the r1 type into r6.
-You're right. I read BPF_MOV64_REG() AT&T-syntax-style.
+From: Colin Ian King <colin.king@canonical.com>
 
-BTW, check_stack_write() in kernel/bpf/verifier.c has a couple of
-assignments of a slot->ptr to 0 (instead of INVALID_PTR). I assume
-this is unintended.
+Smatch detected two memory leaks on saved_ec:
 
--Chema
+drivers/acpi/ec.c:1070 acpi_ec_ecdt_probe() warn: possible
+  memory leak of 'saved_ec'
+drivers/acpi/ec.c:1109 acpi_ec_ecdt_probe() warn: possible
+  memory leak of 'saved_ec'
+
+Free saved_ec on these two error exit paths to stop the memory
+leak.  Note that saved_ec maybe null, but kfree on null is allowed.
+
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+---
+ drivers/acpi/ec.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index ad11ba4..9800f50 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -1066,8 +1066,10 @@ int __init acpi_ec_ecdt_probe(void)
+ 	/* fall through */
+ 	}
+ 
+-	if (EC_FLAGS_SKIP_DSDT_SCAN)
++	if (EC_FLAGS_SKIP_DSDT_SCAN) {
++		kfree(saved_ec);
+ 		return -ENODEV;
++	}
+ 
+ 	/* This workaround is needed only on some broken machines,
+ 	 * which require early EC, but fail to provide ECDT */
+@@ -1105,6 +1107,7 @@ install:
+ 	}
+ error:
+ 	kfree(boot_ec);
++	kfree(saved_ec);
+ 	boot_ec = NULL;
+ 	return -ENODEV;
+ }
+-- 
+2.0.1
+
