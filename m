@@ -1,70 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072AbaGBRdM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 13:33:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34461 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431AbaGBRdL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 13:33:11 -0400
-Date: Wed, 2 Jul 2014 10:32:55 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Emil Goode <emilgoode@gmail.com>
-Cc: Rashika Kheria <rashika.kheria@gmail.com>,
-        Valentina Manea <valentina.manea.m@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Andrea Merello <andrea.merello@gmail.com>, devel@driverdev.osuosl.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8192e: Fix potential NULL pointer dereference
-Message-ID: <20140702173255.GA18649@kroah.com>
-References: <1404293151-15804-1-git-send-email-emilgoode@gmail.com>
- <20140702163334.GA19349@kroah.com>
- <20140702172620.GA4848@lianli>
+	id S1756571AbaGBReY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 13:34:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30995 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753044AbaGBReX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 13:34:23 -0400
+Date: Wed, 2 Jul 2014 13:33:58 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org, riel@redhat.com,
+        andi@firstfloor.org, akpm@linux-foundation.org
+Subject: Re: [PATCH] x86: numa: setup_node_data(): drop dead code and rename
+ function
+Message-ID: <20140702133358.0b4262cd@redhat.com>
+In-Reply-To: <alpine.DEB.2.02.1406301639390.1327@chino.kir.corp.google.com>
+References: <20140619222019.3db6ad7e@redhat.com>
+	<alpine.DEB.2.02.1406301639390.1327@chino.kir.corp.google.com>
+Organization: Red Hat
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140702172620.GA4848@lianli>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 07:26:20PM +0200, Emil Goode wrote:
-> Hello Greg,
+On Mon, 30 Jun 2014 16:42:39 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
+
+> On Thu, 19 Jun 2014, Luiz Capitulino wrote:
 > 
-> On Wed, Jul 02, 2014 at 09:33:34AM -0700, Greg Kroah-Hartman wrote:
-> > On Wed, Jul 02, 2014 at 11:25:51AM +0200, Emil Goode wrote:
-> > > We need to make sure the struct rtllib_device pointer ieee is not NULL
-> > > after the goto rx_dropped label since it is dereferenced there.
-> > > 
-> > > Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> > > ---
-> > >  drivers/staging/rtl8192e/rtllib_rx.c |    3 ++-
-> > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
-> > > index 60de54c..7db3e74 100644
-> > > --- a/drivers/staging/rtl8192e/rtllib_rx.c
-> > > +++ b/drivers/staging/rtl8192e/rtllib_rx.c
-> > > @@ -1496,7 +1496,8 @@ int rtllib_rx(struct rtllib_device *ieee, struct sk_buff *skb,
-> > >  	return ret;
-> > >  
-> > >   rx_dropped:
-> > > -	ieee->stats.rx_dropped++;
-> > > +	if (ieee)
-> > > +		ieee->stats.rx_dropped++;
-> > >  	return 0;
-> > >  }
-> > >  EXPORT_SYMBOL(rtllib_rx);
+> > The setup_node_data() function allocates a pg_data_t object, inserts it
+> > into the node_data[] array and initializes the following fields:
+> > node_id, node_start_pfn and node_spanned_pages.
 > > 
-> > Is this something that is hitting users today in the tree, or is this
-> > just a bug you found looking at the code?
+> > However, a few function calls later during the kernel boot,
+> > free_area_init_node() re-initializes those fields, possibly with
+> > different values. This means that the initialization done by
+> > setup_node_data() is not used.
+> > 
+> > This causes a small glitch when running Linux as a hyperv numa guest:
+> > 
+> > [    0.000000] SRAT: PXM 0 -> APIC 0x00 -> Node 0
+> > [    0.000000] SRAT: PXM 0 -> APIC 0x01 -> Node 0
+> > [    0.000000] SRAT: PXM 1 -> APIC 0x02 -> Node 1
+> > [    0.000000] SRAT: PXM 1 -> APIC 0x03 -> Node 1
+> > [    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
+> > [    0.000000] SRAT: Node 1 PXM 1 [mem 0x80200000-0xf7ffffff]
+> > [    0.000000] SRAT: Node 1 PXM 1 [mem 0x100000000-0x1081fffff]
+> > [    0.000000] NUMA: Node 1 [mem 0x80200000-0xf7ffffff] + [mem 0x100000000-0x1081fffff] -> [mem 0x80200000-0x1081fffff]
+> > [    0.000000] Initmem setup node 0 [mem 0x00000000-0x7fffffff]
+> > [    0.000000]   NODE_DATA [mem 0x7ffec000-0x7ffeffff]
+> > [    0.000000] Initmem setup node 1 [mem 0x80800000-0x1081fffff]
+> > [    0.000000]   NODE_DATA [mem 0x1081fa000-0x1081fdfff]
+> > [    0.000000] crashkernel: memory value expected
+> > [    0.000000]  [ffffea0000000000-ffffea0001ffffff] PMD -> [ffff88007de00000-ffff88007fdfffff] on node 0
+> > [    0.000000]  [ffffea0002000000-ffffea00043fffff] PMD -> [ffff880105600000-ffff8801077fffff] on node 1
+> > [    0.000000] Zone ranges:
+> > [    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
+> > [    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
+> > [    0.000000]   Normal   [mem 0x100000000-0x1081fffff]
+> > [    0.000000] Movable zone start for each node
+> > [    0.000000] Early memory node ranges
+> > [    0.000000]   node   0: [mem 0x00001000-0x0009efff]
+> > [    0.000000]   node   0: [mem 0x00100000-0x7ffeffff]
+> > [    0.000000]   node   1: [mem 0x80200000-0xf7ffffff]
+> > [    0.000000]   node   1: [mem 0x100000000-0x1081fffff]
+> > [    0.000000] On node 0 totalpages: 524174
+> > [    0.000000]   DMA zone: 64 pages used for memmap
+> > [    0.000000]   DMA zone: 21 pages reserved
+> > [    0.000000]   DMA zone: 3998 pages, LIFO batch:0
+> > [    0.000000]   DMA32 zone: 8128 pages used for memmap
+> > [    0.000000]   DMA32 zone: 520176 pages, LIFO batch:31
+> > [    0.000000] On node 1 totalpages: 524288
+> > [    0.000000]   DMA32 zone: 7672 pages used for memmap
+> > [    0.000000]   DMA32 zone: 491008 pages, LIFO batch:31
+> > [    0.000000]   Normal zone: 520 pages used for memmap
+> > [    0.000000]   Normal zone: 33280 pages, LIFO batch:7
+> > 
+> > In this dmesg, the SRAT table reports that the memory range for node 1
+> > starts at 0x80200000. However, the line starting with "Initmem" reports
+> > that node 1 memory range starts at 0x80800000. The "Initmem" line is
+> > reported by setup_node_data() and is wrong, because the kernel ends up
+> > using the range as reported in the SRAT table.
+> > 
+> > This commit drops all that dead code from setup_node_data(), renames it
+> > to alloc_node_data() and adds a printk() to free_area_init_node() so
+> > that we report a node's memory range accurately.
+> > 
+> > Here's the same dmesg section with this patch applied:
+> > 
+> > [    0.000000] SRAT: PXM 0 -> APIC 0x00 -> Node 0
+> > [    0.000000] SRAT: PXM 0 -> APIC 0x01 -> Node 0
+> > [    0.000000] SRAT: PXM 1 -> APIC 0x02 -> Node 1
+> > [    0.000000] SRAT: PXM 1 -> APIC 0x03 -> Node 1
+> > [    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
+> > [    0.000000] SRAT: Node 1 PXM 1 [mem 0x80200000-0xf7ffffff]
+> > [    0.000000] SRAT: Node 1 PXM 1 [mem 0x100000000-0x1081fffff]
+> > [    0.000000] NUMA: Node 1 [mem 0x80200000-0xf7ffffff] + [mem 0x100000000-0x1081fffff] -> [mem 0x80200000-0x1081fffff]
+> > [    0.000000] NODE_DATA(0) allocated [mem 0x7ffec000-0x7ffeffff]
+> > [    0.000000] NODE_DATA(1) allocated [mem 0x1081fa000-0x1081fdfff]
+> > [    0.000000] crashkernel: memory value expected
+> > [    0.000000]  [ffffea0000000000-ffffea0001ffffff] PMD -> [ffff88007de00000-ffff88007fdfffff] on node 0
+> > [    0.000000]  [ffffea0002000000-ffffea00043fffff] PMD -> [ffff880105600000-ffff8801077fffff] on node 1
+> > [    0.000000] Zone ranges:
+> > [    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
+> > [    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
+> > [    0.000000]   Normal   [mem 0x100000000-0x1081fffff]
+> > [    0.000000] Movable zone start for each node
+> > [    0.000000] Early memory node ranges
+> > [    0.000000]   node   0: [mem 0x00001000-0x0009efff]
+> > [    0.000000]   node   0: [mem 0x00100000-0x7ffeffff]
+> > [    0.000000]   node   1: [mem 0x80200000-0xf7ffffff]
+> > [    0.000000]   node   1: [mem 0x100000000-0x1081fffff]
+> > [    0.000000] Node 0 memory range 0x00001000-0x7ffeffff
+> > [    0.000000] On node 0 totalpages: 524174
+> > [    0.000000]   DMA zone: 64 pages used for memmap
+> > [    0.000000]   DMA zone: 21 pages reserved
+> > [    0.000000]   DMA zone: 3998 pages, LIFO batch:0
+> > [    0.000000]   DMA32 zone: 8128 pages used for memmap
+> > [    0.000000]   DMA32 zone: 520176 pages, LIFO batch:31
+> > [    0.000000] Node 1 memory range 0x80200000-0x1081fffff
+> > [    0.000000] On node 1 totalpages: 524288
+> > [    0.000000]   DMA32 zone: 7672 pages used for memmap
+> > [    0.000000]   DMA32 zone: 491008 pages, LIFO batch:31
+> > [    0.000000]   Normal zone: 520 pages used for memmap
+> > [    0.000000]   Normal zone: 33280 pages, LIFO batch:7
+> > 
+> > This commit was tested on a two node bare-metal NUMA machine and Linux
+> > as a numa guest on hyperv and qemu/kvm.
+> > 
+> > PS: The wrong memory range reported by setup_node_data() seems to be
+> >     harmless in the current kernel because it's just not used. However,
+> >     that bad range is used in kernel 2.6.32 to initialize the old boot
+> >     memory allocator, which causes a crash during boot.
+> > 
+> > Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
 > 
-> It's a static checker fix and I'm not aware of any impact on users.
-> If you want I will resend with that information added?
+> With this patch, the dmesg changes break one of my scripts that we use to 
+> determine the start and end address of a node (doubly bad because there's 
+> no sysfs interface to determine this otherwise and we have to do this at 
+> boot to acquire the system topology).
+> 
+> Specifically, the removal of the
+> 
+> 	"Initmem setup node X [mem 0xstart-0xend]"
+> 
+> lines that are replaced when each node is onlined to
+> 
+> 	"Node 0 memory range 0xstart-0xend"
+> 
+> And if I just noticed this breakage when booting the latest -mm kernel, 
+> I'm assuming I'm not the only person who is going to run into it.  Is it 
+> possible to not change the dmesg output?
 
-No, that's fine, just trying to see which kernel to apply this to...
+Sure. I can add back the original text. The only detail is that with this
+patch that line is now printed a little bit later during boot and the
+NODA_DATA lines also changed. Are you OK with that?
 
-thanks,
-
-greg k-h
+What's the guidelines on changing what's printed in dmesg?
