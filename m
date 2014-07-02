@@ -1,124 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763AbaGBON0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 10:13:26 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:52525 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753606AbaGBONZ (ORCPT
+	id S1754573AbaGBOOF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 10:14:05 -0400
+Received: from smtp-out-155.synserver.de ([212.40.185.155]:1042 "EHLO
+	smtp-out-155.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753976AbaGBOOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 10:13:25 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Mike Travis <travis@sgi.com>, Randy Dunlap <rdunlap@infradead.org>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@suse.de>, kgdb-bugreport@lists.sourceforge.net
-Subject: [PATCH v2] kgdb: Timeout if secondary CPUs ignore the roundup
-Date: Wed,  2 Jul 2014 15:12:59 +0100
-Message-Id: <1404310379-30228-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1404224174-25024-1-git-send-email-daniel.thompson@linaro.org>
-References: <1404224174-25024-1-git-send-email-daniel.thompson@linaro.org>
+	Wed, 2 Jul 2014 10:14:01 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 14206
+Message-ID: <53B413A7.6070301@metafoo.de>
+Date: Wed, 02 Jul 2014 16:13:59 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, alsa-devel@alsa-project.org,
+        vinod.koul@intel.com, nsekhar@ti.com,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        joelf@ti.com, Mark Brown <broonie@kernel.org>,
+        dmaengine@vger.kernel.org, dan.j.williams@intel.com
+Subject: Re: [alsa-devel] [PATCH v2 3/5] ASoC: generic-dmaengine-pcm: Prepare
+ formats mask for valid physical sample sizes
+References: <1404307763-30557-1-git-send-email-peter.ujfalusi@ti.com>	<1404307763-30557-4-git-send-email-peter.ujfalusi@ti.com>	<s5h61jf6fec.wl%tiwai@suse.de>	<53B412C1.20406@metafoo.de> <s5h38ej6e8y.wl%tiwai@suse.de>
+In-Reply-To: <s5h38ej6e8y.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently if an active CPU fails to respond to a roundup request the
-CPU that requested the roundup will become stuck. This needlessly
-reduces the robustness of the debugger.
+On 07/02/2014 04:12 PM, Takashi Iwai wrote:
+> At Wed, 02 Jul 2014 16:10:09 +0200,
+> Lars-Peter Clausen wrote:
+>>
+>> On 07/02/2014 03:47 PM, Takashi Iwai wrote:
+>> [...]
+>>>> +	/*
+>>>> +	 * Prepare formats mask for valid/allowed sample types. If the dma does
+>>>> +	 * not have support for the given physical word size, it needs to be
+>>>> +	 * masked out so user space can not use the format which produces
+>>>> +	 * corrupted audio.
+>>>> +	 * In case the dma driver does not implement the slave_caps the default
+>>>> +	 * assumption is that it supports 1, 2 and 4 bytes widths.
+>>>> +	 */
+>>>> +	for (i = 0; i <= SNDRV_PCM_FORMAT_LAST; i++) {
+>>>> +		int bits = snd_pcm_format_physical_width(i);
+>>>
+>>> Better to add a negative value check.  Some formats return -EINVAL.
+>>>
+>>
+>> So what should we do with those formats? Not support them?
+>
+> Yes, these are special formats that can't be handled generically.
+>
 
-This patch introduces a timeout allowing the system state to be examined
-even when the system contains unresponsive processors. It also modifies
-kdb's cpu command to make it censor attempts to switch to unresponsive
-processors and to report their state as (D)ead.
+Looking through the list in pcm_misc.c there are also some formats where the 
+physical width is not a multiple of 8. We should probably also skip those.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Mike Travis <travis@sgi.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Dimitri Sivanich <sivanich@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: kgdb-bugreport@lists.sourceforge.net
----
-
-Notes:
-    Changes since v1:
-    - Set CATASTROPHIC if the system contains unresponsive processors
-      (Jason Wessel)
-
- kernel/debug/debug_core.c       | 9 +++++++--
- kernel/debug/kdb/kdb_debugger.c | 4 ++++
- kernel/debug/kdb/kdb_main.c     | 4 +++-
- 3 files changed, 14 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-index 1adf62b..acd7497 100644
---- a/kernel/debug/debug_core.c
-+++ b/kernel/debug/debug_core.c
-@@ -471,6 +471,7 @@ static int kgdb_cpu_enter(struct kgdb_state *ks, struct pt_regs *regs,
- 	int cpu;
- 	int trace_on = 0;
- 	int online_cpus = num_online_cpus();
-+	u64 time_left;
- 
- 	kgdb_info[ks->cpu].enter_kgdb++;
- 	kgdb_info[ks->cpu].exception_state |= exception_state;
-@@ -595,9 +596,13 @@ return_normal:
- 	/*
- 	 * Wait for the other CPUs to be notified and be waiting for us:
- 	 */
--	while (kgdb_do_roundup && (atomic_read(&masters_in_kgdb) +
--				atomic_read(&slaves_in_kgdb)) != online_cpus)
-+	time_left = loops_per_jiffy * HZ;
-+	while (kgdb_do_roundup && --time_left &&
-+	       (atomic_read(&masters_in_kgdb) + atomic_read(&slaves_in_kgdb)) !=
-+		   online_cpus)
- 		cpu_relax();
-+	if (!time_left)
-+		pr_crit("KGDB: Timed out waiting for secondary CPUs.\n");
- 
- 	/*
- 	 * At this point the primary processor is completely
-diff --git a/kernel/debug/kdb/kdb_debugger.c b/kernel/debug/kdb/kdb_debugger.c
-index 8859ca3..15e1a7a 100644
---- a/kernel/debug/kdb/kdb_debugger.c
-+++ b/kernel/debug/kdb/kdb_debugger.c
-@@ -129,6 +129,10 @@ int kdb_stub(struct kgdb_state *ks)
- 		ks->pass_exception = 1;
- 		KDB_FLAG_SET(CATASTROPHIC);
- 	}
-+	/* set CATASTROPHIC if the system contains unresponsive processors */
-+	for_each_online_cpu(i)
-+		if (!kgdb_info[i].enter_kgdb)
-+			KDB_FLAG_SET(CATASTROPHIC);
- 	if (KDB_STATE(SSBPT) && reason == KDB_REASON_SSTEP) {
- 		KDB_STATE_CLEAR(SSBPT);
- 		KDB_STATE_CLEAR(DOING_SS);
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 2f7c760..49f2425 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -2157,6 +2157,8 @@ static void kdb_cpu_status(void)
- 	for (start_cpu = -1, i = 0; i < NR_CPUS; i++) {
- 		if (!cpu_online(i)) {
- 			state = 'F';	/* cpu is offline */
-+		} else if (!kgdb_info[i].enter_kgdb) {
-+			state = 'D';	/* cpu is online but unresponsive */
- 		} else {
- 			state = ' ';	/* cpu is responding to kdb */
- 			if (kdb_task_state_char(KDB_TSK(i)) == 'I')
-@@ -2210,7 +2212,7 @@ static int kdb_cpu(int argc, const char **argv)
- 	/*
- 	 * Validate cpunum
- 	 */
--	if ((cpunum > NR_CPUS) || !cpu_online(cpunum))
-+	if ((cpunum > NR_CPUS) || !kgdb_info[cpunum].enter_kgdb)
- 		return KDB_BADCPUNUM;
- 
- 	dbg_switch_cpu = cpunum;
--- 
-1.9.3
+- Lars
 
