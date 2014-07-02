@@ -1,51 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727AbaGBQtu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 12:49:50 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:65450 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754104AbaGBQts (ORCPT
+	id S1756761AbaGBQt6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 12:49:58 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:46753 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754104AbaGBQtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 12:49:48 -0400
-From: navin patidar <navin.patidar@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 07/48] staging: rtl8188eu: rtw_cmd.h: Remove unused macro and structure
-Date: Wed,  2 Jul 2014 22:17:03 +0530
-Message-Id: <1404319664-8327-7-git-send-email-navin.patidar@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
-References: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
+	Wed, 2 Jul 2014 12:49:55 -0400
+Message-ID: <53B4382F.9030908@codeaurora.org>
+Date: Wed, 02 Jul 2014 12:49:51 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrey Vagin <avagin@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        "Linux ARM kernel mailing list" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [patch 3/4] timerfd: Implement timerfd_ioctl method to restore
+ timerfd_ctx::ticks
+References: <20140623185431.396309193@openvz.org> <20140623190345.499956567@openvz.org> <20140624220351.GZ2095@moon>
+In-Reply-To: <20140624220351.GZ2095@moon>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: navin patidar <navin.patidar@gmail.com>
----
- drivers/staging/rtl8188eu/include/rtw_cmd.h |    9 ---------
- 1 file changed, 9 deletions(-)
+Hi Cyrill,
 
-diff --git a/drivers/staging/rtl8188eu/include/rtw_cmd.h b/drivers/staging/rtl8188eu/include/rtw_cmd.h
-index 7a70f02..049e112 100644
---- a/drivers/staging/rtl8188eu/include/rtw_cmd.h
-+++ b/drivers/staging/rtl8188eu/include/rtw_cmd.h
-@@ -74,15 +74,6 @@ do {\
- 	pcmd->rspsz = 0;\
- } while (0)
- 
--struct c2h_evt_hdr {
--	u8 id:4;
--	u8 plen:4;
--	u8 seq;
--	u8 payload[0];
--};
--
--#define c2h_evt_exist(c2h_evt) ((c2h_evt)->id || (c2h_evt)->plen)
--
- u32 rtw_enqueue_cmd(struct cmd_priv *pcmdpriv, struct cmd_obj *obj);
- struct cmd_obj *rtw_dequeue_cmd(struct cmd_priv *pcmdpriv);
- void rtw_free_cmd_obj(struct cmd_obj *pcmd);
+On 06/24/2014 06:03 PM, Cyrill Gorcunov wrote:
+> The read() of timerfd files allows to fetch the number of timer ticks
+> while there is no way to set it back from userspace.
+> 
+> To restore the timer's state as it was at checkpoint moment we need
+> a path to bring @ticks back. Initially I thought about writing ticks
+> back via write() interface but it seems such API is somehow obscure.
+> 
+> Instead implement timerfd_ioctl() method with TFD_IOC_SET_TICKS
+> command which allows to adjust @ticks into non-zero value waking
+> up the waiters.
+> 
+> I wrapped code with CONFIG_CHECKPOINT_RESTORE which can be
+> dropped off if there users except c/r camp appear.
+> 
+> v2 (by akpm@):
+>  -Use define timerfd_ioctl NULL for non c/r config
+> 
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Andrey Vagin <avagin@openvz.org>
+> CC: Pavel Emelyanov <xemul@parallels.com>
+> CC: Vladimir Davydov <vdavydov@parallels.com>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> ---
+> 
+> A nit fixed for for non c/r config in timerfd_ioctl declaration
+> 
+>  fs/timerfd.c            |   37 +++++++++++++++++++++++++++++++++++++
+>  include/linux/timerfd.h |    5 +++++
+>  2 files changed, 42 insertions(+)
+> 
+> Index: linux-2.6.git/fs/timerfd.c
+> ===================================================================
+> --- linux-2.6.git.orig/fs/timerfd.c
+> +++ linux-2.6.git/fs/timerfd.c
+> @@ -315,12 +315,49 @@ static int timerfd_show(struct seq_file
+>  #define timerfd_show NULL
+>  #endif
+>  
+> +#ifdef CONFIG_CHECKPOINT_RESTORE
+> +static long timerfd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+> +{
+> +	struct timerfd_ctx *ctx = file->private_data;
+> +	int ret = 0;
+> +
+> +	switch (cmd) {
+> +	case TFD_IOC_SET_TICKS: {
+> +		u64 ticks;
+> +
+> +		if (get_user(ticks, (u64 __user *)arg))
+
+64-bit get_user is currently unsupported on ARM, although it appears work is
+ongoing [1].
+
+1. https://lkml.org/lkml/2014/6/17/260
+
+Regards,
+Christopher
+
 -- 
-1.7.10.4
-
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
