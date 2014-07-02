@@ -1,67 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883AbaGBVnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 17:43:41 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:46658 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512AbaGBVnj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 17:43:39 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Rob Clark <robdclark@gmail.com>, David Ung <davidu@nvidia.com>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: core: fbmon.c:  Fix for possible null pointer dereference
-Date: Wed,  2 Jul 2014 23:44:53 +0200
-Message-Id: <1404337493-6416-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S932251AbaGBVoJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 17:44:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30447 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754947AbaGBVoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 17:44:08 -0400
+Date: Wed, 2 Jul 2014 17:38:57 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] mm, hugetlb: remove hugetlb_zero and hugetlb_infinity
+Message-ID: <20140702173857.08dff9fc@redhat.com>
+In-Reply-To: <alpine.DEB.2.02.1406301745200.7070@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1406301655480.27587@chino.kir.corp.google.com>
+	<alpine.DEB.2.02.1406301745200.7070@chino.kir.corp.google.com>
+Organization: Red Hat
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a possible null pointer dereference, there is otherwise a risk of a possible null pointer dereference
+On Mon, 30 Jun 2014 17:46:35 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
 
-This was found using a static code analysis program called cppcheck
+> They are unnecessary: "zero" can be used in place of "hugetlb_zero" and 
+> passing extra2 == NULL is equivalent to infinity.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/video/fbdev/core/fbmon.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+Reviewed-by: Luiz Capitulino <lcapitulino@redhat.com>
 
-diff --git a/drivers/video/fbdev/core/fbmon.c b/drivers/video/fbdev/core/fbmon.c
-index 5b0e313..9ec81ee 100644
---- a/drivers/video/fbdev/core/fbmon.c
-+++ b/drivers/video/fbdev/core/fbmon.c
-@@ -608,6 +608,11 @@ static struct fb_videomode *fb_create_modedb(unsigned char *edid, int *dbsize)
- 	int num = 0, i, first = 1;
- 	int ver, rev;
- 
-+	if (edid == NULL || !edid_checksum(edid) ||
-+		!edid_check_header(edid)) {
-+		return NULL;
-+	}
-+
- 	ver = edid[EDID_STRUCT_VERSION];
- 	rev = edid[EDID_STRUCT_REVISION];
- 
-@@ -615,12 +620,6 @@ static struct fb_videomode *fb_create_modedb(unsigned char *edid, int *dbsize)
- 	if (mode == NULL)
- 		return NULL;
- 
--	if (edid == NULL || !edid_checksum(edid) ||
--	    !edid_check_header(edid)) {
--		kfree(mode);
--		return NULL;
--	}
--
- 	*dbsize = 0;
- 
- 	DPRINTK("   Detailed Timings\n");
--- 
-1.7.10.4
+> ---
+>  include/linux/hugetlb.h | 1 -
+>  kernel/sysctl.c         | 9 +++------
+>  mm/hugetlb.c            | 1 -
+>  3 files changed, 3 insertions(+), 8 deletions(-)
+> 
+> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -86,7 +86,6 @@ pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud);
+>  #endif
+>  
+>  extern unsigned long hugepages_treat_as_movable;
+> -extern const unsigned long hugetlb_zero, hugetlb_infinity;
+>  extern int sysctl_hugetlb_shm_group;
+>  extern struct list_head huge_boot_pages;
+>  
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -1240,8 +1240,7 @@ static struct ctl_table vm_table[] = {
+>  		.maxlen		= sizeof(unsigned long),
+>  		.mode		= 0644,
+>  		.proc_handler	= hugetlb_sysctl_handler,
+> -		.extra1		= (void *)&hugetlb_zero,
+> -		.extra2		= (void *)&hugetlb_infinity,
+> +		.extra1		= &zero,
+>  	},
+>  #ifdef CONFIG_NUMA
+>  	{
+> @@ -1250,8 +1249,7 @@ static struct ctl_table vm_table[] = {
+>  		.maxlen         = sizeof(unsigned long),
+>  		.mode           = 0644,
+>  		.proc_handler   = &hugetlb_mempolicy_sysctl_handler,
+> -		.extra1		= (void *)&hugetlb_zero,
+> -		.extra2		= (void *)&hugetlb_infinity,
+> +		.extra1		= &zero,
+>  	},
+>  #endif
+>  	 {
+> @@ -1274,8 +1272,7 @@ static struct ctl_table vm_table[] = {
+>  		.maxlen		= sizeof(unsigned long),
+>  		.mode		= 0644,
+>  		.proc_handler	= hugetlb_overcommit_handler,
+> -		.extra1		= (void *)&hugetlb_zero,
+> -		.extra2		= (void *)&hugetlb_infinity,
+> +		.extra1		= &zero,
+>  	},
+>  #endif
+>  	{
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -35,7 +35,6 @@
+>  #include <linux/node.h>
+>  #include "internal.h"
+>  
+> -const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
+>  unsigned long hugepages_treat_as_movable;
+>  
+>  int hugetlb_max_hstate __read_mostly;
+> 
 
