@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267AbaGBLdD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 07:33:03 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42986 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750955AbaGBLdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 07:33:01 -0400
-Date: Wed, 2 Jul 2014 13:32:53 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        toshi.kani@hp.com, imammedo@redhat.com, huawei.libin@huawei.com,
-        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Subject: Re: [PATCH] x86,cpu-hotplug: clear llc_shared_mask at CPU hotplug
-Message-ID: <20140702113253.GD1318@pd.tnic>
-References: <53B3A991.2070502@jp.fujitsu.com>
+	id S1752207AbaGBLef (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 07:34:35 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:63108 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880AbaGBLee (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 07:34:34 -0400
+Date: Wed, 2 Jul 2014 12:34:28 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com
+Subject: Re: [PATCH v2 4/5] phy: miphy365x: Represent each PHY channel as a
+ subnode
+Message-ID: <20140702113428.GA16724@lee--X1>
+References: <1404133317-25953-1-git-send-email-lee.jones@linaro.org>
+ <1404133317-25953-5-git-send-email-lee.jones@linaro.org>
+ <20140630144114.GB25926@lee--X1>
+ <53B3DE4F.1040100@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <53B3A991.2070502@jp.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53B3DE4F.1040100@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 03:41:21PM +0900, Yasuaki Ishimatsu wrote:
-> llc_shared_mask is not cleared even if cpu is offline or hot removed.
-> So when hot-plugging CPU, the mask has wrong value. The mask is used
-> by CSF schduler. So it breaks CFS scheduler.
-> 
-> Here is a example on my system.
-> My system has 4 sockets and each socket has 15 cores and HT is enabled.
-> In this case, each core of sockes is numbered as follows:
-> 
->          | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> Socket#2 | 30-44, 90-104
-> Socket#3 | 45-59, 105-119
-> 
-> Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
-> It means that cache of Socket#2 is shared with CPU#30-44 and 90-104.
-> 
-> When hot-removing socket#2 and #3, each core of sockets is numbered
-> as follows:
-> 
->          | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> 
-> But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30 remains
-> having 0x3fff80000001fffc0000000.
-> 
-> After that, when hot-adding socket#2 and #3, each core of sockets is
-> numbered as follows:
-> 
->          | CPU#
-> Socket#0 | 0-14 , 60-74
-> Socket#1 | 15-29, 75-89
-> Socket#2 | 30-59
-> Socket#3 | 90-119
+> On Monday 30 June 2014 08:11 PM, Lee Jones wrote:
+> > phy: miphy365x: Represent each PHY channel as a DT subnode
+> > 
+> > This has the added advantages of being able to enable/disable each
+> > of the channels as simply as enabling/disabling the DT node.
+> > 
+> > Suggested-by: Kishon Vijay Abraham I <kishon@ti.com>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > 
+> > diff --git a/drivers/phy/phy-miphy365x.c b/drivers/phy/phy-miphy365x.c
+> > index 1109f42..2c4ea6e 100644
+> > --- a/drivers/phy/phy-miphy365x.c
+> > +++ b/drivers/phy/phy-miphy365x.c
 
-Ok, this doesn't make too much sense to me. Why would the readded cores
-have new numbers?
+[...]
 
-Because if they kept their old numbers, you wouldn't have to correct the
-LLC mask.
+> > -static int miphy365x_of_probe(struct device_node *np,
+> > +static int miphy365x_of_probe(struct platform_device *pdev,
+> >  			      struct miphy365x_dev *phy_dev)
+> >  {
+> > +	struct device_node *np = pdev->dev.of_node;
+> > +	struct device_node *child;
+> > +	int child_count = 0;
+> > +
+> > +	for_each_child_of_node(np, child)
+> > +		child_count++;
+> 
+> use of_get_child_count() instead.
 
-Shouldn't the hotplug code keep stable core ids based on APIC id and
-node and whatever across physical hotplug operations?
+Ah, nice. I'll do that.
+
+[...]
+
+> I think you can merge this to your original patch.
+
+I can do that, but I thought It'd be nice to keep some history and
+show the migration over to a different setup.  This is particularly
+important for when we back-port the changes back into the internal
+development kernel.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
