@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928AbaGBNAr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 09:00:47 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:55948 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751591AbaGBNAo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 09:00:44 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18HmrT47EnwiMefBISZvWRej8+UJQFv1hs=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 004DA5A0380
-From: Jason Cooper <jason@lakedaemon.net>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Jason Cooper <jason@lakedaemon.net>, Kees Cook <keescook@chromium.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>, <stable@vger.kernel.org>
-Subject: [PATCH 2/2 v2] hwrng: virtio: disable reading during probe
-Date: Wed,  2 Jul 2014 13:00:20 +0000
-Message-Id: <1404306020-24916-2-git-send-email-jason@lakedaemon.net>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404306020-24916-1-git-send-email-jason@lakedaemon.net>
-References: <cover.1404296679.git.amit.shah@redhat.com>
- <1404306020-24916-1-git-send-email-jason@lakedaemon.net>
+	id S1753323AbaGBNBV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 09:01:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42677 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751538AbaGBNBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 09:01:19 -0400
+Date: Wed, 2 Jul 2014 15:01:16 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+cc: Tejun Heo <tj@kernel.org>, Jiri Slaby <jslaby@suse.cz>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, mingo@redhat.com, akpm@linux-foundation.org,
+        andi@firstfloor.org, paulmck@linux.vnet.ibm.com, pavel@ucw.cz,
+        jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
+        Michael Matz <matz@suse.de>
+Subject: Re: kGraft to -next [was: 00/21 kGraft]
+In-Reply-To: <20140702134721.00163886@alan.etchedpixels.co.uk>
+Message-ID: <alpine.LNX.2.00.1407021459330.1655@pobox.suse.cz>
+References: <1403694329-3064-1-git-send-email-jslaby@suse.cz> <53B3F556.7050002@suse.cz> <20140702123002.GA20071@mtj.dyndns.org> <20140702134721.00163886@alan.etchedpixels.co.uk>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hwrng core asks for random data in the hwrng_register() call itself
-from commit d9e7972619.  This doesn't play well with virtio -- the
-DRIVER_OK bit is only set by virtio core on a successful probe, and
-we're not yet out of our probe routine when this call is made.  This
-causes the host to not acknowledge any requests we put in the virtqueue,
-and the insmod or kernel boot process just waits for data to arrive from
-the host, which never happens.
+On Wed, 2 Jul 2014, One Thousand Gnomes wrote:
 
-The previous commit makes the hwrng core check for the
-HWRNG_NO_READ_AT_PROBE flag before reading from the device  If the flag
-is set, the request for random data isn't made, and the stall when
-loading the module doesn't happen.
+> > > > https://git.kernel.org/cgit/linux/kernel/git/jirislaby/kgraft.git/log/?h=kgraft
+> > > 
+> > > Stephen,
+> > > 
+> > > may I ask you to add the kGraft tree to -next?
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/jirislaby/kgraft.git#kgraft
+> > 
+> > Do we have consensus on the approach?  I personally really don't like
+> > the fact that it's adding another aspect to kthread management which
+> > is difficult to get right and nearly impossible to verify
+> > automatically.
+> 
+> Nor me. I don't see why it can't use the kernel freeze functionality ?
 
-[jac: reworked to use a flag instead of an init function.  Reused most
-of Amit's commit message. ]
+Well, we are, see the patch no. 9. It all boils down basically to
 
-CC: Kees Cook <keescook@chromium.org>
-CC: Jason Cooper <jason@lakedaemon.net>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-CC: <stable@vger.kernel.org> # v3.15+
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
----
- drivers/char/hw_random/virtio-rng.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
-index f3e71501de54..f83433bb1fae 100644
---- a/drivers/char/hw_random/virtio-rng.c
-+++ b/drivers/char/hw_random/virtio-rng.c
-@@ -115,6 +115,7 @@ static int probe_common(struct virtio_device *vdev)
- 		.cleanup = virtio_cleanup,
- 		.priv = (unsigned long)vi,
- 		.name = vi->name,
-+		.flags = HWRNG_NO_READ_AT_PROBE,
- 	};
- 	vdev->priv = vi;
+[ ... ]
+diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+index 7fd81b8c4897..e08c3bef251b 100644
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -61,6 +61,8 @@ static inline bool try_to_freeze_unsafe(void)
  
--- 
-2.0.0
+ static inline bool try_to_freeze(void)
+ {
++       kgr_task_safe(current);
++
+        if (!(current->flags & PF_NOFREEZE))
+                debug_check_no_locks_held();
+        return try_to_freeze_unsafe();
+[ ... ]
 
+
+Then there are non-freezable kernel threads. We are currently handling 
+those explicitly, but I agree it can be argued that they might not require 
+any special handling at all, given they claimed themselves explicitly 
+non-freezable.
+
+-- 
+Jiri Kosina
+SUSE Labs
