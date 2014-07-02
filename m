@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809AbaGBN3p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 09:29:45 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37297 "EHLO arroyo.ext.ti.com"
+	id S932178AbaGBN3z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 09:29:55 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37315 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753043AbaGBN3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 09:29:43 -0400
+	id S1753819AbaGBN3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 09:29:52 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>, <lars@metafoo.de>,
         <tiwai@suse.de>, Mark Brown <broonie@kernel.org>,
         Liam Girdwood <lgirdwood@gmail.com>, <joelf@ti.com>, <nsekhar@ti.com>
 CC: <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
         <dmaengine@vger.kernel.org>
-Subject: [PATCH v2 1/5] dma: Support for 3 bytes word size
-Date: Wed, 2 Jul 2014 16:29:19 +0300
-Message-ID: <1404307763-30557-2-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 4/5] ALSA: pcm_dmaengine: Correct support for 24bits physical sample widths
+Date: Wed, 2 Jul 2014 16:29:22 +0300
+Message-ID: <1404307763-30557-5-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404307763-30557-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1404307763-30557-1-git-send-email-peter.ujfalusi@ti.com>
@@ -24,29 +24,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add DMA_SLAVE_BUSWIDTH_3_BYTES to dma_slave_buswidth for engines and users
-to select 3 bytes as bus width.
-For example eDMA can be configured to use 3bytes mode and in audio we have
-formats stored on 3bytes in memory (_XXX_3LE) where this new bus width can
-be used.
+In case of _3LE/_3BE formats the samples are stored in 3 consecutive bytes
+without padding it to 4 bytes. This means that the DMA needs to be able to
+support 3 bytes word length in order to read/write the samples from memory
+correctly. Originally the code treated 24 bits physical length samples as
+they were 32 bits which leads to corruption when playing or recording audio.
+
+The hw.formats field has already been prepared to exclude formats not
+supported by the DMA engine in use, which means that only on platforms where
+3 bytes is supported by the DMA will be able to use this format.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- include/linux/dmaengine.h | 1 +
- 1 file changed, 1 insertion(+)
+ sound/core/pcm_dmaengine.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index d2c5cc7c583c..3d1c2aa51530 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -299,6 +299,7 @@ enum dma_slave_buswidth {
- 	DMA_SLAVE_BUSWIDTH_UNDEFINED = 0,
- 	DMA_SLAVE_BUSWIDTH_1_BYTE = 1,
- 	DMA_SLAVE_BUSWIDTH_2_BYTES = 2,
-+	DMA_SLAVE_BUSWIDTH_3_BYTES = 3,
- 	DMA_SLAVE_BUSWIDTH_4_BYTES = 4,
- 	DMA_SLAVE_BUSWIDTH_8_BYTES = 8,
- };
+diff --git a/sound/core/pcm_dmaengine.c b/sound/core/pcm_dmaengine.c
+index d5611ec80381..6542c4083594 100644
+--- a/sound/core/pcm_dmaengine.c
++++ b/sound/core/pcm_dmaengine.c
+@@ -72,6 +72,8 @@ int snd_hwparams_to_dma_slave_config(const struct snd_pcm_substream *substream,
+ 		buswidth = DMA_SLAVE_BUSWIDTH_1_BYTE;
+ 	else if (bits == 16)
+ 		buswidth = DMA_SLAVE_BUSWIDTH_2_BYTES;
++	else if (bits == 24)
++		buswidth = DMA_SLAVE_BUSWIDTH_3_BYTES;
+ 	else if (bits <= 32)
+ 		buswidth = DMA_SLAVE_BUSWIDTH_4_BYTES;
+ 	else
 -- 
 2.0.0
 
