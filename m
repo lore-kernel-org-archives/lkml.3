@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703AbaGBLXY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 07:23:24 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:51205 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751083AbaGBLXW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 07:23:22 -0400
-Date: Wed, 2 Jul 2014 12:23:14 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomasz =?utf-8?Q?Stanis=C5=82awski?= <t.stanislaws@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Andrzej Hajda <a.hajda@samsung.com>,
-        Mark Brown <broonie@kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: ABBA deadlock in Common Clock Framework
-Message-ID: <20140702112314.GI32514@n2100.arm.linux.org.uk>
-References: <53B3E5F8.80501@samsung.com>
+	id S1752072AbaGBLXd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 07:23:33 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60626 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751839AbaGBLXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 07:23:31 -0400
+Message-ID: <53B3EBAC.3010800@ti.com>
+Date: Wed, 2 Jul 2014 14:23:24 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B3E5F8.80501@samsung.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: <tony@atomide.com>, <paul@pwsan.com>, <rnayak@ti.com>
+CC: <nm@ti.com>, <kishon@ti.com>, <george.cherian@ti.com>, <balbi@ti.com>,
+        <balajitk@ti.com>, <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] ARM: DRA7: hwmod: Add OCP2SCP3 module
+References: <1403093816-10960-2-git-send-email-rogerq@ti.com> <1403121040-22523-1-git-send-email-rogerq@ti.com>
+In-Reply-To: <1403121040-22523-1-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 12:59:04PM +0200, Tomasz Figa wrote:
-> Hi All,
+Rajendra,
+
+On 06/18/2014 10:50 PM, Roger Quadros wrote:
+> This module is needed for the SATA and PCIe PHYs.
 > 
-> While testing linux-next (next-20140625) on Exynos4412-based TRATS2
-> board, from time to time I hit a deadlock between clk_disable_unused()
-> of Common Clock Framework and parallel clk_prepare() from s3c24xx-i2c
-> driver.
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Tested-by: Roger Quadros <rogerq@ti.com>
 
-This is pretty sad.  The Linux kernel has quite a range of truely excellent
-debugging tools which can be built in, but it seems many developers don't
-enable them.  The important one here is lockdep (which I notice isn't on
-in your kernel.)
+could you please Ack this one? Thanks.
 
-Lockdep is a static lock checker - it tracks the dependencies and contexts
-between various locks and can report whether deadlock is possible without
-having to run into the deadlock.  It is /highly/ recommended that all
-developers should run their changes through a kernel with this feature
-on before submitting them upstream - see Documentation/SubmitChecklist
-point 15.
+cheers,
+-roger
 
-It can really catch these things before the patch is even submitted...
-The recommendation is that if you're doing kernel development, always
-have lockdep enabled.  If you want to do performance checking, then
-obviously it has an impact on that, so turn it off to do that, but
-remember to turn it back on before you do further development.
+> ---
+> v2:
+> - added .main_clk to hwmod.
+> - moved interface structure to the right place.
+> 
+>  arch/arm/mach-omap2/omap_hwmod_7xx_data.c | 24 ++++++++++++++++++++++++
+>  1 file changed, 24 insertions(+)
+> 
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> index 20b4398..c9daee4 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> @@ -1215,6 +1215,21 @@ static struct omap_hwmod dra7xx_ocp2scp1_hwmod = {
+>  	},
+>  };
+>  
+> +/* ocp2scp3 */
+> +static struct omap_hwmod dra7xx_ocp2scp3_hwmod = {
+> +	.name		= "ocp2scp3",
+> +	.class		= &dra7xx_ocp2scp_hwmod_class,
+> +	.clkdm_name	= "l3init_clkdm",
+> +	.main_clk	= "l4_root_clk_div",
+> +	.prcm = {
+> +		.omap4 = {
+> +			.clkctrl_offs = DRA7XX_CM_L3INIT_OCP2SCP3_CLKCTRL_OFFSET,
+> +			.context_offs = DRA7XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET,
+> +			.modulemode   = MODULEMODE_HWCTRL,
+> +		},
+> +	},
+> +};
+> +
+>  /*
+>   * 'qspi' class
+>   *
+> @@ -2326,6 +2341,14 @@ static struct omap_hwmod_ocp_if dra7xx_l4_cfg__ocp2scp1 = {
+>  	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+>  };
+>  
+> +/* l4_cfg -> ocp2scp3 */
+> +static struct omap_hwmod_ocp_if dra7xx_l4_cfg__ocp2scp3 = {
+> +	.master		= &dra7xx_l4_cfg_hwmod,
+> +	.slave		= &dra7xx_ocp2scp3_hwmod,
+> +	.clk		= "l4_root_clk_div",
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+>  static struct omap_hwmod_addr_space dra7xx_qspi_addrs[] = {
+>  	{
+>  		.pa_start	= 0x4b300000,
+> @@ -2672,6 +2695,7 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
+>  	&dra7xx_l4_per1__mmc4,
+>  	&dra7xx_l4_cfg__mpu,
+>  	&dra7xx_l4_cfg__ocp2scp1,
+> +	&dra7xx_l4_cfg__ocp2scp3,
+>  	&dra7xx_l3_main_1__qspi,
+>  	&dra7xx_l4_cfg__sata,
+>  	&dra7xx_l4_cfg__smartreflex_core,
+> 
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
