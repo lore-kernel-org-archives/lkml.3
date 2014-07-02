@@ -1,69 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683AbaGBFzk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 01:55:40 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:46822 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753941AbaGBFzi (ORCPT
+	id S1755298AbaGBF5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 01:57:53 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:46711 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461AbaGBF5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 01:55:38 -0400
+	Wed, 2 Jul 2014 01:57:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140702055330.GA3454@dragon>
-References: <cover.1404231535.git.viresh.kumar@linaro.org>
-	<eb6df0f1f2c82db0d516b9b63820cfe0c0c97d5c.1404231535.git.viresh.kumar@linaro.org>
-	<20140702055330.GA3454@dragon>
-Date: Wed, 2 Jul 2014 11:25:38 +0530
-Message-ID: <CAKohpomzPHRghqHD7-tDbj0gXzc=ANEb3qLv2kRKOZUyqatBew@mail.gmail.com>
-Subject: Re: [PATCH 06/14] cpufreq: cpu0: defer probe if clock isn't
- registered yet
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        Sachin Kamat <spk.linux@gmail.com>,
-        Thomas P Abraham <thomas.ab@samsung.com>, Nishanth Menon <nm@ti.com>,
-        Tomasz Figa <t.figa@samsung.com>
+In-Reply-To: <87y4wc4aff.fsf@sejong.aot.lge.com>
+References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
+	<1403913966-4927-9-git-send-email-ast@plumgrid.com>
+	<87y4wc4aff.fsf@sejong.aot.lge.com>
+Date: Tue, 1 Jul 2014 22:57:49 -0700
+Message-ID: <CAMEtUuztwZQ_kvKEYKgjUp0yRdkao=yCdp3xXkXQJCMYXos2Qg@mail.gmail.com>
+Subject: Re: [PATCH RFC net-next 08/14] bpf: add eBPF verifier
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 July 2014 11:23, Shawn Guo <shawn.guo@linaro.org> wrote:
-> On Tue, Jul 01, 2014 at 10:02:35PM +0530, Viresh Kumar wrote:
+On Tue, Jul 1, 2014 at 10:05 PM, Namhyung Kim <namhyung@gmail.com> wrote:
+> Mostly questions and few nitpicks.. :)
 
->> diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
->> index 4273a5f..b5b8e1c 100644
->> --- a/drivers/cpufreq/cpufreq-cpu0.c
->> +++ b/drivers/cpufreq/cpufreq-cpu0.c
->> @@ -150,8 +150,17 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
->>
->>       cpu_clk = clk_get(cpu_dev, NULL);
->>       if (IS_ERR(cpu_clk)) {
->> -             ret = PTR_ERR(cpu_clk);
->
-> If you keep this ...
->
->> -             pr_err("failed to get cpu0 clock: %d\n", ret);
->> +             /*
->> +              * If cpu's clk node is present, but clock is not yet
->> +              * registered, we should try defering probe.
->> +              */
->> +             if (PTR_ERR(cpu_clk) == -EPROBE_DEFER) {
->
-> ... you can use 'ret' here ...
->
->> +                     dev_err(cpu_dev, "cpu0 clock not ready, retry\n");
->> +                     ret = -EPROBE_DEFER;
->
-> ... this can be saved ...
->
->> +             } else {
->> +                     ret = PTR_ERR(cpu_clk);
->
-> ... and this as well.
+great questions. Thank you for review! Answers below:
 
-All accepted. Thanks.
+> On Fri, 27 Jun 2014 17:06:00 -0700, Alexei Starovoitov wrote:
+>> +/* types of values:
+>> + * - stored in an eBPF register
+>> + * - passed into helper functions as an argument
+>> + * - returned from helper functions
+>> + */
+>> +enum bpf_reg_type {
+>> +     INVALID_PTR,                    /* reg doesn't contain a valid pointer */
+>
+> I don't think it's a good name.  The INVALID_PTR can be read as it
+> contains a "pointer" which is invalid.  Maybe INTEGER, NUMBER or
+> something different can be used.  And I think the struct reg_state->ptr
+> should be renamed also.
+
+ok. I agree that 'invalid' part of the name is too negative.
+May be 'unknown_value' ?
+
+>> +     PTR_TO_CTX,                     /* reg points to bpf_context */
+>> +     PTR_TO_MAP,                     /* reg points to map element value */
+>> +     PTR_TO_MAP_CONDITIONAL,         /* points to map element value or NULL */
+>> +     PTR_TO_STACK,                   /* reg == frame_pointer */
+>> +     PTR_TO_STACK_IMM,               /* reg == frame_pointer + imm */
+>> +     PTR_TO_STACK_IMM_MAP_KEY,       /* pointer to stack used as map key */
+>> +     PTR_TO_STACK_IMM_MAP_VALUE,     /* pointer to stack used as map elem */
+>
+> So, these PTR_TO_STACK_IMM[_*] types are only for function argument,
+> right?  I guessed it could be used to access memory in general too, but
+> then I thought it'd make verification complicated..
+>
+> And I also agree that it'd better splitting reg types and function
+> argument constraints.
+
+Ok. Will split this enum into three.
+
+>> +
+>> +/* check read/write into map element returned by bpf_table_lookup() */
+>> +static int check_table_access(struct verifier_env *env, int regno, int off,
+>> +                           int size)
+>
+> I guess the "table" is an old name of the "map"?
+
+oops :) Yes. I've been calling them 'bpf tables' initially, but it created too
+strong of a correlation to 'hash table', so I've changed the name to 'map'
+to stress that this is a generic key/value and not just hash table.
+
+>> +     } else if (state->regs[regno].ptr == PTR_TO_STACK) {
+>> +             if (off >= 0 || off < -MAX_BPF_STACK) {
+>> +                     verbose("invalid stack off=%d size=%d\n", off, size);
+>> +                     return -EACCES;
+>> +             }
+>
+> So memory (stack) access is only allowed for a stack base regsiter and a
+> constant offset, right?
+
+Correct.
+In other words it allows instructions:
+BPF_STX_MEM(BPF_W, BPF_REG_10, BPF_REG_xx, -stack_offset);
+
+Verifier makes no attempt to track pointer arithmetic and just marks
+the result as 'invalid_ptr'.
+For non-root programs it will reject programs that are trying to do
+arithmetic on pointers (it's not part of this patch yet).
+
+>> +     /* check args */
+>> +     _(check_func_arg(env, BPF_REG_1, fn->arg1_type, &map_id, &map));
+>> +     _(check_func_arg(env, BPF_REG_2, fn->arg2_type, &map_id, &map));
+>> +     _(check_func_arg(env, BPF_REG_3, fn->arg3_type, &map_id, &map));
+>> +     _(check_func_arg(env, BPF_REG_4, fn->arg4_type, &map_id, &map));
+>
+> Missing BPF_REG_5?
+
+yes. good catch.
+I guess this shows that we didn't have a use case for function with 5 args :)
+Will fix this.
+
+>> +#define PEAK_INT() \
+>
+> s/PEAK/PEEK/ ?
+
+aren't these the same? ;))
+Will fix. Thanks!
