@@ -1,271 +1,460 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880AbaGBPaS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 11:30:18 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:47198 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755584AbaGBP3p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 11:29:45 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: sameo@linux.intel.com, linus.walleij@linaro.org,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 11/12] mfd: ab3100-core: Correct code sytle problems
-Date: Wed,  2 Jul 2014 16:28:43 +0100
-Message-Id: <1404314924-23564-12-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1404314924-23564-1-git-send-email-lee.jones@linaro.org>
-References: <1404314924-23564-1-git-send-email-lee.jones@linaro.org>
+	id S932128AbaGBPaj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 11:30:39 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56677 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752148AbaGBPag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 11:30:36 -0400
+Message-ID: <53B42591.5080608@ti.com>
+Date: Wed, 2 Jul 2014 10:30:25 -0500
+From: Dan Murphy <dmurphy@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: <balbi@ti.com>
+CC: <linux-sound@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>, <broonie@kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3] ASoC: tas2552: Support TI TAS2552 Amplifier
+References: <1404307852-10456-1-git-send-email-dmurphy@ti.com> <20140702141001.GA5541@saruman.home> <53B41CD6.8090403@ti.com> <20140702150259.GC5541@saruman.home>
+In-Reply-To: <20140702150259.GC5541@saruman.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Corrects the following checkpatch gripes:
+On 07/02/2014 10:03 AM, Felipe Balbi wrote:
+> Hi,
+>
+> On Wed, Jul 02, 2014 at 09:53:10AM -0500, Dan Murphy wrote:
+>> Felipe
+>> Thanks for the review
+>>
+>> On 07/02/2014 09:10 AM, Felipe Balbi wrote:
+>>> Hi,
+>>>
+>>> On Wed, Jul 02, 2014 at 08:30:52AM -0500, Dan Murphy wrote:
+>>>> Support the TI TAS2552 Class D amplifier.
+>>>>
+>>>> The TAS2552 is a high efficiency Class-D audio
+>>>> power amplifier with advanced battery current
+>>>> management and an integrated Class-G boost
+>>>> The device constantly measures the
+>>>> current and voltage across the load and provides a
+>>>> digital stream of this information.
+>>>>
+>>>> Signed-off-by: Dan Murphy <dmurphy@ti.com>
+>>>> ---
+>>>>
+>>>> v3 - Updated bindings doc per comments, rearranged probe pdata vs 
+>>>> np check - https://patchwork.kernel.org/patch/4453481/
+>>>>
+>>>>  .../devicetree/bindings/sound/tas2552.txt          |   22 +
+>>>>  include/sound/tas2552-plat.h                       |   25 ++
+>>>>  sound/soc/codecs/Kconfig                           |    5 +
+>>>>  sound/soc/codecs/Makefile                          |    2 +
+>>>>  sound/soc/codecs/tas2552.c                         |  463 ++++++++++++++++++++
+>>>>  sound/soc/codecs/tas2552.h                         |   75 ++++
+>>>>  6 files changed, 592 insertions(+)
+>>>>  create mode 100644 Documentation/devicetree/bindings/sound/tas2552.txt
+>>>>  create mode 100644 include/sound/tas2552-plat.h
+>>>>  create mode 100644 sound/soc/codecs/tas2552.c
+>>>>  create mode 100644 sound/soc/codecs/tas2552.h
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/sound/tas2552.txt b/Documentation/devicetree/bindings/sound/tas2552.txt
+>>>> new file mode 100644
+>>>> index 0000000..ada8fd4
+>>>> --- /dev/null
+>>>> +++ b/Documentation/devicetree/bindings/sound/tas2552.txt
+>>>> @@ -0,0 +1,22 @@
+>>>> +Texas Instruments - tas2552 Codec module
+>>>> +
+>>>> +The tas2552 serial control bus communicates through I2C protocols
+>>>> +
+>>>> +Required properties:
+>>>> +
+>>>> +- compatible - One of:
+>>>> +    "ti,tas2552" - TAS2552
+>>>> +
+>>>> +- reg -  I2C slave address
+>>>> +
+>>>> +Optional properties:
+>>>> +
+>>>> +- power-gpio - gpio pin to enable/disable the device
+>>>> +
+>>>> +Example:
+>>>> +
+>>>> +tas2552: tas2552@41 {
+>>>> +	compatible = "ti,tas2552";
+>>>> +	reg = <0x41>;
+>>>> +	enable-gpio = <&gpio4 2 GPIO_ACTIVE_HIGH>;
+>>> you probably want to add:
+>>>
+>>> 	pvdd-supply = <&pvdd>;
+>>> 	vbat-supply = <&vbat>;
+>>> 	avdd-supply = <&avdd>;
+>>> 	iovdd-supply = <&iovdd>;
+>>>
+>>> that way you can make sure to switch your regulators on from the driver.
+>>> Since they must be all on, you can just grab them all with
+>>> regulator_bulk_get() and enable them all with regulator_bulk_enable().
+>> I could add this but I don't have a use case for this so I did not add
+>> the code.
+> actually, you do. Right now you have a device which is powered by
+> several different sources (fixed or not).
 
-    WARNING: quoted string split across lines
-    #95: FILE: drivers/mfd/ab3100-core.c:95:
-    +			"write error (write register) "
-    +			"%d bytes transferred (expected 2)\n",
+Does the regulator_enable *gaurantee* that the supplies will be turned on in
+the following order?
 
-    WARNING: quoted string split across lines
-    #139: FILE: drivers/mfd/ab3100-core.c:139:
-    +			"write error (write test register) "
-    +			"%d bytes transferred (expected 2)\n",
+1. VBAT,
+2. IOVDD,
+3. AVDD.
 
-    WARNING: quoted string split across lines
-    #175: FILE: drivers/mfd/ab3100-core.c:175:
-    +			"write error (send register address) "
-    +			"%d bytes transferred (expected 1)\n",
+>
+>> The supplies I used were always-on so adding the regulators was not
+>> testable in this patchset.
+> it _is_ testable. regulator_get()/regulator_enable() still works on
+> fixed regulators.
 
-    WARNING: quoted string split across lines
-    #193: FILE: drivers/mfd/ab3100-core.c:193:
-    +			"write error (read register) "
-    +			"%d bytes transferred (expected 1)\n",
+I did not say i used fixed regulators.  I indicated that the regulators
+were always-on.  So regulator_enable/disable would have no affect.  right?
 
-    WARNING: quoted string split across lines
-    #241: FILE: drivers/mfd/ab3100-core.c:241:
-    +			"write error (send first register address) "
-    +			"%d bytes transferred (expected 1)\n",
+I mean you cannot turn off vbat right?
 
-    WARNING: quoted string split across lines
-    #256: FILE: drivers/mfd/ab3100-core.c:256:
-    +			"write error (read register page) "
-    +			"%d bytes transferred (expected %d)\n",
+>
+>>>> @@ -325,3 +326,4 @@ obj-$(CONFIG_SND_SOC_WM_HUBS)	+= snd-soc-wm-hubs.o
+>>>>  # Amp
+>>>>  obj-$(CONFIG_SND_SOC_MAX9877)	+= snd-soc-max9877.o
+>>>>  obj-$(CONFIG_SND_SOC_TPA6130A2)	+= snd-soc-tpa6130a2.o
+>>>> +obj-$(CONFIG_SND_SOC_TAS2552)	+= snd-soc-tas2552.o
+>>>> diff --git a/sound/soc/codecs/tas2552.c b/sound/soc/codecs/tas2552.c
+>>>> new file mode 100644
+>>>> index 0000000..79b8212
+>>>> --- /dev/null
+>>>> +++ b/sound/soc/codecs/tas2552.c
+>>>> @@ -0,0 +1,463 @@
+>>>> +/*
+>>>> + * ALSA SoC Texas Instruments TAS2552 Mono Audio Amplifier
+>>>> + *
+>>>> + * Copyright (C) 2014 Texas Instruments Inc.
+>>>> + *
+>>>> + * Author: Dan Murphy <dmurphy@ti.com>
+>>>> + *
+>>>> + * This program is free software; you can redistribute it and/or
+>>>> + * modify it under the terms of the GNU General Public License
+>>>> + * version 2 as published by the Free Software Foundation.
+>>>> + *
+>>>> + * This program is distributed in the hope that it will be useful, but
+>>>> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+>>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+>>>> + * General Public License for more details.
+>>>> + */
+>>>> +
+>>>> +#include <linux/module.h>
+>>>> +#include <linux/errno.h>
+>>>> +#include <linux/device.h>
+>>>> +#include <linux/i2c.h>
+>>>> +#include <linux/gpio.h>
+>>>> +#include <linux/of_gpio.h>
+>>>> +#include <linux/regmap.h>
+>>>> +#include <linux/slab.h>
+>>>> +
+>>>> +#include <sound/pcm.h>
+>>>> +#include <sound/pcm_params.h>
+>>>> +#include <sound/soc.h>
+>>>> +#include <sound/soc-dapm.h>
+>>>> +#include <sound/tlv.h>
+>>>> +#include <sound/tas2552-plat.h>
+>>>> +
+>>>> +#include "tas2552.h"
+>>>> +
+>>>> +static struct reg_default tas2552_reg_defs[] = {
+>>>> +	{TAS2552_CFG_1, 0x16},
+>>>> +	{TAS2552_CFG_3, 0x5E},
+>>>> +	{TAS2552_DOUT, 0x00},
+>>>> +	{TAS2552_OUTPUT_DATA, 0xC8},
+>>>> +	{TAS2552_PDM_CFG, 0x02},
+>>>> +	{TAS2552_PGA_GAIN, 0x10},
+>>>> +	{TAS2552_BOOST_PT_CTRL, 0x0F},
+>>>> +	{TAS2552_LIMIT_LVL_CTRL, 0x0C},
+>>>> +	{TAS2552_LIMIT_RATE_HYS, 0x20},
+>>>> +	{TAS2552_CFG_2, 0xEA},
+>>>> +	{TAS2552_SER_CTRL_1, 0x00},
+>>>> +	{TAS2552_SER_CTRL_2, 0x00},
+>>>> +	{TAS2552_PLL_CTRL_1, 0x10},
+>>>> +	{TAS2552_PLL_CTRL_2, 0x00},
+>>>> +	{TAS2552_PLL_CTRL_3, 0x00},
+>>>> +	{TAS2552_BTIP, 0x8f},
+>>>> +	{TAS2552_BTS_CTRL, 0x80},
+>>>> +	{TAS2552_LIMIT_RELEASE, 0x05},
+>>>> +	{TAS2552_LIMIT_INT_COUNT, 0x00},
+>>>> +	{TAS2552_EDGE_RATE_CTRL, 0x40},
+>>>> +	{TAS2552_VBAT_DATA, 0x00},
+>>>> +};
+>>>> +
+>>>> +struct tas2552_data {
+>>>> +	struct mutex mutex;
+>>>> +	struct snd_soc_codec *codec;
+>>>> +	struct regmap *regmap;
+>>>> +	struct i2c_client *tas2552_client;
+>>>> +	unsigned char regs[TAS2552_VBAT_DATA];
+>>>> +	int power_gpio;
+>>>> +	u8 power_state:1;
+>>>> +};
+>>>> +
+>>>> +static int tas2552_power(struct tas2552_data *data, u8 power)
+>>>> +{
+>>>> +	int	ret = 0;
+>>>> +
+>>>> +	BUG_ON(data->tas2552_client == NULL);
+>>> don't hang the entire machine because of a bug on the amplifier driver,
+>>> WARN() should be enough, followed by the return of an error code.
+>>>
+>>> In fact, is this really necessary ? It would be a simple bug on the
+>>> driver to fix.
+>> Yeah I can remove this.  I was following an older example.
+>>
+>>>> +
+>>>> +	mutex_lock(&data->mutex);
+>>>> +	if (power == data->power_state)
+>>> Same here. Is this really necessary ? It's simple to guarantee this case
+>>> won't happen in code.
+>> Yes this LOC is necessary.  It is checking the current state of the tas2552.
+> heh, the point is that all your calls to this function can be balanced
+> easily, so this check becomes pointless, as it will never be true.
 
-    WARNING: quoted string split across lines
-    #299: FILE: drivers/mfd/ab3100-core.c:299:
-    +			"write error (maskset send address) "
-    +			"%d bytes transferred (expected 1)\n",
+I will remove it.
 
-    WARNING: quoted string split across lines
-    #314: FILE: drivers/mfd/ab3100-core.c:314:
-    +			"write error (maskset read register) "
-    +			"%d bytes transferred (expected 1)\n",
+>>>> +		goto exit;
+>>>> +
+>>>> +	if (power) {
+>>>> +		if (data->power_gpio >= 0)
+>>>> +			gpio_set_value(data->power_gpio, 1);
+>>>> +
+>>>> +		data->power_state = 1;
+>>>> +	} else {
+>>>> +		if (data->power_gpio >= 0)
+>>>> +			gpio_set_value(data->power_gpio, 0);
+>>>> +
+>>>> +		data->power_state = 0;
+>>>> +	}
+>>>> +
+>>>> +exit:
+>>>> +	mutex_unlock(&data->mutex);
+>>>> +	return ret;
+>>>> +}
+>>>> +
+>>>> +static void tas2552_sw_shutdown(struct tas2552_data *tas_data, int sw_shutdown)
+>>>> +{
+>>>> +	u8 cfg1_reg = 0x0;
+>>>> +
+>>>> +	if (sw_shutdown)
+>>>> +		cfg1_reg |= (sw_shutdown << 1);
+>>> this line is dangerous. You're using a 32-bit variable to write a single
+>>> bit on cfg1 register. What if user passes 0xff on sw_shutdown ?
+>>>
+>>> I think a better approach would be to:
+>>>
+>>> a) first of all, move this sw_shutdown function to
+>>> runtime_suspend/runtime_resume.
+>> Yeah that is not the intent of this API.  This API is called when the ALSA layer
+>> opens/closes the device.  It is not governed by pm calls.
+> and PM calls are exactly for that. You start with a powered off device,
+> then when user wants to use it, you power it up. This is exactly what's
+> you're doing here.
 
-    WARNING: quoted string split across lines
-    #334: FILE: drivers/mfd/ab3100-core.c:334:
-    +			"write error (write register) "
-    +			"%d bytes transferred (expected 2)\n",
+I will look into it.
 
-    WARNING: please, no spaces at the start of a line
-    #374: FILE: drivers/mfd/ab3100-core.c:374:
-    +  return blocking_notifier_chain_unregister(&ab3100->event_subscribers,$
+But I am not convinced I need these calls yet.
 
-    WARNING: Prefer seq_puts to seq_printf
-    #458: FILE: drivers/mfd/ab3100-core.c:458:
-    +	seq_printf(s, "AB3100 registers:\n");
+>>> b) to the check as below:
+>>>
+>>> 	if (shutdown)
+>>> 		cfg1_reg |= TAS2552_SWS;
+>>> 	else
+>>> 		cfg1_reg &= ~TAS2552_SWS;
+>>>
+>>> then, of course #define TAS2552_SWS (1 << 1) (or BIT(1), even)
+>> But I will make this change.
+>>
+>>>> +	else
+>>>> +		cfg1_reg &= ~TAS2552_SWS_MASK;
+>>>> +
+>>>> +	snd_soc_update_bits(tas_data->codec, TAS2552_CFG_1,
+>>>> +						 TAS2552_SWS_MASK, cfg1_reg);
+>>>> +}
+>>>> +
+>>>> +static void tas2552_init(struct snd_soc_codec *codec)
+>>>> +{
+>>>> +	snd_soc_write(codec, TAS2552_CFG_1, 0x16);
+>>>> +	snd_soc_write(codec, TAS2552_CFG_3, 0x5E);
+>>>> +	snd_soc_write(codec, TAS2552_DOUT, 0x00);
+>>>> +	snd_soc_write(codec, TAS2552_OUTPUT_DATA, 0xC8);
+>>>> +	snd_soc_write(codec, TAS2552_PDM_CFG, 0x02);
+>>>> +	snd_soc_write(codec, TAS2552_PGA_GAIN, 0x10);
+>>>> +	snd_soc_write(codec, TAS2552_BOOST_PT_CTRL, 0x0F);
+>>>> +	snd_soc_write(codec, TAS2552_LIMIT_LVL_CTRL, 0x0C);
+>>>> +	snd_soc_write(codec, TAS2552_LIMIT_RATE_HYS, 0x20);
+>>>> +	snd_soc_write(codec, TAS2552_CFG_2, 0xEA);
+>>> what do all these magic constants mean ? Also, lower case hex numbers
+>>> are usually preferred.
+>> I will add comments to what the numbers mean and change to lower case
+> I would rather see proper bit macros and the driver using them.
 
-    WARNING: quoted string split across lines
-    #564: FILE: drivers/mfd/ab3100-core.c:564:
-    +			 "debug write reg[0x%02x] with 0x%02x, "
-    +			 "after readback: 0x%02x\n",
+Yeah I started doing that in my initial driver but the bit macros were getting
+a little obsessive.
 
-    WARNING: quoted string split across lines
-    #723: FILE: drivers/mfd/ab3100-core.c:723:
-    +			 "AB3100 P1E variant detected, "
-    +			 "forcing chip to 32KHz\n");
+>
+>>> No battery tracking ?  Any plans to add that at a later date ? It's
+>>> probably not needed to have functional audio, but might have some use
+>>> cases where you want it.
+>> The battery tracking was not the scope of the driver.  We just need to
+>> get the basic driver in place with audio functional and add the
+>> battery tracking later.
+> it's a single bit
 
-    WARNING: quoted string split across lines
-    #882: FILE: drivers/mfd/ab3100-core.c:882:
-    +			"could not communicate with the AB3100 analog "
-    +			"baseband chip\n");
+I will flip the bit for the default.
 
-    WARNING: quoted string split across lines
-    #906: FILE: drivers/mfd/ab3100-core.c:906:
-    +		dev_err(&client->dev, "accepting it anyway. Please update "
-    +			"the driver.\n");
+I looked back in my emails and it was the IVsense code I could not develop not
+the battery checking.
 
-    total: 0 errors, 15 warnings, 999 lines checked
+>
+>> I also did not have a device that had the battery tracking enabled so
+>> I could not develop that level of code anyway.
+> device will track your constant VBAT and, ideally, since voltage would
+> never drop on VBAT, it shouldn't have to adjust gain.
+>
+>>> /* goes re-read datasheet */
+>>>
+>>> Actually, I strongly believe you want to enable battery tracking (LIM_EN
+>>> on cfg2).
+>>>
+>>>> +}
+>>>> +
+>>>> +static int tas2552_hw_params(struct snd_pcm_substream *substream,
+>>>> +			     struct snd_pcm_hw_params *params,
+>>>> +			     struct snd_soc_dai *dai)
+>>>> +{
+>>>> +	u8 wclk_reg;
+>>>> +	struct snd_soc_codec *codec = dai->codec;
+>>>> +
+>>>> +	/* Setting DAC clock dividers based on substream sample rate. */
+>>>> +	switch (params_rate(params)) {
+>>>> +	case 8000:
+>>>> +		wclk_reg = TAS2552_8KHZ;
+>>>> +		break;
+>>>> +	case 11025:
+>>>> +		wclk_reg = TAS2552_11_12KHZ;
+>>>> +		break;
+>>>> +	case 16000:
+>>>> +		wclk_reg = TAS2552_16KHZ;
+>>>> +		break;
+>>>> +	case 32000:
+>>>> +		wclk_reg = TAS2552_32KHZ;
+>>>> +		break;
+>>>> +	case 22050:
+>>>> +	case 24000:
+>>>> +		wclk_reg = TAS2552_22_24KHZ;
+>>>> +		break;
+>>>> +	case 44100:
+>>>> +	case 48000:
+>>>> +		wclk_reg = TAS2552_44_48KHZ;
+>>>> +		break;
+>>>> +	case 96000:
+>>>> +		wclk_reg = TAS2552_88_96KHZ;
+>>>> +		break;
+>>>> +	default:
+>>> might be worth adding a dev_vdbg() here.
+>> I could, but trying to not add a lot of logging in the code.
+> dev_vdbg() is only built when CONFIG_VERBOSE_DEBUG is set. Otherwise
+> it's a no-op and optimized away.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mfd/ab3100-core.c | 54 +++++++++++++++++++++++------------------------
- 1 file changed, 26 insertions(+), 28 deletions(-)
+OK will add but still I did not want to add a lot of logging in the code.
 
-diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
-index b348ae5..4659ac1 100644
---- a/drivers/mfd/ab3100-core.c
-+++ b/drivers/mfd/ab3100-core.c
-@@ -91,8 +91,8 @@ static int ab3100_set_register_interruptible(struct ab3100 *ab3100,
- 			err);
- 	} else if (err != 2) {
- 		dev_err(ab3100->dev,
--			"write error (write register) "
--			"%d bytes transferred (expected 2)\n",
-+			"write error (write register)\n"
-+			"  %d bytes transferred (expected 2)\n",
- 			err);
- 		err = -EIO;
- 	} else {
-@@ -135,8 +135,8 @@ static int ab3100_set_test_register_interruptible(struct ab3100 *ab3100,
- 			err);
- 	} else if (err != 2) {
- 		dev_err(ab3100->dev,
--			"write error (write test register) "
--			"%d bytes transferred (expected 2)\n",
-+			"write error (write test register)\n"
-+			"  %d bytes transferred (expected 2)\n",
- 			err);
- 		err = -EIO;
- 	} else {
-@@ -171,8 +171,8 @@ static int ab3100_get_register_interruptible(struct ab3100 *ab3100,
- 		goto get_reg_out_unlock;
- 	} else if (err != 1) {
- 		dev_err(ab3100->dev,
--			"write error (send register address) "
--			"%d bytes transferred (expected 1)\n",
-+			"write error (send register address)\n"
-+			"  %d bytes transferred (expected 1)\n",
- 			err);
- 		err = -EIO;
- 		goto get_reg_out_unlock;
-@@ -189,8 +189,8 @@ static int ab3100_get_register_interruptible(struct ab3100 *ab3100,
- 		goto get_reg_out_unlock;
- 	} else if (err != 1) {
- 		dev_err(ab3100->dev,
--			"write error (read register) "
--			"%d bytes transferred (expected 1)\n",
-+			"write error (read register)\n"
-+			"  %d bytes transferred (expected 1)\n",
- 			err);
- 		err = -EIO;
- 		goto get_reg_out_unlock;
-@@ -237,8 +237,8 @@ static int ab3100_get_register_page_interruptible(struct ab3100 *ab3100,
- 		goto get_reg_page_out_unlock;
- 	} else if (err != 1) {
- 		dev_err(ab3100->dev,
--			"write error (send first register address) "
--			"%d bytes transferred (expected 1)\n",
-+			"write error (send first register address)\n"
-+			"  %d bytes transferred (expected 1)\n",
- 			err);
- 		err = -EIO;
- 		goto get_reg_page_out_unlock;
-@@ -252,8 +252,8 @@ static int ab3100_get_register_page_interruptible(struct ab3100 *ab3100,
- 		goto get_reg_page_out_unlock;
- 	} else if (err != numregs) {
- 		dev_err(ab3100->dev,
--			"write error (read register page) "
--			"%d bytes transferred (expected %d)\n",
-+			"write error (read register page)\n"
-+			"  %d bytes transferred (expected %d)\n",
- 			err, numregs);
- 		err = -EIO;
- 		goto get_reg_page_out_unlock;
-@@ -295,8 +295,8 @@ static int ab3100_mask_and_set_register_interruptible(struct ab3100 *ab3100,
- 		goto get_maskset_unlock;
- 	} else if (err != 1) {
- 		dev_err(ab3100->dev,
--			"write error (maskset send address) "
--			"%d bytes transferred (expected 1)\n",
-+			"write error (maskset send address)\n"
-+			"  %d bytes transferred (expected 1)\n",
- 			err);
- 		err = -EIO;
- 		goto get_maskset_unlock;
-@@ -310,8 +310,8 @@ static int ab3100_mask_and_set_register_interruptible(struct ab3100 *ab3100,
- 		goto get_maskset_unlock;
- 	} else if (err != 1) {
- 		dev_err(ab3100->dev,
--			"write error (maskset read register) "
--			"%d bytes transferred (expected 1)\n",
-+			"write error (maskset read register)\n"
-+			"  %d bytes transferred (expected 1)\n",
- 			err);
- 		err = -EIO;
- 		goto get_maskset_unlock;
-@@ -330,8 +330,8 @@ static int ab3100_mask_and_set_register_interruptible(struct ab3100 *ab3100,
- 		goto get_maskset_unlock;
- 	} else if (err != 2) {
- 		dev_err(ab3100->dev,
--			"write error (write register) "
--			"%d bytes transferred (expected 2)\n",
-+			"write error (write register)\n"
-+			"  %d bytes transferred (expected 2)\n",
- 			err);
- 		err = -EIO;
- 		goto get_maskset_unlock;
-@@ -371,7 +371,7 @@ EXPORT_SYMBOL(ab3100_event_register);
- int ab3100_event_unregister(struct ab3100 *ab3100,
- 			    struct notifier_block *nb)
- {
--  return blocking_notifier_chain_unregister(&ab3100->event_subscribers,
-+	return blocking_notifier_chain_unregister(&ab3100->event_subscribers,
- 					    nb);
- }
- EXPORT_SYMBOL(ab3100_event_unregister);
-@@ -455,7 +455,7 @@ static int ab3100_registers_print(struct seq_file *s, void *p)
- 	u8 value;
- 	u8 reg;
- 
--	seq_printf(s, "AB3100 registers:\n");
-+	seq_puts(s, "AB3100 registers:\n");
- 
- 	for (reg = 0; reg < 0xff; reg++) {
- 		ab3100_get_register_interruptible(ab3100, reg, &value);
-@@ -560,8 +560,8 @@ static ssize_t ab3100_get_set_reg(struct file *file,
- 		ab3100_get_register_interruptible(ab3100, user_reg, &regvalue);
- 
- 		dev_info(ab3100->dev,
--			 "debug write reg[0x%02x] with 0x%02x, "
--			 "after readback: 0x%02x\n",
-+			 "debug write reg[0x%02x]\n"
-+			 "  with 0x%02x, after readback: 0x%02x\n",
- 			 user_reg, user_value, regvalue);
- 	}
- 	return buf_size;
-@@ -719,8 +719,7 @@ static int ab3100_setup(struct ab3100 *ab3100)
- 	 */
- 	if (ab3100->chip_id == 0xc4) {
- 		dev_warn(ab3100->dev,
--			 "AB3100 P1E variant detected, "
--			 "forcing chip to 32KHz\n");
-+			 "AB3100 P1E variant detected forcing chip to 32KHz\n");
- 		err = ab3100_set_test_register_interruptible(ab3100,
- 			0x02, 0x08);
- 	}
-@@ -878,8 +877,7 @@ static int ab3100_probe(struct i2c_client *client,
- 						&ab3100->chip_id);
- 	if (err) {
- 		dev_err(&client->dev,
--			"could not communicate with the AB3100 analog "
--			"baseband chip\n");
-+			"failed to communicate with AB3100 chip\n");
- 		goto exit_no_detect;
- 	}
- 
-@@ -902,8 +900,8 @@ static int ab3100_probe(struct i2c_client *client,
- 	if (ids[i].id == 0x0) {
- 		dev_err(&client->dev, "unknown analog baseband chip id: 0x%x\n",
- 			ab3100->chip_id);
--		dev_err(&client->dev, "accepting it anyway. Please update "
--			"the driver.\n");
-+		dev_err(&client->dev,
-+			"accepting it anyway. Please update the driver.\n");
- 		goto exit_no_detect;
- 	}
- 
+>
+>>>> +		return -EINVAL;
+>>>> +	}
+>>>> +
+>>>> +	snd_soc_update_bits(codec, TAS2552_CFG_3, TAS2552_WCLK_MASK, wclk_reg);
+>>>> +
+>>>> +	return 0;
+>>>> +}
+>>>> +
+>>>> +static int tas2552_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
+>>>> +{
+>>>> +	u8 serial_format;
+>>>> +	struct snd_soc_codec *codec = dai->codec;
+>>>> +
+>>>> +	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
+>>>> +	case SND_SOC_DAIFMT_CBS_CFS:
+>>>> +		serial_format = 0x00;
+>>>> +		break;
+>>>> +	case SND_SOC_DAIFMT_CBS_CFM:
+>>>> +		serial_format = TAS2552_WORD_CLK_MASK;
+>>>> +		break;
+>>>> +	case SND_SOC_DAIFMT_CBM_CFS:
+>>>> +		serial_format = TAS2552_BIT_CLK_MASK;
+>>>> +		break;
+>>>> +	case SND_SOC_DAIFMT_CBM_CFM:
+>>>> +		serial_format = (TAS2552_BIT_CLK_MASK | TAS2552_WORD_CLK_MASK);
+>>>> +		break;
+>>>> +	default:
+>>>> +		return -EINVAL;
+>>>> +	}
+>>>> +
+>>>> +	snd_soc_update_bits(codec, TAS2552_SER_CTRL_1,
+>>>> +			    (TAS2552_BIT_CLK_MASK | TAS2552_WORD_CLK_MASK),
+>>>> +			    serial_format);
+>>>> +
+>>>> +	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
+>>>> +	case SND_SOC_DAIFMT_I2S:
+>>>> +		serial_format = 0x0;
+>>>> +		break;
+>>>> +	case SND_SOC_DAIFMT_DSP_A:
+>>>> +		serial_format = TAS2552_DAIFMT_DSP;
+>>>> +		break;
+>>>> +	case SND_SOC_DAIFMT_RIGHT_J:
+>>>> +		serial_format = TAS2552_DAIFMT_RIGHT_J;
+>>>> +		break;
+>>>> +	case SND_SOC_DAIFMT_LEFT_J:
+>>>> +		serial_format = TAS2552_DAIFMT_LEFT_J;
+>>>> +		break;
+>>>> +
+>>>> +	default:
+>>>> +		return -EINVAL;
+>>>> +	}
+>>>> +
+>>>> +	snd_soc_update_bits(codec, TAS2552_SER_CTRL_1, TAS2552_DATA_FORMAT_MASK,
+>>>> +						serial_format);
+>>>> +
+>>>> +	return 0;
+>>>> +}
+>>>> +
+>>>> +static int tas2552_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
+>>>> +				  unsigned int freq, int dir)
+>>>> +{
+>>>> +	struct snd_soc_codec *codec = dai->codec;
+>>>> +	struct tas2552_data *data = dev_get_drvdata(dai->dev);
+>>>> +
+>>>> +	/* Fill in the PLL control registers for J & D
+>>>> +	 * PLL_CLK = (.5 * freq * J.D) / 2^p
+>>>> +	 * Need to fill in J and D here based on incoming freq
+>>>> +	 */
+>>>> +
+>>>> +	tas2552_sw_shutdown(data, 1);
+>>> if you move sw_shutdown to runtime_suspend/resume, you could implement
+>>> this as follows:
+>>>
+>>> 	ret = pm_runtime_get_sync(data->dev);
+>>> 	if (ret)
+>>> 		return ret;
+>> See above comment about these APIs not being related to power management
+> shutdown is not related to PM ? interesting...
+>
+
+
 -- 
-1.8.3.2
+------------------
+Dan Murphy
 
