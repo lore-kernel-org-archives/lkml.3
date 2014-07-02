@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485AbaGBPca (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 11:32:30 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:35500 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754638AbaGBP3E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 11:29:04 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: sameo@linux.intel.com, linus.walleij@linaro.org,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 02/12] mfd: ab8500-debugfs: Simplify invalid debugfs data checking
-Date: Wed,  2 Jul 2014 16:28:34 +0100
-Message-Id: <1404314924-23564-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1404314924-23564-1-git-send-email-lee.jones@linaro.org>
-References: <1404314924-23564-1-git-send-email-lee.jones@linaro.org>
+	id S1755261AbaGBPeK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 11:34:10 -0400
+Received: from mga11.intel.com ([192.55.52.93]:17561 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753793AbaGBPeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 11:34:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,588,1400050800"; 
+   d="scan'208";a="564222679"
+Date: Wed, 2 Jul 2014 08:34:07 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, eranian@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] perf, x86: Revamp PEBS event selection
+Message-ID: <20140702153407.GN19781@tassilo.jf.intel.com>
+References: <1403910612-8754-1-git-send-email-andi@firstfloor.org>
+ <1403910612-8754-2-git-send-email-andi@firstfloor.org>
+ <20140702122902.GC19379@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140702122902.GC19379@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Noticed during a coding review, if we reorganised the checking a
-little, we can rid the code of a pointless 'else'.  Whilst looking
-for this particular code hunk I noticed another pointless 'else',
-which I've subsequently fixed in this patch.
+On Wed, Jul 02, 2014 at 02:29:02PM +0200, Peter Zijlstra wrote:
+> On Fri, Jun 27, 2014 at 04:10:11PM -0700, Andi Kleen wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > As already discussed earlier in email.
+> 
+> Is an entirely inappropriate start for a Changelog. Do not assume prior
+> knowledge. If its relevant include it here without reference.
 
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mfd/ab8500-debugfs.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+Thanks. Do you have any other comments?
 
-diff --git a/drivers/mfd/ab8500-debugfs.c b/drivers/mfd/ab8500-debugfs.c
-index e23fcba..f7f271c 100644
---- a/drivers/mfd/ab8500-debugfs.c
-+++ b/drivers/mfd/ab8500-debugfs.c
-@@ -2503,14 +2503,14 @@ static ssize_t ab8500_gpadc_trig_timer_write(struct file *file,
- 	if (err)
- 		return err;
- 
--	if (user_trig_timer <= 255) {
--		trig_timer = (u8) user_trig_timer;
--	} else {
--		dev_err(dev, "debugfs error input: "
--			"should be beetween 0 to 255\n");
-+	if (user_trig_timer & ~0xFF) {
-+		dev_err(dev,
-+			"debugfs error input: should be beetween 0 to 255\n");
- 		return -EINVAL;
- 	}
- 
-+	trig_timer = (u8) user_trig_timer;
-+
- 	return count;
- }
- 
-@@ -2764,8 +2764,8 @@ static ssize_t show_irq(struct device *dev,
- 	irq_index = name - irq_first;
- 	if (irq_index >= num_irqs)
- 		return -EINVAL;
--	else
--		return sprintf(buf, "%u\n", irq_count[irq_index]);
-+
-+	return sprintf(buf, "%u\n", irq_count[irq_index]);
- }
- 
- static ssize_t ab8500_subscribe_write(struct file *file,
+-Andi
+
 -- 
-1.8.3.2
-
+ak@linux.intel.com -- Speaking for myself only
