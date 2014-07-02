@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271AbaGBNHc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 09:07:32 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:65111 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030AbaGBNHb (ORCPT
+	id S1753402AbaGBNI1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 09:08:27 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:61424 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752264AbaGBNIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 09:07:31 -0400
+	Wed, 2 Jul 2014 09:08:25 -0400
+Subject: [RFC PATCH] [blk]: fix NULL bdev dereference in driver's merge
+ callbacks
+From: Stanislav Kinsbursky <stanislav.kinsbursky@profitbricks.com>
+To: axboe@kernel.dk
+Cc: florian-ewald.mueller@profitbricks.com, linux-kernel@vger.kernel.org,
+        stanislav.kinsbursky@profitbricks.com
+Date: Wed, 02 Jul 2014 15:02:01 +0200
+Message-ID: <20140702130149.25700.32590.stgit@skinsbursky-OptiPlex-9020>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-In-Reply-To: <1403910612-8754-3-git-send-email-andi@firstfloor.org>
-References: <1403910612-8754-1-git-send-email-andi@firstfloor.org>
-	<1403910612-8754-3-git-send-email-andi@firstfloor.org>
-Date: Wed, 2 Jul 2014 15:07:30 +0200
-Message-ID: <CABPqkBSemE1bAnWANO4fnejV8iGXkF5f3+orgBvoN5jqd_jueA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] perf, x86, ivb: Allow leaking events with ANY bit set
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi,
+Function __bio_map_kern() allocates new fresh bio with bi_bdev field undefined
+and set to NULL. Than it calls bio_add_pc_page() which in turn calls
+merge_bvec_fn() callback if defined, passing bvec_megre_data structure
+pointer, with bi_bdev filesd initialized to "bio::bi_bdev" (equal to NULL).
+There are 9 of them so far. At least some of them (like "rbd_merge_bvec",
+"linear_mergeable_bvec") then dereference undefined "bvec_megre_data::bi_bdev"
+to get start sector of the device, resulting in NULL pointer dereference.
+This patch adds check for non-NULL bio->bi_bdev pointer to make sure, that the
+device is defined, otherwise there is no sense to call this callback at all.
 
-On Sat, Jun 28, 2014 at 1:10 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Currently the leaking IVB events cannot be scheduled at all,
-> to avoid leaking information about other process.
-> When the ANY bit is set this does not matter: the process
-> already has all the needed priviledges and "leaking" is expected.
-> So allow these events with any bit set.
->
-Does not make any sense.
-This is not the problem.
+Signed-of-by: Stanislav Kinsbursky <stanislav.kinsbursky@profitbricks.com>
+---
+ block/bio.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-It is not about leaking information to another hyper-thread, i.e.,
-leaking private info.
+diff --git a/block/bio.c b/block/bio.c
+index 0ec61c9..cb45186 100644
+--- a/block/bio.c
++++ b/block/bio.c
+@@ -725,7 +725,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 			unsigned int prev_bv_len = prev->bv_len;
+ 			prev->bv_len += len;
+ 
+-			if (q->merge_bvec_fn) {
++			if (q->merge_bvec_fn && bio->bi_bdev) {
+ 				struct bvec_merge_data bvm = {
+ 					/* prev_bvec is already charged in
+ 					   bi_size, discharge it in order to
+@@ -787,7 +787,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 	 * depending on offset), it can specify a merge_bvec_fn in the
+ 	 * queue to get further control
+ 	 */
+-	if (q->merge_bvec_fn) {
++	if (q->merge_bvec_fn && bio->bi_bdev) {
+ 		struct bvec_merge_data bvm = {
+ 			.bi_bdev = bio->bi_bdev,
+ 			.bi_sector = bio->bi_iter.bi_sector,
 
-It is about corrupting the other thread's counter regardless of what
-it measures.
-
-The events black-listed here could as well be black-listed on SNB
-and HSW. Yet, they are useful events. The patch series we posted
-with Maria address the corruption aspect. I will post a V2 next week.
-
-
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel.c | 9 ++++++---
->  1 file changed, 6 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index adb02aa..db5cec3 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -116,6 +116,8 @@ static struct event_constraint intel_snb_event_constraints[] __read_mostly =
->         EVENT_CONSTRAINT_END
->  };
->
-> +#define FLAGS_NOT_ANY (X86_ALL_EVENT_FLAGS & ~ARCH_PERFMON_EVENTSEL_ANY)
-> +
->  static struct event_constraint intel_ivb_event_constraints[] __read_mostly =
->  {
->         FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
-> @@ -135,11 +137,12 @@ static struct event_constraint intel_ivb_event_constraints[] __read_mostly =
->          * Errata BV98 -- MEM_*_RETIRED events can leak between counters of SMT
->          * siblings; disable these events because they can corrupt unrelated
->          * counters.
-> +        * But allow them with the ANY bit set.
->          */
->         INTEL_EVENT_CONSTRAINT(0xd0, 0x0), /* MEM_UOPS_RETIRED.* */
-> -       INTEL_EVENT_CONSTRAINT(0xd1, 0x0), /* MEM_LOAD_UOPS_RETIRED.* */
-> -       INTEL_EVENT_CONSTRAINT(0xd2, 0x0), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-> -       INTEL_EVENT_CONSTRAINT(0xd3, 0x0), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
-> +       INTEL_FLAGS_EVENT_CONSTRAINT(FLAGS_NOT_ANY|0xd1, 0x0), /* MEM_LOAD_UOPS_RETIRED.* */
-> +       INTEL_FLAGS_EVENT_CONSTRAINT(FLAGS_NOT_ANY|0xd2, 0x0), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-> +       INTEL_FLAGS_EVENT_CONSTRAINT(FLAGS_NOT_ANY|0xd3, 0x0), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
->         EVENT_CONSTRAINT_END
->  };
->
-> --
-> 1.9.3
->
