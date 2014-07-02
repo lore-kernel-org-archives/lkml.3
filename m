@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891AbaGBOGH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 10:06:07 -0400
-Received: from mga11.intel.com ([192.55.52.93]:57654 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751770AbaGBOGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 10:06:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,588,1400050800"; 
-   d="scan'208";a="564179424"
-Message-ID: <1404309961.5102.35.camel@smile.fi.intel.com>
-Subject: Re: [PATCH 3/6] lib80211: re-use string_escape_mem_any_np()
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 02 Jul 2014 17:06:01 +0300
-In-Reply-To: <1404308611.14624.78.camel@joe-AO725>
-References: <1404307229-19186-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1404307229-19186-4-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1404308611.14624.78.camel@joe-AO725>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753839AbaGBOJg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 10:09:36 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:62689 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538AbaGBOJe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 10:09:34 -0400
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        p.zabel@pengutronix.de, srinivas.kandagatla@gmail.com,
+        maxime.coquelin@st.com, patrice.chotard@st.com
+Cc: peter.griffin@linaro.org, lee.jones@linaro.org, devicetree@vger.kernel.org
+Subject: [PATCH v2 0/4] Add reset controllers for STiH407 SoC
+Date: Wed,  2 Jul 2014 15:08:45 +0100
+Message-Id: <1404310129-14667-1-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-02 at 06:43 -0700, Joe Perches wrote:
-> On Wed, 2014-07-02 at 16:20 +0300, Andy Shevchenko wrote:
-> > In kernel we have function to escape a given string. Let's use it instead of
-> > custom approach.
-> > 
-> > This fixes a bug. The current implementation wrongly prints octal numbers: only
-> > two first digits are used in case when 3 are required and the rest of the
-> > string ends up cut off.
+This series adds reset controller support for the STiH407 SoC.
 
-[]
+Changes since v1
+ - Update copyright to 2014
+ - Add const qualifier
+ - Fix various whitespace issues
+ - Remove THIS_OWNER
+ - Move DT documentation into separate patch
 
-> This code looks like it was adapted from the old print_mac
-> ethernet code that was eventually replaced by a vsprintf
-> pointer extension %pM
-> 
-> So a better way to do this might be to add and use yet
-> another vsprintf %p<foo> extension for ssids.
+Peter Griffin (4):
+  reset: stih407: Add softreset, powerdown and picophy controllers
+  reset: sti: Document sti-picophyreset controllers bindings.
+  ARM: sti: Add STiH407 Kconfig entry to select STIH407_RESET
+  ARM: sti: Add STiH407 reset controller support.
 
-Might be, but it
- - doesn't reduce necessity of string_escape_mem (not only ssid are
-escaped in kernel)
- - prevents user to choose a rule what exactly their would like to
-escape (look at the other patches against ssid escaping)
+ .../bindings/reset/st,sti-picophyreset.txt         |  42 ++++++
+ arch/arm/boot/dts/stih407.dtsi                     |  16 +++
+ arch/arm/mach-sti/Kconfig                          |  10 ++
+ drivers/reset/sti/Kconfig                          |   4 +
+ drivers/reset/sti/Makefile                         |   1 +
+ drivers/reset/sti/reset-stih407.c                  | 158 +++++++++++++++++++++
+ .../dt-bindings/reset-controller/stih407-resets.h  |  61 ++++++++
+ 7 files changed, 292 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/reset/st,sti-picophyreset.txt
+ create mode 100644 drivers/reset/sti/reset-stih407.c
+ create mode 100644 include/dt-bindings/reset-controller/stih407-resets.h
 
 -- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
+1.9.1
 
