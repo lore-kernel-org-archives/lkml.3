@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539AbaGBQcQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 12:32:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33839 "EHLO
+	id S1755315AbaGBQdu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 12:33:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33968 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756211AbaGBQcP (ORCPT
+	with ESMTP id S1751247AbaGBQdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 12:32:15 -0400
-Date: Wed, 2 Jul 2014 09:31:59 -0700
+	Wed, 2 Jul 2014 12:33:49 -0400
+Date: Wed, 2 Jul 2014 09:33:34 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Josh Boyer <jwboyer@fedoraproject.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Brian Lane <bcl@redhat.com>, John McCutchan <john@johnmccutchan.com>,
-        Robert Love <rlove@rlove.org>, Eric Paris <eparis@parisplace.org>
-Subject: Re: [PATCH driver-core-linus] kernfs: kernfs_notify() must be
- useable from non-sleepable contexts
-Message-ID: <20140702163159.GA16048@kroah.com>
-References: <CA+5PVA4h2hQJLrAm4eEZ8oUgGiAjq2y5eAyBcJWxK_FiQXnuQg@mail.gmail.com>
- <20140629082637.GA23942@redhat.com>
- <20140629193222.GA7030@lst.de>
- <20140629204710.GB11100@redhat.com>
- <53B07D48.60003@kernel.dk>
- <20140630201741.GA20853@htj.dyndns.org>
- <20140701204103.GA12459@htj.dyndns.org>
- <20140701205148.GA26542@kroah.com>
- <20140702141416.GA23275@htj.dyndns.org>
+To: Emil Goode <emilgoode@gmail.com>
+Cc: Rashika Kheria <rashika.kheria@gmail.com>,
+        Valentina Manea <valentina.manea.m@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Andrea Merello <andrea.merello@gmail.com>, devel@driverdev.osuosl.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: rtl8192e: Fix potential NULL pointer dereference
+Message-ID: <20140702163334.GA19349@kroah.com>
+References: <1404293151-15804-1-git-send-email-emilgoode@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140702141416.GA23275@htj.dyndns.org>
+In-Reply-To: <1404293151-15804-1-git-send-email-emilgoode@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 10:14:16AM -0400, Tejun Heo wrote:
-> Hello,
+On Wed, Jul 02, 2014 at 11:25:51AM +0200, Emil Goode wrote:
+> We need to make sure the struct rtllib_device pointer ieee is not NULL
+> after the goto rx_dropped label since it is dereferenced there.
 > 
-> On Tue, Jul 01, 2014 at 01:51:48PM -0700, Greg Kroah-Hartman wrote:
-> > Looks good to me, do you want to take this with your other kernfs
-> > patches for 3.16-final?  Or if you don't have that, I can take it
-> > through my tree, it's your choice, either is fine for me.
-> > 
-> > If you want it in your tree, feel free to add:
-> > 	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> ---
+>  drivers/staging/rtl8192e/rtllib_rx.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> The other kernfs changes are cgroup specific and in
-> cgroup/for-3.16-fixes.  I think this one fits better in the driver
-> core tree.  Can you please route it?
+> diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
+> index 60de54c..7db3e74 100644
+> --- a/drivers/staging/rtl8192e/rtllib_rx.c
+> +++ b/drivers/staging/rtl8192e/rtllib_rx.c
+> @@ -1496,7 +1496,8 @@ int rtllib_rx(struct rtllib_device *ieee, struct sk_buff *skb,
+>  	return ret;
+>  
+>   rx_dropped:
+> -	ieee->stats.rx_dropped++;
+> +	if (ieee)
+> +		ieee->stats.rx_dropped++;
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL(rtllib_rx);
 
-Sure, will queue it up now.
+Is this something that is hitting users today in the tree, or is this
+just a bug you found looking at the code?
+
+thanks,
 
 greg k-h
