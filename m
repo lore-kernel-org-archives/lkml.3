@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124AbaGBJGA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 05:06:00 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:52539 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752929AbaGBJF6 (ORCPT
+	id S1752829AbaGBJGr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 05:06:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59507 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815AbaGBJGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 05:05:58 -0400
-Message-ID: <1404291956.12021.23.camel@x220>
-Subject: Re: [PATCH] USB: remove CONFIG_USB_PERSIST from Documentation
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-usb@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 02 Jul 2014 11:05:56 +0200
-In-Reply-To: <Pine.LNX.4.44L0.1406241317200.888-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1406241317200.888-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 02 Jul 2014 09:05:56.0604 (UTC) FILETIME=[D5965BC0:01CF95D4]
-X-RcptDomain: vger.kernel.org
+	Wed, 2 Jul 2014 05:06:45 -0400
+Date: Wed, 2 Jul 2014 11:06:38 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
+        eranian@google.com, andi@firstfloor.org
+Subject: Re: [PATCH V4 03/16] perf, x86: use context switch callback to flush
+ LBR stack
+Message-ID: <20140702090638.GU6758@twins.programming.kicks-ass.net>
+References: <1404118253-19532-1-git-send-email-zheng.z.yan@intel.com>
+ <1404118253-19532-4-git-send-email-zheng.z.yan@intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="onwk0SivC/dtQkFp"
+Content-Disposition: inline
+In-Reply-To: <1404118253-19532-4-git-send-email-zheng.z.yan@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-06-24 at 13:19 -0400, Alan Stern wrote:
-> On Tue, 24 Jun 2014, Paul Bolle wrote:
-> > On Tue, 2014-06-24 at 10:25 -0400, Alan Stern wrote:
-> > > Also, that "Later kernels" thing has already arrived.  I believe it was 
-> > > implemented in 2.6.35.
-> > 
-> > How does the kernel currently call the disconnect method? I can't yet
-> > say for sure, and it seems silly to send a v2 dropping those lines
-> > without actually knowing why they can be dropped.
-> 
-> In drivers/usb/core/driver.c:usb_resume_complete(), which is called 
-> during the final "complete" phase of system suspend, interfaces that 
-> were marked for rebinding (because their drivers didn't have proper PM 
-> support) get rebound.
-> 
-> Is that what you wanted to know?
 
-I haven't yet discovered what the link is between rebinding and the
-"disconnect" method. I'll have to study that. This is far from urgent,
-so that might take me quite some time.
+--onwk0SivC/dtQkFp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks anyway,
+On Mon, Jun 30, 2014 at 04:50:40PM +0800, Yan, Zheng wrote:
+> @@ -185,6 +185,23 @@ void intel_pmu_lbr_enable(struct perf_event *event)
+>  		return;
+> =20
+>  	/*
+> +	 * It is necessary to flush the stack on context switch. This happens
+> +	 * when the branch stack does not tag its entries with the pid of the
+> +	 * current task.
 
+Did you mean to say: "This happens _because_ the branch stack does not
+tag its entries with the pid of the current task." ?
 
-Paul Bolle
+> +	 */
+> +	if (sched_in) {
+> +		intel_pmu_lbr_reset();
+> +		cpuc->lbr_context =3D ctx;
+> +	}
+> +}
 
+--onwk0SivC/dtQkFp
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTs8udAAoJEHZH4aRLwOS6/3EP/iPj0TAmtUaTX0x5er6rR/wh
+dn4STUQkrzZwO66v5nN84EXVgYiblTHrIR+hFp2z8HbtJVOScdzaAFfUZ0CLsm8+
+ndcX6RNQPqwVb+iHwmYzdOJTjv0AAl28g1eUslGk2OzyfhJv2BzWuwJz3BYs18qu
+YjciD8Xv7/Pmj15adIQawWe60rM8qe+f79iELdkYTzwjqCUhBXJpSgQ13BVyP518
+uLMVFz1+ZwPDLeTHOABgTY+V7KDPiC3So5twDZg5A8yfpc5GRoeKhtfHBJfMh/qd
+GmcjhyLxXcz9Z5wVnqlqS6hkUYkQpVK0u4c9VLyiRGMATp3ariruMTmZHw0OUB0L
+1e+x+nwa8R5zr4SucvhE64f/7PGlKC+H/Yn20OO2q2sO9eAHdLquso6n0kUf8hjd
+hnOMdm6waxly8Loytot1K3bQdrEOcnp0JzfkOna2uQRyoqhLQZNxNMtTnmu7/zru
+Yytw1p6u431CI4y7DC1sSvoxsBvwt/IrwfDPcmCBJMMfVOk4nnRteYv2uNsjeJrV
+2OVvF4GZVjnEK1R+qTeOKDKs4igzECKhrK9KSYAs8bFxWlJoLMPpdHZKJm9UMxnX
+GWjBkVk+2PPDrrM2tUXm8/VZTMMPy27EGhV3wwpsIHF2e72gxr+F+YiVBY6FqIsu
+8UoOeWcPeoaekjouTylh
+=oO4y
+-----END PGP SIGNATURE-----
+
+--onwk0SivC/dtQkFp--
