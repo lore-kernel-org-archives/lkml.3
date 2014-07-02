@@ -1,98 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617AbaGBMOs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 08:14:48 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:44302 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748AbaGBMOq (ORCPT
+	id S1752857AbaGBMPi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 08:15:38 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:36367 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaGBMPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 08:14:46 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19ICyDoUvLfkRJb4EOTq86JALGKAPf+zsM=
-X-DKIM: OpenDKIM Filter v2.0.1 titan B5A9B5A02C8
-Date: Wed, 2 Jul 2014 08:14:38 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
-        keescook@chromium.org, stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] hwrng: don't fetch rng from sources without init
-Message-ID: <20140702121438.GK23978@titan.lakedaemon.net>
-References: <cover.1404296679.git.amit.shah@redhat.com>
- <c911b7944f2d05f5c6f5cf5dc37b8dbb99fd0b14.1404296679.git.amit.shah@redhat.com>
- <20140702115823.GJ23978@titan.lakedaemon.net>
- <20140702121120.GB7505@grmbl.mre>
+	Wed, 2 Jul 2014 08:15:37 -0400
+Date: Wed, 2 Jul 2014 13:15:30 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: micky <micky_ching@realsil.com.cn>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Chris Ball <chris@printf.net>, devel@linuxdriverproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Roger <rogerable@realtek.com>, Wei WANG <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH 1/2] mfd: rtsx: add dma transfer function
+Message-ID: <20140702121530.GF16724@lee--X1>
+References: <cover.1402037562.git.micky_ching@realsil.com.cn>
+ <9021eae37d96aa027d00ae4a7b6cd84dbbd1b6b5.1402037564.git.micky_ching@realsil.com.cn>
+ <20140616122032.GS14323@lee--X1>
+ <CAPDyKFpJ5tToJOk6try-jrRCCzcKtJkszNE5Nuc3Uarhpta1BQ@mail.gmail.com>
+ <20140618080056.GM21030@lee--X1>
+ <53B3CD60.80302@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140702121120.GB7505@grmbl.mre>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53B3CD60.80302@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 05:41:20PM +0530, Amit Shah wrote:
-> On (Wed) 02 Jul 2014 [07:58:23], Jason Cooper wrote:
-> > On Wed, Jul 02, 2014 at 03:58:15PM +0530, Amit Shah wrote:
-> > > Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
-> > > added a call to rng_get_data() from the hwrng_register() function.
-> > > However, some rng devices need initialization before data can be read
-> > > from them.
-> > > 
-> > > Also, the virtio-rng device does not behave properly when this call is
-> > > made in its probe() routine - the virtio core sets the DRIVER_OK status
-> > > bit only on a successful probe, which means the host ignores all
-> > > communication from the guest, and the guest insmod or boot process just
-> > > sits there doing nothing.
-> > > 
-> > > This commit makes the call to rng_get_data() depend on no init fn
-> > > pointer being registered by the device.  If an init function is
-> > > registered, this call isn't made.
-> > > 
-> > > CC: Kees Cook <keescook@chromium.org>
-> > > CC: Jason Cooper <jason@lakedaemon.net>
-> > > CC: Herbert Xu <herbert@gondor.apana.org.au>
-> > > CC: <stable@vger.kernel.org> # For 3.15 only
-> > 
-> > # v3.15+ should be fine here.
-> > 
-> > > Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> > > ---
-> > >  drivers/char/hw_random/core.c | 8 +++++---
-> > >  1 file changed, 5 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-> > > index 334601c..3f3941d 100644
-> > > --- a/drivers/char/hw_random/core.c
-> > > +++ b/drivers/char/hw_random/core.c
-> > > @@ -347,9 +347,11 @@ int hwrng_register(struct hwrng *rng)
-> > >  	INIT_LIST_HEAD(&rng->list);
-> > >  	list_add_tail(&rng->list, &rng_list);
-> > >  
-> > > -	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
-> > > -	if (bytes_read > 0)
-> > > -		add_device_randomness(bytes, bytes_read);
-> > > +	if (!rng->init) {
-> > > +		bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
-> > > +		if (bytes_read > 0)
-> > > +			add_device_randomness(bytes, bytes_read);
-> > > +	}
-> > 
-> > afaict, this is redundant at initialization time.  current_rng shouldn't
-> > be set yet, so hwrng_init(rng) will get called at line 333.  Or, am I
-> > missing something?
+On Wed, 02 Jul 2014, micky wrote:
+
+> On 06/18/2014 04:00 PM, Lee Jones wrote:
+> >On Mon, 16 Jun 2014, Ulf Hansson wrote:
+> >
+> >>On 16 June 2014 14:20, Lee Jones <lee.jones@linaro.org> wrote:
+> >>>>From: Micky Ching <micky_ching@realsil.com.cn>
+> >>>>
+> >>>>rtsx driver using a single function for transfer data, dma map/unmap are
+> >>>>placed in one fix function. We need map/unmap dma in different place(for
+> >>>>mmc async driver), so add three function for dma map, dma transfer and
+> >>>>dma unmap.
+> >>>>
+> >>>>Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+> >>>>---
+> >>>>  drivers/mfd/rtsx_pcr.c       |   76 ++++++++++++++++++++++++++----------------
+> >>>>  include/linux/mfd/rtsx_pci.h |    6 ++++
+> >>>>  2 files changed, 54 insertions(+), 28 deletions(-)
+> >>>I don't see any glaring issues with this patch.  Does it rely on the
+> >>>first patch, or vise versa, or can it just be applied?
+> >>The mmc part in patch2 relies on this one, but please go ahead and
+> >>apply the mfd patch if you see it good.
+> >>
+> >>I can later provide my ack for the mmc parts, in patch2, when it's a
+> >>reviewed properly and thus you can take it through your tree.
+> >There's no rush.  Once you're happy with the MMC patch, Micky can
+> >submit them both again with my Ack on the MFD part and I'll take them
+> >as a set.
+> >
+> Hi Lee,
 > 
-> You're right -- the device will have been initialized if it's the
-> first hwrng device to be registered.  And in that case, this device
-> won't contribute to the initial pool (and that's the only case).
-> 
-> Can someone think of a better way to handle this for that case, then?
+> Can you pick this patch directly?  need resend it now?
 
-I'm cooking up something...
+No need to resend, I'll get round to applying it from here.
 
-thx,
-
-Jason.
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
