@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598AbaGBMJx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 08:09:53 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:61702 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297AbaGBMJw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 08:09:52 -0400
-Message-ID: <53B3F687.5050502@gmail.com>
-Date: Wed, 02 Jul 2014 14:09:43 +0200
-From: Pascal Huerst <pascal.huerst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751656AbaGBMLu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 08:11:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47980 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750869AbaGBMLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 08:11:49 -0400
+Date: Wed, 2 Jul 2014 17:41:20 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: linux-kernel@vger.kernel.org,
+        Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
+        keescook@chromium.org, stable@vger.kernel.org
+Subject: Re: [PATCH 1/2] hwrng: don't fetch rng from sources without init
+Message-ID: <20140702121120.GB7505@grmbl.mre>
+References: <cover.1404296679.git.amit.shah@redhat.com>
+ <c911b7944f2d05f5c6f5cf5dc37b8dbb99fd0b14.1404296679.git.amit.shah@redhat.com>
+ <20140702115823.GJ23978@titan.lakedaemon.net>
 MIME-Version: 1.0
-To: santosh.shilimkar@ti.com
-CC: khilman@deeprootsystems.com, linus.walleij@linaro.org, gnurou@gmail.com,
-        linux-omap@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Daniel Mack <daniel@zonque.org>
-Subject: gpio-omap: wakeup mask
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140702115823.GJ23978@titan.lakedaemon.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On (Wed) 02 Jul 2014 [07:58:23], Jason Cooper wrote:
+> On Wed, Jul 02, 2014 at 03:58:15PM +0530, Amit Shah wrote:
+> > Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
+> > added a call to rng_get_data() from the hwrng_register() function.
+> > However, some rng devices need initialization before data can be read
+> > from them.
+> > 
+> > Also, the virtio-rng device does not behave properly when this call is
+> > made in its probe() routine - the virtio core sets the DRIVER_OK status
+> > bit only on a successful probe, which means the host ignores all
+> > communication from the guest, and the guest insmod or boot process just
+> > sits there doing nothing.
+> > 
+> > This commit makes the call to rng_get_data() depend on no init fn
+> > pointer being registered by the device.  If an init function is
+> > registered, this call isn't made.
+> > 
+> > CC: Kees Cook <keescook@chromium.org>
+> > CC: Jason Cooper <jason@lakedaemon.net>
+> > CC: Herbert Xu <herbert@gondor.apana.org.au>
+> > CC: <stable@vger.kernel.org> # For 3.15 only
+> 
+> # v3.15+ should be fine here.
+> 
+> > Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> > ---
+> >  drivers/char/hw_random/core.c | 8 +++++---
+> >  1 file changed, 5 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+> > index 334601c..3f3941d 100644
+> > --- a/drivers/char/hw_random/core.c
+> > +++ b/drivers/char/hw_random/core.c
+> > @@ -347,9 +347,11 @@ int hwrng_register(struct hwrng *rng)
+> >  	INIT_LIST_HEAD(&rng->list);
+> >  	list_add_tail(&rng->list, &rng_list);
+> >  
+> > -	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
+> > -	if (bytes_read > 0)
+> > -		add_device_randomness(bytes, bytes_read);
+> > +	if (!rng->init) {
+> > +		bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
+> > +		if (bytes_read > 0)
+> > +			add_device_randomness(bytes, bytes_read);
+> > +	}
+> 
+> afaict, this is redundant at initialization time.  current_rng shouldn't
+> be set yet, so hwrng_init(rng) will get called at line 333.  Or, am I
+> missing something?
 
-we have a device with an am335x and are using some gpios on bank0 to
-wake up the device from suspend to ram.
+You're right -- the device will have been initialized if it's the
+first hwrng device to be registered.  And in that case, this device
+won't contribute to the initial pool (and that's the only case).
 
-We have some user buttons which are configured in the devicetree as
-gpio-keys and one power-key which should wake up the device:
+Can someone think of a better way to handle this for that case, then?
 
-&buttons {
-        power {
-                label = "Power";
-                gpios = <&gpio0 6 1>;
-                linux,code = <116>;
-                gpio-key,wakeup;
-        };
 
-        one {
-                label = "One";
-                gpios = <&gpio0 11 1>;
-                linux,code = <2>;
-        };
-
-        : : :
-}
-
-The problem is, that the device wakes up on any trigger on bank 0. No
-matter which button was pressed. "gpio-key,wakeup" seems not to have any
-influence.
-
-Now, if I comment the following lines out in drivers/gpio/gpio-omap.c :
-set_gpio_trigger(...).
-
-321
-322 if (likely(!(bank->non_wakeup_gpios & gpio_bit))) {
-323    _gpio_rmw(base, bank->regs->wkup_en, gpio_bit, trigger != 0);
-324      bank->context.wake_en =
-325        readl_relaxed(bank->base + bank->regs->wkup_en);
-326 }
-327
-
-Everything works as expected. But I don't really understand why? Is this
-a bug, or does this break something else I have not discovered yet?
-
-Thanks,
-Pascal
+		Amit
