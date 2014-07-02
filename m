@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740AbaGBOhI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 10:37:08 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54095 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752249AbaGBOhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 10:37:06 -0400
-Message-ID: <53B4190C.6040709@ti.com>
-Date: Wed, 2 Jul 2014 17:37:00 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
-        <balbi@ti.com>
-CC: <nsekhar@ti.com>, <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Rajendra Nayak <rnayak@ti.com>, Tero Kristo <t-kristo@ti.com>
-Subject: Re: [PATCH 1/6] ARM: dts: dra7-evm: Make VDDA_1V8_PHY supply always
- on
-References: <1404302638-3003-1-git-send-email-rogerq@ti.com> <1404302638-3003-2-git-send-email-rogerq@ti.com> <53B403AF.60505@ti.com>
-In-Reply-To: <53B403AF.60505@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1753499AbaGBOpD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 10:45:03 -0400
+Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:42330 "EHLO
+	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751538AbaGBOpB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 10:45:01 -0400
+Date: Wed, 2 Jul 2014 09:44:57 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Wei Yang <weiyang@linux.vnet.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: mm: slub: invalid memory access in setup_object
+In-Reply-To: <53B32D80.8000601@oracle.com>
+Message-ID: <alpine.DEB.2.11.1407020935450.17773@gentwo.org>
+References: <53AAFDF7.2010607@oracle.com> <alpine.DEB.2.11.1406251228130.29216@gentwo.org> <alpine.DEB.2.02.1406301500410.13545@chino.kir.corp.google.com> <alpine.DEB.2.11.1407010956470.5353@gentwo.org> <20140701144947.5ce3f93729759d8f38d7813a@linux-foundation.org>
+ <53B32D80.8000601@oracle.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2014 04:05 PM, Nishanth Menon wrote:
-> On 07/02/2014 07:03 AM, Roger Quadros wrote:
->> After clarification from the hardware team it was found that
->> this 1.8V PHY supply can't be switched OFF when SoC is Active.
->> It can only be switched off when in PORz (power on reset).
-> 
-> I dont think folks know the reasoning why hardware team decided that
-> the voltage rail cannot be switched off -> I suggest adding the
-> following information as well.
-> 
-> Since isolation is not present in the design for these PHY IPs to
-> allow for the PHY rail to be switched off, there is a very high risk
-> of IP reliability and additional leakage paths which can result in
-> additional power consumption.
-> 
-> Only scenario where this rail can be switched off is part of Power on
-> reset sequencing, but it needs to be kept always-on during operation.
+On Tue, 1 Jul 2014, Sasha Levin wrote:
 
-This sort of information should be in the TRM instead, but doesn't harm to be in the commit message so I'll do that.
-Thanks.
+> Is there a better way to stress test slub?
 
-cheers,
--roger
-> 
->>
->> This patch is required for proper functionality of USB, SATA
->> and PCIe on DRA7-evm.
->>
->> CC: Rajendra Nayak <rnayak@ti.com>
->> CC: Tero Kristo <t-kristo@ti.com>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> ---
->>  arch/arm/boot/dts/dra7-evm.dts | 1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
->> index 4adc280..8308954 100644
->> --- a/arch/arm/boot/dts/dra7-evm.dts
->> +++ b/arch/arm/boot/dts/dra7-evm.dts
->> @@ -240,6 +240,7 @@
->>  					regulator-name = "ldo3";
->>  					regulator-min-microvolt = <1800000>;
->>  					regulator-max-microvolt = <1800000>;
->> +					regulator-always-on;
->>  					regulator-boot-on;
->>  				};
->>  
->>
-> 
-> 
+The typical way to test is by stressing the network subsystem
+with small packets that require small allocations. Or do a filesystem
+test that requires lots of metadata (file creations, removal, renames
+etc).
+
+But I also posted some in kernel benchmarks a while back
+
+https://lkml.org/lkml/2009/10/13/459
+
+Pekka had a project going to get these merged.
+
+https://lkml.org/lkml/2009/11/29/17
+
 
