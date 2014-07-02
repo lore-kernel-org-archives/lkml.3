@@ -1,236 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006AbaGBK1I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 06:27:08 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58475 "EHLO arroyo.ext.ti.com"
+	id S1752298AbaGBK2y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 06:28:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40182 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751512AbaGBK1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 06:27:05 -0400
-Message-ID: <53B3DE4F.1040100@ti.com>
-Date: Wed, 2 Jul 2014 15:56:23 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <kernel@stlinux.com>
-Subject: Re: [PATCH v2 4/5] phy: miphy365x: Represent each PHY channel as
- a subnode
-References: <1404133317-25953-1-git-send-email-lee.jones@linaro.org> <1404133317-25953-5-git-send-email-lee.jones@linaro.org> <20140630144114.GB25926@lee--X1>
-In-Reply-To: <20140630144114.GB25926@lee--X1>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1750852AbaGBK2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 06:28:53 -0400
+From: Amit Shah <amit.shah@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
+        keescook@chromium.org, jason@lakedaemon.net,
+        Amit Shah <amit.shah@redhat.com>
+Subject: [PATCH 0/2] hwrng: don't fetch data before device init
+Date: Wed,  2 Jul 2014 15:58:14 +0530
+Message-Id: <cover.1404296679.git.amit.shah@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Monday 30 June 2014 08:11 PM, Lee Jones wrote:
-> phy: miphy365x: Represent each PHY channel as a DT subnode
-> 
-> This has the added advantages of being able to enable/disable each
-> of the channels as simply as enabling/disabling the DT node.
-> 
-> Suggested-by: Kishon Vijay Abraham I <kishon@ti.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> diff --git a/drivers/phy/phy-miphy365x.c b/drivers/phy/phy-miphy365x.c
-> index 1109f42..2c4ea6e 100644
-> --- a/drivers/phy/phy-miphy365x.c
-> +++ b/drivers/phy/phy-miphy365x.c
-> @@ -17,6 +17,7 @@
->  #include <linux/module.h>
->  #include <linux/of.h>
->  #include <linux/of_platform.h>
-> +#include <linux/of_address.h>
->  #include <linux/clk.h>
->  #include <linux/phy/phy.h>
->  #include <linux/delay.h>
-> @@ -144,6 +145,7 @@ struct miphy365x {
->  	void __iomem *pcie;
->  	u8 type;
->  	u8 port;
-> +	bool enabled;
->  };
->  
->  struct miphy365x_dev {
-> @@ -468,7 +470,7 @@ static struct phy *miphy365x_xlate(struct device *dev,
->  	struct miphy365x_dev *state = dev_get_drvdata(dev);
->  	u8 port, type;
->  
-> -	if (args->count != 2) {
-> +	if (args->args_count != 2) {
->  		dev_err(dev, "Invalid number of cells in 'phy' property\n");
->  		return ERR_PTR(-EINVAL);
->  	}
-> @@ -484,6 +486,11 @@ static struct phy *miphy365x_xlate(struct device *dev,
->  	if (WARN_ON(port >= ARRAY_SIZE(ports)))
->  		return ERR_PTR(-EINVAL);
->  
-> +	if (!state->phys[port].enabled) {
-> +		dev_warn(dev, "PHY port %d is disabled\n", port);
-> +		return ERR_PTR(-EINVAL);
-> +	}
-> +
->  	if (type == MIPHY_TYPE_SATA)
->  		state->phys[port].base = state->phys[port].sata;
->  	else if (type == MIPHY_TYPE_PCIE)
-> @@ -503,38 +510,75 @@ static struct phy_ops miphy365x_ops = {
->  	.owner		= THIS_MODULE,
->  };
->  
-> -static int miphy365x_get_base_addr(struct platform_device *pdev,
-> -				    struct miphy365x_phy *phy, u8 port)
-> +static int miphy365x_get_base_addr_one(struct platform_device *pdev,
-> +				       struct miphy365x *phy,
-> +				       struct device_node *child,
-> +				       int index)
->  {
-> -	struct resource *res;
-> -	char type[6];
-> +	void __iomem *base;
-> +	const char *name;
-> +	int ret;
->  
-> -	sprintf(type, "sata%d", port);
-> +	base = of_iomap(child, index);
-> +	if (!base) {
-> +		dev_err(&pdev->dev, "Failed to map %s\n", child->full_name);
-> +		return -EINVAL;
-> +	}
->  
-> -	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, type);
-> -	if (!res)
-> -		return -ENODEV;
-> +	ret = of_property_read_string_index(child, "reg-names", index, &name);
-> +	if (ret) {
-> +		dev_err(&pdev->dev,
-> +			"%s: no reg-names property not found\n", child->name);
-> +		return ret;
-> +	}
->  
-> -	phy->sata = devm_ioremap(&pdev->dev, res->start, resource_size(res));
-> -	if (!phy->sata)
-> -		return -ENOMEM;
-> +	if (!strncmp(name, "sata", 4))
-> +		phy->sata = base;
-> +	else if (!strncmp(name, "pcie", 4))
-> +		phy->pcie = base;
-> +	else {
-> +		dev_err(&pdev->dev, "reg-names in %s not sata or pcie: %s",
-> +			child->name, name);
-> +		return -EINVAL;
-> +	}
->  
-> -	sprintf(type, "pcie%d", port);
-> +	return 0;
-> +}
->  
-> -	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, type);
-> -	if (!res)
-> -		return -ENODEV;
-> +static int miphy365x_get_base_addr(struct platform_device *pdev,
-> +				   struct miphy365x *phy,
-> +				   struct device_node *child)
-> +{
-> +	int index;
-> +	int ret;
->  
-> -	phy->pcie = devm_ioremap(&pdev->dev, res->start, resource_size(res));
-> -	if (!phy->pcie)
-> -		return -ENOMEM;
-> +	/* Each port handles SATA or PCIE. */
-> +	for (index = 0; index < 2; index++) {
-> +		ret = miphy365x_get_base_addr_one(pdev, phy,
-> +						  child, index);
-> +		if (ret)
-> +			return ret;
-> +	}
->  
->  	return 0;
->  }
->  
-> -static int miphy365x_of_probe(struct device_node *np,
-> +static int miphy365x_of_probe(struct platform_device *pdev,
->  			      struct miphy365x_dev *phy_dev)
->  {
-> +	struct device_node *np = pdev->dev.of_node;
-> +	struct device_node *child;
-> +	int child_count = 0;
-> +
-> +	for_each_child_of_node(np, child)
-> +		child_count++;
+When booting a recent kernel under KVM with the virtio-rng device
+enabled, the boot process was stalling.  Bisect pointed to a commit
+made during the 3.15 window to fetch randomness from newly-registered
+devices in the hwrng core.  The details are in the patches.
 
-use of_get_child_count() instead.
-> +
-> +	if (child_count != ARRAY_SIZE(ports)) {
-> +		dev_err(&pdev->dev, "%d ports supported, %d supplied\n",
-> +			ARRAY_SIZE(ports), child_count);
-> +		return -EINVAL;
-> +	}
-> +
->  	phy_dev->regmap = syscon_regmap_lookup_by_phandle(np, "st,syscfg");
->  	if (IS_ERR(phy_dev->regmap)) {
->  		dev_err(phy_dev->dev, "No syscfg phandle specified\n");
-> @@ -556,11 +600,10 @@ static int miphy365x_of_probe(struct device_node *np,
->  
->  static int miphy365x_probe(struct platform_device *pdev)
->  {
-> -	struct device_node *np = pdev->dev.of_node;
-> +	struct device_node *child, *np = pdev->dev.of_node;
->  	struct miphy365x_dev *phy_dev;
->  	struct device *dev = &pdev->dev;
->  	struct phy_provider *provider;
-> -	u8 port;
->  	int ret;
->  
->  	if (!np) {
-> @@ -572,7 +615,7 @@ static int miphy365x_probe(struct platform_device *pdev)
->  	if (!phy_dev)
->  		return -ENOMEM;
->  
-> -	ret = miphy365x_of_probe(np, phy_dev);
-> +	ret = miphy365x_of_probe(pdev, phy_dev);
->  	if (ret)
->  		return ret;
->  
-> @@ -582,8 +625,9 @@ static int miphy365x_probe(struct platform_device *pdev)
->  
->  	mutex_init(&phy_dev->miphy_mutex);
->  
-> -	for (port = 0; port < ARRAY_SIZE(ports); port++) {
-> +	for_each_child_of_node(np, child) {
->  		struct phy *phy;
-> +		static int port = 0;
->  
->  		phy = devm_phy_create(dev, &miphy365x_ops, NULL);
->  		if (IS_ERR(phy)) {
-> @@ -591,15 +635,17 @@ static int miphy365x_probe(struct platform_device *pdev)
->  			return PTR_ERR(phy);
->  		}
->  
-> -		phy_dev->phys[port].phy  = phy;
-> -		phy_dev->phys[port].port = port;
-> -
-> -		ret = miphy365x_get_base_addr(pdev,
-> -					&phy_dev->phys[port], port);
-> +		ret = miphy365x_get_base_addr(pdev, &phy_dev->phys[port],
-> +					      child);
->  		if (ret)
->  			return ret;
->  
-> +		phy_dev->phys[port].phy  = phy;
-> +		phy_dev->phys[port].port = port;
-> +		phy_dev->phys[port].enabled = !!of_device_is_available(child);
-> +
->  		phy_set_drvdata(phy, &phy_dev->phys[port]);
-> +		port++;
->  	}
->  
->  	provider = devm_of_phy_provider_register(dev, miphy365x_xlate);
+I considered a couple of approaches, but basing on the init() function
+being registered, as is done in patch 1 here, seems like the best idea,
+since quite a few drivers need to initialize their devices before data
+is fetched off them.
 
-I think you can merge this to your original patch.
+Please review and apply if appropriate,
 
-Cheers
-Kishon
+Amit Shah (2):
+  hwrng: don't fetch rng from sources without init
+  virtio: rng: introduce an init fn for hwrng core
+
+ drivers/char/hw_random/core.c       |  8 +++++---
+ drivers/char/hw_random/virtio-rng.c | 11 +++++++++++
+ 2 files changed, 16 insertions(+), 3 deletions(-)
+
+-- 
+1.9.3
+
