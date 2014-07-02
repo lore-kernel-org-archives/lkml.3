@@ -1,92 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758888AbaGBBEq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 21:04:46 -0400
-Received: from mga11.intel.com ([192.55.52.93]:3745 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754154AbaGBBEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 21:04:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,585,1400050800"; 
-   d="scan'208";a="556150700"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Boon Leong Ong <boon.leong.ong@intel.com>
-Subject: [PATCH v5] USB: ehci-pci: USB host controller support for Intel Quark X1000
-Date: Wed,  2 Jul 2014 01:58:18 -0700
-Message-Id: <1404291498-28841-1-git-send-email-alvin.chen@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S965231AbaGBBJJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 21:09:09 -0400
+Received: from 6.mo68.mail-out.ovh.net ([46.105.63.100]:40940 "EHLO
+	mo68.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757225AbaGBBJI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jul 2014 21:09:08 -0400
+X-Greylist: delayed 969 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Jul 2014 21:09:08 EDT
+Message-ID: <53B357E8.1090909@nominal-animal.net>
+Date: Wed, 02 Jul 2014 03:52:56 +0300
+From: Nominal Animal <kernel@nominal-animal.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: linux-fsdevel@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: [RFC PATCH] dup3(): option to detect close() error
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 6347260725240595264
+X-Ovh-Remote: 62.78.228.143 (cs78228143.pp.htv.fi)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedruddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedruddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+The RFC patch below adds a new flag for dup3().
+(For simplicity, I'm just reusing O_EXCL for now.)
 
-The EHCI packet buffer in/out threshold is programmable for Intel Quark X1000
-USB host controller, and the default value is 0x20 dwords. The in/out threshold
-can be programmed to 0x80 dwords (512 Bytes) to maximize the perfomrance,
-but only when isochronous/interrupt transactions are not initiated by the USB
-host controller. This patch is to reconfigure the packet buffer in/out
-threshold as maximal as possible to maximize the performance, and 0x7F dwords
-(508 Bytes) should be used because the USB host controller initiates
-isochronous/interrupt transactions.
+I am assuming calling f_op->flush() twice instead of just once
+before closing the file is not harmful.
 
-Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
-Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Reviewed-by: Jingoo Han <jg1.han@samsung.com>
----
-Changlog v5:
-* Correct the wrong comment style.
+The idea is to extend dup3() so that we can catch close() errors
+for the descriptor to be replaced, if we want to. Existing code
+will not see any changes. (Userspace might wish to replace a
+descriptor exactly because there is a problem, so we don't want
+to make this unconditional.
 
- drivers/usb/host/ehci-pci.c |   25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+This approach relies on close() having a single error path in Linux:
+the file has an f_op->flush() handler, and it returns an error.
+Here, if the flag is included in dup3(), f_op->flush() is called early
+for newfd, and if it fails, dup3() will return with -EIO.
 
-diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
-index 3e86bf4..ca7b964 100644
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -35,6 +35,21 @@ static const char hcd_name[] = "ehci-pci";
- #define PCI_DEVICE_ID_INTEL_CE4100_USB	0x2e70
+It will still be called again in filp_close(), but since the descriptor
+is to be closed, there should be no activity between the two
+f_op->flush() calls, so the latter should not fail.
+
+Is there a reason (besides having yet another O_ flag) why this
+would not work, or why we would not want to do this?
+Am I missing something?
+I just want be able to know if a problem was detected, that's all.
+
+Best,
+    Nominal Animal
+
+diff -u5 -bar linux-3.16-rc3/fs/file.c linux-3.16-rc3.new/fs/file.c
+--- linux-3.16-rc3/fs/file.c	2014-06-30 00:11:36.000000000 +0300
++++ linux-3.16-rc3.new/fs/file.c	2014-07-02 02:04:23.708114821 +0300
+@@ -816,21 +816,31 @@
+ SYSCALL_DEFINE3(dup3, unsigned int, oldfd, unsigned int, newfd, int, flags)
+ {
+ 	int err = -EBADF;
+-	struct file *file;
++	struct file *file, *tofree;
+ 	struct files_struct *files = current->files;
  
- /*-------------------------------------------------------------------------*/
-+#define PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC		0x0939
-+static inline bool is_intel_quark_x1000(struct pci_dev *pdev)
-+{
-+	return pdev->vendor == PCI_VENDOR_ID_INTEL &&
-+		pdev->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC;
-+}
-+
-+/*
-+ * 0x84 is the offset of in/out threshold register,
-+ * and it is the same offset as the register of 'hostpc'.
-+ */
-+#define	intel_quark_x1000_insnreg01	hostpc
-+
-+/* Maximum usable threshold value is 0x7f dwords for both IN and OUT */
-+#define INTEL_QUARK_X1000_EHCI_MAX_THRESHOLD	0x007f007f
+-	if ((flags & ~O_CLOEXEC) != 0)
++	if ((flags & ~(O_CLOEXEC | O_EXCL)) != 0)
+ 		return -EINVAL;
  
- /* called after powerup, by probe or system-pm "wakeup" */
- static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
-@@ -50,6 +65,16 @@ static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
- 	if (!retval)
- 		ehci_dbg(ehci, "MWI active\n");
+ 	if (unlikely(oldfd == newfd))
+ 		return -EINVAL;
  
-+	/* Reset the threshold limit */
-+	if (is_intel_quark_x1000(pdev)) {
-+		/*
-+		 * For the Intel QUARK X1000, raise the I/O threshold to the
-+		 * maximum usable value in order to improve performance.
-+		 */
-+		ehci_writel(ehci, INTEL_QUARK_X1000_EHCI_MAX_THRESHOLD,
-+			ehci->regs->intel_quark_x1000_insnreg01);
+ 	if (newfd >= rlimit(RLIMIT_NOFILE))
+ 		return -EBADF;
+ 
+ 	spin_lock(&files->file_lock);
++	if (unlikely(flags & O_EXCL)) {
++		tofree = fcheck(newfd);
++		if (tofree && file_count(tofree) && tofree->f_op->flush) {
++			spin_unlock(&files->file_lock);
++			err = tofree->f_op->flush(tofree, files);
++			if (unlikely(err < 0))
++				return -EIO;
++			spin_lock(&files->file_lock);
++		}
 +	}
-+
- 	return 0;
- }
- 
--- 
-1.7.9.5
-
+ 	err = expand_files(files, newfd);
+ 	file = fcheck(oldfd);
+ 	if (unlikely(!file))
+ 		goto Ebadf;
+ 	if (unlikely(err < 0)) {
