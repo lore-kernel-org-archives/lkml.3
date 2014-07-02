@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814AbaGBIXU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 04:23:20 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41334 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750969AbaGBIXS (ORCPT
+	id S1751982AbaGBIYR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 04:24:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58138 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164AbaGBIYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 04:23:18 -0400
-Date: Wed, 2 Jul 2014 10:23:15 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/33] clk: at91: main: warn when the main crystal
- frequency is not set
-Message-ID: <20140702102315.1a508747@bbrezillon>
-In-Reply-To: <20140702101811.2f2a507e@bbrezillon>
-References: <1404223962-30471-1-git-send-email-alexandre.belloni@free-electrons.com>
-	<1404223962-30471-4-git-send-email-alexandre.belloni@free-electrons.com>
-	<20140702101811.2f2a507e@bbrezillon>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jul 2014 04:24:14 -0400
+Date: Wed, 2 Jul 2014 01:24:00 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
+Cc: linux-kernel@vger.kernel.org,
+        Thomas =?iso-8859-1?Q?Sch=F6bel-Theuer?= <tst@1und1.de>
+Subject: Re: [PATCH 49/50] mars: generic pre-patch for mars
+Message-ID: <20140702082400.GB10971@kroah.com>
+References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
+ <1404251250-22992-50-git-send-email-tst@schoebel-theuer.de>
+ <20140701223644.GA30330@kroah.com>
+ <53B3B283.7050800@schoebel-theuer.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53B3B283.7050800@schoebel-theuer.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jul 2014 10:18:11 +0200
-Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
 
-> On Tue,  1 Jul 2014 16:12:12 +0200
-> Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
-> 
-> > When the main crystal frequency is not set, the main clock is
-> > approximated using the MAINF value in the CKGR_MCFR register. Warn
-> > the user in that case.
-> > 
-> > Signed-off-by: Alexandre Belloni
-> > <alexandre.belloni@free-electrons.com> ---
-> 
-> Acked-by: Boris BREZILLON <boris.brezillon@overkiz.com>
+A: No.
+Q: Should I include quotations after my reply?
 
-Sorry, it seems I kinda regret my former employer :-).
+http://daringfireball.net/2007/07/on_top
 
-This is of course:
+On Wed, Jul 02, 2014 at 09:19:31AM +0200, Thomas Schoebel-Theuer wrote:
+> I will prepare a new version ASAP.
+> 
+> Is the asmlinkage one of the reasons?
 
-Acked-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+No.  The wholesale exporting of all 300+ syscall functions for no
+apparent reasoning is the reason.
 
-> 
-> Mike, do you want me to take this patch and send you a pull request,
-> or should I let you take this one directly ?
-> 
-> Best Regards,
-> 
-> Boris
-> 
-> >  drivers/clk/at91/clk-main.c | 1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/drivers/clk/at91/clk-main.c
-> > b/drivers/clk/at91/clk-main.c index 733306131b99..59fa3cc96c9e
-> > 100644 --- a/drivers/clk/at91/clk-main.c
-> > +++ b/drivers/clk/at91/clk-main.c
-> > @@ -388,6 +388,7 @@ static unsigned long clk_main_recalc_rate(struct
-> > at91_pmc *pmc, if (parent_rate)
-> >  		return parent_rate;
-> >  
-> > +	pr_warn("Main crystal frequency not set, using approximate
-> > value\n"); tmp = pmc_read(pmc, AT91_CKGR_MCFR);
-> >  	if (!(tmp & AT91_PMC_MAINRDY))
-> >  		return 0;
-> 
-> 
-> 
+> If so, some additional wrappers like vfs_* or kernel_* would have to be
+> written. This would also complicate portability between the out-of-tree
+> and the in-tree version of MARS (which I have to maintain in parallel at
+> least for some years).
 
+Maintaining out of tree code is not our problem, sorry.
 
+thanks,
 
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+greg k-h
