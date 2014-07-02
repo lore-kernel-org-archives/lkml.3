@@ -1,76 +1,349 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829AbaGBJGr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 05:06:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59507 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751815AbaGBJGp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 05:06:45 -0400
-Date: Wed, 2 Jul 2014 11:06:38 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
-        eranian@google.com, andi@firstfloor.org
-Subject: Re: [PATCH V4 03/16] perf, x86: use context switch callback to flush
- LBR stack
-Message-ID: <20140702090638.GU6758@twins.programming.kicks-ass.net>
-References: <1404118253-19532-1-git-send-email-zheng.z.yan@intel.com>
- <1404118253-19532-4-git-send-email-zheng.z.yan@intel.com>
+	id S1752302AbaGBJIZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 05:08:25 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40797 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751205AbaGBJIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 05:08:21 -0400
+Message-ID: <53B3CBE4.4030807@ti.com>
+Date: Wed, 2 Jul 2014 14:37:48 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="onwk0SivC/dtQkFp"
-Content-Disposition: inline
-In-Reply-To: <1404118253-19532-4-git-send-email-zheng.z.yan@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Murali Karicheri <m-karicheri2@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <linux-pci@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RESEND: PATCH - v3] phy: Add serdes phy driver for keystone
+References: <1404223042-12845-1-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1404223042-12845-1-git-send-email-m-karicheri2@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---onwk0SivC/dtQkFp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tuesday 01 July 2014 07:27 PM, Murali Karicheri wrote:
+> This phy driver added to support keystone PCI driver. This is
 
-On Mon, Jun 30, 2014 at 04:50:40PM +0800, Yan, Zheng wrote:
-> @@ -185,6 +185,23 @@ void intel_pmu_lbr_enable(struct perf_event *event)
->  		return;
-> =20
->  	/*
-> +	 * It is necessary to flush the stack on context switch. This happens
-> +	 * when the branch stack does not tag its entries with the pid of the
-> +	 * current task.
+%s/PCI/PCIe/
+> a generic phy driver and currently it supports only SerDes
+> for PCI Controller. The hw vendor that provides the phy
 
-Did you mean to say: "This happens _because_ the branch stack does not
-tag its entries with the pid of the current task." ?
+The driver supports only for PCIe or the controller?
+> hw published only registers and their values. So this driver
+> uses these hard coded values to initialize the phy.
+> 
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> CC: Rob Herring <robh+dt@kernel.org>
+> CC: Pawel Moll <pawel.moll@arm.com>
+> CC: Mark Rutland <mark.rutland@arm.com>
+> CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> CC: Kumar Gala <galak@codeaurora.org>
+> CC: Kishon Vijay Abraham I <kishon@ti.com>
+> CC: Grant Likely <grant.likely@linaro.org>
+> ---
+> Changelog:-
+>  -  Resending with changelog moved out of commit message
+>  -  Added comments to indicate what the register functionality
+>     each register blob is doing.
+>  -  Previous versions were part of the PCI Keystone driver series.
+>     This is now send as a separate patch so that this can be
+>     reviewed indepedently and merged.
+> 
+>  .../bindings/phy/phy-serdes-keystone.txt           |   25 +++
+>  drivers/phy/Kconfig                                |    6 +
+>  drivers/phy/Makefile                               |    1 +
+>  drivers/phy/phy-serdes-keystone.c                  |  200 ++++++++++++++++++++
+>  4 files changed, 232 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/phy/phy-serdes-keystone.txt
+>  create mode 100644 drivers/phy/phy-serdes-keystone.c
+> 
+> diff --git a/Documentation/devicetree/bindings/phy/phy-serdes-keystone.txt b/Documentation/devicetree/bindings/phy/phy-serdes-keystone.txt
 
-> +	 */
-> +	if (sched_in) {
-> +		intel_pmu_lbr_reset();
-> +		cpuc->lbr_context =3D ctx;
+Can we reuse ti-phy.txt for this?
+> new file mode 100644
+> index 0000000..612c7b5
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/phy/phy-serdes-keystone.txt
+> @@ -0,0 +1,25 @@
+> +TI Keystone SerDes Phy: DT documentation
+> +=======================================
+> +
+> +Required properties:
+> + - compatible: should be "ti,keystone-serdes-phy";
+> + - reg: base address and length of the SerDes register set
+> + - reg-names: should be "reg_serdes", name of the reg SerDes register set
+> + - #phy-cells: from the generic phy bindings, must be 0;
+> +
+> +Exampel for Keystone PCIE,
+> +
+> +		pcie0_phy: serdes_phy@2320000 {
+> +			#phy-cells = <0>;
+> +			compatible = "ti,keystone-serdes-phy";
+> +			reg = <0x02320000 0x4000>;
+> +			reg-names = "reg_serdes";
+> +		};
+> +
+> +
+> +Then the PHY can be used in PCIe controller node as
+> +
+> +pcie@21800000 {
+> +	phys = <&pcie0_phy>;
+> +	phy-names = "pcie-phy";
+> +};
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index 16a2f06..54a8471 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -178,4 +178,10 @@ config PHY_XGENE
+>  	help
+>  	  This option enables support for APM X-Gene SoC multi-purpose PHY.
+>  
+> +config PHY_TI_KEYSTONE_SERDES
+> +	bool "TI Keystone SerDes PHY support"
+> +	depends on ARCH_KEYSTONE
+
+depends on HAS_IOMEM?
+> +	select GENERIC_PHY
+> +	help
+> +	  This option enables support for TI Keystone SerDes PHY.
+>  endmenu
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index b4f1d57..a02faaa 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -20,3 +20,4 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4X12_USB2)	+= phy-exynos4x12-usb2.o
+>  phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
+>  obj-$(CONFIG_PHY_EXYNOS5_USBDRD)	+= phy-exynos5-usbdrd.o
+>  obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
+> +obj-$(CONFIG_PHY_TI_KEYSTONE_SERDES)	+= phy-serdes-keystone.o
+> diff --git a/drivers/phy/phy-serdes-keystone.c b/drivers/phy/phy-serdes-keystone.c
+> new file mode 100644
+> index 0000000..f1a8888
+> --- /dev/null
+> +++ b/drivers/phy/phy-serdes-keystone.c
+
+Looking at the other phy drivers, feel this should be named phy-keystone-serdes.c?
+> @@ -0,0 +1,200 @@
+> +/*
+> + * Keystone SerDes Phy driver
+> + *
+> + * Copyright (C) 2013-2014 Texas Instruments, Inc.
+> + *		http://www.ti.com
+> + *
+> + * Author: Murali Karicheri <m-karicheri2@ti.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/delay.h>
+> +#include <linux/err.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/phy/phy.h>
+> +#include <linux/platform_device.h>
+> +
+> +#define reg_dump(addr, mask) \
+> +		pr_debug("reg %p has value %x\n", (void *)addr, \
+> +			(readl(addr) & ~mask))
+> +
+> +/* mask bits point to bits being modified */
+> +#define reg_rmw(addr, value, mask) \
+> +		writel(((readl(addr) & (~(mask))) | \
+> +			(value & (mask))), (addr))
+> +struct serdes_config {
+
+struct ks_serdes_config?
+> +	u32 reg;
+> +	u32 val;
+> +	u32 mask;
+> +};
+> +
+> +struct phy_serdes_keystone {
+
+struct ks_serdes_phy?
+> +	struct device *dev;
+> +	void __iomem *base;
+> +};
+> +
+> +static struct serdes_config ks_100mhz_5gbps_serdes[] = {
+> +	/* SerDes Clock and common configuration */
+> +	{0x0000, 0x00000800, 0x0000ff00},
+> +	{0x0060, 0x00041c5c, 0x00ffffff},
+> +	{0x0064, 0x0343c700, 0xffffff00},
+> +	{0x006c, 0x00000012, 0x000000ff},
+> +	{0x0068, 0x00070000, 0x00ff0000},
+> +	{0x0078, 0x0000c000, 0x0000ff00},
+> +
+> +	/* Lane - A Phy configuration */
+> +	{0x0200, 0x00000000, 0x000000ff},
+> +	{0x0204, 0x5e000080, 0xff0000ff},
+> +	{0x0208, 0x00000006, 0x000000ff},
+> +	{0x0210, 0x00000023, 0x000000ff},
+> +	{0x0214, 0x2e003060, 0xff00ffff},
+> +	{0x0218, 0x76000000, 0xff000000},
+> +	{0x022c, 0x00200002, 0x00ff00ff},
+> +	{0x02a0, 0xffee0000, 0xffff0000},
+> +	{0x02a4, 0x0000000f, 0x000000ff},
+> +	{0x0204, 0x5e000000, 0xff000000},
+> +	{0x0208, 0x00000006, 0x000000ff},
+> +	{0x0278, 0x00002000, 0x0000ff00},
+> +	{0x0280, 0x00280028, 0x00ff00ff},
+> +	{0x0284, 0x2d0f0385, 0xffffffff},
+> +	{0x0250, 0xd0000000, 0xff000000},
+> +	{0x0284, 0x00000085, 0x000000ff},
+> +	{0x0294, 0x20000000, 0xff000000},
+> +
+> +	/* Lane - B Phy configuration */
+> +	{0x0400, 0x00000000, 0x000000ff},
+> +	{0x0404, 0x5e000080, 0xff0000ff},
+> +	{0x0408, 0x00000006, 0x000000ff},
+> +	{0x0410, 0x00000023, 0x000000ff},
+> +	{0x0414, 0x2e003060, 0xff00ffff},
+> +	{0x0418, 0x76000000, 0xff000000},
+> +	{0x042c, 0x00200002, 0x00ff00ff},
+> +	{0x04a0, 0xffee0000, 0xffff0000},
+> +	{0x04a4, 0x0000000f, 0x000000ff},
+> +	{0x0404, 0x5e000000, 0xff000000},
+> +	{0x0408, 0x00000006, 0x000000ff},
+> +	{0x0478, 0x00002000, 0x0000ff00},
+> +	{0x0480, 0x00280028, 0x00ff00ff},
+> +	{0x0484, 0x2d0f0385, 0xffffffff},
+> +	{0x0450, 0xd0000000, 0xff000000},
+> +	{0x0494, 0x20000000, 0xff000000},
+> +
+> +	/* Common Lane configurations */
+> +	{0x0a00, 0x00000100, 0x0000ff00},
+> +	{0x0a08, 0x00e12c08, 0x00ffffff},
+> +	{0x0a0c, 0x00000081, 0x000000ff},
+> +	{0x0a18, 0x00e80000, 0x00ff0000},
+> +	{0x0a30, 0x002f2f00, 0x00ffff00},
+> +	{0x0a4c, 0xac820000, 0xffff0000},
+> +	{0x0a54, 0xc0000000, 0xff000000},
+> +	{0x0a58, 0x00001441, 0x0000ffff},
+> +	{0x0a84, 0x00000301, 0x0000ffff},
+> +	{0x0a8c, 0x81030000, 0xffff0000},
+> +	{0x0a90, 0x00006001, 0x0000ffff},
+> +	{0x0a94, 0x01000000, 0xff000000},
+> +	{0x0aa0, 0x81000000, 0xff000000},
+> +	{0x0abc, 0xff000000, 0xff000000},
+> +	{0x0ac0, 0x0000008b, 0x000000ff},
+> +
+> +	/* common clock configuration */
+> +	{0x0000, 0x00000003, 0x000000ff},
+> +
+> +	/* Common Lane configurations */
+> +	{0x0a00, 0x0000009f, 0x000000ff},
+> +	{0x0a44, 0x5f733d00, 0xffffff00},
+> +	{0x0a48, 0x00fdca00, 0x00ffff00},
+> +	{0x0a5c, 0x00000000, 0xffff0000},
+> +	{0x0a60, 0x00008000, 0xffffffff},
+> +	{0x0a64, 0x0c581220, 0xffffffff},
+> +	{0x0a68, 0xe13b0602, 0xffffffff},
+> +	{0x0a6c, 0xb8074cc1, 0xffffffff},
+> +	{0x0a70, 0x3f02e989, 0xffffffff},
+> +	{0x0a74, 0x00000001, 0x000000ff},
+> +	{0x0b14, 0x00370000, 0x00ff0000},
+> +	{0x0b10, 0x37000000, 0xff000000},
+> +	{0x0b14, 0x0000005d, 0x000000ff},
+
+I'm not particularly happy about merging this sort of configuration :-/
+
+> +};
+> +
+> +static int ks_serdes_phy_init(struct phy *phy)
+> +{
+> +	struct serdes_config *p;
+> +	struct phy_serdes_keystone *ks_phy = phy_get_drvdata(phy);
+> +
+> +	int i;
+> +
+> +	for (i = 0, p = &ks_100mhz_5gbps_serdes[0];
+> +		i < ARRAY_SIZE(ks_100mhz_5gbps_serdes);
+> +		i++, p++) {
+> +		reg_rmw((ks_phy->base + p->reg), p->val, p->mask);
+> +		reg_dump((ks_phy->base + p->reg), p->mask);
 > +	}
+> +	msleep(20);
+
+Why this delay is needed? A small comment would help.
+> +
+> +	return 0;
 > +}
+> +
+> +static struct phy_ops ks_serdes_phy_ops = {
+> +	.init		= ks_serdes_phy_init,
+> +	.owner		= THIS_MODULE,
+> +};
+> +
+> +static int ks_serdes_phy_probe(struct platform_device *pdev)
+> +{
+> +	struct phy_provider *phy_provider;
+> +	struct device *dev = &pdev->dev;
+> +	struct phy_serdes_keystone *ks_phy;
+> +	struct phy *phy;
+> +	struct resource *res;
+> +
+> +	ks_phy = devm_kzalloc(dev, sizeof(*ks_phy), GFP_KERNEL);
+> +	if (!ks_phy)
+> +		return -ENOMEM;
+> +
+> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "reg_serdes");
+> +	ks_phy->base = devm_ioremap_resource(dev, res);
+> +	if (IS_ERR(ks_phy->base))
+> +		return PTR_ERR(ks_phy->base);
+> +
+> +	ks_phy->dev = dev;
+> +	phy = devm_phy_create(dev, &ks_serdes_phy_ops, NULL);
+> +	if (IS_ERR(phy))
+> +		return PTR_ERR(phy);
+> +
+> +	phy_set_drvdata(phy, ks_phy);
+> +	phy_provider = devm_of_phy_provider_register(ks_phy->dev,
+> +				of_phy_simple_xlate);
+> +
+> +	if (IS_ERR(phy_provider))
+> +		return PTR_ERR(phy_provider);
+> +
+> +	dev_info(dev, "keystone SerDes Phy initialized\n");
 
---onwk0SivC/dtQkFp
-Content-Type: application/pgp-signature
+Lets not make the boot noisy, remove this.
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id ks_serdes_phy_of_match[] = {
+> +	{ .compatible = "ti,keystone-serdes-phy" },
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, ks_serdes_phy_of_match);
+> +
+> +static struct platform_driver ks_serdes_phy_driver = {
+> +	.probe	= ks_serdes_phy_probe,
+> +	.driver = {
+> +		.of_match_table	= ks_serdes_phy_of_match,
+> +		.name  = "ti,keystone-serdes-phy",
+> +		.owner = THIS_MODULE,
+> +	}
+> +};
+> +module_platform_driver(ks_serdes_phy_driver);
+> +
+> +MODULE_DESCRIPTION("TI Keystone SerDes PHY driver");
+> +MODULE_LICENSE("GPL V2");
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+It's *GPL v2*
 
-iQIcBAEBAgAGBQJTs8udAAoJEHZH4aRLwOS6/3EP/iPj0TAmtUaTX0x5er6rR/wh
-dn4STUQkrzZwO66v5nN84EXVgYiblTHrIR+hFp2z8HbtJVOScdzaAFfUZ0CLsm8+
-ndcX6RNQPqwVb+iHwmYzdOJTjv0AAl28g1eUslGk2OzyfhJv2BzWuwJz3BYs18qu
-YjciD8Xv7/Pmj15adIQawWe60rM8qe+f79iELdkYTzwjqCUhBXJpSgQ13BVyP518
-uLMVFz1+ZwPDLeTHOABgTY+V7KDPiC3So5twDZg5A8yfpc5GRoeKhtfHBJfMh/qd
-GmcjhyLxXcz9Z5wVnqlqS6hkUYkQpVK0u4c9VLyiRGMATp3ariruMTmZHw0OUB0L
-1e+x+nwa8R5zr4SucvhE64f/7PGlKC+H/Yn20OO2q2sO9eAHdLquso6n0kUf8hjd
-hnOMdm6waxly8Loytot1K3bQdrEOcnp0JzfkOna2uQRyoqhLQZNxNMtTnmu7/zru
-Yytw1p6u431CI4y7DC1sSvoxsBvwt/IrwfDPcmCBJMMfVOk4nnRteYv2uNsjeJrV
-2OVvF4GZVjnEK1R+qTeOKDKs4igzECKhrK9KSYAs8bFxWlJoLMPpdHZKJm9UMxnX
-GWjBkVk+2PPDrrM2tUXm8/VZTMMPy27EGhV3wwpsIHF2e72gxr+F+YiVBY6FqIsu
-8UoOeWcPeoaekjouTylh
-=oO4y
------END PGP SIGNATURE-----
-
---onwk0SivC/dtQkFp--
+Cheers
+Kishon
