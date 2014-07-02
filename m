@@ -1,220 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162AbaGBXvt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 19:51:49 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:53753 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508AbaGBXvF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 19:51:05 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Vivek Goyal <vgoyal@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Aristeu Rozanski <aris@redhat.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 4/5] cgroup: distinguish the default and legacy hierarchies when handling cftypes
-Date: Wed,  2 Jul 2014 19:50:54 -0400
-Message-Id: <1404345055-8196-5-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1404345055-8196-1-git-send-email-tj@kernel.org>
-References: <1404345055-8196-1-git-send-email-tj@kernel.org>
+	id S1754520AbaGBXw0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 19:52:26 -0400
+Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:9758
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750852AbaGBXwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 19:52:20 -0400
+Date: Wed, 2 Jul 2014 18:52:11 -0500
+From: Scott Wood <scottwood@freescale.com>
+To: <linuxppc-dev@lists.ozlabs.org>
+CC: <linux-kernel@vger.kernel.org>,
+        Bharat Bhushan <Bharat.Bhushan@freescale.com>
+Subject: [PATCH v2] memory: Freescale CoreNet Coherency Fabric error
+ reporting driver
+Message-ID: <20140702235211.GA3898@home.buserror.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2601:2:5800:3f7:39f9:17:4960:c198]
+X-ClientProxiedBy: BN1PR08CA0025.namprd08.prod.outlook.com (10.242.217.153) To
+ BLUPR03MB390.namprd03.prod.outlook.com (10.141.78.19)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0260457E99
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(189002)(199002)(92566001)(92726001)(53416004)(95666004)(69596002)(77982001)(81342001)(47776003)(20776003)(19580395003)(85306003)(42186005)(80022001)(77096002)(64706001)(83322001)(74662001)(81542001)(46102001)(31966008)(101416001)(575784001)(102836001)(86362001)(83506001)(19580405001)(23726002)(21056001)(50466002)(97756001)(74502001)(99396002)(87976001)(106356001)(83072002)(85852003)(50986999)(33656002)(105586002)(229853001)(76482001)(79102001)(46406003)(54356999)(107046002)(81156004)(2351001)(2004002)(3826002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB390;H:home.buserror.net;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Until now, cftype arrays carried files for both the default and legacy
-hierarchies and the files which needed to be used on only one of them
-were flagged with either CFTYPE_ONLY_ON_DFL or CFTYPE_INSANE.  This
-gets confusing very quickly and we may end up exposing interface files
-to the default hierarchy without thinking it through.
+The CoreNet Coherency Fabric is part of the memory subsystem on
+some Freescale QorIQ chips.  It can report coherency violations (e.g.
+due to misusing memory that is mapped noncoherent) as well as
+transactions that do not hit any local access window, or which hit a
+local access window with an invalid target ID.
 
-This patch makes cgroup core provide separate sets of interfaces for
-cftype handling so that the cftypes for the default and legacy
-hierarchies are clearly distinguished.  The previous two patches
-renamed the existing ones so that they clearly indicate that they're
-for the legacy hierarchies.  This patch adds the interface for the
-default hierarchy and apply them selectively depending on the
-hierarchy type.
-
-* cftypes added through cgroup_subsys->dfl_cftypes and
-  cgroup_add_dfl_cftypes() only show up on the default hierarchy.
-
-* cftypes added through cgroup_subsys->legacy_cftypes and
-  cgroup_add_legacy_cftypes() only show up on the legacy hierarchies.
-
-* cgroup_subsys->dfl_cftypes and ->legacy_cftypes can point to the
-  same array for the cases where the interface files are identical on
-  both types of hierarchies.
-
-* This makes all the existing subsystem interface files legacy-only by
-  default and all subsystems will have no interface file created when
-  enabled on the default hierarchy.  Each subsystem should explicitly
-  review and compose the interface for the default hierarchy.
-
-* A boot param "cgroup__DEVEL__legacy_files_on_dfl" is added which
-  makes subsystems which haven't decided the interface files for the
-  default hierarchy to present the legacy files on the default
-  hierarchy so that its behavior on the default hierarchy can be
-  tested.  As the awkward name suggests, this is for development only.
-
-* memcg's CFTYPE_INSANE on "use_hierarchy" is noop now as the whole
-  array isn't used on the default hierarchy.  The flag is removed.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Aristeu Rozanski <aris@redhat.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Scott Wood <scottwood@freescale.com>
 ---
- include/linux/cgroup.h |  9 ++++++--
- kernel/cgroup.c        | 58 +++++++++++++++++++++++++++++++++++++++++++++++---
- mm/memcontrol.c        |  1 -
- 3 files changed, 62 insertions(+), 6 deletions(-)
+v2:
+ - s/cecadr/cecaddr/ to consistently use ccf2 names
+ - fix ERRDET_CTYPE_MASK value
+ - use the ccf2 value for CECADDRH_ADDRH (harmless on ccf1)
+ - add comment explaining why we disable detection on remove for
+   ccf1 but not ccf2
+---
+ arch/powerpc/configs/corenet32_smp_defconfig |   1 +
+ arch/powerpc/configs/corenet64_smp_defconfig |   1 +
+ drivers/memory/Kconfig                       |  10 ++
+ drivers/memory/Makefile                      |   1 +
+ drivers/memory/fsl-corenet-cf.c              | 251 +++++++++++++++++++++++++++
+ 5 files changed, 264 insertions(+)
+ create mode 100644 drivers/memory/fsl-corenet-cf.c
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index a75a37f..62a2be1 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -582,6 +582,7 @@ static inline void pr_cont_cgroup_path(struct cgroup *cgrp)
+diff --git a/arch/powerpc/configs/corenet32_smp_defconfig b/arch/powerpc/configs/corenet32_smp_defconfig
+index 7d0c837..6a3c58a 100644
+--- a/arch/powerpc/configs/corenet32_smp_defconfig
++++ b/arch/powerpc/configs/corenet32_smp_defconfig
+@@ -180,3 +180,4 @@ CONFIG_CRYPTO_SHA512=y
+ CONFIG_CRYPTO_AES=y
+ # CONFIG_CRYPTO_ANSI_CPRNG is not set
+ CONFIG_CRYPTO_DEV_FSL_CAAM=y
++CONFIG_FSL_CORENET_CF=y
+diff --git a/arch/powerpc/configs/corenet64_smp_defconfig b/arch/powerpc/configs/corenet64_smp_defconfig
+index 6ae07e1..4b07bad 100644
+--- a/arch/powerpc/configs/corenet64_smp_defconfig
++++ b/arch/powerpc/configs/corenet64_smp_defconfig
+@@ -179,3 +179,4 @@ CONFIG_CRYPTO_SHA256=y
+ CONFIG_CRYPTO_SHA512=y
+ # CONFIG_CRYPTO_ANSI_CPRNG is not set
+ CONFIG_CRYPTO_DEV_FSL_CAAM=y
++CONFIG_FSL_CORENET_CF=y
+diff --git a/drivers/memory/Kconfig b/drivers/memory/Kconfig
+index c59e9c9..fab81a1 100644
+--- a/drivers/memory/Kconfig
++++ b/drivers/memory/Kconfig
+@@ -61,6 +61,16 @@ config TEGRA30_MC
+ 	  analysis, especially for IOMMU/SMMU(System Memory Management
+ 	  Unit) module.
  
- char *task_cgroup_path(struct task_struct *task, char *buf, size_t buflen);
- 
-+int cgroup_add_dfl_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
- int cgroup_add_legacy_cftypes(struct cgroup_subsys *ss, struct cftype *cfts);
- int cgroup_rm_cftypes(struct cftype *cfts);
- 
-@@ -662,8 +663,12 @@ struct cgroup_subsys {
- 	 */
- 	struct list_head cfts;
- 
--	/* base cftypes, automatically registered with subsys itself */
--	struct cftype *legacy_cftypes;	/* used on the legacy hierarchies */
-+	/*
-+	 * Base cftypes which are automatically registered.  The two can
-+	 * point to the same array.
-+	 */
-+	struct cftype *dfl_cftypes;	/* for the default hierarchy */
-+	struct cftype *legacy_cftypes;	/* for the legacy hierarchies */
- };
- 
- #define SUBSYS(_x) extern struct cgroup_subsys _x ## _cgrp_subsys;
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 311d42b..94cdb7b 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -149,6 +149,12 @@ struct cgroup_root cgrp_dfl_root;
-  */
- static bool cgrp_dfl_root_visible;
- 
++config FSL_CORENET_CF
++	tristate "Freescale CoreNet Error Reporting"
++	depends on FSL_SOC_BOOKE
++	help
++	  Say Y for reporting of errors from the Freescale CoreNet
++	  Coherency Fabric.  Errors reported include accesses to
++	  physical addresses that mapped by no local access window
++	  (LAW) or an invalid LAW, as well as bad cache state that
++	  represents a coherency violation.
++
+ config FSL_IFC
+ 	bool
+ 	depends on FSL_SOC
+diff --git a/drivers/memory/Makefile b/drivers/memory/Makefile
+index 71160a2..4055c47 100644
+--- a/drivers/memory/Makefile
++++ b/drivers/memory/Makefile
+@@ -7,6 +7,7 @@ obj-$(CONFIG_OF)		+= of_memory.o
+ endif
+ obj-$(CONFIG_TI_AEMIF)		+= ti-aemif.o
+ obj-$(CONFIG_TI_EMIF)		+= emif.o
++obj-$(CONFIG_FSL_CORENET_CF)	+= fsl-corenet-cf.o
+ obj-$(CONFIG_FSL_IFC)		+= fsl_ifc.o
+ obj-$(CONFIG_MVEBU_DEVBUS)	+= mvebu-devbus.o
+ obj-$(CONFIG_TEGRA20_MC)	+= tegra20-mc.o
+diff --git a/drivers/memory/fsl-corenet-cf.c b/drivers/memory/fsl-corenet-cf.c
+new file mode 100644
+index 0000000..c9443fc
+--- /dev/null
++++ b/drivers/memory/fsl-corenet-cf.c
+@@ -0,0 +1,251 @@
 +/*
-+ * Set by the boot param of the same name and makes subsystems with NULL
-+ * ->dfl_files to use ->legacy_files on the default hierarchy.
-+ */
-+static bool cgroup_legacy_files_on_dfl;
-+
- /* some controllers are not supported in the default hierarchy */
- static const unsigned int cgrp_dfl_root_inhibit_ss_mask = 0
- #ifdef CONFIG_CGROUP_DEBUG
-@@ -3085,8 +3091,37 @@ static int cgroup_add_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
- 	return ret;
- }
- 
-+/**
-+ * cgroup_add_dfl_cftypes - add an array of cftypes for default hierarchy
-+ * @ss: target cgroup subsystem
-+ * @cfts: zero-length name terminated array of cftypes
++ * CoreNet Coherency Fabric error reporting
 + *
-+ * Similar to cgroup_add_cftypes() but the added files are only used for
-+ * the default hierarchy.
++ * Copyright 2014 Freescale Semiconductor Inc.
++ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
 + */
-+int cgroup_add_dfl_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
-+{
-+	struct cftype *cft;
 +
-+	for (cft = cfts; cft && cft->name[0] != '\0'; cft++)
-+		cft->flags |= CFTYPE_ONLY_ON_DFL;
-+	return cgroup_add_cftypes(ss, cfts);
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_device.h>
++#include <linux/of_irq.h>
++#include <linux/platform_device.h>
++
++enum ccf_version {
++	CCF1,
++	CCF2,
++};
++
++struct ccf_info {
++	enum ccf_version version;
++	int err_reg_offs;
++};
++
++static const struct ccf_info ccf1_info = {
++	.version = CCF1,
++	.err_reg_offs = 0xa00,
++};
++
++static const struct ccf_info ccf2_info = {
++	.version = CCF2,
++	.err_reg_offs = 0xe40,
++};
++
++static const struct of_device_id ccf_matches[] = {
++	{
++		.compatible = "fsl,corenet1-cf",
++		.data = &ccf1_info,
++	},
++	{
++		.compatible = "fsl,corenet2-cf",
++		.data = &ccf2_info,
++	},
++	{}
++};
++
++struct ccf_err_regs {
++	u32 errdet;		/* 0x00 Error Detect Register */
++	/* 0x04 Error Enable (ccf1)/Disable (ccf2) Register */
++	u32 errdis;
++	/* 0x08 Error Interrupt Enable Register (ccf2 only) */
++	u32 errinten;
++	u32 cecar;		/* 0x0c Error Capture Attribute Register */
++	u32 cecaddrh;		/* 0x10 Error Capture Address High */
++	u32 cecaddrl;		/* 0x14 Error Capture Address Low */
++	u32 cecar2;		/* 0x18 Error Capture Attribute Register 2 */
++};
++
++/* LAE/CV also valid for errdis and errinten */
++#define ERRDET_LAE		(1 << 0)  /* Local Access Error */
++#define ERRDET_CV		(1 << 1)  /* Coherency Violation */
++#define ERRDET_CTYPE_SHIFT	26	  /* Capture Type (ccf2 only) */
++#define ERRDET_CTYPE_MASK	(0x1f << ERRDET_CTYPE_SHIFT)
++#define ERRDET_CAP		(1 << 31) /* Capture Valid (ccf2 only) */
++
++#define CECAR_VAL		(1 << 0)  /* Valid (ccf1 only) */
++#define CECAR_UVT		(1 << 15) /* Unavailable target ID (ccf1) */
++#define CECAR_SRCID_SHIFT_CCF1	24
++#define CECAR_SRCID_MASK_CCF1	(0xff << CECAR_SRCID_SHIFT_CCF1)
++#define CECAR_SRCID_SHIFT_CCF2	18
++#define CECAR_SRCID_MASK_CCF2	(0xff << CECAR_SRCID_SHIFT_CCF2)
++
++#define CECADDRH_ADDRH		0xff
++
++struct ccf_private {
++	const struct ccf_info *info;
++	struct device *dev;
++	void __iomem *regs;
++	struct ccf_err_regs __iomem *err_regs;
++};
++
++static irqreturn_t ccf_irq(int irq, void *dev_id)
++{
++	struct ccf_private *ccf = dev_id;
++	static DEFINE_RATELIMIT_STATE(ratelimit, DEFAULT_RATELIMIT_INTERVAL,
++				      DEFAULT_RATELIMIT_BURST);
++	u32 errdet, cecar, cecar2;
++	u64 addr;
++	u32 src_id;
++	bool uvt = false;
++	bool cap_valid = false;
++
++	errdet = ioread32be(&ccf->err_regs->errdet);
++	cecar = ioread32be(&ccf->err_regs->cecar);
++	cecar2 = ioread32be(&ccf->err_regs->cecar2);
++	addr = ioread32be(&ccf->err_regs->cecaddrl);
++	addr |= ((u64)(ioread32be(&ccf->err_regs->cecaddrh) &
++		       CECADDRH_ADDRH)) << 32;
++
++	if (!__ratelimit(&ratelimit))
++		goto out;
++
++	switch (ccf->info->version) {
++	case CCF1:
++		if (cecar & CECAR_VAL) {
++			if (cecar & CECAR_UVT)
++				uvt = true;
++
++			src_id = (cecar & CECAR_SRCID_MASK_CCF1) >>
++				 CECAR_SRCID_SHIFT_CCF1;
++			cap_valid = true;
++		}
++
++		break;
++	case CCF2:
++		if (errdet & ERRDET_CAP) {
++			src_id = (cecar & CECAR_SRCID_MASK_CCF2) >>
++				 CECAR_SRCID_SHIFT_CCF2;
++			cap_valid = true;
++		}
++
++		break;
++	}
++
++	dev_crit(ccf->dev, "errdet 0x%08x cecar 0x%08x cecar2 0x%08x\n",
++		 errdet, cecar, cecar2);
++
++	if (errdet & ERRDET_LAE) {
++		if (uvt)
++			dev_crit(ccf->dev, "LAW Unavailable Target ID\n");
++		else
++			dev_crit(ccf->dev, "Local Access Window Error\n");
++	}
++
++	if (errdet & ERRDET_CV)
++		dev_crit(ccf->dev, "Coherency Violation\n");
++
++	if (cap_valid) {
++		dev_crit(ccf->dev, "address 0x%09llx, src id 0x%x\n",
++			 addr, src_id);
++	}
++
++out:
++	iowrite32be(errdet, &ccf->err_regs->errdet);
++	return errdet ? IRQ_HANDLED : IRQ_NONE;
 +}
 +
-+/**
-+ * cgroup_add_legacy_cftypes - add an array of cftypes for legacy hierarchies
-+ * @ss: target cgroup subsystem
-+ * @cfts: zero-length name terminated array of cftypes
-+ *
-+ * Similar to cgroup_add_cftypes() but the added files are only used for
-+ * the legacy hierarchies.
-+ */
- int cgroup_add_legacy_cftypes(struct cgroup_subsys *ss, struct cftype *cfts)
- {
-+	struct cftype *cft;
-+
-+	for (cft = cfts; cft && cft->name[0] != '\0'; cft++)
-+		cft->flags |= CFTYPE_INSANE;
- 	return cgroup_add_cftypes(ss, cfts);
- }
- 
-@@ -4775,9 +4810,19 @@ int __init cgroup_init(void)
- 		 * disabled flag and cftype registration needs kmalloc,
- 		 * both of which aren't available during early_init.
- 		 */
--		if (!ss->disabled) {
--			cgrp_dfl_root.subsys_mask |= 1 << ss->id;
--			WARN_ON(cgroup_add_cftypes(ss, ss->legacy_cftypes));
-+		if (ss->disabled)
-+			continue;
-+
-+		cgrp_dfl_root.subsys_mask |= 1 << ss->id;
-+
-+		if (cgroup_legacy_files_on_dfl && !ss->dfl_cftypes)
-+			ss->dfl_cftypes = ss->legacy_cftypes;
-+
-+		if (ss->dfl_cftypes == ss->legacy_cftypes) {
-+			WARN_ON(cgroup_add_cftypes(ss, ss->dfl_cftypes));
-+		} else {
-+			WARN_ON(cgroup_add_dfl_cftypes(ss, ss->dfl_cftypes));
-+			WARN_ON(cgroup_add_legacy_cftypes(ss, ss->legacy_cftypes));
- 		}
- 	}
- 
-@@ -5173,6 +5218,13 @@ static int __init cgroup_disable(char *str)
- }
- __setup("cgroup_disable=", cgroup_disable);
- 
-+static int __init cgroup_set_legacy_files_on_dfl(char *str)
++static int ccf_probe(struct platform_device *pdev)
 +{
-+	cgroup_legacy_files_on_dfl = true;
++	struct ccf_private *ccf;
++	struct resource *r;
++	const struct of_device_id *match;
++	int ret, irq;
++
++	match = of_match_device(ccf_matches, &pdev->dev);
++	if (WARN_ON(!match))
++		return -ENODEV;
++
++	ccf = devm_kzalloc(&pdev->dev, sizeof(*ccf), GFP_KERNEL);
++	if (!ccf)
++		return -ENOMEM;
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!r) {
++		dev_err(&pdev->dev, "%s: no mem resource\n", __func__);
++		return -ENXIO;
++	}
++
++	ccf->regs = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(ccf->regs)) {
++		dev_err(&pdev->dev, "%s: can't map mem resource\n", __func__);
++		return PTR_ERR(ccf->regs);
++	}
++
++	ccf->dev = &pdev->dev;
++	ccf->info = match->data;
++	ccf->err_regs = ccf->regs + ccf->info->err_reg_offs;
++
++	dev_set_drvdata(&pdev->dev, ccf);
++
++	irq = platform_get_irq(pdev, 0);
++	if (!irq) {
++		dev_err(&pdev->dev, "%s: no irq\n", __func__);
++		return -ENXIO;
++	}
++
++	ret = devm_request_irq(&pdev->dev, irq, ccf_irq, 0, pdev->name, ccf);
++	if (ret) {
++		dev_err(&pdev->dev, "%s: can't request irq\n", __func__);
++		return ret;
++	}
++
++	switch (ccf->info->version) {
++	case CCF1:
++		/* On CCF1 this register enables rather than disables. */
++		iowrite32be(ERRDET_LAE | ERRDET_CV, &ccf->err_regs->errdis);
++		break;
++
++	case CCF2:
++		iowrite32be(0, &ccf->err_regs->errdis);
++		iowrite32be(ERRDET_LAE | ERRDET_CV, &ccf->err_regs->errinten);
++		break;
++	}
++
 +	return 0;
 +}
-+__setup("cgroup__DEVEL__legacy_files_on_dfl", cgroup_set_legacy_files_on_dfl);
 +
- /**
-  * css_tryget_online_from_dir - get corresponding css from a cgroup dentry
-  * @dentry: directory dentry of interest
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index a629611..3b37586 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6003,7 +6003,6 @@ static struct cftype mem_cgroup_files[] = {
- 	},
- 	{
- 		.name = "use_hierarchy",
--		.flags = CFTYPE_INSANE,
- 		.write_u64 = mem_cgroup_hierarchy_write,
- 		.read_u64 = mem_cgroup_hierarchy_read,
- 	},
++static int ccf_remove(struct platform_device *pdev)
++{
++	struct ccf_private *ccf = dev_get_drvdata(&pdev->dev);
++
++	switch (ccf->info->version) {
++	case CCF1:
++		iowrite32be(0, &ccf->err_regs->errdis);
++		break;
++
++	case CCF2:
++		/*
++		 * We clear errdis on ccf1 because that's the only way to
++		 * disable interrupts, but on ccf2 there's no need to disable
++		 * detection.
++		 */
++		iowrite32be(0, &ccf->err_regs->errinten);
++		break;
++	}
++
++	return 0;
++}
++
++static struct platform_driver ccf_driver = {
++	.driver = {
++		.name = KBUILD_MODNAME,
++		.owner = THIS_MODULE,
++		.of_match_table = ccf_matches,
++	},
++	.probe = ccf_probe,
++	.remove = ccf_remove,
++};
++
++module_platform_driver(ccf_driver);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Freescale Semiconductor");
++MODULE_DESCRIPTION("Freescale CoreNet Coherency Fabric error reporting");
 -- 
-1.9.3
-
+1.9.1
