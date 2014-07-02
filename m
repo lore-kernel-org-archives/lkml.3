@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721AbaGBGDE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 02:03:04 -0400
-Received: from mail6.autoliv.com ([195.33.130.243]:45957 "EHLO
-	mail6.autoliv.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888AbaGBGDC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 02:03:02 -0400
-From: Fredrik Noring <fredrik.noring@autoliv.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: Oops: 17 SMP ARM (v3.16-rc2)
-Thread-Topic: Oops: 17 SMP ARM (v3.16-rc2)
-Thread-Index: Ac+QeuMIv4ry9FBDTNKHf1ccZ0ioqQAu3GGAAAUkuuD//+tKAIABUVuA//+RU9CAAMUXAP/72MIA//SLx7A=
-Date: Wed, 2 Jul 2014 06:02:40 +0000
-Message-ID: <3FFB61A7A8473C49831AF20FA193534A43CB8B5F@ALVA-EXMB01.alv.autoliv.int>
-References: <C4A61A5CA4AD2246942F4BA6F20ACB804356534D@ALVA-EXMB04.alv.autoliv.int>
- <20140626140115.GQ32514@n2100.arm.linux.org.uk>
- <C4A61A5CA4AD2246942F4BA6F20ACB80435655E9@ALVA-EXMB04.alv.autoliv.int>
- <20140626151424.GT32514@n2100.arm.linux.org.uk>
- <20140627112151.GF32514@n2100.arm.linux.org.uk>
- <3FFB61A7A8473C49831AF20FA193534A43CADFA7@ALVA-EXMB01.alv.autoliv.int>
- <20140627163108.GP32514@n2100.arm.linux.org.uk> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.14.8.136]
-x-tm-as-product-ver: SMEX-10.2.0.2087-7.500.1017-20792.003
-x-tm-as-result: No--30.921100-8.000000-31
-x-tm-as-user-approved-sender: No
-x-tm-as-user-blocked-sender: No
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754826AbaGBGGj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 02:06:39 -0400
+Received: from ozlabs.org ([103.22.144.67]:60693 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750888AbaGBGGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 02:06:38 -0400
+Date: Wed, 2 Jul 2014 16:06:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Maurizio Lombardi <mlombard@redhat.com>,
+        Ming Lei <ming.lei@canonical.com>
+Subject: linux-next: manual merge of the akpm-current tree with the block
+ tree
+Message-ID: <20140702160631.240b44d0@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/60pHM+ZYKRbJJu32FruTFNC"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+--Sig_/60pHM+ZYKRbJJu32FruTFNC
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> > The initial version (marked RFC) attracted very little interest from
-> > testers, or acks.  I'd very much like to have some testing of it, so
-> > if you want to try it out, I can provide you with a git URL, patches
-> > or a combined patch.
-> 
-> Sure! A combined gzip patch attachment is fine. Git over HTTP probably
-> works too.
+Hi Andrew,
 
-We are still interested in trying out your patches to improve network
-performance. We can do some testing this week and in August.
+Today's linux-next merge of the akpm-current tree got a conflict in
+block/bio.c between commit 254c4407cb84 ("bio: modify __bio_add_page()
+to accept pages that don't start a new segment") from the block tree
+and commit b5e51c564fb2 ("bio: modify __bio_add_page() to accept pages
+that don't start a new segment") from the akpm-current tree.
 
-Best regards,
-Fredrik
+I fixed it up (I used the version from the block tree) and can carry the
+fix as necessary (no action is required).
 
-***************************************************************
-Consider the environment before printing this message.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-To read Autoliv's Information and Confidentiality Notice, follow this link:
-http://www.autoliv.com/disclaimer.html
-***************************************************************
+--Sig_/60pHM+ZYKRbJJu32FruTFNC
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTs6FsAAoJEMDTa8Ir7ZwV1psP/2XeXTXviVegPR52LaIStYZx
+bUidzEdmL7vO6ihcO1XmE09mSlH/7e79iJcFxl1uqc50q2oLotf9XYKFuPtcL3f1
+XgY8/Tw7O4DF9P6rX28GrIB8FAJG9+SR1+V0embHV5TbbuAjYTl84J5XcbY/WeDz
+LD7pE6lFquixJVm7QEVkmGiy7rg3KQxxFm9+U42ZYImlFfNbktcsyXARmhrlcpI2
+0gyOynRJlzbpqm9shbN7gr6Xqzh9cKGi3zPc83yT4UmzhWc1ddRiREonPIEFol39
+x9QXY56z58koj+kE8gtsX3RvKY17QIh1ixA2w9fOgIERN9xRGhU9HgyWDibbh6Mk
+c+wtPiKLTwUeXY1bhsBTi+vy4BlNiRfaiD+y2Xb5gKuSFCtSoaElvvRPp+4KUmJZ
+Se6ZZRPrCRmJSW4O1I46jSjVGTWigtswI5UO7UX/MUpB0kfVkiFI8RPifbJ4SFnZ
+syhvfwNvUA5oNE81nJg2BQ9YlLhKOhMCASzBJBBkV/ywvIsv/cdb5frX4RytLHsD
+AOYt3mAB+5TOsQEbHLvBCVNIc/QX4H4pVgOZat7w81YZcLTJymARAXCFQNRcI5U4
+BV02jgX/Lkv5EGQtFaIo0IwM7oirtkMzKnhlHow5f2rYRfnVBwIP1f1VCruC6ppA
+qr+jNUyos3TpGVGy0Xto
+=5riL
+-----END PGP SIGNATURE-----
+
+--Sig_/60pHM+ZYKRbJJu32FruTFNC--
