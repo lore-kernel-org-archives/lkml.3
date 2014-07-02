@@ -1,110 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496AbaGBNUl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 09:20:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:15862 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752550AbaGBNUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 09:20:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,588,1400050800"; 
-   d="scan'208";a="537740202"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH 1/6] lib / string_helpers: clean up test suite
-Date: Wed,  2 Jul 2014 16:20:24 +0300
-Message-Id: <1404307229-19186-2-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404307229-19186-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1404307229-19186-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1753537AbaGBNUv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 09:20:51 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:51813 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297AbaGBNUs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 09:20:48 -0400
+Date: Wed, 2 Jul 2014 14:20:42 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 3/9] pci: Introduce pci_register_io_range() helper
+ function.
+Message-ID: <20140702132042.GG2173@e106497-lin.cambridge.arm.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+ <1404240214-9804-4-git-send-email-Liviu.Dudau@arm.com>
+ <4751391.BGkeOrZGt8@wuerfel>
+MIME-Version: 1.0
+In-Reply-To: <4751391.BGkeOrZGt8@wuerfel>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 02 Jul 2014 13:20:43.0916 (UTC) FILETIME=[6D890CC0:01CF95F8]
+X-MC-Unique: 114070214204600601
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prepares test suite for a following update. It introduces
-test_string_check_buf() helper which checks the result and dumps an error.
+On Wed, Jul 02, 2014 at 01:38:04PM +0100, Arnd Bergmann wrote:
+> Some more detailed comments now
+> 
+> On Tuesday 01 July 2014 19:43:28 Liviu Dudau wrote:
+> > +/*
+> > + * Record the PCI IO range (expressed as CPU physical address + size).
+> > + * Return a negative value if an error has occured, zero otherwise
+> > + */
+> > +int __weak pci_register_io_range(phys_addr_t addr, resource_size_t size)
+> > +{
+> > +#ifdef PCI_IOBASE
+> > +       struct io_range *res;
+> 
+> I was confused by the variable naming here: A variable named 'res' is
+> normally a 'struct resource'. Maybe better call this 'range'.
+> 
+> > +       resource_size_t allocated_size = 0;
+> > +
+> > +       /* check if the range hasn't been previously recorded */
+> > +       list_for_each_entry(res, &io_range_list, list) {
+> > +               if (addr >= res->start && addr + size <= res->start + size)
+> > +                       return 0;
+> > +               allocated_size += res->size;
+> > +       }
+> 
+> A spin_lock around the list lookup should be sufficient to get around
+> the race that Will mentioned.
+> 
+> > +       /* range not registed yet, check for available space */
+> > +       if (allocated_size + size - 1 > IO_SPACE_LIMIT)
+> > +               return -E2BIG;
+> 
+> It might be better to limit the size to 64K if it doesn't fit at first.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- lib/test-string_helpers.c | 39 +++++++++++++++++++++++++++------------
- 1 file changed, 27 insertions(+), 12 deletions(-)
+Thanks Arnd for review. Will update and post a new patch soon if I don't
+get any other comments.
 
-diff --git a/lib/test-string_helpers.c b/lib/test-string_helpers.c
-index 6ac48de..ea86e02 100644
---- a/lib/test-string_helpers.c
-+++ b/lib/test-string_helpers.c
-@@ -10,6 +10,26 @@
- #include <linux/string.h>
- #include <linux/string_helpers.h>
- 
-+static __init bool test_string_check_buf(const char *name, unsigned int flags,
-+					 char *in, size_t p,
-+					 char *out_real, size_t q_real,
-+					 char *out_test, size_t q_test)
-+{
-+	if (q_real == q_test && !memcmp(out_test, out_real, q_test))
-+		return true;
-+
-+	pr_err("Test '%s' failed: flags = %u\n", name, flags);
-+
-+	print_hex_dump(KERN_WARNING, "Input: ", DUMP_PREFIX_NONE, 16, 1,
-+		       in, p, true);
-+	print_hex_dump(KERN_WARNING, "Expected: ", DUMP_PREFIX_NONE, 16, 1,
-+		       out_test, q_test, true);
-+	print_hex_dump(KERN_WARNING, "Got: ", DUMP_PREFIX_NONE, 16, 1,
-+		       out_real, q_real, true);
-+
-+	return false;
-+}
-+
- struct test_string {
- 	const char *in;
- 	const char *out;
-@@ -39,7 +59,8 @@ static const struct test_string strings[] __initconst = {
- 	},
- };
- 
--static void __init test_string_unescape(unsigned int flags, bool inplace)
-+static void __init test_string_unescape(const char *name, unsigned int flags,
-+					bool inplace)
- {
- 	char in[256];
- 	char out_test[256];
-@@ -77,15 +98,8 @@ static void __init test_string_unescape(unsigned int flags, bool inplace)
- 		q_real = string_unescape(in, out_real, q_real, flags);
- 	}
- 
--	if (q_real != q_test || memcmp(out_test, out_real, q_test)) {
--		pr_warn("Test failed: flags = %u\n", flags);
--		print_hex_dump(KERN_WARNING, "Input: ",
--			       DUMP_PREFIX_NONE, 16, 1, in, p - 1, true);
--		print_hex_dump(KERN_WARNING, "Expected: ",
--			       DUMP_PREFIX_NONE, 16, 1, out_test, q_test, true);
--		print_hex_dump(KERN_WARNING, "Got: ",
--			       DUMP_PREFIX_NONE, 16, 1, out_real, q_real, true);
--	}
-+	test_string_check_buf(name, flags, in, p - 1, out_real, q_real,
-+			      out_test, q_test);
- }
- 
- static int __init test_string_helpers_init(void)
-@@ -94,8 +108,9 @@ static int __init test_string_helpers_init(void)
- 
- 	pr_info("Running tests...\n");
- 	for (i = 0; i < UNESCAPE_ANY + 1; i++)
--		test_string_unescape(i, false);
--	test_string_unescape(get_random_int() % (UNESCAPE_ANY + 1), true);
-+		test_string_unescape("unescape", i, false);
-+	test_string_unescape("unescape inplace",
-+			     get_random_int() % (UNESCAPE_ANY + 1), true);
- 
- 	return -EINVAL;
- }
+Best regards,
+Liviu
+
+> 
+> 
+> 	Arnd
+> 
+> 
+
 -- 
-2.0.0
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
