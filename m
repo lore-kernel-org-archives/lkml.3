@@ -1,78 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985AbaGBMcT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 08:32:19 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:42549 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134AbaGBMcR (ORCPT
+	id S1752234AbaGBMeo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 08:34:44 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43052 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297AbaGBMen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 08:32:17 -0400
-Message-ID: <53B3FBD2.3090003@cogentembedded.com>
-Date: Wed, 02 Jul 2014 16:32:18 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 2 Jul 2014 08:34:43 -0400
+Date: Wed, 2 Jul 2014 14:34:12 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
+ wakeups
+Message-ID: <20140702123412.GD19379@twins.programming.kicks-ass.net>
+References: <20140627142038.GA22942@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, tony@atomide.com, kishon@ti.com,
-        balbi@ti.com
-CC: nsekhar@ti.com, nm@ti.com, george.cherian@ti.com,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] phy: core: Support regulator supply for PHY power
-References: <1404302638-3003-1-git-send-email-rogerq@ti.com> <1404302638-3003-4-git-send-email-rogerq@ti.com>
-In-Reply-To: <1404302638-3003-4-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eqp4TxRxnD4KrmFZ"
+Content-Disposition: inline
+In-Reply-To: <20140627142038.GA22942@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 07/02/2014 04:03 PM, Roger Quadros wrote:
+--eqp4TxRxnD4KrmFZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Some PHYs can be powered by an external power regulator.
-> e.g. USB_HS PHY on DRA7 SoC. Make the PHY core support a
-> power regulator.
+On Fri, Jun 27, 2014 at 07:20:38AM -0700, Paul E. McKenney wrote:
+> An 80-CPU system with a context-switch-heavy workload can require so
+> many NOCB kthread wakeups that the RCU grace-period kthreads spend several
+> tens of percent of a CPU just awakening things.  This clearly will not
+> scale well: If you add enough CPUs, the RCU grace-period kthreads would
+> get behind, increasing grace-period latency.
+>=20
+> To avoid this problem, this commit divides the NOCB kthreads into leaders
+> and followers, where the grace-period kthreads awaken the leaders each of
+> whom in turn awakens its followers.  By default, the number of groups of
+> kthreads is the square root of the number of CPUs, but this default may
+> be overridden using the rcutree.rcu_nocb_leader_stride boot parameter.
+> This reduces the number of wakeups done per grace period by the RCU
+> grace-period kthread by the square root of the number of CPUs, but of
+> course by shifting those wakeups to the leaders.  In addition, because
+> the leaders do grace periods on behalf of their respective followers,
+> the number of wakeups of the followers decreases by up to a factor of two.
+> Instead of being awakened once when new callbacks arrive and again
+> at the end of the grace period, the followers are awakened only at
+> the end of the grace period.
+>=20
+> For a numerical example, in a 4096-CPU system, the grace-period kthread
+> would awaken 64 leaders, each of which would awaken its 63 followers
+> at the end of the grace period.  This compares favorably with the 79
+> wakeups for the grace-period kthread on an 80-CPU system.
 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->   drivers/phy/phy-core.c  | 32 ++++++++++++++++++++++++++++++++
->   include/linux/phy/phy.h |  2 ++
->   2 files changed, 34 insertions(+)
+Urgh, how about we kill the entire nocb nonsense and try again? This is
+getting quite rediculous.
 
-> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-> index 49c4465..d817107 100644
-> --- a/drivers/phy/phy-core.c
-> +++ b/drivers/phy/phy-core.c
-[...]
-> @@ -664,6 +689,10 @@ EXPORT_SYMBOL_GPL(devm_phy_create);
->   void phy_destroy(struct phy *phy)
->   {
->   	pm_runtime_disable(&phy->dev);
-> +
-> +	if (phy->pwr)
-> +		regulator_put(phy->pwr);
+--eqp4TxRxnD4KrmFZ
+Content-Type: application/pgp-signature
 
-    regulator_put() already handles NULL pointer.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> +
->   	device_unregister(&phy->dev);
->   }
->   EXPORT_SYMBOL_GPL(phy_destroy);
-> @@ -800,6 +829,9 @@ static void phy_release(struct device *dev)
->
->   	phy = to_phy(dev);
->   	dev_vdbg(dev, "releasing '%s'\n", dev_name(dev));
-> +	if (phy->pwr)
-> +		regulator_put(phy->pwr);
+iQIcBAEBAgAGBQJTs/xDAAoJEHZH4aRLwOS6VNwQAJISEsHOEtpwS+Ca6hrOxopk
+lHC9q/zPkVH3amSEkQqNzX+11bgcmnipxr+prwVzkfebDX3tUUkvWMs213dxVoMI
+sxU2Ltuc74I4VqLOGnAgWMzBzSlBGlx8CVysESlxuuzYEi3pCWtesr2Yg59nQBLK
+Z55pUWuIlcCCzieIvrGXyJZPxQP1LolB6EkcIDXufYzvsn24kqlLv0rwsjlHRjnI
+Kbjij81Rl5HHuhCAEdeJMCZqIIytggJvTCuORoNLY0UZOXU4oUOwtNkxK+MeC81t
+eb7zDdrLSo0gNrF6mQjaLwDn2jmtv9avPkLb5MZWOLrss21oB4WDcPR3wvib3cIu
+gs1OXEZu6roMGxo7fnpx3e+FQvgi2ofusBhITjo0qUs2kzU3ioaxO/tos6cgPMTG
+Onjp/pf0cyg6LpGAPXZtXjPBpKUhNLTR772ChhGTn465tNHgGDYghOsXW+VANsY9
+SA+HGJfsg3aBQqBn+xlTdKQn7kQm4C1DiwgwJPbwaPIA3Nj3qnVCH+ZsAHwSfm4y
+hmKmy9SgRMVAH6x0kI+iUDXwV31UA1I5DXOS27zIcUK6vRWjQgC/Zda+07QPo2MW
+ogkCOC306GnBHvtr/fYMoT8j5VTF/Q2/d4gk4Flz5xp8mkk29BElbRmjWyr7r9wc
+qmgQ9FxB7qA78YheXXQO
+=ce6A
+-----END PGP SIGNATURE-----
 
-    Same comment here.
-
-> +
->   	ida_simple_remove(&phy_ida, phy->id);
->   	kfree(phy);
->   }
-
-WBR, Sergei
-
+--eqp4TxRxnD4KrmFZ--
