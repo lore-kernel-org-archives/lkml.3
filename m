@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048AbaGBHEY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 03:04:24 -0400
-Received: from canardo.mork.no ([148.122.252.1]:35085 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017AbaGBHEW convert rfc822-to-8bit (ORCPT
+	id S1751401AbaGBHHO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 03:07:14 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:42606 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924AbaGBHHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 03:04:22 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Bernd Wachter <bernd.wachter@jolla.com>
-Cc: netdev@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: qmi_wwan: Add ID for Telewell TW-LTE 4G v2
-Organization: m
-References: <87vbrgewei.fsf@bwachter.lart.info>
-Date: Wed, 02 Jul 2014 09:04:10 +0200
-In-Reply-To: <87vbrgewei.fsf@bwachter.lart.info> (Bernd Wachter's message of
-	"Tue, 01 Jul 2014 22:01:09 +0300")
-Message-ID: <87wqbw1bth.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.3 (gnu/linux)
+	Wed, 2 Jul 2014 03:07:12 -0400
+Date: Wed, 2 Jul 2014 16:06:04 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
+Cc: markh@compro.net, driverdev-devel@linuxdriverproject.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] staging: dgap: fixed "foo* bar should be foo * bar" in
+ dgap.c
+Message-ID: <20140702070604.GA11300@devel.8.8.4.4>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bernd Wachter <bernd.wachter@jolla.com> writes:
+clean up checkpatch.pl error:
+ERROR: "foo* bar" should be "foo *bar"
 
-> There's a new version of the Telewell 4G modem working with, but not
-> recognized by this driver. 
->
-> Signed-off-by: Bernd Wachter <bernd.wachter@jolla.com>
-> ---
-> --- linux-3.15.3/drivers/net/usb/qmi_wwan.c.orig	2014-07-01 21:31:07.000000000 +0300
-> +++ linux-3.15.3/drivers/net/usb/qmi_wwan.c	2014-07-01 20:39:30.000000000 +0300
-> @@ -741,6 +741,7 @@ static const struct usb_device_id produc
->  	{QMI_FIXED_INTF(0x19d2, 0x1424, 2)},
->  	{QMI_FIXED_INTF(0x19d2, 0x1425, 2)},
->  	{QMI_FIXED_INTF(0x19d2, 0x1426, 2)},	/* ZTE MF91 */
-> +	{QMI_FIXED_INTF(0x19d2, 0x1428, 2)},	/* Telewell TW-LTE 4G v2 */
->  	{QMI_FIXED_INTF(0x19d2, 0x2002, 4)},	/* ZTE (Vodafone) K3765-Z */
->  	{QMI_FIXED_INTF(0x0f3d, 0x68a2, 8)},    /* Sierra Wireless MC7700 */
->  	{QMI_FIXED_INTF(0x114f, 0x68a2, 8)},    /* Sierra Wireless MC7750 */
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ drivers/staging/dgap/dgap.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Acked-by: Bjørn Mork <bjorn@mork.no>
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index d4f80af..0036f35 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -202,7 +202,7 @@ static int dgap_test_bios(struct board_t *brd);
+ static int dgap_test_fep(struct board_t *brd);
+ static int dgap_tty_register_ports(struct board_t *brd);
+ static int dgap_firmware_load(struct pci_dev *pdev, int card_type,
+-			      struct board_t* brd);
++			      struct board_t *brd);
+ 
+ static void dgap_cleanup_module(void);
+ 
+@@ -574,7 +574,7 @@ static int dgap_init_pci(void)
+ static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ {
+ 	int rc;
+-	struct board_t* brd;
++	struct board_t *brd;
+ 
+ 	if (dgap_numboards >= MAXBOARDS)
+ 		return -EPERM;
+@@ -872,7 +872,7 @@ static void dgap_free_irq(struct board_t *brd)
+ }
+ 
+ static int dgap_firmware_load(struct pci_dev *pdev, int card_type,
+-			      struct board_t* brd)
++			      struct board_t *brd)
+ {
+ 	const struct firmware *fw;
+ 	char *tmp_ptr;
+-- 
+1.7.1
 
-Please queue this for stable as well.  Thanks.
-
-
-Bjørn
