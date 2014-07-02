@@ -1,117 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaGBJQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 05:16:57 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:52961 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205AbaGBJQy (ORCPT
+	id S1752791AbaGBJRI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 05:17:08 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:41788 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752643AbaGBJRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 05:16:54 -0400
+	Wed, 2 Jul 2014 05:17:04 -0400
+Message-ID: <53B3CDFE.20808@siemens.com>
+Date: Wed, 02 Jul 2014 11:16:46 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-X-Originating-IP: [95.23.59.197]
-In-Reply-To: <20140702043338.23338.31600@quantum>
-References: <1403848871-26519-1-git-send-email-peter.ujfalusi@ti.com>
-	<1403848871-26519-3-git-send-email-peter.ujfalusi@ti.com>
-	<CABxcv=metB4=eoT=fAh7S-b_mhAvHcJtn2wrV8v8koSyKMxNNw@mail.gmail.com>
-	<53B0FC27.5040002@ti.com>
-	<20140702043338.23338.31600@quantum>
-Date: Wed, 2 Jul 2014 11:16:53 +0200
-Message-ID: <CABxcv==Ut40bQg22hWuXmMgHF7b_iLfJuLHrdGds1B3wXb74ug@mail.gmail.com>
-Subject: Re: [RESEND 2/2] clk: Add driver for Palmas clk32kg and clk32kgaudio clocks
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>, linux-doc@vger.kernel.org,
-        Nishanth Menon <nm@ti.com>, Rob Herring <robh+dt@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Hu, Robert" <robert.hu@intel.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since
+ race
+References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com> <9E79D1C9A97CFD4097BCE431828FDD31983416@SHSMSX103.ccr.corp.intel.com> <53B3CADD.3000504@siemens.com> <9E79D1C9A97CFD4097BCE431828FDD3198359C@SHSMSX103.ccr.corp.intel.com>
+In-Reply-To: <9E79D1C9A97CFD4097BCE431828FDD3198359C@SHSMSX103.ccr.corp.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mike,
-
-On Wed, Jul 2, 2014 at 6:33 AM, Mike Turquette <mturquette@linaro.org> wrote:
-> Quoting Peter Ujfalusi (2014-06-29 22:56:55)
->> Hi Javier,
+On 2014-07-02 11:13, Hu, Robert wrote:
+> 
+>> -----Original Message-----
+>> From: Jan Kiszka [mailto:jan.kiszka@siemens.com]
+>> Sent: Wednesday, July 2, 2014 5:03 PM
+>> To: Hu, Robert; Wanpeng Li; Paolo Bonzini; Gleb Natapov
+>> Cc: kvm@vger.kernel.org; linux-kernel@vger.kernel.org
+>> Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since
+>> race
 >>
->> On 06/27/2014 09:23 PM, Javier Martinez Canillas wrote:
->> > Hello Peter,
->> >
->> > On Fri, Jun 27, 2014 at 8:01 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
->> >> Palmas class of devices can provide 32K clock(s) to be used by other devices
->> >> on the board. Depending on the actual device the provided clocks can be:
->> >> CLK32K_KG and CLK32K_KGAUDIO
->> >> or only one:
->> >> CLK32K_KG (TPS659039 for example)
->> >>
->> >> Use separate compatible flags for the two 32K clock.
->> >> A system which needs or have only one of the 32k clock from
->> >> Palmas will need to add node(s) for each clock as separate section
->> >> in the dts file.
->> >> The two compatible property is:
->> >> "ti,palmas-clk32kg" for clk32kg clock
->> >> "ti,palmas-clk32kgaudio" for clk32kgaudio clock
->> >>
->> >> Apart from the register control of the clocks - which is done via
->> >> the clock API there is a posibility to enable the external sleep
->> >> control. In this way the clock can be enabled/disabled on demand by the
->> >> user of the clock.
->> >>
->> >> See the documentation for more details.
->> >>
->> >> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->> >> Reviewed-by: Nishanth Menon <nm@ti.com>
+>> On 2014-07-02 09:20, Hu, Robert wrote:
+>>>> -----Original Message-----
+>>>> From: Wanpeng Li [mailto:wanpeng.li@linux.intel.com]
+>>>> Sent: Wednesday, July 2, 2014 2:54 PM
+>>>> To: Paolo Bonzini; Jan Kiszka; Gleb Natapov
+>>>> Cc: Hu, Robert; kvm@vger.kernel.org; linux-kernel@vger.kernel.org; Wanpeng
+>> Li
+>>>> Subject: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since
+>> race
+>>>>
+>>>> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=72381
+>>>>
+>>>> If we didn't inject a still-pending event to L1 since nested_run_pending,
+>>>> KVM_REQ_EVENT should be requested after the vmexit in order to inject the
+>>>> event to L1. However, current log blindly request a KVM_REQ_EVENT even if
+>>>> there is no still-pending event to L1 which blocked by nested_run_pending.
+>>>> There is a race which lead to an interrupt will be injected to L2 which
+>>>> belong to L1 if L0 send an interrupt to L1 during this window.
+>>>>
+>>>>                VCPU0                               another thread
+>>>>
+>>>> L1 intr not blocked on L2 first entry
+>>>> vmx_vcpu_run req event
+>>>> kvm check request req event
+>>>> check_nested_events don't have any intr
+>>>> not nested exit
+>>>>                                             intr occur (8254, lapic timer
+>>>> etc)
+>>>> inject_pending_event now have intr
+>>>> inject interrupt
+>>>>
+>>>> This patch fix this race by introduced a l1_events_blocked field in nested_vmx
+>>>> which indicates there is still-pending event which blocked by
+>>>> nested_run_pending,
+>>>> and smart request a KVM_REQ_EVENT if there is a still-pending event which
+>>>> blocked
+>>>> by nested_run_pending.
+>>>>
+>>>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>>> Tested-by: Robert Hu<robert.hu@intel.com>
 >>
->> >> +static unsigned long palmas_clks_recalc_rate(struct clk_hw *hw,
->> >> +                                            unsigned long parent_rate)
->> >> +{
->> >> +       return 32768;
->> >> +}
->> >
->> > I see that other clock drivers using a constant rate return 0 if the
->> > clock has not been enabled.
->>
->> and there are examples when similar fixed clock drivers returns only the clock
->> value, like clk-max77686. I can not find clear guidelines neither in the
->> documentation or around the header/c files for this.
->> Mike, what is the appropriate way of handling the recalc_rate?
->
-> You are right that there are no guidelines stating, "don't do that", but
-> please, "don't do that" ;-)
->
-> clk_enable and clk_set_rate are entirely unrelated operations from the
-> perspective of the Linux clock framework, and mixing these two classes
-> of operations is a recipe for pain.
->
+>> Do you happen to have a kvm-unit-test for this race? Or how did you
+>> test? Just curious, and if there is a test, it would be good to
+>> integrate it.
+> I just apply the patch and test the reported scenario.
 
-Thanks a lot for the clarification. I just asked since when posting a
-clock driver I got feedback that recalc_rate should return 0 if the
-clock was disabled and also saw some drivers doing that, e.g:
-drivers/clk/clk-s2mps11.c
+Ah, sorry, missed the referenced bug report.
 
->>
->> > So maybe is more correct to have something
->> > like the following?
->> >
->> > if (__clk_is_enabled(hw->clk))
->> >         return 32768;
->> > else
->> >         return 0;
->
-> So what happens here if this is gateable clock and later on we call
-> clk_enable on it? The clocks rate will still be zero since
-> clk_enable/clk_disable do not touch the rate at all.
->
+Jan
 
-Got it, thanks for the explanation.
-
-> Regards,
-> Mike
->
-
-Best regards,
-Javier
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
