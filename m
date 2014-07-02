@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757127AbaGBQ7Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 12:59:24 -0400
-Received: from g5t1627.atlanta.hp.com ([15.192.137.10]:46349 "EHLO
-	g5t1627.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755561AbaGBQ7W (ORCPT
+	id S964978AbaGBQ7e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 12:59:34 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:53891 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757192AbaGBQ7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 12:59:22 -0400
-Message-ID: <1404320356.3170.12.camel@j-VirtualBox>
-Subject: Re: [RFC] Cancellable MCS spinlock rework
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        mingo@kernel.org, Waiman.Long@hp.com, davidlohr@hp.com,
-        linux-kernel@vger.kernel.org, riel@redhat.com,
-        akpm@linux-foundation.org, hpa@zytor.com, andi@firstfloor.org,
-        James.Bottomley@hansenpartnership.com, rostedt@goodmis.org,
-        tim.c.chen@linux.intel.com, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Date: Wed, 02 Jul 2014 09:59:16 -0700
-In-Reply-To: <20140702162749.GP19379@twins.programming.kicks-ass.net>
-References: <1404318070-2856-1-git-send-email-jason.low2@hp.com>
-	 <20140702162749.GP19379@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 2 Jul 2014 12:59:31 -0400
+Date: Wed, 2 Jul 2014 17:59:24 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Peter Griffin <peter.griffin@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] Add reset controllers for STiH407 SoC
+Message-ID: <20140702165924.GB17665@lee--X1>
+References: <1404310129-14667-1-git-send-email-peter.griffin@linaro.org>
+ <1404317194.4109.13.camel@paszta.hi.pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1404317194.4109.13.camel@paszta.hi.pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-02 at 18:27 +0200, Peter Zijlstra wrote:
-> On Wed, Jul 02, 2014 at 09:21:10AM -0700, Jason Low wrote:
-> > The cancellable MCS spinlock is currently used to queue threads that are
-> > doing optimistic spinning. It uses per-cpu nodes, where a thread obtaining
-> > the lock would access and queue the local node corresponding to the CPU that
-> > it's running on. Currently, the cancellable MCS lock is implemented by using
-> > pointers to these nodes.
-> > 
-> > In this RFC patch, instead of operating on pointers to the per-cpu nodes, we
-> > store the CPU numbers in which the per-cpu nodes correspond to in atomic_t.
-> > A similar concept is used with the qspinlock.
-> > 
-> > We add 1 to the CPU number to retrive an "encoded value" representing the node
-> > of that CPU. By doing this, 0 can represent "no CPU", which allows us to
-> > keep the simple "if (CPU)" and "if (!CPU)" checks. In this patch, the next and
-> > prev pointers in each node were also modified to store encoded CPU values.
-> > 
-> > By operating on the CPU # of the nodes using atomic_t instead of pointers
-> > to those nodes, this can reduce the overhead of the cancellable MCS spinlock
-> > by 32 bits (on 64 bit systems).
+On Wed, 02 Jul 2014, Philipp Zabel wrote:
+
+> Hi Peter,
 > 
-> Still struggling to figure out why you did this.
+> Am Mittwoch, den 02.07.2014, 15:08 +0100 schrieb Peter Griffin:
+> > This series adds reset controller support for the STiH407 SoC.
+> > 
+> > Changes since v1
+> >  - Update copyright to 2014
+> >  - Add const qualifier
+> >  - Fix various whitespace issues
+> >  - Remove THIS_OWNER
+> >  - Move DT documentation into separate patch
+> > 
+> > Peter Griffin (4):
+> >   reset: stih407: Add softreset, powerdown and picophy controllers
+> >   reset: sti: Document sti-picophyreset controllers bindings.
+> >   ARM: sti: Add STiH407 Kconfig entry to select STIH407_RESET
+> >   ARM: sti: Add STiH407 reset controller support.
+> > 
+> >  .../bindings/reset/st,sti-picophyreset.txt         |  42 ++++++
+> >  arch/arm/boot/dts/stih407.dtsi                     |  16 +++
+> >  arch/arm/mach-sti/Kconfig                          |  10 ++
+> >  drivers/reset/sti/Kconfig                          |   4 +
+> >  drivers/reset/sti/Makefile                         |   1 +
+> >  drivers/reset/sti/reset-stih407.c                  | 158 +++++++++++++++++++++
+> >  .../dt-bindings/reset-controller/stih407-resets.h  |  61 ++++++++
+> >  7 files changed, 292 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/reset/st,sti-picophyreset.txt
+> >  create mode 100644 drivers/reset/sti/reset-stih407.c
+> >  create mode 100644 include/dt-bindings/reset-controller/stih407-resets.h
+> 
+> Looks good to me now.
+> 
+> Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
 
-Why I converted pointers to atomic_t?
+Do you have a tree for Reset?  If not, which route do these patches
+normally follow?
 
-This would avoid the potentially racy ACCESS_ONCE stores + cmpxchg while
-also using less overhead, since atomic_t is often only 32 bits while
-pointers could be 64 bits.
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
