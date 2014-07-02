@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207AbaGBLef (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 07:34:35 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:63108 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880AbaGBLee (ORCPT
+	id S1751472AbaGBLjS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 07:39:18 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43671 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869AbaGBLjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 07:34:34 -0400
-Date: Wed, 2 Jul 2014 12:34:28 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com
-Subject: Re: [PATCH v2 4/5] phy: miphy365x: Represent each PHY channel as a
- subnode
-Message-ID: <20140702113428.GA16724@lee--X1>
-References: <1404133317-25953-1-git-send-email-lee.jones@linaro.org>
- <1404133317-25953-5-git-send-email-lee.jones@linaro.org>
- <20140630144114.GB25926@lee--X1>
- <53B3DE4F.1040100@ti.com>
+	Wed, 2 Jul 2014 07:39:16 -0400
+Date: Wed, 2 Jul 2014 12:38:54 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Beniamino Galvani <b.galvani@gmail.com>,
+        "Wenyou.Yang" <wenyou.yang@atmel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20140702113854.GH410@sirena.org.uk>
+References: <1404113529.21614.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oyqLL/JqMvClXZi1"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53B3DE4F.1040100@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1404113529.21614.1.camel@phoenix>
+X-Cookie: Semper Fi, dude.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] regulator: act8865: Remove error variable in
+ act8865_pmic_probe
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Monday 30 June 2014 08:11 PM, Lee Jones wrote:
-> > phy: miphy365x: Represent each PHY channel as a DT subnode
-> > 
-> > This has the added advantages of being able to enable/disable each
-> > of the channels as simply as enabling/disabling the DT node.
-> > 
-> > Suggested-by: Kishon Vijay Abraham I <kishon@ti.com>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > 
-> > diff --git a/drivers/phy/phy-miphy365x.c b/drivers/phy/phy-miphy365x.c
-> > index 1109f42..2c4ea6e 100644
-> > --- a/drivers/phy/phy-miphy365x.c
-> > +++ b/drivers/phy/phy-miphy365x.c
 
-[...]
+--oyqLL/JqMvClXZi1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > -static int miphy365x_of_probe(struct device_node *np,
-> > +static int miphy365x_of_probe(struct platform_device *pdev,
-> >  			      struct miphy365x_dev *phy_dev)
-> >  {
-> > +	struct device_node *np = pdev->dev.of_node;
-> > +	struct device_node *child;
-> > +	int child_count = 0;
-> > +
-> > +	for_each_child_of_node(np, child)
-> > +		child_count++;
-> 
-> use of_get_child_count() instead.
+On Mon, Jun 30, 2014 at 03:32:09PM +0800, Axel Lin wrote:
+> Simply use ret variable instead.
+> Also remove unneeded initialize for ret variable.
 
-Ah, nice. I'll do that.
+Applied, thanks.
 
-[...]
+--oyqLL/JqMvClXZi1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> I think you can merge this to your original patch.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-I can do that, but I thought It'd be nice to keep some history and
-show the migration over to a different setup.  This is particularly
-important for when we back-port the changes back into the internal
-development kernel.
+iQIcBAEBAgAGBQJTs+9LAAoJELSic+t+oim966AP/1XeiY8l7mJI/p/ifoWnLShm
+2xh+NWl9cH+TbzmqPJpcN9ej26Y5U3HQ2SX1Cu92gIWAEWuix+VmPXzMB8lwLM5i
+0buk8zDt+wxoh5evMyXhvIH0j9FkItxd+tO2sAq8HvDvEeMYHRAcBqZPMjzDmjCY
+gTBgtMnCX7sxYnuMOjSz9opAOzGbeGW5Mv/AlWDFhc6hEUPh1hxpZKP4Gkp+Sd/W
+rmIxBuCY5455/fG45UTARIqVvVqTM0sJxqjp1lVY2GkAFbrWB85h+4jrBK4cQWK1
+s2aXsBeXuGT04bJZ1+tzFOZDWH9KT12uXIkwOTnBkTfD5wMExhOOPIBHZhnqr0+W
+caSYq7YK9DBzJurk0Sd0uP5PRB1nCiTWtpoSsGxcITmzlAA9xtJVrxuEe6el7ZKN
+ZQ4q14vsoDm8mwvn5lP/lBugnBB8upXp+BcpTGEl7aoUFHw+U1RYW+MGskD67Aa8
+nrqqMXwUZEFwhuJk1uVUGaGBHeuuE8lRMWGcV8H943yDCfzSRNxl8rxn10YrHLe3
+TW5LigRdzYHje8ZPbHH/J6zzrjCE0Aj1IpREA25Tk75pXWkmh2iSdZXinRz87RTW
+gYaC381BzthiOr3uKsyhUNIxKe7FMnDFbqGvkJH0ae8YfJtSDglZHvQ8uNLswuQC
+0D1UaYSH0NK3tLfivmY6
+=OGBh
+-----END PGP SIGNATURE-----
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--oyqLL/JqMvClXZi1--
