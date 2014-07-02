@@ -1,89 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621AbaGBQS2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 12:18:28 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55018 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920AbaGBQS0 (ORCPT
+	id S1755060AbaGBQSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 12:18:47 -0400
+Received: from www17.your-server.de ([213.133.104.17]:59154 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754691AbaGBQSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 12:18:26 -0400
-Message-ID: <53B430CE.5040905@wwwdotorg.org>
-Date: Wed, 02 Jul 2014 10:18:22 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, Philipp Zabel <p.zabel@pengutronix.de>,
-        linux-usb@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tuomas.tynkkynen@iki.fi
-Subject: Re: [PATCH 0/3] Tegra USB probe order issue fix
-References: <Pine.LNX.4.44L0.1407021204570.874-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1407021204570.874-100000@iolanthe.rowland.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 2 Jul 2014 12:18:45 -0400
+Message-ID: <1404317921.3910.3.camel@localhost.localdomain>
+Subject: Re: [Intel-gfx] Linux 3.16-rc2
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Pavel Machek <pavel@ucw.cz>, Jani Nikula <jani.nikula@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jikos@suse.cz
+Date: Wed, 02 Jul 2014 18:18:41 +0200
+In-Reply-To: <20140630100925.GA18836@nuc-i3427.alporthouse.com>
+References: <CA+55aFxdAhp-esuGiY4VEugiiwcMJgg1r6fPiR9Fb+HOz_5tLg@mail.gmail.com>
+	 <1403564870.3091.6.camel@localhost.localdomain> <871tuea7nz.fsf@intel.com>
+	 <20140624115753.GD17674@nuc-i3427.alporthouse.com>
+	 <1403612670.3091.10.camel@localhost.localdomain>
+	 <20140624122737.GF17674@nuc-i3427.alporthouse.com>
+	 <20140630100220.GA4934@xo-6d-61-c0.localdomain>
+	 <20140630100925.GA18836@nuc-i3427.alporthouse.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2014 10:09 AM, Alan Stern wrote:
-> On Wed, 2 Jul 2014, Stephen Warren wrote:
+Am Montag, den 30.06.2014, 11:09 +0100 schrieb Chris Wilson:
+> On Mon, Jun 30, 2014 at 12:02:20PM +0200, Pavel Machek wrote:
+> > On Tue 2014-06-24 13:27:37, Chris Wilson wrote:
+> > > On Tue, Jun 24, 2014 at 02:24:30PM +0200, Thomas Meyer wrote:
+> > > > Am Dienstag, den 24.06.2014, 12:57 +0100 schrieb Chris Wilson:
+> > > > > On Tue, Jun 24, 2014 at 02:06:24PM +0300, Jani Nikula wrote:
+> > > > > > On Tue, 24 Jun 2014, Thomas Meyer <thomas@m3y3r.de> wrote:
+> > > > > > > the i915 driver is still broken in 3.16-rc2. Resume from ram crashes the
+> > > > > > > X server.
+> > > > > > 
+> > > > > > This is not new to 3.16-rc2; apparently we've had it since v3.15-rc4
+> > > > > > [1]. Also related [2].
+> > > > > > 
+> > > > > > Chris, any fresh ideas?
+> > > > > 
+> > > > > Nope. The bug is https://bugs.freedesktop.org/show_bug.cgi?id=76554
+> > > > > everything we know and have tried is there. Which is not much more than
+> > > > > at time of the original incarnation:
+> > > > > 
+> > > > > commit 50aa253d820ad4577e2231202f2c8fd89f9dc4e6
+> > > > > Author: Keith Packard <keithp@keithp.com>
+> > > > > Date:   Tue Oct 14 17:20:35 2008 -0700
+> > > > > 
+> > > > >     i915: Fix up ring initialization to cover G45 oddities
+> > > > >     
+> > > > >     G45 appears quite sensitive to ring initialization register writes,
+> > > > >     sometimes leaving the HEAD register with the START register contents. Check
+> > > > >     to make sure HEAD is reset correctly when START is written, and fix it up,
+> > > > >     screaming loudly.
+> > > > > -Chris
+> > > > > 
+> > > > 
+> > > > Hi,
+> > > > 
+> > > > so why not revert 78f2975eec9faff353a6194e854d3d39907bab68 (drm/i915:
+> > > > Move all ring resets before setting the HWS page) ?
+> > > 
+> > > Because that patch was in response to a boot time regression.
+> > 
+> > It seems we are in a fairly ugly "fix one board, it breaks another" iterations, right?
+> > 
+> > (BTW, if you apply patch to fix this bug, could you Cc me? I have strange feeling
+> > that it will break my setup... Actually, it probably makes sense to Cc all the people
+> > who reported problems with ring initialization...
+> > 
+> > What patch caused the boot time regression you are talking about? We need to get 
+> > list of commits involved in this, and revert the original one...
 > 
->> On 07/02/2014 08:02 AM, Alan Stern wrote:
->>> On Wed, 2 Jul 2014, Tuomas Tynkkynen wrote:
->>>
->>>> Hi all,
->>>>
->>>> This series fixes a probe order issue with the Tegra EHCI driver.
->>>> Basically, the register area of the 1st USB controller contains some
->>>> registers that are global to all of the controllers, but that are also
->>>> cleared when reset is asserted to the 1st controller. So if (say) the
->>>> 3rd controller would be the first one to finish probing successfully,
->>>> then the reset that happens during the 1st controller's probe would
->>>> result in broken USB. So the before doing anything with the USB HW,
->>>> we should reset the 1st controller once, and then never ever reset
->>>> it again.
->>>
->>> This sounds very much like the sort of thing that ought to be described 
->>> in DT.  It is a hardware dependence, and DT exists for the purpose of 
->>> describing the hardware.
->>
->> DT is more about describing the HW, not how SW has to use the HW.
+> commit 9991ae787a0c87fe7c783b4b6f4754c3cdbb6213
+> Author: Chris Wilson <chris@chris-wilson.co.uk>
+> Date:   Wed Apr 2 16:36:07 2014 +0100
 > 
-> Tuomas wrote: "the register area of the 1st USB controller contains
-> some registers that are global to all of the controllers, but that are
-> also cleared when reset is asserted to the 1st controller."  That is
-> very much an attribute of the hardware and so DT should describe it.
+>     drm/i915: Move all ring resets before setting the HWS page
+>     
+>     In commit a51435a3137ad8ae75c288c39bd2d8b2696bae8f
+>     Author: Naresh Kumar Kachhi <naresh.kumar.kachhi@intel.com>
+>     Date:   Wed Mar 12 16:39:40 2014 +0530
+>     
+>         drm/i915: disable rings before HW status page setup
+>     
+>     we reordered stopping the rings to do so before we set the HWS register.
+>     However, there is an extra workaround for g45 to reset the rings twice,
+>     and for consistency we should apply that workaround before setting the
+>     HWS to be sure that the rings are truly stopped.
+>     
+>     Cc: Naresh Kumar Kachhi <naresh.kumar.kachhi@intel.com>
+>     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+>     Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+>     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> 
+> 
+> commit a51435a3137ad8ae75c288c39bd2d8b2696bae8f
+> Author: Naresh Kumar Kachhi <naresh.kumar.kachhi@intel.com>
+> Date:   Wed Mar 12 16:39:40 2014 +0530
+> 
+>     drm/i915: disable rings before HW status page setup
+>     
+>     Rings should be idle before issuing sync_flush
+>     (in intel_ring_setup_status_page). This patch moves the ring
+>     disabling before doing the HW status page setup.
+>     
+>     Signed-off-by: Naresh Kumar Kachhi <naresh.kumar.kachhi@intel.com>
+>     Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+>     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> 
+> 
 
-So you want to add a Boolean DT property to the first USB controller
-node indicating that it has the "shared" reset? That would be fine, but
-would only replace the content of tegra_find_usb1_node(); much of the
-rest of the patch would remain the same.
+Hi,
 
-I guess in this case, it's fine to require DT changes to enable the new
-feature of fixing this issue, so long as the code continues to work the
-same as it currently does with old DTs. Due to the backwards
-compatibility requirement, the patch will end up slightly more complex,
-but hopefully not too bad.
+this patch on top of v3.16-rc3-62-gd92a333 makes the resume from ram
+regression go away on my machine:
 
->> probe() ordering is a SW issue, not a HW description. It's driver
->> knowledge that the HW resets have to run in a certain order, and if the
->> driver didn't actually reset the HW ever (but rather, re-programmed all
->> registers so reset was never needed), then order wouldn't be relevant
->>
->> DT certainly doesn't have any mechanism for describing probe order or
->> anything like that, although you can fake it out by adding phandles
->> between nodes, and having SW wait for the driver for the referenced node
->> to probe first. That won't work here though, since there's no guarantee
->> that the USB1 node will actually be enabled (that USB port might not be
->> hooked up on the board, hence the DT node will be disabled), so we can't
->> rely on a driver for it ever appearing.
-> 
-> I wasn't talking about probe order; I was talking about the fact that 
-> registers pertinent to the later controllers are in the reset domain of 
-> the first controller.
-> 
-> Alan Stern
+diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
+index 279488a..b896ac8 100644
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -459,22 +459,25 @@ static bool stop_ring(struct intel_engine_cs *ring)
+ {
+ 	struct drm_i915_private *dev_priv = to_i915(ring->dev);
+ 
+-	if (!IS_GEN2(ring->dev)) {
+-		I915_WRITE_MODE(ring, _MASKED_BIT_ENABLE(STOP_RING));
+-		if (wait_for_atomic((I915_READ_MODE(ring) & MODE_IDLE) != 0, 1000)) {
+-			DRM_ERROR("%s :timed out trying to stop ring\n", ring->name);
+-			return false;
+-		}
+-	}
+-
++//	if (!IS_GEN2(ring->dev)) {
++//		I915_WRITE_MODE(ring, _MASKED_BIT_ENABLE(STOP_RING));
++//		if (wait_for_atomic((I915_READ_MODE(ring) & MODE_IDLE) != 0, 1000)) {
++//			DRM_ERROR("%s :timed out trying to stop ring1\n", ring->name);
++//			return false;
++//		}
++//	}
++
++	/* Stop the ring if it's running. */
+ 	I915_WRITE_CTL(ring, 0);
+ 	I915_WRITE_HEAD(ring, 0);
+ 	ring->write_tail(ring, 0);
++	if (wait_for_atomic((I915_READ_MODE(ring) & MODE_IDLE) != 0, 1000))
++		DRM_ERROR("%s :timed out trying to stop ring2\n", ring->name);
+ 
+-	if (!IS_GEN2(ring->dev)) {
+-		(void)I915_READ_CTL(ring);
+-		I915_WRITE_MODE(ring, _MASKED_BIT_DISABLE(STOP_RING));
+-	}
++//	if (!IS_GEN2(ring->dev)) {
++//		(void)I915_READ_CTL(ring);
++//		I915_WRITE_MODE(ring, _MASKED_BIT_DISABLE(STOP_RING));
++//	}
+ 
+ 	return (I915_READ_HEAD(ring) & HEAD_ADDR) == 0;
+ }
+
+Chris, any ideas why explicitly stopping the ring before reset, results
+in this kind of misbehaviour on my machine on resume from ram?
+
+with kind regards
+thomas
+
 
