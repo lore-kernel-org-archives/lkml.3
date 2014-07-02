@@ -1,95 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178AbaGBM4d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 08:56:33 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35903 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751593AbaGBM4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 08:56:31 -0400
-Message-ID: <53B4016F.9060005@ti.com>
-Date: Wed, 2 Jul 2014 15:56:15 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>, <vinod.koul@intel.com>,
-        <dan.j.williams@intel.com>, <tiwai@suse.de>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        <joelf@ti.com>, <nsekhar@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        <dmaengine@vger.kernel.org>
-Subject: Re: [PATCH 4/4] ALSA: pcm_dmaengine: Correct support for 3 physical
- bytes samples
-References: <1404300570-14082-1-git-send-email-peter.ujfalusi@ti.com> <1404300570-14082-5-git-send-email-peter.ujfalusi@ti.com> <53B3FEB5.1040508@ti.com> <53B3FF9C.6060102@metafoo.de>
-In-Reply-To: <53B3FF9C.6060102@metafoo.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+	id S1752610AbaGBNAp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 09:00:45 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:17501 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226AbaGBNAn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 09:00:43 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19aP8TnY1k11eVIw0NyIZlDVfB6cHWCucA=
+X-DKIM: OpenDKIM Filter v2.0.1 titan E6D915A037F
+From: Jason Cooper <jason@lakedaemon.net>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        Jason Cooper <jason@lakedaemon.net>, Kees Cook <keescook@chromium.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>, <stable@vger.kernel.org>
+Subject: [PATCH 1/2 v2] hwrng: Allow drivers to disable reading during probe
+Date: Wed,  2 Jul 2014 13:00:19 +0000
+Message-Id: <1404306020-24916-1-git-send-email-jason@lakedaemon.net>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <cover.1404296679.git.amit.shah@redhat.com>
+References: <cover.1404296679.git.amit.shah@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2014 03:48 PM, Lars-Peter Clausen wrote:
->> per discussion over the irc with Lars we could extend the masking to other
->> widths as well, which would look something like this:
->> u32 addr_widths = BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) |
->>           BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) |
->>           BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
->> ...
->> /*
->>   * Prepare formats mask for valid/allowed sample types. If the dma does
->>   * not have support for the given physical word size, it needs to be
->>   * masked out so user space can not use the format which produces
->>   * corrupted audio.
->>   * In case the dma driver does not implement the slave_caps the default
->>   * assumption is that it supports 1, 2 and 4 bytes widths.
->>   */
->> if (!dma_get_slave_caps(prtd->dma_chan, &dma_caps)) {
->>     if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
->>         addr_widths = dma_caps.dstn_addr_widths;
->>     else
->>         addr_widths = dma_caps.src_addr_widths;
->> }
->>
->> for (i = 0; i <= SNDRV_PCM_FORMAT_LAST; i++) {
->>     int bits = snd_pcm_format_physical_width(i);
->>
->>     switch (bits) {
->>     case 8:
->>         if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_1_BYTE)))
->>             fmt_mask |= (1LL << i);
->>         break;
->>     case 16:
->>         if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_2_BYTES)))
->>             fmt_mask |= (1LL << i);
->>         break;
->>     case 24:
->>         if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_3_BYTES)))
->>             fmt_mask |= (1LL << i);
->>         break;
->>     case 32:
->>         if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_4_BYTES)))
->>             fmt_mask |= (1LL << i);
->>         break;
->>     case 64:
->>         if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_8_BYTES)))
->>             fmt_mask |= (1LL << i);
->>         break;
->>     default:
->>         fmt_mask |= (1LL << i);
->>         break;
->>     }
->> }
->>
->> Is this sounds better?
-> 
-> Sounds good. I think we can assume that DMA_SLAVE_BUSWIDTH_1_BYTE = 1, ...
-> So (addr_width & BIT(bits / 8)) should work fine and we do not need to
-> duplicate the case branches.
-> 
-> The other thing is this should go into dmaengine_pcm_set_runtime_hwparams()
-> where we also restrict the other hardware parameters based on the dmaengine
-> capabilities.
+Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
+added a call to rng_get_data() from the hwrng_register() function.
+However, some rng devices need initialization before data can be read
+from them.
 
-true
+Also, the virtio-rng device does not behave properly when this call is
+made in its probe() routine - the virtio core sets the DRIVER_OK status
+bit only on a successful probe, which means the host ignores all
+communication from the guest, and the guest insmod or boot process just
+sits there doing nothing.
 
+[ jac: Modify the API to allow drivers to disable reading at probe, new
+patch, copied Amit's commit message. ]
+
+CC: Kees Cook <keescook@chromium.org>
+CC: Jason Cooper <jason@lakedaemon.net>
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: <stable@vger.kernel.org> # v3.15+
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+---
+ drivers/char/hw_random/core.c | 8 +++++---
+ include/linux/hw_random.h     | 4 ++++
+ 2 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+index 334601cc81cf..b7b6c48ca682 100644
+--- a/drivers/char/hw_random/core.c
++++ b/drivers/char/hw_random/core.c
+@@ -347,9 +347,11 @@ int hwrng_register(struct hwrng *rng)
+ 	INIT_LIST_HEAD(&rng->list);
+ 	list_add_tail(&rng->list, &rng_list);
+ 
+-	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
+-	if (bytes_read > 0)
+-		add_device_randomness(bytes, bytes_read);
++	if (!(rng->flags & HWRNG_NO_READ_AT_PROBE)) {
++		bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
++		if (bytes_read > 0)
++			add_device_randomness(bytes, bytes_read);
++	}
+ out_unlock:
+ 	mutex_unlock(&rng_mutex);
+ out:
+diff --git a/include/linux/hw_random.h b/include/linux/hw_random.h
+index b4b0eef5fddf..5e358c7f3aae 100644
+--- a/include/linux/hw_random.h
++++ b/include/linux/hw_random.h
+@@ -15,6 +15,8 @@
+ #include <linux/types.h>
+ #include <linux/list.h>
+ 
++#define HWRNG_NO_READ_AT_PROBE	BIT(0)
++
+ /**
+  * struct hwrng - Hardware Random Number Generator driver
+  * @name:		Unique RNG name.
+@@ -28,6 +30,7 @@
+  *			Must not be NULL.    *OBSOLETE*
+  * @read:		New API. drivers can fill up to max bytes of data
+  *			into the buffer. The buffer is aligned for any type.
++ * @flags:              per-device properties
+  * @priv:		Private data, for use by the RNG driver.
+  */
+ struct hwrng {
+@@ -37,6 +40,7 @@ struct hwrng {
+ 	int (*data_present)(struct hwrng *rng, int wait);
+ 	int (*data_read)(struct hwrng *rng, u32 *data);
+ 	int (*read)(struct hwrng *rng, void *data, size_t max, bool wait);
++	unsigned long flags;
+ 	unsigned long priv;
+ 
+ 	/* internal. */
 -- 
-Péter
+2.0.0
+
