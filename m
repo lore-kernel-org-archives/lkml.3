@@ -1,93 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486AbaGBQU3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 12:20:29 -0400
-Received: from moi001.1and1.com ([212.227.126.208]:56294 "EHLO moi.1and1.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754091AbaGBQU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 12:20:28 -0400
-Message-ID: <53B43144.6010306@1und1.de>
-Date: Wed, 02 Jul 2014 18:20:20 +0200
-From: =?ISO-8859-1?Q?Thomas_Sch=F6bel-Theuer?= <tst@1und1.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755715AbaGBQUz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 12:20:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33719 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751670AbaGBQUy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 12:20:54 -0400
+Date: Wed, 2 Jul 2014 09:02:50 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: arcnet: Remove "#define bool int"
+Message-ID: <20140702160250.GA2658@kroah.com>
+References: <1404303121-2548-1-git-send-email-linux@rasmusvillemoes.dk>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Thomas Schoebel-Theuer <tst@schoebel-theuer.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 49/50] mars: generic pre-patch for mars
-References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de> <1404251250-22992-50-git-send-email-tst@schoebel-theuer.de> <20140701223644.GA30330@kroah.com> <53B3B283.7050800@schoebel-theuer.de> <20140702082400.GB10971@kroah.com> <20140702132708.GA26732@infradead.org> <53B418FA.80600@1und1.de> <20140702145024.GA19425@infradead.org>
-In-Reply-To: <20140702145024.GA19425@infradead.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404303121-2548-1-git-send-email-linux@rasmusvillemoes.dk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Most likely you shouldn't do either. A block driver really should not
-> be removing directories from the filesystem namespace. 
+On Wed, Jul 02, 2014 at 02:12:01PM +0200, Rasmus Villemoes wrote:
+> The header file include/linux/arcdevice.h #defines bool to int, if
+> bool is not already #defined. However, the files which use that header
+> file seem to rely on that #define (unconditionally) being in effect:
+> the prototypes for the functions arcrimi_reset, com20020_reset,
+> com90io_reset, com90xx_reset (whose addresses are assigned to the
+> hw.reset member of struct arcnet_local) use int explicitly.
+> 
+> Moreover, that #define is an accident waiting to happen (scenario:
+> inclusion of arcdevice.h followed by inclusion of some header which
+> declares function prototypes using bool). Also, #include
+> <linux/types.h> must appear before #include <linux/arcdevice.h> (the
+> compiler wouldn't like "typedef _Bool int").
+> 
+> Since none of the files using arcdevice.h declare variables of type
+> "bool", the patch is actually quite simple, unlike the commit message.
+> 
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> ---
+>  include/linux/arcdevice.h | 10 +++-------
+>  1 file changed, 3 insertions(+), 7 deletions(-)
 
-Please take into account that MARS Light is not just a "device driver",
-but a long-distance distributed system dealing with huge masses of state
-information.
+Why are you sending this patch to me?  I don't "own" it at all, please
+use scripts/get_maintainer.pl to determine who to email patches to.
 
-The /mars/ filesystem (which is a reserved directory) is a means for
-storage of transaction logfiles. This has one big advantage: it is a
-_shared_ storage space for _multiple_ resources.
+thanks,
 
-The current setup at 1&1 datacenters is dealing with at least 7
-resources in parallel; the number is likely to grow in future.
-
-IMHO, replacing the /mars/ filesystem by block device storage would
-likely mean to have a rather static ring-buffer like structure for
-_each_ of multiple resources.
-
-When taking your argument (which I can understand) to the extreme, I
-would not even be allowed to use files as a dynamic storage for
-transaction logfiles at all.
-
-In essence, I fear that such a requirement  would mean to re-implement
-the core functionality of a classical filesystem, namely (a) creating
-multiple instances of _dynamic_ storage (aka files) out of a single
-static storage (aka block device), and (b) synchronizing parallel access
-to that. My idea was to re-use that functionality already implemented by
-filesystems, where fundamental problems such as fragmentation are
-already solved.
-
-There is a second reason for using a filesystem:
-
-As explained in slide 10 of the LinuxTag presentation, the symlink tree
-residing in /mars/ is also used for storage and propagation of metadata
-information.
-
-Unfortunately, the slides don't contain my oral explanations (both at
-LCA2014 and LinuxTag2014) about the symlink tree. It is used for three
-purposes at the same time:
-
-1) as a _persistent_ key->value store.
-
-2) as the _only_ means of high-level metadata communication in the
-long-distance cluster.
-
-3) as interface between userspace and kernelspace (no longer any binary
-interfaces).
-
-IMHO, if I had to avoid filesystem operations at least regarding
-symlinks, the complete MARS Light design would have to be redesigend /
-re-implemented in a very different way, essentially a completely
-different implementation, essentially forcing me to throw away the
-effort of years.
-
-Notice that MARS Full is planned to abstract away from concrete storage
-formats such as filesystems, so your objective could probably be met in
-future (if it will have some advantages).
-
-Please permit me to use /mars/ for MARS Light as a reserved space where
-not only transaction logfiles for multiple resources are residing, but
-also the symlink tree is allowed to reside.
-
-Cheers,
-
-Thomas
-
+greg k-h
