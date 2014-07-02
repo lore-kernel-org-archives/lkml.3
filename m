@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386AbaGBM3M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 08:29:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60523 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638AbaGBM3K (ORCPT
+	id S1752711AbaGBMaI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 08:30:08 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:62977 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226AbaGBMaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 08:29:10 -0400
-Date: Wed, 2 Jul 2014 14:29:02 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: eranian@google.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/2] perf, x86: Revamp PEBS event selection
-Message-ID: <20140702122902.GC19379@twins.programming.kicks-ass.net>
-References: <1403910612-8754-1-git-send-email-andi@firstfloor.org>
- <1403910612-8754-2-git-send-email-andi@firstfloor.org>
+	Wed, 2 Jul 2014 08:30:06 -0400
+Date: Wed, 2 Jul 2014 08:30:02 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, mingo@redhat.com, akpm@linux-foundation.org,
+        andi@firstfloor.org, paulmck@linux.vnet.ibm.com, pavel@ucw.cz,
+        jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
+        Michael Matz <matz@suse.de>, Jiri Kosina <jkosina@suse.cz>
+Subject: Re: kGraft to -next [was: 00/21 kGraft]
+Message-ID: <20140702123002.GA20071@mtj.dyndns.org>
+References: <1403694329-3064-1-git-send-email-jslaby@suse.cz>
+ <53B3F556.7050002@suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+nBD6E3TurpgldQp"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403910612-8754-2-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <53B3F556.7050002@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---+nBD6E3TurpgldQp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jul 02, 2014 at 02:04:38PM +0200, Jiri Slaby wrote:
+> On 06/25/2014 01:05 PM, Jiri Slaby wrote:
+...
+> > https://git.kernel.org/cgit/linux/kernel/git/jirislaby/kgraft.git/log/?h=kgraft
+> 
+> Stephen,
+> 
+> may I ask you to add the kGraft tree to -next?
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/jirislaby/kgraft.git#kgraft
 
-On Fri, Jun 27, 2014 at 04:10:11PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->=20
-> As already discussed earlier in email.
+Do we have consensus on the approach?  I personally really don't like
+the fact that it's adding another aspect to kthread management which
+is difficult to get right and nearly impossible to verify
+automatically.
 
-Is an entirely inappropriate start for a Changelog. Do not assume prior
-knowledge. If its relevant include it here without reference.
+IIUC, there are three similar solutions.  What are the pros and cons
+of each?  Can we combine the different approaches?
 
---+nBD6E3TurpgldQp
-Content-Type: application/pgp-signature
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTs/sOAAoJEHZH4aRLwOS6HwUQAIfVBMvlBWp212yOyLgxu4X4
-JKsL67i8e+0cwVmbJ2CBos6Y6F4RMc3NgizRz+18vxotp4nhKJsJiki6MYbpqJoE
-HBJMEJ6b5YoYnkpJRDRCZxsd4OGRveX+l5bGmlFBUHBm8lopuxilXkHZsYhv9551
-evtVf7wMfpSpH2Hh9dNi1+yEFh/RvRmOEGuDP237LRckQGSIbX4snbwIwwkJV1SB
-2mIRlCfxlCGFs8/fYBYUJs+JEYL0DKG4hINMQ+imdo0LNzKUXsj9scK469vmf6YE
-kLjNZ2q60v5aU/HPZOO/fPSIgkFu+UW1RH5UHp7/4yzP7qAgH0QIwK0I3ikbq01e
-wWIedfcimCn6E4FqGBQuTMo8xDxScV9XnVLk6+Gw6BGmO2sPJY/cZuY+evpSifGG
-jJSKFO9sZfyzk3gEBxzNqMPEPQQQsIxswNCYygdbLLJbG5TD92JrehLvpPQh1OVm
-FBFkVbLHqsiGN24KVQewisxp/Z/lBa4nS3zppC36fiZHd7z8ofceuvsMma+5KtQ5
-3+g7dMk7WxBUiC+i8RIGKYS6X3uuJwNoJoLd5n/U6Hg5M0FhlbMzU5lioB9amKFT
-CCRBfcmyiSdQKrc6xmXn+VT6Wox8IPrVDwyLkGHL7MCsED74RKGl1l+1ryOO/bEM
-tudo7TdNX+MEXVju1CXy
-=CO7d
------END PGP SIGNATURE-----
-
---+nBD6E3TurpgldQp--
+-- 
+tejun
