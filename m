@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641AbaGBOyW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 10:54:22 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42831 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538AbaGBOyU (ORCPT
+	id S1753762AbaGBO7Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 10:59:24 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:52689 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880AbaGBO7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 10:54:20 -0400
-Date: Wed, 2 Jul 2014 16:54:11 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: David Rientjes <rientjes@google.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>, x86 <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] x86, perf: avoid spamming kernel log for bts buffer
- failure
-Message-ID: <20140702145411.GI19379@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.02.1406301600460.26302@chino.kir.corp.google.com>
- <20140701093442.GN6758@twins.programming.kicks-ass.net>
- <CABPqkBT9zT6Qejc3hin5yLO4x8bxkZqrXTS-VNana8MhtWC0XA@mail.gmail.com>
- <20140702133105.GG19379@twins.programming.kicks-ass.net>
- <CABPqkBSCckKtKUZ0P0FONtiygjmGYzgA1myE9aG+-RcQ9xnLsg@mail.gmail.com>
+	Wed, 2 Jul 2014 10:59:22 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Liviu Dudau <liviu@dudau.co.uk>, Sinan Kaya <okaya@codeaurora.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>, LKML <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Kukjin Kim <kgene.kim@samsung.com>, Tanmay Inamdar <tinamdar@apm.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH v8 3/9] pci: Introduce pci_register_io_range() helper function.
+Date: Wed, 02 Jul 2014 16:58:58 +0200
+Message-ID: <5997020.x4BWezXjnq@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140702142303.GJ2173@e106497-lin.cambridge.arm.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com> <7343032.WUqPgbXNQS@wuerfel> <20140702142303.GJ2173@e106497-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9s922KAXlWjPfK/Q"
-Content-Disposition: inline
-In-Reply-To: <CABPqkBSCckKtKUZ0P0FONtiygjmGYzgA1myE9aG+-RcQ9xnLsg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:VEQ1d2ngTJ+XW4WJQDLdmfHbT8V3DTcrded8uCMgZFp
+ 86Y6spGeZiCIT7rjVJSClji/5xyLQfOUHUw/5jC3px4mt1DRYo
+ mP16QXuz7Dw5fUqMBBlFTYECEIyZHCo+XLlkiSTDTlIYi+Kf/4
+ DJqOseOl7nlXWZ7se8/v0eMCPN0jGIGniD5r2EsAr56lTt53Jo
+ 8+20x9uzKWSizuAqZVp7GDrDsxzb2R/sHJ0mvFYv0jOSqNRypD
+ 4ADs/GO2GC4C0gKp5wzihYM1ZwmwbQX8Hge8A1b9Dip2dtaZG/
+ Wu8j5Urup+lno6AqYhPq6O3YejOdvzqCDHnu6j17Eul4M04Rhf
+ z3jU0SzFAQO4xSFXBQOw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 02 July 2014 15:23:03 Liviu Dudau wrote:
+> > 
+> > Your solution looks correct to me, just using different
+> > tradeoffs to what I was expecting: You get a working pci_address_to_pio()
+> > function, which is probably never needed, but in turn you need to
+> > keep the state of each host bridge in a global list.
+> 
+> Just a reminder that with my patchset I *do* start using pci_address_to_pio()
+> in order to correctly parse the IO ranges from DT.
 
---9s922KAXlWjPfK/Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, what I meant is that it would be easier not to do that. All existing
+drivers expect of_pci_range_to_resource() to return the CPU address for
+an I/O space register, not the Linux I/O port number that we want to 
+pass to the PCI core. This is suboptimal because it's not obvious how
+it works, but it lets us get away without an extra registration step.
+Once all probe functions in PCI host drivers have been changed to the
+of_create_pci_host_bridge, that should not matter any more, because
+there is only one place left that calls it and we only have to get it
+right once.
 
-On Wed, Jul 02, 2014 at 03:38:50PM +0200, Stephane Eranian wrote:
-> On Wed, Jul 2, 2014 at 3:31 PM, Peter Zijlstra <peterz@infradead.org> wro=
-te:
-> > Right, that'd suck. I suppose we could also change that to allocate the
-> > DS resources on first demand and never free them again.
-> >
-> Some may argue that if you never use perf_event again, you are wasting
-> (1 + 1 + 4) pages per CPU. That may not be okay on some systems.
->=20
-> But yes, it would avoid this problem and also take the penalty for the al=
-locs
-> only once.
+Also, when you change that of_pci_range_to_resource, you also have to 
+audit all callers of that function and ensure they can deal with the new
+behavior.
 
-We could of course over engineer this and put a timer on them to free
-after 5 minutes to avoid the alloc/free cycle for workloads that
-create/destroy events a lot.
-
---9s922KAXlWjPfK/Q
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTtB0TAAoJEHZH4aRLwOS6kpoQAIMWRoxyIQJ2xCYuJAxsaslg
-/LUAQPUcTfCna8Lw3PInCV74FshA89wXCxapdE+FKjNr1gH6TNYyO20rqyi0hjR6
-6SX43lSFuVb9zG6U/jH87RDTI5C+CZMD4INMhJv5pfhf8LTx8niUgOow9EKIU6l4
-1YEp49bA9UN6591EraXMqX/idQR7UT9gRNcPVePvkKKyBXbqyE8lUdYqdUV+dsnv
-Dvq7B8qzdzCLU2n66INQpgqJZHraP+/y5pJs9pfzsqDH6oK4u6Rjw/xfGVprTwCz
-eAh+mNVIHDE+Y/iUcESI/iQbgtYPdz1hrQOg8xPK1PjXj+2/vNqphGjsZ0MaGWFX
-Oyq1upE5gOvsuSWPLiBx3n8/GhCxF87GNf0DfnjTTJt+lwNGSnlkXeUIqPisqfR2
-jS0cVFVYc0TscZ6uKXcosgEWzI253CObkJm9QMiqckiYGCpWHbWOnOfkBvVNNKxs
-CYnRsIUl0Qst5vtTBQi8gkZ0LsCef0ziZwwDNDhMNyS0oG1/nUeWZUyLKZg8jGjt
-TVnTD4r7thDE89cJ0wlPOttPwqkuXhhfDQPMGfVjHSdzf5Xuzd8IFKbZrkSgVKpm
-OJpeUkIOzbxefHfWVxQLjUpOwOAcMHHcwpCpGnMFRKEvuSPS5frdIZeKblasP9sc
-LNrb61dT6hApU1Yjhoec
-=auQM
------END PGP SIGNATURE-----
-
---9s922KAXlWjPfK/Q--
+	Arnd
