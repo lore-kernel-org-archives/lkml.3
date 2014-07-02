@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285AbaGBP3V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 11:29:21 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:40155 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755076AbaGBP3R (ORCPT
+	id S1755382AbaGBP3e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 11:29:34 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:58974 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755113AbaGBP3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 11:29:17 -0400
+	Wed, 2 Jul 2014 11:29:32 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: sameo@linux.intel.com, linus.walleij@linaro.org,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 04/12] mfd: stmpe: Rid data size incompatibility warn when building for 64bit
-Date: Wed,  2 Jul 2014 16:28:36 +0100
-Message-Id: <1404314924-23564-5-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 05/12] mfd: arizona: Rid data size incompatibility warn when building for 64bit
+Date: Wed,  2 Jul 2014 16:28:37 +0100
+Message-Id: <1404314924-23564-6-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1404314924-23564-1-git-send-email-lee.jones@linaro.org>
 References: <1404314924-23564-1-git-send-email-lee.jones@linaro.org>
@@ -26,66 +26,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Extinguishes:
 
-../drivers/mfd/stmpe-i2c.c: In function ‘stmpe_i2c_probe’:
-../drivers/mfd/stmpe-i2c.c:88:13:
+../drivers/mfd/arizona-core.c: In function ‘arizona_of_get_type’:
+../drivers/mfd/arizona-core.c:505:10:
 	warning: cast from pointer to integer of different size
-	partnum = (int)of_id->data;
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/stmpe-i2c.c | 4 ++--
- drivers/mfd/stmpe.c     | 2 +-
- drivers/mfd/stmpe.h     | 2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/mfd/arizona-core.c | 4 ++--
+ drivers/mfd/arizona-i2c.c  | 5 +++--
+ drivers/mfd/arizona-spi.c  | 3 ++-
+ drivers/mfd/arizona.h      | 4 ++--
+ 4 files changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/mfd/stmpe-i2c.c b/drivers/mfd/stmpe-i2c.c
-index a45f9c0..5c05403 100644
---- a/drivers/mfd/stmpe-i2c.c
-+++ b/drivers/mfd/stmpe-i2c.c
-@@ -68,7 +68,7 @@ MODULE_DEVICE_TABLE(of, stmpe_of_match);
- static int
- stmpe_i2c_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+index b4f22e7..e9c3563 100644
+--- a/drivers/mfd/arizona-core.c
++++ b/drivers/mfd/arizona-core.c
+@@ -497,12 +497,12 @@ const struct dev_pm_ops arizona_pm_ops = {
+ EXPORT_SYMBOL_GPL(arizona_pm_ops);
+ 
+ #ifdef CONFIG_OF
+-int arizona_of_get_type(struct device *dev)
++unsigned long arizona_of_get_type(struct device *dev)
  {
--	int partnum;
-+	enum stmpe_partnum partnum;
- 	const struct of_device_id *of_id;
+ 	const struct of_device_id *id = of_match_device(arizona_of_match, dev);
  
- 	i2c_ci.data = (void *)id;
-@@ -85,7 +85,7 @@ stmpe_i2c_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
- 		dev_info(&i2c->dev, "matching on node name, compatible is preferred\n");
- 		partnum = id->driver_data;
- 	} else
--		partnum = (int)of_id->data;
-+		partnum = (enum stmpe_partnum)of_id->data;
- 
- 	return stmpe_probe(&i2c_ci, partnum);
+ 	if (id)
+-		return (int)id->data;
++		return (unsigned long)id->data;
+ 	else
+ 		return 0;
  }
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index 3b6bfa7..02a17c3 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -1147,7 +1147,7 @@ static void stmpe_of_probe(struct stmpe_platform_data *pdata,
- }
+diff --git a/drivers/mfd/arizona-i2c.c b/drivers/mfd/arizona-i2c.c
+index beccb79..9d4156f 100644
+--- a/drivers/mfd/arizona-i2c.c
++++ b/drivers/mfd/arizona-i2c.c
+@@ -24,11 +24,12 @@
+ #include "arizona.h"
  
- /* Called from client specific probe routines */
--int stmpe_probe(struct stmpe_client_info *ci, int partnum)
-+int stmpe_probe(struct stmpe_client_info *ci, enum stmpe_partnum partnum)
+ static int arizona_i2c_probe(struct i2c_client *i2c,
+-					  const struct i2c_device_id *id)
++			     const struct i2c_device_id *id)
  {
- 	struct stmpe_platform_data *pdata = dev_get_platdata(ci->dev);
- 	struct device_node *np = ci->dev->of_node;
-diff --git a/drivers/mfd/stmpe.h b/drivers/mfd/stmpe.h
-index 9e4d21d..2d045f2 100644
---- a/drivers/mfd/stmpe.h
-+++ b/drivers/mfd/stmpe.h
-@@ -97,7 +97,7 @@ struct stmpe_client_info {
- 	void (*init)(struct stmpe *stmpe);
- };
+ 	struct arizona *arizona;
+ 	const struct regmap_config *regmap_config;
+-	int ret, type;
++	unsigned long type;
++	int ret;
  
--int stmpe_probe(struct stmpe_client_info *ci, int partnum);
-+int stmpe_probe(struct stmpe_client_info *ci, enum stmpe_partnum partnum);
- int stmpe_remove(struct stmpe *stmpe);
+ 	if (i2c->dev.of_node)
+ 		type = arizona_of_get_type(&i2c->dev);
+diff --git a/drivers/mfd/arizona-spi.c b/drivers/mfd/arizona-spi.c
+index 1ca554b..5145d78 100644
+--- a/drivers/mfd/arizona-spi.c
++++ b/drivers/mfd/arizona-spi.c
+@@ -28,7 +28,8 @@ static int arizona_spi_probe(struct spi_device *spi)
+ 	const struct spi_device_id *id = spi_get_device_id(spi);
+ 	struct arizona *arizona;
+ 	const struct regmap_config *regmap_config;
+-	int ret, type;
++	unsigned long type;
++	int ret;
  
- #define STMPE_ICR_LSB_HIGH	(1 << 2)
+ 	if (spi->dev.of_node)
+ 		type = arizona_of_get_type(&spi->dev);
+diff --git a/drivers/mfd/arizona.h b/drivers/mfd/arizona.h
+index b4cef77..2951498 100644
+--- a/drivers/mfd/arizona.h
++++ b/drivers/mfd/arizona.h
+@@ -46,9 +46,9 @@ int arizona_irq_init(struct arizona *arizona);
+ int arizona_irq_exit(struct arizona *arizona);
+ 
+ #ifdef CONFIG_OF
+-int arizona_of_get_type(struct device *dev);
++unsigned long arizona_of_get_type(struct device *dev);
+ #else
+-static inline int arizona_of_get_type(struct device *dev)
++static inline unsigned long arizona_of_get_type(struct device *dev)
+ {
+ 	return 0;
+ }
 -- 
 1.8.3.2
 
