@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756494AbaGBR0M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 13:26:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33585 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756186AbaGBR0K (ORCPT
+	id S1756672AbaGBR0i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 13:26:38 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:49624 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540AbaGBR0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 13:26:10 -0400
-Date: Wed, 2 Jul 2014 19:26:00 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
- wakeups
-Message-ID: <20140702172600.GR19379@twins.programming.kicks-ass.net>
-References: <20140627142038.GA22942@linux.vnet.ibm.com>
- <20140702123412.GD19379@twins.programming.kicks-ass.net>
- <20140702153915.GQ4603@linux.vnet.ibm.com>
- <20140702160412.GO19379@twins.programming.kicks-ass.net>
- <20140702170838.GS4603@linux.vnet.ibm.com>
+	Wed, 2 Jul 2014 13:26:37 -0400
+Date: Wed, 2 Jul 2014 19:26:20 +0200
+From: Emil Goode <emilgoode@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Rashika Kheria <rashika.kheria@gmail.com>,
+        Valentina Manea <valentina.manea.m@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Andrea Merello <andrea.merello@gmail.com>, devel@driverdev.osuosl.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: rtl8192e: Fix potential NULL pointer dereference
+Message-ID: <20140702172620.GA4848@lianli>
+References: <1404293151-15804-1-git-send-email-emilgoode@gmail.com>
+ <20140702163334.GA19349@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BnCwdHgQ2ZomtW9r"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140702170838.GS4603@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140702163334.GA19349@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Greg,
 
---BnCwdHgQ2ZomtW9r
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jul 02, 2014 at 09:33:34AM -0700, Greg Kroah-Hartman wrote:
+> On Wed, Jul 02, 2014 at 11:25:51AM +0200, Emil Goode wrote:
+> > We need to make sure the struct rtllib_device pointer ieee is not NULL
+> > after the goto rx_dropped label since it is dereferenced there.
+> > 
+> > Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> > ---
+> >  drivers/staging/rtl8192e/rtllib_rx.c |    3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
+> > index 60de54c..7db3e74 100644
+> > --- a/drivers/staging/rtl8192e/rtllib_rx.c
+> > +++ b/drivers/staging/rtl8192e/rtllib_rx.c
+> > @@ -1496,7 +1496,8 @@ int rtllib_rx(struct rtllib_device *ieee, struct sk_buff *skb,
+> >  	return ret;
+> >  
+> >   rx_dropped:
+> > -	ieee->stats.rx_dropped++;
+> > +	if (ieee)
+> > +		ieee->stats.rx_dropped++;
+> >  	return 0;
+> >  }
+> >  EXPORT_SYMBOL(rtllib_rx);
+> 
+> Is this something that is hitting users today in the tree, or is this
+> just a bug you found looking at the code?
 
-On Wed, Jul 02, 2014 at 10:08:38AM -0700, Paul E. McKenney wrote:
-> As were others, not that long ago.  Today is the first hint that I got
-> that you feel otherwise.  But it does look like the softirq approach to
-> callback processing needs to stick around for awhile longer.  Nice to
-> hear that softirq is now "sane and normal" again, I guess.  ;-)
+It's a static checker fix and I'm not aware of any impact on users.
+If you want I will resend with that information added?
 
-Nah, softirqs are still totally annoying :-)
+Best regards,
 
-So I've lost detail again, but it seems to me that on all CPUs that are
-actually getting ticks, waking tasks to process the RCU state is
-entirely over doing it. Might as well keep processing their RCU state
-=66rom the tick as was previously done.
-
-
-
---BnCwdHgQ2ZomtW9r
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTtECoAAoJEHZH4aRLwOS64v8QAKbkO35TQci9SIbBgt+1AJMz
-j40gjV72OVfGKH9DAV7GYqC62PYzvjMdGTpL0zSt2++SzpAoVX0yjI9Ng8RZVMUe
-gZsTPDIARljxkcaZJ2hw+w/IHsiSkm7GaiByFrBEySnJStWZLb2Rr+4chQ8N7Vtk
-+Wd6nD81pNisxdRJBu20IvfQBvhVCKQMorZ6lB6W/2CcB4Jd7uNeSRNbf8j/P/PT
-YyKlJygwYRdDF+32KICJA7Kq5kNbtjN9ErJQC54oJFboZyxKEgEj6+g8uTiuk0AI
-yc5VeWbcS4az5nOqL7q+9XaJyDKxd0usC6cDA65u2GZx04BJk7r7gL1/Xk76kyKm
-kTOl8Vj7T/ZHaN5MACRWWpl7xodz2L31jPDiMP2gqt8mcSnKNPMF4Ek4cDL5y6tr
-+PJGrEyl0zYlgtdl62uiCBxtY2fkI9xn5KBGYff+Gxbck7nnF/KvDmpCQkQWV/5V
-otrMPPBPqyxi74CZ8nQtcY1sumlfV9/p821ZjpjmbLr/F6Vv06TOOO7Jj8yuDEW1
-UTJb5OA44ftZQEbJDCYFsjd5J38IgPrc4fueTwpvjCVuAI5fYNABLVmrgd87E2JM
-aOCsTGXJ89TLRBdnwlKr9xylU6QqBjRMZFwFPtaOCwc2GjkCZ45dtWPx9nrSm4wu
-S7RWJgPgfDs3nnr/RhOr
-=lQRe
------END PGP SIGNATURE-----
-
---BnCwdHgQ2ZomtW9r--
+Emil Goode
