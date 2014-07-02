@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759005AbaGBCGS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 22:06:18 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:44216 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166AbaGBCGQ (ORCPT
+	id S1759022AbaGBCGy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 22:06:54 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:46426 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754025AbaGBCGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 22:06:16 -0400
+	Tue, 1 Jul 2014 22:06:53 -0400
+Date: Wed, 2 Jul 2014 10:06:46 +0800
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@gentwo.org>, David Rientjes <rientjes@google.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Wei Yang <weiyang@linux.vnet.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: mm: slub: invalid memory access in setup_object
+Message-ID: <20140702020646.GB6961@richard>
+Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
+References: <53AAFDF7.2010607@oracle.com>
+ <alpine.DEB.2.11.1406251228130.29216@gentwo.org>
+ <alpine.DEB.2.02.1406301500410.13545@chino.kir.corp.google.com>
+ <alpine.DEB.2.11.1407010956470.5353@gentwo.org>
+ <20140701144947.5ce3f93729759d8f38d7813a@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <53B13B0B.5030809@mev.co.uk>
-References: <1403930876-27678-1-git-send-email-chase.southwood@gmail.com>
-	<53B13B0B.5030809@mev.co.uk>
-Date: Tue, 1 Jul 2014 21:06:16 -0500
-Message-ID: <CA+jnaaX74EiA5QZkg7W+nt=EBp9DSJc-pcHED3zj-mFkVMh=8w@mail.gmail.com>
-Subject: Re: [PATCH 0/3] staging: comedi: addi_apci_1564: miscellaneous fixes
- and cleanups
-From: Chase Southwood <chase.southwood@gmail.com>
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        hsweeten@visionengravers.com,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140701144947.5ce3f93729759d8f38d7813a@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070202-9574-0000-0000-00000EA73CE4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-
-On Mon, Jun 30, 2014 at 5:25 AM, Ian Abbott <abbotti@mev.co.uk> wrote:
-> On 2014-06-28 05:47, Chase Southwood wrote:
->>
->> This patchset moves a misplaced include to the proper file, swaps out an
->> overly
->> aggressive placement of apci1564_reset(), and cleans up
->> apci1564_interrupt().
->>
->> Chase Southwood (3):
->>    staging: comedi: addi_apci_1564: move addi_watchdog.h include to
->>      addi_apci_1564.c
->>    staging: comedi: addi_apci_1564: fix use of apci1564_reset() to
->>      disable DI interrupts
->>    staging: comedi: addi_apci_1564: clean up apci1564_interrupt()
->>
+On Tue, Jul 01, 2014 at 02:49:47PM -0700, Andrew Morton wrote:
+>On Tue, 1 Jul 2014 09:58:52 -0500 (CDT) Christoph Lameter <cl@gentwo.org> wrote:
 >
-> It's okay, but I think you can simplify the interrupt handling a bit more by
-> not bothering to check for interrupts from unknown sources.   If a source
-> hasn't been enabled, it shouldn't generate interrupts, right? Besides, since
-> the does nothing to stop further interrupts from unknown sources, it would
-> just keep getting further interrupts repeatedly in that case.
+>> On Mon, 30 Jun 2014, David Rientjes wrote:
+>> 
+>> > It's not at all clear to me that that patch is correct.  Wei?
+>> 
+>> Looks ok to me. But I do not like the convoluted code in new_slab() which
+>> Wei's patch does not make easier to read. Makes it difficult for the
+>> reader to see whats going on.
+>> 
+>> Lets drop the use of the variable named "last".
+>> 
+>> 
+>> Subject: slub: Only call setup_object once for each object
+>> 
+>> Modify the logic for object initialization to be less convoluted
+>> and initialize an object only once.
+>> 
 >
-> Then you can get rid of the ui_DO, ui_DI, ui_Timer, and counters[] variables
-> and just check the registers directly (e.g. replace 'if (ui_Timer == 1)'
-> with 'if (inl(devpriv->amcc_iobase + APCI1564_TIMER_IRQ_REG) & 0x01)').
+>Well, um.  Wei's changelog was much better:
+>
+>: When a kmem_cache is created with ctor, each object in the kmem_cache will
+>: be initialized before use.  In the slub implementation, the first object
+>: will be initialized twice.
+>: 
+>: This patch avoids the duplication of initialization of the first object.
+>: 
+>: Fixes commit 7656c72b5a63: ("SLUB: add macros for scanning objects in a
+>: slab").
+>
+>I can copy that text over and add the reported-by etc (ho hum) but I
+>have a tiny feeling that this patch hasn't been rigorously tested? 
+>Perhaps someone (Wei?) can do that?
 
-I received some more good comments about the interrupt function, and
-looks like Greg is on vacation this week anyway, so I think I will
-just redo patch 3 and send out a v2 patchset.
+Ok, I will apply this one and give a shot.
 
-Thanks,
-Chase
+>
+>And we still don't know why Sasha's kernel went oops.
+
+Yep, if there is some procedure to reproduce it, I'd like to do it at my side.
+
+-- 
+Richard Yang
+Help you, Help me
+
