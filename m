@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791AbaGBJRI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 05:17:08 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:41788 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643AbaGBJRE (ORCPT
+	id S1752811AbaGBJSO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 05:18:14 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:22523 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585AbaGBJSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 05:17:04 -0400
-Message-ID: <53B3CDFE.20808@siemens.com>
-Date: Wed, 02 Jul 2014 11:16:46 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: "Hu, Robert" <robert.hu@intel.com>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since
- race
-References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com> <9E79D1C9A97CFD4097BCE431828FDD31983416@SHSMSX103.ccr.corp.intel.com> <53B3CADD.3000504@siemens.com> <9E79D1C9A97CFD4097BCE431828FDD3198359C@SHSMSX103.ccr.corp.intel.com>
-In-Reply-To: <9E79D1C9A97CFD4097BCE431828FDD3198359C@SHSMSX103.ccr.corp.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jul 2014 05:18:12 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-98-53b3ce52e9b4
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        Anton Vorontsov <anton@enomsg.org>
+Cc: Philip Rakity <prakity@marvell.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH RESEND 1/2] power: max8925: Fix NULL ptr dereference on memory
+ allocation failure
+Date: Wed, 02 Jul 2014 11:17:53 +0200
+Message-id: <1404292674-5260-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNJMWRmVeSWpSXmKPExsVy+t/xy7pB5zYHGxy/z2txcKumxaQn75kt
+	Jq6czGzx+oWhxeVdc9gs5q9+wujA5jGh/xOjx85Zd9k9Nq/Q8pi88CKzR9+WVYwenzfJBbBF
+	cdmkpOZklqUW6dslcGU8v/+MreAEV8WP3b2MDYzNnF2MnBwSAiYS7fvWsUHYYhIX7q0Hsrk4
+	hASWMkr86b/BBOH0MUlMuP6UCaSKTcBYYvPyJWBVIgLzGSWmH5wO1s4sECHx/thfMFtYIFni
+	y4+f7F2MHBwsAqoSu3dZgIR5Bdwkdq39xg6xTU7i5LHJrBMYuRcwMqxiFE0tTS4oTkrPNdIr
+	TswtLs1L10vOz93ECAmQrzsYlx6zOsQowMGoxMP7Qn9TsBBrYllxZe4hRgkOZiUR3kdnNgcL
+	8aYkVlalFuXHF5XmpBYfYmTi4JRqYCw7H6GhtGxS0/aAA2yvud2ehvesar7weOFrzcPaFWI8
+	Ctw6/xK61zf/8Y7ZPcNq4lyRrI8nbm/eXbCwpGhChUL20W3R17ftZJZftEV33eoJ6zQr2YJS
+	HseHMs1dEsRq6Jeo36Yb/P9g6HbbvvOnJfbXTUnf5H+KY7+S6NnrLe6dUXn/u/+1nFNiKc5I
+	NNRiLipOBAC7GLJP7gEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-02 11:13, Hu, Robert wrote:
-> 
->> -----Original Message-----
->> From: Jan Kiszka [mailto:jan.kiszka@siemens.com]
->> Sent: Wednesday, July 2, 2014 5:03 PM
->> To: Hu, Robert; Wanpeng Li; Paolo Bonzini; Gleb Natapov
->> Cc: kvm@vger.kernel.org; linux-kernel@vger.kernel.org
->> Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since
->> race
->>
->> On 2014-07-02 09:20, Hu, Robert wrote:
->>>> -----Original Message-----
->>>> From: Wanpeng Li [mailto:wanpeng.li@linux.intel.com]
->>>> Sent: Wednesday, July 2, 2014 2:54 PM
->>>> To: Paolo Bonzini; Jan Kiszka; Gleb Natapov
->>>> Cc: Hu, Robert; kvm@vger.kernel.org; linux-kernel@vger.kernel.org; Wanpeng
->> Li
->>>> Subject: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since
->> race
->>>>
->>>> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=72381
->>>>
->>>> If we didn't inject a still-pending event to L1 since nested_run_pending,
->>>> KVM_REQ_EVENT should be requested after the vmexit in order to inject the
->>>> event to L1. However, current log blindly request a KVM_REQ_EVENT even if
->>>> there is no still-pending event to L1 which blocked by nested_run_pending.
->>>> There is a race which lead to an interrupt will be injected to L2 which
->>>> belong to L1 if L0 send an interrupt to L1 during this window.
->>>>
->>>>                VCPU0                               another thread
->>>>
->>>> L1 intr not blocked on L2 first entry
->>>> vmx_vcpu_run req event
->>>> kvm check request req event
->>>> check_nested_events don't have any intr
->>>> not nested exit
->>>>                                             intr occur (8254, lapic timer
->>>> etc)
->>>> inject_pending_event now have intr
->>>> inject interrupt
->>>>
->>>> This patch fix this race by introduced a l1_events_blocked field in nested_vmx
->>>> which indicates there is still-pending event which blocked by
->>>> nested_run_pending,
->>>> and smart request a KVM_REQ_EVENT if there is a still-pending event which
->>>> blocked
->>>> by nested_run_pending.
->>>>
->>>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->>> Tested-by: Robert Hu<robert.hu@intel.com>
->>
->> Do you happen to have a kvm-unit-test for this race? Or how did you
->> test? Just curious, and if there is a test, it would be good to
->> integrate it.
-> I just apply the patch and test the reported scenario.
+Check the return value of devm_kzalloc() to fix possible NULL pointer
+dereference and properly exit the probe() on memory allocation failure.
 
-Ah, sorry, missed the referenced bug report.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/power/max8925_power.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Jan
-
+diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
+index b4513f284bbc..0cf237808d47 100644
+--- a/drivers/power/max8925_power.c
++++ b/drivers/power/max8925_power.c
+@@ -452,13 +452,14 @@ max8925_power_dt_init(struct platform_device *pdev)
+ 	pdata = devm_kzalloc(&pdev->dev,
+ 			sizeof(struct max8925_power_pdata),
+ 			GFP_KERNEL);
++	if (!pdata)
++		goto ret;
+ 
+ 	of_property_read_u32(np, "topoff-threshold", &topoff_threshold);
+ 	of_property_read_u32(np, "batt-detect", &batt_detect);
+ 	of_property_read_u32(np, "fast-charge", &fast_charge);
+ 	of_property_read_u32(np, "no-insert-detect", &no_insert_detect);
+ 	of_property_read_u32(np, "no-temp-support", &no_temp_support);
+-	of_node_put(np);
+ 
+ 	pdata->batt_detect = batt_detect;
+ 	pdata->fast_charge = fast_charge;
+@@ -466,6 +467,8 @@ max8925_power_dt_init(struct platform_device *pdev)
+ 	pdata->no_insert_detect = no_insert_detect;
+ 	pdata->no_temp_support = no_temp_support;
+ 
++ret:
++	of_node_put(np);
+ 	return pdata;
+ }
+ #else
 -- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+1.9.1
+
