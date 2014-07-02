@@ -1,74 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534AbaGBNix (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 09:38:53 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:52750 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770AbaGBNiv (ORCPT
+	id S1753567AbaGBNmH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 09:42:07 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:44089 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751226AbaGBNmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 09:38:51 -0400
+	Wed, 2 Jul 2014 09:42:04 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+lKslftfkk91ptZJ2FJzwXMna/en0c4Js=
+X-DKIM: OpenDKIM Filter v2.0.1 titan D719D5A0445
+Date: Wed, 2 Jul 2014 09:41:56 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        Kees Cook <keescook@chromium.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>, stable@vger.kernel.org
+Subject: Re: [PATCH 1/2 v2] hwrng: Allow drivers to disable reading during
+ probe
+Message-ID: <20140702134156.GL23978@titan.lakedaemon.net>
+References: <cover.1404296679.git.amit.shah@redhat.com>
+ <1404306020-24916-1-git-send-email-jason@lakedaemon.net>
+ <20140702132635.GD7505@grmbl.mre>
 MIME-Version: 1.0
-In-Reply-To: <20140702133105.GG19379@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.02.1406301600460.26302@chino.kir.corp.google.com>
-	<20140701093442.GN6758@twins.programming.kicks-ass.net>
-	<CABPqkBT9zT6Qejc3hin5yLO4x8bxkZqrXTS-VNana8MhtWC0XA@mail.gmail.com>
-	<20140702133105.GG19379@twins.programming.kicks-ass.net>
-Date: Wed, 2 Jul 2014 15:38:50 +0200
-Message-ID: <CABPqkBSCckKtKUZ0P0FONtiygjmGYzgA1myE9aG+-RcQ9xnLsg@mail.gmail.com>
-Subject: Re: [patch] x86, perf: avoid spamming kernel log for bts buffer failure
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: David Rientjes <rientjes@google.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>, x86 <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140702132635.GD7505@grmbl.mre>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 2, 2014 at 3:31 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Jul 02, 2014 at 03:16:40PM +0200, Stephane Eranian wrote:
->> On Tue, Jul 1, 2014 at 11:34 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Mon, Jun 30, 2014 at 04:04:08PM -0700, David Rientjes wrote:
->> >> It's unnecessary to excessively spam the kernel log anytime the BTS buffer
->> >> cannot be allocated, so make this allocation __GFP_NOWARN.
->> >>
->> >> The user probably will want to at least find some artifact that the
->> >> allocation has failed in the past, probably due to fragmentation because
->> >> of its large size, when it's not allocated at bootstrap.  Thus, add a
->> >> WARN_ONCE() so something is left behind for them to understand why perf
->> >> commnads that require PEBS is not working properly.
->> >
->> > Can you elaborate a bit under which conditions this triggered? Typically
->> > we should be doing fairly well allocating such buffers with GFP_KERNEL,
->> > that should allow things like compaction to run and create higher order
->> > pages.
->> >
->> I think this triggers when you have fragmented memory and you have
->> perf_events active and inactive (i.e., 0 users = no nmi watchdog) frequently.
->> Each first user invokes the reserve_ds() function to reserve DS, PEBS, BTS.
->
-> Right, that'd suck. I suppose we could also change that to allocate the
-> DS resources on first demand and never free them again.
->
-Some may argue that if you never use perf_event again, you are wasting
-(1 + 1 + 4) pages per CPU. That may not be okay on some systems.
+On Wed, Jul 02, 2014 at 06:56:35PM +0530, Amit Shah wrote:
+> Hi Jason,
+> 
+> On (Wed) 02 Jul 2014 [13:00:19], Jason Cooper wrote:
+> > Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
+> > added a call to rng_get_data() from the hwrng_register() function.
+> > However, some rng devices need initialization before data can be read
+> > from them.
+> > 
+> > Also, the virtio-rng device does not behave properly when this call is
+> > made in its probe() routine - the virtio core sets the DRIVER_OK status
+> > bit only on a successful probe, which means the host ignores all
+> > communication from the guest, and the guest insmod or boot process just
+> > sits there doing nothing.
+> > 
+> > [ jac: Modify the API to allow drivers to disable reading at probe, new
+> > patch, copied Amit's commit message. ]
+> > 
+> > CC: Kees Cook <keescook@chromium.org>
+> > CC: Jason Cooper <jason@lakedaemon.net>
+> > CC: Herbert Xu <herbert@gondor.apana.org.au>
+> > CC: <stable@vger.kernel.org> # v3.15+
+> > Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> > Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+> > ---
+> >  drivers/char/hw_random/core.c | 8 +++++---
+> >  include/linux/hw_random.h     | 4 ++++
+> >  2 files changed, 9 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+> > index 334601cc81cf..b7b6c48ca682 100644
+> > --- a/drivers/char/hw_random/core.c
+> > +++ b/drivers/char/hw_random/core.c
+> > @@ -347,9 +347,11 @@ int hwrng_register(struct hwrng *rng)
+> >  	INIT_LIST_HEAD(&rng->list);
+> >  	list_add_tail(&rng->list, &rng_list);
+> >  
+> > -	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
+> > -	if (bytes_read > 0)
+> > -		add_device_randomness(bytes, bytes_read);
+> > +	if (!(rng->flags & HWRNG_NO_READ_AT_PROBE)) {
+> > +		bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
+> > +		if (bytes_read > 0)
+> > +			add_device_randomness(bytes, bytes_read);
+> > +	}
+> 
+> But this has the inverse problem: if there are two hwrngs in the
+> system, one will be initialized and probed.  The other will not be
+> initialized, but still be probed.
 
-But yes, it would avoid this problem and also take the penalty for the allocs
-only once.
+That's a problem outside the scope of this patch.  You're basically
+saying the ->init() should be called unconditionally for each hwrng.  If
+that's what driver authors assumed, that's not what is happening if
+there is more than one driver in the system.
 
+I think you should be changing the code a few lines up to make sure
+hwrng_init() is called once for each driver.
 
-> So only allocate the PEBS buffer when we create the first PEBS event,
-> and idem for the BTS muck.
->
->> The reason for BTS rather then PEBS is the size of the allocation.
->> PEBS allocates one page, i.e., less likely to get a failure than BTS
->> which allocates 4 pages, I think.
->
-> Sure..
->
->> David and I discussed this. He can probably add more background
->> info, if needed.
->
-> It would still be good to see why compaction etc is failing.
+> My version was more conservative while this one keeps the bug from the
+> current kernels.
+
+Huh?  What do you mean by "keeps the bug from the current kernels." ?
+
+Besides, you're second patch isn't actually doing any ->init to get the
+hwrng ready for reading...  If you had a real ->init function, and it
+was always called, would rng_get_data() work at probe time for your
+driver?
+
+confused,
+
+Jason.
