@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236AbaGBPws (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 11:52:48 -0400
-Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:34081 "EHLO
-	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932164AbaGBPwq (ORCPT
+	id S932284AbaGBPxQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 11:53:16 -0400
+Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:42404 "EHLO
+	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932100AbaGBPwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 11:52:46 -0400
+	Wed, 2 Jul 2014 11:52:40 -0400
 To: peterz@infradead.org, mingo@kernel.org
 Cc: linux-kernel@vger.kernel.org, andi@firstfloor.org, rostedt@goodmis.org
-Message-Id: <9d7780c83db26683955cd01e6bc654ee2586e67f.1404315388.git.jbaron@akamai.com>
-In-Reply-To: <cover.1404315388.git.jbaron@akamai.com>
-References: <cover.1404315388.git.jbaron@akamai.com>
+Message-Id: <cover.1404315388.git.jbaron@akamai.com>
 From: Jason Baron <jbaron@akamai.com>
-Subject: [PATCH 2/2] sched: fix static_key race with sched_feat
-Date: Wed,  2 Jul 2014 15:52:44 +0000 (GMT)
+Subject: [PATCH 0/2] sched: static_key sched_feat race + cleanup
+Date: Wed,  2 Jul 2014 15:52:38 +0000 (GMT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As pointed out by Andi Kleen, the usage of static keys can be racy in
-sched_feat_disable() vs. sched_feat_enable(). Currently, we first check the
-value of keys->enabled, and subsequently update the branch direction. This,
-can be racy and can potentially leave the keys in an inconsistent state.
+Hi,
 
-Take the i_mutex around these calls to resolve the race.
+Andi Kleen previously pointed out a get/set race in the sched_feat()
+infrastructure. I had previously proposed to address this with a new
+static_key set_true/set_false API:
 
-Reported-by: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Jason Baron <jbaron@akamai.com>
----
- kernel/sched/core.c | 5 +++++
- 1 file changed, 5 insertions(+)
+http://www.gossamer-threads.com/lists/linux/kernel/1955879
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 3bdf01b..249c865 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -243,6 +243,7 @@ sched_feat_write(struct file *filp, const char __user *ubuf,
- 	char buf[64];
- 	char *cmp;
- 	int i;
-+	struct inode *inode;
+However, I think its simpler to just add higher level locking as
+Ingo previously suggested, and that is how other consumers of the
+this interface are already operating. It seems a bit like overkill
+to add this new API, just for this one case.
+
+So, this locking change is in patch 2. Patch 1 is a small cleanup, but
+no functional change.
  
- 	if (cnt > 63)
- 		cnt = 63;
-@@ -253,7 +254,11 @@ sched_feat_write(struct file *filp, const char __user *ubuf,
- 	buf[cnt] = 0;
- 	cmp = strstrip(buf);
- 
-+	/* Ensure the static_key remains in a consistent state */
-+	inode = file_inode(filp);
-+	mutex_lock(&inode->i_mutex);
- 	i = sched_feat_set(cmp);
-+	mutex_unlock(&inode->i_mutex);
- 	if (i == __SCHED_FEAT_NR)
- 		return -EINVAL;
- 
+Thanks,
+
+-Jason
+
+Jason Baron (2):
+  sched: remove extra static_key function indirection
+  sched: fix static_key race with sched_feat
+
+ kernel/sched/core.c  |  5 +++++
+ kernel/sched/sched.h | 12 +-----------
+ 2 files changed, 6 insertions(+), 11 deletions(-)
+
 -- 
 1.8.2.rc2
 
