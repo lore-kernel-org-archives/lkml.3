@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043AbaGBJ3O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 05:29:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56522 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750742AbaGBJ3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 05:29:12 -0400
-Message-ID: <53B3D0BE.9090708@ti.com>
-Date: Wed, 2 Jul 2014 14:58:30 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752201AbaGBJaK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 05:30:10 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:54084 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991AbaGBJaI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 05:30:08 -0400
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <kernel@stlinux.com>
-Subject: Re: [PATCH 2/5] phy: miphy365x: Add MiPHY365x header file for DT
- x Driver defines
-References: <1404133317-25953-1-git-send-email-lee.jones@linaro.org> <1404133317-25953-3-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1404133317-25953-3-git-send-email-lee.jones@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140702052012.23338.54536@quantum>
+References: <1404061055-89797-1-git-send-email-manuel.lauss@gmail.com>
+ <1404061055-89797-3-git-send-email-manuel.lauss@gmail.com> <20140702052012.23338.54536@quantum>
+From: Manuel Lauss <manuel.lauss@gmail.com>
+Date: Wed, 2 Jul 2014 11:29:27 +0200
+Message-ID: <CAOLZvyH810_0yp=CaQjxYianguS++iXOmq6ZEW2FWRPDxZMW2g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] MIPS: Alchemy: common clock framework integration
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Linux-MIPS <linux-mips@linux-mips.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Mike,
 
-On Monday 30 June 2014 06:31 PM, Lee Jones wrote:
-> This provides the shared header file which will be reference from both
-> the MiPHY365x driver and its associated Device Tree node(s).
-> 
-> Cc: Kishon Vijay Abraham I <kishon@ti.com>
-> Acked-by: Mark Rutland <mark.rutland@arm.com>
-> Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  include/dt-bindings/phy/phy-miphy365x.h | 25 +++++++++++++++++++++++++
->  1 file changed, 25 insertions(+)
->  create mode 100644 include/dt-bindings/phy/phy-miphy365x.h
-> 
-> diff --git a/include/dt-bindings/phy/phy-miphy365x.h b/include/dt-bindings/phy/phy-miphy365x.h
-> new file mode 100644
-> index 0000000..8757c02
-> --- /dev/null
-> +++ b/include/dt-bindings/phy/phy-miphy365x.h
-> @@ -0,0 +1,25 @@
-> +/*
-> + * This header provides constants for the phy framework
-> + * based on the STMicroelectronics miphy365x.
-> + */
-> +#ifndef _DT_BINDINGS_PHY_MIPHY
-> +#define _DT_BINDINGS_PHY_MIPHY
-> +
-> +/* Supports 16 ports without a datatype change (u8 & 0xF0). */
-> +#define MIPHY_PORT_0			0
-> +#define MIPHY_PORT_1			1
-> +#define MIPHY_PORT_2			2
-> +#define MIPHY_PORT_3			3
-> +
-> +/* Supports 16 types without a datatype change (u8 & 0x0F). */
-> +#define MIPHY_TYPE_SHIFT		4
-> +#define MIPHY_TYPE_SATA			(0 << MIPHY_TYPE_SHIFT)
-> +#define MIPHY_TYPE_PCIE			(1 << MIPHY_TYPE_SHIFT)
-> +#define MIPHY_TYPE_USB			(2 << MIPHY_TYPE_SHIFT)
-> +
-> +#define MIPHY_SATA_PORT0		(MIPHY_TYPE_SATA) | (MIPHY_PORT_0)
-> +#define MIPHY_SATA_PORT1		(MIPHY_TYPE_SATA) | (MIPHY_PORT_1)
-> +#define MIPHY_PCIE_PORT0		(MIPHY_TYPE_PCIE) | (MIPHY_PORT_0)
-> +#define MIPHY_PCIE_PORT1		(MIPHY_TYPE_PCIE) | (MIPHY_PORT_1)
+On Wed, Jul 2, 2014 at 7:20 AM, Mike Turquette <mturquette@linaro.org> wrote:
+> Quoting Manuel Lauss (2014-06-29 09:57:35)
+>> Expose chip-internal configurable clocks to the common clk framework,
+>> and fix a few drivers to take advantage of it.
+>
+> Thanks for the patch series! Both patches cover a lot of ground, but
+> I'll focus on #2. It would be best to split the driver changes out
 
-As Sergei pointed in your previous version it should be (X | Y).
+I sent the first one along because the second doesn't compile without it.
 
-Thanks
-Kishon
+
+> separately. You can introduce the common clk changes but not compile
+> them in, then change the drivers, then add the logic to compile the new
+> common clock driver all as separate patches.
+
+I'll split them into pure clock framework and enablement parts.
+
+
+> Additionally, it would be cool to push this driver out to drivers/clk/
+> if you are so inclined. It looks like your header dependencies are not
+> so bad as to make that task impossible. Just a suggestion from me.
+
+This clock framework is for a single line of MIPS SoCs which are no longer
+being developed by the manufacturer and I don't think it is reusable for any
+other soc line currently in existence.  I'd like to keep it within the mips tree
+for that reason.  (I find the ARM way of sprinkling the whole tree with
+a single driver for each iteration of each custom on-chip peripheral on
+each ARM chip [exaggerated of course] quite messy.   But that's just me).
+
+Manuel
