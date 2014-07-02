@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394AbaGBKTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 06:19:34 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50929 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753326AbaGBKTc (ORCPT
+	id S1753492AbaGBKTj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 06:19:39 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:45870 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566AbaGBKTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 06:19:32 -0400
-Date: Wed, 2 Jul 2014 11:19:26 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Yang,Wei" <Wei.Yang@windriver.com>
-Cc: mroberto@cpti.cetuc.puc-rio.br, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v1] ARM:sa1100: Remove a redundant spin lock
-Message-ID: <20140702101925.GE32514@n2100.arm.linux.org.uk>
-References: <1404200488-7809-1-git-send-email-Wei.Yang@windriver.com> <53B3CEAC.9080609@windriver.com>
+	Wed, 2 Jul 2014 06:19:36 -0400
+Date: Wed, 2 Jul 2014 11:19:27 +0100
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        p.zabel@pengutronix.de, srinivas.kandagatla@gmail.com,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 3/3] ARM: STi: STiH407: Add reset controller support.
+Message-ID: <20140702101927.GC8809@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1404225047-9495-1-git-send-email-peter.griffin@linaro.org>
+ <1404225047-9495-4-git-send-email-peter.griffin@linaro.org>
+ <20140702085102.GF10311@lee--X1>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53B3CEAC.9080609@windriver.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140702085102.GF10311@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 05:19:40PM +0800, Yang,Wei wrote:
-> Hi Guys,
->
-> What about this patch?
+Hi Lee,
 
-The only concern on the face of it is that it removes mutual exclusion
-from the pci config write path, where a read-modifiy-write operation is
-performed.
+> > +		picophyreset: picophyreset-controller {
+> > +			#reset-cells = <1>;
+> > +			compatible = "st,stih407-picophyreset";
+> > +		};
+> > +
+> 
+> I'd always put the compatible string at the very top of the node.
 
-However, the PCI code already gives that guarantee (drivers/pci/access.c)
-so this should be safe.
+Thanks for reviewing, have changed in v2.
 
-As this is fairly old code, it would be useful to know what the motivation
-is behind this change.  Is it purely clean up, or is it something that
-you've tested, or is this a change that you require for something else?
+regards,
 
-Thanks.
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+Peter.
