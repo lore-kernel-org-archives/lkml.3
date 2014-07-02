@@ -1,142 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751761AbaGBE2A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 00:28:00 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:15123 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872AbaGBE16 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 00:27:58 -0400
-X-AuditID: cbfee68e-b7fb96d000004bfc-54-53b38a4b93f8
-Message-id: <53B38A4B.4020407@samsung.com>
-Date: Wed, 02 Jul 2014 13:27:55 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Sachin Kamat <spk.linux@gmail.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH] ARM: dts: Add TMU dt node to monitor the temperature for
- Exynos3250
-References: <1404175210-9278-1-git-send-email-cw00.choi@samsung.com>
- <CAK5sBcFJMK-y+MZPXCufKEmp=v1nFJHstvNTczsQ3ez3SUPbKw@mail.gmail.com>
- <53B23362.7080103@samsung.com>
- <CAK5sBcER-rFmqe74b8uS=ZxKnTNGtkE0x6f7zaLphmyuHJz7Yg@mail.gmail.com>
- <53B349AF.4080606@samsung.com>
- <CAK5sBcHrMPweMSxfde0SSDOtRHbf7t7WQZkf0wAZNTc+N2=Wgg@mail.gmail.com>
-In-reply-to: <CAK5sBcHrMPweMSxfde0SSDOtRHbf7t7WQZkf0wAZNTc+N2=Wgg@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHIsWRmVeSWpSXmKPExsWyRsSkWNe7a3OwwedFshaT1h1gsph/5Byr
-	Rf+bhawW516tZLToXXCVzeJs0xt2i02Pr7FaXN41h81ixvl9TBa3L/NaLL1+kcliwvS1LBat
-	e4+wW7R8PcdisX7GaxYHfo8189YwerQ097B5XO7rZfL4u+oFs8fOWXfZPVYu/8LmsWlVJ5vH
-	5iX1Hn1bVjF6fN4kF8AVxWWTkpqTWZZapG+XwJVx5lcvW8FW0YoPn6azNzAuEuhi5OSQEDCR
-	mPnpNjOELSZx4d56NhBbSGApo8SMe0IwNc2vWoBquIDi0xkl5vf+ZIVwXjNKPFjfwARSxSug
-	JdG24ys7iM0ioCrR/OUwK4jNBhTf/+IG2FRRgTCJldOvsEDUC0r8mHwPzBYRUJOYefY0G8hQ
-	ZoGvLBJr2nczdjFycAgLREnsOsQGsew2k8TJWf/BFnAKBEss6JwLtoBZQF1i0rxFzBC2vMTm
-	NW/BTpUQWMkh8fvHJiaIiwQkvk0+xAIyVEJAVmLTAaiXJSUOrrjBMoFRbBaSm2YhGTsLydgF
-	jMyrGEVTC5ILipPSi4z0ihNzi0vz0vWS83M3MQLj/vS/Z307GG8esD7EmAy0ciKzlGhyPjBt
-	5JXEGxqbGVmYmpgaG5lbmpEmrCTOu+hhUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRpF9
-	j2JbH9sHHtr0PeixvBuXrdm5oLxZy/f8WB/xsVfNmCVYWetWf91HfadpqeZn7V9vZjXprjgf
-	x2158tBFiRihT7dV+da8kFI6zspUXbLRbe79Mp1ZcSdflM1XC60N3x8ewVLu+O+M5Cut/6JL
-	HkyLO1/rxPTywfe/KxO/nVjDoMG0dNVVLyWW4oxEQy3mouJEAFtyqzgRAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jQV3vrs3BBi93iFhMWneAyWL+kXOs
-	Fv1vFrJanHu1ktGid8FVNouzTW/YLTY9vsZqcXnXHDaLGef3MVncvsxrsfT6RSaLCdPXsli0
-	7j3CbtHy9RyLxfoZr1kc+D3WzFvD6NHS3MPmcbmvl8nj76oXzB47Z91l91i5/Aubx6ZVnWwe
-	m5fUe/RtWcXo8XmTXABXVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5i
-	bqqtkotPgK5bZg7QG0oKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwhrGjDO/
-	etkKtopWfPg0nb2BcZFAFyMnh4SAiUTzqxZmCFtM4sK99WxdjFwcQgLTGSXm9/5khXBeM0o8
-	WN/ABFLFK6Al0bbjKzuIzSKgKtH85TAriM0GFN//4gYbiC0qECaxcvoVFoh6QYkfk++B2SIC
-	ahIzz54G28As8JVFYk37bsYuRg4OYYEoiV2HoDbfZpI4Oes/2AJOgWCJBZ1zwRYwC6hLTJq3
-	iBnClpfYvOYt8wRGgVlIdsxCUjYLSdkCRuZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMFp
-	5ZnUDsaVDRaHGAU4GJV4eCPubgoWYk0sK67MPcQowcGsJMIbz7M5WIg3JbGyKrUoP76oNCe1
-	+BCjKTAIJjJLiSbnA1NeXkm8obGJmZGlkbmhhZGxuZI474FW60AhgfTEktTs1NSC1CKYPiYO
-	TqkGRn/dRS6Tt/Z3nRN9wH42s4n93cN96spOqQ8ep98p7AiRcdYIW7+2vlf5ddHCVxnFMdPW
-	rC/oML6Qbe82ba7DI8VJdRPy73BNmXRY7nREdaFI9KplthZCpSbXfNiCuCRvP7n+8YJNhel7
-	D/WPywp+vlDfEfBU16f2tGHW7jfMHNfWWDou9cn8ocRSnJFoqMVcVJwIAHj208pBAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752071AbaGBEbW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 00:31:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32737 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750893AbaGBEbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 00:31:21 -0400
+Date: Wed, 2 Jul 2014 00:30:57 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Hillf Danton <dhillf@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH] rmap: fix pgoff calculation to handle hugepage correctly
+Message-ID: <20140702043057.GA19813@nhori.redhat.com>
+References: <1404225982-22739-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20140701180739.GA4985@node.dhcp.inet.fi>
+ <20140701185021.GA10356@nhori.bos.redhat.com>
+ <20140701201540.GA5953@node.dhcp.inet.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140701201540.GA5953@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sachin,
-
-On 07/02/2014 12:09 PM, Sachin Kamat wrote:
-> On Wed, Jul 2, 2014 at 5:22 AM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->> On 07/01/2014 01:10 PM, Sachin Kamat wrote:
->>> Hi Chanwoo,
->>>
->>> On Tue, Jul 1, 2014 at 9:34 AM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->>>> Hi Sachin,
->>>>
->>>> On 07/01/2014 12:33 PM, Sachin Kamat wrote:
->>>>> Hi Chanwoo,
->>>>>
->>>>> On Tue, Jul 1, 2014 at 6:10 AM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->>>>>> This patch add TMU (Thermal Management Unit) dt node to monitor the high
->>>>>> temperature for Exynos3250.
->>>>>>
->>>>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>>>>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->>>>>> ---
->>>>>> This patch has a dependency on following patch [1]:
->>>>>>  [1] https://lkml.org/lkml/2014/6/30/805
->>>>>>
->>>>>>  arch/arm/boot/dts/exynos3250.dtsi | 10 ++++++++++
->>>>>>  1 file changed, 10 insertions(+)
->>>>>>
->>>>>> diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
->>>>>> index 3660cab..1e566af 100644
->>>>>> --- a/arch/arm/boot/dts/exynos3250.dtsi
->>>>>> +++ b/arch/arm/boot/dts/exynos3250.dtsi
->>>>>> @@ -192,6 +192,16 @@
->>>>>>                         status = "disabled";
->>>>>>                 };
->>>>>>
->>>>>> +               tmu: tmu@100C0000 {
->>>>>> +                       compatible = "samsung,exynos3250-tmu";
->>>>>> +                       interrupt-parent = <&gic>;
->>>>>> +                       reg = <0x100C0000 0x100>;
->>>>>> +                       interrupts = <0 216 0>;
->>>>>> +                       clocks = <&cmu CLK_TMU_APBIF>;
->>>>>> +                       clock-names = "tmu_apbif";
->>>>>> +                       status = "disabled";
->>>>>
->>>>> I don't think there would be any board specific properties needed. Hence
->>>>> leave the status as enabled (by deleting the above line).
->>>>>
->>>>
->>>> I think that if specific board need TMU feature, dts file for specific board
->>>> should include tmu dt node with 'okay' status. The specific board based on
->>>> Exynos3250 might not need TMU feature.
->>>
->>> The status field in DT node is not meant for stating the build configuration but
->>> represents the readiness of the hardware for usage on the platform. If
->>> a particular
->>> board does not need this feature it needs to be disabled in the build
->>> config and only
->>> for any special requirements disable it in board file.
->>
->> TMU (Thermal Management Unit) needs specific regulator for TMU power as following:
->> The regulator for TMU is dependent on board.
+On Tue, Jul 01, 2014 at 11:15:40PM +0300, Kirill A. Shutemov wrote:
+> On Tue, Jul 01, 2014 at 02:50:21PM -0400, Naoya Horiguchi wrote:
+> > On Tue, Jul 01, 2014 at 09:07:39PM +0300, Kirill A. Shutemov wrote:
+> > > Why do we need this special case for hugetlb page ->index? Why not use
+> > > PAGE_SIZE units there too? Or I miss something?
+> > 
+> > hugetlb pages are never split, so we use larger page cache size for
+> > hugetlbfs file (to avoid large sparse page cache tree.)
 > 
-> In this case it makes sense to leave it disabled in dtsi.
-> 
+> For transparent huge page cache I would like to have native support in
+> page cache radix-tree: since huge pages are always naturally aligned we
+> can create a leaf node for it several (RADIX_TREE_MAP_SHIFT -
+> HPAGE_PMD_ORDER) levels up by tree, which would cover all indexes in the
+> range the huge page represents. This approach should fit hugetlb too. And
+> -1 special case for hugetlb.
+> But I'm not sure when I'll get time to play with this...
 
-Thanks for your review.
+So I'm OK that hugetlb page should have ->index in PAGE_CACHE_SIZE
+when transparent huge page is merged. I may try to write patches
+on top of your tree after I've done a few series in my work queue.
 
-Best Regards,
-Chanwoo Choi
+In order to fix the current problem, I suggest a page_to_pgoff() as a
+short-term workaround. I found a few other call sites which can call
+on hugepage, so this function help us track such callers.
+The similar function seems to be introduced in your transparent huge
+page cache tree (page_cache_index()). So this function will be finally
+overwritten with it.
+
+Thanks,
+Naoya Horiguchi
+---
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Tue, 1 Jul 2014 21:38:22 -0400
+Subject: [PATCH v2] rmap: fix pgoff calculation to handle hugepage correctly
+
+I triggered VM_BUG_ON() in vma_address() when I try to migrate an anonymous
+hugepage with mbind() in the kernel v3.16-rc3. This is because pgoff's
+calculation in rmap_walk_anon() fails to consider compound_order() only to
+have an incorrect value.
+
+This patch introduces page_to_pgoff(), which gets the page's offset in
+PAGE_CACHE_SIZE. Kirill pointed out that page cache tree should natively
+handle hugepages, and in order to make hugetlbfs fit it, page->index of
+hugetlbfs page should be in PAGE_CACHE_SIZE. This is beyond this patch,
+but page_to_pgoff() contains the point to be fixed in a single function.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ include/linux/pagemap.h | 12 ++++++++++++
+ mm/memory-failure.c     |  4 ++--
+ mm/rmap.c               | 10 +++-------
+ 3 files changed, 17 insertions(+), 9 deletions(-)
+
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 0a97b583ee8d..e1474ae18c88 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -399,6 +399,18 @@ static inline struct page *read_mapping_page(struct address_space *mapping,
+ }
+ 
+ /*
++ * Get the offset in PAGE_SIZE.
++ * (TODO: hugepage should have ->index in PAGE_SIZE)
++ */
++static inline pgoff_t page_to_pgoff(struct page *page)
++{
++	if (unlikely(PageHeadHuge(page)))
++		return page->index << compound_order(page);
++	else
++		return page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
++}
++
++/*
+  * Return byte-offset into filesystem object for page.
+  */
+ static inline loff_t page_offset(struct page *page)
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index cd8989c1027e..61f05d745e3d 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -435,7 +435,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
+ 	if (av == NULL)	/* Not actually mapped anymore */
+ 		return;
+ 
+-	pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
++	pgoff = page_to_pgoff(page);
+ 	read_lock(&tasklist_lock);
+ 	for_each_process (tsk) {
+ 		struct anon_vma_chain *vmac;
+@@ -469,7 +469,7 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
+ 	mutex_lock(&mapping->i_mmap_mutex);
+ 	read_lock(&tasklist_lock);
+ 	for_each_process(tsk) {
+-		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
++		pgoff_t pgoff = page_to_pgoff(page);
+ 		struct task_struct *t = task_early_kill(tsk, force_early);
+ 
+ 		if (!t)
+diff --git a/mm/rmap.c b/mm/rmap.c
+index b7e94ebbd09e..22a4a7699cdb 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -517,11 +517,7 @@ void page_unlock_anon_vma_read(struct anon_vma *anon_vma)
+ static inline unsigned long
+ __vma_address(struct page *page, struct vm_area_struct *vma)
+ {
+-	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+-
+-	if (unlikely(is_vm_hugetlb_page(vma)))
+-		pgoff = page->index << huge_page_order(page_hstate(page));
+-
++	pgoff_t pgoff = page_to_pgoff(page);
+ 	return vma->vm_start + ((pgoff - vma->vm_pgoff) << PAGE_SHIFT);
+ }
+ 
+@@ -1639,7 +1635,7 @@ static struct anon_vma *rmap_walk_anon_lock(struct page *page,
+ static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
+ {
+ 	struct anon_vma *anon_vma;
+-	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
++	pgoff_t pgoff = page_to_pgoff(page);
+ 	struct anon_vma_chain *avc;
+ 	int ret = SWAP_AGAIN;
+ 
+@@ -1680,7 +1676,7 @@ static int rmap_walk_anon(struct page *page, struct rmap_walk_control *rwc)
+ static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
+ {
+ 	struct address_space *mapping = page->mapping;
+-	pgoff_t pgoff = page->index << compound_order(page);
++	pgoff_t pgoff = page_to_pgoff(page);
+ 	struct vm_area_struct *vma;
+ 	int ret = SWAP_AGAIN;
+ 
+-- 
+1.9.3
+
