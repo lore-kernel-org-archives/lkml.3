@@ -1,100 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237AbaGBJA5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 05:00:57 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:33598 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861AbaGBJAy (ORCPT
+	id S1753274AbaGBJB6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 05:01:58 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:56813 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751897AbaGBJB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 05:00:54 -0400
+	Wed, 2 Jul 2014 05:01:56 -0400
+Message-ID: <53B3CA6A.4050902@siemens.com>
+Date: Wed, 02 Jul 2014 11:01:30 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-In-Reply-To: <1403618196-7366-2-git-send-email-alvin.chen@intel.com>
-References: <1403618196-7366-1-git-send-email-alvin.chen@intel.com>
-	<1403618196-7366-2-git-send-email-alvin.chen@intel.com>
-Date: Wed, 2 Jul 2014 11:00:53 +0200
-Message-ID: <CAPDyKFq8cQHhadSAcaMG6XTKKaZ3XjX5PQyxsRteqhbcMaYZ0A@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc: sdhci-pci: SDIO host controller support for Intel
- Quark X1000
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Chen, Alvin" <alvin.chen@intel.com>
-Cc: Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Boon Leong Ong <boon.leong.ong@intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>
+CC: Hu Robert <robert.hu@intel.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since
+ race
+References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 June 2014 15:56, Chen, Alvin <alvin.chen@intel.com> wrote:
-> From: Derek Browne <Derek.Browne@intel.com>
->
-> This patch is to enable SDIO host controller for Intel Quark X1000.
->
-> Signed-off-by: Derek Browne <Derek.Browne@intel.com>
-> Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
+On 2014-07-02 08:54, Wanpeng Li wrote:
+> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=72381 
+> 
+> If we didn't inject a still-pending event to L1 since nested_run_pending,
+> KVM_REQ_EVENT should be requested after the vmexit in order to inject the 
+> event to L1. However, current log blindly request a KVM_REQ_EVENT even if 
+> there is no still-pending event to L1 which blocked by nested_run_pending. 
+> There is a race which lead to an interrupt will be injected to L2 which 
+> belong to L1 if L0 send an interrupt to L1 during this window. 
+> 
+>                VCPU0                               another thread 
+> 
+> L1 intr not blocked on L2 first entry
+> vmx_vcpu_run req event 
+> kvm check request req event 
+> check_nested_events don't have any intr 
+> not nested exit 
+>                                             intr occur (8254, lapic timer etc)
+> inject_pending_event now have intr 
+> inject interrupt 
+> 
+> This patch fix this race by introduced a l1_events_blocked field in nested_vmx 
+> which indicates there is still-pending event which blocked by nested_run_pending, 
+> and smart request a KVM_REQ_EVENT if there is a still-pending event which blocked 
+> by nested_run_pending.
 
-Thanks! Applied for next.
+There are more, unrelated reasons why KVM_REQ_EVENT could be set. Why
+aren't those able to trigger this scenario?
 
-Kind regards
-Uffe
+In any case, unconditionally setting KVM_REQ_EVENT seems strange and
+should be changed.
 
+Jan
+
+> 
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 > ---
-> changelog v2:
-> *Delete '#define PCI_DEVICE_ID_INTEL_QUARK_ILB 0x095E' from 'include/linux/pci_ids.h'.
-> *Move '#define PCI_DEVICE_ID_INTEL_QRK_SD 0x08A7' from 'include/linux/pci_ids.h'
->  to 'driver/mmc/host/sdhci-pci.h'.
-> *Update the subject and description.
->
->  drivers/mmc/host/sdhci-pci.c |   12 ++++++++++++
->  drivers/mmc/host/sdhci-pci.h |    1 +
->  2 files changed, 13 insertions(+)
->
-> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-> index 52c42fc..1aeeefc 100644
-> --- a/drivers/mmc/host/sdhci-pci.c
-> +++ b/drivers/mmc/host/sdhci-pci.c
-> @@ -103,6 +103,10 @@ static const struct sdhci_pci_fixes sdhci_cafe = {
->                           SDHCI_QUIRK_BROKEN_TIMEOUT_VAL,
->  };
->
-> +static const struct sdhci_pci_fixes sdhci_intel_qrk = {
-> +       .quirks         = SDHCI_QUIRK_NO_HISPD_BIT,
-> +};
-> +
->  static int mrst_hc_probe_slot(struct sdhci_pci_slot *slot)
->  {
->         slot->host->mmc->caps |= MMC_CAP_8_BIT_DATA;
-> @@ -753,6 +757,14 @@ static const struct pci_device_id pci_ids[] = {
->
->         {
->                 .vendor         = PCI_VENDOR_ID_INTEL,
-> +               .device         = PCI_DEVICE_ID_INTEL_QRK_SD,
-> +               .subvendor      = PCI_ANY_ID,
-> +               .subdevice      = PCI_ANY_ID,
-> +               .driver_data    = (kernel_ulong_t)&sdhci_intel_qrk,
-> +       },
-> +
-> +       {
-> +               .vendor         = PCI_VENDOR_ID_INTEL,
->                 .device         = PCI_DEVICE_ID_INTEL_MRST_SD0,
->                 .subvendor      = PCI_ANY_ID,
->                 .subdevice      = PCI_ANY_ID,
-> diff --git a/drivers/mmc/host/sdhci-pci.h b/drivers/mmc/host/sdhci-pci.h
-> index 6d71871..c101477 100644
-> --- a/drivers/mmc/host/sdhci-pci.h
-> +++ b/drivers/mmc/host/sdhci-pci.h
-> @@ -17,6 +17,7 @@
->  #define PCI_DEVICE_ID_INTEL_CLV_SDIO2  0x08fb
->  #define PCI_DEVICE_ID_INTEL_CLV_EMMC0  0x08e5
->  #define PCI_DEVICE_ID_INTEL_CLV_EMMC1  0x08e6
-> +#define PCI_DEVICE_ID_INTEL_QRK_SD     0x08A7
->
->  /*
->   * PCI registers
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>  arch/x86/kvm/vmx.c | 20 +++++++++++++++-----
+>  1 file changed, 15 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index f4e5aed..fe69c49 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -372,6 +372,7 @@ struct nested_vmx {
+>  	u64 vmcs01_tsc_offset;
+>  	/* L2 must run next, and mustn't decide to exit to L1. */
+>  	bool nested_run_pending;
+> +	bool l1_events_blocked;
+>  	/*
+>  	 * Guest pages referred to in vmcs02 with host-physical pointers, so
+>  	 * we must keep them pinned while L2 runs.
+> @@ -7380,8 +7381,10 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
+>  	 * we did not inject a still-pending event to L1 now because of
+>  	 * nested_run_pending, we need to re-enable this bit.
+>  	 */
+> -	if (vmx->nested.nested_run_pending)
+> +	if (to_vmx(vcpu)->nested.l1_events_blocked) {
+> +		to_vmx(vcpu)->nested.l1_events_blocked = false;
+>  		kvm_make_request(KVM_REQ_EVENT, vcpu);
+> +	}
+>  
+>  	vmx->nested.nested_run_pending = 0;
+>  
+> @@ -8197,15 +8200,20 @@ static int vmx_check_nested_events(struct kvm_vcpu *vcpu, bool external_intr)
+>  
+>  	if (nested_cpu_has_preemption_timer(get_vmcs12(vcpu)) &&
+>  	    vmx->nested.preemption_timer_expired) {
+> -		if (vmx->nested.nested_run_pending)
+> +		if (vmx->nested.nested_run_pending) {
+> +			vmx->nested.l1_events_blocked = true;
+>  			return -EBUSY;
+> +		}
+>  		nested_vmx_vmexit(vcpu, EXIT_REASON_PREEMPTION_TIMER, 0, 0);
+>  		return 0;
+>  	}
+>  
+>  	if (vcpu->arch.nmi_pending && nested_exit_on_nmi(vcpu)) {
+> -		if (vmx->nested.nested_run_pending ||
+> -		    vcpu->arch.interrupt.pending)
+> +		if (vmx->nested.nested_run_pending) {
+> +			vmx->nested.l1_events_blocked = true;
+> +			return -EBUSY;
+> +		}
+> +		if (vcpu->arch.interrupt.pending)
+>  			return -EBUSY;
+>  		nested_vmx_vmexit(vcpu, EXIT_REASON_EXCEPTION_NMI,
+>  				  NMI_VECTOR | INTR_TYPE_NMI_INTR |
+> @@ -8221,8 +8229,10 @@ static int vmx_check_nested_events(struct kvm_vcpu *vcpu, bool external_intr)
+>  
+>  	if ((kvm_cpu_has_interrupt(vcpu) || external_intr) &&
+>  	    nested_exit_on_intr(vcpu)) {
+> -		if (vmx->nested.nested_run_pending)
+> +		if (vmx->nested.nested_run_pending) {
+> +			vmx->nested.l1_events_blocked = true;
+>  			return -EBUSY;
+> +		}
+>  		nested_vmx_vmexit(vcpu, EXIT_REASON_EXTERNAL_INTERRUPT, 0, 0);
+>  	}
+>  
+> 
+
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
