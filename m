@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737AbaGBVXA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 17:23:00 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53612 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752731AbaGBVW7 (ORCPT
+	id S1754903AbaGBVZp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 17:25:45 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:47737 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752632AbaGBVZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 17:22:59 -0400
-Date: Wed, 2 Jul 2014 23:22:19 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Thomas Richter <thor@math.tu-berlin.de>
-Cc: linux-kernel@vger.kernel.org,
-        Ville Syrj?l? <ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel@ffwll.ch>, rjw@sisk.pl
-Subject: Re: Kernel OOPS when reloading i915 after resume from suspend
-Message-ID: <20140702212219.GA2842@xo-6d-61-c0.localdomain>
-References: <53B05033.7070709@math.tu-berlin.de>
+	Wed, 2 Jul 2014 17:25:43 -0400
+Date: Wed, 2 Jul 2014 15:25:38 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Ryan Desfosses <ryan@desfo.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [Patch] PCI/portdrv: Remove warning about invalid IRQ
+Message-ID: <20140702212538.GC28852@google.com>
+References: <CAErSpo7pAv=v7JQp2UoNxYN8Pdj788NPP8OsLkM3p8NuwL_6Wg@mail.gmail.com>
+ <1403070985-31373-1-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53B05033.7070709@math.tu-berlin.de>
+In-Reply-To: <1403070985-31373-1-git-send-email-jiang.liu@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Wed, Jun 18, 2014 at 01:56:21PM +0800, Jiang Liu wrote:
+> For hot-added PCIe ports, it always generates a warning message on x86
+> platforms when binding to portdrv as:
+> 	"device [8086:0e0b] has invalid IRQ; check vendor BIOS".
+> 
+> It's due to that we check pci_dev->irq before actually allocating IRQ
+> for the PCI device:
+> 	if (!dev->irq && dev->pin) {
+> 		dev_warn(&dev->dev, "device [%04x:%04x] has invalid IRQ; "
+> 			 "check vendor BIOS\n", dev->vendor, dev->device);
+> 	}
+>  	status = pcie_port_device_register(dev);
+> 		-->pci_enable_device(dev);
+> 			-->pci_enable_device_flags()
+> 				-->do_pci_enable_device()
+> 					-->pcibios_enable_device()
+> 						-->pcibios_enable_irq()
+> 
+> This warning message isn't generated for PCIe ports present at boot time
+> because x86 arch code has called acpi_pci_irq_enable() in pci_acpi_init()
+> for each PCI device for safety.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 
-> still experimenting with the resume from suspend on the Fujitsu
-> S6010. I can, however, still create a kernel oops. The kernel source
-> comes from alm_fixes5, kernel 3.15.0-rc7+. For that, do the
-> following:
-> 
-> 1) Shut down X,
-> 2) Unbind the consoles:
-> 
-> echo 0 > /sys/class/vtconsole/vtcon1/bind
-> echo 0 > /sys/class/vtconsole/vtcon0/bind
-> 
-> 3) Remove the i915
-> 
-> rmmod i915
-> 
-> 4) Suspend the system
-> 
-> pm-suspend
+Applied to pci/misc for v3.17, thanks!
 
-Does it also break with plain echo mem > /sys/power/state?
-
-Does it break when you don't suspend at all?
-
-> 5) Resume the system by pressing on the power-button.
-> 6) Reload the i915 module with
+> ---
+> Hi Bjorn,
+> 	I have rebased it onto v3.16-rc1 and changed the patch title
+> according to your suggestion.
+> Thanks!
+> Gerry
+> ___
+>  drivers/pci/pcie/portdrv_pci.c |    4 ----
+>  1 file changed, 4 deletions(-)
 > 
-> modprobe i915.
+> diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
+> index 80887eaa0668..2ccc9b926ea7 100644
+> --- a/drivers/pci/pcie/portdrv_pci.c
+> +++ b/drivers/pci/pcie/portdrv_pci.c
+> @@ -203,10 +203,6 @@ static int pcie_portdrv_probe(struct pci_dev *dev,
+>  	     (pci_pcie_type(dev) != PCI_EXP_TYPE_DOWNSTREAM)))
+>  		return -ENODEV;
+>  
+> -	if (!dev->irq && dev->pin) {
+> -		dev_warn(&dev->dev, "device [%04x:%04x] has invalid IRQ; check vendor BIOS\n",
+> -			 dev->vendor, dev->device);
+> -	}
+>  	status = pcie_port_device_register(dev);
+>  	if (status)
+>  		return status;
+> -- 
+> 1.7.10.4
 > 
-> Result is a kernel-Oops:
-
-Sounds like problem in suspend/resume framework, actually :-(.
-
-									Pavel
-
-> 
-> Jun 29 19:34:00 tyleet kernel: [  321.283072] [drm] Memory usable by
-> graphics device = 128M
-> Jun 29 19:34:00 tyleet kernel: [  321.286770] [drm] Supports vblank
-> timestamp caching Rev 2 (21.10.2013).
-> Jun 29 19:34:00 tyleet kernel: [  321.286782] [drm] Driver supports
-> precise vblank timestamp query.
-> Jun 29 19:34:00 tyleet kernel: [  321.286959] [drm] applying pipe a
-> force quirk
-> Jun 29 19:34:00 tyleet kernel: [  321.286965] [drm] applying pipe b
-> force quirk
-> Jun 29 19:34:00 tyleet kernel: [  321.307436] *pde = 00000000
-> Jun 29 19:34:00 tyleet kernel: [  321.307568] Oops: 0000 [#1]
-> Jun 29 19:34:00 tyleet kernel: [  321.307751] Modules linked in:
-> i915(+) michael_mic arc4 ecb lib80211_crypt_tkip lib80211_crypt_ccmp
-> binfmt_misc fuse netconsole loop firewire_sbp2 hid_generic usbhid
-> hid snd_intel8x0 sg snd_ac97_codec ac97_bus snd_pcm sr_mod snd_seq
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
