@@ -1,222 +1,448 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132AbaGBUVe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 16:21:34 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:44658 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704AbaGBUVb (ORCPT
+	id S932392AbaGBUWL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 16:22:11 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:35011 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932293AbaGBUWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 16:21:31 -0400
-Message-ID: <1404332484.596.98.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH v2 2/3] ima: introduce multi-page collect buffers
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, Dmitry Kasatkin <d.kasatkin@samsung.com>
-Date: Wed, 02 Jul 2014 16:21:24 -0400
-In-Reply-To: <2ca2519809a1c99c061ebdb960f83614b72b0c59.1404245510.git.d.kasatkin@samsung.com>
-References: <cover.1404245510.git.d.kasatkin@samsung.com>
-	 <2ca2519809a1c99c061ebdb960f83614b72b0c59.1404245510.git.d.kasatkin@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070220-0928-0000-0000-000003194374
+	Wed, 2 Jul 2014 16:22:06 -0400
+Date: Wed, 2 Jul 2014 14:22:01 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org, iommu@lists.linux-foundation.org,
+        linux-ide@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 1/3] PCI/MSI: Add pci_enable_msi_partial()
+Message-ID: <20140702202201.GA28852@google.com>
+References: <cover.1402405331.git.agordeev@redhat.com>
+ <4fef62a2e647a7c38e9f2a1ea4244b3506a85e2b.1402405331.git.agordeev@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4fef62a2e647a7c38e9f2a1ea4244b3506a85e2b.1402405331.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-07-01 at 23:12 +0300, Dmitry Kasatkin wrote: 
-> Use of multiple-page collect buffers reduces:
-> 1) the number of block IO requests
-> 2) the number of asynchronous hash update requests
+On Tue, Jun 10, 2014 at 03:10:30PM +0200, Alexander Gordeev wrote:
+> There are PCI devices that require a particular value written
+> to the Multiple Message Enable (MME) register while aligned on
+> power of 2 boundary value of actually used MSI vectors 'nvec'
+> is a lesser of that MME value:
 > 
-> Second is important for HW accelerated hashing, because significant
-> amount of time is spent for preparation of hash update operation,
-> which includes configuring acceleration HW, DMA engine, etc...
-> Thus, HW accelerators are more efficient when working on large
-> chunks of data.
+> 	roundup_pow_of_two(nvec) < 'Multiple Message Enable'
 > 
-> This patch introduces usage of multi-page collect buffers. Buffer size
-> can be specified by providing additional option to the 'ima_ahash='
-> kernel parameter. 'ima_ahash=2048,16384' specifies that minimal file
-> size to use ahash is 2048 byes and buffer size is 16384 bytes.
-> Default buffer size is 4096 bytes.
+> However the existing pci_enable_msi_block() interface is not
+> able to configure such devices, since the value written to the
+> MME register is calculated from the number of requested MSIs
+> 'nvec':
 > 
-> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> 	'Multiple Message Enable' = roundup_pow_of_two(nvec)
+
+For MSI, software learns how many vectors a device requests by reading
+the Multiple Message Capable (MMC) field.  This field is encoded, so a
+device can only request 1, 2, 4, 8, etc., vectors.  It's impossible
+for a device to request 3 vectors; it would have to round up that up
+to a power of two and request 4 vectors.
+
+Software writes similarly encoded values to MME to tell the device how
+many vectors have been allocated for its use.  For example, it's
+impossible to tell the device that it can use 3 vectors; the OS has to
+round that up and tell the device it can use 4 vectors.
+
+So if I understand correctly, the point of this series is to take
+advantage of device-specific knowledge, e.g., the device requests 4
+vectors via MMC, but we "know" the device is only capable of using 3.
+Moreover, we tell the device via MME that 4 vectors are available, but
+we've only actually set up 3 of them.
+
+This makes me uneasy because we're lying to the device, and the device
+is perfectly within spec to use all 4 of those vectors.  If anything
+changes the number of vectors the device uses (new device revision,
+firmware upgrade, etc.), this is liable to break.
+
+Can you quantify the benefit of this?  Can't a device already use
+MSI-X to request exactly the number of vectors it can use?  (I know
+not all devices support MSI-X, but maybe we should just accept MSI for
+what it is and encourage the HW guys to use MSI-X if MSI isn't good
+enough.)
+
+> In this case the result written to the MME register may not
+> satisfy the aforementioned PCI devices requirement and therefore
+> the PCI functions will not operate in a desired mode.
+
+I'm not sure what you mean by "will not operate in a desired mode."
+I thought this was an optimization to save vectors and that these
+changes would be completely invisible to the hardware.
+
+Bjorn
+
+> This update introduces pci_enable_msi_partial() extension to
+> pci_enable_msi_block() interface that accepts extra 'nvec_mme'
+> argument which is then written to MME register while the value
+> of 'nvec' is still used to setup as many interrupts as requested.
+> 
+> As result of this change, architecture-specific callbacks
+> arch_msi_check_device() and arch_setup_msi_irqs() get an extra
+> 'nvec_mme' parameter as well, but it is ignored for now.
+> Therefore, this update is a placeholder for architectures that
+> wish to support pci_enable_msi_partial() function in the future.
+> 
+> Cc: linux-doc@vger.kernel.org
+> Cc: linux-mips@linux-mips.org
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Cc: linux-s390@vger.kernel.org
+> Cc: x86@kernel.org
+> Cc: xen-devel@lists.xenproject.org
+> Cc: iommu@lists.linux-foundation.org
+> Cc: linux-ide@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 > ---
->  Documentation/kernel-parameters.txt |  3 +-
->  security/integrity/ima/ima_crypto.c | 85 ++++++++++++++++++++++++++++++++++---
->  2 files changed, 81 insertions(+), 7 deletions(-)
+>  Documentation/PCI/MSI-HOWTO.txt |   36 ++++++++++++++--
+>  arch/mips/pci/msi-octeon.c      |    2 +-
+>  arch/powerpc/kernel/msi.c       |    4 +-
+>  arch/s390/pci/pci.c             |    2 +-
+>  arch/x86/kernel/x86_init.c      |    2 +-
+>  drivers/pci/msi.c               |   83 ++++++++++++++++++++++++++++++++++-----
+>  include/linux/msi.h             |    5 +-
+>  include/linux/pci.h             |    3 +
+>  8 files changed, 115 insertions(+), 22 deletions(-)
 > 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index b406f5c..529ba58 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -1292,9 +1292,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			Set number of hash buckets for inode cache.
-> 
->  	ima_ahash=	[IMA] Asynchronous hash usage parameters
-> -			Format: <min_file_size>
-> +			Format: <min_file_size>[,<bufsize>]
->  			Set the minimal file size when use asynchronous hash.
->  			If ima_ahash is not provided, ahash usage is disabled.
-> +			bufsize - hashing buffer size. 4k if not specified.
-> 
->  	ima_appraise=	[IMA] appraise integrity measurements
->  			Format: { "off" | "enforce" | "fix" }
-> diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-> index 5eb19b4..41f2695 100644
-> --- a/security/integrity/ima/ima_crypto.c
-> +++ b/security/integrity/ima/ima_crypto.c
-> @@ -25,7 +25,6 @@
->  #include <crypto/hash_info.h>
->  #include "ima.h"
-> 
-> -
->  struct ahash_completion {
->  	struct completion completion;
->  	int err;
-> @@ -36,14 +35,24 @@ static struct crypto_ahash *ima_ahash_tfm;
-> 
->  /* minimal file size for ahash use */
->  static loff_t ima_ahash_size;
-> +/* default is 0 - 1 page. */
-> +static int ima_max_order;
-> 
->  static int __init ima_ahash_setup(char *str)
+> diff --git a/Documentation/PCI/MSI-HOWTO.txt b/Documentation/PCI/MSI-HOWTO.txt
+> index 10a9369..c8a8503 100644
+> --- a/Documentation/PCI/MSI-HOWTO.txt
+> +++ b/Documentation/PCI/MSI-HOWTO.txt
+> @@ -195,14 +195,40 @@ By contrast with pci_enable_msi_range() function, pci_enable_msi_exact()
+>  returns zero in case of success, which indicates MSI interrupts have been
+>  successfully allocated.
+>  
+> -4.2.4 pci_disable_msi
+> +4.2.4 pci_enable_msi_partial
+> +
+> +int pci_enable_msi_partial(struct pci_dev *dev, int nvec, int nvec_mme)
+> +
+> +This variation on pci_enable_msi_exact() call allows a device driver to
+> +setup 'nvec_mme' number of multiple MSIs with the PCI function, while
+> +setup only 'nvec' (which could be a lesser of 'nvec_mme') number of MSIs
+> +in operating system. The MSI specification only allows 'nvec_mme' to be
+> +allocated in powers of two, up to a maximum of 2^5 (32).
+> +
+> +This function could be used when a PCI function is known to send 'nvec'
+> +MSIs, but still requires a particular number of MSIs 'nvec_mme' to be
+> +initialized with. As result, 'nvec_mme' - 'nvec' number of unused MSIs
+> +do not waste system resources.
+> +
+> +If this function returns 0, it has succeeded in allocating 'nvec_mme'
+> +interrupts and setting up 'nvec' interrupts. In this case, the function
+> +enables MSI on this device and updates dev->irq to be the lowest of the
+> +new interrupts assigned to it.  The other interrupts assigned to the
+> +device are in the range dev->irq to dev->irq + nvec - 1.
+> +
+> +If this function returns a negative number, it indicates an error and
+> +the driver should not attempt to request any more MSI interrupts for
+> +this device.
+> +
+> +4.2.5 pci_disable_msi
+>  
+>  void pci_disable_msi(struct pci_dev *dev)
+>  
+> -This function should be used to undo the effect of pci_enable_msi_range().
+> -Calling it restores dev->irq to the pin-based interrupt number and frees
+> -the previously allocated MSIs.  The interrupts may subsequently be assigned
+> -to another device, so drivers should not cache the value of dev->irq.
+> +This function should be used to undo the effect of pci_enable_msi_range()
+> +or pci_enable_msi_partial(). Calling it restores dev->irq to the pin-based
+> +interrupt number and frees the previously allocated MSIs.  The interrupts
+> +may subsequently be assigned to another device, so drivers should not cache
+> +the value of dev->irq.
+>  
+>  Before calling this function, a device driver must always call free_irq()
+>  on any interrupt for which it previously called request_irq().
+> diff --git a/arch/mips/pci/msi-octeon.c b/arch/mips/pci/msi-octeon.c
+> index 2b91b0e..2be7979 100644
+> --- a/arch/mips/pci/msi-octeon.c
+> +++ b/arch/mips/pci/msi-octeon.c
+> @@ -178,7 +178,7 @@ msi_irq_allocated:
+>  	return 0;
+>  }
+>  
+> -int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+> +int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int nvec_mme, int type)
 >  {
-> -	int rc;
-> +	int ints[3] = { 0, };
-> +
-> +	str = get_options(str, ARRAY_SIZE(ints), ints);
-> +	if (!ints[0])
-> +		return 0;
-> +
-> +	ima_ahash_size = ints[1];
-> +	ima_max_order = get_order(ints[2]);
-
-get_options() returns the number of options processed in ints[0].
-Before assigning ima_max_order, we normally check to see if it exists.
-I guess in this case it doesn't matter since it would return 0 anyway.
-
-Should there be any value checking here?  Should the values be some
-multiple of 1024?
-
-> 
-> -	rc = kstrtoll(str, 10, &ima_ahash_size);
-> +	pr_info("ima_ahash: minsize=%lld, bufsize=%lu\n",
-> +		ima_ahash_size, (PAGE_SIZE << ima_max_order));
-> 
-> -	return !rc;
-> +	return 1;
+>  	struct msi_desc *entry;
+>  	int ret;
+> diff --git a/arch/powerpc/kernel/msi.c b/arch/powerpc/kernel/msi.c
+> index 8bbc12d..c60aee3 100644
+> --- a/arch/powerpc/kernel/msi.c
+> +++ b/arch/powerpc/kernel/msi.c
+> @@ -13,7 +13,7 @@
+>  
+>  #include <asm/machdep.h>
+>  
+> -int arch_msi_check_device(struct pci_dev* dev, int nvec, int type)
+> +int arch_msi_check_device(struct pci_dev *dev, int nvec, int nvec_mme, int type)
+>  {
+>  	if (!ppc_md.setup_msi_irqs || !ppc_md.teardown_msi_irqs) {
+>  		pr_debug("msi: Platform doesn't provide MSI callbacks.\n");
+> @@ -32,7 +32,7 @@ int arch_msi_check_device(struct pci_dev* dev, int nvec, int type)
+>          return 0;
 >  }
->  __setup("ima_ahash=", ima_ahash_setup);
-> 
-> @@ -166,6 +175,65 @@ static int ahash_wait(int err, struct ahash_completion *res)
->  	return err;
+>  
+> -int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+> +int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int nvec_mme, int type)
+>  {
+>  	return ppc_md.setup_msi_irqs(dev, nvec, type);
 >  }
-> 
-> +/**
-> + * ima_alloc_pages() - Allocated contiguous pages.
-> + * @max_size:       Maximum amount of memory to allocate.
-> + * @allocated_size: Returned size of actual allocation.
-> + * @last_warn:      Should the min_size allocation warn or not.
-> + *
-> + * Tries to do opportunistic allocation for memory first trying to allocate
-> + * max_size amount of memory and then splitting that until zero order is
-> + * reached. Allocation is tried without generating allocation warnings unless
-> + * last_warn is set. Last_warn set affects only last allocation of zero order.
-> + *
-> + * Return pointer to allocated memory, or NULL on failure.
-> + */
-> +static void *ima_alloc_pages(loff_t max_size, size_t *allocated_size,
-> +			     int last_warn)
-> +{
-> +	void *ptr;
-> +	unsigned int order;
-> +	gfp_t gfp_mask = __GFP_NOWARN | __GFP_WAIT | __GFP_NORETRY;
-> +
-> +	order = min(get_order(max_size), ima_max_order);
-> +
-> +	for (; order; order--) {
-> +		ptr = (void *)__get_free_pages(gfp_mask, order);
-> +		if (ptr) {
-> +			*allocated_size = PAGE_SIZE << order;
-> +			return ptr;
-> +		}
-> +	}
-> +
-> +	/* order is zero - one page */
-> +
-> +	gfp_mask = GFP_KERNEL;
-> +
-> +	if (!last_warn)
-> +		gfp_mask |= __GFP_NOWARN;
-> +
-> +	ptr = (void *)__get_free_pages(gfp_mask, 0);
-> +	if (ptr) {
-> +		*allocated_size = PAGE_SIZE;
-> +		return ptr;
-> +	}
-> +
-> +	*allocated_size = 0;
-> +	return NULL;
-> +}
-> +
-> +/**
-> + * ima_free_pages() - Free pages allocated by ima_alloc_pages().
-> + * @ptr:  Pointer to allocated pages.
-> + * @size: Size of allocated buffer.
-> + */
-> +static void ima_free_pages(void *ptr, size_t size)
-> +{
-> +	if (!ptr)
-> +		return;
-> +	free_pages((unsigned long)ptr, get_order(size));
-> +}
-> +
->  static int ima_calc_file_hash_atfm(struct file *file,
->  				   struct ima_digest_data *hash,
->  				   struct crypto_ahash *tfm)
-> @@ -176,6 +244,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
->  	struct ahash_request *req;
->  	struct scatterlist sg[1];
->  	struct ahash_completion res;
-> +	size_t rbuf_size;
-> 
->  	hash->length = crypto_ahash_digestsize(tfm);
-> 
-> @@ -197,7 +266,11 @@ static int ima_calc_file_hash_atfm(struct file *file,
->  	if (i_size == 0)
->  		goto out2;
-> 
-> -	rbuf = kzalloc(PAGE_SIZE, GFP_KERNEL);
-> +	/*
-> +	 * Try to allocate maximum size of memory, fail if not even single
-> +	 * page cannot be allocated.
-> +	 */
-
-The comment is nice explanation, but might be unnecessary if there was a
-function comment.
-
-Mimi
-
-> +	rbuf = ima_alloc_pages(i_size, &rbuf_size, 1);
->  	if (!rbuf) {
->  		rc = -ENOMEM;
->  		goto out1;
-> @@ -226,7 +299,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
+> diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
+> index 9ddc51e..3cf38a8 100644
+> --- a/arch/s390/pci/pci.c
+> +++ b/arch/s390/pci/pci.c
+> @@ -398,7 +398,7 @@ static void zpci_irq_handler(struct airq_struct *airq)
 >  	}
->  	if (read)
->  		file->f_mode &= ~FMODE_READ;
-> -	kfree(rbuf);
-> +	ima_free_pages(rbuf, rbuf_size);
->  out2:
->  	if (!rc) {
->  		ahash_request_set_crypt(req, NULL, hash->digest, 0);
-
-
+>  }
+>  
+> -int arch_setup_msi_irqs(struct pci_dev *pdev, int nvec, int type)
+> +int arch_setup_msi_irqs(struct pci_dev *pdev, int nvec, int nvec_mme, int type)
+>  {
+>  	struct zpci_dev *zdev = get_zdev(pdev);
+>  	unsigned int hwirq, msi_vecs;
+> diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+> index e48b674..b65bf95 100644
+> --- a/arch/x86/kernel/x86_init.c
+> +++ b/arch/x86/kernel/x86_init.c
+> @@ -121,7 +121,7 @@ struct x86_msi_ops x86_msi = {
+>  };
+>  
+>  /* MSI arch specific hooks */
+> -int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+> +int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int nvec_mme, int type)
+>  {
+>  	return x86_msi.setup_msi_irqs(dev, nvec, type);
+>  }
+> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+> index 27a7e67..0410d9b 100644
+> --- a/drivers/pci/msi.c
+> +++ b/drivers/pci/msi.c
+> @@ -56,7 +56,8 @@ void __weak arch_teardown_msi_irq(unsigned int irq)
+>  	chip->teardown_irq(chip, irq);
+>  }
+>  
+> -int __weak arch_msi_check_device(struct pci_dev *dev, int nvec, int type)
+> +int __weak arch_msi_check_device(struct pci_dev *dev,
+> +				 int nvec, int nvec_mme, int type)
+>  {
+>  	struct msi_chip *chip = dev->bus->msi;
+>  
+> @@ -66,7 +67,8 @@ int __weak arch_msi_check_device(struct pci_dev *dev, int nvec, int type)
+>  	return chip->check_device(chip, dev, nvec, type);
+>  }
+>  
+> -int __weak arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+> +int __weak arch_setup_msi_irqs(struct pci_dev *dev,
+> +			       int nvec, int nvec_mme, int type)
+>  {
+>  	struct msi_desc *entry;
+>  	int ret;
+> @@ -598,6 +600,7 @@ error_attrs:
+>   * msi_capability_init - configure device's MSI capability structure
+>   * @dev: pointer to the pci_dev data structure of MSI device function
+>   * @nvec: number of interrupts to allocate
+> + * @nvec_mme: number of interrupts to write to Multiple Message Enable register
+>   *
+>   * Setup the MSI capability structure of the device with the requested
+>   * number of interrupts.  A return value of zero indicates the successful
+> @@ -605,7 +608,7 @@ error_attrs:
+>   * an error, and a positive return value indicates the number of interrupts
+>   * which could have been allocated.
+>   */
+> -static int msi_capability_init(struct pci_dev *dev, int nvec)
+> +static int msi_capability_init(struct pci_dev *dev, int nvec, int nvec_mme)
+>  {
+>  	struct msi_desc *entry;
+>  	int ret;
+> @@ -640,7 +643,7 @@ static int msi_capability_init(struct pci_dev *dev, int nvec)
+>  	list_add_tail(&entry->list, &dev->msi_list);
+>  
+>  	/* Configure MSI capability structure */
+> -	ret = arch_setup_msi_irqs(dev, nvec, PCI_CAP_ID_MSI);
+> +	ret = arch_setup_msi_irqs(dev, nvec, nvec_mme, PCI_CAP_ID_MSI);
+>  	if (ret) {
+>  		msi_mask_irq(entry, mask, ~mask);
+>  		free_msi_irqs(dev);
+> @@ -758,7 +761,8 @@ static int msix_capability_init(struct pci_dev *dev,
+>  	if (ret)
+>  		return ret;
+>  
+> -	ret = arch_setup_msi_irqs(dev, nvec, PCI_CAP_ID_MSIX);
+> +	/* Parameter 'nvec_mme' does not make sense in case of MSI-X */
+> +	ret = arch_setup_msi_irqs(dev, nvec, 0, PCI_CAP_ID_MSIX);
+>  	if (ret)
+>  		goto out_avail;
+>  
+> @@ -812,13 +816,15 @@ out_free:
+>   * pci_msi_check_device - check whether MSI may be enabled on a device
+>   * @dev: pointer to the pci_dev data structure of MSI device function
+>   * @nvec: how many MSIs have been requested ?
+> + * @nvec_mme: how many MSIs write to Multiple Message Enable register ?
+>   * @type: are we checking for MSI or MSI-X ?
+>   *
+>   * Look at global flags, the device itself, and its parent buses
+>   * to determine if MSI/-X are supported for the device. If MSI/-X is
+>   * supported return 0, else return an error code.
+>   **/
+> -static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
+> +static int pci_msi_check_device(struct pci_dev *dev,
+> +				int nvec, int nvec_mme, int type)
+>  {
+>  	struct pci_bus *bus;
+>  	int ret;
+> @@ -846,7 +852,7 @@ static int pci_msi_check_device(struct pci_dev *dev, int nvec, int type)
+>  		if (bus->bus_flags & PCI_BUS_FLAGS_NO_MSI)
+>  			return -EINVAL;
+>  
+> -	ret = arch_msi_check_device(dev, nvec, type);
+> +	ret = arch_msi_check_device(dev, nvec, nvec_mme, type);
+>  	if (ret)
+>  		return ret;
+>  
+> @@ -878,6 +884,62 @@ int pci_msi_vec_count(struct pci_dev *dev)
+>  }
+>  EXPORT_SYMBOL(pci_msi_vec_count);
+>  
+> +/**
+> + * pci_enable_msi_partial - configure device's MSI capability structure
+> + * @dev: device to configure
+> + * @nvec: number of interrupts to configure
+> + * @nvec_mme: number of interrupts to write to Multiple Message Enable register
+> + *
+> + * This function tries to allocate @nvec number of interrupts while setup
+> + * device's Multiple Message Enable register with @nvec_mme interrupts.
+> + * It returns a negative errno if an error occurs. If it succeeds, it returns
+> + * zero and updates the @dev's irq member to the lowest new interrupt number;
+> + * the other interrupt numbers allocated to this device are consecutive.
+> + */
+> +int pci_enable_msi_partial(struct pci_dev *dev, int nvec, int nvec_mme)
+> +{
+> +	int maxvec;
+> +	int rc;
+> +
+> +	if (dev->current_state != PCI_D0)
+> +		return -EINVAL;
+> +
+> +	WARN_ON(!!dev->msi_enabled);
+> +
+> +	/* Check whether driver already requested MSI-X irqs */
+> +	if (dev->msix_enabled) {
+> +		dev_info(&dev->dev, "can't enable MSI "
+> +			 "(MSI-X already enabled)\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (!is_power_of_2(nvec_mme))
+> +		return -EINVAL;
+> +	if (nvec > nvec_mme)
+> +		return -EINVAL;
+> +
+> +	maxvec = pci_msi_vec_count(dev);
+> +	if (maxvec < 0)
+> +		return maxvec;
+> +	else if (nvec_mme > maxvec)
+> +		return -EINVAL;
+> +
+> +	rc = pci_msi_check_device(dev, nvec, nvec_mme, PCI_CAP_ID_MSI);
+> +	if (rc < 0)
+> +		return rc;
+> +	else if (rc > 0)
+> +		return -ENOSPC;
+> +
+> +	rc = msi_capability_init(dev, nvec, nvec_mme);
+> +	if (rc < 0)
+> +		return rc;
+> +	else if (rc > 0)
+> +		return -ENOSPC;
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(pci_enable_msi_partial);
+> +
+>  void pci_msi_shutdown(struct pci_dev *dev)
+>  {
+>  	struct msi_desc *desc;
+> @@ -957,7 +1019,7 @@ int pci_enable_msix(struct pci_dev *dev, struct msix_entry *entries, int nvec)
+>  	if (!entries || !dev->msix_cap || dev->current_state != PCI_D0)
+>  		return -EINVAL;
+>  
+> -	status = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSIX);
+> +	status = pci_msi_check_device(dev, nvec, 0, PCI_CAP_ID_MSIX);
+>  	if (status)
+>  		return status;
+>  
+> @@ -1110,7 +1172,8 @@ int pci_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec)
+>  		nvec = maxvec;
+>  
+>  	do {
+> -		rc = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSI);
+> +		rc = pci_msi_check_device(dev, nvec, roundup_pow_of_two(nvec),
+> +					  PCI_CAP_ID_MSI);
+>  		if (rc < 0) {
+>  			return rc;
+>  		} else if (rc > 0) {
+> @@ -1121,7 +1184,7 @@ int pci_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec)
+>  	} while (rc);
+>  
+>  	do {
+> -		rc = msi_capability_init(dev, nvec);
+> +		rc = msi_capability_init(dev, nvec, roundup_pow_of_two(nvec));
+>  		if (rc < 0) {
+>  			return rc;
+>  		} else if (rc > 0) {
+> diff --git a/include/linux/msi.h b/include/linux/msi.h
+> index 92a2f99..b9f89ee 100644
+> --- a/include/linux/msi.h
+> +++ b/include/linux/msi.h
+> @@ -57,9 +57,10 @@ struct msi_desc {
+>   */
+>  int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc);
+>  void arch_teardown_msi_irq(unsigned int irq);
+> -int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
+> +int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int nvec_mme, int type);
+>  void arch_teardown_msi_irqs(struct pci_dev *dev);
+> -int arch_msi_check_device(struct pci_dev* dev, int nvec, int type);
+> +int arch_msi_check_device(struct pci_dev *dev,
+> +			  int nvec, int nvec_mme, int type);
+>  void arch_restore_msi_irqs(struct pci_dev *dev);
+>  
+>  void default_teardown_msi_irqs(struct pci_dev *dev);
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 71d9673..7360bd2 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -1184,6 +1184,7 @@ void pci_disable_msix(struct pci_dev *dev);
+>  void msi_remove_pci_irq_vectors(struct pci_dev *dev);
+>  void pci_restore_msi_state(struct pci_dev *dev);
+>  int pci_msi_enabled(void);
+> +int pci_enable_msi_partial(struct pci_dev *dev, int nvec, int nvec_mme);
+>  int pci_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec);
+>  static inline int pci_enable_msi_exact(struct pci_dev *dev, int nvec)
+>  {
+> @@ -1215,6 +1216,8 @@ static inline void pci_disable_msix(struct pci_dev *dev) { }
+>  static inline void msi_remove_pci_irq_vectors(struct pci_dev *dev) { }
+>  static inline void pci_restore_msi_state(struct pci_dev *dev) { }
+>  static inline int pci_msi_enabled(void) { return 0; }
+> +static int pci_enable_msi_partial(struct pci_dev *dev, int nvec, int nvec_mme)
+> +{ return -ENOSYS; }
+>  static inline int pci_enable_msi_range(struct pci_dev *dev, int minvec,
+>  				       int maxvec)
+>  { return -ENOSYS; }
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
