@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757806AbaGBTiI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 15:38:08 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:49889 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756362AbaGBTiG (ORCPT
+	id S1757883AbaGBTiZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 15:38:25 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49802 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757830AbaGBTiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 15:38:06 -0400
-Message-ID: <1404329880.596.92.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH v2 1/3] ima: use ahash API for file hash calculation
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: linux-ima-devel@lists.sourceforge.net,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>
-Date: Wed, 02 Jul 2014 15:38:00 -0400
-In-Reply-To: <CACE9dm8vx9b-n4b+0NAvp=9Er4uPWGwa8eYSGtkiAPv5ahve4A@mail.gmail.com>
-References: <cover.1404245510.git.d.kasatkin@samsung.com>
-	 <72d68808fd8db2b896a459b120f3e550e5f976c1.1404245510.git.d.kasatkin@samsung.com>
-	 <1404323065.596.65.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <CACE9dm8vx9b-n4b+0NAvp=9Er4uPWGwa8eYSGtkiAPv5ahve4A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070219-9332-0000-0000-00000143C0A6
+	Wed, 2 Jul 2014 15:38:23 -0400
+Date: Wed, 2 Jul 2014 15:38:22 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Oliver Neukum <oliver@neukum.org>
+cc: Stefan Klug <stefan.klug@baslerweb.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][RFC] USB: zerocopy support for usbfs
+In-Reply-To: <1404327517.10859.3.camel@linux-fkkt.site>
+Message-ID: <Pine.LNX.4.44L0.1407021532370.874-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-02 at 21:21 +0300, Dmitry Kasatkin wrote: 
-> On 2 July 2014 20:44, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> > On Tue, 2014-07-01 at 23:12 +0300, Dmitry Kasatkin wrote:
-> >
-> >> -/*
-> >> - * Calculate the MD5/SHA1 file digest
-> >> - */
-> >> +static struct crypto_ahash *ima_alloc_atfm(enum hash_algo algo)
-> >> +{
-> >> +     struct crypto_ahash *tfm = ima_ahash_tfm;
-> >> +     int rc;
-> >> +
-> >> +     if ((algo != ima_hash_algo && algo < HASH_ALGO__LAST) || !tfm) {
-> >> +             tfm = crypto_alloc_ahash(hash_algo_name[algo], 0, 0);
-> >
-> > In the case where algo isn't the same as ima_hash_algo, won't this
-> > replace the existing ima_ahash_tfm without freeing it?
-> >
+On Wed, 2 Jul 2014, Oliver Neukum wrote:
+
+> On Wed, 2014-07-02 at 17:53 +0200, Stefan Klug wrote:
 > 
-> Look to next comment...
+> > Implementation details:
+> > The patch only touches drivers/usb/core/devio.c.
+> > In procy_do_submiturb(), it is checked if zerocopy is allowed. This is 
+> > currently a rough
+> > check which compares the number of required pages to 
+> > ps->dev->bus->sg_tablesize.
+> 
+> It seems to me that the check is per call, so using
+> multiple calls one could still pin unlimited amounts
+> of memory.
 
-Yep, my mistake in reading the code.
+usbfs keeps track of the total amount of pinned memory and enforces an
+overall limit.  It will be necessary to add the size of the transfer
+buffer to that total.
 
-Mimi
+> > I don't know if there is more to check there.
+> > Then the user memory provided inside the usbdevfs_urb structure is 
+> > pinned to
+> > physical memory using get_user_pages_fast().
+> > All the user pages are added to the scatter-gather list and the logic 
+> > continues as before.
+> 
+> How do you enforce the cache coherency rules?
+
+There is no way to do this.  If the user program accesses memory when 
+it shouldn't, the transfer might not work right.
+
+> Also you don't have a fall back if get_user_pages_fast()
+> returns less than requested. It seems to me that than you
+> ought to fall back buffered IO.
+
+Agreed.
+
+Alan Stern
 
