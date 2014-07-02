@@ -1,84 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759022AbaGBCGy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 22:06:54 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:46426 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754025AbaGBCGx (ORCPT
+	id S1757461AbaGBCI2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 22:08:28 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:63419 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772AbaGBCIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 22:06:53 -0400
-Date: Wed, 2 Jul 2014 10:06:46 +0800
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Lameter <cl@gentwo.org>, David Rientjes <rientjes@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Wei Yang <weiyang@linux.vnet.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: mm: slub: invalid memory access in setup_object
-Message-ID: <20140702020646.GB6961@richard>
-Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-References: <53AAFDF7.2010607@oracle.com>
- <alpine.DEB.2.11.1406251228130.29216@gentwo.org>
- <alpine.DEB.2.02.1406301500410.13545@chino.kir.corp.google.com>
- <alpine.DEB.2.11.1407010956470.5353@gentwo.org>
- <20140701144947.5ce3f93729759d8f38d7813a@linux-foundation.org>
+	Tue, 1 Jul 2014 22:08:25 -0400
+Message-ID: <53B3697C.1090602@gmail.com>
+Date: Wed, 02 Jul 2014 10:07:56 +0800
+From: Zhou Wang <wangzhou.bry@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140701144947.5ce3f93729759d8f38d7813a@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070202-9574-0000-0000-00000EA73CE4
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Pekon Gupta <pekon@ti.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        Joern Engel <joern@logfs.org>, Randy Dunlap <rdunlap@infradead.org>,
+        devicetree@vger.kernel.org, linux-mtd@lists.infradead.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        caizhiyong@huawei.com, wangzhou1@hisilicon.com
+Subject: Re: [PATCH 2/3] mtd: hisilicon: add a new nand controller driver
+ for hisilicon hip04 Soc
+References: <1404115409-20200-1-git-send-email-wangzhou.bry@gmail.com> <1404115409-20200-3-git-send-email-wangzhou.bry@gmail.com> <6920327.DpBe6vKVPa@wuerfel>
+In-Reply-To: <6920327.DpBe6vKVPa@wuerfel>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 01, 2014 at 02:49:47PM -0700, Andrew Morton wrote:
->On Tue, 1 Jul 2014 09:58:52 -0500 (CDT) Christoph Lameter <cl@gentwo.org> wrote:
+On 2014年06月30日 17:00, Arnd Bergmann wrote:
+> Overall a very nice driver. I didn't find any real bugs, but a few things
+> that could be changed for readability and micro-optimizations:
 >
->> On Mon, 30 Jun 2014, David Rientjes wrote:
->> 
->> > It's not at all clear to me that that patch is correct.  Wei?
->> 
->> Looks ok to me. But I do not like the convoluted code in new_slab() which
->> Wei's patch does not make easier to read. Makes it difficult for the
->> reader to see whats going on.
->> 
->> Lets drop the use of the variable named "last".
->> 
->> 
->> Subject: slub: Only call setup_object once for each object
->> 
->> Modify the logic for object initialization to be less convoluted
->> and initialize an object only once.
->> 
+> On Monday 30 June 2014 16:03:28 Zhou Wang wrote:
 >
->Well, um.  Wei's changelog was much better:
+>> +#define hinfc_read(_host, _reg)	readl(_host->iobase + (_reg))
+>> +#define hinfc_write(_host, _value, _reg)\
+>> +	writel((_value), _host->iobase + (_reg))
 >
->: When a kmem_cache is created with ctor, each object in the kmem_cache will
->: be initialized before use.  In the slub implementation, the first object
->: will be initialized twice.
->: 
->: This patch avoids the duplication of initialization of the first object.
->: 
->: Fixes commit 7656c72b5a63: ("SLUB: add macros for scanning objects in a
->: slab").
+> I'd recommend making these inline functions rather than macros.
 >
->I can copy that text over and add the reported-by etc (ho hum) but I
->have a tiny feeling that this patch hasn't been rigorously tested? 
->Perhaps someone (Wei?) can do that?
 
-Ok, I will apply this one and give a shot.
+I will change above macros to inline functions, thanks.
 
+>> +struct hinfc_host {
+>> +	struct nand_chip	*chip;
+>> +	struct mtd_info		*mtd;
 >
->And we still don't know why Sasha's kernel went oops.
+> I notice that you allocate the nand_chip and mtd_info together
+> with the hinfc_host and then assign these pointers. A preferred
+> method is normally to just embed the structures in this case:
+>
+> struct hinfc_host {
+> 	struct nand_chip	chip;
+> 	struct mtd_info		mtd;
+>
+> so you avoid the pointer overhead, and can go back from these
+> two structures to the hinfc_host using container_of().
+>
 
-Yep, if there is some procedure to reproduce it, I'd like to do it at my side.
+It is better to embed chip and mtd in host, I will change this, thanks.
 
--- 
-Richard Yang
-Help you, Help me
+>> +	struct device		*dev;
+>> +	void __iomem		*iobase;
+>> +	struct completion       cmd_complete;
+>> +	unsigned int		offset;
+>> +	unsigned int		command;
+>> +	int			chipselect;
+>> +	unsigned int		addr_cycle;
+>> +	unsigned int		addr_value[2];
+>> +	unsigned int		cache_addr_value[2];
+>> +	char			*buffer;
+>> +	dma_addr_t		dma_buffer;
+>> +	dma_addr_t		dma_oob;
+>> +	int			version;
+>> +	unsigned int            ecc_bits;
+>> +	unsigned int            irq_status; /* interrupt status */
+>> +
+>> +	int (*send_cmd_pageprog)(struct hinfc_host *host);
+>> +	int (*send_cmd_status)(struct hinfc_host *host);
+>> +	int (*send_cmd_readstart)(struct hinfc_host *host);
+>> +	int (*send_cmd_erase)(struct hinfc_host *host);
+>> +	int (*send_cmd_readid)(struct hinfc_host *host);
+>> +	int (*send_cmd_reset)(struct hinfc_host *host, int chipselect);
+>> +};
+>
+> Why do you need function pointers here? The current version of the
+> driver you posted always assigns these to the same functions, so
+> it would be more efficient to just call those directly.
+>
+> If you plan to add another variant later that uses a different set
+> of functions here, you can add the function pointers then, in a
+> separate patch. Also, a common style element is to have a separate
+> constant structure with the function pointers:
+>
+> const struct hinfc_host_ops ops = {
+> 	.send_cmd_pageprog = hisi_nfc_send_cmd_pageprog,
+> 	...
+> };
+>
+> if you actually end up needing function pointers. That simplifies
+> the code a bit and is slightly more robust to attacks overwriting
+> the function pointers.
+>
+
+I will move above function pointers out of host and directly call the 
+functions, thanks for your good comment.
+
+>> +
+>> +void wait_controller_finished(struct hinfc_host *host)
+>> +{
+>> +	unsigned long timeout = jiffies + HINFC504_NFC_TIMEOUT;
+>> +	int val;
+>> +
+>> +	while (time_before(jiffies, timeout)) {
+>> +		val = hinfc_read(host, HINFC504_STATUS);
+>> +		if (host->command == NAND_CMD_ERASE2) {
+>> +			/* nfc is ready */
+>> +			while (!(val & HINFC504_READY))	{
+>> +				usleep_range(500, 1000);
+>> +				val = hinfc_read(host, HINFC504_STATUS);
+>> +			}
+>> +			return;
+>> +		} else {
+>> +			if (val & HINFC504_READY)
+>> +				return;
+>> +		}
+>> +	}
+>> +
+>> +	/* wait cmd timeout */
+>> +	dev_err(host->dev, "Wait NAND controller exec cmd timeout.\n");
+>> +}
+>
+> Since the timeout is much bigger than the wait time here, I guess you
+> can use a wider range for the usleep_range(), e.g.
+>
+> 	usleep_range(500, 50000);
+>
+> which is nicer to other tasks. You will normally be woken up much earlier.
+>
+> 	Arnd
+>
+As I know that the operating time of NAND flash erasure is about 
+ms-level, so I set sleep time as usleep_range(500, 1000) here. And the 
+timeout means that relative operations don't finish in this time, so 
+maybe there is something wrong with the operations. In normal situation, 
+after detecting the operation finished, the above function will return 
+before timeout arriving.
 
