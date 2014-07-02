@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803AbaGBSCZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 14:02:25 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:51746 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754536AbaGBSCX (ORCPT
+	id S1757008AbaGBSDt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 14:03:49 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51925 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756866AbaGBSDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 14:02:23 -0400
-Date: Wed, 2 Jul 2014 19:02:12 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Andrew Lunn <andrew@lunn.ch>, Mark Brown <broonie@kernel.org>,
-        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
-        lgirdwood@gmail.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        Dave Airlie <airlied@gmail.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ASoC: tda998x: add a codec to the HDMI transmitter
-Message-ID: <20140702180212.GS32514@n2100.arm.linux.org.uk>
-References: <20140702183841.7c964832@armhf> <20140702165628.GO20799@lunn.ch> <20140702195154.47d6f6b4@armhf>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140702195154.47d6f6b4@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 2 Jul 2014 14:03:47 -0400
+From: Laura Abbott <lauraa@codeaurora.org>
+To: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Cc: Laura Abbott <lauraa@codeaurora.org>,
+        David Riley <davidriley@chromium.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Ritesh Harjain <ritesh.harjani@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv4 1/5] lib/genalloc.c: Add power aligned algorithm
+Date: Wed,  2 Jul 2014 11:03:34 -0700
+Message-Id: <1404324218-4743-2-git-send-email-lauraa@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
+References: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 07:51:54PM +0200, Jean-Francois Moine wrote:
-> On Wed, 2 Jul 2014 18:56:28 +0200
-> Andrew Lunn <andrew@lunn.ch> wrote:
-> 
-> > How well will this work with Russell concept of a front end and two
-> > backends? Can you uses your CODEC twice, once with the I2S backend and
-> > a second time with the S/PDIF backend?
-> 
-> Hi Andrew,
-> 
-> The TDA998x CODEC has two functions:
-> - it sets the possible formats and rates when the screen connects and
-> - it sets the audio input port when audio streaming starts.
-> 
-> I tested this CODEC with both DAPM and DPCM. If the audio subsystem
-> asks for streaming on both I2S and S/PDIF, only the last call is served
-> (this depends on the order of the DAI links in the audio card creation
-> table).
-> 
-> As I told to Russell, DPCM just asks for a 'system' DAI (front-end),
-> but it also asks for some additional code in the kirkwood DMA driver
-> because all PCMs are activated on streaming start.
 
-Well, as far as I'm concerned right now, it's for Mark to sort out this
-situation, and tell us what he wants to do with the Kirkwood stuff.  I
-suspect he's keeping quiet because he doesn't care about it.
+One of the more common algorithms used for allocation
+is to align the start address of the allocation to
+the order of size requested. Add this as an algorithm
+option for genalloc.
 
-Given that he's the one with the knowledge of DPCM, and he's the maintainer
-of ASoC, he has the ultimate responsibility for sorting out this and
-giving direction as to how he wants to proceed.
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+---
+ include/linux/genalloc.h |  4 ++++
+ lib/genalloc.c           | 20 ++++++++++++++++++++
+ 2 files changed, 24 insertions(+)
 
-As I understand it though, my solution is the full and proper DPCM solution,
-and I believe that what's currently in mainline is not a DPCM solution.
-
-Mark needs to correct that, because he is one of the few who knows this
-stuff.
-
+diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
+index 1c2fdaa..3cd0934 100644
+--- a/include/linux/genalloc.h
++++ b/include/linux/genalloc.h
+@@ -110,6 +110,10 @@ extern void gen_pool_set_algo(struct gen_pool *pool, genpool_algo_t algo,
+ extern unsigned long gen_pool_first_fit(unsigned long *map, unsigned long size,
+ 		unsigned long start, unsigned int nr, void *data);
+ 
++extern unsigned long gen_pool_first_fit_order_align(unsigned long *map,
++		unsigned long size, unsigned long start, unsigned int nr,
++		void *data);
++
+ extern unsigned long gen_pool_best_fit(unsigned long *map, unsigned long size,
+ 		unsigned long start, unsigned int nr, void *data);
+ 
+diff --git a/lib/genalloc.c b/lib/genalloc.c
+index bdb9a45..c2b3ad7 100644
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -481,6 +481,26 @@ unsigned long gen_pool_first_fit(unsigned long *map, unsigned long size,
+ EXPORT_SYMBOL(gen_pool_first_fit);
+ 
+ /**
++ * gen_pool_first_fit_order_align - find the first available region
++ * of memory matching the size requirement. The region will be aligned
++ * to the order of the size specified.
++ * @map: The address to base the search on
++ * @size: The bitmap size in bits
++ * @start: The bitnumber to start searching at
++ * @nr: The number of zeroed bits we're looking for
++ * @data: additional data - unused
++ */
++unsigned long gen_pool_first_fit_order_align(unsigned long *map,
++		unsigned long size, unsigned long start,
++		unsigned int nr, void *data)
++{
++	unsigned long align_mask = roundup_pow_of_two(nr) - 1;
++
++	return bitmap_find_next_zero_area(map, size, start, nr, align_mask);
++}
++EXPORT_SYMBOL(gen_pool_first_fit_order_align);
++
++/**
+  * gen_pool_best_fit - find the best fitting region of memory
+  * macthing the size requirement (no alignment constraint)
+  * @map: The address to base the search on
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
