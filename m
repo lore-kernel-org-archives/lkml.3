@@ -1,100 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761AbaGBQt6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 12:49:58 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:46753 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754104AbaGBQtz (ORCPT
+	id S1756817AbaGBQuI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 12:50:08 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:40244 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756771AbaGBQuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 12:49:55 -0400
-Message-ID: <53B4382F.9030908@codeaurora.org>
-Date: Wed, 02 Jul 2014 12:49:51 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrey Vagin <avagin@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        "Linux ARM kernel mailing list" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [patch 3/4] timerfd: Implement timerfd_ioctl method to restore
- timerfd_ctx::ticks
-References: <20140623185431.396309193@openvz.org> <20140623190345.499956567@openvz.org> <20140624220351.GZ2095@moon>
-In-Reply-To: <20140624220351.GZ2095@moon>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jul 2014 12:50:05 -0400
+From: navin patidar <navin.patidar@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
+Subject: [PATCH 09/48] staging: rtl8188eu: Remove unused function rtw_c2h_wk_cmd()
+Date: Wed,  2 Jul 2014 22:17:05 +0530
+Message-Id: <1404319664-8327-9-git-send-email-navin.patidar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
+References: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cyrill,
+Signed-off-by: navin patidar <navin.patidar@gmail.com>
+---
+ drivers/staging/rtl8188eu/core/rtw_cmd.c    |   33 ---------------------------
+ drivers/staging/rtl8188eu/include/rtw_cmd.h |    2 --
+ 2 files changed, 35 deletions(-)
 
-On 06/24/2014 06:03 PM, Cyrill Gorcunov wrote:
-> The read() of timerfd files allows to fetch the number of timer ticks
-> while there is no way to set it back from userspace.
-> 
-> To restore the timer's state as it was at checkpoint moment we need
-> a path to bring @ticks back. Initially I thought about writing ticks
-> back via write() interface but it seems such API is somehow obscure.
-> 
-> Instead implement timerfd_ioctl() method with TFD_IOC_SET_TICKS
-> command which allows to adjust @ticks into non-zero value waking
-> up the waiters.
-> 
-> I wrapped code with CONFIG_CHECKPOINT_RESTORE which can be
-> dropped off if there users except c/r camp appear.
-> 
-> v2 (by akpm@):
->  -Use define timerfd_ioctl NULL for non c/r config
-> 
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Andrey Vagin <avagin@openvz.org>
-> CC: Pavel Emelyanov <xemul@parallels.com>
-> CC: Vladimir Davydov <vdavydov@parallels.com>
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> ---
-> 
-> A nit fixed for for non c/r config in timerfd_ioctl declaration
-> 
->  fs/timerfd.c            |   37 +++++++++++++++++++++++++++++++++++++
->  include/linux/timerfd.h |    5 +++++
->  2 files changed, 42 insertions(+)
-> 
-> Index: linux-2.6.git/fs/timerfd.c
-> ===================================================================
-> --- linux-2.6.git.orig/fs/timerfd.c
-> +++ linux-2.6.git/fs/timerfd.c
-> @@ -315,12 +315,49 @@ static int timerfd_show(struct seq_file
->  #define timerfd_show NULL
->  #endif
->  
-> +#ifdef CONFIG_CHECKPOINT_RESTORE
-> +static long timerfd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-> +{
-> +	struct timerfd_ctx *ctx = file->private_data;
-> +	int ret = 0;
-> +
-> +	switch (cmd) {
-> +	case TFD_IOC_SET_TICKS: {
-> +		u64 ticks;
-> +
-> +		if (get_user(ticks, (u64 __user *)arg))
-
-64-bit get_user is currently unsupported on ARM, although it appears work is
-ongoing [1].
-
-1. https://lkml.org/lkml/2014/6/17/260
-
-Regards,
-Christopher
-
+diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
+index 294c9e2..ec0990f 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
++++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
+@@ -1741,39 +1741,6 @@ exit:
+ }
+ #endif
+ 
+-u8 rtw_c2h_wk_cmd(struct adapter *padapter, u8 *c2h_evt)
+-{
+-	struct cmd_obj *ph2c;
+-	struct drvextra_cmd_parm *pdrvextra_cmd_parm;
+-	struct cmd_priv	*pcmdpriv = &padapter->cmdpriv;
+-	u8	res = _SUCCESS;
+-
+-	ph2c = kzalloc(sizeof(struct cmd_obj), GFP_KERNEL);
+-	if (ph2c == NULL) {
+-		res = _FAIL;
+-		goto exit;
+-	}
+-
+-	pdrvextra_cmd_parm = kzalloc(sizeof(struct drvextra_cmd_parm), GFP_KERNEL);
+-	if (pdrvextra_cmd_parm == NULL) {
+-		kfree(ph2c);
+-		res = _FAIL;
+-		goto exit;
+-	}
+-
+-	pdrvextra_cmd_parm->ec_id = C2H_WK_CID;
+-	pdrvextra_cmd_parm->type_size = c2h_evt ? 16 : 0;
+-	pdrvextra_cmd_parm->pbuf = c2h_evt;
+-
+-	init_h2fwcmd_w_parm_no_rsp(ph2c, pdrvextra_cmd_parm, GEN_CMD_CODE(_Set_Drv_Extra));
+-
+-	res = rtw_enqueue_cmd(pcmdpriv, ph2c);
+-
+-exit:
+-
+-	return res;
+-}
+-
+ u8 rtw_drvextra_cmd_hdl(struct adapter *padapter, unsigned char *pbuf)
+ {
+ 	struct drvextra_cmd_parm *pdrvextra_cmd;
+diff --git a/drivers/staging/rtl8188eu/include/rtw_cmd.h b/drivers/staging/rtl8188eu/include/rtw_cmd.h
+index bb1f8f0..ca17145 100644
+--- a/drivers/staging/rtl8188eu/include/rtw_cmd.h
++++ b/drivers/staging/rtl8188eu/include/rtw_cmd.h
+@@ -776,8 +776,6 @@ u8 rtw_set_chplan_cmd(struct adapter *padapter, u8 chplan, u8 enqueue);
+ u8 rtw_set_csa_cmd(struct adapter *padapter, u8 new_ch_no);
+ u8 rtw_tdls_cmd(struct adapter *padapter, u8 *addr, u8 option);
+ 
+-u8 rtw_c2h_wk_cmd(struct adapter *padapter, u8 *c2h_evt);
+-
+ u8 rtw_drvextra_cmd_hdl(struct adapter *padapter, unsigned char *pbuf);
+ 
+ void rtw_survey_cmd_callback(struct adapter *padapter, struct cmd_obj *pcmd);
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+1.7.10.4
+
