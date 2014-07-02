@@ -1,50 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758046AbaGBUHb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 16:07:31 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:48005 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757411AbaGBUH3 (ORCPT
+	id S1757832AbaGBUKI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 16:10:08 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:5097 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752808AbaGBUKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 16:07:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <53B46608.8030408@zytor.com>
-References: <20140701000913.5ea51f77@gandalf.local.home> <CALCETrW8MYApbyVZ3zxhX3StqVZVBux1xoF8y+gNBAaUP7y6TQ@mail.gmail.com>
- <53B46608.8030408@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 2 Jul 2014 13:07:08 -0700
-Message-ID: <CALCETrUDKUvB9TdPReBg+yv+Ss867G7mu3=r1YRAGW9tutbN8w@mail.gmail.com>
-Subject: Re: [BUILD BUG][3.16-rc3] Error: too many copied sections (max = 13)
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 2 Jul 2014 16:10:07 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Am4IADZmtFNXQBPR/2dsb2JhbABagw2sZwUBAQEBAQEFAW4BmWeBBxd1hDEvI4EaN4hGAcdjF4VwiGVNHYQtBZpti0qIQINFO4Ey
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Steven Whitehouse <swhiteho@redhat.com>,
+        cluster-devel@redhat.com
+Subject: [PATCH 1/1] fs/gfs2/super.c: replace seq_printf by seq_puts
+Date: Wed,  2 Jul 2014 22:08:46 +0200
+Message-Id: <1404331726-4858-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 2, 2014 at 1:05 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 07/02/2014 01:00 PM, Andy Lutomirski wrote:
->>
->> I managed to munge the binutils sources enough to build binutils 2.21.
->> This seems to be a binutils bug: ld generates an empty .rela.dyn.
->> Fortunately, it's not generating a DT_RELA dynamic entry.
->>
->
-> Not sure if that is a bug.  Unnecessary, yes, but it ought to be legal.
+fix checkpatch warnings:
+"WARNING: Prefer seq_puts to seq_printf"
 
-Right.  But I don't really want to chase down some oddity like this
-every week until 3.16 comes out.
+Cc: Steven Whitehouse <swhiteho@redhat.com>
+Cc: cluster-devel@redhat.com
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/gfs2/super.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
---Andy
-
->
->         -hpa
->
-
-
-
+diff --git a/fs/gfs2/super.c b/fs/gfs2/super.c
+index 1319b5c..669e92e 100644
+--- a/fs/gfs2/super.c
++++ b/fs/gfs2/super.c
+@@ -1300,7 +1300,7 @@ static int gfs2_show_options(struct seq_file *s, struct dentry *root)
+ 	int val;
+ 
+ 	if (is_ancestor(root, sdp->sd_master_dir))
+-		seq_printf(s, ",meta");
++		seq_puts(s, ",meta");
+ 	if (args->ar_lockproto[0])
+ 		seq_printf(s, ",lockproto=%s", args->ar_lockproto);
+ 	if (args->ar_locktable[0])
+@@ -1308,13 +1308,13 @@ static int gfs2_show_options(struct seq_file *s, struct dentry *root)
+ 	if (args->ar_hostdata[0])
+ 		seq_printf(s, ",hostdata=%s", args->ar_hostdata);
+ 	if (args->ar_spectator)
+-		seq_printf(s, ",spectator");
++		seq_puts(s, ",spectator");
+ 	if (args->ar_localflocks)
+-		seq_printf(s, ",localflocks");
++		seq_puts(s, ",localflocks");
+ 	if (args->ar_debug)
+-		seq_printf(s, ",debug");
++		seq_puts(s, ",debug");
+ 	if (args->ar_posix_acl)
+-		seq_printf(s, ",acl");
++		seq_puts(s, ",acl");
+ 	if (args->ar_quota != GFS2_QUOTA_DEFAULT) {
+ 		char *state;
+ 		switch (args->ar_quota) {
+@@ -1334,7 +1334,7 @@ static int gfs2_show_options(struct seq_file *s, struct dentry *root)
+ 		seq_printf(s, ",quota=%s", state);
+ 	}
+ 	if (args->ar_suiddir)
+-		seq_printf(s, ",suiddir");
++		seq_puts(s, ",suiddir");
+ 	if (args->ar_data != GFS2_DATA_DEFAULT) {
+ 		char *state;
+ 		switch (args->ar_data) {
+@@ -1351,7 +1351,7 @@ static int gfs2_show_options(struct seq_file *s, struct dentry *root)
+ 		seq_printf(s, ",data=%s", state);
+ 	}
+ 	if (args->ar_discard)
+-		seq_printf(s, ",discard");
++		seq_puts(s, ",discard");
+ 	val = sdp->sd_tune.gt_logd_secs;
+ 	if (val != 30)
+ 		seq_printf(s, ",commit=%d", val);
+@@ -1382,11 +1382,11 @@ static int gfs2_show_options(struct seq_file *s, struct dentry *root)
+ 		seq_printf(s, ",errors=%s", state);
+ 	}
+ 	if (test_bit(SDF_NOBARRIERS, &sdp->sd_flags))
+-		seq_printf(s, ",nobarrier");
++		seq_puts(s, ",nobarrier");
+ 	if (test_bit(SDF_DEMOTE, &sdp->sd_flags))
+-		seq_printf(s, ",demote_interface_used");
++		seq_puts(s, ",demote_interface_used");
+ 	if (args->ar_rgrplvb)
+-		seq_printf(s, ",rgrplvb");
++		seq_puts(s, ",rgrplvb");
+ 	return 0;
+ }
+ 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.8.4.5
+
