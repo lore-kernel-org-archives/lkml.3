@@ -1,35 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928AbaGBPHf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 11:07:35 -0400
-Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:45614 "EHLO
-	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750880AbaGBPHe (ORCPT
+	id S1752157AbaGBPLe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 11:11:34 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:58663 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753627AbaGBPLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 11:07:34 -0400
-Date: Wed, 2 Jul 2014 10:07:31 -0500 (CDT)
-From: Christoph Lameter <cl@gentwo.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: David Rientjes <rientjes@google.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Wei Yang <weiyang@linux.vnet.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: mm: slub: invalid memory access in setup_object
-In-Reply-To: <20140701144947.5ce3f93729759d8f38d7813a@linux-foundation.org>
-Message-ID: <alpine.DEB.2.11.1407021006270.18104@gentwo.org>
-References: <53AAFDF7.2010607@oracle.com> <alpine.DEB.2.11.1406251228130.29216@gentwo.org> <alpine.DEB.2.02.1406301500410.13545@chino.kir.corp.google.com> <alpine.DEB.2.11.1407010956470.5353@gentwo.org>
- <20140701144947.5ce3f93729759d8f38d7813a@linux-foundation.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 2 Jul 2014 11:11:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140702134156.GL23978@titan.lakedaemon.net>
+References: <cover.1404296679.git.amit.shah@redhat.com>
+	<1404306020-24916-1-git-send-email-jason@lakedaemon.net>
+	<20140702132635.GD7505@grmbl.mre>
+	<20140702134156.GL23978@titan.lakedaemon.net>
+Date: Wed, 2 Jul 2014 08:11:30 -0700
+X-Google-Sender-Auth: LlDxW0ugps9ku30oFXcDvloA2yY
+Message-ID: <CAGXu5j+sbiK9zdkwWh_MD1fk4aFs-Na4ZO=3tRosGtqjFvWnDg@mail.gmail.com>
+Subject: Re: [PATCH 1/2 v2] hwrng: Allow drivers to disable reading during probe
+From: Kees Cook <keescook@chromium.org>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Amit Shah <amit.shah@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "# 3.4.x" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jul 2014, Andrew Morton wrote:
+On Wed, Jul 2, 2014 at 6:41 AM, Jason Cooper <jason@lakedaemon.net> wrote:
+> On Wed, Jul 02, 2014 at 06:56:35PM +0530, Amit Shah wrote:
+>> Hi Jason,
+>>
+>> On (Wed) 02 Jul 2014 [13:00:19], Jason Cooper wrote:
+>> > Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
+>> > added a call to rng_get_data() from the hwrng_register() function.
+>> > However, some rng devices need initialization before data can be read
+>> > from them.
+>> >
+>> > Also, the virtio-rng device does not behave properly when this call is
+>> > made in its probe() routine - the virtio core sets the DRIVER_OK status
+>> > bit only on a successful probe, which means the host ignores all
+>> > communication from the guest, and the guest insmod or boot process just
+>> > sits there doing nothing.
+>> >
+>> > [ jac: Modify the API to allow drivers to disable reading at probe, new
+>> > patch, copied Amit's commit message. ]
+>> >
+>> > CC: Kees Cook <keescook@chromium.org>
+>> > CC: Jason Cooper <jason@lakedaemon.net>
+>> > CC: Herbert Xu <herbert@gondor.apana.org.au>
+>> > CC: <stable@vger.kernel.org> # v3.15+
+>> > Signed-off-by: Amit Shah <amit.shah@redhat.com>
+>> > Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+>> > ---
+>> >  drivers/char/hw_random/core.c | 8 +++++---
+>> >  include/linux/hw_random.h     | 4 ++++
+>> >  2 files changed, 9 insertions(+), 3 deletions(-)
+>> >
+>> > diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+>> > index 334601cc81cf..b7b6c48ca682 100644
+>> > --- a/drivers/char/hw_random/core.c
+>> > +++ b/drivers/char/hw_random/core.c
+>> > @@ -347,9 +347,11 @@ int hwrng_register(struct hwrng *rng)
+>> >     INIT_LIST_HEAD(&rng->list);
+>> >     list_add_tail(&rng->list, &rng_list);
+>> >
+>> > -   bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
+>> > -   if (bytes_read > 0)
+>> > -           add_device_randomness(bytes, bytes_read);
+>> > +   if (!(rng->flags & HWRNG_NO_READ_AT_PROBE)) {
+>> > +           bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
+>> > +           if (bytes_read > 0)
+>> > +                   add_device_randomness(bytes, bytes_read);
+>> > +   }
+>>
+>> But this has the inverse problem: if there are two hwrngs in the
+>> system, one will be initialized and probed.  The other will not be
+>> initialized, but still be probed.
+>
+> That's a problem outside the scope of this patch.  You're basically
+> saying the ->init() should be called unconditionally for each hwrng.  If
+> that's what driver authors assumed, that's not what is happening if
+> there is more than one driver in the system.
 
-> I can copy that text over and add the reported-by etc (ho hum) but I
-> have a tiny feeling that this patch hasn't been rigorously tested?
+My intent with the patch was to get randomness added when a hwrng was
+available. Perhaps instead of skipping this call, it can be done
+either during probe (for devices that support it or lack an init
+function), or done after initialization?
 
-The testing so far was to verify that  a kernel successfully builds with
-the patch and then booted upo in a kvm instance.
+> I think you should be changing the code a few lines up to make sure
+> hwrng_init() is called once for each driver.
 
+Is that really how it should work? I'd be for the "always-init"
+approach since it gains us access to the entropy, but I have to play
+devil's advocate: would one expect "probe" to just probe, not
+initialize? That seems more like a function of enabling the device.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
