@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667AbaGBLan (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 07:30:43 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46290 "EHLO bear.ext.ti.com"
+	id S1751863AbaGBLbt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 07:31:49 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:32770 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751612AbaGBL3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 07:29:50 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>, <lars@metafoo.de>,
-        <tiwai@suse.de>, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, <joelf@ti.com>, <nsekhar@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        <dmaengine@vger.kernel.org>
-Subject: [PATCH 2/4] dma: edma: Declare DMA_SLAVE_BUSWIDTH_3_BYTES as supported buswidth
-Date: Wed, 2 Jul 2014 14:29:28 +0300
-Message-ID: <1404300570-14082-3-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404300570-14082-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1404300570-14082-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1751056AbaGBLbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 07:31:48 -0400
+Message-ID: <53B3ED8E.3020503@ti.com>
+Date: Wed, 2 Jul 2014 17:01:26 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Vivek Gautam <gautam.vivek@samsung.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Subject: Re: [PATCHv2 0/6] phy: simplified phy lookup
+References: <1401972778-5880-1-git-send-email-heikki.krogerus@linux.intel.com> <CAFp+6iE9Wu-VrNUiu9VaFrEBdGyfnv0z23ME-x3WxUjJRWBt9g@mail.gmail.com>
+In-Reply-To: <CAFp+6iE9Wu-VrNUiu9VaFrEBdGyfnv0z23ME-x3WxUjJRWBt9g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-eDMA can be configured for 3bytes word size for source and destination.
+Hi,
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/dma/edma.c | 1 +
- 1 file changed, 1 insertion(+)
+On Thursday 05 June 2014 06:51 PM, Vivek Gautam wrote:
+> Hi Heikki,
+> 
+> 
+> On Thu, Jun 5, 2014 at 6:22 PM, Heikki Krogerus
+> <heikki.krogerus@linux.intel.com> wrote:
+>> Hi,
+>>
+>> So the idea with these is that they should help to make it possible to
+>> request phys without caring about how they are mapped to the
+>> consumers, meaning, was is the mapping done in DT, ACPI, etc. Mapping
+>> phys to consumers can be now done with lookups similarly how clocks
+>> can be mapped in clkdev.c.
+>>
+>> Vivek needs to handle the phys of dwc3 also in xhci driver on
+>> Exynos5420 SoC, so I'm resending these now.
+> 
+> Thank you so much for your efforts.
+> This will greatly help me in preparing the patches for PHY tuning.
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index d08c4dedef35..b512caf46944 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -982,6 +982,7 @@ static void __init edma_chan_init(struct edma_cc *ecc,
- 
- #define EDMA_DMA_BUSWIDTHS	(BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) | \
- 				 BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) | \
-+				 BIT(DMA_SLAVE_BUSWIDTH_3_BYTES) | \
- 				 BIT(DMA_SLAVE_BUSWIDTH_4_BYTES))
- 
- static int edma_dma_device_slave_caps(struct dma_chan *dchan,
--- 
-2.0.0
+Can I get Tested-by please?
 
+Cheers
+Kishon
