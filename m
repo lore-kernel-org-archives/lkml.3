@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751359AbaGBHXq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 03:23:46 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:35513 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796AbaGBHXo (ORCPT
+	id S1751255AbaGBH3r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 03:29:47 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:54582 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaGBH3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 03:23:44 -0400
-Date: Wed, 2 Jul 2014 08:23:38 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Mark Brown <broonie@kernel.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Bill Richardson <wfrichar@chromium.org>,
-        Randall Spangler <rspangler@chromium.org>, sjg@chromium.org,
-        afaerber@suse.de, stephan@synkhronix.com, olof@lixom.net,
-        sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] mfd: cros_ec: Use the proper size when looking at
- the cros_ec_i2c result
-Message-ID: <20140702072338.GC10311@lee--X1>
-References: <1403898973-19571-1-git-send-email-dianders@chromium.org>
- <1403898973-19571-3-git-send-email-dianders@chromium.org>
+	Wed, 2 Jul 2014 03:29:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1403898973-19571-3-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAM9d7cisUq9nJbSXZMtD+nQ_g+ZCKSsu_ghRDZY9vvkq51oiKQ@mail.gmail.com>
+References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
+	<1403913966-4927-12-git-send-email-ast@plumgrid.com>
+	<87tx70496q.fsf@sejong.aot.lge.com>
+	<CAMEtUuzHakFzJYRR0WgwRBnsQL24KGsNax5DTfRNMJrGhvfQMA@mail.gmail.com>
+	<CAM9d7cisUq9nJbSXZMtD+nQ_g+ZCKSsu_ghRDZY9vvkq51oiKQ@mail.gmail.com>
+Date: Wed, 2 Jul 2014 00:29:44 -0700
+Message-ID: <CAMEtUuyUqUsQbdvCWQvGjD5kuUQ8OzXzf7-7v+UJq+dDsBMv8A@mail.gmail.com>
+Subject: Re: [PATCH RFC net-next 11/14] tracing: allow eBPF programs to be
+ attached to events
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 27 Jun 2014, Doug Anderson wrote:
+On Tue, Jul 1, 2014 at 11:39 PM, Namhyung Kim <namhyung@kernel.org> wrote:
+> On Wed, Jul 2, 2014 at 3:14 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>
+>> Can manipulate what at compile time? Entry records of tracepoints are
+>> hard coded based on the event. For verifier it's easier to treat all
+>> tracepoint events as they received the same 'struct bpf_context'
+>> of N arguments then the same program can be attached to multiple
+>> tracepoint events at the same time.
+>
+> I was thinking about perf creates a bpf program for filtering some
+> events like recording kfree_skb if protocol == xx.  So perf can
+> calculate the offset and size of the protocol field and make
+> appropriate insns for the filter.
 
-> We know how many bytes the EC should be sending us (which is also the
-> number of bytes transferred) and also how many bytes the EC actually
-> wanted to send to us.  When computing the checksum and copying back
-> data let's make sure we take the lesser of the two of those.  We'll
-> also complain if the EC tried to send us too many bytes.  The EC
-> sending us too few bytes is legit for when we send the EC an invalid
-> command.
-> 
-> This is based on similar code in cros_ec_spi.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->  drivers/mfd/cros_ec_i2c.c | 15 ++++++++++++---
->  1 file changed, 12 insertions(+), 3 deletions(-)
+When I'm saying 'tracing filter' in patch 11/14, I really mean
+stap/dtrace-like facility for live debugging, where tracing infra plays
+a key role. At the end the programs are written in C with annotations
+and perf orchestrates compilation, insertion, attaching, printing results.
+Your meaning of 'tracing filter' is canonical: a filter that says whether
+event should be recorded or not. And it makes sense.
+When perf sees 'protocol==xx' on command line it can generate
+ebpf program for it. In such case my earlier proposal for replacing
+predicate tree walker with ebpf programs in kernel becomes obsolete?
+If I understood correctly, you're proposing to teach perf to generate
+ebpf programs for existing command line interface and use it instead
+of predicate tree. This way predicate tree can be removed, right?
+In such case programs would need to access event records.
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+> Maybe it needs to pass the event format to the verifier somehow then.
 
-Is this patch orthogonal i.e. can it be applied without the other two
-patches?
+The integer fields are easy to verify. dynamic_array part is tricky, since
+16-bit offset  + 16-bit length accessors are very tracing specific.
+I need to think it through.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> Your scenario looks like just calling a bpf program when it hits a
+> event.  It could use event triggering for that purpose IMHO.
+
+Sure. Calling ebpf program can be one of even trigger types.
+On the other side ebpf programs themselves can replace the whole
+triggering, filtering, recording code. We can have events that
+do nothing or call ebpf programs. Then programs walk all necessary
+data structures, store stuff into a maps, etc Just look at amount of
+events that perf processes. Some of it can be done in kernel by
+dynamic program.
