@@ -1,158 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757086AbaGBQ4I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 12:56:08 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:59265 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755983AbaGBQ4D (ORCPT
+	id S1756814AbaGBQ6x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 12:58:53 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:54149 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754728AbaGBQxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 12:56:03 -0400
-Date: Wed, 2 Jul 2014 09:55:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
- wakeups
-Message-ID: <20140702165556.GR4603@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140627142038.GA22942@linux.vnet.ibm.com>
- <20140702123412.GD19379@twins.programming.kicks-ass.net>
- <53B40D2B.7090406@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B40D2B.7090406@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070216-0928-0000-0000-00000320BBE7
+	Wed, 2 Jul 2014 12:53:10 -0400
+From: navin patidar <navin.patidar@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
+Subject: [PATCH 30/48] staging: rtl8188eu: Rename _rtw_init_cmd_priv() to rtw_init_cmd_priv()
+Date: Wed,  2 Jul 2014 22:17:26 +0530
+Message-Id: <1404319664-8327-30-git-send-email-navin.patidar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
+References: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 09:46:19AM -0400, Rik van Riel wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
-> 
-> On 07/02/2014 08:34 AM, Peter Zijlstra wrote:
-> > On Fri, Jun 27, 2014 at 07:20:38AM -0700, Paul E. McKenney wrote:
-> >> An 80-CPU system with a context-switch-heavy workload can require
-> >> so many NOCB kthread wakeups that the RCU grace-period kthreads
-> >> spend several tens of percent of a CPU just awakening things.
-> >> This clearly will not scale well: If you add enough CPUs, the RCU
-> >> grace-period kthreads would get behind, increasing grace-period
-> >> latency.
-> >> 
-> >> To avoid this problem, this commit divides the NOCB kthreads into
-> >> leaders and followers, where the grace-period kthreads awaken the
-> >> leaders each of whom in turn awakens its followers.  By default,
-> >> the number of groups of kthreads is the square root of the number
-> >> of CPUs, but this default may be overridden using the
-> >> rcutree.rcu_nocb_leader_stride boot parameter. This reduces the
-> >> number of wakeups done per grace period by the RCU grace-period
-> >> kthread by the square root of the number of CPUs, but of course
-> >> by shifting those wakeups to the leaders.  In addition, because 
-> >> the leaders do grace periods on behalf of their respective
-> >> followers, the number of wakeups of the followers decreases by up
-> >> to a factor of two. Instead of being awakened once when new
-> >> callbacks arrive and again at the end of the grace period, the
-> >> followers are awakened only at the end of the grace period.
-> >> 
-> >> For a numerical example, in a 4096-CPU system, the grace-period
-> >> kthread would awaken 64 leaders, each of which would awaken its
-> >> 63 followers at the end of the grace period.  This compares
-> >> favorably with the 79 wakeups for the grace-period kthread on an
-> >> 80-CPU system.
-> > 
-> > Urgh, how about we kill the entire nocb nonsense and try again?
-> > This is getting quite rediculous.
-> 
-> Some observations.
-> 
-> First, the rcuos/N threads are NOT bound to CPU N at all, but are
-> free to float through the system.
+Signed-off-by: navin patidar <navin.patidar@gmail.com>
+---
+ drivers/staging/rtl8188eu/core/rtw_cmd.c    |    9 +--------
+ drivers/staging/rtl8188eu/include/rtw_cmd.h |    2 +-
+ 2 files changed, 2 insertions(+), 9 deletions(-)
 
-I could easily bind each to its home CPU by default for CONFIG_NO_HZ_FULL=n.
-For CONFIG_NO_HZ_FULL=y, they get bound to the non-nohz_full= CPUs.
-
-> Second, the number of RCU callbacks at the end of each grace period
-> is quite likely to be small most of the time.
-> 
-> This suggests that on a system with N CPUs, it may be perfectly
-> sufficient to have a much smaller number of rcuos threads.
-> 
-> One thread can probably handle the RCU callbacks for as many as
-> 16, or even 64 CPUs...
-
-In many cases, one thread could handle the RCU callbacks for way more
-than that.  In other cases, a single CPU could keep a single rcuo kthread
-quite busy.  So something dynamic ends up being required.
-
-But I suspect that the real solution here is to adjust the Kconfig setup
-between NO_HZ_FULL and RCU_NOCB_CPU_ALL so that you have to specify boot
-parameters to get callback offloading on systems built with NO_HZ_FULL.
-Then add some boot-time code so that any CPU that has nohz_full= is
-forced to also have rcu_nocbs= set.  This would have the good effect
-of applying callback offloading only to those workloads for which it
-was specifically designed, but allowing those workloads to gain the
-latency-reduction benefits of callback offloading.
-
-I do freely confess that I was hoping that callback offloading might one
-day completely replace RCU_SOFTIRQ, but that hope now appears to be at
-best premature.
-
-Something like the attached patch.  Untested, probably does not even build.
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-rcu: Don't offload callbacks unless specifically requested
-
-<more here soon>
-
-Not-yet-signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/init/Kconfig b/init/Kconfig
-index 9d76b99af1b9..9332d33346ac 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -737,7 +737,7 @@ choice
+diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
+index b9c61e3..e26a582 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
++++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
+@@ -30,7 +30,7 @@ Caller and the rtw_cmd_thread can protect cmd_q by spin_lock.
+ No irqsave is necessary.
+ */
  
- config RCU_NOCB_CPU_NONE
- 	bool "No build_forced no-CBs CPUs"
--	depends on RCU_NOCB_CPU && !NO_HZ_FULL
-+	depends on RCU_NOCB_CPU && !NO_HZ_FULL_ALL
- 	help
- 	  This option does not force any of the CPUs to be no-CBs CPUs.
- 	  Only CPUs designated by the rcu_nocbs= boot parameter will be
-@@ -751,7 +751,7 @@ config RCU_NOCB_CPU_NONE
+-int _rtw_init_cmd_priv(struct cmd_priv *pcmdpriv)
++int rtw_init_cmd_priv(struct cmd_priv *pcmdpriv)
+ {
+ 	int res = _SUCCESS;
  
- config RCU_NOCB_CPU_ZERO
- 	bool "CPU 0 is a build_forced no-CBs CPU"
--	depends on RCU_NOCB_CPU && !NO_HZ_FULL
-+	depends on RCU_NOCB_CPU && !NO_HZ_FULL_ALL
- 	help
- 	  This option forces CPU 0 to be a no-CBs CPU, so that its RCU
- 	  callbacks are invoked by a per-CPU kthread whose name begins
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 58fbb8204d15..3b150bfcce3d 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -2473,6 +2473,9 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+@@ -130,13 +130,6 @@ struct	cmd_obj	*_rtw_dequeue_cmd(struct __queue *queue)
+ 	return obj;
+ }
  
- 	if (rcu_nocb_mask == NULL)
- 		return;
-+#ifdef CONFIG_NO_HZ_FULL
-+	cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
-+#endif /* #ifdef CONFIG_NO_HZ_FULL */
- 	if (ls == -1) {
- 		ls = int_sqrt(nr_cpu_ids);
- 		rcu_nocb_leader_stride = ls;
+-u32 rtw_init_cmd_priv(struct cmd_priv *pcmdpriv)
+-{
+-	u32	res;
+-	res = _rtw_init_cmd_priv(pcmdpriv);
+-	return res;
+-}
+-
+ void rtw_free_cmd_priv(struct cmd_priv *pcmdpriv)
+ {
+ 	RT_TRACE(_module_rtl871x_cmd_c_, _drv_info_, ("rtw_free_cmd_priv\n"));
+diff --git a/drivers/staging/rtl8188eu/include/rtw_cmd.h b/drivers/staging/rtl8188eu/include/rtw_cmd.h
+index d6b8724..cc75c7d 100644
+--- a/drivers/staging/rtl8188eu/include/rtw_cmd.h
++++ b/drivers/staging/rtl8188eu/include/rtw_cmd.h
+@@ -75,7 +75,7 @@ void rtw_free_cmd_obj(struct cmd_obj *pcmd);
+ 
+ int rtw_cmd_thread(void *context);
+ 
+-u32 rtw_init_cmd_priv(struct cmd_priv *pcmdpriv);
++int rtw_init_cmd_priv(struct cmd_priv *pcmdpriv);
+ void rtw_free_cmd_priv(struct cmd_priv *pcmdpriv);
+ 
+ enum rtw_drvextra_cmd_id {
+-- 
+1.7.10.4
 
