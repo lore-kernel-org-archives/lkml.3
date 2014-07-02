@@ -1,81 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903AbaGBVZp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 17:25:45 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:47737 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752632AbaGBVZn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 17:25:43 -0400
-Date: Wed, 2 Jul 2014 15:25:38 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Ryan Desfosses <ryan@desfo.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [Patch] PCI/portdrv: Remove warning about invalid IRQ
-Message-ID: <20140702212538.GC28852@google.com>
-References: <CAErSpo7pAv=v7JQp2UoNxYN8Pdj788NPP8OsLkM3p8NuwL_6Wg@mail.gmail.com>
- <1403070985-31373-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1757013AbaGBVZu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 17:25:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38149 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755868AbaGBVZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 17:25:48 -0400
+Date: Wed, 2 Jul 2014 17:25:29 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] mm, hugetlb: generalize writes to nr_hugepages
+Message-ID: <20140702172529.347f2dd2@redhat.com>
+In-Reply-To: <alpine.DEB.2.02.1406301655480.27587@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1406301655480.27587@chino.kir.corp.google.com>
+Organization: Red Hat
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403070985-31373-1-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 18, 2014 at 01:56:21PM +0800, Jiang Liu wrote:
-> For hot-added PCIe ports, it always generates a warning message on x86
-> platforms when binding to portdrv as:
-> 	"device [8086:0e0b] has invalid IRQ; check vendor BIOS".
-> 
-> It's due to that we check pci_dev->irq before actually allocating IRQ
-> for the PCI device:
-> 	if (!dev->irq && dev->pin) {
-> 		dev_warn(&dev->dev, "device [%04x:%04x] has invalid IRQ; "
-> 			 "check vendor BIOS\n", dev->vendor, dev->device);
-> 	}
->  	status = pcie_port_device_register(dev);
-> 		-->pci_enable_device(dev);
-> 			-->pci_enable_device_flags()
-> 				-->do_pci_enable_device()
-> 					-->pcibios_enable_device()
-> 						-->pcibios_enable_irq()
-> 
-> This warning message isn't generated for PCIe ports present at boot time
-> because x86 arch code has called acpi_pci_irq_enable() in pci_acpi_init()
-> for each PCI device for safety.
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+On Mon, 30 Jun 2014 16:57:06 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
 
-Applied to pci/misc for v3.17, thanks!
-
+> Three different interfaces alter the maximum number of hugepages for an
+> hstate:
+> 
+>  - /proc/sys/vm/nr_hugepages for global number of hugepages of the default
+>    hstate,
+> 
+>  - /sys/kernel/mm/hugepages/hugepages-X/nr_hugepages for global number of
+>    hugepages for a specific hstate, and
+> 
+>  - /sys/kernel/mm/hugepages/hugepages-X/nr_hugepages/mempolicy for number of
+>    hugepages for a specific hstate over the set of allowed nodes.
+> 
+> Generalize the code so that a single function handles all of these writes 
+> instead of duplicating the code in two different functions.
+> 
+> This decreases the number of lines of code, but also reduces the size of
+> .text by about half a percent since set_max_huge_pages() can be inlined.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
 > ---
-> Hi Bjorn,
-> 	I have rebased it onto v3.16-rc1 and changed the patch title
-> according to your suggestion.
-> Thanks!
-> Gerry
-> ___
->  drivers/pci/pcie/portdrv_pci.c |    4 ----
->  1 file changed, 4 deletions(-)
+>  mm/hugetlb.c | 61 ++++++++++++++++++++++++++----------------------------------
+>  1 file changed, 26 insertions(+), 35 deletions(-)
 > 
-> diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
-> index 80887eaa0668..2ccc9b926ea7 100644
-> --- a/drivers/pci/pcie/portdrv_pci.c
-> +++ b/drivers/pci/pcie/portdrv_pci.c
-> @@ -203,10 +203,6 @@ static int pcie_portdrv_probe(struct pci_dev *dev,
->  	     (pci_pcie_type(dev) != PCI_EXP_TYPE_DOWNSTREAM)))
->  		return -ENODEV;
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -1734,21 +1734,13 @@ static ssize_t nr_hugepages_show_common(struct kobject *kobj,
+>  	return sprintf(buf, "%lu\n", nr_huge_pages);
+>  }
 >  
-> -	if (!dev->irq && dev->pin) {
-> -		dev_warn(&dev->dev, "device [%04x:%04x] has invalid IRQ; check vendor BIOS\n",
-> -			 dev->vendor, dev->device);
+> -static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+> -			struct kobject *kobj, struct kobj_attribute *attr,
+> -			const char *buf, size_t len)
+> +static ssize_t __nr_hugepages_store_common(bool obey_mempolicy,
+> +					   struct hstate *h, int nid,
+> +					   unsigned long count, size_t len)
+>  {
+>  	int err;
+> -	int nid;
+> -	unsigned long count;
+> -	struct hstate *h;
+>  	NODEMASK_ALLOC(nodemask_t, nodes_allowed, GFP_KERNEL | __GFP_NORETRY);
+>  
+> -	err = kstrtoul(buf, 10, &count);
+> -	if (err)
+> -		goto out;
+> -
+> -	h = kobj_to_hstate(kobj, &nid);
+>  	if (hstate_is_gigantic(h) && !gigantic_page_supported()) {
+>  		err = -EINVAL;
+>  		goto out;
+> @@ -1784,6 +1776,23 @@ out:
+>  	return err;
+>  }
+>  
+> +static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+> +					 struct kobject *kobj, const char *buf,
+> +					 size_t len)
+> +{
+> +	struct hstate *h;
+> +	unsigned long count;
+> +	int nid;
+> +	int err;
+> +
+> +	err = kstrtoul(buf, 10, &count);
+> +	if (err)
+> +		return err;
+> +
+> +	h = kobj_to_hstate(kobj, &nid);
+> +	return __nr_hugepages_store_common(obey_mempolicy, h, nid, count, len);
+> +}
+> +
+>  static ssize_t nr_hugepages_show(struct kobject *kobj,
+>  				       struct kobj_attribute *attr, char *buf)
+>  {
+> @@ -1793,7 +1802,7 @@ static ssize_t nr_hugepages_show(struct kobject *kobj,
+>  static ssize_t nr_hugepages_store(struct kobject *kobj,
+>  	       struct kobj_attribute *attr, const char *buf, size_t len)
+>  {
+> -	return nr_hugepages_store_common(false, kobj, attr, buf, len);
+> +	return nr_hugepages_store_common(false, kobj, buf, len);
+>  }
+>  HSTATE_ATTR(nr_hugepages);
+>  
+> @@ -1812,7 +1821,7 @@ static ssize_t nr_hugepages_mempolicy_show(struct kobject *kobj,
+>  static ssize_t nr_hugepages_mempolicy_store(struct kobject *kobj,
+>  	       struct kobj_attribute *attr, const char *buf, size_t len)
+>  {
+> -	return nr_hugepages_store_common(true, kobj, attr, buf, len);
+> +	return nr_hugepages_store_common(true, kobj, buf, len);
+>  }
+>  HSTATE_ATTR(nr_hugepages_mempolicy);
+>  #endif
+> @@ -2248,36 +2257,18 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
+>  			 void __user *buffer, size_t *length, loff_t *ppos)
+>  {
+>  	struct hstate *h = &default_hstate;
+> -	unsigned long tmp;
+> +	unsigned long tmp = h->max_huge_pages;
+>  	int ret;
+>  
+> -	if (!hugepages_supported())
+> -		return -ENOTSUPP;
+
+Shouldn't you add this check to __nr_hugepages_store_common()? Otherwise
+looks good to me.
+
+> -
+> -	tmp = h->max_huge_pages;
+> -
+> -	if (write && hstate_is_gigantic(h) && !gigantic_page_supported())
+> -		return -EINVAL;
+> -
+>  	table->data = &tmp;
+>  	table->maxlen = sizeof(unsigned long);
+>  	ret = proc_doulongvec_minmax(table, write, buffer, length, ppos);
+>  	if (ret)
+>  		goto out;
+>  
+> -	if (write) {
+> -		NODEMASK_ALLOC(nodemask_t, nodes_allowed,
+> -						GFP_KERNEL | __GFP_NORETRY);
+> -		if (!(obey_mempolicy &&
+> -			       init_nodemask_of_mempolicy(nodes_allowed))) {
+> -			NODEMASK_FREE(nodes_allowed);
+> -			nodes_allowed = &node_states[N_MEMORY];
+> -		}
+> -		h->max_huge_pages = set_max_huge_pages(h, tmp, nodes_allowed);
+> -
+> -		if (nodes_allowed != &node_states[N_MEMORY])
+> -			NODEMASK_FREE(nodes_allowed);
 > -	}
->  	status = pcie_port_device_register(dev);
->  	if (status)
->  		return status;
-> -- 
-> 1.7.10.4
+> +	if (write)
+> +		ret = __nr_hugepages_store_common(obey_mempolicy, h,
+> +						  NUMA_NO_NODE, tmp, *length);
+>  out:
+>  	return ret;
+>  }
 > 
+
