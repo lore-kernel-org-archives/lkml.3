@@ -1,87 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354AbaGBMt3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 08:49:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60638 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255AbaGBMt2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 08:49:28 -0400
-Date: Wed, 2 Jul 2014 14:49:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael wang <wangyun@linux.vnet.ibm.com>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@linaro.org>,
-        Paul Turner <pjt@google.com>, Mel Gorman <mgorman@suse.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: select 'idle' cfs_rq per task-group to prevent
- tg-internal imbalance
-Message-ID: <20140702124918.GE19379@twins.programming.kicks-ass.net>
-References: <53A11A89.5000602@linux.vnet.ibm.com>
- <20140623094251.GS19860@laptop.programming.kicks-ass.net>
- <53A8F1DE.2060908@linux.vnet.ibm.com>
- <20140701082020.GL6758@twins.programming.kicks-ass.net>
- <53B273A2.5050500@linux.vnet.ibm.com>
- <20140701085658.GM6758@twins.programming.kicks-ass.net>
- <53B372C6.5000107@linux.vnet.ibm.com>
+	id S1752178AbaGBM4d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 08:56:33 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35903 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751593AbaGBM4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 08:56:31 -0400
+Message-ID: <53B4016F.9060005@ti.com>
+Date: Wed, 2 Jul 2014 15:56:15 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="N1GIdlSm9i+YlY4t"
-Content-Disposition: inline
-In-Reply-To: <53B372C6.5000107@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Lars-Peter Clausen <lars@metafoo.de>, <vinod.koul@intel.com>,
+        <dan.j.williams@intel.com>, <tiwai@suse.de>,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        <joelf@ti.com>, <nsekhar@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        <dmaengine@vger.kernel.org>
+Subject: Re: [PATCH 4/4] ALSA: pcm_dmaengine: Correct support for 3 physical
+ bytes samples
+References: <1404300570-14082-1-git-send-email-peter.ujfalusi@ti.com> <1404300570-14082-5-git-send-email-peter.ujfalusi@ti.com> <53B3FEB5.1040508@ti.com> <53B3FF9C.6060102@metafoo.de>
+In-Reply-To: <53B3FF9C.6060102@metafoo.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/02/2014 03:48 PM, Lars-Peter Clausen wrote:
+>> per discussion over the irc with Lars we could extend the masking to other
+>> widths as well, which would look something like this:
+>> u32 addr_widths = BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) |
+>>           BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) |
+>>           BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
+>> ...
+>> /*
+>>   * Prepare formats mask for valid/allowed sample types. If the dma does
+>>   * not have support for the given physical word size, it needs to be
+>>   * masked out so user space can not use the format which produces
+>>   * corrupted audio.
+>>   * In case the dma driver does not implement the slave_caps the default
+>>   * assumption is that it supports 1, 2 and 4 bytes widths.
+>>   */
+>> if (!dma_get_slave_caps(prtd->dma_chan, &dma_caps)) {
+>>     if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+>>         addr_widths = dma_caps.dstn_addr_widths;
+>>     else
+>>         addr_widths = dma_caps.src_addr_widths;
+>> }
+>>
+>> for (i = 0; i <= SNDRV_PCM_FORMAT_LAST; i++) {
+>>     int bits = snd_pcm_format_physical_width(i);
+>>
+>>     switch (bits) {
+>>     case 8:
+>>         if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_1_BYTE)))
+>>             fmt_mask |= (1LL << i);
+>>         break;
+>>     case 16:
+>>         if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_2_BYTES)))
+>>             fmt_mask |= (1LL << i);
+>>         break;
+>>     case 24:
+>>         if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_3_BYTES)))
+>>             fmt_mask |= (1LL << i);
+>>         break;
+>>     case 32:
+>>         if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_4_BYTES)))
+>>             fmt_mask |= (1LL << i);
+>>         break;
+>>     case 64:
+>>         if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_8_BYTES)))
+>>             fmt_mask |= (1LL << i);
+>>         break;
+>>     default:
+>>         fmt_mask |= (1LL << i);
+>>         break;
+>>     }
+>> }
+>>
+>> Is this sounds better?
+> 
+> Sounds good. I think we can assume that DMA_SLAVE_BUSWIDTH_1_BYTE = 1, ...
+> So (addr_width & BIT(bits / 8)) should work fine and we do not need to
+> duplicate the case branches.
+> 
+> The other thing is this should go into dmaengine_pcm_set_runtime_hwparams()
+> where we also restrict the other hardware parameters based on the dmaengine
+> capabilities.
 
---N1GIdlSm9i+YlY4t
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+true
 
-On Wed, Jul 02, 2014 at 10:47:34AM +0800, Michael wang wrote:
-> The opinion on features actually make me a little confusing... I used to
-> think the scheduler is willing on providing kinds of way to adapt itself
-> to different situation, and some features do help on that, make them
-> only a debug option make the scheduler more static to users, but I know
-> that's not what I should touched...
->=20
-> Anyway, the problem is still there and seems like we have to adopt some
-> optional solution to address it, we'll still working and practice on
-> that, please let us know if you have any ideas we could help on ;-)
-
-No, its very much not intended as a user knob to adapt.
-
-The problem with that approach to scheduling is that one set of knobs
-runs workload A, while another set of knobs runs workload B, but what
-happens if you need to run both A and B on the same machine?
-
-So optional things and knobs are a complete fail and will not happen.
-
-Clearly I need to go take out all these things because people don't seem
-to know this and SCHED_DEBUG isn't a big enough hint. Tedious.
-
---N1GIdlSm9i+YlY4t
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTs//OAAoJEHZH4aRLwOS6pD8P/39iviJIUNlR2adHta1DCSY9
-1efcFK466GQWg7lnb0fSOaseOec04NYJfbmymEQZSp8AmOELuBshjtdaeiCzDQkc
-hc6lrE2xROMRPDf5eZqSfNVdJZo45mzoK6Mxid6EPl0rsso9/thBdyMLgqjME+vZ
-CpT94lk4GOzxDSLgvoa2Dy8jLeKpGAqqhoWXHmMkQtzj+Ls0AENhzQsUmge0Qkti
-b+DM3vpikdEPMP8Rs1NcO1e0YKL+hfGBf+g9fkFOv6Dzq2hzk7SYY1yTLYZlNx8K
-vqYuQ5JCPcdYMhGD8cpvQHXQuFdtmTzrmpyn2yzBqMB8Is2ycAQopPOuoAVEg4kp
-70Np4T6Dj0r4g3dWK/xxhQ9iW6Rn7gUorxnfNXTjdlXC072/pX7gvCV6cADSVLMn
-xPRNtzaIh5bQG6sBZD2TcXaKjxxbWTo7bistPJADHar2n9tLvRwHtL7Q0zAhzzCS
-lXhl0dNtd3fkJXyWuH6JNv1Md03niES0cJM73cQ1reS1JwlHephm5fwRzr1cnsN4
-OtgthwjratWeBk/wsVaEPtVpS/46LjHo/bdp90Y3G03AAkU7P3PL15W7t4ItZ/ZE
-FyfrVSNaYwsRCJCWnVuqtY1+a3SNYgudxFl2PX6Sq/ptkAf1Czs7UqLWwP8QsCu+
-Eh655+YygKy/+SR6XG55
-=Rb9c
------END PGP SIGNATURE-----
-
---N1GIdlSm9i+YlY4t--
+-- 
+Péter
