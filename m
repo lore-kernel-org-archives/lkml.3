@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553AbaGBQwt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 12:52:49 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:57081 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756380AbaGBQwq (ORCPT
+	id S1757577AbaGBQw4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 12:52:56 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:37057 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756380AbaGBQwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 12:52:46 -0400
+	Wed, 2 Jul 2014 12:52:54 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 27/48] staging: rtl8188eu: rtw_cmd.h: Remove struct Tx_Beacon_param
-Date: Wed,  2 Jul 2014 22:17:23 +0530
-Message-Id: <1404319664-8327-27-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 28/48] staging: rtl8188eu: Remove header file cmd_osdep.h
+Date: Wed,  2 Jul 2014 22:17:24 +0530
+Message-Id: <1404319664-8327-28-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
 References: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
@@ -21,81 +21,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct Tx_Beacon_param has only one member.
+cmd_osdep.h is not required.
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_mlme_ext.c    |   12 ++++++------
- drivers/staging/rtl8188eu/include/rtw_cmd.h      |    4 ----
- drivers/staging/rtl8188eu/include/rtw_mlme_ext.h |    2 +-
- 3 files changed, 7 insertions(+), 11 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_cmd.c      |    1 -
+ drivers/staging/rtl8188eu/hal/rtl8188e_cmd.c  |    1 -
+ drivers/staging/rtl8188eu/include/cmd_osdep.h |   31 -------------------------
+ 3 files changed, 33 deletions(-)
+ delete mode 100644 drivers/staging/rtl8188eu/include/cmd_osdep.h
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c b/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
-index 3bd3962..b4dd14e 100644
---- a/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_mlme_ext.c
-@@ -5416,7 +5416,7 @@ u8 add_ba_hdl(struct adapter *padapter, unsigned char *pbuf)
- u8 set_tx_beacon_cmd(struct adapter *padapter)
- {
- 	struct cmd_obj	*ph2c;
--	struct Tx_Beacon_param	*ptxBeacon_parm;
-+	struct wlan_bssid_ex	*ptxBeacon_parm;
- 	struct cmd_priv	*pcmdpriv = &(padapter->cmdpriv);
- 	struct mlme_ext_priv	*pmlmeext = &padapter->mlmeextpriv;
- 	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);
-@@ -5430,19 +5430,19 @@ u8 set_tx_beacon_cmd(struct adapter *padapter)
- 		goto exit;
- 	}
+diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
+index 651d809..5a1ee87 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
++++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
+@@ -22,7 +22,6 @@
+ #include <osdep_service.h>
+ #include <drv_types.h>
+ #include <recv_osdep.h>
+-#include <cmd_osdep.h>
+ #include <mlme_osdep.h>
+ #include <rtw_mlme_ext.h>
  
--	ptxBeacon_parm = kzalloc(sizeof(struct Tx_Beacon_param), GFP_KERNEL);
-+	ptxBeacon_parm = kzalloc(sizeof(struct wlan_bssid_ex), GFP_KERNEL);
- 	if (ptxBeacon_parm == NULL) {
- 		kfree(ph2c);
- 		res = _FAIL;
- 		goto exit;
- 	}
+diff --git a/drivers/staging/rtl8188eu/hal/rtl8188e_cmd.c b/drivers/staging/rtl8188eu/hal/rtl8188e_cmd.c
+index 6ad3bd4..023a3d8 100644
+--- a/drivers/staging/rtl8188eu/hal/rtl8188e_cmd.c
++++ b/drivers/staging/rtl8188eu/hal/rtl8188e_cmd.c
+@@ -22,7 +22,6 @@
+ #include <osdep_service.h>
+ #include <drv_types.h>
+ #include <recv_osdep.h>
+-#include <cmd_osdep.h>
+ #include <mlme_osdep.h>
+ #include <rtw_ioctl_set.h>
  
--	memcpy(&(ptxBeacon_parm->network), &(pmlmeinfo->network), sizeof(struct wlan_bssid_ex));
-+	memcpy(ptxBeacon_parm, &(pmlmeinfo->network), sizeof(struct wlan_bssid_ex));
- 
--	len_diff = update_hidden_ssid(ptxBeacon_parm->network.IEs+_BEACON_IE_OFFSET_,
--				      ptxBeacon_parm->network.IELength-_BEACON_IE_OFFSET_,
-+	len_diff = update_hidden_ssid(ptxBeacon_parm->IEs+_BEACON_IE_OFFSET_,
-+				      ptxBeacon_parm->IELength-_BEACON_IE_OFFSET_,
- 				      pmlmeinfo->hidden_ssid_mode);
--	ptxBeacon_parm->network.IELength += len_diff;
-+	ptxBeacon_parm->IELength += len_diff;
- 
- 	init_h2fwcmd_w_parm_no_rsp(ph2c, ptxBeacon_parm, GEN_CMD_CODE(_TX_Beacon));
- 
-diff --git a/drivers/staging/rtl8188eu/include/rtw_cmd.h b/drivers/staging/rtl8188eu/include/rtw_cmd.h
-index 6ff500c..d6b8724 100644
---- a/drivers/staging/rtl8188eu/include/rtw_cmd.h
-+++ b/drivers/staging/rtl8188eu/include/rtw_cmd.h
-@@ -353,10 +353,6 @@ struct	getphy_parm {
- 
- };
- 
--struct Tx_Beacon_param {
--	struct wlan_bssid_ex network;
--};
+diff --git a/drivers/staging/rtl8188eu/include/cmd_osdep.h b/drivers/staging/rtl8188eu/include/cmd_osdep.h
+deleted file mode 100644
+index 7a93e1d..0000000
+--- a/drivers/staging/rtl8188eu/include/cmd_osdep.h
++++ /dev/null
+@@ -1,31 +0,0 @@
+-/******************************************************************************
+- *
+- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms of version 2 of the GNU General Public License as
+- * published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful, but WITHOUT
+- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+- * more details.
+- *
+- * You should have received a copy of the GNU General Public License along with
+- * this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
+- *
+- *
+- ******************************************************************************/
+-#ifndef __CMD_OSDEP_H_
+-#define __CMD_OSDEP_H_
 -
- /*
- 	Notes: This command is used for H2C/C2H loopback testing
- 
-diff --git a/drivers/staging/rtl8188eu/include/rtw_mlme_ext.h b/drivers/staging/rtl8188eu/include/rtw_mlme_ext.h
-index 1fdd1f8..2a32caa 100644
---- a/drivers/staging/rtl8188eu/include/rtw_mlme_ext.h
-+++ b/drivers/staging/rtl8188eu/include/rtw_mlme_ext.h
-@@ -764,7 +764,7 @@ static struct cmd_hdl wlancmds[] = {
- 	GEN_MLME_EXT_HANDLER(0, NULL)
- 	GEN_MLME_EXT_HANDLER(0, NULL)
- 	GEN_MLME_EXT_HANDLER(0, NULL)
--	GEN_MLME_EXT_HANDLER(sizeof(struct Tx_Beacon_param),
-+	GEN_MLME_EXT_HANDLER(sizeof(struct wlan_bssid_ex),
- 			     tx_beacon_hdl) /*55*/
- 
- 	GEN_MLME_EXT_HANDLER(0, mlme_evt_hdl) /*56*/
+-#include <osdep_service.h>
+-#include <drv_types.h>
+-
+-extern int _rtw_init_cmd_priv(struct cmd_priv *pcmdpriv);
+-extern void _rtw_free_cmd_priv(struct cmd_priv *pcmdpriv);
+-extern int _rtw_enqueue_cmd(struct __queue *queue, struct cmd_obj *obj);
+-extern struct cmd_obj	*_rtw_dequeue_cmd(struct __queue *queue);
+-
+-#endif
 -- 
 1.7.10.4
 
