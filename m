@@ -1,60 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881AbaGBJSZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 05:18:25 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:22523 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752AbaGBJSN (ORCPT
+	id S1752291AbaGBJU2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 05:20:28 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:60002 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226AbaGBJU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 05:18:13 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-f4-53b3ce523a08
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        Anton Vorontsov <anton@enomsg.org>
-Cc: Philip Rakity <prakity@marvell.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH RESEND 2/2] power: max8925: Use of_get_child_by_name
-Date: Wed, 02 Jul 2014 11:17:54 +0200
-Message-id: <1404292674-5260-2-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1404292674-5260-1-git-send-email-k.kozlowski@samsung.com>
-References: <1404292674-5260-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEJMWRmVeSWpSXmKPExsVy+t/xy7pB5zYHG7z9rmhxcKumxaQn75kt
-	Jq6czGzx+oWhxeVdc9gs5q9+wujA5jGh/xOjx85Zd9k9Nq/Q8pi88CKzR9+WVYwenzfJBbBF
-	cdmkpOZklqUW6dslcGWc6LvKWrCBraL733XmBsbNrF2MnBwSAiYSm1evZ4OwxSQu3IOwhQSW
-	Mkps2m7TxcgFZPcxSUy4/pQJJMEmYCyxefkSNpCEiMB8RonpB6eDdTALREi8P/YXzBYWcJG4
-	tf0xO4jNIqAq8eHqQaA4BwevgJtE3ycRiGVyEiePTQY7glPAXeLPildMEIvdJLY2PmabwMi7
-	gJFhFaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIOH3Zwbj4mNUhRgEORiUe3sYVG4KFWBPL
-	iitzDzFKcDArifA+OrM5WIg3JbGyKrUoP76oNCe1+BAjEwenVAPjJB25bXt+dd1bF+23f0HJ
-	mTWidpwPd3lseHV+Qb1KrdSUojz/gva+809Tf1psdDoc/8NG+vP6Y/uf3ORsO/TqmswZ+an3
-	NnOum7I2xMx/r4H/W47KySc2MF7+vzPswVZt6T2ufYJbJT9VTdNclcL1fYLNpo1zrn0vmiB0
-	+3Xivx3i5nv+bmsya1NiKc5INNRiLipOBAADUBz8BQIAAA==
+	Wed, 2 Jul 2014 05:20:27 -0400
+Message-ID: <53B3CEAC.9080609@windriver.com>
+Date: Wed, 2 Jul 2014 17:19:40 +0800
+From: "Yang,Wei" <Wei.Yang@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+MIME-Version: 1.0
+To: <Wei.Yang@windriver.com>, <mroberto@cpti.cetuc.puc-rio.br>,
+        <rmk+kernel@arm.linux.org.uk>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v1] ARM:sa1100: Remove a redundant spin lock
+References: <1404200488-7809-1-git-send-email-Wei.Yang@windriver.com>
+In-Reply-To: <1404200488-7809-1-git-send-email-Wei.Yang@windriver.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.162.170]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use of_get_child_by_name to obtain reference to charger node instead of
-of_find_node_by_name which can walk outside of the parent node.
+Hi Guys,
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/power/max8925_power.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+What about this patch?
 
-diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
-index 0cf237808d47..a6d45eef64dd 100644
---- a/drivers/power/max8925_power.c
-+++ b/drivers/power/max8925_power.c
-@@ -443,7 +443,7 @@ max8925_power_dt_init(struct platform_device *pdev)
- 	if (!nproot)
- 		return pdev->dev.platform_data;
- 
--	np = of_find_node_by_name(nproot, "charger");
-+	np = of_get_child_by_name(nproot, "charger");
- 	if (!np) {
- 		dev_err(&pdev->dev, "failed to find charger node\n");
- 		return NULL;
--- 
-1.9.1
+Thanks
+Wei
+On 07/01/2014 03:41 PM, Wei.Yang@windriver.com wrote:
+> From: Yang Wei <Wei.Yang@windriver.com>
+>
+> The pair read/write of accessing pci confiuration space function
+> has already protected by pci_lock. so remove nano_lock.
+>
+> Signed-off-by: Yang Wei <Wei.Yang@windriver.com>
+> ---
+>   arch/arm/mach-sa1100/pci-nanoengine.c |    9 ---------
+>   1 file changed, 9 deletions(-)
+>
+> diff --git a/arch/arm/mach-sa1100/pci-nanoengine.c b/arch/arm/mach-sa1100/pci-nanoengine.c
+> index ff02e2d..b944c99 100644
+> --- a/arch/arm/mach-sa1100/pci-nanoengine.c
+> +++ b/arch/arm/mach-sa1100/pci-nanoengine.c
+> @@ -30,7 +30,6 @@
+>   #include <mach/nanoengine.h>
+>   #include <mach/hardware.h>
+>   
+> -static DEFINE_SPINLOCK(nano_lock);
+>   
+>   static int nanoengine_get_pci_address(struct pci_bus *bus,
+>   	unsigned int devfn, int where, unsigned long *address)
+> @@ -52,7 +51,6 @@ static int nanoengine_read_config(struct pci_bus *bus, unsigned int devfn, int w
+>   {
+>   	int ret;
+>   	unsigned long address;
+> -	unsigned long flags;
+>   	u32 v;
+>   
+>   	/* nanoEngine PCI bridge does not return -1 for a non-existing
+> @@ -64,15 +62,12 @@ static int nanoengine_read_config(struct pci_bus *bus, unsigned int devfn, int w
+>   		goto exit_function;
+>   	}
+>   
+> -	spin_lock_irqsave(&nano_lock, flags);
+>   
+>   	ret = nanoengine_get_pci_address(bus, devfn, where, &address);
+>   	if (ret != PCIBIOS_SUCCESSFUL)
+>   		return ret;
+>   	v = __raw_readl(address);
+>   
+> -	spin_unlock_irqrestore(&nano_lock, flags);
+> -
+>   	v >>= ((where & 3) * 8);
+>   	v &= (unsigned long)(-1) >> ((4 - size) * 8);
+>   
+> @@ -86,13 +81,11 @@ static int nanoengine_write_config(struct pci_bus *bus, unsigned int devfn, int
+>   {
+>   	int ret;
+>   	unsigned long address;
+> -	unsigned long flags;
+>   	unsigned shift;
+>   	u32 v;
+>   
+>   	shift = (where & 3) * 8;
+>   
+> -	spin_lock_irqsave(&nano_lock, flags);
+>   
+>   	ret = nanoengine_get_pci_address(bus, devfn, where, &address);
+>   	if (ret != PCIBIOS_SUCCESSFUL)
+> @@ -113,8 +106,6 @@ static int nanoengine_write_config(struct pci_bus *bus, unsigned int devfn, int
+>   	}
+>   	__raw_writel(v, address);
+>   
+> -	spin_unlock_irqrestore(&nano_lock, flags);
+> -
+>   	return PCIBIOS_SUCCESSFUL;
+>   }
+>   
 
