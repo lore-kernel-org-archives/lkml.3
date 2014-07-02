@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851AbaGBMMY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 08:12:24 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45499 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375AbaGBMMV (ORCPT
+	id S1752590AbaGBMMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 08:12:23 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:63392 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064AbaGBMMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Jul 2014 08:12:21 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH] net: arcnet: Remove "#define bool int"
-Date: Wed,  2 Jul 2014 14:12:01 +0200
-Message-Id: <1404303121-2548-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 1.7.10.4
+Message-ID: <53B3F556.7050002@suse.cz>
+Date: Wed, 02 Jul 2014 14:04:38 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-kernel@vger.kernel.org, tj@kernel.org, rostedt@goodmis.org,
+        mingo@redhat.com, akpm@linux-foundation.org, andi@firstfloor.org,
+        paulmck@linux.vnet.ibm.com, pavel@ucw.cz, jirislaby@gmail.com,
+        Vojtech Pavlik <vojtech@suse.cz>, Michael Matz <matz@suse.de>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: kGraft to -next [was: 00/21 kGraft]
+References: <1403694329-3064-1-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1403694329-3064-1-git-send-email-jslaby@suse.cz>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The header file include/linux/arcdevice.h #defines bool to int, if
-bool is not already #defined. However, the files which use that header
-file seem to rely on that #define (unconditionally) being in effect:
-the prototypes for the functions arcrimi_reset, com20020_reset,
-com90io_reset, com90xx_reset (whose addresses are assigned to the
-hw.reset member of struct arcnet_local) use int explicitly.
+On 06/25/2014 01:05 PM, Jiri Slaby wrote:
+> Hi,
+> 
+> this is a repost of the second round of RFC on kGraft, the linux
+> kernel online patching developed at SUSE. This repost only widened the
+> target audience for broader review, no code change happened.
+> 
+> Please speak up now (or be silent till the next merge window). That
+> is, if there are no objections, we plan pushing the tree into -next
+> and asking Linus in the next merge window for comments.
+> 
+> The patches are posted as a reply to this email and can be also
+> obtained as a whole tree from:
+> https://git.kernel.org/cgit/linux/kernel/git/jirislaby/kgraft.git/log/?h=kgraft
 
-Moreover, that #define is an accident waiting to happen (scenario:
-inclusion of arcdevice.h followed by inclusion of some header which
-declares function prototypes using bool). Also, #include
-<linux/types.h> must appear before #include <linux/arcdevice.h> (the
-compiler wouldn't like "typedef _Bool int").
+Stephen,
 
-Since none of the files using arcdevice.h declare variables of type
-"bool", the patch is actually quite simple, unlike the commit message.
+may I ask you to add the kGraft tree to -next?
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- include/linux/arcdevice.h | 10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+git://git.kernel.org/pub/scm/linux/kernel/git/jirislaby/kgraft.git#kgraft
 
-diff --git a/include/linux/arcdevice.h b/include/linux/arcdevice.h
-index 7216b0d..df03562 100644
---- a/include/linux/arcdevice.h
-+++ b/include/linux/arcdevice.h
-@@ -22,10 +22,6 @@
- #ifdef __KERNEL__
- #include  <linux/irqreturn.h>
- 
--#ifndef bool
--#define bool int
--#endif
--
- /*
-  * RECON_THRESHOLD is the maximum number of RECON messages to receive
-  * within one minute before printing a "cabling problem" warning. The
-@@ -285,9 +281,9 @@ struct arcnet_local {
- 	unsigned long first_recon; /* time of "first" RECON message to count */
- 	unsigned long last_recon;  /* time of most recent RECON */
- 	int num_recons;		/* number of RECONs between first and last. */
--	bool network_down;	/* do we think the network is down? */
-+	int network_down;	/* do we think the network is down? */
- 
--	bool excnak_pending;    /* We just got an excesive nak interrupt */
-+	int excnak_pending;    /* We just got an excesive nak interrupt */
- 
- 	struct {
- 		uint16_t sequence;	/* sequence number (incs with each packet) */
-@@ -305,7 +301,7 @@ struct arcnet_local {
- 		void (*command) (struct net_device * dev, int cmd);
- 		int (*status) (struct net_device * dev);
- 		void (*intmask) (struct net_device * dev, int mask);
--		bool (*reset) (struct net_device * dev, bool really_reset);
-+		int (*reset) (struct net_device * dev, int really_reset);
- 		void (*open) (struct net_device * dev);
- 		void (*close) (struct net_device * dev);
- 
+Thank you.
+
+ Documentation/kgraft.txt           |  44 ++++
+ MAINTAINERS                        |   9 +
+ arch/x86/Kconfig                   |   2 +
+ arch/x86/include/asm/kgraft.h      |  61 +++++
+ arch/x86/include/asm/thread_info.h |   6 +-
+ arch/x86/kernel/entry_64.S         |   9 +
+ drivers/base/devtmpfs.c            |   1 +
+ drivers/scsi/scsi_error.c          |   2 +
+ drivers/usb/core/hub.c             |   4 +-
+ fs/jbd2/journal.c                  |   2 +
+ fs/notify/mark.c                   |   5 +-
+ fs/proc/base.c                     |  11 +
+ include/linux/freezer.h            |   2 +
+ include/linux/ftrace.h             |   4 +
+ include/linux/kgraft.h             | 130 ++++++++++
+ include/linux/sched.h              |   9 +
+ kernel/Kconfig.kgraft              |  12 +
+ kernel/Makefile                    |   1 +
+ kernel/hung_task.c                 |   5 +-
+ kernel/kgraft.c                    | 477 ++++++++++++++++++++++++++++++
+ kernel/kgraft_files.c              | 150 ++++++++++++
+ kernel/kthread.c                   |   3 +
+ kernel/rcu/tree.c                  |   6 +-
+ kernel/rcu/tree_plugin.h           |  10 +-
+ kernel/smpboot.c                   |   2 +
+ kernel/trace/ftrace.c              |  30 +++
+ kernel/trace/trace.h               |   2 -
+ kernel/workqueue.c                 |   3 +
+ mm/huge_memory.c                   |   6 +-
+ net/bluetooth/rfcomm/core.c        |   2 +
+ samples/Kconfig                    |   8 +
+ samples/Makefile                   |   3 +-
+ samples/kgraft/Makefile            |   1 +
+ samples/kgraft/kgraft_patcher.c    |  97 ++++++++
+ 34 files changed, 1104 insertions(+), 15 deletions(-)
+ create mode 100644 Documentation/kgraft.txt
+ create mode 100644 arch/x86/include/asm/kgraft.h
+ create mode 100644 include/linux/kgraft.h
+ create mode 100644 kernel/Kconfig.kgraft
+ create mode 100644 kernel/kgraft.c
+ create mode 100644 kernel/kgraft_files.c
+ create mode 100644 samples/kgraft/Makefile
+ create mode 100644 samples/kgraft/kgraft_patcher.c
+
 -- 
-1.9.2
-
+js
+suse labs
