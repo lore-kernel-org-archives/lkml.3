@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238AbaGBJZe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 05:25:34 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41492 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751622AbaGBJZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 05:25:32 -0400
-Message-ID: <53B3CFDD.5090504@ti.com>
-Date: Wed, 2 Jul 2014 14:54:45 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <kernel@stlinux.com>
-Subject: Re: [PATCH 1/5] phy: miphy365x: Add Device Tree bindings for the
- MiPHY365x
-References: <1404133317-25953-1-git-send-email-lee.jones@linaro.org> <1404133317-25953-2-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1404133317-25953-2-git-send-email-lee.jones@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1752366AbaGBJ0P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 05:26:15 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:33709 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991AbaGBJ0N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 05:26:13 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Valentina Manea <valentina.manea.m@gmail.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Andrea Merello <andrea.merello@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] Staging: rtl8192e: Fix potential NULL pointer dereference
+Date: Wed,  2 Jul 2014 11:25:51 +0200
+Message-Id: <1404293151-15804-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+We need to make sure the struct rtllib_device pointer ieee is not NULL
+after the goto rx_dropped label since it is dereferenced there.
 
-On Monday 30 June 2014 06:31 PM, Lee Jones wrote:
-> The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
-> devices. It has 2 ports which it can use for either; both SATA, both
-> PCIe or one of each in any configuration.
-> 
-> Cc: Kishon Vijay Abraham I <kishon@ti.com>
-> Acked-by: Mark Rutland <mark.rutland@arm.com>
-> Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  .../devicetree/bindings/phy/phy-miphy365x.txt      | 76 ++++++++++++++++++++++
->  1 file changed, 76 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy365x.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/phy/phy-miphy365x.txt b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
-> new file mode 100644
-> index 0000000..d75f300
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
-> @@ -0,0 +1,76 @@
-> +STMicroelectronics STi MIPHY365x PHY binding
-> +============================================
-> +
-> +This binding describes a miphy device that is used to control PHY hardware
-> +for SATA and PCIe.
-> +
-> +Required properties:
-> +- compatible :	Should be "st,miphy365x-phy"
-> +- #phy-cells :	Should be 2 (See second example)
-> +		First cell is the port number from:
-> +			- MIPHY_PORT_0
-> +			- MIPHY_PORT_1
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+ drivers/staging/rtl8192e/rtllib_rx.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-I'm just thinking if we can directly give phandle to the sub-node
-(channel0/channel1 or port0/port1) we won't need this information in the PHY
-specifier. This might need some modification in the phy-core but that can be done.
-> +		Second cell is device type from:
-> +			- MIPHY_TYPE_SATA
-> +			- MIPHY_TYPE_PCI
-> +- reg       :	Address and length of register sets for each device in
-> +		"reg-names"
-> +- reg-names : 	The names of the register addresses corresponding to the
-> +		registers filled in "reg", from:
-> +			- sata0: For SATA port 0 registers
-> +			- sata1: For SATA port 1 registers
-> +			- pcie0: For PCIE port 0 registers
-> +			- pcie1: For PCIE port 1 registers
+diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
+index 60de54c..7db3e74 100644
+--- a/drivers/staging/rtl8192e/rtllib_rx.c
++++ b/drivers/staging/rtl8192e/rtllib_rx.c
+@@ -1496,7 +1496,8 @@ int rtllib_rx(struct rtllib_device *ieee, struct sk_buff *skb,
+ 	return ret;
+ 
+  rx_dropped:
+-	ieee->stats.rx_dropped++;
++	if (ieee)
++		ieee->stats.rx_dropped++;
+ 	return 0;
+ }
+ EXPORT_SYMBOL(rtllib_rx);
+-- 
+1.7.10.4
 
-this information should be in the documentation of sub-nodes.
-
-Cheers
-Kishon
