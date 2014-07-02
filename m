@@ -1,84 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696AbaGBHUr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 03:20:47 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:51208 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaGBHUp (ORCPT
+	id S1751873AbaGBHVE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 03:21:04 -0400
+Received: from mga01.intel.com ([192.55.52.88]:38676 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751751AbaGBHVB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 03:20:45 -0400
-Date: Wed, 2 Jul 2014 10:20:39 +0300
-From: Dan Aloni <dan@kernelim.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
-        kadlec@blackhole.kfki.hu, "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org
-Subject: Re: net: pretty odd panic in netfilter
-Message-ID: <20140702072039.GA15488@gmail.com>
-References: <53B37B61.3020901@oracle.com>
+	Wed, 2 Jul 2014 03:21:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,587,1400050800"; 
+   d="scan'208";a="564011907"
+From: "Hu, Robert" <robert.hu@intel.com>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@kernel.org>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1
+ since race 
+Thread-Topic: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1
+ since race 
+Thread-Index: AQHPlcKEDdmekCjl90+N7WBu6qvlT5uMYJ9g
+Date: Wed, 2 Jul 2014 07:20:58 +0000
+Message-ID: <9E79D1C9A97CFD4097BCE431828FDD31983416@SHSMSX103.ccr.corp.intel.com>
+References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B37B61.3020901@oracle.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 01, 2014 at 11:24:17PM -0400, Sasha Levin wrote:
-> Hi all,
+> -----Original Message-----
+> From: Wanpeng Li [mailto:wanpeng.li@linux.intel.com]
+> Sent: Wednesday, July 2, 2014 2:54 PM
+> To: Paolo Bonzini; Jan Kiszka; Gleb Natapov
+> Cc: Hu, Robert; kvm@vger.kernel.org; linux-kernel@vger.kernel.org; Wanpeng Li
+> Subject: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since race
 > 
-> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> kernel I've stumbled on a pretty odd corruption(?) in the code - a pretty odd
-> one.
+> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=72381
 > 
-> Here's the issue I've hit:
+> If we didn't inject a still-pending event to L1 since nested_run_pending,
+> KVM_REQ_EVENT should be requested after the vmexit in order to inject the
+> event to L1. However, current log blindly request a KVM_REQ_EVENT even if
+> there is no still-pending event to L1 which blocked by nested_run_pending.
+> There is a race which lead to an interrupt will be injected to L2 which
+> belong to L1 if L0 send an interrupt to L1 during this window.
 > 
-> [ 3640.805823] BUG: unable to handle kernel paging request at ffffffffffffff84
->[..]
-> [ 3640.840752] Code: 4c 89 65 e8 49 89 cc 0f 97 c1 83 fa 01 0f 95 c0 48 89 5d e0 31 db 83 fa 04 4c 89 6d f0 0f 95 c3 4c 89 75 f8 21 55 55 fb 01 48 19 <d2> 48 83 e2 f0 48 83 c2 20 48 89 d0 48 83 f0 30 84 c9 48 0f 45
-> [ 3640.840752] RIP nf_nat_packet (net/netfilter/nf_nat_core.c:482)
-> [ 3640.840752]  RSP <ffff88014608b958>
-> [ 3640.840752] CR2: ffffffffffffff84
+>                VCPU0                               another thread
 > 
-> Two odd things here:
+> L1 intr not blocked on L2 first entry
+> vmx_vcpu_run req event
+> kvm check request req event
+> check_nested_events don't have any intr
+> not nested exit
+>                                             intr occur (8254, lapic timer
+> etc)
+> inject_pending_event now have intr
+> inject interrupt
 > 
-> 1. The code section seems to point mid-instruction:
+> This patch fix this race by introduced a l1_events_blocked field in nested_vmx
+> which indicates there is still-pending event which blocked by
+> nested_run_pending,
+> and smart request a KVM_REQ_EVENT if there is a still-pending event which
+> blocked
+> by nested_run_pending.
 > 
->     19dc:       0f 95 c3                setne  %bl
->     19df:       4c 89 75 f8             mov    %r14,-0x8(%rbp)
->     19e3:       21 c3                   and    %eax,%ebx
->     19e5:       83 fb 01                cmp    $0x1,%ebx
->     19e8:       48 19 d2                sbb    %rdx,%rdx  <=== The end of this (0xd2)
->     19eb:       48 83 e2 f0             and    $0xfffffffffffffff0,%rdx
->     19ef:       48 83 c2 20             add    $0x20,%rdx
->     19f3:       48 89 d0                mov    %rdx,%rax
->     19f6:       48 83 f0 30             xor    $0x30,%rax
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+Tested-by: Robert Hu<robert.hu@intel.com>
+> ---
+>  arch/x86/kvm/vmx.c | 20 +++++++++++++++-----
+>  1 file changed, 15 insertions(+), 5 deletions(-)
 > 
-> 2. There isn't anything in that area that dereferences memory:
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index f4e5aed..fe69c49 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -372,6 +372,7 @@ struct nested_vmx {
+>  	u64 vmcs01_tsc_offset;
+>  	/* L2 must run next, and mustn't decide to exit to L1. */
+>  	bool nested_run_pending;
+> +	bool l1_events_blocked;
+>  	/*
+>  	 * Guest pages referred to in vmcs02 with host-physical pointers, so
+>  	 * we must keep them pinned while L2 runs.
+> @@ -7380,8 +7381,10 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu
+> *vcpu)
+>  	 * we did not inject a still-pending event to L1 now because of
+>  	 * nested_run_pending, we need to re-enable this bit.
+>  	 */
+> -	if (vmx->nested.nested_run_pending)
+> +	if (to_vmx(vcpu)->nested.l1_events_blocked) {
+> +		to_vmx(vcpu)->nested.l1_events_blocked = false;
+>  		kvm_make_request(KVM_REQ_EVENT, vcpu);
+> +	}
 > 
->         enum nf_nat_manip_type mtype = HOOK2MANIP(hooknum);
+>  	vmx->nested.nested_run_pending = 0;
 > 
->         if (mtype == NF_NAT_MANIP_SRC)
->                 statusbit = IPS_SRC_NAT;
->         else
->                 statusbit = IPS_DST_NAT;
+> @@ -8197,15 +8200,20 @@ static int vmx_check_nested_events(struct
+> kvm_vcpu *vcpu, bool external_intr)
+> 
+>  	if (nested_cpu_has_preemption_timer(get_vmcs12(vcpu)) &&
+>  	    vmx->nested.preemption_timer_expired) {
+> -		if (vmx->nested.nested_run_pending)
+> +		if (vmx->nested.nested_run_pending) {
+> +			vmx->nested.l1_events_blocked = true;
+>  			return -EBUSY;
+> +		}
+>  		nested_vmx_vmexit(vcpu, EXIT_REASON_PREEMPTION_TIMER, 0, 0);
+>  		return 0;
+>  	}
+> 
+>  	if (vcpu->arch.nmi_pending && nested_exit_on_nmi(vcpu)) {
+> -		if (vmx->nested.nested_run_pending ||
+> -		    vcpu->arch.interrupt.pending)
+> +		if (vmx->nested.nested_run_pending) {
+> +			vmx->nested.l1_events_blocked = true;
+> +			return -EBUSY;
+> +		}
+> +		if (vcpu->arch.interrupt.pending)
+>  			return -EBUSY;
+>  		nested_vmx_vmexit(vcpu, EXIT_REASON_EXCEPTION_NMI,
+>  				  NMI_VECTOR | INTR_TYPE_NMI_INTR |
+> @@ -8221,8 +8229,10 @@ static int vmx_check_nested_events(struct kvm_vcpu
+> *vcpu, bool external_intr)
+> 
+>  	if ((kvm_cpu_has_interrupt(vcpu) || external_intr) &&
+>  	    nested_exit_on_intr(vcpu)) {
+> -		if (vmx->nested.nested_run_pending)
+> +		if (vmx->nested.nested_run_pending) {
+> +			vmx->nested.l1_events_blocked = true;
+>  			return -EBUSY;
+> +		}
+>  		nested_vmx_vmexit(vcpu, EXIT_REASON_EXTERNAL_INTERRUPT, 0,
+> 0);
+>  	}
+> 
+> --
+> 1.9.1
 
-Hi Sasha,
-
-The fault registers are consistent with the 'rorb %cl,-0x7d(%rax)' starting
-at the place where you have 0xd2. But the problem started earlier:
-
-    "75 f8 21 55 55 fb 01 48 19 <d2> 48 83 e2 f0"
-
-What should have been according to objdump:
-
-    "75 f8 21 c3 83 fb 01 48 19 <d2> 48 83 e2 f0"
-              ^^^^^ 
-These instructions should not have been modified, even by relocation. 
-So we only need to figure out what overwrote with '0x5555'.
-
--- 
-Dan Aloni
