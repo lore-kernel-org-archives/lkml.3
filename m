@@ -1,223 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758952AbaGBBu2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 21:50:28 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:61128 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607AbaGBBu0 (ORCPT
+	id S932412AbaGBBvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 21:51:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:41959 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932354AbaGBBvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 21:50:26 -0400
-Date: Tue, 1 Jul 2014 18:49:03 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: shm: hang in shmem_fallocate
-In-Reply-To: <53B2A0E0.3000503@suse.cz>
-Message-ID: <alpine.LSU.2.11.1407011717350.14301@eggly.anvils>
-References: <52AE7B10.2080201@oracle.com> <52F6898A.50101@oracle.com> <alpine.LSU.2.11.1402081841160.26825@eggly.anvils> <52F82E62.2010709@oracle.com> <539A0FC8.8090504@oracle.com> <alpine.LSU.2.11.1406151921070.2850@eggly.anvils> <53A9A7D8.2020703@suse.cz>
- <alpine.LSU.2.11.1406251152450.1580@eggly.anvils> <53ABE479.3080508@suse.cz> <alpine.LSU.2.11.1406262108390.27670@eggly.anvils> <53B2A0E0.3000503@suse.cz>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Tue, 1 Jul 2014 21:51:39 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140702010117.GS27687@wotan.suse.de>
+References: <1404171017-28064-1-git-send-email-mcgrof@do-not-panic.com>
+	<CACVXFVMgNa6RM6GdtNbbNOG0zn29WVRSfD8xdM983-x8sGnp4g@mail.gmail.com>
+	<s5hk37x8mdc.wl%tiwai@suse.de>
+	<20140702010117.GS27687@wotan.suse.de>
+Date: Wed, 2 Jul 2014 09:51:36 +0800
+Message-ID: <CACVXFVNKc7i1CiyY=6cG+xv9joTFgthwBwMZMyTfTN9Z-+XqfA@mail.gmail.com>
+Subject: Re: [PATCH] firmware loader: inform direct failure when udev loader
+ is disabled
+From: Ming Lei <ming.lei@canonical.com>
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+Cc: Takashi Iwai <tiwai@suse.de>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tom Gundersen <teg@jklm.no>, Abhay Salunke <Abhay_Salunke@dell.com>,
+        Stefan Roese <sr@denx.de>, Arnd Bergmann <arnd@arndb.de>,
+        Kay Sievers <kay@vrfy.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jul 2014, Vlastimil Babka wrote:
-> On 06/27/2014 07:36 AM, Hugh Dickins wrote:> [Cc Johannes: at the end I have
-> a particular question for you]
-> > On Thu, 26 Jun 2014, Vlastimil Babka wrote:
-> > > 
-> > > Thanks, I didn't notice that. Do I understand correctly that this could
-> > > mean
-> > > info leak for the punch hole call, but wouldn't be a problem for madvise?
-> > > (In
-> > > any case, that means the solution is not general enough for all kernels,
-> > > so
-> > > I'm asking just to be sure).
-> > 
-> > It's exactly the same issue for the madvise as for the fallocate:
-> > data that is promised to have been punched out would still be there.
-> 
-> AFAIK madvise doesn't promise anything. But nevermind.
+On Wed, Jul 2, 2014 at 9:01 AM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
+> On Tue, Jul 01, 2014 at 11:22:07AM +0200, Takashi Iwai wrote:
+>> At Tue, 1 Jul 2014 11:54:24 +0800,
+>> Ming Lei wrote:
+>> >
+>> > On Tue, Jul 1, 2014 at 7:30 AM, Luis R. Rodriguez
+>> > <mcgrof@do-not-panic.com> wrote:
+>> > > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>> > >
+>> > > Now that the udev firmware loader is optional request_firmware()
+>> > > will not provide any information on the kernel ring buffer if
+>> > > direct firmware loading failed and udev firmware loading is disabled.
+>> > > If no information is needed request_firmware_direct() should be used
+>> > > for optional firmware, at which point drivers can take on the onus
+>> > > over informing of any failures, if udev firmware loading is disabled
+>> > > though we should at the very least provide some sort of information
+>> > > as when the udev loader was enabled by default back in the days.
+>> > >
+>> > > With this change with a simple firmware load test module [0]:
+>> > >
+>> > > Example output without FW_LOADER_USER_HELPER_FALLBACK
+>> > >
+>> > > platform fake-dev.0: Direct firmware load for fake.bin failed with error -2
+>> > >
+>> > > Example without FW_LOADER_USER_HELPER_FALLBACK
+>> > >
+>> > > platform fake-dev.0: Direct firmware load for fake.bin failed with error -2
+>> > > platform fake-dev.0: Falling back to user helper
+>> > >
+>> > > Without this change without FW_LOADER_USER_HELPER_FALLBACK we get no output
+>> > > logged upon failure.
+>> > >
+>> > > [0] https://github.com/mcgrof/fake-firmware-test.git
+>> > >
+>> > > Cc: Tom Gundersen <teg@jklm.no>
+>> > > Cc: Ming Lei <ming.lei@canonical.com>
+>> > > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> > > Cc: Abhay Salunke <Abhay_Salunke@dell.com>
+>> > > Cc: Stefan Roese <sr@denx.de>
+>> > > Cc: Arnd Bergmann <arnd@arndb.de>
+>> > > Cc: Kay Sievers <kay@vrfy.org>
+>> > > Cc: Takashi Iwai <tiwai@suse.de>
+>> > > Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+>> > > ---
+>> > >
+>> > >  drivers/base/firmware_class.c | 12 ++++++++----
+>> > >  1 file changed, 8 insertions(+), 4 deletions(-)
+>> > >
+>> > > diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+>> > > index 46ea5f4..23274d8 100644
+>> > > --- a/drivers/base/firmware_class.c
+>> > > +++ b/drivers/base/firmware_class.c
+>> > > @@ -101,8 +101,10 @@ static inline long firmware_loading_timeout(void)
+>> > >  #define FW_OPT_NOWAIT  (1U << 1)
+>> > >  #ifdef CONFIG_FW_LOADER_USER_HELPER
+>> > >  #define FW_OPT_USERHELPER      (1U << 2)
+>> > > +#define FW_OPT_FAIL_WARN       0
+>> > >  #else
+>> > >  #define FW_OPT_USERHELPER      0
+>> > > +#define FW_OPT_FAIL_WARN       (1U << 3)
+>> > >  #endif
+>> > >  #ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK
+>> > >  #define FW_OPT_FALLBACK                FW_OPT_USERHELPER
+>> > > @@ -1116,10 +1118,11 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
+>> > >
+>> > >         ret = fw_get_filesystem_firmware(device, fw->priv);
+>> > >         if (ret) {
+>> > > -               if (opt_flags & FW_OPT_USERHELPER) {
+>> > > +               if (opt_flags & (FW_OPT_FAIL_WARN | FW_OPT_USERHELPER))
+>> > >                         dev_warn(device,
+>> > > -                                "Direct firmware load failed with error %d\n",
+>> > > -                                ret);
+>> > > +                                "Direct firmware load for %s failed with error %d\n",
+>> > > +                                name, ret);
+>> >
+>> > Maybe the warning can be always printed out since
+>> > (FW_OPT_FAIL_WARN | FW_OPT_USERHELPER) should be
+>> > always true.
+>>
+>> Yes, it'd be simpler.  Let's reduce lines! :)
+>
+> Actually we don't want to warn when request_firmware_direct() is used right? That's really what
 
-Good point.  I was looking at it from an implementation point of
-view, that the implementation is the same for both, so therefore the
-same issue for both.  But you are right, madvise makes no promise,
-so we can therefore excuse it.  You'd make a fine lawyer :)
+Yes, that is for the CPU microcode update in which it is common to
+fail in direct loading, and x86 guys hate the warning.
 
-> > 
-> > So let's all forget that patch, although it does help to highlight my
-> > mistake in d0823576bf4b.  (Oh, hey, let's all forget my mistake too!)
-> 
-> What patch? What mistake? :)
+> I meant to upkeep while adding a warning when _direct() is not used. So how about
+> this as an ammendment:
 
-Yes, which of my increasingly many? :(
+Yes, the idea is right, and it is good to make request_firmware_direct()
+not depend on CONFIG_FW_LOADER_USER_HELPER, and with
+one FW_OPT_DIRECT_ONLY flag together it should work.
 
-> 
-> > Here's the 3.16-rc2 patch that I've now settled on (which will also
-> > require a revert of current git's f00cdc6df7d7; well, not require the
-> > revert, but this makes that redundant, and cannot be tested with it in).
-> > 
-> > I've not yet had time to write up the patch description, nor to test
-> > it fully; but thought I should get the patch itself into the open for
-> > review and testing before then.
-> 
-> It seems to work here (tested 3.16-rc1 which didn't have f00cdc6df7d7 yet).
-> Checking for end != -1 is indeed much more elegant solution than i_size.
-> Thanks. So you can add my Tested-by.
+>
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index 23274d8..4f6adf3 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -1180,7 +1180,6 @@ request_firmware(const struct firmware **firmware_p, const char *name,
+>  }
+>  EXPORT_SYMBOL(request_firmware);
+>
+> -#ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK
+>  /**
+>   * request_firmware: - load firmware directly without usermode helper
+>   * @firmware_p: pointer to firmware image
+> @@ -1202,7 +1201,6 @@ int request_firmware_direct(const struct firmware **firmware_p,
+>         return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(request_firmware_direct);
+> -#endif
+>
+>  /**
+>   * release_firmware: - release the resource associated with a firmware image
+> diff --git a/include/linux/firmware.h b/include/linux/firmware.h
+> index 67e5b80..5c41c5e 100644
+> --- a/include/linux/firmware.h
+> +++ b/include/linux/firmware.h
+> @@ -45,6 +45,8 @@ int request_firmware_nowait(
+>         struct module *module, bool uevent,
+>         const char *name, struct device *device, gfp_t gfp, void *context,
+>         void (*cont)(const struct firmware *fw, void *context));
+> +int request_firmware_direct(const struct firmware **fw, const char *name,
+> +                           struct device *device);
+>
+>  void release_firmware(const struct firmware *fw);
+>  #else
+> @@ -66,13 +68,12 @@ static inline void release_firmware(const struct firmware *fw)
+>  {
+>  }
+>
+> -#endif
+> +static inline int request_firmware_direct(const struct firmware **fw,
+> +                                         const char *name,
+> +                                         struct device *device)
+> +{
+> +       return -EINVAL;
+> +}
 
-Thanks a lot for the testing, Vlastimir.
+You define two request_firmware_direct?
 
-Though I'm happy with the new shmem.c patch, I've thought more about my
-truncate.c patch meanwhile, and grown unhappy with it for two reasons.
-
-One was remembering that XFS still uses lend -1 even when punching a
-hole: it writes out dirty pages, then throws away the pagecache from
-start of hole to end of file; not brilliant (and a violation of mlock),
-but that's how it is, and I'm not about to become an XFS hacker to fix
-it (I did long ago send a patch I thought fixed it, but it never went
-in, and I could easily have overlooked all kinds of XFS subtleties).
-
-So although the end -1 test is more satisfying in tmpfs, and I don't
-particularly like making assumptions in truncate_inode_pages_range()
-about what i_size will show at that point, XFS would probably push
-me back to using your original i_size test in truncate.c.
-
-If we are to stop the endless pincer in truncate.c like in shmem.c.
-
-But the other reason I'm unhappy with it, is really a generalization
-of that.  Starting from the question I asked Hannes below, I came to
-realize that truncate_inode_pages_range() is serving many filesystems,
-and I don't know what all their assumptions are; and even if I spent
-days researching what each requires of truncate_inode_pages_range(),
-chances are that I wouldn't get the right answer on all of them.
-Maybe there is a filesystem which now depends upon it to clean out
-that hole completely: obviously not before I made the change, but
-perhaps in the years since.
-
-So, although I dislike tmpfs behaviour diverging from the others here,
-we do have Sasha's assurance that tmpfs was the only one to show the
-problem, and no intention of implementing hole-punch on ramfs: so I
-think the safest course is for me not to interfere with the other
-filesystems, just fix the pessimization I introduced back then.
-
-And now that we have hard evidence that my "fix" there in -rc3
-must be reverted, I should move forward with the alternative.
-
-Hugh
-
-> 
-> > I've checked against v3.1 to see how it works out there: certainly
-> > wouldn't apply cleanly (and beware: prior to v3.5's shmem_undo_range,
-> > "end" was included in the range, not excluded), but the same
-> > principles apply.  Haven't checked the intermediates yet, will
-> > probably leave those until each stable wants them - but if you've a
-> > particular release in mind, please ask, or ask me to check your port.
-> 
-> I will try, thanks.
-> 
-> > I've included the mm/truncate.c part of it here, but that will be a
-> > separate (not for -stable) patch when I post the finalized version.
-> > 
-> > Hannes, a question for you please, I just could not make up my mind.
-> > In mm/truncate.c truncate_inode_pages_range(), what should be done
-> > with a failed clear_exceptional_entry() in the case of hole-punch?
-> > Is that case currently depending on the rescan loop (that I'm about
-> > to revert) to remove a new page, so I would need to add a retry for
-> > that rather like the shmem_free_swap() one?  Or is it irrelevant,
-> > and can stay unchanged as below?  I've veered back and forth,
-> > thinking first one and then the other.
-> > 
-> > Thanks,
-> > Hugh
-> > 
-> > ---
-> > 
-> >   mm/shmem.c    |   19 ++++++++++---------
-> >   mm/truncate.c |   14 +++++---------
-> >   2 files changed, 15 insertions(+), 18 deletions(-)
-> > 
-> > --- 3.16-rc2/mm/shmem.c	2014-06-16 00:28:55.124076531 -0700
-> > +++ linux/mm/shmem.c	2014-06-26 15:41:52.704362962 -0700
-> > @@ -467,23 +467,20 @@ static void shmem_undo_range(struct inod
-> >   		return;
-> > 
-> >   	index = start;
-> > -	for ( ; ; ) {
-> > +	while (index < end) {
-> >   		cond_resched();
-> > 
-> >   		pvec.nr = find_get_entries(mapping, index,
-> >   				min(end - index, (pgoff_t)PAGEVEC_SIZE),
-> >   				pvec.pages, indices);
-> >   		if (!pvec.nr) {
-> > -			if (index == start || unfalloc)
-> > +			/* If all gone or hole-punch or unfalloc, we're done
-> > */
-> > +			if (index == start || end != -1)
-> >   				break;
-> > +			/* But if truncating, restart to make sure all gone
-> > */
-> >   			index = start;
-> >   			continue;
-> >   		}
-> > -		if ((index == start || unfalloc) && indices[0] >= end) {
-> > -			pagevec_remove_exceptionals(&pvec);
-> > -			pagevec_release(&pvec);
-> > -			break;
-> > -		}
-> >   		mem_cgroup_uncharge_start();
-> >   		for (i = 0; i < pagevec_count(&pvec); i++) {
-> >   			struct page *page = pvec.pages[i];
-> > @@ -495,8 +492,12 @@ static void shmem_undo_range(struct inod
-> >   			if (radix_tree_exceptional_entry(page)) {
-> >   				if (unfalloc)
-> >   					continue;
-> > -				nr_swaps_freed += !shmem_free_swap(mapping,
-> > -								index, page);
-> > +				if (shmem_free_swap(mapping, index, page)) {
-> > +					/* Swap was replaced by page: retry
-> > */
-> > +					index--;
-> > +					break;
-> > +				}
-> > +				nr_swaps_freed++;
-> >   				continue;
-> >   			}
-> > 
-> > --- 3.16-rc2/mm/truncate.c	2014-06-08 11:19:54.000000000 -0700
-> > +++ linux/mm/truncate.c	2014-06-26 16:31:35.932433863 -0700
-> > @@ -352,21 +352,17 @@ void truncate_inode_pages_range(struct a
-> >   		return;
-> > 
-> >   	index = start;
-> > -	for ( ; ; ) {
-> > +	while (index < end) {
-> >   		cond_resched();
-> >   		if (!pagevec_lookup_entries(&pvec, mapping, index,
-> > -			min(end - index, (pgoff_t)PAGEVEC_SIZE),
-> > -			indices)) {
-> > -			if (index == start)
-> > +			min(end - index, (pgoff_t)PAGEVEC_SIZE), indices)) {
-> > +			/* If all gone or hole-punch, we're done */
-> > +			if (index == start || end != -1)
-> >   				break;
-> > +			/* But if truncating, restart to make sure all gone
-> > */
-> >   			index = start;
-> >   			continue;
-> >   		}
-> > -		if (index == start && indices[0] >= end) {
-> > -			pagevec_remove_exceptionals(&pvec);
-> > -			pagevec_release(&pvec);
-> > -			break;
-> > -		}
-> >   		mem_cgroup_uncharge_start();
-> >   		for (i = 0; i < pagevec_count(&pvec); i++) {
-> >   			struct page *page = pvec.pages[i];
+>
+> -#ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK
+> -int request_firmware_direct(const struct firmware **fw, const char *name,
+> -                           struct device *device);
+> -#else
+> -#define request_firmware_direct        request_firmware
+>  #endif
+> -
+>  #endif
