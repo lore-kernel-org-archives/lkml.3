@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758041AbaGBUGt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 16:06:49 -0400
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:27143 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754511AbaGBUGr (ORCPT
+	id S1758046AbaGBUHb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 16:07:31 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:48005 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757411AbaGBUH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 16:06:47 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Am4IABFltFNXQBPR/2dsb2JhbABagw2sZgUBAQEBAQEFAW4BmWeBBxd1hGAjgRo3iEYBx2EXhXCJMh2ELQWabZQKg0U7
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Steven Whitehouse <swhiteho@redhat.com>,
-        cluster-devel@redhat.com
-Subject: [PATCH 1/1] fs/gfs2/rgrp.c: kernel-doc warning fixes
-Date: Wed,  2 Jul 2014 22:05:27 +0200
-Message-Id: <1404331527-4068-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Wed, 2 Jul 2014 16:07:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <53B46608.8030408@zytor.com>
+References: <20140701000913.5ea51f77@gandalf.local.home> <CALCETrW8MYApbyVZ3zxhX3StqVZVBux1xoF8y+gNBAaUP7y6TQ@mail.gmail.com>
+ <53B46608.8030408@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 2 Jul 2014 13:07:08 -0700
+Message-ID: <CALCETrUDKUvB9TdPReBg+yv+Ss867G7mu3=r1YRAGW9tutbN8w@mail.gmail.com>
+Subject: Re: [BUILD BUG][3.16-rc3] Error: too many copied sections (max = 13)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Cc: cluster-devel@redhat.com
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/gfs2/rgrp.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+On Wed, Jul 2, 2014 at 1:05 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 07/02/2014 01:00 PM, Andy Lutomirski wrote:
+>>
+>> I managed to munge the binutils sources enough to build binutils 2.21.
+>> This seems to be a binutils bug: ld generates an empty .rela.dyn.
+>> Fortunately, it's not generating a DT_RELA dynamic entry.
+>>
+>
+> Not sure if that is a bug.  Unnecessary, yes, but it ought to be legal.
 
-diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-index db629d1..f4cb9c0 100644
---- a/fs/gfs2/rgrp.c
-+++ b/fs/gfs2/rgrp.c
-@@ -337,7 +337,7 @@ static bool gfs2_unaligned_extlen(struct gfs2_rbm *rbm, u32 n_unaligned, u32 *le
- 
- /**
-  * gfs2_free_extlen - Return extent length of free blocks
-- * @rbm: Starting position
-+ * @rrbm: Starting position
-  * @len: Max length to check
-  *
-  * Starting at the block specified by the rbm, see how many free blocks
-@@ -2522,7 +2522,7 @@ void gfs2_rlist_alloc(struct gfs2_rgrp_list *rlist, unsigned int state)
- 
- /**
-  * gfs2_rlist_free - free a resource group list
-- * @list: the list of resource groups
-+ * @rlist: the list of resource groups
-  *
-  */
- 
+Right.  But I don't really want to chase down some oddity like this
+every week until 3.16 comes out.
+
+--Andy
+
+>
+>         -hpa
+>
+
+
+
 -- 
-1.8.4.5
-
+Andy Lutomirski
+AMA Capital Management, LLC
