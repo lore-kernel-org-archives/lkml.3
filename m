@@ -1,174 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701AbaGBMsd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 08:48:33 -0400
-Received: from smtp-out-155.synserver.de ([212.40.185.155]:1051 "EHLO
-	smtp-out-155.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538AbaGBMsc (ORCPT
+	id S1752939AbaGBMst (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 08:48:49 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:52281 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538AbaGBMsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 08:48:32 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 28462
-Message-ID: <53B3FF9C.6060102@metafoo.de>
-Date: Wed, 02 Jul 2014 14:48:28 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+	Wed, 2 Jul 2014 08:48:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Rob Herring <robherring2@gmail.com>,
+        jackp@codeaurora.org, linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Linux USB List <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Kumar Gala <galak@codeaurora.org>,
+        Andy Gross <agross@codeaurora.org>
+Subject: Re: [Patch v7 3/3] usb: dwc3: qcom: Add device tree binding
+Date: Wed, 02 Jul 2014 14:48:17 +0200
+Message-ID: <4545008.qD8N1qWmNz@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1404290605.3622.6.camel@iivanov-dev>
+References: <1404144233-17222-1-git-send-email-agross@codeaurora.org> <CAL_JsqLjjDV50x5LCDeySvV0u4U1om-3KDkFHMd5WouC=eV8kw@mail.gmail.com> <1404290605.3622.6.camel@iivanov-dev>
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, vinod.koul@intel.com,
-        dan.j.williams@intel.com, tiwai@suse.de,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        joelf@ti.com, nsekhar@ti.com
-CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH 4/4] ALSA: pcm_dmaengine: Correct support for 3 physical
- bytes samples
-References: <1404300570-14082-1-git-send-email-peter.ujfalusi@ti.com> <1404300570-14082-5-git-send-email-peter.ujfalusi@ti.com> <53B3FEB5.1040508@ti.com>
-In-Reply-To: <53B3FEB5.1040508@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Aenfvyb+C4lcMJ3EQWEa7fBmAfZaXDALSF47++pRqz8
+ XjFN12vKv3sNBkkh/XLNy8QEcsNEyXWONS2jzxJOaNn8mopXZt
+ mtF4kN5sx3IBWqBWDg0KDDtJ4RV8xWZKWgkhgW+WLUXWXnvXBo
+ n3YZz3waJ808psPUhcMg+sfuBxVQwSc049C/fdGcr/UcKtIu7L
+ GDX8JZZou+xsFuXfSAIi48xPCIRw+h0EpreHbkfyC10g9bk6zG
+ Jddy3HwH7Zaybau63BPViUkr2QWM4JWVufeFWU8OyZP2EIowjn
+ wC0nnTbne4E3a/k5nRi8qK7HNByiyffWF5aALcyQKxpUuUsC7n
+ /+trzGVaLTwMIVH4vsbM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2014 02:44 PM, Peter Ujfalusi wrote:
-> On 07/02/2014 02:29 PM, Peter Ujfalusi wrote:
->> In case of _3LE/_3BE formats the samples are stored in 3 consecutive bytes
->> without padding it to 4 bytes. This means that the DMA needs to be able to
->> support 3 bytes word length in order to read/write the samples from memory
->> correctly. Originally the code treated 24 bits physical length samples as
->> they were 32 bits which leads to corruption when playing or recording audio.
->>
->> In snd_dmaengine_pcm_open() we should check the slave_caps of the dma if it
->> supports DMA_SLAVE_BUSWIDTH_3_BYTES. Based on this information we initialize
->> the runtime->hw.formats: if DMA_SLAVE_BUSWIDTH_3_BYTES is not supported or
->> the slave_caps is not provided by the driver we mask out the 24 bits
->> physical width sample formats so they will be not available for user space
->> to pick. If the DMA_SLAVE_BUSWIDTH_3_BYTES is supported _3LE/_3BE formats
->> will not be masked so later on they can be valid if both CPU and codec dai
->> supports them.
->>
->> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->> ---
->>   sound/core/pcm_dmaengine.c | 39 ++++++++++++++++++++++++++++++++++++++-
->>   1 file changed, 38 insertions(+), 1 deletion(-)
->>
->> diff --git a/sound/core/pcm_dmaengine.c b/sound/core/pcm_dmaengine.c
->> index d5611ec80381..519b500c5669 100644
->> --- a/sound/core/pcm_dmaengine.c
->> +++ b/sound/core/pcm_dmaengine.c
->> @@ -72,6 +72,8 @@ int snd_hwparams_to_dma_slave_config(const struct snd_pcm_substream *substream,
->>   		buswidth = DMA_SLAVE_BUSWIDTH_1_BYTE;
->>   	else if (bits == 16)
->>   		buswidth = DMA_SLAVE_BUSWIDTH_2_BYTES;
->> +	else if (bits == 24)
->> +		buswidth = DMA_SLAVE_BUSWIDTH_3_BYTES;
->>   	else if (bits <= 32)
->>   		buswidth = DMA_SLAVE_BUSWIDTH_4_BYTES;
->>   	else
->> @@ -292,8 +294,12 @@ EXPORT_SYMBOL_GPL(snd_dmaengine_pcm_request_channel);
->>   int snd_dmaengine_pcm_open(struct snd_pcm_substream *substream,
->>   	struct dma_chan *chan)
->>   {
->> +	struct snd_pcm_runtime *runtime = substream->runtime;
->>   	struct dmaengine_pcm_runtime_data *prtd;
->> -	int ret;
->> +	struct dma_slave_caps dma_caps;
->> +	bool dma_3bytes_supported = false;
->> +	u64 fmt_mask = 0;
->> +	int i, ret;
->>
->>   	if (!chan)
->>   		return -ENXIO;
->> @@ -311,6 +317,37 @@ int snd_dmaengine_pcm_open(struct snd_pcm_substream *substream,
->>
->>   	substream->runtime->private_data = prtd;
->>
->> +	/*
->> +	 * Prepare formats mask for valid/allowed sample types. If the dma does
->> +	 * not support 3bytes word size, it needs to be masked out so user space
->> +	 * can not use the format which produces corrupted audio.
->> +	 * If the dma driver does not implement get_slave_caps callback, treat
->> +	 * it as no 3bytes word support.
->> +	 */
->> +	if (!dma_get_slave_caps(prtd->dma_chan, &dma_caps)) {
->> +		u32 addr_widths;
->> +
->> +		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
->> +			addr_widths = dma_caps.dstn_addr_widths;
->> +		else
->> +			addr_widths = dma_caps.src_addr_widths;
->> +
->> +		if (addr_widths & BIT(DMA_SLAVE_BUSWIDTH_3_BYTES))
->> +			dma_3bytes_supported = true;
->> +	}
->> +
->> +	for (i = 0; i <= SNDRV_PCM_FORMAT_LAST; i++) {
->> +		int bits = snd_pcm_format_physical_width(i);
->> +
->> +		if (bits == 24 && !dma_3bytes_supported)
->> +			fmt_mask |= (1LL << i);
->> +	}
->
-> per discussion over the irc with Lars we could extend the masking to other
-> widths as well, which would look something like this:
-> u32 addr_widths = BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) |
-> 		  BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) |
-> 		  BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
-> ...
-> /*
->   * Prepare formats mask for valid/allowed sample types. If the dma does
->   * not have support for the given physical word size, it needs to be
->   * masked out so user space can not use the format which produces
->   * corrupted audio.
->   * In case the dma driver does not implement the slave_caps the default
->   * assumption is that it supports 1, 2 and 4 bytes widths.
->   */
-> if (!dma_get_slave_caps(prtd->dma_chan, &dma_caps)) {
-> 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-> 		addr_widths = dma_caps.dstn_addr_widths;
-> 	else
-> 		addr_widths = dma_caps.src_addr_widths;
-> }
->
-> for (i = 0; i <= SNDRV_PCM_FORMAT_LAST; i++) {
-> 	int bits = snd_pcm_format_physical_width(i);
->
-> 	switch (bits) {
-> 	case 8:
-> 		if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_1_BYTE)))
-> 			fmt_mask |= (1LL << i);
-> 		break;
-> 	case 16:
-> 		if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_2_BYTES)))
-> 			fmt_mask |= (1LL << i);
-> 		break;
-> 	case 24:
-> 		if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_3_BYTES)))
-> 			fmt_mask |= (1LL << i);
-> 		break;
-> 	case 32:
-> 		if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_4_BYTES)))
-> 			fmt_mask |= (1LL << i);
-> 		break;
-> 	case 64:
-> 		if (!(addr_widths & BIT(DMA_SLAVE_BUSWIDTH_8_BYTES)))
-> 			fmt_mask |= (1LL << i);
-> 		break;
-> 	default:
-> 		fmt_mask |= (1LL << i);
-> 		break;
-> 	}
-> }
->
-> Is this sounds better?
+On Wednesday 02 July 2014 11:43:25 Ivan T. Ivanov wrote:
+> > > <snip>
+> > >
+> > >> > +
+> > >> > +                       ranges;
+> > >> > +
+> > >> > +                       status = "disabled";
+> > >> > +
+> > >> > +                       dwc3@11000000 {
+> > >> > +                               compatible = "snps,dwc3";
+> > >>
+> > >> This sub-node is just wrong. Why can't you have a single node with '
+> > >> "qcom,dwc3", "snps,dwc3" ' for the compatible property? All you are
+> > >> adding here is clocks. Does the Synopsys block have no clocks?
+> > >>
+> > >> I guess this is copied from other broken dwc3 bindings... That doesn't
+> > >> mean you have to copy it.
+> > >
+> > > The dwc3 core does not deal with clocks.  That is why everyone has a wrapper.
+> > > That, in addition to pm, has to be handled from the wrapper.  That's my take
+> > > anyway.  I am sure Felipe can speak more to this.
+> > 
+> > That is a Linux driver issue which is irrelevant to the binding.
+> 
+> DWC3 IP core from Synopsys is the same across SoC's (OMAP, Exynos..),
+> vendors are adding glue IP to provide necessary clocks and voltages. 
+> I think that the DT bindings properly reflect this fact.
 
-Sounds good. I think we can assume that DMA_SLAVE_BUSWIDTH_1_BYTE = 1, ...
-So (addr_width & BIT(bits / 8)) should work fine and we do not need to 
-duplicate the case branches.
+Not really. The proper way to do this is to have a single node that
+lists multiple compatible strings from the most specific (per SoC variant)
+to most generic (the underlying IP core) and have all properties in it.
 
-The other thing is this should go into dmaengine_pcm_set_runtime_hwparams() 
-where we also restrict the other hardware parameters based on the dmaengine 
-capabilities.
+We have seen many cases before where it later turned out that whatever
+feature people thought was SoC specific actually was common to all
+of them and that we later want to change the code to handle it in a
+common way, and to reflect it in the common binding. The clocks that
+Rob mentioned are one example of that.
 
-- Lars
+If you have a binding that separates one IP block into two device nodes,
+you cannot later adapt the common driver to be more generic and handle
+all sorts of SoCs. See the usb-ehci.txt for an example: it started out
+really simple but the generic driver has been extended multiple times
+to the point where it handles a lot of SoCs by default.
+
+	Arnd
