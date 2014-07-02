@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756977AbaGBRPO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 13:15:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:40509 "EHLO
+	id S1757178AbaGBRPn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 13:15:43 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:19168 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756632AbaGBROh (ORCPT
+	by vger.kernel.org with ESMTP id S1755560AbaGBROf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 13:14:37 -0400
-Message-Id: <20140702171433.763323337@goodmis.org>
+	Wed, 2 Jul 2014 13:14:35 -0400
+Message-Id: <20140702171433.467774026@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Wed, 02 Jul 2014 13:14:17 -0400
+Date: Wed, 02 Jul 2014 13:14:15 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -17,14 +17,13 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        stable-rt@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH RT 3/4] Fix latency histogram after "hrtimer: Set expiry time before
- switch_hrtimer_base()"
+        stable-rt@vger.kernel.org
+Subject: [PATCH RT 1/4] Revert "migrate_disable pushd down in atomic_dec_and_spin_lock"
 References: <20140702171414.482562827@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0003-Fix-latency-histogram-after-hrtimer-Set-expiry-time-.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0001-Revert-migrate_disable-pushd-down-in-atomic_dec_and_.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,48 +34,36 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-In an rt-kernel with CONFIG_MISSED_TIMER_OFFSETS_HIST enabled,
-__hrtimer_start_range_ns() now crashes, as new_base is not assigned
-before it is used.
-
-Tested-by: Carsten Emde <C.Emde@osadl.org>
+This reverts commit ff9c870c3e27d58c9512fad122e91436681fee5a.
 Cc: stable-rt@vger.kernel.org
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/hrtimer.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ kernel/rtmutex.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index bc0e47dc0a05..c967b718ab37 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1105,6 +1105,11 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- #endif
- 	}
- 
-+	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
-+
-+	/* Switch the timer base, if necessary: */
-+	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
-+
- #ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
- 	{
- 		ktime_t now = new_base->get_time();
-@@ -1116,11 +1121,6 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 	}
- #endif
- 
--	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
--
--	/* Switch the timer base, if necessary: */
--	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
--
- 	timer_stats_hrtimer_set_start_info(timer);
- 
- 	leftmost = enqueue_hrtimer(timer, new_base);
+diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+index 4057bc607923..d1b2ca08b160 100644
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -952,12 +952,12 @@ int atomic_dec_and_spin_lock(atomic_t *atomic, spinlock_t *lock)
+ 	/* Subtract 1 from counter unless that drops it to 0 (ie. it was 1) */
+ 	if (atomic_add_unless(atomic, -1, 1))
+ 		return 0;
++	migrate_disable();
+ 	rt_spin_lock(lock);
+-	if (atomic_dec_and_test(atomic)){
+-		migrate_disable();
++	if (atomic_dec_and_test(atomic))
+ 		return 1;
+-	}
+ 	rt_spin_unlock(lock);
++	migrate_enable();
+ 	return 0;
+ }
+ EXPORT_SYMBOL(atomic_dec_and_spin_lock);
 -- 
 2.0.0
 
