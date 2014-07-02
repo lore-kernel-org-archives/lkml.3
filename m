@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075AbaGBKy1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 06:54:27 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:53159 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228AbaGBKy0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 06:54:26 -0400
-From: Anil Belur <askb23@gmail.com>
-X-Google-Original-From: Anil Belur
-To: teobaluta@gmail.com, oleg.drokin@intel.com, dmitry.eremin@intel.com,
-        bergwolf@gmail.com, gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Anil Belur <askb23@gmail.com>
-Subject: [PATCH v2 1/1] staging: lustre: libcfs: nidstrings.c - use ARRAY_SIZE macro
-Date: Wed,  2 Jul 2014 16:23:55 +0530
-Message-Id: <1404298435-9729-1-git-send-email-askb23@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1752382AbaGBK4M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 06:56:12 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:39694 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751536AbaGBK4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 06:56:10 -0400
+X-IronPort-AV: E=Sophos;i="5.01,587,1400025600"; 
+   d="scan'208";a="149210309"
+Message-ID: <1404298567.5562.13.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH net-next] xen-netback: Adding debugfs "io_ring_qX" files
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: Wei Liu <wei.liu2@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>
+Date: Wed, 2 Jul 2014 11:56:07 +0100
+In-Reply-To: <1404160411-23747-1-git-send-email-zoltan.kiss@citrix.com>
+References: <1404160411-23747-1-git-send-email-zoltan.kiss@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anil Belur <askb23@gmail.com>
+On Mon, 2014-06-30 at 21:33 +0100, Zoltan Kiss wrote:
+> This patch adds debugfs capabilities to netback. There used to be a similar
+> patch floating around for classic kernel, but it used procfs. It is based on a
+> very similar blkback patch.
+> It creates xen-netback/[vifname]/io_ring_q[queueno] files, reading them output
+> various ring variables etc. Writing "kick" into it imitates an interrupt
+> happened, it can be useful to check whether the ring is just stalled due to a
+> missed interrupt.
 
-- this patch replaces sizeof(a)/sizeof(a[0]) with the ARRAY_SIZE macro
-  to get the number of nidstrings (and netstrfns)
-- v2: also for netstrfns
+Shouldn't there be some CONFIG_XEN_DEBUG_FS ifdefs sprinkled around
+here?
 
-Signed-off-by: Anil Belur <askb23@gmail.com>
----
- drivers/staging/lustre/lustre/libcfs/nidstrings.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+> 	if (tx_ring->sring) {
+> +		struct xen_netif_tx_sring *sring = tx_ring->sring;
+> +
+> +		err = snprintf(buf + rv, XEN_NETBACK_DBG_IORING_BUF_SIZE - rv,
+> +			       "TX queue %d: nr_ents %u\n", i,
+> +			       tx_ring->nr_ents);
+> +		if (err >= XEN_NETBACK_DBG_IORING_BUF_SIZE - rv)
+> +			return XEN_NETBACK_DBG_IORING_BUF_SIZE;
+> +		else
+> +			rv += err;
 
-diff --git a/drivers/staging/lustre/lustre/libcfs/nidstrings.c b/drivers/staging/lustre/lustre/libcfs/nidstrings.c
-index 87705ae..4fc7b45 100644
---- a/drivers/staging/lustre/lustre/libcfs/nidstrings.c
-+++ b/drivers/staging/lustre/lustre/libcfs/nidstrings.c
-@@ -74,8 +74,7 @@ libcfs_next_nidstring(void)
- 	spin_lock_irqsave(&libcfs_nidstring_lock, flags);
- 
- 	str = libcfs_nidstrings[libcfs_nidstring_idx++];
--	if (libcfs_nidstring_idx ==
--	    sizeof(libcfs_nidstrings)/sizeof(libcfs_nidstrings[0]))
-+	if (libcfs_nidstring_idx == ARRAY_SIZE(libcfs_nidstrings))
- 		libcfs_nidstring_idx = 0;
- 
- 	spin_unlock_irqrestore(&libcfs_nidstring_lock, flags);
-@@ -198,7 +197,7 @@ static struct netstrfns  libcfs_netstrfns[] = {
- 	{/* .nf_type      */  -1},
- };
- 
--const int libcfs_nnetstrfns = sizeof(libcfs_netstrfns)/sizeof(libcfs_netstrfns[0]);
-+const int libcfs_nnetstrfns = ARRAY_SIZE(libcfs_netstrfns);
- 
- int
- libcfs_lo_str2addr(const char *str, int nob, __u32 *addr)
--- 
-1.9.1
+Does debugfs not provide helpers which let this be done in some more
+palatable way?
+
+arch/x86/xen/p2m.c seems to use some useful seq_*/single_* helpers for
+something very similar and it looks much cleaner.
+
+> +	if (vif->xenvif_dbg_root)
+
+No IS_ERR check?
+
+And in backend_disconnect/connect too.
+
+Ian.
 
