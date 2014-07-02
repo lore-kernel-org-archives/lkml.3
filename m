@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672AbaGBR0i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 13:26:38 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:49624 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540AbaGBR0h (ORCPT
+	id S1756159AbaGBRaP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 13:30:15 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:32456 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447AbaGBRaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 13:26:37 -0400
-Date: Wed, 2 Jul 2014 19:26:20 +0200
-From: Emil Goode <emilgoode@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Rashika Kheria <rashika.kheria@gmail.com>,
-        Valentina Manea <valentina.manea.m@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Andrea Merello <andrea.merello@gmail.com>, devel@driverdev.osuosl.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8192e: Fix potential NULL pointer dereference
-Message-ID: <20140702172620.GA4848@lianli>
-References: <1404293151-15804-1-git-send-email-emilgoode@gmail.com>
- <20140702163334.GA19349@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140702163334.GA19349@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 2 Jul 2014 13:30:14 -0400
+Message-ID: <1404322203.3170.17.camel@j-VirtualBox>
+Subject: Re: [RFC] Cancellable MCS spinlock rework
+From: Jason Low <jason.low2@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        mingo@kernel.org, Waiman.Long@hp.com, davidlohr@hp.com,
+        linux-kernel@vger.kernel.org, riel@redhat.com,
+        akpm@linux-foundation.org, hpa@zytor.com, andi@firstfloor.org,
+        James.Bottomley@hansenpartnership.com, rostedt@goodmis.org,
+        tim.c.chen@linux.intel.com, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Date: Wed, 02 Jul 2014 10:30:03 -0700
+In-Reply-To: <20140702172333.GQ19379@twins.programming.kicks-ass.net>
+References: <1404318070-2856-1-git-send-email-jason.low2@hp.com>
+	 <20140702162749.GP19379@twins.programming.kicks-ass.net>
+	 <1404320356.3170.12.camel@j-VirtualBox>
+	 <20140702172333.GQ19379@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
-
-On Wed, Jul 02, 2014 at 09:33:34AM -0700, Greg Kroah-Hartman wrote:
-> On Wed, Jul 02, 2014 at 11:25:51AM +0200, Emil Goode wrote:
-> > We need to make sure the struct rtllib_device pointer ieee is not NULL
-> > after the goto rx_dropped label since it is dereferenced there.
+On Wed, 2014-07-02 at 19:23 +0200, Peter Zijlstra wrote:
+> On Wed, Jul 02, 2014 at 09:59:16AM -0700, Jason Low wrote:
+> > On Wed, 2014-07-02 at 18:27 +0200, Peter Zijlstra wrote:
+> > > On Wed, Jul 02, 2014 at 09:21:10AM -0700, Jason Low wrote:
+> > > > The cancellable MCS spinlock is currently used to queue threads that are
+> > > > doing optimistic spinning. It uses per-cpu nodes, where a thread obtaining
+> > > > the lock would access and queue the local node corresponding to the CPU that
+> > > > it's running on. Currently, the cancellable MCS lock is implemented by using
+> > > > pointers to these nodes.
+> > > > 
+> > > > In this RFC patch, instead of operating on pointers to the per-cpu nodes, we
+> > > > store the CPU numbers in which the per-cpu nodes correspond to in atomic_t.
+> > > > A similar concept is used with the qspinlock.
+> > > > 
+> > > > We add 1 to the CPU number to retrive an "encoded value" representing the node
+> > > > of that CPU. By doing this, 0 can represent "no CPU", which allows us to
+> > > > keep the simple "if (CPU)" and "if (!CPU)" checks. In this patch, the next and
+> > > > prev pointers in each node were also modified to store encoded CPU values.
+> > > > 
+> > > > By operating on the CPU # of the nodes using atomic_t instead of pointers
+> > > > to those nodes, this can reduce the overhead of the cancellable MCS spinlock
+> > > > by 32 bits (on 64 bit systems).
+> > > 
+> > > Still struggling to figure out why you did this.
 > > 
-> > Signed-off-by: Emil Goode <emilgoode@gmail.com>
-> > ---
-> >  drivers/staging/rtl8192e/rtllib_rx.c |    3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > Why I converted pointers to atomic_t?
 > > 
-> > diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
-> > index 60de54c..7db3e74 100644
-> > --- a/drivers/staging/rtl8192e/rtllib_rx.c
-> > +++ b/drivers/staging/rtl8192e/rtllib_rx.c
-> > @@ -1496,7 +1496,8 @@ int rtllib_rx(struct rtllib_device *ieee, struct sk_buff *skb,
-> >  	return ret;
-> >  
-> >   rx_dropped:
-> > -	ieee->stats.rx_dropped++;
-> > +	if (ieee)
-> > +		ieee->stats.rx_dropped++;
-> >  	return 0;
-> >  }
-> >  EXPORT_SYMBOL(rtllib_rx);
+> > This would avoid the potentially racy ACCESS_ONCE stores + cmpxchg while
+> > also using less overhead, since atomic_t is often only 32 bits while
+> > pointers could be 64 bits.
 > 
-> Is this something that is hitting users today in the tree, or is this
-> just a bug you found looking at the code?
+> So no real good reason.. The ACCESS_ONCE stores + cmpxchg stuff is
+> likely broken all over the place, and 'fixing' this one place doesn't
+> cure the problem.
 
-It's a static checker fix and I'm not aware of any impact on users.
-If you want I will resend with that information added?
+Right, fixing the ACCESS_ONCE + cmpxchg and avoiding the architecture
+workarounds for optimistic spinning was just a nice side effect.
 
-Best regards,
+Would potentially reducing the size of the rw semaphore structure by 32
+bits (for all architectures using optimistic spinning) be a nice
+benefit?
 
-Emil Goode
