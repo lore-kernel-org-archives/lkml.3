@@ -1,58 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288AbaGBNQm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 09:16:42 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:62432 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538AbaGBNQl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 09:16:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140701093442.GN6758@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.02.1406301600460.26302@chino.kir.corp.google.com>
-	<20140701093442.GN6758@twins.programming.kicks-ass.net>
-Date: Wed, 2 Jul 2014 15:16:40 +0200
-Message-ID: <CABPqkBT9zT6Qejc3hin5yLO4x8bxkZqrXTS-VNana8MhtWC0XA@mail.gmail.com>
-Subject: Re: [patch] x86, perf: avoid spamming kernel log for bts buffer failure
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: David Rientjes <rientjes@google.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>, x86 <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753496AbaGBNUl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 09:20:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15862 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752550AbaGBNUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 09:20:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,588,1400050800"; 
+   d="scan'208";a="537740202"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH 1/6] lib / string_helpers: clean up test suite
+Date: Wed,  2 Jul 2014 16:20:24 +0300
+Message-Id: <1404307229-19186-2-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1404307229-19186-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1404307229-19186-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 1, 2014 at 11:34 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, Jun 30, 2014 at 04:04:08PM -0700, David Rientjes wrote:
->> It's unnecessary to excessively spam the kernel log anytime the BTS buffer
->> cannot be allocated, so make this allocation __GFP_NOWARN.
->>
->> The user probably will want to at least find some artifact that the
->> allocation has failed in the past, probably due to fragmentation because
->> of its large size, when it's not allocated at bootstrap.  Thus, add a
->> WARN_ONCE() so something is left behind for them to understand why perf
->> commnads that require PEBS is not working properly.
->
-> Can you elaborate a bit under which conditions this triggered? Typically
-> we should be doing fairly well allocating such buffers with GFP_KERNEL,
-> that should allow things like compaction to run and create higher order
-> pages.
->
-I think this triggers when you have fragmented memory and you have
-perf_events active and inactive (i.e., 0 users = no nmi watchdog) frequently.
-Each first user invokes the reserve_ds() function to reserve DS, PEBS, BTS.
+This patch prepares test suite for a following update. It introduces
+test_string_check_buf() helper which checks the result and dumps an error.
 
-The reason for BTS rather then PEBS is the size of the allocation.
-PEBS allocates one page, i.e., less likely to get a failure than BTS
-which allocates 4 pages, I think.
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ lib/test-string_helpers.c | 39 +++++++++++++++++++++++++++------------
+ 1 file changed, 27 insertions(+), 12 deletions(-)
 
-David and I discussed this. He can probably add more background
-info, if needed.
+diff --git a/lib/test-string_helpers.c b/lib/test-string_helpers.c
+index 6ac48de..ea86e02 100644
+--- a/lib/test-string_helpers.c
++++ b/lib/test-string_helpers.c
+@@ -10,6 +10,26 @@
+ #include <linux/string.h>
+ #include <linux/string_helpers.h>
+ 
++static __init bool test_string_check_buf(const char *name, unsigned int flags,
++					 char *in, size_t p,
++					 char *out_real, size_t q_real,
++					 char *out_test, size_t q_test)
++{
++	if (q_real == q_test && !memcmp(out_test, out_real, q_test))
++		return true;
++
++	pr_err("Test '%s' failed: flags = %u\n", name, flags);
++
++	print_hex_dump(KERN_WARNING, "Input: ", DUMP_PREFIX_NONE, 16, 1,
++		       in, p, true);
++	print_hex_dump(KERN_WARNING, "Expected: ", DUMP_PREFIX_NONE, 16, 1,
++		       out_test, q_test, true);
++	print_hex_dump(KERN_WARNING, "Got: ", DUMP_PREFIX_NONE, 16, 1,
++		       out_real, q_real, true);
++
++	return false;
++}
++
+ struct test_string {
+ 	const char *in;
+ 	const char *out;
+@@ -39,7 +59,8 @@ static const struct test_string strings[] __initconst = {
+ 	},
+ };
+ 
+-static void __init test_string_unescape(unsigned int flags, bool inplace)
++static void __init test_string_unescape(const char *name, unsigned int flags,
++					bool inplace)
+ {
+ 	char in[256];
+ 	char out_test[256];
+@@ -77,15 +98,8 @@ static void __init test_string_unescape(unsigned int flags, bool inplace)
+ 		q_real = string_unescape(in, out_real, q_real, flags);
+ 	}
+ 
+-	if (q_real != q_test || memcmp(out_test, out_real, q_test)) {
+-		pr_warn("Test failed: flags = %u\n", flags);
+-		print_hex_dump(KERN_WARNING, "Input: ",
+-			       DUMP_PREFIX_NONE, 16, 1, in, p - 1, true);
+-		print_hex_dump(KERN_WARNING, "Expected: ",
+-			       DUMP_PREFIX_NONE, 16, 1, out_test, q_test, true);
+-		print_hex_dump(KERN_WARNING, "Got: ",
+-			       DUMP_PREFIX_NONE, 16, 1, out_real, q_real, true);
+-	}
++	test_string_check_buf(name, flags, in, p - 1, out_real, q_real,
++			      out_test, q_test);
+ }
+ 
+ static int __init test_string_helpers_init(void)
+@@ -94,8 +108,9 @@ static int __init test_string_helpers_init(void)
+ 
+ 	pr_info("Running tests...\n");
+ 	for (i = 0; i < UNESCAPE_ANY + 1; i++)
+-		test_string_unescape(i, false);
+-	test_string_unescape(get_random_int() % (UNESCAPE_ANY + 1), true);
++		test_string_unescape("unescape", i, false);
++	test_string_unescape("unescape inplace",
++			     get_random_int() % (UNESCAPE_ANY + 1), true);
+ 
+ 	return -EINVAL;
+ }
+-- 
+2.0.0
 
-> And the BTS (branch trace store) isn't _that_ large.
->
-> That said, the patch is reasonable; although arguably we should maybe do
-> the same to alloc_pebs_buffer().
