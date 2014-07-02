@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814AbaGBQ6x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 12:58:53 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:54149 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728AbaGBQxK (ORCPT
+	id S1757127AbaGBQ7Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 12:59:24 -0400
+Received: from g5t1627.atlanta.hp.com ([15.192.137.10]:46349 "EHLO
+	g5t1627.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755561AbaGBQ7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 12:53:10 -0400
-From: navin patidar <navin.patidar@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 30/48] staging: rtl8188eu: Rename _rtw_init_cmd_priv() to rtw_init_cmd_priv()
-Date: Wed,  2 Jul 2014 22:17:26 +0530
-Message-Id: <1404319664-8327-30-git-send-email-navin.patidar@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
-References: <1404319664-8327-1-git-send-email-navin.patidar@gmail.com>
+	Wed, 2 Jul 2014 12:59:22 -0400
+Message-ID: <1404320356.3170.12.camel@j-VirtualBox>
+Subject: Re: [RFC] Cancellable MCS spinlock rework
+From: Jason Low <jason.low2@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        mingo@kernel.org, Waiman.Long@hp.com, davidlohr@hp.com,
+        linux-kernel@vger.kernel.org, riel@redhat.com,
+        akpm@linux-foundation.org, hpa@zytor.com, andi@firstfloor.org,
+        James.Bottomley@hansenpartnership.com, rostedt@goodmis.org,
+        tim.c.chen@linux.intel.com, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Date: Wed, 02 Jul 2014 09:59:16 -0700
+In-Reply-To: <20140702162749.GP19379@twins.programming.kicks-ass.net>
+References: <1404318070-2856-1-git-send-email-jason.low2@hp.com>
+	 <20140702162749.GP19379@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: navin patidar <navin.patidar@gmail.com>
----
- drivers/staging/rtl8188eu/core/rtw_cmd.c    |    9 +--------
- drivers/staging/rtl8188eu/include/rtw_cmd.h |    2 +-
- 2 files changed, 2 insertions(+), 9 deletions(-)
+On Wed, 2014-07-02 at 18:27 +0200, Peter Zijlstra wrote:
+> On Wed, Jul 02, 2014 at 09:21:10AM -0700, Jason Low wrote:
+> > The cancellable MCS spinlock is currently used to queue threads that are
+> > doing optimistic spinning. It uses per-cpu nodes, where a thread obtaining
+> > the lock would access and queue the local node corresponding to the CPU that
+> > it's running on. Currently, the cancellable MCS lock is implemented by using
+> > pointers to these nodes.
+> > 
+> > In this RFC patch, instead of operating on pointers to the per-cpu nodes, we
+> > store the CPU numbers in which the per-cpu nodes correspond to in atomic_t.
+> > A similar concept is used with the qspinlock.
+> > 
+> > We add 1 to the CPU number to retrive an "encoded value" representing the node
+> > of that CPU. By doing this, 0 can represent "no CPU", which allows us to
+> > keep the simple "if (CPU)" and "if (!CPU)" checks. In this patch, the next and
+> > prev pointers in each node were also modified to store encoded CPU values.
+> > 
+> > By operating on the CPU # of the nodes using atomic_t instead of pointers
+> > to those nodes, this can reduce the overhead of the cancellable MCS spinlock
+> > by 32 bits (on 64 bit systems).
+> 
+> Still struggling to figure out why you did this.
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-index b9c61e3..e26a582 100644
---- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-@@ -30,7 +30,7 @@ Caller and the rtw_cmd_thread can protect cmd_q by spin_lock.
- No irqsave is necessary.
- */
- 
--int _rtw_init_cmd_priv(struct cmd_priv *pcmdpriv)
-+int rtw_init_cmd_priv(struct cmd_priv *pcmdpriv)
- {
- 	int res = _SUCCESS;
- 
-@@ -130,13 +130,6 @@ struct	cmd_obj	*_rtw_dequeue_cmd(struct __queue *queue)
- 	return obj;
- }
- 
--u32 rtw_init_cmd_priv(struct cmd_priv *pcmdpriv)
--{
--	u32	res;
--	res = _rtw_init_cmd_priv(pcmdpriv);
--	return res;
--}
--
- void rtw_free_cmd_priv(struct cmd_priv *pcmdpriv)
- {
- 	RT_TRACE(_module_rtl871x_cmd_c_, _drv_info_, ("rtw_free_cmd_priv\n"));
-diff --git a/drivers/staging/rtl8188eu/include/rtw_cmd.h b/drivers/staging/rtl8188eu/include/rtw_cmd.h
-index d6b8724..cc75c7d 100644
---- a/drivers/staging/rtl8188eu/include/rtw_cmd.h
-+++ b/drivers/staging/rtl8188eu/include/rtw_cmd.h
-@@ -75,7 +75,7 @@ void rtw_free_cmd_obj(struct cmd_obj *pcmd);
- 
- int rtw_cmd_thread(void *context);
- 
--u32 rtw_init_cmd_priv(struct cmd_priv *pcmdpriv);
-+int rtw_init_cmd_priv(struct cmd_priv *pcmdpriv);
- void rtw_free_cmd_priv(struct cmd_priv *pcmdpriv);
- 
- enum rtw_drvextra_cmd_id {
--- 
-1.7.10.4
+Why I converted pointers to atomic_t?
+
+This would avoid the potentially racy ACCESS_ONCE stores + cmpxchg while
+also using less overhead, since atomic_t is often only 32 bits while
+pointers could be 64 bits.
 
