@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965231AbaGBBJJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jul 2014 21:09:09 -0400
-Received: from 6.mo68.mail-out.ovh.net ([46.105.63.100]:40940 "EHLO
-	mo68.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757225AbaGBBJI (ORCPT
+	id S965250AbaGBBKG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jul 2014 21:10:06 -0400
+Received: from mail-bn1lp0142.outbound.protection.outlook.com ([207.46.163.142]:18563
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754109AbaGBBKE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jul 2014 21:09:08 -0400
-X-Greylist: delayed 969 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Jul 2014 21:09:08 EDT
-Message-ID: <53B357E8.1090909@nominal-animal.net>
-Date: Wed, 02 Jul 2014 03:52:56 +0300
-From: Nominal Animal <kernel@nominal-animal.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Tue, 1 Jul 2014 21:10:04 -0400
+From: Peter Chen <Peter.Chen@freescale.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        =?iso-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "zmxu@marvell.com" <zmxu@marvell.com>,
+        "jszhang@marvell.com" <jszhang@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2 07/12] usb: chipidea: add a generic driver
+Thread-Topic: [PATCH v2 07/12] usb: chipidea: add a generic driver
+Thread-Index: AQHPj5gGro5Azx09/0KP9YJxwV2nm5uE1bQAgATayoCAATsoAIAACZ2AgAB+/YD//579AIAATQ2AgACksFA=
+Date: Wed, 2 Jul 2014 01:10:00 +0000
+Message-ID: <1d01427f91084d67bf63721e2267e160@BL2PR03MB226.namprd03.prod.outlook.com>
+References: <1403606121-6368-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1403606121-6368-8-git-send-email-antoine.tenart@free-electrons.com>
+ <20140627032506.GA18039@shlinux1.ap.freescale.net>
+ <20140630133313.GA11880@kwain>
+ <20140701002112.GA26146@shlinux1.ap.freescale.net>
+ <53B27789.3090509@gmail.com>
+ <20140701083007.GB26146@shlinux1.ap.freescale.net>
+ <20140701104254.GD3427@piout.net> <53B2D151.60404@cogentembedded.com>
+In-Reply-To: <53B2D151.60404@cogentembedded.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.50]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-forefront-prvs: 0260457E99
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(479174003)(377454003)(24454002)(189002)(199002)(51704005)(21056001)(95666004)(81542001)(106116001)(74316001)(107046002)(85306003)(106356001)(77096002)(101416001)(81342001)(92566001)(105586002)(33646001)(87936001)(77982001)(83072002)(85852003)(79102001)(2656002)(66066001)(83322001)(46102001)(80022001)(76176999)(74662001)(4396001)(64706001)(76482001)(93886003)(99396002)(54356999)(76576001)(31966008)(86362001)(74502001)(20776003)(50986999)(108616002)(41533002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB228;H:BL2PR03MB226.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [RFC PATCH] dup3(): option to detect close() error
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 6347260725240595264
-X-Ovh-Remote: 62.78.228.143 (cs78228143.pp.htv.fi)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedruddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedruddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RFC patch below adds a new flag for dup3().
-(For simplicity, I'm just reusing O_EXCL for now.)
-
-I am assuming calling f_op->flush() twice instead of just once
-before closing the file is not harmful.
-
-The idea is to extend dup3() so that we can catch close() errors
-for the descriptor to be replaced, if we want to. Existing code
-will not see any changes. (Userspace might wish to replace a
-descriptor exactly because there is a problem, so we don't want
-to make this unconditional.
-
-This approach relies on close() having a single error path in Linux:
-the file has an f_op->flush() handler, and it returns an error.
-Here, if the flag is included in dup3(), f_op->flush() is called early
-for newfd, and if it fails, dup3() will return with -EIO.
-
-It will still be called again in filp_close(), but since the descriptor
-is to be closed, there should be no activity between the two
-f_op->flush() calls, so the latter should not fail.
-
-Is there a reason (besides having yet another O_ flag) why this
-would not work, or why we would not want to do this?
-Am I missing something?
-I just want be able to know if a problem was detected, that's all.
-
-Best,
-    Nominal Animal
-
-diff -u5 -bar linux-3.16-rc3/fs/file.c linux-3.16-rc3.new/fs/file.c
---- linux-3.16-rc3/fs/file.c	2014-06-30 00:11:36.000000000 +0300
-+++ linux-3.16-rc3.new/fs/file.c	2014-07-02 02:04:23.708114821 +0300
-@@ -816,21 +816,31 @@
- SYSCALL_DEFINE3(dup3, unsigned int, oldfd, unsigned int, newfd, int, flags)
- {
- 	int err = -EBADF;
--	struct file *file;
-+	struct file *file, *tofree;
- 	struct files_struct *files = current->files;
  
--	if ((flags & ~O_CLOEXEC) != 0)
-+	if ((flags & ~(O_CLOEXEC | O_EXCL)) != 0)
- 		return -EINVAL;
- 
- 	if (unlikely(oldfd == newfd))
- 		return -EINVAL;
- 
- 	if (newfd >= rlimit(RLIMIT_NOFILE))
- 		return -EBADF;
- 
- 	spin_lock(&files->file_lock);
-+	if (unlikely(flags & O_EXCL)) {
-+		tofree = fcheck(newfd);
-+		if (tofree && file_count(tofree) && tofree->f_op->flush) {
-+			spin_unlock(&files->file_lock);
-+			err = tofree->f_op->flush(tofree, files);
-+			if (unlikely(err < 0))
-+				return -EIO;
-+			spin_lock(&files->file_lock);
-+		}
-+	}
- 	err = expand_files(files, newfd);
- 	file = fcheck(oldfd);
- 	if (unlikely(!file))
- 		goto Ebadf;
- 	if (unlikely(err < 0)) {
+> 
+> Hello.
+> 
+> On 07/01/2014 02:42 PM, Alexandre Belloni wrote:
+> 
+> >>>>> Well, there is nothing specific about the Berlin CI. Some
+> >>>>> subsystems use the 'generic' keyword in these cases. Do you see a
+> >>>>> particular reason I should use some Berlin related compatible here?
+> 
+> >>>> Not must, one suggestion is: can you change the compatible string
+> >>>> to "chipidea-usb-generic"?
+> 
+> >>> I don't know about ChipIdea/ARC/DW's product portfolio but I guess
+> >>> the compatible should also carry '2.0' or 'usb2' in it. Or we just
+> >>> use some version number like 'chipidea,ci13000' or 'chipidea,ci13xxx'.
+> 
+> >> The recommended format for compatible string is:
+> >> "manufacturer,model", I agree with "chipidea,ci13xxx", thanks.
+> 
+> > I think we should probably avoid using wildcards in the compatible
+> > string.
+> 
+>     I'm sure wildcards shouldn't be allowed there. :-)
+
+Then, what's your guys recommend, how about "chipidea,usb2-generic"?
+
+Peter
+
