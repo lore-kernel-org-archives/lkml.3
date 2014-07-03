@@ -1,105 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759312AbaGCRap (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 13:30:45 -0400
-Received: from mail-by2lp0238.outbound.protection.outlook.com ([207.46.163.238]:6476
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752290AbaGCRao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 13:30:44 -0400
-Date: Thu, 3 Jul 2014 10:30:38 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+	id S964789AbaGCRcC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 13:32:02 -0400
+Received: from smtp06.smtpout.orange.fr ([80.12.242.128]:43246 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753712AbaGCRcA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 13:32:00 -0400
+X-ME-Helo: beldin
+X-ME-Date: Thu, 03 Jul 2014 19:31:56 +0200
+X-ME-IP: 90.38.42.162
+From: Robert Jarzmik <robert.jarzmik@free.fr>
 To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: timers & suspend
-References: <f270ad9c-9906-445d-9e9a-4d3618787455@BY2FFO11FD039.protection.gbl>
- <53B54AC2.5040908@linaro.org>
- <83fa689b-a06a-4f1c-97cb-f7a7121a0f25@BL2FFO11FD041.protection.gbl>
- <53B5922A.7020006@linaro.org>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] clocksource: add device-tree support for PXA timer
+References: <1403388588-11956-1-git-send-email-robert.jarzmik@free.fr>
+	<1403388588-11956-2-git-send-email-robert.jarzmik@free.fr>
+	<53B5470D.4070009@linaro.org>
+X-URL: http://belgarath.falguerolles.org/
+Date: Thu, 03 Jul 2014 19:31:52 +0200
+In-Reply-To: <53B5470D.4070009@linaro.org> (Daniel Lezcano's message of "Thu,
+	03 Jul 2014 14:05:33 +0200")
+Message-ID: <87tx6ynybb.fsf@free.fr>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53B5922A.7020006@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <b4b5a783-75cb-42f9-a501-7384b750b719@BN1AFFO11FD038.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(377424004)(24454002)(479174003)(377454003)(51704005)(199002)(189002)(83072002)(20776003)(77096002)(102836001)(85202003)(44976005)(95666004)(46102001)(99396002)(70736001)(76176999)(50986999)(21056001)(92566001)(47776003)(50466002)(83506001)(74662001)(85182001)(76482001)(53416004)(74316001)(92726001)(83322001)(85852003)(77982001)(23676002)(54356999)(6806004)(81342001)(74502001)(80022001)(93886003)(81542001)(85306003)(107046002)(64706001)(1496007)(87936001)(86362001)(104016002)(33646001)(79102001)(31966008)(107986001);DIR:OUT;SFP:;SCL:1;SRVR:BN1AFFO11HUB045;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0261CCEEDF
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-03 at 07:26PM +0200, Daniel Lezcano wrote:
-> On 07/03/2014 06:09 PM, Sören Brinkmann wrote:
-> >On Thu, 2014-07-03 at 02:21PM +0200, Daniel Lezcano wrote:
-> >>On 06/30/2014 08:39 PM, Sören Brinkmann wrote:
-> >>>Hi,
-> >>>
-> >>>I'm currently working on suspend for Zynq and try to track down some
-> >>>spurious wakes. It looks like the spurious wakes are caused by timers,
-> >>>hence I was wondering whether there are any special requirements for
-> >>>timer drivers when it comes to suspend support or if I just missed
-> >>>something.
-> >>>
-> >>>Zynq sets the 'IRQCHIP_MASK_ON_SUSPEND' flag, which should mask all
-> >>>interrupts but the wake source. Reading through kernel/irq/pm.c
-> >>>indicates, that timer interrupts get some special treatment though.
-> >>>Therefore I implemented some suspend/resume callbacks for the
-> >>>cadence_ttc which disable and clear the timer's interrupts when going
-> >>>into suspend. That seems to mitigate the issue quite a bit, but I still
-> >>>saw spurious wakes - just a lot less often.
-> >>>Digging a little deeper revealed, the spurious wakes are caused by the
-> >>>ARM's smp_twd timer now. Given that that driver is probably used by a few
-> >>>more ARM platforms, I get the feeling that I'm missing something.
-> >>
-> >>Do you receive any interrupt from the cadence_ttc ? (/proc/interrupts)
-> >>
-> >>That's funny because I realize that you cadence ttc timer is never
-> >>used as there are the architected timers. The cadence ttc would be
-> >>only useful if there were an idle state powering down the smp_twd
-> >>timers but it is not the case on this board, IIUC.
-> >Yes they are used. They TTC is the only broadcast capable timer for
-> >Zynq. In my experience, I can not even boot without it (may have
-> >dependencies on CPUidle or something).
-> 
-> Actually the cpuidle driver is wrong. It assumes the state #1 will
-> power off the different cores with their architected timers and then
-> switch to the broadcast timer. But this one is not needed as we
-> don't power down the core with the twd timers, so no need to switch
-> to a backup timer device.
-> 
-> The implementation of the DDR self refresh idle state (incoming
-> patchset) removes the cpu_pm notifiers + the flag TIMER_STOP. The
-> result is 0 interrupts for ttc cadence timer. I removed in the dts
-> the cadence ttc and my board booted without problem (it is a zynq
-> 702).
-> 
-> Except I missed something, the cadence ttc is actually not used at all.
-You mean with your patches, or without? I'd have to check that.
+Daniel Lezcano <daniel.lezcano@linaro.org> writes:
 
-> 
-> >>>It's probably worth mentioning that the suspend state in Zynq does not
-> >>>power off the CPU cores. It just asserts the resets on secondary cores
-> >>>and the primary one waits in wfi.
-> >>
-> >>Why do you need to reset them ?
-> >CPU0 is not reset, but all secondary cores are. That is as close to
-> >power off as we get and works well with hotplug.
-> 
-> Ok, I was not aware of this approach. Is there any patchset
-> available in the net ?
-It's in mainline for a while. arch/arm/mach-zynq/platsmp.c defines the
-SMP ops. Zynq's cpu_die/kill result in the CPU reset being asserted. And
-when the core is plugged in again, it gets deasserted and goes through
-the secondary boot path.
-That code is a little cleaned up in our vendor tree, but overall it
-should be the same functionality wise.
+>> -#include <mach/regs-ost.h>
+>>   #include <mach/irqs.h>
+>> +#include <mach/hardware.h>
+>
+> Now as the driver is in 'drivers', do not reference the headers files in
+> mach. Moving the driver to the drivers directory implies some cleanup with the
+> headers dependencies.
+I don't see that very possible.
+Or said another way, I don't see how the irq number, IRQ_OST0 (in mach/irqs.h)
+can be guessed for non device-tree configuration.
 
-	Sören
+>> +#define OSMR0		0x00	/* */
+>> +#define OSMR1		0x04	/* */
+>> +#define OSMR2		0x08	/* */
+>> +#define OSMR3		0x0C	/* */
+>> +#define OSMR4		0x80	/* */
+>
+> Can you please remove those unused empty comment or fill them with something
+> appropriate.
+Sure.
+
+>
+>> +#define OSCR		0x10	/* OS Timer Counter Register */
+>> +#define OSCR4		0x40	/* OS Timer Counter Register */
+>> +#define OMCR4		0xC0	/* */
+>> +#define OSSR		0x14	/* OS Timer Status Register */
+>> +#define OWER		0x18	/* OS Timer Watchdog Enable Register */
+>> +#define OIER		0x1C	/* OS Timer Interrupt Enable Register */
+>> +
+>> +#define OSSR_M3		(1 << 3)	/* Match status channel 3 */
+>> +#define OSSR_M2		(1 << 2)	/* Match status channel 2 */
+>> +#define OSSR_M1		(1 << 1)	/* Match status channel 1 */
+>> +#define OSSR_M0		(1 << 0)	/* Match status channel 0 */
+>> +
+>> +#define OWER_WME	(1 << 0)	/* Watchdog Match Enable */
+>> +
+>> +#define OIER_E3		(1 << 3)	/* Interrupt enable channel 3 */
+>> +#define OIER_E2		(1 << 2)	/* Interrupt enable channel 2 */
+>> +#define OIER_E1		(1 << 1)	/* Interrupt enable channel 1 */
+>> +#define OIER_E0		(1 << 0)	/* Interrupt enable channel 0 */
+>
+> Is it possible to do some cleanups around regs-ost.h and here in order to remove
+> the unused macros. Also, it seems some define will be duplicate as they are
+> shared with the watchdog. Any plan to fix that ?
+For the cleanup, yes, will do.
+
+For the watchdog I don't have any plan yet. This patch's purpose is only to
+bring the PXA time source to drivers/clocksource, and make it compatible with
+both device-tree and non device-tree builds.
+
+>> @@ -33,9 +60,14 @@
+>>    * calls to sched_clock() which should always be the case in practice.
+>>    */
+>>
+>> +#define timer_readl(reg) readl_relaxed(timer_base + (reg))
+>> +#define timer_writel(val, reg) writel_relaxed((val), timer_base + (reg))
+>> +
+>> +static void __iomem *timer_base;
+>> +
+>>   static u64 notrace pxa_read_sched_clock(void)
+>>   {
+>> -	return readl_relaxed(OSCR);
+>
+> So here there is a change which is not explained in the changelog (timer_base
+> offset).
+>
+> Even it is obvious for me because I am used to see this kind of code, that would
+> deserve a better description in the changelog.
+OK, I'll add the backward compatibility explanation with non device-tree builds,
+and the necessary timer_base iomem hard encoded value. And the Janus double face
+explanation of the driver (both DT and non-DT oriented).
+
+Another question brought up by this : if I remove all 'mach/' includes, I loose
+io_p2v() right ? How can I guess timer_base then ?
+
+>> +	/* we are only interested in OS-timer0 irq */
+>> +	irq = irq_of_parse_and_map(np, 0);
+>> +	if (irq <= 0)
+>> +		panic("%s: unable to parse OS-timer0 irq\n", np->name);
+>
+> Is the 'panic' desirable ? The clksrc-of is written in a way to use different
+> clocks, no ?
+Good question.
+
+Maybe not, I followed the same rationale as in orion-timer, which is :
+ - as this timer is the only possible timer for PXA boards, and because without
+ it the kernel boot will stall (scheduling will be blocked), it's better to
+ panic early that to remain stalled.
+
+Isn't this a good approach ?
+
+-- 
+Robert
