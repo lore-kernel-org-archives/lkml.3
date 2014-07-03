@@ -1,82 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759614AbaGCTQM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 15:16:12 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:37559 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759590AbaGCTQF (ORCPT
+	id S1759636AbaGCTQP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 15:16:15 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:58744 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759588AbaGCTQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 15:16:05 -0400
-Date: Thu, 3 Jul 2014 21:15:57 +0200
-From: Pawel Lebioda <pawel.lebioda89@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Julian Andres Klode <jak@jak-linux.org>, Marc Dietrich <marvin24@gmx.de>,
-        ac100@lists.launchpad.net, linux-tegra@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: nvec: insert blank lines after declarations
-Message-ID: <20140703191554.GA12029@ThinkPad>
+	Thu, 3 Jul 2014 15:16:04 -0400
+Date: Thu, 3 Jul 2014 12:14:31 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Vlastimil Babka <vbabka@suse.cz>
+cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] shmem: fix faulting into a hole while it's punched,
+ take 2
+In-Reply-To: <53B578BC.4050300@suse.cz>
+Message-ID: <alpine.LSU.2.11.1407031202340.1370@eggly.anvils>
+References: <alpine.LSU.2.11.1407021204180.12131@eggly.anvils> <alpine.LSU.2.11.1407021209570.12131@eggly.anvils> <53B578BC.4050300@suse.cz>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 3 Jul 2014, Vlastimil Babka wrote:
+> On 07/02/2014 09:11 PM, Hugh Dickins wrote:
+> > 
+> > --- 3.16-rc3+/mm/shmem.c	2014-07-02 03:31:12.956546569 -0700
+> > +++ linux/mm/shmem.c	2014-07-02 03:34:13.172550852 -0700
+> > @@ -467,23 +467,20 @@ static void shmem_undo_range(struct inod
+> >   		return;
+> > 
+> >   	index = start;
+> > -	for ( ; ; ) {
+> > +	while (index < end) {
+> >   		cond_resched();
+> > 
+> >   		pvec.nr = find_get_entries(mapping, index,
+> >   				min(end - index, (pgoff_t)PAGEVEC_SIZE),
+> >   				pvec.pages, indices);
+> >   		if (!pvec.nr) {
+> > -			if (index == start || unfalloc)
+> > +			/* If all gone or hole-punch or unfalloc, we're done
+> > */
+> > +			if (index == start || end != -1)
+> >   				break;
+> > +			/* But if truncating, restart to make sure all gone
+> > */
+> >   			index = start;
+> >   			continue;
+> >   		}
+> > -		if ((index == start || unfalloc) && indices[0] >= end) {
+> > -			pagevec_remove_exceptionals(&pvec);
+> > -			pagevec_release(&pvec);
+> > -			break;
+> > -		}
+> >   		mem_cgroup_uncharge_start();
+> >   		for (i = 0; i < pagevec_count(&pvec); i++) {
+> >   			struct page *page = pvec.pages[i];
+> > @@ -495,8 +492,12 @@ static void shmem_undo_range(struct inod
+> >   			if (radix_tree_exceptional_entry(page)) {
+> >   				if (unfalloc)
+> >   					continue;
+> > -				nr_swaps_freed += !shmem_free_swap(mapping,
+> > -								index, page);
+> > +				if (shmem_free_swap(mapping, index, page)) {
+> > +					/* Swap was replaced by page: retry
+> > */
+> > +					index--;
+> > +					break;
+> > +				}
+> > +				nr_swaps_freed++;
+> >   				continue;
+> 
+> Ugh, a warning to anyone trying to backport this. This hunk can match both
+> instances of the same code in the function, and I've just seen patch picking
+> the wrong one.
 
-This patch fixes coding style warnings reported by checkpatch.pl:
-"Missing a blank line after declarations".
+Thanks for the warning.
 
-Regards
-Pawel Lebioda
+Yes, as it ends up, there are only two hunks: so if the first fails
+to apply (and down the releases there may be various trivial reasons
+why it would fail to apply cleanly, although easily edited by hand),
+patch might very well choose the first match to apply the second hunk.
 
-Signed-off-by: Pawel Lebioda <pawel.lebioda89@gmail.com>
- drivers/staging/nvec/nvec_paz00.c | 1 +
- drivers/staging/nvec/nvec_power.c | 1 +
- drivers/staging/nvec/nvec_ps2.c   | 2 ++
- 3 files changed, 4 insertions(+)
+I'm expecting to have to do (or at least to check) each -stable by
+hand as it comes by.  I did just check mmotm, and it came out fine.
 
-diff --git a/drivers/staging/nvec/nvec_paz00.c b/drivers/staging/nvec/nvec_paz00.c
-index 934b796..e2e675a 100644
---- a/drivers/staging/nvec/nvec_paz00.c
-+++ b/drivers/staging/nvec/nvec_paz00.c
-@@ -35,6 +35,7 @@ static void nvec_led_brightness_set(struct led_classdev *led_cdev,
- {
- 	struct nvec_led *led = to_nvec_led(led_cdev);
- 	unsigned char buf[] = NVEC_LED_REQ;
-+
- 	buf[4] = value;
- 
- 	nvec_write_async(led->nvec, buf, sizeof(buf));
-diff --git a/drivers/staging/nvec/nvec_power.c b/drivers/staging/nvec/nvec_power.c
-index aacfcd6..6446e15 100644
---- a/drivers/staging/nvec/nvec_power.c
-+++ b/drivers/staging/nvec/nvec_power.c
-@@ -226,6 +226,7 @@ static int nvec_power_get_property(struct power_supply *psy,
- 				   union power_supply_propval *val)
- {
- 	struct nvec_power *power = dev_get_drvdata(psy->dev->parent);
-+
- 	switch (psp) {
- 	case POWER_SUPPLY_PROP_ONLINE:
- 		val->intval = power->on;
-diff --git a/drivers/staging/nvec/nvec_ps2.c b/drivers/staging/nvec/nvec_ps2.c
-index 45b2f13..f56f1db 100644
---- a/drivers/staging/nvec/nvec_ps2.c
-+++ b/drivers/staging/nvec/nvec_ps2.c
-@@ -53,12 +53,14 @@ static struct nvec_ps2 ps2_dev;
- static int ps2_startstreaming(struct serio *ser_dev)
- {
- 	unsigned char buf[] = { NVEC_PS2, AUTO_RECEIVE_N, PACKET_SIZE };
-+
- 	return nvec_write_async(ps2_dev.nvec, buf, sizeof(buf));
- }
- 
- static void ps2_stopstreaming(struct serio *ser_dev)
- {
- 	unsigned char buf[] = { NVEC_PS2, CANCEL_AUTO_RECEIVE };
-+
- 	nvec_write_async(ps2_dev.nvec, buf, sizeof(buf));
- }
- 
+Hugh
