@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758440AbaGCOUW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:20:22 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50937 "EHLO
+	id S964859AbaGCO1x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:27:53 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50945 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758361AbaGCOUT (ORCPT
+	with ESMTP id S1758406AbaGCOUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:20:19 -0400
+	Thu, 3 Jul 2014 10:20:22 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -17,9 +17,9 @@ Cc: Boris Brezillon <boris@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 12/18] AT91: DT: Remove poweroff DT probing
-Date: Thu,  3 Jul 2014 16:14:53 +0200
-Message-Id: <1404396906-25194-21-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 13/18] AT91: DT: Remove poweroff DT probing
+Date: Thu,  3 Jul 2014 16:14:55 +0200
+Message-Id: <1404396906-25194-23-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -36,11 +36,11 @@ Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
  1 file changed, 77 deletions(-)
 
 diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index 771e0495bfe5..69967c21d5c0 100644
+index fe0601e0a3c0..ae269291d19d 100644
 --- a/arch/arm/mach-at91/setup.c
 +++ b/arch/arm/mach-at91/setup.c
-@@ -385,82 +385,6 @@ static void at91_dt_ramc(void)
- 	of_node_put(np);
+@@ -387,82 +387,6 @@ static void at91_dt_ramc(void)
+ 	at91_pm_set_standby(of_id->data);
  }
  
 -static struct of_device_id shdwc_ids[] = {
@@ -122,7 +122,7 @@ index 771e0495bfe5..69967c21d5c0 100644
  void __init at91rm9200_dt_initialize(void)
  {
  	at91_dt_ramc();
-@@ -478,7 +402,6 @@ void __init at91rm9200_dt_initialize(void)
+@@ -480,7 +404,6 @@ void __init at91rm9200_dt_initialize(void)
  void __init at91_dt_initialize(void)
  {
  	at91_dt_ramc();
