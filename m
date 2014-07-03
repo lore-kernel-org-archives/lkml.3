@@ -1,177 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759540AbaGCSjc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 14:39:32 -0400
-Received: from mail-we0-f202.google.com ([74.125.82.202]:48193 "EHLO
-	mail-we0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539AbaGCSj3 (ORCPT
+	id S1759088AbaGCSmP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 14:42:15 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:33332 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570AbaGCSmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 14:39:29 -0400
-Date: Thu, 3 Jul 2014 19:39:27 +0100
-From: David Drysdale <drysdale@google.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: LSM List <linux-security-module@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [RFC PATCH 00/11] Adding FreeBSD's Capsicum security framework
- (part 1)
-Message-ID: <20140703183927.GA1629@google.com>
-References: <1404124096-21445-1-git-send-email-drysdale@google.com>
- <53B51E81.4090700@redhat.com>
+	Thu, 3 Jul 2014 14:42:14 -0400
+Message-ID: <53B5A343.4090402@linux.vnet.ibm.com>
+Date: Fri, 04 Jul 2014 00:08:59 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B51E81.4090700@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
+        David Rientjes <rientjes@google.com>,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm readahead: Fix sys_readahead breakage by reverting
+ 2MB limit (bug 79111)
+References: <1404392547-11648-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <CA+55aFxOTqUAqEF7+83s890Q18qCHSQqDOxWqWHNjG_25hVhXg@mail.gmail.com> <53B59CB5.9060004@linux.vnet.ibm.com> <CA+55aFyRgYW6Y8paYKGfqE205enhiPsZ1C8wrKpFavVXq7ZAtA@mail.gmail.com> <CA+55aFwwSCrH5QDvrzzyHhRU5R849Mo8A3NdRMwm9OTeWH9diQ@mail.gmail.com>
+In-Reply-To: <CA+55aFwwSCrH5QDvrzzyHhRU5R849Mo8A3NdRMwm9OTeWH9diQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070318-8878-0000-0000-00000D51937D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 11:12:33AM +0200, Paolo Bonzini wrote:
-> Il 30/06/2014 12:28, David Drysdale ha scritto:
-> >Hi all,
-> >
-> >The last couple of versions of FreeBSD (9.x/10.x) have included the
-> >Capsicum security framework [1], which allows security-aware
-> >applications to sandbox themselves in a very fine-grained way.  For
-> >example, OpenSSH now (>= 6.5) uses Capsicum in its FreeBSD version to
-> >restrict sshd's credentials checking process, to reduce the chances of
-> >credential leakage.
+On 07/03/2014 11:59 PM, Linus Torvalds wrote:
+> On Thu, Jul 3, 2014 at 11:22 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> So the bugzilla entry worries me a bit - we definitely do not want to
+>> regress in case somebody really relied on timing - but without more
+>> specific information I still think the real bug is just in the
+>> man-page.
 >
-> Hi David,
+> Side note: the 2MB limit may be too small. 2M is peanuts on modern
+> machines, even for fairly slow IO, and there are lots of files (like
+> glibc etc) that people might want to read-ahead during boot. We
+> already do bigger read-ahead if people just do "read()" system calls.
+> So I could certainly imagine that we should increase it.
 >
-> we've had similar goals in QEMU.  QEMU can be used as a virtual
-> machine monitor from the command line, but it also has an API that
-> lets a management tool drive QEMU via AF_UNIX sockets.  Long term,
-> we would like to have a restricted mode for QEMU where all file
-> descriptors are obtained via SCM_RIGHTS or /dev/fd, and syscalls can
-> be locked down.
->
-> Currently we do use seccomp v2 BPF filters, but unfortunately this
-> didn't help very much.  QEMU supports hotplugging hence the filter
-> must whitelist anything that _might_ be used in the future, which is
-> generally... too much.
->
-> Something like Capsicum would be really nice because it attaches
-> capabilities to file descriptors.  However, I wonder however how
-> extensible Capsicum could be, and I am worried about the
-> proliferation of capabilities that its design naturally leads to.
+> I do *not* think we should bow down to insane man-pages that have
+> always been wrong, though, and I don't think we should increase it to
+> "let's just read-ahead a whole ISO image" kind of sizes..
 
-True, capability rights are likely to expand over time (although
-FreeBSD only expanded from 55 to 60 between 9.x and 10.x).
- 
-> Given Linux's previous experience with BPF filters, what do you
-> think about attaching specific BPF programs to file descriptors?
-> Then whenever a syscall is run that affects a file descriptor, the
-> BPF program for the file descriptor (attached to a struct file* as
-> in Capsicum) would run in addition to the process-wide filter.
+Okay, how about something like 256MB? I would be happy to send a patch
+for that change.
 
-That sounds kind of clever, but also kind of complicated.
-
-Off the top of my head, one particular problem is that not all
-fd->struct file conversions in the kernel are completely specified
-by an enclosing syscall and the explicit values of its parameters.
-
-For example, the actual contents of the arguments to io_submit(2)
-aren't visible to a seccomp-bpf program (as it can't read the __user
-memory for the iocb structures), and so it can't distinguish a
-read from a write.
-
-Also, there could potentially be some odd interactions with file
-descriptors passed between processes, if the BPF program relies
-on assumptions about the environment of the original process.  For
-example, what happens if an x86_64 process passes a filter-attached
-FD to an ia32 process?  Given that the syscall numbers are
-arch-specific, I guess that means the filter program would have
-to include arch-specific branches for any possible variant.
-
-More generally, I suspect that keeping things simpler will end
-up being more secure.  Capsicum was based on well-studied ideas
-from the world of object capability-based security, and I'd be
-nervous about adding complications that take us further away from
-that. 
-
-> An equivalent of PR_SET_NO_NEW_PRIVS can also be added to file
-> descriptors, so that a program that doesn't lock down syscalls can
-> still lock down the operations (including fcntls and ioctls) on
-> specific file descriptors.
->
-> Converting FreeBSD capabilities to BPF programs can be easily
-> implemented in userspace.
-
-I get the idea, but I'm not sure it would be that easy!  The
-BPF-generation library would need to hold all of the mappings
-from system calls (and their arguments) to the equivalent
-required rights -- and vice versa.
-
-That mapping would also need be kept closely in sync with the kernel
-and other system libraries -- if a new syscall is added and libc (or
-some other library) started using it, the equivalent BPF chunks would
-need to be updated to cope.
- 
-> >  [Capsicum also includes 'capability mode', which locks down the
-> >  available syscalls so the rights restrictions can't just be bypassed
-> >  by opening new file descriptors; I'll describe that separately later.]
->
-> This can also be implemented in userspace via seccomp and
-> PR_SET_NO_NEW_PRIVS.
-
-Well, mostly (and in fact I've got an attempt to do exactly that at
-https://github.com/google/capsicum-test/blob/dev/linux-bpf-capmode.c).
-
-But there are a few wrinkles with that approach.
-
-First, we need Kees Cook's patches to allow seccomp filters
-to be synchronized across existing threads, but hopefully they
-will make it in soon.
-
-Next, there's one awkward syscall case.  In capability mode we'd like
-to prevent processes from sending signals with kill(2)/tgkill(2)
-to other processes, but they should still be able to send themselves
-signals.  For example, abort(3) generates:
-  tgkill(gettid(), gettid(), SIGABRT)
-
-Only allowing kill(self) is hard to encode in a seccomp-bpf program, at
-least in a way that survives forking.
-
-Finally, capability mode also turns on strict-relative lookups
-process-wide; in other words, every openat(dfd, ...) operation
-acts as though it has the O_BENEATH_ONLY flag set, regardless of
-whether the dfd is a Capsicum capability.  I can't see a way to
-do that with a BPF program (although it would be possible to add
-a filter that polices the requirement to include O_BENEATH_ONLY
-rather than implicitly adding it).
- 
-So although a capability-mode implementation in terms of seccomp-bpf
-is tantalizingly close, at the moment I've got it implemented as a new
-seccomp mode.
-
-> >  [Policing the rights checks anywhere else, for example at the system
-> >  call boundary, isn't a good idea because it opens up the possibility
-> >  of time-of-check/time-of-use (TOCTOU) attacks [2] where FDs are
-> >  changed (as openat/close/dup2 are allowed in capability mode) between
-> >  the 'check' at syscall entry and the 'use' at fget() invocation.]
->
-> In the case of BPF filters, I wonder if you could stash the BPF
-> "environment" somewhere and then use it at fget() invocation.
-> Alternatively, it can be reconstructed at fget() time, similar to
-> your introduction of fgetr().
-
-Stashing something at syscall entry to be referred to later always
-makes me worry about TOCTOU vulnerabilities, but the details might
-be OK in this case (given that no check occurs at syscall entry)...
- 
-> Thanks,
->
-> Paolo
-
-Many thanks for taking the time to comment and think of innovative
-ideas!
-
-David
