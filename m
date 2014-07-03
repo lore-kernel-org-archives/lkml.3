@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009AbaGCNXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 09:23:15 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:50934 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757834AbaGCNXK (ORCPT
+	id S1758145AbaGCNXT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 09:23:19 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:59892 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757930AbaGCNXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 09:23:10 -0400
+	Thu, 3 Jul 2014 09:23:14 -0400
 From: Manuel Lauss <manuel.lauss@gmail.com>
 To: Linux-MIPS <linux-mips@linux-mips.org>,
         Mike Turquette <mturquette@linaro.org>
 Cc: linux-kernel@vger.kernel.org, Manuel Lauss <manuel.lauss@gmail.com>
-Subject: [RFC PATCH v2 03/11] MIPS: Alchemy: platform: use clk framework for uarts
-Date: Thu,  3 Jul 2014 15:22:34 +0200
-Message-Id: <1404393762-858019-4-git-send-email-manuel.lauss@gmail.com>
+Subject: [RFC PATCH v2 07/11] MIPS: Alchemy: irda: use clk framework
+Date: Thu,  3 Jul 2014 15:22:38 +0200
+Message-Id: <1404393762-858019-8-git-send-email-manuel.lauss@gmail.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404393762-858019-1-git-send-email-manuel.lauss@gmail.com>
 References: <1404393762-858019-1-git-send-email-manuel.lauss@gmail.com>
@@ -21,109 +21,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the clock framework to get the rate of the peripheral clock.
-Remove the now obsolete get_uart_baud_base function.
+Test the existence of the irda_clk clock object, use it to en/dis-
+able it when date is being transferred.
 
 Signed-off-by: Manuel Lauss <manuel.lauss@gmail.com>
 ---
-v2: initial version, taken from original patch #2
+ drivers/net/irda/au1k_ir.c | 48 ++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 46 insertions(+), 2 deletions(-)
 
- arch/mips/alchemy/common/clocks.c          | 19 -------------------
- arch/mips/alchemy/common/platform.c        | 13 ++++++++++++-
- arch/mips/include/asm/mach-au1x00/au1000.h |  2 --
- 3 files changed, 12 insertions(+), 22 deletions(-)
-
-diff --git a/arch/mips/alchemy/common/clocks.c b/arch/mips/alchemy/common/clocks.c
-index 35db35b..e77fa9b 100644
---- a/arch/mips/alchemy/common/clocks.c
-+++ b/arch/mips/alchemy/common/clocks.c
-@@ -38,7 +38,6 @@
- #define AU1000_SRC_CLK	12000000
- 
- static unsigned int au1x00_clock; /*  Hz */
--static unsigned long uart_baud_base;
- 
- /*
-  * Set the au1000_clock
-@@ -55,21 +54,6 @@ unsigned int get_au1x00_speed(void)
- EXPORT_SYMBOL(get_au1x00_speed);
- 
- /*
-- * The UART baud base is not known at compile time ... if
-- * we want to be able to use the same code on different
-- * speed CPUs.
-- */
--unsigned long get_au1x00_uart_baud_base(void)
--{
--	return uart_baud_base;
--}
--
--void set_au1x00_uart_baud_base(unsigned long new_baud_base)
--{
--	uart_baud_base = new_baud_base;
--}
--
--/*
-  * We read the real processor speed from the PLL.  This is important
-  * because it is more accurate than computing it from the 32 KHz
-  * counter, if it exists.  If we don't have an accurate processor
-@@ -96,9 +80,6 @@ unsigned long au1xxx_calc_clock(void)
- 
- 	/* On Alchemy CPU:counter ratio is 1:1 */
- 	mips_hpt_frequency = cpu_speed;
--	/* Equation: Baudrate = CPU / (SD * 2 * CLKDIV * 16) */
--	set_au1x00_uart_baud_base(cpu_speed /
--		(2 * ((AU1X_RDSYS(AU1000_SYS_POWERCTRL) & 0x03) + 2) * 16));
- 
- 	set_au1x00_speed(cpu_speed);
- 
-diff --git a/arch/mips/alchemy/common/platform.c b/arch/mips/alchemy/common/platform.c
-index 4cdc8fd..e70d5c1 100644
---- a/arch/mips/alchemy/common/platform.c
-+++ b/arch/mips/alchemy/common/platform.c
-@@ -11,6 +11,7 @@
-  * warranty of any kind, whether express or implied.
+diff --git a/drivers/net/irda/au1k_ir.c b/drivers/net/irda/au1k_ir.c
+index 5f91e3e..aab2cf7 100644
+--- a/drivers/net/irda/au1k_ir.c
++++ b/drivers/net/irda/au1k_ir.c
+@@ -18,6 +18,7 @@
+  *  with this program; if not, see <http://www.gnu.org/licenses/>.
   */
  
 +#include <linux/clk.h>
- #include <linux/dma-mapping.h>
- #include <linux/etherdevice.h>
- #include <linux/init.h>
-@@ -99,10 +100,20 @@ static struct platform_device au1xx0_uart_device = {
+ #include <linux/module.h>
+ #include <linux/netdevice.h>
+ #include <linux/interrupt.h>
+@@ -175,6 +176,7 @@ struct au1k_private {
  
- static void __init alchemy_setup_uarts(int ctype)
+ 	struct resource *ioarea;
+ 	struct au1k_irda_platform_data *platdata;
++	struct clk *irda_clk;
+ };
+ 
+ static int qos_mtt_bits = 0x07;  /* 1 ms or more */
+@@ -514,9 +516,39 @@ static irqreturn_t au1k_irda_interrupt(int dummy, void *dev_id)
+ static int au1k_init(struct net_device *dev)
  {
--	unsigned int uartclk = get_au1x00_uart_baud_base() * 16;
-+	long uartclk;
- 	int s = sizeof(struct plat_serial8250_port);
- 	int c = alchemy_get_uarts(ctype);
- 	struct plat_serial8250_port *ports;
-+	struct clk *clk = clk_get(NULL, ALCHEMY_PERIPH_CLK);
-+
-+	if (IS_ERR(clk))
-+		return;
-+	if (clk_prepare_enable(clk)) {
-+		clk_put(clk);
-+		return;
+ 	struct au1k_private *aup = netdev_priv(dev);
+-	u32 enable, ring_address;
++	u32 enable, ring_address, phyck;
++	struct clk *c;
+ 	int i;
+ 
++	c = clk_get(NULL, "irda_clk");
++	if (IS_ERR(c))
++		return PTR_ERR(c);
++	i = clk_prepare_enable(c);
++	if (i) {
++		clk_put(c);
++		return i;
 +	}
-+	uartclk = clk_get_rate(clk);
-+	clk_put(clk);
++
++	switch (clk_get_rate(c)) {
++	case 40000000:
++		phyck = IR_PHYCLK_40MHZ;
++		break;
++	case 48000000:
++		phyck = IR_PHYCLK_48MHZ;
++		break;
++	case 56000000:
++		phyck = IR_PHYCLK_56MHZ;
++		break;
++	case 64000000:
++		phyck = IR_PHYCLK_64MHZ;
++		break;
++	default:
++		clk_disable_unprepare(c);
++		clk_put(c);
++		return -EINVAL;
++	}
++	aup->irda_clk = c;
++
+ 	enable = IR_HC | IR_CE | IR_C;
+ #ifndef CONFIG_CPU_LITTLE_ENDIAN
+ 	enable |= IR_BE;
+@@ -545,7 +577,7 @@ static int au1k_init(struct net_device *dev)
+ 	irda_write(aup, IR_RING_SIZE,
+ 				(RING_SIZE_64 << 8) | (RING_SIZE_64 << 12));
  
- 	ports = kzalloc(s * (c + 1), GFP_KERNEL);
- 	if (!ports) {
-diff --git a/arch/mips/include/asm/mach-au1x00/au1000.h b/arch/mips/include/asm/mach-au1x00/au1000.h
-index 734b4ac..46ce1fe 100644
---- a/arch/mips/include/asm/mach-au1x00/au1000.h
-+++ b/arch/mips/include/asm/mach-au1x00/au1000.h
-@@ -829,8 +829,6 @@ static inline int alchemy_get_macs(int type)
- /* arch/mips/au1000/common/clocks.c */
- extern void set_au1x00_speed(unsigned int new_freq);
- extern unsigned int get_au1x00_speed(void);
--extern void set_au1x00_uart_baud_base(unsigned long new_baud_base);
--extern unsigned long get_au1x00_uart_baud_base(void);
- extern unsigned long au1xxx_calc_clock(void);
+-	irda_write(aup, IR_CONFIG_2, IR_PHYCLK_48MHZ | IR_ONE_PIN);
++	irda_write(aup, IR_CONFIG_2, phyck | IR_ONE_PIN);
+ 	irda_write(aup, IR_RING_ADDR_CMPR, 0);
  
- /* PM: arch/mips/alchemy/common/sleeper.S, power.c, irq.c */
+ 	au1k_irda_set_speed(dev, 9600);
+@@ -619,6 +651,9 @@ static int au1k_irda_stop(struct net_device *dev)
+ 	free_irq(aup->irq_tx, dev);
+ 	free_irq(aup->irq_rx, dev);
+ 
++	clk_disable_unprepare(aup->irda_clk);
++	clk_put(aup->irda_clk);
++
+ 	return 0;
+ }
+ 
+@@ -853,6 +888,7 @@ static int au1k_irda_probe(struct platform_device *pdev)
+ 	struct au1k_private *aup;
+ 	struct net_device *dev;
+ 	struct resource *r;
++	struct clk *c;
+ 	int err;
+ 
+ 	dev = alloc_irdadev(sizeof(struct au1k_private));
+@@ -886,6 +922,14 @@ static int au1k_irda_probe(struct platform_device *pdev)
+ 	if (!aup->ioarea)
+ 		goto out;
+ 
++	/* bail out early if clock doesn't exist */
++	c = clk_get(NULL, "irda_clk");
++	if (IS_ERR(c)) {
++		err = PTR_ERR(c);
++		goto out;
++	}
++	clk_put(c);
++
+ 	aup->iobase = ioremap_nocache(r->start, resource_size(r));
+ 	if (!aup->iobase)
+ 		goto out2;
 -- 
 2.0.0
 
