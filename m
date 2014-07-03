@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759424AbaGCRlP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 13:41:15 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:52701 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758872AbaGCRlM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 13:41:12 -0400
+	id S1759430AbaGCRnc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 13:43:32 -0400
+Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:15072
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751285AbaGCRnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 13:43:31 -0400
+From: Varun Sethi <Varun.Sethi@freescale.com>
+To: Alex Williamson <alex.williamson@redhat.com>,
+        Joerg Roedel <joro@8bytes.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/3] iommu: Expose IOMMU information in sysfs
+Thread-Topic: [PATCH 0/3] iommu: Expose IOMMU information in sysfs
+Thread-Index: AQHPhotyfmKXNHtW5kuAoU6+PbKknZtz3sKAgAACSICAGsQBAIAAGMCg
+Date: Thu, 3 Jul 2014 17:43:26 +0000
+Message-ID: <092459cf6aa04425bae1bd19b746f0fc@BL2PR03MB468.namprd03.prod.outlook.com>
+References: <20140612215954.2754.30263.stgit@bling.home>
+	 <20140616151619.GA31771@8bytes.org> <1402932269.3707.35.camel@ul30vt.home>
+ <1404403726.1862.78.camel@ul30vt.home>
+In-Reply-To: <1404403726.1862.78.camel@ul30vt.home>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.169.1]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-forefront-prvs: 0261CCEEDF
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(24454002)(377424004)(377454003)(164054003)(189002)(199002)(51704005)(13464003)(19580395003)(2656002)(87936001)(76482001)(81542001)(81342001)(105586002)(107046002)(19580405001)(106356001)(21056001)(106116001)(83322001)(76576001)(74316001)(101416001)(20776003)(86362001)(54356999)(93886003)(79102001)(99396002)(77982001)(85852003)(85306003)(46102001)(31966008)(64706001)(76176999)(99286002)(74662001)(83072002)(50986999)(95666004)(33646001)(80022001)(92566001)(74502001)(66066001)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB467;H:BL2PR03MB468.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1726BF1A@AcuExch.aculab.com>
-References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
-	<1403913966-4927-9-git-send-email-ast@plumgrid.com>
-	<CA+ZOOTODDPN=6SECq1uPPD7AGP1zgBJ+bfYaX9o3YhnaCTiHYQ@mail.gmail.com>
-	<CAMEtUuxfrAUDDQVGNsNV2PeDii-6LAwQCbB2XGEHTJDwkkvyWg@mail.gmail.com>
-	<063D6719AE5E284EB5DD2968C1650D6D1726BF1A@AcuExch.aculab.com>
-Date: Thu, 3 Jul 2014 10:41:10 -0700
-Message-ID: <CAMEtUuzfU6APGmWrCXVR-18P531vSAEOaC=x8wtyr+4yegTq3w@mail.gmail.com>
-Subject: Re: [PATCH RFC net-next 08/14] bpf: add eBPF verifier
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: David Laight <David.Laight@aculab.com>
-Cc: Chema Gonzalez <chema@google.com>, "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s63Hha8D011120
 
-On Thu, Jul 3, 2014 at 2:13 AM, David Laight <David.Laight@aculab.com> wrote:
-> From: Alexei Starovoitov
->> >> +#define _(OP) ({ int ret = OP; if (ret < 0) return ret; })
->> > +1 to removing the _ macro. If you want to avoid the 3 lines (is there
->> > anything in the style guide against "if ((err=OP) < 0) ..." ?), at
->>
->> assignment and function call inside 'if' ? I don't like such style.
->>
->> > least use some meaningful macro name (DO_AND_CHECK, or something like
->> > that).
->
-> It would have to be RETURN_IF_NEGATIVE().
-> But even then it is skipped by searches for 'return'.
+Hi Alex,
+This is on my todo list. I have a requirement for adding sysfs support for PAMU.
 
-try s/\<_\>/RETURN_IF_NEGATIVE/ and see how ugly it looks‚Ä¶
+Regards
+Varun
+> -----Original Message-----
+> From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> Sent: Thursday, July 03, 2014 9:39 PM
+> To: Joerg Roedel
+> Cc: iommu@lists.linux-foundation.org; dwmw2@infradead.org; linux-
+> kernel@vger.kernel.org; Sethi Varun-B16395
+> Subject: Re: [PATCH 0/3] iommu: Expose IOMMU information in sysfs
+> 
+> On Mon, 2014-06-16 at 09:24 -0600, Alex Williamson wrote:
+> > On Mon, 2014-06-16 at 17:16 +0200, Joerg Roedel wrote:
+> > > On Thu, Jun 12, 2014 at 04:12:18PM -0600, Alex Williamson wrote:
+> > > > Alex Williamson (3):
+> > > >       iommu: Add sysfs support for IOMMUs
+> > > >       iommu/intel: Make use of IOMMU sysfs support
+> > > >       iommu/amd: Add sysfs support
+> > >
+> > > I like the general approach. But why do you only enable the x86
+> iommus?
+> > > Some ARM IOMMUs and PAMU would certainly also benefit from a sysfs
+> > > representation of which device is translated by which IOMMU.
+> >
+> > Only because I have no ability to test the others platforms.  I'd be
+> > thrilled if someone working on those IOMMUs could validate this on
+> > non-x86.  Thanks,
+> 
+> Should I re-send this series or are you hoping I'll attempt to piece
+> together a non-x86 user for which I have no hardware and can't test?
+> Varun, do you have any interest in this for the fsl iommu to try a proof
+> of concept?  Thanks,
+> 
+> Alex
 
->> Try replacing _ with any other name and see how bad it will look.
->> I tried with MACRO_NAME and with 'if (err) goto' and with 'if (err) return',
->> before I converged on _ macro.
->> I think it's a hidden gem of this patch.
->
-> No, it is one of those things that 'seems like a good idea at the time',
-> but causes grief much later on.
-
-Disagree. The _ macro in this code has been around for
-almost 2 years and survived all sorts of changes all over the verifier.
-The macro proved to be very effective in reducing code noise.
-
-> Have you considered saving the error code into 'env' and making most of
-> the functions return if an error is set?
-> Then the calling code need not check the result of every function call.
-
-that won't work, since err = check1(); err = check2(); if (err) is just wrong,
-then err |= check1(); err |= check2() is even worse.
-Even if it was possible, continuing verification and printing multiple
-errors is too confusing for users. While writing programs and
-dealing with verifier rejects we found that the first error is more than
-enough to go back and analyze what's wrong with C source.
-Notice that verifier prints full verification trace. Without it it was very
-hard to understand why particular register at some point has
-invalid type.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
