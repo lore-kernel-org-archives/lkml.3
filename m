@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336AbaGCU6f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 16:58:35 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50838 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751357AbaGCU6e (ORCPT
+	id S1754285AbaGCVF4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 17:05:56 -0400
+Received: from p3plsmtpa12-05.prod.phx3.secureserver.net ([68.178.252.234]:32909
+	"EHLO p3plsmtpa12-05.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751336AbaGCVFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 16:58:34 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Allen Yu <alleny@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Add "rpm_not_supported" flag
-Date: Thu, 03 Jul 2014 23:16:31 +0200
-Message-ID: <1703139.e6mBtKGhYW@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1407021002380.874-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1407021002380.874-100000@iolanthe.rowland.org>
+	Thu, 3 Jul 2014 17:05:55 -0400
+X-Greylist: delayed 493 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jul 2014 17:05:55 EDT
+Date: Thu, 3 Jul 2014 13:57:40 -0700
+From: "Mark A. Greer" <mgreer@animalcreek.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-wireless@vger.kernel.org, linux-nfc@ml01.01.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [linux-nfc] [PATCH] NFC: trf7970a: Move trf7970a_init inside
+ #ifdef CONFIG_PM_RUNTIME
+Message-ID: <20140703205740.GA19951@animalcreek.com>
+References: <1402923973-24316-1-git-send-email-geert@linux-m68k.org>
+ <20140616155855.GA2539@animalcreek.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140616155855.GA2539@animalcreek.com>
+Organization: Animal Creek Technologies, Inc.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 02, 2014 10:27:06 AM Alan Stern wrote:
-> On Wed, 2 Jul 2014, Rafael J. Wysocki wrote:
-> 
-> > > Then you have no other objections to the patch?
+On Mon, Jun 16, 2014 at 08:58:55AM -0700, Mark A. Greer wrote:
+> On Mon, Jun 16, 2014 at 03:06:13PM +0200, Geert Uytterhoeven wrote:
+> > If CONFIG_PM_RUNTIME=n:
 > > 
-> > My concern still is that it will be confusing, because people won't read the
-> > documentation carefully enough and will confuse "runtime PM never used" with
-> > "hardware can't do PM".  I'm not sure how to make that more clear, though.
+> > drivers/nfc/trf7970a.c:755: warning: ‘trf7970a_init’ defined but not used
+> > 
+> > Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 > 
-> I could emphasize that distinction a little more strongly in the 
-> documentation.
-> 
-> > Also we have the no_callbacks flag and I wonder if/how it is related to the
-> > new one.  Do we still need both?
-> 
-> They mean different things.  The no_callbacks flag is used when we want 
-> the PM core to think the device can be in RPM_SUSPENDED at times (it is 
-> "logically suspended").  rpm_not_supported is used when we want the PM 
-> core to think the device must always be in RPM_ACTIVE.
-> 
-> > In addition to that, I think that "hardware can't do PM" should apply to the
-> > handling of system suspend resume too.
-> 
-> Maybe.  For the use case Dan Williams and I are working on, it doesn't 
-> matter; for other cases it might matter.  That's why I named the flag 
-> "rpm_not_supported" -- it applies specifically to runtime PM, not 
-> system PM.
-> 
-> Here's a brief summary of the story behind this patch...
-> 
-> At one point, I suggested to Dan that instead of doing something
-> special for these devices, we could simply have the runtime_suspend()
-> routine always return -EBUSY.  He didn't like that idea because then
-> the user would see the device was never powering down but would have no
-> idea why.  The rpm_not_supported flag provides this information to the
-> user by causing the power/runtime_status attribute to say "not
-> supported".  (Although to be entirely fair, we could just put a message
-> in the kernel log during probe if the hardware doesn't support runtime
-> suspend.)
-> 
-> Instead, Dan introduced a messy PM QoS mechanism in commit
-> e3d105055525.  I didn't like that approach, but Greg merged it before I
-> objected.
-> 
-> Do you have any suggestions?
+> Acked-by: Mark A. Greer <mgreer@animalcreek.com>
 
-I need some more time to think about that.  I'm on vacation till Monday,
-I should be able to get to this by then.  I hope that's not a problem.
+Actually, I'd like to change my mind on this.  I've modified the code
+locally and I will have to move trf7970a_init() back to where it originally
+was again, if this patch is taken.  If you can tolerate the warning for
+another week or so, I'll have a new set of patches that will fix it.
 
-Rafael
+Not a big deal if you still want to take it.
 
+Mark
+--
