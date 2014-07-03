@@ -1,116 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759562AbaGCQ3D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:29:03 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45624 "EHLO
+	id S1759478AbaGCQ3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:29:00 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:45687 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759301AbaGCQ0T (ORCPT
+	with ESMTP id S1759339AbaGCQ0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 12:26:19 -0400
+	Thu, 3 Jul 2014 12:26:20 -0400
 From: Morten Rasmussen <morten.rasmussen@arm.com>
 To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         peterz@infradead.org, mingo@kernel.org
 Cc: rjw@rjwysocki.net, vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
         preeti@linux.vnet.ibm.com, Dietmar.Eggemann@arm.com, pjt@google.com
-Subject: [RFCv2 PATCH 14/23] sched: Introduce SD_SHARE_CAP_STATES sched_domain flag
-Date: Thu,  3 Jul 2014 17:26:01 +0100
-Message-Id: <1404404770-323-15-git-send-email-morten.rasmussen@arm.com>
+Subject: [RFCv2 PATCH 15/23] sched, cpufreq: Introduce current cpu compute capacity into scheduler
+Date: Thu,  3 Jul 2014 17:26:02 +0100
+Message-Id: <1404404770-323-16-git-send-email-morten.rasmussen@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
 References: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
-X-OriginalArrivalTime: 03 Jul 2014 16:26:17.0522 (UTC) FILETIME=[84184120:01CF96DB]
-X-MC-Unique: 114070317261712801
+X-OriginalArrivalTime: 03 Jul 2014 16:26:18.0506 (UTC) FILETIME=[84AE66A0:01CF96DB]
+X-MC-Unique: 114070317261810701
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s63GUgSi010706
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s63GUsm8010710
 
-cpufreq is currently keeping it a secret which cpus are sharing
-clock source. The scheduler needs to know about clock domains as well
-to become more energy aware. The SD_SHARE_CAP_STATES domain flag
-indicates whether cpus belonging to the sched_domain share capacity
-states (P-states).
+The scheduler is currently unaware of frequency changes and the current
+compute capacity offered by the cpus. This patch is not the solution.
+It is a hack to give us something to experiment with for now.
 
-There is no connection with cpufreq (yet). The flag must be set by
-the arch specific topology code.
+A proper solution could be based on the frequency invariant load
+tracking proposed in the past: https://lkml.org/lkml/2013/4/16/289
+The best way to get current compute capacity is likely to be
+architecture specific. A potential solution is therefore to let the
+architecture implement get_curr_capacity() instead.
+
+This patch should _not_ be considered safe.
 
 Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
 ---
- arch/arm/kernel/topology.c |    3 ++-
- include/linux/sched.h      |    1 +
- kernel/sched/core.c        |   10 +++++++---
- 3 files changed, 10 insertions(+), 4 deletions(-)
+ drivers/cpufreq/cpufreq.c |    2 ++
+ include/linux/sched.h     |    2 ++
+ kernel/sched/fair.c       |   11 +++++++++++
+ kernel/sched/sched.h      |    2 ++
+ 4 files changed, 17 insertions(+)
 
-diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-index 70915b1..0f9b27a 100644
---- a/arch/arm/kernel/topology.c
-+++ b/arch/arm/kernel/topology.c
-@@ -393,7 +393,8 @@ static inline const struct sched_group_energy *cpu_sys_energy(int cpu)
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index abda660..a2b788d 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -28,6 +28,7 @@
+ #include <linux/slab.h>
+ #include <linux/suspend.h>
+ #include <linux/tick.h>
++#include <linux/sched.h>
+ #include <trace/events/power.h>
  
- static inline const int cpu_corepower_flags(void)
- {
--	return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
-+	return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN | \
-+		SD_SHARE_CAP_STATES;
- }
- 
- static struct sched_domain_topology_level arm_topology[] = {
+ /**
+@@ -315,6 +316,7 @@ static void __cpufreq_notify_transition(struct cpufreq_policy *policy,
+ 		pr_debug("FREQ: %lu - CPU: %lu\n",
+ 			 (unsigned long)freqs->new, (unsigned long)freqs->cpu);
+ 		trace_cpu_frequency(freqs->new, freqs->cpu);
++		set_curr_capacity(freqs->cpu, (freqs->new*1024)/policy->max);
+ 		srcu_notifier_call_chain(&cpufreq_transition_notifier_list,
+ 				CPUFREQ_POSTCHANGE, freqs);
+ 		if (likely(policy) && likely(policy->cpu == freqs->cpu))
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index b5eeae0..e5d8d57 100644
+index e5d8d57..faebd87 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -877,6 +877,7 @@ enum cpu_idle_type {
- #define SD_PREFER_SIBLING	0x1000	/* Prefer to place tasks in a sibling domain */
- #define SD_OVERLAP		0x2000	/* sched_domains of this level overlap */
- #define SD_NUMA			0x4000	/* cross-node balancing */
-+#define SD_SHARE_CAP_STATES	0x8000  /* Domain members share capacity state */
+@@ -3025,4 +3025,6 @@ static inline unsigned long rlimit_max(unsigned int limit)
+ 	return task_rlimit_max(current, limit);
+ }
  
- #ifdef CONFIG_SCHED_SMT
- static inline const int cpu_smt_flags(void)
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index d814064..ce43396 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5417,7 +5417,8 @@ static int sd_degenerate(struct sched_domain *sd)
- 			 SD_BALANCE_EXEC |
- 			 SD_SHARE_CPUCAPACITY |
- 			 SD_SHARE_PKG_RESOURCES |
--			 SD_SHARE_POWERDOMAIN)) {
-+			 SD_SHARE_POWERDOMAIN |
-+			 SD_SHARE_CAP_STATES)) {
- 		if (sd->groups != sd->groups->next)
- 			return 0;
- 	}
-@@ -5449,7 +5450,8 @@ sd_parent_degenerate(struct sched_domain *sd, struct sched_domain *parent)
- 				SD_SHARE_CPUCAPACITY |
- 				SD_SHARE_PKG_RESOURCES |
- 				SD_PREFER_SIBLING |
--				SD_SHARE_POWERDOMAIN);
-+				SD_SHARE_POWERDOMAIN |
-+				SD_SHARE_CAP_STATES);
- 		if (nr_node_ids == 1)
- 			pflags &= ~SD_SERIALIZE;
- 	}
-@@ -6109,6 +6111,7 @@ static int sched_domains_curr_level;
-  * SD_SHARE_PKG_RESOURCES - describes shared caches
-  * SD_NUMA                - describes NUMA topologies
-  * SD_SHARE_POWERDOMAIN   - describes shared power domain
-+ * SD_SHARE_CAP_STATES    - describes shared capacity states
-  *
-  * Odd one out:
-  * SD_ASYM_PACKING        - describes SMT quirks
-@@ -6118,7 +6121,8 @@ static int sched_domains_curr_level;
- 	 SD_SHARE_PKG_RESOURCES |	\
- 	 SD_NUMA |			\
- 	 SD_ASYM_PACKING |		\
--	 SD_SHARE_POWERDOMAIN)
-+	 SD_SHARE_POWERDOMAIN |		\
-+	 SD_SHARE_CAP_STATES)
++void set_curr_capacity(int cpu, long capacity);
++
+ #endif
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 37e9ea1..9720f04 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -7564,9 +7564,20 @@ void init_cfs_rq(struct cfs_rq *cfs_rq)
+ 	atomic64_set(&cfs_rq->decay_counter, 1);
+ 	atomic_long_set(&cfs_rq->removed_load, 0);
+ 	atomic_long_set(&cfs_rq->uw_removed_load, 0);
++	atomic_long_set(&cfs_rq->curr_capacity, 1024);
+ #endif
+ }
  
- static struct sched_domain *
- sd_init(struct sched_domain_topology_level *tl, int cpu)
++void set_curr_capacity(int cpu, long capacity)
++{
++	atomic_long_set(&cpu_rq(cpu)->cfs.curr_capacity, capacity);
++}
++
++static inline unsigned long get_curr_capacity(int cpu)
++{
++	return atomic_long_read(&cpu_rq(cpu)->cfs.curr_capacity);
++}
++
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ static void task_move_group_fair(struct task_struct *p, int on_rq)
+ {
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 455d152..a6d5239 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -342,6 +342,8 @@ struct cfs_rq {
+ 	u64 last_decay;
+ 	atomic_long_t removed_load, uw_removed_load;
+ 
++	atomic_long_t curr_capacity;
++
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	/* Required to track per-cpu representation of a task_group */
+ 	u32 tg_runnable_contrib;
 -- 
 1.7.9.5
 
