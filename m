@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965380AbaGCJy2 (ORCPT <rfc822;w@1wt.eu>);
+	id S1030909AbaGCJy2 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 3 Jul 2014 05:54:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52068 "EHLO
+Received: from youngberry.canonical.com ([91.189.89.112]:52071 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965037AbaGCJXU (ORCPT
+	with ESMTP id S965038AbaGCJXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Jul 2014 05:23:20 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 102/198] mm: vmscan: clear kswapd's special reclaim powers before exiting
-Date: Thu,  3 Jul 2014 10:19:05 +0100
-Message-Id: <1404379241-8590-103-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 106/198] Input: elantech - deal with clickpads reporting right button events
+Date: Thu,  3 Jul 2014 10:19:09 +0100
+Message-Id: <1404379241-8590-107-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -31,96 +28,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 71abdc15adf8c702a1dd535f8e30df50758848d2 upstream.
+commit cd9e83e2754465856097f31c7ab933ce74c473f8 upstream.
 
-When kswapd exits, it can end up taking locks that were previously held
-by allocating tasks while they waited for reclaim.  Lockdep currently
-warns about this:
+At least the Dell Vostro 5470 elantech *clickpad* reports right button
+clicks when clicked in the right bottom area:
 
-On Wed, May 28, 2014 at 06:06:34PM +0800, Gu Zheng wrote:
->  inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
->  kswapd2/1151 [HC0[0]:SC0[0]:HE1:SE1] takes:
->   (&sig->group_rwsem){+++++?}, at: exit_signals+0x24/0x130
->  {RECLAIM_FS-ON-W} state was registered at:
->     mark_held_locks+0xb9/0x140
->     lockdep_trace_alloc+0x7a/0xe0
->     kmem_cache_alloc_trace+0x37/0x240
->     flex_array_alloc+0x99/0x1a0
->     cgroup_attach_task+0x63/0x430
->     attach_task_by_pid+0x210/0x280
->     cgroup_procs_write+0x16/0x20
->     cgroup_file_write+0x120/0x2c0
->     vfs_write+0xc0/0x1f0
->     SyS_write+0x4c/0xa0
->     tracesys+0xdd/0xe2
->  irq event stamp: 49
->  hardirqs last  enabled at (49):  _raw_spin_unlock_irqrestore+0x36/0x70
->  hardirqs last disabled at (48):  _raw_spin_lock_irqsave+0x2b/0xa0
->  softirqs last  enabled at (0):  copy_process.part.24+0x627/0x15f0
->  softirqs last disabled at (0):            (null)
->
->  other info that might help us debug this:
->   Possible unsafe locking scenario:
->
->         CPU0
->         ----
->    lock(&sig->group_rwsem);
->    <Interrupt>
->      lock(&sig->group_rwsem);
->
->   *** DEADLOCK ***
->
->  no locks held by kswapd2/1151.
->
->  stack backtrace:
->  CPU: 30 PID: 1151 Comm: kswapd2 Not tainted 3.10.39+ #4
->  Call Trace:
->    dump_stack+0x19/0x1b
->    print_usage_bug+0x1f7/0x208
->    mark_lock+0x21d/0x2a0
->    __lock_acquire+0x52a/0xb60
->    lock_acquire+0xa2/0x140
->    down_read+0x51/0xa0
->    exit_signals+0x24/0x130
->    do_exit+0xb5/0xa50
->    kthread+0xdb/0x100
->    ret_from_fork+0x7c/0xb0
+https://bugzilla.redhat.com/show_bug.cgi?id=1103528
 
-This is because the kswapd thread is still marked as a reclaimer at the
-time of exit.  But because it is exiting, nobody is actually waiting on
-it to make reclaim progress anymore, and it's nothing but a regular
-thread at this point.  Be tidy and strip it of all its powers
-(PF_MEMALLOC, PF_SWAPWRITE, PF_KSWAPD, and the lockdep reclaim state)
-before returning from the thread function.
+This is different from how (elantech) clickpads normally operate, normally
+no matter where the user clicks on the pad the pad always reports a left
+button event, since there is only 1 hardware button beneath the path.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reported-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+It looks like Dell has put 2 buttons under the pad, one under each bottom
+corner, causing this.
+
+Since this however still clearly is a real clickpad hardware-wise, we still
+want to report it as such to userspace, so that things like finger movement
+in the bottom area can be properly ignored as it should be on clickpads.
+
+So deal with this weirdness by simply mapping a right click to a left click
+on elantech clickpads. As an added advantage this is something which we can
+simply do on all elantech clickpads, so no need to add special quirks for
+this weird model.
+
+Reported-and-tested-by: Elder Marco <eldermarco@gmail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/vmscan.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/input/mouse/elantech.c | 22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 433671bc21d5..b4241b7d7f07 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3247,7 +3247,10 @@ static int kswapd(void *p)
- 		}
- 	}
- 
-+	tsk->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD);
- 	current->reclaim_state = NULL;
-+	lockdep_clear_current_reclaim_state();
+diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+index 01fbea59398a..1f011270846a 100644
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -473,8 +473,15 @@ static void elantech_report_absolute_v3(struct psmouse *psmouse,
+ 	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
+ 	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
+ 	input_report_key(dev, BTN_TOOL_TRIPLETAP, fingers == 3);
+-	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
+-	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
 +
- 	return 0;
- }
++	/* For clickpads map both buttons to BTN_LEFT */
++	if (etd->fw_version & 0x001000) {
++		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
++	} else {
++		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
++		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
++	}
++
+ 	input_report_abs(dev, ABS_PRESSURE, pres);
+ 	input_report_abs(dev, ABS_TOOL_WIDTH, width);
  
+@@ -484,10 +491,17 @@ static void elantech_report_absolute_v3(struct psmouse *psmouse,
+ static void elantech_input_sync_v4(struct psmouse *psmouse)
+ {
+ 	struct input_dev *dev = psmouse->dev;
++	struct elantech_data *etd = psmouse->private;
+ 	unsigned char *packet = psmouse->packet;
+ 
+-	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
+-	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
++	/* For clickpads map both buttons to BTN_LEFT */
++	if (etd->fw_version & 0x001000) {
++		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
++	} else {
++		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
++		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
++	}
++
+ 	input_mt_report_pointer_emulation(dev, true);
+ 	input_sync(dev);
+ }
 -- 
 1.9.1
 
