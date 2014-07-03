@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758179AbaGCJVa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:21:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51499 "EHLO
+	id S1758230AbaGCJVi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:21:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51561 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758108AbaGCJVW (ORCPT
+	with ESMTP id S1758195AbaGCJVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:21:22 -0400
+	Thu, 3 Jul 2014 05:21:34 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Krufky <mkrufky@linuxtv.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 023/198] [media] dib0700: add support for PCTV 2002e & PCTV 2002e SE
-Date: Thu,  3 Jul 2014 10:17:46 +0100
-Message-Id: <1404379241-8590-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 032/198] Target/iser: Improve cm events handling
+Date: Thu,  3 Jul 2014 10:17:55 +0100
+Message-Id: <1404379241-8590-33-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,64 +28,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Krufky <mkrufky@linuxtv.org>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit c859e6ef33ac0c9a5e9e934fe11a2232752b4e96 upstream.
+commit 88c4015fda6d014392f76d3b1688347950d7a12d upstream.
 
-Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+There are 4 RDMA_CM events that all basically mean that
+the user should teardown the IB connection:
+- DISCONNECTED
+- ADDR_CHANGE
+- DEVICE_REMOVAL
+- TIMEWAIT_EXIT
+
+Only in DISCONNECTED/ADDR_CHANGE it makes sense to
+call rdma_disconnect (send DREQ/DREP to our initiator).
+So we keep the same teardown handler for all of them
+but only indicate calling rdma_disconnect for the relevant
+events.
+
+This patch also removes redundant debug prints for each single
+event.
+
+v2 changes:
+ - Call isert_disconnected_handler() for DEVICE_REMOVAL (Or + Sag)
+
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/dvb-core/dvb-usb-ids.h        |  2 ++
- drivers/media/usb/dvb-usb/dib0700_devices.c | 12 +++++++++++-
- 2 files changed, 13 insertions(+), 1 deletion(-)
+ drivers/infiniband/ulp/isert/ib_isert.c | 26 ++++++++++++++------------
+ drivers/infiniband/ulp/isert/ib_isert.h |  1 +
+ 2 files changed, 15 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/media/dvb-core/dvb-usb-ids.h b/drivers/media/dvb-core/dvb-usb-ids.h
-index 143d90819ec3..4cfb9624d69c 100644
---- a/drivers/media/dvb-core/dvb-usb-ids.h
-+++ b/drivers/media/dvb-core/dvb-usb-ids.h
-@@ -371,4 +371,6 @@
- #define USB_PID_TECHNISAT_USB2_DVB_S2			0x0500
- #define USB_PID_CPYTO_REDI_PC50A			0xa803
- #define USB_PID_CTVDIGDUAL_V2				0xe410
-+#define USB_PID_PCTV_2002E                              0x025c
-+#define USB_PID_PCTV_2002E_SE                           0x025d
- #endif
-diff --git a/drivers/media/usb/dvb-usb/dib0700_devices.c b/drivers/media/usb/dvb-usb/dib0700_devices.c
-index f08136052f9c..829323e42ca0 100644
---- a/drivers/media/usb/dvb-usb/dib0700_devices.c
-+++ b/drivers/media/usb/dvb-usb/dib0700_devices.c
-@@ -3589,6 +3589,8 @@ struct usb_device_id dib0700_usb_id_table[] = {
- 	{ USB_DEVICE(USB_VID_DIBCOM,    USB_PID_DIBCOM_TFE7790P) },
- 	{ USB_DEVICE(USB_VID_DIBCOM,    USB_PID_DIBCOM_TFE8096P) },
- /* 80 */{ USB_DEVICE(USB_VID_ELGATO,	USB_PID_ELGATO_EYETV_DTT_2) },
-+	{ USB_DEVICE(USB_VID_PCTV,      USB_PID_PCTV_2002E) },
-+	{ USB_DEVICE(USB_VID_PCTV,      USB_PID_PCTV_2002E_SE) },
- 	{ 0 }		/* Terminating entry */
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
+index 434113247c62..cfb8824d6a9e 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -573,8 +573,10 @@ isert_disconnect_work(struct work_struct *work)
+ 		return;
+ 	}
+ 
+-	/* Send DREQ/DREP towards our initiator */
+-	rdma_disconnect(isert_conn->conn_cm_id);
++	if (isert_conn->disconnect) {
++		/* Send DREQ/DREP towards our initiator */
++		rdma_disconnect(isert_conn->conn_cm_id);
++	}
+ 
+ 	mutex_unlock(&isert_conn->conn_mutex);
+ 
+@@ -584,10 +586,11 @@ wake_up:
+ }
+ 
+ static void
+-isert_disconnected_handler(struct rdma_cm_id *cma_id)
++isert_disconnected_handler(struct rdma_cm_id *cma_id, bool disconnect)
+ {
+ 	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
+ 
++	isert_conn->disconnect = disconnect;
+ 	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
+ 	schedule_work(&isert_conn->conn_logout_work);
+ }
+@@ -596,29 +599,28 @@ static int
+ isert_cma_handler(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
+ {
+ 	int ret = 0;
++	bool disconnect = false;
+ 
+ 	pr_debug("isert_cma_handler: event %d status %d conn %p id %p\n",
+ 		 event->event, event->status, cma_id->context, cma_id);
+ 
+ 	switch (event->event) {
+ 	case RDMA_CM_EVENT_CONNECT_REQUEST:
+-		pr_debug("RDMA_CM_EVENT_CONNECT_REQUEST: >>>>>>>>>>>>>>>\n");
+ 		ret = isert_connect_request(cma_id, event);
+ 		break;
+ 	case RDMA_CM_EVENT_ESTABLISHED:
+-		pr_debug("RDMA_CM_EVENT_ESTABLISHED >>>>>>>>>>>>>>\n");
+ 		isert_connected_handler(cma_id);
+ 		break;
+-	case RDMA_CM_EVENT_DISCONNECTED:
+-		pr_debug("RDMA_CM_EVENT_DISCONNECTED: >>>>>>>>>>>>>>\n");
+-		isert_disconnected_handler(cma_id);
+-		break;
+-	case RDMA_CM_EVENT_DEVICE_REMOVAL:
+-	case RDMA_CM_EVENT_ADDR_CHANGE:
++	case RDMA_CM_EVENT_ADDR_CHANGE:    /* FALLTHRU */
++	case RDMA_CM_EVENT_DISCONNECTED:   /* FALLTHRU */
++	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
++		disconnect = true;
++	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
++		isert_disconnected_handler(cma_id, disconnect);
+ 		break;
+ 	case RDMA_CM_EVENT_CONNECT_ERROR:
+ 	default:
+-		pr_err("Unknown RDMA CMA event: %d\n", event->event);
++		pr_err("Unhandled RDMA CMA event: %d\n", event->event);
+ 		break;
+ 	}
+ 
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.h b/drivers/infiniband/ulp/isert/ib_isert.h
+index 62a7a1de4365..174c4fffd8c4 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.h
++++ b/drivers/infiniband/ulp/isert/ib_isert.h
+@@ -105,6 +105,7 @@ struct isert_conn {
+ 	struct completion	conn_wait;
+ 	struct completion	conn_wait_comp_err;
+ 	struct kref		conn_kref;
++	bool                    disconnect;
  };
- MODULE_DEVICE_TABLE(usb, dib0700_usb_id_table);
-@@ -3993,12 +3995,20 @@ struct dvb_usb_device_properties dib0700_devices[] = {
- 			}
- 		},
  
--		.num_device_descs = 1,
-+		.num_device_descs = 3,
- 		.devices = {
- 			{   "Hauppauge Nova-TD Stick (52009)",
- 				{ &dib0700_usb_id_table[35], NULL },
- 				{ NULL },
- 			},
-+			{   "PCTV 2002e",
-+				{ &dib0700_usb_id_table[81], NULL },
-+				{ NULL },
-+			},
-+			{   "PCTV 2002e SE",
-+				{ &dib0700_usb_id_table[82], NULL },
-+				{ NULL },
-+			},
- 		},
- 
- 		.rc.core = {
+ #define ISERT_MAX_CQ 64
 -- 
 1.9.1
 
