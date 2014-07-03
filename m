@@ -1,125 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702AbaGCIgJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 04:36:09 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:34580 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884AbaGCIgH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 04:36:07 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Thu, 3 Jul 2014 17:37:29 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Subject: Re: [PATCH v9] mm: support madvise(MADV_FREE)
-Message-ID: <20140703083729.GE2939@bbox>
-References: <1404174975-22019-1-git-send-email-minchan@kernel.org>
- <20140701145058.GA2084@node.dhcp.inet.fi>
- <20140703010318.GA2939@bbox>
- <20140703072954.GC2939@bbox>
- <20140703102901.322bfdb0@mschwide>
+	id S1754027AbaGCIlf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 04:41:35 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:60840 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751031AbaGCIlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 04:41:32 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Stefan Klug'" <stefan.klug@baslerweb.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH][RFC] USB: zerocopy support for usbfs
+Thread-Topic: [PATCH][RFC] USB: zerocopy support for usbfs
+Thread-Index: AQHPlpMFL9uP+IUGEEyniU1IREIvbZuOBe9A
+Date: Thu, 3 Jul 2014 08:40:21 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1726BEF0@AcuExch.aculab.com>
+References: <Pine.LNX.4.44L0.1407021355060.874-100000@iolanthe.rowland.org>
+ <53B50AB7.2090709@baslerweb.com>
+In-Reply-To: <53B50AB7.2090709@baslerweb.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140703102901.322bfdb0@mschwide>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s638fjQj005744
 
-Hello,
+From: Stefan Klug
+...
+> Is there any way to check if the host controller supports arbitrary
+> alignment?
+> If I read the xhci spec correctly arbitrary alignment is explicitly
+> permitted.
 
-On Thu, Jul 03, 2014 at 10:29:01AM +0200, Martin Schwidefsky wrote:
-> On Thu, 3 Jul 2014 16:29:54 +0900
-> Minchan Kim <minchan@kernel.org> wrote:
-> 
-> > Hello,
-> > 
-> > On Thu, Jul 03, 2014 at 10:03:19AM +0900, Minchan Kim wrote:
-> > > Hello,
-> > > 
-> > > On Tue, Jul 01, 2014 at 05:50:58PM +0300, Kirill A. Shutemov wrote:
-> > > > On Tue, Jul 01, 2014 at 09:36:15AM +0900, Minchan Kim wrote:
-> > > > > +	do {
-> > > > > +		/*
-> > > > > +		 * XXX: We can optimize with supporting Hugepage free
-> > > > > +		 * if the range covers.
-> > > > > +		 */
-> > > > > +		next = pmd_addr_end(addr, end);
-> > > > > +		if (pmd_trans_huge(*pmd))
-> > > > > +			split_huge_page_pmd(vma, addr, pmd);
-> > > > 
-> > > > Could you implement proper THP support before upstreaming the feature?
-> > > > It shouldn't be a big deal.
-> > > 
-> > > Okay, Hope to review.
-> > > 
-> > > Thanks for the feedback!
-> > > 
-> > 
-> > I tried to implement it but had a issue.
-> > 
-> > I need pmd_mkold, pmd_mkclean for MADV_FREE operation and pmd_dirty for
-> > page_referenced. When I investigate all of arches supported THP,
-> > it's not a big deal but s390 is not sure to me who has no idea of
-> > soft tracking of s390 by storage key instead of page table information.
-> > Cced s390 maintainer. Hope to help.
-> 
-> Storage key for dirty and referenced tracking is a thing of the past.
-> The current code for s390 uses software tracking for dirty and referenced.
-> There is one catch though, for ptes the software implementation covers
-> dirty and referenced bit but for pmds only referenced bit is available.
-> The reason is that there is no free bit left in the pmd entry for the
-> software dirty bit.
+Not entirely.
+The xhci spec has a few limits on the alignment of transfer buffer.
+They seem to be designed to make life difficult for the kernel!
+1) Transfer buffers cannot be longer than 64k.
+2) Transfer buffers cannot cross 64k address boundaries.
+3) The end of a ring segment must occur on a USB packet boundary.
 
-Thanks for the quick reply.
+The current xhci driver doesn't implement check 3 - which causes
+certain devices to fail (notable the ax88179_178a usb3 ethernet).
 
->  
-> > So, if there isn't any help from s390, I should introduce
-> > HAVE_ARCH_THP_MADVFREE to disable MADV_FREE support of THP in s390 but
-> > not want to introduce such new config.
-> 
-> Why is the dirty bit for pmds needed for the MADV_FREE implementation?
+	David
 
-MADV_FREE semantic want it.
-
-When madvise syscall is called, VM clears dirty bit of ptes of
-the range. If memory pressure happens, VM checks dirty bit of
-page table and if it found still "clean", it means it's a
-"lazyfree pages" so VM could discard the page instead of swapping out.
-Once there was store operation for the page before VM peek a page
-to reclaim, dirty bit is set so VM can swap out the page instead of
-discarding to keep up-to-date contents.
-
-If it's hard on s390, maybe we could use just reference bit
-instead of dirty bit to check recent access but it might change
-semantic a bit with other OSes. :(
-
-> 
-> -- 
-> blue skies,
->    Martin.
-> 
-> "Reality continues to ruin my life." - Calvin.
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
