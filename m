@@ -1,97 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481AbaGCE7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 00:59:50 -0400
-Received: from ozlabs.org ([103.22.144.67]:37664 "EHLO ozlabs.org"
+	id S1751373AbaGCFKu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 01:10:50 -0400
+Received: from mga14.intel.com ([192.55.52.115]:14919 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754629AbaGCE7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 00:59:48 -0400
-Date: Thu, 3 Jul 2014 14:59:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20140703145940.002b7056@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1750867AbaGCFKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 01:10:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,592,1400050800"; 
+   d="scan'208";a="556766661"
+Date: Thu, 3 Jul 2014 13:11:42 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Bandan Das <bsd@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
+        Gleb Natapov <gleb@kernel.org>, Hu Robert <robert.hu@intel.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1
+ since race
+Message-ID: <20140703051142.GA2687@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com>
+ <jpg7g3v7mk0.fsf@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/=ttZzPY9/.AYNox9B.t4pIM"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <jpg7g3v7mk0.fsf@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/=ttZzPY9/.AYNox9B.t4pIM
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Bandan,
+On Wed, Jul 02, 2014 at 12:27:59PM -0400, Bandan Das wrote:
+>Wanpeng Li <wanpeng.li@linux.intel.com> writes:
+>
+>> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=72381 
+>I can also reproduce this easily with Linux as L1 by "slowing it down"
+>eg. running with ept = 0
+>
+>I suggest changing the subject to -
+>KVM: nVMX: Fix race that incorrectly injects L1's irq to L2
+>
 
-Hi Andrew,
+Ok, I will fold this to next version. ;-)
 
-After merging the akpm-current tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+>> If we didn't inject a still-pending event to L1 since nested_run_pending,
+>> KVM_REQ_EVENT should be requested after the vmexit in order to inject the 
+>> event to L1. However, current log blindly request a KVM_REQ_EVENT even if 
+>
+>What's current "log" ? Do you mean current "code" ?
+>
 
-/bin/sh: /scratch/sfr/next/scripts/basic/bin2c: No such file or directory
+Yeah, it's a typo. I mean "logic".
 
-Presumably caused by commit 572a8e0147f8 ("bin2c: move bin2c in
-scripts/basic") and commit 1b4c30351f49 ("purgatory: core purgatory
-functionality").  Note that the directory above is the *source*
-directory (I build with O=3D...).  bin2c is in my object directory (in
-scripts/basicbin2c).
+[...]
+>Also, I am wondering isn't it enough to just do this to avoid this race ?
+>
+> static int vmx_interrupt_allowed(struct kvm_vcpu *vcpu)
+> {
+>-       return (!to_vmx(vcpu)->nested.nested_run_pending &&
+>+       return (!is_guest_mode(vcpu) &&
+>+               !to_vmx(vcpu)->nested.nested_run_pending &&
+>                vmcs_readl(GUEST_RFLAGS) & X86_EFLAGS_IF) &&
+>                !(vmcs_read32(GUEST_INTERRUPTIBILITY_INFO) &
+>
 
-I have added the following patch for today:
+I don't think you fix the root cause of the race, and there are two cases which 
+I concern about your proposal:
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 3 Jul 2014 14:56:25 +1000
-Subject: [PATCH] purgatory: run host built programs from objtree
+- If there is a special L1 which don't ask to exit on external intrs, you will 
+  lose the intrs which L0 inject to L2.  
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/x86/purgatory/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+- If inject_pending_event fail to inject an intr since the change that you made 
+  in vmx_interrupt_allowed, L0 will request an intr window for L2, however, the 
+  intr is belong to L1.
 
-diff --git a/arch/x86/purgatory/Makefile b/arch/x86/purgatory/Makefile
-index e5829ddbca2b..7fde9ee438a4 100644
---- a/arch/x86/purgatory/Makefile
-+++ b/arch/x86/purgatory/Makefile
-@@ -18,7 +18,7 @@ $(obj)/purgatory.ro: $(PURGATORY_OBJS) FORCE
- targets +=3D kexec-purgatory.c
-=20
- quiet_cmd_bin2c =3D BIN2C   $@
--      cmd_bin2c =3D cat $(obj)/purgatory.ro | $(srctree)/scripts/basic/bin=
-2c kexec_purgatory > $(obj)/kexec-purgatory.c
-+      cmd_bin2c =3D cat $(obj)/purgatory.ro | $(objtree)/scripts/basic/bin=
-2c kexec_purgatory > $(obj)/kexec-purgatory.c
-=20
- $(obj)/kexec-purgatory.c: $(obj)/purgatory.ro FORCE
- 	$(call if_changed,bin2c)
---=20
-2.0.0
+Regards,
+Wanpeng Li 
 
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/=ttZzPY9/.AYNox9B.t4pIM
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTtONBAAoJEMDTa8Ir7ZwVKnYP+wYcc1wW0F5w8m7oA5eiiNES
-UJ6Uct/EJhUoanP7UobZdpnBqGCgHLeHONxSqMuhdf9Z/nRgdgRQD1kZO/sq7RH1
-KedhFZBQHgtOHHlSW4aKQXeQNhcV1Z5fDmGTWJZrmVEtOeD80y606jvgPmoYuCpy
-5pWJYJlSziEt52ztFYHv2+DVGZTQkf5X+OnyXyW7w8jdCTG3rzbpVunCrCQFEiFg
-/I0rgow7rXgRVxPBud/lVfDZZYYrVm7FuvaEJcx+WqvhY0dvAwxkNXCaK5E7Fssm
-UfsbsXf/M/3LPkN+LXRm9o7kKwaoTawk+czfMCVnpg6dVBeGGcPclJuheJxKQ83L
-w5IWfM++FVEKYs758Fhxz29av4TR7UCz4hD55d6XMLgOxBrwkVv49rqzONSbx69z
-sr9NSXRhYV9xR3kAbI0P/DBQFNGxyiqLydfmNaKUrM30BfEtlGFWleV0/4m39vgY
-vvKO+gxB3o1VwNqivFV+n3lbQUWVa56zcMkS4fZcaSrP+WmXuigiO3KdxDgEQqQq
-/2iutASJrsjQtmVq5Si8IqjsObk6IPrqFl1kA5JofaOd4X5j/w9M0z8XUf4BwL4W
-Rmo1zl86L162Nwsd52VfBMkS2oZLhoR0wh/5iqaqU38nLRBfZBc/Nd68lVhbPPt5
-TEUTmBQTzTrtgGYXfUlS
-=/6g2
------END PGP SIGNATURE-----
-
---Sig_/=ttZzPY9/.AYNox9B.t4pIM--
+>Thanks,
+>Bandan
