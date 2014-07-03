@@ -1,179 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847AbaGCC3v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 22:29:51 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:45904 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754248AbaGCC3s convert rfc822-to-8bit (ORCPT
+	id S1754927AbaGCCcK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 22:32:10 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:29541 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751547AbaGCCcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 22:29:48 -0400
+	Wed, 2 Jul 2014 22:32:08 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqBaAHy/tFN5LHZ8PGdsb2JhbABagw2DSoUIpBkBAgEBB5pVgQgXBAEBAQE4NYREHCMYJDQFJQMHLYhBx2kYhViGDQGCW0mESgWabJYMgVQrgTI
+Date: Thu, 3 Jul 2014 12:32:04 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: linux-kernel@vger.kernel.org
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Peter Zijlstra <peterz@infradead.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [regression, 3.16-rc] rwsem: optimistic spinning causing performance
+ degradation
+Message-ID: <20140703023204.GN4453@dastard>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrW5WitpzcFmkGDwR6U=qOwCkOfQMy=XOtQTuHs-942Drw@mail.gmail.com>
-References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
-	<1403913966-4927-4-git-send-email-ast@plumgrid.com>
-	<CALCETrV3WLBmHewCZgfhCkjODWfq_byRg6sF7HpqZ6n9BVMBVQ@mail.gmail.com>
-	<CAMEtUuzWs+MbSOGGD-Rc01DHKASa4GxbHdtCrSCLit4cUM35mA@mail.gmail.com>
-	<CALCETrWy6=dzTycy-ckiMR92+nQeqAWp_Hw=hi__VSzVWZ43Ag@mail.gmail.com>
-	<CAMEtUuwRf--qyPu3rKB7-57KAu2NdsQdEpVRckqabmf61g+h-g@mail.gmail.com>
-	<CALCETrUoOTtQ1R1A8Ak35fxHxaFTPHWP6oZWnXDVLKa_ESziWw@mail.gmail.com>
-	<CAMEtUuzS=9Y_ZjigofvQ5d3=89RS=+d8-WGPk9VVSMc3qawWsw@mail.gmail.com>
-	<CALCETrWq+=Q3G2Smjd2RYES42UagpmD0EKxFM+jNufi6_qitWg@mail.gmail.com>
-	<CAMEtUuyKY=haqP11VgXHdfHBkqfB-KxuswygUd7hDPLkOFz9HQ@mail.gmail.com>
-	<CALCETrW3=idHOKF56d94suiA0NoiUGwr7pENm13q6=1XMbBPdw@mail.gmail.com>
-	<CAMEtUuyX-tybpMEW=f-00qgq9h3AcHovLNW0_bak3oT4Oj3FuA@mail.gmail.com>
-	<CALCETrWpA5M74pKJLFJ0t-2hi2TXMi_BV6DbJMmdDOJyOoHOyg@mail.gmail.com>
-	<CAMEtUuzHrzyUG1nie5cWzGZYTDTnqL7vPvAmPZdie_uSM_wqRA@mail.gmail.com>
-	<CALCETrW5WitpzcFmkGDwR6U=qOwCkOfQMy=XOtQTuHs-942Drw@mail.gmail.com>
-Date: Wed, 2 Jul 2014 19:29:47 -0700
-Message-ID: <CAMEtUuzkVANM341xPTKH1bNVNuK6TQcyqsdZdkGWausLT5Qj6A@mail.gmail.com>
-Subject: Re: [PATCH RFC net-next 03/14] bpf: introduce syscall(BPF, ...) and
- BPF maps
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 2, 2014 at 6:43 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Tue, Jul 1, 2014 at 10:33 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->> I want to avoid string names, since they will force new 'strtab', 'symtab'
->> sections in the programs/maps and will uglify the user interface quite a bit.
->
-> To be fair, you really need to imitate ELF here.  A very simple
-> relocation-like table should do the trick.
+Hi folks,
 
-simple.. right :) I do see the amount of struggle you have with
-binutils and vdso.
-I really don't want to add relocation unless this is last resort.
-Especially since it can be solved without it.
-I don't think I explained it enough in my last email… trying again:
+I've got a workload that hammers the mmap_sem via multi-threads
+memory allocation and page faults: it's called xfs_repair. I've been
+debugging problems with the latest release, and in the process of
+tracking down some recent regressions I noticed that turning off all
+the cross-ag IO concurrency resulted in the repair running about
+4-5x faster.
 
->> Back in september one loadable unit was: one eBPF program + set of maps,
->> but tracing requirements forced a change, since multiple programs need
->> to access the same map and maps may need to be pre-populated before
->> the programs start executing, so I've split maps and programs into mostly
->> independent entities, but programs still need to think of maps as local:
->> For example I want to do a skb leak check 'tracing filter':
->> - attach this program to kretprobe of __alloc_skb():
->>   u64 key = (u64) skb;
->>   u64 value = bpf_get_time();
->>   bpf_update_map_elem(1/*const_map_id*/, &key, &value);
->> - attach this program to consume_skb and kfree_skb tracepoints:
->>   u64 key = (u64) skb;
->>   bpf_delete_map_elem(1/*const_map_id*/, &key);
->> - and have user space do:
->>   prior to loading:
->>   bpf_create_map(1/*map_id*/, 8/*key_size*/, 8/*value*/, 1M /*max_entries*/)
->>   and then periodically iterate the map to see whether any skb stayed
->>   in the map for too long.
->>
->> Programs need to be written with hard coded map_ids otherwise usability
->> suffers, so I did global 32-bit id in this RFC
->>, but this indeed doesn't work
->
-> Really?  That will mean that you have to edit the source of your
-> filter program if the small integer map number you chose conflicts
-> with another program.  That sounds unpleasant.
+i.e.:
 
-unpleasant. exactly. that's why I'm proposing per-process local map-id,
-so that programs don't need to be edited.
+# time xfs_repair -f -vv fs.img
+.....
 
->> for unprivileged chrome browser unless programs are previously loaded
->> by root and chrome only does attach to seccomp.
->>
->> So here is the non-root bpf syscall interface I'm thinking about:
->>
->> ufd = bpf_create_map(map_id, key_size, value_size, max_entries);
->>
->> it will create a global map in the system which will be accessible
->> in this process via 'ufd'. Internally this 'ufd' will be assigned global map_id
->> and process-local map_id that was passed as a 1st argument.
->> To do update/lookup the process will use bpf_map_xxx_elem(ufd,…)
->>
->
-> Erk.  Unprivileged programs shouldn't be able to allocate global ids
-> of their choosing, especially if privileged programs can also do it.
-> Otherwise unprivileged programs can force a collision and possibly
-> steal information.
+        XFS_REPAIR Summary    Thu Jul  3 11:51:41 2014
 
-of course. that's not what said.
+Phase           Start           End             Duration
+Phase 1:        07/03 11:47:15  07/03 11:47:15
+Phase 2:        07/03 11:47:15  07/03 11:47:35  20 seconds
+Phase 3:        07/03 11:47:35  07/03 11:51:26  3 minutes, 51 seconds
+Phase 4:        07/03 11:51:26  07/03 11:51:31  5 seconds
+Phase 5:        07/03 11:51:31  07/03 11:51:31
+Phase 6:        07/03 11:51:31  07/03 11:51:39  8 seconds
+Phase 7:        07/03 11:51:39  07/03 11:51:39
 
->> Then to load eBPF program the process will do:
->> ufd = bpf_prog_load(prog_type, ebpf_insn_array, license)
->> and instructions will be referring to maps via local map_id that
->> was hard coded as part of the program.
->
-> I think relocations would be must prettier than per-process map id tables.
+Total run time: 4 minutes, 24 seconds
+done
 
-I think per process map_id are much cleaner.
+real    4m26.399s
+user    1m6.023s
+sys     27m26.707s
+$
 
-non-root API:
+And turning off AG striding:
 
-ufd = bpf_create_map(local_map_id,… )
-bpf_map_update/delete/lookup_elem(ufd,…)
-ufd = bpf_prog_load(insns)
-close(ufd)
+# time xfs_repair -f -vv -o ag_stride=-1 fs.img
+.....
+        XFS_REPAIR Summary    Thu Jul  3 11:41:28 2014
 
-root only API:
+Phase           Start           End             Duration
+Phase 1:        07/03 11:40:27  07/03 11:40:27  
+Phase 2:        07/03 11:40:27  07/03 11:40:36  9 seconds
+Phase 3:        07/03 11:40:36  07/03 11:41:12  36 seconds
+Phase 4:        07/03 11:41:12  07/03 11:41:17  5 seconds
+Phase 5:        07/03 11:41:17  07/03 11:41:18  1 second
+Phase 6:        07/03 11:41:18  07/03 11:41:25  7 seconds
+Phase 7:        07/03 11:41:25  07/03 11:41:25  
 
-global_id = bpf_get_id(ufd) // returns either map or prog global id
-bpf_map_delete(global_map_id)
-bpf_prog_unload(global_prog_id)
+Total run time: 58 seconds
+done
 
-Details:
+real    0m59.893s
+user    0m41.935s
+sys     4m55.867s
+$
 
-ufd = bpf_create_map(local_map_id, ...);
+The difference is in phase 2 and 3, which is where all the memory
+allocation and IO that populates the userspace buffer cache takes
+place. The remainder of the phases run from the cache. All IO is
+direct IO, so there is no kernel caching at all. The filesystem
+image has a lot of metadata in it - it has 336 AGs and the buffer
+cache grows to about 6GB in size during phase 3.
 
-local_map_id - process local map_id
-(this id is used to access maps from eBPF program loaded by this process)
+The difference in performance is in the system CPU time, and it
+results directly in lower IO dispatch rates - about 2,000 IOPS
+instead of ~12,000.
 
-ufd - process local file descriptor
-(used to update/lookup maps from this process)
+This is what the kernel profile looks like on the strided run:
 
-global_map_id = bpf_get_id(ufd)
-this is root only call to get global_ids and pass them to global events
-like tracing.
+-  83.06%  [kernel]  [k] osq_lock
+   - osq_lock
+      - 100.00% rwsem_down_write_failed
+         - call_rwsem_down_write_failed
+            - 99.55% sys_mprotect
+                 tracesys
+                 __GI___mprotect
+-  12.02%  [kernel]  [k] rwsem_down_write_failed
+     rwsem_down_write_failed
+     call_rwsem_down_write_failed
++   1.09%  [kernel]  [k] _raw_spin_unlock_irqrestore
++   0.92%  [kernel]  [k] _raw_spin_unlock_irq
++   0.68%  [kernel]  [k] __do_softirq
++   0.33%  [kernel]  [k] default_send_IPI_mask_sequence_phys
++   0.10%  [kernel]  [k] __do_page_fault
 
-global ids will only be seen by root. There is no way for root or non-root
-to influence id ranges.
+Basically, all the kernel time is spent processing lock contention
+rather than doing real work.
 
->> Beyond the normal create_map, update/lookup/delete, load_prog
->> operations (that are accessible to both root and non-root), the root user
->> gains one more operations: bpf_get_global_id(ufd) that returns
->> global map_id or prog_id. This id can be attached to global events
->> like tracing. Non-root users lose ability to do delete_map and
->> unload_prog (they do close(ufd) instead), so this ops are for root
->> only and operate on global ids.
->> This is the cleanest way I could think of to combine non-root
->> security, per-process id and global id all in one API. Thoughts?
->
-> I think I'm okay with this part, although an interface to get a map fd
-> given some reference to the program (in sysfs) that uses it would also
-> work and maybe be more straightforward.
+I haven't tested back on 3.15 yet, but historically the strided AG
+repair for such filesystems (which I test all the time on 100+500TB
+filesystem images) is about 20-25% faster on this storage subsystem.
+Yes, the old code also burnt a lot of CPU due to lock contention,
+but it didn't go 5x slower than having no threading at all.
 
-If you meant debugfs, then yes. I'm planning to add a way for root
-to see all loaded programs and maps (similar to /proc as lsmod does),
-and then do bpf_map_delete/bpf_prog_unload (similar to rmmod)
+So this looks like a significant performance regression due to:
 
-setsockopt and seccomp will be non-root and programs will go
-through additional dont_leak_pointers check in verifier.
-tracing/dtrace will be for root only, since they would need to attach
-to global events.
+4fc828e locking/rwsem: Support optimistic spinning
 
-I think it will be cleaner once I finish fd conversion as a patch.
+which changed the rwsem behaviour in 3.16-rc1.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
