@@ -1,209 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759378AbaGCRk4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 13:40:56 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:35048 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759325AbaGCRky (ORCPT
+	id S1759424AbaGCRlP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 13:41:15 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:52701 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758872AbaGCRlM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 13:40:54 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Thu, 3 Jul 2014 19:40:17 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Janne Kanniainen <janne.kanniainen@gmail.com>, cooloney@gmail.com
-Cc: johan@kernel.org, cooloney@gmail.com, jkosina@suse.cz, greg@kroah.com,
-        bjorn@mork.no, linux-kernel@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 2/2 v6] HID: gt683r: move mode attribute to led-class
- devices
-Message-ID: <20140703174017.GP16590@localhost>
-References: <20140703082830.GB16590@localhost>
- <1404407829-1815-1-git-send-email-janne.kanniainen@gmail.com>
- <1404407829-1815-2-git-send-email-janne.kanniainen@gmail.com>
+	Thu, 3 Jul 2014 13:41:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404407829-1815-2-git-send-email-janne.kanniainen@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1726BF1A@AcuExch.aculab.com>
+References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
+	<1403913966-4927-9-git-send-email-ast@plumgrid.com>
+	<CA+ZOOTODDPN=6SECq1uPPD7AGP1zgBJ+bfYaX9o3YhnaCTiHYQ@mail.gmail.com>
+	<CAMEtUuxfrAUDDQVGNsNV2PeDii-6LAwQCbB2XGEHTJDwkkvyWg@mail.gmail.com>
+	<063D6719AE5E284EB5DD2968C1650D6D1726BF1A@AcuExch.aculab.com>
+Date: Thu, 3 Jul 2014 10:41:10 -0700
+Message-ID: <CAMEtUuzfU6APGmWrCXVR-18P531vSAEOaC=x8wtyr+4yegTq3w@mail.gmail.com>
+Subject: Re: [PATCH RFC net-next 08/14] bpf: add eBPF verifier
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: David Laight <David.Laight@aculab.com>
+Cc: Chema Gonzalez <chema@google.com>, "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 08:17:09PM +0300, Janne Kanniainen wrote:
-> Move led_mode attribute from HID device to led-class devices and rename
-> it msi_mode. This will also fix race condition by using
+On Thu, Jul 3, 2014 at 2:13 AM, David Laight <David.Laight@aculab.com> wrote:
+> From: Alexei Starovoitov
+>> >> +#define _(OP) ({ int ret = OP; if (ret < 0) return ret; })
+>> > +1 to removing the _ macro. If you want to avoid the 3 lines (is there
+>> > anything in the style guide against "if ((err=OP) < 0) ..." ?), at
+>>
+>> assignment and function call inside 'if' ? I don't like such style.
+>>
+>> > least use some meaningful macro name (DO_AND_CHECK, or something like
+>> > that).
+>
+> It would have to be RETURN_IF_NEGATIVE().
+> But even then it is skipped by searches for 'return'.
 
-There's a typo here (s/msi_mode/mode) but perhaps Bryan can just fix
-that up before applying?
+try s/\<_\>/RETURN_IF_NEGATIVE/ and see how ugly it looks…
 
-> attribute-groups.
-> 
-> Signed-off-by: Janne Kanniainen <janne.kanniainen@gmail.com>
+>> Try replacing _ with any other name and see how bad it will look.
+>> I tried with MACRO_NAME and with 'if (err) goto' and with 'if (err) return',
+>> before I converged on _ macro.
+>> I think it's a hidden gem of this patch.
+>
+> No, it is one of those things that 'seems like a good idea at the time',
+> but causes grief much later on.
 
-Reviewed-by: Johan Hovold <johan@kernel.org>
+Disagree. The _ macro in this code has been around for
+almost 2 years and survived all sorts of changes all over the verifier.
+The macro proved to be very effective in reducing code noise.
 
-Otherwise both patches (v6) are ready to be merged, Bryan.
+> Have you considered saving the error code into 'env' and making most of
+> the functions return if an error is set?
+> Then the calling code need not check the result of every function call.
 
-Thanks, Janne!
-
-Johan
-
-> ---
-> 
-> Changes in v3:
-> 	- Style fixes
-> 	- Rename sysfs-class-hid-driver-gt683r to sysfs-class-leds-driver-gt683r
-> 
-> Changes in v4:
-> 	- Rename sysfs-class-leds-driver-gt683r to sysfs-class-leds-gt683r
-> 	- Change "What: " to /sys/class/leds/<led>/gt683r/mode
-> 	- Change .name from gt683r_led to gt683r
-> 
-> Changes in v5:
-> 	- Move mode attribute to gt683r/mode
-> 
-> Changes in v6:
-> 	- Fix subject and commit message
-> 
->  .../ABI/testing/sysfs-class-hid-driver-gt683r      | 14 ---------
->  Documentation/ABI/testing/sysfs-class-leds-gt683r  | 16 ++++++++++
->  drivers/hid/hid-gt683r.c                           | 36 ++++++++++++++--------
->  3 files changed, 40 insertions(+), 26 deletions(-)
->  delete mode 100644 Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
->  create mode 100644 Documentation/ABI/testing/sysfs-class-leds-gt683r
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r b/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
-> deleted file mode 100644
-> index 317e9d5..0000000
-> --- a/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
-> +++ /dev/null
-> @@ -1,14 +0,0 @@
-> -What:		/sys/class/hidraw/<hidraw>/device/leds_mode
-> -Date:		Jun 2014
-> -KernelVersion:	3.17
-> -Contact:	Janne Kanniainen <janne.kanniainen@gmail.com>
-> -Description:
-> -		Set the mode of LEDs
-> -
-> -		0 - normal
-> -		1 - audio
-> -		2 - breathing
-> -
-> -		Normal: LEDs are fully on when enabled
-> -		Audio:  LEDs brightness depends on sound level
-> -		Breathing: LEDs brightness varies at human breathing rate
-> \ No newline at end of file
-> diff --git a/Documentation/ABI/testing/sysfs-class-leds-gt683r b/Documentation/ABI/testing/sysfs-class-leds-gt683r
-> new file mode 100644
-> index 0000000..e4fae60
-> --- /dev/null
-> +++ b/Documentation/ABI/testing/sysfs-class-leds-gt683r
-> @@ -0,0 +1,16 @@
-> +What:		/sys/class/leds/<led>/gt683r/mode
-> +Date:		Jun 2014
-> +KernelVersion:	3.17
-> +Contact:	Janne Kanniainen <janne.kanniainen@gmail.com>
-> +Description:
-> +		Set the mode of LEDs. You should notice that changing the mode
-> +		of one LED will update the mode of its two sibling devices as
-> +		well.
-> +
-> +		0 - normal
-> +		1 - audio
-> +		2 - breathing
-> +
-> +		Normal: LEDs are fully on when enabled
-> +		Audio:  LEDs brightness depends on sound level
-> +		Breathing: LEDs brightness varies at human breathing rate
-> \ No newline at end of file
-> diff --git a/drivers/hid/hid-gt683r.c b/drivers/hid/hid-gt683r.c
-> index 073bd80..0d6f135 100644
-> --- a/drivers/hid/hid-gt683r.c
-> +++ b/drivers/hid/hid-gt683r.c
-> @@ -84,12 +84,13 @@ static void gt683r_brightness_set(struct led_classdev *led_cdev,
->  	}
->  }
->  
-> -static ssize_t leds_mode_show(struct device *dev,
-> +static ssize_t mode_show(struct device *dev,
->  				struct device_attribute *attr,
->  				char *buf)
->  {
->  	u8 sysfs_mode;
-> -	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-> +	struct hid_device *hdev = container_of(dev->parent,
-> +					struct hid_device, dev);
->  	struct gt683r_led *led = hid_get_drvdata(hdev);
->  
->  	if (led->mode == GT683R_LED_NORMAL)
-> @@ -102,12 +103,13 @@ static ssize_t leds_mode_show(struct device *dev,
->  	return scnprintf(buf, PAGE_SIZE, "%u\n", sysfs_mode);
->  }
->  
-> -static ssize_t leds_mode_store(struct device *dev,
-> +static ssize_t mode_store(struct device *dev,
->  				struct device_attribute *attr,
->  				const char *buf, size_t count)
->  {
->  	u8 sysfs_mode;
-> -	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-> +	struct hid_device *hdev = container_of(dev->parent,
-> +					struct hid_device, dev);
->  	struct gt683r_led *led = hid_get_drvdata(hdev);
->  
->  
-> @@ -212,7 +214,22 @@ fail:
->  	mutex_unlock(&led->lock);
->  }
->  
-> -static DEVICE_ATTR_RW(leds_mode);
-> +static DEVICE_ATTR_RW(mode);
-> +
-> +static struct attribute *gt683r_led_attrs[] = {
-> +	&dev_attr_mode.attr,
-> +	NULL
-> +};
-> +
-> +static const struct attribute_group gt683r_led_group = {
-> +	.name = "gt683r",
-> +	.attrs = gt683r_led_attrs,
-> +};
-> +
-> +static const struct attribute_group *gt683r_led_groups[] = {
-> +	&gt683r_led_group,
-> +	NULL
-> +};
->  
->  static int gt683r_led_probe(struct hid_device *hdev,
->  			const struct hid_device_id *id)
-> @@ -261,6 +278,8 @@ static int gt683r_led_probe(struct hid_device *hdev,
->  		led->led_devs[i].name = name;
->  		led->led_devs[i].max_brightness = 1;
->  		led->led_devs[i].brightness_set = gt683r_brightness_set;
-> +		led->led_devs[i].groups = gt683r_led_groups;
-> +
->  		ret = led_classdev_register(&hdev->dev, &led->led_devs[i]);
->  		if (ret) {
->  			hid_err(hdev, "could not register led device\n");
-> @@ -268,12 +287,6 @@ static int gt683r_led_probe(struct hid_device *hdev,
->  		}
->  	}
->  
-> -	ret = device_create_file(&led->hdev->dev, &dev_attr_leds_mode);
-> -	if (ret) {
-> -		hid_err(hdev, "could not make mode attribute file\n");
-> -		goto fail;
-> -	}
-> -
->  	return 0;
->  
->  fail:
-> @@ -288,7 +301,6 @@ static void gt683r_led_remove(struct hid_device *hdev)
->  	int i;
->  	struct gt683r_led *led = hid_get_drvdata(hdev);
->  
-> -	device_remove_file(&hdev->dev, &dev_attr_leds_mode);
->  	for (i = 0; i < GT683R_LED_COUNT; i++)
->  		led_classdev_unregister(&led->led_devs[i]);
->  	flush_work(&led->work);
+that won't work, since err = check1(); err = check2(); if (err) is just wrong,
+then err |= check1(); err |= check2() is even worse.
+Even if it was possible, continuing verification and printing multiple
+errors is too confusing for users. While writing programs and
+dealing with verifier rejects we found that the first error is more than
+enough to go back and analyze what's wrong with C source.
+Notice that verifier prints full verification trace. Without it it was very
+hard to understand why particular register at some point has
+invalid type.
