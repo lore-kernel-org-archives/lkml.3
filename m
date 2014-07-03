@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030469AbaGCJtN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:49:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52203 "EHLO
+	id S1030787AbaGCJtl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:49:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52176 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030207AbaGCJXr (ORCPT
+	with ESMTP id S1030185AbaGCJXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:23:47 -0400
+	Thu, 3 Jul 2014 05:23:41 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lukas Czerner <lczerner@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 125/198] dm thin: update discard_granularity to reflect the thin-pool blocksize
-Date: Thu,  3 Jul 2014 10:19:28 +0100
-Message-Id: <1404379241-8590-126-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 120/198] powerpc: Make logical to real cpu mapping code endian safe
+Date: Thu,  3 Jul 2014 10:19:23 +0100
+Message-Id: <1404379241-8590-121-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukas Czerner <lczerner@redhat.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 09869de57ed2728ae3c619803932a86cb0e2c4f8 upstream.
+commit ac13282dff13cd0f4da0f0ccb134bc29bfa10255 upstream.
 
-DM thinp already checks whether the discard_granularity of the data
-device is a factor of the thin-pool block size.  But when using the
-dm-thin-pool's discard passdown support, DM thinp was not selecting the
-max of the underlying data device's discard_granularity and the
-thin-pool's block size.
-
-Update set_discard_limits() to set discard_granularity to the max of
-these values.  This enables blkdev_issue_discard() to properly align the
-discards that are sent to the DM thin device on a full block boundary.
-As such each discard will now cover an entire DM thin-pool block and the
-block will be reclaimed.
-
-Reported-by: Zdenek Kabelac <zkabelac@redhat.com>
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-thin.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/powerpc/kernel/setup-common.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
-index 316f8a9af93b..7dab6e605c88 100644
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -2675,7 +2675,8 @@ static void set_discard_limits(struct pool_c *pt, struct queue_limits *limits)
- 	 */
- 	if (pt->adjusted_pf.discard_passdown) {
- 		data_limits = &bdev_get_queue(pt->data_dev->bdev)->limits;
--		limits->discard_granularity = data_limits->discard_granularity;
-+		limits->discard_granularity = max(data_limits->discard_granularity,
-+						  pool->sectors_per_block << SECTOR_SHIFT);
- 	} else
- 		limits->discard_granularity = pool->sectors_per_block << SECTOR_SHIFT;
- }
+diff --git a/arch/powerpc/kernel/setup-common.c b/arch/powerpc/kernel/setup-common.c
+index 63d051f5b7a5..ee0e0553ae0e 100644
+--- a/arch/powerpc/kernel/setup-common.c
++++ b/arch/powerpc/kernel/setup-common.c
+@@ -436,7 +436,7 @@ void __init smp_setup_cpu_maps(void)
+ 	DBG("smp_setup_cpu_maps()\n");
+ 
+ 	while ((dn = of_find_node_by_type(dn, "cpu")) && cpu < nr_cpu_ids) {
+-		const int *intserv;
++		const __be32 *intserv;
+ 		int j, len;
+ 
+ 		DBG("  * %s...\n", dn->full_name);
+@@ -456,9 +456,9 @@ void __init smp_setup_cpu_maps(void)
+ 
+ 		for (j = 0; j < nthreads && cpu < nr_cpu_ids; j++) {
+ 			DBG("    thread %d -> cpu %d (hard id %d)\n",
+-			    j, cpu, intserv[j]);
++			    j, cpu, be32_to_cpu(intserv[j]));
+ 			set_cpu_present(cpu, true);
+-			set_hard_smp_processor_id(cpu, intserv[j]);
++			set_hard_smp_processor_id(cpu, be32_to_cpu(intserv[j]));
+ 			set_cpu_possible(cpu, true);
+ 			cpu++;
+ 		}
 -- 
 1.9.1
 
