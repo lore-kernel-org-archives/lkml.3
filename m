@@ -1,246 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759959AbaGCWKp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 18:10:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52302 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750868AbaGCWKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 18:10:43 -0400
-Date: Thu, 3 Jul 2014 18:10:11 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org, riel@redhat.com,
-        andi@firstfloor.org, rientjes@google.com
-Subject: [PATCH v2] x86: numa: setup_node_data(): drop dead code and rename
- function
-Message-ID: <20140703181011.75cb7cc0@redhat.com>
-Organization: Red Hat
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759986AbaGCWLN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 18:11:13 -0400
+Received: from smtprelay0194.hostedemail.com ([216.40.44.194]:33604 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759791AbaGCWIS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 18:08:18 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:800:960:966:973:988:989:1260:1345:1359:1534:1538:1566:1711:1714:1730:1747:1777:1792:2196:2199:2393:2559:2562:3138:3139:3140:3141:3142:3622:3876:3877:4321:4385:5007:6114:6119:6261:6642:7514:7809:10004:10026:10848:11232:11658:11914:12043:12517:12519:12555:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: wood07_2b1d7fbf4940a
+X-Filterd-Recvd-Size: 1290
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 07/16] MAINTAINERS: Fix PXA3xx NAND FLASH DRIVER pattern
+Date: Thu,  3 Jul 2014 15:07:51 -0700
+Message-Id: <5c55003d96ab481799f9d7974e3144842a30bde0.1404425176.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <cover.1404425176.git.joe@perches.com>
+References: <cover.1404425176.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The setup_node_data() function allocates a pg_data_t object, inserts it
-into the node_data[] array and initializes the following fields:
-node_id, node_start_pfn and node_spanned_pages.
+Use underscore, not dash
 
-However, a few function calls later during the kernel boot,
-free_area_init_node() re-initializes those fields, possibly with
-different values. This means that the initialization done by
-setup_node_data() is not used.
-
-This causes a small glitch when running Linux as a hyperv numa guest:
-
-[    0.000000] SRAT: PXM 0 -> APIC 0x00 -> Node 0
-[    0.000000] SRAT: PXM 0 -> APIC 0x01 -> Node 0
-[    0.000000] SRAT: PXM 1 -> APIC 0x02 -> Node 1
-[    0.000000] SRAT: PXM 1 -> APIC 0x03 -> Node 1
-[    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
-[    0.000000] SRAT: Node 1 PXM 1 [mem 0x80200000-0xf7ffffff]
-[    0.000000] SRAT: Node 1 PXM 1 [mem 0x100000000-0x1081fffff]
-[    0.000000] NUMA: Node 1 [mem 0x80200000-0xf7ffffff] + [mem 0x100000000-0x1081fffff] -> [mem 0x80200000-0x1081fffff]
-[    0.000000] Initmem setup node 0 [mem 0x00000000-0x7fffffff]
-[    0.000000]   NODE_DATA [mem 0x7ffdc000-0x7ffeffff]
-[    0.000000] Initmem setup node 1 [mem 0x80800000-0x1081fffff]
-[    0.000000]   NODE_DATA [mem 0x1081ea000-0x1081fdfff]
-[    0.000000] crashkernel: memory value expected
-[    0.000000]  [ffffea0000000000-ffffea0001ffffff] PMD -> [ffff88007de00000-ffff88007fdfffff] on node 0
-[    0.000000]  [ffffea0002000000-ffffea00043fffff] PMD -> [ffff880105600000-ffff8801077fffff] on node 1
-[    0.000000] Zone ranges:
-[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
-[    0.000000]   Normal   [mem 0x100000000-0x1081fffff]
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x00001000-0x0009efff]
-[    0.000000]   node   0: [mem 0x00100000-0x7ffeffff]
-[    0.000000]   node   1: [mem 0x80200000-0xf7ffffff]
-[    0.000000]   node   1: [mem 0x100000000-0x1081fffff]
-[    0.000000] On node 0 totalpages: 524174
-[    0.000000]   DMA zone: 64 pages used for memmap
-[    0.000000]   DMA zone: 21 pages reserved
-[    0.000000]   DMA zone: 3998 pages, LIFO batch:0
-[    0.000000]   DMA32 zone: 8128 pages used for memmap
-[    0.000000]   DMA32 zone: 520176 pages, LIFO batch:31
-[    0.000000] On node 1 totalpages: 524288
-[    0.000000]   DMA32 zone: 7672 pages used for memmap
-[    0.000000]   DMA32 zone: 491008 pages, LIFO batch:31
-[    0.000000]   Normal zone: 520 pages used for memmap
-[    0.000000]   Normal zone: 33280 pages, LIFO batch:7
-
-In this dmesg, the SRAT table reports that the memory range for node 1
-starts at 0x80200000. However, the line starting with "Initmem" reports
-that node 1 memory range starts at 0x80800000. The "Initmem" line is
-reported by setup_node_data() and is wrong, because the kernel ends up
-using the range as reported in the SRAT table.
-
-This commit drops all that dead code from setup_node_data(), renames it
-to alloc_node_data() and adds a printk() to free_area_init_node() so
-that we report a node's memory range accurately.
-
-Here's the same dmesg section with this patch applied:
-
-[    0.000000] SRAT: PXM 0 -> APIC 0x00 -> Node 0
-[    0.000000] SRAT: PXM 0 -> APIC 0x01 -> Node 0
-[    0.000000] SRAT: PXM 1 -> APIC 0x02 -> Node 1
-[    0.000000] SRAT: PXM 1 -> APIC 0x03 -> Node 1
-[    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
-[    0.000000] SRAT: Node 1 PXM 1 [mem 0x80200000-0xf7ffffff]
-[    0.000000] SRAT: Node 1 PXM 1 [mem 0x100000000-0x1081fffff]
-[    0.000000] NUMA: Node 1 [mem 0x80200000-0xf7ffffff] + [mem 0x100000000-0x1081fffff] -> [mem 0x80200000-0x1081fffff]
-[    0.000000] NODE_DATA(0) allocated [mem 0x7ffdc000-0x7ffeffff]
-[    0.000000] NODE_DATA(1) allocated [mem 0x1081ea000-0x1081fdfff]
-[    0.000000] crashkernel: memory value expected
-[    0.000000]  [ffffea0000000000-ffffea0001ffffff] PMD -> [ffff88007de00000-ffff88007fdfffff] on node 0
-[    0.000000]  [ffffea0002000000-ffffea00043fffff] PMD -> [ffff880105600000-ffff8801077fffff] on node 1
-[    0.000000] Zone ranges:
-[    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-[    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
-[    0.000000]   Normal   [mem 0x100000000-0x1081fffff]
-[    0.000000] Movable zone start for each node
-[    0.000000] Early memory node ranges
-[    0.000000]   node   0: [mem 0x00001000-0x0009efff]
-[    0.000000]   node   0: [mem 0x00100000-0x7ffeffff]
-[    0.000000]   node   1: [mem 0x80200000-0xf7ffffff]
-[    0.000000]   node   1: [mem 0x100000000-0x1081fffff]
-[    0.000000] Initmem setup node 0 [mem 0x00001000-0x7ffeffff]
-[    0.000000] On node 0 totalpages: 524174
-[    0.000000]   DMA zone: 64 pages used for memmap
-[    0.000000]   DMA zone: 21 pages reserved
-[    0.000000]   DMA zone: 3998 pages, LIFO batch:0
-[    0.000000]   DMA32 zone: 8128 pages used for memmap
-[    0.000000]   DMA32 zone: 520176 pages, LIFO batch:31
-[    0.000000] Initmem setup node 1 [mem 0x80200000-0x1081fffff]
-[    0.000000] On node 1 totalpages: 524288
-[    0.000000]   DMA32 zone: 7672 pages used for memmap
-[    0.000000]   DMA32 zone: 491008 pages, LIFO batch:31
-[    0.000000]   Normal zone: 520 pages used for memmap
-[    0.000000]   Normal zone: 33280 pages, LIFO batch:7
-
-This commit was tested on a two node bare-metal NUMA machine and Linux
-as a numa guest on hyperv and qemu/kvm.
-
-PS: The wrong memory range reported by setup_node_data() seems to be
-    harmless in the current kernel because it's just not used. However,
-    that bad range is used in kernel 2.6.32 to initialize the old boot
-    memory allocator, which causes a crash during boot.
-
-Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
+ MAINTAINERS | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-v2
-
- - Restore Initmem text when reporting the memory range in dmesg [David]
-
-o David, Andrew: I'm sending v2 instead of sending an incremental patch
-  because I had to update the commit log.
-
- arch/x86/include/asm/numa.h |  1 -
- arch/x86/mm/numa.c          | 34 ++++++++++++++--------------------
- mm/page_alloc.c             |  2 ++
- 3 files changed, 16 insertions(+), 21 deletions(-)
-
-diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
-index 4064aca..01b493e 100644
---- a/arch/x86/include/asm/numa.h
-+++ b/arch/x86/include/asm/numa.h
-@@ -9,7 +9,6 @@
- #ifdef CONFIG_NUMA
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 0dab840..d398875 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7179,7 +7179,7 @@ PXA3xx NAND FLASH DRIVER
+ M:	Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+ L:	linux-mtd@lists.infradead.org
+ S:	Maintained
+-F:	drivers/mtd/nand/pxa3xx-nand.c
++F:	drivers/mtd/nand/pxa3xx_nand.c
  
- #define NR_NODE_MEMBLKS		(MAX_NUMNODES*2)
--#define ZONE_ALIGN (1UL << (MAX_ORDER+PAGE_SHIFT))
- 
- /*
-  * Too small node sizes may confuse the VM badly. Usually they
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index a32b706..d221374 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -185,8 +185,8 @@ int __init numa_add_memblk(int nid, u64 start, u64 end)
- 	return numa_add_memblk_to(nid, start, end, &numa_meminfo);
- }
- 
--/* Initialize NODE_DATA for a node on the local memory */
--static void __init setup_node_data(int nid, u64 start, u64 end)
-+/* Allocate NODE_DATA for a node on the local memory */
-+static void __init alloc_node_data(int nid)
- {
- 	const size_t nd_size = roundup(sizeof(pg_data_t), PAGE_SIZE);
- 	u64 nd_pa;
-@@ -194,18 +194,6 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 	int tnid;
- 
- 	/*
--	 * Don't confuse VM with a node that doesn't have the
--	 * minimum amount of memory:
--	 */
--	if (end && (end - start) < NODE_MIN_SIZE)
--		return;
--
--	start = roundup(start, ZONE_ALIGN);
--
--	printk(KERN_INFO "Initmem setup node %d [mem %#010Lx-%#010Lx]\n",
--	       nid, start, end - 1);
--
--	/*
- 	 * Allocate node data.  Try node-local memory and then any node.
- 	 * Never allocate in DMA zone.
- 	 */
-@@ -222,7 +210,7 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 	nd = __va(nd_pa);
- 
- 	/* report and initialize */
--	printk(KERN_INFO "  NODE_DATA [mem %#010Lx-%#010Lx]\n",
-+	printk(KERN_INFO "NODE_DATA(%d) allocated [mem %#010Lx-%#010Lx]\n", nid,
- 	       nd_pa, nd_pa + nd_size - 1);
- 	tnid = early_pfn_to_nid(nd_pa >> PAGE_SHIFT);
- 	if (tnid != nid)
-@@ -230,9 +218,6 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 
- 	node_data[nid] = nd;
- 	memset(NODE_DATA(nid), 0, sizeof(pg_data_t));
--	NODE_DATA(nid)->node_id = nid;
--	NODE_DATA(nid)->node_start_pfn = start >> PAGE_SHIFT;
--	NODE_DATA(nid)->node_spanned_pages = (end - start) >> PAGE_SHIFT;
- 
- 	node_set_online(nid);
- }
-@@ -523,8 +508,17 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 			end = max(mi->blk[i].end, end);
- 		}
- 
--		if (start < end)
--			setup_node_data(nid, start, end);
-+		if (start >= end)
-+			continue;
-+
-+		/*
-+		 * Don't confuse VM with a node that doesn't have the
-+		 * minimum amount of memory:
-+		 */
-+		if (end && (end - start) < NODE_MIN_SIZE)
-+			continue;
-+
-+		alloc_node_data(nid);
- 	}
- 
- 	/* Dump memblock with node info and return. */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 20d17f8..9c699e7 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4957,6 +4957,8 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
- 	pgdat->node_start_pfn = node_start_pfn;
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- 	get_pfn_range_for_nid(nid, &start_pfn, &end_pfn);
-+	printk(KERN_INFO "Initmem setup node %d [mem %#010Lx-%#010Lx]\n", nid,
-+			(u64) start_pfn << PAGE_SHIFT, (u64) (end_pfn << PAGE_SHIFT) - 1);
- #endif
- 	calculate_node_totalpages(pgdat, start_pfn, end_pfn,
- 				  zones_size, zholes_size);
+ MMP SUPPORT
+ M:	Eric Miao <eric.y.miao@gmail.com>
 -- 
-1.9.3
+1.8.1.2.459.gbcd45b4.dirty
 
