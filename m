@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759291AbaGCKVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:21:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51425 "EHLO
+	id S1759276AbaGCKVn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:21:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51427 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757786AbaGCJVI (ORCPT
+	with ESMTP id S1757805AbaGCJVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Jul 2014 05:21:08 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 013/198] genirq: Sanitize spurious interrupt detection of threaded irqs
-Date: Thu,  3 Jul 2014 10:17:36 +0100
-Message-Id: <1404379241-8590-14-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 014/198] Drivers: hv: balloon: Ensure pressure reports are posted regularly
+Date: Thu,  3 Jul 2014 10:17:37 +0100
+Message-Id: <1404379241-8590-15-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -31,222 +28,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 1e77d0a1ed7417d2a5a52a7b8d32aea1833faa6c upstream.
+commit ae339336dc950b9b05e7ccd3565dd3e8781c06d9 upstream.
 
-Till reported that the spurious interrupt detection of threaded
-interrupts is broken in two ways:
+The current code posts periodic memory pressure status from a dedicated thread.
+Under some conditions, especially when we are releasing a lot of memory into
+the guest, we may not send timely pressure reports back to the host. Fix this
+issue by reporting pressure in all contexts that can be active in this driver.
 
-- note_interrupt() is called for each action thread of a shared
-  interrupt line. That's wrong as we are only interested whether none
-  of the device drivers felt responsible for the interrupt, but by
-  calling multiple times for a single interrupt line we account
-  IRQ_NONE even if one of the drivers felt responsible.
-
-- note_interrupt() when called from the thread handler is not
-  serialized. That leaves the members of irq_desc which are used for
-  the spurious detection unprotected.
-
-To solve this we need to defer the spurious detection of a threaded
-interrupt to the next hardware interrupt context where we have
-implicit serialization.
-
-If note_interrupt is called with action_ret == IRQ_WAKE_THREAD, we
-check whether the previous interrupt requested a deferred check. If
-not, we request a deferred check for the next hardware interrupt and
-return.
-
-If set, we check whether one of the interrupt threads signaled
-success. Depending on this information we feed the result into the
-spurious detector.
-
-If one primary handler of a shared interrupt returns IRQ_HANDLED we
-disable the deferred check of irq threads on the same line, as we have
-found at least one device driver who cared.
-
-Reported-by: Till Straumann <strauman@slac.stanford.edu>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Tested-by: Austin Schuh <austin@peloton-tech.com>
-Cc: Oliver Hartkopp <socketcan@hartkopp.net>
-Cc: Wolfgang Grandegger <wg@grandegger.com>
-Cc: Pavel Pisa <pisa@cmp.felk.cvut.cz>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: linux-can@vger.kernel.org
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1303071450130.22263@ionos
-[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/irqdesc.h |   4 ++
- kernel/irq/manage.c     |   4 +-
- kernel/irq/spurious.c   | 106 ++++++++++++++++++++++++++++++++++++++++++++++--
- 3 files changed, 108 insertions(+), 6 deletions(-)
+ drivers/hv/hv_balloon.c | 29 ++++++++++++++++++++++++++---
+ 1 file changed, 26 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
-index 623325e2ff97..078bc2fc74ff 100644
---- a/include/linux/irqdesc.h
-+++ b/include/linux/irqdesc.h
-@@ -27,6 +27,8 @@ struct irq_desc;
-  * @irq_count:		stats field to detect stalled irqs
-  * @last_unhandled:	aging timer for unhandled count
-  * @irqs_unhandled:	stats field for spurious unhandled interrupts
-+ * @threads_handled:	stats field for deferred spurious detection of threaded handlers
-+ * @threads_handled_last: comparator field for deferred spurious detection of theraded handlers
-  * @lock:		locking for SMP
-  * @affinity_hint:	hint to user space for preferred irq affinity
-  * @affinity_notify:	context for notification of affinity changes
-@@ -52,6 +54,8 @@ struct irq_desc {
- 	unsigned int		irq_count;	/* For detecting broken IRQs */
- 	unsigned long		last_unhandled;	/* Aging timer for unhandled count */
- 	unsigned int		irqs_unhandled;
-+	atomic_t		threads_handled;
-+	int			threads_handled_last;
- 	raw_spinlock_t		lock;
- 	struct cpumask		*percpu_enabled;
- #ifdef CONFIG_SMP
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 9e31fa71908d..75a976a8ed58 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -856,8 +856,8 @@ static int irq_thread(void *data)
- 		irq_thread_check_affinity(desc, action);
+diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
+index deb5c25305af..694173f662d1 100644
+--- a/drivers/hv/hv_balloon.c
++++ b/drivers/hv/hv_balloon.c
+@@ -19,6 +19,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
  
- 		action_ret = handler_fn(desc, action);
--		if (!noirqdebug)
--			note_interrupt(action->irq, desc, action_ret);
-+		if (action_ret == IRQ_HANDLED)
-+			atomic_inc(&desc->threads_handled);
+ #include <linux/kernel.h>
++#include <linux/jiffies.h>
+ #include <linux/mman.h>
+ #include <linux/delay.h>
+ #include <linux/init.h>
+@@ -459,6 +460,11 @@ static bool do_hot_add;
+  */
+ static uint pressure_report_delay = 45;
  
- 		wake_threads_waitq(desc);
- 	}
-diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
-index 7b5f012bde9d..febcee3c2aa9 100644
---- a/kernel/irq/spurious.c
-+++ b/kernel/irq/spurious.c
-@@ -265,21 +265,119 @@ try_misrouted_irq(unsigned int irq, struct irq_desc *desc,
- 	return action && (action->flags & IRQF_IRQPOLL);
- }
- 
-+#define SPURIOUS_DEFERRED	0x80000000
++/*
++ * The last time we posted a pressure report to host.
++ */
++static unsigned long last_post_time;
 +
- void note_interrupt(unsigned int irq, struct irq_desc *desc,
- 		    irqreturn_t action_ret)
- {
- 	if (desc->istate & IRQS_POLL_INPROGRESS)
- 		return;
+ module_param(hot_add, bool, (S_IRUGO | S_IWUSR));
+ MODULE_PARM_DESC(hot_add, "If set attempt memory hot_add");
  
--	/* we get here again via the threaded handler */
--	if (action_ret == IRQ_WAKE_THREAD)
--		return;
+@@ -542,6 +548,7 @@ struct hv_dynmem_device {
+ 
+ static struct hv_dynmem_device dm_device;
+ 
++static void post_status(struct hv_dynmem_device *dm);
+ #ifdef CONFIG_MEMORY_HOTPLUG
+ 
+ static void hv_bring_pgs_online(unsigned long start_pfn, unsigned long size)
+@@ -612,7 +619,7 @@ static void hv_mem_hot_add(unsigned long start, unsigned long size,
+ 		 * have not been "onlined" within the allowed time.
+ 		 */
+ 		wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
 -
- 	if (bad_action_ret(action_ret)) {
- 		report_bad_irq(irq, desc, action_ret);
++		post_status(&dm_device);
+ 	}
+ 
+ 	return;
+@@ -951,11 +958,17 @@ static void post_status(struct hv_dynmem_device *dm)
+ {
+ 	struct dm_status status;
+ 	struct sysinfo val;
++	unsigned long now = jiffies;
++	unsigned long last_post = last_post_time;
+ 
+ 	if (pressure_report_delay > 0) {
+ 		--pressure_report_delay;
  		return;
  	}
++
++	if (!time_after(now, (last_post_time + HZ)))
++		return;
++
+ 	si_meminfo(&val);
+ 	memset(&status, 0, sizeof(struct dm_status));
+ 	status.hdr.type = DM_STATUS_REPORT;
+@@ -983,6 +996,14 @@ static void post_status(struct hv_dynmem_device *dm)
+ 	if (status.hdr.trans_id != atomic_read(&trans_id))
+ 		return;
  
 +	/*
-+	 * We cannot call note_interrupt from the threaded handler
-+	 * because we need to look at the compound of all handlers
-+	 * (primary and threaded). Aside of that in the threaded
-+	 * shared case we have no serialization against an incoming
-+	 * hardware interrupt while we are dealing with a threaded
-+	 * result.
-+	 *
-+	 * So in case a thread is woken, we just note the fact and
-+	 * defer the analysis to the next hardware interrupt.
-+	 *
-+	 * The threaded handlers store whether they sucessfully
-+	 * handled an interrupt and we check whether that number
-+	 * changed versus the last invocation.
-+	 *
-+	 * We could handle all interrupts with the delayed by one
-+	 * mechanism, but for the non forced threaded case we'd just
-+	 * add pointless overhead to the straight hardirq interrupts
-+	 * for the sake of a few lines less code.
++	 * If the last post time that we sampled has changed,
++	 * we have raced, don't post the status.
 +	 */
-+	if (action_ret & IRQ_WAKE_THREAD) {
-+		/*
-+		 * There is a thread woken. Check whether one of the
-+		 * shared primary handlers returned IRQ_HANDLED. If
-+		 * not we defer the spurious detection to the next
-+		 * interrupt.
-+		 */
-+		if (action_ret == IRQ_WAKE_THREAD) {
-+			int handled;
-+			/*
-+			 * We use bit 31 of thread_handled_last to
-+			 * denote the deferred spurious detection
-+			 * active. No locking necessary as
-+			 * thread_handled_last is only accessed here
-+			 * and we have the guarantee that hard
-+			 * interrupts are not reentrant.
-+			 */
-+			if (!(desc->threads_handled_last & SPURIOUS_DEFERRED)) {
-+				desc->threads_handled_last |= SPURIOUS_DEFERRED;
-+				return;
-+			}
-+			/*
-+			 * Check whether one of the threaded handlers
-+			 * returned IRQ_HANDLED since the last
-+			 * interrupt happened.
-+			 *
-+			 * For simplicity we just set bit 31, as it is
-+			 * set in threads_handled_last as well. So we
-+			 * avoid extra masking. And we really do not
-+			 * care about the high bits of the handled
-+			 * count. We just care about the count being
-+			 * different than the one we saw before.
-+			 */
-+			handled = atomic_read(&desc->threads_handled);
-+			handled |= SPURIOUS_DEFERRED;
-+			if (handled != desc->threads_handled_last) {
-+				action_ret = IRQ_HANDLED;
-+				/*
-+				 * Note: We keep the SPURIOUS_DEFERRED
-+				 * bit set. We are handling the
-+				 * previous invocation right now.
-+				 * Keep it for the current one, so the
-+				 * next hardware interrupt will
-+				 * account for it.
-+				 */
-+				desc->threads_handled_last = handled;
-+			} else {
-+				/*
-+				 * None of the threaded handlers felt
-+				 * responsible for the last interrupt
-+				 *
-+				 * We keep the SPURIOUS_DEFERRED bit
-+				 * set in threads_handled_last as we
-+				 * need to account for the current
-+				 * interrupt as well.
-+				 */
-+				action_ret = IRQ_NONE;
-+			}
-+		} else {
-+			/*
-+			 * One of the primary handlers returned
-+			 * IRQ_HANDLED. So we don't care about the
-+			 * threaded handlers on the same line. Clear
-+			 * the deferred detection bit.
-+			 *
-+			 * In theory we could/should check whether the
-+			 * deferred bit is set and take the result of
-+			 * the previous run into account here as
-+			 * well. But it's really not worth the
-+			 * trouble. If every other interrupt is
-+			 * handled we never trigger the spurious
-+			 * detector. And if this is just the one out
-+			 * of 100k unhandled ones which is handled
-+			 * then we merily delay the spurious detection
-+			 * by one hard interrupt. Not a real problem.
-+			 */
-+			desc->threads_handled_last &= ~SPURIOUS_DEFERRED;
-+		}
-+	}
++	if (last_post != last_post_time)
++		return;
 +
- 	if (unlikely(action_ret == IRQ_NONE)) {
- 		/*
- 		 * If we are seeing only the odd spurious IRQ caused by
++	last_post_time = jiffies;
+ 	vmbus_sendpacket(dm->dev->channel, &status,
+ 				sizeof(struct dm_status),
+ 				(unsigned long)NULL,
+@@ -1117,7 +1138,7 @@ static void balloon_up(struct work_struct *dummy)
+ 
+ 			if (ret == -EAGAIN)
+ 				msleep(20);
+-
++			post_status(&dm_device);
+ 		} while (ret == -EAGAIN);
+ 
+ 		if (ret) {
+@@ -1144,8 +1165,10 @@ static void balloon_down(struct hv_dynmem_device *dm,
+ 	struct dm_unballoon_response resp;
+ 	int i;
+ 
+-	for (i = 0; i < range_count; i++)
++	for (i = 0; i < range_count; i++) {
+ 		free_balloon_pages(dm, &range_array[i]);
++		post_status(&dm_device);
++	}
+ 
+ 	if (req->more_pages == 1)
+ 		return;
 -- 
 1.9.1
 
