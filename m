@@ -1,321 +1,333 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759157AbaGCPL2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 11:11:28 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:58050 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758447AbaGCPLH (ORCPT
+	id S1759245AbaGCPNV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 11:13:21 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:54066 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757524AbaGCPNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 11:11:07 -0400
-Message-Id: <20140703151102.842945837@openvz.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 03 Jul 2014 18:33:20 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: gorcunov@openvz.org, Kees Cook <keescook@chromium.org>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: [RFC 2/2] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP operation
-References: <20140703143318.568554771@openvz.org>
-Content-Disposition: inline; filename=prctl-rework-new-mm-map-2
+	Thu, 3 Jul 2014 11:13:14 -0400
+From: nick.dyer@itdev.co.uk
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>,
+        Nick Dyer <nick.dyer@itdev.co.uk>
+Subject: [PATCH 15/15] Input: atmel_mxt_ts - implement T44 message handling
+Date: Thu,  3 Jul 2014 16:01:37 +0100
+Message-Id: <1404399697-26484-16-git-send-email-nick.dyer@itdev.co.uk>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk>
+References: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During development of c/r we've noticed that in case if we need to
-support user namespaces we face a problem with capabilities in
-prctl(PR_SET_MM, ...) call.
+From: Nick Dyer <nick.dyer@itdev.co.uk>
 
-Current PR_SET_MM code forbids to modify fields if no CAP_SYS_RESOURCE
-granted, but rather relies on one who use this interface is passing
-more-less sane values (though the values must pass the basic validation
-procedure).
+maXTouch chips allow the reading of multiple messages in a single I2C
+transaction, which reduces bus overhead and improves performance/latency. The
+number of messages available to be read is given by the value in the T44
+object which is located directly before the T5 object.
 
-It seems a better approach is to eliminate CAP_SYS_RESOURCE check but
-provide all new values in one bundle, which would allow the kernel to make
-more intensive test for sanity of values and same time allow us to
-support checkpoint/restore of user namespaces.
-
-Thus a new command (PR_SET_MM_MAP) introduced. It takes a pointer of
-prctl_mm_map structure which carries all members to be updated.
-
-Most intensive work is done in validate_prctl_map_locked helper,
-because we need to make sure the values are valid. Thus we do
-
- - check the values are laying inside available user address space
- - stack, brk, command line arguments and evnironment variables
-   must point to already existing VMA
- - values must be ordered (start < end)
- - if RLIMITs are defined don't allow to exceed it with new values
-
-Since it uses prctl_set_mm_exe_file_locked helper, updating the
-exe-file link is one-shot action for security reason.
-
-I believe the old interface should be deprecated and ripped off
-in a couple of kernel releases if noone against.
-
-To test if new interface is implemented in the kernel one
-can pass PR_SET_MM_MAP_SIZE opcode and the kernel returns
-the size of currently supported struct prctl_mm_map.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrew Vagin <avagin@openvz.org>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+Acked-by: Benson Leung <bleung@chromium.org>
+Acked-by: Yufeng Shen <miletus@chromium.org>
 ---
- include/uapi/linux/prctl.h |   19 ++++
- kernel/sys.c               |  188 ++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 206 insertions(+), 1 deletion(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c | 191 +++++++++++++++++++++++++------
+ 1 file changed, 159 insertions(+), 32 deletions(-)
 
-Index: linux-2.6.git/include/uapi/linux/prctl.h
-===================================================================
---- linux-2.6.git.orig/include/uapi/linux/prctl.h
-+++ linux-2.6.git/include/uapi/linux/prctl.h
-@@ -119,6 +119,25 @@
- # define PR_SET_MM_ENV_END		11
- # define PR_SET_MM_AUXV			12
- # define PR_SET_MM_EXE_FILE		13
-+# define PR_SET_MM_MAP			14
-+# define PR_SET_MM_MAP_SIZE		15
-+
-+struct prctl_mm_map {
-+	unsigned long	start_code;
-+	unsigned long	end_code;
-+	unsigned long	start_data;
-+	unsigned long	end_data;
-+	unsigned long	start_brk;
-+	unsigned long	brk;
-+	unsigned long	start_stack;
-+	unsigned long	arg_start;
-+	unsigned long	arg_end;
-+	unsigned long	env_start;
-+	unsigned long	env_end;
-+	unsigned long	*auxv;
-+	unsigned int	auxv_size;
-+	int		exe_fd;
-+};
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index c3eee0f..25cfbba 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -247,6 +247,7 @@ struct mxt_data {
+ 	unsigned int max_y;
+ 	bool in_bootloader;
+ 	u16 mem_size;
++	u8 max_reportid;
+ 	u32 config_crc;
+ 	u32 info_crc;
+ 	u8 bootloader_addr;
+@@ -254,6 +255,8 @@ struct mxt_data {
+ 	u8 *msg_buf;
+ 	u8 t6_status;
+ 	bool update_input;
++	u8 last_message_count;
++	u8 num_touchids;
  
- /*
-  * Set specific pid that is allowed to ptrace the current task.
-Index: linux-2.6.git/kernel/sys.c
-===================================================================
---- linux-2.6.git.orig/kernel/sys.c
-+++ linux-2.6.git/kernel/sys.c
-@@ -1687,6 +1687,187 @@ exit:
- 	return err;
+ 	/* Cached parameters from object table */
+ 	u16 T5_address;
+@@ -264,6 +267,7 @@ struct mxt_data {
+ 	u8 T9_reportid_min;
+ 	u8 T9_reportid_max;
+ 	u8 T19_reportid;
++	u16 T44_address;
+ 
+ 	/* for fw update in bootloader */
+ 	struct completion bl_completion;
+@@ -785,30 +789,142 @@ static int mxt_proc_message(struct mxt_data *data, u8 *message)
+ 	return 1;
  }
  
-+/*
-+ * WARNING: we don't require any capability here so be very careful
-+ * in what is allowed for modification from userspace.
-+ */
-+static int validate_prctl_map_locked(struct prctl_mm_map *prctl_map)
-+{
-+	unsigned long mmap_max_addr = TASK_SIZE;
-+	struct mm_struct *mm = current->mm;
-+	struct vm_area_struct *stack_vma;
-+	unsigned long rlim;
-+	int error = 0;
-+
-+	/*
-+	 * Make sure the members are not somewhere outside
-+	 * of allowed address space.
-+	 */
-+#define __prctl_check_addr_space(__map, __member)				\
-+	({									\
-+		int __rc;							\
-+		if ((unsigned long)__map->__member < mmap_max_addr &&		\
-+		    (unsigned long)__map->__member >= mmap_min_addr)		\
-+			__rc = 0;						\
-+		else								\
-+			__rc = -EINVAL;						\
-+		__rc;								\
-+	})
-+
-+	error |= __prctl_check_addr_space(prctl_map, start_code);
-+	error |= __prctl_check_addr_space(prctl_map, end_code);
-+	error |= __prctl_check_addr_space(prctl_map, start_data);
-+	error |= __prctl_check_addr_space(prctl_map, end_data);
-+	error |= __prctl_check_addr_space(prctl_map, start_stack);
-+	error |= __prctl_check_addr_space(prctl_map, start_brk);
-+	error |= __prctl_check_addr_space(prctl_map, brk);
-+	error |= __prctl_check_addr_space(prctl_map, arg_start);
-+	error |= __prctl_check_addr_space(prctl_map, arg_end);
-+	error |= __prctl_check_addr_space(prctl_map, env_start);
-+	error |= __prctl_check_addr_space(prctl_map, env_end);
-+	if (error)
-+		goto out;
-+#undef __prctl_check_addr_space
-+
-+	/*
-+	 * Stack, brk, command line arguments and environment must exist.
-+	 */
-+	stack_vma = find_vma(mm, prctl_map->start_stack);
-+	if (!stack_vma) {
-+		error = -EINVAL;
-+		goto out;
-+	}
-+#define __prctl_check_vma(mm, addr) find_vma(mm, addr) ? 0 : -EINVAL
-+	error |= __prctl_check_vma(mm, prctl_map->start_brk);
-+	error |= __prctl_check_vma(mm, prctl_map->brk);
-+	error |= __prctl_check_vma(mm, prctl_map->arg_start);
-+	error |= __prctl_check_vma(mm, prctl_map->arg_end);
-+	error |= __prctl_check_vma(mm, prctl_map->env_start);
-+	error |= __prctl_check_vma(mm, prctl_map->env_end);
-+	if (error)
-+		goto out;
-+#undef __prctl_check_vma
-+
-+	/*
-+	 * Make sure the pairs are ordered.
-+	 */
-+#define __prctl_check_order(__map, __m1, __m2)					\
-+	__map->__m2 <= __map->__m1
-+	if (__prctl_check_order(prctl_map, start_code, end_code)	||
-+	    __prctl_check_order(prctl_map, start_data, end_data)	||
-+	    __prctl_check_order(prctl_map, arg_start, arg_end)		||
-+	    __prctl_check_order(prctl_map, env_start, env_end))
-+		goto out;
-+#undef __prctl_check_order
-+
-+	error = -EINVAL;
-+
-+	/*
-+	 * @brk should be after @end_data in traditional maps.
-+	 */
-+	if (prctl_map->start_brk <= prctl_map->end_data ||
-+	    prctl_map->brk <= prctl_map->end_data)
-+		goto out;
-+
-+	/*
-+	 * Neither we should allow to override limits if they set.
-+	 */
-+	rlim = rlimit(RLIMIT_DATA);
-+	if (rlim < RLIM_INFINITY) {
-+		if ((prctl_map->brk - prctl_map->start_brk) +
-+		    (prctl_map->end_data - prctl_map->start_data) > rlim)
-+			goto out;
-+	}
-+
-+	rlim = rlimit(RLIMIT_STACK);
-+	if (rlim < RLIM_INFINITY) {
-+#ifdef CONFIG_STACK_GROWSUP
-+		unsigned long left = stack_vma->vm_end - prctl_map->start_stack;
-+#else
-+		unsigned long left = prctl_map->start_stack - stack_vma->vm_start;
-+#endif
-+		if (left > rlim)
-+			goto out;
-+	}
-+
-+	/*
-+	 * Someone is trying to cheat the auxv vector.
-+	 */
-+	if (prctl_map->auxv && prctl_map->auxv_size > sizeof(mm->saved_auxv))
-+		goto out;
-+	error = 0;
-+out:
-+	return error;
-+}
-+
-+static int prctl_set_mm_map(int opt, const void __user *addr, unsigned long data_size)
-+{
-+	struct prctl_mm_map prctl_map = { .exe_fd = (u32)-1, };
-+	unsigned long user_auxv[AT_VECTOR_SIZE];
-+	struct mm_struct *mm = current->mm;
-+	int error = -EINVAL;
-+
-+	BUILD_BUG_ON(sizeof(user_auxv) != sizeof(mm->saved_auxv));
-+
-+	if (opt == PR_SET_MM_MAP_SIZE)
-+		return put_user((unsigned int)sizeof(prctl_map),
-+				(unsigned int __user *)addr);
-+
-+	if (data_size != sizeof(prctl_map))
-+		return -EINVAL;
-+
-+	if (copy_from_user(&prctl_map, addr, sizeof(prctl_map)))
-+		return -EFAULT;
-+
-+	down_read(&mm->mmap_sem);
-+
-+	if (validate_prctl_map_locked(&prctl_map))
-+		goto out;
-+
-+	if (prctl_map.auxv && prctl_map.auxv_size) {
-+		up_read(&mm->mmap_sem);
-+		memset(user_auxv, 0, sizeof(user_auxv));
-+		error = copy_from_user(user_auxv,
-+				       (const void __user *)prctl_map.auxv,
-+				       prctl_map.auxv_size);
-+		down_read(&mm->mmap_sem);
-+		if (error)
-+			goto out;
-+	}
-+
-+	if (prctl_map.exe_fd != (u32)-1) {
-+		error = prctl_set_mm_exe_file_locked(mm, prctl_map.exe_fd);
-+		if (error)
-+			goto out;
-+	}
-+
-+	if (prctl_map.auxv && prctl_map.auxv_size) {
-+		user_auxv[AT_VECTOR_SIZE - 2] = 0;
-+		user_auxv[AT_VECTOR_SIZE - 1] = 0;
-+
-+		task_lock(current);
-+		memcpy(mm->saved_auxv, user_auxv, sizeof(user_auxv));
-+		task_unlock(current);
-+	}
-+
-+	mm->start_code	= prctl_map.start_code;
-+	mm->end_code	= prctl_map.end_code;
-+	mm->start_data	= prctl_map.start_data;
-+	mm->end_data	= prctl_map.end_data;
-+	mm->start_brk	= prctl_map.start_brk;
-+	mm->brk		= prctl_map.brk;
-+	mm->start_stack	= prctl_map.start_stack;
-+	mm->arg_start	= prctl_map.arg_start;
-+	mm->arg_end	= prctl_map.arg_end;
-+	mm->env_start	= prctl_map.env_start;
-+	mm->env_end	= prctl_map.env_end;
-+
-+	error = 0;
-+out:
-+	up_read(&mm->mmap_sem);
-+	return error;
-+}
-+
- static int prctl_set_mm(int opt, unsigned long addr,
- 			unsigned long arg4, unsigned long arg5)
+-static int mxt_read_and_process_message(struct mxt_data *data)
++static int mxt_read_and_process_messages(struct mxt_data *data, u8 count)
  {
-@@ -1695,9 +1876,14 @@ static int prctl_set_mm(int opt, unsigne
- 	struct vm_area_struct *vma;
+ 	struct device *dev = &data->client->dev;
+ 	int ret;
++	int i;
++	u8 num_valid = 0;
++
++	/* Safety check for msg_buf */
++	if (count > data->max_reportid)
++		return -EINVAL;
+ 
++	/* Process remaining messages if necessary */
+ 	ret = __mxt_read_reg(data->client, data->T5_address,
+-				data->T5_msg_size, data->msg_buf);
++				data->T5_msg_size * count, data->msg_buf);
+ 	if (ret) {
+-		dev_err(dev, "Error %d reading message\n", ret);
++		dev_err(dev, "Failed to read %u messages (%d)\n", count, ret);
+ 		return ret;
+ 	}
+ 
+-	return mxt_proc_message(data, data->msg_buf);
++	for (i = 0;  i < count; i++) {
++		ret = mxt_proc_message(data,
++			data->msg_buf + data->T5_msg_size * i);
++
++		if (ret == 1)
++			num_valid++;
++	}
++
++	/* return number of messages read */
++	return num_valid;
+ }
+ 
+-static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
++static irqreturn_t mxt_process_messages_t44(struct mxt_data *data)
+ {
++	struct device *dev = &data->client->dev;
+ 	int ret;
++	u8 count, num_left;
+ 
+-	do {
+-		ret = mxt_read_and_process_message(data);
++	/* Read T44 and T5 together */
++	ret = __mxt_read_reg(data->client, data->T44_address,
++		data->T5_msg_size + 1, data->msg_buf);
++	if (ret) {
++		dev_err(dev, "Failed to read T44 and T5 (%d)\n", ret);
++		return IRQ_NONE;
++	}
++
++	count = data->msg_buf[0];
++
++	if (count == 0) {
++		dev_warn(dev, "Interrupt triggered but zero messages\n");
++		return IRQ_NONE;
++	} else if (count > data->max_reportid) {
++		dev_err(dev, "T44 count %d exceeded max report id\n", count);
++		count = data->max_reportid;
++	}
++
++	/* Process first message */
++	ret = mxt_proc_message(data, data->msg_buf + 1);
++	if (ret < 0) {
++		dev_warn(dev, "Unexpected invalid message\n");
++		return IRQ_NONE;
++	}
++
++	num_left = count - 1;
++
++	/* Process remaining messages if necessary */
++	if (num_left) {
++		ret = mxt_read_and_process_messages(data, num_left);
+ 		if (ret < 0)
++			goto end;
++		else if (ret != num_left)
++			dev_warn(dev, "Unexpected invalid message\n");
++	}
++
++end:
++	if (data->update_input) {
++		mxt_input_sync(data);
++		data->update_input = false;
++	}
++
++	return IRQ_HANDLED;
++}
++
++static int mxt_process_messages_until_invalid(struct mxt_data *data)
++{
++	struct device *dev = &data->client->dev;
++	int count, read;
++	u8 tries = 2;
++
++	count = data->max_reportid;
++
++	/* Read messages until we force an invalid */
++	do {
++		read = mxt_read_and_process_messages(data, count);
++		if (read < count)
++			return 0;
++	} while (--tries);
++
++	if (data->update_input) {
++		mxt_input_sync(data);
++		data->update_input = false;
++	}
++
++	dev_err(dev, "CHG pin isn't cleared\n");
++	return -EBUSY;
++}
++
++static irqreturn_t mxt_process_messages(struct mxt_data *data)
++{
++	int total_handled, num_handled;
++	u8 count = data->last_message_count;
++
++	if (count < 1 || count > data->max_reportid)
++		count = 1;
++
++	/* include final invalid message */
++	total_handled = mxt_read_and_process_messages(data, count + 1);
++	if (total_handled < 0)
++		return IRQ_NONE;
++	/* if there were invalid messages, then we are done */
++	else if (total_handled <= count)
++		goto update_count;
++
++	/* keep reading two msgs until one is invalid or reportid limit */
++	do {
++		num_handled = mxt_read_and_process_messages(data, 2);
++		if (num_handled < 0)
+ 			return IRQ_NONE;
+-	} while (ret > 0);
++
++		total_handled += num_handled;
++
++		if (num_handled < 2)
++			break;
++	} while (total_handled < data->num_touchids);
++
++update_count:
++	data->last_message_count = total_handled;
+ 
+ 	if (data->update_input) {
+ 		mxt_input_sync(data);
+@@ -831,7 +947,11 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+ 	if (!data->object_table)
+ 		return IRQ_HANDLED;
+ 
+-	return mxt_process_messages_until_invalid(data);
++	if (data->T44_address) {
++		return mxt_process_messages_t44(data);
++	} else {
++		return mxt_process_messages(data);
++	}
+ }
+ 
+ static int mxt_t6_command(struct mxt_data *data, u16 cmd_offset,
+@@ -1258,32 +1378,13 @@ recheck:
+ 	return 0;
+ }
+ 
+-static int mxt_make_highchg(struct mxt_data *data)
+-{
+-	struct device *dev = &data->client->dev;
+-	int count = 10;
+-	int ret;
+-
+-	/* Read messages until we force an invalid */
+-	do {
+-		ret = mxt_read_and_process_message(data);
+-		if (ret == 0)
+-			return 0;
+-		else if (ret < 0)
+-			return ret;
+-	} while (--count);
+-
+-	dev_err(dev, "CHG pin isn't cleared\n");
+-	return -EBUSY;
+-}
+-
+ static int mxt_acquire_irq(struct mxt_data *data)
+ {
  	int error;
  
--	if (arg5 || (arg4 && opt != PR_SET_MM_AUXV))
-+	if (arg5 || (arg4 && (opt != PR_SET_MM_AUXV &&
-+			      opt != PR_SET_MM_MAP &&
-+			      opt != PR_SET_MM_MAP_SIZE)))
- 		return -EINVAL;
+ 	enable_irq(data->irq);
  
-+	if (opt == PR_SET_MM_MAP || opt == PR_SET_MM_MAP_SIZE)
-+		return prctl_set_mm_map(opt, (const void __user *)addr, arg4);
+-	error = mxt_make_highchg(data);
++	error = mxt_process_messages_until_invalid(data);
+ 	if (error)
+ 		return error;
+ 
+@@ -1320,6 +1421,8 @@ static void mxt_free_object_table(struct mxt_data *data)
+ 	data->T9_reportid_min = 0;
+ 	data->T9_reportid_max = 0;
+ 	data->T19_reportid = 0;
++	data->T44_address = 0;
++	data->max_reportid = 0;
+ }
+ 
+ static int mxt_get_object_table(struct mxt_data *data)
+@@ -1373,8 +1476,16 @@ static int mxt_get_object_table(struct mxt_data *data)
+ 
+ 		switch (object->type) {
+ 		case MXT_GEN_MESSAGE_T5:
+-			/* CRC not enabled, therefore don't read last byte */
+-			data->T5_msg_size = mxt_obj_size(object) - 1;
++			if (data->info.family_id == 0x80) {
++				/*
++				 * On mXT224 read and discard unused CRC byte
++				 * otherwise DMA reads are misaligned
++				 */
++				data->T5_msg_size = mxt_obj_size(object);
++			} else {
++				/* CRC not enabled, so skip last byte */
++				data->T5_msg_size = mxt_obj_size(object) - 1;
++			}
+ 			data->T5_address = object->start_address;
+ 		case MXT_GEN_COMMAND_T6:
+ 			data->T6_reportid = min_id;
+@@ -1386,6 +1497,11 @@ static int mxt_get_object_table(struct mxt_data *data)
+ 		case MXT_TOUCH_MULTI_T9:
+ 			data->T9_reportid_min = min_id;
+ 			data->T9_reportid_max = max_id;
++			data->num_touchids = object->num_report_ids
++						* mxt_obj_instances(object);
++			break;
++		case MXT_SPT_MESSAGECOUNT_T44:
++			data->T44_address = object->start_address;
+ 			break;
+ 		case MXT_SPT_GPIOPWM_T19:
+ 			data->T19_reportid = min_id;
+@@ -1399,7 +1515,18 @@ static int mxt_get_object_table(struct mxt_data *data)
+ 			data->mem_size = end_address + 1;
+ 	}
+ 
+-	data->msg_buf = kzalloc(data->T5_msg_size, GFP_KERNEL);
++	/* Store maximum reportid */
++	data->max_reportid = reportid;
 +
- 	if (!capable(CAP_SYS_RESOURCE))
- 		return -EPERM;
- 
++	/* If T44 exists, T5 position has to be directly after */
++	if (data->T44_address && (data->T5_address != data->T44_address + 1)) {
++		dev_err(&client->dev, "Invalid T44 position\n");
++		error = -EINVAL;
++		goto free_object_table;
++	}
++
++	data->msg_buf = kcalloc(data->max_reportid,
++				data->T5_msg_size, GFP_KERNEL);
+ 	if (!data->msg_buf) {
+ 		dev_err(&client->dev, "Failed to allocate message buffer\n");
+ 		error = -ENOMEM;
+-- 
+2.0.1
 
