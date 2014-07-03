@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964886AbaGCOvu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:51:50 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51829 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758640AbaGCOuI (ORCPT
+	id S964980AbaGCOwS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:52:18 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:39243 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964897AbaGCOwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:50:08 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        dwmw2@infradead.org, dbaryshkov@gmail.com
-Cc: Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH RESEND 07/18] AT91: DT: Remove the old-style reset probing
-Date: Thu,  3 Jul 2014 16:41:22 +0200
-Message-Id: <1404398493-28907-8-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1404398493-28907-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1404398493-28907-1-git-send-email-maxime.ripard@free-electrons.com>
+	Thu, 3 Jul 2014 10:52:13 -0400
+Date: Thu, 3 Jul 2014 16:52:04 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: [PATCH 2/6] irq_work: Implement remote queueing
+Message-ID: <20140703145201.GB9520@localhost.localdomain>
+References: <20140625051234.GD6758@twins.programming.kicks-ass.net>
+ <20140625051721.GG3588@twins.programming.kicks-ass.net>
+ <53AA6E11.1000404@linux.vnet.ibm.com>
+ <20140625093657.GN19860@laptop.programming.kicks-ass.net>
+ <20140625093944.GV16155@laptop.programming.kicks-ass.net>
+ <53AA9B68.4050104@linux.vnet.ibm.com>
+ <53AA9C43.3020903@linux.vnet.ibm.com>
+ <20140625101915.GO19860@laptop.programming.kicks-ass.net>
+ <53AAF779.8060006@wwwdotorg.org>
+ <20140625163820.GC3935@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140625163820.GC3935@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the reset code is a driver of its own, just let the usual DT probing
-mecanism do its job, and remove the code entirely in this case.
+On Wed, Jun 25, 2014 at 06:38:20PM +0200, Peter Zijlstra wrote:
+> On Wed, Jun 25, 2014 at 10:23:21AM -0600, Stephen Warren wrote:
+> > On 06/25/2014 04:19 AM, Peter Zijlstra wrote:
+> > > On Wed, Jun 25, 2014 at 03:24:11PM +0530, Srivatsa S. Bhat wrote:
+> > >> Wait, that was a stupid idea. hotplug_cfd() already invokes irq_work_run
+> > >> indirectly via flush_smp_call_function_queue(). So irq_work_cpu_notify()
+> > >> doesn't need to invoke it again, AFAIU. So perhaps we can get rid of
+> > >> irq_work_cpu_notify() altogether?
+> > > 
+> > > Just so...
+> > > 
+> > > getting up at 6am and sitting in an airport terminal doesn't seem to
+> > > agree with me; any more silly fail here?
+> > > 
+> > > ---
+> > > Subject: irq_work: Remove BUG_ON in irq_work_run()
+> > > From: Peter Zijlstra <peterz@infradead.org>
+> > > Date: Wed Jun 25 07:13:07 CEST 2014
+> > > 
+> > > Because of a collision with 8d056c48e486 ("CPU hotplug, smp: flush any
+> > > pending IPI callbacks before CPU offline"), which ends up calling
+> > > hotplug_cfd()->flush_smp_call_function_queue()->irq_work_run(), which
+> > > is not from IRQ context.
+> > > 
+> > > And since that already calls irq_work_run() from the hotplug path,
+> > > remove our entire hotplug handling.
+> > 
+> > Tested-by: Stephen Warren <swarren@nvidia.com>
+> > 
+> > [with the s/static// already mentioned in this thread, obviously:-)]
+> 
+> Right; I pushed out a fixed version right before loosing my tubes at the
+> airport :-)
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/peterz/queue.git/commit/?h=timers/nohz&id=921d8b81281ecdca686369f52165d04fa3505bd7
+> 
+> I've not gotten wu build bot spam on it so it must be good ;-)
+> 
+> In any case, I'll add your tested-by and update later this evening.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/mach-at91/setup.c | 29 -----------------------------
- 1 file changed, 29 deletions(-)
+Ack! Thanks for fixing this.
 
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index cc520596f23b..71003e40f01c 100644
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -354,34 +354,6 @@ void __init at91_ioremap_matrix(u32 base_addr)
- }
- 
- #if defined(CONFIG_OF) && !defined(CONFIG_ARCH_AT91X40)
--static struct of_device_id rstc_ids[] = {
--	{ .compatible = "atmel,at91sam9260-rstc", .data = at91sam9_alt_restart },
--	{ .compatible = "atmel,at91sam9g45-rstc", .data = at91sam9g45_restart },
--	{ /*sentinel*/ }
--};
--
--static void at91_dt_rstc(void)
--{
--	struct device_node *np;
--	const struct of_device_id *of_id;
--
--	np = of_find_matching_node(NULL, rstc_ids);
--	if (!np)
--		panic(pr_fmt("unable to find compatible rstc node in dtb\n"));
--
--	at91_rstc_base = of_iomap(np, 0);
--	if (!at91_rstc_base)
--		panic(pr_fmt("unable to map rstc cpu registers\n"));
--
--	of_id = of_match_node(rstc_ids, np);
--	if (!of_id)
--		panic(pr_fmt("rtsc no restart function available\n"));
--
--	arm_pm_restart = of_id->data;
--
--	of_node_put(np);
--}
--
- static struct of_device_id ramc_ids[] = {
- 	{ .compatible = "atmel,at91rm9200-sdramc", .data = at91rm9200_standby },
- 	{ .compatible = "atmel,at91sam9260-sdramc", .data = at91sam9_sdram_standby },
-@@ -507,7 +479,6 @@ void __init at91rm9200_dt_initialize(void)
- 
- void __init at91_dt_initialize(void)
- {
--	at91_dt_rstc();
- 	at91_dt_ramc();
- 	at91_dt_shdwc();
- 
--- 
-2.0.1
-
+In case you're AFK, do you need any help for pushing the patch or so?
