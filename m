@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965317AbaGCKZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:25:26 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54072 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754895AbaGCKZX (ORCPT
+	id S1030285AbaGCK0w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:26:52 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:52324 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030184AbaGCK0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 06:25:23 -0400
-Date: Thu, 3 Jul 2014 11:24:50 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: Kees Cook <keescook@chromium.org>,
-        =?iso-8859-1?Q?Andr=E9?= Hentschel <nerv@dawncrow.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Austin <Jonathan.Austin@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ricky Zhou <rickyz@google.com>
-Subject: Re: [PATCH] arm: ptrace: fix syscall modification under
- PTRACE_O_TRACESECCOMP
-Message-ID: <20140703102450.GD12958@arm.com>
-References: <20140618202748.GA9022@www.outflux.net>
- <20140620102258.GA26626@arm.com>
- <CAGXu5jKJ07bXw_K+7uSAf=H_SDoeoaWPxS4rwuonbR71Svwwmw@mail.gmail.com>
- <20140620172330.GA30656@arm.com>
- <CAGXu5jKg0didhwZTUq8AbMnwD=RV=EaWiZWBWuar625JXGnL6w@mail.gmail.com>
- <CAGXu5j+bk3g0Dude8jfKM3dXxX8LE_46CMmcBCGdVMNX_Hu-6w@mail.gmail.com>
- <20140623084608.GA9316@arm.com>
- <CAGXu5jLJRU21YoBXjXRpfHW1-jwy_PV0hpH_oUfew23xLF4gYg@mail.gmail.com>
- <20140624085405.GA26013@arm.com>
- <53B5098B.9050801@linaro.org>
+	Thu, 3 Jul 2014 06:26:50 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Tanmay Inamdar <tinamdar@apm.com>, Sinan Kaya <okaya@codeaurora.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Will Deacon <Will.Deacon@arm.com>,
+        Grant Likely <grant.likely@secretlab.ca>, patches <patches@apm.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH v8 2/9] pci: Export find_pci_host_bridge() function.
+Date: Thu, 03 Jul 2014 12:26:32 +0200
+Message-ID: <12857279.nHR7kEbqBW@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CACoXjcn5wdOwQx6PSfhTyuo-FQqBL62o-MNj3i6EfENRnUNt6g@mail.gmail.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com> <7101568.8DVJFku5jp@wuerfel> <CACoXjcn5wdOwQx6PSfhTyuo-FQqBL62o-MNj3i6EfENRnUNt6g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B5098B.9050801@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:bj95T271c9Ux589v5OGWWbtcDgNuvOfArtS8IxDq4UY
+ SxjfFiAR3Zq1iSwwQ5Zmi4iNgVsz9H6phzMo/iFi9ATIIUQ7US
+ mpIwZGRj/V0VPHSs2cINkdxuJdHUpih0VjqL4Uuyr/S7KBIUJH
+ LLPu3J9Ip/dpcoTxz2QT+M2uRaTdYp+GkydKWtXd0L4wfSnR6I
+ lXf43fXER305IE6P1LmnCGGnwnceQ7JShEPmwqJVwTjnOACVSr
+ hBUeW59DBGwOWyHwoRM4cXFfmrNIpHCvSEupNTvt4/S2UGOsbm
+ yjSYIQfuHVp1a8Tb5xgbmNDL3ypxGiPwrom0z6IsCIwZs5gq3V
+ HPUYke8hL9ZIKPfbklr8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 08:43:07AM +0100, AKASHI Takahiro wrote:
-> Hi Will,
-
-Hi Akashi,
-
-> On 06/24/2014 05:54 PM, Will Deacon wrote:
-> > On Mon, Jun 23, 2014 at 08:46:52PM +0100, Kees Cook wrote:
-> >> What's the state of seccomp on arm64? I saw a series back in March,
-> >> but nothing since then? It looked complete, but I haven't set up a
-> >> test environment yet to verify.
+On Wednesday 02 July 2014 13:43:41 Tanmay Inamdar wrote:
+> On Wed, Jul 2, 2014 at 12:12 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > I think EXPORT_SYMBOL_GPL() is better here. The new symbols are unlikely
+> > to be used by a peripheral device driver, and PCI host controllers are
+> > already restricted by EXPORT_SYMBOL_GPL.
 > >
-> > I think Akashi was going to repost `real soon now' so we can include them
-> > for 3.17. He missed the merge window last time around.
 > 
-> I took a quick look at the current implementation of ptrace.
-> ptrace(PTRACE_GETREGSET/SETREGSET), eventually gpr_get/set(), handles only
-> 'struct user_pt_regs', and we have no way to modify orig_x0 nor syscallno
-> in 'struct pt_regs' directly.
-> So it seems to me that we can't change a system call by ptrace().
-> Do I misunderstand anything?
+> You are right as long as the functions are not used directly. But what
+> if GPL functions are called indirectly.  For example, 'pci_domain_nr'
+> implementation in Liviu's V7 series calls 'find_pci_host_bridge'.
 
-No, it looks like you have a point here. I don't think userspace has any
-business with orig_x0, but changing syscallno is certainly useful. I can
-think of two ways to fix this:
+Good point. If pci_domain_nr() doesn't require access to an EXPORT_SYMBOL_GPL
+symbol, it should not start doing that after this patch.
 
-  (1) Updating syscallno based on w8, but this ties us to the current ABI
-      and could get messy if this register changes in the future.
+For of_create_pci_host_bridge() however, I can't think of any reason to use
+a legacy EXPORT_SYMBOL.
 
-  (2) Adding a PTRACE_SET_SYSCALL request, like we have for arch/arm/,
-      but that means adding arch-specific stuff to arch_ptrace (which
-      currently goes straight to ptrace_request on arm64).
-
-It looks like x86 uses orig_ax, which I *think* means we would go with
-(1) above if we followed their lead.
-
-Anybody else have an opinion about this?
-
-Will
+	Arnd
