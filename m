@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758772AbaGCOVa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:21:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15493 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758554AbaGCOUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:20:50 -0400
-Message-ID: <53B566B7.9020505@redhat.com>
-Date: Thu, 03 Jul 2014 15:20:39 +0100
-From: Steven Whitehouse <swhiteho@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jiri Kosina <trivial@kernel.org>
-CC: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Subject: Re: [PATCH -trivial 4/4] GFS2: memcontrol: Spelling s/invlidate/invalidate/
-References: <1404037299-31570-1-git-send-email-geert@linux-m68k.org> <1404037299-31570-4-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1404037299-31570-4-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758824AbaGCOWD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:22:03 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51004 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758500AbaGCOUo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 10:20:44 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        dwmw2@infradead.org, dbaryshkov@gmail.com
+Cc: Boris Brezillon <boris@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 06/18] AT91: DT: Remove the old-style reset probing
+Date: Thu,  3 Jul 2014 16:14:41 +0200
+Message-Id: <1404396906-25194-9-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Now that the reset code is a driver of its own, just let the usual DT probing
+mecanism do its job, and remove the code entirely in this case.
 
-Now in the -nmw tree. Thanks,
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/mach-at91/setup.c | 29 -----------------------------
+ 1 file changed, 29 deletions(-)
 
-Steve.
-
-On 29/06/14 11:21, Geert Uytterhoeven wrote:
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Steven Whitehouse <swhiteho@redhat.com>
-> Cc: cluster-devel@redhat.com
-> ---
->   fs/gfs2/glops.c | 4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/fs/gfs2/glops.c b/fs/gfs2/glops.c
-> index fc1100781bbc..2ffc67dce87f 100644
-> --- a/fs/gfs2/glops.c
-> +++ b/fs/gfs2/glops.c
-> @@ -234,8 +234,8 @@ static void inode_go_sync(struct gfs2_glock *gl)
->    * inode_go_inval - prepare a inode glock to be released
->    * @gl: the glock
->    * @flags:
-> - *
-> - * Normally we invlidate everything, but if we are moving into
-> + *
-> + * Normally we invalidate everything, but if we are moving into
->    * LM_ST_DEFERRED from LM_ST_SHARED or LM_ST_EXCLUSIVE then we
->    * can keep hold of the metadata, since it won't have changed.
->    *
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index 9c4c7fb323fb..3463b9e14418 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -354,34 +354,6 @@ void __init at91_ioremap_matrix(u32 base_addr)
+ }
+ 
+ #if defined(CONFIG_OF) && !defined(CONFIG_ARCH_AT91X40)
+-static struct of_device_id rstc_ids[] = {
+-	{ .compatible = "atmel,at91sam9260-rstc", .data = at91sam9_alt_restart },
+-	{ .compatible = "atmel,at91sam9g45-rstc", .data = at91sam9g45_restart },
+-	{ /*sentinel*/ }
+-};
+-
+-static void at91_dt_rstc(void)
+-{
+-	struct device_node *np;
+-	const struct of_device_id *of_id;
+-
+-	np = of_find_matching_node(NULL, rstc_ids);
+-	if (!np)
+-		panic(pr_fmt("unable to find compatible rstc node in dtb\n"));
+-
+-	at91_rstc_base = of_iomap(np, 0);
+-	if (!at91_rstc_base)
+-		panic(pr_fmt("unable to map rstc cpu registers\n"));
+-
+-	of_id = of_match_node(rstc_ids, np);
+-	if (!of_id)
+-		panic(pr_fmt("rtsc no restart function available\n"));
+-
+-	arm_pm_restart = of_id->data;
+-
+-	of_node_put(np);
+-}
+-
+ static struct of_device_id ramc_ids[] = {
+ 	{ .compatible = "atmel,at91rm9200-sdramc", .data = at91rm9200_standby },
+ 	{ .compatible = "atmel,at91sam9260-sdramc", .data = at91sam9_sdram_standby },
+@@ -505,7 +477,6 @@ void __init at91rm9200_dt_initialize(void)
+ 
+ void __init at91_dt_initialize(void)
+ {
+-	at91_dt_rstc();
+ 	at91_dt_ramc();
+ 	at91_dt_shdwc();
+ 
+-- 
+2.0.1
 
