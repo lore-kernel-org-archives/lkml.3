@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951AbaGCEwh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 00:52:37 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50962 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752061AbaGCEw2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 00:52:28 -0400
+	id S1751924AbaGCEw1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 00:52:27 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35409 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751250AbaGCEwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 00:52:17 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>, <lars@metafoo.de>,
         <tiwai@suse.de>, Mark Brown <broonie@kernel.org>,
         Liam Girdwood <lgirdwood@gmail.com>, <joelf@ti.com>, <nsekhar@ti.com>
 CC: <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
         <dmaengine@vger.kernel.org>
-Subject: [PATCH v3 5/5] dma: edma: Declare DMA_SLAVE_BUSWIDTH_3_BYTES as supported buswidth
-Date: Thu, 3 Jul 2014 07:51:56 +0300
-Message-ID: <1404363116-10538-6-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v3 2/5] ALSA: pcm_dmaengine: Use the available wrapper to get physical width
+Date: Thu, 3 Jul 2014 07:51:53 +0300
+Message-ID: <1404363116-10538-3-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404363116-10538-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1404363116-10538-1-git-send-email-peter.ujfalusi@ti.com>
@@ -25,25 +24,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-eDMA can be configured for 3bytes word size for source and destination.
+params_physical_width() is available via pcm_params.h
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 ---
- drivers/dma/edma.c | 1 +
- 1 file changed, 1 insertion(+)
+ sound/core/pcm_dmaengine.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index d08c4dedef35..b512caf46944 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -982,6 +982,7 @@ static void __init edma_chan_init(struct edma_cc *ecc,
+diff --git a/sound/core/pcm_dmaengine.c b/sound/core/pcm_dmaengine.c
+index 76cbb9ec953a..d5611ec80381 100644
+--- a/sound/core/pcm_dmaengine.c
++++ b/sound/core/pcm_dmaengine.c
+@@ -65,7 +65,7 @@ int snd_hwparams_to_dma_slave_config(const struct snd_pcm_substream *substream,
+ 	enum dma_slave_buswidth buswidth;
+ 	int bits;
  
- #define EDMA_DMA_BUSWIDTHS	(BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) | \
- 				 BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) | \
-+				 BIT(DMA_SLAVE_BUSWIDTH_3_BYTES) | \
- 				 BIT(DMA_SLAVE_BUSWIDTH_4_BYTES))
- 
- static int edma_dma_device_slave_caps(struct dma_chan *dchan,
+-	bits = snd_pcm_format_physical_width(params_format(params));
++	bits = params_physical_width(params);
+ 	if (bits < 8 || bits > 64)
+ 		return -EINVAL;
+ 	else if (bits == 8)
 -- 
 2.0.0
 
