@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758316AbaGCNsj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 09:48:39 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56016 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758052AbaGCNrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 09:47:12 -0400
-From: Keerthy <j-keerthy@ti.com>
-To: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-CC: <mark.rutland@arm.com>, <galak@codeaurora.org>, <robh+dt@kernel.org>,
-        <linux@arm.linux.org.uk>, <balbi@ti.com>, <tony@atomide.com>,
-        <kishon@ti.com>, Keerthy <j-keerthy@ti.com>
-Subject: [PATCH 2/5] regulator: Add DT bindings for tps65218 PMIC regulators.
-Date: Thu, 3 Jul 2014 19:14:59 +0530
-Message-ID: <1404395102-21469-3-git-send-email-j-keerthy@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404395102-21469-1-git-send-email-j-keerthy@ti.com>
-References: <1404395102-21469-1-git-send-email-j-keerthy@ti.com>
+	id S1756708AbaGCNu1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 09:50:27 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:61402 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaGCNu0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 09:50:26 -0400
+Message-ID: <53B55FA6.5080801@cogentembedded.com>
+Date: Thu, 03 Jul 2014 17:50:30 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Manuel Lauss <manuel.lauss@gmail.com>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        Mike Turquette <mturquette@linaro.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2 05/11] MIPS: Alchemy: pci: use clk framework to
+ enable PCI clock
+References: <1404393762-858019-1-git-send-email-manuel.lauss@gmail.com> <1404393762-858019-6-git-send-email-manuel.lauss@gmail.com>
+In-Reply-To: <1404393762-858019-6-git-send-email-manuel.lauss@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add DT bindings for tps65218 PMIC regulators.
+Hello.
 
-Signed-off-by: Keerthy <j-keerthy@ti.com>
----
- .../devicetree/bindings/regulator/tps65218.txt     |   21 ++++++++++++++++++++
- 1 file changed, 21 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/regulator/tps65218.txt
+On 07/03/2014 05:22 PM, Manuel Lauss wrote:
 
-diff --git a/Documentation/devicetree/bindings/regulator/tps65218.txt b/Documentation/devicetree/bindings/regulator/tps65218.txt
-new file mode 100644
-index 0000000..6272a73
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/tps65218.txt
-@@ -0,0 +1,21 @@
-+TPS65218 family of regulators
-+
-+Required properties:
-+For tps65218 regulators/LDOs
-+- compatible:
-+  - "ti,tps65218-dcdc1" for DCDC1 
-+  - "ti,tps65218-dcdc2" for DCDC2
-+  - "ti,tps65218-dcdc3" for DCDC3
-+  - "ti,tps65218-dcdc4" for DCDC4
-+  - "ti,tps65218-ldo1" for LDO1
-+
-+Optional properties:
-+- Any optional property defined in bindings/regulator/regulator.txt
-+
-+Example:
-+
-+	xyz: regulator@0 {
-+		compatible = "ti,tps65218-dcdc1";
-+		regulator-min-microvolt  = <1000000>;
-+		regulator-max-microvolt  = <3000000>;
-+	};
--- 
-1.7.9.5
+> Use the clock framework to get at the PCI clock source and enable
+> it on driver initialization.
+
+> Signed-off-by: Manuel Lauss <manuel.lauss@gmail.com>
+> ---
+>   arch/mips/pci/pci-alchemy.c | 23 ++++++++++++++++++++++-
+>   1 file changed, 22 insertions(+), 1 deletion(-)
+
+> diff --git a/arch/mips/pci/pci-alchemy.c b/arch/mips/pci/pci-alchemy.c
+> index 912c5f2..adc810f 100644
+> --- a/arch/mips/pci/pci-alchemy.c
+> +++ b/arch/mips/pci/pci-alchemy.c
+[...]
+> @@ -394,11 +396,24 @@ static int alchemy_pci_probe(struct platform_device *pdev)
+>   		goto out1;
+>   	}
+>
+> +	c = clk_get(&pdev->dev, "pci_clko");
+> +	if (IS_ERR(c)) {
+> +		dev_err(&pdev->dev, "unable to find PCI clock\n");
+> +		ret = PTR_ERR(c);
+> +		goto out2;
+> +	}
+> +	ret = clk_prepare_enable(c);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "cannot enable PCI clock\n");
+> +		clk_put(c);
+> +		goto out2;
+
+    Isn't it simpler to add one more label before clk_put() at end of function?
+
+> +	}
+> +
+[...]
+> @@ -466,12 +481,18 @@ static int alchemy_pci_probe(struct platform_device *pdev)
+>   	register_syscore_ops(&alchemy_pci_pmops);
+>   	register_pci_controller(&ctx->alchemy_pci_ctrl);
+>
+> +	dev_info(&pdev->dev, "PCI controller at %ld MHz\n",
+> +		 clk_get_rate(c) / 1000000);
+> +
+>   	return 0;
+>
+>   out4:
+>   	iounmap(virt_io);
+>   out3:
+>   	iounmap(ctx->regs);
+> +out5:
+> +	clk_disable_unprepare(c);
+> +	clk_put(c);
+>   out2:
+>   	release_mem_region(r->start, resource_size(r));
+>   out1:
+>
+
+WBR, Sergei
 
