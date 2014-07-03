@@ -1,142 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757921AbaGCOzM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:55:12 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52046 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965219AbaGCOzG (ORCPT
+	id S1030195AbaGCOzl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:55:41 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45039 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758077AbaGCOzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:55:06 -0400
-Date: Thu, 3 Jul 2014 16:53:46 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: linux@maxim.org.za, Nicolas FERRE <nicolas.ferre@atmel.com>,
-        dwmw2@infradead.org, dbaryshkov@gmail.com,
-        Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 12/18] power: reset: Add AT91 poweroff driver
-Message-ID: <20140703145346.GG31996@lukather>
-References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
- <1404396906-25194-22-git-send-email-maxime.ripard@free-electrons.com>
- <6296F186-1B0C-4089-928A-4B0950BE847A@jcrosoft.com>
+	Thu, 3 Jul 2014 10:55:38 -0400
+Date: Thu, 3 Jul 2014 15:55:17 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Bill Richardson <wfrichar@chromium.org>,
+        Randall Spangler <rspangler@chromium.org>, sjg@chromium.org,
+        afaerber@suse.de, stephan@synkhronix.com, olof@lixom.net,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Message-ID: <20140703145517.GE410@sirena.org.uk>
+References: <1403898973-19571-1-git-send-email-dianders@chromium.org>
+ <1403898973-19571-2-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="64j1qyTOoGvYcHb1"
+	protocol="application/pgp-signature"; boundary="0k24IdCjZr+ZpLJG"
 Content-Disposition: inline
-In-Reply-To: <6296F186-1B0C-4089-928A-4B0950BE847A@jcrosoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1403898973-19571-2-git-send-email-dianders@chromium.org>
+X-Cookie: Semper Fi, dude.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3] regmap: cache: regcache_hw_init() should use
+ regmap_bulk_read()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---64j1qyTOoGvYcHb1
-Content-Type: text/plain; charset=utf-8
+--0k24IdCjZr+ZpLJG
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jul 03, 2014 at 10:31:27PM +0800, Jean-Christophe PLAGNIOL-VILLARD =
-wrote:
->=20
-> On Jul 3, 2014, at 10:14 PM, Maxime Ripard <maxime.ripard@free-electrons.=
-com> wrote:
->=20
-> >=20
-> > Add a driver to handle the shutdown of the Atmel SoCs. This code used t=
-o be
-> > (and still is) in arch/arm/mach-at91. We didn't removed it yet so that =
-we can
-> > convert all the boards to using this driver, before removing it entirel=
-y in a
-> > separate patch.
-> >=20
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > ---
-> > drivers/power/reset/Kconfig         |   7 ++
-> > drivers/power/reset/Makefile        |   1 +
-> > drivers/power/reset/at91-poweroff.c | 156 +++++++++++++++++++++++++++++=
-+++++++
-> > 3 files changed, 164 insertions(+)
-> > create mode 100644 drivers/power/reset/at91-poweroff.c
-> >=20
-> > diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-> > index b3fef01d7cbb..f9d53af50ec0 100644
-> > --- a/drivers/power/reset/Kconfig
-> > +++ b/drivers/power/reset/Kconfig
-> > @@ -14,6 +14,13 @@ config POWER_RESET_AS3722
-> > 	help
-> > 	  This driver supports turning off board via a ams AS3722 power-off.
-> >=20
-> > +config POWER_RESET_AT91_POWEROFF
-> > +	bool "Atmel AT91 poweroff driver"
-> > +	default SOC_AT91SAM9 || SOC_SAMA5
-> > +	help
-> > +	  This driver supports poweroff for Atmel AT91SAM9 and SAMA5
-> > +	  SoCs
-> > +
-> > config POWER_RESET_AT91_RESET
-> > 	bool "Atmel AT91 reset driver"
-> > 	default SOC_AT91SAM9 || SOC_SAMA5
-> > diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-> > index 1599214b91d9..8bf941bac3da 100644
-> > --- a/drivers/power/reset/Makefile
-> > +++ b/drivers/power/reset/Makefile
-> > @@ -1,4 +1,5 @@
-> > obj-$(CONFIG_POWER_RESET_AS3722) +=3D as3722-poweroff.o
-> > +obj-$(CONFIG_POWER_RESET_AT91_POWEROFF) +=3D at91-poweroff.o
-> > obj-$(CONFIG_POWER_RESET_AT91_RESET) +=3D at91-reset.o
-> > obj-$(CONFIG_POWER_RESET_AXXIA) +=3D axxia-reset.o
-> > obj-$(CONFIG_POWER_RESET_GPIO) +=3D gpio-poweroff.o
-> > diff --git a/drivers/power/reset/at91-poweroff.c b/drivers/power/reset/=
-at91-poweroff.c
-> > new file mode 100644
-> > index 000000000000..2f2a69e9bae3
-> > --- /dev/null
-> > +++ b/drivers/power/reset/at91-poweroff.c
-> > @@ -0,0 +1,156 @@
-> > +/*
-> > + * Atmel AT91 SAM9 SoCs reset code
-> > + *
-> > + * Copyright (C) 2014 Maxime Ripard
-> > + *
-> > + * Maxime Ripard <maxime.ripard@free-electrons.com>
-> > + *
->=20
-> As it=E2=80=99s mostly a copy of other people work you can not claim the =
-copyright
+On Fri, Jun 27, 2014 at 12:56:11PM -0700, Doug Anderson wrote:
 
-Yep. It was a wrongful copy and paste on my side.
+> We really should be using regmap_bulk_read() in regcache_hw_init().
+> The regmap_bulk_read() will translate into regmap_raw_read() when
+> appropriate.  Doing this fixes problems where regmap_smbus() will
+> crash because they don't implement .read and .write.
 
-Maxime
+Not quite - _bulk_read() does do byte swapping so...
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+> -		ret = regmap_raw_read(map, 0, tmp_buf,
+> +		ret = regmap_bulk_read(map, 0, tmp_buf,
+>  				      map->num_reg_defaults_raw);
+>  		map->cache_bypass = cache_bypass;
+>  		if (ret < 0) {
 
---64j1qyTOoGvYcHb1
+...a direct replacement shouldn't quite work.  We need an actual
+fallback to word at a time operation I think.
+
+--0k24IdCjZr+ZpLJG
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2
 
-iQIcBAEBAgAGBQJTtW56AAoJEBx+YmzsjxAgzk8P/1rCSS9xtfgRusMpK7rT9jON
-Z0fM++ezGM++2v0bIW9YJJthEbqOSvvkHq+ube8vBh3ZXwm9ESWPG+dp/+5ZcWia
-07Y0Gsz8QUGu+PWtcEKNY5+vsRWbeuzbHKU30xfnWDoOYzW1JrXwKhFzC56sn7Ex
-9qNHYryRVpyE5I5F1sOpp6/m99pfMcnqyI6OsKUzTQ9UqEhfFwiAIcx0KoKGSRTv
-pC+VyOiD0rfnA38ol6FERignRMm4UTPdTjxBV4n/X5mhxKcya9hjLPOuWzM8R5Vz
-E4FkfVBmCoGUw4DW6Kxbl3bI0Wukqq2sc4UfGcUCwFLS51+cKKtpSK3D7DTcSMsa
-kuI7/bDP7EGPWazQRo96FZHpQ87q68gTeEMSpPUhhO6m2iuTqOlDYCJ4elWXc1c1
-82LqM0j/yF6EbvBNvLedT3qYXfWYl/T/Sm39NS1x84RmwQV0wqlKOVpIffBO1s6m
-vx7lgXrDmn0LjpZiWwb1QdATTPGKLfoff7vvRKqZS62kBNhvZQEi/9dMuK0QkuaW
-EP10vBv3wb8xzOs9GYjrcUhXlto0odSKX3AXTp/3aiKRHBE7KY1MORYc6lHVtiHd
-uMs5VfDa+/W71ZzBOQCumzpe859Fq3pLIUJxM2le/EHIPbv3p5e61TMqCAft3wwc
-QGuZbRzMecS/PIq5mYDL
-=uarQ
+iQIcBAEBAgAGBQJTtW7SAAoJELSic+t+oim9Jp0P/iS1DC0/Vx3EXyqk4/YYzvBg
+nBc/YBTscAQB/kxHQPikZOAZSw0Vy40pxmQolVKCrgnBEGgmDnjqGv5rDRFepeqM
+UGQ8dOSOkENaV3Q9eR6F+R6MYZvNgh9ghQJwnMHLkmytgP4trQcGJucqiOuNcSTd
+eaP3VWSXYCUOfIciUCW7yTSCA4eAzaCUNtWKxebbnCb/7PHsMq1cRI/YYEJrlLZK
+SSTwC/9f2/izyjJHj7qcyVHy7dHjq+XM1VTIiZK17+PRYU1NqlpgCSuohEXLU+b1
+5vbcfhotuFa9lnl92UfEW4yr5/3TFZIDuHysRPmvr0TERjT3yD02CA2DEbcUOykM
+0UhonlDiSKMRk44bCC0Gk7uZTvcSneOSoukKi94ewAyNtOCJarYSNtbD00y+spzg
+zvIaeiZlGkxaG91Fb5dG/JVbvkuR8g6+FjP+kBqxg6sxRF/dCbbrhSQBANUIpzE3
+WHk+RtMU9yWQinVqmsFPglX2/tPBBV3C+fE6nJfJRCWuvbUnqBFl+B8ToIEmoJ/B
+malV4zzQvKEdntnn37ALYlN/npKC8bjdbru2Km3losaJrcgM4+jBwYDTz3Mbo59k
+F3gibiaBCD8avpm90c/7oo0pyqvd3hYp9CuGsyNbOtjl4YAxLaLTDiLBK7tZiJDT
+JqGIV/GcDjgYXcQlGGM2
+=DfuW
 -----END PGP SIGNATURE-----
 
---64j1qyTOoGvYcHb1--
+--0k24IdCjZr+ZpLJG--
