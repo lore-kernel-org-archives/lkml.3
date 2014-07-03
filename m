@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757886AbaGCHeG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 03:34:06 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:62817 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755756AbaGCHeE (ORCPT
+	id S932219AbaGCHeN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 03:34:13 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:42922 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755819AbaGCHeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 03:34:04 -0400
-Message-ID: <53B50767.2010209@dev.mellanox.co.il>
-Date: Thu, 03 Jul 2014 10:33:59 +0300
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 3 Jul 2014 03:34:09 -0400
+Message-ID: <53B50760.3040708@siemens.com>
+Date: Thu, 03 Jul 2014 09:33:52 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>,
-        Mikulas Patocka <mpatocka@redhat.com>
-CC: Sagi Grimberg <sagig@mellanox.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: Re: Crash on WRITE SAME
-References: <alpine.LRH.2.02.1407021338550.20183@file01.intranet.prod.int.rdu2.redhat.com> <20140702181333.GA15792@infradead.org> <alpine.LRH.2.02.1407021423240.20183@file01.intranet.prod.int.rdu2.redhat.com> <20140702183607.GA19117@infradead.org>
-In-Reply-To: <20140702183607.GA19117@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Bandan Das <bsd@redhat.com>, Wanpeng Li <wanpeng.li@linux.intel.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Hu Robert <robert.hu@intel.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since
+ race
+References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com>	<jpg7g3v7mk0.fsf@redhat.com> <20140703051142.GA2687@kernel> <jpg61jf9fis.fsf@redhat.com>
+In-Reply-To: <jpg61jf9fis.fsf@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/2/2014 9:36 PM, Christoph Hellwig wrote:
-> On Wed, Jul 02, 2014 at 02:29:05PM -0400, Mikulas Patocka wrote:
->> And what about protection information for commands that transfer partial
->> sectors? (for example, UMAP transfers 24 bytes). Should
->> scsi_transfer_length return 24 or 32 in this case?
-> As far as I understand so far PI is only defined for READ/WRITE
-> commands.  But I'll defer to Martin who is a much better source for
-> information on this topic.
+On 2014-07-03 07:29, Bandan Das wrote:
+> Wanpeng Li <wanpeng.li@linux.intel.com> writes:
+> 
+>> Hi Bandan,
+>> On Wed, Jul 02, 2014 at 12:27:59PM -0400, Bandan Das wrote:
+>>> Wanpeng Li <wanpeng.li@linux.intel.com> writes:
+>>>
+>>>> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=72381 
+>>> I can also reproduce this easily with Linux as L1 by "slowing it down"
+>>> eg. running with ept = 0
+>>>
+>>> I suggest changing the subject to -
+>>> KVM: nVMX: Fix race that incorrectly injects L1's irq to L2
+>>>
+>>
+>> Ok, I will fold this to next version. ;-)
+>>
+>>>> If we didn't inject a still-pending event to L1 since nested_run_pending,
+>>>> KVM_REQ_EVENT should be requested after the vmexit in order to inject the 
+>>>> event to L1. However, current log blindly request a KVM_REQ_EVENT even if 
+>>>
+>>> What's current "log" ? Do you mean current "code" ?
+>>>
+>>
+>> Yeah, it's a typo. I mean "logic".
+>>
+>> [...]
+>>> Also, I am wondering isn't it enough to just do this to avoid this race ?
+>>>
+>>> static int vmx_interrupt_allowed(struct kvm_vcpu *vcpu)
+>>> {
+>>> -       return (!to_vmx(vcpu)->nested.nested_run_pending &&
+>>> +       return (!is_guest_mode(vcpu) &&
+>>> +               !to_vmx(vcpu)->nested.nested_run_pending &&
+>>>                vmcs_readl(GUEST_RFLAGS) & X86_EFLAGS_IF) &&
+>>>                !(vmcs_read32(GUEST_INTERRUPTIBILITY_INFO) &
+>>>
+>>
+>> I don't think you fix the root cause of the race, and there are two cases which 
+>> I concern about your proposal:
+>>
+>> - If there is a special L1 which don't ask to exit on external intrs, you will 
+>>   lose the intrs which L0 inject to L2.  
+> 
+> Oh didn't think about that case :), thanks for the pointing this out.
+> It's easy to check this with Xen as L1, I suppose.
 
-hch is correct, PI supported operations are (stated in SBC)
+Xen most probably intercepts external interrupts, but Jailhouse
+definitely does not. We also have a unit test for that, but I will
+likely not expose the issue of lost events.
 
-a) COMPARE AND WRITE;
-b) ORWRITE (16);
-c) ORWRITE (32);
-d) READ (10);
-e) READ (12);
-f) READ (16);
-g) READ (32);
-h) VERIFY (10);
-i) VERIFY (12);
-j) VERIFY (16);
-k) VERIFY (32);
-l) WRITE (10);
-m) WRITE (12);
-n) WRITE (16);
-o) WRITE (32);
-p) WRITE AND VERIFY (10);
-q) WRITE AND VERIFY (12);
-r) WRITE AND VERIFY (16);
-s) WRITE AND VERIFY (32);
-t) WRITE SAME (10);
-u) WRITE SAME (16);
-v) WRITE SAME (32);
-y) XDWRITEREAD (10);
-z) XDWRITEREAD (32);
-aa) XPWRITE (10); and
-ab) XPWRITE (32).
+Jan
 
-Sagi.
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
