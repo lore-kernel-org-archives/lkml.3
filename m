@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965311AbaGCKOR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:14:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51601 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758254AbaGCJVm (ORCPT
+	id S1758973AbaGCKOg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:14:36 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:59185 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964964AbaGCKOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:21:42 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 038/198] SUNRPC: Fix a module reference leak in svc_handle_xprt
-Date: Thu,  3 Jul 2014 10:18:01 +0100
-Message-Id: <1404379241-8590-39-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 3 Jul 2014 06:14:15 -0400
+Date: Thu, 3 Jul 2014 19:13:06 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
+Cc: markh@compro.net, driverdev-devel@linuxdriverproject.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4] staging: dgnc: removes unreachable code
+Message-ID: <20140703101306.GA18967@devel.8.8.4.4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.13 -stable review patch.  If anyone has any objections, please let me know.
+dgnc_tty_ioctl() cannot reach the end of function.
 
-------------------
-
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-
-commit c789102c20bbbdda6831a273e046715be9d6af79 upstream.
-
-If the accept() call fails, we need to put the module reference.
-
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
- net/sunrpc/svc_xprt.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/staging/dgnc/dgnc_tty.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
 
-diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
-index 80a6640f329b..b9aad4723a9d 100644
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -730,6 +730,8 @@ static int svc_handle_xprt(struct svc_rqst *rqstp, struct svc_xprt *xprt)
- 		newxpt = xprt->xpt_ops->xpo_accept(xprt);
- 		if (newxpt)
- 			svc_add_new_temp_xprt(serv, newxpt);
-+		else
-+			module_put(xprt->xpt_class->xcl_owner);
- 	} else if (xprt->xpt_ops->xpo_has_wspace(xprt)) {
- 		/* XPT_DATA|XPT_DEFERRED case: */
- 		dprintk("svc: server %p, pool %u, transport %p, inuse=%d\n",
+diff --git a/drivers/staging/dgnc/dgnc_tty.c b/drivers/staging/dgnc/dgnc_tty.c
+index f7409d9..c07ec74 100644
+--- a/drivers/staging/dgnc/dgnc_tty.c
++++ b/drivers/staging/dgnc/dgnc_tty.c
+@@ -3430,11 +3430,4 @@ static int dgnc_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
+ 
+ 		return -ENOIOCTLCMD;
+ 	}
+-
+-	DGNC_UNLOCK(ch->ch_lock, lock_flags);
+-
+-	DPR_IOCTL(("dgnc_tty_ioctl end - cmd %s (%x), arg %lx\n",
+-		dgnc_ioctl_name(cmd), cmd, arg));
+-
+-	return 0;
+ }
 -- 
-1.9.1
+1.7.1
 
