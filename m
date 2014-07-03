@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616AbaGCH2d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 03:28:33 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60316 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755756AbaGCH2b (ORCPT
+	id S932120AbaGCH27 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 03:28:59 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:53734 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755868AbaGCH24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 03:28:31 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Thu, 3 Jul 2014 16:29:54 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Subject: Re: [PATCH v9] mm: support madvise(MADV_FREE)
-Message-ID: <20140703072954.GC2939@bbox>
-References: <1404174975-22019-1-git-send-email-minchan@kernel.org>
- <20140701145058.GA2084@node.dhcp.inet.fi>
- <20140703010318.GA2939@bbox>
+	Thu, 3 Jul 2014 03:28:56 -0400
+Date: Thu, 3 Jul 2014 08:28:50 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Andrew Bresticker <abrestic@chromium.org>, swarren@wwwdotorg.org,
+        olof@lixom.net, Sonny Rao <sonnyrao@chromium.org>,
+        linux-samsung-soc@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Bill Richardson <wfrichar@chromium.org>, sjg@chromium.org,
+        Wolfram Sang <wsa@the-dreams.de>, broonie@kernel.org,
+        sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 04/10] mdf: cros_ec: Detect in-progress commands
+Message-ID: <20140703072850.GB30534@lee--X1>
+References: <1403115247-8853-1-git-send-email-dianders@chromium.org>
+ <1403115247-8853-5-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140703010318.GA2939@bbox>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1403115247-8853-5-git-send-email-dianders@chromium.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 18 Jun 2014, Doug Anderson wrote:
 
-On Thu, Jul 03, 2014 at 10:03:19AM +0900, Minchan Kim wrote:
-> Hello,
+> From: Simon Glass <sjg@chromium.org>
 > 
-> On Tue, Jul 01, 2014 at 05:50:58PM +0300, Kirill A. Shutemov wrote:
-> > On Tue, Jul 01, 2014 at 09:36:15AM +0900, Minchan Kim wrote:
-> > > +	do {
-> > > +		/*
-> > > +		 * XXX: We can optimize with supporting Hugepage free
-> > > +		 * if the range covers.
-> > > +		 */
-> > > +		next = pmd_addr_end(addr, end);
-> > > +		if (pmd_trans_huge(*pmd))
-> > > +			split_huge_page_pmd(vma, addr, pmd);
-> > 
-> > Could you implement proper THP support before upstreaming the feature?
-> > It shouldn't be a big deal.
+> Some commands take a while to execute. Use -EAGAIN to signal this to the
+> caller.
 > 
-> Okay, Hope to review.
+> Signed-off-by: Simon Glass <sjg@chromium.org>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> ---
+> Changes in v2: None
 > 
-> Thanks for the feedback!
-> 
+>  drivers/mfd/cros_ec_spi.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
 
-I tried to implement it but had a issue.
+Patch applied.
 
-I need pmd_mkold, pmd_mkclean for MADV_FREE operation and pmd_dirty for
-page_referenced. When I investigate all of arches supported THP,
-it's not a big deal but s390 is not sure to me who has no idea of
-soft tracking of s390 by storage key instead of page table information.
-Cced s390 maintainer. Hope to help.
+Clause: There is a chance that this patch might not be seen in -next
+for ~24-48hrs.  If it's not there by 72hrs, feel free to poke.
 
-So, if there isn't any help from s390, I should introduce
-HAVE_ARCH_THP_MADVFREE to disable MADV_FREE support of THP in s390 but
-not want to introduce such new config.
-
-At least, jemalloc case, it's hard to play with THP because it has
-some metadata in the head of chunk so normally it doesn't free 2M
-entirely. I guess other allocator works with similar approach
-so not sure it's worth in this stage.
-
-Do you have any workload to use MADV_FREE with THP?
-so do you really want to support THP MADV_FREE now?
+> diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
+> index 52d4d7b..c29a2d7 100644
+> --- a/drivers/mfd/cros_ec_spi.c
+> +++ b/drivers/mfd/cros_ec_spi.c
+> @@ -292,6 +292,12 @@ static int cros_ec_cmd_xfer_spi(struct cros_ec_device *ec_dev,
+>  	/* check response error code */
+>  	ptr = ec_dev->din;
+>  	if (ptr[0]) {
+> +		if (ptr[0] == EC_RES_IN_PROGRESS) {
+> +			dev_dbg(ec_dev->dev, "command 0x%02x in progress\n",
+> +				ec_msg->cmd);
+> +			ret = -EAGAIN;
+> +			goto exit;
+> +		}
+>  		dev_warn(ec_dev->dev, "command 0x%02x returned an error %d\n",
+>  			 ec_msg->cmd, ptr[0]);
+>  		debug_packet(ec_dev->dev, "in_err", ptr, len);
 
 -- 
-Kind regards,
-Minchan Kim
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
