@@ -1,190 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758154AbaGCUYq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 16:24:46 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:64181 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412AbaGCUYp (ORCPT
+	id S1753646AbaGCU1z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 16:27:55 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:35801 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855AbaGCU1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 16:24:45 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: get rid of hardcoded assumptions about kernel stack size
-Date: Thu, 3 Jul 2014 22:24:28 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
-References: <1403099422-850-1-git-send-email-a.ryabinin@samsung.com>
-In-Reply-To: <1403099422-850-1-git-send-email-a.ryabinin@samsung.com>
+	Thu, 3 Jul 2014 16:27:54 -0400
+X-IronPort-AV: E=Sophos;i="5.01,596,1400050800"; 
+   d="scan'208";a="37564053"
+From: Markus Mayer <markus.mayer@linaro.org>
+To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
+CC: Tim Kryger <tim.kryger@gmail.com>,
+        Mike Looijmans <mike.looijmans@topic.nl>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        "Matt Porter" <mporter@linaro.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [RESEND PATCH v5] mmc: sdhci: Replace host->mmc with mmc where possible
+Date: Thu, 3 Jul 2014 13:27:42 -0700
+Message-ID: <1404419262-20393-1-git-send-email-markus.mayer@linaro.org>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201407032224.28386.arnd@arndb.de>
-X-Provags-ID: V02:K0:radFTZlvYKWtSZY4tt01kOXfRB4A9xob0P1tPl69Tpn
- 7c2E7uvPNc8RGZVp0ch35ilQpdbHYPcN0k661nAiXnIdAuCz5q
- opXT9lgqJXgWCQEepBscopgx5oYqxALzT4NIEZvpdred+GRoEb
- s9avMbPVSeK3/aGtkDi0XzvDrKwGw5rohyVfnp2qV8DLq3zx1m
- X+Zex+LlogXp04wR0bZNiQqhxWh4yeiNOi4WvkcBPpElVcXVhR
- 83/kX9xsD/vxZGyLOnEBM44MTts7wpWp1QavRq7I/QPNz5LnGg
- ztaGK8XtZwajrdIsxrao/6joQYUPjzFhMYecjyDMyG+XDOX7zT
- xMd/Xd7U63kOuFueyOdg=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 18 June 2014, Andrey Ryabinin wrote:
-> diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
-> index f989d7c..f85d2b0 100644
-> --- a/arch/arm/include/asm/thread_info.h
-> +++ b/arch/arm/include/asm/thread_info.h
-> @@ -14,9 +14,10 @@
->  
->  #include <linux/compiler.h>
->  #include <asm/fpstate.h>
-> +#include <asm/page.h>
->  
->  #define THREAD_SIZE_ORDER      1
-> -#define THREAD_SIZE            8192
-> +#define THREAD_SIZE            (PAGE_SIZE << THREAD_SIZE_ORDER)
->  #define THREAD_START_SP                (THREAD_SIZE - 8)
->  
->  #ifndef __ASSEMBLY__
+After the switch to the MMC core regulator infrastucture, we already
+have a local "mmc" pointer in various functions. There is no longer a
+need to access the data structure via host->mmc.
 
-The extra #include has caused recursive inclusion on the iop13xx platform, as you
-can see below. I've been able to work around it using this small patch:
+Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
+Reviewed-by: Matt Porter <mporter@linaro.org>
+---
 
-diff --git a/arch/arm/mach-iop13xx/include/mach/iop13xx.h b/arch/arm/mach-iop13xx/include/mach/iop13xx.h
-index 17b4027..e851f5c 100644
---- a/arch/arm/mach-iop13xx/include/mach/iop13xx.h
-+++ b/arch/arm/mach-iop13xx/include/mach/iop13xx.h
-@@ -3,8 +3,6 @@
+This patch was posted before as part 2/2 of a series
+(https://lkml.org/lkml/2014/6/13/449). Part 1/2 has since been
+accepted.
+
+Please note that checkpatch still complains about the wrapped strings,
+but issue is not introduced by this patch, nor is it confined to the
+lines changed by this patch. (There are several other locations in
+sdhci.c where strings are wrapped across lines.)
+
+Changes from v4:
+  - Rebased on Ulf's current mmc-next branch.
+
+ drivers/mmc/host/sdhci.c | 30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 5cf4a86..26639bf 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1228,7 +1228,7 @@ static void sdhci_set_power(struct sdhci_host *host, unsigned char mode,
  
- #ifndef __ASSEMBLY__
+ 	if (!IS_ERR(mmc->supply.vmmc)) {
+ 		spin_unlock_irq(&host->lock);
+-		mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, vdd);
++		mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
+ 		spin_lock_irq(&host->lock);
+ 		return;
+ 	}
+@@ -1450,7 +1450,7 @@ static void sdhci_do_set_ios(struct sdhci_host *host, struct mmc_ios *ios)
+ 		spin_unlock_irqrestore(&host->lock, flags);
+ 		if (!IS_ERR(mmc->supply.vmmc) &&
+ 		    ios->power_mode == MMC_POWER_OFF)
+-			mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, 0);
++			mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, 0);
+ 		return;
+ 	}
  
--#include <linux/reboot.h>
--
- /* The ATU offsets can change based on the strapping */
- extern u32 iop13xx_atux_pmmr_offset;
- extern u32 iop13xx_atue_pmmr_offset;
-@@ -14,6 +12,7 @@ void iop13xx_map_io(void);
- void iop13xx_platform_init(void);
- void iop13xx_add_tpmi_devices(void);
- void iop13xx_init_irq(void);
-+enum reboot_mode;
- void iop13xx_restart(enum reboot_mode, const char *);
+@@ -1734,7 +1734,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+ 						    3600000);
+ 			if (ret) {
+ 				pr_warning("%s: Switching to 3.3V signalling voltage "
+-						" failed\n", mmc_hostname(host->mmc));
++						" failed\n", mmc_hostname(mmc));
+ 				return -EIO;
+ 			}
+ 		}
+@@ -1747,7 +1747,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+ 			return 0;
  
- /* CPUID CP6 R0 Page 0 */
-diff --git a/arch/arm/mach-iop13xx/setup.c b/arch/arm/mach-iop13xx/setup.c
-index bca96f43..53c316f 100644
---- a/arch/arm/mach-iop13xx/setup.c
-+++ b/arch/arm/mach-iop13xx/setup.c
-@@ -20,6 +20,7 @@
- #include <linux/dma-mapping.h>
- #include <linux/serial_8250.h>
- #include <linux/io.h>
-+#include <linux/reboot.h>
- #ifdef CONFIG_MTD_PHYSMAP
- #include <linux/mtd/physmap.h>
- #endif
+ 		pr_warning("%s: 3.3V regulator output did not became stable\n",
+-				mmc_hostname(host->mmc));
++				mmc_hostname(mmc));
+ 
+ 		return -EAGAIN;
+ 	case MMC_SIGNAL_VOLTAGE_180:
+@@ -1756,7 +1756,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+ 					1700000, 1950000);
+ 			if (ret) {
+ 				pr_warning("%s: Switching to 1.8V signalling voltage "
+-						" failed\n", mmc_hostname(host->mmc));
++						" failed\n", mmc_hostname(mmc));
+ 				return -EIO;
+ 			}
+ 		}
+@@ -1777,7 +1777,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+ 			return 0;
+ 
+ 		pr_warning("%s: 1.8V regulator output did not became stable\n",
+-				mmc_hostname(host->mmc));
++				mmc_hostname(mmc));
+ 
+ 		return -EAGAIN;
+ 	case MMC_SIGNAL_VOLTAGE_120:
+@@ -1786,7 +1786,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
+ 						    1300000);
+ 			if (ret) {
+ 				pr_warning("%s: Switching to 1.2V signalling voltage "
+-						" failed\n", mmc_hostname(host->mmc));
++						" failed\n", mmc_hostname(mmc));
+ 				return -EIO;
+ 			}
+ 		}
+@@ -2825,12 +2825,12 @@ int sdhci_add_host(struct sdhci_host *host)
+ 		 * (128) and potentially one alignment transfer for
+ 		 * each of those entries.
+ 		 */
+-		host->adma_desc = dma_alloc_coherent(mmc_dev(host->mmc),
++		host->adma_desc = dma_alloc_coherent(mmc_dev(mmc),
+ 						     ADMA_SIZE, &host->adma_addr,
+ 						     GFP_KERNEL);
+ 		host->align_buffer = kmalloc(128 * 4, GFP_KERNEL);
+ 		if (!host->adma_desc || !host->align_buffer) {
+-			dma_free_coherent(mmc_dev(host->mmc), ADMA_SIZE,
++			dma_free_coherent(mmc_dev(mmc), ADMA_SIZE,
+ 					  host->adma_desc, host->adma_addr);
+ 			kfree(host->align_buffer);
+ 			pr_warning("%s: Unable to allocate ADMA "
+@@ -2843,7 +2843,7 @@ int sdhci_add_host(struct sdhci_host *host)
+ 			pr_warning("%s: unable to allocate aligned ADMA descriptor\n",
+ 				   mmc_hostname(mmc));
+ 			host->flags &= ~SDHCI_USE_ADMA;
+-			dma_free_coherent(mmc_dev(host->mmc), ADMA_SIZE,
++			dma_free_coherent(mmc_dev(mmc), ADMA_SIZE,
+ 					  host->adma_desc, host->adma_addr);
+ 			kfree(host->align_buffer);
+ 			host->adma_desc = NULL;
+@@ -2858,7 +2858,7 @@ int sdhci_add_host(struct sdhci_host *host)
+ 	 */
+ 	if (!(host->flags & (SDHCI_USE_SDMA | SDHCI_USE_ADMA))) {
+ 		host->dma_mask = DMA_BIT_MASK(64);
+-		mmc_dev(host->mmc)->dma_mask = &host->dma_mask;
++		mmc_dev(mmc)->dma_mask = &host->dma_mask;
+ 	}
+ 
+ 	if (host->version >= SDHCI_SPEC_300)
+@@ -2964,7 +2964,7 @@ int sdhci_add_host(struct sdhci_host *host)
+ 		mmc->caps |= MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED;
+ 
+ 	if ((host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION) &&
+-	    !(host->mmc->caps & MMC_CAP_NONREMOVABLE))
++	    !(mmc->caps & MMC_CAP_NONREMOVABLE))
+ 		mmc->caps |= MMC_CAP_NEEDS_POLL;
+ 
+ 	/* If there are external regulators, get them */
+@@ -3261,7 +3261,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
+ 
+ 		if (host->mrq) {
+ 			pr_err("%s: Controller removed during "
+-				" transfer!\n", mmc_hostname(host->mmc));
++				" transfer!\n", mmc_hostname(mmc));
+ 
+ 			host->mrq->cmd->error = -ENOMEDIUM;
+ 			tasklet_schedule(&host->finish_tasklet);
+@@ -3272,7 +3272,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
+ 
+ 	sdhci_disable_card_detection(host);
+ 
+-	mmc_remove_host(host->mmc);
++	mmc_remove_host(mmc);
+ 
+ #ifdef SDHCI_USE_LEDS_CLASS
+ 	led_classdev_unregister(&host->led);
+@@ -3296,7 +3296,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
+ 		regulator_disable(mmc->supply.vqmmc);
+ 
+ 	if (host->adma_desc)
+-		dma_free_coherent(mmc_dev(host->mmc), ADMA_SIZE,
++		dma_free_coherent(mmc_dev(mmc), ADMA_SIZE,
+ 				  host->adma_desc, host->adma_addr);
+ 	kfree(host->align_buffer);
+ 
+-- 
+1.9.1
 
-
-but I wonder if there is a way to avoid the extra include here, as it might also
-cause a general slowdown because of asm/memory.h getting pulled into more .c
-files. Would it be reasonable to hardcode PAGE_SIZE here?
-
-	Arnd
-
-----
-In file included from /git/arm-soc/include/linux/srcu.h:33:0,
-                 from /git/arm-soc/include/linux/notifier.h:15,
-                 from /git/arm-soc/include/linux/reboot.h:5,
-                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/iop13xx.h:6,
-                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/hardware.h:14,
-                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/memory.h:4,
-                 from /git/arm-soc/arch/arm/include/asm/memory.h:24,
-                 from /git/arm-soc/arch/arm/include/asm/page.h:163,
-                 from /git/arm-soc/arch/arm/include/asm/thread_info.h:17,
-                 from /git/arm-soc/include/linux/thread_info.h:54,
-                 from /git/arm-soc/include/asm-generic/preempt.h:4,
-                 from arch/arm/include/generated/asm/preempt.h:1,
-                 from /git/arm-soc/include/linux/preempt.h:18,
-                 from /git/arm-soc/include/linux/spinlock.h:50,
-                 from /git/arm-soc/include/linux/seqlock.h:35,
-                 from /git/arm-soc/include/linux/time.h:5,
-                 from /git/arm-soc/include/uapi/linux/timex.h:56,
-                 from /git/arm-soc/include/linux/timex.h:56,
-                 from /git/arm-soc/include/linux/sched.h:19,
-                 from /git/arm-soc/arch/arm/kernel/asm-offsets.c:13:
-/git/arm-soc/include/linux/rcupdate.h: In function '__rcu_read_lock':
-/git/arm-soc/include/linux/rcupdate.h:219:2: error: implicit declaration of function 'preempt_disable' [-Werror=implicit-function-declaration]
-  preempt_disable();
-  ^
-/git/arm-soc/include/linux/rcupdate.h: In function '__rcu_read_unlock':
-/git/arm-soc/include/linux/rcupdate.h:224:2: error: implicit declaration of function 'preempt_enable' [-Werror=implicit-function-declaration]
-  preempt_enable();
-  ^
-In file included from /git/arm-soc/include/linux/srcu.h:33:0,
-                 from /git/arm-soc/include/linux/notifier.h:15,
-                 from /git/arm-soc/include/linux/reboot.h:5,
-                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/iop13xx.h:6,
-                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/hardware.h:14,
-                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/memory.h:4,
-                 from /git/arm-soc/arch/arm/include/asm/memory.h:24,
-                 from /git/arm-soc/arch/arm/include/asm/page.h:163,
-                 from /git/arm-soc/arch/arm/include/asm/thread_info.h:17,
-                 from /git/arm-soc/include/linux/thread_info.h:54,
-                 from /git/arm-soc/include/asm-generic/preempt.h:4,
-                 from arch/arm/include/generated/asm/preempt.h:1,
-                 from /git/arm-soc/include/linux/preempt.h:18,
-                 from /git/arm-soc/include/linux/spinlock.h:50,
-                 from /git/arm-soc/include/linux/seqlock.h:35,
-                 from /git/arm-soc/include/linux/time.h:5,
-                 from /git/arm-soc/include/uapi/linux/timex.h:56,
-                 from /git/arm-soc/include/linux/timex.h:56,
-                 from /git/arm-soc/include/linux/sched.h:19,
-                 from /git/arm-soc/arch/arm/kernel/asm-offsets.c:13:
-/git/arm-soc/include/linux/rcupdate.h: In function 'rcu_read_lock_bh':
-/git/arm-soc/include/linux/rcupdate.h:928:2: error: implicit declaration of function 'local_bh_disable' [-Werror=implicit-function-declaration]
-  local_bh_disable();
-  ^
-/git/arm-soc/include/linux/rcupdate.h: In function 'rcu_read_unlock_bh':
-/git/arm-soc/include/linux/rcupdate.h:942:2: error: implicit declaration of function 'local_bh_enable' [-Werror=implicit-function-declaration]
-  local_bh_enable();
-  ^
-/git/arm-soc/include/linux/rcupdate.h: In function 'rcu_read_lock_sched_notrace':
-/git/arm-soc/include/linux/rcupdate.h:968:2: error: implicit declaration of function 'preempt_disable_notrace' [-Werror=implicit-function-declaration]
-  preempt_disable_notrace();
-  ^
-/git/arm-soc/include/linux/rcupdate.h: In function 'rcu_read_unlock_sched_notrace':
-/git/arm-soc/include/linux/rcupdate.h:988:2: error: implicit declaration of function 'preempt_enable_notrace' [-Werror=implicit-function-declaration]
-  preempt_enable_notrace();
-  ^
-In file included from /git/arm-soc/include/linux/ktime.h:25:0,
-                 from /git/arm-soc/include/linux/timer.h:5,
-                 from /git/arm-soc/include/linux/workqueue.h:8,
-                 from /git/arm-soc/include/linux/srcu.h:34,
-                 from /git/arm-soc/include/linux/notifier.h:15,
-                 from /git/arm-soc/include/linux/reboot.h:5,
-                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/iop13xx.h:6,
-                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/hardware.h:14,
-                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/memory.h:4,
-                 from /git/arm-soc/arch/arm/include/asm/memory.h:24,
-                 from /git/arm-soc/arch/arm/include/asm/page.h:163,
-                 from /git/arm-soc/arch/arm/include/asm/thread_info.h:17,
-                 from /git/arm-soc/include/linux/thread_info.h:54,
-                 from /git/arm-soc/include/asm-generic/preempt.h:4,
-                 from arch/arm/include/generated/asm/preempt.h:1,
-                 from /git/arm-soc/include/linux/preempt.h:18,
-                 from /git/arm-soc/include/linux/spinlock.h:50,
-                 from /git/arm-soc/include/linux/seqlock.h:35,
-                 from /git/arm-soc/include/linux/time.h:5,
-                 from /git/arm-soc/include/uapi/linux/timex.h:56,
-                 from /git/arm-soc/include/linux/timex.h:56,
-                 from /git/arm-soc/include/linux/sched.h:19,
-                 from /git/arm-soc/arch/arm/kernel/asm-offsets.c:13:
-/git/arm-soc/include/linux/jiffies.h: At top level:
-/git/arm-soc/include/linux/jiffies.h:256:10: warning: "NSEC_PER_SEC" is not defined [-Wundef]
-... many more...
