@@ -1,103 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759171AbaGCRvp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 13:51:45 -0400
-Received: from p01c11o141.mxlogic.net ([208.65.144.64]:34934 "EHLO
-	p01c11o141.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285AbaGCRvn (ORCPT
+	id S1759395AbaGCRw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 13:52:58 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:31466 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753712AbaGCRw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 13:51:43 -0400
-X-MXL-Hash: 53b5982f4b9d8e4e-e80afa6c621f15338be8746946bf132a08b8cea1
-X-MXL-Hash: 53b597b116f0f2d6-06a96abf051ce09f343549b15c8d5c04a940d114
-Date: Thu, 3 Jul 2014 13:49:29 -0400
-From: Joe Lawrence <joe.lawrence@stratus.com>
-X-X-Sender: jlaw@jlaw-desktop.mno.stratus.com
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-CC: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, <DL-MPTFusionLinux@lsi.com>,
-        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers: message: fusion: Simplify rounding
-In-Reply-To: <1404219380-2712-1-git-send-email-linux@rasmusvillemoes.dk>
-Message-ID: <alpine.DEB.2.02.1407031300280.9641@jlaw-desktop.mno.stratus.com>
-References: <1404219380-2712-1-git-send-email-linux@rasmusvillemoes.dk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 3 Jul 2014 13:52:57 -0400
+Date: Thu, 3 Jul 2014 13:52:22 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Andrew Morton <akpm@linux-foundation.org>, luto@amacapital.net
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        boris.ostrovsky@oracle.com
+Subject: Re: [BUILD BUG][3.16-rc3] Error: too many copied sections (max = 13)
+Message-ID: <20140703175222.GA13710@konrad-lan.dumpdata.com>
+References: <20140701000913.5ea51f77@gandalf.local.home>
+ <20140702142836.084d1ad63b049d53a2f51218@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-Originating-IP: [134.111.199.152]
-X-AnalysisOut: [v=2.1 cv=FuCL/gbq c=1 sm=1 tr=0 a=VNTQBUOG7PJoPU2GWtE7Ww==]
-X-AnalysisOut: [:117 a=VNTQBUOG7PJoPU2GWtE7Ww==:17 a=nXGuE6rTyBAA:10 a=Wz6]
-X-AnalysisOut: [OvkS5RLgA:10 a=_KQqW7t0BisA:10 a=CdzKgOd8jloA:10 a=BLceEmw]
-X-AnalysisOut: [cHowA:10 a=kj9zAlcOel0A:10 a=uelBKuKpAAAA:8 a=YlVTAMxIAAAA]
-X-AnalysisOut: [:8 a=VwQbUJbxAAAA:8 a=vcr42lU8XPD7nsxI_OUA:9 a=CjuIK1q_8ug]
-X-AnalysisOut: [A:10 a=x8gzFH9gYPwA:10 a=kSViFEBMy1sA:10]
-X-Spam: [F=0.5000000000; CM=0.500; MH=0.500(2014070310); S=0.200(2014051901)]
-X-MAIL-FROM: <joe.lawrence@stratus.com>
-X-SOURCE-IP: [134.111.1.17]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140702142836.084d1ad63b049d53a2f51218@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ALIGN is certainly more readable to me.
-
-Reviewed-by: Joe Lawrence <joe.lawrence@stratus.com>
-
--- Joe
-
-On Tue, 1 Jul 2014, Rasmus Villemoes wrote:
-
-> Rounding up to a multiple of 4 should be done using the ALIGN
-> macro. As a bonus, this also makes the generated code smaller.
+On Wed, Jul 02, 2014 at 02:28:36PM -0700, Andrew Morton wrote:
+> On Tue, 1 Jul 2014 00:09:13 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
-> In GetIocFacts(), sz is assigned to a few lines below without being
-> read in the meantime, so it is ok that it doesn't end up with the same
-> value as facts->FWImageSize.
+> > Testing the latest kernel (3.16-rc3) I hit this build bug:
+> > 
+> >   VDSO2C  arch/x86/vdso/vdso-image-64.c
+> > Error: too many copied sections (max = 13)
+> > /arch/x86/vdso/Makefile:61: recipe for target 'arch/x86/vdso/vdso-image-64.c' failed
+> > make[3]: *** [arch/x86/vdso/vdso-image-64.c] Error 1
+> > /scripts/Makefile.build:404: recipe for target 'arch/x86/vdso' failed
+> > make[2]: *** [arch/x86/vdso] Error 2
+> > 
+> > I bisected it down to this commit:
+> > 
+> > commit 0e3727a8839c988a3c56170bc8da76d55a16acad
+> > Author: Andy Lutomirski <luto@amacapital.net>
+> > Date:   Wed Jun 18 15:59:49 2014 -0700
+> > 
+> >     x86/vdso: Remove some redundant in-memory section headers
+> > 
+> > When I revert this commit, it compiles fine.
 > 
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-> ---
->  drivers/message/fusion/mptbase.c | 7 +------
->  drivers/message/fusion/mptctl.c  | 7 +------
->  2 files changed, 2 insertions(+), 12 deletions(-)
+> When I revert that I get
 > 
-> diff --git a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
-> index ebc0af7..10b16a1 100644
-> --- a/drivers/message/fusion/mptbase.c
-> +++ b/drivers/message/fusion/mptbase.c
-> @@ -3175,12 +3175,7 @@ GetIocFacts(MPT_ADAPTER *ioc, int sleepFlag, int reason)
->  			facts->FWImageSize = le32_to_cpu(facts->FWImageSize);
->  		}
->  
-> -		sz = facts->FWImageSize;
-> -		if ( sz & 0x01 )
-> -			sz += 1;
-> -		if ( sz & 0x02 )
-> -			sz += 2;
-> -		facts->FWImageSize = sz;
-> +		facts->FWImageSize = ALIGN(facts->FWImageSize, 4);
->  
->  		if (!facts->RequestFrameSize) {
->  			/*  Something is wrong!  */
-> diff --git a/drivers/message/fusion/mptctl.c b/drivers/message/fusion/mptctl.c
-> index 8a050e8..1004392 100644
-> --- a/drivers/message/fusion/mptctl.c
-> +++ b/drivers/message/fusion/mptctl.c
-> @@ -1749,12 +1749,7 @@ mptctl_replace_fw (unsigned long arg)
->  
->  	/* Allocate memory for the new FW image
->  	 */
-> -	newFwSize = karg.newImageSize;
-> -
-> -	if (newFwSize & 0x01)
-> -		newFwSize += 1;
-> -	if (newFwSize & 0x02)
-> -		newFwSize += 2;
-> +	newFwSize = ALIGN(karg.newImageSize, 4);
->  
->  	mpt_alloc_fw_memory(ioc, newFwSize);
->  	if (ioc->cached_fw == NULL)
-> -- 
-> 1.9.2
+> Error: cannot handle memsz != filesz
+> make[2]: *** [arch/x86/vdso/vdso-image-64.c] Error 1
+> make[1]: *** [arch/x86/vdso] Error 2
+> make[1]: *** Waiting for unfinished jobs....
+> In file included from include/linux/poll.h:11,
+>                  from include/linux/ring_buffer.h:7,
+>                  from include/linux/ftrace_event.h:5,
+>                  from include/trace/syscall.h:6,
+>                  from include/linux/syscalls.h:80,
+>                  from kernel/capability.c:17:
 > 
+> Productivity decline...
+
+When I revert that mentioned commit I get
+Error: too many copied sections (max = 16)
+
+But if I revert bfad381c0d1e19cae8461e105d8d4387dd2a14fe as well
+then everything is back to normal.
+
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> Please read the FAQ at  http://www.tux.org/lkml/
