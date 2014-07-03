@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758506AbaGCSEz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 14:04:55 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:56443 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751912AbaGCSEx (ORCPT
+	id S1759344AbaGCSFQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 14:05:16 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:35488 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759088AbaGCSFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 14:04:53 -0400
-Message-ID: <1404410691.16291.11.camel@x220>
-Subject: Re: [PATCH 2/2] mach-spear: fixed spear1340.c file
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: viresh.linux@gmail.com, shiraz.linux.kernel@gmail.com,
-        linux@arm.linux.org.uk, spear-devel@list.st.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 03 Jul 2014 20:04:51 +0200
-In-Reply-To: <1404354994-7478-1-git-send-email-xerofoify@gmail.com>
-References: <1404354994-7478-1-git-send-email-xerofoify@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Thu, 3 Jul 2014 14:05:14 -0400
+Message-ID: <53B59BC9.5080205@oracle.com>
+Date: Thu, 03 Jul 2014 14:07:05 -0400
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, luto@amacapital.net,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [BUILD BUG][3.16-rc3] Error: too many copied sections (max =
+ 13)
+References: <20140701000913.5ea51f77@gandalf.local.home> <20140702142836.084d1ad63b049d53a2f51218@linux-foundation.org> <20140703175222.GA13710@konrad-lan.dumpdata.com>
+In-Reply-To: <20140703175222.GA13710@konrad-lan.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Jul 2014 18:04:51.0602 (UTC) FILETIME=[49293F20:01CF96E9]
-X-RcptDomain: vger.kernel.org
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-02 at 22:36 -0400, Nicholas Krause wrote:
-> This is the fixed file after moving sata support to new file in
-> spear1340_sata.c
-> 
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->  arch/arm/mach-spear/spear1340.c | 111 ----------------------------------------
->  1 file changed, 111 deletions(-)
+On 07/03/2014 01:52 PM, Konrad Rzeszutek Wilk wrote:
+> On Wed, Jul 02, 2014 at 02:28:36PM -0700, Andrew Morton wrote:
+>> On Tue, 1 Jul 2014 00:09:13 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
+>>
+>>> Testing the latest kernel (3.16-rc3) I hit this build bug:
+>>>
+>>>    VDSO2C  arch/x86/vdso/vdso-image-64.c
+>>> Error: too many copied sections (max = 13)
+>>> /arch/x86/vdso/Makefile:61: recipe for target 'arch/x86/vdso/vdso-image-64.c' failed
+>>> make[3]: *** [arch/x86/vdso/vdso-image-64.c] Error 1
+>>> /scripts/Makefile.build:404: recipe for target 'arch/x86/vdso' failed
+>>> make[2]: *** [arch/x86/vdso] Error 2
+>>>
+>>> I bisected it down to this commit:
+>>>
+>>> commit 0e3727a8839c988a3c56170bc8da76d55a16acad
+>>> Author: Andy Lutomirski <luto@amacapital.net>
+>>> Date:   Wed Jun 18 15:59:49 2014 -0700
+>>>
+>>>      x86/vdso: Remove some redundant in-memory section headers
+>>>
+>>> When I revert this commit, it compiles fine.
+>> When I revert that I get
+>>
+>> Error: cannot handle memsz != filesz
+>> make[2]: *** [arch/x86/vdso/vdso-image-64.c] Error 1
+>> make[1]: *** [arch/x86/vdso] Error 2
+>> make[1]: *** Waiting for unfinished jobs....
+>> In file included from include/linux/poll.h:11,
+>>                   from include/linux/ring_buffer.h:7,
+>>                   from include/linux/ftrace_event.h:5,
+>>                   from include/trace/syscall.h:6,
+>>                   from include/linux/syscalls.h:80,
+>>                   from kernel/capability.c:17:
+>>
+>> Productivity decline...
+> When I revert that mentioned commit I get
+> Error: too many copied sections (max = 16)
+>
+> But if I revert bfad381c0d1e19cae8461e105d8d4387dd2a14fe as well
+> then everything is back to normal.
 
-This patch, together with patch 1/2, basically moves a chunk of code
-into a separate file, didn't it? If so, why did you split that move in
-two patches?
 
-And how does all this work without any changes to a Makefile?
+This is with binutils-2.20.51.0.2-15 (I assume Konrad is using the same 
+environment as I do. But in any case, reverting bfad381c0d makes the 
+build work for me at that version).
 
-> diff --git a/arch/arm/mach-spear/spear1340.c b/arch/arm/mach-spear/spear1340.c
-> index 7b6bff7..f9d8ef3 100644
-> --- a/arch/arm/mach-spear/spear1340.c
-> +++ b/arch/arm/mach-spear/spear1340.c
-> @@ -21,117 +21,6 @@
->  #include "generic.h"
->  #include <mach/spear.h>
->  
-> -/* FIXME: Move SATA PHY code into a standalone driver */
-
-(I have no idea what this FIXME is about, but I do wonder whether that
-new file by itself is the standalone driver this FIXME is about. The
-spear developers will surely know.)
-
-
-Paul Bolle
+-borsi
 
