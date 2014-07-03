@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030251AbaGCJld (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:41:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52384 "EHLO
+	id S932617AbaGCJlb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:41:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52387 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030374AbaGCJY1 (ORCPT
+	with ESMTP id S1030375AbaGCJY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Jul 2014 05:24:27 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
-        stephen hemminger <stephen@networkplumber.org>,
-        Pravin B Shelar <pshelar@nicira.com>,
-        Cong Wang <cwang@twopensource.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
+Cc: Wei Yang <weiyang@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 151/198] vxlan: use dev->needed_headroom instead of dev->hard_header_len
-Date: Thu,  3 Jul 2014 10:19:54 +0100
-Message-Id: <1404379241-8590-152-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 152/198] net/mlx4_core: pass pci_device_id.driver_data to __mlx4_init_one during reset
+Date: Thu,  3 Jul 2014 10:19:55 +0100
+Message-Id: <1404379241-8590-153-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -31,54 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cong Wang <cwang@twopensource.com>
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
 
-commit 2853af6a2ea1a8ed09b09dd4fb578e7f435e8d34 upstream.
+[ No upstream commit, this is a cherry picked backport enabler. ]
 
-When we mirror packets from a vxlan tunnel to other device,
-the mirror device should see the same packets (that is, without
-outer header). Because vxlan tunnel sets dev->hard_header_len,
-tcf_mirred() resets mac header back to outer mac, the mirror device
-actually sees packets with outer headers
+The second parameter of __mlx4_init_one() is used to identify whether the
+pci_dev is a PF or VF. Currently, when it is invoked in mlx4_pci_slot_reset()
+this information is missed.
 
-Vxlan tunnel should set dev->needed_headroom instead of
-dev->hard_header_len, like what other ip tunnels do. This fixes
-the above problem.
+This patch match the pci_dev with mlx4_pci_table and passes the
+pci_device_id.driver_data to __mlx4_init_one() in mlx4_pci_slot_reset().
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: stephen hemminger <stephen@networkplumber.org>
-Cc: Pravin B Shelar <pshelar@nicira.com>
-Signed-off-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.11: used davem's backport for 3.10 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/vxlan.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/main.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
-index 116810f9ca35..80bd392c1d84 100644
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -1476,7 +1476,7 @@ static void vxlan_setup(struct net_device *dev)
+diff --git a/drivers/net/ethernet/mellanox/mlx4/main.c b/drivers/net/ethernet/mellanox/mlx4/main.c
+index 36be3208786a..c495c604ead3 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/main.c
++++ b/drivers/net/ethernet/mellanox/mlx4/main.c
+@@ -2522,7 +2522,11 @@ static pci_ers_result_t mlx4_pci_err_detected(struct pci_dev *pdev,
  
- 	eth_hw_addr_random(dev);
- 	ether_setup(dev);
--	dev->hard_header_len = ETH_HLEN + VXLAN_HEADROOM;
-+	dev->needed_headroom = ETH_HLEN + VXLAN_HEADROOM;
+ static pci_ers_result_t mlx4_pci_slot_reset(struct pci_dev *pdev)
+ {
+-	int ret = __mlx4_init_one(pdev, 0);
++	const struct pci_device_id *id;
++	int ret;
++
++	id = pci_match_id(mlx4_pci_table, pdev);
++	ret = __mlx4_init_one(pdev, id->driver_data);
  
- 	dev->netdev_ops = &vxlan_netdev_ops;
- 	dev->destructor = free_netdev;
-@@ -1720,7 +1720,7 @@ static int vxlan_newlink(struct net *net, struct net_device *dev,
- 			dev->mtu = lowerdev->mtu - VXLAN_HEADROOM;
- 
- 		/* update header length based on lower device */
--		dev->hard_header_len = lowerdev->hard_header_len +
-+		dev->needed_headroom = lowerdev->hard_header_len +
- 				       VXLAN_HEADROOM;
- 	}
- 
+ 	return ret ? PCI_ERS_RESULT_DISCONNECT : PCI_ERS_RESULT_RECOVERED;
+ }
 -- 
 1.9.1
 
