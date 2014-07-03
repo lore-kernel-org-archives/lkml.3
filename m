@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568AbaGCA5D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 20:57:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37306 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587AbaGCA5B (ORCPT
+	id S1753890AbaGCA5W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 20:57:22 -0400
+Received: from infernal.debian.net ([176.28.9.132]:38286 "EHLO
+	infernal.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260AbaGCA5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 20:57:01 -0400
-Date: Wed, 2 Jul 2014 17:56:35 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kees Cook <kees@outflux.net>
-Cc: Andi Kleen <ak@linux.intel.com>, Randy Dunlap <rdunlap@infradead.org>,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, mhocko@suse.cz
-Subject: Re: mmotm 2014-07-02-15-07 uploaded (stack protector)
-Message-Id: <20140702175635.79d54c44.akpm@linux-foundation.org>
-In-Reply-To: <20140703005100.GI5412@outflux.net>
-References: <53b482d3.gR7nYB/K7hPREviI%akpm@linux-foundation.org>
-	<53B493E2.2030905@infradead.org>
-	<20140703002231.GR19781@tassilo.jf.intel.com>
-	<20140703005100.GI5412@outflux.net>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jul 2014 20:57:20 -0400
+Date: Thu, 3 Jul 2014 02:57:15 +0200
+From: Andreas Bombe <aeb@debian.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [REGRESSION] Boot hang with 939f04bec printk: enable interrupts
+ before calling console_trylock_for_printk()
+Message-ID: <20140703005715.GA3626@amos.fritz.box>
+References: <20140628225050.GA3484@amos.fritz.box>
+ <20140630132030.fa6ac8c8f040e6f5b05071f3@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140630132030.fa6ac8c8f040e6f5b05071f3@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jul 2014 17:51:00 -0700 Kees Cook <kees@outflux.net> wrote:
-
-> > It's hard to tell what the original author wanted, perhaps they wanted
-> > it to error out. It looks intentional. Clearly they didn't think of randconfig
-> > though.
+On Mon, Jun 30, 2014 at 01:20:30PM -0700, Andrew Morton wrote:
+> On Sun, 29 Jun 2014 00:50:50 +0200 Andreas Bombe <aeb@debian.org> wrote:
 > 
-> The problem is that if you make kbuild hard-fail when selecting this missing
-> compiler option, you can never switch it back because "make menuconfig" will
-> refuse to build since the compiler option would be missing. Being silent
-> about the missing option (and/or falling back to other options) means that
-> you could get two different kernel features selection with the same CONFIG_*
-> set, depending on the kernel, which is extremely bad ("I selected
-> stack-protector-strong but it built without it?!").
+> > None of the post 3.15 kernel boot for me. They all hang at the GRUB
+> > screen telling me it loaded and started the kernel, but the kernel
+> > itself stops before it prints anything (or even replaces the GRUB
+> > background graphics).
+> > 
+> > I bisected it down to 939f04bec1a4ef6ba4370b0f34b01decc844b1b1 "printk:
+> > enable interrupts before calling console_trylock_for_printk()".
+> > Reverting that patch on the latest kernel (git 24b414d5a7) allows me to
+> > boot normally.
 > 
-> So, the middle ground was to warn about it during the kbuild logic so
-> you could find the source of the problem, but ultimately fail the build
-> when the compiler doesn't support it so there weren't any silent failure
-> modes.
+> OK, thanks, I queued the below reversion.  I'll hold off for a week or
+> two in case we come up with a fix.
+> 
+> > I fixed the conflict in the revert by leaving in the "if
+> > (in_sched) return printed_len;".
+> 
+> hm, that might have been buggy - we still need to the lockdep_on() and
+> local_irq_restore().  You're a victim of
+> someone-stuck-a-random-return-in-the-middle-of-a-function.
 
---- a/Makefile~a
-+++ a/Makefile
-@@ -630,6 +630,9 @@ KBUILD_CFLAGS += $(call cc-option,-Wfram
- endif
- 
- # Handle stack protector mode.
-+#
-+# This space reserved for Kees
-+#
- ifdef CONFIG_CC_STACKPROTECTOR_REGULAR
-   stackp-flag := -fstack-protector
-   ifeq ($(call cc-option, $(stackp-flag)),)
-_
+To be honest, I just randomly picked one possible conflict resolution to
+confirm whether the revert actually helps.
 
+> Please review this and if possible, run-time test it?  Against current
+> mainline.
+
+I've applied it (actually I picked the one from your patch series but
+they are identical I think) and it does boot. I'm writing this on the
+latest kernel + your revert.
