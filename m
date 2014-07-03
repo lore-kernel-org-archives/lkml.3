@@ -1,131 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414AbaGCUYI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 16:24:08 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:48678 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751357AbaGCUX2 (ORCPT
+	id S1758154AbaGCUYq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 16:24:46 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:64181 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412AbaGCUYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 16:23:28 -0400
-Message-Id: <20140703202325.240729487@goodmis.org>
-User-Agent: quilt/0.63-1
-Date: Thu, 03 Jul 2014 16:07:53 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Oleg Nesterov <oleg@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
-        Jiri Slaby <jslaby@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [RFC][PATCH 3/3] ftrace/x86: Allow !CONFIG_PREEMPT dynamic ops to use allocated
- trampolines
-References: <20140703200750.648550267@goodmis.org>
+	Thu, 3 Jul 2014 16:24:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: get rid of hardcoded assumptions about kernel stack size
+Date: Thu, 3 Jul 2014 22:24:28 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
+References: <1403099422-850-1-git-send-email-a.ryabinin@samsung.com>
+In-Reply-To: <1403099422-850-1-git-send-email-a.ryabinin@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0003-ftrace-x86-Allow-CONFIG_PREEMPT-dynamic-ops-to-use-a.patch
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201407032224.28386.arnd@arndb.de>
+X-Provags-ID: V02:K0:radFTZlvYKWtSZY4tt01kOXfRB4A9xob0P1tPl69Tpn
+ 7c2E7uvPNc8RGZVp0ch35ilQpdbHYPcN0k661nAiXnIdAuCz5q
+ opXT9lgqJXgWCQEepBscopgx5oYqxALzT4NIEZvpdred+GRoEb
+ s9avMbPVSeK3/aGtkDi0XzvDrKwGw5rohyVfnp2qV8DLq3zx1m
+ X+Zex+LlogXp04wR0bZNiQqhxWh4yeiNOi4WvkcBPpElVcXVhR
+ 83/kX9xsD/vxZGyLOnEBM44MTts7wpWp1QavRq7I/QPNz5LnGg
+ ztaGK8XtZwajrdIsxrao/6joQYUPjzFhMYecjyDMyG+XDOX7zT
+ xMd/Xd7U63kOuFueyOdg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Wednesday 18 June 2014, Andrey Ryabinin wrote:
+> diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
+> index f989d7c..f85d2b0 100644
+> --- a/arch/arm/include/asm/thread_info.h
+> +++ b/arch/arm/include/asm/thread_info.h
+> @@ -14,9 +14,10 @@
+>  
+>  #include <linux/compiler.h>
+>  #include <asm/fpstate.h>
+> +#include <asm/page.h>
+>  
+>  #define THREAD_SIZE_ORDER      1
+> -#define THREAD_SIZE            8192
+> +#define THREAD_SIZE            (PAGE_SIZE << THREAD_SIZE_ORDER)
+>  #define THREAD_START_SP                (THREAD_SIZE - 8)
+>  
+>  #ifndef __ASSEMBLY__
 
-When the static ftrace_ops (like function tracer) enables tracing, and it
-is the only callback that is referencing a function, a trampoline is
-dynamically allocated to the function that calls the callback directly
-instead of calling a loop function that iterates over all the registered
-ftrace ops (if more than one ops is registered).
+The extra #include has caused recursive inclusion on the iop13xx platform, as you
+can see below. I've been able to work around it using this small patch:
 
-But when it comes to dynamically allocated ftrace_ops, where they may be
-freed, on a CONFIG_PREEMPT kernel there's no way to know when it is safe
-to free the trampoline. If a task was preempted while executing on the
-trampoline, there's currently no way to know when it will be off that
-trampoline.
-
-But this is not true when it comes to !CONFIG_PREEMPT. The current method
-of calling schedule_on_each_cpu() will force tasks off the trampoline,
-becaues they can not schedule while on it (kernel preemption is not
-configured). That means it is safe to free a dynamically allocated
-ftrace ops trampoline when CONFIG_PREEMPT is not configured.
-
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/x86/kernel/ftrace.c |  8 ++++++++
- kernel/trace/ftrace.c    | 18 ++++++++++++++++++
- 2 files changed, 26 insertions(+)
-
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index 50de611d44b4..b718fe6f881a 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -874,6 +874,14 @@ void *arch_ftrace_trampoline_func(struct ftrace_ops *ops, struct dyn_ftrace *rec
- 	return addr_from_call((void *)ops->trampoline + offset);
- }
+diff --git a/arch/arm/mach-iop13xx/include/mach/iop13xx.h b/arch/arm/mach-iop13xx/include/mach/iop13xx.h
+index 17b4027..e851f5c 100644
+--- a/arch/arm/mach-iop13xx/include/mach/iop13xx.h
++++ b/arch/arm/mach-iop13xx/include/mach/iop13xx.h
+@@ -3,8 +3,6 @@
  
-+void arch_ftrace_trampoline_free(struct ftrace_ops *ops)
-+{
-+	if (!ops || !(ops->flags & FTRACE_OPS_FL_ALLOC_TRAMP))
-+		return;
-+
-+	module_free(NULL, ops->trampoline);
-+	ops->trampoline = NULL;
-+}
+ #ifndef __ASSEMBLY__
  
- #endif /* CONFIG_X86_64 */
- #endif /* CONFIG_DYNAMIC_FTRACE */
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 66cbb3b7251d..a1202c6d57d2 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2281,6 +2281,10 @@ static void ftrace_run_update_code(int command)
- static ftrace_func_t saved_ftrace_func;
- static int ftrace_start_up;
+-#include <linux/reboot.h>
+-
+ /* The ATU offsets can change based on the strapping */
+ extern u32 iop13xx_atux_pmmr_offset;
+ extern u32 iop13xx_atue_pmmr_offset;
+@@ -14,6 +12,7 @@ void iop13xx_map_io(void);
+ void iop13xx_platform_init(void);
+ void iop13xx_add_tpmi_devices(void);
+ void iop13xx_init_irq(void);
++enum reboot_mode;
+ void iop13xx_restart(enum reboot_mode, const char *);
  
-+void __weak arch_ftrace_trampoline_free(struct ftrace_ops *ops)
-+{
-+}
-+
- static void control_ops_free(struct ftrace_ops *ops)
- {
- 	free_percpu(ops->disabled);
-@@ -2391,6 +2395,8 @@ static int ftrace_shutdown(struct ftrace_ops *ops, int command)
- 	if (ops->flags & (FTRACE_OPS_FL_DYNAMIC | FTRACE_OPS_FL_CONTROL)) {
- 		schedule_on_each_cpu(ftrace_sync);
- 
-+		arch_ftrace_trampoline_free(ops);
-+
- 		if (ops->flags & FTRACE_OPS_FL_CONTROL)
- 			control_ops_free(ops);
- 	}
-@@ -4632,9 +4638,21 @@ void __weak arch_ftrace_update_trampoline(struct ftrace_ops *ops)
- 
- static void ftrace_update_trampoline(struct ftrace_ops *ops)
- {
-+
-+/*
-+ * Currently there's no safe way to free a trampoline when the kernel
-+ * is configured with PREEMPT. That is because a task could be preempted
-+ * when it jumped to the trampoline, it may be preempted for a long time
-+ * depending on the system load, and currently there's no way to know
-+ * when it will be off the trampoline. If the trampoline is freed
-+ * too early, when the task runs again, it will be executing on freed
-+ * memory and crash.
-+ */
-+#ifdef CONFIG_PREEMPT
- 	/* Currently, only non dynamic ops can have a trampoline */
- 	if (ops->flags & FTRACE_OPS_FL_DYNAMIC)
- 		return;
-+#endif
- 
- 	arch_ftrace_update_trampoline(ops);
- }
--- 
-2.0.0
+ /* CPUID CP6 R0 Page 0 */
+diff --git a/arch/arm/mach-iop13xx/setup.c b/arch/arm/mach-iop13xx/setup.c
+index bca96f43..53c316f 100644
+--- a/arch/arm/mach-iop13xx/setup.c
++++ b/arch/arm/mach-iop13xx/setup.c
+@@ -20,6 +20,7 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/serial_8250.h>
+ #include <linux/io.h>
++#include <linux/reboot.h>
+ #ifdef CONFIG_MTD_PHYSMAP
+ #include <linux/mtd/physmap.h>
+ #endif
 
 
+but I wonder if there is a way to avoid the extra include here, as it might also
+cause a general slowdown because of asm/memory.h getting pulled into more .c
+files. Would it be reasonable to hardcode PAGE_SIZE here?
+
+	Arnd
+
+----
+In file included from /git/arm-soc/include/linux/srcu.h:33:0,
+                 from /git/arm-soc/include/linux/notifier.h:15,
+                 from /git/arm-soc/include/linux/reboot.h:5,
+                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/iop13xx.h:6,
+                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/hardware.h:14,
+                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/memory.h:4,
+                 from /git/arm-soc/arch/arm/include/asm/memory.h:24,
+                 from /git/arm-soc/arch/arm/include/asm/page.h:163,
+                 from /git/arm-soc/arch/arm/include/asm/thread_info.h:17,
+                 from /git/arm-soc/include/linux/thread_info.h:54,
+                 from /git/arm-soc/include/asm-generic/preempt.h:4,
+                 from arch/arm/include/generated/asm/preempt.h:1,
+                 from /git/arm-soc/include/linux/preempt.h:18,
+                 from /git/arm-soc/include/linux/spinlock.h:50,
+                 from /git/arm-soc/include/linux/seqlock.h:35,
+                 from /git/arm-soc/include/linux/time.h:5,
+                 from /git/arm-soc/include/uapi/linux/timex.h:56,
+                 from /git/arm-soc/include/linux/timex.h:56,
+                 from /git/arm-soc/include/linux/sched.h:19,
+                 from /git/arm-soc/arch/arm/kernel/asm-offsets.c:13:
+/git/arm-soc/include/linux/rcupdate.h: In function '__rcu_read_lock':
+/git/arm-soc/include/linux/rcupdate.h:219:2: error: implicit declaration of function 'preempt_disable' [-Werror=implicit-function-declaration]
+  preempt_disable();
+  ^
+/git/arm-soc/include/linux/rcupdate.h: In function '__rcu_read_unlock':
+/git/arm-soc/include/linux/rcupdate.h:224:2: error: implicit declaration of function 'preempt_enable' [-Werror=implicit-function-declaration]
+  preempt_enable();
+  ^
+In file included from /git/arm-soc/include/linux/srcu.h:33:0,
+                 from /git/arm-soc/include/linux/notifier.h:15,
+                 from /git/arm-soc/include/linux/reboot.h:5,
+                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/iop13xx.h:6,
+                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/hardware.h:14,
+                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/memory.h:4,
+                 from /git/arm-soc/arch/arm/include/asm/memory.h:24,
+                 from /git/arm-soc/arch/arm/include/asm/page.h:163,
+                 from /git/arm-soc/arch/arm/include/asm/thread_info.h:17,
+                 from /git/arm-soc/include/linux/thread_info.h:54,
+                 from /git/arm-soc/include/asm-generic/preempt.h:4,
+                 from arch/arm/include/generated/asm/preempt.h:1,
+                 from /git/arm-soc/include/linux/preempt.h:18,
+                 from /git/arm-soc/include/linux/spinlock.h:50,
+                 from /git/arm-soc/include/linux/seqlock.h:35,
+                 from /git/arm-soc/include/linux/time.h:5,
+                 from /git/arm-soc/include/uapi/linux/timex.h:56,
+                 from /git/arm-soc/include/linux/timex.h:56,
+                 from /git/arm-soc/include/linux/sched.h:19,
+                 from /git/arm-soc/arch/arm/kernel/asm-offsets.c:13:
+/git/arm-soc/include/linux/rcupdate.h: In function 'rcu_read_lock_bh':
+/git/arm-soc/include/linux/rcupdate.h:928:2: error: implicit declaration of function 'local_bh_disable' [-Werror=implicit-function-declaration]
+  local_bh_disable();
+  ^
+/git/arm-soc/include/linux/rcupdate.h: In function 'rcu_read_unlock_bh':
+/git/arm-soc/include/linux/rcupdate.h:942:2: error: implicit declaration of function 'local_bh_enable' [-Werror=implicit-function-declaration]
+  local_bh_enable();
+  ^
+/git/arm-soc/include/linux/rcupdate.h: In function 'rcu_read_lock_sched_notrace':
+/git/arm-soc/include/linux/rcupdate.h:968:2: error: implicit declaration of function 'preempt_disable_notrace' [-Werror=implicit-function-declaration]
+  preempt_disable_notrace();
+  ^
+/git/arm-soc/include/linux/rcupdate.h: In function 'rcu_read_unlock_sched_notrace':
+/git/arm-soc/include/linux/rcupdate.h:988:2: error: implicit declaration of function 'preempt_enable_notrace' [-Werror=implicit-function-declaration]
+  preempt_enable_notrace();
+  ^
+In file included from /git/arm-soc/include/linux/ktime.h:25:0,
+                 from /git/arm-soc/include/linux/timer.h:5,
+                 from /git/arm-soc/include/linux/workqueue.h:8,
+                 from /git/arm-soc/include/linux/srcu.h:34,
+                 from /git/arm-soc/include/linux/notifier.h:15,
+                 from /git/arm-soc/include/linux/reboot.h:5,
+                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/iop13xx.h:6,
+                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/hardware.h:14,
+                 from /git/arm-soc/arch/arm/mach-iop13xx/include/mach/memory.h:4,
+                 from /git/arm-soc/arch/arm/include/asm/memory.h:24,
+                 from /git/arm-soc/arch/arm/include/asm/page.h:163,
+                 from /git/arm-soc/arch/arm/include/asm/thread_info.h:17,
+                 from /git/arm-soc/include/linux/thread_info.h:54,
+                 from /git/arm-soc/include/asm-generic/preempt.h:4,
+                 from arch/arm/include/generated/asm/preempt.h:1,
+                 from /git/arm-soc/include/linux/preempt.h:18,
+                 from /git/arm-soc/include/linux/spinlock.h:50,
+                 from /git/arm-soc/include/linux/seqlock.h:35,
+                 from /git/arm-soc/include/linux/time.h:5,
+                 from /git/arm-soc/include/uapi/linux/timex.h:56,
+                 from /git/arm-soc/include/linux/timex.h:56,
+                 from /git/arm-soc/include/linux/sched.h:19,
+                 from /git/arm-soc/arch/arm/kernel/asm-offsets.c:13:
+/git/arm-soc/include/linux/jiffies.h: At top level:
+/git/arm-soc/include/linux/jiffies.h:256:10: warning: "NSEC_PER_SEC" is not defined [-Wundef]
+... many more...
