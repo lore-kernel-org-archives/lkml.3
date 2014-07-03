@@ -1,92 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759349AbaGCR0G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 13:26:06 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:32808 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662AbaGCR0D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 13:26:03 -0400
-Message-ID: <53B5922A.7020006@linaro.org>
-Date: Thu, 03 Jul 2014 19:26:02 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1759363AbaGCR1P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 13:27:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25953 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753041AbaGCR1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 13:27:14 -0400
+From: Bandan Das <bsd@redhat.com>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>, Hu Robert <robert.hu@intel.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since race
+References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com>
+	<53B3CA6A.4050902@siemens.com> <jpgy4wb9g5t.fsf@redhat.com>
+	<20140703065955.GA4236@kernel>
+Date: Thu, 03 Jul 2014 13:27:05 -0400
+In-Reply-To: <20140703065955.GA4236@kernel> (Wanpeng Li's message of "Thu, 3
+	Jul 2014 14:59:55 +0800")
+Message-ID: <jpgk37u8iae.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: timers & suspend
-References: <f270ad9c-9906-445d-9e9a-4d3618787455@BY2FFO11FD039.protection.gbl> <53B54AC2.5040908@linaro.org> <83fa689b-a06a-4f1c-97cb-f7a7121a0f25@BL2FFO11FD041.protection.gbl>
-In-Reply-To: <83fa689b-a06a-4f1c-97cb-f7a7121a0f25@BL2FFO11FD041.protection.gbl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2014 06:09 PM, Sören Brinkmann wrote:
-> On Thu, 2014-07-03 at 02:21PM +0200, Daniel Lezcano wrote:
->> On 06/30/2014 08:39 PM, Sören Brinkmann wrote:
->>> Hi,
+Wanpeng Li <wanpeng.li@linux.intel.com> writes:
+
+> On Thu, Jul 03, 2014 at 01:15:26AM -0400, Bandan Das wrote:
+>>Jan Kiszka <jan.kiszka@siemens.com> writes:
+>>
+>>> On 2014-07-02 08:54, Wanpeng Li wrote:
+>>>> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=72381 
+>>>> 
+>>>> If we didn't inject a still-pending event to L1 since nested_run_pending,
+>>>> KVM_REQ_EVENT should be requested after the vmexit in order to inject the 
+>>>> event to L1. However, current log blindly request a KVM_REQ_EVENT even if 
+>>>> there is no still-pending event to L1 which blocked by nested_run_pending. 
+>>>> There is a race which lead to an interrupt will be injected to L2 which 
+>>>> belong to L1 if L0 send an interrupt to L1 during this window. 
+>>>> 
+>>>>                VCPU0                               another thread 
+>>>> 
+>>>> L1 intr not blocked on L2 first entry
+>>>> vmx_vcpu_run req event 
+>>>> kvm check request req event 
+>>>> check_nested_events don't have any intr 
+>>>> not nested exit 
+>>>>                                             intr occur (8254, lapic timer etc)
+>>>> inject_pending_event now have intr 
+>>>> inject interrupt 
+>>>> 
+>>>> This patch fix this race by introduced a l1_events_blocked field in nested_vmx 
+>>>> which indicates there is still-pending event which blocked by nested_run_pending, 
+>>>> and smart request a KVM_REQ_EVENT if there is a still-pending event which blocked 
+>>>> by nested_run_pending.
 >>>
->>> I'm currently working on suspend for Zynq and try to track down some
->>> spurious wakes. It looks like the spurious wakes are caused by timers,
->>> hence I was wondering whether there are any special requirements for
->>> timer drivers when it comes to suspend support or if I just missed
->>> something.
+>>> There are more, unrelated reasons why KVM_REQ_EVENT could be set. Why
+>>> aren't those able to trigger this scenario?
 >>>
->>> Zynq sets the 'IRQCHIP_MASK_ON_SUSPEND' flag, which should mask all
->>> interrupts but the wake source. Reading through kernel/irq/pm.c
->>> indicates, that timer interrupts get some special treatment though.
->>> Therefore I implemented some suspend/resume callbacks for the
->>> cadence_ttc which disable and clear the timer's interrupts when going
->>> into suspend. That seems to mitigate the issue quite a bit, but I still
->>> saw spurious wakes - just a lot less often.
->>> Digging a little deeper revealed, the spurious wakes are caused by the
->>> ARM's smp_twd timer now. Given that that driver is probably used by a few
->>> more ARM platforms, I get the feeling that I'm missing something.
+>>> In any case, unconditionally setting KVM_REQ_EVENT seems strange and
+>>> should be changed.
 >>
->> Do you receive any interrupt from the cadence_ttc ? (/proc/interrupts)
 >>
->> That's funny because I realize that you cadence ttc timer is never
->> used as there are the architected timers. The cadence ttc would be
->> only useful if there were an idle state powering down the smp_twd
->> timers but it is not the case on this board, IIUC.
-> Yes they are used. They TTC is the only broadcast capable timer for
-> Zynq. In my experience, I can not even boot without it (may have
-> dependencies on CPUidle or something).
-
-Actually the cpuidle driver is wrong. It assumes the state #1 will power 
-off the different cores with their architected timers and then switch to 
-the broadcast timer. But this one is not needed as we don't power down 
-the core with the twd timers, so no need to switch to a backup timer device.
-
-The implementation of the DDR self refresh idle state (incoming 
-patchset) removes the cpu_pm notifiers + the flag TIMER_STOP. The result 
-is 0 interrupts for ttc cadence timer. I removed in the dts the cadence 
-ttc and my board booted without problem (it is a zynq 702).
-
-Except I missed something, the cadence ttc is actually not used at all.
-
->>> It's probably worth mentioning that the suspend state in Zynq does not
->>> power off the CPU cores. It just asserts the resets on secondary cores
->>> and the primary one waits in wfi.
+>>Ugh! I think I am hitting another one but this one's probably because 
+>>we are not setting KVM_REQ_EVENT for something we should.
 >>
->> Why do you need to reset them ?
-> CPU0 is not reset, but all secondary cores are. That is as close to
-> power off as we get and works well with hotplug.
+>>Before this patch, I was able to hit this bug everytime with 
+>>"modprobe kvm_intel ept=0 nested=1 enable_shadow_vmcs=0" and then booting 
+>>L2. I can verify that I was indeed hitting the race in inject_pending_event.
+>>
+>>After this patch, I believe I am hitting another bug - this happens 
+>>after I boot L2, as above, and then start a Linux kernel compilation
+>>and then wait and watch :) It's a pain to debug because this happens
+>
+> I have already try several times with "modprobe kvm_intel ept=0 nested=1
+> enable_shadow_vmcs=0" and still can't reproduce the bug you mentioned.
+> Could you give me more details such like L1 and L2 which one hang or panic? 
+> In addition, if you can post the call trace is appreciated. 
 
-Ok, I was not aware of this approach. Is there any patchset available in 
-the net ?
+# modprobe kvm_intel ept=0 nested=1 enable_shadow_vmcs=0
+
+The Host CPU - Intel(R) Core(TM) i7-4770 CPU @ 3.40GHz
+qemu cmd to run L1 - 
+# qemu-system-x86_64 -drive file=level1.img,if=virtio,id=disk0,format=raw,cache=none,werror=stop,rerror=stop,aio=threads -drive file=level2.img,if=virtio,id=disk1,format=raw,cache=none,werror=stop,rerror=stop,aio=threads -vnc :2 --enable-kvm -monitor stdio -m 4G -net nic,macaddr=00:23:32:45:89:10 -net tap,ifname=tap0,script=/etc/qemu-ifup,downscript=no -smp 4 -cpu Nehalem,+vmx -serial pty
+
+qemu cmd to run L2 -
+# sudo qemu-system-x86_64 -hda VM/level2.img -vnc :0 --enable-kvm -monitor stdio -m 2G -smp 2 -cpu Nehalem -redir tcp:5555::22
+
+Additionally,
+L0 is FC19 with 3.16-rc3
+L1 and L2 are Ubuntu 14.04 with 3.13.0-24-generic
+
+Then start a kernel compilation inside L2 with "make -j3"
+
+There's no call trace on L0, both L0 and L1 are hung (or rather really slow) and
+L1 serial spews out CPU softlock up errors. Enabling panic on softlockup on L1 will give
+a trace with smp_call_function_many() I think the corresponding code in kernel/smp.c that
+triggers this is
+ 
+WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
+                      && !oops_in_progress && !early_boot_irqs_disabled);
+
+I know in most cases this is usually harmless, but in this specific case,
+it seems it's stuck here forever.
+
+Sorry, I don't have a L1 call trace handy atm, I can post that if you are interested.
+
+Note that this can take as much as 30 to 40 minutes to appear but once it does,
+you will know because both L1 and L2 will be stuck with the serial messages as I mentioned
+before. From my side, let me try this on another system to rule out any machine specific
+weirdness going on..
+
+Please let me know if you need any further information.
 
 Thanks
+Bandan
 
-   -- Daniel
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+> Regards,
+> Wanpeng Li 
+>
+>>almost once in three times; it never happens if I run with ept=1, however,
+>>I think that's only because the test completes sooner. But I can confirm
+>>that I don't see it if I always set REQ_EVENT if nested_run_pending is set instead of
+>>the approach this patch takes.
+>>(Any debug hints help appreciated!)
+>>
+>>So, I am not sure if this is the right fix. Rather, I think the safer thing
+>>to do is to have the interrupt pending check for injection into L1 at
+>>the "same site" as the call to kvm_queue_interrupt() just like we had before 
+>>commit b6b8a1451fc40412c57d1. Is there any advantage to having all the 
+>>nested events checks together ?
+>>
+>>PS - Actually, a much easier fix (or rather hack) is to return 1 in 
+>>vmx_interrupt_allowed() (as I mentioned elsewhere) only if 
+>>!is_guest_mode(vcpu) That way, the pending interrupt interrupt 
+>>can be taken care of correctly during the next vmexit.
+>>
+>>Bandan
+>>
+>>> Jan
+>>>
+> [...]
