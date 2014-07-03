@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757181AbaGCJMs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:12:48 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:62040 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756262AbaGCJMq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:12:46 -0400
-Message-ID: <53B51E81.4090700@redhat.com>
-Date: Thu, 03 Jul 2014 11:12:33 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: David Drysdale <drysdale@google.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
+	id S1756805AbaGCJOs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:14:48 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:33319 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750908AbaGCJOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 05:14:45 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Alexei Starovoitov'" <ast@plumgrid.com>,
+        Chema Gonzalez <chema@google.com>
+CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Arnaldo Carvalho de Melo" <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, "Thomas Gleixner" <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>, linux-api@vger.kernel.org,
-        qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [RFC PATCH 00/11] Adding FreeBSD's Capsicum security framework
- (part 1)
-References: <1404124096-21445-1-git-send-email-drysdale@google.com>
-In-Reply-To: <1404124096-21445-1-git-send-email-drysdale@google.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        "Linux API" <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH RFC net-next 08/14] bpf: add eBPF verifier
+Thread-Topic: [PATCH RFC net-next 08/14] bpf: add eBPF verifier
+Thread-Index: AQHPlknrjjkyXHF39E2brFC82m+gmpuOD4YA
+Date: Thu, 3 Jul 2014 09:13:33 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1726BF1A@AcuExch.aculab.com>
+References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
+	<1403913966-4927-9-git-send-email-ast@plumgrid.com>
+	<CA+ZOOTODDPN=6SECq1uPPD7AGP1zgBJ+bfYaX9o3YhnaCTiHYQ@mail.gmail.com>
+ <CAMEtUuxfrAUDDQVGNsNV2PeDii-6LAwQCbB2XGEHTJDwkkvyWg@mail.gmail.com>
+In-Reply-To: <CAMEtUuxfrAUDDQVGNsNV2PeDii-6LAwQCbB2XGEHTJDwkkvyWg@mail.gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s639ErSk006034
 
-Il 30/06/2014 12:28, David Drysdale ha scritto:
-> Hi all,
->
-> The last couple of versions of FreeBSD (9.x/10.x) have included the
-> Capsicum security framework [1], which allows security-aware
-> applications to sandbox themselves in a very fine-grained way.  For
-> example, OpenSSH now (>= 6.5) uses Capsicum in its FreeBSD version to
-> restrict sshd's credentials checking process, to reduce the chances of
-> credential leakage.
+From: Alexei Starovoitov
+> >> +#define _(OP) ({ int ret = OP; if (ret < 0) return ret; })
+> > +1 to removing the _ macro. If you want to avoid the 3 lines (is there
+> > anything in the style guide against "if ((err=OP) < 0) ..." ?), at
+> 
+> assignment and function call inside 'if' ? I don't like such style.
+> 
+> > least use some meaningful macro name (DO_AND_CHECK, or something like
+> > that).
 
-Hi David,
+It would have to be RETURN_IF_NEGATIVE().
+But even then it is skipped by searches for 'return'.
 
-we've had similar goals in QEMU.  QEMU can be used as a virtual machine 
-monitor from the command line, but it also has an API that lets a 
-management tool drive QEMU via AF_UNIX sockets.  Long term, we would 
-like to have a restricted mode for QEMU where all file descriptors are 
-obtained via SCM_RIGHTS or /dev/fd, and syscalls can be locked down.
+> Try replacing _ with any other name and see how bad it will look.
+> I tried with MACRO_NAME and with 'if (err) goto' and with 'if (err) return',
+> before I converged on _ macro.
+> I think it's a hidden gem of this patch.
 
-Currently we do use seccomp v2 BPF filters, but unfortunately this 
-didn't help very much.  QEMU supports hotplugging hence the filter must 
-whitelist anything that _might_ be used in the future, which is 
-generally... too much.
+No, it is one of those things that 'seems like a good idea at the time',
+but causes grief much later on.
 
-Something like Capsicum would be really nice because it attaches 
-capabilities to file descriptors.  However, I wonder however how 
-extensible Capsicum could be, and I am worried about the proliferation 
-of capabilities that its design naturally leads to.
+Have you considered saving the error code into 'env' and making most of
+the functions return if an error is set?
+Then the calling code need not check the result of every function call.
 
-Given Linux's previous experience with BPF filters, what do you think 
-about attaching specific BPF programs to file descriptors?  Then 
-whenever a syscall is run that affects a file descriptor, the BPF 
-program for the file descriptor (attached to a struct file* as in 
-Capsicum) would run in addition to the process-wide filter.
+	David
 
-An equivalent of PR_SET_NO_NEW_PRIVS can also be added to file 
-descriptors, so that a program that doesn't lock down syscalls can still 
-lock down the operations (including fcntls and ioctls) on specific file 
-descriptors.
-
-Converting FreeBSD capabilities to BPF programs can be easily 
-implemented in userspace.
-
->   [Capsicum also includes 'capability mode', which locks down the
->   available syscalls so the rights restrictions can't just be bypassed
->   by opening new file descriptors; I'll describe that separately later.]
-
-This can also be implemented in userspace via seccomp and 
-PR_SET_NO_NEW_PRIVS.
-
->   [Policing the rights checks anywhere else, for example at the system
->   call boundary, isn't a good idea because it opens up the possibility
->   of time-of-check/time-of-use (TOCTOU) attacks [2] where FDs are
->   changed (as openat/close/dup2 are allowed in capability mode) between
->   the 'check' at syscall entry and the 'use' at fget() invocation.]
-
-In the case of BPF filters, I wonder if you could stash the BPF 
-"environment" somewhere and then use it at fget() invocation. 
-Alternatively, it can be reconstructed at fget() time, similar to your 
-introduction of fgetr().
-
-Thanks,
-
-Paolo
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
