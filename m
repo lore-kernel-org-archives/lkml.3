@@ -1,96 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759636AbaGCTQP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 15:16:15 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:58744 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759588AbaGCTQE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 15:16:04 -0400
-Date: Thu, 3 Jul 2014 12:14:31 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Vlastimil Babka <vbabka@suse.cz>
-cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] shmem: fix faulting into a hole while it's punched,
- take 2
-In-Reply-To: <53B578BC.4050300@suse.cz>
-Message-ID: <alpine.LSU.2.11.1407031202340.1370@eggly.anvils>
-References: <alpine.LSU.2.11.1407021204180.12131@eggly.anvils> <alpine.LSU.2.11.1407021209570.12131@eggly.anvils> <53B578BC.4050300@suse.cz>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	id S1759656AbaGCTQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 15:16:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36381 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758464AbaGCTQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 15:16:23 -0400
+Date: Thu, 3 Jul 2014 15:16:20 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Jens Axboe <axboe@kernel.dk>
+cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] blk-lib: fix error reporting
+Message-ID: <alpine.LRH.2.02.1407031514320.3347@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jul 2014, Vlastimil Babka wrote:
-> On 07/02/2014 09:11 PM, Hugh Dickins wrote:
-> > 
-> > --- 3.16-rc3+/mm/shmem.c	2014-07-02 03:31:12.956546569 -0700
-> > +++ linux/mm/shmem.c	2014-07-02 03:34:13.172550852 -0700
-> > @@ -467,23 +467,20 @@ static void shmem_undo_range(struct inod
-> >   		return;
-> > 
-> >   	index = start;
-> > -	for ( ; ; ) {
-> > +	while (index < end) {
-> >   		cond_resched();
-> > 
-> >   		pvec.nr = find_get_entries(mapping, index,
-> >   				min(end - index, (pgoff_t)PAGEVEC_SIZE),
-> >   				pvec.pages, indices);
-> >   		if (!pvec.nr) {
-> > -			if (index == start || unfalloc)
-> > +			/* If all gone or hole-punch or unfalloc, we're done
-> > */
-> > +			if (index == start || end != -1)
-> >   				break;
-> > +			/* But if truncating, restart to make sure all gone
-> > */
-> >   			index = start;
-> >   			continue;
-> >   		}
-> > -		if ((index == start || unfalloc) && indices[0] >= end) {
-> > -			pagevec_remove_exceptionals(&pvec);
-> > -			pagevec_release(&pvec);
-> > -			break;
-> > -		}
-> >   		mem_cgroup_uncharge_start();
-> >   		for (i = 0; i < pagevec_count(&pvec); i++) {
-> >   			struct page *page = pvec.pages[i];
-> > @@ -495,8 +492,12 @@ static void shmem_undo_range(struct inod
-> >   			if (radix_tree_exceptional_entry(page)) {
-> >   				if (unfalloc)
-> >   					continue;
-> > -				nr_swaps_freed += !shmem_free_swap(mapping,
-> > -								index, page);
-> > +				if (shmem_free_swap(mapping, index, page)) {
-> > +					/* Swap was replaced by page: retry
-> > */
-> > +					index--;
-> > +					break;
-> > +				}
-> > +				nr_swaps_freed++;
-> >   				continue;
-> 
-> Ugh, a warning to anyone trying to backport this. This hunk can match both
-> instances of the same code in the function, and I've just seen patch picking
-> the wrong one.
+The function bio_batch_end_io ignores -EOPNOTSUPP. It doesn't matter for
+discard (the device isn't required to discard anything, so missing the
+error code and reporting success shouldn't cause any trouble). However,
+for WRITE SAME command, missing the error code is obviously wrong. It may
+fool the user into thinking that the data were written while in fact they
+weren't.
 
-Thanks for the warning.
+Note that in device mapper, devices may be dynamically reconfigured, so a
+device that supports WRITE SAME may stop supporting it at any time and
+return -EOPNOTSUPP. Ignoring -EOPNOTSUPP is wrong.
 
-Yes, as it ends up, there are only two hunks: so if the first fails
-to apply (and down the releases there may be various trivial reasons
-why it would fail to apply cleanly, although easily edited by hand),
-patch might very well choose the first match to apply the second hunk.
+This patch changes bio_batch->flags to an error field and stores the last
+error there - so that the error is reported accurately and it isn't
+ignored.
 
-I'm expecting to have to do (or at least to check) each -stable by
-hand as it comes by.  I did just check mmotm, and it came out fine.
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: stable@vger.kernel.org
 
-Hugh
+---
+ block/blk-lib.c |   25 ++++++++++++-------------
+ 1 file changed, 12 insertions(+), 13 deletions(-)
+
+Index: linux-3.16-rc3/block/blk-lib.c
+===================================================================
+--- linux-3.16-rc3.orig/block/blk-lib.c	2014-07-03 18:17:21.000000000 +0200
++++ linux-3.16-rc3/block/blk-lib.c	2014-07-03 18:36:52.000000000 +0200
+@@ -11,7 +11,7 @@
+ 
+ struct bio_batch {
+ 	atomic_t		done;
+-	unsigned long		flags;
++	int			error;
+ 	struct completion	*wait;
+ };
+ 
+@@ -19,8 +19,8 @@ static void bio_batch_end_io(struct bio 
+ {
+ 	struct bio_batch *bb = bio->bi_private;
+ 
+-	if (err && (err != -EOPNOTSUPP))
+-		clear_bit(BIO_UPTODATE, &bb->flags);
++	if (unlikely(err))
++		ACCESS_ONCE(bb->error) = err;
+ 	if (atomic_dec_and_test(&bb->done))
+ 		complete(bb->wait);
+ 	bio_put(bio);
+@@ -78,7 +78,7 @@ int blkdev_issue_discard(struct block_de
+ 	}
+ 
+ 	atomic_set(&bb.done, 1);
+-	bb.flags = 1 << BIO_UPTODATE;
++	bb.error = 0;
+ 	bb.wait = &wait;
+ 
+ 	blk_start_plug(&plug);
+@@ -134,8 +134,8 @@ int blkdev_issue_discard(struct block_de
+ 	if (!atomic_dec_and_test(&bb.done))
+ 		wait_for_completion_io(&wait);
+ 
+-	if (!test_bit(BIO_UPTODATE, &bb.flags))
+-		ret = -EIO;
++	if (likely(!ret))
++		ret = bb.error;
+ 
+ 	return ret;
+ }
+@@ -172,7 +172,7 @@ int blkdev_issue_write_same(struct block
+ 		return -EOPNOTSUPP;
+ 
+ 	atomic_set(&bb.done, 1);
+-	bb.flags = 1 << BIO_UPTODATE;
++	bb.error = 0;
+ 	bb.wait = &wait;
+ 
+ 	while (nr_sects) {
+@@ -208,8 +208,8 @@ int blkdev_issue_write_same(struct block
+ 	if (!atomic_dec_and_test(&bb.done))
+ 		wait_for_completion_io(&wait);
+ 
+-	if (!test_bit(BIO_UPTODATE, &bb.flags))
+-		ret = -ENOTSUPP;
++	if (likely(!ret))
++		ret = bb.error;
+ 
+ 	return ret;
+ }
+@@ -236,7 +236,7 @@ static int __blkdev_issue_zeroout(struct
+ 	DECLARE_COMPLETION_ONSTACK(wait);
+ 
+ 	atomic_set(&bb.done, 1);
+-	bb.flags = 1 << BIO_UPTODATE;
++	bb.error = 0;
+ 	bb.wait = &wait;
+ 
+ 	ret = 0;
+@@ -270,9 +270,8 @@ static int __blkdev_issue_zeroout(struct
+ 	if (!atomic_dec_and_test(&bb.done))
+ 		wait_for_completion_io(&wait);
+ 
+-	if (!test_bit(BIO_UPTODATE, &bb.flags))
+-		/* One of bios in the batch was completed with error.*/
+-		ret = -EIO;
++	if (likely(!ret))
++		ret = bb.error;
+ 
+ 	return ret;
+ }
