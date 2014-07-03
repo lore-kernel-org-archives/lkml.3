@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977AbaGCBGM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 21:06:12 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:48568 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885AbaGCBGL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 21:06:11 -0400
+	id S1753054AbaGCBMH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 21:12:07 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:57555 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750809AbaGCBMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 21:12:05 -0400
+Date: Wed, 2 Jul 2014 18:10:59 -0700
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <ak@linux.intel.com>, Randy Dunlap <rdunlap@infradead.org>,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz,
+        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild@vger.kernel.org
+Subject: [PATCH] kbuild: explain stack-protector-strong CONFIG logic
+Message-ID: <20140703011059.GA6331@www.outflux.net>
 MIME-Version: 1.0
-In-Reply-To: <20140702063224.GA13864@samfundet.no>
-References: <1404183899-5953-1-git-send-email-xerofoify@gmail.com>
-	<20140701065554.GA20782@samfundet.no>
-	<CAPDOMViGUR=QP+Dxbq+SYsSuv2ituygL4gMz638kLFwKDr0GXg@mail.gmail.com>
-	<20140702063224.GA13864@samfundet.no>
-Date: Wed, 2 Jul 2014 21:06:10 -0400
-Message-ID: <CAPDOMVh3KNcUfdR-DBneksbz6jEr0MvS3a8DdUVfS_fOzsqbmA@mail.gmail.com>
-Subject: Re: [PATCH] Remove memory start and memory end
-From: Nick Krause <xerofoify@gmail.com>
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: =?UTF-8?Q?H=C3=A5vard_Skinnemoen?= <hskinnemoen@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140702175635.79d54c44.akpm@linux-foundation.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry about the typo. Need time will prefix subsystem or area of kernel fixed.
-Cheers Nick
+This adds a hopefully helpful comment above the (seemingly weird)
+compiler flag selection logic.
 
-On Wed, Jul 2, 2014 at 2:32 AM, Hans-Christian Egtvedt
-<egtvedt@samfundet.no> wrote:
-> Around Tue 01 Jul 2014 18:22:53 -0400 or thereabout, Nick Krause wrote:
->> No problem , just happy it was of help to you.
->> Cheers Nick
->
-> I did take the liberty of fixing a typo, uneeded => unneeded, and prefixing
-> the subject with avr32:. Have a nice day (-:
->
->> On Tue, Jul 1, 2014 at 2:55 AM, Hans-Christian Egtvedt
->> <egtvedt@samfundet.no> wrote:
->>> Around Mon 30 Jun 2014 23:04:59 -0400 or thereabout, Nicholas Krause wrote:
->>>> This patch removes the uneeded variables memory start and memory
->>>> stated in FIXME message before declaring this variables as extern
->>>> unsigned longs.
->>>
->>> Thanks for cleaning, I will append it to my for-linus branch. Queuing it for
->>> 3.17 most likely.
->>>
->>>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->>>>
->>>
->>> Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
->>>
->>>> ---
->>>>  arch/avr32/include/asm/page.h | 3 ---
->>>>  1 file changed, 3 deletions(-)
->>>
->>> <snipp diff>
-> --
-> mvh
-> Hans-Christian Egtvedt
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ Makefile |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/Makefile b/Makefile
+index 13175632137f..ea88e68d121e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -630,6 +630,22 @@ KBUILD_CFLAGS += $(call cc-option,-Wframe-larger-than=${CONFIG_FRAME_WARN})
+ endif
+ 
+ # Handle stack protector mode.
++#
++# Since kbuild can potentially perform two passes (first with the old
++# .config values and then with updated .config values), we cannot error out
++# if a desired compiler option is unsupported. If we were to error, kbuild
++# could never get to the second pass and actually notice that we changed
++# the option to something that was supported.
++#
++# Additionally, we don't want to fallback and/or silently change which compiler
++# flags will be used, since that leads to producing kernels with different
++# security feature characteristics depending on the compiler used. ("But I
++# selected CC_STACKPROTECTOR_STRONG! Why did it build with _REGULAR?!")
++#
++# The middle ground is to warn here so that the failed option is obvious, but
++# to let the build fail with bad compiler flags so that we can't produce a
++# kernel when there is a CONFIG and compiler mismatch.
++#
+ ifdef CONFIG_CC_STACKPROTECTOR_REGULAR
+   stackp-flag := -fstack-protector
+   ifeq ($(call cc-option, $(stackp-flag)),)
+-- 
+1.7.9.5
+
+
+-- 
+Kees Cook
+Chrome OS Security
