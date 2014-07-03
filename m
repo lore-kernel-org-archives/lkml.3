@@ -1,126 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758837AbaGCO5J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:57:09 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:50857 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758616AbaGCO5G (ORCPT
+	id S1758857AbaGCO5Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:57:25 -0400
+Received: from 17.mo6.mail-out.ovh.net ([46.105.36.150]:35267 "EHLO
+	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758089AbaGCO5U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:57:06 -0400
-From: Zi Shen Lim <zlim.lnx@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Zi Shen Lim <zlim.lnx@gmail.com>, Daniel Borkmann <dborkman@redhat.com>,
-        Alexei Starovoitov <ast@plumgrid.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHv2 net-next] net: filter: move load_pointer() into filter.h
-Date: Thu,  3 Jul 2014 07:56:54 -0700
-Message-Id: <1404399414-32099-1-git-send-email-zlim.lnx@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 3 Jul 2014 10:57:20 -0400
+X-Greylist: delayed 1410 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jul 2014 10:57:20 EDT
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Subject: Re: [PATCH 05/18] power: reset: Add AT91 reset driver
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+In-Reply-To: <1404396906-25194-8-git-send-email-maxime.ripard@free-electrons.com>
+Date: Thu, 3 Jul 2014 22:39:08 +0800
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux@maxim.org.za, Nicolas FERRE <nicolas.ferre@atmel.com>,
+        dwmw2@infradead.org, dbaryshkov@gmail.com,
+        Boris Brezillon <boris@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F9547E0F-AB97-47E6-BA09-135EE4E1BC73@jcrosoft.com>
+References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com> <1404396906-25194-8-git-send-email-maxime.ripard@free-electrons.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+X-Mailer: Apple Mail (2.1878.2)
+X-Ovh-Tracer-Id: 7746191360251374525
+X-Ovh-Remote: 193.138.230.182 (182.230.138.193.client.dyn.strong-ba6.blackoakcomputers.com)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedrudegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedrudegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-load_pointer() is already a static inline function.
-Let's move it into filter.h so BPF JIT implementations can reuse this
-function.
+NACK
 
-Since we're exporting this function, let's also rename it to
-bpf_load_pointer() for clarity.
 
-Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
----
-v1->v2:
-* Renamed to more specific name of bpf_load_pointer(), as suggested
-  by Daniel.
+On Jul 3, 2014, at 10:14 PM, Maxime Ripard <maxime.ripard@free-electrons.com> wrote:
 
-This patch is based on discussion with Alexei in the context of
-reusing load_pointer for upcoming arm64 BPF JIT compiler. [1]
-Compile tested on x86_64 and arm64.
+> 
+> Implement the reset behaviour of the various AT91 SoCS in drivers/power/reset.
+> 
+> It used to be (and still is) located in arch/arm/mach-at91, and in order to
+> preserve bisectability is not removed yet, but every board should be converted
+> to use this driver instead.
+> 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+> drivers/power/reset/Kconfig      |   7 ++
+> drivers/power/reset/Makefile     |   1 +
+> drivers/power/reset/at91-reset.c | 202 +++++++++++++++++++++++++++++++++++++++
+> 3 files changed, 210 insertions(+)
+> create mode 100644 drivers/power/reset/at91-reset.c
+> 
+> diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+> index 19d546c5edfa..b3fef01d7cbb 100644
+> --- a/drivers/power/reset/Kconfig
+> +++ b/drivers/power/reset/Kconfig
+> @@ -14,6 +14,13 @@ config POWER_RESET_AS3722
+> 	help
+> 	  This driver supports turning off board via a ams AS3722 power-off.
+> 
+> +config POWER_RESET_AT91_RESET
+> +	bool "Atmel AT91 reset driver"
+> +	default SOC_AT91SAM9 || SOC_SAMA5
+> +	help
+> +	  This driver supports restart for Atmel AT91SAM9 and SAMA5
+> +	  SoCs
+> +
+> config POWER_RESET_AXXIA
+> 	bool "LSI Axxia reset driver"
+> 	depends on ARCH_AXXIA
+> diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
+> index dde2e8bbac53..1599214b91d9 100644
+> --- a/drivers/power/reset/Makefile
+> +++ b/drivers/power/reset/Makefile
+> @@ -1,4 +1,5 @@
+> obj-$(CONFIG_POWER_RESET_AS3722) += as3722-poweroff.o
+> +obj-$(CONFIG_POWER_RESET_AT91_RESET) += at91-reset.o
+> obj-$(CONFIG_POWER_RESET_AXXIA) += axxia-reset.o
+> obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
+> obj-$(CONFIG_POWER_RESET_MSM) += msm-poweroff.o
+> diff --git a/drivers/power/reset/at91-reset.c b/drivers/power/reset/at91-reset.c
+> new file mode 100644
+> index 000000000000..878547410acb
+> --- /dev/null
+> +++ b/drivers/power/reset/at91-reset.c
+> @@ -0,0 +1,202 @@
+> +/*
+> + * Atmel AT91 SAM9 SoCs reset code
+> + *
+> + * Copyright (C) 2014 Maxime Ripard
+> + *
+> + * Maxime Ripard <maxime.ripard@free-electrons.com>
 
-[1] https://lkml.org/lkml/2014/7/3/14
+you can not own the copyright as it’s basically a copy of other people code
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2.  This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/of_address.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/reboot.h>
+> +
+> +#include <asm/system_misc.h>
+> +
+> +#include <mach/at91sam9_ddrsdr.h>
+> +#include <mach/at91sam9_sdramc.h>
+> +
+> +#define AT91_RSTC_CR	0x00		/* Reset Controller Control Register */
+> +#define	AT91_RSTC_PROCRST	BIT(0)		/* Processor Reset */
+> +#define	AT91_RSTC_PERRST	BIT(2)		/* Peripheral Reset */
+> +#define	AT91_RSTC_EXTRST	BIT(3)		/* External Reset */
+> +#define	AT91_RSTC_KEY		(0xa5 << 24)	/* KEY Password */
+> +
+> +#define AT91_RSTC_SR	0x04		/* Reset Controller Status Register */
+> +#define	AT91_RSTC_URSTS		BIT(0)		/* User Reset Status */
+> +#define	AT91_RSTC_RSTTYP	GENMASK(10, 8)	/* Reset Type */
+> +#define	AT91_RSTC_NRSTL		BIT(16)		/* NRST Pin Level */
+> +#define	AT91_RSTC_SRCMP		BIT(17)		/* Software Reset Command in Progress */
+> +
+> +#define AT91_RSTC_MR	0x08		/* Reset Controller Mode Register */
+> +#define	AT91_RSTC_URSTEN	BIT(0)		/* User Reset Enable */
+> +#define	AT91_RSTC_URSTIEN	BIT(4)		/* User Reset Interrupt Enable */
+> +#define	AT91_RSTC_ERSTL		GENMASK(11, 8)	/* External Reset Length */
+> +
+> +enum reset_type {
+> +	RESET_TYPE_GENERAL	= 0,
+> +	RESET_TYPE_WAKEUP	= 1,
+> +	RESET_TYPE_WATCHDOG	= 2,
+> +	RESET_TYPE_SOFTWARE	= 3,
+> +	RESET_TYPE_USER		= 4,
+> +};
+> +
+> +static void __iomem *at91_ramc_base[2], *at91_rstc_base;
+> +
+> +static void at91sam9_restart(enum reboot_mode mode, const char *cmd)
+> +{
+> +	asm volatile(
+> +		".balign 32\n\t"
+> +
+> +		"str	%2, [%0, #" __stringify(AT91_SDRAMC_TR) "]\n\t"
+> +		"str	%3, [%0, #" __stringify(AT91_SDRAMC_LPR) "]\n\t"
+> +		"str	%4, [%1, #" __stringify(AT91_RSTC_CR) "]\n\t"
+> +
+> +		"b	.\n\t"
+> +		:
+> +		: "r" (at91_ramc_base[0]),
+> +		  "r" (at91_rstc_base),
+> +		  "r" (1),
+> +		  "r" (AT91_SDRAMC_LPCB_POWER_DOWN),
+> +		  "r" (AT91_RSTC_KEY | AT91_RSTC_PERRST | AT91_RSTC_PROCRST));
+> +}
+> +
+> +static void at91sam9g45_restart(enum reboot_mode mode, const char *cmd)
+> +{
+> +	asm volatile(
+> +		"cmp	%1, #0\n\t"
+> +		"beq	1f\n\t"
+> +
+> +		"ldr	r0, [%1]\n\t"
+> +		"cmp	r0, #0\n\t"
+> +
+> +		".balign 32\n\t"
+> +
+> +		"1:	str	%3, [%0, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
+> +		"	str	%4, [%0, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
+> +		"	strne	%3, [%1, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
+> +		"	strne	%4, [%1, #" __stringify(AT91_DDRSDRC_RTR) "]\n\t"
+> +		"	str	%5, [%2, #" __stringify(AT91_RSTC_CR) "]\n\t"
+> +
+> +		"	b	.\n\t"
+> +		:
+> +		: "r" (at91_ramc_base[0]),
+> +		  "r" (at91_ramc_base[1]),
+> +		  "r" (at91_rstc_base),
+> +		  "r" (1),
+> +		  "r" (AT91_DDRSDRC_LPCB_POWER_DOWN),
+> +		  "r" (AT91_RSTC_KEY | AT91_RSTC_PERRST | AT91_RSTC_PROCRST)
+> +		: "r0");
+> +}
+> +
+move this to an assembly file more easy to read than a C code
 
- include/linux/filter.h | 13 +++++++++++++
- net/core/filter.c      | 15 +++------------
- 2 files changed, 16 insertions(+), 12 deletions(-)
+> +static void __init at91_reset_status(struct platform_device *pdev)
+> +{
+> +	u32 reg = readl(at91_rstc_base + AT91_RSTC_SR);
+> +	char *reason;
+> +
+> +	switch ((reg & AT91_RSTC_RSTTYP) >> 8) {
+> +	case RESET_TYPE_GENERAL:
+> +		reason = "general reset";
+> +		break;
+> +	case RESET_TYPE_WAKEUP:
+> +		reason = "wakeup";
+> +		break;
+> +	case RESET_TYPE_WATCHDOG:
+> +		reason = "watchdog reset";
+> +		break;
+> +	case RESET_TYPE_SOFTWARE:
+> +		reason = "software reset";
+> +		break;
+> +	case RESET_TYPE_USER:
+> +		reason = "user reset";
+> +		break;
+> +	default:
+> +		reason = "unknown reset";
+> +		break;
+> +	}
+> +
+> +	pr_info("AT91: Starting after %s\n", reason);
+> +}
+> +
+> +static struct of_device_id at91_ramc_of_match[] = {
+> +	{ .compatible = "atmel,at91sam9260-sdramc", },
+> +	{ .compatible = "atmel,at91sam9g45-ddramc", },
+> +	{ /* sentinel */ }
+> +};
+> +
+> +static struct of_device_id at91_reset_of_match[] = {
+> +	{ .compatible = "atmel,at91sam9260-rstc", .data = at91sam9_restart },
+> +	{ .compatible = "atmel,at91sam9g45-rstc", .data = at91sam9g45_restart },
+> +	{ /* sentinel */ }
+> +};
+> +
+> +static int at91_reset_probe(struct platform_device *pdev)
+> +{
+> +	struct resource *res;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	at91_rstc_base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(at91_rstc_base)) {
+> +		dev_err(&pdev->dev, "Could not map reset controller address\n");
+> +		return PTR_ERR(at91_rstc_base);
+> +	}
+> +
+> +	if (pdev->dev.of_node) {
 
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index a7e3c48..b885dcb 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -6,6 +6,7 @@
- 
- #include <linux/atomic.h>
- #include <linux/compat.h>
-+#include <linux/skbuff.h>
- #include <linux/workqueue.h>
- #include <uapi/linux/filter.h>
- 
-@@ -406,6 +407,18 @@ static inline u16 bpf_anc_helper(const struct sock_filter *ftest)
- 	}
- }
- 
-+void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb,
-+					   int k, unsigned int size);
-+
-+static inline void *bpf_load_pointer(const struct sk_buff *skb, int k,
-+				     unsigned int size, void *buffer)
-+{
-+	if (k >= 0)
-+		return skb_header_pointer(skb, k, size, buffer);
-+
-+	return bpf_internal_load_pointer_neg_helper(skb, k, size);
-+}
-+
- #ifdef CONFIG_BPF_JIT
- #include <stdarg.h>
- #include <linux/linkage.h>
-diff --git a/net/core/filter.c b/net/core/filter.c
-index 1dbf646..87af1e3 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -84,15 +84,6 @@ void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb, int k, uns
- 	return NULL;
- }
- 
--static inline void *load_pointer(const struct sk_buff *skb, int k,
--				 unsigned int size, void *buffer)
--{
--	if (k >= 0)
--		return skb_header_pointer(skb, k, size, buffer);
--
--	return bpf_internal_load_pointer_neg_helper(skb, k, size);
--}
--
- /**
-  *	sk_filter - run a packet through a socket filter
-  *	@sk: sock associated with &sk_buff
-@@ -537,7 +528,7 @@ load_word:
- 		 *   BPF_R0 - 8/16/32-bit skb data converted to cpu endianness
- 		 */
- 
--		ptr = load_pointer((struct sk_buff *) (unsigned long) CTX, off, 4, &tmp);
-+		ptr = bpf_load_pointer((struct sk_buff *) (unsigned long) CTX, off, 4, &tmp);
- 		if (likely(ptr != NULL)) {
- 			BPF_R0 = get_unaligned_be32(ptr);
- 			CONT;
-@@ -547,7 +538,7 @@ load_word:
- 	LD_ABS_H: /* BPF_R0 = ntohs(*(u16 *) (skb->data + imm32)) */
- 		off = IMM;
- load_half:
--		ptr = load_pointer((struct sk_buff *) (unsigned long) CTX, off, 2, &tmp);
-+		ptr = bpf_load_pointer((struct sk_buff *) (unsigned long) CTX, off, 2, &tmp);
- 		if (likely(ptr != NULL)) {
- 			BPF_R0 = get_unaligned_be16(ptr);
- 			CONT;
-@@ -557,7 +548,7 @@ load_half:
- 	LD_ABS_B: /* BPF_R0 = *(u8 *) (skb->data + imm32) */
- 		off = IMM;
- load_byte:
--		ptr = load_pointer((struct sk_buff *) (unsigned long) CTX, off, 1, &tmp);
-+		ptr = bpf_load_pointer((struct sk_buff *) (unsigned long) CTX, off, 1, &tmp);
- 		if (likely(ptr != NULL)) {
- 			BPF_R0 = *(u8 *)ptr;
- 			CONT;
--- 
-1.9.1
+split in 2 function more easy to ready and less indentation
+> +		const struct of_device_id *match;
+> +		struct device_node *np;
+> +		int idx = 0;
+> +
+> +		for_each_matching_node(np, at91_ramc_of_match) {
+> +			at91_ramc_base[idx] = of_iomap(np, 0);
+> +			if (!at91_ramc_base[idx]) {
+> +				dev_err(&pdev->dev, "Could not map ram controller address\n");
+> +				return -ENODEV;
+> +			}
+> +			idx++;
+> +		}
+
+and if you can not probe the ram controler it’s a panic not a -ENODEV
+
+as you have an unstable platform
+> +
+> +		match = of_match_node(at91_reset_of_match, pdev->dev.of_node);
+> +		arm_pm_restart = match->data;
+> +	} else {
+> +		const struct platform_device_id *match;
+> +		int idx = 0;
+> +
+> +		for (idx = 0; idx < 2; idx++) {
+> +			res = platform_get_resource(pdev, IORESOURCE_MEM, idx + 1 );
+> +			at91_ramc_base[idx] = devm_ioremap_resource(&pdev->dev, res);
+> +			if (IS_ERR(at91_ramc_base[idx])) {
+> +				dev_err(&pdev->dev, "Could not map ram controller address\n");
+> +				return PTR_ERR(at91_rstc_base);
+> +			}
+> +		}
+> +
+> +		match = platform_get_device_id(pdev);
+> +		arm_pm_restart = (void (*)(enum reboot_mode, const char*))
+> +			match->driver_data;
+> +	}
+> +
+> +	at91_reset_status(pdev);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_device_id at91_reset_plat_match[] = {
+> +	{ "at91-sam9-reset", (unsigned long)at91sam9_restart },
+> +	{ "at91-g45-reset", (unsigned long)at91sam9g45_restart },
+	    at91-sam9???
+
+	    from the beginning of DT we put the first SoC were the reset was introduce and why do you change the DT binding?
+
+
+> +	{ /* sentinel */ }
+> +};
+> +
+> +static struct platform_driver at91_reset_driver = {
+> +	.probe = at91_reset_probe,
+> +	.driver = {
+> +		.name = "at91-reset",
+> +		.of_match_table = at91_reset_of_match,
+> +	},
+> +	.id_table = at91_reset_plat_match,
+> +};
+> +module_platform_driver(at91_reset_driver);
+> -- 
+> 2.0.1
+> 
 
