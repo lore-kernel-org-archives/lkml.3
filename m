@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508AbaGCUve (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 16:51:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47523 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345AbaGCUvc (ORCPT
+	id S1758944AbaGCUvy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 16:51:54 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:45849 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357AbaGCUvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 16:51:32 -0400
-Date: Thu, 3 Jul 2014 13:55:49 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Samuel Iglesias =?iso-8859-1?Q?Gons=E1lvez?= 
-	<siglesias@igalia.com>
-Cc: Federico Vaga <federico.vaga@cern.ch>,
-        Jens Taprogge <jens.taprogge@taprogge.org>,
-        industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipoctal: request_irq after configuration
-Message-ID: <20140703205549.GA11109@kroah.com>
-References: <1404377638-23387-1-git-send-email-federico.vaga@cern.ch>
- <1404377815.4537.20.camel@fourier>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1404377815.4537.20.camel@fourier>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 3 Jul 2014 16:51:53 -0400
+Message-ID: <1404420708.8764.54.camel@j-VirtualBox>
+Subject: Re: [RFC] Cancellable MCS spinlock rework
+From: Jason Low <jason.low2@hp.com>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Peter Zijlstra <peterz@infradead.org>,
+        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        mingo@kernel.org, linux-kernel@vger.kernel.org, riel@redhat.com,
+        akpm@linux-foundation.org, hpa@zytor.com, andi@firstfloor.org,
+        James.Bottomley@hansenpartnership.com, rostedt@goodmis.org,
+        tim.c.chen@linux.intel.com, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Date: Thu, 03 Jul 2014 13:51:48 -0700
+In-Reply-To: <53B5BE99.1090008@hp.com>
+References: <1404318070-2856-1-git-send-email-jason.low2@hp.com>
+	  <20140702162749.GP19379@twins.programming.kicks-ass.net>
+	  <1404320356.3170.12.camel@j-VirtualBox>
+	  <20140702172333.GQ19379@twins.programming.kicks-ass.net>
+	  <1404322203.3170.17.camel@j-VirtualBox>
+	  <20140703073107.GS19379@twins.programming.kicks-ass.net>
+	  <1404407389.2498.3.camel@buesod1.americas.hpqcorp.net>
+	 <1404412485.8764.33.camel@j-VirtualBox> <53B5BE99.1090008@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 10:56:55AM +0200, Samuel Iglesias Gonsálvez wrote:
-> On Thu, 2014-07-03 at 10:53 +0200, Federico Vaga wrote:
-> > The request for an IRQ handler must be done after whole configuration. This
-> > was not the case for this driver which request the IRQ in the middle of
-> > the configuration. Sometimes, it happens that something is not completely
-> > configured, we recieve an interrupt thus we stumble into troubles in the
-> > IRQ handler.
-> > 
-> > Signed-off-by: Federico Vaga <federico.vaga@cern.ch>
-> > ---
-> >  drivers/ipack/devices/ipoctal.c |   15 ++++++++-------
-> >  1 file changed, 8 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/drivers/ipack/devices/ipoctal.c b/drivers/ipack/devices/ipoctal.c
-> > index a7ec6f9..72fd761 100644
-> > --- a/drivers/ipack/devices/ipoctal.c
-> > +++ b/drivers/ipack/devices/ipoctal.c
-> > @@ -344,13 +344,6 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal, unsigned int bus_nr,
-> >  			 &block_regs[i].w.imr);
-> >  	}
-> >  
-> > -	/*
-> > -	 * IP-OCTAL has different addresses to copy its IRQ vector.
-> > -	 * Depending of the carrier these addresses are accesible or not.
-> > -	 * More info in the datasheet.
-> > -	 */
-> > -	ipoctal->dev->bus->ops->request_irq(ipoctal->dev,
-> > -				       ipoctal_irq_handler, ipoctal);
-> >  	/* Dummy write */
-> >  	iowrite8(1, ipoctal->mem8_space + 1);
-> >  
-> > @@ -411,6 +404,14 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal, unsigned int bus_nr,
-> >  		dev_set_drvdata(tty_dev, channel);
-> >  	}
-> >  
-> > +	/*
-> > +	 * IP-OCTAL has different addresses to copy its IRQ vector.
-> > +	 * Depending of the carrier these addresses are accesible or not.
-> > +	 * More info in the datasheet.
-> > +	 */
-> > +	ipoctal->dev->bus->ops->request_irq(ipoctal->dev,
-> > +				       ipoctal_irq_handler, ipoctal);
-> > +
-> >  	return 0;
-> >  }
-> >  
+On Thu, 2014-07-03 at 16:35 -0400, Waiman Long wrote:
+> On 07/03/2014 02:34 PM, Jason Low wrote:
+> > On Thu, 2014-07-03 at 10:09 -0700, Davidlohr Bueso wrote:
+> >> On Thu, 2014-07-03 at 09:31 +0200, Peter Zijlstra wrote:
+> >>> On Wed, Jul 02, 2014 at 10:30:03AM -0700, Jason Low wrote:
+> >>>> Would potentially reducing the size of the rw semaphore structure by 32
+> >>>> bits (for all architectures using optimistic spinning) be a nice
+> >>>> benefit?
+> >>> Possibly, although I had a look at the mutex structure and we didn't
+> >>> have a hole to place it in, unlike what you found with the rwsem.
+> >> Yeah, and currently struct rw_semaphore is the largest lock we have in
+> >> the kernel. Shaving off space is definitely welcome.
+> > Right, especially if it could help things like xfs inode.
+> >
 > 
-> Acked-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
-> 
-> Greg, Would you mind picking this patch through your driver-core tree?
-> Together with "ipoctal: protect only the real critical section" patch.
+> I do see a point in reducing the size of the rwsem structure. However, I 
+> don't quite understand the point of converting pointers in the 
+> optimistic_spin_queue structure to atomic_t.
 
-Ok, will do, thanks.
+Converting the pointers in the optimistic_spin_queue to atomic_t would
+mean we're fully operating on atomic operations instead of using the
+potentially racy cmpxchg + ACCESS_ONCE stores on the pointers.
 
-greg k-h
+If we're in the process of using the CPU numbers in atomic_t, I thought
+we might as well fix that as well since it has actually been shown to
+result in lockups on some architectures. We can then avoid needing to
+implement the tricky architecture workarounds for optimistic spinning.
+Wouldn't that be a "nice-have"?
+
+Jason
+
