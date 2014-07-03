@@ -1,378 +1,861 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758679AbaGCOkB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:40:01 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:56116 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758412AbaGCOjY (ORCPT
+	id S1758726AbaGCOkH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:40:07 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:46455 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758412AbaGCOkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:39:24 -0400
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>, rabin@rab.in,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [RFC v2 4/5] clk: per-user clock accounting for debug
-Date: Thu,  3 Jul 2014 16:38:42 +0200
-Message-Id: <1404398323-18934-5-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1404398323-18934-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1404398323-18934-1-git-send-email-tomeu.vizoso@collabora.com>
+	Thu, 3 Jul 2014 10:40:01 -0400
+From: Dan Murphy <dmurphy@ti.com>
+To: <linux-sound@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        <broonie@kernel.org>, <devicetree@vger.kernel.org>,
+        Dan Murphy <dmurphy@ti.com>
+Subject: [PATCH v4] ASoC: tas2552: Support TI TAS2552 Amplifier
+Date: Thu, 3 Jul 2014 09:39:53 -0500
+Message-ID: <1404398393-21497-1-git-send-email-dmurphy@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rabin Vincent <rabin.vincent@stericsson.com>
+Support the TI TAS2552 Class D amplifier.
 
-When a clock has multiple users, the WARNING on imbalance of
-enable/disable may not show the guilty party since although they may
-have commited the error earlier, the warning is emitted later when some
-other user, presumably innocent, disables the clock.
+The TAS2552 is a high efficiency Class-D audio
+power amplifier with advanced battery current
+management and an integrated Class-G boost
+The device constantly measures the
+current and voltage across the load and provides a
+digital stream of this information.
 
-Provide per-user clock enable/disable accounting and disabler tracking
-in order to help debug these problems.
-
-NOTE: with this patch, clk_get_parent() behaves like clk_get(), i.e. it
-needs to be matched with a clk_put().  Otherwise, memory will leak.
-
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Signed-off-by: Dan Murphy <dmurphy@ti.com>
 ---
- drivers/clk/clk-devres.c        |  3 ++-
- drivers/clk/clk-highbank.c      |  2 +-
- drivers/clk/clk.c               | 52 ++++++++++++++++++++++++++++++++++++++---
- drivers/clk/clk.h               |  2 +-
- drivers/clk/clkdev.c            | 26 +++++++++++++++++----
- drivers/clk/qcom/mmcc-msm8960.c |  9 ++++---
- drivers/clk/sunxi/clk-sunxi.c   |  2 +-
- drivers/clk/tegra/clk.c         |  2 +-
- drivers/clk/zynq/clkc.c         | 12 +++++-----
- include/linux/clk-private.h     |  4 ++++
- include/linux/clk-provider.h    |  3 ++-
- 11 files changed, 94 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/clk/clk-devres.c b/drivers/clk/clk-devres.c
-index 5f2aba9..d6a5e59 100644
---- a/drivers/clk/clk-devres.c
-+++ b/drivers/clk/clk-devres.c
-@@ -37,7 +37,8 @@ EXPORT_SYMBOL(devm_clk_provider_get);
+v4 - Added pm_runtime support, removed magical numbers, added regulator
+support, changed from legacy gpio to new gpiod calls, fixed default register
+values, flipped on battery tracking support and
+added suspend/resume support - https://patchwork.kernel.org/patch/4465611/
+
+ .../devicetree/bindings/sound/tas2552.txt          |   25 +
+ include/sound/tas2552-plat.h                       |   25 +
+ sound/soc/codecs/Kconfig                           |    5 +
+ sound/soc/codecs/Makefile                          |    2 +
+ sound/soc/codecs/tas2552.c                         |  574 ++++++++++++++++++++
+ sound/soc/codecs/tas2552.h                         |  119 ++++
+ 6 files changed, 750 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/sound/tas2552.txt
+ create mode 100644 include/sound/tas2552-plat.h
+ create mode 100644 sound/soc/codecs/tas2552.c
+ create mode 100644 sound/soc/codecs/tas2552.h
+
+diff --git a/Documentation/devicetree/bindings/sound/tas2552.txt b/Documentation/devicetree/bindings/sound/tas2552.txt
+new file mode 100644
+index 0000000..00223dc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/sound/tas2552.txt
+@@ -0,0 +1,25 @@
++Texas Instruments - tas2552 Codec module
++
++The tas2552 serial control bus communicates through I2C protocols
++
++Required properties:
++
++- compatible - One of:
++    "ti,tas2552" - TAS2552
++
++- reg -  I2C slave address
++
++Optional properties:
++
++- enable-gpio - gpio pin to enable/disable the device
++
++Example:
++
++tas2552: tas2552@41 {
++	compatible = "ti,tas2552";
++	reg = <0x41>;
++	enable-gpio = <&gpio4 2 GPIO_ACTIVE_HIGH>;
++};
++
++For more product information please see the link below:
++http://www.ti.com/product/TAS2552
+diff --git a/include/sound/tas2552-plat.h b/include/sound/tas2552-plat.h
+new file mode 100644
+index 0000000..65e7627
+--- /dev/null
++++ b/include/sound/tas2552-plat.h
+@@ -0,0 +1,25 @@
++/*
++ * TAS2552 driver platform header
++ *
++ * Copyright (C) 2014 Texas Instruments Inc.
++ *
++ * Author: Dan Murphy <dmurphy@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ */
++
++#ifndef TAS2552_PLAT_H
++#define TAS2552_PLAT_H
++
++struct tas2552_platform_data {
++	int enable_gpio;
++};
++
++#endif
+diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+index 0b9571c..cc09261 100644
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -99,6 +99,7 @@ config SND_SOC_ALL_CODECS
+ 	select SND_SOC_TLV320AIC32X4 if I2C
+ 	select SND_SOC_TLV320AIC3X if I2C
+ 	select SND_SOC_TPA6130A2 if I2C
++	select SND_SOC_TAS2552 if I2C
+ 	select SND_SOC_TLV320DAC33 if I2C
+ 	select SND_SOC_TWL4030 if TWL4030_CORE
+ 	select SND_SOC_TWL6040 if TWL6040_CORE
+@@ -754,4 +755,8 @@ config SND_SOC_TPA6130A2
+ 	tristate "Texas Instruments TPA6130A2 headphone amplifier"
+ 	depends on I2C
  
- struct clk *devm_clk_get(struct device *dev, const char *id)
- {
--	return clk_core_to_clk(devm_clk_provider_get(dev, id));
-+	const char *dev_id = dev ? dev_name(dev) : NULL;
-+	return clk_core_to_clk(devm_clk_provider_get(dev, id), dev_id, id);
- }
- EXPORT_SYMBOL(devm_clk_get);
++config SND_SOC_TAS2552
++	tristate "Texas Instruments TAS2552 Mono Audio amplifier"
++	depends on I2C
++
+ endmenu
+diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
+index 1bd6e1c..33bc7228 100644
+--- a/sound/soc/codecs/Makefile
++++ b/sound/soc/codecs/Makefile
+@@ -162,6 +162,7 @@ snd-soc-wm-hubs-objs := wm_hubs.o
+ # Amp
+ snd-soc-max9877-objs := max9877.o
+ snd-soc-tpa6130a2-objs := tpa6130a2.o
++snd-soc-tas2552-objs := tas2552.o
  
-diff --git a/drivers/clk/clk-highbank.c b/drivers/clk/clk-highbank.c
-index cc1bae1..4e38856 100644
---- a/drivers/clk/clk-highbank.c
-+++ b/drivers/clk/clk-highbank.c
-@@ -331,7 +331,7 @@ CLK_OF_DECLARE(hb_a9periph, "calxeda,hb-a9periph-clock", hb_a9periph_init);
- static void __init hb_a9bus_init(struct device_node *node)
- {
- 	struct clk_core *clk = hb_clk_init(node, &a9bclk_ops);
--	clk_prepare_enable(clk_core_to_clk(clk));
-+	clk_prepare_enable(clk_core_to_clk(clk, node->full_name, NULL));
- }
- CLK_OF_DECLARE(hb_a9bus, "calxeda,hb-a9bus-clock", hb_a9bus_init);
- 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 644a824..b887c69 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -568,6 +568,28 @@ static int clk_disable_unused(void)
- }
- late_initcall_sync(clk_disable_unused);
- 
-+struct clk *clk_core_to_clk(struct clk_core *clk_core, const char *dev,
-+			    const char *con)
+ obj-$(CONFIG_SND_SOC_88PM860X)	+= snd-soc-88pm860x.o
+ obj-$(CONFIG_SND_SOC_AB8500_CODEC)	+= snd-soc-ab8500-codec.o
+@@ -325,3 +326,4 @@ obj-$(CONFIG_SND_SOC_WM_HUBS)	+= snd-soc-wm-hubs.o
+ # Amp
+ obj-$(CONFIG_SND_SOC_MAX9877)	+= snd-soc-max9877.o
+ obj-$(CONFIG_SND_SOC_TPA6130A2)	+= snd-soc-tpa6130a2.o
++obj-$(CONFIG_SND_SOC_TAS2552)	+= snd-soc-tas2552.o
+diff --git a/sound/soc/codecs/tas2552.c b/sound/soc/codecs/tas2552.c
+new file mode 100644
+index 0000000..6eab02f
+--- /dev/null
++++ b/sound/soc/codecs/tas2552.c
+@@ -0,0 +1,574 @@
++/*
++ * tas2552.c - ALSA SoC Texas Instruments TAS2552 Mono Audio Amplifier
++ *
++ * Copyright (C) 2014 Texas Instruments Incorporated -  http://www.ti.com
++ *
++ * Author: Dan Murphy <dmurphy@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ */
++
++#include <linux/module.h>
++#include <linux/errno.h>
++#include <linux/device.h>
++#include <linux/i2c.h>
++#include <linux/gpio.h>
++#include <linux/of_gpio.h>
++#include <linux/pm_runtime.h>
++#include <linux/regmap.h>
++#include <linux/slab.h>
++
++#include <linux/gpio/consumer.h>
++#include <linux/regulator/consumer.h>
++
++#include <sound/pcm.h>
++#include <sound/pcm_params.h>
++#include <sound/soc.h>
++#include <sound/soc-dapm.h>
++#include <sound/tlv.h>
++#include <sound/tas2552-plat.h>
++
++#include "tas2552.h"
++
++static struct reg_default tas2552_reg_defs[] = {
++	{TAS2552_CFG_1, 0x22},
++	{TAS2552_CFG_3, 0x80},
++	{TAS2552_DOUT, 0x00},
++	{TAS2552_OUTPUT_DATA, 0xc0},
++	{TAS2552_PDM_CFG, 0x01},
++	{TAS2552_PGA_GAIN, 0x00},
++	{TAS2552_BOOST_PT_CTRL, 0x0f},
++	{TAS2552_LIMIT_LVL_CTRL, 0x0c},
++	{TAS2552_LIMIT_RATE_HYS, 0x08},
++	{TAS2552_CFG_2, 0xef},
++	{TAS2552_SER_CTRL_1, 0x00},
++	{TAS2552_SER_CTRL_2, 0x00},
++	{TAS2552_PLL_CTRL_1, 0x10},
++	{TAS2552_PLL_CTRL_2, 0x00},
++	{TAS2552_PLL_CTRL_3, 0x00},
++	{TAS2552_BTIP, 0x8f},
++	{TAS2552_BTS_CTRL, 0x80},
++	{TAS2552_LIMIT_RELEASE, 0x04},
++	{TAS2552_LIMIT_INT_COUNT, 0x00},
++	{TAS2552_EDGE_RATE_CTRL, 0x40},
++	{TAS2552_VBAT_DATA, 0x00},
++};
++
++#define TAS2552_NUM_SUPPLIES	3
++static const char *tas2552_supply_names[TAS2552_NUM_SUPPLIES] = {
++	"vbat",		/* vbat voltage */
++	"iovdd",	/* I/O Voltage */
++	"avdd",		/* Analog DAC Voltage */
++};
++
++struct tas2552_data {
++	struct mutex mutex;
++	struct snd_soc_codec *codec;
++	struct regmap *regmap;
++	struct i2c_client *tas2552_client;
++	struct regulator_bulk_data supplies[TAS2552_NUM_SUPPLIES];
++	unsigned char regs[TAS2552_VBAT_DATA];
++	struct gpio_desc *enable_gpio;
++	u8 power_state:1;
++};
++
++static int tas2552_power(struct tas2552_data *data, u8 power)
 +{
-+	struct clk *clk;
++	int	ret = 0;
 +
-+	clk = kzalloc(sizeof(*clk), GFP_KERNEL);
-+	if (!clk)
-+		return ERR_PTR(-ENOMEM);
++	mutex_lock(&data->mutex);
 +
-+	clk->core = clk_core;
-+	clk->dev_id = dev;
-+	clk->con_id = con;
++	if (power) {
++		if (data->enable_gpio)
++			gpiod_set_value(data->enable_gpio, 1);
 +
-+	return clk;
-+}
-+EXPORT_SYMBOL_GPL(clk_core_to_clk);
++		data->power_state = 1;
++	} else {
++		if (data->enable_gpio)
++			gpiod_set_value(data->enable_gpio, 0);
 +
-+struct clk_core *clk_to_clk_core(struct clk *clk)
-+{
-+	return clk->core;
-+}
-+
- /***    helper functions   ***/
- 
- const char *__clk_get_name(struct clk_core *clk)
-@@ -935,7 +957,20 @@ static void __clk_disable_internal(struct clk_core *clk)
-  */
- void clk_disable(struct clk *clk_user)
- {
--	__clk_disable_internal(clk_to_clk_core(clk_user));
-+	struct clk_core *clk = clk_to_clk_core(clk_user);
-+	unsigned long flags;
-+
-+	flags = clk_enable_lock();
-+	if (!WARN(clk_user->enable_count == 0,
-+		  "incorrect disable clk dev %s con %s last disabler %pF\n",
-+		  clk_user->dev_id, clk_user->con_id, clk_user->last_disable)) {
-+
-+		clk_user->last_disable = __builtin_return_address(0);
-+		clk_user->enable_count--;
-+
-+		__clk_disable(clk);
++		data->power_state = 0;
 +	}
-+	clk_enable_unlock(flags);
- }
- EXPORT_SYMBOL_GPL(clk_disable);
- 
-@@ -995,7 +1030,17 @@ static int __clk_enable_internal(struct clk_core *clk)
-  */
- int clk_enable(struct clk *clk_user)
- {
--	return __clk_enable_internal(clk_to_clk_core(clk_user));
-+	struct clk_core *clk = clk_to_clk_core(clk_user);
-+	unsigned long flags;
++
++	mutex_unlock(&data->mutex);
++	return ret;
++}
++
++static void tas2552_sw_shutdown(struct tas2552_data *tas_data, int sw_shutdown)
++{
++	u8 cfg1_reg = 0x0;
++
++	if (sw_shutdown)
++		cfg1_reg |= TAS2552_SWS_MASK;
++	else
++		cfg1_reg &= ~TAS2552_SWS_MASK;
++
++	snd_soc_update_bits(tas_data->codec, TAS2552_CFG_1,
++						 TAS2552_SWS_MASK, cfg1_reg);
++}
++
++static int tas2552_hw_params(struct snd_pcm_substream *substream,
++			     struct snd_pcm_hw_params *params,
++			     struct snd_soc_dai *dai)
++{
++	u8 wclk_reg;
++	struct snd_soc_codec *codec = dai->codec;
++
++	/* Setting DAC clock dividers based on substream sample rate. */
++	switch (params_rate(params)) {
++	case 8000:
++		wclk_reg = TAS2552_8KHZ;
++		break;
++	case 11025:
++		wclk_reg = TAS2552_11_12KHZ;
++		break;
++	case 16000:
++		wclk_reg = TAS2552_16KHZ;
++		break;
++	case 32000:
++		wclk_reg = TAS2552_32KHZ;
++		break;
++	case 22050:
++	case 24000:
++		wclk_reg = TAS2552_22_24KHZ;
++		break;
++	case 44100:
++	case 48000:
++		wclk_reg = TAS2552_44_48KHZ;
++		break;
++	case 96000:
++		wclk_reg = TAS2552_88_96KHZ;
++		break;
++	default:
++		dev_vdbg(codec->dev, "Substream sample rate is not found\n");
++		return -EINVAL;
++	}
++
++	pm_runtime_get_sync(codec->dev);
++
++	snd_soc_update_bits(codec, TAS2552_CFG_3, TAS2552_WCLK_MASK, wclk_reg);
++
++	pm_runtime_put(codec->dev);
++
++	return 0;
++}
++
++static int tas2552_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
++{
++	u8 serial_format;
++	struct snd_soc_codec *codec = dai->codec;
++
++	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
++	case SND_SOC_DAIFMT_CBS_CFS:
++		serial_format = 0x00;
++		break;
++	case SND_SOC_DAIFMT_CBS_CFM:
++		serial_format = TAS2552_WORD_CLK_MASK;
++		break;
++	case SND_SOC_DAIFMT_CBM_CFS:
++		serial_format = TAS2552_BIT_CLK_MASK;
++		break;
++	case SND_SOC_DAIFMT_CBM_CFM:
++		serial_format = (TAS2552_BIT_CLK_MASK | TAS2552_WORD_CLK_MASK);
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	pm_runtime_get_sync(codec->dev);
++
++	snd_soc_update_bits(codec, TAS2552_SER_CTRL_1,
++			    (TAS2552_BIT_CLK_MASK | TAS2552_WORD_CLK_MASK),
++			    serial_format);
++
++	pm_runtime_put(codec->dev);
++
++	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
++	case SND_SOC_DAIFMT_I2S:
++		serial_format = 0x0;
++		break;
++	case SND_SOC_DAIFMT_DSP_A:
++		serial_format = TAS2552_DAIFMT_DSP;
++		break;
++	case SND_SOC_DAIFMT_RIGHT_J:
++		serial_format = TAS2552_DAIFMT_RIGHT_J;
++		break;
++	case SND_SOC_DAIFMT_LEFT_J:
++		serial_format = TAS2552_DAIFMT_LEFT_J;
++		break;
++
++	default:
++		return -EINVAL;
++	}
++
++	pm_runtime_get_sync(codec->dev);
++
++	snd_soc_update_bits(codec, TAS2552_SER_CTRL_1, TAS2552_DATA_FORMAT_MASK,
++						serial_format);
++
++	pm_runtime_put(codec->dev);
++
++	return 0;
++}
++
++static int tas2552_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
++				  unsigned int freq, int dir)
++{
++	struct snd_soc_codec *codec = dai->codec;
++
++	/* Fill in the PLL control registers for J & D
++	 * PLL_CLK = (.5 * freq * J.D) / 2^p
++	 * Need to fill in J and D here based on incoming freq
++	 */
++	pm_runtime_get_sync(codec->dev);
++
++	snd_soc_update_bits(codec, TAS2552_CFG_2, TAS2552_PLL_ENABLE, 0);
++
++	snd_soc_write(codec, TAS2552_PLL_CTRL_1, 0x10);
++	snd_soc_write(codec, TAS2552_PLL_CTRL_2, 0x00);
++	snd_soc_write(codec, TAS2552_PLL_CTRL_3, 0x00);
++
++	snd_soc_update_bits(codec, TAS2552_CFG_2, TAS2552_PLL_ENABLE,
++						TAS2552_PLL_ENABLE);
++
++	pm_runtime_put(codec->dev);
++
++	return 0;
++}
++
++static int tas2552_mute(struct snd_soc_dai *dai, int mute)
++{
++	u8 cfg1_reg = 0x0;
++	struct snd_soc_codec *codec = dai->codec;
++
++	if (mute)
++		cfg1_reg |= TAS2552_MUTE_MASK;
++	else
++		cfg1_reg &= ~TAS2552_MUTE_MASK;
++
++	pm_runtime_get_sync(codec->dev);
++
++	snd_soc_update_bits(codec, TAS2552_CFG_1, TAS2552_MUTE_MASK, cfg1_reg);
++
++	pm_runtime_put(codec->dev);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM_RUNTIME
++static int tas2552_runtime_suspend(struct device *dev)
++{
++	struct tas2552_data *tas2552 = dev_get_drvdata(dev);
++
++	tas2552_sw_shutdown(tas2552, 1);
++	tas2552_power(tas2552, 0);
++
++	regcache_cache_only(tas2552->regmap, true);
++	regcache_mark_dirty(tas2552->regmap);
++
++	return 0;
++}
++
++static int tas2552_runtime_resume(struct device *dev)
++{
++	struct tas2552_data *tas2552 = dev_get_drvdata(dev);
++
++	tas2552_power(tas2552, 1);
++	tas2552_sw_shutdown(tas2552, 0);
++
++	regcache_cache_only(tas2552->regmap, false);
++	regcache_sync(tas2552->regmap);
++
++	return 0;
++}
++#endif
++
++static const struct dev_pm_ops tas2552_pm = {
++	SET_RUNTIME_PM_OPS(tas2552_runtime_suspend, tas2552_runtime_resume,
++			   NULL)
++};
++
++static int tas2552_startup(struct snd_pcm_substream *substream,
++			   struct snd_soc_dai *dai)
++{
++	struct snd_soc_codec *codec = dai->codec;
++
++	pm_runtime_get_sync(codec->dev);
++
++	/* Turn on Class D amplifier */
++	snd_soc_update_bits(codec, TAS2552_CFG_2, TAS2552_CLASSD_EN_MASK,
++						TAS2552_CLASSD_EN);
++	return 0;
++}
++
++static void tas2552_shutdown(struct snd_pcm_substream *substream,
++			   struct snd_soc_dai *dai)
++{
++	struct snd_soc_codec *codec = dai->codec;
++
++	/* Turn on Class D amplifier */
++	snd_soc_update_bits(codec, TAS2552_CFG_2, TAS2552_CLASSD_EN_MASK,
++						TAS2552_CLASSD_EN);
++
++	pm_runtime_put(codec->dev);
++}
++
++static struct snd_soc_dai_ops tas2552_speaker_dai_ops = {
++	.hw_params	= tas2552_hw_params,
++	.set_sysclk	= tas2552_set_dai_sysclk,
++	.set_fmt	= tas2552_set_dai_fmt,
++	.startup	= tas2552_startup,
++	.shutdown	= tas2552_shutdown,
++	.digital_mute = tas2552_mute,
++};
++
++/* Formats supported by TAS2552 driver. */
++#define TAS2552_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S20_3LE |\
++			 SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S32_LE)
++
++/* TAS2552 dai structure. */
++static struct snd_soc_dai_driver tas2552_dai[] = {
++	{
++		.name = "tas2552-amplifier",
++		.playback = {
++			.stream_name = "Speaker",
++			.channels_min = 2,
++			.channels_max = 2,
++			.rates = SNDRV_PCM_RATE_8000_192000,
++			.formats = TAS2552_FORMATS,
++		},
++		.ops = &tas2552_speaker_dai_ops,
++	},
++};
++
++/*
++ * DAC digital volumes. From -7 to 24 dB in 1 dB steps
++ */
++static DECLARE_TLV_DB_SCALE(dac_tlv, -7, 100, 24);
++
++static const struct snd_kcontrol_new tas2552_snd_controls[] = {
++	SOC_SINGLE_TLV("Speaker Driver Playback Volume",
++			 TAS2552_PGA_GAIN, 0, 0x1f, 1, dac_tlv),
++};
++
++static int tas2552_codec_probe(struct snd_soc_codec *codec)
++{
++	struct tas2552_data *tas2552 = snd_soc_codec_get_drvdata(codec);
 +	int ret;
 +
-+	flags = clk_enable_lock();
-+	ret = __clk_enable(clk);
-+	if (!ret)
-+		clk_user->enable_count++;
-+	clk_enable_unlock(flags);
++	tas2552->codec = codec;
 +
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(clk_enable);
- 
-@@ -1671,8 +1716,9 @@ EXPORT_SYMBOL_GPL(clk_provider_get_parent);
- struct clk *clk_get_parent(struct clk *clk_user)
- {
- 	struct clk_core *clk = clk_to_clk_core(clk_user);
-+	struct clk_core *parent = clk_provider_get_parent(clk);
- 
--	return clk_core_to_clk(clk_provider_get_parent(clk));
-+	return clk_core_to_clk(parent, clk_user->dev_id, clk_user->con_id);
- }
- EXPORT_SYMBOL_GPL(clk_get_parent);
- 
-diff --git a/drivers/clk/clk.h b/drivers/clk/clk.h
-index c69f4fe..2f682bf 100644
---- a/drivers/clk/clk.h
-+++ b/drivers/clk/clk.h
-@@ -17,5 +17,5 @@ void of_clk_unlock(void);
- #endif
- 
- #if defined(CONFIG_COMMON_CLK)
--#define clk_to_clk_core(clk)	(clk->core)
-+struct clk_core *clk_to_clk_core(struct clk *clk);
- #endif
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index 48811c0..5be6bb1 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -76,7 +76,9 @@ struct clk_core *of_clk_provider_get(struct device_node *np, int index)
- 
- struct clk *of_clk_get(struct device_node *np, int index)
- {
--	return clk_core_to_clk(of_clk_provider_get(np, index));
-+	struct clk_core *clk = of_clk_provider_get(np, index);
++	ret = regulator_bulk_enable(ARRAY_SIZE(tas2552->supplies),
++				    tas2552->supplies);
 +
-+	return clk_core_to_clk(clk, np->full_name, NULL);
- }
- EXPORT_SYMBOL(of_clk_get);
- 
-@@ -128,7 +130,9 @@ struct clk_core *of_clk_provider_get_by_name(struct device_node *np, const char
-  */
- struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
- {
--	return clk_core_to_clk(of_clk_provider_get_by_name(np, name));
-+	struct clk_core *clk = of_clk_provider_get_by_name(np, name);
++	if (ret != 0) {
++		dev_err(codec->dev, "Failed to enable supplies: %d\n",
++			ret);
++		return ret;
++	}
 +
-+	return clk_core_to_clk(clk, np->full_name, NULL);
- }
- EXPORT_SYMBOL(of_clk_get_by_name);
- #endif
-@@ -195,7 +199,9 @@ EXPORT_SYMBOL_GPL(clk_provider_get_sys);
- 
- struct clk *clk_get_sys(const char *dev_id, const char *con_id)
- {
--	return clk_core_to_clk(clk_provider_get_sys(dev_id, con_id));
-+	struct clk_core *clk = clk_provider_get_sys(dev_id, con_id);
++	tas2552_power(tas2552, 1);
++	tas2552_sw_shutdown(tas2552, 0);
 +
-+	return clk_core_to_clk(clk, dev_id, con_id);
- }
- EXPORT_SYMBOL(clk_get_sys);
- 
-@@ -218,13 +224,23 @@ EXPORT_SYMBOL(clk_provider_get);
- 
- struct clk *clk_get(struct device *dev, const char *con_id)
- {
--	return clk_core_to_clk(clk_provider_get(dev, con_id));
-+	const char *dev_id = dev ? dev_name(dev) : NULL;
++	pm_runtime_set_active(codec->dev);
++	pm_runtime_set_autosuspend_delay(codec->dev, 1000);
++	pm_runtime_use_autosuspend(codec->dev);
++	pm_runtime_enable(codec->dev);
++	pm_runtime_mark_last_busy(codec->dev);
++	pm_runtime_put_sync_autosuspend(codec->dev);
 +
-+	return clk_core_to_clk(clk_provider_get(dev, con_id), dev_id, con_id);
- }
- EXPORT_SYMBOL(clk_get);
- 
-+static void clk_free_clk(struct clk *clk)
-+{
-+	kfree(clk);
++	snd_soc_write(codec, TAS2552_CFG_1, TAS2552_MUTE_MASK |
++				TAS2552_SWS_MASK | TAS2552_PLL_SRC_BCLK);
++	snd_soc_write(codec, TAS2552_CFG_3, TAS2552_I2S_OUT_SEL |
++				TAS2552_DIN_SRC_SEL_AVG_L_R | TAS2552_88_96KHZ);
++	snd_soc_write(codec, TAS2552_DOUT, TAS2552_PDM_DATA_I);
++	snd_soc_write(codec, TAS2552_OUTPUT_DATA, TAS2552_PDM_DATA_V_I | 0x8);
++	snd_soc_write(codec, TAS2552_PDM_CFG, TAS2552_PDM_BCLK_SEL);
++	/* 0dB gain */
++	snd_soc_write(codec, TAS2552_PGA_GAIN, 0x10);
++	snd_soc_write(codec, TAS2552_BOOST_PT_CTRL, TAS2552_APT_DELAY_200 |
++				TAS2552_APT_THRESH_2_1_7);
++	/**
++	 * Data sheet indicates to write 0x0c to 0x0d during init but no
++	 * additional information is given to what it means.
++	 */
++	snd_soc_write(codec, TAS2552_LIMIT_LVL_CTRL, 0x0c);
++	/**
++	 * Data sheet indicates to write 0x20 to 0x0e during init but no
++	 * additional information is given to what it means.
++	 */
++
++	snd_soc_write(codec, TAS2552_LIMIT_RATE_HYS, 0x20);
++
++	snd_soc_write(codec, TAS2552_CFG_2, TAS2552_CLASSD_EN |
++				  TAS2552_BOOST_EN | TAS2552_APT_EN |
++				  TAS2552_PLL_ENABLE | TAS2552_LIM_EN);
++
++	return 0;
 +}
 +
- void clk_put(struct clk *clk)
- {
--	__clk_put(clk_to_clk_core(clk));
-+	clk_core_t *core = clk_to_clk_core(clk);
++static int tas2552_codec_remove(struct snd_soc_codec *codec)
++{
++	struct tas2552_data *tas2552 = snd_soc_codec_get_drvdata(codec);
 +
-+	clk_free_clk(clk);
-+	__clk_put(core);
- }
- EXPORT_SYMBOL(clk_put);
- 
-diff --git a/drivers/clk/qcom/mmcc-msm8960.c b/drivers/clk/qcom/mmcc-msm8960.c
-index 28a5d30..47f21ea 100644
---- a/drivers/clk/qcom/mmcc-msm8960.c
-+++ b/drivers/clk/qcom/mmcc-msm8960.c
-@@ -470,7 +470,8 @@ static int pix_rdi_set_parent(struct clk_hw *hw, u8 index)
- 	 * needs to be on at what time.
- 	 */
- 	for (i = 0; i < num_parents; i++) {
--		ret = clk_prepare_enable(clk_core_to_clk(clk_get_parent_by_index(clk, i)));
-+		struct clk_core *parent = clk_get_parent_by_index(clk, i);
-+		ret = clk_prepare_enable(clk_core_to_clk(parent, NULL, __clk_get_name(parent)));
- 		if (ret)
- 			goto err;
- 	}
-@@ -498,8 +499,10 @@ static int pix_rdi_set_parent(struct clk_hw *hw, u8 index)
- 	udelay(1);
- 
- err:
--	for (i--; i >= 0; i--)
--		clk_disable_unprepare(clk_core_to_clk(clk_get_parent_by_index(clk, i)));
-+	for (i--; i >= 0; i--) {
-+		struct clk_core *parent = clk_get_parent_by_index(clk, i);
-+		clk_disable_unprepare(clk_core_to_clk(parent, NULL, __clk_get_name(parent)));
++	tas2552_power(tas2552, 0);
++
++	return 0;
++};
++
++#ifdef CONFIG_PM
++static int tas2552_suspend(struct snd_soc_codec *codec)
++{
++	struct tas2552_data *tas2552 = snd_soc_codec_get_drvdata(codec);
++	int ret;
++
++	pm_runtime_put(codec->dev);
++
++	ret = regulator_bulk_disable(ARRAY_SIZE(tas2552->supplies),
++					tas2552->supplies);
++
++	if (ret != 0)
++		dev_err(codec->dev, "Failed to disable supplies: %d\n",
++			ret);
++	return 0;
++}
++
++static int tas2552_resume(struct snd_soc_codec *codec)
++{
++	struct tas2552_data *tas2552 = snd_soc_codec_get_drvdata(codec);
++	int ret;
++
++	ret = regulator_bulk_enable(ARRAY_SIZE(tas2552->supplies),
++				    tas2552->supplies);
++
++	if (ret != 0) {
++		dev_err(codec->dev, "Failed to enable supplies: %d\n",
++			ret);
 +	}
- 
- 	return ret;
- }
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index 5de44c1..550a691 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -1196,7 +1196,7 @@ static void __init sunxi_init_clocks(const char *clocks[], int nclocks)
- 		struct clk_core *clk = clk_provider_get(NULL, clocks[i]);
- 
- 		if (!IS_ERR(clk))
--			clk_prepare_enable(clk_core_to_clk(clk));
-+			clk_prepare_enable(clk_core_to_clk(clk, NULL, clocks[i]));
- 	}
- }
- 
-diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
-index 385d101..2a03d47 100644
---- a/drivers/clk/tegra/clk.c
-+++ b/drivers/clk/tegra/clk.c
-@@ -228,7 +228,7 @@ void __init tegra_init_from_table(struct tegra_clk_init_table *tbl,
- 			}
- 
- 		if (tbl->state)
--			if (clk_prepare_enable(clk_core_to_clk(clk))) {
-+			if (clk_prepare_enable(clk_core_to_clk(clk, NULL, __clk_get_name(clk)))) {
- 				pr_err("%s: Failed to enable %s\n", __func__,
- 				       __clk_get_name(clk));
- 				WARN_ON(1);
-diff --git a/drivers/clk/zynq/clkc.c b/drivers/clk/zynq/clkc.c
-index c58c540..ed3e1cba 100644
---- a/drivers/clk/zynq/clkc.c
-+++ b/drivers/clk/zynq/clkc.c
-@@ -154,7 +154,7 @@ static void __init zynq_clk_register_fclk(enum zynq_clk fclk,
- 			0, CLK_GATE_SET_TO_DISABLE, fclk_gate_lock);
- 	enable_reg = clk_readl(fclk_gate_reg) & 1;
- 	if (enable && !enable_reg) {
--		if (clk_prepare_enable(clk_core_to_clk(clks[fclk])))
-+		if (clk_prepare_enable(clk_core_to_clk(clks[fclk], NULL, clk_name)))
- 			pr_warn("%s: FCLK%u enable failed\n", __func__,
- 					fclk - fclk0);
- 	}
-@@ -333,13 +333,13 @@ static void __init zynq_clk_setup(struct device_node *np)
- 			CLK_DIVIDER_ALLOW_ZERO, &ddrclk_lock);
- 	clks[ddr2x] = clk_register_gate(NULL, clk_output_name[ddr2x],
- 			"ddr2x_div", 0, SLCR_DDR_CLK_CTRL, 1, 0, &ddrclk_lock);
--	clk_prepare_enable(clk_core_to_clk(clks[ddr2x]));
-+	clk_prepare_enable(clk_core_to_clk(clks[ddr2x], NULL, clk_output_name[ddr2x]));
- 	clk = clk_register_divider(NULL, "ddr3x_div", "ddrpll", 0,
- 			SLCR_DDR_CLK_CTRL, 20, 6, CLK_DIVIDER_ONE_BASED |
- 			CLK_DIVIDER_ALLOW_ZERO, &ddrclk_lock);
- 	clks[ddr3x] = clk_register_gate(NULL, clk_output_name[ddr3x],
- 			"ddr3x_div", 0, SLCR_DDR_CLK_CTRL, 0, 0, &ddrclk_lock);
--	clk_prepare_enable(clk_core_to_clk(clks[ddr3x]));
-+	clk_prepare_enable(clk_core_to_clk(clks[ddr3x], NULL, clk_output_name[ddr3x]));
- 
- 	clk = clk_register_divider(NULL, "dci_div0", "ddrpll", 0,
- 			SLCR_DCI_CLK_CTRL, 8, 6, CLK_DIVIDER_ONE_BASED |
-@@ -351,7 +351,7 @@ static void __init zynq_clk_setup(struct device_node *np)
- 	clks[dci] = clk_register_gate(NULL, clk_output_name[dci], "dci_div1",
- 			CLK_SET_RATE_PARENT, SLCR_DCI_CLK_CTRL, 0, 0,
- 			&dciclk_lock);
--	clk_prepare_enable(clk_core_to_clk(clks[dci]));
-+	clk_prepare_enable(clk_core_to_clk(clks[dci], NULL, clk_output_name[dci]));
- 
- 	/* Peripheral clocks */
- 	for (i = fclk0; i <= fclk3; i++) {
-@@ -505,10 +505,10 @@ static void __init zynq_clk_setup(struct device_node *np)
- 	/* leave debug clocks in the state the bootloader set them up to */
- 	tmp = clk_readl(SLCR_DBG_CLK_CTRL);
- 	if (tmp & DBG_CLK_CTRL_CLKACT_TRC)
--		if (clk_prepare_enable(clk_core_to_clk(clks[dbg_trc])))
-+		if (clk_prepare_enable(clk_core_to_clk(clks[dbg_trc], NULL, clk_output_name[dbg_trc])))
- 			pr_warn("%s: trace clk enable failed\n", __func__);
- 	if (tmp & DBG_CLK_CTRL_CPU_1XCLKACT)
--		if (clk_prepare_enable(clk_core_to_clk(clks[dbg_apb])))
-+		if (clk_prepare_enable(clk_core_to_clk(clks[dbg_apb], NULL, clk_output_name[dbg_apb])))
- 			pr_warn("%s: debug APB clk enable failed\n", __func__);
- 
- 	/* One gated clock for all APER clocks. */
-diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-index 2c1ece9..9657fc8 100644
---- a/include/linux/clk-private.h
-+++ b/include/linux/clk-private.h
-@@ -57,6 +57,10 @@ struct clk_core {
- 
- struct clk {
- 	struct clk_core	*core;
-+	unsigned int	enable_count;
-+	const char	*dev_id;
-+	const char	*con_id;
-+	void		*last_disable;
- };
- 
- /*
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 87de32c..abfc31a 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -533,7 +533,8 @@ struct clk_core *clk_provider_get_sys(const char *dev_id, const char *con_id);
- struct clk_core *clk_provider_get(struct device *dev, const char *con_id);
- struct clk_core *devm_clk_provider_get(struct device *dev, const char *id);
- 
--#define clk_core_to_clk(core)	((struct clk *)(core))
-+struct clk *clk_core_to_clk(struct clk_core *clk_core, const char *dev,
-+			    const char *con);
- 
- /*
-  * FIXME clock api without lock protection
++
++	pm_runtime_get_sync(codec->dev);
++
++	return 0;
++}
++#else
++#define tas2552_suspend NULL
++#define tas2552_resume NULL
++#endif
++
++static struct snd_soc_codec_driver soc_codec_dev_tas2552 = {
++	.probe = tas2552_codec_probe,
++	.remove = tas2552_codec_remove,
++	.suspend =	tas2552_suspend,
++	.resume = tas2552_resume,
++	.controls = tas2552_snd_controls,
++	.num_controls = ARRAY_SIZE(tas2552_snd_controls),
++};
++
++static const struct regmap_config tas2552_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++
++	.max_register = TAS2552_MAX_REG,
++	.reg_defaults = tas2552_reg_defs,
++	.num_reg_defaults = ARRAY_SIZE(tas2552_reg_defs),
++	.cache_type = REGCACHE_RBTREE,
++};
++
++static int tas2552_probe(struct i2c_client *client,
++			   const struct i2c_device_id *id)
++{
++	struct device *dev;
++	struct tas2552_data *data;
++	int ret;
++	int i;
++
++	dev = &client->dev;
++	data = devm_kzalloc(&client->dev, sizeof(*data), GFP_KERNEL);
++	if (data == NULL)
++		return -ENOMEM;
++
++	data->enable_gpio = devm_gpiod_get(dev, "enable");
++	if (IS_ERR(data->enable_gpio)) {
++		ret = PTR_ERR(data->enable_gpio);
++		if (ret != -ENOENT && ret != -ENOSYS)
++			return ret;
++
++		data->enable_gpio = NULL;
++	} else {
++		gpiod_direction_output(data->enable_gpio, 0);
++	}
++
++	data->tas2552_client = client;
++	data->regmap = devm_regmap_init_i2c(client, &tas2552_regmap_config);
++	if (IS_ERR(data->regmap)) {
++		ret = PTR_ERR(data->regmap);
++		dev_err(&client->dev, "Failed to allocate register map: %d\n",
++			ret);
++		return ret;
++	}
++
++	for (i = 0; i < ARRAY_SIZE(data->supplies); i++)
++		data->supplies[i].supply = tas2552_supply_names[i];
++
++	ret = devm_regulator_bulk_get(dev, ARRAY_SIZE(data->supplies),
++				      data->supplies);
++	if (ret != 0)
++		dev_err(dev, "Failed to request supplies: %d\n", ret);
++
++	mutex_init(&data->mutex);
++
++	dev_set_drvdata(&client->dev, data);
++
++	ret = snd_soc_register_codec(&client->dev,
++				      &soc_codec_dev_tas2552,
++				      tas2552_dai, ARRAY_SIZE(tas2552_dai));
++	if (ret < 0)
++		dev_err(&client->dev, "Failed to register codec: %d\n", ret);
++
++	return 0;
++}
++
++static int tas2552_i2c_remove(struct i2c_client *client)
++{
++	snd_soc_unregister_codec(&client->dev);
++	return 0;
++}
++
++static const struct i2c_device_id tas2552_id[] = {
++	{ "tas2552-codec", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, tas2552_id);
++
++#if IS_ENABLED(CONFIG_OF)
++static const struct of_device_id tas2552_of_match[] = {
++	{ .compatible = "ti,tas2552", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, tas2552_of_match);
++#endif
++
++static struct i2c_driver tas2552_i2c_driver = {
++	.driver = {
++		.name = "tas2552-codec",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(tas2552_of_match),
++		.pm = &tas2552_pm,
++	},
++	.probe = tas2552_probe,
++	.remove = tas2552_i2c_remove,
++	.id_table = tas2552_id,
++};
++
++module_i2c_driver(tas2552_i2c_driver);
++
++MODULE_AUTHOR("Dan Muprhy <dmurphy@ti.com>");
++MODULE_DESCRIPTION("TAS2552 Audio amplifier driver");
++MODULE_LICENSE("GPL");
+diff --git a/sound/soc/codecs/tas2552.h b/sound/soc/codecs/tas2552.h
+new file mode 100644
+index 0000000..52b2d64
+--- /dev/null
++++ b/sound/soc/codecs/tas2552.h
+@@ -0,0 +1,119 @@
++/*
++ * tas2552.h - ALSA SoC Texas Instruments TAS2552 Mono Audio Amplifier
++ *
++ * Copyright (C) 2014 Texas Instruments Incorporated -  http://www.ti.com
++ *
++ * Author: Dan Murphy <dmurphy@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ */
++
++#ifndef __TAS2552_H__
++#define __TAS2552_H__
++
++/* Register Address Map */
++#define TAS2552_DEVICE_STATUS	0x00
++#define TAS2552_CFG_1			0x01
++#define TAS2552_CFG_2			0x02
++#define TAS2552_CFG_3			0x03
++#define TAS2552_DOUT			0x04
++#define TAS2552_SER_CTRL_1		0x05
++#define TAS2552_SER_CTRL_2		0x06
++#define TAS2552_OUTPUT_DATA		0x07
++#define TAS2552_PLL_CTRL_1		0x08
++#define TAS2552_PLL_CTRL_2		0x09
++#define TAS2552_PLL_CTRL_3		0x0a
++#define TAS2552_BTIP			0x0b
++#define TAS2552_BTS_CTRL		0x0c
++#define TAS2552_LIMIT_LVL_CTRL	0x0d
++#define TAS2552_LIMIT_RATE_HYS	0x0e
++#define TAS2552_LIMIT_RELEASE	0x0f
++#define TAS2552_LIMIT_INT_COUNT	0x10
++#define TAS2552_PDM_CFG			0x11
++#define TAS2552_PGA_GAIN		0x12
++#define TAS2552_EDGE_RATE_CTRL	0x13
++#define TAS2552_BOOST_PT_CTRL	0x14
++#define TAS2552_VER_NUM			0x16
++#define TAS2552_VBAT_DATA		0x19
++#define TAS2552_MAX_REG			0x20
++
++/* CFG1 Register Masks */
++#define TAS2552_MUTE_MASK		(1 << 2)
++#define TAS2552_SWS_MASK		(1 << 1)
++#define TAS2552_WCLK_MASK		0x07
++#define TAS2552_CLASSD_EN_MASK	(1 << 7)
++
++/* CFG2 Register Masks */
++#define TAS2552_CLASSD_EN		(1 << 7)
++#define TAS2552_BOOST_EN		(1 << 6)
++#define TAS2552_APT_EN			(1 << 5)
++#define TAS2552_PLL_ENABLE		(1 << 3)
++#define TAS2552_LIM_EN			(1 << 2)
++#define TAS2552_IVSENSE_EN		(1 << 1)
++
++/* CFG3 Register Masks */
++#define TAS2552_WORD_CLK_MASK		(1 << 7)
++#define TAS2552_BIT_CLK_MASK		(1 << 6)
++#define TAS2552_DATA_FORMAT_MASK	(0x11 << 2)
++
++#define TAS2552_DAIFMT_DSP			(1 << 3)
++#define TAS2552_DAIFMT_RIGHT_J		(1 << 4)
++#define TAS2552_DAIFMT_LEFT_J		(0x11 << 3)
++
++#define TAS2552_PLL_SRC_MCLK	0x00
++#define TAS2552_PLL_SRC_BCLK	(1 << 3)
++#define TAS2552_PLL_SRC_IVCLKIN	(1 << 4)
++#define TAS2552_PLL_SRC_1_8_FIXED (0x11 << 3)
++
++#define TAS2552_DIN_SRC_SEL_MUTED	0x00
++#define TAS2552_DIN_SRC_SEL_LEFT	(1 << 4)
++#define TAS2552_DIN_SRC_SEL_RIGHT	(1 << 5)
++#define TAS2552_DIN_SRC_SEL_AVG_L_R	(0x11 << 4)
++
++#define TAS2552_PDM_IN_SEL		(1 << 5)
++#define TAS2552_I2S_OUT_SEL		(1 << 6)
++#define TAS2552_ANALOG_IN_SEL	(1 << 7)
++
++/* CFG3 WCLK Dividers */
++#define TAS2552_8KHZ		0x00
++#define TAS2552_11_12KHZ	(1 << 1)
++#define TAS2552_16KHZ		(1 << 2)
++#define TAS2552_22_24KHZ	(1 << 3)
++#define TAS2552_32KHZ		(1 << 4)
++#define TAS2552_44_48KHZ	(1 << 5)
++#define TAS2552_88_96KHZ	(1 << 6)
++#define TAS2552_176_192KHZ	(1 << 7)
++
++/* OUTPUT_DATA register */
++#define TAS2552_PDM_DATA_I		0x00
++#define TAS2552_PDM_DATA_V		(1 << 6)
++#define TAS2552_PDM_DATA_I_V	(1 << 7)
++#define TAS2552_PDM_DATA_V_I	(0x11 << 6)
++
++/* PDM CFG Register */
++#define TAS2552_PDM_DATA_ES_RISE 0x4
++
++#define TAS2552_PDM_PLL_CLK_SEL 0x00
++#define TAS2552_PDM_IV_CLK_SEL	(1 << 1)
++#define TAS2552_PDM_BCLK_SEL	(1 << 2)
++#define TAS2552_PDM_MCLK_SEL	(1 << 3)
++
++/* Boost pass-through register */
++#define TAS2552_APT_DELAY_50	0x00
++#define TAS2552_APT_DELAY_75	(1 << 1)
++#define TAS2552_APT_DELAY_125	(1 << 2)
++#define TAS2552_APT_DELAY_200	(1 << 3)
++
++#define TAS2552_APT_THRESH_2_5		0x00
++#define TAS2552_APT_THRESH_1_7		(1 << 3)
++#define TAS2552_APT_THRESH_1_4_1_1	(1 << 4)
++#define TAS2552_APT_THRESH_2_1_7	(0x11 << 2)
++
++#endif
 -- 
-1.9.3
+1.7.9.5
 
