@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030551AbaGCJc1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:32:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52571 "EHLO
+	id S1030613AbaGCJcs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:32:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52543 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030544AbaGCJZB (ORCPT
+	with ESMTP id S1030522AbaGCJYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:25:01 -0400
+	Thu, 3 Jul 2014 05:24:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Jonathan Cameron <jic23@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 176/198] USB: usbtest: add a timeout for scatter-gather tests
-Date: Thu,  3 Jul 2014 10:20:19 +0100
-Message-Id: <1404379241-8590-177-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 171/198] iio: adc: at91: signedness bug in at91_adc_get_trigger_value_by_name()
+Date: Thu,  3 Jul 2014 10:20:14 +0100
+Message-Id: <1404379241-8590-172-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,75 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 32b36eeae6a859670d2939a7d6136cb5e9ed64f8 upstream.
+commit 4f3bcd878f1d3c730fe00f619b7260c6125d49eb upstream.
 
-In usbtest, tests 5 - 8 use the scatter-gather library in usbcore
-without any sort of timeout.  If there's a problem in the gadget or
-host controller being tested, the test can hang.
+at91_adc_get_trigger_value_by_name() was returning -ENOMEM truncated to
+a positive u8 and that doesn't work.  I've changed it to int and
+refactored it to preserve the error code.
 
-This patch adds a 10-second timeout to the tests, so that they will
-fail gracefully with an ETIMEDOUT error instead of hanging.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Huang Rui <ray.huang@amd.com>
-Tested-by: Huang Rui <ray.huang@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Tested-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/misc/usbtest.c | 16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ drivers/iio/adc/at91_adc.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/usb/misc/usbtest.c b/drivers/usb/misc/usbtest.c
-index 41bdbaf70a6d..98438b90838f 100644
---- a/drivers/usb/misc/usbtest.c
-+++ b/drivers/usb/misc/usbtest.c
-@@ -7,7 +7,7 @@
- #include <linux/moduleparam.h>
- #include <linux/scatterlist.h>
- #include <linux/mutex.h>
--
-+#include <linux/timer.h>
- #include <linux/usb.h>
- 
- #define SIMPLE_IO_TIMEOUT	10000	/* in milliseconds */
-@@ -484,6 +484,14 @@ alloc_sglist(int nents, int max, int vary)
- 	return sg;
+diff --git a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
+index b6db6a0e09cd..f1e4322abe3e 100644
+--- a/drivers/iio/adc/at91_adc.c
++++ b/drivers/iio/adc/at91_adc.c
+@@ -161,12 +161,11 @@ static int at91_adc_channel_init(struct iio_dev *idev)
+ 	return idev->num_channels;
  }
  
-+static void sg_timeout(unsigned long _req)
-+{
-+	struct usb_sg_request	*req = (struct usb_sg_request *) _req;
-+
-+	req->status = -ETIMEDOUT;
-+	usb_sg_cancel(req);
-+}
-+
- static int perform_sglist(
- 	struct usbtest_dev	*tdev,
- 	unsigned		iterations,
-@@ -495,6 +503,9 @@ static int perform_sglist(
+-static u8 at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
++static int at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
+ 					     struct at91_adc_trigger *triggers,
+ 					     const char *trigger_name)
  {
- 	struct usb_device	*udev = testdev_to_usbdev(tdev);
- 	int			retval = 0;
-+	struct timer_list	sg_timer;
-+
-+	setup_timer_on_stack(&sg_timer, sg_timeout, (unsigned long) req);
+ 	struct at91_adc_state *st = iio_priv(idev);
+-	u8 value = 0;
+ 	int i;
  
- 	while (retval == 0 && iterations-- > 0) {
- 		retval = usb_sg_init(req, udev, pipe,
-@@ -505,7 +516,10 @@ static int perform_sglist(
+ 	for (i = 0; i < st->trigger_number; i++) {
+@@ -179,15 +178,16 @@ static u8 at91_adc_get_trigger_value_by_name(struct iio_dev *idev,
+ 			return -ENOMEM;
  
- 		if (retval)
- 			break;
-+		mod_timer(&sg_timer, jiffies +
-+				msecs_to_jiffies(SIMPLE_IO_TIMEOUT));
- 		usb_sg_wait(req);
-+		del_timer_sync(&sg_timer);
- 		retval = req->status;
+ 		if (strcmp(trigger_name, name) == 0) {
+-			value = triggers[i].value;
+ 			kfree(name);
+-			break;
++			if (triggers[i].value == 0)
++				return -EINVAL;
++			return triggers[i].value;
+ 		}
  
- 		/* FIXME check resulting data pattern */
+ 		kfree(name);
+ 	}
+ 
+-	return value;
++	return -EINVAL;
+ }
+ 
+ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
+@@ -197,14 +197,14 @@ static int at91_adc_configure_trigger(struct iio_trigger *trig, bool state)
+ 	struct iio_buffer *buffer = idev->buffer;
+ 	struct at91_adc_reg_desc *reg = st->registers;
+ 	u32 status = at91_adc_readl(st, reg->trigger_register);
+-	u8 value;
++	int value;
+ 	u8 bit;
+ 
+ 	value = at91_adc_get_trigger_value_by_name(idev,
+ 						   st->trigger_list,
+ 						   idev->trig->name);
+-	if (value == 0)
+-		return -EINVAL;
++	if (value < 0)
++		return value;
+ 
+ 	if (state) {
+ 		st->buffer = kmalloc(idev->scan_bytes, GFP_KERNEL);
 -- 
 1.9.1
 
