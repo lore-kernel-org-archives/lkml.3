@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759445AbaGCRxH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 13:53:07 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59987 "EHLO
+	id S1759468AbaGCRxe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 13:53:34 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59997 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753712AbaGCRxC (ORCPT
+	by vger.kernel.org with ESMTP id S1753453AbaGCRxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 13:53:02 -0400
-Date: Thu, 3 Jul 2014 18:52:31 +0100
+	Thu, 3 Jul 2014 13:53:33 -0400
+Date: Thu, 3 Jul 2014 18:53:07 +0100
 From: Will Deacon <will.deacon@arm.com>
 To: Jean Pihet <jean.pihet@linaro.org>
 Cc: "linux-arm-kernel@lists.infradead.org" 
@@ -17,81 +17,50 @@ Cc: "linux-arm-kernel@lists.infradead.org"
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Jiri Olsa <jolsa@redhat.com>,
         Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH 2/3] ARM: perf: disable the pagefault handler when
- reading from user space
-Message-ID: <20140703175231.GF17372@arm.com>
+Subject: Re: [PATCH 1/3] ARM: perf: Check that current->mm is alive before
+ getting user callchain
+Message-ID: <20140703175306.GG17372@arm.com>
 References: <1403881067-22690-1-git-send-email-jean.pihet@linaro.org>
- <1403881067-22690-3-git-send-email-jean.pihet@linaro.org>
+ <1403881067-22690-2-git-send-email-jean.pihet@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403881067-22690-3-git-send-email-jean.pihet@linaro.org>
+In-Reply-To: <1403881067-22690-2-git-send-email-jean.pihet@linaro.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
-
-On Fri, Jun 27, 2014 at 03:57:46PM +0100, Jean Pihet wrote:
-> As done on other architectures (ARM64, x86, Sparc etc.).
+On Fri, Jun 27, 2014 at 03:57:45PM +0100, Jean Pihet wrote:
+> An event may occur when an mm is already released.
 > 
-> This prevents a deadlock on down_read in do_page_fault when unwinding
-> using fp and triggering on kernel tracepoints:
-
-So is this an issue because you could try setting tracepoints on the
-pagefault path? If so, the patch is a little brutal as it would break user
-backtracing as soon as we take any old page fault, no?
-
-Or am I missing something obvious?
-
-Will
-
->   INFO: task stress:2116 blocked for more than 120 seconds.
->         Not tainted 3.15.0-rc4-00364-g3401dfb-dirty #43
->   "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->   stress          D c04b41e8     0  2116   2115 0x00000000
->   [<c04b41e8>] (__schedule) from [<c04b46dc>] (schedule+0x40/0x90)
->   [<c04b46dc>] (schedule) from [<c04b6ec8>] (__down_read+0xc4/0xfc)
->   [<c04b6ec8>] (__down_read) from [<c04b69c0>] (down_read+0x18/0x1c)
->   [<c04b69c0>] (down_read) from [<c001d41c>] (do_page_fault+0xac/0x420)
->   [<c001d41c>] (do_page_fault) from [<c0008444>] (do_DataAbort+0x44/0xa8)
->   [<c0008444>] (do_DataAbort) from [<c00136b8>] (__dabt_svc+0x38/0x60)
->   Exception stack(0xecbc3af8 to 0xecbc3b40)
->   3ae0:                                                       ecbc3b74 b6d72ff4
->   3b00: ffffffec 00000000 b6d72ff4 ec0fc000 00000000 ec0fc000 0000007e 00000000
->   3b20: ecbc2000 ecbc3bac 00000014 ecbc3b44 c0019e78 c021ef44 00000013 ffffffff
->   [<c00136b8>] (__dabt_svc) from [<c021ef44>] (__copy_from_user+0xa4/0x3a0)
+> As per commit 20afc60f892d285fde179ead4b24e6a7938c2f1b
+>  'x86, perf: Check that current->mm is alive before getting user callchain'
 > 
 > Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
 > Cc: Will Deacon <will.deacon@arm.com>
 > ---
->  arch/arm/kernel/perf_event.c | 9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
+
+Acked-by: Will Deacon <will.deacon@arm.com>
+
+>  arch/arm/kernel/perf_event.c | 4 ++++
+>  1 file changed, 4 insertions(+)
 > 
 > diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-> index 6493c4c..f5aeca2 100644
+> index 4238bcb..6493c4c 100644
 > --- a/arch/arm/kernel/perf_event.c
 > +++ b/arch/arm/kernel/perf_event.c
-> @@ -560,11 +560,16 @@ user_backtrace(struct frame_tail __user *tail,
->  	       struct perf_callchain_entry *entry)
->  {
->  	struct frame_tail buftail;
-> +	unsigned long err;
+> @@ -590,6 +590,10 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
+>  	}
 >  
-> -	/* Also check accessibility of one struct frame_tail beyond */
->  	if (!access_ok(VERIFY_READ, tail, sizeof(buftail)))
->  		return NULL;
-> -	if (__copy_from_user_inatomic(&buftail, tail, sizeof(buftail)))
+>  	perf_callchain_store(entry, regs->ARM_pc);
 > +
-> +	pagefault_disable();
-> +	err = __copy_from_user_inatomic(&buftail, tail, sizeof(buftail));
-> +	pagefault_enable();
+> +	if (!current->mm)
+> +		return;
 > +
-> +	if (err)
->  		return NULL;
+>  	tail = (struct frame_tail __user *)regs->ARM_fp - 1;
 >  
->  	perf_callchain_store(entry, buftail.lr);
+>  	while ((entry->nr < PERF_MAX_STACK_DEPTH) &&
 > -- 
 > 1.8.1.2
 > 
