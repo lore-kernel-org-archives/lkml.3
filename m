@@ -1,169 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341AbaGCGtN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 02:49:13 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:48818 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951AbaGCGtL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 02:49:11 -0400
-Message-ID: <1404370142.23797.24.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH net-next v2 3/3 RFC] pktgen: Allow sending TCP packets
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>,
-        Mathias Krause <minipli@googlemail.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, Thomas Graf <tgraf@suug.ch>,
-        Joe Perches <joe@perches.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
-Date: Wed, 02 Jul 2014 23:49:02 -0700
-In-Reply-To: <1404330855-24546-4-git-send-email-zoltan.kiss@citrix.com>
-References: <1404330855-24546-1-git-send-email-zoltan.kiss@citrix.com>
-	 <1404330855-24546-4-git-send-email-zoltan.kiss@citrix.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755470AbaGCG7E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 02:59:04 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61896 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754252AbaGCG7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 02:59:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,593,1400050800"; 
+   d="scan'208";a="567684141"
+Date: Thu, 3 Jul 2014 14:59:55 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Bandan Das <bsd@redhat.com>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>, Hu Robert <robert.hu@intel.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1
+ since race
+Message-ID: <20140703065955.GA4236@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com>
+ <53B3CA6A.4050902@siemens.com>
+ <jpgy4wb9g5t.fsf@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <jpgy4wb9g5t.fsf@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-02 at 20:54 +0100, Zoltan Kiss wrote:
-> This is a prototype patch to enable sending TCP packets with pktgen. The
-> original motivation is to test TCP GSO with xen-netback/netfront, but I'm not
-> sure about how the checksum should be set up, and also someone should verify the
-> GSO settings I'm using.
-> 
+On Thu, Jul 03, 2014 at 01:15:26AM -0400, Bandan Das wrote:
+>Jan Kiszka <jan.kiszka@siemens.com> writes:
+>
+>> On 2014-07-02 08:54, Wanpeng Li wrote:
+>>> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=72381 
+>>> 
+>>> If we didn't inject a still-pending event to L1 since nested_run_pending,
+>>> KVM_REQ_EVENT should be requested after the vmexit in order to inject the 
+>>> event to L1. However, current log blindly request a KVM_REQ_EVENT even if 
+>>> there is no still-pending event to L1 which blocked by nested_run_pending. 
+>>> There is a race which lead to an interrupt will be injected to L2 which 
+>>> belong to L1 if L0 send an interrupt to L1 during this window. 
+>>> 
+>>>                VCPU0                               another thread 
+>>> 
+>>> L1 intr not blocked on L2 first entry
+>>> vmx_vcpu_run req event 
+>>> kvm check request req event 
+>>> check_nested_events don't have any intr 
+>>> not nested exit 
+>>>                                             intr occur (8254, lapic timer etc)
+>>> inject_pending_event now have intr 
+>>> inject interrupt 
+>>> 
+>>> This patch fix this race by introduced a l1_events_blocked field in nested_vmx 
+>>> which indicates there is still-pending event which blocked by nested_run_pending, 
+>>> and smart request a KVM_REQ_EVENT if there is a still-pending event which blocked 
+>>> by nested_run_pending.
+>>
+>> There are more, unrelated reasons why KVM_REQ_EVENT could be set. Why
+>> aren't those able to trigger this scenario?
+>>
+>> In any case, unconditionally setting KVM_REQ_EVENT seems strange and
+>> should be changed.
+>
+>
+>Ugh! I think I am hitting another one but this one's probably because 
+>we are not setting KVM_REQ_EVENT for something we should.
+>
+>Before this patch, I was able to hit this bug everytime with 
+>"modprobe kvm_intel ept=0 nested=1 enable_shadow_vmcs=0" and then booting 
+>L2. I can verify that I was indeed hitting the race in inject_pending_event.
+>
+>After this patch, I believe I am hitting another bug - this happens 
+>after I boot L2, as above, and then start a Linux kernel compilation
+>and then wait and watch :) It's a pain to debug because this happens
 
-It seems you only took care of IPv6, but did not mention this in the
-changelog.
+I have already try several times with "modprobe kvm_intel ept=0 nested=1
+enable_shadow_vmcs=0" and still can't reproduce the bug you mentioned.
+Could you give me more details such like L1 and L2 which one hang or panic? 
+In addition, if you can post the call trace is appreciated. 
 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Thomas Graf <tgraf@suug.ch>
-> Cc: Joe Perches <joe@perches.com>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: xen-devel@lists.xenproject.org
-> ---
-> diff --git a/net/core/pktgen.c b/net/core/pktgen.c
-> index d7206ea..13aad46 100644
-> --- a/net/core/pktgen.c
-> +++ b/net/core/pktgen.c
-> @@ -203,6 +203,7 @@
->  #define F_NODE          (1<<15)	/* Node memory alloc*/
->  #define F_UDPCSUM       (1<<16)	/* Include UDP checksum */
->  #define F_PATTERN       (1<<17)	/* Fill the payload with a pattern */
-> +#define F_TCP           (1<<18)	/* Send TCP packet instead of UDP */
->  
->  /* Thread control flag bits */
->  #define T_STOP        (1<<0)	/* Stop run */
-> @@ -1343,6 +1344,12 @@ static ssize_t pktgen_if_write(struct file *file,
->  		else if (strcmp(f, "!PATTERN") == 0)
->  			pkt_dev->flags &= ~F_PATTERN;
->  
-> +		else if (strcmp(f, "TCP") == 0)
-> +			pkt_dev->flags |= F_TCP;
-> +
-> +		else if (strcmp(f, "!TCP") == 0)
-> +			pkt_dev->flags &= ~F_TCP;
-> +
->  		else {
->  			sprintf(pg_result,
->  				"Flag -:%s:- unknown\nAvailable flags, (prepend ! to un-set flag):\n%s",
-> @@ -2952,6 +2959,7 @@ static struct sk_buff *fill_packet_ipv4(struct net_device *odev,
->  	struct sk_buff *skb = NULL;
->  	__u8 *eth;
->  	struct udphdr *udph;
-> +	struct tcphdr *tcph;
->  	int datalen, iplen;
->  	struct iphdr *iph;
->  	__be16 protocol = htons(ETH_P_IP);
-> @@ -3013,29 +3021,39 @@ static struct sk_buff *fill_packet_ipv4(struct net_device *odev,
->  	iph = (struct iphdr *) skb_put(skb, sizeof(struct iphdr));
->  
->  	skb_set_transport_header(skb, skb->len);
-> -	udph = (struct udphdr *) skb_put(skb, sizeof(struct udphdr));
-> +
-> +	if (pkt_dev->flags & F_TCP) {
-> +		datalen = pkt_dev->cur_pkt_size - ETH_HLEN - 20 -
-> +			  sizeof(struct tcphdr) - pkt_dev->pkt_overhead;
-> +		tcph = (struct tcphdr *)skb_put(skb, sizeof(struct tcphdr));
-> +		tcph->source = htons(pkt_dev->cur_udp_src);
-> +		tcph->dest = htons(pkt_dev->cur_udp_dst);
-> +		tcph->check = 0;
+Regards,
+Wanpeng Li 
 
-You do not clear other fields, thus leaking kernel memory.
-
-> +	} else {
-> +		datalen = pkt_dev->cur_pkt_size - ETH_HLEN - 20 -
-> +			  sizeof(struct udphdr) - pkt_dev->pkt_overhead;
-> +		udph = (struct udphdr *)skb_put(skb, sizeof(struct udphdr));
-> +		udph->source = htons(pkt_dev->cur_udp_src);
-> +		udph->dest = htons(pkt_dev->cur_udp_dst);
-> +		udph->len = htons(datalen + sizeof(struct udphdr));	/* DATA + udphdr */
-> +		udph->check = 0;
-> +	}
-> +
->  	skb_set_queue_mapping(skb, queue_map);
->  	skb->priority = pkt_dev->skb_priority;
->  
->  	memcpy(eth, pkt_dev->hh, 12);
->  	*(__be16 *) & eth[12] = protocol;
->  
-> -	/* Eth + IPh + UDPh + mpls */
-> -	datalen = pkt_dev->cur_pkt_size - 14 - 20 - 8 -
-> -		  pkt_dev->pkt_overhead;
->  	if (datalen < 0 || datalen < sizeof(struct pktgen_hdr))
->  		datalen = sizeof(struct pktgen_hdr);
->  
-> -	udph->source = htons(pkt_dev->cur_udp_src);
-> -	udph->dest = htons(pkt_dev->cur_udp_dst);
-> -	udph->len = htons(datalen + 8);	/* DATA + udphdr */
-> -	udph->check = 0;
->  
->  	iph->ihl = 5;
->  	iph->version = 4;
->  	iph->ttl = 32;
->  	iph->tos = pkt_dev->tos;
-> -	iph->protocol = IPPROTO_UDP;	/* UDP */
-> +	iph->protocol = pkt_dev->flags & F_TCP ? IPPROTO_TCP : IPPROTO_UDP;
->  	iph->saddr = pkt_dev->cur_saddr;
->  	iph->daddr = pkt_dev->cur_daddr;
->  	iph->id = htons(pkt_dev->ip_id);
-> @@ -3050,7 +3068,9 @@ static struct sk_buff *fill_packet_ipv4(struct net_device *odev,
->  
->  	if (!(pkt_dev->flags & F_UDPCSUM)) {
->  		skb->ip_summed = CHECKSUM_NONE;
-> -	} else if (odev->features & NETIF_F_V4_CSUM) {
-> +	} else if (pkt_dev->flags & F_TCP)
-> +		skb_checksum_setup(skb, true);
-> +	else if (odev->features & NETIF_F_V4_CSUM) {
->  		skb->ip_summed = CHECKSUM_PARTIAL;
->  		skb->csum = 0;
->  		udp4_hwcsum(skb, udph->source, udph->dest);
-> @@ -3067,6 +3087,18 @@ static struct sk_buff *fill_packet_ipv4(struct net_device *odev,
->  
->  	pktgen_finalize_skb(pkt_dev, skb, datalen);
->  
-> +	if (odev->mtu < skb->len) {
-> +		skb_shinfo(skb)->gso_size = odev->mtu - ETH_HLEN - 20 -
-> +					    pkt_dev->pkt_overhead;
-> +		if (pkt_dev->flags & F_TCP) {
-> +			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV4;
-> +			skb_shinfo(skb)->gso_size -= sizeof(struct tcphdr);
-> +		} else {
-> +			skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
-> +			skb_shinfo(skb)->gso_size -= sizeof(struct udphdr);
-> +		}
-> +	}
-
-Some NIC do not handle TSO, and driver could crash if they have sanity
-tests.
-
-pktgen directly calls driver ndo_start_xmit(), so we need to make sure
-we give valid packets to the driver (no software fallbacks at this
-stage)
-
-
+>almost once in three times; it never happens if I run with ept=1, however,
+>I think that's only because the test completes sooner. But I can confirm
+>that I don't see it if I always set REQ_EVENT if nested_run_pending is set instead of
+>the approach this patch takes.
+>(Any debug hints help appreciated!)
+>
+>So, I am not sure if this is the right fix. Rather, I think the safer thing
+>to do is to have the interrupt pending check for injection into L1 at
+>the "same site" as the call to kvm_queue_interrupt() just like we had before 
+>commit b6b8a1451fc40412c57d1. Is there any advantage to having all the 
+>nested events checks together ?
+>
+>PS - Actually, a much easier fix (or rather hack) is to return 1 in 
+>vmx_interrupt_allowed() (as I mentioned elsewhere) only if 
+>!is_guest_mode(vcpu) That way, the pending interrupt interrupt 
+>can be taken care of correctly during the next vmexit.
+>
+>Bandan
+>
+>> Jan
+>>
+[...]
