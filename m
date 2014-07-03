@@ -1,166 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758994AbaGCP77 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 11:59:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44824 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753490AbaGCP76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 11:59:58 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [RE-RESEND PATCH] vgaarb: We can own non-decoded resources
-To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Ville =?utf-8?b?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@redhat.com>
-Date: Thu, 03 Jul 2014 09:59:51 -0600
-Message-ID: <20140703155914.8524.94699.stgit@gimli.home>
-User-Agent: StGIT/0.14.3
+	id S1759241AbaGCQAy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:00:54 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45113 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759193AbaGCQAw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 12:00:52 -0400
+Date: Thu, 3 Jul 2014 17:00:27 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Beniamino Galvani <b.galvani@gmail.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Wenyou Yang <wenyou.yang@atmel.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Heiko Stuebner <heiko@sntech.de>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Message-ID: <20140703160027.GI410@sirena.org.uk>
+References: <1403451105-31929-1-git-send-email-b.galvani@gmail.com>
+ <1403451105-31929-4-git-send-email-b.galvani@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nbmc0BhO2pdgImje"
+Content-Disposition: inline
+In-Reply-To: <1403451105-31929-4-git-send-email-b.galvani@gmail.com>
+X-Cookie: Semper Fi, dude.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/5] regulator: act8865: prepare support for other
+ act88xx devices
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The VGA arbiter does not allow devices to "own" resources that it
-doesn't "decode".  However, it does allow devices to "lock" resources
-that it doesn't decode.  This gets us into trouble because locking
-the resource goes through the same bridge routing updates regardless
-of whether we decode the resource.  This means that when a non-decoded
-resource is released, the bridge is left with VGA routing enabled and
-locking a different device won't clear it.
 
-This happens in the following scenario:
+--nbmc0BhO2pdgImje
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-VGA device 01:00.0 (VGA1) is owned by the radeon driver, which
-registers a set_vga_decode function which releases legacy VGA decodes.
+On Sun, Jun 22, 2014 at 05:31:43PM +0200, Beniamino Galvani wrote:
+> This patch prepares support for other devices in the act88xx family of
+> PMUs manufactured by Active-Semi.
 
-VGA device 02:00.0 (VGA2) is any VGA device.
+This doesn't appear to apply against current code, can you please check
+and resend (along with the rest of the series)?
 
-VGA1 user locks VGA resources triggering first_use callback of
-set_vga_decoded, clearing "decode" and "owns" of legacy resources
-on VGA1.
+--nbmc0BhO2pdgImje
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-VGA1 user unlocks VGA resources.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-VGA2 user locks VGA resources, which skips VGA1 as conflicting as it
-does not "own" legacy resources, although VGA routing is still enabled
-for the VGA1 bridge.  VGA routing is enabled on VGA2 bridge.
+iQIcBAEBAgAGBQJTtX4YAAoJELSic+t+oim9B2MP+wQCP1jqzEbsVStm2W4I9hjL
+w3ZllUE9HV1D0OGNHt1UOwqZzkS2H7y2Kqf7MkI9VJ4yHPQDQ7yalUq2EHc2tj8j
+kVF11bSRiiO0IY8TeE8mx9KH1e8iuNmLm50ICloDUgRA+A6mAk+tOwbSG7MWoRq7
+RrHXeR8enXoMBoPNM0SCVM+pkidwp00d6rgWdLkxZe+zMbh/K2ZzA9fGztyfBJmy
++4tskcJ2HjPDd/PNtec7zvmrNyRoCxgwokveZKk77/Cdk4RGLFaZzVyUNdiCUIsM
+YcKgKoFQIx+yp12HnxgRV3/xfZ96BTvPFOKn6JEgNSL8MelkTIOfBr5L7taab7tW
+HIbDT6D8oRJguqnEOp6W+5nz5v0Mle93C1CvhZVJKvUdYIoYNb551URMtjOnNFRE
+Tbhh2x4OkwxcOsGuowMcGmq5+BsdHG42bcM2xWI8xU7P2//+0dQhmB2Eq2dFaWrg
+5u2YfD7364PgOHUroozMNhshr1Dll5HaROxW1AeNfllPpPtn3YvAQofEZj4g6lwy
+VGhZ7A7ZTUFdK1++XhhY0MxJsLyxqZDir9uqsH7u5LB9p2xISldDpSeF7HQSoGhg
+aH9aKG/anhiNlnyL768nevgfvJEadCkkvkH4jV/YV9wNm5kxCl2NRQTDBCvXNpWp
+GYBlPueXEaQj5Q324Oie
+=6BLX
+-----END PGP SIGNATURE-----
 
-VGA2 may or may not receive VGA transactions depending on the bus
-priority of VGA1 vs VGA2 bridge.
-
-To resolve this, we need to allow devices to "own" resources that they
-do not "decode".  This way we can track bus ownership of VGA.  When a
-device decodes VGA, it only means that we must update the command bits
-in cases where the conflicting device is on the same bus.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Dave Airlie <airlied@redhat.com>
----
-
-Can someone please claim ownership of vgaarb?
-
- drivers/gpu/vga/vgaarb.c |   40 ++++++++++++++++++++++------------------
- 1 file changed, 22 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
-index af02597..d2077f0 100644
---- a/drivers/gpu/vga/vgaarb.c
-+++ b/drivers/gpu/vga/vgaarb.c
-@@ -237,12 +237,10 @@ static struct vga_device *__vga_tryget(struct vga_device *vgadev,
- 		if (conflict->locks & lwants)
- 			return conflict;
- 
--		/* Ok, now check if he owns the resource we want. We don't need
--		 * to check "decodes" since it should be impossible to own
--		 * own legacy resources you don't decode unless I have a bug
--		 * in this code...
-+		/* Ok, now check if it owns the resource we want.  We can
-+		 * lock resources that are not decoded, therefore a device
-+		 * can own resources it doesn't decode.
- 		 */
--		WARN_ON(conflict->owns & ~conflict->decodes);
- 		match = lwants & conflict->owns;
- 		if (!match)
- 			continue;
-@@ -254,13 +252,19 @@ static struct vga_device *__vga_tryget(struct vga_device *vgadev,
- 		flags = 0;
- 		pci_bits = 0;
- 
-+		/* If we can't control legacy resources via the bridge, we
-+		 * also need to disable normal decoding.
-+		 */
- 		if (!conflict->bridge_has_one_vga) {
--			vga_irq_set_state(conflict, false);
--			flags |= PCI_VGA_STATE_CHANGE_DECODES;
--			if (match & (VGA_RSRC_LEGACY_MEM|VGA_RSRC_NORMAL_MEM))
-+			if ((match & conflict->decodes) & VGA_RSRC_LEGACY_MEM)
- 				pci_bits |= PCI_COMMAND_MEMORY;
--			if (match & (VGA_RSRC_LEGACY_IO|VGA_RSRC_NORMAL_IO))
-+			if ((match & conflict->decodes) & VGA_RSRC_LEGACY_IO)
- 				pci_bits |= PCI_COMMAND_IO;
-+
-+			if (pci_bits) {
-+				vga_irq_set_state(conflict, false);
-+				flags |= PCI_VGA_STATE_CHANGE_DECODES;
-+			}
- 		}
- 
- 		if (change_bridge)
-@@ -268,18 +272,19 @@ static struct vga_device *__vga_tryget(struct vga_device *vgadev,
- 
- 		pci_set_vga_state(conflict->pdev, false, pci_bits, flags);
- 		conflict->owns &= ~match;
--		/* If he also owned non-legacy, that is no longer the case */
--		if (match & VGA_RSRC_LEGACY_MEM)
-+
-+		/* If we disabled normal decoding, reflect it in owns */
-+		if (pci_bits & PCI_COMMAND_MEMORY)
- 			conflict->owns &= ~VGA_RSRC_NORMAL_MEM;
--		if (match & VGA_RSRC_LEGACY_IO)
-+		if (pci_bits & PCI_COMMAND_IO)
- 			conflict->owns &= ~VGA_RSRC_NORMAL_IO;
- 	}
- 
- enable_them:
- 	/* ok dude, we got it, everybody conflicting has been disabled, let's
--	 * enable us. Make sure we don't mark a bit in "owns" that we don't
--	 * also have in "decodes". We can lock resources we don't decode but
--	 * not own them.
-+	 * enable us.  Mark any bits in "owns" regardless of whether we
-+	 * decoded them.  We can lock resources we don't decode, therefore
-+	 * we must track them via "owns".
- 	 */
- 	flags = 0;
- 	pci_bits = 0;
-@@ -291,7 +296,7 @@ enable_them:
- 		if (wants & (VGA_RSRC_LEGACY_IO|VGA_RSRC_NORMAL_IO))
- 			pci_bits |= PCI_COMMAND_IO;
- 	}
--	if (!!(wants & VGA_RSRC_LEGACY_MASK))
-+	if (wants & VGA_RSRC_LEGACY_MASK)
- 		flags |= PCI_VGA_STATE_CHANGE_BRIDGE;
- 
- 	pci_set_vga_state(vgadev->pdev, true, pci_bits, flags);
-@@ -299,7 +304,7 @@ enable_them:
- 	if (!vgadev->bridge_has_one_vga) {
- 		vga_irq_set_state(vgadev, true);
- 	}
--	vgadev->owns |= (wants & vgadev->decodes);
-+	vgadev->owns |= wants;
- lock_them:
- 	vgadev->locks |= (rsrc & VGA_RSRC_LEGACY_MASK);
- 	if (rsrc & VGA_RSRC_LEGACY_IO)
-@@ -649,7 +654,6 @@ static inline void vga_update_device_decodes(struct vga_device *vgadev,
- 	old_decodes = vgadev->decodes;
- 	decodes_removed = ~new_decodes & old_decodes;
- 	decodes_unlocked = vgadev->locks & decodes_removed;
--	vgadev->owns &= ~decodes_removed;
- 	vgadev->decodes = new_decodes;
- 
- 	pr_info("vgaarb: device changed decodes: PCI:%s,olddecodes=%s,decodes=%s:owns=%s\n",
-
+--nbmc0BhO2pdgImje--
