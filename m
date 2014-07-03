@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759746AbaGCV5p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 17:57:45 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:44598 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192AbaGCV5n (ORCPT
+	id S1759803AbaGCV6d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 17:58:33 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:53530 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756845AbaGCV6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 17:57:43 -0400
-Date: Thu, 3 Jul 2014 14:57:41 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Nicholas Krause <xerofoify@gmail.com>
-cc: monstr@monstr.eu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] microblaze: fixes includes in sigcontext.h
-In-Reply-To: <1404423935-5287-1-git-send-email-xerofoify@gmail.com>
-Message-ID: <alpine.DEB.2.02.1407031456430.10658@chino.kir.corp.google.com>
-References: <1404423935-5287-1-git-send-email-xerofoify@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 3 Jul 2014 17:58:32 -0400
+Date: Thu, 3 Jul 2014 22:58:26 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rob Clark <robdclark@gmail.com>
+Cc: Benjamin Gaignard <benjamin.gaignard@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>
+Subject: Re: [PATCH v5 00/11] Add DRM for stih4xx platforms
+Message-ID: <20140703215826.GA21739@n2100.arm.linux.org.uk>
+References: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org> <CAF6AEGsLbmos9nz-AYv2v0g33BYdAgKYTe8_ihDWEF3GK_=gjQ@mail.gmail.com> <20140703215200.GG32514@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140703215200.GG32514@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jul 2014, Nicholas Krause wrote:
+On Thu, Jul 03, 2014 at 10:52:00PM +0100, Russell King - ARM Linux wrote:
+> On Thu, Jul 03, 2014 at 05:31:21PM -0400, Rob Clark wrote:
+> > >From a brief look, it looks like my comments have been addressed, so I
+> > think this is starting to shape up..
+> > 
+> > Laurent/Thierry/Russell, I don't suppose any of you are likely to have
+> > time before 3.17 merge window to give sti one last once-over to see
+> > what I missed ;-)
+> 
+> As this appears to be using the component helpers, it would be good for
+> the author to be pre-warned about the change to the API.  I'm going to
+> be doing this as a two step thing.
 
-> diff --git a/arch/microblaze/include/uapi/asm/sigcontext.h b/arch/microblaze/include/uapi/asm/sigcontext.h
-> index 55873c8..1180d9b 100644
-> --- a/arch/microblaze/include/uapi/asm/sigcontext.h
-> +++ b/arch/microblaze/include/uapi/asm/sigcontext.h
-> @@ -9,8 +9,7 @@
->  #ifndef _ASM_MICROBLAZE_SIGCONTEXT_H
->  #define _ASM_MICROBLAZE_SIGCONTEXT_H
->  
-> -/* FIXME should be linux/ptrace.h */
-> -#include <asm/ptrace.h>
-> +#include <linux/ptrace.h>
->  
->  struct sigcontext {
->  	struct pt_regs regs;
+More on this... just found it in the series.
 
-Umm, does this even compile?  How does sigcontext.h get the definition of 
-struct pt_regs?  Seems like it would be better to just do a forward 
-declaration.
+It looks fine, and I expect that the update would be trivial:
+
+- the body of sti_drm_add_components() moves into sti_drm_master_probe()
+  and sti_drm_add_components() is removed.
+- component_master_add_child() is updated to call component_match_add()
+- component_master_add() is updated to call component_master_add_with_match()
+  instead.
+
+So I don't think there's any problem here.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
