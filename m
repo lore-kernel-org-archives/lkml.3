@@ -1,88 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134AbaGCF3a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 01:29:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58953 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751633AbaGCF33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 01:29:29 -0400
-From: Bandan Das <bsd@redhat.com>
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-        Gleb Natapov <gleb@kernel.org>, Hu Robert <robert.hu@intel.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since race
-References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com>
-	<jpg7g3v7mk0.fsf@redhat.com> <20140703051142.GA2687@kernel>
-Date: Thu, 03 Jul 2014 01:29:15 -0400
-In-Reply-To: <20140703051142.GA2687@kernel> (Wanpeng Li's message of "Thu, 3
-	Jul 2014 13:11:42 +0800")
-Message-ID: <jpg61jf9fis.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751798AbaGCFfd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 01:35:33 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:55182 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884AbaGCFfc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 01:35:32 -0400
+Message-ID: <53B4EB9C.7050508@hitachi.com>
+Date: Thu, 03 Jul 2014 14:35:24 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: probe_event_disable()->synchronize_sched() (Was: tracing/uprobes:
+ Revert "Support mix of ftrace and perf")
+References: <20140627170116.GA18298@redhat.com> <20140627170136.GA18319@redhat.com> <87k37z54lu.fsf@sejong.aot.lge.com> <20140630184828.GA24594@redhat.com> <20140701193147.GA32492@redhat.com>
+In-Reply-To: <20140701193147.GA32492@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wanpeng Li <wanpeng.li@linux.intel.com> writes:
+(2014/07/02 4:31), Oleg Nesterov wrote:
+> Namhyung, Masami,
+> 
+> Please look at the question below. Perhaps we discussed this before,
+> but I can recall nothing.
+> 
+> 
+> On 06/30, Oleg Nesterov wrote:
+>>
+>> Actually, I'll probably try to make the patch tomorrow. It looks simple
+>> enough, the main complication is CONFIG_PERF. And, to keep this patch
+>> simple, I won't try to optimize (say) the TP_FLAG_TRACE-comes-first
+>> case which could avoid uprobe_apply().
+> 
+> I regret very much I said this ;) OK, I'll probably try anyway, but...
+> 
+>> Yes, I still think it would be better to change the register/unregister
+>> API first, but I do not know when I do this ;)
+> 
+> OK, we can do this later.
+> 
+> But it turns out that trace_uprobe.c needs other cleanups, and I simply
+> can't uglify this code more without these cleanups... Starting from
+> set/clear TP_FLAG_*. I'll recheck, but it seems that there is no reason
+> to carefully set (say) TP_FLAG_TRACE before uprobe_register() and then
+> clear it if _register() fails. And uprobe_dispatcher() is very ugly if
+> is_ret_probe(). And more. So it needs a series.
+> 
+> -------------------------------------------------------------------------
+> And. I am puzzled by probe_event_disable()->synchronize_sched(). Why
+> do we need it? I mean, why we can't use call_rcu() ? The comment says
+> "synchronize with u{,ret}probe_trace_func" but it doesn't explain _why_
+> do we need to sync.
+> 
+> I thought that perhaps the caller needs to synch with the callbacks.
+> Say, __trace_remove_event_call() can destroy the data which can be used
+> by the callbacks. But no, this is only possible if we are going to call
+> uprobe_unregister(), and this adds the necessary serialization.
 
-> Hi Bandan,
-> On Wed, Jul 02, 2014 at 12:27:59PM -0400, Bandan Das wrote:
->>Wanpeng Li <wanpeng.li@linux.intel.com> writes:
->>
->>> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=72381 
->>I can also reproduce this easily with Linux as L1 by "slowing it down"
->>eg. running with ept = 0
->>
->>I suggest changing the subject to -
->>KVM: nVMX: Fix race that incorrectly injects L1's irq to L2
->>
->
-> Ok, I will fold this to next version. ;-)
->
->>> If we didn't inject a still-pending event to L1 since nested_run_pending,
->>> KVM_REQ_EVENT should be requested after the vmexit in order to inject the 
->>> event to L1. However, current log blindly request a KVM_REQ_EVENT even if 
->>
->>What's current "log" ? Do you mean current "code" ?
->>
->
-> Yeah, it's a typo. I mean "logic".
->
-> [...]
->>Also, I am wondering isn't it enough to just do this to avoid this race ?
->>
->> static int vmx_interrupt_allowed(struct kvm_vcpu *vcpu)
->> {
->>-       return (!to_vmx(vcpu)->nested.nested_run_pending &&
->>+       return (!is_guest_mode(vcpu) &&
->>+               !to_vmx(vcpu)->nested.nested_run_pending &&
->>                vmcs_readl(GUEST_RFLAGS) & X86_EFLAGS_IF) &&
->>                !(vmcs_read32(GUEST_INTERRUPTIBILITY_INFO) &
->>
->
-> I don't think you fix the root cause of the race, and there are two cases which 
-> I concern about your proposal:
->
-> - If there is a special L1 which don't ask to exit on external intrs, you will 
->   lose the intrs which L0 inject to L2.  
+Hmm, similar code in the trace_kprobe.c said that trace_remove_event_call()
+will remove something, so it should be synchronized.
 
-Oh didn't think about that case :), thanks for the pointing this out.
-It's easy to check this with Xen as L1, I suppose.
+Here, I tracked down the path from trace_remove_event_call().
 
-> - If inject_pending_event fail to inject an intr since the change that you made 
->   in vmx_interrupt_allowed, L0 will request an intr window for L2, however, the 
->   intr is belong to L1.
-Oh, I thought inject_pending_event has kvm_queue_interrupt only if vmx_interrupt_allowed()
-returns true so, interrupt will be injected correctly on the next vmexit.
+1) trace_remove_event_call() locks mutexes to protect event status from
+others, and calls probe_remove_event_call()
 
-Anyway, I am hitting another bug with your patch! Please see my other mail to the list.
+2) probe_remove_event_call() checks call's refcount and state of files which
+related to the call. If there is any enabled file or reference, it returns
+EBUSY.
+If there is no active user of the call, it calls __trace_remove_event_call()
 
-Thanks!
+3) __trace_remove_event_call() calls event_remove(call) and after that it
+releases all objects related to the call [*1].
 
-> Regards,
-> Wanpeng Li 
+4) Finally, event_remove() tries to disable each file on the call and soon
+after that calls destroy_preds() [*2]. Here, to disable the file, it calls
+ftrace_event_enable_disable() and it finally calls probe_event_disable(),
+only if the event is *enabled*.
+
+And as above described, probe_remove_event_call() already checked that
+no user enables this event. This means that nobody calls probe_event_disable()
+on the path from trace_remove_event_call().
+
+
+Hmm, however, for [*1] and [*2], both are free event_file related objects
+right after disabling the event. This means those expects that calling
+ftrace_event_enable_disable() ensures no event handlers running.
+synchronize_sched makes it true, but as long as calling
+__trace_remove_event_call() from probe_remove_event_call(),
+probe_event_disable() is not called at all because the event has to be
+disabled when probe_remove_event_call() is called.
+
+One possible scenario is here; someone disables an event and tries to remove
+it (both will be done by different syscalls). If we don't synchronize
+the first disabling, the event flag set disabled, but the event itself
+is not disabled. Thus event handler is still possible to be running
+somewhere when it is removed.
+
+The other path of __trace_remove_event_call() is trace_module_remove_events()
+which is not related to kprobes/uprobes (Even so, there is no obvious check of
+that.)
+
+> So why? Looks like, the only reason is instance_rmdir() which can do
+> TRACE_REG_UNREGISTER and after that destroy this ftrace_event_file?
+> But event_trace_del_tracer() also has synchronize_sched() right after
+> __ftrace_set_clr_event_nolock() ?
+
+I think it doesn't need to call synchronize_sched() because
+event_trace_del_tracer() ensures that all events are disabled
+(handlers are not running anymore)
+
+Thank you,
+
 >
->>Thanks,
->>Bandan
+> So please tell me why do we need this synchronize_sched ;) And imo
+> this should be documented.
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
