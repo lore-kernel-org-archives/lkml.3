@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964802AbaGCHeZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 03:34:25 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:52625 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932239AbaGCHeW (ORCPT
+	id S932362AbaGCHeq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 03:34:46 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:36342 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932091AbaGCHeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 03:34:22 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/K8uocFnkAJvF0ehqnr4Ls
-Date: Thu, 3 Jul 2014 00:34:11 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Robert Nelson <robertcnelson@gmail.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Felipe Balbi <balbi@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH] tty: serial: Add 8250-core based omap driver
-Message-ID: <20140703073411.GX28884@atomide.com>
-References: <1404316809-20637-1-git-send-email-bigeasy@linutronix.de>
- <20140702160932.GF5541@saruman.home>
- <20140702190944.GA567@drone.musicnaut.iki.fi>
- <CAOCHtYgxMeA+Arfe40XeFDEKuCJ8qo1RqNR0hYBGr_Wp6sRfdA@mail.gmail.com>
+	Thu, 3 Jul 2014 03:34:44 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <53B50791.50208@lge.com>
+Date: Thu, 03 Jul 2014 16:34:41 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOCHtYgxMeA+Arfe40XeFDEKuCJ8qo1RqNR0hYBGr_Wp6sRfdA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Laura Abbott <lauraa@codeaurora.org>
+CC: Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Mel Gorman <mgorman@suse.de>,
+        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC] CMA page migration failure due to buffers on bh_lru
+References: <53A8D092.4040801@lge.com>	<xa1td2dvmznq.fsf@mina86.com>	<53ACAB82.6020201@lge.com>	<53B06DD0.8030106@codeaurora.org>	<53B209BA.8010106@lge.com>	<53B216C5.8020503@codeaurora.org> <20140701224621.bb6a5157.akpm@linux-foundation.org>
+In-Reply-To: <20140701224621.bb6a5157.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Robert Nelson <robertcnelson@gmail.com> [140702 12:27]:
-> On Wed, Jul 2, 2014 at 2:09 PM, Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
-> > Hi,
-> >
-> > On Wed, Jul 02, 2014 at 11:09:32AM -0500, Felipe Balbi wrote:
-> >> > It has been only tested as console UART.
-> >> > The tty name is ttyS based instead of ttyO. How big is the pain here,
-> >> > what could be the easiest way to provide compatibility?
-> >>
-> >> have been considering that myself for months. You could pass an optional
-> >> argument to serial8250_register_8250_port() but that only solves part of
-> >> the problem :-(
 
-Some kind of compability layer sure would be nice.
+Hi, Laura,
 
-> > When ttyS -> ttyO change was done on OMAP, compatibility was not an issue.
-> > Why should we care about it now?
-> 
-> It would be a good opportunity to force everyone to update their bootloader. ;)
-> 
-> Besides the BeagleBoard forum is quiet now, no one is complaining
-> about that old (ttyS -> ttyO) transition anymore..
+I has replaced the evict_bh_lrus(bh) with invalidate_bh_lrus() and it is working fine.
+How about submit new patch with invalidate_bh_lrus()?
+I would appreciate it.
 
-How about a Kconfig option to provide ttyO by default? The not even
-do that if kernel has cmdline option nottyomap.
- 
-> I'll just end up carrying a patch like, to support bb.org users over
-> the transition..
-> 
-> https://github.com/RobertCNelson/stable-kernel/blob/v3.7.x/patches/omap_beagle/0004-zeroMAP-Open-your-eyes.patch
 
-Heh. Just to summarize the reason ttyO needs to be a separate name
-and device entry from ttyS is because we also have external 8250
-devices on GPMC and hotplug busses.
 
-Regards,
-
-Tony
+2014-07-02 오후 2:46, Andrew Morton 쓴 글:
+> On Mon, 30 Jun 2014 19:02:45 -0700 Laura Abbott <lauraa@codeaurora.org> wrote:
+>
+>> On 6/30/2014 6:07 PM, Gioh Kim wrote:
+>>> Hi,Laura.
+>>>
+>>> I have a question.
+>>>
+>>> Does the __evict_bh_lru() not need bh_lru_lock()?
+>>> The get_cpu_var() has already preenpt_disable() and can prevent other thread.
+>>> But get_cpu_var cannot prevent IRQ context such like page-fault.
+>>> I think if a page-fault occured and a file is read in IRQ context it can change cpu-lru.
+>>>
+>>> Is my concern correct?
+>>>
+>>>
+>>
+>> __evict_bh_lru is called via on_each_cpu_cond which I believe will disable irqs.
+>> I based the code on the existing invalidate_bh_lru which did not take the bh_lru_lock
+>> either. It's possible I missed something though.
+>
+> I fear that running on_each_cpu() within try_to_free_buffers() is going
+> to be horridly expensive in some cases.
+>
+> Maybe CMA can use invalidate_bh_lrus() to shoot down everything before
+> trying the allocation attempt.  That should increase the success rate
+> greatly and doesn't burden page reclaim.  The bh LRU isn't terribly
+> important from a performance point of view, so emptying it occasionally
+> won't hurt.
+>
+>
