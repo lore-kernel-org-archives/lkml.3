@@ -1,861 +1,489 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964876AbaGCQYp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:24:45 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35460 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756403AbaGCQYn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 12:24:43 -0400
-From: Dan Murphy <dmurphy@ti.com>
-To: <linux-sound@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        <broonie@kernel.org>, <devicetree@vger.kernel.org>,
-        Dan Murphy <dmurphy@ti.com>
-Subject: [PATCH v5] ASoC: tas2552: Support TI TAS2552 Amplifier
-Date: Thu, 3 Jul 2014 11:24:35 -0500
-Message-ID: <1404404675-5948-1-git-send-email-dmurphy@ti.com>
+	id S1759265AbaGCQ0O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:26:14 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:44787 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757962AbaGCQ0J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 12:26:09 -0400
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        peterz@infradead.org, mingo@kernel.org
+Cc: rjw@rjwysocki.net, vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
+        preeti@linux.vnet.ibm.com, Dietmar.Eggemann@arm.com, pjt@google.com
+Subject: [RFCv2 PATCH 01/23] sched: Documentation for scheduler energy cost model
+Date: Thu,  3 Jul 2014 17:25:48 +0100
+Message-Id: <1404404770-323-2-git-send-email-morten.rasmussen@arm.com>
 X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
+References: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
+X-OriginalArrivalTime: 03 Jul 2014 16:26:06.0584 (UTC) FILETIME=[7D933F80:01CF96DB]
+X-MC-Unique: 114070317260613001
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s63GQJu8010616
 
-Support the TI TAS2552 Class D amplifier.
+This documentation patch provides an overview of the experimental
+scheduler energy costing model, associated data structures, and a
+reference recipe on how platforms can be characterized to derive energy
+models.
 
-The TAS2552 is a high efficiency Class-D audio
-power amplifier with advanced battery current
-management and an integrated Class-G boost
-The device constantly measures the
-current and voltage across the load and provides a
-digital stream of this information.
-
-Signed-off-by: Dan Murphy <dmurphy@ti.com>
+Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
 ---
+ Documentation/scheduler/sched-energy.txt |  439 ++++++++++++++++++++++++++++++
+ 1 file changed, 439 insertions(+)
+ create mode 100644 Documentation/scheduler/sched-energy.txt
 
-v5 - Consolidated dai_fmt call back to write serial control register
-once - https://patchwork.kernel.org/patch/4474531/
-
- .../devicetree/bindings/sound/tas2552.txt          |   25 +
- include/sound/tas2552-plat.h                       |   25 +
- sound/soc/codecs/Kconfig                           |    5 +
- sound/soc/codecs/Makefile                          |    2 +
- sound/soc/codecs/tas2552.c                         |  576 ++++++++++++++++++++
- sound/soc/codecs/tas2552.h                         |  120 ++++
- 6 files changed, 753 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/sound/tas2552.txt
- create mode 100644 include/sound/tas2552-plat.h
- create mode 100644 sound/soc/codecs/tas2552.c
- create mode 100644 sound/soc/codecs/tas2552.h
-
-diff --git a/Documentation/devicetree/bindings/sound/tas2552.txt b/Documentation/devicetree/bindings/sound/tas2552.txt
+diff --git a/Documentation/scheduler/sched-energy.txt b/Documentation/scheduler/sched-energy.txt
 new file mode 100644
-index 0000000..00223dc
+index 0000000..7c0b4dc
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/sound/tas2552.txt
-@@ -0,0 +1,25 @@
-+Texas Instruments - tas2552 Codec module
++++ b/Documentation/scheduler/sched-energy.txt
+@@ -0,0 +1,439 @@
++Energy cost model for energy-aware scheduling (EXPERIMENTAL)
 +
-+The tas2552 serial control bus communicates through I2C protocols
++Introduction
++=============
 +
-+Required properties:
++The basic energy model uses platform energy data stored in sched_group_energy
++data structures attached to the sched_groups in the sched_domain hierarchy. The
++energy cost model offers three functions that can be used to guide scheduling
++decisions:
 +
-+- compatible - One of:
-+    "ti,tas2552" - TAS2552
++1.	static int energy_diff_util(int cpu, int util, int wakeups)
++2.	static int energy_diff_task(int cpu, struct task_struct *p)
++3.	static int energy_diff_cpu(int dst_cpu, int src_cpu)
 +
-+- reg -  I2C slave address
++All three of them return the energy cost delta caused by adding/removing
++utilization or a task to/from specific cpus. To be more precise:
 +
-+Optional properties:
++util: The signed utilization delta. That is, the amount of cpu utilization we
++want to add or remove from the cpu, basically how much more/less is the cpu
++expected to be busy. The current metric used to represent utilization is the
++actual per-entity runnable time averaged over time using a geometric series.
++Very similar to the existing per-entity load-tracking, but _not_ scaled by task
++priority. energy_diff_util() calculates the energy implications of
++adding/removing a specific amount of utilization (which could be the combined
++utilization of a number of tasks), while energy_diff_task() calculates the
++energy implications of adding a specific task to a specific cpu.
 +
-+- enable-gpio - gpio pin to enable/disable the device
++wakeups: Represents the wakeups (task enqueues, not idle exits) caused by the
++utilization we are about to add/remove to/from the cpu. As with utilization,
++the wakeup rate is averaged over time using a geometric series. The energy
++model estimates (in a fairly naive way) the proportion of the wakeups that
++causes cpu wakeups (idle exits). This metric is particularly important for
++short but frequently running tasks as the wakeup cost (energy) for these can be
++substantial if placed on an idle cpu.
 +
-+Example:
++Background and Terminology
++===========================
 +
-+tas2552: tas2552@41 {
-+	compatible = "ti,tas2552";
-+	reg = <0x41>;
-+	enable-gpio = <&gpio4 2 GPIO_ACTIVE_HIGH>;
-+};
++To make it clear from the start:
 +
-+For more product information please see the link below:
-+http://www.ti.com/product/TAS2552
-diff --git a/include/sound/tas2552-plat.h b/include/sound/tas2552-plat.h
-new file mode 100644
-index 0000000..65e7627
---- /dev/null
-+++ b/include/sound/tas2552-plat.h
-@@ -0,0 +1,25 @@
-+/*
-+ * TAS2552 driver platform header
-+ *
-+ * Copyright (C) 2014 Texas Instruments Inc.
-+ *
-+ * Author: Dan Murphy <dmurphy@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ */
++energy = [joule] (resource like a battery on powered devices)
++power = energy/time = [joule/second] = [watt]
 +
-+#ifndef TAS2552_PLAT_H
-+#define TAS2552_PLAT_H
++The goal of energy-aware scheduling is to minimize energy, while still getting
++the job done. That is, we want to maximize:
 +
-+struct tas2552_platform_data {
-+	int enable_gpio;
-+};
++	performance [inst/s]
++	--------------------
++	    power [W]
 +
-+#endif
-diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
-index 0b9571c..cc09261 100644
---- a/sound/soc/codecs/Kconfig
-+++ b/sound/soc/codecs/Kconfig
-@@ -99,6 +99,7 @@ config SND_SOC_ALL_CODECS
- 	select SND_SOC_TLV320AIC32X4 if I2C
- 	select SND_SOC_TLV320AIC3X if I2C
- 	select SND_SOC_TPA6130A2 if I2C
-+	select SND_SOC_TAS2552 if I2C
- 	select SND_SOC_TLV320DAC33 if I2C
- 	select SND_SOC_TWL4030 if TWL4030_CORE
- 	select SND_SOC_TWL6040 if TWL6040_CORE
-@@ -754,4 +755,8 @@ config SND_SOC_TPA6130A2
- 	tristate "Texas Instruments TPA6130A2 headphone amplifier"
- 	depends on I2C
- 
-+config SND_SOC_TAS2552
-+	tristate "Texas Instruments TAS2552 Mono Audio amplifier"
-+	depends on I2C
++which is equivalent to minimizing:
 +
- endmenu
-diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
-index 1bd6e1c..33bc7228 100644
---- a/sound/soc/codecs/Makefile
-+++ b/sound/soc/codecs/Makefile
-@@ -162,6 +162,7 @@ snd-soc-wm-hubs-objs := wm_hubs.o
- # Amp
- snd-soc-max9877-objs := max9877.o
- snd-soc-tpa6130a2-objs := tpa6130a2.o
-+snd-soc-tas2552-objs := tas2552.o
- 
- obj-$(CONFIG_SND_SOC_88PM860X)	+= snd-soc-88pm860x.o
- obj-$(CONFIG_SND_SOC_AB8500_CODEC)	+= snd-soc-ab8500-codec.o
-@@ -325,3 +326,4 @@ obj-$(CONFIG_SND_SOC_WM_HUBS)	+= snd-soc-wm-hubs.o
- # Amp
- obj-$(CONFIG_SND_SOC_MAX9877)	+= snd-soc-max9877.o
- obj-$(CONFIG_SND_SOC_TPA6130A2)	+= snd-soc-tpa6130a2.o
-+obj-$(CONFIG_SND_SOC_TAS2552)	+= snd-soc-tas2552.o
-diff --git a/sound/soc/codecs/tas2552.c b/sound/soc/codecs/tas2552.c
-new file mode 100644
-index 0000000..fe305d6
---- /dev/null
-+++ b/sound/soc/codecs/tas2552.c
-@@ -0,0 +1,576 @@
-+/*
-+ * tas2552.c - ALSA SoC Texas Instruments TAS2552 Mono Audio Amplifier
-+ *
-+ * Copyright (C) 2014 Texas Instruments Incorporated -  http://www.ti.com
-+ *
-+ * Author: Dan Murphy <dmurphy@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ */
++	energy [J]
++	-----------
++	instruction
 +
-+#include <linux/module.h>
-+#include <linux/errno.h>
-+#include <linux/device.h>
-+#include <linux/i2c.h>
-+#include <linux/gpio.h>
-+#include <linux/of_gpio.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/regmap.h>
-+#include <linux/slab.h>
++while still getting 'good' performance. It is essentially an alternative
++optimization objective to the current performance-only objective for the
++scheduler. This alternative considers two objectives: energy-efficiency and
++performance. Hence, there needs to be a user controllable knob to switch the
++objective. Since it is early days, this is currently a sched_feature
++(ENERGY_AWARE).
 +
-+#include <linux/gpio/consumer.h>
-+#include <linux/regulator/consumer.h>
++The idea behind introducing an energy cost model is to allow the scheduler to
++evaluate the implications of its decisions rather than applying energy-saving
++techniques blindly that may only have positive effects on some platforms. At
++the same time, the energy cost model must be as simple as possible to minimize
++the scheduler latency impact.
 +
-+#include <sound/pcm.h>
-+#include <sound/pcm_params.h>
-+#include <sound/soc.h>
-+#include <sound/soc-dapm.h>
-+#include <sound/tlv.h>
-+#include <sound/tas2552-plat.h>
++Platform topology
++------------------
 +
-+#include "tas2552.h"
++The system topology (cpus, caches, and NUMA information, not peripherals) is
++represented in the scheduler by the sched_domain hierarchy which has
++sched_groups attached at each level that covers one or more cpus (see
++sched-domains.txt for more details). To add energy awareness to the scheduler
++we need to consider power and frequency domains.
 +
-+static struct reg_default tas2552_reg_defs[] = {
-+	{TAS2552_CFG_1, 0x22},
-+	{TAS2552_CFG_3, 0x80},
-+	{TAS2552_DOUT, 0x00},
-+	{TAS2552_OUTPUT_DATA, 0xc0},
-+	{TAS2552_PDM_CFG, 0x01},
-+	{TAS2552_PGA_GAIN, 0x00},
-+	{TAS2552_BOOST_PT_CTRL, 0x0f},
-+	{TAS2552_LIMIT_LVL_CTRL, 0x0c},
-+	{TAS2552_LIMIT_RATE_HYS, 0x08},
-+	{TAS2552_CFG_2, 0xef},
-+	{TAS2552_SER_CTRL_1, 0x00},
-+	{TAS2552_SER_CTRL_2, 0x00},
-+	{TAS2552_PLL_CTRL_1, 0x10},
-+	{TAS2552_PLL_CTRL_2, 0x00},
-+	{TAS2552_PLL_CTRL_3, 0x00},
-+	{TAS2552_BTIP, 0x8f},
-+	{TAS2552_BTS_CTRL, 0x80},
-+	{TAS2552_LIMIT_RELEASE, 0x04},
-+	{TAS2552_LIMIT_INT_COUNT, 0x00},
-+	{TAS2552_EDGE_RATE_CTRL, 0x40},
-+	{TAS2552_VBAT_DATA, 0x00},
-+};
++Power domain:
 +
-+#define TAS2552_NUM_SUPPLIES	3
-+static const char *tas2552_supply_names[TAS2552_NUM_SUPPLIES] = {
-+	"vbat",		/* vbat voltage */
-+	"iovdd",	/* I/O Voltage */
-+	"avdd",		/* Analog DAC Voltage */
-+};
++A power domain is a part of the system that can be powered on/off
++independently. Power domains are typically organized in a hierarchy where you
++may be able to power down just a cpu or a group of cpus along with any
++associated resources (e.g.  shared caches). Powering up a cpu means that all
++power domains it is a part of in the hierarchy must be powered up. Hence, it is
++more expensive to power up the first cpu that belongs to a higher level power
++domain than powering up additional cpus in the same high level domain. Two
++level power domain hierarchy example:
 +
-+struct tas2552_data {
-+	struct mutex mutex;
-+	struct snd_soc_codec *codec;
-+	struct regmap *regmap;
-+	struct i2c_client *tas2552_client;
-+	struct regulator_bulk_data supplies[TAS2552_NUM_SUPPLIES];
-+	unsigned char regs[TAS2552_VBAT_DATA];
-+	struct gpio_desc *enable_gpio;
-+	u8 power_state:1;
-+};
++		Power source
++		         +-------------------------------+----...
++per group PD		 G                               G
++		         |           +----------+        |
++		    +--------+-------| Shared   |  (other groups)
++per-cpu PD	    G        G       | resource |
++		    |        |       +----------+
++		+-------+ +-------+
++		| CPU 0 | | CPU 1 |
++		+-------+ +-------+
 +
-+static int tas2552_power(struct tas2552_data *data, u8 power)
-+{
-+	int	ret = 0;
++Frequency domain:
 +
-+	mutex_lock(&data->mutex);
++Frequency domains (P-states) typically cover the same group of cpus as one of
++the power domain levels. That is, there might be several smaller power domains
++sharing the same frequency (P-state) or there might be a power domain spanning
++multiple frequency domains.
 +
-+	if (power) {
-+		if (data->enable_gpio)
-+			gpiod_set_value(data->enable_gpio, 1);
++From a scheduling point of view there is no need to know the actual frequencies
++[Hz]. All the scheduler cares about is the compute capacity available at the
++current state (P-state) the cpu is in and any other available states. For that
++reason, and to also factor in any cpu micro-architecture differences, compute
++capacity scaling states are called 'capacity states' in this document. For SMP
++systems this is equivalent to P-states. For mixed micro-architecture systems
++(like ARM big.LITTLE) it is P-states scaled according to the micro-architecture
++performance relative to the other cpus in the system.
 +
-+		data->power_state = 1;
-+	} else {
-+		if (data->enable_gpio)
-+			gpiod_set_value(data->enable_gpio, 0);
++Energy modelling:
++------------------
 +
-+		data->power_state = 0;
++Due to the hierarchical nature of the power domains, the most obvious way to
++model energy costs is therefore to associate power and energy costs with
++domains (groups of cpus). Energy costs of shared resources are associated with
++the group of cpus that share the resources, only the cost of powering the
++cpu itself and any private resources (e.g. private L1 caches) is associated
++with the per-cpu groups (lowest level).
++
++For example, for an SMP system with per-cpu power domains and a cluster level
++(group of cpus) power domain we get the overall energy costs to be:
++
++	energy = energy_cluster + n * energy_cpu
++
++where 'n' is the number of cpus powered up and energy_cluster is the cost paid
++as soon as any cpu in the cluster is powered up.
++
++The power and frequency domains can naturally be mapped onto the existing
++sched_domain hierarchy and sched_groups by adding the necessary data to the
++existing data structures.
++
++The energy model considers energy consumption from three contributors (shown in
++the illustration below):
++
++1. Busy energy: Energy consumed while a cpu and the higher level groups that it
++belongs to are busy running tasks. Busy energy is associated with the state of
++the cpu, not an event. The time the cpu spends in this state varies. Thus, the
++most obvious platform parameter for this contribution is busy power
++(energy/time).
++
++2. Idle energy: Energy consumed while a cpu and higher level groups that it
++belongs to are idle (in a C-state). Like busy energy, idle energy is associated
++with the state of the cpu. Thus, the platform parameter for this contribution
++is idle power (energy/time).
++
++3. Wakeup energy: Energy consumed for a transition from an idle-state (C-state)
++to a busy state (P-state) and back again, that is, a full run->sleep->run cycle
++(they always come in pairs, transitions between idle-states are not modelled).
++This energy is associated with an event with a fixed duration (at least
++roughly). The most obvious platform parameter for this contribution is
++therefore wakeup energy. Wakeup energy is depicted by the areas under the power
++graph for the transition phases in the illustration.
++
++
++	Power
++	^
++	|            busy->idle             idle->busy
++	|            transition             transition
++	|
++	|                _                      __
++	|               / \                    /  \__________________
++	|______________/   \                  /
++	|                   \                /
++	|  Busy              \    Idle      /        Busy
++	|  low P-state        \____________/         high P-state
++	|
++	+------------------------------------------------------------> time
++
++Busy    |--------------|                          |-----------------|
++
++Wakeup                 |------|            |------|
++
++Idle                          |------------|
++
++
++The basic algorithm
++====================
++
++The basic idea is to determine the total energy impact when utilization is
++added or removed by estimating the impact at each level in the sched_domain
++hierarchy starting from the bottom (sched_group contains just a single cpu).
++The energy cost comes from three sources: busy time (sched_group is awake
++because one or more cpus are busy), idle time (in an idle-state), and wakeups
++(idle state exits). Power and energy numbers account for energy costs
++associated with all cpus in the sched_group as a group. In some cases it is
++possible to bail out early without having go to the top of the hierarchy if the
++additional/removed utilization doesn't affect the busy time of higher levels.
++
++	for_each_domain(cpu, sd) {
++		sg = sched_group_of(cpu)
++		energy_before = curr_util(sg) * busy_power(sg)
++				+ (1-curr_util(sg)) * idle_power(sg)
++		energy_after = new_util(sg) * busy_power(sg)
++				+ (1-new_util(sg)) * idle_power(sg)
++				+ (1-new_util(sg)) * wakeups * wakeup_energy(sg)
++		energy_diff += energy_before - energy_after
++
++		if (energy_before == energy_after)
++			break;
 +	}
 +
-+	mutex_unlock(&data->mutex);
-+	return ret;
-+}
++	return energy_diff
 +
-+static void tas2552_sw_shutdown(struct tas2552_data *tas_data, int sw_shutdown)
++{curr, new}_util: The cpu utilization at the lowest level and the overall
++non-idle time for the entire group for higher levels. Utilization is in the
++range 0.0 to 1.0 in the pseudo-code.
++
++busy_power: The power consumption of the sched_group.
++
++idle_power: The power consumption of the sched_group when idle.
++
++wakeups: Average wakeup rate of the task(s) being added/removed. To predict how
++many of the wakeups are wakeups that causes idle exits we scale the number by
++the unused utilization (assuming that wakeups are uniformly distributed).
++
++wakeup_energy: The energy consumed for a run->sleep->run cycle for the
++sched_group.
++
++Note: It is a fundamental assumption that the utilization is (roughly) scale
++invariant. Task utilization tracking factors in any frequency scaling and
++performance scaling differences due to difference cpu microarchitectures such
++that task utilization can be used across the entire system. This is _not_ in
++place yet.
++
++Platform energy data
++=====================
++
++struct sched_group_energy can be attached to sched_groups in the sched_domain
++hierarchy and has the following members:
++
++cap_states:
++	List of struct capacity_state representing the supported capacity states
++	(P-states). struct capacity_state has two members: cap and power, which
++	represents the compute capacity and the busy_power of the state. The
++	list must be ordered by capacity low->high.
++
++nr_cap_states:
++	Number of capacity states in cap_states list.
++
++idle_states:
++	List of struct idle_state containing idle_state related costs for each
++	idle-state support by the sched_group. struct idle_state has two
++	members: power and wu_energy. The former is the idle-state power
++	consumption, while the latter is the wakeup energy for an
++	run->sleep->run cycle for that particular sched_group idle-state.
++	Note that the list should only contain idle-states where the affected
++	cpu matches the members of the sched_group. That is, per-cpu idle
++	states are associated with sched_groups at the lowest level, and
++	package/cluster idle-states are listed for sched_group's further up the
++	hierarchy.
++
++nr_idle_states:
++	Number of idle states in idle_states list.
++
++There are no unit requirements for the energy cost data. Data can be normalized
++with any reference, however, the normalization must be consistent across all
++energy cost data. That is, one bogo-joule/watt must be the same quantity for
++data, but we don't care what it is.
++
++A recipe for platform characterization
++=======================================
++
++Obtaining the actual model data for a particular platform requires some way of
++measuring power/energy. There isn't a tool to help with this (yet). This
++section provides a recipe for use as reference. It covers the steps used to
++characterize the ARM TC2 development platform. This sort of measurements is
++expected to be done anyway when tuning cpuidle and cpufreq for a given
++platform.
++
++The energy model needs three types of data (struct sched_group_energy holds
++these) for each sched_group where energy costs should be taken into account:
++
++1. Capacity state information
++
++A list containing the compute capacity and power consumption when fully
++utilized attributed to the group as a whole for each available capacity state.
++At the lowest level (group contains just a single cpu) this is the power of the
++cpu alone without including power consumed by resources shared with other cpus.
++It basically needs to fit the basic modelling approach described in "Background
++and Terminology" section:
++
++	energy_system = energy_shared + n * energy_cpu
++
++for a system containing 'n' busy cpus. Only 'energy_cpu' should be included at
++the lowest level. 'energy_shared' is included at the next level which
++represents the group of cpus among which the resources are shared.
++
++This model is, of course, a simplification of reality. Thus, power/energy
++attributions might not always exactly represent how the hardware is designed.
++Also, busy power is likely to depend on the workload. It is therefore
++recommended to use a representative mix of workloads when characterizing the
++capacity states.
++
++If the group has no capacity scaling support, the list will contain a single
++state where power is the busy power attributed to the group. The capacity
++should be set to a default value (1024).
++
++When frequency domains include multiple power domains, the group representing
++the frequency domain and all child groups share capacity states. This must be
++indicated by setting the SD_SHARE_CAP_STATES sched_domain flag. All groups at
++all levels that share the capacity state must have the list of capacity states
++with the power set to the contribution of the individual group.
++
++2. Idle power information
++
++The first member of idle-state information stored in the idle_states list. The
++power number is the group idle power consumption. Due to the way the energy
++model is defined, the idle power of the deepest group idle state can
++alternatively be accounted for in the parent group busy power. In that case the
++group idle state power values are offset such that the idle power of the
++deepest state is zero. It is less intuitive, but it is easier to measure as
++idle power consumed by the group and the busy/idle power of the parent group
++cannot be distinguished without per group measurement points.
++
++3. Wakeup energy information
++
++The second member of the idle-state information stored in the idle_states list.
++The wakeup energy is the total energy consumed during the transition from a
++specific idle state to busy (some P-state) and back again. It is not easy to
++measure them individually and they always occur in pairs anyway. Exit from one
++idle state and going back into a different one is not modelled.
++
++The energy model estimates wakeup energy based on the tracked average wakeup
++rate. Assuming that all task wakeups result in idle exits, the wakeup energy
++consumed per time unit (~ energy rate ~ power) is:
++
++	wakeup_energy_rate = wakeup_energy * wakeup_rate
++
++The wakeup_rate is a geometric series similar to the per entity load tracking.
++To simplify the math in the scheduler the wakeup_energy parameter must be
++pre-scaled to take the geometric series into account. wakeup_rate =
++LOAD_AVG_MAX (=47742) is equivalent to a true wakeup rate of 1000 wakeups per
++second. The wu_energy stored in each struct idle_state in the
++sched_group_energy data structure must therefore be scaled accordingly:
++
++	wakeup_energy = 1000/47742 * true_wakeup_energy
++
++Measuring capacity states and idle power:
++
++The capacity states' capacity and power can be estimated by running a benchmark
++workload at each available capacity state. By restricting the benchmark to run
++on subsets of cpus it is possible to extrapolate the power consumption of
++shared resources.
++
++ARM TC2 has two clusters of two and three cpus respectively. Each cluster has a
++shared L2 cache. TC2 has on-chip energy counters per cluster. Running a
++benchmark workload on just one cpu in a cluster means that power is consumed in
++the cluster (higher level group) and a single cpu (lowest level group). Adding
++another benchmark task to another cpu increases the power consumption by the
++amount consumed by the additional cpu. Hence, it is possible to extrapolate the
++cluster busy power.
++
++For platforms that don't have energy counters or equivalent instrumentation
++built-in, it may be possible to use an external DAQ to acquire similar data.
++
++If the benchmark includes some performance score (for example sysbench cpu
++benchmark), this can be used to record the compute capacity.
++
++Measuring idle power requires insight into the idle state implementation on the
++particular platform. Specifically, if the platform has coupled idle-states (or
++package states). To measure non-coupled per-cpu idle-states it is necessary to
++keep one cpu busy to keep any shared resources alive to isolate the idle power
++of the cpu from idle/busy power of the shared resources. The cpu can be tricked
++into different per-cpu idle states by disabling the other states. Based on
++various combinations of measurements with specific cpus busy and disabling
++idle-states it is possible to extrapolate the idle-state power.
++
++Measuring wakeup energy again requires knowledge about the supported platform
++idle-states, particularly about target residencies. Wakeup energy is a very
++small quantity that might be difficult to distinguish from noise. One way to
++measure it is to use a synthetic test case that periodically wakes up a task on
++a specific cpu. The task should immediately block/go to sleep again. The
++wake-up rate should be as high as the target residency for the idle-state
++allows. Based on cpuidle statistics and knowledge about coupled idle-states the
++wakeup energy can be determined.
++
++The following wakeup generator test was used for the ARM TC2 profiling.
++
++#include <signal.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++
++volatile int busy_loops = 1;
++volatile useconds_t alarm_rate = 100000;
++
++void
++waste_time(int loops)
 +{
-+	u8 cfg1_reg = 0x0;
-+
-+	if (sw_shutdown)
-+		cfg1_reg |= TAS2552_SWS_MASK;
-+	else
-+		cfg1_reg &= ~TAS2552_SWS_MASK;
-+
-+	snd_soc_update_bits(tas_data->codec, TAS2552_CFG_1,
-+						 TAS2552_SWS_MASK, cfg1_reg);
-+}
-+
-+static int tas2552_hw_params(struct snd_pcm_substream *substream,
-+			     struct snd_pcm_hw_params *params,
-+			     struct snd_soc_dai *dai)
-+{
-+	u8 wclk_reg;
-+	struct snd_soc_codec *codec = dai->codec;
-+
-+	/* Setting DAC clock dividers based on substream sample rate. */
-+	switch (params_rate(params)) {
-+	case 8000:
-+		wclk_reg = TAS2552_8KHZ;
-+		break;
-+	case 11025:
-+		wclk_reg = TAS2552_11_12KHZ;
-+		break;
-+	case 16000:
-+		wclk_reg = TAS2552_16KHZ;
-+		break;
-+	case 32000:
-+		wclk_reg = TAS2552_32KHZ;
-+		break;
-+	case 22050:
-+	case 24000:
-+		wclk_reg = TAS2552_22_24KHZ;
-+		break;
-+	case 44100:
-+	case 48000:
-+		wclk_reg = TAS2552_44_48KHZ;
-+		break;
-+	case 96000:
-+		wclk_reg = TAS2552_88_96KHZ;
-+		break;
-+	default:
-+		dev_vdbg(codec->dev, "Substream sample rate is not found\n");
-+		return -EINVAL;
-+	}
-+
-+	pm_runtime_get_sync(codec->dev);
-+
-+	snd_soc_update_bits(codec, TAS2552_CFG_3, TAS2552_WCLK_MASK, wclk_reg);
-+
-+	pm_runtime_put(codec->dev);
-+
-+	return 0;
-+}
-+
-+static int tas2552_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
-+{
-+	u8 serial_format;
-+	u8 serial_control_mask = 0x00;
-+	struct snd_soc_codec *codec = dai->codec;
-+
-+	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
-+	case SND_SOC_DAIFMT_CBS_CFS:
-+		serial_format = 0x00;
-+		break;
-+	case SND_SOC_DAIFMT_CBS_CFM:
-+		serial_format = TAS2552_WORD_CLK_MASK;
-+		break;
-+	case SND_SOC_DAIFMT_CBM_CFS:
-+		serial_format = TAS2552_BIT_CLK_MASK;
-+		break;
-+	case SND_SOC_DAIFMT_CBM_CFM:
-+		serial_format = (TAS2552_BIT_CLK_MASK | TAS2552_WORD_CLK_MASK);
-+		break;
-+	default:
-+		dev_vdbg(codec->dev, "DAI Format master is not found\n");
-+		return -EINVAL;
-+	}
-+
-+	if (fmt & SND_SOC_DAIFMT_MASTER_MASK)
-+		serial_control_mask = TAS2552_BIT_CLK_MASK | TAS2552_WORD_CLK_MASK;
-+
-+	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
-+	case SND_SOC_DAIFMT_I2S:
-+		serial_format &= TAS2552_DAIFMT_I2S_MASK;
-+		break;
-+	case SND_SOC_DAIFMT_DSP_A:
-+		serial_format |= TAS2552_DAIFMT_DSP;
-+		break;
-+	case SND_SOC_DAIFMT_RIGHT_J:
-+		serial_format |= TAS2552_DAIFMT_RIGHT_J;
-+		break;
-+	case SND_SOC_DAIFMT_LEFT_J:
-+		serial_format |= TAS2552_DAIFMT_LEFT_J;
-+		break;
-+	default:
-+		dev_vdbg(codec->dev, "DAI Format is not found\n");
-+		return -EINVAL;
-+	}
-+
-+	if (fmt & SND_SOC_DAIFMT_FORMAT_MASK)
-+		serial_control_mask |= TAS2552_DATA_FORMAT_MASK;
-+
-+	if (serial_control_mask) {
-+		pm_runtime_get_sync(codec->dev);
-+
-+		snd_soc_update_bits(codec, TAS2552_SER_CTRL_1, serial_control_mask,
-+							serial_format);
-+
-+		pm_runtime_put(codec->dev);
-+	}
-+
-+	return 0;
-+}
-+
-+static int tas2552_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
-+				  unsigned int freq, int dir)
-+{
-+	struct snd_soc_codec *codec = dai->codec;
-+
-+	/* Fill in the PLL control registers for J & D
-+	 * PLL_CLK = (.5 * freq * J.D) / 2^p
-+	 * Need to fill in J and D here based on incoming freq
-+	 */
-+	pm_runtime_get_sync(codec->dev);
-+
-+	snd_soc_update_bits(codec, TAS2552_CFG_2, TAS2552_PLL_ENABLE, 0);
-+
-+	snd_soc_write(codec, TAS2552_PLL_CTRL_1, 0x10);
-+	snd_soc_write(codec, TAS2552_PLL_CTRL_2, 0x00);
-+	snd_soc_write(codec, TAS2552_PLL_CTRL_3, 0x00);
-+
-+	snd_soc_update_bits(codec, TAS2552_CFG_2, TAS2552_PLL_ENABLE,
-+						TAS2552_PLL_ENABLE);
-+
-+	pm_runtime_put(codec->dev);
-+
-+	return 0;
-+}
-+
-+static int tas2552_mute(struct snd_soc_dai *dai, int mute)
-+{
-+	u8 cfg1_reg = 0x0;
-+	struct snd_soc_codec *codec = dai->codec;
-+
-+	if (mute)
-+		cfg1_reg |= TAS2552_MUTE_MASK;
-+	else
-+		cfg1_reg &= ~TAS2552_MUTE_MASK;
-+
-+	pm_runtime_get_sync(codec->dev);
-+
-+	snd_soc_update_bits(codec, TAS2552_CFG_1, TAS2552_MUTE_MASK, cfg1_reg);
-+
-+	pm_runtime_put(codec->dev);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_RUNTIME
-+static int tas2552_runtime_suspend(struct device *dev)
-+{
-+	struct tas2552_data *tas2552 = dev_get_drvdata(dev);
-+
-+	tas2552_sw_shutdown(tas2552, 1);
-+	tas2552_power(tas2552, 0);
-+
-+	regcache_cache_only(tas2552->regmap, true);
-+	regcache_mark_dirty(tas2552->regmap);
-+
-+	return 0;
-+}
-+
-+static int tas2552_runtime_resume(struct device *dev)
-+{
-+	struct tas2552_data *tas2552 = dev_get_drvdata(dev);
-+
-+	tas2552_power(tas2552, 1);
-+	tas2552_sw_shutdown(tas2552, 0);
-+
-+	regcache_cache_only(tas2552->regmap, false);
-+	regcache_sync(tas2552->regmap);
-+
-+	return 0;
-+}
-+#endif
-+
-+static const struct dev_pm_ops tas2552_pm = {
-+	SET_RUNTIME_PM_OPS(tas2552_runtime_suspend, tas2552_runtime_resume,
-+			   NULL)
-+};
-+
-+static int tas2552_startup(struct snd_pcm_substream *substream,
-+			   struct snd_soc_dai *dai)
-+{
-+	struct snd_soc_codec *codec = dai->codec;
-+
-+	pm_runtime_get_sync(codec->dev);
-+
-+	/* Turn on Class D amplifier */
-+	snd_soc_update_bits(codec, TAS2552_CFG_2, TAS2552_CLASSD_EN_MASK,
-+						TAS2552_CLASSD_EN);
-+	return 0;
-+}
-+
-+static void tas2552_shutdown(struct snd_pcm_substream *substream,
-+			   struct snd_soc_dai *dai)
-+{
-+	struct snd_soc_codec *codec = dai->codec;
-+
-+	/* Turn on Class D amplifier */
-+	snd_soc_update_bits(codec, TAS2552_CFG_2, TAS2552_CLASSD_EN_MASK,
-+						TAS2552_CLASSD_EN);
-+
-+	pm_runtime_put(codec->dev);
-+}
-+
-+static struct snd_soc_dai_ops tas2552_speaker_dai_ops = {
-+	.hw_params	= tas2552_hw_params,
-+	.set_sysclk	= tas2552_set_dai_sysclk,
-+	.set_fmt	= tas2552_set_dai_fmt,
-+	.startup	= tas2552_startup,
-+	.shutdown	= tas2552_shutdown,
-+	.digital_mute = tas2552_mute,
-+};
-+
-+/* Formats supported by TAS2552 driver. */
-+#define TAS2552_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S20_3LE |\
-+			 SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S32_LE)
-+
-+/* TAS2552 dai structure. */
-+static struct snd_soc_dai_driver tas2552_dai[] = {
-+	{
-+		.name = "tas2552-amplifier",
-+		.playback = {
-+			.stream_name = "Speaker",
-+			.channels_min = 2,
-+			.channels_max = 2,
-+			.rates = SNDRV_PCM_RATE_8000_192000,
-+			.formats = TAS2552_FORMATS,
-+		},
-+		.ops = &tas2552_speaker_dai_ops,
-+	},
-+};
-+
-+/*
-+ * DAC digital volumes. From -7 to 24 dB in 1 dB steps
-+ */
-+static DECLARE_TLV_DB_SCALE(dac_tlv, -7, 100, 24);
-+
-+static const struct snd_kcontrol_new tas2552_snd_controls[] = {
-+	SOC_SINGLE_TLV("Speaker Driver Playback Volume",
-+			 TAS2552_PGA_GAIN, 0, 0x1f, 1, dac_tlv),
-+};
-+
-+static int tas2552_codec_probe(struct snd_soc_codec *codec)
-+{
-+	struct tas2552_data *tas2552 = snd_soc_codec_get_drvdata(codec);
-+	int ret;
-+
-+	tas2552->codec = codec;
-+
-+	ret = regulator_bulk_enable(ARRAY_SIZE(tas2552->supplies),
-+				    tas2552->supplies);
-+
-+	if (ret != 0) {
-+		dev_err(codec->dev, "Failed to enable supplies: %d\n",
-+			ret);
-+		return ret;
-+	}
-+
-+	tas2552_power(tas2552, 1);
-+	tas2552_sw_shutdown(tas2552, 0);
-+
-+	pm_runtime_set_active(codec->dev);
-+	pm_runtime_set_autosuspend_delay(codec->dev, 1000);
-+	pm_runtime_use_autosuspend(codec->dev);
-+	pm_runtime_enable(codec->dev);
-+	pm_runtime_mark_last_busy(codec->dev);
-+	pm_runtime_put_sync_autosuspend(codec->dev);
-+
-+	snd_soc_write(codec, TAS2552_CFG_1, TAS2552_MUTE_MASK |
-+				TAS2552_SWS_MASK | TAS2552_PLL_SRC_BCLK);
-+	snd_soc_write(codec, TAS2552_CFG_3, TAS2552_I2S_OUT_SEL |
-+				TAS2552_DIN_SRC_SEL_AVG_L_R | TAS2552_88_96KHZ);
-+	snd_soc_write(codec, TAS2552_DOUT, TAS2552_PDM_DATA_I);
-+	snd_soc_write(codec, TAS2552_OUTPUT_DATA, TAS2552_PDM_DATA_V_I | 0x8);
-+	snd_soc_write(codec, TAS2552_PDM_CFG, TAS2552_PDM_BCLK_SEL);
-+	/* 0dB gain */
-+	snd_soc_write(codec, TAS2552_PGA_GAIN, 0x10);
-+	snd_soc_write(codec, TAS2552_BOOST_PT_CTRL, TAS2552_APT_DELAY_200 |
-+				TAS2552_APT_THRESH_2_1_7);
-+	/**
-+	 * Data sheet indicates to write 0x0c to 0x0d during init but no
-+	 * additional information is given to what it means.
-+	 */
-+	snd_soc_write(codec, TAS2552_LIMIT_LVL_CTRL, 0x0c);
-+	/**
-+	 * Data sheet indicates to write 0x20 to 0x0e during init but no
-+	 * additional information is given to what it means.
-+	 */
-+
-+	snd_soc_write(codec, TAS2552_LIMIT_RATE_HYS, 0x20);
-+
-+	snd_soc_write(codec, TAS2552_CFG_2, TAS2552_CLASSD_EN |
-+				  TAS2552_BOOST_EN | TAS2552_APT_EN |
-+				  TAS2552_PLL_ENABLE | TAS2552_LIM_EN);
-+
-+	return 0;
-+}
-+
-+static int tas2552_codec_remove(struct snd_soc_codec *codec)
-+{
-+	struct tas2552_data *tas2552 = snd_soc_codec_get_drvdata(codec);
-+
-+	tas2552_power(tas2552, 0);
-+
-+	return 0;
-+};
-+
-+#ifdef CONFIG_PM
-+static int tas2552_suspend(struct snd_soc_codec *codec)
-+{
-+	struct tas2552_data *tas2552 = snd_soc_codec_get_drvdata(codec);
-+	int ret;
-+
-+	pm_runtime_put(codec->dev);
-+
-+	ret = regulator_bulk_disable(ARRAY_SIZE(tas2552->supplies),
-+					tas2552->supplies);
-+
-+	if (ret != 0)
-+		dev_err(codec->dev, "Failed to disable supplies: %d\n",
-+			ret);
-+	return 0;
-+}
-+
-+static int tas2552_resume(struct snd_soc_codec *codec)
-+{
-+	struct tas2552_data *tas2552 = snd_soc_codec_get_drvdata(codec);
-+	int ret;
-+
-+	ret = regulator_bulk_enable(ARRAY_SIZE(tas2552->supplies),
-+				    tas2552->supplies);
-+
-+	if (ret != 0) {
-+		dev_err(codec->dev, "Failed to enable supplies: %d\n",
-+			ret);
-+	}
-+
-+	pm_runtime_get_sync(codec->dev);
-+
-+	return 0;
-+}
-+#else
-+#define tas2552_suspend NULL
-+#define tas2552_resume NULL
-+#endif
-+
-+static struct snd_soc_codec_driver soc_codec_dev_tas2552 = {
-+	.probe = tas2552_codec_probe,
-+	.remove = tas2552_codec_remove,
-+	.suspend =	tas2552_suspend,
-+	.resume = tas2552_resume,
-+	.controls = tas2552_snd_controls,
-+	.num_controls = ARRAY_SIZE(tas2552_snd_controls),
-+};
-+
-+static const struct regmap_config tas2552_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+
-+	.max_register = TAS2552_MAX_REG,
-+	.reg_defaults = tas2552_reg_defs,
-+	.num_reg_defaults = ARRAY_SIZE(tas2552_reg_defs),
-+	.cache_type = REGCACHE_RBTREE,
-+};
-+
-+static int tas2552_probe(struct i2c_client *client,
-+			   const struct i2c_device_id *id)
-+{
-+	struct device *dev;
-+	struct tas2552_data *data;
-+	int ret;
 +	int i;
-+
-+	dev = &client->dev;
-+	data = devm_kzalloc(&client->dev, sizeof(*data), GFP_KERNEL);
-+	if (data == NULL)
-+		return -ENOMEM;
-+
-+	data->enable_gpio = devm_gpiod_get(dev, "enable");
-+	if (IS_ERR(data->enable_gpio)) {
-+		ret = PTR_ERR(data->enable_gpio);
-+		if (ret != -ENOENT && ret != -ENOSYS)
-+			return ret;
-+
-+		data->enable_gpio = NULL;
-+	} else {
-+		gpiod_direction_output(data->enable_gpio, 0);
-+	}
-+
-+	data->tas2552_client = client;
-+	data->regmap = devm_regmap_init_i2c(client, &tas2552_regmap_config);
-+	if (IS_ERR(data->regmap)) {
-+		ret = PTR_ERR(data->regmap);
-+		dev_err(&client->dev, "Failed to allocate register map: %d\n",
-+			ret);
-+		return ret;
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(data->supplies); i++)
-+		data->supplies[i].supply = tas2552_supply_names[i];
-+
-+	ret = devm_regulator_bulk_get(dev, ARRAY_SIZE(data->supplies),
-+				      data->supplies);
-+	if (ret != 0)
-+		dev_err(dev, "Failed to request supplies: %d\n", ret);
-+
-+	mutex_init(&data->mutex);
-+
-+	dev_set_drvdata(&client->dev, data);
-+
-+	ret = snd_soc_register_codec(&client->dev,
-+				      &soc_codec_dev_tas2552,
-+				      tas2552_dai, ARRAY_SIZE(tas2552_dai));
-+	if (ret < 0)
-+		dev_err(&client->dev, "Failed to register codec: %d\n", ret);
-+
-+	return 0;
++	int t = 0;
++	for (i=0;i<loops;i++)
++		t++;
 +}
 +
-+static int tas2552_i2c_remove(struct i2c_client *client)
++/* The signal handler just clears the flag and re-enables itself. */
++void catch_alarm (int sig)
 +{
-+	snd_soc_unregister_codec(&client->dev);
-+	return 0;
++	waste_time(busy_loops);
++	signal(sig, catch_alarm);
 +}
 +
-+static const struct i2c_device_id tas2552_id[] = {
-+	{ "tas2552-codec", 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, tas2552_id);
++int main(int argc, char **argv)
++{
++	if (argc != 3) {
++		printf("Usage: timerload <alarm_rate> <busy_loops>\n");
++		printf("alarm_rate:\tBusy loop invocation rate [us]. ");
++		printf("(Doesn't work for rate >= 1s)\n");
++		printf("busy_loops:\tbusy loop iterations per invocation.\n");
++		exit(0);
++	}
 +
-+#if IS_ENABLED(CONFIG_OF)
-+static const struct of_device_id tas2552_of_match[] = {
-+	{ .compatible = "ti,tas2552", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, tas2552_of_match);
-+#endif
++	if (atoi(argv[1]) >= 1000000){
++		printf("alarm_rate must be less than 1000000\n");
++	}
 +
-+static struct i2c_driver tas2552_i2c_driver = {
-+	.driver = {
-+		.name = "tas2552-codec",
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(tas2552_of_match),
-+		.pm = &tas2552_pm,
-+	},
-+	.probe = tas2552_probe,
-+	.remove = tas2552_i2c_remove,
-+	.id_table = tas2552_id,
-+};
++	alarm_rate = (useconds_t) atoi(argv[1]);
++	busy_loops = atoi(argv[2]);
++	printf("alarm_rate = %d\nbusy_loops = %d\n",alarm_rate,busy_loops);
 +
-+module_i2c_driver(tas2552_i2c_driver);
++	/* Establish a handler for SIGALRM signals. */
++	signal(SIGALRM, catch_alarm);
 +
-+MODULE_AUTHOR("Dan Muprhy <dmurphy@ti.com>");
-+MODULE_DESCRIPTION("TAS2552 Audio amplifier driver");
-+MODULE_LICENSE("GPL");
-diff --git a/sound/soc/codecs/tas2552.h b/sound/soc/codecs/tas2552.h
-new file mode 100644
-index 0000000..107b237
---- /dev/null
-+++ b/sound/soc/codecs/tas2552.h
-@@ -0,0 +1,120 @@
-+/*
-+ * tas2552.h - ALSA SoC Texas Instruments TAS2552 Mono Audio Amplifier
-+ *
-+ * Copyright (C) 2014 Texas Instruments Incorporated -  http://www.ti.com
-+ *
-+ * Author: Dan Murphy <dmurphy@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ */
++	/* Set an alarm to go off in a little while. */
++	ualarm(alarm_rate,alarm_rate);
 +
-+#ifndef __TAS2552_H__
-+#define __TAS2552_H__
++	while (1) {
++		pause();
++	}
 +
-+/* Register Address Map */
-+#define TAS2552_DEVICE_STATUS	0x00
-+#define TAS2552_CFG_1			0x01
-+#define TAS2552_CFG_2			0x02
-+#define TAS2552_CFG_3			0x03
-+#define TAS2552_DOUT			0x04
-+#define TAS2552_SER_CTRL_1		0x05
-+#define TAS2552_SER_CTRL_2		0x06
-+#define TAS2552_OUTPUT_DATA		0x07
-+#define TAS2552_PLL_CTRL_1		0x08
-+#define TAS2552_PLL_CTRL_2		0x09
-+#define TAS2552_PLL_CTRL_3		0x0a
-+#define TAS2552_BTIP			0x0b
-+#define TAS2552_BTS_CTRL		0x0c
-+#define TAS2552_LIMIT_LVL_CTRL	0x0d
-+#define TAS2552_LIMIT_RATE_HYS	0x0e
-+#define TAS2552_LIMIT_RELEASE	0x0f
-+#define TAS2552_LIMIT_INT_COUNT	0x10
-+#define TAS2552_PDM_CFG			0x11
-+#define TAS2552_PGA_GAIN		0x12
-+#define TAS2552_EDGE_RATE_CTRL	0x13
-+#define TAS2552_BOOST_PT_CTRL	0x14
-+#define TAS2552_VER_NUM			0x16
-+#define TAS2552_VBAT_DATA		0x19
-+#define TAS2552_MAX_REG			0x20
-+
-+/* CFG1 Register Masks */
-+#define TAS2552_MUTE_MASK		(1 << 2)
-+#define TAS2552_SWS_MASK		(1 << 1)
-+#define TAS2552_WCLK_MASK		0x07
-+#define TAS2552_CLASSD_EN_MASK	(1 << 7)
-+
-+/* CFG2 Register Masks */
-+#define TAS2552_CLASSD_EN		(1 << 7)
-+#define TAS2552_BOOST_EN		(1 << 6)
-+#define TAS2552_APT_EN			(1 << 5)
-+#define TAS2552_PLL_ENABLE		(1 << 3)
-+#define TAS2552_LIM_EN			(1 << 2)
-+#define TAS2552_IVSENSE_EN		(1 << 1)
-+
-+/* CFG3 Register Masks */
-+#define TAS2552_WORD_CLK_MASK		(1 << 7)
-+#define TAS2552_BIT_CLK_MASK		(1 << 6)
-+#define TAS2552_DATA_FORMAT_MASK	(0x11 << 2)
-+
-+#define TAS2552_DAIFMT_I2S_MASK		0xf3
-+#define TAS2552_DAIFMT_DSP			(1 << 3)
-+#define TAS2552_DAIFMT_RIGHT_J		(1 << 4)
-+#define TAS2552_DAIFMT_LEFT_J		(0x11 << 3)
-+
-+#define TAS2552_PLL_SRC_MCLK	0x00
-+#define TAS2552_PLL_SRC_BCLK	(1 << 3)
-+#define TAS2552_PLL_SRC_IVCLKIN	(1 << 4)
-+#define TAS2552_PLL_SRC_1_8_FIXED (0x11 << 3)
-+
-+#define TAS2552_DIN_SRC_SEL_MUTED	0x00
-+#define TAS2552_DIN_SRC_SEL_LEFT	(1 << 4)
-+#define TAS2552_DIN_SRC_SEL_RIGHT	(1 << 5)
-+#define TAS2552_DIN_SRC_SEL_AVG_L_R	(0x11 << 4)
-+
-+#define TAS2552_PDM_IN_SEL		(1 << 5)
-+#define TAS2552_I2S_OUT_SEL		(1 << 6)
-+#define TAS2552_ANALOG_IN_SEL	(1 << 7)
-+
-+/* CFG3 WCLK Dividers */
-+#define TAS2552_8KHZ		0x00
-+#define TAS2552_11_12KHZ	(1 << 1)
-+#define TAS2552_16KHZ		(1 << 2)
-+#define TAS2552_22_24KHZ	(1 << 3)
-+#define TAS2552_32KHZ		(1 << 4)
-+#define TAS2552_44_48KHZ	(1 << 5)
-+#define TAS2552_88_96KHZ	(1 << 6)
-+#define TAS2552_176_192KHZ	(1 << 7)
-+
-+/* OUTPUT_DATA register */
-+#define TAS2552_PDM_DATA_I		0x00
-+#define TAS2552_PDM_DATA_V		(1 << 6)
-+#define TAS2552_PDM_DATA_I_V	(1 << 7)
-+#define TAS2552_PDM_DATA_V_I	(0x11 << 6)
-+
-+/* PDM CFG Register */
-+#define TAS2552_PDM_DATA_ES_RISE 0x4
-+
-+#define TAS2552_PDM_PLL_CLK_SEL 0x00
-+#define TAS2552_PDM_IV_CLK_SEL	(1 << 1)
-+#define TAS2552_PDM_BCLK_SEL	(1 << 2)
-+#define TAS2552_PDM_MCLK_SEL	(1 << 3)
-+
-+/* Boost pass-through register */
-+#define TAS2552_APT_DELAY_50	0x00
-+#define TAS2552_APT_DELAY_75	(1 << 1)
-+#define TAS2552_APT_DELAY_125	(1 << 2)
-+#define TAS2552_APT_DELAY_200	(1 << 3)
-+
-+#define TAS2552_APT_THRESH_2_5		0x00
-+#define TAS2552_APT_THRESH_1_7		(1 << 3)
-+#define TAS2552_APT_THRESH_1_4_1_1	(1 << 4)
-+#define TAS2552_APT_THRESH_2_1_7	(0x11 << 2)
-+
-+#endif
++	return EXIT_SUCCESS;
++}
 -- 
 1.7.9.5
+
 
