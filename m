@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757546AbaGCJPX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:15:23 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53057 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753260AbaGCJPT (ORCPT
+	id S1755696AbaGCJSm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:18:42 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:50964 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752078AbaGCJSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:15:19 -0400
-Date: Thu, 3 Jul 2014 10:14:50 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Zi Shen Lim <zlim.lnx@gmail.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Chema Gonzalez <chema@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH RFC] arm64: eBPF JIT compiler
-Message-ID: <20140703091450.GB12958@arm.com>
-References: <1404278424-31176-1-git-send-email-zlim.lnx@gmail.com>
+	Thu, 3 Jul 2014 05:18:40 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: DNAME_INLINE_LEN versus CONFIG_GENERIC_LOCKBREAK
+Organization: D03
+Date: Thu, 03 Jul 2014 11:18:35 +0200
+Message-ID: <8761je94wk.fsf@rasmusvillemoes.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404278424-31176-1-git-send-email-zlim.lnx@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-On Wed, Jul 02, 2014 at 06:20:24AM +0100, Zi Shen Lim wrote:
-> The JIT compiler emits A64 instructions. It supports eBPF only.
-> Legacy BPF is supported thanks to conversion by BPF core.
-> 
-> JIT is enabled in the same way as for other architectures:
-> 
->         echo 1 > /proc/sys/net/core/bpf_jit_enable
-> 
-> Or for additional compiler output:
-> 
->         echo 2 > /proc/sys/net/core/bpf_jit_enable
-> 
-> See Documentation/networking/filter.txt for more information.
-> 
-> The implementation passes all 57 tests in lib/test_bpf.c
-> on ARMv8 Foundation Model :)
+In dcache.h, DNAME_INLINE_LEN is carefully chosen so that sizeof(struct
+dentry) is a (specific) multiple of 64 bytes. Obviously this breaks when
+certain debug options are chosen (DEBUG_LOCK_ALLOC and DEBUG_SPINLOCK),
+but also, AFAICT, on architectures with CONFIG_GENERIC_LOCKBREAK.
 
-First off, this is really cool. Thanks for putting in the effort to get this
-supported on arm64! I'm happy to run tests on some real hardware if you tell
-me how to run them :)
+I'm not sure it matters, but if it does, I'd suggest putting a
+BUILD_BUG_ON somewhere, protected by suitable #ifdefs, so that the code
+documents the assumptions that went into the particular choice of
+DNAME_INLINE_LEN (this would also help catch changes to some of the
+structures embedded in struct dentry which would violate those
+assumptions). 
 
-One general observation relates to your instruction encoding logic, e.g:
+Rasmus
 
-> +/* 5-bit Register Operand */
-> +#define A64_R(x)       x               /* R0-R30: General purpose */
-> +#define A64_FP         A64_R(29)       /* Frame pointer */
-> +#define A64_LR         A64_R(30)       /* Link register */
-> +#define A64_ZR         31              /* As source register operand */
-> +#define A64_SP         31              /* As load/store base register */
-> +
-> +#define BITSMASK(bits) ((1 << (bits)) - 1)
-> +
-> +/* Compare & branch (immediate) */
-> +static inline u32 A64_COMP_BRANCH_IMM(int sf, int op, int imm19, int Rt)
-> +{
-> +       sf &= BITSMASK(1);
-> +       op &= BITSMASK(1);
-> +       imm19 &= BITSMASK(19);
-> +       Rt &= BITSMASK(5);
-> +       return 0x34000000 | sf << 31 | op << 24 | imm19 << 5 | Rt;
-> +}
-> +#define A64_CBZ(sf, Rt, imm19)  A64_COMP_BRANCH_IMM(sf, 0, imm19, Rt)
-> +#define A64_CBNZ(sf, Rt, imm19) A64_COMP_BRANCH_IMM(sf, 1, imm19, Rt)
 
-We already have some some basic instruction manipulation code in
-arch/arm64/kernel/insn.c and arch/arm64/include/asm/insn.h. Would you be
-able to move some of this there please (but only the bits that aren't tied
-to BPF?
+Something like this, which correctly fails for me on x86_64 when I
+transplant CONFIG_GENERIC_LOCKBREAK to its Kconfig.
 
-The reason I ask, is because we're inevitebly going to need this stuff
-for other subsystems (e.g. kprobes, dynamic code patching ("alternatives"))
-and I'd like to avoid a proliferation of magic numbers across the codebase.
-
-Does this sound remotely feasible?
-
-Cheers,
-
-Will
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 06f6585..aa72a86 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1433,6 +1433,14 @@ struct dentry *__d_alloc(struct super_block *sb, const struct qstr *name)
+ 	struct dentry *dentry;
+ 	char *dname;
+ 
++#if !defined(CONFIG_DEBUG_LOCK_ALLOC) && !defined(CONFIG_DEBUG_SPINLOCK)
++# ifdef CONFIG_64BIT
++	BUILD_BUG_ON(sizeof(struct dentry) != 192);
++# else
++	BUILD_BUG_ON(sizeof(struct dentry) != 128);
++# endif
++#endif
++
+ 	dentry = kmem_cache_alloc(dentry_cache, GFP_KERNEL);
+ 	if (!dentry)
+ 		return NULL;
