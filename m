@@ -1,118 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932464AbaGCJjw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:39:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52409 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030391AbaGCJYc (ORCPT
+	id S932558AbaGCJkL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:40:11 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:50714 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932469AbaGCJkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:24:32 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jeff Layton <jlayton@redhat.com>, "J. Bruce Fields" <bfields@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 156/198] nfsd: don't try to reuse an expired DRC entry off the list
-Date: Thu,  3 Jul 2014 10:19:59 +0100
-Message-Id: <1404379241-8590-157-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 3 Jul 2014 05:40:08 -0400
+Date: Thu, 3 Jul 2014 10:40:01 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Maxime Coquelin <maxime.coquelin@st.com>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        srinivas.kandagatla@gmail.com, patrice.chotard@st.com,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] Add reset controllers for STiH407 SoC
+Message-ID: <20140703094001.GB32208@lee--X1>
+References: <1404310129-14667-1-git-send-email-peter.griffin@linaro.org>
+ <1404317194.4109.13.camel@paszta.hi.pengutronix.de>
+ <20140702165924.GB17665@lee--X1>
+ <53B50EFD.2070007@st.com>
+ <1404379248.18039.31.camel@paszta.hi.pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1404379248.18039.31.camel@paszta.hi.pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.13 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, 03 Jul 2014, Philipp Zabel wrote:
+> Am Donnerstag, den 03.07.2014, 10:06 +0200 schrieb Maxime Coquelin:
+> > I will queue patch 4 to STi DT branch for v3.17.
+> > For now, no nodes uses reset for STiH407, so we don't need the 
+> > dt-bindings header file in the STi tree.
+> > 
+> > If we have a DT node using a reset line before my pull-request, I might 
+> > have to integrate the series in the STi DT branch.
+> > Philipp, does that sound reasonable?
+> 
+> Patch 4 depends on patch 1 for the header. My tree is still empty, how
+> about I take the first two, and you merge that branch and then take 3
+> and 4 on top?
 
-------------------
+That approach sounds reasonable.  Once you've applied the patches can
+you tag the branch and provide Maxime with a pull-request please
+Philipp?
 
-From: Jeff Layton <jlayton@redhat.com>
-
-commit a0ef5e19684f0447da9ff0654a12019c484f57ca upstream.
-
-Currently when we are processing a request, we try to scrape an expired
-or over-limit entry off the list in preference to allocating a new one
-from the slab.
-
-This is unnecessarily complicated. Just use the slab layer.
-
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- fs/nfsd/nfscache.c | 36 ++++--------------------------------
- 1 file changed, 4 insertions(+), 32 deletions(-)
-
-diff --git a/fs/nfsd/nfscache.c b/fs/nfsd/nfscache.c
-index ec8d97ddc635..02e8e9ad5750 100644
---- a/fs/nfsd/nfscache.c
-+++ b/fs/nfsd/nfscache.c
-@@ -129,13 +129,6 @@ nfsd_reply_cache_alloc(void)
- }
- 
- static void
--nfsd_reply_cache_unhash(struct svc_cacherep *rp)
--{
--	hlist_del_init(&rp->c_hash);
--	list_del_init(&rp->c_lru);
--}
--
--static void
- nfsd_reply_cache_free_locked(struct svc_cacherep *rp)
- {
- 	if (rp->c_type == RC_REPLBUFF && rp->c_replvec.iov_base) {
-@@ -402,22 +395,8 @@ nfsd_cache_lookup(struct svc_rqst *rqstp)
- 
- 	/*
- 	 * Since the common case is a cache miss followed by an insert,
--	 * preallocate an entry. First, try to reuse the first entry on the LRU
--	 * if it works, then go ahead and prune the LRU list.
-+	 * preallocate an entry.
- 	 */
--	spin_lock(&cache_lock);
--	if (!list_empty(&lru_head)) {
--		rp = list_first_entry(&lru_head, struct svc_cacherep, c_lru);
--		if (nfsd_cache_entry_expired(rp) ||
--		    num_drc_entries >= max_drc_entries) {
--			nfsd_reply_cache_unhash(rp);
--			prune_cache_entries();
--			goto search_cache;
--		}
--	}
--
--	/* No expired ones available, allocate a new one. */
--	spin_unlock(&cache_lock);
- 	rp = nfsd_reply_cache_alloc();
- 	spin_lock(&cache_lock);
- 	if (likely(rp)) {
-@@ -425,7 +404,9 @@ nfsd_cache_lookup(struct svc_rqst *rqstp)
- 		drc_mem_usage += sizeof(*rp);
- 	}
- 
--search_cache:
-+	/* go ahead and prune the cache */
-+	prune_cache_entries();
-+
- 	found = nfsd_cache_search(rqstp, csum);
- 	if (found) {
- 		if (likely(rp))
-@@ -439,15 +420,6 @@ search_cache:
- 		goto out;
- 	}
- 
--	/*
--	 * We're keeping the one we just allocated. Are we now over the
--	 * limit? Prune one off the tip of the LRU in trade for the one we
--	 * just allocated if so.
--	 */
--	if (num_drc_entries >= max_drc_entries)
--		nfsd_reply_cache_free_locked(list_first_entry(&lru_head,
--						struct svc_cacherep, c_lru));
--
- 	nfsdstats.rcmisses++;
- 	rqstp->rq_cacherep = rp;
- 	rp->c_state = RC_INPROG;
 -- 
-1.9.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
