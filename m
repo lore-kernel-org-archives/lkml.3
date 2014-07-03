@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758706AbaGCJW5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:22:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51924 "EHLO
+	id S1030552AbaGCJ7E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:59:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51933 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758628AbaGCJWx (ORCPT
+	with ESMTP id S1758683AbaGCJW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:22:53 -0400
+	Thu, 3 Jul 2014 05:22:56 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?J=C3=A9r=C3=B4me=20Carretero?= <cJ-ko@zougloub.eu>,
-        Tejun Heo <tj@kernel.org>,
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 087/198] ahci: Add Device ID for HighPoint RocketRaid 642L
-Date: Thu,  3 Jul 2014 10:18:50 +0100
-Message-Id: <1404379241-8590-88-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 090/198] mm: vmscan: do not throttle based on pfmemalloc reserves if node has no ZONE_NORMAL
+Date: Thu,  3 Jul 2014 10:18:53 +0100
+Message-Id: <1404379241-8590-91-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,38 +28,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?J=C3=A9r=C3=B4me=20Carretero?= <cJ-ko@zougloub.eu>
+From: Mel Gorman <mgorman@suse.de>
 
-commit d251836508fb26cd1a22b41381739835ee23728d upstream.
+commit 675becce15f320337499bc1a9356260409a5ba29 upstream.
 
-This device normally comes with a proprietary driver, using a web GUI
-to configure RAID:
- http://www.highpoint-tech.com/USA_new/series_rr600-download.htm
-But thankfully it also works out of the box with the AHCI driver,
-being just a Marvell 88SE9235.
+throttle_direct_reclaim() is meant to trigger during swap-over-network
+during which the min watermark is treated as a pfmemalloc reserve.  It
+throttes on the first node in the zonelist but this is flawed.
 
-Devices 640L, 644L, 644LS should also be supported but not tested here.
+The user-visible impact is that a process running on CPU whose local
+memory node has no ZONE_NORMAL will stall for prolonged periods of time,
+possibly indefintely.  This is due to throttle_direct_reclaim thinking the
+pfmemalloc reserves are depleted when in fact they don't exist on that
+node.
 
-Signed-off-by: Jérôme Carretero <cJ-ko@zougloub.eu>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+On a NUMA machine running a 32-bit kernel (I know) allocation requests
+from CPUs on node 1 would detect no pfmemalloc reserves and the process
+gets throttled.  This patch adjusts throttling of direct reclaim to
+throttle based on the first node in the zonelist that has a usable
+ZONE_NORMAL or lower zone.
+
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/ahci.c | 2 ++
- 1 file changed, 2 insertions(+)
+ mm/vmscan.c | 43 +++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 37 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 236016d410f7..7ce164157768 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -450,6 +450,8 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	  .driver_data = board_ahci_yes_fbs },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9230),
- 	  .driver_data = board_ahci_yes_fbs },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_TTI, 0x0642),
-+	  .driver_data = board_ahci_yes_fbs },
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 65cbae5b85c4..433671bc21d5 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2431,10 +2431,17 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
  
- 	/* Promise */
- 	{ PCI_VDEVICE(PROMISE, 0x3f20), board_ahci },	/* PDC42819 */
+ 	for (i = 0; i <= ZONE_NORMAL; i++) {
+ 		zone = &pgdat->node_zones[i];
++		if (!populated_zone(zone))
++			continue;
++
+ 		pfmemalloc_reserve += min_wmark_pages(zone);
+ 		free_pages += zone_page_state(zone, NR_FREE_PAGES);
+ 	}
+ 
++	/* If there are no reserves (unexpected config) then do not throttle */
++	if (!pfmemalloc_reserve)
++		return true;
++
+ 	wmark_ok = free_pages > pfmemalloc_reserve / 2;
+ 
+ 	/* kswapd must be awake if processes are being throttled */
+@@ -2459,9 +2466,9 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
+ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+ 					nodemask_t *nodemask)
+ {
++	struct zoneref *z;
+ 	struct zone *zone;
+-	int high_zoneidx = gfp_zone(gfp_mask);
+-	pg_data_t *pgdat;
++	pg_data_t *pgdat = NULL;
+ 
+ 	/*
+ 	 * Kernel threads should not be throttled as they may be indirectly
+@@ -2480,10 +2487,34 @@ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+ 	if (fatal_signal_pending(current))
+ 		goto out;
+ 
+-	/* Check if the pfmemalloc reserves are ok */
+-	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
+-	pgdat = zone->zone_pgdat;
+-	if (pfmemalloc_watermark_ok(pgdat))
++	/*
++	 * Check if the pfmemalloc reserves are ok by finding the first node
++	 * with a usable ZONE_NORMAL or lower zone. The expectation is that
++	 * GFP_KERNEL will be required for allocating network buffers when
++	 * swapping over the network so ZONE_HIGHMEM is unusable.
++	 *
++	 * Throttling is based on the first usable node and throttled processes
++	 * wait on a queue until kswapd makes progress and wakes them. There
++	 * is an affinity then between processes waking up and where reclaim
++	 * progress has been made assuming the process wakes on the same node.
++	 * More importantly, processes running on remote nodes will not compete
++	 * for remote pfmemalloc reserves and processes on different nodes
++	 * should make reasonable progress.
++	 */
++	for_each_zone_zonelist_nodemask(zone, z, zonelist,
++					gfp_mask, nodemask) {
++		if (zone_idx(zone) > ZONE_NORMAL)
++			continue;
++
++		/* Throttle based on the first usable node */
++		pgdat = zone->zone_pgdat;
++		if (pfmemalloc_watermark_ok(pgdat))
++			goto out;
++		break;
++	}
++
++	/* If no zone was usable by the allocation flags then do not throttle */
++	if (!pgdat)
+ 		goto out;
+ 
+ 	/* Account for the throttling */
 -- 
 1.9.1
 
