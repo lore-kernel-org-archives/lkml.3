@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758217AbaGCOtx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:49:53 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51752 "EHLO
+	id S965242AbaGCOzG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:55:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51769 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752244AbaGCOtu (ORCPT
+	with ESMTP id S1758194AbaGCOtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:49:50 -0400
+	Thu, 3 Jul 2014 10:49:53 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -17,9 +17,9 @@ Cc: Boris Brezillon <boris@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH RESEND 02/18] AT91: setup: Switch to pr_fmt
-Date: Thu,  3 Jul 2014 16:41:17 +0200
-Message-Id: <1404398493-28907-3-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH RESEND 10/18] AT91: Call at91_register_devices in the board files
+Date: Thu,  3 Jul 2014 16:41:25 +0200
+Message-Id: <1404398493-28907-11-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1404398493-28907-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1404398493-28907-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -27,171 +27,167 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of the printed messages are using the "AT91:" prefix in the setup.c file,
-but not all of them. Moreover, those who add it hardcode it directly in the
-message, while the pr_fmt macro makes it easier for us to support such a case.
+Make every board call the register_devices callback so that the devices
+declared by the SoC are registered.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/mach-at91/setup.c | 42 ++++++++++++++++++++++--------------------
- 1 file changed, 22 insertions(+), 20 deletions(-)
+ arch/arm/mach-at91/board-afeb-9260v1.c  | 2 ++
+ arch/arm/mach-at91/board-cam60.c        | 2 ++
+ arch/arm/mach-at91/board-cpu9krea.c     | 2 ++
+ arch/arm/mach-at91/board-flexibity.c    | 2 ++
+ arch/arm/mach-at91/board-sam9-l9260.c   | 2 ++
+ arch/arm/mach-at91/board-sam9260ek.c    | 2 ++
+ arch/arm/mach-at91/board-sam9261ek.c    | 2 ++
+ arch/arm/mach-at91/board-sam9263ek.c    | 2 ++
+ arch/arm/mach-at91/board-sam9m10g45ek.c | 2 ++
+ arch/arm/mach-at91/board-sam9rlek.c     | 2 ++
+ arch/arm/mach-at91/board-snapper9260.c  | 2 ++
+ 11 files changed, 22 insertions(+)
 
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index f7a07a58ebb6..9c4c7fb323fb 100644
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -5,6 +5,8 @@
-  * Under GPLv2
-  */
+diff --git a/arch/arm/mach-at91/board-afeb-9260v1.c b/arch/arm/mach-at91/board-afeb-9260v1.c
+index 597c649170aa..fc9621ccb606 100644
+--- a/arch/arm/mach-at91/board-afeb-9260v1.c
++++ b/arch/arm/mach-at91/board-afeb-9260v1.c
+@@ -167,6 +167,8 @@ static struct at91_cf_data afeb9260_cf_data = {
  
-+#define pr_fmt(fmt)	"AT91: " fmt
+ static void __init afeb9260_board_init(void)
+ {
++	at91_register_devices();
 +
- #include <linux/module.h>
- #include <linux/io.h>
- #include <linux/mm.h>
-@@ -37,7 +39,7 @@ void __init at91rm9200_set_type(int type)
- 	else
- 		at91_soc_initdata.subtype = AT91_SOC_RM9200_BGA;
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+diff --git a/arch/arm/mach-at91/board-cam60.c b/arch/arm/mach-at91/board-cam60.c
+index a30502c8d379..283655bd86c1 100644
+--- a/arch/arm/mach-at91/board-cam60.c
++++ b/arch/arm/mach-at91/board-cam60.c
+@@ -170,6 +170,8 @@ static void __init cam60_add_device_nand(void)
  
--	pr_info("AT91: filled in soc subtype: %s\n",
-+	pr_info("filled in soc subtype: %s\n",
- 		at91_get_soc_subtype(&at91_soc_initdata));
- }
- 
-@@ -66,7 +68,7 @@ void __init at91_ioremap_ramc(int id, u32 addr, u32 size)
- 	}
- 	at91_ramc_base[id] = ioremap(addr, size);
- 	if (!at91_ramc_base[id])
--		panic("Impossible to ioremap ramc.%d 0x%x\n", id, addr);
-+		panic(pr_fmt("Impossible to ioremap ramc.%d 0x%x\n"), id, addr);
- }
- 
- static struct map_desc sram_desc[2] __initdata;
-@@ -83,7 +85,7 @@ void __init at91_init_sram(int bank, unsigned long base, unsigned int length)
- 	desc->length = length;
- 	desc->type = MT_MEMORY_RWX_NONCACHED;
- 
--	pr_info("AT91: sram at 0x%lx of 0x%x mapped at 0x%lx\n",
-+	pr_info("sram at 0x%lx of 0x%x mapped at 0x%lx\n",
- 		base, length, desc->virtual);
- 
- 	iotable_init(desc, 1);
-@@ -302,16 +304,16 @@ void __init at91_map_io(void)
- 		soc_detect(AT91_BASE_DBGU1);
- 
- 	if (!at91_soc_is_detected())
--		panic("AT91: Impossible to detect the SOC type");
-+		panic(pr_fmt("Impossible to detect the SOC type"));
- 
--	pr_info("AT91: Detected soc type: %s\n",
-+	pr_info("Detected soc type: %s\n",
- 		at91_get_soc_type(&at91_soc_initdata));
- 	if (at91_soc_initdata.subtype != AT91_SOC_SUBTYPE_NONE)
--		pr_info("AT91: Detected soc subtype: %s\n",
-+		pr_info("Detected soc subtype: %s\n",
- 			at91_get_soc_subtype(&at91_soc_initdata));
- 
- 	if (!at91_soc_is_enabled())
--		panic("AT91: Soc not enabled");
-+		panic(pr_fmt("Soc not enabled"));
- 
- 	if (at91_boot_soc.map_io)
- 		at91_boot_soc.map_io();
-@@ -328,7 +330,7 @@ void __init at91_ioremap_shdwc(u32 base_addr)
+ static void __init cam60_board_init(void)
  {
- 	at91_shdwc_base = ioremap(base_addr, 16);
- 	if (!at91_shdwc_base)
--		panic("Impossible to ioremap at91_shdwc_base\n");
-+		panic(pr_fmt("Impossible to ioremap at91_shdwc_base\n"));
- 	pm_power_off = at91sam9_poweroff;
- }
++	at91_register_devices();
++
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+diff --git a/arch/arm/mach-at91/board-cpu9krea.c b/arch/arm/mach-at91/board-cpu9krea.c
+index 2037f78c84e7..29a89032bb9a 100644
+--- a/arch/arm/mach-at91/board-cpu9krea.c
++++ b/arch/arm/mach-at91/board-cpu9krea.c
+@@ -322,6 +322,8 @@ static struct mci_platform_data __initdata cpu9krea_mci0_data = {
  
-@@ -338,7 +340,7 @@ void __init at91_ioremap_rstc(u32 base_addr)
+ static void __init cpu9krea_board_init(void)
  {
- 	at91_rstc_base = ioremap(base_addr, 16);
- 	if (!at91_rstc_base)
--		panic("Impossible to ioremap at91_rstc_base\n");
-+		panic(pr_fmt("Impossible to ioremap at91_rstc_base\n"));
- }
++	at91_register_devices();
++
+ 	/* NOR */
+ 	cpu9krea_add_device_nor();
+ 	/* Serial */
+diff --git a/arch/arm/mach-at91/board-flexibity.c b/arch/arm/mach-at91/board-flexibity.c
+index 68f1ab6bd08f..79bd411b0cee 100644
+--- a/arch/arm/mach-at91/board-flexibity.c
++++ b/arch/arm/mach-at91/board-flexibity.c
+@@ -138,6 +138,8 @@ static struct gpio_led flexibity_leds[] = {
  
- void __iomem *at91_matrix_base;
-@@ -348,7 +350,7 @@ void __init at91_ioremap_matrix(u32 base_addr)
+ static void __init flexibity_board_init(void)
  {
- 	at91_matrix_base = ioremap(base_addr, 512);
- 	if (!at91_matrix_base)
--		panic("Impossible to ioremap at91_matrix_base\n");
-+		panic(pr_fmt("Impossible to ioremap at91_matrix_base\n"));
- }
++	at91_register_devices();
++
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+diff --git a/arch/arm/mach-at91/board-sam9-l9260.c b/arch/arm/mach-at91/board-sam9-l9260.c
+index d24dda67e2d3..70309404f366 100644
+--- a/arch/arm/mach-at91/board-sam9-l9260.c
++++ b/arch/arm/mach-at91/board-sam9-l9260.c
+@@ -187,6 +187,8 @@ static struct gpio_led ek_leds[] = {
  
- #if defined(CONFIG_OF) && !defined(CONFIG_ARCH_AT91X40)
-@@ -365,15 +367,15 @@ static void at91_dt_rstc(void)
+ static void __init ek_board_init(void)
+ {
++	at91_register_devices();
++
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+diff --git a/arch/arm/mach-at91/board-sam9260ek.c b/arch/arm/mach-at91/board-sam9260ek.c
+index 65dea12d685e..da9c5f1f2c49 100644
+--- a/arch/arm/mach-at91/board-sam9260ek.c
++++ b/arch/arm/mach-at91/board-sam9260ek.c
+@@ -307,6 +307,8 @@ static void __init ek_add_device_buttons(void) {}
  
- 	np = of_find_matching_node(NULL, rstc_ids);
- 	if (!np)
--		panic("unable to find compatible rstc node in dtb\n");
-+		panic(pr_fmt("unable to find compatible rstc node in dtb\n"));
+ static void __init ek_board_init(void)
+ {
++	at91_register_devices();
++
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+diff --git a/arch/arm/mach-at91/board-sam9261ek.c b/arch/arm/mach-at91/board-sam9261ek.c
+index 4637432de08f..d1be10b09ab3 100644
+--- a/arch/arm/mach-at91/board-sam9261ek.c
++++ b/arch/arm/mach-at91/board-sam9261ek.c
+@@ -561,6 +561,8 @@ static struct gpio_led ek_leds[] = {
  
- 	at91_rstc_base = of_iomap(np, 0);
- 	if (!at91_rstc_base)
--		panic("unable to map rstc cpu registers\n");
-+		panic(pr_fmt("unable to map rstc cpu registers\n"));
+ static void __init ek_board_init(void)
+ {
++	at91_register_devices();
++
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+diff --git a/arch/arm/mach-at91/board-sam9263ek.c b/arch/arm/mach-at91/board-sam9263ek.c
+index cd2726ee5add..3f613d962d9b 100644
+--- a/arch/arm/mach-at91/board-sam9263ek.c
++++ b/arch/arm/mach-at91/board-sam9263ek.c
+@@ -405,6 +405,8 @@ static struct at91_can_data ek_can_data = {
  
- 	of_id = of_match_node(rstc_ids, np);
- 	if (!of_id)
--		panic("AT91: rtsc no restart function available\n");
-+		panic(pr_fmt("rtsc no restart function available\n"));
+ static void __init ek_board_init(void)
+ {
++	at91_register_devices();
++
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
+index 1ea61328f30d..33a7b19f7400 100644
+--- a/arch/arm/mach-at91/board-sam9m10g45ek.c
++++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
+@@ -450,6 +450,8 @@ static struct platform_device *devices[] __initdata = {
  
- 	arm_pm_restart = of_id->data;
+ static void __init ek_board_init(void)
+ {
++	at91_register_devices();
++
+ 	/* Serial */
+ 	/* DGBU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+diff --git a/arch/arm/mach-at91/board-sam9rlek.c b/arch/arm/mach-at91/board-sam9rlek.c
+index b64648b4a1fc..262e3f957d9f 100644
+--- a/arch/arm/mach-at91/board-sam9rlek.c
++++ b/arch/arm/mach-at91/board-sam9rlek.c
+@@ -292,6 +292,8 @@ static void __init ek_add_device_buttons(void) {}
  
-@@ -394,17 +396,17 @@ static void at91_dt_ramc(void)
+ static void __init ek_board_init(void)
+ {
++	at91_register_devices();
++
+ 	/* Serial */
+ 	/* DBGU on ttyS0. (Rx & Tx only) */
+ 	at91_register_uart(0, 0, 0);
+diff --git a/arch/arm/mach-at91/board-snapper9260.c b/arch/arm/mach-at91/board-snapper9260.c
+index 1b870e6def0c..2a817b85569f 100644
+--- a/arch/arm/mach-at91/board-snapper9260.c
++++ b/arch/arm/mach-at91/board-snapper9260.c
+@@ -154,6 +154,8 @@ static void __init snapper9260_add_device_nand(void)
  
- 	np = of_find_matching_node(NULL, ramc_ids);
- 	if (!np)
--		panic("unable to find compatible ram controller node in dtb\n");
-+		panic(pr_fmt("unable to find compatible ram controller node in dtb\n"));
+ static void __init snapper9260_board_init(void)
+ {
++	at91_register_devices();
++
+ 	at91_add_device_i2c(snapper9260_i2c_devices,
+ 			    ARRAY_SIZE(snapper9260_i2c_devices));
  
- 	at91_ramc_base[0] = of_iomap(np, 0);
- 	if (!at91_ramc_base[0])
--		panic("unable to map ramc[0] cpu registers\n");
-+		panic(pr_fmt("unable to map ramc[0] cpu registers\n"));
- 	/* the controller may have 2 banks */
- 	at91_ramc_base[1] = of_iomap(np, 1);
- 
- 	of_id = of_match_node(ramc_ids, np);
- 	if (!of_id)
--		pr_warn("AT91: ramc no standby function available\n");
-+		pr_warn("ramc no standby function available\n");
- 	else
- 		at91_pm_set_standby(of_id->data);
- 
-@@ -450,23 +452,23 @@ static void at91_dt_shdwc(void)
- 
- 	np = of_find_matching_node(NULL, shdwc_ids);
- 	if (!np) {
--		pr_debug("AT91: unable to find compatible shutdown (shdwc) controller node in dtb\n");
-+		pr_debug("unable to find compatible shutdown (shdwc) controller node in dtb\n");
- 		return;
- 	}
- 
- 	at91_shdwc_base = of_iomap(np, 0);
- 	if (!at91_shdwc_base)
--		panic("AT91: unable to map shdwc cpu registers\n");
-+		panic(pr_fmt("unable to map shdwc cpu registers\n"));
- 
- 	wakeup_mode = at91_dtget_shdwc_wakeup_mode(np);
- 	if (wakeup_mode < 0) {
--		pr_warn("AT91: shdwc unknown wakeup mode\n");
-+		pr_warn("shdwc unknown wakeup mode\n");
- 		goto end;
- 	}
- 
- 	if (!of_property_read_u32(np, "atmel,wakeup-counter", &reg)) {
- 		if (reg > AT91_SHDW_CPTWK0_MAX) {
--			pr_warn("AT91: shdwc wakeup counter 0x%x > 0x%x reduce it to 0x%x\n",
-+			pr_warn("shdwc wakeup counter 0x%x > 0x%x reduce it to 0x%x\n",
- 				reg, AT91_SHDW_CPTWK0_MAX, AT91_SHDW_CPTWK0_MAX);
- 			reg = AT91_SHDW_CPTWK0_MAX;
- 		}
 -- 
 2.0.1
 
