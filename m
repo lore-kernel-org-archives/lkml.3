@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399AbaGCFsN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 01:48:13 -0400
-Received: from smtp2-g21.free.fr ([212.27.42.2]:7840 "EHLO smtp2-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751311AbaGCFsL convert rfc822-to-8bit (ORCPT
+	id S1755516AbaGCFsp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 01:48:45 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:54243 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311AbaGCFso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 01:48:11 -0400
-Date: Thu, 3 Jul 2014 07:49:59 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Mark Brown <broonie@kernel.org>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
-        lgirdwood@gmail.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        Dave Airlie <airlied@gmail.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ASoC: tda998x: add a codec to the HDMI transmitter
-Message-ID: <20140703074959.7c489912@armhf>
-In-Reply-To: <20140702194252.GN410@sirena.org.uk>
-References: <20140702183841.7c964832@armhf>
-	<20140702165628.GO20799@lunn.ch>
-	<20140702195154.47d6f6b4@armhf>
-	<20140702194252.GN410@sirena.org.uk>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; arm-unknown-linux-gnueabihf)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 Jul 2014 01:48:44 -0400
+Message-ID: <1404366520.5137.90.camel@marge.simpson.net>
+Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
+ wakeups
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        riel@redhat.com, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Date: Thu, 03 Jul 2014 07:48:40 +0200
+In-Reply-To: <20140703052124.GB4603@linux.vnet.ibm.com>
+References: <20140627142038.GA22942@linux.vnet.ibm.com>
+	 <20140702123412.GD19379@twins.programming.kicks-ass.net>
+	 <20140702153915.GQ4603@linux.vnet.ibm.com>
+	 <20140702160412.GO19379@twins.programming.kicks-ass.net>
+	 <20140702170838.GS4603@linux.vnet.ibm.com>
+	 <1404358279.5137.63.camel@marge.simpson.net>
+	 <20140703052124.GB4603@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jul 2014 20:42:52 +0100
-Mark Brown <broonie@kernel.org> wrote:
+On Wed, 2014-07-02 at 22:21 -0700, Paul E. McKenney wrote: 
+> On Thu, Jul 03, 2014 at 05:31:19AM +0200, Mike Galbraith wrote:
 
-> > I tested this CODEC with both DAPM and DPCM. If the audio subsystem
-> > asks for streaming on both I2S and S/PDIF, only the last call is served
-> > (this depends on the order of the DAI links in the audio card creation
-> > table).  
+> > NO_HZ_FULL is a property of a set of CPUs.  isolcpus is supposed to go
+> > away as being a redundant interface to manage a single property of a set
+> > of CPUs, but it's perfectly fine for NO_HZ_FULL to add an interface to
+> > manage a single property of a set of CPUs.  What am I missing? 
 > 
-> I'd expect this to return an error for the busy DAI rather than just
-> silently ignore it failing to start or (better) implement some control
-> to let the user select which of the DAIs is active.
+> Well, for now, it can only be specified at build time or at boot time.
+> In theory, it is possible to change a CPU from being callback-offloaded
+> to not at runtime, but there would need to be an extremely good reason
+> for adding that level of complexity.  Lots of "fun" races in there...
 
-Mark,
+Yeah, understood.
 
-This is not an error. If the audio subsystem (DPCM, not the user)
-chooses to activate both I2S and S/PDIF, this means the HDMI audio may
-be taken either from I2S or from S/PDIF: both inputs have the right
-format and rate.
+(still it's a NO_HZ_FULL wart though IMHO, would be prettier and more
+usable if it eventually became unified with cpuset and learned how to
+tap-dance properly;)
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+-Mike
+
