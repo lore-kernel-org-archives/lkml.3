@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965248AbaGCJ3p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:29:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52615 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758738AbaGCJZK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758739AbaGCJZK (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 3 Jul 2014 05:25:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52558 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030536AbaGCJY6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 05:24:58 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Takashi Iwai <tiwai@suse.de>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 183/198] ALSA: control: Make sure that id->index does not overflow
-Date: Thu,  3 Jul 2014 10:20:26 +0100
-Message-Id: <1404379241-8590-184-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 174/198] USB: EHCI: avoid BIOS handover on the HASEE E200
+Date: Thu,  3 Jul 2014 10:20:17 +0100
+Message-Id: <1404379241-8590-175-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -27,39 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 883a1d49f0d77d30012f114b2e19fc141beb3e8e upstream.
+commit b0a50e92bda3c4aeb8017d4e6c6e92146ebd5c9b upstream.
 
-The ALSA control code expects that the range of assigned indices to a control is
-continuous and does not overflow. Currently there are no checks to enforce this.
-If a control with a overflowing index range is created that control becomes
-effectively inaccessible and unremovable since snd_ctl_find_id() will not be
-able to find it. This patch adds a check that makes sure that controls with a
-overflowing index range can not be created.
+Leandro Liptak reports that his HASEE E200 computer hangs when we ask
+the BIOS to hand over control of the EHCI host controller.  This
+definitely sounds like a bug in the BIOS, but at the moment there is
+no way to fix it.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Jaroslav Kysela <perex@perex.cz>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This patch works around the problem by avoiding the handoff whenever
+the motherboard and BIOS version match those of Leandro's computer.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Leandro Liptak <leandroliptak@gmail.com>
+Tested-by: Leandro Liptak <leandroliptak@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/core/control.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/host/pci-quirks.c | 19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
-diff --git a/sound/core/control.c b/sound/core/control.c
-index 93215b4bec6b..98a29b26c5f4 100644
---- a/sound/core/control.c
-+++ b/sound/core/control.c
-@@ -343,6 +343,9 @@ int snd_ctl_add(struct snd_card *card, struct snd_kcontrol *kcontrol)
- 	if (snd_BUG_ON(!card || !kcontrol->info))
- 		goto error;
- 	id = kcontrol->id;
-+	if (id.index > UINT_MAX - kcontrol->count)
-+		goto error;
-+
- 	down_write(&card->controls_rwsem);
- 	if (snd_ctl_find_id(card, &id)) {
- 		up_write(&card->controls_rwsem);
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index b9848e4d3d44..75c818c164d5 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -568,6 +568,14 @@ static const struct dmi_system_id ehci_dmi_nohandoff_table[] = {
+ 			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
+ 		},
+ 	},
++	{
++		/* HASEE E200 */
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "HASEE"),
++			DMI_MATCH(DMI_BOARD_NAME, "E210"),
++			DMI_MATCH(DMI_BIOS_VERSION, "6.00"),
++		},
++	},
+ 	{ }
+ };
+ 
+@@ -577,9 +585,14 @@ static void ehci_bios_handoff(struct pci_dev *pdev,
+ {
+ 	int try_handoff = 1, tried_handoff = 0;
+ 
+-	/* The Pegatron Lucid tablet sporadically waits for 98 seconds trying
+-	 * the handoff on its unused controller.  Skip it. */
+-	if (pdev->vendor == 0x8086 && pdev->device == 0x283a) {
++	/*
++	 * The Pegatron Lucid tablet sporadically waits for 98 seconds trying
++	 * the handoff on its unused controller.  Skip it.
++	 *
++	 * The HASEE E200 hangs when the semaphore is set (bugzilla #77021).
++	 */
++	if (pdev->vendor == 0x8086 && (pdev->device == 0x283a ||
++			pdev->device == 0x27cc)) {
+ 		if (dmi_check_system(ehci_dmi_nohandoff_table))
+ 			try_handoff = 0;
+ 	}
 -- 
 1.9.1
 
