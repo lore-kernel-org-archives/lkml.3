@@ -1,106 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299AbaGCOCY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:02:24 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:37452 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755096AbaGCOCW (ORCPT
+	id S1754919AbaGCOIT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:08:19 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:64367 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752318AbaGCOIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:02:22 -0400
-Message-ID: <53B56266.8090208@collabora.com>
-Date: Thu, 03 Jul 2014 16:02:14 +0200
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 3 Jul 2014 10:08:17 -0400
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 5/5] clk: Add floor and ceiling constraints to clock rates
-References: <1403855872-14749-1-git-send-email-tomeu.vizoso@collabora.com> <1403855872-14749-6-git-send-email-tomeu.vizoso@collabora.com> <53ADF6E6.6090705@wwwdotorg.org>
-In-Reply-To: <53ADF6E6.6090705@wwwdotorg.org>
-Content-Type: text/plain; charset=US-ASCII;
-	format=flowed
-Content-Transfer-Encoding: 7BIT
+In-Reply-To: <1404133317-25953-6-git-send-email-lee.jones@linaro.org>
+References: <1404133317-25953-1-git-send-email-lee.jones@linaro.org>
+	<1404133317-25953-6-git-send-email-lee.jones@linaro.org>
+Date: Thu, 3 Jul 2014 16:08:17 +0200
+Message-ID: <CAG374jBYcOAL=GMGvkjf6AuzKaEFs8TaaYr=8_yBZykSrbuO_g@mail.gmail.com>
+Subject: Re: [PATCH 5/5] ARM: DT: STi: Add DT node for MiPHY365x
+From: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kishon@ti.com, "kernel@stlinux.com" <kernel@stlinux.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2014 12:57 AM, Stephen Warren wrote:
-> On 06/27/2014 01:57 AM, Tomeu Vizoso wrote:
->> Adds a way for clock consumers to set maximum and minimum rates. This can be
->> used for thermal drivers to set ceiling rates, or by misc. drivers to set
->> floor rates to assure a minimum performance level.
->
->> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
->
->> +static struct rate_constraint *__ensure_constraint(struct clk *clk_user,
->> +						   enum constraint_type type)
->
->> +	if (!found) {
->> +		constraint = kzalloc(sizeof(*constraint), GFP_KERNEL);
->> +		if (!constraint) {
->> +			pr_err("%s: could not allocate constraint\n", __func__);
->
-> Doesn't kzalloc print an error itself if the allocation fails? I've
-> certainly seen quite a few patches ripping out custom "allocation
-> failed" errors in code.
+Hi Lee,
 
-Thanks for pointing this out, have fixed it in a new version that will 
-be sent soon.
+You missed to mention the target name (stih416) in the title or in the
+commit message.
 
->> +void __clk_free_clk(struct clk *clk_user)
->> +{
->> +	struct clk_core *clk = clk_to_clk_core(clk_user);
->> +	struct rate_constraint *constraint;
->> +	struct hlist_node *tmp;
->> +
->> +	hlist_for_each_entry_safe(constraint, tmp, &clk->rate_constraints, node) {
->> +		if (constraint->dev_id == clk_user->dev_id &&
->> +		    constraint->con_id == clk_user->con_id) {
->> +			hlist_del(&constraint->node);
->> +			kfree(constraint);
+BR
+Gabriel
+
+
+On 30 June 2014 15:01, Lee Jones <lee.jones@linaro.org> wrote:
+> The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+> devices. It has 2 ports which it can use for either; both SATA, both
+> PCIe or one of each in any configuration.
 >
-> Perhaps the list of constraints should be indexed by the client clk
-> structure, so that test should be:
+> Acked-by: Mark Rutland <mark.rutland@arm.com>
+> Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  arch/arm/boot/dts/stih416-b2020-revE.dts |  5 +++++
+>  arch/arm/boot/dts/stih416-b2020.dts      |  7 +++++++
+>  arch/arm/boot/dts/stih416.dtsi           | 21 +++++++++++++++++++++
+>  3 files changed, 33 insertions(+)
 >
-> if (constraint->clk_user == clk_user)
+> diff --git a/arch/arm/boot/dts/stih416-b2020-revE.dts b/arch/arm/boot/dts/stih416-b2020-revE.dts
+> index ba0fa2c..0e2c870 100644
+> --- a/arch/arm/boot/dts/stih416-b2020-revE.dts
+> +++ b/arch/arm/boot/dts/stih416-b2020-revE.dts
+> @@ -31,5 +31,10 @@
+>                 ethernet1: dwmac@fef08000 {
+>                         snps,reset-gpio = <&PIO0 7>;
+>                 };
+> +
+> +               miphy365x_phy: miphy365x@fe382000 {
+> +                       st,pcie-tx-pol-inv;
+> +                       st,sata-gen = <3>;
+> +               };
+>         };
+>  };
+> diff --git a/arch/arm/boot/dts/stih416-b2020.dts b/arch/arm/boot/dts/stih416-b2020.dts
+> index 4e2df66..6f1145c 100644
+> --- a/arch/arm/boot/dts/stih416-b2020.dts
+> +++ b/arch/arm/boot/dts/stih416-b2020.dts
+> @@ -12,4 +12,11 @@
+>  / {
+>         model = "STiH416 B2020";
+>         compatible = "st,stih416-b2020", "st,stih416";
+> +
+> +       soc {
+> +               miphy365x_phy: miphy365x@fe382000 {
+> +                       st,pcie-tx-pol-inv;
+> +                       st,sata-gen = <3>;
+> +               };
+> +       };
+>  };
+> diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+> index 06473c5..6d7aee3 100644
+> --- a/arch/arm/boot/dts/stih416.dtsi
+> +++ b/arch/arm/boot/dts/stih416.dtsi
+> @@ -9,6 +9,8 @@
+>  #include "stih41x.dtsi"
+>  #include "stih416-clock.dtsi"
+>  #include "stih416-pinctrl.dtsi"
+> +
+> +#include <dt-bindings/phy/phy-miphy365x.h>
+>  #include <dt-bindings/interrupt-controller/arm-gic.h>
+>  #include <dt-bindings/reset-controller/stih416-resets.h>
+>  / {
+> @@ -236,5 +238,24 @@
+>                         resets  = <&powerdown STIH416_KEYSCAN_POWERDOWN>,
+>                                   <&softreset STIH416_KEYSCAN_SOFTRESET>;
+>                 };
+> +
+> +               miphy365x_phy: miphy365x@fe382000 {
+> +                       compatible      = "st,miphy365x-phy";
+> +                       st,syscfg       = <&syscfg_rear>;
+> +                       #phy-cells      = <2>;
+> +                       #address-cells  = <1>;
+> +                       #size-cells     = <1>;
+> +                       ranges;
+> +
+> +                       phy_port0: port@fe382000 {
+> +                               reg = <0xfe382000 0x100>, <0xfe394000 0x100>;
+> +                               reg-names = "sata", "pcie";
+> +                       };
+> +
+> +                       phy_port1: port@fe38a000 {
+> +                               reg = <0xfe38a000 0x100>, <0xfe804000 0x100>;
+> +                               reg-names = "sata", "pcie";
+> +                       };
+> +               };
+>         };
+>  };
+> --
+> 1.8.3.2
 >
-> It might be a bit more work, but perhaps the constraints should simply
-> be stored directly in the struct clk rater than the struct clk_core.
-> That would require a nested loop to apply constraints though; first over
-> each struct clk associated with a struct clk_core, then over each
-> constraints in that struct clk. It would slightly simplify
-> adding/removing constraints though, and store the constraints at their
-> "source".
-
-Yeah, I like this alternative from a code organization point of view, 
-but I found the increased code complexity hard to justify. Wonder if 
-anybody else has an opinion on this.
-
->> diff --git a/include/linux/clk.h b/include/linux/clk.h
 >
->> +int clk_set_floor_rate(struct clk *clk, unsigned long rate);
->
->> +int clk_set_ceiling_rate(struct clk *clk, unsigned long rate);
->
-> Additions functions to explicitly remove any previously requested
-> floor/ceiling rate might be useful. The same effect could be achieved by
-> a floor of 0 or a very high ceiling, but it feels cleaner to remove them.
-
-I'm also on the fence on whether the improved readability justifies the 
-additional API, because I find convenient that one just has to grep for 
-a single function call to find all usages (it was certainly useful when 
-I looked at how downstream does the equivalent). I'll be glad to add the 
-functions in a future version if there's consensus on this.
-
-> Overall, this series seems to implement the right kind of concept to me.
-> It'll certainly stop us (NVIDIA at least) wanting to create all kinds of
-> "virtual" clock objects (and associated clock IDs and device tree clock
-> IDs) to achieve a similar effect.
-
-Thanks for the great feedback,
-
-Tomeu
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
