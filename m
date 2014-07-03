@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964855AbaGCJWL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:22:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51694 "EHLO
+	id S1758750AbaGCKIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:08:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51728 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932196AbaGCJWC (ORCPT
+	with ESMTP id S964815AbaGCJWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:22:02 -0400
+	Thu, 3 Jul 2014 05:22:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tomas Winkler <tomas.winkler@intel.com>,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
+Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 052/198] mei: me: drop harmful wait optimization
-Date: Thu,  3 Jul 2014 10:18:15 +0100
-Message-Id: <1404379241-8590-53-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 058/198] USB: sierra: fix remote wakeup
+Date: Thu,  3 Jul 2014 10:18:21 +0100
+Message-Id: <1404379241-8590-59-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -29,44 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 07cd7be3d92eeeae1f92a017f2cfe4fdd9256526 upstream.
+commit 80cc0fcbdaeaf10d04ba27779a2d7ceb73d2717a upstream.
 
-It my take time till ME_RDY will be cleared after the reset,
-so we cannot check the bit before we got the interrupt
+Make sure that needs_remote_wake up is always set when there are open
+ports.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Currently close() would unconditionally set needs_remote_wakeup to 0
+even though there might still be open ports. This could lead to blocked
+input and possibly dropped data on devices that do not support remote
+wakeup (and which must therefore not be runtime suspended while open).
+
+Add an open_ports counter (protected by the susp_lock) and only clear
+needs_remote_wakeup when the last port is closed.
+
+Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
+online")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/misc/mei/hw-me.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/usb/serial/sierra.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
-index 3412adcdaeb0..6cba26d9465f 100644
---- a/drivers/misc/mei/hw-me.c
-+++ b/drivers/misc/mei/hw-me.c
-@@ -183,6 +183,7 @@ static int mei_me_hw_reset(struct mei_device *dev, bool intr_enable)
- 	else
- 		hcsr &= ~H_IE;
+diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
+index 0988887e2059..d84a3f31ae2d 100644
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -58,6 +58,7 @@ struct sierra_intf_private {
+ 	spinlock_t susp_lock;
+ 	unsigned int suspended:1;
+ 	int in_flight;
++	unsigned int open_ports;
+ };
  
-+	dev->recvd_hw_ready = false;
- 	mei_me_reg_write(hw, H_CSR, hcsr);
+ static int sierra_set_power_state(struct usb_device *udev, __u16 swiState)
+@@ -776,7 +777,6 @@ static void sierra_close(struct usb_serial_port *port)
  
- 	if (dev->dev_state == MEI_DEV_POWER_DOWN)
-@@ -233,10 +234,7 @@ static bool mei_me_hw_is_ready(struct mei_device *dev)
- static int mei_me_hw_ready_wait(struct mei_device *dev)
- {
- 	int err;
--	if (mei_me_hw_is_ready(dev))
--		return 0;
+ 	mutex_lock(&serial->disc_mutex);
+ 	if (!serial->disconnected) {
+-		serial->interface->needs_remote_wakeup = 0;
+ 		/* odd error handling due to pm counters */
+ 		if (!usb_autopm_get_interface(serial->interface))
+ 			sierra_send_setup(port);
+@@ -787,6 +787,8 @@ static void sierra_close(struct usb_serial_port *port)
+ 	mutex_unlock(&serial->disc_mutex);
+ 	spin_lock_irq(&intfdata->susp_lock);
+ 	portdata->opened = 0;
++	if (--intfdata->open_ports == 0)
++		serial->interface->needs_remote_wakeup = 0;
+ 	spin_unlock_irq(&intfdata->susp_lock);
  
--	dev->recvd_hw_ready = false;
- 	mutex_unlock(&dev->device_lock);
- 	err = wait_event_interruptible_timeout(dev->wait_hw_ready,
- 			dev->recvd_hw_ready,
+ 	for (;;) {
+@@ -842,9 +844,10 @@ static int sierra_open(struct tty_struct *tty, struct usb_serial_port *port)
+ 
+ 	sierra_send_setup(port);
+ 
+-	serial->interface->needs_remote_wakeup = 1;
+ 	spin_lock_irq(&intfdata->susp_lock);
+ 	portdata->opened = 1;
++	if (++intfdata->open_ports == 1)
++		serial->interface->needs_remote_wakeup = 1;
+ 	spin_unlock_irq(&intfdata->susp_lock);
+ 	usb_autopm_put_interface(serial->interface);
+ 
 -- 
 1.9.1
 
