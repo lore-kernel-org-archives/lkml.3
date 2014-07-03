@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030434AbaGCKQD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:16:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51566 "EHLO
+	id S1030493AbaGCKQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:16:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51556 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758206AbaGCJVf (ORCPT
+	with ESMTP id S1758185AbaGCJVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:21:35 -0400
+	Thu, 3 Jul 2014 05:21:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Bart Van Assche <bvanassche@acm.org>,
+        Roland Dreier <roland@purestorage.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 033/198] Target/iser: Wait for proper cleanup before unloading
-Date: Thu,  3 Jul 2014 10:17:56 +0100
-Message-Id: <1404379241-8590-34-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 031/198] IB/srp: Fix a sporadic crash triggered by cable pulling
+Date: Thu,  3 Jul 2014 10:17:54 +0100
+Message-Id: <1404379241-8590-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,34 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit f5ebec9629cf78eeeea4b8258882a9f439ab2404 upstream.
+commit 024ca90151f5e4296d30f72c13ff9a075e23c9ec upstream.
 
-disconnected_handler works are scheduled on system_wq.
-When attempting to unload, first make sure all works
-have cleaned up.
+Avoid that the loops that iterate over the request ring can encounter
+a pointer to a SCSI command in req->scmnd that is no longer associated
+with that request. If the function srp_unmap_data() is invoked twice
+for a SCSI command that is not in flight then that would cause
+ib_fmr_pool_unmap() to be invoked with an invalid pointer as argument,
+resulting in a kernel oops.
 
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[ luis: backported to 3.11: adjusted context ]
+Reported-by: Sagi Grimberg <sagig@mellanox.com>
+Reference: http://thread.gmane.org/gmane.linux.drivers.rdma/19068/focus=19069
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/infiniband/ulp/srp/ib_srp.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index cfb8824d6a9e..f1208f9ba702 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -2452,6 +2452,7 @@ destroy_rx_wq:
+diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
+index 17b58f4f0681..024fa025a7ab 100644
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -1412,6 +1412,12 @@ err_unmap:
+ err_iu:
+ 	srp_put_tx_iu(target, iu, SRP_IU_CMD);
  
- static void __exit isert_exit(void)
- {
-+	flush_scheduled_work();
- 	kmem_cache_destroy(isert_cmd_cache);
- 	destroy_workqueue(isert_comp_wq);
- 	destroy_workqueue(isert_rx_wq);
++	/*
++	 * Avoid that the loops that iterate over the request ring can
++	 * encounter a dangling SCSI command pointer.
++	 */
++	req->scmnd = NULL;
++
+ 	spin_lock_irqsave(&target->lock, flags);
+ 	list_add(&req->list, &target->free_reqs);
+ 
 -- 
 1.9.1
 
