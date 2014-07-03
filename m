@@ -1,77 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898AbaGCGjH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 02:39:07 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:58003 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824AbaGCGjF (ORCPT
+	id S1755341AbaGCGtN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 02:49:13 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:48818 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951AbaGCGtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 02:39:05 -0400
-Date: Thu, 3 Jul 2014 07:38:58 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Mark Brown <broonie@kernel.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Bill Richardson <wfrichar@chromium.org>,
-        Randall Spangler <rspangler@chromium.org>,
-        Simon Glass <sjg@chromium.org>,
-        Andreas =?iso-8859-1?Q?F=E4rber?= <afaerber@suse.de>,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Olof Johansson <olof@lixom.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] mfd: cros_ec: Use the proper size when looking at
- the cros_ec_i2c result
-Message-ID: <20140703063858.GD17665@lee--X1>
-References: <1403898973-19571-1-git-send-email-dianders@chromium.org>
- <1403898973-19571-3-git-send-email-dianders@chromium.org>
- <20140702072338.GC10311@lee--X1>
- <CAD=FV=VRA-WLgxqQ37naFLcoBM3fBM8FWPcLv8X_wZ89wiV4KA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAD=FV=VRA-WLgxqQ37naFLcoBM3fBM8FWPcLv8X_wZ89wiV4KA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 3 Jul 2014 02:49:11 -0400
+Message-ID: <1404370142.23797.24.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH net-next v2 3/3 RFC] pktgen: Allow sending TCP packets
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, Thomas Graf <tgraf@suug.ch>,
+        Joe Perches <joe@perches.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Date: Wed, 02 Jul 2014 23:49:02 -0700
+In-Reply-To: <1404330855-24546-4-git-send-email-zoltan.kiss@citrix.com>
+References: <1404330855-24546-1-git-send-email-zoltan.kiss@citrix.com>
+	 <1404330855-24546-4-git-send-email-zoltan.kiss@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 02 Jul 2014, Doug Anderson wrote:
-> On Wed, Jul 2, 2014 at 12:23 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> > On Fri, 27 Jun 2014, Doug Anderson wrote:
-> >
-> >> We know how many bytes the EC should be sending us (which is also the
-> >> number of bytes transferred) and also how many bytes the EC actually
-> >> wanted to send to us.  When computing the checksum and copying back
-> >> data let's make sure we take the lesser of the two of those.  We'll
-> >> also complain if the EC tried to send us too many bytes.  The EC
-> >> sending us too few bytes is legit for when we send the EC an invalid
-> >> command.
-> >>
-> >> This is based on similar code in cros_ec_spi.
-> >>
-> >> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> >> ---
-> >>  drivers/mfd/cros_ec_i2c.c | 15 ++++++++++++---
-> >>  1 file changed, 12 insertions(+), 3 deletions(-)
-> >
-> > Acked-by: Lee Jones <lee.jones@linaro.org>
-> >
-> > Is this patch orthogonal i.e. can it be applied without the other two
-> > patches?
+On Wed, 2014-07-02 at 20:54 +0100, Zoltan Kiss wrote:
+> This is a prototype patch to enable sending TCP packets with pktgen. The
+> original motivation is to test TCP GSO with xen-netback/netfront, but I'm not
+> sure about how the checksum should be set up, and also someone should verify the
+> GSO settings I'm using.
 > 
-> Yes.  If patch 3/3 had worked out then it would have required patch #1
-> for proper functioning and patch #2 (this patch) to avoid an ugly
-> error message in the log.  ...but patch #1 and this patch both can
-> stand on their own and can be applied.
 
-Very well, patch applied than.
+It seems you only took care of IPv6, but did not mention this in the
+changelog.
 
-Clause: There is a chance that this patch might not be seen in -next
-for ~24-48hrs.  If it's not there by 72hrs, feel free to poke.
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Thomas Graf <tgraf@suug.ch>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: xen-devel@lists.xenproject.org
+> ---
+> diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+> index d7206ea..13aad46 100644
+> --- a/net/core/pktgen.c
+> +++ b/net/core/pktgen.c
+> @@ -203,6 +203,7 @@
+>  #define F_NODE          (1<<15)	/* Node memory alloc*/
+>  #define F_UDPCSUM       (1<<16)	/* Include UDP checksum */
+>  #define F_PATTERN       (1<<17)	/* Fill the payload with a pattern */
+> +#define F_TCP           (1<<18)	/* Send TCP packet instead of UDP */
+>  
+>  /* Thread control flag bits */
+>  #define T_STOP        (1<<0)	/* Stop run */
+> @@ -1343,6 +1344,12 @@ static ssize_t pktgen_if_write(struct file *file,
+>  		else if (strcmp(f, "!PATTERN") == 0)
+>  			pkt_dev->flags &= ~F_PATTERN;
+>  
+> +		else if (strcmp(f, "TCP") == 0)
+> +			pkt_dev->flags |= F_TCP;
+> +
+> +		else if (strcmp(f, "!TCP") == 0)
+> +			pkt_dev->flags &= ~F_TCP;
+> +
+>  		else {
+>  			sprintf(pg_result,
+>  				"Flag -:%s:- unknown\nAvailable flags, (prepend ! to un-set flag):\n%s",
+> @@ -2952,6 +2959,7 @@ static struct sk_buff *fill_packet_ipv4(struct net_device *odev,
+>  	struct sk_buff *skb = NULL;
+>  	__u8 *eth;
+>  	struct udphdr *udph;
+> +	struct tcphdr *tcph;
+>  	int datalen, iplen;
+>  	struct iphdr *iph;
+>  	__be16 protocol = htons(ETH_P_IP);
+> @@ -3013,29 +3021,39 @@ static struct sk_buff *fill_packet_ipv4(struct net_device *odev,
+>  	iph = (struct iphdr *) skb_put(skb, sizeof(struct iphdr));
+>  
+>  	skb_set_transport_header(skb, skb->len);
+> -	udph = (struct udphdr *) skb_put(skb, sizeof(struct udphdr));
+> +
+> +	if (pkt_dev->flags & F_TCP) {
+> +		datalen = pkt_dev->cur_pkt_size - ETH_HLEN - 20 -
+> +			  sizeof(struct tcphdr) - pkt_dev->pkt_overhead;
+> +		tcph = (struct tcphdr *)skb_put(skb, sizeof(struct tcphdr));
+> +		tcph->source = htons(pkt_dev->cur_udp_src);
+> +		tcph->dest = htons(pkt_dev->cur_udp_dst);
+> +		tcph->check = 0;
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+You do not clear other fields, thus leaking kernel memory.
+
+> +	} else {
+> +		datalen = pkt_dev->cur_pkt_size - ETH_HLEN - 20 -
+> +			  sizeof(struct udphdr) - pkt_dev->pkt_overhead;
+> +		udph = (struct udphdr *)skb_put(skb, sizeof(struct udphdr));
+> +		udph->source = htons(pkt_dev->cur_udp_src);
+> +		udph->dest = htons(pkt_dev->cur_udp_dst);
+> +		udph->len = htons(datalen + sizeof(struct udphdr));	/* DATA + udphdr */
+> +		udph->check = 0;
+> +	}
+> +
+>  	skb_set_queue_mapping(skb, queue_map);
+>  	skb->priority = pkt_dev->skb_priority;
+>  
+>  	memcpy(eth, pkt_dev->hh, 12);
+>  	*(__be16 *) & eth[12] = protocol;
+>  
+> -	/* Eth + IPh + UDPh + mpls */
+> -	datalen = pkt_dev->cur_pkt_size - 14 - 20 - 8 -
+> -		  pkt_dev->pkt_overhead;
+>  	if (datalen < 0 || datalen < sizeof(struct pktgen_hdr))
+>  		datalen = sizeof(struct pktgen_hdr);
+>  
+> -	udph->source = htons(pkt_dev->cur_udp_src);
+> -	udph->dest = htons(pkt_dev->cur_udp_dst);
+> -	udph->len = htons(datalen + 8);	/* DATA + udphdr */
+> -	udph->check = 0;
+>  
+>  	iph->ihl = 5;
+>  	iph->version = 4;
+>  	iph->ttl = 32;
+>  	iph->tos = pkt_dev->tos;
+> -	iph->protocol = IPPROTO_UDP;	/* UDP */
+> +	iph->protocol = pkt_dev->flags & F_TCP ? IPPROTO_TCP : IPPROTO_UDP;
+>  	iph->saddr = pkt_dev->cur_saddr;
+>  	iph->daddr = pkt_dev->cur_daddr;
+>  	iph->id = htons(pkt_dev->ip_id);
+> @@ -3050,7 +3068,9 @@ static struct sk_buff *fill_packet_ipv4(struct net_device *odev,
+>  
+>  	if (!(pkt_dev->flags & F_UDPCSUM)) {
+>  		skb->ip_summed = CHECKSUM_NONE;
+> -	} else if (odev->features & NETIF_F_V4_CSUM) {
+> +	} else if (pkt_dev->flags & F_TCP)
+> +		skb_checksum_setup(skb, true);
+> +	else if (odev->features & NETIF_F_V4_CSUM) {
+>  		skb->ip_summed = CHECKSUM_PARTIAL;
+>  		skb->csum = 0;
+>  		udp4_hwcsum(skb, udph->source, udph->dest);
+> @@ -3067,6 +3087,18 @@ static struct sk_buff *fill_packet_ipv4(struct net_device *odev,
+>  
+>  	pktgen_finalize_skb(pkt_dev, skb, datalen);
+>  
+> +	if (odev->mtu < skb->len) {
+> +		skb_shinfo(skb)->gso_size = odev->mtu - ETH_HLEN - 20 -
+> +					    pkt_dev->pkt_overhead;
+> +		if (pkt_dev->flags & F_TCP) {
+> +			skb_shinfo(skb)->gso_type = SKB_GSO_TCPV4;
+> +			skb_shinfo(skb)->gso_size -= sizeof(struct tcphdr);
+> +		} else {
+> +			skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
+> +			skb_shinfo(skb)->gso_size -= sizeof(struct udphdr);
+> +		}
+> +	}
+
+Some NIC do not handle TSO, and driver could crash if they have sanity
+tests.
+
+pktgen directly calls driver ndo_start_xmit(), so we need to make sure
+we give valid packets to the driver (no software fallbacks at this
+stage)
+
+
