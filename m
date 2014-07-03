@@ -1,58 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563AbaGCM72 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 08:59:28 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:51912 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080AbaGCM70 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 08:59:26 -0400
-Message-ID: <53B553A4.6070407@in.ibm.com>
-Date: Thu, 03 Jul 2014 18:29:16 +0530
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755908AbaGCNCM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 09:02:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33883 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752251AbaGCNCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 09:02:10 -0400
+Message-ID: <53B55450.3060908@suse.cz>
+Date: Thu, 03 Jul 2014 15:02:08 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Phillip Susi <psusi@ubuntu.com>,
-        Janani Venkataraman <jananive@linux.vnet.ibm.com>,
-        Karel Zak <kzak@redhat.com>
-CC: amwang@redhat.com, rdunlap@xenotime.net, andi@firstfloor.org,
-        aravinda@linux.vnet.ibm.com, hch@lst.de, mhiramat@redhat.com,
-        jeremy.fitzhardinge@citrix.com, xemul@parallels.com,
-        suzuki@linux.vnet.ibm.com, kosaki.motohiro@jp.fujitsu.com,
-        adobriyan@gmail.com, tarundsk@linux.vnet.ibm.com, vapier@gentoo.org,
-        roland@hack.frob.com, tj@kernel.org, ananth@linux.vnet.ibm.com,
-        gorcunov@openvz.org, avagin@openvz.org, oleg@redhat.com,
-        eparis@redhat.com, d.hatayama@jp.fujitsu.com, james.hogan@imgtec.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        coreutils@gnu.org, procps@freelists.org, util-linux@vger.kernel.org,
+To: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>
+CC: Sasha Levin <sasha.levin@oracle.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/33] [RFC] Non disruptive application core dump infrastructure
-References: <20140320093040.14878.903.stgit@localhost.localdomain> <20140321080855.GE26374@x2.net.home> <532C54A3.3030903@ubuntu.com> <532FFE3A.9060002@linux.vnet.ibm.com> <53303927.1030004@ubuntu.com>
-In-Reply-To: <53303927.1030004@ubuntu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH 3/3] mm/fs: fix pessimization in hole-punching pagecache
+References: <alpine.LSU.2.11.1407021204180.12131@eggly.anvils> <alpine.LSU.2.11.1407021212060.12131@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1407021212060.12131@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070312-5816-0000-0000-00000F02E510
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2014 07:24 PM, Phillip Susi wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
-> 
-> On 3/24/2014 5:43 AM, Janani Venkataraman wrote:
->> Gcore attaches to the process using gdb and runs the gdb gcore
->> command and then detaches. In gcore the dump cannot be issued from
->> a signal handler context as fork() is not signal safe and moreover
->> it is disruptive in
-> 
-> You can fork+exec from a signal handler just fine.
-Please go through the bug, and especially the comment below :
+On 07/02/2014 09:13 PM, Hugh Dickins wrote:
+> I wanted to revert my v3.1 commit d0823576bf4b ("mm: pincer in
+> truncate_inode_pages_range"), to keep truncate_inode_pages_range()
+> in synch with shmem_undo_range(); but have stepped back - a change
+> to hole-punching in truncate_inode_pages_range() is a change to
+> hole-punching in every filesystem (except tmpfs) that supports it.
+>
+> If there's a logical proof why no filesystem can depend for its own
+> correctness on the pincer guarantee in truncate_inode_pages_range() -
+> an instant when the entire hole is removed from pagecache - then let's
+> revisit later.  But the evidence is that only tmpfs suffered from the
+> livelock, and we have no intention of extending hole-punch to ramfs.
+> So for now just add a few comments (to match or differ from those in
+> shmem_undo_range()), and fix one silliness noticed in d0823576bf4b...
+>
+> Its "index == start" addition to the hole-punch termination test was
+> incomplete: it opened a way for the end condition to be missed, and the
+> loop go on looking through the radix_tree, all the way to end of file.
+> Fix that pessimization by resetting index when detected in inner loop.
+>
+> Note that it's actually hard to hit this case, without the obsessive
+> concurrent faulting that trinity does: normally all pages are removed
+> in the initial trylock_page() pass, and this loop finds nothing to do.
+> I had to "#if 0" out the initial pass to reproduce bug and test fix.
+>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> Cc: Sasha Levin <sasha.levin@oracle.com>
 
-https://sourceware.org/bugzilla/show_bug.cgi?id=4737#c12
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
 
-Cheers
-Suzuki
+> Cc: Konstantin Khlebnikov <koct9i@gmail.com>
+> Cc: Lukas Czerner <lczerner@redhat.com>
+> Cc: Dave Jones <davej@redhat.com>
+> ---
+>
+>   mm/truncate.c |   11 ++++++++---
+>   1 file changed, 8 insertions(+), 3 deletions(-)
+>
+> --- 3.16-rc3/mm/truncate.c	2014-06-08 11:19:54.000000000 -0700
+> +++ linux/mm/truncate.c	2014-07-02 03:36:05.972553533 -0700
+> @@ -355,14 +355,16 @@ void truncate_inode_pages_range(struct a
+>   	for ( ; ; ) {
+>   		cond_resched();
+>   		if (!pagevec_lookup_entries(&pvec, mapping, index,
+> -			min(end - index, (pgoff_t)PAGEVEC_SIZE),
+> -			indices)) {
+> +			min(end - index, (pgoff_t)PAGEVEC_SIZE), indices)) {
+> +			/* If all gone from start onwards, we're done */
+>   			if (index == start)
+>   				break;
+> +			/* Otherwise restart to make sure all gone */
+>   			index = start;
+>   			continue;
+>   		}
+>   		if (index == start && indices[0] >= end) {
+> +			/* All gone out of hole to be punched, we're done */
+>   			pagevec_remove_exceptionals(&pvec);
+>   			pagevec_release(&pvec);
+>   			break;
+> @@ -373,8 +375,11 @@ void truncate_inode_pages_range(struct a
+>
+>   			/* We rely upon deletion not changing page->index */
+>   			index = indices[i];
+> -			if (index >= end)
+> +			if (index >= end) {
+> +				/* Restart punch to make sure all gone */
+> +				index = start - 1;
+>   				break;
+> +			}
+>
+>   			if (radix_tree_exceptional_entry(page)) {
+>   				clear_exceptional_entry(mapping, index, page);
+>
 
