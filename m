@@ -1,51 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758250AbaGCPcP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 11:32:15 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56709 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754485AbaGCPcN (ORCPT
+	id S1758341AbaGCPdh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 11:33:37 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:55528 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960AbaGCPdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 11:32:13 -0400
-Message-ID: <53B5777C.2050307@infradead.org>
-Date: Thu, 03 Jul 2014 08:32:12 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Thu, 3 Jul 2014 11:33:36 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
-CC: linux-kernel@vger.kernel.org,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Ben Romer <sparmaintainer@unisys.com>, Ken Cox <jkc@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: linux-next: Tree for Jul 3 (staging/unisys)
-References: <20140703155305.416bf8c7@canb.auug.org.au>
-In-Reply-To: <20140703155305.416bf8c7@canb.auug.org.au>
+In-Reply-To: <53B5861E02000078000204D1@mail.emea.novell.com>
+References: <53B5861E02000078000204D1@mail.emea.novell.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 3 Jul 2014 08:33:15 -0700
+Message-ID: <CALCETrVR194i97dp42-=Sa+Pz0qdDUgxDVcF-Yuihp6OKPy60Q@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: fix vDSO build
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/14 22:53, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20140702:
-> 
+On Thu, Jul 3, 2014 at 7:34 AM, Jan Beulich <JBeulich@suse.com> wrote:
+> Certain ld versions (observed with 2.20.0) put an empty .rela.dyn
+> section into shared object files, breaking the assumption on the number
+> of sections to be copied to the final output. Simply discard any empty
+> SHT_REL and SHT_RELA sections to address this.
+>
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> Cc: Andy Lutomirski <luto@amacapital.net>
 
-on x86_64:
+Acked-by: Andy Lutomirski <luto@amacapital.net>
 
-CONFIG_UNISYSSPAR=y
-CONFIG_UNISYS_VISORUTIL=m
-# CONFIG_UNISYS_VISORCHANNEL is not set
-CONFIG_UNISYS_CHANNELSTUB=y
+although I'm hoping to get rid of this section copying crap soon anyway.
 
-drivers/built-in.o: In function `channel_mod_init':
-chanstub.c:(.init.text+0x10a8f): undefined reference to `unisys_spar_platform'
-
-
-because CHANNELSTUB=y and VISORUTIL=m.
-
-
-
--- 
-~Randy
+--Andy
