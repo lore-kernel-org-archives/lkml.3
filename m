@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760052AbaGCWMt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 18:12:49 -0400
-Received: from smtprelay0019.hostedemail.com ([216.40.44.19]:41690 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754150AbaGCWIG (ORCPT
+	id S1759890AbaGCWOO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 18:14:14 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:61603 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752275AbaGCWON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 18:08:06 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1541:1711:1714:1730:1747:1777:1792:2393:2559:2562:2895:3138:3139:3140:3141:3142:3351:3865:3867:5007:6261:6298:7809:10004:10026:10848:11232:11657:11658:11914:12043:12517:12519:12555:13311:13357:13846:14093:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: robin88_2960eb195dd4a
-X-Filterd-Recvd-Size: 1775
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 01/16] MAINTAINERS: Update microcode patterns
-Date: Thu,  3 Jul 2014 15:07:45 -0700
-Message-Id: <1100bcda7fae2a18a8271849e0ef4be1d1c4aeb5.1404425176.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1404425176.git.joe@perches.com>
-References: <cover.1404425176.git.joe@perches.com>
+	Thu, 3 Jul 2014 18:14:13 -0400
+Date: Thu, 3 Jul 2014 15:14:10 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Nick Krause <xerofoify@gmail.com>
+cc: monstr@monstr.eu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] microblaze: fixes includes in sigcontext.h
+In-Reply-To: <CAPDOMVh9F7p05wmzaQTpXvAGQzwjuTqJyU__=+e0CzXE152bcw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1407031511070.10658@chino.kir.corp.google.com>
+References: <1404423935-5287-1-git-send-email-xerofoify@gmail.com> <alpine.DEB.2.02.1407031456430.10658@chino.kir.corp.google.com> <CAPDOMVh9F7p05wmzaQTpXvAGQzwjuTqJyU__=+e0CzXE152bcw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit bad5fa631fca ("x86, microcode: Move to a proper location")
-moved the files, update the pattern.
+On Thu, 3 Jul 2014, Nick Krause wrote:
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- MAINTAINERS | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+> You may be right I don't have a compiler that supports microblaze therefore I
+> would suggest removing this FIXME message.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index b9f079b..54bd82e 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -604,7 +604,7 @@ AMD MICROCODE UPDATE SUPPORT
- M:	Andreas Herrmann <herrmann.der.user@googlemail.com>
- L:	amd64-microcode@amd64.org
- S:	Maintained
--F:	arch/x86/kernel/microcode_amd.c
-+F:	arch/x86/kernel/cpu/microcode/amd*
- 
- AMD XGBE DRIVER
- M:	Tom Lendacky <thomas.lendacky@amd.com>
-@@ -4630,8 +4630,8 @@ F:	drivers/platform/x86/intel_menlow.c
- INTEL IA32 MICROCODE UPDATE SUPPORT
- M:	Tigran Aivazian <tigran@aivazian.fsnet.co.uk>
- S:	Maintained
--F:	arch/x86/kernel/microcode_core.c
--F:	arch/x86/kernel/microcode_intel.c
-+F:	arch/x86/kernel/cpu/microcode/core*
-+F:	arch/x86/kernel/cpu/microcode/intel*
- 
- INTEL I/OAT DMA DRIVER
- M:	Dan Williams <dan.j.williams@intel.com>
--- 
-1.8.1.2.459.gbcd45b4.dirty
+The FIXME here is obviously stating that the code needs to be fixed so 
+that it can include linux/ptrace.h rather than asm/ptrace.h since we want 
+to include the former rather than the latter.  It doesn't imply, in any 
+way, that you can just do the conversion without some due diligence 
+(compilation) to ensure it works; otherwise it would have been including 
+linux/ptrace.h since the beginning.
 
+It's bad practice to mess with per-arch header files for platforms that 
+you cannot compile yourself.
+
+> Cheers Nick
+> 
+> On Thu, Jul 3, 2014 at 5:57 PM, David Rientjes <rientjes@google.com> wrote:
+> > On Thu, 3 Jul 2014, Nicholas Krause wrote:
+> >
+> >> diff --git a/arch/microblaze/include/uapi/asm/sigcontext.h b/arch/microblaze/include/uapi/asm/sigcontext.h
+> >> index 55873c8..1180d9b 100644
+> >> --- a/arch/microblaze/include/uapi/asm/sigcontext.h
+> >> +++ b/arch/microblaze/include/uapi/asm/sigcontext.h
+> >> @@ -9,8 +9,7 @@
+> >>  #ifndef _ASM_MICROBLAZE_SIGCONTEXT_H
+> >>  #define _ASM_MICROBLAZE_SIGCONTEXT_H
+> >>
+> >> -/* FIXME should be linux/ptrace.h */
+> >> -#include <asm/ptrace.h>
+> >> +#include <linux/ptrace.h>
+> >>
+> >>  struct sigcontext {
+> >>       struct pt_regs regs;
+> >
+> > Umm, does this even compile?  How does sigcontext.h get the definition of
+> > struct pt_regs?  Seems like it would be better to just do a forward
+> > declaration.
+> 
