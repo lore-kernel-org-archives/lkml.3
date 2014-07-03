@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758854AbaGCVQR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 17:16:17 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:46121 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499AbaGCVQQ (ORCPT
+	id S965058AbaGCVRR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 17:17:17 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:36262 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753979AbaGCVRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 17:16:16 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: rth@twiddle.net
-Cc: ink@jurassic.park.msu.ru, mattst88@gmail.com, linux-alpha@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] alpha: Remove FIXME in file osf_sys.c
-Date: Thu,  3 Jul 2014 17:16:10 -0400
-Message-Id: <1404422170-3784-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 3 Jul 2014 17:17:15 -0400
+Date: Thu, 3 Jul 2014 17:17:14 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Allen Yu <alleny@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Add "rpm_not_supported" flag
+In-Reply-To: <1703139.e6mBtKGhYW@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1407031715560.873-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes the FIXME message on line 891 for info.si_addr being NULL
-as according to alpha devolopers there is no good work around as
-of newest kernel verisons
+On Thu, 3 Jul 2014, Rafael J. Wysocki wrote:
 
-Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
----
- arch/alpha/kernel/osf_sys.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> > Do you have any suggestions?
+> 
+> I need some more time to think about that.  I'm on vacation till Monday,
+> I should be able to get to this by then.  I hope that's not a problem.
 
-diff --git a/arch/alpha/kernel/osf_sys.c b/arch/alpha/kernel/osf_sys.c
-index 1402fcc..27257dc 100644
---- a/arch/alpha/kernel/osf_sys.c
-+++ b/arch/alpha/kernel/osf_sys.c
-@@ -888,7 +888,7 @@ SYSCALL_DEFINE5(osf_setsysinfo, unsigned long, op, void __user *, buffer,
- 			info.si_signo = SIGFPE;
- 			info.si_errno = 0;
- 			info.si_code = si_code;
--			info.si_addr = NULL;  /* FIXME */
-+			info.si_addr = NULL;
-  			send_sig_info(SIGFPE, &info, current);
-  		}
- 		return 0;
--- 
-1.9.1
+Tomorrow is a national holiday in the US, so I'm taking some time off
+too.  Don't hurry.
+
+Alan Stern
 
