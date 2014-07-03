@@ -1,145 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080AbaGCDbM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 23:31:12 -0400
-Received: from g2t2352.austin.hp.com ([15.217.128.51]:56221 "EHLO
-	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525AbaGCDbL (ORCPT
+	id S1754993AbaGCDb1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 23:31:27 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:35120 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754261AbaGCDbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 23:31:11 -0400
-Message-ID: <1404358268.23839.13.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [regression, 3.16-rc] rwsem: optimistic spinning causing
- performance degradation
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@kernel.org>
-Date: Wed, 02 Jul 2014 20:31:08 -0700
-In-Reply-To: <20140703023204.GN4453@dastard>
-References: <20140703023204.GN4453@dastard>
+	Wed, 2 Jul 2014 23:31:23 -0400
+Message-ID: <1404358279.5137.63.camel@marge.simpson.net>
+Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
+ wakeups
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        riel@redhat.com, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Date: Thu, 03 Jul 2014 05:31:19 +0200
+In-Reply-To: <20140702170838.GS4603@linux.vnet.ibm.com>
+References: <20140627142038.GA22942@linux.vnet.ibm.com>
+	 <20140702123412.GD19379@twins.programming.kicks-ass.net>
+	 <20140702153915.GQ4603@linux.vnet.ibm.com>
+	 <20140702160412.GO19379@twins.programming.kicks-ass.net>
+	 <20140702170838.GS4603@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-03 at 12:32 +1000, Dave Chinner wrote:
-> Hi folks,
+On Wed, 2014-07-02 at 10:08 -0700, Paul E. McKenney wrote: 
+> On Wed, Jul 02, 2014 at 06:04:12PM +0200, Peter Zijlstra wrote:
+> > On Wed, Jul 02, 2014 at 08:39:15AM -0700, Paul E. McKenney wrote:
+> > > On Wed, Jul 02, 2014 at 02:34:12PM +0200, Peter Zijlstra wrote:
+> > > > On Fri, Jun 27, 2014 at 07:20:38AM -0700, Paul E. McKenney wrote:
+> > > > > An 80-CPU system with a context-switch-heavy workload can require so
+> > > > > many NOCB kthread wakeups that the RCU grace-period kthreads spend several
+> > > > > tens of percent of a CPU just awakening things.  This clearly will not
+> > > > > scale well: If you add enough CPUs, the RCU grace-period kthreads would
+> > > > > get behind, increasing grace-period latency.
+> > > > > 
+> > > > > To avoid this problem, this commit divides the NOCB kthreads into leaders
+> > > > > and followers, where the grace-period kthreads awaken the leaders each of
+> > > > > whom in turn awakens its followers.  By default, the number of groups of
+> > > > > kthreads is the square root of the number of CPUs, but this default may
+> > > > > be overridden using the rcutree.rcu_nocb_leader_stride boot parameter.
+> > > > > This reduces the number of wakeups done per grace period by the RCU
+> > > > > grace-period kthread by the square root of the number of CPUs, but of
+> > > > > course by shifting those wakeups to the leaders.  In addition, because
+> > > > > the leaders do grace periods on behalf of their respective followers,
+> > > > > the number of wakeups of the followers decreases by up to a factor of two.
+> > > > > Instead of being awakened once when new callbacks arrive and again
+> > > > > at the end of the grace period, the followers are awakened only at
+> > > > > the end of the grace period.
+> > > > > 
+> > > > > For a numerical example, in a 4096-CPU system, the grace-period kthread
+> > > > > would awaken 64 leaders, each of which would awaken its 63 followers
+> > > > > at the end of the grace period.  This compares favorably with the 79
+> > > > > wakeups for the grace-period kthread on an 80-CPU system.
+> > > > 
+> > > > Urgh, how about we kill the entire nocb nonsense and try again? This is
+> > > > getting quite rediculous.
+> > > 
+> > > Sure thing, Peter.
+> > 
+> > So you don't think this has gotten a little out of hand? The NOCB stuff
+> > has lead to these masses of rcu threads and now you're adding extra
+> > cache misses to the perfectly sane and normal code paths just to deal
+> > with so many threads.
 > 
-> I've got a workload that hammers the mmap_sem via multi-threads
-> memory allocation and page faults: it's called xfs_repair. 
+> Indeed it appears to have gotten a bit out of hand.  But let's please
+> attack the real problem rather than the immediate irritant.
+> 
+> And in this case, the real problem is that users are getting callback
+> offloading even when there is no reason for it.
+> 
+> > And all to support a feature that nearly nobody uses. And you were
+> > talking about making nocb the default rcu...
+> 
+> As were others, not that long ago.  Today is the first hint that I got
+> that you feel otherwise.  But it does look like the softirq approach to
+> callback processing needs to stick around for awhile longer.  Nice to
+> hear that softirq is now "sane and normal" again, I guess.  ;-)
+> 
+> Please see my patch in reply to Rik's email.  The idea is to neither
+> rip callback offloading from the kernel nor to keep callback offloading
+> as the default, but instead do callback offloading only for those CPUs
+> specifically marked as NO_HZ_FULL CPUs, or when specifically requested
+> at build time or at boot time.  In other words, only do it when it is
+> needed.
 
-Another reason for concurrent address space operations :/
+Exactly!  Like dynamically, when the user isolates CPUs via the cpuset
+interface, none of it making much sense without that particular property
+of a set of CPUs, and cpuset being the manager of CPU set properties.
 
-> I've been
-> debugging problems with the latest release, and in the process of
-> tracking down some recent regressions I noticed that turning off all
-> the cross-ag IO concurrency resulted in the repair running about
-> 4-5x faster.
-> 
-> i.e.:
-> 
-> # time xfs_repair -f -vv fs.img
-> .....
-> 
->         XFS_REPAIR Summary    Thu Jul  3 11:51:41 2014
-> 
-> Phase           Start           End             Duration
-> Phase 1:        07/03 11:47:15  07/03 11:47:15
-> Phase 2:        07/03 11:47:15  07/03 11:47:35  20 seconds
-> Phase 3:        07/03 11:47:35  07/03 11:51:26  3 minutes, 51 seconds
-> Phase 4:        07/03 11:51:26  07/03 11:51:31  5 seconds
-> Phase 5:        07/03 11:51:31  07/03 11:51:31
-> Phase 6:        07/03 11:51:31  07/03 11:51:39  8 seconds
-> Phase 7:        07/03 11:51:39  07/03 11:51:39
-> 
-> Total run time: 4 minutes, 24 seconds
-> done
-> 
-> real    4m26.399s
-> user    1m6.023s
-> sys     27m26.707s
-> $
-> 
-> And turning off AG striding:
-> 
-> # time xfs_repair -f -vv -o ag_stride=-1 fs.img
-> .....
->         XFS_REPAIR Summary    Thu Jul  3 11:41:28 2014
-> 
-> Phase           Start           End             Duration
-> Phase 1:        07/03 11:40:27  07/03 11:40:27  
-> Phase 2:        07/03 11:40:27  07/03 11:40:36  9 seconds
-> Phase 3:        07/03 11:40:36  07/03 11:41:12  36 seconds
+NO_HZ_FULL is a property of a set of CPUs.  isolcpus is supposed to go
+away as being a redundant interface to manage a single property of a set
+of CPUs, but it's perfectly fine for NO_HZ_FULL to add an interface to
+manage a single property of a set of CPUs.  What am I missing? 
 
-The *real* degradation is here then.
-
-> Phase 4:        07/03 11:41:12  07/03 11:41:17  5 seconds
-> Phase 5:        07/03 11:41:17  07/03 11:41:18  1 second
-> Phase 6:        07/03 11:41:18  07/03 11:41:25  7 seconds
-> Phase 7:        07/03 11:41:25  07/03 11:41:25  
-> 
-> Total run time: 58 seconds
-> done
-> 
-> real    0m59.893s
-> user    0m41.935s
-> sys     4m55.867s
-> $
-> 
-> The difference is in phase 2 and 3, which is where all the memory
-> allocation and IO that populates the userspace buffer cache takes
-> place. The remainder of the phases run from the cache. All IO is
-> direct IO, so there is no kernel caching at all. The filesystem
-> image has a lot of metadata in it - it has 336 AGs and the buffer
-> cache grows to about 6GB in size during phase 3.
-> 
-> The difference in performance is in the system CPU time, and it
-> results directly in lower IO dispatch rates - about 2,000 IOPS
-> instead of ~12,000.
-> 
-> This is what the kernel profile looks like on the strided run:
-> 
-> -  83.06%  [kernel]  [k] osq_lock
->    - osq_lock
->       - 100.00% rwsem_down_write_failed
->          - call_rwsem_down_write_failed
->             - 99.55% sys_mprotect
->                  tracesys
->                  __GI___mprotect
-> -  12.02%  [kernel]  [k] rwsem_down_write_failed
->      rwsem_down_write_failed
->      call_rwsem_down_write_failed
-> +   1.09%  [kernel]  [k] _raw_spin_unlock_irqrestore
-> +   0.92%  [kernel]  [k] _raw_spin_unlock_irq
-> +   0.68%  [kernel]  [k] __do_softirq
-> +   0.33%  [kernel]  [k] default_send_IPI_mask_sequence_phys
-> +   0.10%  [kernel]  [k] __do_page_fault
-> 
-> Basically, all the kernel time is spent processing lock contention
-> rather than doing real work.
-
-While before it just blocked.
-
-> I haven't tested back on 3.15 yet, but historically the strided AG
-> repair for such filesystems (which I test all the time on 100+500TB
-> filesystem images) is about 20-25% faster on this storage subsystem.
-> Yes, the old code also burnt a lot of CPU due to lock contention,
-> but it didn't go 5x slower than having no threading at all.
-> 
-> So this looks like a significant performance regression due to:
-> 
-> 4fc828e locking/rwsem: Support optimistic spinning
-> 
-> which changed the rwsem behaviour in 3.16-rc1.
-
-So the mmap_sem is held long enough in this workload that the cost of
-blocking is actually significantly smaller than just spinning --
-particularly MCS. How many threads are you running when you see the
-issue?
-
-Thanks,
-Davidlohr
+-Mike
 
