@@ -1,149 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965237AbaGCJmd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:42:33 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48182 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965218AbaGCJm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:42:28 -0400
-Message-ID: <53B5257B.8040609@ti.com>
-Date: Thu, 3 Jul 2014 12:42:19 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: <tony@atomide.com>, <kishon@ti.com>, <balbi@ti.com>
-CC: <nsekhar@ti.com>, <nm@ti.com>, <george.cherian@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Subject: [PATCH v2 3/6] phy: core: Support regulator supply for PHY power
-References: <1404302638-3003-1-git-send-email-rogerq@ti.com> <1404302638-3003-4-git-send-email-rogerq@ti.com>
-In-Reply-To: <1404302638-3003-4-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1030435AbaGCJmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:42:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52373 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754745AbaGCJYY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 05:24:24 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Michal Schmidt <mschmidt@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 150/198] rtnetlink: fix userspace API breakage for iproute2 < v3.9.0
+Date: Thu,  3 Jul 2014 10:19:53 +0100
+Message-Id: <1404379241-8590-151-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
+References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roger Quadros <rogerq@ti.com>
+3.11.10.13 -stable review patch.  If anyone has any objections, please let me know.
 
-Some PHYs can be powered by an external power regulator.
-e.g. USB_HS PHY on DRA7 SoC. Make the PHY core support a
-power regulator.
+------------------
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
+From: Michal Schmidt <mschmidt@redhat.com>
+
+commit e5eca6d41f53db48edd8cf88a3f59d2c30227f8e upstream.
+
+When running RHEL6 userspace on a current upstream kernel, "ip link"
+fails to show VF information.
+
+The reason is a kernel<->userspace API change introduced by commit
+88c5b5ce5cb57 ("rtnetlink: Call nlmsg_parse() with correct header length"),
+after which the kernel does not see iproute2's IFLA_EXT_MASK attribute
+in the netlink request.
+
+iproute2 adjusted for the API change in its commit 63338dca4513
+("libnetlink: Use ifinfomsg instead of rtgenmsg in rtnl_wilddump_req_filter").
+
+The problem has been noticed before:
+http://marc.info/?l=linux-netdev&m=136692296022182&w=2
+(Subject: Re: getting VF link info seems to be broken in 3.9-rc8)
+
+We can do better than tell those with old userspace to upgrade. We can
+recognize the old iproute2 in the kernel by checking the netlink message
+length. Even when including the IFLA_EXT_MASK attribute, its netlink
+message is shorter than struct ifinfomsg.
+
+With this patch "ip link" shows VF information in both old and new
+iproute2 versions.
+
+Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/phy/phy-core.c  | 27 +++++++++++++++++++++++++++
- include/linux/phy/phy.h |  2 ++
- 2 files changed, 29 insertions(+)
+ net/core/rtnetlink.c | 22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index 49c4465..2add59c 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -21,6 +21,7 @@
- #include <linux/phy/phy.h>
- #include <linux/idr.h>
- #include <linux/pm_runtime.h>
-+#include <linux/regulator/consumer.h>
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 61b25794e74f..d6eac9f048b9 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1053,6 +1053,7 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	u32 ext_filter_mask = 0;
+ 	int err;
++	int hdrlen;
  
- static struct class *phy_class;
- static DEFINE_MUTEX(phy_provider_mutex);
-@@ -226,6 +227,12 @@ int phy_power_on(struct phy *phy)
- 	if (!phy)
- 		return 0;
+ 	s_h = cb->args[0];
+ 	s_idx = cb->args[1];
+@@ -1060,8 +1061,17 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
+ 	rcu_read_lock();
+ 	cb->seq = net->dev_base_seq;
  
-+	if (phy->pwr) {
-+		ret = regulator_enable(phy->pwr);
-+		if (ret)
-+			return ret;
-+	}
+-	if (nlmsg_parse(cb->nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
+-			ifla_policy) >= 0) {
++	/* A hack to preserve kernel<->userspace interface.
++	 * The correct header is ifinfomsg. It is consistent with rtnl_getlink.
++	 * However, before Linux v3.9 the code here assumed rtgenmsg and that's
++	 * what iproute2 < v3.9.0 used.
++	 * We can detect the old iproute2. Even including the IFLA_EXT_MASK
++	 * attribute, its netlink message is shorter than struct ifinfomsg.
++	 */
++	hdrlen = nlmsg_len(cb->nlh) < sizeof(struct ifinfomsg) ?
++		 sizeof(struct rtgenmsg) : sizeof(struct ifinfomsg);
 +
- 	ret = phy_pm_runtime_get_sync(phy);
- 	if (ret < 0 && ret != -ENOTSUPP)
- 		return ret;
-@@ -247,6 +254,8 @@ int phy_power_on(struct phy *phy)
- out:
- 	mutex_unlock(&phy->mutex);
- 	phy_pm_runtime_put_sync(phy);
-+	if (phy->pwr)
-+		regulator_disable(phy->pwr);
++	if (nlmsg_parse(cb->nlh, hdrlen, tb, IFLA_MAX, ifla_policy) >= 0) {
  
- 	return ret;
- }
-@@ -272,6 +281,9 @@ int phy_power_off(struct phy *phy)
- 	mutex_unlock(&phy->mutex);
- 	phy_pm_runtime_put(phy);
- 
-+	if (phy->pwr)
-+		regulator_disable(phy->pwr);
+ 		if (tb[IFLA_EXT_MASK])
+ 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
+@@ -1925,9 +1935,13 @@ static u16 rtnl_calcit(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 	struct nlattr *tb[IFLA_MAX+1];
+ 	u32 ext_filter_mask = 0;
+ 	u16 min_ifinfo_dump_size = 0;
++	int hdrlen;
 +
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(phy_power_off);
-@@ -588,6 +600,16 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
- 		goto free_phy;
++	/* Same kernel<->userspace interface hack as in rtnl_dump_ifinfo. */
++	hdrlen = nlmsg_len(nlh) < sizeof(struct ifinfomsg) ?
++		 sizeof(struct rtgenmsg) : sizeof(struct ifinfomsg);
+ 
+-	if (nlmsg_parse(nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
+-			ifla_policy) >= 0) {
++	if (nlmsg_parse(nlh, hdrlen, tb, IFLA_MAX, ifla_policy) >= 0) {
+ 		if (tb[IFLA_EXT_MASK])
+ 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
  	}
- 
-+	/* phy-supply */
-+	phy->pwr = regulator_get_optional(dev, "phy");
-+	if (IS_ERR(phy->pwr)) {
-+		if (PTR_ERR(phy->pwr) == -EPROBE_DEFER) {
-+			ret = -EPROBE_DEFER;
-+			goto free_ida;
-+		}
-+		phy->pwr = NULL;
-+	}
-+
- 	device_initialize(&phy->dev);
- 	mutex_init(&phy->mutex);
- 
-@@ -617,6 +639,9 @@ put_dev:
- 	put_device(&phy->dev);  /* calls phy_release() which frees resources */
- 	return ERR_PTR(ret);
- 
-+free_ida:
-+	ida_simple_remove(&phy_ida, phy->id);
-+
- free_phy:
- 	kfree(phy);
- 	return ERR_PTR(ret);
-@@ -664,6 +689,7 @@ EXPORT_SYMBOL_GPL(devm_phy_create);
- void phy_destroy(struct phy *phy)
- {
- 	pm_runtime_disable(&phy->dev);
-+	regulator_put(phy->pwr);
- 	device_unregister(&phy->dev);
- }
- EXPORT_SYMBOL_GPL(phy_destroy);
-@@ -800,6 +826,7 @@ static void phy_release(struct device *dev)
- 
- 	phy = to_phy(dev);
- 	dev_vdbg(dev, "releasing '%s'\n", dev_name(dev));
-+	regulator_put(phy->pwr);
- 	ida_simple_remove(&phy_ida, phy->id);
- 	kfree(phy);
- }
-diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-index 2760744..9a86945 100644
---- a/include/linux/phy/phy.h
-+++ b/include/linux/phy/phy.h
-@@ -18,6 +18,7 @@
- #include <linux/of.h>
- #include <linux/device.h>
- #include <linux/pm_runtime.h>
-+#include <linux/regulator/consumer.h>
- 
- struct phy;
- 
-@@ -65,6 +66,7 @@ struct phy {
- 	int			init_count;
- 	int			power_count;
- 	struct phy_attrs	attrs;
-+	struct regulator	*pwr;
- };
- 
- /**
 -- 
-1.8.3.2
+1.9.1
 
