@@ -1,128 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503AbaGCAvo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 20:51:44 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:43365 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750916AbaGCAvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 20:51:43 -0400
-Date: Wed, 2 Jul 2014 17:51:00 -0700
-From: Kees Cook <kees@outflux.net>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, mhocko@suse.cz
-Subject: Re: mmotm 2014-07-02-15-07 uploaded (stack protector)
-Message-ID: <20140703005100.GI5412@outflux.net>
-References: <53b482d3.gR7nYB/K7hPREviI%akpm@linux-foundation.org>
- <53B493E2.2030905@infradead.org>
- <20140703002231.GR19781@tassilo.jf.intel.com>
+	id S1752743AbaGCAzB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 20:55:01 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:39846 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaGCAzA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 20:55:00 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: probe_event_disable()->synchronize_sched()
+References: <20140627170116.GA18298@redhat.com>
+	<20140627170136.GA18319@redhat.com>
+	<87k37z54lu.fsf@sejong.aot.lge.com>
+	<20140630184828.GA24594@redhat.com>
+	<20140701193147.GA32492@redhat.com>
+Date: Thu, 03 Jul 2014 09:54:57 +0900
+In-Reply-To: <20140701193147.GA32492@redhat.com> (Oleg Nesterov's message of
+	"Tue, 1 Jul 2014 21:31:47 +0200")
+Message-ID: <87pphn45y6.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140703002231.GR19781@tassilo.jf.intel.com>
-Organization: Outflux
-X-HELO: www.outflux.net
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 05:22:31PM -0700, Andi Kleen wrote:
-> On Wed, Jul 02, 2014 at 04:21:06PM -0700, Randy Dunlap wrote:
-> > On 07/02/14 15:08, akpm@linux-foundation.org wrote:
-> > > The mm-of-the-moment snapshot 2014-07-02-15-07 has been uploaded to
-> > > 
-> > >    http://www.ozlabs.org/~akpm/mmotm/
-> > > 
-> > > mmotm-readme.txt says
-> > > 
-> > > README for mm-of-the-moment:
-> > > 
-> > > http://www.ozlabs.org/~akpm/mmotm/
-> > > 
-> > > This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> > > more than once a week.
-> > 
-> > Hi Andi,
-> > 
-> > Here is an extract from 10 randconfig builds:
-> > 
-> > 
-> > $ grep STACKPROTECTOR_STRONG config-r*
-> > config-r8735:CONFIG_CC_STACKPROTECTOR_STRONG=y
-> > config-r8736:CONFIG_CC_STACKPROTECTOR_STRONG=y
-> > config-r8737:# CONFIG_CC_STACKPROTECTOR_STRONG is not set
-> > config-r8738:# CONFIG_CC_STACKPROTECTOR_STRONG is not set
-> > config-r8739:CONFIG_CC_STACKPROTECTOR_STRONG=y
-> > config-r8740:CONFIG_CC_STACKPROTECTOR_STRONG=y
-> > config-r8741:CONFIG_CC_STACKPROTECTOR_STRONG=y
-> > config-r8742:# CONFIG_CC_STACKPROTECTOR_STRONG is not set
-> > config-r8743:# CONFIG_CC_STACKPROTECTOR_STRONG is not set
-> > config-r8744:# CONFIG_CC_STACKPROTECTOR_STRONG is not set
-> > 
-> > 
-> > but the captured output for each one says:
-> > 
-> > grep STACKPROTECTOR_STRONG  build*.out
-> > build-r8735.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
-> > build-r8736.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
-> > build-r8736.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
-> > build-r8737.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
-> > build-r8739.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
-> > build-r8740.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
-> > build-r8740.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
-> > build-r8741.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
-> > build-r8741.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
-> > build-r8742.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
-> > 
-> > 
-> > then the build goes on to produce many errors like this one:
-> > 
-> >   CC      init/do_mounts.o
-> > gcc: error: unrecognized command line option '-fstack-protector-strong'
-> > 
-> > 
-> > Can you explain this, please?  or even better yet, fix it.
-> 
-> That's the code 
-> 
-> ifdef CONFIG_CC_STACKPROTECTOR_STRONG
->   stackp-flag := -fstack-protector-strong
->   ifeq ($(call cc-option, $(stackp-flag)),)
->     $(warning Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: \
->               -fstack-protector-strong not supported by compiler)
->   endif
-> else
->   # Force off for distro compilers that enable stack protector by default.
->   stackp-flag := $(call cc-option, -fno-stack-protector)
-> endif
-> endif
-> KBUILD_CFLAGS += $(stackp-flag)
-> 
-> So -fstack-protector-strong itself is never protected by a cc-option call.
-> 
-> You could add it to the stack-flag line, then it would only warn.
-> 
->   stackp-flag := $(call cc-option, -fstack-protector-strong)
-> 
-> It's hard to tell what the original author wanted, perhaps they wanted
-> it to error out. It looks intentional. Clearly they didn't think of randconfig
-> though.
+Hi Oleg,
 
-The problem is that if you make kbuild hard-fail when selecting this missing
-compiler option, you can never switch it back because "make menuconfig" will
-refuse to build since the compiler option would be missing. Being silent
-about the missing option (and/or falling back to other options) means that
-you could get two different kernel features selection with the same CONFIG_*
-set, depending on the kernel, which is extremely bad ("I selected
-stack-protector-strong but it built without it?!").
+On Tue, 1 Jul 2014 21:31:47 +0200, Oleg Nesterov wrote:
+> Namhyung, Masami,
+>
+> Please look at the question below. Perhaps we discussed this before,
+> but I can recall nothing.
 
-So, the middle ground was to warn about it during the kbuild logic so
-you could find the source of the problem, but ultimately fail the build
-when the compiler doesn't support it so there weren't any silent failure
-modes.
+I'm not sure I grok the code enough to answer your question, but...
 
--Kees
+>
+>
+> On 06/30, Oleg Nesterov wrote:
+>>
+>> Actually, I'll probably try to make the patch tomorrow. It looks simple
+>> enough, the main complication is CONFIG_PERF. And, to keep this patch
+>> simple, I won't try to optimize (say) the TP_FLAG_TRACE-comes-first
+>> case which could avoid uprobe_apply().
+>
+> I regret very much I said this ;) OK, I'll probably try anyway, but...
+>
+>> Yes, I still think it would be better to change the register/unregister
+>> API first, but I do not know when I do this ;)
+>
+> OK, we can do this later.
+>
+> But it turns out that trace_uprobe.c needs other cleanups, and I simply
+> can't uglify this code more without these cleanups... Starting from
+> set/clear TP_FLAG_*. I'll recheck, but it seems that there is no reason
+> to carefully set (say) TP_FLAG_TRACE before uprobe_register() and then
+> clear it if _register() fails. And uprobe_dispatcher() is very ugly if
+> is_ret_probe(). And more. So it needs a series.
 
--- 
-Kees Cook                                            @outflux.net
+Okay, I'd like to see it. :)
+
+
+>
+> -------------------------------------------------------------------------
+> And. I am puzzled by probe_event_disable()->synchronize_sched(). Why
+> do we need it? I mean, why we can't use call_rcu() ? The comment says
+> "synchronize with u{,ret}probe_trace_func" but it doesn't explain _why_
+> do we need to sync.
+
+It looks like the code was copied from trace_kprobe.c file.  But IIUC,
+unlike kprobes, uprobe events are always called in a process context.
+
+Also u{,ret}probe_trace_func() call handlers under rcu_read_lock() not
+rcu_read_lock_sched() so I guess the synchronize_sched() can go.
+
+Thanks,
+Namhyung
+
+
+>
+> I thought that perhaps the caller needs to synch with the callbacks.
+> Say, __trace_remove_event_call() can destroy the data which can be used
+> by the callbacks. But no, this is only possible if we are going to call
+> uprobe_unregister(), and this adds the necessary serialization.
+>
+> So why? Looks like, the only reason is instance_rmdir() which can do
+> TRACE_REG_UNREGISTER and after that destroy this ftrace_event_file?
+> But event_trace_del_tracer() also has synchronize_sched() right after
+> __ftrace_set_clr_event_nolock() ?
+>
+> So please tell me why do we need this synchronize_sched ;) And imo
+> this should be documented.
+>
+> Oleg.
