@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965162AbaGCJ0K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:26:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52720 "EHLO
+	id S1030616AbaGCJZc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:25:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52703 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030619AbaGCJZe (ORCPT
+	with ESMTP id S1030596AbaGCJZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:25:34 -0400
+	Thu, 3 Jul 2014 05:25:29 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Roland McGrath <roland@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
+        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
+        Jeff Moyer <jmoyer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 198/198] x86_32, entry: Do syscall exit work on badsys (CVE-2014-4508)
-Date: Thu,  3 Jul 2014 10:20:41 +0100
-Message-Id: <1404379241-8590-199-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 194/198] aio: fix aio request leak when events are reaped by userspace
+Date: Thu,  3 Jul 2014 10:20:37 +0100
+Message-Id: <1404379241-8590-195-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,60 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Benjamin LaHaise <bcrl@kvack.org>
 
-commit 554086d85e71f30abe46fc014fea31929a7c6a8a upstream.
+commit f8567a3845ac05bb28f3c1b478ef752762bd39ef upstream.
 
-The bad syscall nr paths are their own incomprehensible route
-through the entry control flow.  Rearrange them to work just like
-syscalls that return -ENOSYS.
+The aio cleanups and optimizations by kmo that were merged into the 3.10
+tree added a regression for userspace event reaping.  Specifically, the
+reference counts are not decremented if the event is reaped in userspace,
+leading to the application being unable to submit further aio requests.
+This patch applies to 3.12+.  A separate backport is required for 3.10/3.11.
+This issue was uncovered as part of CVE-2014-0206.
 
-This fixes an OOPS in the audit code when fast-path auditing is
-enabled and sysenter gets a bad syscall nr (CVE-2014-4508).
-
-This has probably been broken since Linux 2.6.27:
-af0575bba0 i386 syscall audit fast-path
-
-Cc: Roland McGrath <roland@redhat.com>
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/e09c499eade6fc321266dd6b54da7beb28d6991c.1403558229.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+[jmoyer@redhat.com: backported to 3.10]
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Cc: Mateusz Guzik <mguzik@redhat.com>
+Cc: Petr Matousek <pmatouse@redhat.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/entry_32.S | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ fs/aio.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 473f125a3a52..4de29bc5a5b4 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -434,9 +434,10 @@ sysenter_past_esp:
- 	jnz sysenter_audit
- sysenter_do_call:
- 	cmpl $(NR_syscalls), %eax
--	jae syscall_badsys
-+	jae sysenter_badsys
- 	call *sys_call_table(,%eax,4)
- 	movl %eax,PT_EAX(%esp)
-+sysenter_after_call:
- 	LOCKDEP_SYS_EXIT
- 	DISABLE_INTERRUPTS(CLBR_ANY)
- 	TRACE_IRQS_OFF
-@@ -686,7 +687,12 @@ END(syscall_fault)
+diff --git a/fs/aio.c b/fs/aio.c
+index 975a5d5810a9..48f02745b876 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -312,7 +312,6 @@ static void free_ioctx(struct kioctx *ctx)
  
- syscall_badsys:
- 	movl $-ENOSYS,PT_EAX(%esp)
--	jmp resume_userspace
-+	jmp syscall_exit
-+END(syscall_badsys)
-+
-+sysenter_badsys:
-+	movl $-ENOSYS,PT_EAX(%esp)
-+	jmp sysenter_after_call
- END(syscall_badsys)
- 	CFI_ENDPROC
- /*
+ 		avail = (head <= ctx->tail ? ctx->tail : ctx->nr_events) - head;
+ 
+-		atomic_sub(avail, &ctx->reqs_active);
+ 		head += avail;
+ 		head %= ctx->nr_events;
+ 	}
+@@ -680,6 +679,7 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
+ put_rq:
+ 	/* everything turned out well, dispose of the aiocb. */
+ 	aio_put_req(iocb);
++	atomic_dec(&ctx->reqs_active);
+ 
+ 	/*
+ 	 * We have to order our ring_info tail store above and test
+@@ -757,8 +757,6 @@ static long aio_read_events_ring(struct kioctx *ctx,
+ 	flush_dcache_page(ctx->ring_pages[0]);
+ 
+ 	pr_debug("%li  h%u t%u\n", ret, head, ctx->tail);
+-
+-	atomic_sub(ret, &ctx->reqs_active);
+ out:
+ 	mutex_unlock(&ctx->ring_lock);
+ 
 -- 
 1.9.1
 
