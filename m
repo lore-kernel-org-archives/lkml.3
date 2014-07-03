@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175AbaGCIuX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 04:50:23 -0400
-Received: from zimbra13.linbit.com ([212.69.166.240]:45906 "EHLO
+	id S932492AbaGCIuV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 04:50:21 -0400
+Received: from zimbra13.linbit.com ([212.69.166.240]:45905 "EHLO
 	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617AbaGCInU (ORCPT
+	with ESMTP id S1755646AbaGCInU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Jul 2014 04:43:20 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 07/23] drbd: improve throttling decisions of background resynchronisation
-Date: Thu,  3 Jul 2014 10:42:59 +0200
-Message-Id: <1404376995-4877-8-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 08/23] drbd: track timing details of peer_requests
+Date: Thu,  3 Jul 2014 10:43:00 +0200
+Message-Id: <1404376995-4877-9-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404376995-4877-1-git-send-email-philipp.reisner@linbit.com>
 References: <1404376995-4877-1-git-send-email-philipp.reisner@linbit.com>
@@ -22,259 +22,259 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-Background resynchronisation does some "side-stepping", or throttles
-itself, if it detects application IO activity, and the current resync
-rate estimate is above the configured "cmin-rate".
+To be able to present timing details in debugfs,
+we need to track preparation/submit times of peer requests.
 
-What was not detected: if there is no application IO,
-because it blocks on activity log transactions.
+Track peer request flags early,
+before they are put on the epoch_entry lists.
 
-Introduce a new atomic_t ap_actlog_cnt, tracking such blocked requests,
-and count non-zero as application IO activity.
-This counter is exposed at proc_details level 2 and above.
+Waiting for activity log transactions may be a major latency factor.
+We want to be able to present the peer_request state accurately in
+debugfs, and what it is waiting for.
 
-Also make sure to release the currently locked resync extent
-if we side-step due to such voluntary throttling.
+Consistently mark/unmark peer requests with EE_CALL_AL_COMPLETE_IO.
+Set it only *after* calling drbd_al_begin_io(),
+clear it as soon as we call drbd_al_complete_io().
 
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_actlog.c   | 29 ++++++++++++++++++++++++++---
- drivers/block/drbd/drbd_int.h      |  4 +++-
- drivers/block/drbd/drbd_main.c     |  1 +
- drivers/block/drbd/drbd_proc.c     |  3 +++
- drivers/block/drbd/drbd_receiver.c | 19 ++++++++++++-------
- drivers/block/drbd/drbd_req.c      |  4 ++++
- drivers/block/drbd/drbd_worker.c   |  9 ++-------
- 7 files changed, 51 insertions(+), 18 deletions(-)
+ drivers/block/drbd/drbd_int.h      | 15 ++++++++
+ drivers/block/drbd/drbd_receiver.c | 78 +++++++++++++++++++++++---------------
+ drivers/block/drbd/drbd_worker.c   |  1 +
+ 3 files changed, 64 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_actlog.c b/drivers/block/drbd/drbd_actlog.c
-index d7e8066..6ce5c76 100644
---- a/drivers/block/drbd/drbd_actlog.c
-+++ b/drivers/block/drbd/drbd_actlog.c
-@@ -991,6 +991,15 @@ int drbd_try_rs_begin_io(struct drbd_device *device, sector_t sector)
- 	struct lc_element *e;
- 	struct bm_extent *bm_ext;
- 	int i;
-+	bool throttle = drbd_rs_should_slow_down(device, sector, true);
-+
-+	/* If we need to throttle, a half-locked (only marked BME_NO_WRITES,
-+	 * not yet BME_LOCKED) extent needs to be kicked out explicitly if we
-+	 * need to throttle. There is at most one such half-locked extent,
-+	 * which is remembered in resync_wenr. */
-+
-+	if (throttle && device->resync_wenr != enr)
-+		return -EAGAIN;
- 
- 	spin_lock_irq(&device->al_lock);
- 	if (device->resync_wenr != LC_FREE && device->resync_wenr != enr) {
-@@ -1014,8 +1023,10 @@ int drbd_try_rs_begin_io(struct drbd_device *device, sector_t sector)
- 			D_ASSERT(device, test_bit(BME_NO_WRITES, &bm_ext->flags));
- 			clear_bit(BME_NO_WRITES, &bm_ext->flags);
- 			device->resync_wenr = LC_FREE;
--			if (lc_put(device->resync, &bm_ext->lce) == 0)
-+			if (lc_put(device->resync, &bm_ext->lce) == 0) {
-+				bm_ext->flags = 0;
- 				device->resync_locked--;
-+			}
- 			wake_up(&device->al_wait);
- 		} else {
- 			drbd_alert(device, "LOGIC BUG\n");
-@@ -1077,8 +1088,20 @@ proceed:
- 	return 0;
- 
- try_again:
--	if (bm_ext)
--		device->resync_wenr = enr;
-+	if (bm_ext) {
-+		if (throttle) {
-+			D_ASSERT(device, !test_bit(BME_LOCKED, &bm_ext->flags));
-+			D_ASSERT(device, test_bit(BME_NO_WRITES, &bm_ext->flags));
-+			clear_bit(BME_NO_WRITES, &bm_ext->flags);
-+			device->resync_wenr = LC_FREE;
-+			if (lc_put(device->resync, &bm_ext->lce) == 0) {
-+				bm_ext->flags = 0;
-+				device->resync_locked--;
-+			}
-+			wake_up(&device->al_wait);
-+		} else
-+			device->resync_wenr = enr;
-+	}
- 	spin_unlock_irq(&device->al_lock);
- 	return -EAGAIN;
- }
 diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index fa010ea..81f4af4 100644
+index 81f4af4..c7a409f 100644
 --- a/drivers/block/drbd/drbd_int.h
 +++ b/drivers/block/drbd/drbd_int.h
-@@ -797,6 +797,7 @@ struct drbd_device {
- 	unsigned int al_writ_cnt;
- 	unsigned int bm_writ_cnt;
- 	atomic_t ap_bio_cnt;	 /* Requests we need to complete */
-+	atomic_t ap_actlog_cnt;  /* Requests waiting for activity log */
- 	atomic_t ap_pending_cnt; /* AP data packets on the wire, ack expected */
- 	atomic_t rs_pending_cnt; /* RS request/data packets on the wire */
- 	atomic_t unacked_cnt;	 /* Need to send replies for */
-@@ -1454,7 +1455,8 @@ extern void drbd_endio_write_sec_final(struct drbd_peer_request *peer_req);
- extern int drbd_receiver(struct drbd_thread *thi);
- extern int drbd_asender(struct drbd_thread *thi);
- extern bool drbd_rs_c_min_rate_throttle(struct drbd_device *device);
--extern bool drbd_rs_should_slow_down(struct drbd_device *device, sector_t sector);
-+extern bool drbd_rs_should_slow_down(struct drbd_device *device, sector_t sector,
-+		bool throttle_if_app_is_waiting);
- extern int drbd_submit_peer_request(struct drbd_device *,
- 				    struct drbd_peer_request *, const unsigned,
- 				    const int);
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 5886596..ad7c0e8 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -1909,6 +1909,7 @@ void drbd_init_set_defaults(struct drbd_device *device)
- 	drbd_set_defaults(device);
+@@ -422,6 +422,7 @@ struct drbd_peer_request {
+ 	struct drbd_interval i;
+ 	/* see comments on ee flag bits below */
+ 	unsigned long flags;
++	unsigned long submit_jif;
+ 	union {
+ 		u64 block_id;
+ 		struct digest_info *digest;
+@@ -464,6 +465,17 @@ enum {
  
- 	atomic_set(&device->ap_bio_cnt, 0);
-+	atomic_set(&device->ap_actlog_cnt, 0);
- 	atomic_set(&device->ap_pending_cnt, 0);
- 	atomic_set(&device->rs_pending_cnt, 0);
- 	atomic_set(&device->unacked_cnt, 0);
-diff --git a/drivers/block/drbd/drbd_proc.c b/drivers/block/drbd/drbd_proc.c
-index 9059d7b..06e6147 100644
---- a/drivers/block/drbd/drbd_proc.c
-+++ b/drivers/block/drbd/drbd_proc.c
-@@ -335,6 +335,9 @@ static int drbd_seq_show(struct seq_file *seq, void *v)
- 			lc_seq_printf_stats(seq, device->act_log);
- 			put_ldev(device);
- 		}
+ 	/* Is set when net_conf had two_primaries set while creating this peer_req */
+ 	__EE_IN_INTERVAL_TREE,
 +
-+		if (proc_details >= 2)
-+			seq_printf(seq, "\tblocked on activity log: %d\n", atomic_read(&device->ap_actlog_cnt));
- 	}
- 	rcu_read_unlock();
++	/* for debugfs: */
++	/* has this been submitted, or does it still wait for something else? */
++	__EE_SUBMITTED,
++
++	/* this is/was a write request */
++	__EE_WRITE,
++
++	/* this originates from application on peer
++	 * (not some resync or verify or other DRBD internal request) */
++	__EE_APPLICATION,
+ };
+ #define EE_CALL_AL_COMPLETE_IO (1<<__EE_CALL_AL_COMPLETE_IO)
+ #define EE_MAY_SET_IN_SYNC     (1<<__EE_MAY_SET_IN_SYNC)
+@@ -475,6 +487,9 @@ enum {
+ #define EE_RESTART_REQUESTS	(1<<__EE_RESTART_REQUESTS)
+ #define EE_SEND_WRITE_ACK	(1<<__EE_SEND_WRITE_ACK)
+ #define EE_IN_INTERVAL_TREE	(1<<__EE_IN_INTERVAL_TREE)
++#define EE_SUBMITTED		(1<<__EE_SUBMITTED)
++#define EE_WRITE		(1<<__EE_WRITE)
++#define EE_APPLICATION		(1<<__EE_APPLICATION)
  
+ /* flag bits per device */
+ enum {
 diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 7a1078d..0d3cbd8 100644
+index 0d3cbd8..2f67dc0 100644
 --- a/drivers/block/drbd/drbd_receiver.c
 +++ b/drivers/block/drbd/drbd_receiver.c
-@@ -2417,13 +2417,14 @@ out_interrupted:
-  * The current sync rate used here uses only the most recent two step marks,
-  * to have a short time average so we can react faster.
-  */
--bool drbd_rs_should_slow_down(struct drbd_device *device, sector_t sector)
-+bool drbd_rs_should_slow_down(struct drbd_device *device, sector_t sector,
-+		bool throttle_if_app_is_waiting)
+@@ -389,11 +389,16 @@ drbd_alloc_peer_req(struct drbd_peer_device *peer_device, u64 id, sector_t secto
+ void __drbd_free_peer_req(struct drbd_device *device, struct drbd_peer_request *peer_req,
+ 		       int is_net)
  {
- 	struct lc_element *tmp;
--	bool throttle = true;
-+	bool throttle = drbd_rs_c_min_rate_throttle(device);
++	might_sleep();
+ 	if (peer_req->flags & EE_HAS_DIGEST)
+ 		kfree(peer_req->digest);
+ 	drbd_free_pages(device, peer_req->pages, is_net);
+ 	D_ASSERT(device, atomic_read(&peer_req->pending_bios) == 0);
+ 	D_ASSERT(device, drbd_interval_empty(&peer_req->i));
++	if (!expect(!(peer_req->flags & EE_CALL_AL_COMPLETE_IO))) {
++		peer_req->flags &= ~EE_CALL_AL_COMPLETE_IO;
++		drbd_al_complete_io(device, &peer_req->i);
++	}
+ 	mempool_free(peer_req, drbd_ee_mempool);
+ }
  
--	if (!drbd_rs_c_min_rate_throttle(device))
--		return false;
-+	if (!throttle || throttle_if_app_is_waiting)
-+		return throttle;
+@@ -1372,6 +1377,8 @@ int drbd_submit_peer_request(struct drbd_device *device,
+ 		conn_wait_active_ee_empty(first_peer_device(device)->connection);
+ 		/* add it to the active list now,
+ 		 * so we can find it to present it in debugfs */
++		peer_req->submit_jif = jiffies;
++		peer_req->flags |= EE_SUBMITTED;
+ 		spin_lock_irq(&device->resource->req_lock);
+ 		list_add_tail(&peer_req->w.list, &device->active_ee);
+ 		spin_unlock_irq(&device->resource->req_lock);
+@@ -1443,6 +1450,9 @@ submit:
+ 	D_ASSERT(device, page == NULL);
  
- 	spin_lock_irq(&device->al_lock);
- 	tmp = lc_find(device->resync, BM_SECT_TO_EXT(sector));
-@@ -2431,7 +2432,8 @@ bool drbd_rs_should_slow_down(struct drbd_device *device, sector_t sector)
- 		struct bm_extent *bm_ext = lc_entry(tmp, struct bm_extent, lce);
- 		if (test_bit(BME_PRIORITY, &bm_ext->flags))
- 			throttle = false;
--		/* Do not slow down if app IO is already waiting for this extent */
-+		/* Do not slow down if app IO is already waiting for this extent,
-+		 * and our progress is necessary for application IO to complete. */
+ 	atomic_set(&peer_req->pending_bios, n_bios);
++	/* for debugfs: update timestamp, mark as submitted */
++	peer_req->submit_jif = jiffies;
++	peer_req->flags |= EE_SUBMITTED;
+ 	do {
+ 		bio = bios;
+ 		bios = bios->bi_next;
+@@ -1624,6 +1634,7 @@ read_in_block(struct drbd_peer_device *peer_device, u64 id, sector_t sector,
+ 	if (!peer_req)
+ 		return NULL;
+ 
++	peer_req->flags |= EE_WRITE;
+ 	if (trim)
+ 		return peer_req;
+ 
+@@ -1780,6 +1791,7 @@ static int recv_resync_read(struct drbd_peer_device *peer_device, sector_t secto
+ 	 * respective _drbd_clear_done_ee */
+ 
+ 	peer_req->w.cb = e_end_resync_block;
++	peer_req->submit_jif = jiffies;
+ 
+ 	spin_lock_irq(&device->resource->req_lock);
+ 	list_add_tail(&peer_req->w.list, &device->sync_ee);
+@@ -2196,7 +2208,6 @@ static int handle_write_conflicts(struct drbd_device *device,
+ 					  (unsigned long long)sector, size,
+ 					  superseded ? "local" : "remote");
+ 
+-			inc_unacked(device);
+ 			peer_req->w.cb = superseded ? e_send_superseded :
+ 						   e_send_retry_write;
+ 			list_add_tail(&peer_req->w.list, &device->done_ee);
+@@ -2255,6 +2266,7 @@ static int receive_Data(struct drbd_connection *connection, struct packet_info *
+ {
+ 	struct drbd_peer_device *peer_device;
+ 	struct drbd_device *device;
++	struct net_conf *nc;
+ 	sector_t sector;
+ 	struct drbd_peer_request *peer_req;
+ 	struct p_data *p = pi->data;
+@@ -2294,6 +2306,8 @@ static int receive_Data(struct drbd_connection *connection, struct packet_info *
  	}
- 	spin_unlock_irq(&device->al_lock);
  
-@@ -2456,7 +2458,9 @@ bool drbd_rs_c_min_rate_throttle(struct drbd_device *device)
- 	curr_events = (int)part_stat_read(&disk->part0, sectors[0]) +
- 		      (int)part_stat_read(&disk->part0, sectors[1]) -
- 			atomic_read(&device->rs_sect_ev);
--	if (!device->rs_last_events || curr_events - device->rs_last_events > 64) {
+ 	peer_req->w.cb = e_end_block;
++	peer_req->submit_jif = jiffies;
++	peer_req->flags |= EE_APPLICATION;
+ 
+ 	dp_flags = be32_to_cpu(p->dp_flags);
+ 	rw |= wire_flags_to_bio(dp_flags);
+@@ -2320,9 +2334,36 @@ static int receive_Data(struct drbd_connection *connection, struct packet_info *
+ 	spin_unlock(&connection->epoch_lock);
+ 
+ 	rcu_read_lock();
+-	tp = rcu_dereference(peer_device->connection->net_conf)->two_primaries;
++	nc = rcu_dereference(peer_device->connection->net_conf);
++	tp = nc->two_primaries;
++	if (peer_device->connection->agreed_pro_version < 100) {
++		switch (nc->wire_protocol) {
++		case DRBD_PROT_C:
++			dp_flags |= DP_SEND_WRITE_ACK;
++			break;
++		case DRBD_PROT_B:
++			dp_flags |= DP_SEND_RECEIVE_ACK;
++			break;
++		}
++	}
+ 	rcu_read_unlock();
 +
-+	if (atomic_read(&device->ap_actlog_cnt)
-+	    || !device->rs_last_events || curr_events - device->rs_last_events > 64) {
- 		unsigned long rs_left;
- 		int i;
++	if (dp_flags & DP_SEND_WRITE_ACK) {
++		peer_req->flags |= EE_SEND_WRITE_ACK;
++		inc_unacked(device);
++		/* corresponding dec_unacked() in e_end_block()
++		 * respective _drbd_clear_done_ee */
++	}
++
++	if (dp_flags & DP_SEND_RECEIVE_ACK) {
++		/* I really don't like it that the receiver thread
++		 * sends on the msock, but anyways */
++		drbd_send_ack(first_peer_device(device), P_RECV_ACK, peer_req);
++	}
++
+ 	if (tp) {
++		/* two primaries implies protocol C */
++		D_ASSERT(device, dp_flags & DP_SEND_WRITE_ACK);
+ 		peer_req->flags |= EE_IN_INTERVAL_TREE;
+ 		err = wait_for_and_update_peer_seq(peer_device, peer_seq);
+ 		if (err)
+@@ -2352,38 +2393,12 @@ static int receive_Data(struct drbd_connection *connection, struct packet_info *
+ 	if (device->state.conn == C_SYNC_TARGET)
+ 		wait_event(device->ee_wait, !overlapping_resync_write(device, peer_req));
  
-@@ -2646,7 +2650,8 @@ static int receive_DataRequest(struct drbd_connection *connection, struct packet
- 	 * we would also throttle its application reads.
- 	 * In that case, throttling is done on the SyncTarget only.
- 	 */
--	if (device->state.peer != R_PRIMARY && drbd_rs_should_slow_down(device, sector))
-+	if (device->state.peer != R_PRIMARY
-+	&& drbd_rs_should_slow_down(device, sector, false))
- 		schedule_timeout_uninterruptible(HZ/10);
- 	if (drbd_rs_begin_io(device, sector))
- 		goto out_free_e;
-diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
-index 3f6a6ed..74ebef1 100644
---- a/drivers/block/drbd/drbd_req.c
-+++ b/drivers/block/drbd/drbd_req.c
-@@ -1218,6 +1218,7 @@ drbd_request_prepare(struct drbd_device *device, struct bio *bio, unsigned long
- 	if (rw == WRITE && req->private_bio && req->i.size
- 	&& !test_bit(AL_SUSPENDED, &device->flags)) {
- 		if (!drbd_al_begin_io_fastpath(device, &req->i)) {
-+			atomic_inc(&device->ap_actlog_cnt);
- 			drbd_queue_write(device, req);
- 			return NULL;
- 		}
-@@ -1354,6 +1355,7 @@ static void submit_fast_path(struct drbd_device *device, struct list_head *incom
+-	if (peer_device->connection->agreed_pro_version < 100) {
+-		rcu_read_lock();
+-		switch (rcu_dereference(peer_device->connection->net_conf)->wire_protocol) {
+-		case DRBD_PROT_C:
+-			dp_flags |= DP_SEND_WRITE_ACK;
+-			break;
+-		case DRBD_PROT_B:
+-			dp_flags |= DP_SEND_RECEIVE_ACK;
+-			break;
+-		}
+-		rcu_read_unlock();
+-	}
+-
+-	if (dp_flags & DP_SEND_WRITE_ACK) {
+-		peer_req->flags |= EE_SEND_WRITE_ACK;
+-		inc_unacked(device);
+-		/* corresponding dec_unacked() in e_end_block()
+-		 * respective _drbd_clear_done_ee */
+-	}
+-
+-	if (dp_flags & DP_SEND_RECEIVE_ACK) {
+-		/* I really don't like it that the receiver thread
+-		 * sends on the msock, but anyways */
+-		drbd_send_ack(first_peer_device(device), P_RECV_ACK, peer_req);
+-	}
+-
+ 	if (device->state.pdsk < D_INCONSISTENT) {
+ 		/* In case we have the only disk of the cluster, */
+ 		drbd_set_out_of_sync(device, peer_req->i.sector, peer_req->i.size);
+-		peer_req->flags |= EE_CALL_AL_COMPLETE_IO;
+ 		peer_req->flags &= ~EE_MAY_SET_IN_SYNC;
+ 		drbd_al_begin_io(device, &peer_req->i);
++		peer_req->flags |= EE_CALL_AL_COMPLETE_IO;
+ 	}
  
- 			req->rq_state |= RQ_IN_ACT_LOG;
- 			req->in_actlog_jif = jiffies;
-+			atomic_dec(&device->ap_actlog_cnt);
- 		}
+ 	err = drbd_submit_peer_request(device, peer_req, rw, DRBD_FAULT_DT_WR);
+@@ -2396,8 +2411,10 @@ static int receive_Data(struct drbd_connection *connection, struct packet_info *
+ 	list_del(&peer_req->w.list);
+ 	drbd_remove_epoch_entry_interval(device, peer_req);
+ 	spin_unlock_irq(&device->resource->req_lock);
+-	if (peer_req->flags & EE_CALL_AL_COMPLETE_IO)
++	if (peer_req->flags & EE_CALL_AL_COMPLETE_IO) {
++		peer_req->flags &= ~EE_CALL_AL_COMPLETE_IO;
+ 		drbd_al_complete_io(device, &peer_req->i);
++	}
  
- 		list_del_init(&req->tl_requests);
-@@ -1439,6 +1441,7 @@ skip_fast_path:
- 		list_for_each_entry_safe(req, tmp, &pending, tl_requests) {
- 			req->rq_state |= RQ_IN_ACT_LOG;
- 			req->in_actlog_jif = jiffies;
-+			atomic_dec(&device->ap_actlog_cnt);
- 			list_del_init(&req->tl_requests);
- 			drbd_send_and_submit(device, req);
- 		}
-@@ -1454,6 +1457,7 @@ skip_fast_path:
- 			if (!was_cold) {
- 				req->rq_state |= RQ_IN_ACT_LOG;
- 				req->in_actlog_jif = jiffies;
-+				atomic_dec(&device->ap_actlog_cnt);
- 				/* Corresponding extent was hot after all? */
- 				drbd_send_and_submit(device, req);
- 			} else {
+ out_interrupted:
+ 	drbd_may_finish_epoch(connection, peer_req->epoch, EV_PUT + EV_CLEANUP);
+@@ -2561,6 +2578,7 @@ static int receive_DataRequest(struct drbd_connection *connection, struct packet
+ 		peer_req->w.cb = w_e_end_data_req;
+ 		fault_type = DRBD_FAULT_DT_RD;
+ 		/* application IO, don't drbd_rs_begin_io */
++		peer_req->flags |= EE_APPLICATION;
+ 		goto submit;
+ 
+ 	case P_RS_DATA_REQUEST:
 diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
-index 0ff8f46..48975a2 100644
+index 48975a2..b908e9b 100644
 --- a/drivers/block/drbd/drbd_worker.c
 +++ b/drivers/block/drbd/drbd_worker.c
-@@ -395,9 +395,6 @@ static int read_for_csum(struct drbd_peer_device *peer_device, sector_t sector,
- 	if (!get_ldev(device))
- 		return -EIO;
+@@ -132,6 +132,7 @@ void drbd_endio_write_sec_final(struct drbd_peer_request *peer_req) __releases(l
+ 	i = peer_req->i;
+ 	do_al_complete_io = peer_req->flags & EE_CALL_AL_COMPLETE_IO;
+ 	block_id = peer_req->block_id;
++	peer_req->flags &= ~EE_CALL_AL_COMPLETE_IO;
  
--	if (drbd_rs_should_slow_down(device, sector))
--		goto defer;
--
- 	/* GFP_TRY, because if there is no memory available right now, this may
- 	 * be rescheduled for later. It is "only" background resync, after all. */
- 	peer_req = drbd_alloc_peer_req(peer_device, ID_SYNCER /* unused */, sector,
-@@ -651,8 +648,7 @@ next_sector:
- 
- 		sector = BM_BIT_TO_SECT(bit);
- 
--		if (drbd_rs_should_slow_down(device, sector) ||
--		    drbd_try_rs_begin_io(device, sector)) {
-+		if (drbd_try_rs_begin_io(device, sector)) {
- 			device->bm_resync_fo = bit;
- 			goto requeue;
- 		}
-@@ -783,8 +779,7 @@ static int make_ov_request(struct drbd_device *device, int cancel)
- 
- 		size = BM_BLOCK_SIZE;
- 
--		if (drbd_rs_should_slow_down(device, sector) ||
--		    drbd_try_rs_begin_io(device, sector)) {
-+		if (drbd_try_rs_begin_io(device, sector)) {
- 			device->ov_position = sector;
- 			goto requeue;
- 		}
+ 	spin_lock_irqsave(&device->resource->req_lock, flags);
+ 	device->writ_cnt += peer_req->i.size >> 9;
 -- 
 1.9.1
 
