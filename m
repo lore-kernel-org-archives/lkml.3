@@ -1,174 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759070AbaGCUxt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 16:53:49 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:46556 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751842AbaGCUxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 16:53:47 -0400
-From: Suman Anna <s-anna@ti.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Suman Anna <s-anna@ti.com>
-Subject: [PATCH] rpmsg: compute number of buffers to allocate from vrings
-Date: Thu, 3 Jul 2014 15:53:35 -0500
-Message-ID: <1404420815-42108-1-git-send-email-s-anna@ti.com>
-X-Mailer: git-send-email 2.0.0
+	id S1754336AbaGCU6f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 16:58:35 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50838 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751357AbaGCU6e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 16:58:34 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Allen Yu <alleny@nvidia.com>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Add "rpm_not_supported" flag
+Date: Thu, 03 Jul 2014 23:16:31 +0200
+Message-ID: <1703139.e6mBtKGhYW@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1407021002380.874-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1407021002380.874-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The buffers to be used for communication are allocated during
-the rpmsg virtio driver's probe, and the number of buffers is
-currently hard-coded to 512. Remove this hard-coded value, as
-this can vary from one platform to another or between different
-remote processors. Instead, rely on the number of buffers the
-virtqueue vring is setup with in the first place.
+On Wednesday, July 02, 2014 10:27:06 AM Alan Stern wrote:
+> On Wed, 2 Jul 2014, Rafael J. Wysocki wrote:
+> 
+> > > Then you have no other objections to the patch?
+> > 
+> > My concern still is that it will be confusing, because people won't read the
+> > documentation carefully enough and will confuse "runtime PM never used" with
+> > "hardware can't do PM".  I'm not sure how to make that more clear, though.
+> 
+> I could emphasize that distinction a little more strongly in the 
+> documentation.
+> 
+> > Also we have the no_callbacks flag and I wonder if/how it is related to the
+> > new one.  Do we still need both?
+> 
+> They mean different things.  The no_callbacks flag is used when we want 
+> the PM core to think the device can be in RPM_SUSPENDED at times (it is 
+> "logically suspended").  rpm_not_supported is used when we want the PM 
+> core to think the device must always be in RPM_ACTIVE.
+> 
+> > In addition to that, I think that "hardware can't do PM" should apply to the
+> > handling of system suspend resume too.
+> 
+> Maybe.  For the use case Dan Williams and I are working on, it doesn't 
+> matter; for other cases it might matter.  That's why I named the flag 
+> "rpm_not_supported" -- it applies specifically to runtime PM, not 
+> system PM.
+> 
+> Here's a brief summary of the story behind this patch...
+> 
+> At one point, I suggested to Dan that instead of doing something
+> special for these devices, we could simply have the runtime_suspend()
+> routine always return -EBUSY.  He didn't like that idea because then
+> the user would see the device was never powering down but would have no
+> idea why.  The rpm_not_supported flag provides this information to the
+> user by causing the power/runtime_status attribute to say "not
+> supported".  (Although to be entirely fair, we could just put a message
+> in the kernel log during probe if the hardware doesn't support runtime
+> suspend.)
+> 
+> Instead, Dan introduced a messy PM QoS mechanism in commit
+> e3d105055525.  I didn't like that approach, but Greg merged it before I
+> objected.
+> 
+> Do you have any suggestions?
 
-This fixes the WARN_ON during the setup of the receive buffers
-for vrings with buffers less than 512.
+I need some more time to think about that.  I'm on vacation till Monday,
+I should be able to get to this by then.  I hope that's not a problem.
 
-NOTE: The number of buffers is already assumed to be symmetrical
-in each direction, and that logic is not unchanged.
-
-Signed-off-by: Suman Anna <s-anna@ti.com>
----
- drivers/rpmsg/virtio_rpmsg_bus.c | 41 +++++++++++++++++++++++++---------------
- 1 file changed, 26 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/rpmsg/virtio_rpmsg_bus.c b/drivers/rpmsg/virtio_rpmsg_bus.c
-index b6135d4..e9866a6 100644
---- a/drivers/rpmsg/virtio_rpmsg_bus.c
-+++ b/drivers/rpmsg/virtio_rpmsg_bus.c
-@@ -41,6 +41,7 @@
-  * @svq:	tx virtqueue
-  * @rbufs:	kernel address of rx buffers
-  * @sbufs:	kernel address of tx buffers
-+ * @num_bufs:	total number of buffers for rx and tx
-  * @last_sbuf:	index of last tx buffer used
-  * @bufs_dma:	dma base addr of the buffers
-  * @tx_lock:	protects svq, sbufs and sleepers, to allow concurrent senders.
-@@ -60,6 +61,7 @@ struct virtproc_info {
- 	struct virtio_device *vdev;
- 	struct virtqueue *rvq, *svq;
- 	void *rbufs, *sbufs;
-+	unsigned int num_bufs;
- 	int last_sbuf;
- 	dma_addr_t bufs_dma;
- 	struct mutex tx_lock;
-@@ -86,14 +88,14 @@ struct rpmsg_channel_info {
- #define to_rpmsg_driver(d) container_of(d, struct rpmsg_driver, drv)
- 
- /*
-- * We're allocating 512 buffers of 512 bytes for communications, and then
-- * using the first 256 buffers for RX, and the last 256 buffers for TX.
-+ * We're allocating buffers of 512 bytes each for communications. The
-+ * number of buffers are computed from the number of buffers supported
-+ * by the virtqueue vring and then use the first half of those buffers
-+ * for RX, and the last half buffers for TX.
-  *
-  * Each buffer will have 16 bytes for the msg header and 496 bytes for
-  * the payload.
-  *
-- * This will require a total space of 256KB for the buffers.
-- *
-  * We might also want to add support for user-provided buffers in time.
-  * This will allow bigger buffer size flexibility, and can also be used
-  * to achieve zero-copy messaging.
-@@ -102,9 +104,7 @@ struct rpmsg_channel_info {
-  * can change this without changing anything in the firmware of the remote
-  * processor.
-  */
--#define RPMSG_NUM_BUFS		(512)
- #define RPMSG_BUF_SIZE		(512)
--#define RPMSG_TOTAL_BUF_SPACE	(RPMSG_NUM_BUFS * RPMSG_BUF_SIZE)
- 
- /*
-  * Local addresses are dynamically allocated on-demand.
-@@ -579,7 +579,7 @@ static void *get_a_tx_buf(struct virtproc_info *vrp)
- 	 * either pick the next unused tx buffer
- 	 * (half of our buffers are used for sending messages)
- 	 */
--	if (vrp->last_sbuf < RPMSG_NUM_BUFS / 2)
-+	if (vrp->last_sbuf < vrp->num_bufs / 2)
- 		ret = vrp->sbufs + RPMSG_BUF_SIZE * vrp->last_sbuf++;
- 	/* or recycle a used one */
- 	else
-@@ -948,6 +948,7 @@ static int rpmsg_probe(struct virtio_device *vdev)
- 	struct virtproc_info *vrp;
- 	void *bufs_va;
- 	int err = 0, i;
-+	size_t total_buf_space;
- 
- 	vrp = kzalloc(sizeof(*vrp), GFP_KERNEL);
- 	if (!vrp)
-@@ -968,10 +969,19 @@ static int rpmsg_probe(struct virtio_device *vdev)
- 	vrp->rvq = vqs[0];
- 	vrp->svq = vqs[1];
- 
-+	/*
-+	 * We expect equal number of buffers for each direction as per current
-+	 * code, so throw a warning if the configuration doesn't match. This can
-+	 * easily be adjusted if needed.
-+	 */
-+	vrp->num_bufs = virtqueue_get_vring_size(vrp->rvq) * 2;
-+	WARN_ON(virtqueue_get_vring_size(vrp->svq) != (vrp->num_bufs / 2));
-+	total_buf_space = vrp->num_bufs * RPMSG_BUF_SIZE;
-+
- 	/* allocate coherent memory for the buffers */
- 	bufs_va = dma_alloc_coherent(vdev->dev.parent->parent,
--				RPMSG_TOTAL_BUF_SPACE,
--				&vrp->bufs_dma, GFP_KERNEL);
-+				     total_buf_space, &vrp->bufs_dma,
-+				     GFP_KERNEL);
- 	if (!bufs_va) {
- 		err = -ENOMEM;
- 		goto vqs_del;
-@@ -984,10 +994,10 @@ static int rpmsg_probe(struct virtio_device *vdev)
- 	vrp->rbufs = bufs_va;
- 
- 	/* and half is dedicated for TX */
--	vrp->sbufs = bufs_va + RPMSG_TOTAL_BUF_SPACE / 2;
-+	vrp->sbufs = bufs_va + total_buf_space / 2;
- 
- 	/* set up the receive buffers */
--	for (i = 0; i < RPMSG_NUM_BUFS / 2; i++) {
-+	for (i = 0; i < vrp->num_bufs / 2; i++) {
- 		struct scatterlist sg;
- 		void *cpu_addr = vrp->rbufs + i * RPMSG_BUF_SIZE;
- 
-@@ -1023,8 +1033,8 @@ static int rpmsg_probe(struct virtio_device *vdev)
- 	return 0;
- 
- free_coherent:
--	dma_free_coherent(vdev->dev.parent->parent, RPMSG_TOTAL_BUF_SPACE,
--					bufs_va, vrp->bufs_dma);
-+	dma_free_coherent(vdev->dev.parent->parent, total_buf_space,
-+			  bufs_va, vrp->bufs_dma);
- vqs_del:
- 	vdev->config->del_vqs(vrp->vdev);
- free_vrp:
-@@ -1042,6 +1052,7 @@ static int rpmsg_remove_device(struct device *dev, void *data)
- static void rpmsg_remove(struct virtio_device *vdev)
- {
- 	struct virtproc_info *vrp = vdev->priv;
-+	size_t total_buf_space = vrp->num_bufs * RPMSG_BUF_SIZE;
- 	int ret;
- 
- 	vdev->config->reset(vdev);
-@@ -1057,8 +1068,8 @@ static void rpmsg_remove(struct virtio_device *vdev)
- 
- 	vdev->config->del_vqs(vrp->vdev);
- 
--	dma_free_coherent(vdev->dev.parent->parent, RPMSG_TOTAL_BUF_SPACE,
--					vrp->rbufs, vrp->bufs_dma);
-+	dma_free_coherent(vdev->dev.parent->parent, total_buf_space,
-+			  vrp->rbufs, vrp->bufs_dma);
- 
- 	kfree(vrp);
- }
--- 
-2.0.0
+Rafael
 
