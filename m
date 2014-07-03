@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759276AbaGCKVn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:21:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51427 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757805AbaGCJVI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757901AbaGCJVI (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 3 Jul 2014 05:21:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51412 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757687AbaGCJVE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 05:21:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 014/198] Drivers: hv: balloon: Ensure pressure reports are posted regularly
-Date: Thu,  3 Jul 2014 10:17:37 +0100
-Message-Id: <1404379241-8590-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 012/198] x86-32, espfix: Remove filter for espfix32 due to race
+Date: Thu,  3 Jul 2014 10:17:35 +0100
+Message-Id: <1404379241-8590-13-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,117 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit ae339336dc950b9b05e7ccd3565dd3e8781c06d9 upstream.
+commit 246f2d2ee1d715e1077fc47d61c394569c8ee692 upstream.
 
-The current code posts periodic memory pressure status from a dedicated thread.
-Under some conditions, especially when we are releasing a lot of memory into
-the guest, we may not send timely pressure reports back to the host. Fix this
-issue by reporting pressure in all contexts that can be active in this driver.
+It is not safe to use LAR to filter when to go down the espfix path,
+because the LDT is per-process (rather than per-thread) and another
+thread might change the descriptors behind our back.  Fortunately it
+is always *safe* (if a bit slow) to go down the espfix path, and a
+32-bit LDT stack segment is extremely rare.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hv/hv_balloon.c | 29 ++++++++++++++++++++++++++---
- 1 file changed, 26 insertions(+), 3 deletions(-)
+ arch/x86/kernel/entry_32.S | 5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-index deb5c25305af..694173f662d1 100644
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -19,6 +19,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index bbc89cf397bd..473f125a3a52 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -554,11 +554,6 @@ ENTRY(iret_exc)
  
- #include <linux/kernel.h>
-+#include <linux/jiffies.h>
- #include <linux/mman.h>
- #include <linux/delay.h>
- #include <linux/init.h>
-@@ -459,6 +460,11 @@ static bool do_hot_add;
-  */
- static uint pressure_report_delay = 45;
- 
-+/*
-+ * The last time we posted a pressure report to host.
-+ */
-+static unsigned long last_post_time;
-+
- module_param(hot_add, bool, (S_IRUGO | S_IWUSR));
- MODULE_PARM_DESC(hot_add, "If set attempt memory hot_add");
- 
-@@ -542,6 +548,7 @@ struct hv_dynmem_device {
- 
- static struct hv_dynmem_device dm_device;
- 
-+static void post_status(struct hv_dynmem_device *dm);
- #ifdef CONFIG_MEMORY_HOTPLUG
- 
- static void hv_bring_pgs_online(unsigned long start_pfn, unsigned long size)
-@@ -612,7 +619,7 @@ static void hv_mem_hot_add(unsigned long start, unsigned long size,
- 		 * have not been "onlined" within the allowed time.
- 		 */
- 		wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
+ 	CFI_RESTORE_STATE
+ ldt_ss:
+-	larl PT_OLDSS(%esp), %eax
+-	jnz restore_nocheck
+-	testl $0x00400000, %eax		# returning to 32bit stack?
+-	jnz restore_nocheck		# allright, normal return
 -
-+		post_status(&dm_device);
- 	}
- 
- 	return;
-@@ -951,11 +958,17 @@ static void post_status(struct hv_dynmem_device *dm)
- {
- 	struct dm_status status;
- 	struct sysinfo val;
-+	unsigned long now = jiffies;
-+	unsigned long last_post = last_post_time;
- 
- 	if (pressure_report_delay > 0) {
- 		--pressure_report_delay;
- 		return;
- 	}
-+
-+	if (!time_after(now, (last_post_time + HZ)))
-+		return;
-+
- 	si_meminfo(&val);
- 	memset(&status, 0, sizeof(struct dm_status));
- 	status.hdr.type = DM_STATUS_REPORT;
-@@ -983,6 +996,14 @@ static void post_status(struct hv_dynmem_device *dm)
- 	if (status.hdr.trans_id != atomic_read(&trans_id))
- 		return;
- 
-+	/*
-+	 * If the last post time that we sampled has changed,
-+	 * we have raced, don't post the status.
-+	 */
-+	if (last_post != last_post_time)
-+		return;
-+
-+	last_post_time = jiffies;
- 	vmbus_sendpacket(dm->dev->channel, &status,
- 				sizeof(struct dm_status),
- 				(unsigned long)NULL,
-@@ -1117,7 +1138,7 @@ static void balloon_up(struct work_struct *dummy)
- 
- 			if (ret == -EAGAIN)
- 				msleep(20);
--
-+			post_status(&dm_device);
- 		} while (ret == -EAGAIN);
- 
- 		if (ret) {
-@@ -1144,8 +1165,10 @@ static void balloon_down(struct hv_dynmem_device *dm,
- 	struct dm_unballoon_response resp;
- 	int i;
- 
--	for (i = 0; i < range_count; i++)
-+	for (i = 0; i < range_count; i++) {
- 		free_balloon_pages(dm, &range_array[i]);
-+		post_status(&dm_device);
-+	}
- 
- 	if (req->more_pages == 1)
- 		return;
+ #ifdef CONFIG_PARAVIRT
+ 	/*
+ 	 * The kernel can't run on a non-flat stack if paravirt mode
 -- 
 1.9.1
 
