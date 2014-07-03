@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965034AbaGCQMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:12:33 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:3745 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759146AbaGCQM0 (ORCPT
+	id S1758912AbaGCQOC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:14:02 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45132 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964984AbaGCQMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 12:12:26 -0400
-Message-Id: <20140703161224.224000289@goodmis.org>
-User-Agent: quilt/0.63-1
-Date: Thu, 03 Jul 2014 12:05:08 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 05/21] ftrace: Add trampolines to enabled_functions debug file
-References: <20140703160503.006976702@goodmis.org>
+	Thu, 3 Jul 2014 12:12:32 -0400
+Date: Thu, 3 Jul 2014 17:12:08 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Rongjun Ying <rongjun.ying@csr.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Barry Song <baohua@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Workgroup.linux@csr.com
+Message-ID: <20140703161208.GJ410@sirena.org.uk>
+References: <1404269142-3557-1-git-send-email-rongjun.ying@csr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0005-ftrace-Add-trampolines-to-enabled_functions-debug-fi.patch
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4XBiSqiiHCIj6zoM"
+Content-Disposition: inline
+In-Reply-To: <1404269142-3557-1-git-send-email-rongjun.ying@csr.com>
+X-Cookie: Semper Fi, dude.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 0/2] ASoC: add CSR SiRFSoC audio USP interface driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-The enabled_functions is used to help debug the dynamic function tracing.
-Adding what trampolines are attached to files is useful for debugging.
+--4XBiSqiiHCIj6zoM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/ftrace.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+On Wed, Jul 02, 2014 at 10:45:40AM +0800, Rongjun Ying wrote:
+> This patchset adds the SiRF USP controller driver, this
+> driver uses the USP as I2S or DSP_A mode interface.
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 5d15eb8146a7..3ded796e10e0 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2903,10 +2903,22 @@ static int t_show(struct seq_file *m, void *v)
- 		return 0;
- 
- 	seq_printf(m, "%ps", (void *)rec->ip);
--	if (iter->flags & FTRACE_ITER_ENABLED)
-+	if (iter->flags & FTRACE_ITER_ENABLED) {
- 		seq_printf(m, " (%ld)%s",
- 			   ftrace_rec_count(rec),
--			   rec->flags & FTRACE_FL_REGS ? " R" : "");
-+			   rec->flags & FTRACE_FL_REGS ? " R" : "  ");
-+		if (rec->flags & FTRACE_FL_TRAMP_EN) {
-+			struct ftrace_ops *ops;
-+
-+			ops = ftrace_find_tramp_ops_curr(rec);
-+			if (ops && ops->trampoline)
-+				seq_printf(m, "\ttramp: %pS",
-+					   (void *)ops->trampoline);
-+			else
-+				seq_printf(m, "\ttramp: ERROR!");
-+		}
-+	}	
-+
- 	seq_printf(m, "\n");
- 
- 	return 0;
--- 
-2.0.0
+Applied both, thanks.
 
+--4XBiSqiiHCIj6zoM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTtYDVAAoJELSic+t+oim93A8P/0+bY4t28ElyrfsZ0mfvmp3D
+luvKqIXa0hUm3tCUTpr5NNwBv198XUB4P0CC1WMFPIVQYSWQCjF7h4AdYp2dpCQm
+3YFIXB/t4Ub5upxkS6BAT+Q/ZcLlkIqtUg0xHeUxjuIxa8c/OiGiqN47zxjbXj11
+LcPn+/cr0sTTKQFgFs+g9Gy6RArOqx3r7QFyrGmqn5TbytAasdtSzoBDxQy1dojd
+u1HOLXyKaiN4fTH7mG66U9EKD5WGjm7yQ7T8jDjqyDD3/XoYhr/ObdF8kZxnDZpy
+XjxzJmSruCsaLyGnqkNH8PoGCFSTckE5nsZOuBDjt4m4F7y62ULcyEY95pGNAem/
+iCeqyxSkXnNd1m/Yhm1m2q/ekPeSOGdHkpH7SVmRwbeFG1M77Sh3/qDjm9Ls/D6M
+JX+S4l1LNFPcJY4sWOuWRjCU3ocl4N5m88NYESQbNfST/GPStqzXQ/LAz5upv3KZ
+lK9EGTmGSIveKGAGO9zYVpFEMJeb3JNl30EnZVrfpe/w1q5BlrMmUR3zqSZ+6kuI
+IoR5eXEGkPo3DDOysDfE/HU/wVRo8OAHzLdANuyskYovMiCN3s1IiGbEmTErOwsc
+WpaP7E+aXOXzXM/8wiv9vr78jglLcMpMIoJTd9mfsri6cabUXDpPBUcAOG+czj2D
+epy1KMZ8xVPk03FMMxss
+=9Fe3
+-----END PGP SIGNATURE-----
+
+--4XBiSqiiHCIj6zoM--
