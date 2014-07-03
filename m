@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712AbaGCSgj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 14:36:39 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:56497 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751726AbaGCSgi (ORCPT
+	id S1759456AbaGCSil (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 14:38:41 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:50952 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539AbaGCSij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 14:36:38 -0400
-Message-ID: <1404412596.16291.30.camel@x220>
-Subject: Re: [PATCH 2/2] mach-spear: fixed spear1340.c file
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: Viresh Kumar <viresh.linux@gmail.com>,
-        Shiraz Hashim <shiraz.linux.kernel@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        spear-devel@list.st.com, linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 03 Jul 2014 20:36:36 +0200
-In-Reply-To: <CAPDOMVh0qyjq11kKaO2ndYhLW8j+dZyv3-c89BBcO1AxY+fiHQ@mail.gmail.com>
-References: <1404354994-7478-1-git-send-email-xerofoify@gmail.com>
-	 <1404410691.16291.11.camel@x220>
-	 <CAPDOMVh0qyjq11kKaO2ndYhLW8j+dZyv3-c89BBcO1AxY+fiHQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Thu, 3 Jul 2014 14:38:39 -0400
+Message-ID: <53B5A26B.7040606@linux.vnet.ibm.com>
+Date: Fri, 04 Jul 2014 00:05:23 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
+        David Rientjes <rientjes@google.com>,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm readahead: Fix sys_readahead breakage by reverting
+ 2MB limit (bug 79111)
+References: <1404392547-11648-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <CA+55aFxOTqUAqEF7+83s890Q18qCHSQqDOxWqWHNjG_25hVhXg@mail.gmail.com> <53B59CB5.9060004@linux.vnet.ibm.com> <CA+55aFyRgYW6Y8paYKGfqE205enhiPsZ1C8wrKpFavVXq7ZAtA@mail.gmail.com>
+In-Reply-To: <CA+55aFyRgYW6Y8paYKGfqE205enhiPsZ1C8wrKpFavVXq7ZAtA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Jul 2014 18:36:36.0911 (UTC) FILETIME=[B8D053F0:01CF96ED]
-X-RcptDomain: vger.kernel.org
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070318-2000-0000-0000-000000D1CDF3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[I fixed the top posting.]
-
-On Thu, 2014-07-03 at 14:08 -0400, Nick Krause wrote:
-> On Thu, Jul 3, 2014 at 2:04 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> > This patch, together with patch 1/2, basically moves a chunk of code
-> > into a separate file, didn't it? If so, why did you split that move in
-> > two patches?
+On 07/03/2014 11:52 PM, Linus Torvalds wrote:
+> On Thu, Jul 3, 2014 at 11:11 AM, Raghavendra K T
+> <raghavendra.kt@linux.vnet.ibm.com> wrote:
+>>>
+>>> If this comes from some man-page,
+>>
+>> Yes it is.
 >
-> Yes it is and I did it in two patches in order to be more readable.
-
-It makes it harder to understand the change (I had to _guess_ it was a
-move). Moreover, depending on the order that these two patches would be
-merged, we could end up with a chunk of code being either included twice
-or not included at all, in some range of commits. Neither would be good.
-
-> > And how does all this work without any changes to a Makefile?
+> Ok, googling actually finds a fairly recent patch to fix it
 >
-> Furthermore I don't known Kconfig well enough to do the Makefile
-> for the file I created.
+>     http://www.spinics.net/lists/linux-mm/msg70517.html
+>
+> and several much older "that's not true" comments.
 
-Then I think you should, well, study the kernel build system before
-submitting a change like this. And you can also ask a question or two to
-get things going. (Not sure what the relevant list would be.)
+Thanks. I had missed that.
 
+>
+> That said, the bugzilla entry you mentioned does mention "can't boot
+> 3.14 now". I'm not sure what the meaning of that sentence is, though.
+> Does it mean "can't boot 3.14 to test it because the machine is busy",
+> or is it a typo and really meant 3.15, and that some bootup script
+> *depended* on readahead()? I don't know. It seems strange.
 
-Paul Bolle
+I think your guess is right, it meant to say "I can't boot it anymore
+since I already upgraded to 3.15", because eventually bootup script (if
+it is) should have to read IIUC.
+
 
