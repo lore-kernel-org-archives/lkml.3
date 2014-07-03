@@ -1,96 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608AbaGCP42 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 11:56:28 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45086 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910AbaGCP40 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 11:56:26 -0400
-Date: Thu, 3 Jul 2014 16:55:38 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Beniamino Galvani <b.galvani@gmail.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Wenyou Yang <wenyou.yang@atmel.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Heiko Stuebner <heiko@sntech.de>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Message-ID: <20140703155538.GG410@sirena.org.uk>
-References: <1403451105-31929-1-git-send-email-b.galvani@gmail.com>
- <1403451105-31929-3-git-send-email-b.galvani@gmail.com>
- <20140627160725.GQ23300@sirena.org.uk>
- <20140629094642.GA13485@gmail.com>
+	id S932463AbaGCP5a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 11:57:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34419 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932239AbaGCP52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 11:57:28 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [RESEND PATCH v2] iommu/intel: Exclude devices using RMRRs from IOMMU
+	API domains
+To: iommu@lists.linux-foundation.org, dwmw2@infradead.org
+Cc: chegu_vinod@hp.com, linux-kernel@vger.kernel.org
+Date: Thu, 03 Jul 2014 09:57:02 -0600
+Message-ID: <20140703155435.8419.72901.stgit@gimli.home>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="n7zTieg8iIQ1Wja9"
-Content-Disposition: inline
-In-Reply-To: <20140629094642.GA13485@gmail.com>
-X-Cookie: Semper Fi, dude.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/5] regulator: act8865: set correct number of regulators
- in pdata
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The user of the IOMMU API domain expects to have full control of
+the IOVA space for the domain.  RMRRs are fundamentally incompatible
+with that idea.  We can neither map the RMRR into the IOMMU API
+domain, nor can we guarantee that the device won't continue DMA with
+the area described by the RMRR as part of the new domain.  Therefore
+we must prevent such devices from being used by the IOMMU API.
 
---n7zTieg8iIQ1Wja9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: stable@vger.kernel.org
+---
 
-On Sun, Jun 29, 2014 at 11:46:43AM +0200, Beniamino Galvani wrote:
-> On Fri, Jun 27, 2014 at 05:07:25PM +0100, Mark Brown wrote:
-> > On Sun, Jun 22, 2014 at 05:31:42PM +0200, Beniamino Galvani wrote:
-> > > When platform data is populated from DT all the regulators are
-> > > instantiated and the value of num_regulators should be the number of
-> > > all available regulators rather than the number of matched ones.
+We had an interesting discussion last time around about IGD use of
+RMRR, but if anything I think it only reinforces the value of this
+patch.  We can later add exemptions, but we currently have no API
+to expose the RMRR requirements outside of the VT-d driver and it's
+not clear the hardware exposes everything we need.
 
-> > Could you go into more detail on your logic on this one please?  The
-> > platform data (and DT configuration) for regulators should be completely
-> > optional.
+ drivers/iommu/intel-iommu.c |   49 ++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 39 insertions(+), 10 deletions(-)
 
-> pdata contains an array of struct act8865_regulator_data and a
-> num_regulators field which should hold the number of elements in the
-> array, if I understand correctly.
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index f38ec7a..3c7cd80 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -2512,22 +2512,46 @@ static bool device_has_rmrr(struct device *dev)
+ 	return false;
+ }
+ 
++/*
++ * There are a couple cases where we need to restrict the functionality of
++ * devices associated with RMRRs.  The first is when evaluating a device for
++ * identity mapping because problems exist when devices are moved in and out
++ * of domains and their respective RMRR information is lost.  This means that
++ * a device with associated RMRRs will never be in a "passthrough" domain.
++ * The second is use of the device through the IOMMU API.  This interface
++ * expects to have full control of the IOVA space for the device.  We cannot
++ * satisfy both the requirement that RMRR access is maintained and have an
++ * unencumbered IOVA space.  We also have no ability to quiesce the device's
++ * use of the RMRR space or even inform the IOMMU API user of the restriction.
++ * We therefore prevent devices associated with an RMRR from participating in
++ * the IOMMU API, which eliminates them from device assignment.
++ *
++ * In both cases we assume that PCI USB devices with RMRRs have them largely
++ * for historical reasons and that the RMRR space is not actively used post
++ * boot.  This exclusion may change if vendors begin to abuse it.
++ */
++static bool device_is_rmrr_locked(struct device *dev)
++{
++	if (!device_has_rmrr(dev))
++		return false;
++
++	if (dev_is_pci(dev)) {
++		struct pci_dev *pdev = to_pci_dev(dev);
++
++		if ((pdev->class >> 8) == PCI_CLASS_SERIAL_USB)
++			return false;
++	}
++
++	return true;
++}
++
+ static int iommu_should_identity_map(struct device *dev, int startup)
+ {
+ 
+ 	if (dev_is_pci(dev)) {
+ 		struct pci_dev *pdev = to_pci_dev(dev);
+ 
+-		/*
+-		 * We want to prevent any device associated with an RMRR from
+-		 * getting placed into the SI Domain. This is done because
+-		 * problems exist when devices are moved in and out of domains
+-		 * and their respective RMRR info is lost. We exempt USB devices
+-		 * from this process due to their usage of RMRRs that are known
+-		 * to not be needed after BIOS hand-off to OS.
+-		 */
+-		if (device_has_rmrr(dev) &&
+-		    (pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
++		if (device_is_rmrr_locked(dev))
+ 			return 0;
+ 
+ 		if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
+@@ -4185,6 +4209,11 @@ static int intel_iommu_attach_device(struct iommu_domain *domain,
+ 	int addr_width;
+ 	u8 bus, devfn;
+ 
++	if (device_is_rmrr_locked(dev)) {
++		dev_warn(dev, "Device is ineligible for IOMMU domain attach due to platform RMRR requirement.  Contact your platform vendor.\n");
++		return -EPERM;
++	}
++
+ 	/* normally dev is not mapped */
+ 	if (unlikely(domain_context_mapped(dev))) {
+ 		struct dmar_domain *old_domain;
 
-> So in the current code, when populating platform data from DT, there
-> is a mismatch between the number of elements that are put in the array
-> (ARRAY_SIZE(act8865_matches)) and the value of num_regulators, which
-> is set to the number of regulators found in the DT.
-
-> In case of missing regulator nodes in DT, pdata->regulators will be
-> populated with all the regulators but their init_data will be NULL.
-
-OK, so that was slightly unclear but I see what you're saying now - the
-issue isn't that there will be fewer valid elements in the array, it's
-that the array is sparsely populated.
-
---n7zTieg8iIQ1Wja9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTtXz3AAoJELSic+t+oim9GSMP/0YVM1ksW7ciQVv2nQDM2ZGS
-I2gN5MOR9Vnb2/xYbXSre3vw2OIoY8JhCjJSgBePN7+GBh9Xp7o+yme7F0z9LDJZ
-TvxghxkI4aLADUXb+8RVBRwUbyhjmHEdox6dPyRxU+GpNPOld9g1K5vtPxAya4uv
-TWZWqt1/DUX9sLWz72Imqz91Iq4A5upeQN4g+KpITve/5S8WK7aP90xktvUTmMQa
-QTgxgMr7qlSKWWuc5t6WOQWQR1B+OKVBNUhR80nIn2+rbDzY9CfWHP3MjYiJgVM/
-GovzlFATVzrFvtoTiAxsJmvEsARaRh7mxmdJr/DhntCRHj58j7aaNPhV+Yk/Nx5+
-7dEaWo4TrzYH+3E/XP+ZjogxW9oTTrDPfsdEEUMtM0FISgJ3d6dI7Nh2d2XlR9tz
-PnOEaBoCxHm9AmjJltCE85DF7MwwAXEWngEooh+lA7cofRw+PDJZd3MHutvBOpth
-YzJZnQqLhjbCGycUwAadGxB++Zi6fvBhP1R1D8FpyT3ykPdGz79jGwQuxdNYeBzj
-p/cZVu/c4puSz5deWeIEHaf/C8pddMQFZorbaZguwz3s841eqfEyWXOCJH41TDTZ
-iLexVr6JnbmujsXXAlpD8xY4VFqo4Nl5Of3gHRj26IERNQeY8M4Sc3gSURCGSvwX
-9Zmuz7xsz9SDDWInDZ6s
-=QD+m
------END PGP SIGNATURE-----
-
---n7zTieg8iIQ1Wja9--
