@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759629AbaGCVn0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 17:43:26 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53722 "EHLO mail.kernel.org"
+	id S1759704AbaGCVne (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 17:43:34 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53764 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751515AbaGCVnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 17:43:23 -0400
+	id S1759679AbaGCVnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 17:43:32 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Jiri Olsa <jolsa@redhat.com>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/7] perf ui browser: Allow overriding refresh_dimensions method
-Date: Thu,  3 Jul 2014 18:42:55 -0300
-Message-Id: <1404423780-24026-3-git-send-email-acme@kernel.org>
+Subject: [PATCH 4/7] perf hists browser: Override ui_browser refresh_dimensions method
+Date: Thu,  3 Jul 2014 18:42:57 -0300
+Message-Id: <1404423780-24026-5-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1404423780-24026-1-git-send-email-acme@kernel.org>
 References: <1404423780-24026-1-git-send-email-acme@kernel.org>
@@ -28,9 +28,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Some browsers, like the hist_browser, may want to be notified everytime
-a refresh_dimensions is needed, so that it can reset ui_browser->rows,
-for instance, or do some other related reaction to screen resizings.
+This requires some more work so that we can really just use the width of
+current entries when we want to partition the screen.
+
+Right now its just a prep patch so that we can have where to update
+ui_browser->rows when introducing the column headers line, that will be
+togglable, so we need to update it everytime we refresh the dimensions
+of the browser.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -42,50 +46,64 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ielvluuemzn30bneh0zk3twi@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-ovk654rx525b4657y0mh6ku9@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browser.c | 7 +++++--
- tools/perf/ui/browser.h | 1 +
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ tools/perf/ui/browsers/hists.c | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
-index adb294a3ec08..6680fa5cb9dd 100644
---- a/tools/perf/ui/browser.c
-+++ b/tools/perf/ui/browser.c
-@@ -250,7 +250,10 @@ int ui_browser__show(struct ui_browser *browser, const char *title,
- 	int err;
- 	va_list ap;
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index ca63564d203a..ef7abf896f5a 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -56,11 +56,19 @@ static u32 hist_browser__nr_entries(struct hist_browser *hb)
+ 	return nr_entries + hb->nr_callchain_rows;
+ }
  
--	ui_browser__refresh_dimensions(browser);
-+	if (browser->refresh_dimensions == NULL)
-+		browser->refresh_dimensions = ui_browser__refresh_dimensions;
+-static void hist_browser__refresh_dimensions(struct hist_browser *browser)
++static void hist_browser__refresh_dimensions(struct ui_browser *browser)
+ {
++	struct hist_browser *hb = container_of(browser, struct hist_browser, b);
 +
-+	browser->refresh_dimensions(browser);
+ 	/* 3 == +/- toggle symbol before actual hist_entry rendering */
+-	browser->b.width = 3 + (hists__sort_list_width(browser->hists) +
+-			     sizeof("[k]"));
++	browser->width = 3 + (hists__sort_list_width(hb->hists) + sizeof("[k]"));
++	/*
++ 	 * FIXME: Just keeping existing behaviour, but this really should be
++ 	 *	  before updating browser->width, as it will invalidate the
++ 	 *	  calculation above. Fix this and the fallout in another
++ 	 *	  changeset.
++ 	 */
++	ui_browser__refresh_dimensions(browser);
+ }
  
- 	pthread_mutex_lock(&ui__lock);
- 	__ui_browser__show_title(browser, title);
-@@ -367,7 +370,7 @@ int ui_browser__run(struct ui_browser *browser, int delay_secs)
+ static void hist_browser__gotorc(struct hist_browser *browser, int row, int column)
+@@ -78,7 +86,7 @@ static void hist_browser__reset(struct hist_browser *browser)
  
- 		if (key == K_RESIZE) {
- 			ui__refresh_dimensions(false);
--			ui_browser__refresh_dimensions(browser);
-+			browser->refresh_dimensions(browser);
- 			__ui_browser__show_title(browser, browser->title);
- 			ui_helpline__puts(browser->helpline);
- 			continue;
-diff --git a/tools/perf/ui/browser.h b/tools/perf/ui/browser.h
-index cb8f39a1646f..92ae72113965 100644
---- a/tools/perf/ui/browser.h
-+++ b/tools/perf/ui/browser.h
-@@ -19,6 +19,7 @@ struct ui_browser {
- 	void	      *priv;
- 	const char    *title;
- 	char	      *helpline;
-+	void 	      (*refresh_dimensions)(struct ui_browser *browser);
- 	unsigned int  (*refresh)(struct ui_browser *browser);
- 	void	      (*write)(struct ui_browser *browser, void *entry, int row);
- 	void	      (*seek)(struct ui_browser *browser, off_t offset, int whence);
+ 	hist_browser__update_nr_entries(browser);
+ 	browser->b.nr_entries = hist_browser__nr_entries(browser);
+-	hist_browser__refresh_dimensions(browser);
++	hist_browser__refresh_dimensions(&browser->b);
+ 	ui_browser__reset_index(&browser->b);
+ }
+ 
+@@ -360,7 +368,6 @@ static int hist_browser__run(struct hist_browser *browser,
+ 	browser->b.entries = &browser->hists->entries;
+ 	browser->b.nr_entries = hist_browser__nr_entries(browser);
+ 
+-	hist_browser__refresh_dimensions(browser);
+ 	hists__browser_title(browser->hists, title, sizeof(title));
+ 
+ 	if (ui_browser__show(&browser->b, title,
+@@ -1195,6 +1202,7 @@ static struct hist_browser *hist_browser__new(struct hists *hists)
+ 	if (browser) {
+ 		browser->hists = hists;
+ 		browser->b.refresh = hist_browser__refresh;
++		browser->b.refresh_dimensions = hist_browser__refresh_dimensions;
+ 		browser->b.seek = ui_browser__hists_seek;
+ 		browser->b.use_navkeypressed = true;
+ 	}
 -- 
 1.9.3
 
