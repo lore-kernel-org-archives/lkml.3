@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314AbaGCTxI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 15:53:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:42893 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751392AbaGCTxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 15:53:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,596,1400050800"; 
-   d="scan'208";a="564935511"
-From: Andi Kleen <andi@firstfloor.org>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: DNAME_INLINE_LEN versus CONFIG_GENERIC_LOCKBREAK
-References: <8761je94wk.fsf@rasmusvillemoes.dk>
-Date: Thu, 03 Jul 2014 12:53:01 -0700
-In-Reply-To: <8761je94wk.fsf@rasmusvillemoes.dk> (Rasmus Villemoes's message
-	of "Thu, 03 Jul 2014 11:18:35 +0200")
-Message-ID: <87fviite1u.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1757871AbaGCTyK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 15:54:10 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:39799 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698AbaGCTyI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 15:54:08 -0400
+X-Greylist: delayed 622 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jul 2014 15:54:08 EDT
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <21429.45664.255694.85431@quad.stoffel.home>
+Date: Thu, 3 Jul 2014 15:43:28 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
+        David Rientjes <rientjes@google.com>,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm readahead: Fix sys_readahead breakage by reverting 2MB
+ limit (bug 79111)
+In-Reply-To: <CA+55aFwwSCrH5QDvrzzyHhRU5R849Mo8A3NdRMwm9OTeWH9diQ@mail.gmail.com>
+References: <1404392547-11648-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+	<CA+55aFxOTqUAqEF7+83s890Q18qCHSQqDOxWqWHNjG_25hVhXg@mail.gmail.com>
+	<53B59CB5.9060004@linux.vnet.ibm.com>
+	<CA+55aFyRgYW6Y8paYKGfqE205enhiPsZ1C8wrKpFavVXq7ZAtA@mail.gmail.com>
+	<CA+55aFwwSCrH5QDvrzzyHhRU5R849Mo8A3NdRMwm9OTeWH9diQ@mail.gmail.com>
+X-Mailer: VM 8.2.0b under 23.4.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rasmus Villemoes <linux@rasmusvillemoes.dk> writes:
+>>>>> "Linus" == Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-> In dcache.h, DNAME_INLINE_LEN is carefully chosen so that sizeof(struct
-> dentry) is a (specific) multiple of 64 bytes. Obviously this breaks when
-> certain debug options are chosen (DEBUG_LOCK_ALLOC and DEBUG_SPINLOCK),
-> but also, AFAICT, on architectures with CONFIG_GENERIC_LOCKBREAK.
->
-> I'm not sure it matters, but if it does, I'd suggest putting a
-> BUILD_BUG_ON somewhere, protected by suitable #ifdefs, so that the code
-> documents the assumptions that went into the particular choice of
-> DNAME_INLINE_LEN (this would also help catch changes to some of the
-> structures embedded in struct dentry which would violate those
-> assumptions). 
+Linus> On Thu, Jul 3, 2014 at 11:22 AM, Linus Torvalds
+Linus> <torvalds@linux-foundation.org> wrote:
+>> 
+>> So the bugzilla entry worries me a bit - we definitely do not want to
+>> regress in case somebody really relied on timing - but without more
+>> specific information I still think the real bug is just in the
+>> man-page.
 
-The right fix would be to pad it correctly for these other variants
-too.
+Linus> Side note: the 2MB limit may be too small. 2M is peanuts on modern
+Linus> machines, even for fairly slow IO, and there are lots of files (like
+Linus> glibc etc) that people might want to read-ahead during boot. We
+Linus> already do bigger read-ahead if people just do "read()" system calls.
+Linus> So I could certainly imagine that we should increase it.
 
-Checking for magic numbers would be nasty though.
+Linus> I do *not* think we should bow down to insane man-pages that have
+Linus> always been wrong, though, and I don't think we should increase it to
+Linus> "let's just read-ahead a whole ISO image" kind of sizes..
 
--Andi
+This is one of those perenial questions of how to tune this.  I agree
+we should increase the number, but shouldn't it be based on both the
+amount of memory in the machine, number of devices (or is it all just
+one big pool?) and the speed of the actual device doing readahead?
+Doesn't make sense to do 32mb of readahead on a USB 1.1 thumb drive or
+even a CDROM.  But maybe it does for USB3 thumb drives?  
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+John
