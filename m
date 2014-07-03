@@ -1,105 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759520AbaGCQ1k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:27:40 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:50181 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759486AbaGCQ1h (ORCPT
+	id S1759534AbaGCQ2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:28:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43044 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759508AbaGCQ2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 12:27:37 -0400
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        peterz@infradead.org, mingo@kernel.org
-Cc: rjw@rjwysocki.net, vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
-        preeti@linux.vnet.ibm.com, Dietmar.Eggemann@arm.com, pjt@google.com
-Subject: [RFCv2 PATCH 19/23] sched: Task wakeup tracking
-Date: Thu,  3 Jul 2014 17:26:06 +0100
-Message-Id: <1404404770-323-20-git-send-email-morten.rasmussen@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
-References: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
-X-OriginalArrivalTime: 03 Jul 2014 16:26:21.0881 (UTC) FILETIME=[86B16290:01CF96DB]
-X-MC-Unique: 114070317262200601
-Content-Type: text/plain; charset=WINDOWS-1252
+	Thu, 3 Jul 2014 12:28:05 -0400
+Date: Thu, 3 Jul 2014 09:27:48 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        SCSI Mailing List <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 3.15 099/139] libiscsi, iser: Adjust data_length to
+ include protection information
+Message-ID: <20140703162748.GA24758@kroah.com>
+References: <20140628174605.352098823@linuxfoundation.org>
+ <20140628174609.930049472@linuxfoundation.org>
+ <1404339330.1862.69.camel@ul30vt.home>
+ <53B48B37.4000608@cs.wisc.edu>
+ <1404341555.16066.19.camel@dabdike>
+ <20140703060548.GB17456@infradead.org>
+ <1404395645.1949.2.camel@jarvis.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404395645.1949.2.camel@jarvis.lan>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s63GRkDJ010657
 
-Track task wakeup rate in wakeup_avg_sum by counting wakeups. Note that
-this is _not_ cpu wakeups (idle exits). Task wakeups only cause cpu
-wakeups if the cpu is idle when the task wakeup occurs.
+On Thu, Jul 03, 2014 at 06:54:05AM -0700, James Bottomley wrote:
+> On Wed, 2014-07-02 at 23:05 -0700, Christoph Hellwig wrote:
+> > On Wed, Jul 02, 2014 at 03:52:35PM -0700, James Bottomley wrote:
+> > > In which case it's not marked for stable backport ... I assume it should
+> > > be?
+> > 
+> > Only if the patch that regression went to stable, which it shouldn't,
+> 
+> Well it did:
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/drivers/scsi?h=linux-3.15.y&id=04423ddea30a7fb7232636eda8aed55ea5b972fe
+> 
+> The stable process is a bit broken from my point of view since it
+> doesn't copy linux-scsi on SCSI commits
 
-The wakeup rate decays over time at the same rate as used for the
-existing entity load tracking. Unlike runnable_avg_sum, wakeup_avg_sum
-is counting events, not time, and is therefore theoretically unbounded
-and should be used with care.
+I copy everyone on the patch.  You were not on that patch as it doesn't
+look like it went through your tree at all.
 
-Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
----
- include/linux/sched.h |    3 +++
- kernel/sched/fair.c   |   18 ++++++++++++++++++
- 2 files changed, 21 insertions(+)
+> ... but this time even I didn't get a cc, so really no-one who knew
+> there was a problem had a chance to comment.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index faebd87..5f854b2 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1107,6 +1107,9 @@ struct sched_avg {
- 	s64 decay_count;
- 	unsigned long load_avg_contrib;
- 	unsigned long uw_load_avg_contrib;
-+
-+	unsigned long last_wakeup_update;
-+	u32 wakeup_avg_sum;
- };
- 
- #ifdef CONFIG_SCHEDSTATS
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 44ba754..6da8e2b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -679,6 +679,8 @@ void init_task_runnable_average(struct task_struct *p)
- 	p->se.avg.runnable_avg_sum = slice;
- 	p->se.avg.runnable_avg_period = slice;
- 	__update_task_entity_contrib(&p->se);
-+
-+	p->se.avg.last_wakeup_update = jiffies;
- }
- #else
- void init_task_runnable_average(struct task_struct *p)
-@@ -4112,6 +4114,21 @@ static void record_wakee(struct task_struct *p)
- 	}
- }
- 
-+static void update_wakeup_avg(struct task_struct *p)
-+{
-+	struct sched_entity *se = &p->se;
-+	struct sched_avg *sa = &se->avg;
-+	unsigned long now = ACCESS_ONCE(jiffies);
-+
-+	if (time_after(now, sa->last_wakeup_update)) {
-+		sa->wakeup_avg_sum = decay_load(sa->wakeup_avg_sum,
-+				jiffies_to_msecs(now - sa->last_wakeup_update));
-+		sa->last_wakeup_update = now;
-+	}
-+
-+	sa->wakeup_avg_sum += 1024;
-+}
-+
- static void task_waking_fair(struct task_struct *p)
- {
- 	struct sched_entity *se = &p->se;
-@@ -4132,6 +4149,7 @@ static void task_waking_fair(struct task_struct *p)
- 
- 	se->vruntime -= min_vruntime;
- 	record_wakee(p);
-+	update_wakeup_avg(p);
- }
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
--- 
-1.7.9.5
+The target people (Nicholas) asked for the patch to be applied, they
+knew what was going on here.
 
+> The choice is either request revert from stable or add fix.
 
+Agreed, just let me know.
+
+greg k-h
