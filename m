@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030459AbaGCJYm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:24:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52436 "EHLO
+	id S1030484AbaGCJYs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:24:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52476 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030406AbaGCJYf (ORCPT
+	with ESMTP id S1030455AbaGCJYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:24:35 -0400
+	Thu, 3 Jul 2014 05:24:42 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Bryan Evenson <bevenson@melinkcorp.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Mark Roszko <mark.roszko@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: James Hogan <james.hogan@imgtec.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Tim Kryger <tim.kryger@linaro.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Markus Mayer <markus.mayer@linaro.org>, Wang Nan <wangnan0@huawei.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 154/198] ARM: at91: fix at91_sysirq_mask_rtc for sam9x5 SoCs
-Date: Thu,  3 Jul 2014 10:19:57 +0100
-Message-Id: <1404379241-8590-155-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 161/198] serial: 8250_dw: Fix LCR workaround regression
+Date: Thu,  3 Jul 2014 10:20:04 +0100
+Message-Id: <1404379241-8590-162-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -34,75 +32,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+From: James Hogan <james.hogan@imgtec.com>
 
-commit 9dcc87fec8947308e0111c65dcd881e6aa5b1673 upstream.
+commit 6979f8d28049879e6147767d93ba6732c8bd94f4 upstream.
 
-sam9x5 SoCs have the following errata:
- "RTC: Interrupt Mask Register cannot be used
-  Interrupt Mask Register read always returns 0."
+Commit c49436b657d0 (serial: 8250_dw: Improve unwritable LCR workaround)
+caused a regression. It added a check that the LCR was written properly
+to detect and workaround the busy quirk, but the behaviour of bit 5
+(UART_LCR_SPAR) differs between IP versions 3.00a and 3.14c per the
+docs. On older versions this caused the check to fail and it would
+repeatedly force idle and rewrite the LCR register, causing delays and
+preventing any input from serial being received.
 
-Hence we should not rely on what IMR claims about already masked IRQs
-and just disable all IRQs.
+This is fixed by masking out UART_LCR_SPAR before making the comparison.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
-Reviewed-by: Johan Hovold <johan@hovold.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Bryan Evenson <bevenson@melinkcorp.com>
-Cc: Andrew Victor <linux@maxim.org.za>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Mark Roszko <mark.roszko@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Tim Kryger <tim.kryger@linaro.org>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Matt Porter <matt.porter@linaro.org>
+Cc: Markus Mayer <markus.mayer@linaro.org>
+Tested-by: Tim Kryger <tim.kryger@linaro.org>
+Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Tested-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Wang Nan <wangnan0@huawei.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mach-at91/sysirq_mask.c | 22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
+ drivers/tty/serial/8250/8250_dw.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-at91/sysirq_mask.c b/arch/arm/mach-at91/sysirq_mask.c
-index 2ba694f9626b..f8bc3511a8c8 100644
---- a/arch/arm/mach-at91/sysirq_mask.c
-+++ b/arch/arm/mach-at91/sysirq_mask.c
-@@ -25,24 +25,28 @@
- 
- #include "generic.h"
- 
--#define AT91_RTC_IDR	0x24	/* Interrupt Disable Register */
--#define AT91_RTC_IMR	0x28	/* Interrupt Mask Register */
-+#define AT91_RTC_IDR		0x24	/* Interrupt Disable Register */
-+#define AT91_RTC_IMR		0x28	/* Interrupt Mask Register */
-+#define AT91_RTC_IRQ_MASK	0x1f	/* Available IRQs mask */
- 
- void __init at91_sysirq_mask_rtc(u32 rtc_base)
- {
- 	void __iomem *base;
--	u32 mask;
- 
- 	base = ioremap(rtc_base, 64);
- 	if (!base)
- 		return;
- 
--	mask = readl_relaxed(base + AT91_RTC_IMR);
--	if (mask) {
--		pr_info("AT91: Disabling rtc irq\n");
--		writel_relaxed(mask, base + AT91_RTC_IDR);
--		(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
--	}
-+	/*
-+	 * sam9x5 SoCs have the following errata:
-+	 * "RTC: Interrupt Mask Register cannot be used
-+	 *  Interrupt Mask Register read always returns 0."
-+	 *
-+	 * Hence we're not relying on IMR values to disable
-+	 * interrupts.
-+	 */
-+	writel_relaxed(AT91_RTC_IRQ_MASK, base + AT91_RTC_IDR);
-+	(void)readl_relaxed(base + AT91_RTC_IMR);	/* flush */
- 
- 	iounmap(base);
- }
+diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
+index 1dec9af3c9ab..70ecf541b77a 100644
+--- a/drivers/tty/serial/8250/8250_dw.c
++++ b/drivers/tty/serial/8250/8250_dw.c
+@@ -95,7 +95,8 @@ static void dw8250_serial_out(struct uart_port *p, int offset, int value)
+ 	if (offset == UART_LCR) {
+ 		int tries = 1000;
+ 		while (tries--) {
+-			if (value == p->serial_in(p, UART_LCR))
++			unsigned int lcr = p->serial_in(p, UART_LCR);
++			if ((value & ~UART_LCR_SPAR) == (lcr & ~UART_LCR_SPAR))
+ 				return;
+ 			dw8250_force_idle(p);
+ 			writeb(value, p->membase + (UART_LCR << p->regshift));
+@@ -131,7 +132,8 @@ static void dw8250_serial_out32(struct uart_port *p, int offset, int value)
+ 	if (offset == UART_LCR) {
+ 		int tries = 1000;
+ 		while (tries--) {
+-			if (value == p->serial_in(p, UART_LCR))
++			unsigned int lcr = p->serial_in(p, UART_LCR);
++			if ((value & ~UART_LCR_SPAR) == (lcr & ~UART_LCR_SPAR))
+ 				return;
+ 			dw8250_force_idle(p);
+ 			writel(value, p->membase + (UART_LCR << p->regshift));
 -- 
 1.9.1
 
