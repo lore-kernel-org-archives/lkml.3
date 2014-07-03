@@ -1,118 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463AbaGCP5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 11:57:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34419 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932239AbaGCP52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 11:57:28 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [RESEND PATCH v2] iommu/intel: Exclude devices using RMRRs from IOMMU
-	API domains
-To: iommu@lists.linux-foundation.org, dwmw2@infradead.org
-Cc: chegu_vinod@hp.com, linux-kernel@vger.kernel.org
-Date: Thu, 03 Jul 2014 09:57:02 -0600
-Message-ID: <20140703155435.8419.72901.stgit@gimli.home>
-User-Agent: StGIT/0.14.3
+	id S964991AbaGCP5n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 11:57:43 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:35818 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932239AbaGCP5l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 11:57:41 -0400
+Date: Thu, 3 Jul 2014 11:57:38 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [GIT PULL] tracing/uprobes: Various fixes
+Message-ID: <20140703115738.6f5c8eda@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The user of the IOMMU API domain expects to have full control of
-the IOVA space for the domain.  RMRRs are fundamentally incompatible
-with that idea.  We can neither map the RMRR into the IOMMU API
-domain, nor can we guarantee that the device won't continue DMA with
-the area described by the RMRR as part of the new domain.  Therefore
-we must prevent such devices from being used by the IOMMU API.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: stable@vger.kernel.org
----
+Linus,
 
-We had an interesting discussion last time around about IGD use of
-RMRR, but if anything I think it only reinforces the value of this
-patch.  We can later add exemptions, but we currently have no API
-to expose the RMRR requirements outside of the VT-d driver and it's
-not clear the hardware exposes everything we need.
+Oleg Nesterov found and fixed a bug in the perf/ftrace/uprobes code where
+running:
 
- drivers/iommu/intel-iommu.c |   49 ++++++++++++++++++++++++++++++++++---------
- 1 file changed, 39 insertions(+), 10 deletions(-)
+   # perf probe -x /lib/libc.so.6 syscall
+   # echo 1 >> /sys/kernel/debug/tracing/events/probe_libc/enable
+   # perf record -e probe_libc:syscall whatever
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index f38ec7a..3c7cd80 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -2512,22 +2512,46 @@ static bool device_has_rmrr(struct device *dev)
- 	return false;
+kills the uprobe. Along the way he found some other minor bugs and clean ups
+that he fixed up making it a total of 4 patches.
+
+Doing unrelated work, I found that the reading of the ftrace trace
+file disables all function tracer callbacks. This was fine when ftrace
+was the only user, but now that it's used by perf and kprobes, this
+is a bug where reading trace can disable kprobes and perf. A very unexpected
+side effect and should be fixed.
+
+Please pull the latest trace-fixes-v3.16-rc3 tree, which can be found at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+trace-fixes-v3.16-rc3
+
+Tag SHA1: ff029a4ecb5ecfc316bb258534805f1a242e0616
+Head SHA1: 099ed151675cd1d2dbeae1dac697975f6a68716d
+
+
+Oleg Nesterov (4):
+      tracing/uprobes: Revert "Support mix of ftrace and perf"
+      uprobes: Change unregister/apply to WARN() if uprobe/consumer is gone
+      tracing/uprobes: Kill the bogus UPROBE_HANDLER_REMOVE code in uprobe_dispatcher()
+      tracing/uprobes: Fix the usage of uprobe_buffer_enable() in probe_event_enable()
+
+Steven Rostedt (Red Hat) (1):
+      tracing: Remove ftrace_stop/start() from reading the trace file
+
+----
+ kernel/events/uprobes.c     |  6 +++---
+ kernel/trace/trace.c        |  2 --
+ kernel/trace/trace_uprobe.c | 46 ++++++++++++++++++++++++++-------------------
+ 3 files changed, 30 insertions(+), 24 deletions(-)
+---------------------------
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index c445e392e93f..6f3254e8c137 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -846,7 +846,7 @@ static void __uprobe_unregister(struct uprobe *uprobe, struct uprobe_consumer *u
+ {
+ 	int err;
+ 
+-	if (!consumer_del(uprobe, uc))	/* WARN? */
++	if (WARN_ON(!consumer_del(uprobe, uc)))
+ 		return;
+ 
+ 	err = register_for_each_vma(uprobe, NULL);
+@@ -927,7 +927,7 @@ int uprobe_apply(struct inode *inode, loff_t offset,
+ 	int ret = -ENOENT;
+ 
+ 	uprobe = find_uprobe(inode, offset);
+-	if (!uprobe)
++	if (WARN_ON(!uprobe))
+ 		return ret;
+ 
+ 	down_write(&uprobe->register_rwsem);
+@@ -952,7 +952,7 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
+ 	struct uprobe *uprobe;
+ 
+ 	uprobe = find_uprobe(inode, offset);
+-	if (!uprobe)
++	if (WARN_ON(!uprobe))
+ 		return;
+ 
+ 	down_write(&uprobe->register_rwsem);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 384ede311717..f243444a3772 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1396,7 +1396,6 @@ void tracing_start(void)
+ 
+ 	arch_spin_unlock(&global_trace.max_lock);
+ 
+-	ftrace_start();
+  out:
+ 	raw_spin_unlock_irqrestore(&global_trace.start_lock, flags);
+ }
+@@ -1443,7 +1442,6 @@ void tracing_stop(void)
+ 	struct ring_buffer *buffer;
+ 	unsigned long flags;
+ 
+-	ftrace_stop();
+ 	raw_spin_lock_irqsave(&global_trace.start_lock, flags);
+ 	if (global_trace.stop_count++)
+ 		goto out;
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 04fdb5de823c..3c9b97e6b1f4 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -893,6 +893,9 @@ probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
+ 	int ret;
+ 
+ 	if (file) {
++		if (tu->tp.flags & TP_FLAG_PROFILE)
++			return -EINTR;
++
+ 		link = kmalloc(sizeof(*link), GFP_KERNEL);
+ 		if (!link)
+ 			return -ENOMEM;
+@@ -901,29 +904,40 @@ probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
+ 		list_add_tail_rcu(&link->list, &tu->tp.files);
+ 
+ 		tu->tp.flags |= TP_FLAG_TRACE;
+-	} else
+-		tu->tp.flags |= TP_FLAG_PROFILE;
++	} else {
++		if (tu->tp.flags & TP_FLAG_TRACE)
++			return -EINTR;
+ 
+-	ret = uprobe_buffer_enable();
+-	if (ret < 0)
+-		return ret;
++		tu->tp.flags |= TP_FLAG_PROFILE;
++	}
+ 
+ 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+ 
+ 	if (enabled)
+ 		return 0;
+ 
++	ret = uprobe_buffer_enable();
++	if (ret)
++		goto err_flags;
++
+ 	tu->consumer.filter = filter;
+ 	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
+-	if (ret) {
+-		if (file) {
+-			list_del(&link->list);
+-			kfree(link);
+-			tu->tp.flags &= ~TP_FLAG_TRACE;
+-		} else
+-			tu->tp.flags &= ~TP_FLAG_PROFILE;
+-	}
++	if (ret)
++		goto err_buffer;
+ 
++	return 0;
++
++ err_buffer:
++	uprobe_buffer_disable();
++
++ err_flags:
++	if (file) {
++		list_del(&link->list);
++		kfree(link);
++		tu->tp.flags &= ~TP_FLAG_TRACE;
++	} else {
++		tu->tp.flags &= ~TP_FLAG_PROFILE;
++	}
+ 	return ret;
  }
  
-+/*
-+ * There are a couple cases where we need to restrict the functionality of
-+ * devices associated with RMRRs.  The first is when evaluating a device for
-+ * identity mapping because problems exist when devices are moved in and out
-+ * of domains and their respective RMRR information is lost.  This means that
-+ * a device with associated RMRRs will never be in a "passthrough" domain.
-+ * The second is use of the device through the IOMMU API.  This interface
-+ * expects to have full control of the IOVA space for the device.  We cannot
-+ * satisfy both the requirement that RMRR access is maintained and have an
-+ * unencumbered IOVA space.  We also have no ability to quiesce the device's
-+ * use of the RMRR space or even inform the IOMMU API user of the restriction.
-+ * We therefore prevent devices associated with an RMRR from participating in
-+ * the IOMMU API, which eliminates them from device assignment.
-+ *
-+ * In both cases we assume that PCI USB devices with RMRRs have them largely
-+ * for historical reasons and that the RMRR space is not actively used post
-+ * boot.  This exclusion may change if vendors begin to abuse it.
-+ */
-+static bool device_is_rmrr_locked(struct device *dev)
-+{
-+	if (!device_has_rmrr(dev))
-+		return false;
-+
-+	if (dev_is_pci(dev)) {
-+		struct pci_dev *pdev = to_pci_dev(dev);
-+
-+		if ((pdev->class >> 8) == PCI_CLASS_SERIAL_USB)
-+			return false;
-+	}
-+
-+	return true;
-+}
-+
- static int iommu_should_identity_map(struct device *dev, int startup)
- {
+@@ -1201,12 +1215,6 @@ static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
  
- 	if (dev_is_pci(dev)) {
- 		struct pci_dev *pdev = to_pci_dev(dev);
+ 	current->utask->vaddr = (unsigned long) &udd;
  
--		/*
--		 * We want to prevent any device associated with an RMRR from
--		 * getting placed into the SI Domain. This is done because
--		 * problems exist when devices are moved in and out of domains
--		 * and their respective RMRR info is lost. We exempt USB devices
--		 * from this process due to their usage of RMRRs that are known
--		 * to not be needed after BIOS hand-off to OS.
--		 */
--		if (device_has_rmrr(dev) &&
--		    (pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
-+		if (device_is_rmrr_locked(dev))
- 			return 0;
+-#ifdef CONFIG_PERF_EVENTS
+-	if ((tu->tp.flags & TP_FLAG_TRACE) == 0 &&
+-	    !uprobe_perf_filter(&tu->consumer, 0, current->mm))
+-		return UPROBE_HANDLER_REMOVE;
+-#endif
+-
+ 	if (WARN_ON_ONCE(!uprobe_cpu_buffer))
+ 		return 0;
  
- 		if ((iommu_identity_mapping & IDENTMAP_AZALIA) && IS_AZALIA(pdev))
-@@ -4185,6 +4209,11 @@ static int intel_iommu_attach_device(struct iommu_domain *domain,
- 	int addr_width;
- 	u8 bus, devfn;
- 
-+	if (device_is_rmrr_locked(dev)) {
-+		dev_warn(dev, "Device is ineligible for IOMMU domain attach due to platform RMRR requirement.  Contact your platform vendor.\n");
-+		return -EPERM;
-+	}
-+
- 	/* normally dev is not mapped */
- 	if (unlikely(domain_context_mapped(dev))) {
- 		struct dmar_domain *old_domain;
-
