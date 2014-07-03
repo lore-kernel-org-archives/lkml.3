@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501AbaGCT75 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 15:59:57 -0400
-Received: from mga14.intel.com ([192.55.52.115]:27263 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751548AbaGCT74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 15:59:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,596,1400050800"; 
-   d="scan'208";a="557162580"
-From: Andi Kleen <andi@firstfloor.org>
-To: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 30/50] mars: add new file drivers/block/mars/xio_bricks/xio_aio.c
-References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
-	<1404251250-22992-31-git-send-email-tst@schoebel-theuer.de>
-Date: Thu, 03 Jul 2014 12:59:52 -0700
-In-Reply-To: <1404251250-22992-31-git-send-email-tst@schoebel-theuer.de>
-	(Thomas Schoebel-Theuer's message of "Tue, 1 Jul 2014 23:47:10 +0200")
-Message-ID: <87bnt6tdqf.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752219AbaGCUIr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 16:08:47 -0400
+Received: from g5t1626.atlanta.hp.com ([15.192.137.9]:59720 "EHLO
+	g5t1626.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaGCUIq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 16:08:46 -0400
+Message-ID: <1404418122.3179.19.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [regression, 3.16-rc] rwsem: optimistic spinning causing
+ performance degradation
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: Dave Chinner <david@fromorbit.com>, Peter Zijlstra <peterz@infradead.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 03 Jul 2014 13:08:42 -0700
+In-Reply-To: <1404416236.3179.18.camel@buesod1.americas.hpqcorp.net>
+References: <1404413420.8764.42.camel@j-VirtualBox>
+	 <1404416236.3179.18.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Schoebel-Theuer <tst@schoebel-theuer.de> writes:
-> +
-> +/************************ mmu faking (provisionary) ***********************/
-> +
-> +/* Kludge: our kernel threads will have no mm context, but need one
-> + * for stuff like ioctx_alloc() / aio_setup_ring() etc
-> + * which expect userspace resources.
-> + * We fake one.
-> + * TODO: factor out the userspace stuff from AIO such that
-> + * this fake is no longer necessary.
-> + * Even better: replace do_mmap() in AIO stuff by something
-> + * more friendly to kernelspace apps.
-> + */
+Adding lkml.
 
-That obviously has to be done before taking this patchkit any further.
+On Thu, 2014-07-03 at 12:37 -0700, Davidlohr Bueso wrote:
+> On Thu, 2014-07-03 at 11:50 -0700, Jason Low wrote:
+> > On Wed, Jul 2, 2014 at 7:32 PM, Dave Chinner <david@fromorbit.com> wrote:
+> > > This is what the kernel profile looks like on the strided run:
+> > >
+> > > -  83.06%  [kernel]  [k] osq_lock
+> > >    - osq_lock
+> > >       - 100.00% rwsem_down_write_failed
+> > >          - call_rwsem_down_write_failed
+> > >             - 99.55% sys_mprotect
+> > >                  tracesys
+> > >                  __GI___mprotect
+> > > -  12.02%  [kernel]  [k] rwsem_down_write_failed
+> > 
+> > Hi Dave,
+> > 
+> > So with no sign of rwsem_spin_on_owner(), yet with such heavy contention in
+> > osq_lock, this makes me wonder if it's spending most of its time spinning
+> > on !owner while a reader has the lock? (We don't set sem->owner for the readers.)
+> 
+> That would explain the long hold times with the memory allocation
+> patterns between read and write locking described by Dave.
+> 
+> > If that's an issue, maybe the below is worth a test, in which we'll just
+> > avoid spinning if rwsem_can_spin_on_owner() finds that there is no owner.
+> > If we just had to enter the slowpath yet there is no owner, we'll be conservative
+> > and assume readers have the lock.
+> 
+> I do worry a bit about the effects here when this is not an issue.
+> Workloads that have smaller hold times could very well take a
+> performance hit by blocking right away instead of wasting a few extra
+> cycles just spinning.
+> 
+> > (David, you've tested something like this in the original patch with AIM7 and still
+> > got the big performance boosts right?)
+> 
+> I have not, but will. I wouldn't mind sacrificing a bit of the great
+> performance numbers we're getting on workloads that mostly take the lock
+> for writing, if it means not being so devastating for when readers are
+> in the picture. This is a major difference with mutexes wrt optimistic
+> spinning.
+> 
+> Thanks,
+> Davidlohr
 
-AFAIK the kernel already has totally usable internal AIO interfaces.
 
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
