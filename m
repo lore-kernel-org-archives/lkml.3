@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758379AbaGCOc5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:32:57 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50873 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755402AbaGCOUF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:20:05 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        dwmw2@infradead.org, dbaryshkov@gmail.com
-Cc: Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 07/18] AT91: soc: Introduce register_devices callback
-Date: Thu,  3 Jul 2014 16:14:44 +0200
-Message-Id: <1404396906-25194-12-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S1756281AbaGCOel (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:34:41 -0400
+Received: from mail.emea.novell.com ([130.57.118.101]:45813 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752078AbaGCOej convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Thu, 3 Jul 2014 10:34:39 -0400
+Message-Id: <53B5861E02000078000204D1@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.0 
+Date: Thu, 03 Jul 2014 15:34:38 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: "Andy Lutomirski" <luto@amacapital.net>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86-64: fix vDSO build
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some core devices should be registered by the SoC itself rather than by every
-board using this SoC. Introduce a register_devices callback that should be
-called during the init_machine in order to do that.
+Certain ld versions (observed with 2.20.0) put an empty .rela.dyn
+section into shared object files, breaking the assumption on the number
+of sections to be copied to the final output. Simply discard any empty
+SHT_REL and SHT_RELA sections to address this.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/arm/mach-at91/generic.h | 2 ++
- arch/arm/mach-at91/setup.c   | 5 +++++
- arch/arm/mach-at91/soc.h     | 1 +
- 3 files changed, 8 insertions(+)
+ arch/x86/vdso/vdso2c.h |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-index 631fa3b8c16d..4c2c96195a50 100644
---- a/arch/arm/mach-at91/generic.h
-+++ b/arch/arm/mach-at91/generic.h
-@@ -37,6 +37,8 @@ extern int  __init at91_aic5_of_init(struct device_node *node,
- extern void __init at91_sysirq_mask_rtc(u32 rtc_base);
- extern void __init at91_sysirq_mask_rtt(u32 rtt_base);
+--- 3.16-rc3/arch/x86/vdso/vdso2c.h
++++ 3.16-rc3-x86-vdso-build/arch/x86/vdso/vdso2c.h
+@@ -93,6 +93,9 @@ static void BITSFUNC(copy_section)(struc
+ 	uint64_t flags = GET_LE(&in->sh_flags);
  
-+ /* Devices */
-+extern void __init at91_register_devices(void);
+ 	bool copy = flags & SHF_ALLOC &&
++		(GET_LE(&in->sh_size) ||
++		 (GET_LE(&in->sh_type) != SHT_RELA &&
++		  GET_LE(&in->sh_type) != SHT_REL)) &&
+ 		strcmp(name, ".altinstructions") &&
+ 		strcmp(name, ".altinstr_replacement");
  
-  /* Timer */
- extern void at91rm9200_ioremap_st(u32 addr);
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index 3463b9e14418..771e0495bfe5 100644
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -506,3 +506,8 @@ void __init at91_initialize(unsigned long main_clock)
- 
- 	pinctrl_provide_dummies();
- }
-+
-+void __init at91_register_devices(void)
-+{
-+	at91_boot_soc.register_devices();
-+}
-diff --git a/arch/arm/mach-at91/soc.h b/arch/arm/mach-at91/soc.h
-index a1e1482c6da8..ab983f2cc7dd 100644
---- a/arch/arm/mach-at91/soc.h
-+++ b/arch/arm/mach-at91/soc.h
-@@ -11,6 +11,7 @@ struct at91_init_soc {
- 	void (*map_io)(void);
- 	void (*ioremap_registers)(void);
- 	void (*register_clocks)(void);
-+	void (*register_devices)(void);
- 	void (*init)(void);
- };
- 
--- 
-2.0.1
+
+
 
