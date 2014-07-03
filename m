@@ -1,98 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758961AbaGCOYh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:24:37 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40683 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758064AbaGCOYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:24:25 -0400
-Date: Thu, 3 Jul 2014 09:24:08 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Keerthy <j-keerthy@ti.com>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <mark.rutland@arm.com>,
-        <galak@codeaurora.org>, <robh+dt@kernel.org>, <linux@arm.linux.org.uk>,
-        <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>
-Subject: Re: [PATCH 5/5] ARM: configs: omap2plus_defconfig: enable TPS65218
- configs
-Message-ID: <20140703142408.GK5814@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1404395102-21469-1-git-send-email-j-keerthy@ti.com>
- <1404395102-21469-6-git-send-email-j-keerthy@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bPg9NdpM9EETxvqt"
-Content-Disposition: inline
-In-Reply-To: <1404395102-21469-6-git-send-email-j-keerthy@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1758541AbaGCOUb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:20:31 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50970 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758500AbaGCOU2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 10:20:28 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        dwmw2@infradead.org, dbaryshkov@gmail.com
+Cc: Boris Brezillon <boris@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 15/18] AT91: pm: Remove show_reset_status function
+Date: Thu,  3 Jul 2014 16:14:59 +0200
+Message-Id: <1404396906-25194-27-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bPg9NdpM9EETxvqt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Both the reset and poweroff drivers are now implementing what the
+show_reset_status function used to do. Hence, we can remove this rather hackish
+function that prevents us from doing further cleanup.
 
-On Thu, Jul 03, 2014 at 07:15:02PM +0530, Keerthy wrote:
-> Enable TPS65218 config options.
->=20
-> Signed-off-by: Keerthy <j-keerthy@ti.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/mach-at91/pm.c | 72 -------------------------------------------------
+ 1 file changed, 72 deletions(-)
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+index e95554532987..213606111d9a 100644
+--- a/arch/arm/mach-at91/pm.c
++++ b/arch/arm/mach-at91/pm.c
+@@ -34,79 +34,8 @@
+ #include "pm.h"
+ #include "gpio.h"
+ 
+-/*
+- * Show the reason for the previous system reset.
+- */
+-
+-#include "at91_rstc.h"
+-#include "at91_shdwc.h"
+-
+ static void (*at91_pm_standby)(void);
+ 
+-static void __init show_reset_status(void)
+-{
+-	static char reset[] __initdata = "reset";
+-
+-	static char general[] __initdata = "general";
+-	static char wakeup[] __initdata = "wakeup";
+-	static char watchdog[] __initdata = "watchdog";
+-	static char software[] __initdata = "software";
+-	static char user[] __initdata = "user";
+-	static char unknown[] __initdata = "unknown";
+-
+-	static char signal[] __initdata = "signal";
+-	static char rtc[] __initdata = "rtc";
+-	static char rtt[] __initdata = "rtt";
+-	static char restore[] __initdata = "power-restored";
+-
+-	char *reason, *r2 = reset;
+-	u32 reset_type, wake_type;
+-
+-	if (!at91_shdwc_base || !at91_rstc_base)
+-		return;
+-
+-	reset_type = at91_rstc_read(AT91_RSTC_SR) & AT91_RSTC_RSTTYP;
+-	wake_type = at91_shdwc_read(AT91_SHDW_SR);
+-
+-	switch (reset_type) {
+-	case AT91_RSTC_RSTTYP_GENERAL:
+-		reason = general;
+-		break;
+-	case AT91_RSTC_RSTTYP_WAKEUP:
+-		/* board-specific code enabled the wakeup sources */
+-		reason = wakeup;
+-
+-		/* "wakeup signal" */
+-		if (wake_type & AT91_SHDW_WAKEUP0)
+-			r2 = signal;
+-		else {
+-			r2 = reason;
+-			if (wake_type & AT91_SHDW_RTTWK)	/* rtt wakeup */
+-				reason = rtt;
+-			else if (wake_type & AT91_SHDW_RTCWK)	/* rtc wakeup */
+-				reason = rtc;
+-			else if (wake_type == 0)	/* power-restored wakeup */
+-				reason = restore;
+-			else				/* unknown wakeup */
+-				reason = unknown;
+-		}
+-		break;
+-	case AT91_RSTC_RSTTYP_WATCHDOG:
+-		reason = watchdog;
+-		break;
+-	case AT91_RSTC_RSTTYP_SOFTWARE:
+-		reason = software;
+-		break;
+-	case AT91_RSTC_RSTTYP_USER:
+-		reason = user;
+-		break;
+-	default:
+-		reason = unknown;
+-		break;
+-	}
+-	pr_info("AT91: Starting after %s %s\n", reason, r2);
+-}
+-
+ static int at91_pm_valid_state(suspend_state_t state)
+ {
+ 	switch (state) {
+@@ -338,7 +267,6 @@ static int __init at91_pm_init(void)
+ 
+ 	suspend_set_ops(&at91_pm_ops);
+ 
+-	show_reset_status();
+ 	return 0;
+ }
+ arch_initcall(at91_pm_init);
+-- 
+2.0.1
 
-> ---
->  arch/arm/configs/omap2plus_defconfig |    2 ++
->  1 file changed, 2 insertions(+)
->=20
-> diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap=
-2plus_defconfig
-> index 536a137..f650f00 100644
-> --- a/arch/arm/configs/omap2plus_defconfig
-> +++ b/arch/arm/configs/omap2plus_defconfig
-> @@ -180,6 +180,7 @@ CONFIG_TWL4030_WATCHDOG=3Dy
->  CONFIG_MFD_SYSCON=3Dy
->  CONFIG_MFD_PALMAS=3Dy
->  CONFIG_MFD_TPS65217=3Dy
-> +CONFIG_MFD_TPS65218=3Dy
->  CONFIG_MFD_TPS65910=3Dy
->  CONFIG_TWL6040_CORE=3Dy
->  CONFIG_REGULATOR_FIXED_VOLTAGE=3Dy
-> @@ -188,6 +189,7 @@ CONFIG_REGULATOR_TI_ABB=3Dy
->  CONFIG_REGULATOR_TPS65023=3Dy
->  CONFIG_REGULATOR_TPS6507X=3Dy
->  CONFIG_REGULATOR_TPS65217=3Dy
-> +CONFIG_REGULATOR_TPS65218=3Dy
->  CONFIG_REGULATOR_TPS65910=3Dy
->  CONFIG_REGULATOR_TWL4030=3Dy
->  CONFIG_REGULATOR_PBIAS=3Dy
-> --=20
-> 1.7.9.5
->=20
-
---=20
-balbi
-
---bPg9NdpM9EETxvqt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTtWeIAAoJEIaOsuA1yqREcF0QALRiCTwAXWYUe5rrsIJZqK4E
-6MsRUXkKBulotcckJP+I+PDFCve2wWj60e0+qeytgyssoe9dLHM8cgcIK+HouxsG
-pJezQZ3rrCl6LVw8MDJ5/5RK2BmA7r1KtysDZKQ7QXxMF5DdVBIfYqhduPJLxpCZ
-CqAyfWNfMuHRHVWKSc408vai1jKtVXZ+Cyjk43TtHA4NGhWbla0dNQIiEu01LIk7
-g+cc2Bbgw+iSUg7Yxp/lAUzQVse0R3fUmI1sgwlN2o8iK+MwVbJrAwWxbaaAEN0h
-sbHngP2ihagHG+iPsIHlwZWnHwHFdQfD2zOvYL9yA4wR62brkpOKOoTurHUXcBlP
-qJrDn2PtK15eC3pRTpOWCghAvaRsGH8lGArgIbdw0Xuihk4UDRy8pqM8CnHVUPoL
-fe8goMc0upgBWFbvvz4Tf1W8kX+ZVjZxvJ0gJ/FGGfjDOyhJYjjZC+ERCLUo3xKy
-0E7VCBqJpoXDXfbdIghsw1/s13+CKSPhDjwGp4rhXEtSJ8qY67k1v0HMRguFJlBe
-oaq836PQIFLVtQfbGyuLA/5hblTcSHbe6XJQtDwngCRtpuYQEULcxQSyedo9sFfR
-0wfeqNQhFpeVyx2q1IQmM+E5ftIXkZekS8RsCcLFryJxUkg+ViNOf6PRlPGNsdXt
-BlaFNIwa26sVhRP4YEWD
-=dx7f
------END PGP SIGNATURE-----
-
---bPg9NdpM9EETxvqt--
