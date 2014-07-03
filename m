@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759611AbaGCWsB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 18:48:01 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:47889 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759692AbaGCWnZ (ORCPT
+	id S1759555AbaGCXBb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 19:01:31 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:53600 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755047AbaGCXB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 18:43:25 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: linux-kernel@vger.kernel.org
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH 01/18] lib: bitmap: Make nbits parameter of bitmap_empty unsigned
-Date: Fri,  4 Jul 2014 00:42:47 +0200
-Message-Id: <1404427384-11422-2-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1404427384-11422-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1404427384-11422-1-git-send-email-linux@rasmusvillemoes.dk>
+	Thu, 3 Jul 2014 19:01:29 -0400
+Date: Fri, 4 Jul 2014 00:01:14 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Marek Belisko <marek@goldelico.com>, Olof Johansson <olof@lixom.net>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, tony@atomide.com,
+        balajitk@ti.com, chris@printf.net, ulf.hansson@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mmc@vger.kernel.org, hns@goldelico.com,
+        NeilBrown <neilb@suse.de>
+Subject: Re: [PATCH 1/2] mmc: hsmmc: Add reset gpio configuration option.
+Message-ID: <20140703230113.GR3705@n2100.arm.linux.org.uk>
+References: <1404420564-30245-1-git-send-email-marek@goldelico.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404420564-30245-1-git-send-email-marek@goldelico.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The compiler can generate slightly smaller and simpler code when it
-knows that "nbits" is non-negative. Since no-one passes a
-negative bit-count, this shouldn't affect the semantics.
+On Thu, Jul 03, 2014 at 10:49:23PM +0200, Marek Belisko wrote:
+> From: NeilBrown <neilb@suse.de>
+> 
+> If a 'gpio_reset' is specified, then hold it low while
+> turning the power regulator on.
+> This is needed for some wi2wi wireless modules, particularly
+> when the regulator is held active by some other client.
+> The wi2wi needs to be reset if power isn't actually removed, and
+> the gpio can be used to do this.
+> 
+> Signed-off-by: NeilBrown <neilb@suse.de>
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- include/linux/bitmap.h | 4 ++--
- lib/bitmap.c           | 4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+Obvious statement knowing what's been going on elsewhere...
 
-diff --git a/include/linux/bitmap.h b/include/linux/bitmap.h
-index 7ad6345..3d3fd6b 100644
---- a/include/linux/bitmap.h
-+++ b/include/linux/bitmap.h
-@@ -88,7 +88,7 @@
-  * lib/bitmap.c provides these functions:
-  */
- 
--extern int __bitmap_empty(const unsigned long *bitmap, int bits);
-+extern int __bitmap_empty(const unsigned long *bitmap, unsigned int nbits);
- extern int __bitmap_full(const unsigned long *bitmap, int bits);
- extern int __bitmap_equal(const unsigned long *bitmap1,
-                 	const unsigned long *bitmap2, int bits);
-@@ -257,7 +257,7 @@ static inline int bitmap_subset(const unsigned long *src1,
- 		return __bitmap_subset(src1, src2, nbits);
- }
- 
--static inline int bitmap_empty(const unsigned long *src, int nbits)
-+static inline int bitmap_empty(const unsigned long *src, unsigned nbits)
- {
- 	if (small_const_nbits(nbits))
- 		return ! (*src & BITMAP_LAST_WORD_MASK(nbits));
-diff --git a/lib/bitmap.c b/lib/bitmap.c
-index 06f7e4f..3789110 100644
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -40,9 +40,9 @@
-  * for the best explanations of this ordering.
-  */
- 
--int __bitmap_empty(const unsigned long *bitmap, int bits)
-+int __bitmap_empty(const unsigned long *bitmap, unsigned int bits)
- {
--	int k, lim = bits/BITS_PER_LONG;
-+	unsigned int k, lim = bits/BITS_PER_LONG;
- 	for (k = 0; k < lim; ++k)
- 		if (bitmap[k])
- 			return 0;
+A while back, Olof produced a couple of patches to add /generic/ support
+to deal with power and reset controls for SDIO WIFI cards.  Patches
+were posted to linux-arm-kernel and other places around January time
+this year.
+
+No real conclusion came out of it, and it kind of died.  The point here
+is that this is not an OMAP problem.  We have this very same problem
+on different platforms and different SoCs.
+
+Why should we have N different solutions to the same problem.  Why can't
+we have one solution to fix this issue, rather than having every host
+driver implement some different solution to what's a common problem.
+
+If everyone is going to run away from generic problems and continue
+inventing their own private solutions to generic problems, the kernel
+is just going to become severely bloated and unmaintainable...
+
+Please, sort out generic problems with generic solutions.
+
 -- 
-1.9.2
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
