@@ -1,80 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755862AbaGCMEQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 08:04:16 -0400
-Received: from mga11.intel.com ([192.55.52.93]:24741 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751382AbaGCMEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 08:04:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,595,1400050800"; 
-   d="asc'?scan'208";a="564686902"
-Date: Thu, 3 Jul 2014 17:32:56 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, dan.j.williams@intel.com,
-        lars@metafoo.de, tiwai@suse.de, Liam Girdwood <lgirdwood@gmail.com>,
-        joelf@ti.com, nsekhar@ti.com, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, dmaengine@vger.kernel.org
-Subject: Re: [PATCH v3 3/5] ASoC: generic-dmaengine-pcm: Prepare formats
- mask for valid physical sample sizes
-Message-ID: <20140703120256.GO2296@intel.com>
-References: <1404363116-10538-1-git-send-email-peter.ujfalusi@ti.com>
- <1404363116-10538-4-git-send-email-peter.ujfalusi@ti.com>
- <20140703120153.GZ410@sirena.org.uk>
+	id S1755349AbaGCMFf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 08:05:35 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:51747 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182AbaGCMFe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 08:05:34 -0400
+Message-ID: <53B5470D.4070009@linaro.org>
+Date: Thu, 03 Jul 2014 14:05:33 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3siQDZowHQqNOShm"
-Content-Disposition: inline
-In-Reply-To: <20140703120153.GZ410@sirena.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Robert Jarzmik <robert.jarzmik@free.fr>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] clocksource: add device-tree support for PXA timer
+References: <1403388588-11956-1-git-send-email-robert.jarzmik@free.fr> <1403388588-11956-2-git-send-email-robert.jarzmik@free.fr>
+In-Reply-To: <1403388588-11956-2-git-send-email-robert.jarzmik@free.fr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/22/2014 12:09 AM, Robert Jarzmik wrote:
+> Add device-tree support to PXA platforms.
+>
+> Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+> ---
+>   drivers/clocksource/pxa_timer.c | 131 ++++++++++++++++++++++++++++++----------
+>   1 file changed, 98 insertions(+), 33 deletions(-)
+>
+> diff --git a/drivers/clocksource/pxa_timer.c b/drivers/clocksource/pxa_timer.c
+> index fca174e..67da3f5 100644
+> --- a/drivers/clocksource/pxa_timer.c
+> +++ b/drivers/clocksource/pxa_timer.c
+> @@ -15,14 +15,41 @@
+>   #include <linux/kernel.h>
+>   #include <linux/init.h>
+>   #include <linux/interrupt.h>
+> +#include <linux/clk.h>
+>   #include <linux/clockchips.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+>   #include <linux/sched_clock.h>
+>
+>   #include <asm/div64.h>
+>   #include <asm/mach/irq.h>
+>   #include <asm/mach/time.h>
+> -#include <mach/regs-ost.h>
+>   #include <mach/irqs.h>
+> +#include <mach/hardware.h>
 
---3siQDZowHQqNOShm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Now as the driver is in 'drivers', do not reference the headers files in 
+mach. Moving the driver to the drivers directory implies some cleanup 
+with the headers dependencies.
 
-On Thu, Jul 03, 2014 at 01:01:53PM +0100, Mark Brown wrote:
-> On Thu, Jul 03, 2014 at 07:51:54AM +0300, Peter Ujfalusi wrote:
-> > Based on the dma_slave_caps's addr_widths queried from the dma driver
-> > prepare the hw.formats mask to include only formats which is supported =
-by
-> > the DMA engine.
-> > In case the dma driver does not implement the slave_caps the default
-> > assumption is that it supports 1, 2 and 4 bytes widths.
->=20
-> Acked-by: Mark Brown <broonie@linaro.org>
+> +#define OSMR0		0x00	/* */
+> +#define OSMR1		0x04	/* */
+> +#define OSMR2		0x08	/* */
+> +#define OSMR3		0x0C	/* */
+> +#define OSMR4		0x80	/* */
 
-Do you want this to go thru dmaengine tree??
+Can you please remove those unused empty comment or fill them with 
+something appropriate.
 
---=20
-~Vinod
+> +#define OSCR		0x10	/* OS Timer Counter Register */
+> +#define OSCR4		0x40	/* OS Timer Counter Register */
+> +#define OMCR4		0xC0	/* */
+> +#define OSSR		0x14	/* OS Timer Status Register */
+> +#define OWER		0x18	/* OS Timer Watchdog Enable Register */
+> +#define OIER		0x1C	/* OS Timer Interrupt Enable Register */
+> +
+> +#define OSSR_M3		(1 << 3)	/* Match status channel 3 */
+> +#define OSSR_M2		(1 << 2)	/* Match status channel 2 */
+> +#define OSSR_M1		(1 << 1)	/* Match status channel 1 */
+> +#define OSSR_M0		(1 << 0)	/* Match status channel 0 */
+> +
+> +#define OWER_WME	(1 << 0)	/* Watchdog Match Enable */
+> +
+> +#define OIER_E3		(1 << 3)	/* Interrupt enable channel 3 */
+> +#define OIER_E2		(1 << 2)	/* Interrupt enable channel 2 */
+> +#define OIER_E1		(1 << 1)	/* Interrupt enable channel 1 */
+> +#define OIER_E0		(1 << 0)	/* Interrupt enable channel 0 */
 
---3siQDZowHQqNOShm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+Is it possible to do some cleanups around regs-ost.h and here in order 
+to remove the unused macros. Also, it seems some define will be 
+duplicate as they are shared with the watchdog. Any plan to fix that ?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+>   /*
+>    * This is PXA's sched_clock implementation. This has a resolution
+> @@ -33,9 +60,14 @@
+>    * calls to sched_clock() which should always be the case in practice.
+>    */
+>
+> +#define timer_readl(reg) readl_relaxed(timer_base + (reg))
+> +#define timer_writel(val, reg) writel_relaxed((val), timer_base + (reg))
+> +
+> +static void __iomem *timer_base;
+> +
+>   static u64 notrace pxa_read_sched_clock(void)
+>   {
+> -	return readl_relaxed(OSCR);
 
-iQIcBAEBAgAGBQJTtUZwAAoJEHwUBw8lI4NH5MYQAIRfhT9eWWiu+M9mseyyTk8i
-s1XFyZPOS8tQCbBmzacKsH8hxninEZUAEl1FUpOANin6vI7vggmB2vi3DvRmLwxw
-vXoi/71kIPvQvhYIwKR20psHE9fYFIDt5ZTz+QipB684QOO6h3b6eZ+TtF5cY4Pw
-trCHZItAjeWPRCRQVj6p+tk74RdKpwVixUQKa1b33Rv3BDzD3dpIDfBVeLu2yXd9
-9S9j80vpg70MG2qvMC4XHwtJq8RdYx6bxGDj+P2QcpZLjYsRU3tUSiY+3QcE6oya
-Rx9L/R4BioTLhm8+N9jK9GxVIJgZd7RbI12yi/L9UmAEB1SQwGYPSfHpgjP8aMEz
-H45iHkWyqHXZ2jUUmjp5s+EyZMBwwbELXOLIbxLUBlLw1kDgou6LLfHm8Io9tq9j
-cH9CG1n3jWKywuVbCIY7V7EGyhiB1NKHPEonAvope2zyVBXFuq3wZnLTvJ6zodCz
-wsHahybXrJHb2qMg7qK6eABG+XYxOTGJrmVAFFobRP7D8dPRUeoi6eLe7oG3Pu6g
-fqgCK0liwiXwISYEOY9bDpcEWKnvsOEFYj9/b7TqJx7D75I/Pjvziy4zmNn3Z8LC
-8iCTjMzn3SVg1mJIZPgSUpfP/sZcZ5o0XCHCouJiGKLlql6sBDEANJgp9rEyC1Ey
-LcV5jopjeJGNQV6eeG/0
-=1tAG
------END PGP SIGNATURE-----
+So here there is a change which is not explained in the changelog 
+(timer_base offset).
 
---3siQDZowHQqNOShm--
+Even it is obvious for me because I am used to see this kind of code, 
+that would deserve a better description in the changelog.
+
+> +	return timer_readl(OSCR);
+>   }
+>
+
+[ ... ]
+
+> +static void __init pxa_timer_dt_init(struct device_node *np)
+> +{
+> +	struct clk *clk;
+> +	int irq;
+> +
+> +	/* timer registers are shared with watchdog timer */
+> +	timer_base = of_iomap(np, 0);
+> +	if (!timer_base)
+> +		panic("%s: unable to map resource\n", np->name);
+> +
+> +	clk = of_clk_get(np, 0);
+> +	if (IS_ERR(clk))
+> +		panic("%s: unable to get clk\n", np->name);
+> +	clk_prepare_enable(clk);
+> +
+> +	/* we are only interested in OS-timer0 irq */
+> +	irq = irq_of_parse_and_map(np, 0);
+> +	if (irq <= 0)
+> +		panic("%s: unable to parse OS-timer0 irq\n", np->name);
+
+Is the 'panic' desirable ? The clksrc-of is written in a way to use 
+different clocks, no ?
+
+> +
+> +	pxa_timer_common_init(irq, clk_get_rate(clk));
+> +}
+> +CLOCKSOURCE_OF_DECLARE(pxa_timer, "marvell,pxa-timer", pxa_timer_dt_init);
+> +
+> +/*
+> + * Legacy timer init for non device-tree boards.
+> + */
+> +void __init pxa_timer_init(void)
+> +{
+> +	unsigned long clock_tick_rate = get_clock_tick_rate();
+> +
+> +	timer_base = io_p2v(0x40a00000);
+> +	pxa_timer_common_init(IRQ_OST0, clock_tick_rate);
+>   }
+>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
