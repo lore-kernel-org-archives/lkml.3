@@ -1,121 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756180AbaGCI5K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 04:57:10 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:6223 "EHLO smtp4.mundo-r.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750817AbaGCI5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 04:57:08 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiwFAPoZtVNbdWOb/2dsb2JhbABagw2EG8MuAYEKFnWEAwEBBSMEQBIQCxgqAgJXBhOIRgGsDpwAFxiPCgeCd4FMBaY3iECDRQ
-X-IPAS-Result: AiwFAPoZtVNbdWOb/2dsb2JhbABagw2EG8MuAYEKFnWEAwEBBSMEQBIQCxgqAgJXBhOIRgGsDpwAFxiPCgeCd4FMBaY3iECDRQ
-X-IronPort-AV: E=Sophos;i="5.01,594,1400018400"; 
-   d="asc'?scan'208";a="244054737"
-Message-ID: <1404377815.4537.20.camel@fourier>
-Subject: Re: [PATCH] ipoctal: request_irq after configuration
-From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
-	<siglesias@igalia.com>
-To: Federico Vaga <federico.vaga@cern.ch>
-Cc: Jens Taprogge <jens.taprogge@taprogge.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Date: Thu, 03 Jul 2014 10:56:55 +0200
-In-Reply-To: <1404377638-23387-1-git-send-email-federico.vaga@cern.ch>
-References: <1404377638-23387-1-git-send-email-federico.vaga@cern.ch>
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-kgFNvYx84FXD0ZGgxilM"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
+	id S1756223AbaGCI71 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 04:59:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51218 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaGCI7Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 04:59:25 -0400
+Message-ID: <53B51B63.8060809@canonical.com>
+Date: Thu, 03 Jul 2014 16:59:15 +0800
+From: Hui Wang <hui.wang@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Jan Kiszka <jan.kiszka@web.de>
+CC: Hui Wang <jason77.wang@gmail.com>, tiwai@suse.de,
+        alsa-devel@alsa-project.org, alex.hung@canonical.com, yk@canonical.com,
+        david.henningsson@canonical.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [V2 PATCH] ALSA: hda - Enable mute/mic-mute LEDs for more Thinkpads
+ with Conexant codec
+References: <1385534846-20829-1-git-send-email-hui.wang@canonical.com> <53AFF992.5030403@web.de> <53B0C596.6090007@canonical.com> <53B1078B.4090101@web.de> <53B219DF.6090807@canonical.com> <53B26575.1000003@web.de> <53B27ED7.4070401@canonical.com> <53B50062.30200@web.de>
+In-Reply-To: <53B50062.30200@web.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/03/2014 03:04 PM, Jan Kiszka wrote:
+> On 2014-07-01 11:26, Hui Wang wrote:
+>> On 07/01/2014 03:38 PM, Jan Kiszka wrote:
+>>> On 2014-07-01 04:15, Hui Wang wrote:
+>>>> On 06/30/2014 02:45 PM, Jan Kiszka wrote:
+>>>>> On 2014-06-30 04:04, Hui Wang wrote:
+>>>>>> On 06/29/2014 07:33 PM, Jan Kiszka wrote:
+>>>>>>> On 2013-11-27 07:47, Hui Wang wrote:
+>>>>>>>> Most Thinkpad Edge series laptops use conexant codec, so far
+>>>>>>>> although
+>> <snip>
+>>>>> Is there anything I can debug or any information I can collect from my
+>>>>> box to examine this?
+>>>> What is the linux distribution on your machine? And use showkey to catch
+>>>> the keycode of that button.
+>>> I'm running OpenSUSE 13.1. The reported keycode of the power button is
+>>> 116.
+>> It seems the keycode is correct, it is power keycode rather the mute
+>> keycode.
+>>
+>> Could you please do some debug, let us find which line of code is the
+>> root cause for this problem. for example:
+>>
+>> after running the line, the problem shows up:
+>>
+>> 1.     if (ACPI_SUCCESS(acpi_get_devices("LEN0068", acpi_check_cb,
+>> &found, NULL)) && found) // in the sound/pci/hda/thinkpad_helper.c,
+>> is_thinkpad()
+> This evaluates to true
+>
+>> 2.     return ACPI_SUCCESS(acpi_get_devices("IBM0068", acpi_check_cb,
+>> &found, NULL)) && found; // same as above
+>>
+>> 3.         if (led_set_func(TPACPI_LED_MUTE, false) >= 0) { //in the
+>> sound/pci/hda/thinkpad_helper.c, hda_fixup_thinkpad_acpi()
+> ...and this
+>
+>> 4. if (led_set_func(TPACPI_LED_MICMUTE, false) >= 0) { // same as above
+>>
+> ...and this as well. spec->num_adc_nids is 1.
 
---=-kgFNvYx84FXD0ZGgxilM
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2014-07-03 at 10:53 +0200, Federico Vaga wrote:
-> The request for an IRQ handler must be done after whole configuration. Th=
-is
-> was not the case for this driver which request the IRQ in the middle of
-> the configuration. Sometimes, it happens that something is not completely
-> configured, we recieve an interrupt thus we stumble into troubles in the
-> IRQ handler.
->=20
-> Signed-off-by: Federico Vaga <federico.vaga@cern.ch>
-> ---
->  drivers/ipack/devices/ipoctal.c |   15 ++++++++-------
->  1 file changed, 8 insertions(+), 7 deletions(-)
->=20
-> diff --git a/drivers/ipack/devices/ipoctal.c b/drivers/ipack/devices/ipoc=
-tal.c
-> index a7ec6f9..72fd761 100644
-> --- a/drivers/ipack/devices/ipoctal.c
-> +++ b/drivers/ipack/devices/ipoctal.c
-> @@ -344,13 +344,6 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal=
-, unsigned int bus_nr,
->  			 &block_regs[i].w.imr);
->  	}
-> =20
-> -	/*
-> -	 * IP-OCTAL has different addresses to copy its IRQ vector.
-> -	 * Depending of the carrier these addresses are accesible or not.
-> -	 * More info in the datasheet.
-> -	 */
-> -	ipoctal->dev->bus->ops->request_irq(ipoctal->dev,
-> -				       ipoctal_irq_handler, ipoctal);
->  	/* Dummy write */
->  	iowrite8(1, ipoctal->mem8_space + 1);
-> =20
-> @@ -411,6 +404,14 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal=
-, unsigned int bus_nr,
->  		dev_set_drvdata(tty_dev, channel);
->  	}
-> =20
-> +	/*
-> +	 * IP-OCTAL has different addresses to copy its IRQ vector.
-> +	 * Depending of the carrier these addresses are accesible or not.
-> +	 * More info in the datasheet.
-> +	 */
-> +	ipoctal->dev->bus->ops->request_irq(ipoctal->dev,
-> +				       ipoctal_irq_handler, ipoctal);
-> +
->  	return 0;
->  }
-> =20
+If we change the code like below, does the power button can work well?
 
-Acked-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+in the thinkpad_helper.c, hda_fixup_thinkpad_acpi()
 
-Greg, Would you mind picking this patch through your driver-core tree?
-Together with "ipoctal: protect only the real critical section" patch.
 
-Thanks,
+         if (led_set_func(TPACPI_LED_MUTE, false) >= 0) {
+             /*
+             old_vmaster_hook = spec->vmaster_mute.hook;
+             spec->vmaster_mute.hook = update_tpacpi_mute_led;
+             removefunc = false;
+            */
+         }
+         if (led_set_func(TPACPI_LED_MICMUTE, false) >= 0) {
+           /*
+             if (spec->num_adc_nids > 1)
+                 codec_dbg(codec,
+                       "Skipping micmute LED control due to several ADCs");
+             else {
+                 spec->cap_sync_hook = update_tpacpi_micmute_led;
+                 removefunc = false;
+             }
+           */
+         }
 
-Sam
 
---=-kgFNvYx84FXD0ZGgxilM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+If power button can work well, please uncomment one section of the code 
+to find which section code introduce this problem.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABCAAGBQJTtRrXAAoJEH/0ujLxfcND37gP/14fU8XpJU1Mqrk83/bKRzkP
-0oH5byv++z2P81Y2hTtWJmX6lUQ+5YdNeZtwCY5lZnliAKaADh2c7DhxNPf3/AWD
-bQ6DBvmQQRmN4+jIcfZ6T5W3TpiCFXFsG472qGx6JeKANUHU4TG3YbJIQVAQ8o28
-ROWbvB/xa4qSBENV6EEjFCJJ8XrUAldJdUyvYlX2UGWFgMP5DWgBOUpHEkvuy0Ef
-5gH9QAv44wwlb0DVXqQod1MLvI4dn8fT67DhKjdc2J+aVLagzbnPk/2yXatPwCHX
-mlxev7Z3EGIsGCjMceQL9vA6TRx3SzVdkLLx3O6xpL86pxoO87HnuYT2Pmpk+/4K
-C8PtX683IdOvThLAX153Cq87rKoRAhJ4WtP0cXfsAZSJbrZQOhvW64pk7jgD8KgB
-RZ9PZc9tCJ0Hq48kIu+AVE0u0VSfMtig3Bbk06TsHKD7hYiQFug8ti+Zi6fmUGkY
-W1u3TUpQ2Qt3JGPpxuLgAv3RqAW9yJw5VoqiosTp8GYZZn8cQvA8iU6a4wYvKZAg
-UZ7SauBJ/+1FaERuX6l74YWTeFFp+Rni9U2qXzeYoLMKhCAux2liKIaJd9EyGOXH
-KRdBe1rYUZ3TiS2TyC8gO3/eq6iP5tnFpTtSiXKNj2VhrUzTnZezGq3go6Dp45Tg
-9V4oI0zAopvFj8g8ORrz
-=LCPp
------END PGP SIGNATURE-----
-
---=-kgFNvYx84FXD0ZGgxilM--
+Regards,
+Hui.
+>
+> Jan
+>
+>
 
