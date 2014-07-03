@@ -1,191 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646AbaGCU1z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 16:27:55 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:35801 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855AbaGCU1y (ORCPT
+	id S1753198AbaGCUcP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 16:32:15 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:29570 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751196AbaGCUcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 16:27:54 -0400
-X-IronPort-AV: E=Sophos;i="5.01,596,1400050800"; 
-   d="scan'208";a="37564053"
-From: Markus Mayer <markus.mayer@linaro.org>
-To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
-CC: Tim Kryger <tim.kryger@gmail.com>,
-        Mike Looijmans <mike.looijmans@topic.nl>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        "Matt Porter" <mporter@linaro.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [RESEND PATCH v5] mmc: sdhci: Replace host->mmc with mmc where possible
-Date: Thu, 3 Jul 2014 13:27:42 -0700
-Message-ID: <1404419262-20393-1-git-send-email-markus.mayer@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Thu, 3 Jul 2014 16:32:14 -0400
+Date: Thu, 3 Jul 2014 16:32:11 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Oleg Nesterov <oleg@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [RFC][PATCH 0/3] ftrace: Add dynamically allocated trampolines
+Message-ID: <20140703163211.0b4fbdc6@gandalf.local.home>
+In-Reply-To: <20140703200750.648550267@goodmis.org>
+References: <20140703200750.648550267@goodmis.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the switch to the MMC core regulator infrastucture, we already
-have a local "mmc" pointer in various functions. There is no longer a
-need to access the data structure via host->mmc.
+On Thu, 03 Jul 2014 16:07:50 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Signed-off-by: Markus Mayer <markus.mayer@linaro.org>
-Reviewed-by: Matt Porter <mporter@linaro.org>
----
+> [ NOT READY FOR INCLUSION! ]
 
-This patch was posted before as part 2/2 of a series
-(https://lkml.org/lkml/2014/6/13/449). Part 1/2 has since been
-accepted.
+One more thing to note. This will not go in before 3.18 (and depending
+on issues, maybe later than that).
 
-Please note that checkpatch still complains about the wrapped strings,
-but issue is not introduced by this patch, nor is it confined to the
-lines changed by this patch. (There are several other locations in
-sdhci.c where strings are wrapped across lines.)
+-- Steve
 
-Changes from v4:
-  - Rebased on Ulf's current mmc-next branch.
-
- drivers/mmc/host/sdhci.c | 30 +++++++++++++++---------------
- 1 file changed, 15 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 5cf4a86..26639bf 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1228,7 +1228,7 @@ static void sdhci_set_power(struct sdhci_host *host, unsigned char mode,
- 
- 	if (!IS_ERR(mmc->supply.vmmc)) {
- 		spin_unlock_irq(&host->lock);
--		mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, vdd);
-+		mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
- 		spin_lock_irq(&host->lock);
- 		return;
- 	}
-@@ -1450,7 +1450,7 @@ static void sdhci_do_set_ios(struct sdhci_host *host, struct mmc_ios *ios)
- 		spin_unlock_irqrestore(&host->lock, flags);
- 		if (!IS_ERR(mmc->supply.vmmc) &&
- 		    ios->power_mode == MMC_POWER_OFF)
--			mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, 0);
-+			mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, 0);
- 		return;
- 	}
- 
-@@ -1734,7 +1734,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
- 						    3600000);
- 			if (ret) {
- 				pr_warning("%s: Switching to 3.3V signalling voltage "
--						" failed\n", mmc_hostname(host->mmc));
-+						" failed\n", mmc_hostname(mmc));
- 				return -EIO;
- 			}
- 		}
-@@ -1747,7 +1747,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
- 			return 0;
- 
- 		pr_warning("%s: 3.3V regulator output did not became stable\n",
--				mmc_hostname(host->mmc));
-+				mmc_hostname(mmc));
- 
- 		return -EAGAIN;
- 	case MMC_SIGNAL_VOLTAGE_180:
-@@ -1756,7 +1756,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
- 					1700000, 1950000);
- 			if (ret) {
- 				pr_warning("%s: Switching to 1.8V signalling voltage "
--						" failed\n", mmc_hostname(host->mmc));
-+						" failed\n", mmc_hostname(mmc));
- 				return -EIO;
- 			}
- 		}
-@@ -1777,7 +1777,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
- 			return 0;
- 
- 		pr_warning("%s: 1.8V regulator output did not became stable\n",
--				mmc_hostname(host->mmc));
-+				mmc_hostname(mmc));
- 
- 		return -EAGAIN;
- 	case MMC_SIGNAL_VOLTAGE_120:
-@@ -1786,7 +1786,7 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
- 						    1300000);
- 			if (ret) {
- 				pr_warning("%s: Switching to 1.2V signalling voltage "
--						" failed\n", mmc_hostname(host->mmc));
-+						" failed\n", mmc_hostname(mmc));
- 				return -EIO;
- 			}
- 		}
-@@ -2825,12 +2825,12 @@ int sdhci_add_host(struct sdhci_host *host)
- 		 * (128) and potentially one alignment transfer for
- 		 * each of those entries.
- 		 */
--		host->adma_desc = dma_alloc_coherent(mmc_dev(host->mmc),
-+		host->adma_desc = dma_alloc_coherent(mmc_dev(mmc),
- 						     ADMA_SIZE, &host->adma_addr,
- 						     GFP_KERNEL);
- 		host->align_buffer = kmalloc(128 * 4, GFP_KERNEL);
- 		if (!host->adma_desc || !host->align_buffer) {
--			dma_free_coherent(mmc_dev(host->mmc), ADMA_SIZE,
-+			dma_free_coherent(mmc_dev(mmc), ADMA_SIZE,
- 					  host->adma_desc, host->adma_addr);
- 			kfree(host->align_buffer);
- 			pr_warning("%s: Unable to allocate ADMA "
-@@ -2843,7 +2843,7 @@ int sdhci_add_host(struct sdhci_host *host)
- 			pr_warning("%s: unable to allocate aligned ADMA descriptor\n",
- 				   mmc_hostname(mmc));
- 			host->flags &= ~SDHCI_USE_ADMA;
--			dma_free_coherent(mmc_dev(host->mmc), ADMA_SIZE,
-+			dma_free_coherent(mmc_dev(mmc), ADMA_SIZE,
- 					  host->adma_desc, host->adma_addr);
- 			kfree(host->align_buffer);
- 			host->adma_desc = NULL;
-@@ -2858,7 +2858,7 @@ int sdhci_add_host(struct sdhci_host *host)
- 	 */
- 	if (!(host->flags & (SDHCI_USE_SDMA | SDHCI_USE_ADMA))) {
- 		host->dma_mask = DMA_BIT_MASK(64);
--		mmc_dev(host->mmc)->dma_mask = &host->dma_mask;
-+		mmc_dev(mmc)->dma_mask = &host->dma_mask;
- 	}
- 
- 	if (host->version >= SDHCI_SPEC_300)
-@@ -2964,7 +2964,7 @@ int sdhci_add_host(struct sdhci_host *host)
- 		mmc->caps |= MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED;
- 
- 	if ((host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION) &&
--	    !(host->mmc->caps & MMC_CAP_NONREMOVABLE))
-+	    !(mmc->caps & MMC_CAP_NONREMOVABLE))
- 		mmc->caps |= MMC_CAP_NEEDS_POLL;
- 
- 	/* If there are external regulators, get them */
-@@ -3261,7 +3261,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
- 
- 		if (host->mrq) {
- 			pr_err("%s: Controller removed during "
--				" transfer!\n", mmc_hostname(host->mmc));
-+				" transfer!\n", mmc_hostname(mmc));
- 
- 			host->mrq->cmd->error = -ENOMEDIUM;
- 			tasklet_schedule(&host->finish_tasklet);
-@@ -3272,7 +3272,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
- 
- 	sdhci_disable_card_detection(host);
- 
--	mmc_remove_host(host->mmc);
-+	mmc_remove_host(mmc);
- 
- #ifdef SDHCI_USE_LEDS_CLASS
- 	led_classdev_unregister(&host->led);
-@@ -3296,7 +3296,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
- 		regulator_disable(mmc->supply.vqmmc);
- 
- 	if (host->adma_desc)
--		dma_free_coherent(mmc_dev(host->mmc), ADMA_SIZE,
-+		dma_free_coherent(mmc_dev(mmc), ADMA_SIZE,
- 				  host->adma_desc, host->adma_addr);
- 	kfree(host->align_buffer);
- 
--- 
-1.9.1
+> 
+> Note, this is based off of my remove ftrace_start/stop() patch set.
+> 
+> I've been wanting to do this for years, and just never gotten around to it.
+> But with all this talk of kpatch and kgraft live kernel patching using
+> the ftrace infrastructure, it seems like a good time to do it.
+> 
+> The way the function callback mechanism works in ftrace is that if there's
+> only one function callback registered, it will set the mcount/fentry
+> trampoline to call that function directly. But as soon as you register
+> another callback, the mcount trampoline calls a loop function that iterates
+> over all the registered callbacks (ftrace_ops) checking their hash tables
+> to see if the called function matches the ops before calling its callback.
+> This happens even if the two registered functions are not even tracing
+> the same function!
+> 
+> This really sucks if you are tracing all functions, and then add a kprobe
+> or perf event that traces a single function. That will cause all the
+> other functions being traced to perform the loop test.
+> 
+> Ideally, if only a single callback (ftrace_ops) is registered to a
+> function, than that function should call a trampoline that will only
+> call that one callback without doing any other tests.
+> 
+> This patch set adds this functionality to x86_64. If a callback is
+> registered to a function and there's no other callback registered to
+> that function that ftrace_ops will get its own trampoline allocated
+> for it that will call the function directly.
+> 
+> Note, for dynamically allocated ftrace_ops (kprobes, perf, instance
+> directory function tracing), the dynamic trampoline will only be created
+> if CONFIG_PREEMPT is not set. That's because, until Paul finishes his
+> rcu_call_task() code, there's no safe way to know if a task was preempted
+> while on the trampoline and is waiting to run on it some more.
+> 
+> I need to write up a bunch of tests for this code, but currently it works
+> on the few tests I did manually. I didn't even run this code yet under
+> my full test suite, so it may very well have bugs in it that might be
+> easily triggered. But I wanted to get the code out for review to see
+> if anyone has any other idea to help enhance this feature.
+> 
+> If you want a git repo to play with this, you can get it from below.
+> That repo will rebase often, so do not build against it.
+> 
+> Enjoy,
+> 
+> -- Steve
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> rfc/trampoline
+> 
+> Head SHA1: 4d781e010842a56f8e7c1bbe309e38075c277c45
+> 
+> 
+> Steven Rostedt (Red Hat) (3):
+>       ftrace/x86: Add dynamic allocated trampoline for ftrace_ops
+>       ftrace/x86: Show trampoline call function in enabled_functions
+>       ftrace/x86: Allow !CONFIG_PREEMPT dynamic ops to use allocated trampolines
+> 
+> ----
+>  arch/x86/kernel/ftrace.c    | 240 ++++++++++++++++++++++++++++++++++++++++++--
+>  arch/x86/kernel/mcount_64.S |  26 ++++-
+>  include/linux/ftrace.h      |   8 ++
+>  kernel/trace/ftrace.c       |  86 +++++++++++++++-
+>  4 files changed, 344 insertions(+), 16 deletions(-)
 
