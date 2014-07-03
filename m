@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759245AbaGCPNV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 11:13:21 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:54066 "EHLO
+	id S1759224AbaGCPNU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 11:13:20 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:26470 "EHLO
 	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757524AbaGCPNO (ORCPT
+	with ESMTP id S1758091AbaGCPNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Jul 2014 11:13:14 -0400
 From: nick.dyer@itdev.co.uk
@@ -17,9 +17,9 @@ Cc: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
         Benson Leung <bleung@chromium.org>,
         Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>,
         Nick Dyer <nick.dyer@itdev.co.uk>
-Subject: [PATCH 15/15] Input: atmel_mxt_ts - implement T44 message handling
-Date: Thu,  3 Jul 2014 16:01:37 +0100
-Message-Id: <1404399697-26484-16-git-send-email-nick.dyer@itdev.co.uk>
+Subject: [PATCH 11/15] Input: atmel_mxt_ts - recover from bootloader on probe
+Date: Thu,  3 Jul 2014 16:01:33 +0100
+Message-Id: <1404399697-26484-12-git-send-email-nick.dyer@itdev.co.uk>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk>
 References: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk>
@@ -29,305 +29,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nick Dyer <nick.dyer@itdev.co.uk>
 
-maXTouch chips allow the reading of multiple messages in a single I2C
-transaction, which reduces bus overhead and improves performance/latency. The
-number of messages available to be read is given by the value in the T44
-object which is located directly before the T5 object.
+The MXT device may be in bootloader mode on probe, due to:
+1) APP CRC failure, either:
+  a) flash corruption
+  b) bad power or other intermittent problem while checking CRC
+2) If the device has been reset 10 or more times without accessing comms
+3) Warm probe, device was in bootloader mode already
+
+This code attempts to recover from 1(b) and 3.
+
+There is an additional complexity: we have to try two possible bootloader
+addresses because the mapping is not one-to-one and we don't know the exact
+model yet.
 
 Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
-Acked-by: Benson Leung <bleung@chromium.org>
 Acked-by: Yufeng Shen <miletus@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c | 191 +++++++++++++++++++++++++------
- 1 file changed, 159 insertions(+), 32 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c | 67 ++++++++++++++++++++++++--------
+ 1 file changed, 50 insertions(+), 17 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index c3eee0f..25cfbba 100644
+index 5fe3285..8bcf21c 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -247,6 +247,7 @@ struct mxt_data {
- 	unsigned int max_y;
- 	bool in_bootloader;
- 	u16 mem_size;
-+	u8 max_reportid;
- 	u32 config_crc;
- 	u32 info_crc;
- 	u8 bootloader_addr;
-@@ -254,6 +255,8 @@ struct mxt_data {
- 	u8 *msg_buf;
- 	u8 t6_status;
- 	bool update_input;
-+	u8 last_message_count;
-+	u8 num_touchids;
- 
- 	/* Cached parameters from object table */
- 	u16 T5_address;
-@@ -264,6 +267,7 @@ struct mxt_data {
- 	u8 T9_reportid_min;
- 	u8 T9_reportid_max;
- 	u8 T19_reportid;
-+	u16 T44_address;
- 
- 	/* for fw update in bootloader */
- 	struct completion bl_completion;
-@@ -785,30 +789,142 @@ static int mxt_proc_message(struct mxt_data *data, u8 *message)
- 	return 1;
+@@ -383,7 +383,7 @@ static int mxt_bootloader_write(struct mxt_data *data,
+ 	return ret;
  }
  
--static int mxt_read_and_process_message(struct mxt_data *data)
-+static int mxt_read_and_process_messages(struct mxt_data *data, u8 count)
+-static int mxt_lookup_bootloader_address(struct mxt_data *data)
++static int mxt_lookup_bootloader_address(struct mxt_data *data, bool retry)
  {
- 	struct device *dev = &data->client->dev;
- 	int ret;
-+	int i;
-+	u8 num_valid = 0;
-+
-+	/* Safety check for msg_buf */
-+	if (count > data->max_reportid)
-+		return -EINVAL;
- 
-+	/* Process remaining messages if necessary */
- 	ret = __mxt_read_reg(data->client, data->T5_address,
--				data->T5_msg_size, data->msg_buf);
-+				data->T5_msg_size * count, data->msg_buf);
- 	if (ret) {
--		dev_err(dev, "Error %d reading message\n", ret);
-+		dev_err(dev, "Failed to read %u messages (%d)\n", count, ret);
- 		return ret;
- 	}
- 
--	return mxt_proc_message(data, data->msg_buf);
-+	for (i = 0;  i < count; i++) {
-+		ret = mxt_proc_message(data,
-+			data->msg_buf + data->T5_msg_size * i);
-+
-+		if (ret == 1)
-+			num_valid++;
-+	}
-+
-+	/* return number of messages read */
-+	return num_valid;
- }
- 
--static irqreturn_t mxt_process_messages_until_invalid(struct mxt_data *data)
-+static irqreturn_t mxt_process_messages_t44(struct mxt_data *data)
- {
-+	struct device *dev = &data->client->dev;
- 	int ret;
-+	u8 count, num_left;
- 
--	do {
--		ret = mxt_read_and_process_message(data);
-+	/* Read T44 and T5 together */
-+	ret = __mxt_read_reg(data->client, data->T44_address,
-+		data->T5_msg_size + 1, data->msg_buf);
-+	if (ret) {
-+		dev_err(dev, "Failed to read T44 and T5 (%d)\n", ret);
-+		return IRQ_NONE;
-+	}
-+
-+	count = data->msg_buf[0];
-+
-+	if (count == 0) {
-+		dev_warn(dev, "Interrupt triggered but zero messages\n");
-+		return IRQ_NONE;
-+	} else if (count > data->max_reportid) {
-+		dev_err(dev, "T44 count %d exceeded max report id\n", count);
-+		count = data->max_reportid;
-+	}
-+
-+	/* Process first message */
-+	ret = mxt_proc_message(data, data->msg_buf + 1);
-+	if (ret < 0) {
-+		dev_warn(dev, "Unexpected invalid message\n");
-+		return IRQ_NONE;
-+	}
-+
-+	num_left = count - 1;
-+
-+	/* Process remaining messages if necessary */
-+	if (num_left) {
-+		ret = mxt_read_and_process_messages(data, num_left);
- 		if (ret < 0)
-+			goto end;
-+		else if (ret != num_left)
-+			dev_warn(dev, "Unexpected invalid message\n");
-+	}
-+
-+end:
-+	if (data->update_input) {
-+		mxt_input_sync(data);
-+		data->update_input = false;
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int mxt_process_messages_until_invalid(struct mxt_data *data)
-+{
-+	struct device *dev = &data->client->dev;
-+	int count, read;
-+	u8 tries = 2;
-+
-+	count = data->max_reportid;
-+
-+	/* Read messages until we force an invalid */
-+	do {
-+		read = mxt_read_and_process_messages(data, count);
-+		if (read < count)
-+			return 0;
-+	} while (--tries);
-+
-+	if (data->update_input) {
-+		mxt_input_sync(data);
-+		data->update_input = false;
-+	}
-+
-+	dev_err(dev, "CHG pin isn't cleared\n");
-+	return -EBUSY;
-+}
-+
-+static irqreturn_t mxt_process_messages(struct mxt_data *data)
-+{
-+	int total_handled, num_handled;
-+	u8 count = data->last_message_count;
-+
-+	if (count < 1 || count > data->max_reportid)
-+		count = 1;
-+
-+	/* include final invalid message */
-+	total_handled = mxt_read_and_process_messages(data, count + 1);
-+	if (total_handled < 0)
-+		return IRQ_NONE;
-+	/* if there were invalid messages, then we are done */
-+	else if (total_handled <= count)
-+		goto update_count;
-+
-+	/* keep reading two msgs until one is invalid or reportid limit */
-+	do {
-+		num_handled = mxt_read_and_process_messages(data, 2);
-+		if (num_handled < 0)
- 			return IRQ_NONE;
--	} while (ret > 0);
-+
-+		total_handled += num_handled;
-+
-+		if (num_handled < 2)
-+			break;
-+	} while (total_handled < data->num_touchids);
-+
-+update_count:
-+	data->last_message_count = total_handled;
- 
- 	if (data->update_input) {
- 		mxt_input_sync(data);
-@@ -831,7 +947,11 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
- 	if (!data->object_table)
- 		return IRQ_HANDLED;
- 
--	return mxt_process_messages_until_invalid(data);
-+	if (data->T44_address) {
-+		return mxt_process_messages_t44(data);
-+	} else {
-+		return mxt_process_messages(data);
-+	}
- }
- 
- static int mxt_t6_command(struct mxt_data *data, u16 cmd_offset,
-@@ -1258,32 +1378,13 @@ recheck:
+ 	u8 appmode = data->client->addr;
+ 	u8 bootloader;
+@@ -392,7 +392,7 @@ static int mxt_lookup_bootloader_address(struct mxt_data *data)
+ 	case 0x4a:
+ 	case 0x4b:
+ 		/* Chips after 1664S use different scheme */
+-		if (data->info.family_id >= 0xa2) {
++		if (retry || data->info.family_id >= 0xa2) {
+ 			bootloader = appmode - 0x24;
+ 			break;
+ 		}
+@@ -414,14 +414,14 @@ static int mxt_lookup_bootloader_address(struct mxt_data *data)
  	return 0;
  }
  
--static int mxt_make_highchg(struct mxt_data *data)
--{
--	struct device *dev = &data->client->dev;
--	int count = 10;
--	int ret;
--
--	/* Read messages until we force an invalid */
--	do {
--		ret = mxt_read_and_process_message(data);
--		if (ret == 0)
--			return 0;
--		else if (ret < 0)
--			return ret;
--	} while (--count);
--
--	dev_err(dev, "CHG pin isn't cleared\n");
--	return -EBUSY;
--}
--
- static int mxt_acquire_irq(struct mxt_data *data)
+-static int mxt_probe_bootloader(struct mxt_data *data)
++static int mxt_probe_bootloader(struct mxt_data *data, bool retry)
  {
- 	int error;
+ 	struct device *dev = &data->client->dev;
+ 	int ret;
+ 	u8 val;
+ 	bool crc_failure;
  
- 	enable_irq(data->irq);
+-	ret = mxt_lookup_bootloader_address(data);
++	ret = mxt_lookup_bootloader_address(data, retry);
+ 	if (ret)
+ 		return ret;
  
--	error = mxt_make_highchg(data);
-+	error = mxt_process_messages_until_invalid(data);
- 	if (error)
- 		return error;
- 
-@@ -1320,6 +1421,8 @@ static void mxt_free_object_table(struct mxt_data *data)
- 	data->T9_reportid_min = 0;
- 	data->T9_reportid_max = 0;
- 	data->T19_reportid = 0;
-+	data->T44_address = 0;
-+	data->max_reportid = 0;
+@@ -522,13 +522,18 @@ recheck:
+ 	return 0;
  }
  
- static int mxt_get_object_table(struct mxt_data *data)
-@@ -1373,8 +1476,16 @@ static int mxt_get_object_table(struct mxt_data *data)
+-static int mxt_unlock_bootloader(struct mxt_data *data)
++static int mxt_send_bootloader_cmd(struct mxt_data *data, bool unlock)
+ {
+ 	int ret;
+ 	u8 buf[2];
  
- 		switch (object->type) {
- 		case MXT_GEN_MESSAGE_T5:
--			/* CRC not enabled, therefore don't read last byte */
--			data->T5_msg_size = mxt_obj_size(object) - 1;
-+			if (data->info.family_id == 0x80) {
-+				/*
-+				 * On mXT224 read and discard unused CRC byte
-+				 * otherwise DMA reads are misaligned
-+				 */
-+				data->T5_msg_size = mxt_obj_size(object);
-+			} else {
-+				/* CRC not enabled, so skip last byte */
-+				data->T5_msg_size = mxt_obj_size(object) - 1;
+-	buf[0] = MXT_UNLOCK_CMD_LSB;
+-	buf[1] = MXT_UNLOCK_CMD_MSB;
++	if (unlock) {
++		buf[0] = MXT_UNLOCK_CMD_LSB;
++		buf[1] = MXT_UNLOCK_CMD_MSB;
++	} else {
++		buf[0] = 0x01;
++		buf[1] = 0x01;
++	}
+ 
+ 	ret = mxt_bootloader_write(data, buf, 2);
+ 	if (ret)
+@@ -1525,15 +1530,40 @@ static int mxt_initialize(struct mxt_data *data)
+ {
+ 	struct i2c_client *client = data->client;
+ 	int error;
++	bool alt_bootloader_addr = false;
++	bool retry = false;
+ 
++retry_info:
+ 	error = mxt_get_info(data);
+ 	if (error) {
+-		error = mxt_probe_bootloader(data);
+-		if (error)
+-			return error;
++retry_bootloader:
++		error = mxt_probe_bootloader(data, alt_bootloader_addr);
++		if (error) {
++			if (alt_bootloader_addr) {
++				/* Chip is not in appmode or bootloader mode */
++				return error;
 +			}
- 			data->T5_address = object->start_address;
- 		case MXT_GEN_COMMAND_T6:
- 			data->T6_reportid = min_id;
-@@ -1386,6 +1497,11 @@ static int mxt_get_object_table(struct mxt_data *data)
- 		case MXT_TOUCH_MULTI_T9:
- 			data->T9_reportid_min = min_id;
- 			data->T9_reportid_max = max_id;
-+			data->num_touchids = object->num_report_ids
-+						* mxt_obj_instances(object);
-+			break;
-+		case MXT_SPT_MESSAGECOUNT_T44:
-+			data->T44_address = object->start_address;
- 			break;
- 		case MXT_SPT_GPIOPWM_T19:
- 			data->T19_reportid = min_id;
-@@ -1399,7 +1515,18 @@ static int mxt_get_object_table(struct mxt_data *data)
- 			data->mem_size = end_address + 1;
+ 
+-		data->in_bootloader = true;
+-		return 0;
++			dev_info(&client->dev, "Trying alternate bootloader address\n");
++			alt_bootloader_addr = true;
++			goto retry_bootloader;
++		} else {
++			if (retry) {
++				dev_err(&client->dev, "Could not recover from bootloader mode\n");
++				/*
++				 * We can reflash from this state, so do not
++				 * abort init
++				 */
++				data->in_bootloader = true;
++				return 0;
++			}
++
++			/* Attempt to exit bootloader into app mode */
++			mxt_send_bootloader_cmd(data, false);
++			msleep(MXT_FW_RESET_TIME);
++			retry = true;
++			goto retry_info;
++		}
  	}
  
--	data->msg_buf = kzalloc(data->T5_msg_size, GFP_KERNEL);
-+	/* Store maximum reportid */
-+	data->max_reportid = reportid;
+ 	/* Get object table information */
+@@ -1714,10 +1744,6 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+ 	if (ret)
+ 		goto release_firmware;
+ 
+-	ret = mxt_lookup_bootloader_address(data);
+-	if (ret)
+-		goto release_firmware;
+-
+ 	if (!data->in_bootloader) {
+ 		/* Change to the bootloader mode */
+ 		data->in_bootloader = true;
+@@ -1728,6 +1754,13 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+ 			goto release_firmware;
+ 
+ 		msleep(MXT_RESET_TIME);
 +
-+	/* If T44 exists, T5 position has to be directly after */
-+	if (data->T44_address && (data->T5_address != data->T44_address + 1)) {
-+		dev_err(&client->dev, "Invalid T44 position\n");
-+		error = -EINVAL;
-+		goto free_object_table;
-+	}
-+
-+	data->msg_buf = kcalloc(data->max_reportid,
-+				data->T5_msg_size, GFP_KERNEL);
- 	if (!data->msg_buf) {
- 		dev_err(&client->dev, "Failed to allocate message buffer\n");
- 		error = -ENOMEM;
++		/* Do not need to scan since we know family ID */
++		ret = mxt_lookup_bootloader_address(data, 0);
++		if (ret)
++			goto release_firmware;
++	} else {
++		enable_irq(data->irq);
+ 	}
+ 
+ 	mxt_free_object_table(data);
+@@ -1743,7 +1776,7 @@ static int mxt_load_fw(struct device *dev, const char *fn)
+ 		dev_info(dev, "Unlocking bootloader\n");
+ 
+ 		/* Unlock bootloader */
+-		ret = mxt_unlock_bootloader(data);
++		ret = mxt_send_bootloader_cmd(data, true);
+ 		if (ret)
+ 			goto disable_irq;
+ 	}
 -- 
 2.0.1
 
