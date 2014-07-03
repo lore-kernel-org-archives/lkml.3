@@ -1,55 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758624AbaGCPfv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 11:35:51 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:44766 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754895AbaGCPfu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 11:35:50 -0400
+	id S1758628AbaGCPhg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 11:37:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37632 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754485AbaGCPhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 11:37:34 -0400
+Message-ID: <53B578BC.4050300@suse.cz>
+Date: Thu, 03 Jul 2014 17:37:32 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFw6CF0La9FO5jX_BvukjwW618vihqVm-hPXfUpL_5dhBA@mail.gmail.com>
-References: <1404318070-2856-1-git-send-email-jason.low2@hp.com>
-	<20140702162749.GP19379@twins.programming.kicks-ass.net>
-	<1404320356.3170.12.camel@j-VirtualBox>
-	<20140702172333.GQ19379@twins.programming.kicks-ass.net>
-	<1404322203.3170.17.camel@j-VirtualBox>
-	<1404362358.8764.6.camel@j-VirtualBox>
-	<CA+55aFw6CF0La9FO5jX_BvukjwW618vihqVm-hPXfUpL_5dhBA@mail.gmail.com>
-Date: Thu, 3 Jul 2014 08:35:49 -0700
-X-Google-Sender-Auth: hjJWkcTbDuYkDFMg_YQnSFgwk4s
-Message-ID: <CA+55aFy=CnCLet=B9Q5dYU9w885sXNuYVDSkjHAp5V+nczbn3Q@mail.gmail.com>
-Subject: Re: [RFC] Cancellable MCS spinlock rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Waiman Long <Waiman.Long@hp.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Peter Anvin <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Jej B <James.Bottomley@hansenpartnership.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>
-Content-Type: text/plain; charset=UTF-8
+To: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>
+CC: Sasha Levin <sasha.levin@oracle.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] shmem: fix faulting into a hole while it's punched,
+ take 2
+References: <alpine.LSU.2.11.1407021204180.12131@eggly.anvils> <alpine.LSU.2.11.1407021209570.12131@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1407021209570.12131@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 3, 2014 at 8:31 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On 07/02/2014 09:11 PM, Hugh Dickins wrote:
+> Trinity finds that mmap access to a hole while it's punched from shmem
+> can prevent the madvise(MADV_REMOVE) or fallocate(FALLOC_FL_PUNCH_HOLE)
+> from completing, until the (killable) reader stops; with the puncher's
+> hold on i_mutex locking out all other writers until it can complete.
+> This issue was tagged with CVE-2014-4171.
 >
-> I don't think we'll support 2 _billion_ processes/threads waiting on
-> the same semaphore any time soon, so the 'long' seems a bit of an
-> overkill on 64-bit architectures.
+> It appears that the tmpfs fault path is too light in comparison with its
+> hole-punching path, lacking an i_data_sem to obstruct it; but we don't
+> want to slow down the common case.  It is not a problem in truncation,
+> because there the SIGBUS beyond i_size stops pages from being appended.
+>
+> The origin of this problem is my v3.1 commit d0823576bf4b ("mm: pincer
+> in truncate_inode_pages_range"), once it was duplicated into shmem.c.
+> It seemed like a nice idea at the time, to ensure (barring RCU lookup
+> fuzziness) that there's an instant when the entire hole is empty; but
+> the indefinitely repeated scans to ensure that make it vulnerable.
+>
+> Revert that "enhancement" to hole-punch from shmem_undo_range(), but
+> retain the unproblematic rescanning when it's truncating; add a couple
+> of comments there.
+>
+> Remove the "indices[0] >= end" test: that is now handled satisfactorily
+> by the inner loop, and mem_cgroup_uncharge_start()/end() are too light
+> to be worth avoiding here.
+>
+> But if we do not always loop indefinitely, we do need to handle the
+> case of swap swizzled back to page before shmem_free_swap() gets it:
+> add a retry for that case, as suggested by Konstantin Khlebnikov.
+>
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Suggested-and-Tested-by: Vlastimil Babka <vbabka@suse.cz>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> Cc: Konstantin Khlebnikov <koct9i@gmail.com>
+> Cc: Lukas Czerner <lczerner@redhat.com>
+> Cc: Dave Jones <davej@redhat.com>
+> Cc: stable@vger.kernel.org # v3.1+
+> ---
+>
+>   mm/shmem.c |   19 ++++++++++---------
+>   1 file changed, 10 insertions(+), 9 deletions(-)
+>
+> --- 3.16-rc3+/mm/shmem.c	2014-07-02 03:31:12.956546569 -0700
+> +++ linux/mm/shmem.c	2014-07-02 03:34:13.172550852 -0700
+> @@ -467,23 +467,20 @@ static void shmem_undo_range(struct inod
+>   		return;
+>
+>   	index = start;
+> -	for ( ; ; ) {
+> +	while (index < end) {
+>   		cond_resched();
+>
+>   		pvec.nr = find_get_entries(mapping, index,
+>   				min(end - index, (pgoff_t)PAGEVEC_SIZE),
+>   				pvec.pages, indices);
+>   		if (!pvec.nr) {
+> -			if (index == start || unfalloc)
+> +			/* If all gone or hole-punch or unfalloc, we're done */
+> +			if (index == start || end != -1)
+>   				break;
+> +			/* But if truncating, restart to make sure all gone */
+>   			index = start;
+>   			continue;
+>   		}
+> -		if ((index == start || unfalloc) && indices[0] >= end) {
+> -			pagevec_remove_exceptionals(&pvec);
+> -			pagevec_release(&pvec);
+> -			break;
+> -		}
+>   		mem_cgroup_uncharge_start();
+>   		for (i = 0; i < pagevec_count(&pvec); i++) {
+>   			struct page *page = pvec.pages[i];
+> @@ -495,8 +492,12 @@ static void shmem_undo_range(struct inod
+>   			if (radix_tree_exceptional_entry(page)) {
+>   				if (unfalloc)
+>   					continue;
+> -				nr_swaps_freed += !shmem_free_swap(mapping,
+> -								index, page);
+> +				if (shmem_free_swap(mapping, index, page)) {
+> +					/* Swap was replaced by page: retry */
+> +					index--;
+> +					break;
+> +				}
+> +				nr_swaps_freed++;
+>   				continue;
 
-Oh, never mind. The 'struct semaphore' uses it as just a plain count,
-but the rwsem ends up splitting up the bits for readers/writers, so we
-actually do want the full 64-bit value there.
+Ugh, a warning to anyone trying to backport this. This hunk can match 
+both instances of the same code in the function, and I've just seen 
+patch picking the wrong one.
 
-             Linus
+>   			}
+>
+>
+
