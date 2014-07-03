@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320AbaGCMV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 08:21:29 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:54512 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904AbaGCMV1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 08:21:27 -0400
-Message-ID: <53B54AC2.5040908@linaro.org>
-Date: Thu, 03 Jul 2014 14:21:22 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755370AbaGCMZH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 08:25:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17344 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752318AbaGCMZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 08:25:04 -0400
+Date: Thu, 3 Jul 2014 08:24:58 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20140703122458.GA21156@redhat.com>
+References: <20140703145940.002b7056@canb.auug.org.au>
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: timers & suspend
-References: <f270ad9c-9906-445d-9e9a-4d3618787455@BY2FFO11FD039.protection.gbl>
-In-Reply-To: <f270ad9c-9906-445d-9e9a-4d3618787455@BY2FFO11FD039.protection.gbl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140703145940.002b7056@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2014 08:39 PM, Sören Brinkmann wrote:
-> Hi,
->
-> I'm currently working on suspend for Zynq and try to track down some
-> spurious wakes. It looks like the spurious wakes are caused by timers,
-> hence I was wondering whether there are any special requirements for
-> timer drivers when it comes to suspend support or if I just missed
-> something.
->
-> Zynq sets the 'IRQCHIP_MASK_ON_SUSPEND' flag, which should mask all
-> interrupts but the wake source. Reading through kernel/irq/pm.c
-> indicates, that timer interrupts get some special treatment though.
-> Therefore I implemented some suspend/resume callbacks for the
-> cadence_ttc which disable and clear the timer's interrupts when going
-> into suspend. That seems to mitigate the issue quite a bit, but I still
-> saw spurious wakes - just a lot less often.
-> Digging a little deeper revealed, the spurious wakes are caused by the
-> ARM's smp_twd timer now. Given that that driver is probably used by a few
-> more ARM platforms, I get the feeling that I'm missing something.
+On Thu, Jul 03, 2014 at 02:59:40PM +1000, Stephen Rothwell wrote:
+> Hi Andrew,
+> 
+> After merging the akpm-current tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> /bin/sh: /scratch/sfr/next/scripts/basic/bin2c: No such file or directory
+> 
+> Presumably caused by commit 572a8e0147f8 ("bin2c: move bin2c in
+> scripts/basic") and commit 1b4c30351f49 ("purgatory: core purgatory
+> functionality").  Note that the directory above is the *source*
+> directory (I build with O=...).  bin2c is in my object directory (in
+> scripts/basicbin2c).
+> 
+> I have added the following patch for today:
 
-Do you receive any interrupt from the cadence_ttc ? (/proc/interrupts)
+Thanks Stephen. Yes, it should have been objtree instead of srctree. I
+do not compile with O=, hence I did not catch it during my testing.
 
-That's funny because I realize that you cadence ttc timer is never used 
-as there are the architected timers. The cadence ttc would be only 
-useful if there were an idle state powering down the smp_twd timers but 
-it is not the case on this board, IIUC.
+Again, thanks for taking care of this.
 
-> It's probably worth mentioning that the suspend state in Zynq does not
-> power off the CPU cores. It just asserts the resets on secondary cores
-> and the primary one waits in wfi.
+Vivek
 
-Why do you need to reset them ?
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Thu, 3 Jul 2014 14:56:25 +1000
+> Subject: [PATCH] purgatory: run host built programs from objtree
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  arch/x86/purgatory/Makefile | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/purgatory/Makefile b/arch/x86/purgatory/Makefile
+> index e5829ddbca2b..7fde9ee438a4 100644
+> --- a/arch/x86/purgatory/Makefile
+> +++ b/arch/x86/purgatory/Makefile
+> @@ -18,7 +18,7 @@ $(obj)/purgatory.ro: $(PURGATORY_OBJS) FORCE
+>  targets += kexec-purgatory.c
+>  
+>  quiet_cmd_bin2c = BIN2C   $@
+> -      cmd_bin2c = cat $(obj)/purgatory.ro | $(srctree)/scripts/basic/bin2c kexec_purgatory > $(obj)/kexec-purgatory.c
+> +      cmd_bin2c = cat $(obj)/purgatory.ro | $(objtree)/scripts/basic/bin2c kexec_purgatory > $(obj)/kexec-purgatory.c
+>  
+>  $(obj)/kexec-purgatory.c: $(obj)/purgatory.ro FORCE
+>  	$(call if_changed,bin2c)
+> -- 
+> 2.0.0
+> 
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
 
