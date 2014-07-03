@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030962AbaGCKCX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:02:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51858 "EHLO
+	id S1030973AbaGCKCm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:02:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51852 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758579AbaGCJWl (ORCPT
+	with ESMTP id S1758576AbaGCJWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Jul 2014 05:22:41 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bart Van Assche <bvanassche@acm.org>, Yann Droneaud <ydroneaud@opteya.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
         Roland Dreier <roland@purestorage.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 076/198] IB/umad: Fix error handling
-Date: Thu,  3 Jul 2014 10:18:39 +0100
-Message-Id: <1404379241-8590-77-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 077/198] RDMA/cxgb4: Fix four byte info leak in c4iw_create_cq()
+Date: Thu,  3 Jul 2014 10:18:40 +0100
+Message-Id: <1404379241-8590-78-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,134 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 8ec0a0e6b58218bdc1db91dd70ebfcd6ad8dd6cd upstream.
+commit e24a72a3302a638d4c6e77f0b40c45cc61c3f089 upstream.
 
-Avoid leaking a kref count in ib_umad_open() if port->ib_dev == NULL
-or if nonseekable_open() fails.
+There is a four byte hole at the end of the "uresp" struct after the
+->qid_mask member.
 
-Avoid leaking a kref count, that sm_sem is kept down and also that the
-IB_PORT_SM capability mask is not cleared in ib_umad_sm_open() if
-nonseekable_open() fails.
-
-Since container_of() never returns NULL, remove the code that tests
-whether container_of() returns NULL.
-
-Moving the kref_get() call from the start of ib_umad_*open() to the
-end is safe since it is the responsibility of the caller of these
-functions to ensure that the cdev pointer remains valid until at least
-when these functions return.
-
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-
-[ydroneaud@opteya.com: rework a bit to reduce the amount of code changed]
-
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-
-[ nonseekable_open() can't actually fail, but....  - Roland ]
-
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Roland Dreier <roland@purestorage.com>
+[ luis: 3.11.y prereq for:
+  b6f04d3d2145 "RDMA/cxgb4: Add missing padding at end of struct c4iw_create_cq_resp" ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/core/user_mad.c | 49 +++++++++++++++++++++-----------------
- 1 file changed, 27 insertions(+), 22 deletions(-)
+ drivers/infiniband/hw/cxgb4/cq.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/infiniband/core/user_mad.c b/drivers/infiniband/core/user_mad.c
-index f0d588f8859e..9bdf576cd4ab 100644
---- a/drivers/infiniband/core/user_mad.c
-+++ b/drivers/infiniband/core/user_mad.c
-@@ -780,27 +780,19 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
- {
- 	struct ib_umad_port *port;
- 	struct ib_umad_file *file;
--	int ret;
-+	int ret = -ENXIO;
+diff --git a/drivers/infiniband/hw/cxgb4/cq.c b/drivers/infiniband/hw/cxgb4/cq.c
+index 0f1607c8325a..da9364ea03dd 100644
+--- a/drivers/infiniband/hw/cxgb4/cq.c
++++ b/drivers/infiniband/hw/cxgb4/cq.c
+@@ -833,6 +833,7 @@ struct ib_cq *c4iw_create_cq(struct ib_device *ibdev, int entries,
+ 		if (!mm2)
+ 			goto err4;
  
- 	port = container_of(inode->i_cdev, struct ib_umad_port, cdev);
--	if (port)
--		kref_get(&port->umad_dev->ref);
--	else
--		return -ENXIO;
- 
- 	mutex_lock(&port->file_mutex);
- 
--	if (!port->ib_dev) {
--		ret = -ENXIO;
-+	if (!port->ib_dev)
- 		goto out;
--	}
- 
-+	ret = -ENOMEM;
- 	file = kzalloc(sizeof *file, GFP_KERNEL);
--	if (!file) {
--		kref_put(&port->umad_dev->ref, ib_umad_release_dev);
--		ret = -ENOMEM;
-+	if (!file)
- 		goto out;
--	}
- 
- 	mutex_init(&file->mutex);
- 	spin_lock_init(&file->send_lock);
-@@ -814,6 +806,13 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
- 	list_add_tail(&file->port_list, &port->file_list);
- 
- 	ret = nonseekable_open(inode, filp);
-+	if (ret) {
-+		list_del(&file->port_list);
-+		kfree(file);
-+		goto out;
-+	}
-+
-+	kref_get(&port->umad_dev->ref);
- 
- out:
- 	mutex_unlock(&port->file_mutex);
-@@ -880,10 +879,6 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
- 	int ret;
- 
- 	port = container_of(inode->i_cdev, struct ib_umad_port, sm_cdev);
--	if (port)
--		kref_get(&port->umad_dev->ref);
--	else
--		return -ENXIO;
- 
- 	if (filp->f_flags & O_NONBLOCK) {
- 		if (down_trylock(&port->sm_sem)) {
-@@ -898,17 +893,27 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
- 	}
- 
- 	ret = ib_modify_port(port->ib_dev, port->port_num, 0, &props);
--	if (ret) {
--		up(&port->sm_sem);
--		goto fail;
--	}
-+	if (ret)
-+		goto err_up_sem;
- 
- 	filp->private_data = port;
- 
--	return nonseekable_open(inode, filp);
-+	ret = nonseekable_open(inode, filp);
-+	if (ret)
-+		goto err_clr_sm_cap;
-+
-+	kref_get(&port->umad_dev->ref);
-+
-+	return 0;
-+
-+err_clr_sm_cap:
-+	swap(props.set_port_cap_mask, props.clr_port_cap_mask);
-+	ib_modify_port(port->ib_dev, port->port_num, 0, &props);
-+
-+err_up_sem:
-+	up(&port->sm_sem);
- 
- fail:
--	kref_put(&port->umad_dev->ref, ib_umad_release_dev);
- 	return ret;
- }
- 
++		memset(&uresp, 0, sizeof(uresp));
+ 		uresp.qid_mask = rhp->rdev.cqmask;
+ 		uresp.cqid = chp->cq.cqid;
+ 		uresp.size = chp->cq.size;
 -- 
 1.9.1
 
