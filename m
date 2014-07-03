@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030957AbaGCKCB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:02:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51867 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758594AbaGCJWm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755555AbaGCJWm (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 3 Jul 2014 05:22:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51830 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758522AbaGCJWd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 05:22:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Arik Nemtsov <arikx.nemtsov@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 080/198] nfsd: getattr for FATTR4_WORD0_FILES_AVAIL needs the statfs buffer
-Date: Thu,  3 Jul 2014 10:18:43 +0100
-Message-Id: <1404379241-8590-81-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 074/198] mac80211: don't check netdev state for debugfs read/write
+Date: Thu,  3 Jul 2014 10:18:37 +0100
+Message-Id: <1404379241-8590-75-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -27,35 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@lst.de>
+From: Arik Nemtsov <arik@wizery.com>
 
-commit 12337901d654415d9f764b5f5ba50052e9700f37 upstream.
+commit 923eaf367206e01f22c97aee22300e332d071916 upstream.
 
-Note nobody's ever noticed because the typical client probably never
-requests FILES_AVAIL without also requesting something else on the list.
+Doing so will lead to an oops for a p2p-dev interface, since it has
+no netdev.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Arik Nemtsov <arikx.nemtsov@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfsd/nfs4xdr.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/mac80211/debugfs_netdev.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index 0fcd664801a0..9e250c229007 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -2111,8 +2111,8 @@ nfsd4_encode_fattr(struct svc_fh *fhp, struct svc_export *exp,
- 	err = vfs_getattr(&path, &stat);
- 	if (err)
- 		goto out_nfserr;
--	if ((bmval0 & (FATTR4_WORD0_FILES_FREE | FATTR4_WORD0_FILES_TOTAL |
--			FATTR4_WORD0_MAXNAME)) ||
-+	if ((bmval0 & (FATTR4_WORD0_FILES_AVAIL | FATTR4_WORD0_FILES_FREE |
-+			FATTR4_WORD0_FILES_TOTAL | FATTR4_WORD0_MAXNAME)) ||
- 	    (bmval1 & (FATTR4_WORD1_SPACE_AVAIL | FATTR4_WORD1_SPACE_FREE |
- 		       FATTR4_WORD1_SPACE_TOTAL))) {
- 		err = vfs_statfs(&path, &statfs);
+diff --git a/net/mac80211/debugfs_netdev.c b/net/mac80211/debugfs_netdev.c
+index cafe614ef93d..8e41f0163c5a 100644
+--- a/net/mac80211/debugfs_netdev.c
++++ b/net/mac80211/debugfs_netdev.c
+@@ -34,8 +34,7 @@ static ssize_t ieee80211_if_read(
+ 	ssize_t ret = -EINVAL;
+ 
+ 	read_lock(&dev_base_lock);
+-	if (sdata->dev->reg_state == NETREG_REGISTERED)
+-		ret = (*format)(sdata, buf, sizeof(buf));
++	ret = (*format)(sdata, buf, sizeof(buf));
+ 	read_unlock(&dev_base_lock);
+ 
+ 	if (ret >= 0)
+@@ -62,8 +61,7 @@ static ssize_t ieee80211_if_write(
+ 
+ 	ret = -ENODEV;
+ 	rtnl_lock();
+-	if (sdata->dev->reg_state == NETREG_REGISTERED)
+-		ret = (*write)(sdata, buf, count);
++	ret = (*write)(sdata, buf, count);
+ 	rtnl_unlock();
+ 
+ 	return ret;
 -- 
 1.9.1
 
