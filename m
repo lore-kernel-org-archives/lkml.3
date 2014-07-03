@@ -1,108 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993AbaGCDb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 23:31:27 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:35120 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754261AbaGCDbX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 23:31:23 -0400
-Message-ID: <1404358279.5137.63.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
- wakeups
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        riel@redhat.com, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Date: Thu, 03 Jul 2014 05:31:19 +0200
-In-Reply-To: <20140702170838.GS4603@linux.vnet.ibm.com>
-References: <20140627142038.GA22942@linux.vnet.ibm.com>
-	 <20140702123412.GD19379@twins.programming.kicks-ass.net>
-	 <20140702153915.GQ4603@linux.vnet.ibm.com>
-	 <20140702160412.GO19379@twins.programming.kicks-ass.net>
-	 <20140702170838.GS4603@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755283AbaGCDf1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 23:35:27 -0400
+Received: from mga02.intel.com ([134.134.136.20]:18362 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755158AbaGCDfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 23:35:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,592,1400050800"; 
+   d="scan'208";a="567622749"
+From: Chen LinX <linx.z.chen@intel.com>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: yanmin_zhang@linux.intel.com, "Chen LinX" <linx.z.chen@intel.com>,
+        Yanmin Zhang <yanmin.zhang@intel.com>
+Subject: [PATCH] perf: Don't enable the perf_event without in PERF_ATTACH_CONTEXT status
+Date: Thu,  3 Jul 2014 11:36:38 +0800
+Message-Id: <1404358598-19186-1-git-send-email-linx.z.chen@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-02 at 10:08 -0700, Paul E. McKenney wrote: 
-> On Wed, Jul 02, 2014 at 06:04:12PM +0200, Peter Zijlstra wrote:
-> > On Wed, Jul 02, 2014 at 08:39:15AM -0700, Paul E. McKenney wrote:
-> > > On Wed, Jul 02, 2014 at 02:34:12PM +0200, Peter Zijlstra wrote:
-> > > > On Fri, Jun 27, 2014 at 07:20:38AM -0700, Paul E. McKenney wrote:
-> > > > > An 80-CPU system with a context-switch-heavy workload can require so
-> > > > > many NOCB kthread wakeups that the RCU grace-period kthreads spend several
-> > > > > tens of percent of a CPU just awakening things.  This clearly will not
-> > > > > scale well: If you add enough CPUs, the RCU grace-period kthreads would
-> > > > > get behind, increasing grace-period latency.
-> > > > > 
-> > > > > To avoid this problem, this commit divides the NOCB kthreads into leaders
-> > > > > and followers, where the grace-period kthreads awaken the leaders each of
-> > > > > whom in turn awakens its followers.  By default, the number of groups of
-> > > > > kthreads is the square root of the number of CPUs, but this default may
-> > > > > be overridden using the rcutree.rcu_nocb_leader_stride boot parameter.
-> > > > > This reduces the number of wakeups done per grace period by the RCU
-> > > > > grace-period kthread by the square root of the number of CPUs, but of
-> > > > > course by shifting those wakeups to the leaders.  In addition, because
-> > > > > the leaders do grace periods on behalf of their respective followers,
-> > > > > the number of wakeups of the followers decreases by up to a factor of two.
-> > > > > Instead of being awakened once when new callbacks arrive and again
-> > > > > at the end of the grace period, the followers are awakened only at
-> > > > > the end of the grace period.
-> > > > > 
-> > > > > For a numerical example, in a 4096-CPU system, the grace-period kthread
-> > > > > would awaken 64 leaders, each of which would awaken its 63 followers
-> > > > > at the end of the grace period.  This compares favorably with the 79
-> > > > > wakeups for the grace-period kthread on an 80-CPU system.
-> > > > 
-> > > > Urgh, how about we kill the entire nocb nonsense and try again? This is
-> > > > getting quite rediculous.
-> > > 
-> > > Sure thing, Peter.
-> > 
-> > So you don't think this has gotten a little out of hand? The NOCB stuff
-> > has lead to these masses of rcu threads and now you're adding extra
-> > cache misses to the perfectly sane and normal code paths just to deal
-> > with so many threads.
-> 
-> Indeed it appears to have gotten a bit out of hand.  But let's please
-> attack the real problem rather than the immediate irritant.
-> 
-> And in this case, the real problem is that users are getting callback
-> offloading even when there is no reason for it.
-> 
-> > And all to support a feature that nearly nobody uses. And you were
-> > talking about making nocb the default rcu...
-> 
-> As were others, not that long ago.  Today is the first hint that I got
-> that you feel otherwise.  But it does look like the softirq approach to
-> callback processing needs to stick around for awhile longer.  Nice to
-> hear that softirq is now "sane and normal" again, I guess.  ;-)
-> 
-> Please see my patch in reply to Rik's email.  The idea is to neither
-> rip callback offloading from the kernel nor to keep callback offloading
-> as the default, but instead do callback offloading only for those CPUs
-> specifically marked as NO_HZ_FULL CPUs, or when specifically requested
-> at build time or at boot time.  In other words, only do it when it is
-> needed.
+From: "Chen LinX" <linx.z.chen@intel.com>
 
-Exactly!  Like dynamically, when the user isolates CPUs via the cpuset
-interface, none of it making much sense without that particular property
-of a set of CPUs, and cpuset being the manager of CPU set properties.
+when do cpu hotplug test and run below perf test together, pmu may access freed perf_event
 
-NO_HZ_FULL is a property of a set of CPUs.  isolcpus is supposed to go
-away as being a redundant interface to manage a single property of a set
-of CPUs, but it's perfectly fine for NO_HZ_FULL to add an interface to
-manage a single property of a set of CPUs.  What am I missing? 
+while true;
+do
+perf record -a -g -f sleep 10
+rm perf.*
+done
 
--Mike
+the scenario is that when cpu offline firstly, the 'perf_cpu_notify' will disable event on the
+pmu and remove it from the context list. after cpu online, the perf app may enable the event
+that without linked in context list again. when cpu offine the second time, the 'perf_cpu_notify'
+can't disable event on the pmu as the event doesn't link to context list. the perf app may free
+this event later(the free procedure try to disable event on the pmu but as the cpu is offline,
+the 'cpu_function_call(event->cpu, __perf_remove_from_context, event)' is failed). then after
+cpu online again, pmu will access freed perf_event and hit panic.
+
+so adding PERF_ATTACH_CONTEXT flag check before enable event to avoid this scenario.
+
+[  157.666035 ] BUG: unable to handle kernel paging request at ffffffe89af56004
+[  157.666166 ] IP: [<ffffffff8234218c>] do_raw_spin_lock+0xc/0x130
+[  157.668086 ] Call Trace:
+[  157.668122 ]  <IRQ>
+[  157.668156 ]  [<ffffffff828a69aa>] _raw_spin_lock_irqsave+0x2a/0x40
+[  157.668268 ]  [<ffffffff820168f0>] __intel_shared_reg_get_constraints.isra.9+0x70/0x150
+[  157.668350 ]  [<ffffffff8201762e>] intel_get_event_constraints+0x8e/0x150
+[  157.668424 ]  [<ffffffff82011191>] x86_schedule_events+0x81/0x200
+[  157.668495 ]  [<ffffffff8201767a>] ? intel_get_event_constraints+0xda/0x150
+[  157.668568 ]  [<ffffffff82011191>] ? x86_schedule_events+0x81/0x200
+[  157.668640 ]  [<ffffffff82028848>] ? flat_send_IPI_mask+0x88/0xa0
+[  157.668710 ]  [<ffffffff820e5628>] ? __enqueue_entity+0x78/0x80
+[  157.668777 ]  [<ffffffff820e818a>] ? enqueue_task_fair+0x90a/0xdd0
+[  157.668848 ]  [<ffffffff82145585>] ? tracer_tracing_is_on+0x15/0x30
+[  157.668918 ]  [<ffffffff820f3b91>] ? cpuacct_charge+0x61/0x70
+[  157.668984 ]  [<ffffffff82028848>] ? flat_send_IPI_mask+0x88/0xa0
+[  157.669052 ]  [<ffffffff820233c5>] ? native_smp_send_reschedule+0x45/0x60
+[  157.669126 ]  [<ffffffff820df199>] ? resched_task+0x69/0x70
+[  157.669192 ]  [<ffffffff82145585>] ? tracer_tracing_is_on+0x15/0x30
+[  157.669262 ]  [<ffffffff82161c13>] ? perf_pmu_enable+0x13/0x30
+[  157.669328 ]  [<ffffffff820102ef>] ? x86_pmu_add+0xaf/0x150
+[  157.669393 ]  [<ffffffff8200ffc0>] x86_pmu_commit_txn+0x50/0xa0
+[  157.669462 ]  [<ffffffff82008cf4>] ? native_sched_clock+0x24/0x80
+[  157.669531 ]  [<ffffffff82008cf4>] ? native_sched_clock+0x24/0x80
+[  157.669598 ]  [<ffffffff820e441d>] ? sched_clock_cpu+0xbd/0x110
+[  157.669664 ]  [<ffffffff820e44af>] ? local_clock+0x3f/0x50
+[  157.669729 ]  [<ffffffff82161fe4>] ? perf_event_update_userpage+0xe4/0x150
+[  157.669802 ]  [<ffffffff82162721>] ? event_sched_in.isra.72+0x81/0x190
+[  157.669871 ]  [<ffffffff821629ca>] group_sched_in+0x19a/0x1e0
+[  157.669937 ]  [<ffffffff82008cf4>] ? native_sched_clock+0x24/0x80
+[  157.670006 ]  [<ffffffff82162bc8>] ctx_sched_in+0x1b8/0x1e0
+[  157.670071 ]  [<ffffffff821630c2>] perf_event_sched_in+0x22/0x80
+[  157.670138 ]  [<ffffffff8216321f>] __perf_install_in_context+0xff/0x170
+[  157.670212 ]  [<ffffffff8215e8ab>] remote_function+0x4b/0x60
+[  157.670282 ]  [<ffffffff821086bd>] generic_smp_call_function_single_interrupt+0x9d/0x120
+[  157.670363 ]  [<ffffffff82339e79>] ? __const_udelay+0x29/0x30
+[  157.670429 ]  [<ffffffff820236b7>] smp_call_function_single_interrupt+0x27/0x40
+[  157.670504 ]  [<ffffffff828ad96f>] call_function_single_interrupt+0x6f/0x80
+
+Change-Id: I7265d83159b9180e9be3a370ba50e067385547bd
+Signed-off-by: Yanmin Zhang <yanmin.zhang@intel.com>
+Signed-off-by: Chen LinX <linx.z.chen@intel.com>
+---
+ kernel/events/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index e76e495..30f0095 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1783,7 +1783,7 @@ static int __perf_event_enable(void *info)
+ 	 * where the task could be killed and 'ctx' deactivated
+ 	 * by perf_event_exit_task.
+ 	 */
+-	if (!ctx->is_active)
++	if (!ctx->is_active || !(event->attach_state & PERF_ATTACH_CONTEXT))
+ 		return -EINVAL;
+ 
+ 	raw_spin_lock(&ctx->lock);
+-- 
+1.7.9.5
 
