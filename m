@@ -1,132 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030268AbaGCJX5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:23:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52196 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030182AbaGCJXo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:23:44 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 123/198] Target/iscsi: Fix sendtargets response pdu for iser transport
-Date: Thu,  3 Jul 2014 10:19:26 +0100
-Message-Id: <1404379241-8590-124-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1030321AbaGCJYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:24:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32888 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030252AbaGCJX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 05:23:56 -0400
+Message-ID: <53B52102.7060400@redhat.com>
+Date: Thu, 03 Jul 2014 11:23:14 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: Zi Shen Lim <zlim.lnx@gmail.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Chema Gonzalez <chema@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH RFC] arm64: eBPF JIT compiler
+References: <1404278424-31176-1-git-send-email-zlim.lnx@gmail.com> <20140703091450.GB12958@arm.com>
+In-Reply-To: <20140703091450.GB12958@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.13 -stable review patch.  If anyone has any objections, please let me know.
+On 07/03/2014 11:14 AM, Will Deacon wrote:
+> On Wed, Jul 02, 2014 at 06:20:24AM +0100, Zi Shen Lim wrote:
+>> The JIT compiler emits A64 instructions. It supports eBPF only.
+>> Legacy BPF is supported thanks to conversion by BPF core.
+>>
+>> JIT is enabled in the same way as for other architectures:
+>>
+>>          echo 1 > /proc/sys/net/core/bpf_jit_enable
+>>
+>> Or for additional compiler output:
+>>
+>>          echo 2 > /proc/sys/net/core/bpf_jit_enable
+>>
+>> See Documentation/networking/filter.txt for more information.
+>>
+>> The implementation passes all 57 tests in lib/test_bpf.c
+>> on ARMv8 Foundation Model :)
+>
+> First off, this is really cool. Thanks for putting in the effort to get this
+> supported on arm64! I'm happy to run tests on some real hardware if you tell
+> me how to run them :)
 
-------------------
+We have lib/test_bpf.c for this, see also Documentation/networking/filter.txt.
 
-From: Sagi Grimberg <sagig@mellanox.com>
+So, the procedure would be, e.g.:
 
-commit 22c7aaa57e80853b4904a46c18f97db0036a3b97 upstream.
+  1) echo 1 > /proc/sys/net/core/bpf_jit_enable
+  2) modprobe/insmod test_bpf
+  3) See kernel log for passes/fails
 
-In case the transport is iser we should not include the
-iscsi target info in the sendtargets text response pdu.
-This causes sendtargets response to include the target
-info twice.
+For seccomp/BPF, there's a test suite in:
 
-Modify iscsit_build_sendtargets_response to filter
-transport types that don't match.
-
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Reported-by: Slava Shwartsman <valyushash@gmail.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[ luis: backported to 3.11: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/infiniband/ulp/isert/ib_isert.c |  2 +-
- drivers/target/iscsi/iscsi_target.c     | 14 ++++++++++----
- include/target/iscsi/iscsi_transport.h  |  3 ++-
- 3 files changed, 13 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index f1208f9ba702..6ed7c829b863 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -1811,7 +1811,7 @@ isert_put_text_rsp(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
- 	int rc;
- 
- 	isert_create_send_desc(isert_conn, isert_cmd, &isert_cmd->tx_desc);
--	rc = iscsit_build_text_rsp(cmd, conn, hdr);
-+	rc = iscsit_build_text_rsp(cmd, conn, hdr, ISCSI_INFINIBAND);
- 	if (rc < 0)
- 		return rc;
- 
-diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-index a2a650733df2..a5825ea2488e 100644
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -3390,7 +3390,9 @@ static bool iscsit_check_inaddr_any(struct iscsi_np *np)
- 
- #define SENDTARGETS_BUF_LIMIT 32768U
- 
--static int iscsit_build_sendtargets_response(struct iscsi_cmd *cmd)
-+static int
-+iscsit_build_sendtargets_response(struct iscsi_cmd *cmd,
-+				  enum iscsit_transport_type network_transport)
- {
- 	char *payload = NULL;
- 	struct iscsi_conn *conn = cmd->conn;
-@@ -3462,6 +3464,9 @@ static int iscsit_build_sendtargets_response(struct iscsi_cmd *cmd)
- 				struct iscsi_np *np = tpg_np->tpg_np;
- 				bool inaddr_any = iscsit_check_inaddr_any(np);
- 
-+				if (np->np_network_transport != network_transport)
-+					continue;
-+
- 				len = sprintf(buf, "TargetAddress="
- 					"%s%s%s:%hu,%hu",
- 					(np->np_sockaddr.ss_family == AF_INET6) ?
-@@ -3501,11 +3506,12 @@ eob:
- 
- int
- iscsit_build_text_rsp(struct iscsi_cmd *cmd, struct iscsi_conn *conn,
--		      struct iscsi_text_rsp *hdr)
-+		      struct iscsi_text_rsp *hdr,
-+		      enum iscsit_transport_type network_transport)
- {
- 	int text_length, padding;
- 
--	text_length = iscsit_build_sendtargets_response(cmd);
-+	text_length = iscsit_build_sendtargets_response(cmd, network_transport);
- 	if (text_length < 0)
- 		return text_length;
- 
-@@ -3543,7 +3549,7 @@ static int iscsit_send_text_rsp(
- 	u32 tx_size = 0;
- 	int text_length, iov_count = 0, rc;
- 
--	rc = iscsit_build_text_rsp(cmd, conn, hdr);
-+	rc = iscsit_build_text_rsp(cmd, conn, hdr, ISCSI_TCP);
- 	if (rc < 0)
- 		return rc;
- 
-diff --git a/include/target/iscsi/iscsi_transport.h b/include/target/iscsi/iscsi_transport.h
-index 4bde6131bc16..0dba01d89b58 100644
---- a/include/target/iscsi/iscsi_transport.h
-+++ b/include/target/iscsi/iscsi_transport.h
-@@ -63,7 +63,8 @@ extern void iscsit_build_nopin_rsp(struct iscsi_cmd *, struct iscsi_conn *,
- extern void iscsit_build_task_mgt_rsp(struct iscsi_cmd *, struct iscsi_conn *,
- 				struct iscsi_tm_rsp *);
- extern int iscsit_build_text_rsp(struct iscsi_cmd *, struct iscsi_conn *,
--				struct iscsi_text_rsp *);
-+				struct iscsi_text_rsp *,
-+				enum iscsit_transport_type);
- extern void iscsit_build_reject(struct iscsi_cmd *, struct iscsi_conn *,
- 				struct iscsi_reject *);
- extern int iscsit_build_logout_rsp(struct iscsi_cmd *, struct iscsi_conn *,
--- 
-1.9.1
-
+  https://github.com/redpig/seccomp
