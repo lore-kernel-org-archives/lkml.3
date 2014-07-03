@@ -1,116 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932340AbaGCQM3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:12:29 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:16237 "EHLO
+	id S1759380AbaGCQPG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:15:06 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:62039 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759148AbaGCQM0 (ORCPT
+	by vger.kernel.org with ESMTP id S1759229AbaGCQM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 12:12:26 -0400
-Message-Id: <20140703161224.627001913@goodmis.org>
+	Thu, 3 Jul 2014 12:12:29 -0400
+Message-Id: <20140703161226.685605501@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Thu, 03 Jul 2014 12:05:10 -0400
+Date: Thu, 03 Jul 2014 12:05:22 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [for-next][PATCH 07/21] ftrace: Simplify ftrace_hash_disable/enable path in ftrace_hash_move
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [for-next][PATCH 19/21] tracing: Improve message of empty set_graph_notrace file
 References: <20140703160503.006976702@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0007-ftrace-Simplify-ftrace_hash_disable-enable-path-in-f.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0019-tracing-Improve-message-of-empty-set_graph_notrace-f.patch
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: Namhyung Kim <namhyung@kernel.org>
 
-Simplify ftrace_hash_disable/enable path in ftrace_hash_move
-for hardening the process if the memory allocation failed.
+When there's no entry in set_graph_notrace, it'll print below message
 
-Link: http://lkml.kernel.org/p/20140617110442.15167.81076.stgit@kbuild-fedora.novalocal
+  #### all functions enabled ####
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+While this is technically correct, it's better to print like below:
+
+  #### no functions disabled ####
+
+Link: http://lkml.kernel.org/p/1402590233-22321-3-git-send-email-namhyung@kernel.org
+
+Reported-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c | 33 +++++++++++----------------------
- 1 file changed, 11 insertions(+), 22 deletions(-)
+ kernel/trace/ftrace.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 3ded796e10e0..8323082dbc21 100644
+index 17885a27281c..ee245c0659a6 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -1306,25 +1306,15 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
- 	struct ftrace_hash *new_hash;
- 	int size = src->count;
- 	int bits = 0;
--	int ret;
- 	int i;
+@@ -4089,7 +4089,12 @@ static int g_show(struct seq_file *m, void *v)
+ 		return 0;
  
- 	/*
--	 * Remove the current set, update the hash and add
--	 * them back.
--	 */
--	ftrace_hash_rec_disable(ops, enable);
--
--	/*
- 	 * If the new source is empty, just free dst and assign it
- 	 * the empty_hash.
- 	 */
- 	if (!src->count) {
--		free_ftrace_hash_rcu(*dst);
--		rcu_assign_pointer(*dst, EMPTY_HASH);
--		/* still need to update the function records */
--		ret = 0;
--		goto out;
-+		new_hash = EMPTY_HASH;
-+		goto update;
- 	}
- 
- 	/*
-@@ -1337,10 +1327,9 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
- 	if (bits > FTRACE_HASH_MAX_BITS)
- 		bits = FTRACE_HASH_MAX_BITS;
- 
--	ret = -ENOMEM;
- 	new_hash = alloc_ftrace_hash(bits);
- 	if (!new_hash)
--		goto out;
-+		return -ENOMEM;
- 
- 	size = 1 << src->size_bits;
- 	for (i = 0; i < size; i++) {
-@@ -1351,20 +1340,20 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
- 		}
- 	}
- 
-+update:
-+	/*
-+	 * Remove the current set, update the hash and add
-+	 * them back.
-+	 */
-+	ftrace_hash_rec_disable(ops, enable);
+ 	if (ptr == (unsigned long *)1) {
+-		seq_printf(m, "#### all functions enabled ####\n");
++		struct ftrace_graph_data *fgd = m->private;
 +
- 	old_hash = *dst;
- 	rcu_assign_pointer(*dst, new_hash);
- 	free_ftrace_hash_rcu(old_hash);
++		if (fgd->table == ftrace_graph_funcs)
++			seq_printf(m, "#### all functions enabled ####\n");
++		else
++			seq_printf(m, "#### no functions disabled ####\n");
+ 		return 0;
+ 	}
  
--	ret = 0;
-- out:
--	/*
--	 * Enable regardless of ret:
--	 *  On success, we enable the new hash.
--	 *  On failure, we re-enable the original hash.
--	 */
- 	ftrace_hash_rec_enable(ops, enable);
- 
--	return ret;
-+	return 0;
- }
- 
- /*
 -- 
 2.0.0
 
