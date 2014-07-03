@@ -1,116 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965337AbaGCJxJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:53:09 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:51810 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965074AbaGCJxG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:53:06 -0400
-Date: Thu, 3 Jul 2014 10:53:02 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Tanmay Inamdar <tinamdar@apm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        patches <patches@apm.com>
-Subject: Re: [PATCH v8 2/9] pci: Export find_pci_host_bridge() function.
-Message-ID: <20140703095302.GY2173@e106497-lin.cambridge.arm.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
- <1404240214-9804-3-git-send-email-Liviu.Dudau@arm.com>
- <CACoXjck+aU33=kSy=KCGABNXNR7tj2KndAiBqEDK7wQ_Qei80Q@mail.gmail.com>
- <7101568.8DVJFku5jp@wuerfel>
- <CACoXjcn5wdOwQx6PSfhTyuo-FQqBL62o-MNj3i6EfENRnUNt6g@mail.gmail.com>
-MIME-Version: 1.0
-In-Reply-To: <CACoXjcn5wdOwQx6PSfhTyuo-FQqBL62o-MNj3i6EfENRnUNt6g@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 03 Jul 2014 09:53:03.0913 (UTC) FILETIME=[95353990:01CF96A4]
-X-MC-Unique: 114070310530307801
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1030876AbaGCJxW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:53:22 -0400
+Received: from mga11.intel.com ([192.55.52.93]:56736 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964933AbaGCJxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 05:53:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,594,1400050800"; 
+   d="scan'208";a="564638910"
+Message-ID: <1404381194.5102.69.camel@smile.fi.intel.com>
+Subject: Re: [PATCH 2/6] lib / string_helpers: introduce string_escape_mem()
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Thu, 03 Jul 2014 12:53:14 +0300
+In-Reply-To: <20140702150150.b87702934d47fd481646f6ff@linux-foundation.org>
+References: <1404307229-19186-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1404307229-19186-3-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <20140702150150.b87702934d47fd481646f6ff@linux-foundation.org>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 09:43:41PM +0100, Tanmay Inamdar wrote:
-> On Wed, Jul 2, 2014 at 12:12 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Wednesday 02 July 2014 11:06:38 Tanmay Inamdar wrote:
-> >> On Tue, Jul 1, 2014 at 11:43 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> >> > This is a useful function and we should make it visible outside the
-> >> > generic PCI code. Export it as a GPL symbol.
-> >> >
-> >> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> >> > Tested-by: Tanmay Inamdar <tinamdar@apm.com>
-> >> > ---
-> >> >  drivers/pci/host-bridge.c | 3 ++-
-> >> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> >> >
-> >> > diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
-> >> > index 0e5f3c9..36c669e 100644
-> >> > --- a/drivers/pci/host-bridge.c
-> >> > +++ b/drivers/pci/host-bridge.c
-> >> > @@ -16,12 +16,13 @@ static struct pci_bus *find_pci_root_bus(struct pci_bus *bus)
-> >> >         return bus;
-> >> >  }
-> >> >
-> >> > -static struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
-> >> > +struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
-> >> >  {
-> >> >         struct pci_bus *root_bus = find_pci_root_bus(bus);
-> >> >
-> >> >         return to_pci_host_bridge(root_bus->bridge);
-> >> >  }
-> >> > +EXPORT_SYMBOL_GPL(find_pci_host_bridge);
-> >>
-> >> Is there any specific reason behind making this symbol GPL? I think
-> >> the other functions in this file are just EXPORT_SYMBOL. Ultimately
-> >> companies which have non gpl Linux modules (nvidia) will face issue
-> >> using this API.
-> >>
-> >> The same applies to 'of_create_pci_host_bridge'.
-> >
-> > I think EXPORT_SYMBOL_GPL() is better here. The new symbols are unlikely
-> > to be used by a peripheral device driver, and PCI host controllers are
-> > already restricted by EXPORT_SYMBOL_GPL.
-> >
+On Wed, 2014-07-02 at 15:01 -0700, Andrew Morton wrote:
+> On Wed,  2 Jul 2014 16:20:25 +0300 Andy Shevchenko <andriy.shevchenko@linux.intel.com> wrote:
 > 
-> You are right as long as the functions are not used directly. But what
-> if GPL functions are called indirectly.  For example, 'pci_domain_nr'
-> implementation in Liviu's V7 series calls 'find_pci_host_bridge'.
+> > This is almost the opposite function to string_unescape(). Nevertheless it
+> > handles \0 and could be used for any byte buffer.
+> > 
+> > The documentation is supplied together with the function prototype.
+> > 
+> > The test cases covers most of the scenarios and would be expanded later on.
+> > 
+> > ...
+> >
+> > --- a/include/linux/string_helpers.h
+> > +++ b/include/linux/string_helpers.h
+> > @@ -71,4 +71,87 @@ static inline int string_unescape_any_inplace(char *buf)
+> >  	return string_unescape_any(buf, buf, 0);
+> >  }
+> >  
+> > +#define ESCAPE_SPACE		0x01
+> > +#define ESCAPE_SPECIAL		0x02
+> > +#define ESCAPE_NULL		0x04
+> > +#define ESCAPE_OCTAL		0x08
+> > +#define ESCAPE_ANY		\
+> > +	(ESCAPE_SPACE | ESCAPE_OCTAL | ESCAPE_SPECIAL | ESCAPE_NULL)
+> > +#define ESCAPE_NP		0x10
+> > +#define ESCAPE_ANY_NP		(ESCAPE_ANY | ESCAPE_NP)
+> > +#define ESCAPE_HEX		0x20
+> > +
+> > +/**
+> > + * string_escape_mem - quote characters in the given memory buffer
+> 
+> It drive me nuts when the kerneldoc is in the .h file.  Who thinks of
+> looking there?  I realise that string_unescape() already did that, but
+> I'd prefer that we fix string_unescape() rather than imitate it.
 
-I will not be drawn into the discussion of EXPORT_SYMBOL vs EXPORT_SYMBOL_GPL()
-other than to say that I don't understand what is so secret in implementing
-a standard. I do not want to support host bridge drivers that are not open
-source.
-
-Best regards,
-Liviu
+No problem, I will do this in separate patch.
 
 > 
-> > nvidia will certainly not do a PCI host controller driver that is not
-> > upstream or not GPL-compatible.
-> >
-> >         Arnd
+> > --- a/lib/string_helpers.c
+> > +++ b/lib/string_helpers.c
 > 
+> This is a lot of code!  Adds nearly a kbyte.  I'm surprised that
+> escaping a string is so verbose.
+> I wonder if the implementation really needs to be so comprehensive?
+
+I studied several kernel cases and try to cover most of them.
+
+> Would a table-driven approach be more compact?
+
+Do you mean something like ctype set of functions?
+
+I wouldn't think so, we have a lot of variations how we would like to
+escape. Currently I have such cases covered in terms of flags I
+introduced (not all of them in this series):
+ - ESCAPE_OCTAL (with dictionary)
+ - ESCAPE_ANY_NP
+ - ESCAPE_HEX | ESCAPE_NP
+ - ESCAPE_NULL
+... not yet in form of patch
+ - ESCAPE_SPACE | ESCAPE_SPECIAL (with dictionary)
+
+I can't currently realize how table could cover all of that.
+
+> >  static int __init test_string_helpers_init(void)
+> >  {
+> >  	unsigned int i;
+> > @@ -112,6 +315,16 @@ static int __init test_string_helpers_init(void)
+> >  	test_string_unescape("unescape inplace",
+> >  			     get_random_int() % (UNESCAPE_ANY + 1), true);
+> >  
+> > +	/* Without dictionary */
+> > +	for (i = 0; i < (ESCAPE_ANY_NP | ESCAPE_HEX) + 1; i++)
+> > +		test_string_escape("escape 0", escape0, i, TEST_STRING_2_DICT_0);
+> > +
+> > +	/* With dictionary */
+> > +	for (i = 0; i < (ESCAPE_ANY_NP | ESCAPE_HEX) + 1; i++)
+> > +		test_string_escape("escape 1", escape1, i, TEST_STRING_2_DICT_1);
+> > +
+> > +	test_string_escape_nomem();
+> > +
+> >  	return -EINVAL;
+> >  }
+> 
+> I wonder why this returns -EINVAL.
+
+The idea of course to not let module be loaded. I saw this return code
+in test_kstrtox.c. Would you suggest better approach?
+
 
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
 
