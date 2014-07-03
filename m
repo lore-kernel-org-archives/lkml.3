@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030616AbaGCJZc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:25:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52703 "EHLO
+	id S1030649AbaGCJ0t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:26:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52712 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030596AbaGCJZ3 (ORCPT
+	with ESMTP id S1030598AbaGCJZa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:25:29 -0400
+	Thu, 3 Jul 2014 05:25:30 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
-        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
-        Jeff Moyer <jmoyer@redhat.com>,
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 194/198] aio: fix aio request leak when events are reaped by userspace
-Date: Thu,  3 Jul 2014 10:20:37 +0100
-Message-Id: <1404379241-8590-195-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 197/198] lzo: properly check for overruns
+Date: Thu,  3 Jul 2014 10:20:40 +0100
+Message-Id: <1404379241-8590-198-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -29,57 +27,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin LaHaise <bcrl@kvack.org>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit f8567a3845ac05bb28f3c1b478ef752762bd39ef upstream.
+commit 206a81c18401c0cde6e579164f752c4b147324ce upstream.
 
-The aio cleanups and optimizations by kmo that were merged into the 3.10
-tree added a regression for userspace event reaping.  Specifically, the
-reference counts are not decremented if the event is reaped in userspace,
-leading to the application being unable to submit further aio requests.
-This patch applies to 3.12+.  A separate backport is required for 3.10/3.11.
-This issue was uncovered as part of CVE-2014-0206.
+The lzo decompressor can, if given some really crazy data, possibly
+overrun some variable types.  Modify the checking logic to properly
+detect overruns before they happen.
 
-[jmoyer@redhat.com: backported to 3.10]
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Mateusz Guzik <mguzik@redhat.com>
-Cc: Petr Matousek <pmatouse@redhat.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>
+Reported-by: "Don A. Bailey" <donb@securitymouse.com>
+Tested-by: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/aio.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ lib/lzo/lzo1x_decompress_safe.c | 62 +++++++++++++++++++++++++++--------------
+ 1 file changed, 41 insertions(+), 21 deletions(-)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 975a5d5810a9..48f02745b876 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -312,7 +312,6 @@ static void free_ioctx(struct kioctx *ctx)
+diff --git a/lib/lzo/lzo1x_decompress_safe.c b/lib/lzo/lzo1x_decompress_safe.c
+index 569985d522d5..8563081e8da3 100644
+--- a/lib/lzo/lzo1x_decompress_safe.c
++++ b/lib/lzo/lzo1x_decompress_safe.c
+@@ -19,11 +19,31 @@
+ #include <linux/lzo.h>
+ #include "lzodefs.h"
  
- 		avail = (head <= ctx->tail ? ctx->tail : ctx->nr_events) - head;
+-#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
+-#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
+-#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
+-#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
+-#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
++#define HAVE_IP(t, x)					\
++	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
++	 (((t + x) >= t) && ((t + x) >= x)))
++
++#define HAVE_OP(t, x)					\
++	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
++	 (((t + x) >= t) && ((t + x) >= x)))
++
++#define NEED_IP(t, x)					\
++	do {						\
++		if (!HAVE_IP(t, x))			\
++			goto input_overrun;		\
++	} while (0)
++
++#define NEED_OP(t, x)					\
++	do {						\
++		if (!HAVE_OP(t, x))			\
++			goto output_overrun;		\
++	} while (0)
++
++#define TEST_LB(m_pos)					\
++	do {						\
++		if ((m_pos) < out)			\
++			goto lookbehind_overrun;	\
++	} while (0)
  
--		atomic_sub(avail, &ctx->reqs_active);
- 		head += avail;
- 		head %= ctx->nr_events;
- 	}
-@@ -680,6 +679,7 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- put_rq:
- 	/* everything turned out well, dispose of the aiocb. */
- 	aio_put_req(iocb);
-+	atomic_dec(&ctx->reqs_active);
- 
- 	/*
- 	 * We have to order our ring_info tail store above and test
-@@ -757,8 +757,6 @@ static long aio_read_events_ring(struct kioctx *ctx,
- 	flush_dcache_page(ctx->ring_pages[0]);
- 
- 	pr_debug("%li  h%u t%u\n", ret, head, ctx->tail);
--
--	atomic_sub(ret, &ctx->reqs_active);
- out:
- 	mutex_unlock(&ctx->ring_lock);
- 
+ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 			  unsigned char *out, size_t *out_len)
+@@ -58,14 +78,14 @@ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 					while (unlikely(*ip == 0)) {
+ 						t += 255;
+ 						ip++;
+-						NEED_IP(1);
++						NEED_IP(1, 0);
+ 					}
+ 					t += 15 + *ip++;
+ 				}
+ 				t += 3;
+ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
++				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
+ 					const unsigned char *ie = ip + t;
+ 					unsigned char *oe = op + t;
+ 					do {
+@@ -81,8 +101,8 @@ copy_literal_run:
+ 				} else
+ #endif
+ 				{
+-					NEED_OP(t);
+-					NEED_IP(t + 3);
++					NEED_OP(t, 0);
++					NEED_IP(t, 3);
+ 					do {
+ 						*op++ = *ip++;
+ 					} while (--t > 0);
+@@ -95,7 +115,7 @@ copy_literal_run:
+ 				m_pos -= t >> 2;
+ 				m_pos -= *ip++ << 2;
+ 				TEST_LB(m_pos);
+-				NEED_OP(2);
++				NEED_OP(2, 0);
+ 				op[0] = m_pos[0];
+ 				op[1] = m_pos[1];
+ 				op += 2;
+@@ -119,10 +139,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1);
++					NEED_IP(1, 0);
+ 				}
+ 				t += 31 + *ip++;
+-				NEED_IP(2);
++				NEED_IP(2, 0);
+ 			}
+ 			m_pos = op - 1;
+ 			next = get_unaligned_le16(ip);
+@@ -137,10 +157,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1);
++					NEED_IP(1, 0);
+ 				}
+ 				t += 7 + *ip++;
+-				NEED_IP(2);
++				NEED_IP(2, 0);
+ 			}
+ 			next = get_unaligned_le16(ip);
+ 			ip += 2;
+@@ -154,7 +174,7 @@ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+ 		if (op - m_pos >= 8) {
+ 			unsigned char *oe = op + t;
+-			if (likely(HAVE_OP(t + 15))) {
++			if (likely(HAVE_OP(t, 15))) {
+ 				do {
+ 					COPY8(op, m_pos);
+ 					op += 8;
+@@ -164,7 +184,7 @@ copy_literal_run:
+ 					m_pos += 8;
+ 				} while (op < oe);
+ 				op = oe;
+-				if (HAVE_IP(6)) {
++				if (HAVE_IP(6, 0)) {
+ 					state = next;
+ 					COPY4(op, ip);
+ 					op += next;
+@@ -172,7 +192,7 @@ copy_literal_run:
+ 					continue;
+ 				}
+ 			} else {
+-				NEED_OP(t);
++				NEED_OP(t, 0);
+ 				do {
+ 					*op++ = *m_pos++;
+ 				} while (op < oe);
+@@ -181,7 +201,7 @@ copy_literal_run:
+ #endif
+ 		{
+ 			unsigned char *oe = op + t;
+-			NEED_OP(t);
++			NEED_OP(t, 0);
+ 			op[0] = m_pos[0];
+ 			op[1] = m_pos[1];
+ 			op += 2;
+@@ -194,15 +214,15 @@ match_next:
+ 		state = next;
+ 		t = next;
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
++		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
+ 			COPY4(op, ip);
+ 			op += t;
+ 			ip += t;
+ 		} else
+ #endif
+ 		{
+-			NEED_IP(t + 3);
+-			NEED_OP(t);
++			NEED_IP(t, 3);
++			NEED_OP(t, 0);
+ 			while (t > 0) {
+ 				*op++ = *ip++;
+ 				t--;
 -- 
 1.9.1
 
