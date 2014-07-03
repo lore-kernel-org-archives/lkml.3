@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900AbaGCO5s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:57:48 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59451 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758611AbaGCO5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:57:45 -0400
-Message-ID: <53B56F63.8000400@ti.com>
-Date: Thu, 3 Jul 2014 09:57:39 -0500
-From: Dan Murphy <dmurphy@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <linux-sound@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <broonie@kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4] ASoC: tas2552: Support TI TAS2552 Amplifier
-References: <1404398393-21497-1-git-send-email-dmurphy@ti.com> <20140703145250.GO5814@saruman.home>
-In-Reply-To: <20140703145250.GO5814@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1758930AbaGCO6J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:58:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51763 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755661AbaGCOtv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 10:49:51 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        dwmw2@infradead.org, dbaryshkov@gmail.com
+Cc: Boris Brezillon <boris@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH RESEND 03/18] AT91: G45: DT: Declare a second ram controller
+Date: Thu,  3 Jul 2014 16:41:18 +0200
+Message-Id: <1404398493-28907-4-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1404398493-28907-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1404398493-28907-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2014 09:52 AM, Felipe Balbi wrote:
-> Hi,
->
-> On Thu, Jul 03, 2014 at 09:39:53AM -0500, Dan Murphy wrote:
->> +static int tas2552_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
->> +{
->> +	u8 serial_format;
->> +	struct snd_soc_codec *codec = dai->codec;
->> +
->> +	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
->> +	case SND_SOC_DAIFMT_CBS_CFS:
->> +		serial_format = 0x00;
->> +		break;
->> +	case SND_SOC_DAIFMT_CBS_CFM:
->> +		serial_format = TAS2552_WORD_CLK_MASK;
->> +		break;
->> +	case SND_SOC_DAIFMT_CBM_CFS:
->> +		serial_format = TAS2552_BIT_CLK_MASK;
->> +		break;
->> +	case SND_SOC_DAIFMT_CBM_CFM:
->> +		serial_format = (TAS2552_BIT_CLK_MASK | TAS2552_WORD_CLK_MASK);
->> +		break;
->> +	default:
->> +		return -EINVAL;
->> +	}
->> +
->> +	pm_runtime_get_sync(codec->dev);
->> +
->> +	snd_soc_update_bits(codec, TAS2552_SER_CTRL_1,
->> +			    (TAS2552_BIT_CLK_MASK | TAS2552_WORD_CLK_MASK),
->> +			    serial_format);
->> +
->> +	pm_runtime_put(codec->dev);
-> I have a feeling it's better to just put at the end of the function.
-> Remember your pm_runtime_put() will issue i2c transfers which can take a
-> looooooong time ;-)
+The G45 has two identical ram controller, that are defined as a single one,
+with two reg cells.
 
-I thought about that but the next switch case could return if the format
-mask is invalid which means the runtime calls would not be balanced.
+The proper way to support such a case is to have two separate DT nodes.
 
-So I decided to wrap the snd_soc calls with the pm_runtime calls to keep it
-balanced.
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/boot/dts/at91sam9g45.dtsi | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-Dan
-
->
-> other than that, looks ok to me:
->
-> Reviewed-by: Felipe Balbi <balbi@ti.com>
->
-
-
+diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
+index ace6bf197b70..6f648b85b725 100644
+--- a/arch/arm/boot/dts/at91sam9g45.dtsi
++++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+@@ -75,8 +75,12 @@
+ 
+ 			ramc0: ramc@ffffe400 {
+ 				compatible = "atmel,at91sam9g45-ddramc";
+-				reg = <0xffffe400 0x200
+-				       0xffffe600 0x200>;
++				reg = <0xffffe400 0x200>;
++			};
++
++			ramc1: ramc@ffffe600 {
++				compatible = "atmel,at91sam9g45-ddramc";
++				reg = <0xffffe600 0x200>;
+ 			};
+ 
+ 			pmc: pmc@fffffc00 {
 -- 
-------------------
-Dan Murphy
+2.0.1
 
