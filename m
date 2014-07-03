@@ -1,54 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759606AbaGCQ3R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:29:17 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:54845 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759480AbaGCQ3O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 12:29:14 -0400
-Date: Thu, 3 Jul 2014 12:29:10 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Michael wang <wangyun@linux.vnet.ibm.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Alex Shi <alex.shi@linaro.org>, Paul Turner <pjt@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: select 'idle' cfs_rq per task-group to prevent
- tg-internal imbalance
-In-Reply-To: <20140702131507.GM3588@twins.programming.kicks-ass.net>
-Message-ID: <alpine.LFD.2.11.1407031227270.6220@knanqh.ubzr>
-References: <53A11A89.5000602@linux.vnet.ibm.com> <20140623094251.GS19860@laptop.programming.kicks-ass.net> <53A8F1DE.2060908@linux.vnet.ibm.com> <20140701082020.GL6758@twins.programming.kicks-ass.net> <53B273A2.5050500@linux.vnet.ibm.com>
- <20140701085658.GM6758@twins.programming.kicks-ass.net> <53B372C6.5000107@linux.vnet.ibm.com> <20140702124918.GE19379@twins.programming.kicks-ass.net> <20140702131507.GM3588@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1759621AbaGCQ3c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:29:32 -0400
+Received: from smtp2.macqel.be ([109.135.2.61]:52938 "EHLO smtp2.macqel.be"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758556AbaGCQ33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 12:29:29 -0400
+Date: Thu, 3 Jul 2014 18:29:19 +0200
+From: Philippe De Muyter <phdm@macqel.be>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        torvalds@linux-foundation.org, Karel Zak <kzak@redhat.com>
+Subject: Re: [PATCH PING] VFS: mount must return EACCES, not EROFS
+Message-ID: <20140703162919.GA16315@frolo.macqel>
+References: <20140619230924.GO4453@dastard> <1403253562-29248-1-git-send-email-phdm@macqel.be> <20140627082058.GA24986@frolo.macqel> <20140702124651.38b315a8adce63a37fccc60e@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140702124651.38b315a8adce63a37fccc60e@linux-foundation.org>
+User-Agent: Mutt/1.5.16 (2007-06-09)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jul 2014, Peter Zijlstra wrote:
-
-> On Wed, Jul 02, 2014 at 02:49:18PM +0200, Peter Zijlstra wrote:
-> > Clearly I need to go take out all these things because people don't seem
-> > to know this and SCHED_DEBUG isn't a big enough hint. Tedious.
+On Wed, Jul 02, 2014 at 12:46:51PM -0700, Andrew Morton wrote:
+> On Fri, 27 Jun 2014 10:20:58 +0200 Philippe De Muyter <phdm@macqel.be> wrote:
 > 
-> Maybe this would be enough clue?
+> > Currently, the initial mount of the root file system by the linux
+> > kernel fails with a cryptic message instead of being retried with
+> > the MS_RDONLY flag set,  when the device is read-only and the
+> > combination of block driver and filesystem driver yields EROFS.
+> > 
+> > I do not know if POSIX mandates that mount(2) must fail with EACCES, nor
+> > if linux aims to strict compliance with POSIX on that point.  Consensus
+> > amongst the messages that I have read so far seems to show that linux
+> > kernel hackers feel that EROFS is a more appropriate error code than
+> > EACCES in that case.
 > 
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 4c52907a6d8b..e2dd5ca9e6bf 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -470,6 +470,7 @@ extern enum system_states {
->  #define TAINT_FIRMWARE_WORKAROUND	11
->  #define TAINT_OOT_MODULE		12
->  #define TAINT_UNSIGNED_MODULE		13
-> +#define TAINT_DEBUG			14
+> Isn't the core problem that "the combination of block driver and
+> filesystem driver yields EROFS"?  That the fs should instead be
+> returning EACCESS in this case?
 
-LOL  ;-)
+Does POSIX or Linux mandate that it should ?
 
+> 
+> What fs and block driver are we talking about here, anyway?
 
-Nicolas
+The problem happened to me with a f2fs filesystem on a sd-card that was
+accidentally write-protected and that was put in a SD-card slot (mmc block
+driver).
+
+I retested using mount(8) with a similar now intentionnaly write-protected
+sd card in a usb reader (usb_storage driver ?) with vfat, f2fs and ext4
+filesystems with the following results :
+
+  mywdesk:~ # strace -e mount mount /dev/sdb1 /mnt
+  mount("/dev/sdb1", "/mnt", "vfat", MS_MGC_VAL, NULL) = -1 EROFS (Read-only file system)
+  mount: /dev/sdb1 is write-protected, mounting read-only
+  mount("/dev/sdb1", "/mnt", "vfat", MS_MGC_VAL|MS_RDONLY, NULL) = 0
+  +++ exited with 0 +++
+  mywdesk:~ # umount /mnt
+  mywdesk:~ # strace -e mount mount -t f2fs /dev/sdb2 /mnt
+  mount("/dev/sdb2", "/mnt", "f2fs", MS_MGC_VAL, NULL) = -1 EROFS (Read-only file system)
+  mount: /dev/sdb2 is write-protected, mounting read-only
+  mount("/dev/sdb2", "/mnt", "f2fs", MS_MGC_VAL|MS_RDONLY, NULL) = 0
+  +++ exited with 0 +++
+  mywdesk:~ # umount /mnt
+  mywdesk:~ # strace -e mount mount /dev/sdb3 /mnt
+  mount("/dev/sdb3", "/mnt", "ext4", MS_MGC_VAL, NULL) = -1 EROFS (Read-only file system)
+  mount: /dev/sdb3 is write-protected, mounting read-only
+  mount("/dev/sdb3", "/mnt", "ext4", MS_MGC_VAL|MS_RDONLY, NULL) = 0
+  +++ exited with 0 +++
+  mywdesk:~ #
+
+All three file-systems (vfat, f2fs & ext4) yield EROFS.
+
+I also quickly grepped for occurences of EROFS under fs/, and found no check
+to replace EROFS by EACCES,
+while the same grep under drivers/{block,cdrom,ide,md,memstick, mtd,
+s390/block,scsi,usb} gives plenty of "return -EROFS;"
+
+So, if no filesystem driver replaces EROFS by EACCES and many block drivers
+return EROFS, it seems to me that many combinations will yield EROFS.
+
+> > 
+> > So, do you choose for my first pragmatic and non-intrusive patch, that
+> > lets mount_block_root() retry with MS_RDONLY if the file system
+> > returns EROFS (https://lkml.org/lkml/2014/6/18/468) or for the second
+> > one that forces all file-systems to return EACCES instead of EROFS.
+> > (https://lkml.org/lkml/2014/6/20/98).
+> 
+> They both seem a little hacky to me.
+
+Actually I prefer my first patch, which simply adapts the kernel to the current
+situation, like mount(8) already does, instead of trying to impose an ABI
+change.
+
+Philippe
+
+-- 
+Philippe De Muyter +32 2 6101532 Macq SA rue de l'Aeronef 2 B-1140 Bruxelles
