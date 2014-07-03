@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030573AbaGCKA1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:00:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51897 "EHLO
+	id S1030932AbaGCKAr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:00:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51890 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758626AbaGCJWr (ORCPT
+	with ESMTP id S1758622AbaGCJWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:22:47 -0400
+	Thu, 3 Jul 2014 05:22:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Jukka Taimisto <jtt@codenomicon.com>,
+        Johan Hedberg <johan.hedberg@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 084/198] drm/radeon/dp: fix lane/clock setup for dp 1.2 capable devices
-Date: Thu,  3 Jul 2014 10:18:47 +0100
-Message-Id: <1404379241-8590-85-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 082/198] Bluetooth: Fix L2CAP deadlock
+Date: Thu,  3 Jul 2014 10:18:45 +0100
+Message-Id: <1404379241-8590-83-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,62 +31,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jukka Taimisto <jtt@codenomicon.com>
 
-commit 3b6d9fd23e015b5397c438fd3cd74147d2c805b6 upstream.
+commit 8a96f3cd22878fc0bb564a8478a6e17c0b8dca73 upstream.
 
-Only DCE5+ asics support DP 1.2.
+-[0x01 Introduction
 
-Noticed by ArtForz on IRC.
+We have found a programming error causing a deadlock in Bluetooth subsystem
+of Linux kernel. The problem is caused by missing release_sock() call when
+L2CAP connection creation fails due full accept queue.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+The issue can be reproduced with 3.15-rc5 kernel and is also present in
+earlier kernels.
+
+-[0x02 Details
+
+The problem occurs when multiple L2CAP connections are created to a PSM which
+contains listening socket (like SDP) and left pending, for example,
+configuration (the underlying ACL link is not disconnected between
+connections).
+
+When L2CAP connection request is received and listening socket is found the
+l2cap_sock_new_connection_cb() function (net/bluetooth/l2cap_sock.c) is called.
+This function locks the 'parent' socket and then checks if the accept queue
+is full.
+
+1178         lock_sock(parent);
+1179
+1180         /* Check for backlog size */
+1181         if (sk_acceptq_is_full(parent)) {
+1182                 BT_DBG("backlog full %d", parent->sk_ack_backlog);
+1183                 return NULL;
+1184         }
+
+If case the accept queue is full NULL is returned, but the 'parent' socket
+is not released. Thus when next L2CAP connection request is received the code
+blocks on lock_sock() since the parent is still locked.
+
+Also note that for connections already established and waiting for
+configuration to complete a timeout will occur and l2cap_chan_timeout()
+(net/bluetooth/l2cap_core.c) will be called. All threads calling this
+function will also be blocked waiting for the channel mutex since the thread
+which is waiting on lock_sock() alread holds the channel mutex.
+
+We were able to reproduce this by sending continuously L2CAP connection
+request followed by disconnection request containing invalid CID. This left
+the created connections pending configuration.
+
+After the deadlock occurs it is impossible to kill bluetoothd, btmon will not
+get any more data etc. requiring reboot to recover.
+
+-[0x03 Fix
+
+Releasing the 'parent' socket when l2cap_sock_new_connection_cb() returns NULL
+seems to fix the issue.
+
+Signed-off-by: Jukka Taimisto <jtt@codenomicon.com>
+Reported-by: Tommi Mäkilä <tmakila@codenomicon.com>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/atombios_dp.c | 17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
+ net/bluetooth/l2cap_sock.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/atombios_dp.c b/drivers/gpu/drm/radeon/atombios_dp.c
-index 16023986d301..4c05f2b015cf 100644
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -384,6 +384,19 @@ static int dp_get_max_dp_pix_clock(int link_rate,
- 
- /***** radeon specific DP functions *****/
- 
-+static int radeon_dp_get_max_link_rate(struct drm_connector *connector,
-+				       u8 dpcd[DP_DPCD_SIZE])
-+{
-+	int max_link_rate;
-+
-+	if (radeon_connector_is_dp12_capable(connector))
-+		max_link_rate = min(drm_dp_max_link_rate(dpcd), 540000);
-+	else
-+		max_link_rate = min(drm_dp_max_link_rate(dpcd), 270000);
-+
-+	return max_link_rate;
-+}
-+
- /* First get the min lane# when low rate is used according to pixel clock
-  * (prefer low rate), second check max lane# supported by DP panel,
-  * if the max lane# < low rate lane# then use max lane# instead.
-@@ -393,7 +406,7 @@ static int radeon_dp_get_dp_lane_number(struct drm_connector *connector,
- 					int pix_clock)
- {
- 	int bpp = convert_bpc_to_bpp(radeon_get_monitor_bpc(connector));
--	int max_link_rate = drm_dp_max_link_rate(dpcd);
-+	int max_link_rate = radeon_dp_get_max_link_rate(connector, dpcd);
- 	int max_lane_num = drm_dp_max_lane_count(dpcd);
- 	int lane_num;
- 	int max_dp_pix_clock;
-@@ -431,7 +444,7 @@ static int radeon_dp_get_dp_link_clock(struct drm_connector *connector,
- 			return 540000;
+diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
+index 0098af80b213..07c9aea21244 100644
+--- a/net/bluetooth/l2cap_sock.c
++++ b/net/bluetooth/l2cap_sock.c
+@@ -949,13 +949,16 @@ static struct l2cap_chan *l2cap_sock_new_connection_cb(struct l2cap_chan *chan)
+ 	/* Check for backlog size */
+ 	if (sk_acceptq_is_full(parent)) {
+ 		BT_DBG("backlog full %d", parent->sk_ack_backlog);
++		release_sock(parent);
+ 		return NULL;
  	}
  
--	return drm_dp_max_link_rate(dpcd);
-+	return radeon_dp_get_max_link_rate(connector, dpcd);
- }
+ 	sk = l2cap_sock_alloc(sock_net(parent), NULL, BTPROTO_L2CAP,
+ 			      GFP_ATOMIC);
+-	if (!sk)
++	if (!sk) {
++		release_sock(parent);
+ 		return NULL;
++        }
  
- static u8 radeon_dp_encoder_service(struct radeon_device *rdev,
+ 	bt_sock_reclassify_lock(sk, BTPROTO_L2CAP);
+ 
 -- 
 1.9.1
 
