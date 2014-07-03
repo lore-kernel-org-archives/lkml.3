@@ -1,147 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687AbaGCC6e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 22:58:34 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59057 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750916AbaGCC6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 22:58:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,592,1400050800"; 
-   d="scan'208";a="538078261"
-Date: Thu, 3 Jul 2014 10:59:27 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Hu Robert <robert.hu@intel.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1
- since race
-Message-ID: <20140703025927.GA5407@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com>
- <53B3CA6A.4050902@siemens.com>
+	id S1755234AbaGCDBA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 23:01:00 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:59391 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754027AbaGCDA5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 23:00:57 -0400
+Message-Id: <20140703030055.201144423@goodmis.org>
+User-Agent: quilt/0.63-1
+Date: Wed, 02 Jul 2014 23:00:44 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        stable-rt@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
+Subject: [PATCH RT 1/2] Fix latency histogram after "hrtimer: Set expiry time before
+ switch_hrtimer_base()"
+References: <20140703030043.202302661@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B3CA6A.4050902@siemens.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0001-Fix-latency-histogram-after-hrtimer-Set-expiry-time-.patch
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan,
-On Wed, Jul 02, 2014 at 11:01:30AM +0200, Jan Kiszka wrote:
->On 2014-07-02 08:54, Wanpeng Li wrote:
->> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=72381 
->> 
->> If we didn't inject a still-pending event to L1 since nested_run_pending,
->> KVM_REQ_EVENT should be requested after the vmexit in order to inject the 
->> event to L1. However, current log blindly request a KVM_REQ_EVENT even if 
->> there is no still-pending event to L1 which blocked by nested_run_pending. 
->> There is a race which lead to an interrupt will be injected to L2 which 
->> belong to L1 if L0 send an interrupt to L1 during this window. 
->> 
->>                VCPU0                               another thread 
->> 
->> L1 intr not blocked on L2 first entry
->> vmx_vcpu_run req event 
->> kvm check request req event 
->> check_nested_events don't have any intr 
->> not nested exit 
->>                                             intr occur (8254, lapic timer etc)
->> inject_pending_event now have intr 
->> inject interrupt 
->> 
->> This patch fix this race by introduced a l1_events_blocked field in nested_vmx 
->> which indicates there is still-pending event which blocked by nested_run_pending, 
->> and smart request a KVM_REQ_EVENT if there is a still-pending event which blocked 
->> by nested_run_pending.
->
->There are more, unrelated reasons why KVM_REQ_EVENT could be set. Why
->aren't those able to trigger this scenario?
->
+3.2.60-rt88-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
-Other KVM_REQ_EVENT has a specific intr or pending , however, the KVM_REQ_EVENT 
-which request after vmexit with nested_run_pending may or may not have a
-specific intr or pending.
+------------------
 
-Regards,
-Wanpeng Li 
+From: Ben Hutchings <ben@decadent.org.uk>
 
->In any case, unconditionally setting KVM_REQ_EVENT seems strange and
->should be changed.
->
->Jan
->
->> 
->> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->> ---
->>  arch/x86/kvm/vmx.c | 20 +++++++++++++++-----
->>  1 file changed, 15 insertions(+), 5 deletions(-)
->> 
->> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
->> index f4e5aed..fe69c49 100644
->> --- a/arch/x86/kvm/vmx.c
->> +++ b/arch/x86/kvm/vmx.c
->> @@ -372,6 +372,7 @@ struct nested_vmx {
->>  	u64 vmcs01_tsc_offset;
->>  	/* L2 must run next, and mustn't decide to exit to L1. */
->>  	bool nested_run_pending;
->> +	bool l1_events_blocked;
->>  	/*
->>  	 * Guest pages referred to in vmcs02 with host-physical pointers, so
->>  	 * we must keep them pinned while L2 runs.
->> @@ -7380,8 +7381,10 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
->>  	 * we did not inject a still-pending event to L1 now because of
->>  	 * nested_run_pending, we need to re-enable this bit.
->>  	 */
->> -	if (vmx->nested.nested_run_pending)
->> +	if (to_vmx(vcpu)->nested.l1_events_blocked) {
->> +		to_vmx(vcpu)->nested.l1_events_blocked = false;
->>  		kvm_make_request(KVM_REQ_EVENT, vcpu);
->> +	}
->>  
->>  	vmx->nested.nested_run_pending = 0;
->>  
->> @@ -8197,15 +8200,20 @@ static int vmx_check_nested_events(struct kvm_vcpu *vcpu, bool external_intr)
->>  
->>  	if (nested_cpu_has_preemption_timer(get_vmcs12(vcpu)) &&
->>  	    vmx->nested.preemption_timer_expired) {
->> -		if (vmx->nested.nested_run_pending)
->> +		if (vmx->nested.nested_run_pending) {
->> +			vmx->nested.l1_events_blocked = true;
->>  			return -EBUSY;
->> +		}
->>  		nested_vmx_vmexit(vcpu, EXIT_REASON_PREEMPTION_TIMER, 0, 0);
->>  		return 0;
->>  	}
->>  
->>  	if (vcpu->arch.nmi_pending && nested_exit_on_nmi(vcpu)) {
->> -		if (vmx->nested.nested_run_pending ||
->> -		    vcpu->arch.interrupt.pending)
->> +		if (vmx->nested.nested_run_pending) {
->> +			vmx->nested.l1_events_blocked = true;
->> +			return -EBUSY;
->> +		}
->> +		if (vcpu->arch.interrupt.pending)
->>  			return -EBUSY;
->>  		nested_vmx_vmexit(vcpu, EXIT_REASON_EXCEPTION_NMI,
->>  				  NMI_VECTOR | INTR_TYPE_NMI_INTR |
->> @@ -8221,8 +8229,10 @@ static int vmx_check_nested_events(struct kvm_vcpu *vcpu, bool external_intr)
->>  
->>  	if ((kvm_cpu_has_interrupt(vcpu) || external_intr) &&
->>  	    nested_exit_on_intr(vcpu)) {
->> -		if (vmx->nested.nested_run_pending)
->> +		if (vmx->nested.nested_run_pending) {
->> +			vmx->nested.l1_events_blocked = true;
->>  			return -EBUSY;
->> +		}
->>  		nested_vmx_vmexit(vcpu, EXIT_REASON_EXTERNAL_INTERRUPT, 0, 0);
->>  	}
->>  
->> 
->
->-- 
->Siemens AG, Corporate Technology, CT RTC ITP SES-DE
->Corporate Competence Center Embedded Linux
+In an rt-kernel with CONFIG_MISSED_TIMER_OFFSETS_HIST enabled,
+__hrtimer_start_range_ns() now crashes, as new_base is not assigned
+before it is used.
+
+Tested-by: Carsten Emde <C.Emde@osadl.org>
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/hrtimer.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index f54379023e16..2bd88f06a6d0 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1033,6 +1033,11 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ #endif
+ 	}
+ 
++	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
++
++	/* Switch the timer base, if necessary: */
++	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
++
+ #ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
+ 	{
+ 		ktime_t now = new_base->get_time();
+@@ -1044,11 +1049,6 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 	}
+ #endif
+ 
+-	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
+-
+-	/* Switch the timer base, if necessary: */
+-	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
+-
+ 	timer_stats_hrtimer_set_start_info(timer);
+ 
+ 	leftmost = enqueue_hrtimer(timer, new_base);
+-- 
+2.0.0
+
+
