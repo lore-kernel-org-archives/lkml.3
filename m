@@ -1,103 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965142AbaGCKMY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:12:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51636 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758298AbaGCJVt (ORCPT
+	id S965287AbaGCKNn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:13:43 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:59973 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965015AbaGCKNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:21:49 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 042/198] [media] media: stk1160: Avoid stack-allocated buffer for control URBs
-Date: Thu,  3 Jul 2014 10:18:05 +0100
-Message-Id: <1404379241-8590-43-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 3 Jul 2014 06:13:40 -0400
+Date: Thu, 3 Jul 2014 19:12:31 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
+Cc: markh@compro.net, driverdev-devel@linuxdriverproject.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/4] staging: dgnc: Fix unsigned value for less than zero
+Message-ID: <20140703101231.GA18962@devel.8.8.4.4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.13 -stable review patch.  If anyone has any objections, please let me know.
+The "un->un_open_count" is unsigned variable, so it cannot
+be less than zero.
 
-------------------
-
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-
-commit 85ac1a1772bb41da895bad83a81f6a62c8f293f6 upstream.
-
-Currently stk1160_read_reg() uses a stack-allocated char to get the
-read control value. This is wrong because usb_control_msg() requires
-a kmalloc-ed buffer.
-
-This commit fixes such issue by kmalloc'ating a 1-byte buffer to receive
-the read value.
-
-While here, let's remove the urb_buf array which was meant for a similar
-purpose, but never really used.
-
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
-Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
- drivers/media/usb/stk1160/stk1160-core.c | 10 +++++++++-
- drivers/media/usb/stk1160/stk1160.h      |  1 -
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/staging/dgnc/dgnc_tty.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/media/usb/stk1160/stk1160-core.c b/drivers/media/usb/stk1160/stk1160-core.c
-index 34a26e0cfe77..03504dcf3c52 100644
---- a/drivers/media/usb/stk1160/stk1160-core.c
-+++ b/drivers/media/usb/stk1160/stk1160-core.c
-@@ -67,17 +67,25 @@ int stk1160_read_reg(struct stk1160 *dev, u16 reg, u8 *value)
- {
- 	int ret;
- 	int pipe = usb_rcvctrlpipe(dev->udev, 0);
-+	u8 *buf;
- 
- 	*value = 0;
-+
-+	buf = kmalloc(sizeof(u8), GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
- 	ret = usb_control_msg(dev->udev, pipe, 0x00,
- 			USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
--			0x00, reg, value, sizeof(u8), HZ);
-+			0x00, reg, buf, sizeof(u8), HZ);
- 	if (ret < 0) {
- 		stk1160_err("read failed on reg 0x%x (%d)\n",
- 			reg, ret);
-+		kfree(buf);
- 		return ret;
+diff --git a/drivers/staging/dgnc/dgnc_tty.c b/drivers/staging/dgnc/dgnc_tty.c
+index 8081621..f7409d9 100644
+--- a/drivers/staging/dgnc/dgnc_tty.c
++++ b/drivers/staging/dgnc/dgnc_tty.c
+@@ -1636,10 +1636,10 @@ static void dgnc_tty_close(struct tty_struct *tty, struct file *file)
+ 		un->un_open_count = 1;
  	}
  
-+	*value = *buf;
-+	kfree(buf);
- 	return 0;
- }
+-	if (--un->un_open_count < 0) {
++	if (un->un_open_count)
++		un->un_open_count--;
++	else
+ 		APR(("bad serial port open count of %d\n", un->un_open_count));
+-		un->un_open_count = 0;
+-	}
  
-diff --git a/drivers/media/usb/stk1160/stk1160.h b/drivers/media/usb/stk1160/stk1160.h
-index 05b05b160e1e..abdea484c998 100644
---- a/drivers/media/usb/stk1160/stk1160.h
-+++ b/drivers/media/usb/stk1160/stk1160.h
-@@ -143,7 +143,6 @@ struct stk1160 {
- 	int num_alt;
+ 	ch->ch_open_count--;
  
- 	struct stk1160_isoc_ctl isoc_ctl;
--	char urb_buf[255];	 /* urb control msg buffer */
- 
- 	/* frame properties */
- 	int width;		  /* current frame width */
 -- 
-1.9.1
+1.7.1
 
