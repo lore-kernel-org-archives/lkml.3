@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030326AbaGCKOu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:14:50 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:54149 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758984AbaGCKOr (ORCPT
+	id S1030372AbaGCKPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:15:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51591 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758235AbaGCJVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 06:14:47 -0400
-Date: Thu, 3 Jul 2014 19:13:39 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: lidza.louina@gmail.com, gregkh@linuxfoundation.org
-Cc: markh@compro.net, driverdev-devel@linuxdriverproject.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] staging: dgnc: remove redundant memset call
-Message-ID: <20140703101339.GA18974@devel.8.8.4.4>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Thu, 3 Jul 2014 05:21:40 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 036/198] reiserfs: call truncate_setsize under tailpack mutex
+Date: Thu,  3 Jul 2014 10:17:59 +0100
+Message-Id: <1404379241-8590-37-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
+References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The brd is allocated by kzalloc() in dgnc_found_board()
-so do not need to set 0 to member variable.
+3.11.10.13 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+------------------
+
+From: Jeff Mahoney <jeffm@suse.com>
+
+commit 22e7478ddbcb670e33fab72d0bbe7c394c3a2c84 upstream.
+
+Prior to commit 0e4f6a791b1e (Fix reiserfs_file_release()), reiserfs
+truncates serialized on i_mutex. They mostly still do, with the exception
+of reiserfs_file_release. That blocks out other writers via the tailpack
+mutex and the inode openers counter adjusted in reiserfs_file_open.
+
+However, NFS will call reiserfs_setattr without having called ->open, so
+we end up with a race when nfs is calling ->setattr while another
+process is releasing the file. Ultimately, it triggers the
+BUG_ON(inode->i_size != new_file_size) check in maybe_indirect_to_direct.
+
+The solution is to pull the lock into reiserfs_setattr to encompass the
+truncate_setsize call as well.
+
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/dgnc/dgnc_tty.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ fs/reiserfs/inode.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/dgnc/dgnc_tty.c b/drivers/staging/dgnc/dgnc_tty.c
-index c07ec74..714a069 100644
---- a/drivers/staging/dgnc/dgnc_tty.c
-+++ b/drivers/staging/dgnc/dgnc_tty.c
-@@ -200,9 +200,6 @@ int dgnc_tty_register(struct dgnc_board *brd)
+diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
+index 0048cc16a6a8..9fa970e7b2cd 100644
+--- a/fs/reiserfs/inode.c
++++ b/fs/reiserfs/inode.c
+@@ -3217,8 +3217,14 @@ int reiserfs_setattr(struct dentry *dentry, struct iattr *attr)
+ 	    attr->ia_size != i_size_read(inode)) {
+ 		error = inode_newsize_ok(inode, attr->ia_size);
+ 		if (!error) {
++			/*
++			 * Could race against reiserfs_file_release
++			 * if called from NFS, so take tailpack mutex.
++			 */
++			mutex_lock(&REISERFS_I(inode)->tailpack);
+ 			truncate_setsize(inode, attr->ia_size);
+-			reiserfs_vfs_truncate_file(inode);
++			reiserfs_truncate_file(inode, 1);
++			mutex_unlock(&REISERFS_I(inode)->tailpack);
+ 		}
+ 	}
  
- 	DPR_INIT(("tty_register start\n"));
- 
--	memset(&brd->SerialDriver, 0, sizeof(brd->SerialDriver));
--	memset(&brd->PrintDriver, 0, sizeof(brd->PrintDriver));
--
- 	brd->SerialDriver.magic = TTY_DRIVER_MAGIC;
- 
- 	snprintf(brd->SerialName, MAXTTYNAMELEN, "tty_dgnc_%d_", brd->boardnum);
 -- 
-1.7.1
+1.9.1
 
