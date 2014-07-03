@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279AbaGCQqC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:46:02 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:61761 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753490AbaGCQp7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 12:45:59 -0400
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michel Arruat <michel.arruat@gmail.com>
-Subject: PCIe bus enumeration
-Date: Thu, 03 Jul 2014 18:45:54 +0200
-Message-ID: <280883016.9onmf0miLq@pcbe13110.cern.ch>
-User-Agent: KMail/4.12.5 (Linux/3.14.8-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
+	id S1758067AbaGCQuc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:50:32 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36413 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750910AbaGCQub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 12:50:31 -0400
+Message-ID: <53B589D1.1090209@ti.com>
+Date: Thu, 3 Jul 2014 19:50:25 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Kishon Vijay Abraham I <kishon@ti.com>, <tony@atomide.com>, <balbi@ti.com>
+CC: <nsekhar@ti.com>, <nm@ti.com>, <george.cherian@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] phy: omap-usb2: Balance pm_runtime_enable() on probe
+ failure
+References: <1404302638-3003-1-git-send-email-rogerq@ti.com> <1404302638-3003-6-git-send-email-rogerq@ti.com> <53B55B4A.8020709@ti.com>
+In-Reply-To: <53B55B4A.8020709@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 07/03/2014 04:31 PM, Kishon Vijay Abraham I wrote:
+> Hi Roger,
+> 
+> On Wednesday 02 July 2014 05:33 PM, Roger Quadros wrote:
+>> If probe fails then we need to call pm_runtime_disable() to balance
+>> out the previous pm_runtime_enable() call. Else it will cause
+>> unbalanced pm_runtime_enable() call in the succeding probe call.
+>>
+>> This anomaly was observed when the call to devm_phy_create() failed
+>> with -EPROBE_DEFER.
+>>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> ---
+>>  drivers/phy/phy-omap-usb2.c | 8 ++++++--
+>>  1 file changed, 6 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
+>> index 7007c11..c6f9809 100644
+>> --- a/drivers/phy/phy-omap-usb2.c
+>> +++ b/drivers/phy/phy-omap-usb2.c
+>> @@ -265,15 +265,19 @@ static int omap_usb2_probe(struct platform_device *pdev)
+>>  	pm_runtime_enable(phy->dev);
+>>  
+>>  	generic_phy = devm_phy_create(phy->dev, &ops, NULL);
+>> -	if (IS_ERR(generic_phy))
+>> +	if (IS_ERR(generic_phy)) {
+>> +		pm_runtime_disable(phy->dev);
+>>  		return PTR_ERR(generic_phy);
+>> +	}
+> 
+> Maybe we can move pm_runtime_enable to just before phy_provider_register?
 
-(I haven't a deep knowledge of the PCIe specification, maybe I'm just 
-missing something)
+OK. will try that.
 
-is there a way to force the PCI subsystem to assign a bus-number to 
-every PCIe bridge, even if there is nothing connected?
+>>  
+>>  	phy_set_drvdata(generic_phy, phy);
+>>  
+>>  	phy_provider = devm_of_phy_provider_register(phy->dev,
+>>  			of_phy_simple_xlate);
+>> -	if (IS_ERR(phy_provider))
+>> +	if (IS_ERR(phy_provider)) {
+>> +		pm_runtime_disable(phy->dev);
+>>  		return PTR_ERR(phy_provider);
+>> +	}
+> 
+> Noticed pm_runtime_disable was missing in omap_usb2_remove too. Would be good
+> to fix it here.
+> 
 
+Fine, I'll add it there.
 
-My aim is to have a bus enumeration constant and independent from what 
-I plugged on the system. So, I can associate a physical slot to linux 
-device address bb:dd.f. Is it possible?
-
-I can do the mapping with a simple shell script by discovering the 
-"new" bus number, but I'm wondering if there is a way to have a 
-constant bus enumeration.
-
-
-
-My Humble Observation
----------------------
-It seems (to me) that for PCI the kernel assigns a bus-number to every 
-PCI bridges and sub-bridges even if there is nothing connected:
-
-
-e.g. from lspci -t
-
-      [...]
-      +-1e.0-[04-05]----0c.0-[05]--
-
-00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev 92)
-04:0c.0 PCI bridge: Texas Instruments PCI2050 PCI-to-PCI Bridge (rev 
-02)
-
-
-The behavior on PCIe seems different. When there is nothing plugged on 
-a bus, then the kernel doesn't assign any bus-number and it doesn't 
-detect any PCI-Bridge at all. So, when I reboot the system with a new 
-PCIe card the bus enumeration may change.
-
-
-I tried to use the following pci kernel parameters:
-
-assign-busses : because I want to force the kernel to re-enumerate the 
-busses, hopefully _all_ buses even if they are empty.
-
-pcie_scan_all : not clear the explanation, but it sounds like it tells 
-to the kernel to inspect everything.
-
-bfsort : because, maybe, for a bfsort it must assign a number to each 
-bridge at the same level before inspect the next one.
-
-noacpi : in order to scan independently from BIOS information
-
-
-The result is always the same (empty buses are not enumerated). 
-
-
-
-Thank you :)
-
--- 
-Federico Vaga
+cheers,
+-roger
