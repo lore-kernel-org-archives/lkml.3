@@ -1,80 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758067AbaGCQuc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:50:32 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36413 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910AbaGCQub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 12:50:31 -0400
-Message-ID: <53B589D1.1090209@ti.com>
-Date: Thu, 3 Jul 2014 19:50:25 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>, <tony@atomide.com>, <balbi@ti.com>
-CC: <nsekhar@ti.com>, <nm@ti.com>, <george.cherian@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] phy: omap-usb2: Balance pm_runtime_enable() on probe
- failure
-References: <1404302638-3003-1-git-send-email-rogerq@ti.com> <1404302638-3003-6-git-send-email-rogerq@ti.com> <53B55B4A.8020709@ti.com>
-In-Reply-To: <53B55B4A.8020709@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1756553AbaGCQ5S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:57:18 -0400
+Received: from 15.mo6.mail-out.ovh.net ([188.165.39.161]:40516 "EHLO
+	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753376AbaGCQ5R convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 12:57:17 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
+Subject: Re: [PATCH 09/18] AT91: Call at91_register_devices in the board files
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+In-Reply-To: <1404396906-25194-15-git-send-email-maxime.ripard@free-electrons.com>
+Date: Thu, 3 Jul 2014 22:29:58 +0800
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux@maxim.org.za, Nicolas FERRE <nicolas.ferre@atmel.com>,
+        dwmw2@infradead.org, dbaryshkov@gmail.com, devicetree@vger.kernel.org,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-kernel@vger.kernel.org,
+        Boris Brezillon <boris@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D103F102-4B04-4CC6-8F20-58CEB0EC8E36@jcrosoft.com>
+References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com> <1404396906-25194-15-git-send-email-maxime.ripard@free-electrons.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+X-Mailer: Apple Mail (2.1878.2)
+X-Ovh-Tracer-Id: 7576180474429877181
+X-Ovh-Remote: 193.138.230.182 (182.230.138.193.client.dyn.strong-ba6.blackoakcomputers.com)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedrudegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedrudegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2014 04:31 PM, Kishon Vijay Abraham I wrote:
-> Hi Roger,
-> 
-> On Wednesday 02 July 2014 05:33 PM, Roger Quadros wrote:
->> If probe fails then we need to call pm_runtime_disable() to balance
->> out the previous pm_runtime_enable() call. Else it will cause
->> unbalanced pm_runtime_enable() call in the succeding probe call.
->>
->> This anomaly was observed when the call to devm_phy_create() failed
->> with -EPROBE_DEFER.
->>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> ---
->>  drivers/phy/phy-omap-usb2.c | 8 ++++++--
->>  1 file changed, 6 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
->> index 7007c11..c6f9809 100644
->> --- a/drivers/phy/phy-omap-usb2.c
->> +++ b/drivers/phy/phy-omap-usb2.c
->> @@ -265,15 +265,19 @@ static int omap_usb2_probe(struct platform_device *pdev)
->>  	pm_runtime_enable(phy->dev);
->>  
->>  	generic_phy = devm_phy_create(phy->dev, &ops, NULL);
->> -	if (IS_ERR(generic_phy))
->> +	if (IS_ERR(generic_phy)) {
->> +		pm_runtime_disable(phy->dev);
->>  		return PTR_ERR(generic_phy);
->> +	}
-> 
-> Maybe we can move pm_runtime_enable to just before phy_provider_register?
+no do this at SoC level
 
-OK. will try that.
+Best Regards,
+J.
+On Jul 3, 2014, at 10:14 PM, Maxime Ripard <maxime.ripard@free-electrons.com> wrote:
 
->>  
->>  	phy_set_drvdata(generic_phy, phy);
->>  
->>  	phy_provider = devm_of_phy_provider_register(phy->dev,
->>  			of_phy_simple_xlate);
->> -	if (IS_ERR(phy_provider))
->> +	if (IS_ERR(phy_provider)) {
->> +		pm_runtime_disable(phy->dev);
->>  		return PTR_ERR(phy_provider);
->> +	}
 > 
-> Noticed pm_runtime_disable was missing in omap_usb2_remove too. Would be good
-> to fix it here.
+> Make every board call the register_devices callback so that the devices
+> declared by the SoC are registered.
 > 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+> arch/arm/mach-at91/board-afeb-9260v1.c  | 2 ++
+> arch/arm/mach-at91/board-cam60.c        | 2 ++
+> arch/arm/mach-at91/board-cpu9krea.c     | 2 ++
+> arch/arm/mach-at91/board-flexibity.c    | 2 ++
+> arch/arm/mach-at91/board-sam9-l9260.c   | 2 ++
+> arch/arm/mach-at91/board-sam9260ek.c    | 2 ++
+> arch/arm/mach-at91/board-sam9261ek.c    | 2 ++
+> arch/arm/mach-at91/board-sam9263ek.c    | 2 ++
+> arch/arm/mach-at91/board-sam9m10g45ek.c | 2 ++
+> arch/arm/mach-at91/board-sam9rlek.c     | 2 ++
+> arch/arm/mach-at91/board-snapper9260.c  | 2 ++
+> 11 files changed, 22 insertions(+)
+> 
+> diff --git a/arch/arm/mach-at91/board-afeb-9260v1.c b/arch/arm/mach-at91/board-afeb-9260v1.c
+> index 597c649170aa..fc9621ccb606 100644
+> --- a/arch/arm/mach-at91/board-afeb-9260v1.c
+> +++ b/arch/arm/mach-at91/board-afeb-9260v1.c
+> @@ -167,6 +167,8 @@ static struct at91_cf_data afeb9260_cf_data = {
+> 
+> static void __init afeb9260_board_init(void)
+> {
+> +	at91_register_devices();
+> +
+> 	/* Serial */
+> 	/* DBGU on ttyS0. (Rx & Tx only) */
+> 	at91_register_uart(0, 0, 0);
+> diff --git a/arch/arm/mach-at91/board-cam60.c b/arch/arm/mach-at91/board-cam60.c
+> index a30502c8d379..283655bd86c1 100644
+> --- a/arch/arm/mach-at91/board-cam60.c
+> +++ b/arch/arm/mach-at91/board-cam60.c
+> @@ -170,6 +170,8 @@ static void __init cam60_add_device_nand(void)
+> 
+> static void __init cam60_board_init(void)
+> {
+> +	at91_register_devices();
+> +
+> 	/* Serial */
+> 	/* DBGU on ttyS0. (Rx & Tx only) */
+> 	at91_register_uart(0, 0, 0);
+> diff --git a/arch/arm/mach-at91/board-cpu9krea.c b/arch/arm/mach-at91/board-cpu9krea.c
+> index 2037f78c84e7..29a89032bb9a 100644
+> --- a/arch/arm/mach-at91/board-cpu9krea.c
+> +++ b/arch/arm/mach-at91/board-cpu9krea.c
+> @@ -322,6 +322,8 @@ static struct mci_platform_data __initdata cpu9krea_mci0_data = {
+> 
+> static void __init cpu9krea_board_init(void)
+> {
+> +	at91_register_devices();
+> +
+> 	/* NOR */
+> 	cpu9krea_add_device_nor();
+> 	/* Serial */
+> diff --git a/arch/arm/mach-at91/board-flexibity.c b/arch/arm/mach-at91/board-flexibity.c
+> index 68f1ab6bd08f..79bd411b0cee 100644
+> --- a/arch/arm/mach-at91/board-flexibity.c
+> +++ b/arch/arm/mach-at91/board-flexibity.c
+> @@ -138,6 +138,8 @@ static struct gpio_led flexibity_leds[] = {
+> 
+> static void __init flexibity_board_init(void)
+> {
+> +	at91_register_devices();
+> +
+> 	/* Serial */
+> 	/* DBGU on ttyS0. (Rx & Tx only) */
+> 	at91_register_uart(0, 0, 0);
+> diff --git a/arch/arm/mach-at91/board-sam9-l9260.c b/arch/arm/mach-at91/board-sam9-l9260.c
+> index d24dda67e2d3..70309404f366 100644
+> --- a/arch/arm/mach-at91/board-sam9-l9260.c
+> +++ b/arch/arm/mach-at91/board-sam9-l9260.c
+> @@ -187,6 +187,8 @@ static struct gpio_led ek_leds[] = {
+> 
+> static void __init ek_board_init(void)
+> {
+> +	at91_register_devices();
+> +
+> 	/* Serial */
+> 	/* DBGU on ttyS0. (Rx & Tx only) */
+> 	at91_register_uart(0, 0, 0);
+> diff --git a/arch/arm/mach-at91/board-sam9260ek.c b/arch/arm/mach-at91/board-sam9260ek.c
+> index 65dea12d685e..da9c5f1f2c49 100644
+> --- a/arch/arm/mach-at91/board-sam9260ek.c
+> +++ b/arch/arm/mach-at91/board-sam9260ek.c
+> @@ -307,6 +307,8 @@ static void __init ek_add_device_buttons(void) {}
+> 
+> static void __init ek_board_init(void)
+> {
+> +	at91_register_devices();
+> +
+> 	/* Serial */
+> 	/* DBGU on ttyS0. (Rx & Tx only) */
+> 	at91_register_uart(0, 0, 0);
+> diff --git a/arch/arm/mach-at91/board-sam9261ek.c b/arch/arm/mach-at91/board-sam9261ek.c
+> index 4637432de08f..d1be10b09ab3 100644
+> --- a/arch/arm/mach-at91/board-sam9261ek.c
+> +++ b/arch/arm/mach-at91/board-sam9261ek.c
+> @@ -561,6 +561,8 @@ static struct gpio_led ek_leds[] = {
+> 
+> static void __init ek_board_init(void)
+> {
+> +	at91_register_devices();
+> +
+> 	/* Serial */
+> 	/* DBGU on ttyS0. (Rx & Tx only) */
+> 	at91_register_uart(0, 0, 0);
+> diff --git a/arch/arm/mach-at91/board-sam9263ek.c b/arch/arm/mach-at91/board-sam9263ek.c
+> index cd2726ee5add..3f613d962d9b 100644
+> --- a/arch/arm/mach-at91/board-sam9263ek.c
+> +++ b/arch/arm/mach-at91/board-sam9263ek.c
+> @@ -405,6 +405,8 @@ static struct at91_can_data ek_can_data = {
+> 
+> static void __init ek_board_init(void)
+> {
+> +	at91_register_devices();
+> +
+> 	/* Serial */
+> 	/* DBGU on ttyS0. (Rx & Tx only) */
+> 	at91_register_uart(0, 0, 0);
+> diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
+> index 1ea61328f30d..33a7b19f7400 100644
+> --- a/arch/arm/mach-at91/board-sam9m10g45ek.c
+> +++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
+> @@ -450,6 +450,8 @@ static struct platform_device *devices[] __initdata = {
+> 
+> static void __init ek_board_init(void)
+> {
+> +	at91_register_devices();
+> +
+> 	/* Serial */
+> 	/* DGBU on ttyS0. (Rx & Tx only) */
+> 	at91_register_uart(0, 0, 0);
+> diff --git a/arch/arm/mach-at91/board-sam9rlek.c b/arch/arm/mach-at91/board-sam9rlek.c
+> index b64648b4a1fc..262e3f957d9f 100644
+> --- a/arch/arm/mach-at91/board-sam9rlek.c
+> +++ b/arch/arm/mach-at91/board-sam9rlek.c
+> @@ -292,6 +292,8 @@ static void __init ek_add_device_buttons(void) {}
+> 
+> static void __init ek_board_init(void)
+> {
+> +	at91_register_devices();
+> +
+> 	/* Serial */
+> 	/* DBGU on ttyS0. (Rx & Tx only) */
+> 	at91_register_uart(0, 0, 0);
+> diff --git a/arch/arm/mach-at91/board-snapper9260.c b/arch/arm/mach-at91/board-snapper9260.c
+> index 1b870e6def0c..2a817b85569f 100644
+> --- a/arch/arm/mach-at91/board-snapper9260.c
+> +++ b/arch/arm/mach-at91/board-snapper9260.c
+> @@ -154,6 +154,8 @@ static void __init snapper9260_add_device_nand(void)
+> 
+> static void __init snapper9260_board_init(void)
+> {
+> +	at91_register_devices();
+> +
+> 	at91_add_device_i2c(snapper9260_i2c_devices,
+> 			    ARRAY_SIZE(snapper9260_i2c_devices));
+> 
+> -- 
+> 2.0.1
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-Fine, I'll add it there.
-
-cheers,
--roger
