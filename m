@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759356AbaGCR5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 13:57:31 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60026 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752177AbaGCR53 (ORCPT
+	id S1759284AbaGCSAM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 14:00:12 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59733 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751726AbaGCSAJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 13:57:29 -0400
-Date: Thu, 3 Jul 2014 18:57:06 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Neil Zhang <zhangwm@marvell.com>
-Cc: Sudeep Holla <Sudeep.Holla@arm.com>,
-        "'linux@arm.linux.org.uk'" <linux@arm.linux.org.uk>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'devicetree@vger.kernel.org'" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
-Message-ID: <20140703175706.GI17372@arm.com>
-References: <20140423170821.GJ5649@arm.com>
- <175CCF5F49938B4D99B2E3EF7F558EBE5507A3C1F1@SC-VEXCH4.marvell.com>
- <5360FB07.5030407@arm.com>
- <6106CAF835F351419ADA79E4836E6EC71B6A53C826@SC-VEXCH4.marvell.com>
- <9034CBD80F070943B59700D7F8149ED9A0875730@SC-VEXCH4.marvell.com>
- <20140513184503.GF16388@arm.com>
- <9034CBD80F070943B59700D7F8149ED9A087573F@SC-VEXCH4.marvell.com>
- <537337F3.4080300@arm.com>
- <9034CBD80F070943B59700D7F8149ED9A0875776@SC-VEXCH4.marvell.com>
- <9034CBD80F070943B59700D7F8149ED90182308172@SC-VEXCH4.marvell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9034CBD80F070943B59700D7F8149ED90182308172@SC-VEXCH4.marvell.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 3 Jul 2014 14:00:09 -0400
+Message-ID: <1404410407.5091.9.camel@jarvis>
+Subject: Re: [PATCH 3.15 099/139] libiscsi, iser: Adjust data_length to
+ include protection information
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        SCSI Mailing List <linux-scsi@vger.kernel.org>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Date: Thu, 03 Jul 2014 11:00:07 -0700
+In-Reply-To: <20140703163310.GA21213@infradead.org>
+References: <20140628174605.352098823@linuxfoundation.org>
+	 <20140628174609.930049472@linuxfoundation.org>
+	 <1404339330.1862.69.camel@ul30vt.home> <53B48B37.4000608@cs.wisc.edu>
+	 <1404341555.16066.19.camel@dabdike> <20140703060548.GB17456@infradead.org>
+	 <1404395645.1949.2.camel@jarvis.lan> <20140703162748.GA24758@kroah.com>
+	 <20140703163310.GA21213@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 30, 2014 at 11:39:15AM +0100, Neil Zhang wrote:
-> > > > I will prepare another patch to add DT description under PMU since
-> > > > there is no generic power domain support for pm notifier if no other
-> > > concerns.
-> > > > We can change the manner if there is generic power domain support
-> > > > for
-> > > pm notifier later.
-> > > > Thanks.
-> > >
-> > > No, please don't add any DT bindings for power domains specific to PMU
-> > > node.
-> > > We can't change the DT bindings once added.
-> > >
-> > > As I pointed out the DT bindings for generic power domains are under
-> > > discussion.
-> > > See if you can reuse it, if not help in extending it so that it can be used.
-> > >
-> > 
-> > Sorry for reply later.
-> > As I said before the under discussed generic power domain is not suitable for
-> > CPU peripherals since they are all known belong to CPU or cluster power
-> > domain.
-> > If we want to follow the way they are discussion, we need to register core
-> > and cluster power provider, and need vfp/gic/pmu etc to require them.
-> > Is it really suitable?
-> > 
-> Do you have any comments?
-> If no, I would like to put it under PMU node.
+On Thu, 2014-07-03 at 09:33 -0700, Christoph Hellwig wrote:
+> On Thu, Jul 03, 2014 at 09:27:48AM -0700, Greg Kroah-Hartman wrote:
+> > I copy everyone on the patch.  You were not on that patch as it doesn't
+> > look like it went through your tree at all.
+> 
+> It went through the target tree despite exclusive touching scsi
+> initiator side code.  I'm still not sure how this happened, but we
+> should take care to avoid this in the future.  In addition to this
+> regression due to a complete lack of testing it also caused various
+> merge issues.
 
-Sudeep is a better person to comment than me, but I'd still rather this was
-handled more generically as opposed to a PMU-specific hack. I don't see a
-problem including GIC and VFP here, but only when we actually need to
-save/restore them (i.e. what the hardware guys went crazy with the power
-domains).
+OK, Nic cc'd
 
-Will
+Please explain how this commit:
+
+commit d77e65350f2d82dfa0557707d505711f5a43c8fd
+Author: Sagi Grimberg <sagig@mellanox.com>
+Date:   Wed Jun 11 12:09:58 2014 +0300
+
+    libiscsi, iser: Adjust data_length to include protection information
+    
+    In case protection information exists over the wire
+    iscsi header data length is required to include it.
+    Use protection information aware scsi helpers to set
+    the correct transfer length.
+    
+    In order to avoid breakage, remove iser transfer length
+    checks for each task as they are not always true and
+    somewhat redundant anyway.
+    
+    Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+    Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
+    Acked-by: Mike Christie <michaelc@cs.wisc.edu>
+    Cc: stable@vger.kernel.org # 3.15+
+    Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+
+ drivers/infiniband/ulp/iser/iser_initiator.c | 34 ++++++++--------------------
+ drivers/scsi/libiscsi.c                      | 18 +++++++--------
+
+Came to go through the target tree even though it's initiator only and
+how come it was tagged for stable?
+
+James
+
+
