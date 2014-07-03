@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965383AbaGCJ5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:57:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52026 "EHLO
+	id S965417AbaGCJ5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:57:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52009 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964981AbaGCJXM (ORCPT
+	with ESMTP id S964960AbaGCJXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:23:12 -0400
+	Thu, 3 Jul 2014 05:23:09 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tony Luck <tony.luck@intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@suse.de>,
-        Chen Gong <gong.chen@linux.jf.intel.com>,
+Cc: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 093/198] mm/memory-failure.c: don't let collect_procs() skip over processes for MF_ACTION_REQUIRED
-Date: Thu,  3 Jul 2014 10:18:56 +0100
-Message-Id: <1404379241-8590-94-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 091/198] mm: page_alloc: use word-based accesses for get/set pageblock bitmaps
+Date: Thu,  3 Jul 2014 10:18:54 +0100
+Message-Id: <1404379241-8590-92-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -32,125 +35,244 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Luck <tony.luck@intel.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 74614de17db6fb472370c426d4f934d8d616edf2 upstream.
+commit e58469bafd0524e848c3733bc3918d854595e20f upstream.
 
-When Linux sees an "action optional" machine check (where h/w has reported
-an error that is not in the current execution path) we generally do not
-want to signal a process, since most processes do not have a SIGBUS
-handler - we'd just prematurely terminate the process for a problem that
-they might never actually see.
+The test_bit operations in get/set pageblock flags are expensive.  This
+patch reads the bitmap on a word basis and use shifts and masks to isolate
+the bits of interest.  Similarly masks are used to set a local copy of the
+bitmap and then use cmpxchg to update the bitmap if there have been no
+other changes made in parallel.
 
-task_early_kill() decides whether to consider a process - and it checks
-whether this specific process has been marked for early signals with
-"prctl", or if the system administrator has requested early signals for
-all processes using /proc/sys/vm/memory_failure_early_kill.
+In a test running dd onto tmpfs the overhead of the pageblock-related
+functions went from 1.27% in profiles to 0.5%.
 
-But for MF_ACTION_REQUIRED case we must not defer.  The error is in the
-execution path of the current thread so we must send the SIGBUS
-immediatley.
+In addition to the performance benefits, this patch closes races that are
+possible between:
 
-Fix by passing a flag argument through collect_procs*() to
-task_early_kill() so it knows whether we can defer or must take action.
+a) get_ and set_pageblock_migratetype(), where get_pageblock_migratetype()
+   reads part of the bits before and other part of the bits after
+   set_pageblock_migratetype() has updated them.
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Chen Gong <gong.chen@linux.jf.intel.com>
+b) set_pageblock_migratetype() and set_pageblock_skip(), where the non-atomic
+   read-modify-update set bit operation in set_pageblock_skip() will cause
+   lost updates to some bits changed in the set_pageblock_migratetype().
+
+Joonsoo Kim first reported the case a) via code inspection.  Vlastimil
+Babka's testing with a debug patch showed that either a) or b) occurs
+roughly once per mmtests' stress-highalloc benchmark (although not
+necessarily in the same pageblock).  Furthermore during development of
+unrelated compaction patches, it was observed that frequent calls to
+{start,undo}_isolate_page_range() the race occurs several thousands of
+times and has resulted in NULL pointer dereferences in move_freepages()
+and free_one_page() in places where free_list[migratetype] is
+manipulated by e.g.  list_move().  Further debugging confirmed that
+migratetype had invalid value of 6, causing out of bounds access to the
+free_list array.
+
+That confirmed that the race exist, although it may be extremely rare,
+and currently only fatal where page isolation is performed due to
+memory hot remove.  Races on pageblocks being updated by
+set_pageblock_migratetype(), where both old and new migratetype are
+lower MIGRATE_RESERVE, currently cannot result in an invalid value
+being observed, although theoretically they may still lead to
+unexpected creation or destruction of MIGRATE_RESERVE pageblocks.
+Furthermore, things could get suddenly worse when memory isolation is
+used more, or when new migratetypes are added.
+
+After this patch, the race has no longer been observed in testing.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Reported-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Reported-and-tested-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dave Hansen <dave.hansen@intel.com>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/memory-failure.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ include/linux/mmzone.h          |  6 ++++-
+ include/linux/pageblock-flags.h | 37 ++++++++++++++++++++++++-----
+ mm/page_alloc.c                 | 52 +++++++++++++++++++++++++----------------
+ 3 files changed, 68 insertions(+), 27 deletions(-)
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index c4c09f51cca8..4c7dda814f9c 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -382,10 +382,12 @@ static void kill_procs(struct list_head *to_kill, int forcekill, int trapno,
- 	}
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index af4a3b77a8de..f30a6f1fb604 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -75,9 +75,13 @@ enum {
+ 
+ extern int page_group_by_mobility_disabled;
+ 
++#define NR_MIGRATETYPE_BITS (PB_migrate_end - PB_migrate + 1)
++#define MIGRATETYPE_MASK ((1UL << NR_MIGRATETYPE_BITS) - 1)
++
+ static inline int get_pageblock_migratetype(struct page *page)
+ {
+-	return get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
++	BUILD_BUG_ON(PB_migrate_end - PB_migrate != 2);
++	return get_pageblock_flags_mask(page, PB_migrate_end, MIGRATETYPE_MASK);
  }
  
--static int task_early_kill(struct task_struct *tsk)
-+static int task_early_kill(struct task_struct *tsk, int force_early)
- {
- 	if (!tsk->mm)
- 		return 0;
-+	if (force_early)
-+		return 1;
- 	if (tsk->flags & PF_MCE_PROCESS)
- 		return !!(tsk->flags & PF_MCE_EARLY);
- 	return sysctl_memory_failure_early_kill;
-@@ -395,7 +397,7 @@ static int task_early_kill(struct task_struct *tsk)
-  * Collect processes when the error hit an anonymous page.
+ struct free_area {
+diff --git a/include/linux/pageblock-flags.h b/include/linux/pageblock-flags.h
+index 2ee8cd2466b5..c08730c10c7a 100644
+--- a/include/linux/pageblock-flags.h
++++ b/include/linux/pageblock-flags.h
+@@ -30,9 +30,12 @@ enum pageblock_bits {
+ 	PB_migrate,
+ 	PB_migrate_end = PB_migrate + 3 - 1,
+ 			/* 3 bits required for migrate types */
+-#ifdef CONFIG_COMPACTION
+ 	PB_migrate_skip,/* If set the block is skipped by compaction */
+-#endif /* CONFIG_COMPACTION */
++
++	/*
++	 * Assume the bits will always align on a word. If this assumption
++	 * changes then get/set pageblock needs updating.
++	 */
+ 	NR_PAGEBLOCK_BITS
+ };
+ 
+@@ -62,11 +65,33 @@ extern int pageblock_order;
+ /* Forward declaration */
+ struct page;
+ 
++unsigned long get_pageblock_flags_mask(struct page *page,
++				unsigned long end_bitidx,
++				unsigned long mask);
++void set_pageblock_flags_mask(struct page *page,
++				unsigned long flags,
++				unsigned long end_bitidx,
++				unsigned long mask);
++
+ /* Declarations for getting and setting flags. See mm/page_alloc.c */
+-unsigned long get_pageblock_flags_group(struct page *page,
+-					int start_bitidx, int end_bitidx);
+-void set_pageblock_flags_group(struct page *page, unsigned long flags,
+-					int start_bitidx, int end_bitidx);
++static inline unsigned long get_pageblock_flags_group(struct page *page,
++					int start_bitidx, int end_bitidx)
++{
++	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
++	unsigned long mask = (1 << nr_flag_bits) - 1;
++
++	return get_pageblock_flags_mask(page, end_bitidx, mask);
++}
++
++static inline void set_pageblock_flags_group(struct page *page,
++					unsigned long flags,
++					int start_bitidx, int end_bitidx)
++{
++	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
++	unsigned long mask = (1 << nr_flag_bits) - 1;
++
++	set_pageblock_flags_mask(page, flags, end_bitidx, mask);
++}
+ 
+ #ifdef CONFIG_COMPACTION
+ #define get_pageblock_skip(page) \
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index b100255dedda..4b545f5595e4 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5847,53 +5847,65 @@ static inline int pfn_to_bitidx(struct zone *zone, unsigned long pfn)
+  * @end_bitidx: The last bit of interest
+  * returns pageblock_bits flags
   */
- static void collect_procs_anon(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
+-unsigned long get_pageblock_flags_group(struct page *page,
+-					int start_bitidx, int end_bitidx)
++unsigned long get_pageblock_flags_mask(struct page *page,
++					unsigned long end_bitidx,
++					unsigned long mask)
  {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -411,7 +413,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
- 	for_each_process (tsk) {
- 		struct anon_vma_chain *vmac;
+ 	struct zone *zone;
+ 	unsigned long *bitmap;
+-	unsigned long pfn, bitidx;
+-	unsigned long flags = 0;
+-	unsigned long value = 1;
++	unsigned long pfn, bitidx, word_bitidx;
++	unsigned long word;
  
--		if (!task_early_kill(tsk))
-+		if (!task_early_kill(tsk, force_early))
- 			continue;
- 		anon_vma_interval_tree_foreach(vmac, &av->rb_root,
- 					       pgoff, pgoff) {
-@@ -430,7 +432,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
-  * Collect processes when the error hit a file mapped page.
-  */
- static void collect_procs_file(struct page *page, struct list_head *to_kill,
--			      struct to_kill **tkc)
-+			      struct to_kill **tkc, int force_early)
- {
- 	struct vm_area_struct *vma;
- 	struct task_struct *tsk;
-@@ -441,7 +443,7 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
- 	for_each_process(tsk) {
- 		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+ 	zone = page_zone(page);
+ 	pfn = page_to_pfn(page);
+ 	bitmap = get_pageblock_bitmap(zone, pfn);
+ 	bitidx = pfn_to_bitidx(zone, pfn);
++	word_bitidx = bitidx / BITS_PER_LONG;
++	bitidx &= (BITS_PER_LONG-1);
  
--		if (!task_early_kill(tsk))
-+		if (!task_early_kill(tsk, force_early))
- 			continue;
- 
- 		vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff,
-@@ -467,7 +469,8 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
-  * First preallocate one tokill structure outside the spin locks,
-  * so that we can kill at least one process reasonably reliable.
-  */
--static void collect_procs(struct page *page, struct list_head *tokill)
-+static void collect_procs(struct page *page, struct list_head *tokill,
-+				int force_early)
- {
- 	struct to_kill *tk;
- 
-@@ -478,9 +481,9 @@ static void collect_procs(struct page *page, struct list_head *tokill)
- 	if (!tk)
- 		return;
- 	if (PageAnon(page))
--		collect_procs_anon(page, tokill, &tk);
-+		collect_procs_anon(page, tokill, &tk, force_early);
- 	else
--		collect_procs_file(page, tokill, &tk);
-+		collect_procs_file(page, tokill, &tk, force_early);
- 	kfree(tk);
+-	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
+-		if (test_bit(bitidx + start_bitidx, bitmap))
+-			flags |= value;
+-
+-	return flags;
++	word = bitmap[word_bitidx];
++	bitidx += end_bitidx;
++	return (word >> (BITS_PER_LONG - bitidx - 1)) & mask;
  }
  
-@@ -965,7 +968,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
- 	 * there's nothing that can be done.
- 	 */
- 	if (kill)
--		collect_procs(ppage, &tokill);
-+		collect_procs(ppage, &tokill, flags & MF_ACTION_REQUIRED);
+ /**
+- * set_pageblock_flags_group - Set the requested group of flags for a pageblock_nr_pages block of pages
++ * set_pageblock_flags_mask - Set the requested group of flags for a pageblock_nr_pages block of pages
+  * @page: The page within the block of interest
+  * @start_bitidx: The first bit of interest
+  * @end_bitidx: The last bit of interest
+  * @flags: The flags to set
+  */
+-void set_pageblock_flags_group(struct page *page, unsigned long flags,
+-					int start_bitidx, int end_bitidx)
++void set_pageblock_flags_mask(struct page *page, unsigned long flags,
++					unsigned long end_bitidx,
++					unsigned long mask)
+ {
+ 	struct zone *zone;
+ 	unsigned long *bitmap;
+-	unsigned long pfn, bitidx;
+-	unsigned long value = 1;
++	unsigned long pfn, bitidx, word_bitidx;
++	unsigned long old_word, word;
++
++	BUILD_BUG_ON(NR_PAGEBLOCK_BITS != 4);
  
- 	ret = try_to_unmap(ppage, ttu);
- 	if (ret != SWAP_SUCCESS)
+ 	zone = page_zone(page);
+ 	pfn = page_to_pfn(page);
+ 	bitmap = get_pageblock_bitmap(zone, pfn);
+ 	bitidx = pfn_to_bitidx(zone, pfn);
++	word_bitidx = bitidx / BITS_PER_LONG;
++	bitidx &= (BITS_PER_LONG-1);
++
+ 	VM_BUG_ON(!zone_spans_pfn(zone, pfn));
+ 
+-	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
+-		if (flags & value)
+-			__set_bit(bitidx + start_bitidx, bitmap);
+-		else
+-			__clear_bit(bitidx + start_bitidx, bitmap);
++	bitidx += end_bitidx;
++	mask <<= (BITS_PER_LONG - bitidx - 1);
++	flags <<= (BITS_PER_LONG - bitidx - 1);
++
++	word = ACCESS_ONCE(bitmap[word_bitidx]);
++	for (;;) {
++		old_word = cmpxchg(&bitmap[word_bitidx], word, (word & ~mask) | flags);
++		if (word == old_word)
++			break;
++		word = old_word;
++	}
+ }
+ 
+ /*
 -- 
 1.9.1
 
