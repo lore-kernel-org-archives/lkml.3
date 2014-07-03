@@ -1,41 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680AbaGCCQW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 22:16:22 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:50582 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547AbaGCCQU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 22:16:20 -0400
-From: Chase Southwood <chase.southwood@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@gmail.com>
-Subject: [PATCH v2 0/3] staging: comedi: addi_apci_1564: miscellaneous fixes and cleanups
-Date: Wed,  2 Jul 2014 21:15:39 -0500
-Message-Id: <1404353739-28607-1-git-send-email-chase.southwood@gmail.com>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1403930876-27678-1-git-send-email-chase.southwood@gmail.com>
-References: <1403930876-27678-1-git-send-email-chase.southwood@gmail.com>
+	id S1754750AbaGCCQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 22:16:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:17535 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750916AbaGCCQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 22:16:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,592,1400050800"; 
+   d="scan'208";a="564477430"
+Date: Wed, 2 Jul 2014 19:16:06 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: kan.liang@intel.com
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        andi@firstfloor.org
+Subject: Re: [PATCH V2 1/3] perf ignore LBR and offcore_rsp.
+Message-ID: <20140703021606.GT19781@tassilo.jf.intel.com>
+References: <1404324855-15166-1-git-send-email-kan.liang@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404324855-15166-1-git-send-email-kan.liang@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset moves a misplaced include to the proper file, swaps out an overly
-aggressive placement of apci1564_reset(), and cleans up apci1564_interrupt().
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Chase Southwood (3):
-  staging: comedi: addi_apci_1564: move addi_watchdog.h include to
-    addi_apci_1564.c
-  staging: comedi: addi_apci_1564: fix use of apci1564_reset() to
-    disable DI interrupts
-  staging: comedi: addi_apci_1564: clean up apci1564_interrupt()
+I did not contribute to this patch, so please remove that SOB.
 
- .../comedi/drivers/addi-data/hwdrv_apci1564.c      |   2 -
- drivers/staging/comedi/drivers/addi_apci_1564.c    | 139 +++++----------------
- 2 files changed, 32 insertions(+), 109 deletions(-)
+> Signed-off-by: Kan Liang <kan.liang@intel.com>
 
--- 
-2.0.1
+>  	struct extra_reg *extra_regs;
+>  	unsigned int er_flags;
+> +	bool		extra_msr_access;	   /* EXTRA REG MSR can be accessed */
+>  
 
+This doesn't look right, needs a flag for each extra register.
+
+They are completely unrelated to each other.
+
+BTW this will also cause KVM messages at each boot now.
+
+>  		wrmsrl(hwc->extra_reg.reg, hwc->extra_reg.config);
+>  	wrmsrl(hwc->config_base, (hwc->config | enable_mask) & ~disable_mask);
+>  }
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index adb02aa..8011d42 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -2565,6 +2565,13 @@ __init int intel_pmu_init(void)
+>  		}
+>  	}
+>  
+> +	/* Access LBR MSR may cause #GP under certain circumstances. E.g. KVM doesn't support LBR MSR */
+> +	if (x86_pmu.lbr_nr)
+> +		x86_pmu.lbr_msr_access = test_msr_access(x86_pmu.lbr_tos) & test_msr_access(x86_pmu.lbr_from);
+
+s/&/&&/
+
+And also this doesn't cover the case when someone takes over the LBRs and they start #GPing later.
+So for LBR the test has to be still at each access.
+
+-Andi
