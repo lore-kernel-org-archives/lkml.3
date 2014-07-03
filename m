@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234AbaGCDBA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 23:01:00 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:59391 "EHLO
+	id S1755119AbaGCDA7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 23:00:59 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:55690 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754027AbaGCDA5 (ORCPT
+	by vger.kernel.org with ESMTP id S1753153AbaGCDA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Jul 2014 23:00:57 -0400
-Message-Id: <20140703030055.201144423@goodmis.org>
+Message-Id: <20140703030043.202302661@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Wed, 02 Jul 2014 23:00:44 -0400
+Date: Wed, 02 Jul 2014 23:00:43 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        stable-rt@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH RT 1/2] Fix latency histogram after "hrtimer: Set expiry time before
- switch_hrtimer_base()"
-References: <20140703030043.202302661@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0001-Fix-latency-histogram-after-hrtimer-Set-expiry-time-.patch
-X-RR-Connecting-IP: 107.14.168.130:25
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH RT 0/2] Linux 3.2.60-rt88-rc1
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.60-rt88-rc1 stable review patch.
-If anyone has any objections, please let me know.
 
-------------------
+Dear RT Folks,
 
-From: Ben Hutchings <ben@decadent.org.uk>
+This is the RT stable review cycle of patch 3.2.60-rt88-rc1.
 
-In an rt-kernel with CONFIG_MISSED_TIMER_OFFSETS_HIST enabled,
-__hrtimer_start_range_ns() now crashes, as new_base is not assigned
-before it is used.
+Please scream at me if I messed something up. Please test the patches too.
 
-Tested-by: Carsten Emde <C.Emde@osadl.org>
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+The -rc release will be uploaded to kernel.org and will be deleted when
+the final release is out. This is just a review release (or release candidate).
+
+The pre-releases will not be pushed to the git repository, only the
+final release is.
+
+If all goes well, this patch will be converted to the next main release
+on 7/7/2014.
+
+Enjoy,
+
+-- Steve
+
+
+To build 3.2.60-rt88-rc1 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.60.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.60-rt88-rc1.patch.xz
+
+You can also build from 3.2.60-rt87 by applying the incremental patch:
+
+http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.60-rt87-rt88-rc1.patch.xz
+
+
+Changes from 3.2.60-rt87:
+
 ---
+
+
+Ben Hutchings (1):
+      Fix latency histogram after "hrtimer: Set expiry time before switch_hrtimer_base()"
+
+Steven Rostedt (Red Hat) (1):
+      Linux 3.2.60-rt88-rc1
+
+----
  kernel/hrtimer.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index f54379023e16..2bd88f06a6d0 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1033,6 +1033,11 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- #endif
- 	}
- 
-+	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
-+
-+	/* Switch the timer base, if necessary: */
-+	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
-+
- #ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
- 	{
- 		ktime_t now = new_base->get_time();
-@@ -1044,11 +1049,6 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 	}
- #endif
- 
--	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
--
--	/* Switch the timer base, if necessary: */
--	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
--
- 	timer_stats_hrtimer_set_start_info(timer);
- 
- 	leftmost = enqueue_hrtimer(timer, new_base);
--- 
-2.0.0
-
-
+ localversion-rt  |  2 +-
+ 2 files changed, 6 insertions(+), 6 deletions(-)
