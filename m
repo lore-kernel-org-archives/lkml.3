@@ -1,137 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751798AbaGCFfd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 01:35:33 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:55182 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884AbaGCFfc (ORCPT
+	id S1752174AbaGCFjc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 01:39:32 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:9877 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750817AbaGCFjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 01:35:32 -0400
-Message-ID: <53B4EB9C.7050508@hitachi.com>
-Date: Thu, 03 Jul 2014 14:35:24 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 3 Jul 2014 01:39:31 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArhaAEHstFN5LHZ8PGdsb2JhbABagw2DSoUIpB0BAgEBB5pVAYEHFwQBAQEBODWEAwEBBTocDxQQCAMYCSUPBSUDBxoTiEHHPBcYhViGDQGCW0kHhEMFmmyWDIFUK4Ey
+Date: Thu, 3 Jul 2014 15:39:11 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [regression, 3.16-rc] rwsem: optimistic spinning causing
+ performance degradation
+Message-ID: <20140703053911.GQ4453@dastard>
+References: <20140703023204.GN4453@dastard>
+ <1404358268.23839.13.camel@buesod1.americas.hpqcorp.net>
+ <20140703045933.GP4453@dastard>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: probe_event_disable()->synchronize_sched() (Was: tracing/uprobes:
- Revert "Support mix of ftrace and perf")
-References: <20140627170116.GA18298@redhat.com> <20140627170136.GA18319@redhat.com> <87k37z54lu.fsf@sejong.aot.lge.com> <20140630184828.GA24594@redhat.com> <20140701193147.GA32492@redhat.com>
-In-Reply-To: <20140701193147.GA32492@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140703045933.GP4453@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/07/02 4:31), Oleg Nesterov wrote:
-> Namhyung, Masami,
+On Thu, Jul 03, 2014 at 02:59:33PM +1000, Dave Chinner wrote:
+> On Wed, Jul 02, 2014 at 08:31:08PM -0700, Davidlohr Bueso wrote:
+> > On Thu, 2014-07-03 at 12:32 +1000, Dave Chinner wrote:
+> > > Hi folks,
+> > > 
+> > > I've got a workload that hammers the mmap_sem via multi-threads
+> > > memory allocation and page faults: it's called xfs_repair. 
+> > 
+> > Another reason for concurrent address space operations :/
 > 
-> Please look at the question below. Perhaps we discussed this before,
-> but I can recall nothing.
+> *nod*
 > 
+> > >         XFS_REPAIR Summary    Thu Jul  3 11:41:28 2014
+> > > 
+> > > Phase           Start           End             Duration
+> > > Phase 1:        07/03 11:40:27  07/03 11:40:27  
+> > > Phase 2:        07/03 11:40:27  07/03 11:40:36  9 seconds
+> > > Phase 3:        07/03 11:40:36  07/03 11:41:12  36 seconds
+> > 
+> > The *real* degradation is here then.
 > 
-> On 06/30, Oleg Nesterov wrote:
->>
->> Actually, I'll probably try to make the patch tomorrow. It looks simple
->> enough, the main complication is CONFIG_PERF. And, to keep this patch
->> simple, I won't try to optimize (say) the TP_FLAG_TRACE-comes-first
->> case which could avoid uprobe_apply().
+> Yes, as I said, it's in phase 2 and 3 where all the IO and memory
+> allocation is done.
 > 
-> I regret very much I said this ;) OK, I'll probably try anyway, but...
+> > > This is what the kernel profile looks like on the strided run:
+> > > 
+> > > -  83.06%  [kernel]  [k] osq_lock
+> > >    - osq_lock
+> > >       - 100.00% rwsem_down_write_failed
+> > >          - call_rwsem_down_write_failed
+> > >             - 99.55% sys_mprotect
+> > >                  tracesys
+> > >                  __GI___mprotect
+> > > -  12.02%  [kernel]  [k] rwsem_down_write_failed
+> > >      rwsem_down_write_failed
+> > >      call_rwsem_down_write_failed
+> > > +   1.09%  [kernel]  [k] _raw_spin_unlock_irqrestore
+> > > +   0.92%  [kernel]  [k] _raw_spin_unlock_irq
+> > > +   0.68%  [kernel]  [k] __do_softirq
+> > > +   0.33%  [kernel]  [k] default_send_IPI_mask_sequence_phys
+> > > +   0.10%  [kernel]  [k] __do_page_fault
+> > > 
+> > > Basically, all the kernel time is spent processing lock contention
+> > > rather than doing real work.
+> > 
+> > While before it just blocked.
 > 
->> Yes, I still think it would be better to change the register/unregister
->> API first, but I do not know when I do this ;)
+> Yup, pretty much - there was contention on the rwsem internal
+> spinlock, but nothing else burnt CPU time.
 > 
-> OK, we can do this later.
+> > > I haven't tested back on 3.15 yet, but historically the strided AG
+> > > repair for such filesystems (which I test all the time on 100+500TB
+> > > filesystem images) is about 20-25% faster on this storage subsystem.
+> > > Yes, the old code also burnt a lot of CPU due to lock contention,
+> > > but it didn't go 5x slower than having no threading at all.
+> > > 
+> > > So this looks like a significant performance regression due to:
+> > > 
+> > > 4fc828e locking/rwsem: Support optimistic spinning
+> > > 
+> > > which changed the rwsem behaviour in 3.16-rc1.
+> > 
+> > So the mmap_sem is held long enough in this workload that the cost of
+> > blocking is actually significantly smaller than just spinning --
 > 
-> But it turns out that trace_uprobe.c needs other cleanups, and I simply
-> can't uglify this code more without these cleanups... Starting from
-> set/clear TP_FLAG_*. I'll recheck, but it seems that there is no reason
-> to carefully set (say) TP_FLAG_TRACE before uprobe_register() and then
-> clear it if _register() fails. And uprobe_dispatcher() is very ugly if
-> is_ret_probe(). And more. So it needs a series.
+> The issues is that the memory allocation pattern alternates between
+> read and write locks. i.e. write lock on mprotect at allocation,
+> read lock on page fault when processing the contents. Hence we have
+> a pretty consistent pattern of allocation (and hence mprotect)
+> in prefetch threads, while there page faults are in the
+> processing threads.
 > 
-> -------------------------------------------------------------------------
-> And. I am puzzled by probe_event_disable()->synchronize_sched(). Why
-> do we need it? I mean, why we can't use call_rcu() ? The comment says
-> "synchronize with u{,ret}probe_trace_func" but it doesn't explain _why_
-> do we need to sync.
+> > particularly MCS. How many threads are you running when you see the
+> > issue?
 > 
-> I thought that perhaps the caller needs to synch with the callbacks.
-> Say, __trace_remove_event_call() can destroy the data which can be used
-> by the callbacks. But no, this is only possible if we are going to call
-> uprobe_unregister(), and this adds the necessary serialization.
+> Lots. In phase 3:
+> 
+> $ ps -eLF |grep [x]fs_repair | wc -l
+> 140
+> $
+> 
+> We use 6 threads per AG being processed:
+> 
+> 	- 4 metadata prefetch threads (do allocation and IO),
+> 	- 1 prefetch control thread
+> 	- 1 metadata processing thread (do page faults)
+> 
+> That works out about right - default is to create a new processing
+> group every 15 AGs, so with 336 AGs we should have roughly 22 AGs
+> being processed concurrently...
 
-Hmm, similar code in the trace_kprobe.c said that trace_remove_event_call()
-will remove something, so it should be synchronized.
+There's another regression with the optimisitic spinning in rwsems
+as well: it increases the size of the struct rw_semaphore by 16
+bytes. That has increased the size of the struct xfs_inode by 32
+bytes.
 
-Here, I tracked down the path from trace_remove_event_call().
+That's pretty damn significant - it's no uncommon to see machines
+with tens of millions of cached XFS inodes, so increasing the size
+of the inode by 4% is actually very significant. That's enough to go
+from having a well balanced workload to not being able to fit the
+working set of inodes in memory.
 
-1) trace_remove_event_call() locks mutexes to protect event status from
-others, and calls probe_remove_event_call()
+Filesystem developers will do almost anything to remove a few bytes
+from the struct inode because inode cache footprint is extremely
+important for performance. We also tend to get upset and
+unreasonable when other people undo that hard work by making changes
+that bloat the generic structures embedded in the inode
+structures....
 
-2) probe_remove_event_call() checks call's refcount and state of files which
-related to the call. If there is any enabled file or reference, it returns
-EBUSY.
-If there is no active user of the call, it calls __trace_remove_event_call()
+Cheers,
 
-3) __trace_remove_event_call() calls event_remove(call) and after that it
-releases all objects related to the call [*1].
-
-4) Finally, event_remove() tries to disable each file on the call and soon
-after that calls destroy_preds() [*2]. Here, to disable the file, it calls
-ftrace_event_enable_disable() and it finally calls probe_event_disable(),
-only if the event is *enabled*.
-
-And as above described, probe_remove_event_call() already checked that
-no user enables this event. This means that nobody calls probe_event_disable()
-on the path from trace_remove_event_call().
-
-
-Hmm, however, for [*1] and [*2], both are free event_file related objects
-right after disabling the event. This means those expects that calling
-ftrace_event_enable_disable() ensures no event handlers running.
-synchronize_sched makes it true, but as long as calling
-__trace_remove_event_call() from probe_remove_event_call(),
-probe_event_disable() is not called at all because the event has to be
-disabled when probe_remove_event_call() is called.
-
-One possible scenario is here; someone disables an event and tries to remove
-it (both will be done by different syscalls). If we don't synchronize
-the first disabling, the event flag set disabled, but the event itself
-is not disabled. Thus event handler is still possible to be running
-somewhere when it is removed.
-
-The other path of __trace_remove_event_call() is trace_module_remove_events()
-which is not related to kprobes/uprobes (Even so, there is no obvious check of
-that.)
-
-> So why? Looks like, the only reason is instance_rmdir() which can do
-> TRACE_REG_UNREGISTER and after that destroy this ftrace_event_file?
-> But event_trace_del_tracer() also has synchronize_sched() right after
-> __ftrace_set_clr_event_nolock() ?
-
-I think it doesn't need to call synchronize_sched() because
-event_trace_del_tracer() ensures that all events are disabled
-(handlers are not running anymore)
-
-Thank you,
-
->
-> So please tell me why do we need this synchronize_sched ;) And imo
-> this should be documented.
-
-
+Dave.
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Dave Chinner
+david@fromorbit.com
