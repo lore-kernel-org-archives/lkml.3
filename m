@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030203AbaGCJXn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:23:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52164 "EHLO
+	id S1030268AbaGCJX5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:23:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52196 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030182AbaGCJXi (ORCPT
+	with ESMTP id S1030182AbaGCJXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:23:38 -0400
+	Thu, 3 Jul 2014 05:23:44 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 118/198] selftests: Add infrastructure for powerpc selftests
-Date: Thu,  3 Jul 2014 10:19:21 +0100
-Message-Id: <1404379241-8590-119-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 123/198] Target/iscsi: Fix sendtargets response pdu for iser transport
+Date: Thu,  3 Jul 2014 10:19:26 +0100
+Message-Id: <1404379241-8590-124-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,84 +28,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Ellerman <michael@ellerman.id.au>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit 0e56dacdda49940ff6e24e504f11468a27922416 upstream.
+commit 22c7aaa57e80853b4904a46c18f97db0036a3b97 upstream.
 
-This commit adds a powerpc subdirectory to tools/testing/selftests,
-for tests that are powerpc specific.
+In case the transport is iser we should not include the
+iscsi target info in the sendtargets text response pdu.
+This causes sendtargets response to include the target
+info twice.
 
-On other architectures nothing is built. The makefile supports cross
-compilation if the user sets ARCH and CROSS_COMPILE.
+Modify iscsit_build_sendtargets_response to filter
+transport types that don't match.
 
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[ luis: 3.11.y prereq for:
-  96d016108640 "powerpc: Correct DSCR during TM context switch" ]
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Reported-by: Slava Shwartsman <valyushash@gmail.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- tools/testing/selftests/Makefile         |  1 +
- tools/testing/selftests/powerpc/Makefile | 39 ++++++++++++++++++++++++++++++++
- 2 files changed, 40 insertions(+)
- create mode 100644 tools/testing/selftests/powerpc/Makefile
+ drivers/infiniband/ulp/isert/ib_isert.c |  2 +-
+ drivers/target/iscsi/iscsi_target.c     | 14 ++++++++++----
+ include/target/iscsi/iscsi_transport.h  |  3 ++-
+ 3 files changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-index 4cb14cae3791..9f3eae290900 100644
---- a/tools/testing/selftests/Makefile
-+++ b/tools/testing/selftests/Makefile
-@@ -8,6 +8,7 @@ TARGETS += net
- TARGETS += ptrace
- TARGETS += timers
- TARGETS += vm
-+TARGETS += powerpc
+diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
+index f1208f9ba702..6ed7c829b863 100644
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -1811,7 +1811,7 @@ isert_put_text_rsp(struct iscsi_cmd *cmd, struct iscsi_conn *conn)
+ 	int rc;
  
- all:
- 	for TARGET in $(TARGETS); do \
-diff --git a/tools/testing/selftests/powerpc/Makefile b/tools/testing/selftests/powerpc/Makefile
-new file mode 100644
-index 000000000000..b315740e4cd9
---- /dev/null
-+++ b/tools/testing/selftests/powerpc/Makefile
-@@ -0,0 +1,39 @@
-+# Makefile for powerpc selftests
+ 	isert_create_send_desc(isert_conn, isert_cmd, &isert_cmd->tx_desc);
+-	rc = iscsit_build_text_rsp(cmd, conn, hdr);
++	rc = iscsit_build_text_rsp(cmd, conn, hdr, ISCSI_INFINIBAND);
+ 	if (rc < 0)
+ 		return rc;
+ 
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index a2a650733df2..a5825ea2488e 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -3390,7 +3390,9 @@ static bool iscsit_check_inaddr_any(struct iscsi_np *np)
+ 
+ #define SENDTARGETS_BUF_LIMIT 32768U
+ 
+-static int iscsit_build_sendtargets_response(struct iscsi_cmd *cmd)
++static int
++iscsit_build_sendtargets_response(struct iscsi_cmd *cmd,
++				  enum iscsit_transport_type network_transport)
+ {
+ 	char *payload = NULL;
+ 	struct iscsi_conn *conn = cmd->conn;
+@@ -3462,6 +3464,9 @@ static int iscsit_build_sendtargets_response(struct iscsi_cmd *cmd)
+ 				struct iscsi_np *np = tpg_np->tpg_np;
+ 				bool inaddr_any = iscsit_check_inaddr_any(np);
+ 
++				if (np->np_network_transport != network_transport)
++					continue;
 +
-+# ARCH can be overridden by the user for cross compiling
-+ARCH ?= $(shell uname -m)
-+ARCH := $(shell echo $(ARCH) | sed -e s/ppc.*/powerpc/)
-+
-+ifeq ($(ARCH),powerpc)
-+
-+GIT_VERSION = $(shell git describe --always --long --dirty || echo "unknown")
-+
-+CC := $(CROSS_COMPILE)$(CC)
-+CFLAGS := -Wall -O2 -flto -Wall -Werror -DGIT_VERSION='"$(GIT_VERSION)"' -I$(CURDIR) $(CFLAGS)
-+
-+export CC CFLAGS
-+
-+TARGETS =
-+
-+endif
-+
-+all:
-+	@for TARGET in $(TARGETS); do \
-+		$(MAKE) -C $$TARGET all; \
-+	done;
-+
-+run_tests: all
-+	@for TARGET in $(TARGETS); do \
-+		$(MAKE) -C $$TARGET run_tests; \
-+	done;
-+
-+clean:
-+	@for TARGET in $(TARGETS); do \
-+		$(MAKE) -C $$TARGET clean; \
-+	done;
-+	rm -f tags
-+
-+tags:
-+	find . -name '*.c' -o -name '*.h' | xargs ctags
-+
-+.PHONY: all run_tests clean tags
+ 				len = sprintf(buf, "TargetAddress="
+ 					"%s%s%s:%hu,%hu",
+ 					(np->np_sockaddr.ss_family == AF_INET6) ?
+@@ -3501,11 +3506,12 @@ eob:
+ 
+ int
+ iscsit_build_text_rsp(struct iscsi_cmd *cmd, struct iscsi_conn *conn,
+-		      struct iscsi_text_rsp *hdr)
++		      struct iscsi_text_rsp *hdr,
++		      enum iscsit_transport_type network_transport)
+ {
+ 	int text_length, padding;
+ 
+-	text_length = iscsit_build_sendtargets_response(cmd);
++	text_length = iscsit_build_sendtargets_response(cmd, network_transport);
+ 	if (text_length < 0)
+ 		return text_length;
+ 
+@@ -3543,7 +3549,7 @@ static int iscsit_send_text_rsp(
+ 	u32 tx_size = 0;
+ 	int text_length, iov_count = 0, rc;
+ 
+-	rc = iscsit_build_text_rsp(cmd, conn, hdr);
++	rc = iscsit_build_text_rsp(cmd, conn, hdr, ISCSI_TCP);
+ 	if (rc < 0)
+ 		return rc;
+ 
+diff --git a/include/target/iscsi/iscsi_transport.h b/include/target/iscsi/iscsi_transport.h
+index 4bde6131bc16..0dba01d89b58 100644
+--- a/include/target/iscsi/iscsi_transport.h
++++ b/include/target/iscsi/iscsi_transport.h
+@@ -63,7 +63,8 @@ extern void iscsit_build_nopin_rsp(struct iscsi_cmd *, struct iscsi_conn *,
+ extern void iscsit_build_task_mgt_rsp(struct iscsi_cmd *, struct iscsi_conn *,
+ 				struct iscsi_tm_rsp *);
+ extern int iscsit_build_text_rsp(struct iscsi_cmd *, struct iscsi_conn *,
+-				struct iscsi_text_rsp *);
++				struct iscsi_text_rsp *,
++				enum iscsit_transport_type);
+ extern void iscsit_build_reject(struct iscsi_cmd *, struct iscsi_conn *,
+ 				struct iscsi_reject *);
+ extern int iscsit_build_logout_rsp(struct iscsi_cmd *, struct iscsi_conn *,
 -- 
 1.9.1
 
