@@ -1,234 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964979AbaGCQMb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:12:31 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:62039 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759147AbaGCQM0 (ORCPT
+	id S1759249AbaGCQOm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:14:42 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58808 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932258AbaGCQMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 12:12:26 -0400
-Message-Id: <20140703161225.810427677@goodmis.org>
-User-Agent: quilt/0.63-1
-Date: Thu, 03 Jul 2014 12:05:16 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [for-next][PATCH 13/21] tracing: Add trace_seq_buffer_ptr() helper function
-References: <20140703160503.006976702@goodmis.org>
+	Thu, 3 Jul 2014 12:12:30 -0400
+Date: Thu, 3 Jul 2014 17:11:54 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Kees Cook <keescook@chromium.org>,
+        =?iso-8859-1?Q?Andr=E9?= Hentschel <nerv@dawncrow.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ricky Zhou <rickyz@google.com>
+Subject: Re: [PATCH] arm: ptrace: fix syscall modification under
+ PTRACE_O_TRACESECCOMP
+Message-ID: <20140703161154.GF14305@arm.com>
+References: <CAGXu5jKJ07bXw_K+7uSAf=H_SDoeoaWPxS4rwuonbR71Svwwmw@mail.gmail.com>
+ <20140620172330.GA30656@arm.com>
+ <CAGXu5jKg0didhwZTUq8AbMnwD=RV=EaWiZWBWuar625JXGnL6w@mail.gmail.com>
+ <CAGXu5j+bk3g0Dude8jfKM3dXxX8LE_46CMmcBCGdVMNX_Hu-6w@mail.gmail.com>
+ <20140623084608.GA9316@arm.com>
+ <CAGXu5jLJRU21YoBXjXRpfHW1-jwy_PV0hpH_oUfew23xLF4gYg@mail.gmail.com>
+ <20140624085405.GA26013@arm.com>
+ <53B5098B.9050801@linaro.org>
+ <20140703102450.GD12958@arm.com>
+ <CALCETrWQdHmn0-so1JHFoT-2A02mgcxDUb3jphSQmBGn-SQ+pA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0013-tracing-Add-trace_seq_buffer_ptr-helper-function.patch
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrWQdHmn0-so1JHFoT-2A02mgcxDUb3jphSQmBGn-SQ+pA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On Thu, Jul 03, 2014 at 04:39:21PM +0100, Andy Lutomirski wrote:
+> On Thu, Jul 3, 2014 at 3:24 AM, Will Deacon <will.deacon@arm.com> wrote:
+> > On Thu, Jul 03, 2014 at 08:43:07AM +0100, AKASHI Takahiro wrote:
+> >> On 06/24/2014 05:54 PM, Will Deacon wrote:
+> >> > On Mon, Jun 23, 2014 at 08:46:52PM +0100, Kees Cook wrote:
+> >> >> What's the state of seccomp on arm64? I saw a series back in March,
+> >> >> but nothing since then? It looked complete, but I haven't set up a
+> >> >> test environment yet to verify.
+> >> >
+> >> > I think Akashi was going to repost `real soon now' so we can include them
+> >> > for 3.17. He missed the merge window last time around.
+> >>
+> >> I took a quick look at the current implementation of ptrace.
+> >> ptrace(PTRACE_GETREGSET/SETREGSET), eventually gpr_get/set(), handles only
+> >> 'struct user_pt_regs', and we have no way to modify orig_x0 nor syscallno
+> >> in 'struct pt_regs' directly.
+> >> So it seems to me that we can't change a system call by ptrace().
+> >> Do I misunderstand anything?
+> >
+> > No, it looks like you have a point here. I don't think userspace has any
+> > business with orig_x0, but changing syscallno is certainly useful. I can
+> > think of two ways to fix this:
+> >
+> >   (1) Updating syscallno based on w8, but this ties us to the current ABI
+> >       and could get messy if this register changes in the future.
+> >
+> >   (2) Adding a PTRACE_SET_SYSCALL request, like we have for arch/arm/,
+> >       but that means adding arch-specific stuff to arch_ptrace (which
+> >       currently goes straight to ptrace_request on arm64).
+> >
+> > It looks like x86 uses orig_ax, which I *think* means we would go with
+> > (1) above if we followed their lead.
+> 
+> w8 is a real register, right?  On x86, at least orig_ax isn't a real
+> register, so it's quite unlikely to conflict with hardware stuff.
 
-There's several locations in the kernel that open code the calculation
-of the next location in the trace_seq buffer. This is usually done with
+Yeah, w8 is the hardware register which the Linux ABI uses for the system
+call number. I was thinking We could allow the debugger/tracer to update
+the syscall number by updating that register, or do you see an issue with
+that? (other than tying us to the current ABI).
 
-  p->buffer + p->len
+> On x86, the "user_struct" thing has nothing to do with any real kernel
+> data structure, so it's extensible.  Can you just add syscallno to it?
 
-Instead of having this open coded, supply a helper function in the
-header to do it for them. This function is called trace_seq_buffer_ptr().
+I'm really not keen on changing user-facing structures like that. For
+example, KVM embeds user_pt_regs into kvm_regs.
 
-Link: http://lkml.kernel.org/p/20140626220129.452783019@goodmis.org
+We can add a new ptrace request if we have to.
 
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/x86/kvm/mmutrace.h     |  2 +-
- drivers/scsi/scsi_trace.c   | 16 ++++++++--------
- include/linux/trace_seq.h   | 15 +++++++++++++++
- kernel/trace/trace_output.c | 14 +++++++-------
- 4 files changed, 31 insertions(+), 16 deletions(-)
-
-diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
-index 9d2e0ffcb190..2e5652b62fd6 100644
---- a/arch/x86/kvm/mmutrace.h
-+++ b/arch/x86/kvm/mmutrace.h
-@@ -22,7 +22,7 @@
- 	__entry->unsync = sp->unsync;
- 
- #define KVM_MMU_PAGE_PRINTK() ({				        \
--	const char *ret = p->buffer + p->len;				\
-+	const char *ret = trace_seq_buffer_ptr(p);			\
- 	static const char *access_str[] = {			        \
- 		"---", "--x", "w--", "w-x", "-u-", "-ux", "wu-", "wux"  \
- 	};							        \
-diff --git a/drivers/scsi/scsi_trace.c b/drivers/scsi/scsi_trace.c
-index 2bea4f0b684a..503594e5f76d 100644
---- a/drivers/scsi/scsi_trace.c
-+++ b/drivers/scsi/scsi_trace.c
-@@ -28,7 +28,7 @@ scsi_trace_misc(struct trace_seq *, unsigned char *, int);
- static const char *
- scsi_trace_rw6(struct trace_seq *p, unsigned char *cdb, int len)
- {
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 	sector_t lba = 0, txlen = 0;
- 
- 	lba |= ((cdb[1] & 0x1F) << 16);
-@@ -46,7 +46,7 @@ scsi_trace_rw6(struct trace_seq *p, unsigned char *cdb, int len)
- static const char *
- scsi_trace_rw10(struct trace_seq *p, unsigned char *cdb, int len)
- {
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 	sector_t lba = 0, txlen = 0;
- 
- 	lba |= (cdb[2] << 24);
-@@ -71,7 +71,7 @@ scsi_trace_rw10(struct trace_seq *p, unsigned char *cdb, int len)
- static const char *
- scsi_trace_rw12(struct trace_seq *p, unsigned char *cdb, int len)
- {
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 	sector_t lba = 0, txlen = 0;
- 
- 	lba |= (cdb[2] << 24);
-@@ -94,7 +94,7 @@ scsi_trace_rw12(struct trace_seq *p, unsigned char *cdb, int len)
- static const char *
- scsi_trace_rw16(struct trace_seq *p, unsigned char *cdb, int len)
- {
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 	sector_t lba = 0, txlen = 0;
- 
- 	lba |= ((u64)cdb[2] << 56);
-@@ -125,7 +125,7 @@ scsi_trace_rw16(struct trace_seq *p, unsigned char *cdb, int len)
- static const char *
- scsi_trace_rw32(struct trace_seq *p, unsigned char *cdb, int len)
- {
--	const char *ret = p->buffer + p->len, *cmd;
-+	const char *ret = trace_seq_buffer_ptr(p), *cmd;
- 	sector_t lba = 0, txlen = 0;
- 	u32 ei_lbrt = 0;
- 
-@@ -180,7 +180,7 @@ out:
- static const char *
- scsi_trace_unmap(struct trace_seq *p, unsigned char *cdb, int len)
- {
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 	unsigned int regions = cdb[7] << 8 | cdb[8];
- 
- 	trace_seq_printf(p, "regions=%u", (regions - 8) / 16);
-@@ -192,7 +192,7 @@ scsi_trace_unmap(struct trace_seq *p, unsigned char *cdb, int len)
- static const char *
- scsi_trace_service_action_in(struct trace_seq *p, unsigned char *cdb, int len)
- {
--	const char *ret = p->buffer + p->len, *cmd;
-+	const char *ret = trace_seq_buffer_ptr(p), *cmd;
- 	sector_t lba = 0;
- 	u32 alloc_len = 0;
- 
-@@ -247,7 +247,7 @@ scsi_trace_varlen(struct trace_seq *p, unsigned char *cdb, int len)
- static const char *
- scsi_trace_misc(struct trace_seq *p, unsigned char *cdb, int len)
- {
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 
- 	trace_seq_printf(p, "-");
- 	trace_seq_putc(p, 0);
-diff --git a/include/linux/trace_seq.h b/include/linux/trace_seq.h
-index dd85753e1bb0..ea6c9dea79e3 100644
---- a/include/linux/trace_seq.h
-+++ b/include/linux/trace_seq.h
-@@ -25,6 +25,21 @@ trace_seq_init(struct trace_seq *s)
- 	s->full = 0;
- }
- 
-+/**
-+ * trace_seq_buffer_ptr - return pointer to next location in buffer
-+ * @s: trace sequence descriptor
-+ *
-+ * Returns the pointer to the buffer where the next write to
-+ * the buffer will happen. This is useful to save the location
-+ * that is about to be written to and then return the result
-+ * of that write.
-+ */
-+static inline unsigned char *
-+trace_seq_buffer_ptr(struct trace_seq *s)
-+{
-+	return s->buffer + s->len;
-+}
-+
- /*
-  * Currently only defined when tracing is enabled.
-  */
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index b8930f79a04b..c6977d5a9b12 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -75,7 +75,7 @@ ftrace_print_flags_seq(struct trace_seq *p, const char *delim,
- {
- 	unsigned long mask;
- 	const char *str;
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 	int i, first = 1;
- 
- 	for (i = 0;  flag_array[i].name && flags; i++) {
-@@ -111,7 +111,7 @@ ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
- 			 const struct trace_print_flags *symbol_array)
- {
- 	int i;
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 
- 	for (i = 0;  symbol_array[i].name; i++) {
- 
-@@ -122,7 +122,7 @@ ftrace_print_symbols_seq(struct trace_seq *p, unsigned long val,
- 		break;
- 	}
- 
--	if (ret == (const char *)(p->buffer + p->len))
-+	if (ret == (const char *)(trace_seq_buffer_ptr(p)))
- 		trace_seq_printf(p, "0x%lx", val);
- 		
- 	trace_seq_putc(p, 0);
-@@ -137,7 +137,7 @@ ftrace_print_symbols_seq_u64(struct trace_seq *p, unsigned long long val,
- 			 const struct trace_print_flags_u64 *symbol_array)
- {
- 	int i;
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 
- 	for (i = 0;  symbol_array[i].name; i++) {
- 
-@@ -148,7 +148,7 @@ ftrace_print_symbols_seq_u64(struct trace_seq *p, unsigned long long val,
- 		break;
- 	}
- 
--	if (ret == (const char *)(p->buffer + p->len))
-+	if (ret == (const char *)(trace_seq_buffer_ptr(p)))
- 		trace_seq_printf(p, "0x%llx", val);
- 
- 	trace_seq_putc(p, 0);
-@@ -162,7 +162,7 @@ const char *
- ftrace_print_bitmask_seq(struct trace_seq *p, void *bitmask_ptr,
- 			 unsigned int bitmask_size)
- {
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 
- 	trace_seq_bitmask(p, bitmask_ptr, bitmask_size * 8);
- 	trace_seq_putc(p, 0);
-@@ -175,7 +175,7 @@ const char *
- ftrace_print_hex_seq(struct trace_seq *p, const unsigned char *buf, int buf_len)
- {
- 	int i;
--	const char *ret = p->buffer + p->len;
-+	const char *ret = trace_seq_buffer_ptr(p);
- 
- 	for (i = 0; i < buf_len; i++)
- 		trace_seq_printf(p, "%s%2.2x", i == 0 ? "" : " ", buf[i]);
--- 
-2.0.0
-
-
+Will
