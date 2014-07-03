@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759555AbaGCXBb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 19:01:31 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:53600 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755047AbaGCXB3 (ORCPT
+	id S1759627AbaGCXGs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 19:06:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48013 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035AbaGCXGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 19:01:29 -0400
-Date: Fri, 4 Jul 2014 00:01:14 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Marek Belisko <marek@goldelico.com>, Olof Johansson <olof@lixom.net>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, tony@atomide.com,
-        balajitk@ti.com, chris@printf.net, ulf.hansson@linaro.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mmc@vger.kernel.org, hns@goldelico.com,
-        NeilBrown <neilb@suse.de>
-Subject: Re: [PATCH 1/2] mmc: hsmmc: Add reset gpio configuration option.
-Message-ID: <20140703230113.GR3705@n2100.arm.linux.org.uk>
-References: <1404420564-30245-1-git-send-email-marek@goldelico.com>
+	Thu, 3 Jul 2014 19:06:46 -0400
+Date: Thu, 3 Jul 2014 16:11:03 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Jan Beulich <JBeulich@suse.com>
+Cc: stable@kernel.org, "Don A. Bailey" <donb@securitymouse.com>
+Subject: [PATCH] lz4: add overrun checks to lz4_uncompress_unknownoutputsize()
+Message-ID: <20140703231103.GA4081@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404420564-30245-1-git-send-email-marek@goldelico.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 10:49:23PM +0200, Marek Belisko wrote:
-> From: NeilBrown <neilb@suse.de>
-> 
-> If a 'gpio_reset' is specified, then hold it low while
-> turning the power regulator on.
-> This is needed for some wi2wi wireless modules, particularly
-> when the regulator is held active by some other client.
-> The wi2wi needs to be reset if power isn't actually removed, and
-> the gpio can be used to do this.
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Obvious statement knowing what's been going on elsewhere...
+Jan points out that I forgot to make the needed fixes to the
+lz4_uncompress_unknownoutputsize() function to mirror the changes done
+in lz4_decompress() with regards to potential pointer overflows.
 
-A while back, Olof produced a couple of patches to add /generic/ support
-to deal with power and reset controls for SDIO WIFI cards.  Patches
-were posted to linux-arm-kernel and other places around January time
-this year.
+The only in-kernel user of this function is the zram code, which only
+takes data from a valid compressed buffer that it made itself, so it's
+not a big issue.  But due to external kernel modules using this
+function, it's better to be safe here.
 
-No real conclusion came out of it, and it kind of died.  The point here
-is that this is not an OMAP problem.  We have this very same problem
-on different platforms and different SoCs.
+Reported-by: Jan Beulich <JBeulich@suse.com>
+Cc: "Don A. Bailey" <donb@securitymouse.com>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Why should we have N different solutions to the same problem.  Why can't
-we have one solution to fix this issue, rather than having every host
-driver implement some different solution to what's a common problem.
-
-If everyone is going to run away from generic problems and continue
-inventing their own private solutions to generic problems, the kernel
-is just going to become severely bloated and unmaintainable...
-
-Please, sort out generic problems with generic solutions.
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+diff --git a/lib/lz4/lz4_decompress.c b/lib/lz4/lz4_decompress.c
+index b74da447e81e..7a85967060a5 100644
+--- a/lib/lz4/lz4_decompress.c
++++ b/lib/lz4/lz4_decompress.c
+@@ -192,6 +192,8 @@ static int lz4_uncompress_unknownoutputsize(const char *source, char *dest,
+ 			int s = 255;
+ 			while ((ip < iend) && (s == 255)) {
+ 				s = *ip++;
++				if (unlikely(length > (size_t)(length + s)))
++					goto _output_error;
+ 				length += s;
+ 			}
+ 		}
+@@ -232,6 +234,8 @@ static int lz4_uncompress_unknownoutputsize(const char *source, char *dest,
+ 		if (length == ML_MASK) {
+ 			while (ip < iend) {
+ 				int s = *ip++;
++				if (unlikely(length > (size_t)(length + s)))
++					goto _output_error;
+ 				length += s;
+ 				if (s == 255)
+ 					continue;
+@@ -284,7 +288,7 @@ static int lz4_uncompress_unknownoutputsize(const char *source, char *dest,
+ 
+ 	/* write overflow error detected */
+ _output_error:
+-	return (int) (-(((char *) ip) - source));
++	return -1;
+ }
+ 
+ int lz4_decompress(const unsigned char *src, size_t *src_len,
