@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758865AbaGCKJY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:09:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51709 "EHLO
+	id S1758898AbaGCKJs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:09:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51703 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617AbaGCJWH (ORCPT
+	with ESMTP id S932248AbaGCJWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:22:07 -0400
+	Thu, 3 Jul 2014 05:22:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
+Cc: Tomas Winkler <tomas.winkler@intel.com>,
+        Alexander Usyskin <alexander.usyskin@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 055/198] USB: sierra: fix use after free at suspend/resume
-Date: Thu,  3 Jul 2014 10:18:18 +0100
-Message-Id: <1404379241-8590-56-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 053/198] mei: me: read H_CSR after asserting reset
+Date: Thu,  3 Jul 2014 10:18:16 +0100
+Message-Id: <1404379241-8590-54-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,58 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Tomas Winkler <tomas.winkler@intel.com>
 
-commit 8452727de70f6ad850cd6d0aaa18b5d9050aa63b upstream.
+commit c40765d919d25d2d44d99c4ce39e48808f137e1e upstream.
 
-Fix use after free or NULL-pointer dereference during suspend and
-resume.
+According the spec the host should read H_CSR again
+after asserting reset H_RST to ensure that reset was
+read by the firmware
 
-The port data may never have been allocated (port probe failed)
-or may already have been released by port_remove (e.g. driver is
-unloaded) when suspend and resume are called.
-
-Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
-online")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/sierra.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/misc/mei/hw-me.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
-index b3f2b60465bd..efdb76a7b787 100644
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -941,6 +941,7 @@ static int sierra_port_remove(struct usb_serial_port *port)
- 	struct sierra_port_private *portdata;
+diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
+index 6cba26d9465f..e2ca1574d22a 100644
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -186,6 +186,18 @@ static int mei_me_hw_reset(struct mei_device *dev, bool intr_enable)
+ 	dev->recvd_hw_ready = false;
+ 	mei_me_reg_write(hw, H_CSR, hcsr);
  
- 	portdata = usb_get_serial_port_data(port);
-+	usb_set_serial_port_data(port, NULL);
- 	kfree(portdata);
- 
- 	return 0;
-@@ -957,6 +958,8 @@ static void stop_read_write_urbs(struct usb_serial *serial)
- 	for (i = 0; i < serial->num_ports; ++i) {
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
-+		if (!portdata)
-+			continue;
- 		sierra_stop_rx_urbs(port);
- 		usb_kill_anchored_urbs(&portdata->active);
- 	}
-@@ -999,6 +1002,9 @@ static int sierra_resume(struct usb_serial *serial)
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
- 
-+		if (!portdata)
-+			continue;
++	/*
++	 * Host reads the H_CSR once to ensure that the
++	 * posted write to H_CSR completes.
++	 */
++	hcsr = mei_hcsr_read(hw);
 +
- 		while ((urb = usb_get_from_anchor(&portdata->delayed))) {
- 			usb_anchor_urb(urb, &portdata->active);
- 			intfdata->in_flight++;
++	if ((hcsr & H_RST) == 0)
++		dev_warn(&dev->pdev->dev, "H_RST is not set = 0x%08X", hcsr);
++
++	if ((hcsr & H_RDY) == H_RDY)
++		dev_warn(&dev->pdev->dev, "H_RDY is not cleared 0x%08X", hcsr);
++
+ 	if (dev->dev_state == MEI_DEV_POWER_DOWN)
+ 		mei_me_hw_reset_release(dev);
+ 
 -- 
 1.9.1
 
