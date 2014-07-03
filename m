@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030981AbaGCKEk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:04:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51790 "EHLO
+	id S965264AbaGCKFD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:05:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51784 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758431AbaGCJWZ (ORCPT
+	with ESMTP id S1756262AbaGCJWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:22:25 -0400
+	Thu, 3 Jul 2014 05:22:24 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 068/198] USB: cdc-acm: fix runtime PM for control messages
-Date: Thu,  3 Jul 2014 10:18:31 +0100
-Message-Id: <1404379241-8590-69-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 067/198] USB: cdc-acm: fix broken runtime suspend
+Date: Thu,  3 Jul 2014 10:18:30 +0100
+Message-Id: <1404379241-8590-68-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -30,50 +30,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit bae3f4c53585e9a170da9436e0f06919874bda9a upstream.
+commit 140cb81ac8c625942a1d695875932c615767a526 upstream.
 
-Fix runtime PM handling of control messages by adding the required PM
-counter operations.
+The current ACM runtime-suspend implementation is broken in several
+ways:
+
+Firstly, it buffers only the first write request being made while
+suspended -- any further writes are silently dropped.
+
+Secondly, writes being dropped also leak write urbs, which are never
+reclaimed (until the device is unbound).
+
+Thirdly, even the single buffered write is not cleared at shutdown
+(which may happen before the device is resumed), something which can
+lead to another urb leak as well as a PM usage-counter leak.
+
+Fix this by implementing a delayed-write queue using urb anchors and
+making sure to discard the queue properly at shutdown.
 
 Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
 that support remote wakeup")
 
+Reported-by: Xiao Jin <jin.xiao@intel.com>
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/class/cdc-acm.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c | 32 ++++++++++++++++++++++----------
+ drivers/usb/class/cdc-acm.h |  2 +-
+ 2 files changed, 23 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 7b1ed4b06f6b..ca53818690e3 100644
+index 2d9601da87b3..7b1ed4b06f6b 100644
 --- a/drivers/usb/class/cdc-acm.c
 +++ b/drivers/usb/class/cdc-acm.c
-@@ -122,13 +122,23 @@ static void acm_release_minor(struct acm *acm)
- static int acm_ctrl_msg(struct acm *acm, int request, int value,
- 							void *buf, int len)
+@@ -559,6 +559,8 @@ static void acm_port_destruct(struct tty_port *port)
+ static void acm_port_shutdown(struct tty_port *port)
  {
--	int retval = usb_control_msg(acm->dev, usb_sndctrlpipe(acm->dev, 0),
-+	int retval;
-+
-+	retval = usb_autopm_get_interface(acm->control);
-+	if (retval)
-+		return retval;
-+
-+	retval = usb_control_msg(acm->dev, usb_sndctrlpipe(acm->dev, 0),
- 		request, USB_RT_ACM, value,
- 		acm->control->altsetting[0].desc.bInterfaceNumber,
- 		buf, len, 5000);
-+
- 	dev_dbg(&acm->control->dev,
- 			"%s - rq 0x%02x, val %#x, len %#x, result %d\n",
- 			__func__, request, value, len, retval);
-+
-+	usb_autopm_put_interface(acm->control);
-+
- 	return retval < 0 ? retval : 0;
- }
+ 	struct acm *acm = container_of(port, struct acm, port);
++	struct urb *urb;
++	struct acm_wb *wb;
+ 	int i;
  
+ 	dev_dbg(&acm->control->dev, "%s\n", __func__);
+@@ -567,6 +569,16 @@ static void acm_port_shutdown(struct tty_port *port)
+ 	if (!acm->disconnected) {
+ 		usb_autopm_get_interface(acm->control);
+ 		acm_set_control(acm, acm->ctrlout = 0);
++
++		for (;;) {
++			urb = usb_get_from_anchor(&acm->delayed);
++			if (!urb)
++				break;
++			wb = urb->context;
++			wb->use = 0;
++			usb_autopm_put_interface_async(acm->control);
++		}
++
+ 		usb_kill_urb(acm->ctrlurb);
+ 		for (i = 0; i < ACM_NW; i++)
+ 			usb_kill_urb(acm->wb[i].urb);
+@@ -634,12 +646,9 @@ static int acm_tty_write(struct tty_struct *tty,
+ 
+ 	usb_autopm_get_interface_async(acm->control);
+ 	if (acm->susp_count) {
+-		if (!acm->delayed_wb)
+-			acm->delayed_wb = wb;
+-		else
+-			usb_autopm_put_interface_async(acm->control);
++		usb_anchor_urb(wb->urb, &acm->delayed);
+ 		spin_unlock_irqrestore(&acm->write_lock, flags);
+-		return count;	/* A white lie */
++		return count;
+ 	}
+ 	usb_mark_last_busy(acm->dev);
+ 
+@@ -1176,6 +1185,7 @@ made_compressed_probe:
+ 		acm->bInterval = epread->bInterval;
+ 	tty_port_init(&acm->port);
+ 	acm->port.ops = &acm_port_ops;
++	init_usb_anchor(&acm->delayed);
+ 
+ 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
+ 	if (!buf) {
+@@ -1445,7 +1455,7 @@ static int acm_suspend(struct usb_interface *intf, pm_message_t message)
+ static int acm_resume(struct usb_interface *intf)
+ {
+ 	struct acm *acm = usb_get_intfdata(intf);
+-	struct acm_wb *wb;
++	struct urb *urb;
+ 	int rv = 0;
+ 
+ 	spin_lock_irq(&acm->read_lock);
+@@ -1457,10 +1467,12 @@ static int acm_resume(struct usb_interface *intf)
+ 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
+ 		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
+ 
+-		if (acm->delayed_wb) {
+-			wb = acm->delayed_wb;
+-			acm->delayed_wb = NULL;
+-			acm_start_wb(acm, wb);
++		for (;;) {
++			urb = usb_get_from_anchor(&acm->delayed);
++			if (!urb)
++				break;
++
++			acm_start_wb(acm, urb->context);
+ 		}
+ 
+ 		/*
+diff --git a/drivers/usb/class/cdc-acm.h b/drivers/usb/class/cdc-acm.h
+index 0f76e4af600e..1683ac161cf6 100644
+--- a/drivers/usb/class/cdc-acm.h
++++ b/drivers/usb/class/cdc-acm.h
+@@ -117,7 +117,7 @@ struct acm {
+ 	unsigned int throttled:1;			/* actually throttled */
+ 	unsigned int throttle_req:1;			/* throttle requested */
+ 	u8 bInterval;
+-	struct acm_wb *delayed_wb;			/* write queued for a device about to be woken */
++	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
+ };
+ 
+ #define CDC_DATA_INTERFACE_TYPE	0x0a
 -- 
 1.9.1
 
