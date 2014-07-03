@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759297AbaGCS21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 14:28:27 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:63229 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903AbaGCS2Y (ORCPT
+	id S1759479AbaGCS3l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 14:29:41 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:47491 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459AbaGCS3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 14:28:24 -0400
+	Thu, 3 Jul 2014 14:29:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAK5ve-LBU72Z_dnV9XUyMTVgFF2C1xRhKNhC_cziO5GMx__zhA@mail.gmail.com>
-References: <20140703082830.GB16590@localhost>
-	<1404407829-1815-1-git-send-email-janne.kanniainen@gmail.com>
-	<1404407829-1815-2-git-send-email-janne.kanniainen@gmail.com>
-	<20140703174017.GP16590@localhost>
-	<CAK5ve-LBU72Z_dnV9XUyMTVgFF2C1xRhKNhC_cziO5GMx__zhA@mail.gmail.com>
-Date: Thu, 3 Jul 2014 21:28:23 +0300
-Message-ID: <CAEEjW04+GAc_vXO_=UMzEmL4dLeKQ7jyFakYs=WsVmBLwYfcNw@mail.gmail.com>
-Subject: Re: [PATCH 2/2 v6] HID: gt683r: move mode attribute to led-class devices
-From: Janne Kanniainen <janne.kanniainen@gmail.com>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Johan Hovold <johan@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        linux-usb@vger.kernel.org,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+In-Reply-To: <CA+55aFyRgYW6Y8paYKGfqE205enhiPsZ1C8wrKpFavVXq7ZAtA@mail.gmail.com>
+References: <1404392547-11648-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+	<CA+55aFxOTqUAqEF7+83s890Q18qCHSQqDOxWqWHNjG_25hVhXg@mail.gmail.com>
+	<53B59CB5.9060004@linux.vnet.ibm.com>
+	<CA+55aFyRgYW6Y8paYKGfqE205enhiPsZ1C8wrKpFavVXq7ZAtA@mail.gmail.com>
+Date: Thu, 3 Jul 2014 11:29:38 -0700
+X-Google-Sender-Auth: vZNh72p28rPzNmErqC8FTEDqBuY
+Message-ID: <CA+55aFwwSCrH5QDvrzzyHhRU5R849Mo8A3NdRMwm9OTeWH9diQ@mail.gmail.com>
+Subject: Re: [PATCH] mm readahead: Fix sys_readahead breakage by reverting 2MB
+ limit (bug 79111)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
+        David Rientjes <rientjes@google.com>,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-03 21:17 GMT+03:00 Bryan Wu <cooloney@gmail.com>:
-> On Thu, Jul 3, 2014 at 10:40 AM, Johan Hovold <johan@kernel.org> wrote:
->> On Thu, Jul 03, 2014 at 08:17:09PM +0300, Janne Kanniainen wrote:
->>> Move led_mode attribute from HID device to led-class devices and rename
->>> it msi_mode. This will also fix race condition by using
->>
->> There's a typo here (s/msi_mode/mode) but perhaps Bryan can just fix
->> that up before applying?
->>
->>> attribute-groups.
->>>
->>> Signed-off-by: Janne Kanniainen <janne.kanniainen@gmail.com>
->>
->> Reviewed-by: Johan Hovold <johan@kernel.org>
->>
->> Otherwise both patches (v6) are ready to be merged, Bryan.
->>
->> Thanks, Janne!
->>
+On Thu, Jul 3, 2014 at 11:22 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> No problem. I fixed the typo and merged it.
->
-> Thanks,
-> -Bryan
+> So the bugzilla entry worries me a bit - we definitely do not want to
+> regress in case somebody really relied on timing - but without more
+> specific information I still think the real bug is just in the
+> man-page.
 
-Thanks again to both of you!
+Side note: the 2MB limit may be too small. 2M is peanuts on modern
+machines, even for fairly slow IO, and there are lots of files (like
+glibc etc) that people might want to read-ahead during boot. We
+already do bigger read-ahead if people just do "read()" system calls.
+So I could certainly imagine that we should increase it.
 
-Janne
+I do *not* think we should bow down to insane man-pages that have
+always been wrong, though, and I don't think we should increase it to
+"let's just read-ahead a whole ISO image" kind of sizes..
+
+               Linus
