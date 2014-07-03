@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030344AbaGCJYP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:24:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52304 "EHLO
+	id S1030227AbaGCJXs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:23:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52192 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030319AbaGCJYJ (ORCPT
+	with ESMTP id S1030202AbaGCJXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:24:09 -0400
+	Thu, 3 Jul 2014 05:23:44 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Michael Ellerman <mpe@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 140/198] net: fix inet_getid() and ipv6_select_ident() bugs
-Date: Thu,  3 Jul 2014 10:19:43 +0100
-Message-Id: <1404379241-8590-141-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 122/198] powerpc/perf: Ensure all EBB register state is cleared on fork()
+Date: Thu,  3 Jul 2014 10:19:25 +0100
+Message-Id: <1404379241-8590-123-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,90 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Michael Ellerman <mpe@ellerman.id.au>
 
-commit 39c36094d78c39e038c1e499b2364e13bce36f54 upstream.
+commit 3df48c981d5a9610e02e9270b1bc4274fb536710 upstream.
 
-I noticed we were sending wrong IPv4 ID in TCP flows when MTU discovery
-is disabled.
-Note how GSO/TSO packets do not have monotonically incrementing ID.
+In commit 330a1eb "Core EBB support for 64-bit book3s" I messed up
+clear_task_ebb(). It clears some but not all of the task's Event Based
+Branch (EBB) registers when we duplicate a task struct.
 
-06:37:41.575531 IP (id 14227, proto: TCP (6), length: 4396)
-06:37:41.575534 IP (id 14272, proto: TCP (6), length: 65212)
-06:37:41.575544 IP (id 14312, proto: TCP (6), length: 57972)
-06:37:41.575678 IP (id 14317, proto: TCP (6), length: 7292)
-06:37:41.575683 IP (id 14361, proto: TCP (6), length: 63764)
+That allows a child task to observe the EBBHR & EBBRR of its parent,
+which it should not be able to do.
 
-It appears I introduced this bug in linux-3.1.
+Fix it by clearing EBBHR & EBBRR.
 
-inet_getid() must return the old value of peer->ip_id_count,
-not the new one.
-
-Lets revert this part, and remove the prevention of
-a null identification field in IPv6 Fragment Extension Header,
-which is dubious and not even done properly.
-
-Fixes: 87c48fa3b463 ("ipv6: make fragment identifications less predictable")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.11: used davem's backport for 3.10 ]
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/net/inetpeer.h |  9 +--------
- net/ipv6/output_core.c | 11 +++--------
- 2 files changed, 4 insertions(+), 16 deletions(-)
+ arch/powerpc/include/asm/switch_to.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/include/net/inetpeer.h b/include/net/inetpeer.h
-index 53f464d7cddc..6ca347a0717e 100644
---- a/include/net/inetpeer.h
-+++ b/include/net/inetpeer.h
-@@ -178,16 +178,9 @@ static inline void inet_peer_refcheck(const struct inet_peer *p)
- /* can be called with or without local BH being disabled */
- static inline int inet_getid(struct inet_peer *p, int more)
+diff --git a/arch/powerpc/include/asm/switch_to.h b/arch/powerpc/include/asm/switch_to.h
+index 671c58f4eb44..64ff06b14630 100644
+--- a/arch/powerpc/include/asm/switch_to.h
++++ b/arch/powerpc/include/asm/switch_to.h
+@@ -82,6 +82,8 @@ static inline void clear_task_ebb(struct task_struct *t)
  {
--	int old, new;
- 	more++;
- 	inet_peer_refcheck(p);
--	do {
--		old = atomic_read(&p->ip_id_count);
--		new = old + more;
--		if (!new)
--			new = 1;
--	} while (atomic_cmpxchg(&p->ip_id_count, old, new) != old);
--	return new;
-+	return atomic_add_return(more, &p->ip_id_count) - more;
- }
- 
- #endif /* _NET_INETPEER_H */
-diff --git a/net/ipv6/output_core.c b/net/ipv6/output_core.c
-index ab92a3673fbb..39f6ad1629ff 100644
---- a/net/ipv6/output_core.c
-+++ b/net/ipv6/output_core.c
-@@ -9,7 +9,7 @@
- void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
- {
- 	static atomic_t ipv6_fragmentation_id;
--	int old, new;
-+	int ident;
- 
- #if IS_ENABLED(CONFIG_IPV6)
- 	if (rt && !(rt->dst.flags & DST_NOPEER)) {
-@@ -25,13 +25,8 @@ void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
- 		}
- 	}
- #endif
--	do {
--		old = atomic_read(&ipv6_fragmentation_id);
--		new = old + 1;
--		if (!new)
--			new = 1;
--	} while (atomic_cmpxchg(&ipv6_fragmentation_id, old, new) != old);
--	fhdr->identification = htonl(new);
-+	ident = atomic_inc_return(&ipv6_fragmentation_id);
-+	fhdr->identification = htonl(ident);
- }
- EXPORT_SYMBOL(ipv6_select_ident);
- 
+ #ifdef CONFIG_PPC_BOOK3S_64
+     /* EBB perf events are not inherited, so clear all EBB state. */
++    t->thread.ebbrr = 0;
++    t->thread.ebbhr = 0;
+     t->thread.bescr = 0;
+     t->thread.mmcr2 = 0;
+     t->thread.mmcr0 = 0;
 -- 
 1.9.1
 
