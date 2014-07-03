@@ -1,76 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757541AbaGCIKe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 04:10:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11828 "EHLO mx1.redhat.com"
+	id S1757674AbaGCILE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 04:11:04 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55325 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752907AbaGCIKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 04:10:32 -0400
-Message-ID: <53B50FF0.7080901@redhat.com>
-Date: Thu, 03 Jul 2014 10:10:24 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756702AbaGCIK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 04:10:59 -0400
+Message-ID: <53B50F5B.7010505@ti.com>
+Date: Thu, 3 Jul 2014 13:37:55 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: Zi Shen Lim <zlim.lnx@gmail.com>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Alexei Starovoitov <ast@plumgrid.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next] net: filter: move load_pointer() into filter.h
-References: <1404373932-10929-1-git-send-email-zlim.lnx@gmail.com>
-In-Reply-To: <1404373932-10929-1-git-send-email-zlim.lnx@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <devicetree@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <paul@pwsan.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] arm: dra7xx: Add hwmod data for pcie1 and pcie2 subsystems
+References: <1403719366-9656-1-git-send-email-kishon@ti.com> <1403719366-9656-3-git-send-email-kishon@ti.com>
+In-Reply-To: <1403719366-9656-3-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Zi,
-
-On 07/03/2014 09:52 AM, Zi Shen Lim wrote:
-> load_pointer() is already a static inline function.
-> Let's move it into filter.h so BPF JIT implementations can reuse this
-> function.
->
-> Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
+On Wednesday 25 June 2014 11:32 PM, Kishon Vijay Abraham I wrote:
+> Added hwmod data for pcie1 and pcie2 subsystem present in DRA7xx SOC.
+> 
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Paul Walmsley <paul@pwsan.com>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> Tested-by: Kishon Vijay Abraham I <kishon@ti.com>
 > ---
-> This patch is based on discussion with Alexei in the context of
-> reusing load_pointer for upcoming arm64 BPF JIT compiler. [1]
->
-> Compile tested on x86_64 and arm64.
->
-> [1] https://lkml.org/lkml/2014/7/3/14
->
->   include/linux/filter.h | 13 +++++++++++++
->   net/core/filter.c      |  9 ---------
->   2 files changed, 13 insertions(+), 9 deletions(-)
->
-> diff --git a/include/linux/filter.h b/include/linux/filter.h
-> index a7e3c48..2288e31 100644
-> --- a/include/linux/filter.h
-> +++ b/include/linux/filter.h
-> @@ -6,6 +6,7 @@
->
->   #include <linux/atomic.h>
->   #include <linux/compat.h>
-> +#include <linux/skbuff.h>
->   #include <linux/workqueue.h>
->   #include <uapi/linux/filter.h>
->
-> @@ -406,6 +407,18 @@ static inline u16 bpf_anc_helper(const struct sock_filter *ftest)
->   	}
->   }
->
-> +void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb,
-> +					   int k, unsigned int size);
+> Please find the bootlog with these hwmod patches
+> http://paste.ubuntu.com/7701601/
+>  arch/arm/mach-omap2/omap_hwmod_7xx_data.c |   55 +++++++++++++++++++++++++++++
+>  1 file changed, 55 insertions(+)
+> 
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> index 6ff40a6..934aa9d 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> @@ -1290,6 +1290,43 @@ static struct omap_hwmod dra7xx_ocp2scp3_hwmod = {
+>  };
+>  
+>  /*
+> + * 'PCIE' class
+> + *
+> + */
 > +
-> +static inline void *load_pointer(const struct sk_buff *skb, int k,
-> +				 unsigned int size, void *buffer)
-> +{
+> +static struct omap_hwmod_class dra7xx_pcie_hwmod_class = {
+> +	.name	= "pcie",
+> +};
+> +
+> +/* pcie1 */
+> +static struct omap_hwmod dra7xx_pcie1_hwmod = {
+> +	.name		= "pcie1",
+> +	.class		= &dra7xx_pcie_hwmod_class,
+> +	.clkdm_name	= "l3init_clkdm",
 
-Fine by me, but since you're exporting this into a header,
-please give this a more specific name, such as bpf_load_pointer(),
-for example.
+The TRM tells me it belongs to 'pcie_clkdm' instead. Can you please recheck?
 
-Thanks,
+> +	.main_clk	= "l4_root_clk_div",
+> +	.prcm = {
+> +		.omap4 = {
+> +			.clkctrl_offs	= DRA7XX_CM_PCIE_CLKSTCTRL_OFFSET,
+> +			.modulemode	= MODULEMODE_SWCTRL,
+> +		},
+> +	},
+> +};
+> +
+> +/* pcie2 */
+> +static struct omap_hwmod dra7xx_pcie2_hwmod = {
+> +	.name		= "pcie2",
+> +	.class		= &dra7xx_pcie_hwmod_class,
+> +	.clkdm_name	= "l3init_clkdm",
+> +	.main_clk	= "l4_root_clk_div",
+> +	.prcm = {
+> +		.omap4 = {
+> +			.clkctrl_offs = DRA7XX_CM_PCIE_CLKSTCTRL_OFFSET,
+> +			.modulemode   = MODULEMODE_SWCTRL,
+> +		},
+> +	},
+> +};
+> +
+> +/*
+>   * 'PCIE PHY' class
+>   *
+>   */
+> @@ -2448,6 +2485,22 @@ static struct omap_hwmod_ocp_if dra7xx_l4_cfg__ocp2scp1 = {
+>  	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+>  };
+>  
+> +/* l4_cfg -> pcie1 */
 
-Daniel
+There seems to be a slave port on l3_init as well which seems to be missing?
+
+Refer to 'Figure 24-157. PCIe Controllers Integration' of TRM version P.
+
+regards,
+Rajendra
+
+> +static struct omap_hwmod_ocp_if dra7xx_l4_cfg__pcie1 = {
+> +	.master		= &dra7xx_l4_cfg_hwmod,
+> +	.slave		= &dra7xx_pcie1_hwmod,
+> +	.clk		= "l4_root_clk_div",
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+> +/* l4_cfg -> pcie2 */
+> +static struct omap_hwmod_ocp_if dra7xx_l4_cfg__pcie2 = {
+> +	.master		= &dra7xx_l4_cfg_hwmod,
+> +	.slave		= &dra7xx_pcie2_hwmod,
+> +	.clk		= "l4_root_clk_div",
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+>  /* l4_cfg -> pcie1 phy */
+>  static struct omap_hwmod_ocp_if dra7xx_l4_cfg__pcie1_phy = {
+>  	.master		= &dra7xx_l4_cfg_hwmod,
+> @@ -2813,6 +2866,8 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
+>  	&dra7xx_l4_cfg__mpu,
+>  	&dra7xx_l4_cfg__ocp2scp1,
+>  	&dra7xx_l4_cfg__ocp2scp3,
+> +	&dra7xx_l4_cfg__pcie1,
+> +	&dra7xx_l4_cfg__pcie2,
+>  	&dra7xx_l4_cfg__pcie1_phy,
+>  	&dra7xx_l4_cfg__pcie2_phy,
+>  	&dra7xx_l3_main_1__qspi,
+> 
+
