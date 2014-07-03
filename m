@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601AbaGCJlB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:41:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52401 "EHLO
+	id S1030377AbaGCJY1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:24:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52339 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030389AbaGCJYb (ORCPT
+	with ESMTP id S1030319AbaGCJYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:24:31 -0400
-Message-ID: <53B52146.9050300@canonical.com>
-Date: Thu, 03 Jul 2014 17:24:22 +0800
-From: Hui Wang <hui.wang@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 3 Jul 2014 05:24:18 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 145/198] net: qmi_wwan: add Olivetti Olicard modems
+Date: Thu,  3 Jul 2014 10:19:48 +0100
+Message-Id: <1404379241-8590-146-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
+References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@web.de>
-CC: Hui Wang <jason77.wang@gmail.com>, tiwai@suse.de,
-        alsa-devel@alsa-project.org, alex.hung@canonical.com, yk@canonical.com,
-        david.henningsson@canonical.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [V2 PATCH] ALSA: hda - Enable mute/mic-mute LEDs for more Thinkpads
- with Conexant codec
-References: <1385534846-20829-1-git-send-email-hui.wang@canonical.com> <53AFF992.5030403@web.de> <53B0C596.6090007@canonical.com> <53B1078B.4090101@web.de> <53B219DF.6090807@canonical.com> <53B26575.1000003@web.de> <53B27ED7.4070401@canonical.com> <53B50062.30200@web.de> <53B51B63.8060809@canonical.com> <53B51CF3.8090102@web.de>
-In-Reply-To: <53B51CF3.8090102@web.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2014 05:05 PM, Jan Kiszka wrote:
-> On 2014-07-03 10:59, Hui Wang wrote:
->> On 07/03/2014 03:04 PM, Jan Kiszka wrote:
->>> On 2014-07-01 11:26, Hui Wang wrote:
->>>> On 07/01/2014 03:38 PM, Jan Kiszka wrote:
->>>>> On 2014-07-01 04:15, Hui Wang wrote:
->>>>>> On 06/30/2014 02:45 PM, Jan Kiszka wrote:
->>>>>>> On 2014-06-30 04:04, Hui Wang wrote:
->>>>>>>> On 06/29/2014 07:33 PM, Jan Kiszka wrote:
->>>>>>>>> On 2013-11-27 07:47, Hui Wang wrote:
->>>>>>>>>> Most Thinkpad Edge series laptops use conexant codec, so far
->>>>>>>>>> although
->>>> <snip>
->>>>>>> Is there anything I can debug or any information I can collect
->>>>>>> from my
->>>>>>> box to examine this?
->>>>>> What is the linux distribution on your machine? And use showkey to
->>>>>> catch
->>>>>> the keycode of that button.
->>>>> I'm running OpenSUSE 13.1. The reported keycode of the power button is
->>>>> 116.
->>>> It seems the keycode is correct, it is power keycode rather the mute
->>>> keycode.
->>>>
->>>> Could you please do some debug, let us find which line of code is the
->>>> root cause for this problem. for example:
->>>>
->>>> after running the line, the problem shows up:
->>>>
->>>> 1.     if (ACPI_SUCCESS(acpi_get_devices("LEN0068", acpi_check_cb,
->>>> &found, NULL)) && found) // in the sound/pci/hda/thinkpad_helper.c,
->>>> is_thinkpad()
->>> This evaluates to true
->>>
->>>> 2.     return ACPI_SUCCESS(acpi_get_devices("IBM0068", acpi_check_cb,
->>>> &found, NULL)) && found; // same as above
->>>>
->>>> 3.         if (led_set_func(TPACPI_LED_MUTE, false) >= 0) { //in the
->>>> sound/pci/hda/thinkpad_helper.c, hda_fixup_thinkpad_acpi()
->>> ...and this
->>>
->>>> 4. if (led_set_func(TPACPI_LED_MICMUTE, false) >= 0) { // same as above
->>>>
->>> ...and this as well. spec->num_adc_nids is 1.
->>
->> If we change the code like below, does the power button can work well?
->>
->> in the thinkpad_helper.c, hda_fixup_thinkpad_acpi()
->>
->>
->>          if (led_set_func(TPACPI_LED_MUTE, false) >= 0) {
->>              /*
->>              old_vmaster_hook = spec->vmaster_mute.hook;
->>              spec->vmaster_mute.hook = update_tpacpi_mute_led;
->>              removefunc = false;
->>             */
-> Disabling only this block resolves the issue.
+3.11.10.13 -stable review patch.  If anyone has any objections, please let me know.
 
-So Below two lines make the power button change to the reset button.
+------------------
 
-drivers/platform/x86/thinkpad_acpi.c  mute_led_on_off():
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-acpi_get_handle(hkey_handle, "SSMS", &temp);
-acpi_evalf(hkey_handle, &output, "SSMS", "dd", 1);
+commit ba6de0f5304ccdc45ae260e7e0feb6e0ef2dd558 upstream.
 
+Lars writes: "I'm only 99% sure that the net interfaces are qmi
+interfaces, nothing to lose by adding them in my opinion."
 
-@alexhung,
-Do you have any idea why this can affect the power button behavior?
+And I tend to agree based on the similarity with the two Olicard
+modems we already have here.
 
->
-> Jan
->
->
+Reported-by: Lars Melin <larsm17@gmail.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/net/usb/qmi_wwan.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index 7be4860ccfd7..6fb0082b3308 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -739,7 +739,12 @@ static const struct usb_device_id products[] = {
+ 	{QMI_FIXED_INTF(0x2357, 0x9000, 4)},	/* TP-LINK MA260 */
+ 	{QMI_FIXED_INTF(0x1bc7, 0x1200, 5)},	/* Telit LE920 */
+ 	{QMI_FIXED_INTF(0x1bc7, 0x1201, 2)},	/* Telit LE920 */
+-	{QMI_FIXED_INTF(0x0b3c, 0xc005, 6)},    /* Olivetti Olicard 200 */
++	{QMI_FIXED_INTF(0x0b3c, 0xc000, 4)},	/* Olivetti Olicard 100 */
++	{QMI_FIXED_INTF(0x0b3c, 0xc001, 4)},	/* Olivetti Olicard 120 */
++	{QMI_FIXED_INTF(0x0b3c, 0xc002, 4)},	/* Olivetti Olicard 140 */
++	{QMI_FIXED_INTF(0x0b3c, 0xc004, 6)},	/* Olivetti Olicard 155 */
++	{QMI_FIXED_INTF(0x0b3c, 0xc005, 6)},	/* Olivetti Olicard 200 */
++	{QMI_FIXED_INTF(0x0b3c, 0xc00a, 6)},	/* Olivetti Olicard 160 */
+ 	{QMI_FIXED_INTF(0x0b3c, 0xc00b, 4)},	/* Olivetti Olicard 500 */
+ 	{QMI_FIXED_INTF(0x1e2d, 0x0060, 4)},	/* Cinterion PLxx */
+ 	{QMI_FIXED_INTF(0x1e2d, 0x0053, 4)},	/* Cinterion PHxx,PXxx */
+-- 
+1.9.1
 
