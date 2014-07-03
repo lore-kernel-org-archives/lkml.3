@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757987AbaGCIzc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 04:55:32 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:59012 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755076AbaGCIza (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 04:55:30 -0400
+	id S1756180AbaGCI5K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 04:57:10 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:6223 "EHLO smtp4.mundo-r.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750817AbaGCI5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 04:57:08 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiwFAPoZtVNbdWOb/2dsb2JhbABSCIMNhBvDLgGBChZ1hAMBAQUjBFIQCxgqAgJXBhOIRgGsDpwAFxiONFYHgneBTAWud4IBgUQ7
-X-IPAS-Result: AiwFAPoZtVNbdWOb/2dsb2JhbABSCIMNhBvDLgGBChZ1hAMBAQUjBFIQCxgqAgJXBhOIRgGsDpwAFxiONFYHgneBTAWud4IBgUQ7
+X-IronPort-Anti-Spam-Result: AiwFAPoZtVNbdWOb/2dsb2JhbABagw2EG8MuAYEKFnWEAwEBBSMEQBIQCxgqAgJXBhOIRgGsDpwAFxiPCgeCd4FMBaY3iECDRQ
+X-IPAS-Result: AiwFAPoZtVNbdWOb/2dsb2JhbABagw2EG8MuAYEKFnWEAwEBBSMEQBIQCxgqAgJXBhOIRgGsDpwAFxiPCgeCd4FMBaY3iECDRQ
 X-IronPort-AV: E=Sophos;i="5.01,594,1400018400"; 
-   d="asc'?scan'208";a="244053725"
-Message-ID: <1404377716.4537.18.camel@fourier>
-Subject: Re: [Industrypack-devel] [PATCH] ipoctal: protect only the real
- critical section
+   d="asc'?scan'208";a="244054737"
+Message-ID: <1404377815.4537.20.camel@fourier>
+Subject: Re: [PATCH] ipoctal: request_irq after configuration
 From: Samuel Iglesias =?ISO-8859-1?Q?Gons=E1lvez?= 
 	<siglesias@igalia.com>
 To: Federico Vaga <federico.vaga@cern.ch>
-Cc: gregkh@linuxfoundation.org, jens.taprogge@taprogge.org,
-        linux-kernel@vger.kernel.org, industrypack-devel@lists.sourceforge.net
-Date: Thu, 03 Jul 2014 10:55:16 +0200
-In-Reply-To: <1403769170.4516.5.camel@fourier>
-References: <1403768784-21605-1-git-send-email-federico.vaga@cern.ch>
-	 <1403769170.4516.5.camel@fourier>
+Cc: Jens Taprogge <jens.taprogge@taprogge.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Thu, 03 Jul 2014 10:56:55 +0200
+In-Reply-To: <1404377638-23387-1-git-send-email-federico.vaga@cern.ch>
+References: <1404377638-23387-1-git-send-email-federico.vaga@cern.ch>
 Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-oX5Y0t02YlyXWu05gaI9"
+	protocol="application/pgp-signature"; boundary="=-kgFNvYx84FXD0ZGgxilM"
 X-Mailer: Evolution 3.12.2-1 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,80 +31,70 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-oX5Y0t02YlyXWu05gaI9
+--=-kgFNvYx84FXD0ZGgxilM
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2014-06-26 at 09:52 +0200, Samuel Iglesias Gons=C3=A1lvez wrote:
-> On Thu, 2014-06-26 at 09:46 +0200, Federico Vaga wrote:
-> > In some conditions (echo or particular sequence of special
-> > characters), on buffer push, the tty layer calls the write operation
-> > while we are holding the spinlock. This means deadlock within the same
-> > process on kernels version < 3.12. It seems not a problem on recent
-> > kernel, but the patch still valid as locking optimization.
-> >=20
-> > The protected variables by the spinlock are: xmit_buf, nb_bytes,
-> > pointer_read and pointer_write. So, this patch reduces the locked area
-> > in the IRQ handler only to these variables. Most of the code inside the
-> > locked area in the IRQ handler is not protected elsewhere; it means
-> > that it is not protected at all.
-> >=20
-> > Signed-off-by: Federico Vaga <federico.vaga@cern.ch>
-> > ---
-> >  drivers/ipack/devices/ipoctal.c |    5 ++---
-> >  1 file changed, 2 insertions(+), 3 deletions(-)
-> >=20
-> > diff --git a/drivers/ipack/devices/ipoctal.c b/drivers/ipack/devices/ip=
-octal.c
-> > index 141094e..69687f1 100644
-> > --- a/drivers/ipack/devices/ipoctal.c
-> > +++ b/drivers/ipack/devices/ipoctal.c
-> > @@ -177,19 +177,20 @@ static void ipoctal_irq_tx(struct ipoctal_channel=
- *channel)
-> >  	if (channel->nb_bytes =3D=3D 0)
-> >  		return;
-> > =20
-> > +	spin_lock(&channel->lock);
-> >  	value =3D channel->tty_port.xmit_buf[*pointer_write];
-> >  	iowrite8(value, &channel->regs->w.thr);
-> >  	channel->stats.tx++;
-> >  	(*pointer_write)++;
-> >  	*pointer_write =3D *pointer_write % PAGE_SIZE;
-> >  	channel->nb_bytes--;
-> > +	spin_unlock(&channel->lock);
-> >  }
-> > =20
-> >  static void ipoctal_irq_channel(struct ipoctal_channel *channel)
-> >  {
-> >  	u8 isr, sr;
-> > =20
-> > -	spin_lock(&channel->lock);
-> >  	/* The HW is organized in pair of channels.  See which register we ne=
-ed
-> >  	 * to read from */
-> >  	isr =3D ioread8(&channel->block_regs->r.isr);
-> > @@ -213,8 +214,6 @@ static void ipoctal_irq_channel(struct ipoctal_chan=
-nel *channel)
-> >  	/* TX of each character */
-> >  	if ((isr & channel->isr_tx_rdy_mask) && (sr & SR_TX_READY))
-> >  		ipoctal_irq_tx(channel);
-> > -
-> > -	spin_unlock(&channel->lock);
-> >  }
-> > =20
-> >  static irqreturn_t ipoctal_irq_handler(void *arg)
+On Thu, 2014-07-03 at 10:53 +0200, Federico Vaga wrote:
+> The request for an IRQ handler must be done after whole configuration. Th=
+is
+> was not the case for this driver which request the IRQ in the middle of
+> the configuration. Sometimes, it happens that something is not completely
+> configured, we recieve an interrupt thus we stumble into troubles in the
+> IRQ handler.
 >=20
-> Acked-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+> Signed-off-by: Federico Vaga <federico.vaga@cern.ch>
+> ---
+>  drivers/ipack/devices/ipoctal.c |   15 ++++++++-------
+>  1 file changed, 8 insertions(+), 7 deletions(-)
 >=20
-> Sam
+> diff --git a/drivers/ipack/devices/ipoctal.c b/drivers/ipack/devices/ipoc=
+tal.c
+> index a7ec6f9..72fd761 100644
+> --- a/drivers/ipack/devices/ipoctal.c
+> +++ b/drivers/ipack/devices/ipoctal.c
+> @@ -344,13 +344,6 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal=
+, unsigned int bus_nr,
+>  			 &block_regs[i].w.imr);
+>  	}
+> =20
+> -	/*
+> -	 * IP-OCTAL has different addresses to copy its IRQ vector.
+> -	 * Depending of the carrier these addresses are accesible or not.
+> -	 * More info in the datasheet.
+> -	 */
+> -	ipoctal->dev->bus->ops->request_irq(ipoctal->dev,
+> -				       ipoctal_irq_handler, ipoctal);
+>  	/* Dummy write */
+>  	iowrite8(1, ipoctal->mem8_space + 1);
+> =20
+> @@ -411,6 +404,14 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal=
+, unsigned int bus_nr,
+>  		dev_set_drvdata(tty_dev, channel);
+>  	}
+> =20
+> +	/*
+> +	 * IP-OCTAL has different addresses to copy its IRQ vector.
+> +	 * Depending of the carrier these addresses are accesible or not.
+> +	 * More info in the datasheet.
+> +	 */
+> +	ipoctal->dev->bus->ops->request_irq(ipoctal->dev,
+> +				       ipoctal_irq_handler, ipoctal);
+> +
+>  	return 0;
+>  }
+> =20
+
+Acked-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 
 Greg, Would you mind picking this patch through your driver-core tree?
+Together with "ipoctal: protect only the real critical section" patch.
 
 Thanks,
 
 Sam
 
---=-oX5Y0t02YlyXWu05gaI9
+--=-kgFNvYx84FXD0ZGgxilM
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 Content-Transfer-Encoding: 7bit
@@ -114,20 +102,20 @@ Content-Transfer-Encoding: 7bit
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAABCAAGBQJTtRp0AAoJEH/0ujLxfcNDB1kP/2cSZQu459IG/iQ5vER48T2m
-vYm1V5FcjgbUt/GszCCQkzhGmuBYwW+NR46kmgeiO2zKzxCXMhfrxA7K3znJ3ylM
-rr79F/v1qPrdzboPBlnGdBNbl7UqzwpVQxybEF4auRzLvsJNpIAKJIWysRPFf3QV
-koZFc7ZHJShqtZ+aCgc35piP7/yWqz7gTRWSy77xN/c276xU2T8SvLxa8Ddpgfar
-Gp90qOXux8Br1APiYuEVtLdfoclTdyqe90gXD7Tu+nquHohwI+A9Gb/Unn4TiPWJ
-w0tgLkp9OwZ4I6LHYdre4DaQCzYtNkRd+6nYG556eKzEbhhlxJ2h2VqWUmtkN1MU
-O1z/1fIYe/IJur4k3czRwyY+knF2zXr35MggtCv7ZwfPM4GdQZ5Zj0ZP720U0F10
-XEI7qkpqkl3Y/0LtOOUAJSyU6YjATwIrRykevG5pZF/RlSjIezASvCZAcGJWyohM
-BEWNXKatqFhv2S3CzBgEa6YprtNTOLJ/3yrJa2PHwSIuXISNAv0Ydaq2mTfUTSOw
-lVIyZG+1IXsCFy7TpxpikpFiaBNLB/T1xV7RUDr5trYB7Y1Ylx+m+g0yTFQVIpJT
-9FS7hQ/V6euGzF6Q+IT/Xw+BZz1MemAqjKfj+9tLbccYOe70AWL/N8g/EaWrE7ML
-f8Axx5N6PKgetL2JZzvN
-=CYmC
+iQIcBAABCAAGBQJTtRrXAAoJEH/0ujLxfcND37gP/14fU8XpJU1Mqrk83/bKRzkP
+0oH5byv++z2P81Y2hTtWJmX6lUQ+5YdNeZtwCY5lZnliAKaADh2c7DhxNPf3/AWD
+bQ6DBvmQQRmN4+jIcfZ6T5W3TpiCFXFsG472qGx6JeKANUHU4TG3YbJIQVAQ8o28
+ROWbvB/xa4qSBENV6EEjFCJJ8XrUAldJdUyvYlX2UGWFgMP5DWgBOUpHEkvuy0Ef
+5gH9QAv44wwlb0DVXqQod1MLvI4dn8fT67DhKjdc2J+aVLagzbnPk/2yXatPwCHX
+mlxev7Z3EGIsGCjMceQL9vA6TRx3SzVdkLLx3O6xpL86pxoO87HnuYT2Pmpk+/4K
+C8PtX683IdOvThLAX153Cq87rKoRAhJ4WtP0cXfsAZSJbrZQOhvW64pk7jgD8KgB
+RZ9PZc9tCJ0Hq48kIu+AVE0u0VSfMtig3Bbk06TsHKD7hYiQFug8ti+Zi6fmUGkY
+W1u3TUpQ2Qt3JGPpxuLgAv3RqAW9yJw5VoqiosTp8GYZZn8cQvA8iU6a4wYvKZAg
+UZ7SauBJ/+1FaERuX6l74YWTeFFp+Rni9U2qXzeYoLMKhCAux2liKIaJd9EyGOXH
+KRdBe1rYUZ3TiS2TyC8gO3/eq6iP5tnFpTtSiXKNj2VhrUzTnZezGq3go6Dp45Tg
+9V4oI0zAopvFj8g8ORrz
+=LCPp
 -----END PGP SIGNATURE-----
 
---=-oX5Y0t02YlyXWu05gaI9--
+--=-kgFNvYx84FXD0ZGgxilM--
 
