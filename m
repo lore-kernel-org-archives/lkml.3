@@ -1,256 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072AbaGCOmO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:42:14 -0400
-Received: from 14.mo6.mail-out.ovh.net ([46.105.56.113]:41271 "EHLO
-	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756659AbaGCOmN convert rfc822-to-8bit (ORCPT
+	id S1758435AbaGCOmW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:42:22 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:49585 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753845AbaGCOmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:42:13 -0400
-X-Greylist: delayed 358 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jul 2014 10:42:12 EDT
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Subject: Re: [PATCH 12/18] power: reset: Add AT91 poweroff driver
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-In-Reply-To: <1404396906-25194-22-git-send-email-maxime.ripard@free-electrons.com>
-Date: Thu, 3 Jul 2014 22:31:27 +0800
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux@maxim.org.za, Nicolas FERRE <nicolas.ferre@atmel.com>,
-        dwmw2@infradead.org, dbaryshkov@gmail.com,
-        Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <6296F186-1B0C-4089-928A-4B0950BE847A@jcrosoft.com>
-References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com> <1404396906-25194-22-git-send-email-maxime.ripard@free-electrons.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-X-Mailer: Apple Mail (2.1878.2)
-X-Ovh-Tracer-Id: 7626564495802346429
-X-Ovh-Remote: 193.138.230.182 (182.230.138.193.client.dyn.strong-ba6.blackoakcomputers.com)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedrudegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedrudegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 3 Jul 2014 10:42:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140703095922.14c70ab1@gandalf.local.home>
+References: <CAKohpomvG-jEhMow=g5-nOAW7aBGBAfMjwRocOMU3rMfK9VTgA@mail.gmail.com>
+	<20140703095922.14c70ab1@gandalf.local.home>
+Date: Thu, 3 Jul 2014 20:12:18 +0530
+Message-ID: <CAKohpokj3nop9OKAmK386ofs4FM_KhjpLD+xz5Hf4gz+gp5dgA@mail.gmail.com>
+Subject: Re: [Query/tick] Are we enqueing 'tick-sched' hrtimers in past ?
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 3 July 2014 19:29, Steven Rostedt <rostedt@goodmis.org> wrote:
+> Unless you changed clocks, the default timing of the trace is done by
 
-On Jul 3, 2014, at 10:14 PM, Maxime Ripard <maxime.ripard@free-electrons.com> wrote:
+I haven't..
 
-> 
-> Add a driver to handle the shutdown of the Atmel SoCs. This code used to be
-> (and still is) in arch/arm/mach-at91. We didn't removed it yet so that we can
-> convert all the boards to using this driver, before removing it entirely in a
-> separate patch.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
-> drivers/power/reset/Kconfig         |   7 ++
-> drivers/power/reset/Makefile        |   1 +
-> drivers/power/reset/at91-poweroff.c | 156 ++++++++++++++++++++++++++++++++++++
-> 3 files changed, 164 insertions(+)
-> create mode 100644 drivers/power/reset/at91-poweroff.c
-> 
-> diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-> index b3fef01d7cbb..f9d53af50ec0 100644
-> --- a/drivers/power/reset/Kconfig
-> +++ b/drivers/power/reset/Kconfig
-> @@ -14,6 +14,13 @@ config POWER_RESET_AS3722
-> 	help
-> 	  This driver supports turning off board via a ams AS3722 power-off.
-> 
-> +config POWER_RESET_AT91_POWEROFF
-> +	bool "Atmel AT91 poweroff driver"
-> +	default SOC_AT91SAM9 || SOC_SAMA5
-> +	help
-> +	  This driver supports poweroff for Atmel AT91SAM9 and SAMA5
-> +	  SoCs
-> +
-> config POWER_RESET_AT91_RESET
-> 	bool "Atmel AT91 reset driver"
-> 	default SOC_AT91SAM9 || SOC_SAMA5
-> diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-> index 1599214b91d9..8bf941bac3da 100644
-> --- a/drivers/power/reset/Makefile
-> +++ b/drivers/power/reset/Makefile
-> @@ -1,4 +1,5 @@
-> obj-$(CONFIG_POWER_RESET_AS3722) += as3722-poweroff.o
-> +obj-$(CONFIG_POWER_RESET_AT91_POWEROFF) += at91-poweroff.o
-> obj-$(CONFIG_POWER_RESET_AT91_RESET) += at91-reset.o
-> obj-$(CONFIG_POWER_RESET_AXXIA) += axxia-reset.o
-> obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
-> diff --git a/drivers/power/reset/at91-poweroff.c b/drivers/power/reset/at91-poweroff.c
-> new file mode 100644
-> index 000000000000..2f2a69e9bae3
-> --- /dev/null
-> +++ b/drivers/power/reset/at91-poweroff.c
-> @@ -0,0 +1,156 @@
-> +/*
-> + * Atmel AT91 SAM9 SoCs reset code
-> + *
-> + * Copyright (C) 2014 Maxime Ripard
-> + *
-> + * Maxime Ripard <maxime.ripard@free-electrons.com>
-> + *
+> trace_clock_local() which basically just calls sched_clock(). Not much
+> to be fixed there.
 
-As it’s mostly a copy of other people work you can not claim the copyright
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2.  This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + */
-> +
-> +#include <linux/io.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/printk.h>
-> +
-> +#define AT91_SHDW_CR	0x00		/* Shut Down Control Register */
-> +#define	AT91_SHDW_SHDW		BIT(0)			/* Shut Down command */
-> +#define	AT91_SHDW_KEY		(0xa5 << 24)		/* KEY Password */
-> +
-> +#define AT91_SHDW_MR	0x04		/* Shut Down Mode Register */
-> +#define	AT91_SHDW_WKMODE0	GENMASK(2, 0)		/* Wake-up 0 Mode Selection */
-> +#define	AT91_SHDW_CPTWK0_MAX	0xf			/* Maximum Counter On Wake Up 0 */
-> +#define	AT91_SHDW_CPTWK0	(AT91_SHDW_CPTWK0_MAX << 4) /* Counter On Wake Up 0 */
-> +#define	AT91_SHDW_CPTWK0_(x)	((x) << 4)
-> +#define	AT91_SHDW_RTTWKEN	BIT(16)			/* Real Time Timer Wake-up Enable */
-> +#define	AT91_SHDW_RTCWKEN	BIT(17)			/* Real Time Clock Wake-up Enable */
-> +
-> +#define AT91_SHDW_SR	0x08		/* Shut Down Status Register */
-> +#define	AT91_SHDW_WAKEUP0	BIT(0)			/* Wake-up 0 Status */
-> +#define	AT91_SHDW_RTTWK		BIT(16)			/* Real-time Timer Wake-up */
-> +#define	AT91_SHDW_RTCWK		BIT(17)			/* Real-time Clock Wake-up [SAM9RL] */
-> +
-> +enum wakeup_type {
-> +	AT91_SHDW_WKMODE0_NONE		= 0,
-> +	AT91_SHDW_WKMODE0_HIGH		= 1,
-> +	AT91_SHDW_WKMODE0_LOW		= 2,
-> +	AT91_SHDW_WKMODE0_ANYLEVEL	= 3,
-> +};
-> +
-> +static const char *shdwc_wakeup_modes[] = {
-> +	[AT91_SHDW_WKMODE0_NONE]	= "none",
-> +	[AT91_SHDW_WKMODE0_HIGH]	= "high",
-> +	[AT91_SHDW_WKMODE0_LOW]		= "low",
-> +	[AT91_SHDW_WKMODE0_ANYLEVEL]	= "any",
-> +};
-> +
-> +static void __iomem *at91_shdwc_base;
-> +
-> +static void __init at91_wakeup_status(void)
-> +{
-> +	u32 reg = readl(at91_shdwc_base);
-> +	char *reason = "unknown";
-> +
-> +	/* Simple power-on, just bail out */
-> +	if (!reg)
-> +		return;
-> +
-> +	if (reg & AT91_SHDW_RTTWK)
-> +		reason = "RTT";
-> +	else if (reg & AT91_SHDW_RTCWK)
-> +		reason = "RTC";
-> +
-> +	pr_info("AT91: Wake-Up source: %s\n", reason);
-> +}
-> +
-> +static void at91_poweroff(void)
-> +{
-> +	writel(AT91_SHDW_KEY | AT91_SHDW_SHDW, at91_shdwc_base + AT91_SHDW_CR);
-> +}
-> +
-> +const enum wakeup_type at91_poweroff_get_wakeup_mode(struct device_node *np)
-> +{
-> +	const char *pm;
-> +	int err, i;
-> +
-> +	err = of_property_read_string(np, "atmel,wakeup-mode", &pm);
-> +	if (err < 0)
-> +		return AT91_SHDW_WKMODE0_ANYLEVEL;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(shdwc_wakeup_modes); i++)
-> +		if (!strcasecmp(pm, shdwc_wakeup_modes[i]))
-> +			return i;
-> +
-> +	return -ENODEV;
-> +}
-> +
-> +static void at91_poweroff_dt_set_wakeup_mode(struct platform_device *pdev)
-> +{
-> +	struct device_node *np = pdev->dev.of_node;
-> +	enum wakeup_type wakeup_mode;
-> +	u32 mode = 0, tmp;
-> +
-> +	wakeup_mode = at91_poweroff_get_wakeup_mode(np);
-> +	if (wakeup_mode < 0) {
-> +		dev_warn(&pdev->dev, "shdwc unknown wakeup mode\n");
-> +		return;
-> +	}
-> +
-> +	if (!of_property_read_u32(np, "atmel,wakeup-counter", &tmp)) {
-> +		if (tmp > AT91_SHDW_CPTWK0_MAX) {
-> +			dev_warn(&pdev->dev,
-> +				 "shdwc wakeup counter 0x%x > 0x%x reduce it to 0x%x\n",
-> +				 tmp, AT91_SHDW_CPTWK0_MAX, AT91_SHDW_CPTWK0_MAX);
-> +			tmp = AT91_SHDW_CPTWK0_MAX;
-> +		}
-> +		mode |= AT91_SHDW_CPTWK0_(tmp);
-> +	}
-> +
-> +	if (of_property_read_bool(np, "atmel,wakeup-rtc-timer"))
-> +			mode |= AT91_SHDW_RTCWKEN;
-> +
-> +	if (of_property_read_bool(np, "atmel,wakeup-rtt-timer"))
-> +			mode |= AT91_SHDW_RTTWKEN;
-> +
-> +	writel(wakeup_mode | mode, at91_shdwc_base + AT91_SHDW_MR);
-> +}
-> +
-> +static int at91_poweroff_probe(struct platform_device *pdev)
-> +{
-> +	struct resource *res;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	at91_shdwc_base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(at91_shdwc_base)) {
-> +		dev_err(&pdev->dev, "Could not map reset controller address\n");
-> +		return PTR_ERR(at91_shdwc_base);
-> +	}
-> +
-> +	at91_wakeup_status();
-> +
-> +	if (pdev->dev.of_node)
-> +		at91_poweroff_dt_set_wakeup_mode(pdev);
-> +
-> +	pm_power_off = at91_poweroff;
-> +
-> +	return 0;
-> +}
-> +
-> +static struct of_device_id at91_poweroff_of_match[] = {
-> +	{ .compatible = "atmel,at91sam9260-shdwc", },
-> +	{ .compatible = "atmel,at91sam9rl-shdwc", },
-> +	{ .compatible = "atmel,at91sam9x5-shdwc", },
-> +	{ /*sentinel*/ }
-> +};
-> +
-> +static struct platform_driver at91_poweroff_driver = {
-> +	.probe = at91_poweroff_probe,
-> +	.driver = {
-> +		.name = "at91-poweroff",
-> +		.of_match_table = at91_poweroff_of_match,
-> +	},
-> +};
-> +module_platform_driver(at91_poweroff_driver);
-> -- 
-> 2.0.1
-> 
+Okay.
 
+> I would be interested in seeing another hrtimer_expire_entry to see if
+> that is off by anything else other than 10ms. As that event is the only
+> one shown to show what hrtimer thinks "now" is.
+
+I checked that for some other timer and it was still 10ms. So, its not a
+tick-sched issue.
+
+> Also, I'm not really seeing what is wrong with the above. The
+> expire_entry means the timer is being triggered and it raised the
+> softirq. The hrtimer_start is a new setting to go off at 149.745. Since
+> you noticed that the trace time stamp is 10ms ahead, that would state
+> that the hrtimer would go off around trace timestamp 149.755.
+
+The only part that looked odd to me was this offset of 10ms.
+
+> The trace timer stamp uses a different clock than hrtimers does. Do not
+> confuse them as the same clock.
+
+Hmm, that's new. And the diff might be ~10ms
+
+> The best you can do is reference
+> that "now" value to get the difference between the two and use that as a
+> reference for what the time stamp of the trace should be when the
+> hrtimer goes off again.
+
+Yeah, it was on time as this 10ms offset was consistent ..
+
+So, there is no problem in traces apart from the fact that people might
+try to match trace-time and hrtimer time, like I did.
+
+But the other issue I reported in hrtimer/tick-sched code might still be valid.
+
+Thanks for your reply.
+
+--
+viresh
