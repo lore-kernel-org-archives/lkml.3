@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758230AbaGCJVi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:21:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51561 "EHLO
+	id S1758288AbaGCJVq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:21:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51588 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758195AbaGCJVe (ORCPT
+	with ESMTP id S1758234AbaGCJVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:21:34 -0400
+	Thu, 3 Jul 2014 05:21:40 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 032/198] Target/iser: Improve cm events handling
-Date: Thu,  3 Jul 2014 10:17:55 +0100
-Message-Id: <1404379241-8590-33-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 037/198] ARM: stacktrace: avoid listing stacktrace functions in stacktrace
+Date: Thu,  3 Jul 2014 10:18:00 +0100
+Message-Id: <1404379241-8590-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,118 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 88c4015fda6d014392f76d3b1688347950d7a12d upstream.
+commit 3683f44c42e991d313dc301504ee0fca1aeb8580 upstream.
 
-There are 4 RDMA_CM events that all basically mean that
-the user should teardown the IB connection:
-- DISCONNECTED
-- ADDR_CHANGE
-- DEVICE_REMOVAL
-- TIMEWAIT_EXIT
+While debugging the FEC ethernet driver using stacktrace, it was noticed
+that the stacktraces always begin as follows:
 
-Only in DISCONNECTED/ADDR_CHANGE it makes sense to
-call rdma_disconnect (send DREQ/DREP to our initiator).
-So we keep the same teardown handler for all of them
-but only indicate calling rdma_disconnect for the relevant
-events.
+ [<c00117b4>] save_stack_trace_tsk+0x0/0x98
+ [<c0011870>] save_stack_trace+0x24/0x28
+ ...
 
-This patch also removes redundant debug prints for each single
-event.
+This is because the stack trace code includes the stack frames for itself.
+This is incorrect behaviour, and also leads to "skip" doing the wrong
+thing (which is the number of stack frames to avoid recording.)
 
-v2 changes:
- - Call isert_disconnected_handler() for DEVICE_REMOVAL (Or + Sag)
+Perversely, it does the right thing when passed a non-current thread.  Fix
+this by ensuring that we have a known constant number of frames above the
+main stack trace function, and always skip these.
 
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c | 26 ++++++++++++++------------
- drivers/infiniband/ulp/isert/ib_isert.h |  1 +
- 2 files changed, 15 insertions(+), 12 deletions(-)
+ arch/arm/kernel/stacktrace.c | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index 434113247c62..cfb8824d6a9e 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -573,8 +573,10 @@ isert_disconnect_work(struct work_struct *work)
+diff --git a/arch/arm/kernel/stacktrace.c b/arch/arm/kernel/stacktrace.c
+index af4e8c8a5422..6582c4adc182 100644
+--- a/arch/arm/kernel/stacktrace.c
++++ b/arch/arm/kernel/stacktrace.c
+@@ -83,13 +83,16 @@ static int save_trace(struct stackframe *frame, void *d)
+ 	return trace->nr_entries >= trace->max_entries;
+ }
+ 
+-void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
++/* This must be noinline to so that our skip calculation works correctly */
++static noinline void __save_stack_trace(struct task_struct *tsk,
++	struct stack_trace *trace, unsigned int nosched)
+ {
+ 	struct stack_trace_data data;
+ 	struct stackframe frame;
+ 
+ 	data.trace = trace;
+ 	data.skip = trace->skip;
++	data.no_sched_functions = nosched;
+ 
+ 	if (tsk != current) {
+ #ifdef CONFIG_SMP
+@@ -102,7 +105,6 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
+ 			trace->entries[trace->nr_entries++] = ULONG_MAX;
  		return;
+ #else
+-		data.no_sched_functions = 1;
+ 		frame.fp = thread_saved_fp(tsk);
+ 		frame.sp = thread_saved_sp(tsk);
+ 		frame.lr = 0;		/* recovered from the stack */
+@@ -111,11 +113,12 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
+ 	} else {
+ 		register unsigned long current_sp asm ("sp");
+ 
+-		data.no_sched_functions = 0;
++		/* We don't want this function nor the caller */
++		data.skip += 2;
+ 		frame.fp = (unsigned long)__builtin_frame_address(0);
+ 		frame.sp = current_sp;
+ 		frame.lr = (unsigned long)__builtin_return_address(0);
+-		frame.pc = (unsigned long)save_stack_trace_tsk;
++		frame.pc = (unsigned long)__save_stack_trace;
  	}
  
--	/* Send DREQ/DREP towards our initiator */
--	rdma_disconnect(isert_conn->conn_cm_id);
-+	if (isert_conn->disconnect) {
-+		/* Send DREQ/DREP towards our initiator */
-+		rdma_disconnect(isert_conn->conn_cm_id);
-+	}
- 
- 	mutex_unlock(&isert_conn->conn_mutex);
- 
-@@ -584,10 +586,11 @@ wake_up:
+ 	walk_stackframe(&frame, save_trace, &data);
+@@ -123,9 +126,14 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
+ 		trace->entries[trace->nr_entries++] = ULONG_MAX;
  }
  
- static void
--isert_disconnected_handler(struct rdma_cm_id *cma_id)
-+isert_disconnected_handler(struct rdma_cm_id *cma_id, bool disconnect)
++void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
++{
++	__save_stack_trace(tsk, trace, 1);
++}
++
+ void save_stack_trace(struct stack_trace *trace)
  {
- 	struct isert_conn *isert_conn = (struct isert_conn *)cma_id->context;
- 
-+	isert_conn->disconnect = disconnect;
- 	INIT_WORK(&isert_conn->conn_logout_work, isert_disconnect_work);
- 	schedule_work(&isert_conn->conn_logout_work);
+-	save_stack_trace_tsk(current, trace);
++	__save_stack_trace(current, trace, 0);
  }
-@@ -596,29 +599,28 @@ static int
- isert_cma_handler(struct rdma_cm_id *cma_id, struct rdma_cm_event *event)
- {
- 	int ret = 0;
-+	bool disconnect = false;
- 
- 	pr_debug("isert_cma_handler: event %d status %d conn %p id %p\n",
- 		 event->event, event->status, cma_id->context, cma_id);
- 
- 	switch (event->event) {
- 	case RDMA_CM_EVENT_CONNECT_REQUEST:
--		pr_debug("RDMA_CM_EVENT_CONNECT_REQUEST: >>>>>>>>>>>>>>>\n");
- 		ret = isert_connect_request(cma_id, event);
- 		break;
- 	case RDMA_CM_EVENT_ESTABLISHED:
--		pr_debug("RDMA_CM_EVENT_ESTABLISHED >>>>>>>>>>>>>>\n");
- 		isert_connected_handler(cma_id);
- 		break;
--	case RDMA_CM_EVENT_DISCONNECTED:
--		pr_debug("RDMA_CM_EVENT_DISCONNECTED: >>>>>>>>>>>>>>\n");
--		isert_disconnected_handler(cma_id);
--		break;
--	case RDMA_CM_EVENT_DEVICE_REMOVAL:
--	case RDMA_CM_EVENT_ADDR_CHANGE:
-+	case RDMA_CM_EVENT_ADDR_CHANGE:    /* FALLTHRU */
-+	case RDMA_CM_EVENT_DISCONNECTED:   /* FALLTHRU */
-+	case RDMA_CM_EVENT_DEVICE_REMOVAL: /* FALLTHRU */
-+		disconnect = true;
-+	case RDMA_CM_EVENT_TIMEWAIT_EXIT:  /* FALLTHRU */
-+		isert_disconnected_handler(cma_id, disconnect);
- 		break;
- 	case RDMA_CM_EVENT_CONNECT_ERROR:
- 	default:
--		pr_err("Unknown RDMA CMA event: %d\n", event->event);
-+		pr_err("Unhandled RDMA CMA event: %d\n", event->event);
- 		break;
- 	}
- 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.h b/drivers/infiniband/ulp/isert/ib_isert.h
-index 62a7a1de4365..174c4fffd8c4 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -105,6 +105,7 @@ struct isert_conn {
- 	struct completion	conn_wait;
- 	struct completion	conn_wait_comp_err;
- 	struct kref		conn_kref;
-+	bool                    disconnect;
- };
- 
- #define ISERT_MAX_CQ 64
+ EXPORT_SYMBOL_GPL(save_stack_trace);
+ #endif
 -- 
 1.9.1
 
