@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758982AbaGCQG3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:06:29 -0400
-Received: from mail.kernel.org ([198.145.19.201]:40875 "EHLO mail.kernel.org"
+	id S1758589AbaGCQJS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:09:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47539 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755938AbaGCQG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 12:06:27 -0400
-Date: Thu, 3 Jul 2014 18:06:23 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Robert Nelson <robertcnelson@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux kernel <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH] tty: serial: Add 8250-core based omap driver
-Message-ID: <20140703160622.GE23309@earth.universe>
-References: <1404316809-20637-1-git-send-email-bigeasy@linutronix.de>
- <20140702160932.GF5541@saruman.home>
- <20140702190944.GA567@drone.musicnaut.iki.fi>
- <CAOCHtYgxMeA+Arfe40XeFDEKuCJ8qo1RqNR0hYBGr_Wp6sRfdA@mail.gmail.com>
- <20140703073411.GX28884@atomide.com>
- <20140703132509.GA5814@saruman.home>
- <CAOCHtYi0JwRO12gHa+KFGH1k7pPk4TL40igwhzRRxutw-tqf6A@mail.gmail.com>
- <20140703140736.GF5814@saruman.home>
- <20140703154425.GC23309@earth.universe>
- <20140703155240.GU5814@saruman.home>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="ILuaRSyQpoVaJ1HG"
-Content-Disposition: inline
-In-Reply-To: <20140703155240.GU5814@saruman.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752890AbaGCQJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 12:09:16 -0400
+Message-ID: <1404403726.1862.78.camel@ul30vt.home>
+Subject: Re: [PATCH 0/3] iommu: Expose IOMMU information in sysfs
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: iommu@lists.linux-foundation.org, dwmw2@infradead.org,
+        linux-kernel@vger.kernel.org, Varun Sethi <Varun.Sethi@freescale.com>
+Date: Thu, 03 Jul 2014 10:08:46 -0600
+In-Reply-To: <1402932269.3707.35.camel@ul30vt.home>
+References: <20140612215954.2754.30263.stgit@bling.home>
+	 <20140616151619.GA31771@8bytes.org> <1402932269.3707.35.camel@ul30vt.home>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-06-16 at 09:24 -0600, Alex Williamson wrote:
+> On Mon, 2014-06-16 at 17:16 +0200, Joerg Roedel wrote:
+> > On Thu, Jun 12, 2014 at 04:12:18PM -0600, Alex Williamson wrote:
+> > > Alex Williamson (3):
+> > >       iommu: Add sysfs support for IOMMUs
+> > >       iommu/intel: Make use of IOMMU sysfs support
+> > >       iommu/amd: Add sysfs support
+> > 
+> > I like the general approach. But why do you only enable the x86 iommus?
+> > Some ARM IOMMUs and PAMU would certainly also benefit from a sysfs
+> > representation of which device is translated by which IOMMU.
+> 
+> Only because I have no ability to test the others platforms.  I'd be
+> thrilled if someone working on those IOMMUs could validate this on
+> non-x86.  Thanks,
 
---ILuaRSyQpoVaJ1HG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Should I re-send this series or are you hoping I'll attempt to piece
+together a non-x86 user for which I have no hardware and can't test?
+Varun, do you have any interest in this for the fsl iommu to try a proof
+of concept?  Thanks,
 
-Hi,
+Alex
 
-On Thu, Jul 03, 2014 at 10:52:40AM -0500, Felipe Balbi wrote:
-> > DT is supposed to contain information about the hardware, so it
-> > should stay the same? I think there is no non-hackish way to decide
->=20
-> compatible would change, at a minimum.
-
-why? I would expect it to stay the same (and the current patch uses
-the same compatible strings).
-
--- Sebastian
-
---ILuaRSyQpoVaJ1HG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJTtX9+AAoJENju1/PIO/qaAqQP/i6wmAtD3GC+2ckRvfcMAH7Q
-odnga9BbrwqiLboinx1R0R9VW4KbcmLIMzyqGwKPn0Q4satEbYiYDYO5Tp4+fB7w
-W7ejJdePM74SnvoI/WBTc5xN5aXoT5lmF96bE+vS6ljc7upKUrSn43oovjeg0IZG
-gcPrcfdMBG55CaqK+JHNRUhucp8+Q3bk7OShFMVAl+tuaTaBif4XevIuzJhzhHmf
-CBROfGzAVC2KjFQcgAHokmMbWNitIOO3TfLqEsrWHl/PQWP86YucLHqPEDwjFE4k
-7A99jQe3/7Tq/YyjpnAwbeCAZRoRAARweiNrWq+MlT38mNWuEryyKkouU86eMe0a
-T8jNCTITuNqCRF71GH80TtIvRndhoa9BzdRCgMnoPI75I6mPPcTRZq1zfG1bX2ZT
-X/MoCKLJaCdyHCwsWHulKURu6vh5x72yk4/iz0yqGK/+YjwiBDVFMM3/K0c/bQWw
-ZD+yoIskgf4MukHIcgrfdWfeJPJofJq2+vYCv/Jrw54Ewl8it/6RkycjEimICqgz
-eLMXSZHEMSgrwklJj1pVzUMy4CS7LPR0Ogy45WDJVpomy3KNAv8169fhvmL8ZKHj
-o5Oj2xFjDMG10GBTFWY4QRafVrIk0k/U/GJ4MyooEzuoA0f3COmou9zuXRBg3WZ6
-CIdFZXM2ALsytfFSywvA
-=5HEn
------END PGP SIGNATURE-----
-
---ILuaRSyQpoVaJ1HG--
