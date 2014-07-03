@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756858AbaGCPbY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 11:31:24 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:60376 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752078AbaGCPbX (ORCPT
+	id S1758250AbaGCPcP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 11:32:15 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:56709 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754485AbaGCPcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 11:31:23 -0400
+	Thu, 3 Jul 2014 11:32:13 -0400
+Message-ID: <53B5777C.2050307@infradead.org>
+Date: Thu, 03 Jul 2014 08:32:12 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1404362358.8764.6.camel@j-VirtualBox>
-References: <1404318070-2856-1-git-send-email-jason.low2@hp.com>
-	<20140702162749.GP19379@twins.programming.kicks-ass.net>
-	<1404320356.3170.12.camel@j-VirtualBox>
-	<20140702172333.GQ19379@twins.programming.kicks-ass.net>
-	<1404322203.3170.17.camel@j-VirtualBox>
-	<1404362358.8764.6.camel@j-VirtualBox>
-Date: Thu, 3 Jul 2014 08:31:22 -0700
-X-Google-Sender-Auth: T5g_KOBvi_mVF-vXb3HByHprpsU
-Message-ID: <CA+55aFw6CF0La9FO5jX_BvukjwW618vihqVm-hPXfUpL_5dhBA@mail.gmail.com>
-Subject: Re: [RFC] Cancellable MCS spinlock rework
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Waiman Long <Waiman.Long@hp.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Peter Anvin <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Jej B <James.Bottomley@hansenpartnership.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: linux-kernel@vger.kernel.org,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Ben Romer <sparmaintainer@unisys.com>, Ken Cox <jkc@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: linux-next: Tree for Jul 3 (staging/unisys)
+References: <20140703155305.416bf8c7@canb.auug.org.au>
+In-Reply-To: <20140703155305.416bf8c7@canb.auug.org.au>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 2, 2014 at 9:39 PM, Jason Low <jason.low2@hp.com> wrote:
->
-> And due to padding, the additional modification below reduces the
-> size of struct rw_semaphore by 64 bits on my machine  :)
+On 07/02/14 22:53, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20140702:
+> 
 
-Well, I think you could also make 'count' just be 'int' instead of 'long'.
+on x86_64:
 
-I don't think we'll support 2 _billion_ processes/threads waiting on
-the same semaphore any time soon, so the 'long' seems a bit of an
-overkill on 64-bit architectures.
+CONFIG_UNISYSSPAR=y
+CONFIG_UNISYS_VISORUTIL=m
+# CONFIG_UNISYS_VISORCHANNEL is not set
+CONFIG_UNISYS_CHANNELSTUB=y
 
-          Linus.
+drivers/built-in.o: In function `channel_mod_init':
+chanstub.c:(.init.text+0x10a8f): undefined reference to `unisys_spar_platform'
+
+
+because CHANNELSTUB=y and VISORUTIL=m.
+
+
+
+-- 
+~Randy
