@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759300AbaGCSos (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 14:44:48 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45303 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838AbaGCSoq (ORCPT
+	id S1759571AbaGCSpW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 14:45:22 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:50753 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759435AbaGCSpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 14:44:46 -0400
-Date: Thu, 3 Jul 2014 19:44:22 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Landley <rob@landley.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Message-ID: <20140703184422.GQ410@sirena.org.uk>
-References: <1402666578-16540-1-git-send-email-s.trumtrar@pengutronix.de>
+	Thu, 3 Jul 2014 14:45:20 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6SWS31fp4apnN2Tf"
-Content-Disposition: inline
-In-Reply-To: <1402666578-16540-1-git-send-email-s.trumtrar@pengutronix.de>
-X-Cookie: Semper Fi, dude.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3] spi: dw-mmio: add devicetree support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <alpine.DEB.2.02.1407031331520.9641@jlaw-desktop.mno.stratus.com>
+References: <1400429439-11184-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<20140528112628.GB11953@infradead.org>
+	<alpine.DEB.2.02.1407031331520.9641@jlaw-desktop.mno.stratus.com>
+Date: Thu, 3 Jul 2014 20:45:18 +0200
+Message-ID: <CAFo99gaJ1oyXjAmiWCXBitBUe-G6a+4eHxHPSnv5h-+We7zv3Q@mail.gmail.com>
+Subject: Re: [PATCH] scsi: mpt2sas: mpt2sas_base.c: Fix for possible null
+ pointer dereference
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Joe Lawrence <joe.lawrence@stratus.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2014-07-03 19:45 GMT+02:00 Joe Lawrence <joe.lawrence@stratus.com>:
+> On Wed, 28 May 2014, Christoph Hellwig wrote:
+>
+>> > -   ioc_status = le16_to_cpu(mpi_reply->IOCStatus) & MPI2_IOCSTATUS_MASK;
+>> > +   if (mpi_reply) {
+>> > +           ioc_status = le16_to_cpu(mpi_reply->IOCStatus) & MPI2_IOCSTATUS_MASK;
+>> > +   }
+>> >
+>> >     if (ioc_status != MPI2_IOCSTATUS_SUCCESS)
+>> >             ioc->port_enable_failed = 1;
+>>
+>> ioc_status isn't initialized without the reply and used here as well
+>> as later in the function.  I think we'll need input from LSI or others
+>> with the spec on what to do when we didn't get a reply.
+>
+> Any update on this?
+>
+> The mpt3 version checks for !mpi_reply and returns 1.  Which leads to
+> another question -- should mpt{2,3}sas_port_enable_done ever return 0 (as their
+> respective comments describe)?
+>
+> Regards,
+>
+> -- Joe
 
---6SWS31fp4apnN2Tf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Fri, Jun 13, 2014 at 03:36:18PM +0200, Steffen Trumtrar wrote:
-> Allow probing the dw-mmio from devicetree.
+Hi
 
-Applied, thanks.
+Good questions Joe!
+And good someone else brought this up, because I guess it's not meant to me.
 
---6SWS31fp4apnN2Tf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+And it looks however now that I've done quite a few more patches that
+there should not have been any {}
+And then, it is perhaps good to sett a start value for ioc_status. My
+suggestion is:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+u16 ioc_status = MPI2_IOCSTATUS_OP_STATE_NOT_SUPPORTED;
 
-iQIcBAEBAgAGBQJTtaSDAAoJELSic+t+oim94ukP/iPEcmknJZ5Eg5N/0pVKdI38
-QklD3rfPW28pESe5dDB/d49tRA7sZmzmLARATwzFOQXaL67h4fNr0EwTACcaZGPY
-dRbQ7P57gAB16lT4stwyl+6ZHTeNS4Yunu5q+w3TAm2nzm8004L8ZgtoBsDJasLa
-Gh2vjOv2akCtLoiZEGCOZ1DWALWTPPsr3H+ucfkWUCeiA06CN8evGu19Ht32Nm4t
-B4RMJCUMl6VrtnxM+h5Yq7RR5OO2tLCFAZ7amgrcDgR9rVClnArIQCqWzGddq1Ba
-aHD9s3YI04iuvtRBNCni0+cytZM3R+SJG1mD0hBqR9LmGAasCSmN70y0y8aNFSrs
-XgJYMCNGC6HRB/5/t6AEKZYVIC5r1ZxoxsbbYpjA/hI2k/ZBqTtWbG5DAEGQE6IB
-8cTe7qVVDtzU9QZuWMABnntZT9nBHYFKSNrsgl+6cgz3MJmVGFeFJv5as8jNa6Cg
-WmMIRA+onTcp1WkA8Z59SWYu7M2rcUE+Ms5icWPv/G5xzNSuNrZsKW6ZilK95ivg
-uUEdOK9ESJZrda/EgkoJU/noNgD6Rn78iVIg5tAGvUs+m7PZ0Ej6QZ6FEYmcS1dp
-zdQJevaShW+luWmyTYsAt248gTw45CPSNy/D8Qf5l6k1LgiKDUnq78sCbjx1EZMz
-6hkBqyCXj88NxKJCoOoM
-=/pae
------END PGP SIGNATURE-----
 
---6SWS31fp4apnN2Tf--
+Kind regards
+Rickard Strandqvist
