@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965081AbaGCOxa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:53:30 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51797 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758417AbaGCOuA (ORCPT
+	id S965118AbaGCOxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:53:42 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:58034 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965005AbaGCOxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:50:00 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        dwmw2@infradead.org, dbaryshkov@gmail.com
-Cc: Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH RESEND 15/18] AT91: Remove poweroff code
-Date: Thu,  3 Jul 2014 16:41:30 +0200
-Message-Id: <1404398493-28907-16-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1404398493-28907-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1404398493-28907-1-git-send-email-maxime.ripard@free-electrons.com>
+	Thu, 3 Jul 2014 10:53:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <53B50FF0.7080901@redhat.com>
+References: <1404373932-10929-1-git-send-email-zlim.lnx@gmail.com>
+	<53B50FF0.7080901@redhat.com>
+Date: Thu, 3 Jul 2014 07:53:39 -0700
+Message-ID: <CABg9mctbBbiHq=K2==QZ_RxzR=siRSFCsyjMh8xk2HtaG8fxGQ@mail.gmail.com>
+Subject: Re: [PATCH net-next] net: filter: move load_pointer() into filter.h
+From: Z Lim <zlim.lnx@gmail.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that all the SoC have been converted to use the new poweroff driver, we can
-remove the poweroff code defined in mach-at91.
+On Thu, Jul 3, 2014 at 1:10 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+> Hi Zi,
+>
+>
+> On 07/03/2014 09:52 AM, Zi Shen Lim wrote:
+>>
+>> load_pointer() is already a static inline function.
+>> Let's move it into filter.h so BPF JIT implementations can reuse this
+>> function.
+>>
+>> Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
+>> ---
+>> This patch is based on discussion with Alexei in the context of
+>> reusing load_pointer for upcoming arm64 BPF JIT compiler. [1]
+>>
+>> Compile tested on x86_64 and arm64.
+>>
+>> [1] https://lkml.org/lkml/2014/7/3/14
+>>
+>>   include/linux/filter.h | 13 +++++++++++++
+>>   net/core/filter.c      |  9 ---------
+>>   2 files changed, 13 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/include/linux/filter.h b/include/linux/filter.h
+>> index a7e3c48..2288e31 100644
+>> --- a/include/linux/filter.h
+>> +++ b/include/linux/filter.h
+>> @@ -6,6 +6,7 @@
+>>
+>>   #include <linux/atomic.h>
+>>   #include <linux/compat.h>
+>> +#include <linux/skbuff.h>
+>>   #include <linux/workqueue.h>
+>>   #include <uapi/linux/filter.h>
+>>
+>> @@ -406,6 +407,18 @@ static inline u16 bpf_anc_helper(const struct
+>> sock_filter *ftest)
+>>         }
+>>   }
+>>
+>> +void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb,
+>> +                                          int k, unsigned int size);
+>> +
+>> +static inline void *load_pointer(const struct sk_buff *skb, int k,
+>> +                                unsigned int size, void *buffer)
+>> +{
+>
+>
+> Fine by me, but since you're exporting this into a header,
+> please give this a more specific name, such as bpf_load_pointer(),
+> for example.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/mach-at91/setup.c | 6 ------
- 1 file changed, 6 deletions(-)
+Daniel, thanks for the suggestion. I'll send out v2 shortly.
 
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index ae269291d19d..cdd717a4fa30 100644
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -321,17 +321,11 @@ void __init at91_map_io(void)
- 
- void __iomem *at91_shdwc_base = NULL;
- 
--static void at91sam9_poweroff(void)
--{
--	at91_shdwc_write(AT91_SHDW_CR, AT91_SHDW_KEY | AT91_SHDW_SHDW);
--}
--
- void __init at91_ioremap_shdwc(u32 base_addr)
- {
- 	at91_shdwc_base = ioremap(base_addr, 16);
- 	if (!at91_shdwc_base)
- 		panic(pr_fmt("Impossible to ioremap at91_shdwc_base\n"));
--	pm_power_off = at91sam9_poweroff;
- }
- 
- void __iomem *at91_rstc_base;
--- 
-2.0.1
-
+>
+> Thanks,
+>
+> Daniel
