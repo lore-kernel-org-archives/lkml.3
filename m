@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965090AbaGCKL5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:11:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51641 "EHLO
+	id S1030357AbaGCKM2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:12:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51611 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758302AbaGCJVu (ORCPT
+	with ESMTP id S1758265AbaGCJVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:21:50 -0400
+	Thu, 3 Jul 2014 05:21:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 044/198] KVM: lapic: sync highest ISR to hardware apic on EOI
-Date: Thu,  3 Jul 2014 10:18:07 +0100
-Message-Id: <1404379241-8590-45-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 039/198] matroxfb: perform a dummy read of M_STATUS
+Date: Thu,  3 Jul 2014 10:18:02 +0100
+Message-Id: <1404379241-8590-40-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -27,127 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit fc57ac2c9ca8109ea97fcc594f4be436944230cc upstream.
+commit 972754cfaee94d6e25acf94a497bc0a864d91b7e upstream.
 
-When Hyper-V enlightenments are in effect, Windows prefers to issue an
-Hyper-V MSR write to issue an EOI rather than an x2apic MSR write.
-The Hyper-V MSR write is not handled by the processor, and besides
-being slower, this also causes bugs with APIC virtualization.  The
-reason is that on EOI the processor will modify the highest in-service
-interrupt (SVI) field of the VMCS, as explained in section 29.1.4 of
-the SDM; every other step in EOI virtualization is already done by
-apic_send_eoi or on VM entry, but this one is missing.
+I had occasional screen corruption with the matrox framebuffer driver and
+I found out that the reason for the corruption is that the hardware
+blitter accesses the videoram while it is being written to.
 
-We need to do the same, and be careful not to muck with the isr_count
-and highest_isr_cache fields that are unused when virtual interrupt
-delivery is enabled.
+The matrox driver has a macro WaitTillIdle() that should wait until the
+blitter is idle, but it sometimes doesn't work. I added a dummy read
+mga_inl(M_STATUS) to WaitTillIdle() to fix the problem. The dummy read
+will flush the write buffer in the PCI chipset, and the next read of
+M_STATUS will return the hardware status.
 
-Reviewed-by: Yang Zhang <yang.z.zhang@intel.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Since applying this patch, I had no screen corruption at all.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kvm/lapic.c | 62 ++++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 43 insertions(+), 19 deletions(-)
+ drivers/video/matrox/matroxfb_base.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index 256816b73460..ad86e3b1df92 100644
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -370,6 +370,8 @@ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
+diff --git a/drivers/video/matrox/matroxfb_base.h b/drivers/video/matrox/matroxfb_base.h
+index 556d96ce40bf..89a8a89a5eb2 100644
+--- a/drivers/video/matrox/matroxfb_base.h
++++ b/drivers/video/matrox/matroxfb_base.h
+@@ -698,7 +698,7 @@ void matroxfb_unregister_driver(struct matroxfb_driver* drv);
  
- static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
- {
-+	/* Note that we never get here with APIC virtualization enabled.  */
-+
- 	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
- 		++apic->isr_count;
- 	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
-@@ -381,12 +383,48 @@ static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
- 	apic->highest_isr_cache = vec;
- }
+ #define mga_fifo(n)	do {} while ((mga_inl(M_FIFOSTATUS) & 0xFF) < (n))
  
-+static inline int apic_find_highest_isr(struct kvm_lapic *apic)
-+{
-+	int result;
-+
-+	/*
-+	 * Note that isr_count is always 1, and highest_isr_cache
-+	 * is always -1, with APIC virtualization enabled.
-+	 */
-+	if (!apic->isr_count)
-+		return -1;
-+	if (likely(apic->highest_isr_cache != -1))
-+		return apic->highest_isr_cache;
-+
-+	result = find_highest_vector(apic->regs + APIC_ISR);
-+	ASSERT(result == -1 || result >= 16);
-+
-+	return result;
-+}
-+
- static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
- {
--	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
-+	struct kvm_vcpu *vcpu;
-+	if (!__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
-+		return;
-+
-+	vcpu = apic->vcpu;
-+
-+	/*
-+	 * We do get here for APIC virtualization enabled if the guest
-+	 * uses the Hyper-V APIC enlightenment.  In this case we may need
-+	 * to trigger a new interrupt delivery by writing the SVI field;
-+	 * on the other hand isr_count and highest_isr_cache are unused
-+	 * and must be left alone.
-+	 */
-+	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
-+		kvm_x86_ops->hwapic_isr_update(vcpu->kvm,
-+					       apic_find_highest_isr(apic));
-+	else {
- 		--apic->isr_count;
--	BUG_ON(apic->isr_count < 0);
--	apic->highest_isr_cache = -1;
-+		BUG_ON(apic->isr_count < 0);
-+		apic->highest_isr_cache = -1;
-+	}
- }
+-#define WaitTillIdle()	do {} while (mga_inl(M_STATUS) & 0x10000)
++#define WaitTillIdle()	do { mga_inl(M_STATUS); do {} while (mga_inl(M_STATUS) & 0x10000); } while (0)
  
- int kvm_lapic_find_highest_irr(struct kvm_vcpu *vcpu)
-@@ -466,22 +504,6 @@ static void pv_eoi_clr_pending(struct kvm_vcpu *vcpu)
- 	__clear_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention);
- }
- 
--static inline int apic_find_highest_isr(struct kvm_lapic *apic)
--{
--	int result;
--
--	/* Note that isr_count is always 1 with vid enabled */
--	if (!apic->isr_count)
--		return -1;
--	if (likely(apic->highest_isr_cache != -1))
--		return apic->highest_isr_cache;
--
--	result = find_highest_vector(apic->regs + APIC_ISR);
--	ASSERT(result == -1 || result >= 16);
--
--	return result;
--}
--
- void kvm_apic_update_tmr(struct kvm_vcpu *vcpu, u32 *tmr)
- {
- 	struct kvm_lapic *apic = vcpu->arch.apic;
-@@ -1619,6 +1641,8 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
- 	int vector = kvm_apic_has_interrupt(vcpu);
- 	struct kvm_lapic *apic = vcpu->arch.apic;
- 
-+	/* Note that we never get here with APIC virtualization enabled.  */
-+
- 	if (vector == -1)
- 		return -1;
- 
+ /* code speedup */
+ #ifdef CONFIG_FB_MATROX_MILLENIUM
 -- 
 1.9.1
 
