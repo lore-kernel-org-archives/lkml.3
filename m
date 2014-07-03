@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964892AbaGCJWN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:22:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51691 "EHLO
+	id S1758424AbaGCJWV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:22:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51744 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932158AbaGCJWB (ORCPT
+	with ESMTP id S932327AbaGCJWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:22:01 -0400
+	Thu, 3 Jul 2014 05:22:15 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dennis Dalessandro <dennis.dalessandro@intel.com>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: xiao jin <jin.xiao@intel.com>, "Zhang, Qi1" <qi1.zhang@intel.com>,
+        Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 051/198] IB/ipath: Translate legacy diagpkt into newer extended diagpkt
-Date: Thu,  3 Jul 2014 10:18:14 +0100
-Message-Id: <1404379241-8590-52-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 061/198] USB: usb_wwan: fix race between write and resume
+Date: Thu,  3 Jul 2014 10:18:24 +0100
+Message-Id: <1404379241-8590-62-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,39 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dennis Dalessandro <dennis.dalessandro@intel.com>
+From: xiao jin <jin.xiao@intel.com>
 
-commit 7e6d3e5c70f13874fb06e6b67696ed90ce79bd48 upstream.
+commit d9e93c08d8d985e5ef89436ebc9f4aad7e31559f upstream.
 
-This patch addresses an issue where the legacy diagpacket is sent in
-from the user, but the driver operates on only the extended
-diagpkt. This patch specifically initializes the extended diagpkt
-based on the legacy packet.
+We find a race between write and resume. usb_wwan_resume run play_delayed()
+and spin_unlock, but intfdata->suspended still is not set to zero.
+At this time usb_wwan_write is called and anchor the urb to delay
+list. Then resume keep running but the delayed urb have no chance
+to be commit until next resume. If the time of next resume is far
+away, tty will be blocked in tty_wait_until_sent during time. The
+race also can lead to writes being reordered.
 
-Reported-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+This patch put play_Delayed and intfdata->suspended together in the
+spinlock, it's to avoid the write race during resume.
+
+Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
+option driver")
+
+Signed-off-by: xiao jin <jin.xiao@intel.com>
+Signed-off-by: Zhang, Qi1 <qi1.zhang@intel.com>
+Reviewed-by: David Cohen <david.a.cohen@linux.intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/hw/ipath/ipath_diag.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/serial/usb_wwan.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/infiniband/hw/ipath/ipath_diag.c b/drivers/infiniband/hw/ipath/ipath_diag.c
-index e2f9a51f4a38..45802e97332e 100644
---- a/drivers/infiniband/hw/ipath/ipath_diag.c
-+++ b/drivers/infiniband/hw/ipath/ipath_diag.c
-@@ -346,6 +346,10 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
- 			ret = -EFAULT;
- 			goto bail;
+diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
+index 7096d0ba1d0f..80c16d84156a 100644
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -664,17 +664,15 @@ int usb_wwan_resume(struct usb_serial *serial)
  		}
-+		dp.len = odp.len;
-+		dp.unit = odp.unit;
-+		dp.data = odp.data;
-+		dp.pbc_wd = 0;
- 	} else {
- 		ret = -EINVAL;
- 		goto bail;
+ 	}
+ 
++	spin_lock_irq(&intfdata->susp_lock);
+ 	for (i = 0; i < serial->num_ports; i++) {
+ 		/* walk all ports */
+ 		port = serial->port[i];
+ 		portdata = usb_get_serial_port_data(port);
+ 
+ 		/* skip closed ports */
+-		spin_lock_irq(&intfdata->susp_lock);
+-		if (!portdata || !portdata->opened) {
+-			spin_unlock_irq(&intfdata->susp_lock);
++		if (!portdata || !portdata->opened)
+ 			continue;
+-		}
+ 
+ 		for (j = 0; j < N_IN_URB; j++) {
+ 			urb = portdata->in_urbs[j];
+@@ -687,9 +685,7 @@ int usb_wwan_resume(struct usb_serial *serial)
+ 			}
+ 		}
+ 		play_delayed(port);
+-		spin_unlock_irq(&intfdata->susp_lock);
+ 	}
+-	spin_lock_irq(&intfdata->susp_lock);
+ 	intfdata->suspended = 0;
+ 	spin_unlock_irq(&intfdata->susp_lock);
+ err_out:
 -- 
 1.9.1
 
