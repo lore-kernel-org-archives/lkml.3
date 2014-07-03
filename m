@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751070AbaGCIdi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 04:33:38 -0400
-Received: from smtp-out-164.synserver.de ([212.40.185.164]:1097 "EHLO
-	smtp-out-164.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408AbaGCIdg (ORCPT
+	id S1756570AbaGCIeF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 04:34:05 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:39289 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182AbaGCIeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 04:33:36 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 23798
-Message-ID: <53B5155E.7050103@metafoo.de>
-Date: Thu, 03 Jul 2014 10:33:34 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
-MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, vinod.koul@intel.com,
-        dan.j.williams@intel.com, tiwai@suse.de,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        joelf@ti.com, nsekhar@ti.com
-CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH v3 0/5] ALSA/ASoC/dmaengine: Fix 3 bytes physical sample
- support
-References: <1404363116-10538-1-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1404363116-10538-1-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jul 2014 04:34:01 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-3f-53b51572fabb
+Message-id: <1404376434.27983.22.camel@AMDC1943>
+Subject: drm: Possible NULL ptr exceptions in other DRM drivers
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: David Airlie <airlied@linux.ie>, Thomas Hellstrom <thellstrom@vmware.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, BenSkeggs <bskeggs@redhat.com>,
+        RobClark <robdclark@gmail.com>, GerdHoffmann <kraxel@redhat.com>
+Date: Thu, 03 Jul 2014 10:33:54 +0200
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu1
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJLMWRmVeSWpSXmKPExsVy+t/xq7pFoluDDSaeYrLoPXeSyeLl8g5G
+	i4UP7zJbXPn6ns3i2a2TzBaXd81hs3i+8AezxedTx9gcODz2flvA4rFz1l12j+3fHrB63O8+
+	zuTxft9VNo/Pm+Q83s1/yxbAHsVlk5Kak1mWWqRvl8CV0bb7PHPBLfaK4z/OMDcwbmXrYuTk
+	kBAwkfj8dQ8LhC0mceHeerC4kMBSRonHB8S6GLmA7M+MEu27LzOCJHgFDCRmfD3PBGILC9hL
+	NDxcAWazCRhLbF6+hA2kQURgDpPEjw2N7CAJFgFViXsd78CmMguoS0yat4gZYpuyxLz9x5gg
+	hgpK/Jh8jwWiRl5i85q3zBMYeWchaZmFpGwWkrIFjMyrGEVTS5MLipPScw31ihNzi0vz0vWS
+	83M3MUKC98sOxsXHrA4xCnAwKvHwNq7YECzEmlhWXJl7iFGCg1lJhHf65i3BQrwpiZVVqUX5
+	8UWlOanFhxiZODilGhi7tu85uVHmWqVWgv15q+CES69U6v/fPpvBdCinMnudlcj1O4UGXnyL
+	Y1+Gbd+lxtNqeE1iw7bTmtYnX8h2Le+eXSOdmx90ZOFM3oKU29KGH6zCM25w3Zw098C6nd2F
+	jSeuKD6sytklclzROv3L0e0NAbe7th/xktu1K/Gd4ca+HY+s1xzQ/tmtxFKckWioxVxUnAgA
+	asB/2DwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2014 06:51 AM, Peter Ujfalusi wrote:
-[...]
->
-> First step is to add DMA_SLAVE_BUSWIDTH_3_BYTES to dma_slave_buswidth for
-> engines and users to select 3 bytes as bus width.
->
-> Followed by:
-> In dmaengine_pcm_set_runtime_hwparams() we should check the slave_caps of the
-> dma if it supports the give sample physical width of the sample. Based on this
-> information we initialize the hw.formats: masking out all non supported formats
-> based on the physical width.
-> In case the dma driver does not implement the slave_caps the default assumption
-> is that it supports 1, 2 and 4 bytes widths.
+Hi,
 
-The whole series looks good to me. Since both the DMA and ALSA bits changed 
-in this series are fairly trivial I think it is best to merge the whole 
-series through the ASoC tree.
+In Exynos DRM driver I found a NULL pointer exception when there were no
+components set for DRM driver:
+https://lkml.org/lkml/2014/6/30/331
 
-- Lars
+The NULL pointer will happen during driver suspend if drm_driver.load()
+is not called. The load() won't be called if no components are added.
+
+After looking at other DRM drivers it seems that they may also be
+affected by this issue. Some possible candidates (for my amateur's eyes)
+are:
+1. vmwgfx/vmwgfx_drv.c (vmw_pci_suspend: dereference of 'dev_priv')
+2. qxl/qxl_drv.c (qxl_drm_freeze: dereference of 'qdev')
+3. nouveau/nouveau_drm.c (nouveau_do_suspend: dereference of 'drm')
+4. msm/msm_drv.c (msm_pm_suspend: dereference of 'ddev')
+5. cirrus/cirrus_drv.c (cirrus_pm_suspend: dereference of 'cdev')
+6. bochs/bochs_drv.c (bochs_pm_suspend: dereference of 'bochs')
+
+Unfortunately I am not familiar with DRM drivers and I do not have
+hardware to test it.
+
+Maybe it is worth looking at?
+
+Best regards,
+Krzysztof
+
