@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758519AbaGCJWc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:22:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51809 "EHLO
+	id S1030722AbaGCKDf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:03:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51835 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758429AbaGCJWa (ORCPT
+	with ESMTP id S1758488AbaGCJWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:22:30 -0400
+	Thu, 3 Jul 2014 05:22:34 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Huang Rui <ray.huang@amd.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 071/198] usb: usbtest: fix unlink write error with pattern 1
-Date: Thu,  3 Jul 2014 10:18:34 +0100
-Message-Id: <1404379241-8590-72-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 075/198] pNFS: Handle allocation errors correctly in filelayout_alloc_layout_hdr()
+Date: Thu,  3 Jul 2014 10:18:38 +0100
+Message-Id: <1404379241-8590-76-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,71 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huang Rui <ray.huang@amd.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit e4d58f5dcb7d7be45df8def31881ebfae99c75da upstream.
+commit 6df200f5d5191bdde4d2e408215383890f956781 upstream.
 
-TEST 12 and TEST 24 unlinks the URB write request for N times. When
-host and gadget both initialize pattern 1 (mod 63) data series to
-transfer, the gadget side will complain the wrong data which is not
-expected.  Because in host side, usbtest doesn't fill the data buffer
-as mod 63 and this patch fixed it.
+Return the NULL pointer when the allocation fails.
 
-[20285.488974] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
-[20285.489181] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
-[20285.489423] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb50800 length 512 last
-[20285.489727] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
-[20285.490055] dwc3 dwc3.0.auto: Command Complete --> 0
-[20285.490281] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
-[20285.490492] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Active
-[20285.490713] dwc3 dwc3.0.auto: ep1out-bulk: endpoint busy
-[20285.490909] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Complete
-[20285.491117] dwc3 dwc3.0.auto: request ffff8800aa6cb480 from ep1out-bulk completed 512/512 ===> 0
-[20285.491431] zero gadget: bad OUT byte, buf[1] = 0
-[20285.491605] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Set Stall' params 00000000 00000000 00000000
-[20285.491915] dwc3 dwc3.0.auto: Command Complete --> 0
-[20285.492099] dwc3 dwc3.0.auto: queing request ffff8800aa6cb480 to ep1out-bulk length 512
-[20285.492387] dwc3 dwc3.0.auto: ep1out-bulk: Transfer Not Ready
-[20285.492595] dwc3 dwc3.0.auto: ep1out-bulk: reason Transfer Not Active
-[20285.492830] dwc3 dwc3.0.auto: ep1out-bulk: req ffff8800aa6cb480 dma aeb51000 length 512 last
-[20285.493135] dwc3 dwc3.0.auto: ep1out-bulk: cmd 'Start Transfer' params 00000000 a9eaf000 00000000
-[20285.493465] dwc3 dwc3.0.auto: Command Complete --> 0
-
-Signed-off-by: Huang Rui <ray.huang@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/misc/usbtest.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ fs/nfs/nfs4filelayout.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/misc/usbtest.c b/drivers/usb/misc/usbtest.c
-index 8b4ca1cb450a..a36c46c9318a 100644
---- a/drivers/usb/misc/usbtest.c
-+++ b/drivers/usb/misc/usbtest.c
-@@ -1149,6 +1149,11 @@ static int unlink1(struct usbtest_dev *dev, int pipe, int size, int async)
- 	urb->context = &completion;
- 	urb->complete = unlink1_callback;
+diff --git a/fs/nfs/nfs4filelayout.c b/fs/nfs/nfs4filelayout.c
+index 17ed87ef9de8..76a988f31727 100644
+--- a/fs/nfs/nfs4filelayout.c
++++ b/fs/nfs/nfs4filelayout.c
+@@ -1301,7 +1301,7 @@ filelayout_alloc_layout_hdr(struct inode *inode, gfp_t gfp_flags)
+ 	struct nfs4_filelayout *flo;
  
-+	if (usb_pipeout(urb->pipe)) {
-+		simple_fill_buf(urb);
-+		urb->transfer_flags |= URB_ZERO_PACKET;
-+	}
-+
- 	/* keep the endpoint busy.  there are lots of hc/hcd-internal
- 	 * states, and testing should get to all of them over time.
- 	 *
-@@ -1279,6 +1284,11 @@ static int unlink_queued(struct usbtest_dev *dev, int pipe, unsigned num,
- 				unlink_queued_callback, &ctx);
- 		ctx.urbs[i]->transfer_dma = buf_dma;
- 		ctx.urbs[i]->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
-+
-+		if (usb_pipeout(ctx.urbs[i]->pipe)) {
-+			simple_fill_buf(ctx.urbs[i]);
-+			ctx.urbs[i]->transfer_flags |= URB_ZERO_PACKET;
-+		}
- 	}
+ 	flo = kzalloc(sizeof(*flo), gfp_flags);
+-	return &flo->generic_hdr;
++	return flo != NULL ? &flo->generic_hdr : NULL;
+ }
  
- 	/* Submit all the URBs and then unlink URBs num - 4 and num - 2. */
+ static void
 -- 
 1.9.1
 
