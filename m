@@ -1,108 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755676AbaGCHEK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 03:04:10 -0400
-Received: from mout.web.de ([212.227.17.12]:64521 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751135AbaGCHEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 03:04:08 -0400
-Message-ID: <53B50062.30200@web.de>
-Date: Thu, 03 Jul 2014 09:04:02 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1755784AbaGCHGt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 03:06:49 -0400
+Received: from mail01.baslerweb.com ([80.156.24.166]:4048 "EHLO
+	mail01.baslerweb.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752960AbaGCHGs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 03:06:48 -0400
+Message-ID: <53B50105.1060005@baslerweb.com>
+Date: Thu, 3 Jul 2014 09:06:45 +0200
+From: Stefan Klug <stefan.klug@baslerweb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Hui Wang <hui.wang@canonical.com>
-CC: Hui Wang <jason77.wang@gmail.com>, tiwai@suse.de,
-        alsa-devel@alsa-project.org, alex.hung@canonical.com, yk@canonical.com,
-        david.henningsson@canonical.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [V2 PATCH] ALSA: hda - Enable mute/mic-mute LEDs for more Thinkpads
- with Conexant codec
-References: <1385534846-20829-1-git-send-email-hui.wang@canonical.com> <53AFF992.5030403@web.de> <53B0C596.6090007@canonical.com> <53B1078B.4090101@web.de> <53B219DF.6090807@canonical.com> <53B26575.1000003@web.de> <53B27ED7.4070401@canonical.com>
-In-Reply-To: <53B27ED7.4070401@canonical.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="wIRoUibvDoE2B02u7dbWPTjdw07uiX4bj"
-X-Provags-ID: V03:K0:WCE7FYy9OVTQKYtiGWiRUgfEUk08bt3ZnLGoQrXcgklC/Fl+WHG
- DkRGkhxnGf2jRZTC//lGeOqOPB5VzmtgKenAUK/6VodZVhilT9H9zx8ncXrY23M/rdmNdn2
- wMw2Sy7zXJFzSNQjoc8ZEUEUE7JeX8OxKisoR0gzs7S5mv17wkxlud18RQ/vK5j3x3TNzHq
- hpelBUEQjb3814mzwL5Xg==
+To: Greg KH <greg@kroah.com>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <stern@rowland.harvard.edu>
+Subject: Re: [PATCH][RFC] USB: zerocopy support for usbfs
+References: <53B42B14.7010303@baslerweb.com> <20140702175526.GA21063@kroah.com>
+In-Reply-To: <20140702175526.GA21063@kroah.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [172.16.50.117]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---wIRoUibvDoE2B02u7dbWPTjdw07uiX4bj
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-On 2014-07-01 11:26, Hui Wang wrote:
-> On 07/01/2014 03:38 PM, Jan Kiszka wrote:
->> On 2014-07-01 04:15, Hui Wang wrote:
->>> On 06/30/2014 02:45 PM, Jan Kiszka wrote:
->>>> On 2014-06-30 04:04, Hui Wang wrote:
->>>>> On 06/29/2014 07:33 PM, Jan Kiszka wrote:
->>>>>> On 2013-11-27 07:47, Hui Wang wrote:
->>>>>>> Most Thinkpad Edge series laptops use conexant codec, so far
->>>>>>> although
-> <snip>
->>>>>>>
->>>> Is there anything I can debug or any information I can collect from =
-my
->>>> box to examine this?
->>> What is the linux distribution on your machine? And use showkey to ca=
-tch
->>> the keycode of that button.
->> I'm running OpenSUSE 13.1. The reported keycode of the power button is=
-
->> 116.
-> It seems the keycode is correct, it is power keycode rather the mute
-> keycode.
->=20
-> Could you please do some debug, let us find which line of code is the
-> root cause for this problem. for example:
->=20
-> after running the line, the problem shows up:
->=20
-> 1.     if (ACPI_SUCCESS(acpi_get_devices("LEN0068", acpi_check_cb,
-> &found, NULL)) && found) // in the sound/pci/hda/thinkpad_helper.c,
-> is_thinkpad()
-
-This evaluates to true
-
->=20
-> 2.     return ACPI_SUCCESS(acpi_get_devices("IBM0068", acpi_check_cb,
-> &found, NULL)) && found; // same as above
->=20
-> 3.         if (led_set_func(TPACPI_LED_MUTE, false) >=3D 0) { //in the
-> sound/pci/hda/thinkpad_helper.c, hda_fixup_thinkpad_acpi()
-
-=2E..and this
-
->=20
-> 4. if (led_set_func(TPACPI_LED_MICMUTE, false) >=3D 0) { // same as abo=
-ve
->=20
-
-=2E..and this as well. spec->num_adc_nids is 1.
-
-Jan
+On 02.07.2014 19:55, Greg KH wrote:
+> Very nice. 
+Thanks.
+> Minor non-technical issues here, your patch is corrupted (linewrapped 
+> and tabs converted to spaces) and can't be applied at all. Can you fix 
+> your email client and try again? Look at 
+> Documentation/email_clients.txt for hints on how to do this.
+Hm, I thought I checked that one. Sorry. I'll test and resend correctly.
+>> --- a/drivers/usb/core/devio.c
+>> +++ b/drivers/usb/core/devio.c
+>> @@ -4,6 +4,7 @@
+>>    *      devio.c  --  User space communication with USB devices.
+>>    *
+>>    *      Copyright (C) 1999-2000  Thomas Sailer (sailer@ife.ee.ethz.ch)
+>> + *      Copyright (C) 2014  Stefan Klug (stefan.klug@baslerweb.com)
+> According to legal advice given to me, this isn't needed / true, so can
+> you drop it?  Or, if you have different legal advice, might I ask for
+> what the legal justification is that this needs to be added?
+No problem. I'll remove them.
+>
+>>    *      This program is free software; you can redistribute it and/or
+>> modify
+>>    *      it under the terms of the GNU General Public License as published
+>> by
+>> @@ -30,6 +31,7 @@
+>>    *    04.01.2000   0.2   Turned into its own filesystem
+>>    *    30.09.2005   0.3   Fix user-triggerable oops in async URB delivery
+>>    *                 (CAN-2005-3055)
+>> + *    07.05.2014   0.4   Added zerocopy support
+> No need to do this, we use git now and that's where the changelog goes.
+> We should just delete this "fake changelog" entirely from this file.
+I'll remove the line and maybe prepare a cleanup patch later.
 
 
+Stefan Klug
+Software Developer
 
---wIRoUibvDoE2B02u7dbWPTjdw07uiX4bj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Basler AG
+An der Strusbek 60-62
+22926 Ahrensburg
+Germany
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Tel. +49 4102 463 582
+Fax +49 4102 463 46 582
+ 
+Stefan.Klug@baslerweb.com
 
-iEYEARECAAYFAlO1AGIACgkQitSsb3rl5xQCvQCgyHPB2f7hTX5X9OPbMhnudaBz
-6iUAniHhhGy+m9CM12QO7+ROVDKvfF2W
-=mx87
------END PGP SIGNATURE-----
+www.baslerweb.com
 
---wIRoUibvDoE2B02u7dbWPTjdw07uiX4bj--
+Vorstand: Dr.-Ing. Dietmar Ley (Vorsitzender) · John P. Jennings · Arndt Bake · Hardy Mehl
+Aufsichtsratsvorsitzender: Norbert Basler 
+Basler AG · Amtsgericht Lübeck HRB 4090 · Ust-IdNr.: DE 135 098 121 · Steuer-Nr.: 30 292 04497 · WEEE-Reg.-Nr. DE 83888045
