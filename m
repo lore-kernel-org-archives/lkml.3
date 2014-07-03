@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964971AbaGCJXJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:23:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51982 "EHLO
+	id S965045AbaGCJXV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:23:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52020 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964923AbaGCJXF (ORCPT
+	with ESMTP id S964923AbaGCJXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:23:05 -0400
+	Thu, 3 Jul 2014 05:23:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Kamil Iskra <iskra@mcs.anl.gov>, Andi Kleen <andi@firstfloor.org>,
+        Borislav Petkov <bp@suse.de>, Chen Gong <gong.chen@linux.jf.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 096/198] powerpc/serial: Use saner flags when creating legacy ports
-Date: Thu,  3 Jul 2014 10:18:59 +0100
-Message-Id: <1404379241-8590-97-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 095/198] mm/memory-failure.c: support use of a dedicated thread to handle SIGBUS(BUS_MCEERR_AO)
+Date: Thu,  3 Jul 2014 10:18:58 +0100
+Message-Id: <1404379241-8590-96-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -27,87 +31,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit c4cad90f9e9dcb85afc5e75a02ae3522ed077296 upstream.
+commit 3ba08129e38437561df44c36b7ea9081185d5333 upstream.
 
-We had a mix & match of flags used when creating legacy ports
-depending on where we found them in the device-tree. Among others
-we were missing UPF_SKIP_TEST for some kind of ISA ports which is
-a problem as quite a few UARTs out there don't support the loopback
-test (such as a lot of BMCs).
+Currently memory error handler handles action optional errors in the
+deferred manner by default.  And if a recovery aware application wants
+to handle it immediately, it can do it by setting PF_MCE_EARLY flag.
+However, such signal can be sent only to the main thread, so it's
+problematic if the application wants to have a dedicated thread to
+handler such signals.
 
-Let's pick the set of flags used by the SoC code and generalize it
-which means autoconf, no loopback test, irq maybe shared and fixed
-port.
+So this patch adds dedicated thread support to memory error handler.  We
+have PF_MCE_EARLY flags for each thread separately, so with this patch
+AO signal is sent to the thread with PF_MCE_EARLY flag set, not the main
+thread.  If you want to implement a dedicated thread, you call prctl()
+to set PF_MCE_EARLY on the thread.
 
-Sending to stable as the lack of UPF_SKIP_TEST is breaking
-serial on some machines so I want this back into distros
+Memory error handler collects processes to be killed, so this patch lets
+it check PF_MCE_EARLY flag on each thread in the collecting routines.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[ luis: backported to 3.11: adjusted context ]
+No behavioral change for all non-early kill cases.
+
+Tony said:
+
+: The old behavior was crazy - someone with a multithreaded process might
+: well expect that if they call prctl(PF_MCE_EARLY) in just one thread, then
+: that thread would see the SIGBUS with si_code = BUS_MCEERR_A0 - even if
+: that thread wasn't the main thread for the process.
+
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Tony Luck <tony.luck@intel.com>
+Cc: Kamil Iskra <iskra@mcs.anl.gov>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Chen Gong <gong.chen@linux.jf.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kernel/legacy_serial.c | 17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ Documentation/vm/hwpoison.txt |  5 ++++
+ mm/memory-failure.c           | 56 +++++++++++++++++++++++++++++++++----------
+ 2 files changed, 48 insertions(+), 13 deletions(-)
 
-diff --git a/arch/powerpc/kernel/legacy_serial.c b/arch/powerpc/kernel/legacy_serial.c
-index 0733b05eb856..bfcdb468d207 100644
---- a/arch/powerpc/kernel/legacy_serial.c
-+++ b/arch/powerpc/kernel/legacy_serial.c
-@@ -48,6 +48,9 @@ static struct __initdata of_device_id legacy_serial_parents[] = {
- static unsigned int legacy_serial_count;
- static int legacy_serial_console = -1;
- 
-+static const upf_t legacy_port_flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST |
-+	UPF_SHARE_IRQ | UPF_FIXED_PORT;
+diff --git a/Documentation/vm/hwpoison.txt b/Documentation/vm/hwpoison.txt
+index 550068466605..6ae89a9edf2a 100644
+--- a/Documentation/vm/hwpoison.txt
++++ b/Documentation/vm/hwpoison.txt
+@@ -84,6 +84,11 @@ PR_MCE_KILL
+ 		PR_MCE_KILL_EARLY: Early kill
+ 		PR_MCE_KILL_LATE:  Late kill
+ 		PR_MCE_KILL_DEFAULT: Use system global default
++	Note that if you want to have a dedicated thread which handles
++	the SIGBUS(BUS_MCEERR_AO) on behalf of the process, you should
++	call prctl(PR_MCE_KILL_EARLY) on the designated thread. Otherwise,
++	the SIGBUS is sent to the main thread.
 +
- static unsigned int tsi_serial_in(struct uart_port *p, int offset)
+ PR_MCE_KILL_GET
+ 	return current mode
+ 
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 4c7dda814f9c..159b4506f042 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -382,15 +382,44 @@ static void kill_procs(struct list_head *to_kill, int forcekill, int trapno,
+ 	}
+ }
+ 
+-static int task_early_kill(struct task_struct *tsk, int force_early)
++/*
++ * Find a dedicated thread which is supposed to handle SIGBUS(BUS_MCEERR_AO)
++ * on behalf of the thread group. Return task_struct of the (first found)
++ * dedicated thread if found, and return NULL otherwise.
++ *
++ * We already hold read_lock(&tasklist_lock) in the caller, so we don't
++ * have to call rcu_read_lock/unlock() in this function.
++ */
++static struct task_struct *find_early_kill_thread(struct task_struct *tsk)
++{
++	struct task_struct *t;
++
++	for_each_thread(tsk, t)
++		if ((t->flags & PF_MCE_PROCESS) && (t->flags & PF_MCE_EARLY))
++			return t;
++	return NULL;
++}
++
++/*
++ * Determine whether a given process is "early kill" process which expects
++ * to be signaled when some page under the process is hwpoisoned.
++ * Return task_struct of the dedicated thread (main thread unless explicitly
++ * specified) if the process is "early kill," and otherwise returns NULL.
++ */
++static struct task_struct *task_early_kill(struct task_struct *tsk,
++					   int force_early)
  {
- 	unsigned int tmp;
-@@ -153,8 +156,6 @@ static int __init add_legacy_soc_port(struct device_node *np,
- {
- 	u64 addr;
- 	const u32 *addrp;
--	upf_t flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST | UPF_SHARE_IRQ
--		| UPF_FIXED_PORT;
- 	struct device_node *tsi = of_get_parent(np);
- 
- 	/* We only support ports that have a clock frequency properly
-@@ -185,9 +186,11 @@ static int __init add_legacy_soc_port(struct device_node *np,
- 	 * IO port value. It will be fixed up later along with the irq
- 	 */
- 	if (tsi && !strcmp(tsi->type, "tsi-bridge"))
--		return add_legacy_port(np, -1, UPIO_TSI, addr, addr, NO_IRQ, flags, 0);
-+		return add_legacy_port(np, -1, UPIO_TSI, addr, addr,
-+				       NO_IRQ, legacy_port_flags, 0);
- 	else
--		return add_legacy_port(np, -1, UPIO_MEM, addr, addr, NO_IRQ, flags, 0);
-+		return add_legacy_port(np, -1, UPIO_MEM, addr, addr,
-+				       NO_IRQ, legacy_port_flags, 0);
++	struct task_struct *t;
+ 	if (!tsk->mm)
+-		return 0;
++		return NULL;
+ 	if (force_early)
+-		return 1;
+-	if (tsk->flags & PF_MCE_PROCESS)
+-		return !!(tsk->flags & PF_MCE_EARLY);
+-	return sysctl_memory_failure_early_kill;
++		return tsk;
++	t = find_early_kill_thread(tsk);
++	if (t)
++		return t;
++	if (sysctl_memory_failure_early_kill)
++		return tsk;
++	return NULL;
  }
  
- static int __init add_legacy_isa_port(struct device_node *np,
-@@ -227,8 +230,8 @@ static int __init add_legacy_isa_port(struct device_node *np,
- 		taddr = 0;
+ /*
+@@ -412,16 +441,17 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
+ 	read_lock(&tasklist_lock);
+ 	for_each_process (tsk) {
+ 		struct anon_vma_chain *vmac;
++		struct task_struct *t = task_early_kill(tsk, force_early);
  
- 	/* Add port, irq will be dealt with later */
--	return add_legacy_port(np, index, UPIO_PORT, be32_to_cpu(reg[1]), taddr,
--			       NO_IRQ, UPF_BOOT_AUTOCONF, 0);
-+	return add_legacy_port(np, index, UPIO_PORT, be32_to_cpu(reg[1]),
-+			       taddr, NO_IRQ, legacy_port_flags, 0);
+-		if (!task_early_kill(tsk, force_early))
++		if (!t)
+ 			continue;
+ 		anon_vma_interval_tree_foreach(vmac, &av->rb_root,
+ 					       pgoff, pgoff) {
+ 			vma = vmac->vma;
+ 			if (!page_mapped_in_vma(page, vma))
+ 				continue;
+-			if (vma->vm_mm == tsk->mm)
+-				add_to_kill(tsk, page, vma, to_kill, tkc);
++			if (vma->vm_mm == t->mm)
++				add_to_kill(t, page, vma, to_kill, tkc);
+ 		}
+ 	}
+ 	read_unlock(&tasklist_lock);
+@@ -442,10 +472,10 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
+ 	read_lock(&tasklist_lock);
+ 	for_each_process(tsk) {
+ 		pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
++		struct task_struct *t = task_early_kill(tsk, force_early);
  
- }
- 
-@@ -301,7 +304,7 @@ static int __init add_legacy_pci_port(struct device_node *np,
- 	 * IO port value. It will be fixed up later along with the irq
- 	 */
- 	return add_legacy_port(np, index, iotype, base, addr, NO_IRQ,
--			       UPF_BOOT_AUTOCONF, np != pci_dev);
-+			       legacy_port_flags, np != pci_dev);
- }
- #endif
- 
+-		if (!task_early_kill(tsk, force_early))
++		if (!t)
+ 			continue;
+-
+ 		vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff,
+ 				      pgoff) {
+ 			/*
+@@ -455,8 +485,8 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
+ 			 * Assume applications who requested early kill want
+ 			 * to be informed of all such data corruptions.
+ 			 */
+-			if (vma->vm_mm == tsk->mm)
+-				add_to_kill(tsk, page, vma, to_kill, tkc);
++			if (vma->vm_mm == t->mm)
++				add_to_kill(t, page, vma, to_kill, tkc);
+ 		}
+ 	}
+ 	read_unlock(&tasklist_lock);
 -- 
 1.9.1
 
