@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758150AbaGCJV0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:21:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51506 "EHLO
+	id S1759099AbaGCKRo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:17:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51522 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758083AbaGCJVX (ORCPT
+	with ESMTP id S1757274AbaGCJV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:21:23 -0400
+	Thu, 3 Jul 2014 05:21:26 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Brian Healy <healybrian@gmail.com>, Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Chander Kashyap <k.chander@samsung.com>,
+        Inderpal Singh <inderpal.s@samsung.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 021/198] [media] rtl28xxu: add 1b80:d395 Peak DVB-T USB
-Date: Thu,  3 Jul 2014 10:17:44 +0100
-Message-Id: <1404379241-8590-22-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 027/198] PM / OPP: fix incorrect OPP count handling in of_init_opp_table
+Date: Thu,  3 Jul 2014 10:17:50 +0100
+Message-Id: <1404379241-8590-28-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,35 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Healy <healybrian@gmail.com>
+From: Chander Kashyap <chander.kashyap@linaro.org>
 
-commit 9ca24ae4083665bda38da45f4b5dc9bbaf936bc0 upstream.
+commit 086abb58590a4df73e8a6ed71fd418826937cd46 upstream.
 
-Add USB ID for Peak DVB-T USB.
+In of_init_opp_table function, if a failure to add an OPP is
+detected, the count of OPPs, yet to be added is not updated.
+Fix this by decrementing this count on failure as well.
 
-[crope@iki.fi: fix Brian email address and indentation]
-Signed-off-by: Brian Healy <healybrian@gmail.com>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Acked-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/usb/dvb-usb-v2/rtl28xxu.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/base/power/opp.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-index 3e9298bacdeb..be665b845434 100644
---- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-+++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-@@ -1390,6 +1390,8 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
- 		&rtl2832u_props, "Crypto ReDi PC 50 A", NULL) },
- 	{ DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
- 		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
-+	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd395,
-+		&rtl2832u_props, "Peak DVB-T USB", NULL) },
+diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+index c8ec186303db..a5d4de1b9d42 100644
+--- a/drivers/base/power/opp.c
++++ b/drivers/base/power/opp.c
+@@ -731,11 +731,9 @@ int of_init_opp_table(struct device *dev)
+ 		unsigned long freq = be32_to_cpup(val++) * 1000;
+ 		unsigned long volt = be32_to_cpup(val++);
  
- 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
- 		&rtl2832u_props, "Astrometa DVB-T2", NULL) },
+-		if (opp_add(dev, freq, volt)) {
++		if (opp_add(dev, freq, volt))
+ 			dev_warn(dev, "%s: Failed to add OPP %ld\n",
+ 				 __func__, freq);
+-			continue;
+-		}
+ 		nr -= 2;
+ 	}
+ 
 -- 
 1.9.1
 
