@@ -1,107 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030852AbaGCJur (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:50:47 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:53664 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030837AbaGCJun (ORCPT
+	id S1030819AbaGCJuk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:50:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52158 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965119AbaGCJXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:50:43 -0400
-Date: Thu, 3 Jul 2014 11:50:37 +0200
-From: Juri Lelli <juri.lelli@gmail.com>
-To: Zhihui Zhang <zzhsuny@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [sched] Don't account time after deadline twice
-Message-Id: <20140703115037.938f4c5dcd5a110529ff0df6@gmail.com>
-In-Reply-To: <CADFvMYKzpihC3GLwNFZW0KCrZQY5FDSH5EQd4iLmHLK+hauDWA@mail.gmail.com>
-References: <1404091570-5041-1-git-send-email-zzhsuny@gmail.com>
-	<20140701130816.GR6758@twins.programming.kicks-ass.net>
-	<20140701155915.55de01236e0540e1f0754560@gmail.com>
-	<CADFvMYKzpihC3GLwNFZW0KCrZQY5FDSH5EQd4iLmHLK+hauDWA@mail.gmail.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jul 2014 05:23:35 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 117/198] powerpc: Add AT_HWCAP2 to indicate V.CRYPTO category support
+Date: Thu,  3 Jul 2014 10:19:20 +0100
+Message-Id: <1404379241-8590-118-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
+References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jul 2014 19:44:04 -0400
-Zhihui Zhang <zzhsuny@gmail.com> wrote:
+3.11.10.13 -stable review patch.  If anyone has any objections, please let me know.
 
-> My point is that rq_clock(rq) - dl_se->deadline is already part of
-> dl_se->runtime, which is decremented before calling dl_runtime_exceeded().
+------------------
 
-But, we decrement dl_se->runtime looking at rq_clock_task(rq), that is
-in general <= rq_clock(rq), that we use to handle deadlines. So, if we
-do like you suggest, in some cases we could end up stealing some
-bandwidth from the system. Indeed, we prefer some pessimism here.
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-Thanks,
+commit dd58a092c4202f2bd490adab7285b3ff77f8e467 upstream.
 
-- Juri
+The Vector Crypto category instructions are supported by current POWER8
+chips, advertise them to userspace using a specific bit to properly
+differentiate with chips of the same architecture level that might not
+have them.
 
-> So the following line is not needed in the case of both overrun and missing
-> deadline:
-> 
->     dl_se->runtime -= rq_clock(rq) - dl_se->deadline;
-> 
-> Or did I miss anything?
-> 
-> thanks,
-> 
-> 
-> On Tue, Jul 1, 2014 at 9:59 AM, Juri Lelli <juri.lelli@gmail.com> wrote:
-> 
-> > On Tue, 1 Jul 2014 15:08:16 +0200
-> > Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> > > On Sun, Jun 29, 2014 at 09:26:10PM -0400, Zhihui Zhang wrote:
-> > > > Unless we want to double-penalize an overrun task, the time after the
-> > deadline
-> > > > and before the current time is already accounted in the negative
-> > dl_se->runtime
-> > > > value. So we can leave it as is in the case of dmiss && rorun.
-> > >
-> > > Juri?
-> > >
-> > > > Signed-off-by: Zhihui Zhang <zzhsuny@gmail.com>
-> > > > ---
-> > > >  kernel/sched/deadline.c | 6 ++----
-> > > >  1 file changed, 2 insertions(+), 4 deletions(-)
-> > > >
-> > > > diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> > > > index fc4f98b1..67df0d6 100644
-> > > > --- a/kernel/sched/deadline.c
-> > > > +++ b/kernel/sched/deadline.c
-> > > > @@ -579,10 +579,8 @@ int dl_runtime_exceeded(struct rq *rq, struct
-> > sched_dl_entity *dl_se)
-> > > >      * the next instance. Thus, if we do not account that, we are
-> > > >      * stealing bandwidth from the system at each deadline miss!
-> > > >      */
-> > > > -   if (dmiss) {
-> > > > -           dl_se->runtime = rorun ? dl_se->runtime : 0;
-> >
-> > If we didn't return 0 before, we are going to throttle (or replenish)
-> > the entity, and you want runtime to be <=0. So, this is needed.
-> >
-> > > > -           dl_se->runtime -= rq_clock(rq) - dl_se->deadline;
-> > > > -   }
-> >
-> > A little pessimism in some cases, due to the fact that we use both
-> > rq_clock and rq_clock_task (for the budget).
-> >
-> > Thanks,
-> >
-> > - Juri
-> >
-> > > > +   if (dmiss && !rorun)
-> > > > +           dl_se->runtime = dl_se->deadline - rq_clock(rq);
-> > > >
-> > > >     return 1;
-> > > >  }
-> > > > --
-> > > > 1.8.1.2
-> > > >
-> >
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/powerpc/include/uapi/asm/cputable.h | 1 +
+ arch/powerpc/kernel/cputable.c           | 3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/powerpc/include/uapi/asm/cputable.h b/arch/powerpc/include/uapi/asm/cputable.h
+index 5b7657959faa..de2c0e4ee1aa 100644
+--- a/arch/powerpc/include/uapi/asm/cputable.h
++++ b/arch/powerpc/include/uapi/asm/cputable.h
+@@ -41,5 +41,6 @@
+ #define PPC_FEATURE2_EBB		0x10000000
+ #define PPC_FEATURE2_ISEL		0x08000000
+ #define PPC_FEATURE2_TAR		0x04000000
++#define PPC_FEATURE2_VEC_CRYPTO		0x02000000
+ 
+ #endif /* _UAPI__ASM_POWERPC_CPUTABLE_H */
+diff --git a/arch/powerpc/kernel/cputable.c b/arch/powerpc/kernel/cputable.c
+index 22973a74df73..1c07f0eae495 100644
+--- a/arch/powerpc/kernel/cputable.c
++++ b/arch/powerpc/kernel/cputable.c
+@@ -105,7 +105,8 @@ extern void __restore_cpu_e6500(void);
+ 				 PPC_FEATURE_PSERIES_PERFMON_COMPAT)
+ #define COMMON_USER2_POWER8	(PPC_FEATURE2_ARCH_2_07 | \
+ 				 PPC_FEATURE2_HTM_COMP | PPC_FEATURE2_DSCR | \
+-				 PPC_FEATURE2_ISEL | PPC_FEATURE2_TAR)
++				 PPC_FEATURE2_ISEL | PPC_FEATURE2_TAR | \
++				 PPC_FEATURE2_VEC_CRYPTO)
+ #define COMMON_USER_PA6T	(COMMON_USER_PPC64 | PPC_FEATURE_PA6T |\
+ 				 PPC_FEATURE_TRUE_LE | \
+ 				 PPC_FEATURE_HAS_ALTIVEC_COMP)
+-- 
+1.9.1
+
