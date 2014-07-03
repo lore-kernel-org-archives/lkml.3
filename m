@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419AbaGCGLS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 02:11:18 -0400
-Received: from mail.alumni.tu-berlin.de ([130.149.5.29]:33067 "EHLO
-	mail-2.alumni.tu-berlin.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754368AbaGCGLM (ORCPT
+	id S1751898AbaGCGjH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 02:39:07 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:58003 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824AbaGCGjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 02:11:12 -0400
-X-tubIT-Incoming-IP: 91.47.47.4
-Message-ID: <53B4F3FB.6030108@math.tu-berlin.de>
-Date: Thu, 03 Jul 2014 08:11:07 +0200
-From: Thomas Richter <thor@math.tu-berlin.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+	Thu, 3 Jul 2014 02:39:05 -0400
+Date: Thu, 3 Jul 2014 07:38:58 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Mark Brown <broonie@kernel.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Bill Richardson <wfrichar@chromium.org>,
+        Randall Spangler <rspangler@chromium.org>,
+        Simon Glass <sjg@chromium.org>,
+        Andreas =?iso-8859-1?Q?F=E4rber?= <afaerber@suse.de>,
+        Stephan van Schaik <stephan@synkhronix.com>,
+        Olof Johansson <olof@lixom.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] mfd: cros_ec: Use the proper size when looking at
+ the cros_ec_i2c result
+Message-ID: <20140703063858.GD17665@lee--X1>
+References: <1403898973-19571-1-git-send-email-dianders@chromium.org>
+ <1403898973-19571-3-git-send-email-dianders@chromium.org>
+ <20140702072338.GC10311@lee--X1>
+ <CAD=FV=VRA-WLgxqQ37naFLcoBM3fBM8FWPcLv8X_wZ89wiV4KA@mail.gmail.com>
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: linux-kernel@vger.kernel.org,
-        Ville Syrj?l? <ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel@ffwll.ch>, rjw@sisk.pl
-Subject: Re: Kernel OOPS when reloading i915 after resume from suspend
-References: <53B05033.7070709@math.tu-berlin.de> <13976_1404336180_53B47834_13976_165_1_20140702212219.GA2842@xo-6d-61-c0.localdomain>
-In-Reply-To: <13976_1404336180_53B47834_13976_165_1_20140702212219.GA2842@xo-6d-61-c0.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAD=FV=VRA-WLgxqQ37naFLcoBM3fBM8FWPcLv8X_wZ89wiV4KA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 02.07.2014 23:22, schrieb Pavel Machek:
-> Hi!
->
->> still experimenting with the resume from suspend on the Fujitsu
->> S6010. I can, however, still create a kernel oops. The kernel source
->> comes from alm_fixes5, kernel 3.15.0-rc7+. For that, do the
->> following:
->>
->> 1) Shut down X,
->> 2) Unbind the consoles:
->>
->> echo 0 > /sys/class/vtconsole/vtcon1/bind
->> echo 0 > /sys/class/vtconsole/vtcon0/bind
->>
->> 3) Remove the i915
->>
->> rmmod i915
->>
->> 4) Suspend the system
->>
->> pm-suspend
->
-> Does it also break with plain echo mem > /sys/power/state?
+On Wed, 02 Jul 2014, Doug Anderson wrote:
+> On Wed, Jul 2, 2014 at 12:23 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> > On Fri, 27 Jun 2014, Doug Anderson wrote:
+> >
+> >> We know how many bytes the EC should be sending us (which is also the
+> >> number of bytes transferred) and also how many bytes the EC actually
+> >> wanted to send to us.  When computing the checksum and copying back
+> >> data let's make sure we take the lesser of the two of those.  We'll
+> >> also complain if the EC tried to send us too many bytes.  The EC
+> >> sending us too few bytes is legit for when we send the EC an invalid
+> >> command.
+> >>
+> >> This is based on similar code in cros_ec_spi.
+> >>
+> >> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> >> ---
+> >>  drivers/mfd/cros_ec_i2c.c | 15 ++++++++++++---
+> >>  1 file changed, 12 insertions(+), 3 deletions(-)
+> >
+> > Acked-by: Lee Jones <lee.jones@linaro.org>
+> >
+> > Is this patch orthogonal i.e. can it be applied without the other two
+> > patches?
+> 
+> Yes.  If patch 3/3 had worked out then it would have required patch #1
+> for proper functioning and patch #2 (this patch) to avoid an ugly
+> error message in the log.  ...but patch #1 and this patch both can
+> stand on their own and can be applied.
 
-No. If the modules stay resident, any user driven shutdown/resume events 
-by writing into /sys/power/state work just fine.
+Very well, patch applied than.
 
-> Does it break when you don't suspend at all?
+Clause: There is a chance that this patch might not be seen in -next
+for ~24-48hrs.  If it's not there by 72hrs, feel free to poke.
 
-No. Unloading and reloading i915 under normal conditions also works fine.
-
->> 5) Resume the system by pressing on the power-button.
->> 6) Reload the i915 module with
->>
->> modprobe i915.
->>
->> Result is a kernel-Oops:
->
-> Sounds like problem in suspend/resume framework, actually :-(.
-
-Good guess, but wrong. The BIOS leaves the 830GM in a state the i915 
-does not seem to like.
-
-Greetings,
-	Thomas
-
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
