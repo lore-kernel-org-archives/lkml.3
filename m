@@ -1,86 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964980AbaGCOwS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:52:18 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:39243 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964897AbaGCOwN (ORCPT
+	id S965012AbaGCOwk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:52:40 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51820 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758571AbaGCOuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:52:13 -0400
-Date: Thu, 3 Jul 2014 16:52:04 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH 2/6] irq_work: Implement remote queueing
-Message-ID: <20140703145201.GB9520@localhost.localdomain>
-References: <20140625051234.GD6758@twins.programming.kicks-ass.net>
- <20140625051721.GG3588@twins.programming.kicks-ass.net>
- <53AA6E11.1000404@linux.vnet.ibm.com>
- <20140625093657.GN19860@laptop.programming.kicks-ass.net>
- <20140625093944.GV16155@laptop.programming.kicks-ass.net>
- <53AA9B68.4050104@linux.vnet.ibm.com>
- <53AA9C43.3020903@linux.vnet.ibm.com>
- <20140625101915.GO19860@laptop.programming.kicks-ass.net>
- <53AAF779.8060006@wwwdotorg.org>
- <20140625163820.GC3935@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140625163820.GC3935@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 3 Jul 2014 10:50:06 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        dwmw2@infradead.org, dbaryshkov@gmail.com
+Cc: Boris Brezillon <boris@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH RESEND 13/18] AT91: DT: Remove poweroff DT probing
+Date: Thu,  3 Jul 2014 16:41:28 +0200
+Message-Id: <1404398493-28907-14-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1404398493-28907-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1404398493-28907-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 06:38:20PM +0200, Peter Zijlstra wrote:
-> On Wed, Jun 25, 2014 at 10:23:21AM -0600, Stephen Warren wrote:
-> > On 06/25/2014 04:19 AM, Peter Zijlstra wrote:
-> > > On Wed, Jun 25, 2014 at 03:24:11PM +0530, Srivatsa S. Bhat wrote:
-> > >> Wait, that was a stupid idea. hotplug_cfd() already invokes irq_work_run
-> > >> indirectly via flush_smp_call_function_queue(). So irq_work_cpu_notify()
-> > >> doesn't need to invoke it again, AFAIU. So perhaps we can get rid of
-> > >> irq_work_cpu_notify() altogether?
-> > > 
-> > > Just so...
-> > > 
-> > > getting up at 6am and sitting in an airport terminal doesn't seem to
-> > > agree with me; any more silly fail here?
-> > > 
-> > > ---
-> > > Subject: irq_work: Remove BUG_ON in irq_work_run()
-> > > From: Peter Zijlstra <peterz@infradead.org>
-> > > Date: Wed Jun 25 07:13:07 CEST 2014
-> > > 
-> > > Because of a collision with 8d056c48e486 ("CPU hotplug, smp: flush any
-> > > pending IPI callbacks before CPU offline"), which ends up calling
-> > > hotplug_cfd()->flush_smp_call_function_queue()->irq_work_run(), which
-> > > is not from IRQ context.
-> > > 
-> > > And since that already calls irq_work_run() from the hotplug path,
-> > > remove our entire hotplug handling.
-> > 
-> > Tested-by: Stephen Warren <swarren@nvidia.com>
-> > 
-> > [with the s/static// already mentioned in this thread, obviously:-)]
-> 
-> Right; I pushed out a fixed version right before loosing my tubes at the
-> airport :-)
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/peterz/queue.git/commit/?h=timers/nohz&id=921d8b81281ecdca686369f52165d04fa3505bd7
-> 
-> I've not gotten wu build bot spam on it so it must be good ;-)
-> 
-> In any case, I'll add your tested-by and update later this evening.
+Now that the poweroff code is a driver of its own, remove the DT probing in
+mach-at91 and let the usual DT code do its job.
 
-Ack! Thanks for fixing this.
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/mach-at91/setup.c | 77 ----------------------------------------------
+ 1 file changed, 77 deletions(-)
 
-In case you're AFK, do you need any help for pushing the patch or so?
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index fe0601e0a3c0..ae269291d19d 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -387,82 +387,6 @@ static void at91_dt_ramc(void)
+ 	at91_pm_set_standby(of_id->data);
+ }
+ 
+-static struct of_device_id shdwc_ids[] = {
+-	{ .compatible = "atmel,at91sam9260-shdwc", },
+-	{ .compatible = "atmel,at91sam9rl-shdwc", },
+-	{ .compatible = "atmel,at91sam9x5-shdwc", },
+-	{ /*sentinel*/ }
+-};
+-
+-static const char *shdwc_wakeup_modes[] = {
+-	[AT91_SHDW_WKMODE0_NONE]	= "none",
+-	[AT91_SHDW_WKMODE0_HIGH]	= "high",
+-	[AT91_SHDW_WKMODE0_LOW]		= "low",
+-	[AT91_SHDW_WKMODE0_ANYLEVEL]	= "any",
+-};
+-
+-const int at91_dtget_shdwc_wakeup_mode(struct device_node *np)
+-{
+-	const char *pm;
+-	int err, i;
+-
+-	err = of_property_read_string(np, "atmel,wakeup-mode", &pm);
+-	if (err < 0)
+-		return AT91_SHDW_WKMODE0_ANYLEVEL;
+-
+-	for (i = 0; i < ARRAY_SIZE(shdwc_wakeup_modes); i++)
+-		if (!strcasecmp(pm, shdwc_wakeup_modes[i]))
+-			return i;
+-
+-	return -ENODEV;
+-}
+-
+-static void at91_dt_shdwc(void)
+-{
+-	struct device_node *np;
+-	int wakeup_mode;
+-	u32 reg;
+-	u32 mode = 0;
+-
+-	np = of_find_matching_node(NULL, shdwc_ids);
+-	if (!np) {
+-		pr_debug("unable to find compatible shutdown (shdwc) controller node in dtb\n");
+-		return;
+-	}
+-
+-	at91_shdwc_base = of_iomap(np, 0);
+-	if (!at91_shdwc_base)
+-		panic(pr_fmt("unable to map shdwc cpu registers\n"));
+-
+-	wakeup_mode = at91_dtget_shdwc_wakeup_mode(np);
+-	if (wakeup_mode < 0) {
+-		pr_warn("shdwc unknown wakeup mode\n");
+-		goto end;
+-	}
+-
+-	if (!of_property_read_u32(np, "atmel,wakeup-counter", &reg)) {
+-		if (reg > AT91_SHDW_CPTWK0_MAX) {
+-			pr_warn("shdwc wakeup counter 0x%x > 0x%x reduce it to 0x%x\n",
+-				reg, AT91_SHDW_CPTWK0_MAX, AT91_SHDW_CPTWK0_MAX);
+-			reg = AT91_SHDW_CPTWK0_MAX;
+-		}
+-		mode |= AT91_SHDW_CPTWK0_(reg);
+-	}
+-
+-	if (of_property_read_bool(np, "atmel,wakeup-rtc-timer"))
+-			mode |= AT91_SHDW_RTCWKEN;
+-
+-	if (of_property_read_bool(np, "atmel,wakeup-rtt-timer"))
+-			mode |= AT91_SHDW_RTTWKEN;
+-
+-	at91_shdwc_write(AT91_SHDW_MR, wakeup_mode | mode);
+-
+-end:
+-	pm_power_off = at91sam9_poweroff;
+-
+-	of_node_put(np);
+-}
+-
+ void __init at91rm9200_dt_initialize(void)
+ {
+ 	at91_dt_ramc();
+@@ -480,7 +404,6 @@ void __init at91rm9200_dt_initialize(void)
+ void __init at91_dt_initialize(void)
+ {
+ 	at91_dt_ramc();
+-	at91_dt_shdwc();
+ 
+ 	/* Init clock subsystem */
+ 	at91_dt_clock_init();
+-- 
+2.0.1
+
