@@ -1,184 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759481AbaGCQca (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:32:30 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45062 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759147AbaGCQ0L convert rfc822-to-8bit (ORCPT
+	id S1759506AbaGCQck (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:32:40 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59016 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753520AbaGCQci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 12:26:11 -0400
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        peterz@infradead.org, mingo@kernel.org
-Cc: rjw@rjwysocki.net, vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
-        preeti@linux.vnet.ibm.com, Dietmar.Eggemann@arm.com, pjt@google.com
-Subject: [RFCv2 PATCH 05/23] sched: Add energy procfs interface
-Date: Thu,  3 Jul 2014 17:25:52 +0100
-Message-Id: <1404404770-323-6-git-send-email-morten.rasmussen@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
-References: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
+	Thu, 3 Jul 2014 12:32:38 -0400
+Date: Thu, 3 Jul 2014 17:32:00 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Kees Cook <keescook@chromium.org>,
+        =?iso-8859-1?Q?Andr=E9?= Hentschel <nerv@dawncrow.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ricky Zhou <rickyz@google.com>
+Subject: Re: [PATCH] arm: ptrace: fix syscall modification under
+ PTRACE_O_TRACESECCOMP
+Message-ID: <20140703163200.GA17372@arm.com>
+References: <CAGXu5jKg0didhwZTUq8AbMnwD=RV=EaWiZWBWuar625JXGnL6w@mail.gmail.com>
+ <CAGXu5j+bk3g0Dude8jfKM3dXxX8LE_46CMmcBCGdVMNX_Hu-6w@mail.gmail.com>
+ <20140623084608.GA9316@arm.com>
+ <CAGXu5jLJRU21YoBXjXRpfHW1-jwy_PV0hpH_oUfew23xLF4gYg@mail.gmail.com>
+ <20140624085405.GA26013@arm.com>
+ <53B5098B.9050801@linaro.org>
+ <20140703102450.GD12958@arm.com>
+ <CALCETrWQdHmn0-so1JHFoT-2A02mgcxDUb3jphSQmBGn-SQ+pA@mail.gmail.com>
+ <20140703161154.GF14305@arm.com>
+ <CALCETrXNQ0aLsE03mM0rdt-3mWP1Zze-nHSsME7Bwcf=5DyisA@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 03 Jul 2014 16:26:09.0834 (UTC) FILETIME=[7F8328A0:01CF96DB]
-X-MC-Unique: 114070317260911701
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXNQ0aLsE03mM0rdt-3mWP1Zze-nHSsME7Bwcf=5DyisA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+On Thu, Jul 03, 2014 at 05:13:50PM +0100, Andy Lutomirski wrote:
+> On Thu, Jul 3, 2014 at 9:11 AM, Will Deacon <will.deacon@arm.com> wrote:
+> > On Thu, Jul 03, 2014 at 04:39:21PM +0100, Andy Lutomirski wrote:
+> >> On Thu, Jul 3, 2014 at 3:24 AM, Will Deacon <will.deacon@arm.com> wrote:
+> >> > On Thu, Jul 03, 2014 at 08:43:07AM +0100, AKASHI Takahiro wrote:
+> >> >> So it seems to me that we can't change a system call by ptrace().
+> >> >> Do I misunderstand anything?
+> >> >
+> >> > No, it looks like you have a point here. I don't think userspace has any
+> >> > business with orig_x0, but changing syscallno is certainly useful. I can
+> >> > think of two ways to fix this:
+> >> >
+> >> >   (1) Updating syscallno based on w8, but this ties us to the current ABI
+> >> >       and could get messy if this register changes in the future.
+> >> >
+> >> >   (2) Adding a PTRACE_SET_SYSCALL request, like we have for arch/arm/,
+> >> >       but that means adding arch-specific stuff to arch_ptrace (which
+> >> >       currently goes straight to ptrace_request on arm64).
+> >> >
+> >> > It looks like x86 uses orig_ax, which I *think* means we would go with
+> >> > (1) above if we followed their lead.
+> >>
+> >> w8 is a real register, right?  On x86, at least orig_ax isn't a real
+> >> register, so it's quite unlikely to conflict with hardware stuff.
+> >
+> > Yeah, w8 is the hardware register which the Linux ABI uses for the system
+> > call number. I was thinking We could allow the debugger/tracer to update
+> > the syscall number by updating that register, or do you see an issue with
+> > that? (other than tying us to the current ABI).
+> 
+> Not immediately, but I'm not super-familiar with ptrace.
+> 
+> Is w8 clobbered or otherwise changed by syscalls?  Using w8 for this
+> has the odd effect that tracers can't force a return with a specific
+> value of w8 without executing the corresponding syscall.  If that's a
+> meaningful limitation, then presumably some other channel should be
+> used.
 
-This patch makes the energy data available via procfs. The related files
-are placed as sub-directory named 'energy' inside the
-/proc/sys/kernel/sched_domain/cpuX/domainY/groupZ directory for those
-cpu/domain/group tuples which have energy information.
+Hmm, that's true. Currently w8 is preserved across a syscall by the kernel,
+so it would be pretty bizarre for somebody to try and modify it but I guess
+they could do it if they wanted to. However, they could just as easily
+modify it on the syscall return path and have the same effect...
 
-The following example depicts the contents of
-/proc/sys/kernel/sched_domain/cpu0/domain0/group[01] for a system which
-has energy information attached to domain level 0.
+Furthermore, glibc unconditionally emits a mov into w8 prior to the svc
+instruction, so from a user's perspective that register always contains
+the system call number.
 
-├── cpu0
-│   ├── domain0
-│   │   ├── busy_factor
-│   │   ├── busy_idx
-│   │   ├── cache_nice_tries
-│   │   ├── flags
-│   │   ├── forkexec_idx
-│   │   ├── group0
-│   │   │   └── energy
-│   │   │       ├── cap_states
-│   │   │       ├── idle_states
-│   │   │       ├── nr_cap_states
-│   │   │       └── nr_idle_states
-│   │   ├── group1
-│   │   │   └── energy
-│   │   │       ├── cap_states
-│   │   │       ├── idle_states
-│   │   │       ├── nr_cap_states
-│   │   │       └── nr_idle_states
-│   │   ├── idle_idx
-│   │   ├── imbalance_pct
-│   │   ├── max_interval
-│   │   ├── max_newidle_lb_cost
-│   │   ├── min_interval
-│   │   ├── name
-│   │   ├── newidle_idx
-│   │   └── wake_idx
-│   └── domain1
-│       ├── busy_factor
-│       ├── busy_idx
-│       ├── cache_nice_tries
-│       ├── flags
-│       ├── forkexec_idx
-│       ├── idle_idx
-│       ├── imbalance_pct
-│       ├── max_interval
-│       ├── max_newidle_lb_cost
-│       ├── min_interval
-│       ├── name
-│       ├── newidle_idx
-│       └── wake_idx
+FWIW: the role of w8 in the PCS is `Indirect result location register', so
+I'd expect it to be saved across the syscall anyway.
 
-The files 'nr_idle_states' and 'nr_cap_states' contain a scalar value
-whereas 'idle_states' and 'cap_states' contain a vector of (power
-consumption, wakeup energy for run->sleep->run cycle for this idle
-state) respectively (compute capacity, power consumption at this compute
-capacity) tuples.
-
-Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
----
- kernel/sched/core.c |   67 +++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 65 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ecece17..7fecc63 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4931,9 +4931,60 @@ set_table_entry(struct ctl_table *entry,
- }
- 
- static struct ctl_table *
-+sd_alloc_ctl_energy_table(struct sched_group_energy *sge)
-+{
-+	struct ctl_table *table = sd_alloc_ctl_entry(5);
-+
-+	if (table == NULL)
-+		return NULL;
-+
-+	set_table_entry(&table[0], "nr_idle_states", &sge->nr_idle_states,
-+			sizeof(int), 0644, proc_dointvec_minmax, false);
-+	set_table_entry(&table[1], "idle_states", &sge->idle_states[0].power,
-+			sge->nr_idle_states*sizeof(struct idle_state), 0644,
-+			proc_doulongvec_minmax, false);
-+	set_table_entry(&table[2], "nr_cap_states", &sge->nr_cap_states,
-+			sizeof(int), 0644, proc_dointvec_minmax, false);
-+	set_table_entry(&table[3], "cap_states", &sge->cap_states[0].cap,
-+			sge->nr_cap_states*sizeof(struct capacity_state), 0644,
-+			proc_doulongvec_minmax, false);
-+
-+	return table;
-+}
-+
-+static struct ctl_table *
-+sd_alloc_ctl_group_table(struct sched_group *sg)
-+{
-+	struct ctl_table *table = sd_alloc_ctl_entry(2);
-+
-+	if (table == NULL)
-+		return NULL;
-+
-+	table->procname = kstrdup("energy", GFP_KERNEL);
-+	table->mode = 0555;
-+	table->child = sd_alloc_ctl_energy_table(sg->sge);
-+
-+	return table;
-+}
-+
-+static struct ctl_table *
- sd_alloc_ctl_domain_table(struct sched_domain *sd)
- {
--	struct ctl_table *table = sd_alloc_ctl_entry(14);
-+	struct ctl_table *table;
-+	unsigned int nr_entries = 14;
-+
-+	int i = 0;
-+	struct sched_group *sg = sd->groups;
-+
-+	if (sg->sge) {
-+		int nr_sgs = 0;
-+
-+		do {} while (nr_sgs++, sg = sg->next, sg != sd->groups);
-+
-+		nr_entries += nr_sgs;
-+	}
-+
-+	table = sd_alloc_ctl_entry(nr_entries);
- 
- 	if (table == NULL)
- 		return NULL;
-@@ -4966,7 +5017,19 @@ sd_alloc_ctl_domain_table(struct sched_domain *sd)
- 		sizeof(long), 0644, proc_doulongvec_minmax, false);
- 	set_table_entry(&table[12], "name", sd->name,
- 		CORENAME_MAX_SIZE, 0444, proc_dostring, false);
--	/* &table[13] is terminator */
-+	sg = sd->groups;
-+	if (sg->sge) {
-+		char buf[32];
-+		struct ctl_table *entry = &table[13];
-+
-+		do {
-+			snprintf(buf, 32, "group%d", i);
-+			entry->procname = kstrdup(buf, GFP_KERNEL);
-+			entry->mode = 0555;
-+			entry->child = sd_alloc_ctl_group_table(sg);
-+		} while (entry++, i++, sg = sg->next, sg != sd->groups);
-+	}
-+	/* &table[nr_entries-1] is terminator */
- 
- 	return table;
- }
--- 
-1.7.9.5
-
-
+Will
