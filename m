@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758148AbaGCNrR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 09:47:17 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:39931 "EHLO mail.mev.co.uk"
+	id S1758108AbaGCNrZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 09:47:25 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56030 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758108AbaGCNrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 09:47:15 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: linux-fbdev@vger.kernel.org
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-kernel@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [PATCH] video: da8xx-fb: preserve display width when changing HSYNC
-Date: Thu,  3 Jul 2014 14:46:39 +0100
-Message-Id: <1404395199-5726-1-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.0.0
+	id S1758195AbaGCNrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 09:47:21 -0400
+From: Keerthy <j-keerthy@ti.com>
+To: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+CC: <mark.rutland@arm.com>, <galak@codeaurora.org>, <robh+dt@kernel.org>,
+        <linux@arm.linux.org.uk>, <balbi@ti.com>, <tony@atomide.com>,
+        <kishon@ti.com>, Keerthy <j-keerthy@ti.com>
+Subject: [PATCH 5/5] ARM: configs: omap2plus_defconfig: enable TPS65218 configs
+Date: Thu, 3 Jul 2014 19:15:02 +0530
+Message-ID: <1404395102-21469-6-git-send-email-j-keerthy@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1404395102-21469-1-git-send-email-j-keerthy@ti.com>
+References: <1404395102-21469-1-git-send-email-j-keerthy@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When looking at this driver for a client, I noticed the code that
-configures the HSYNC pulse clobbers the display width in the same
-register.  It only preserves the MS part of the width in bit 3 and zeros
-the LS part of the width in bits 9 to 4.  This doesn't matter during
-initialization as the width is configured afterwards, but subsequent use
-of the FBIPUT_HSYNC ioctl would clobber the width.
+Enable TPS65218 config options.
 
-Preserve bits 9 to 0 of LCD_RASTER_TIMING_0_REG when configuring the
-horizontal sync.
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Keerthy <j-keerthy@ti.com>
 ---
-I haven't tested this change, but it's pretty trivial.
----
- drivers/video/fbdev/da8xx-fb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/configs/omap2plus_defconfig |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/video/fbdev/da8xx-fb.c b/drivers/video/fbdev/da8xx-fb.c
-index 788f6b3..10c876c 100644
---- a/drivers/video/fbdev/da8xx-fb.c
-+++ b/drivers/video/fbdev/da8xx-fb.c
-@@ -419,7 +419,7 @@ static void lcd_cfg_horizontal_sync(int back_porch, int pulse_width,
- {
- 	u32 reg;
- 
--	reg = lcdc_read(LCD_RASTER_TIMING_0_REG) & 0xf;
-+	reg = lcdc_read(LCD_RASTER_TIMING_0_REG) & 0x3ff;
- 	reg |= (((back_porch-1) & 0xff) << 24)
- 	    | (((front_porch-1) & 0xff) << 16)
- 	    | (((pulse_width-1) & 0x3f) << 10);
+diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap2plus_defconfig
+index 536a137..f650f00 100644
+--- a/arch/arm/configs/omap2plus_defconfig
++++ b/arch/arm/configs/omap2plus_defconfig
+@@ -180,6 +180,7 @@ CONFIG_TWL4030_WATCHDOG=y
+ CONFIG_MFD_SYSCON=y
+ CONFIG_MFD_PALMAS=y
+ CONFIG_MFD_TPS65217=y
++CONFIG_MFD_TPS65218=y
+ CONFIG_MFD_TPS65910=y
+ CONFIG_TWL6040_CORE=y
+ CONFIG_REGULATOR_FIXED_VOLTAGE=y
+@@ -188,6 +189,7 @@ CONFIG_REGULATOR_TI_ABB=y
+ CONFIG_REGULATOR_TPS65023=y
+ CONFIG_REGULATOR_TPS6507X=y
+ CONFIG_REGULATOR_TPS65217=y
++CONFIG_REGULATOR_TPS65218=y
+ CONFIG_REGULATOR_TPS65910=y
+ CONFIG_REGULATOR_TWL4030=y
+ CONFIG_REGULATOR_PBIAS=y
 -- 
-2.0.0
+1.7.9.5
 
