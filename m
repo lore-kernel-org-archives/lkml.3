@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758302AbaGCOty (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:49:54 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51753 "EHLO
+	id S1758374AbaGCOt4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:49:56 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51777 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754324AbaGCOtu (ORCPT
+	with ESMTP id S1758248AbaGCOty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:49:50 -0400
+	Thu, 3 Jul 2014 10:49:54 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -17,9 +17,9 @@ Cc: Boris Brezillon <boris@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH RESEND 12/18] power: reset: Add AT91 poweroff driver
-Date: Thu,  3 Jul 2014 16:41:27 +0200
-Message-Id: <1404398493-28907-13-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH RESEND 17/18] AT91: Remove rstc and shdwnc global base addresses
+Date: Thu,  3 Jul 2014 16:41:32 +0200
+Message-Id: <1404398493-28907-18-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1404398493-28907-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1404398493-28907-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -27,209 +27,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a driver to handle the shutdown of the Atmel SoCs. This code used to be
-(and still is) in arch/arm/mach-at91. We didn't removed it yet so that we can
-convert all the boards to using this driver, before removing it entirely in a
-separate patch.
+Now that there's no user left for the global variables holding the reset and
+shutdown controllers base address, we can remove these variables and their
+associated mapping function.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/power/reset/Kconfig         |   7 ++
- drivers/power/reset/Makefile        |   1 +
- drivers/power/reset/at91-poweroff.c | 156 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 164 insertions(+)
- create mode 100644 drivers/power/reset/at91-poweroff.c
+ arch/arm/mach-at91/at91sam9260.c |  2 --
+ arch/arm/mach-at91/at91sam9261.c |  2 --
+ arch/arm/mach-at91/at91sam9263.c |  2 --
+ arch/arm/mach-at91/at91sam9g45.c |  2 --
+ arch/arm/mach-at91/at91sam9rl.c  |  2 --
+ arch/arm/mach-at91/generic.h     |  6 ------
+ arch/arm/mach-at91/setup.c       | 18 ------------------
+ 7 files changed, 34 deletions(-)
 
-diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-index b3fef01d7cbb..f9d53af50ec0 100644
---- a/drivers/power/reset/Kconfig
-+++ b/drivers/power/reset/Kconfig
-@@ -14,6 +14,13 @@ config POWER_RESET_AS3722
- 	help
- 	  This driver supports turning off board via a ams AS3722 power-off.
+diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
+index 5fa1986be2aa..16dd13800b1f 100644
+--- a/arch/arm/mach-at91/at91sam9260.c
++++ b/arch/arm/mach-at91/at91sam9260.c
+@@ -339,8 +339,6 @@ static void __init at91sam9260_map_io(void)
  
-+config POWER_RESET_AT91_POWEROFF
-+	bool "Atmel AT91 poweroff driver"
-+	default SOC_AT91SAM9 || SOC_SAMA5
-+	help
-+	  This driver supports poweroff for Atmel AT91SAM9 and SAMA5
-+	  SoCs
-+
- config POWER_RESET_AT91_RESET
- 	bool "Atmel AT91 reset driver"
- 	default SOC_AT91SAM9 || SOC_SAMA5
-diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-index 1599214b91d9..8bf941bac3da 100644
---- a/drivers/power/reset/Makefile
-+++ b/drivers/power/reset/Makefile
-@@ -1,4 +1,5 @@
- obj-$(CONFIG_POWER_RESET_AS3722) += as3722-poweroff.o
-+obj-$(CONFIG_POWER_RESET_AT91_POWEROFF) += at91-poweroff.o
- obj-$(CONFIG_POWER_RESET_AT91_RESET) += at91-reset.o
- obj-$(CONFIG_POWER_RESET_AXXIA) += axxia-reset.o
- obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
-diff --git a/drivers/power/reset/at91-poweroff.c b/drivers/power/reset/at91-poweroff.c
-new file mode 100644
-index 000000000000..2f2a69e9bae3
---- /dev/null
-+++ b/drivers/power/reset/at91-poweroff.c
-@@ -0,0 +1,156 @@
-+/*
-+ * Atmel AT91 SAM9 SoCs reset code
-+ *
-+ * Copyright (C) 2014 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/printk.h>
-+
-+#define AT91_SHDW_CR	0x00		/* Shut Down Control Register */
-+#define	AT91_SHDW_SHDW		BIT(0)			/* Shut Down command */
-+#define	AT91_SHDW_KEY		(0xa5 << 24)		/* KEY Password */
-+
-+#define AT91_SHDW_MR	0x04		/* Shut Down Mode Register */
-+#define	AT91_SHDW_WKMODE0	GENMASK(2, 0)		/* Wake-up 0 Mode Selection */
-+#define	AT91_SHDW_CPTWK0_MAX	0xf			/* Maximum Counter On Wake Up 0 */
-+#define	AT91_SHDW_CPTWK0	(AT91_SHDW_CPTWK0_MAX << 4) /* Counter On Wake Up 0 */
-+#define	AT91_SHDW_CPTWK0_(x)	((x) << 4)
-+#define	AT91_SHDW_RTTWKEN	BIT(16)			/* Real Time Timer Wake-up Enable */
-+#define	AT91_SHDW_RTCWKEN	BIT(17)			/* Real Time Clock Wake-up Enable */
-+
-+#define AT91_SHDW_SR	0x08		/* Shut Down Status Register */
-+#define	AT91_SHDW_WAKEUP0	BIT(0)			/* Wake-up 0 Status */
-+#define	AT91_SHDW_RTTWK		BIT(16)			/* Real-time Timer Wake-up */
-+#define	AT91_SHDW_RTCWK		BIT(17)			/* Real-time Clock Wake-up [SAM9RL] */
-+
-+enum wakeup_type {
-+	AT91_SHDW_WKMODE0_NONE		= 0,
-+	AT91_SHDW_WKMODE0_HIGH		= 1,
-+	AT91_SHDW_WKMODE0_LOW		= 2,
-+	AT91_SHDW_WKMODE0_ANYLEVEL	= 3,
-+};
-+
-+static const char *shdwc_wakeup_modes[] = {
-+	[AT91_SHDW_WKMODE0_NONE]	= "none",
-+	[AT91_SHDW_WKMODE0_HIGH]	= "high",
-+	[AT91_SHDW_WKMODE0_LOW]		= "low",
-+	[AT91_SHDW_WKMODE0_ANYLEVEL]	= "any",
-+};
-+
-+static void __iomem *at91_shdwc_base;
-+
-+static void __init at91_wakeup_status(void)
-+{
-+	u32 reg = readl(at91_shdwc_base);
-+	char *reason = "unknown";
-+
-+	/* Simple power-on, just bail out */
-+	if (!reg)
-+		return;
-+
-+	if (reg & AT91_SHDW_RTTWK)
-+		reason = "RTT";
-+	else if (reg & AT91_SHDW_RTCWK)
-+		reason = "RTC";
-+
-+	pr_info("AT91: Wake-Up source: %s\n", reason);
-+}
-+
-+static void at91_poweroff(void)
-+{
-+	writel(AT91_SHDW_KEY | AT91_SHDW_SHDW, at91_shdwc_base + AT91_SHDW_CR);
-+}
-+
-+const enum wakeup_type at91_poweroff_get_wakeup_mode(struct device_node *np)
-+{
-+	const char *pm;
-+	int err, i;
-+
-+	err = of_property_read_string(np, "atmel,wakeup-mode", &pm);
-+	if (err < 0)
-+		return AT91_SHDW_WKMODE0_ANYLEVEL;
-+
-+	for (i = 0; i < ARRAY_SIZE(shdwc_wakeup_modes); i++)
-+		if (!strcasecmp(pm, shdwc_wakeup_modes[i]))
-+			return i;
-+
-+	return -ENODEV;
-+}
-+
-+static void at91_poweroff_dt_set_wakeup_mode(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	enum wakeup_type wakeup_mode;
-+	u32 mode = 0, tmp;
-+
-+	wakeup_mode = at91_poweroff_get_wakeup_mode(np);
-+	if (wakeup_mode < 0) {
-+		dev_warn(&pdev->dev, "shdwc unknown wakeup mode\n");
-+		return;
-+	}
-+
-+	if (!of_property_read_u32(np, "atmel,wakeup-counter", &tmp)) {
-+		if (tmp > AT91_SHDW_CPTWK0_MAX) {
-+			dev_warn(&pdev->dev,
-+				 "shdwc wakeup counter 0x%x > 0x%x reduce it to 0x%x\n",
-+				 tmp, AT91_SHDW_CPTWK0_MAX, AT91_SHDW_CPTWK0_MAX);
-+			tmp = AT91_SHDW_CPTWK0_MAX;
-+		}
-+		mode |= AT91_SHDW_CPTWK0_(tmp);
-+	}
-+
-+	if (of_property_read_bool(np, "atmel,wakeup-rtc-timer"))
-+			mode |= AT91_SHDW_RTCWKEN;
-+
-+	if (of_property_read_bool(np, "atmel,wakeup-rtt-timer"))
-+			mode |= AT91_SHDW_RTTWKEN;
-+
-+	writel(wakeup_mode | mode, at91_shdwc_base + AT91_SHDW_MR);
-+}
-+
-+static int at91_poweroff_probe(struct platform_device *pdev)
-+{
-+	struct resource *res;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	at91_shdwc_base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(at91_shdwc_base)) {
-+		dev_err(&pdev->dev, "Could not map reset controller address\n");
-+		return PTR_ERR(at91_shdwc_base);
-+	}
-+
-+	at91_wakeup_status();
-+
-+	if (pdev->dev.of_node)
-+		at91_poweroff_dt_set_wakeup_mode(pdev);
-+
-+	pm_power_off = at91_poweroff;
-+
-+	return 0;
-+}
-+
-+static struct of_device_id at91_poweroff_of_match[] = {
-+	{ .compatible = "atmel,at91sam9260-shdwc", },
-+	{ .compatible = "atmel,at91sam9rl-shdwc", },
-+	{ .compatible = "atmel,at91sam9x5-shdwc", },
-+	{ /*sentinel*/ }
-+};
-+
-+static struct platform_driver at91_poweroff_driver = {
-+	.probe = at91_poweroff_probe,
-+	.driver = {
-+		.name = "at91-poweroff",
-+		.of_match_table = at91_poweroff_of_match,
-+	},
-+};
-+module_platform_driver(at91_poweroff_driver);
+ static void __init at91sam9260_ioremap_registers(void)
+ {
+-	at91_ioremap_shdwc(AT91SAM9260_BASE_SHDWC);
+-	at91_ioremap_rstc(AT91SAM9260_BASE_RSTC);
+ 	at91_ioremap_ramc(0, AT91SAM9260_BASE_SDRAMC, 512);
+ 	at91sam926x_ioremap_pit(AT91SAM9260_BASE_PIT);
+ 	at91sam9_ioremap_smc(0, AT91SAM9260_BASE_SMC);
+diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
+index 5ccc67235e7a..2c8553e63785 100644
+--- a/arch/arm/mach-at91/at91sam9261.c
++++ b/arch/arm/mach-at91/at91sam9261.c
+@@ -302,8 +302,6 @@ static void __init at91sam9261_map_io(void)
+ 
+ static void __init at91sam9261_ioremap_registers(void)
+ {
+-	at91_ioremap_shdwc(AT91SAM9261_BASE_SHDWC);
+-	at91_ioremap_rstc(AT91SAM9261_BASE_RSTC);
+ 	at91_ioremap_ramc(0, AT91SAM9261_BASE_SDRAMC, 512);
+ 	at91sam926x_ioremap_pit(AT91SAM9261_BASE_PIT);
+ 	at91sam9_ioremap_smc(0, AT91SAM9261_BASE_SMC);
+diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
+index 4d28c3479d4b..63a47c7d7f2b 100644
+--- a/arch/arm/mach-at91/at91sam9263.c
++++ b/arch/arm/mach-at91/at91sam9263.c
+@@ -317,8 +317,6 @@ static void __init at91sam9263_map_io(void)
+ 
+ static void __init at91sam9263_ioremap_registers(void)
+ {
+-	at91_ioremap_shdwc(AT91SAM9263_BASE_SHDWC);
+-	at91_ioremap_rstc(AT91SAM9263_BASE_RSTC);
+ 	at91_ioremap_ramc(0, AT91SAM9263_BASE_SDRAMC0, 512);
+ 	at91_ioremap_ramc(1, AT91SAM9263_BASE_SDRAMC1, 512);
+ 	at91sam926x_ioremap_pit(AT91SAM9263_BASE_PIT);
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index 22034c96d488..f0b78923da75 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -367,8 +367,6 @@ static void __init at91sam9g45_map_io(void)
+ 
+ static void __init at91sam9g45_ioremap_registers(void)
+ {
+-	at91_ioremap_shdwc(AT91SAM9G45_BASE_SHDWC);
+-	at91_ioremap_rstc(AT91SAM9G45_BASE_RSTC);
+ 	at91_ioremap_ramc(0, AT91SAM9G45_BASE_DDRSDRC1, 512);
+ 	at91_ioremap_ramc(1, AT91SAM9G45_BASE_DDRSDRC0, 512);
+ 	at91sam926x_ioremap_pit(AT91SAM9G45_BASE_PIT);
+diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
+index 323a9f90931a..ea9ac0ee0895 100644
+--- a/arch/arm/mach-at91/at91sam9rl.c
++++ b/arch/arm/mach-at91/at91sam9rl.c
+@@ -311,8 +311,6 @@ static void __init at91sam9rl_map_io(void)
+ 
+ static void __init at91sam9rl_ioremap_registers(void)
+ {
+-	at91_ioremap_shdwc(AT91SAM9RL_BASE_SHDWC);
+-	at91_ioremap_rstc(AT91SAM9RL_BASE_RSTC);
+ 	at91_ioremap_ramc(0, AT91SAM9RL_BASE_SDRAMC, 512);
+ 	at91sam926x_ioremap_pit(AT91SAM9RL_BASE_PIT);
+ 	at91sam9_ioremap_smc(0, AT91SAM9RL_BASE_SMC);
+diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
+index 5d5e55237c41..f42b0490ad98 100644
+--- a/arch/arm/mach-at91/generic.h
++++ b/arch/arm/mach-at91/generic.h
+@@ -64,12 +64,6 @@ extern void at91_irq_resume(void);
+ /* idle */
+ extern void at91sam9_idle(void);
+ 
+-/* reset */
+-extern void at91_ioremap_rstc(u32 base_addr);
+-
+-/* shutdown */
+-extern void at91_ioremap_shdwc(u32 base_addr);
+-
+ /* Matrix */
+ extern void at91_ioremap_matrix(u32 base_addr);
+ 
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index cdd717a4fa30..eb2b922a4adb 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -319,24 +319,6 @@ void __init at91_map_io(void)
+ 		at91_boot_soc.map_io();
+ }
+ 
+-void __iomem *at91_shdwc_base = NULL;
+-
+-void __init at91_ioremap_shdwc(u32 base_addr)
+-{
+-	at91_shdwc_base = ioremap(base_addr, 16);
+-	if (!at91_shdwc_base)
+-		panic(pr_fmt("Impossible to ioremap at91_shdwc_base\n"));
+-}
+-
+-void __iomem *at91_rstc_base;
+-
+-void __init at91_ioremap_rstc(u32 base_addr)
+-{
+-	at91_rstc_base = ioremap(base_addr, 16);
+-	if (!at91_rstc_base)
+-		panic(pr_fmt("Impossible to ioremap at91_rstc_base\n"));
+-}
+-
+ void __iomem *at91_matrix_base;
+ EXPORT_SYMBOL_GPL(at91_matrix_base);
+ 
 -- 
 2.0.1
 
