@@ -1,478 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759039AbaGCRpN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 13:45:13 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:47289 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752290AbaGCRpK (ORCPT
+	id S1759375AbaGCRq0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 13:46:26 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:61754 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912AbaGCRqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 13:45:10 -0400
-X-Sasl-enc: bkZEk2oLpGq74hxDxt8RCBMZFn8Rq3lA0A3+8R8/lr1Y 1404409509
-From: Michalis Pappas <mpappas@fastmail.fm>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        benchan@chromium.org
-Subject: [PATCH] staging: gdm72xx: reorder functions and remove function declarations
-Date: Thu,  3 Jul 2014 18:45:03 +0100
-Message-Id: <1404409503-12852-1-git-send-email-mpappas@fastmail.fm>
-X-Mailer: git-send-email 1.8.4
+	Thu, 3 Jul 2014 13:46:25 -0400
+Message-ID: <53B596F0.7020507@linaro.org>
+Date: Thu, 03 Jul 2014 19:46:24 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: timers & suspend
+References: <f270ad9c-9906-445d-9e9a-4d3618787455@BY2FFO11FD039.protection.gbl> <53B54AC2.5040908@linaro.org> <83fa689b-a06a-4f1c-97cb-f7a7121a0f25@BL2FFO11FD041.protection.gbl> <53B5922A.7020006@linaro.org> <12596549-d0f6-43b6-810d-ccd908404364@BL2FFO11FD055.protection.gbl>
+In-Reply-To: <12596549-d0f6-43b6-810d-ccd908404364@BL2FFO11FD055.protection.gbl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Michalis Pappas <mpappas@fastmail.fm>
----
- drivers/staging/gdm72xx/gdm_sdio.c  |  77 ++++++++--------
- drivers/staging/gdm72xx/gdm_usb.c   |  87 +++++++++---------
- drivers/staging/gdm72xx/gdm_wimax.c | 179 +++++++++++++++++-------------------
- 3 files changed, 164 insertions(+), 179 deletions(-)
+On 07/03/2014 07:40 PM, Sören Brinkmann wrote:
+> On Thu, 2014-07-03 at 07:26PM +0200, Daniel Lezcano wrote:
+>> On 07/03/2014 06:09 PM, Sören Brinkmann wrote:
+>>> On Thu, 2014-07-03 at 02:21PM +0200, Daniel Lezcano wrote:
+>>>> On 06/30/2014 08:39 PM, Sören Brinkmann wrote:
+>>>>> Hi,
+>>>>>
+>>>>> I'm currently working on suspend for Zynq and try to track down some
+>>>>> spurious wakes. It looks like the spurious wakes are caused by timers,
+>>>>> hence I was wondering whether there are any special requirements for
+>>>>> timer drivers when it comes to suspend support or if I just missed
+>>>>> something.
+>>>>>
+>>>>> Zynq sets the 'IRQCHIP_MASK_ON_SUSPEND' flag, which should mask all
+>>>>> interrupts but the wake source. Reading through kernel/irq/pm.c
+>>>>> indicates, that timer interrupts get some special treatment though.
+>>>>> Therefore I implemented some suspend/resume callbacks for the
+>>>>> cadence_ttc which disable and clear the timer's interrupts when going
+>>>>> into suspend. That seems to mitigate the issue quite a bit, but I still
+>>>>> saw spurious wakes - just a lot less often.
+>>>>> Digging a little deeper revealed, the spurious wakes are caused by the
+>>>>> ARM's smp_twd timer now. Given that that driver is probably used by a few
+>>>>> more ARM platforms, I get the feeling that I'm missing something.
+>>>>
+>>>> Do you receive any interrupt from the cadence_ttc ? (/proc/interrupts)
+>>>>
+>>>> That's funny because I realize that you cadence ttc timer is never
+>>>> used as there are the architected timers. The cadence ttc would be
+>>>> only useful if there were an idle state powering down the smp_twd
+>>>> timers but it is not the case on this board, IIUC.
+>>> Yes they are used. They TTC is the only broadcast capable timer for
+>>> Zynq. In my experience, I can not even boot without it (may have
+>>> dependencies on CPUidle or something).
+>>
+>> Actually the cpuidle driver is wrong. It assumes the state #1 will
+>> power off the different cores with their architected timers and then
+>> switch to the broadcast timer. But this one is not needed as we
+>> don't power down the core with the twd timers, so no need to switch
+>> to a backup timer device.
+>>
+>> The implementation of the DDR self refresh idle state (incoming
+>> patchset) removes the cpu_pm notifiers + the flag TIMER_STOP. The
+>> result is 0 interrupts for ttc cadence timer. I removed in the dts
+>> the cadence ttc and my board booted without problem (it is a zynq
+>> 702).
+>>
+>> Except I missed something, the cadence ttc is actually not used at all.
+> I tested on the current master branch. I see TTC interrupts on CPU0 and
+> timer_list shows the TTC to be the broadcast device. Removing the TTC
+> nodes from my DT results in boot hanging - shortly after cpuidle is
+> started.
+>
+> Removing cpuidle from my kernel makes the system boot. And it has no
+> broadcast device anymore.
 
-diff --git a/drivers/staging/gdm72xx/gdm_sdio.c b/drivers/staging/gdm72xx/gdm_sdio.c
-index 9d2de6f..f1a53ff 100644
---- a/drivers/staging/gdm72xx/gdm_sdio.c
-+++ b/drivers/staging/gdm72xx/gdm_sdio.c
-@@ -38,9 +38,6 @@
- #define TX_HZ		2000
- #define TX_INTERVAL	(1000000/TX_HZ)
- 
--static int init_sdio(struct sdiowm_dev *sdev);
--static void release_sdio(struct sdiowm_dev *sdev);
--
- static struct sdio_tx *alloc_tx_struct(struct tx_cxt *tx)
- {
- 	struct sdio_tx *t = kzalloc(sizeof(*t), GFP_ATOMIC);
-@@ -124,6 +121,43 @@ static void put_rx_struct(struct rx_cxt *rx, struct sdio_rx *r)
- 	list_add_tail(&r->list, &rx->free_list);
- }
- 
-+static void release_sdio(struct sdiowm_dev *sdev)
-+{
-+	struct tx_cxt	*tx = &sdev->tx;
-+	struct rx_cxt	*rx = &sdev->rx;
-+	struct sdio_tx	*t, *t_next;
-+	struct sdio_rx	*r, *r_next;
-+
-+	kfree(tx->sdu_buf);
-+
-+	list_for_each_entry_safe(t, t_next, &tx->free_list, list) {
-+		list_del(&t->list);
-+		free_tx_struct(t);
-+	}
-+
-+	list_for_each_entry_safe(t, t_next, &tx->sdu_list, list) {
-+		list_del(&t->list);
-+		free_tx_struct(t);
-+	}
-+
-+	list_for_each_entry_safe(t, t_next, &tx->hci_list, list) {
-+		list_del(&t->list);
-+		free_tx_struct(t);
-+	}
-+
-+	kfree(rx->rx_buf);
-+
-+	list_for_each_entry_safe(r, r_next, &rx->free_list, list) {
-+		list_del(&r->list);
-+		free_rx_struct(r);
-+	}
-+
-+	list_for_each_entry_safe(r, r_next, &rx->req_list, list) {
-+		list_del(&r->list);
-+		free_rx_struct(r);
-+	}
-+}
-+
- static int init_sdio(struct sdiowm_dev *sdev)
- {
- 	int ret = 0, i;
-@@ -176,43 +210,6 @@ fail:
- 	return ret;
- }
- 
--static void release_sdio(struct sdiowm_dev *sdev)
--{
--	struct tx_cxt	*tx = &sdev->tx;
--	struct rx_cxt	*rx = &sdev->rx;
--	struct sdio_tx	*t, *t_next;
--	struct sdio_rx	*r, *r_next;
--
--	kfree(tx->sdu_buf);
--
--	list_for_each_entry_safe(t, t_next, &tx->free_list, list) {
--		list_del(&t->list);
--		free_tx_struct(t);
--	}
--
--	list_for_each_entry_safe(t, t_next, &tx->sdu_list, list) {
--		list_del(&t->list);
--		free_tx_struct(t);
--	}
--
--	list_for_each_entry_safe(t, t_next, &tx->hci_list, list) {
--		list_del(&t->list);
--		free_tx_struct(t);
--	}
--
--	kfree(rx->rx_buf);
--
--	list_for_each_entry_safe(r, r_next, &rx->free_list, list) {
--		list_del(&r->list);
--		free_rx_struct(r);
--	}
--
--	list_for_each_entry_safe(r, r_next, &rx->req_list, list) {
--		list_del(&r->list);
--		free_rx_struct(r);
--	}
--}
--
- static void send_sdio_pkt(struct sdio_func *func, u8 *data, int len)
- {
- 	int n, blocks, ret, remain;
-diff --git a/drivers/staging/gdm72xx/gdm_usb.c b/drivers/staging/gdm72xx/gdm_usb.c
-index 971976c..2fc062c 100644
---- a/drivers/staging/gdm72xx/gdm_usb.c
-+++ b/drivers/staging/gdm72xx/gdm_usb.c
-@@ -53,9 +53,6 @@ static int k_mode_stop;
- 
- #endif /* CONFIG_WIMAX_GDM72XX_K_MODE */
- 
--static int init_usb(struct usbwm_dev *udev);
--static void release_usb(struct usbwm_dev *udev);
--
- static struct usb_tx *alloc_tx_struct(struct tx_cxt *tx)
- {
- 	struct usb_tx *t = kzalloc(sizeof(*t), GFP_ATOMIC);
-@@ -164,6 +161,48 @@ static void put_rx_struct(struct rx_cxt *rx, struct usb_rx *r)
- 	list_move(&r->list, &rx->free_list);
- }
- 
-+static void release_usb(struct usbwm_dev *udev)
-+{
-+	struct tx_cxt *tx = &udev->tx;
-+	struct rx_cxt *rx = &udev->rx;
-+	struct usb_tx *t, *t_next;
-+	struct usb_rx *r, *r_next;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&tx->lock, flags);
-+
-+	list_for_each_entry_safe(t, t_next, &tx->sdu_list, list) {
-+		list_del(&t->list);
-+		free_tx_struct(t);
-+	}
-+
-+	list_for_each_entry_safe(t, t_next, &tx->hci_list, list) {
-+		list_del(&t->list);
-+		free_tx_struct(t);
-+	}
-+
-+	list_for_each_entry_safe(t, t_next, &tx->free_list, list) {
-+		list_del(&t->list);
-+		free_tx_struct(t);
-+	}
-+
-+	spin_unlock_irqrestore(&tx->lock, flags);
-+
-+	spin_lock_irqsave(&rx->lock, flags);
-+
-+	list_for_each_entry_safe(r, r_next, &rx->free_list, list) {
-+		list_del(&r->list);
-+		free_rx_struct(r);
-+	}
-+
-+	list_for_each_entry_safe(r, r_next, &rx->used_list, list) {
-+		list_del(&r->list);
-+		free_rx_struct(r);
-+	}
-+
-+	spin_unlock_irqrestore(&rx->lock, flags);
-+}
-+
- static int init_usb(struct usbwm_dev *udev)
- {
- 	int ret = 0, i;
-@@ -214,48 +253,6 @@ fail:
- 	return ret;
- }
- 
--static void release_usb(struct usbwm_dev *udev)
--{
--	struct tx_cxt *tx = &udev->tx;
--	struct rx_cxt *rx = &udev->rx;
--	struct usb_tx *t, *t_next;
--	struct usb_rx *r, *r_next;
--	unsigned long flags;
--
--	spin_lock_irqsave(&tx->lock, flags);
--
--	list_for_each_entry_safe(t, t_next, &tx->sdu_list, list) {
--		list_del(&t->list);
--		free_tx_struct(t);
--	}
--
--	list_for_each_entry_safe(t, t_next, &tx->hci_list, list) {
--		list_del(&t->list);
--		free_tx_struct(t);
--	}
--
--	list_for_each_entry_safe(t, t_next, &tx->free_list, list) {
--		list_del(&t->list);
--		free_tx_struct(t);
--	}
--
--	spin_unlock_irqrestore(&tx->lock, flags);
--
--	spin_lock_irqsave(&rx->lock, flags);
--
--	list_for_each_entry_safe(r, r_next, &rx->free_list, list) {
--		list_del(&r->list);
--		free_rx_struct(r);
--	}
--
--	list_for_each_entry_safe(r, r_next, &rx->used_list, list) {
--		list_del(&r->list);
--		free_rx_struct(r);
--	}
--
--	spin_unlock_irqrestore(&rx->lock, flags);
--}
--
- static void __gdm_usb_send_complete(struct urb *urb)
- {
- 	struct usb_tx *t = urb->context;
-diff --git a/drivers/staging/gdm72xx/gdm_wimax.c b/drivers/staging/gdm72xx/gdm_wimax.c
-index 4148013..b1c7673 100644
---- a/drivers/staging/gdm72xx/gdm_wimax.c
-+++ b/drivers/staging/gdm72xx/gdm_wimax.c
-@@ -41,12 +41,6 @@ struct evt_entry {
- 	int	size;
- };
- 
--static void __gdm_wimax_event_send(struct work_struct *work);
--static inline struct evt_entry *alloc_event_entry(void);
--static inline void free_event_entry(struct evt_entry *e);
--static struct evt_entry *get_event_entry(void);
--static void put_event_entry(struct evt_entry *e);
--
- static struct {
- 	int ref_cnt;
- 	struct sock *sock;
-@@ -58,9 +52,6 @@ static struct {
- 
- static u8 gdm_wimax_macaddr[6] = {0x00, 0x0a, 0x3b, 0xf0, 0x01, 0x30};
- 
--static void gdm_wimax_ind_fsm_update(struct net_device *dev, struct fsm_s *fsm);
--static void gdm_wimax_ind_if_updown(struct net_device *dev, int if_up);
--
- static const char *get_protocol_name(u16 protocol)
- {
- 	static char buf[32];
-@@ -189,6 +180,61 @@ static inline int gdm_wimax_header(struct sk_buff **pskb)
- 	return 0;
- }
- 
-+static inline struct evt_entry *alloc_event_entry(void)
-+{
-+	return kmalloc(sizeof(struct evt_entry), GFP_ATOMIC);
-+}
-+
-+static inline void free_event_entry(struct evt_entry *e)
-+{
-+	kfree(e);
-+}
-+
-+static struct evt_entry *get_event_entry(void)
-+{
-+	struct evt_entry *e;
-+
-+	if (list_empty(&wm_event.freeq)) {
-+		e = alloc_event_entry();
-+	} else {
-+		e = list_entry(wm_event.freeq.next, struct evt_entry, list);
-+		list_del(&e->list);
-+	}
-+
-+	return e;
-+}
-+
-+static void put_event_entry(struct evt_entry *e)
-+{
-+	BUG_ON(!e);
-+
-+	list_add_tail(&e->list, &wm_event.freeq);
-+}
-+
-+static void __gdm_wimax_event_send(struct work_struct *work)
-+{
-+	int idx;
-+	unsigned long flags;
-+	struct evt_entry *e;
-+
-+	spin_lock_irqsave(&wm_event.evt_lock, flags);
-+
-+	while (!list_empty(&wm_event.evtq)) {
-+		e = list_entry(wm_event.evtq.next, struct evt_entry, list);
-+		spin_unlock_irqrestore(&wm_event.evt_lock, flags);
-+
-+		if (sscanf(e->dev->name, "wm%d", &idx) == 1)
-+			netlink_send(wm_event.sock, idx, 0, e->evt_data,
-+				     e->size);
-+
-+		spin_lock_irqsave(&wm_event.evt_lock, flags);
-+		list_del(&e->list);
-+		put_event_entry(e);
-+	}
-+
-+	spin_unlock_irqrestore(&wm_event.evt_lock, flags);
-+}
-+
- static void gdm_wimax_event_rcv(struct net_device *dev, u16 type, void *msg,
- 				int len)
- {
-@@ -248,61 +294,6 @@ static void gdm_wimax_event_exit(void)
- 	}
- }
- 
--static inline struct evt_entry *alloc_event_entry(void)
--{
--	return kmalloc(sizeof(struct evt_entry), GFP_ATOMIC);
--}
--
--static inline void free_event_entry(struct evt_entry *e)
--{
--	kfree(e);
--}
--
--static struct evt_entry *get_event_entry(void)
--{
--	struct evt_entry *e;
--
--	if (list_empty(&wm_event.freeq)) {
--		e = alloc_event_entry();
--	} else {
--		e = list_entry(wm_event.freeq.next, struct evt_entry, list);
--		list_del(&e->list);
--	}
--
--	return e;
--}
--
--static void put_event_entry(struct evt_entry *e)
--{
--	BUG_ON(!e);
--
--	list_add_tail(&e->list, &wm_event.freeq);
--}
--
--static void __gdm_wimax_event_send(struct work_struct *work)
--{
--	int idx;
--	unsigned long flags;
--	struct evt_entry *e;
--
--	spin_lock_irqsave(&wm_event.evt_lock, flags);
--
--	while (!list_empty(&wm_event.evtq)) {
--		e = list_entry(wm_event.evtq.next, struct evt_entry, list);
--		spin_unlock_irqrestore(&wm_event.evt_lock, flags);
--
--		if (sscanf(e->dev->name, "wm%d", &idx) == 1)
--			netlink_send(wm_event.sock, idx, 0, e->evt_data,
--				     e->size);
--
--		spin_lock_irqsave(&wm_event.evt_lock, flags);
--		list_del(&e->list);
--		put_event_entry(e);
--	}
--
--	spin_unlock_irqrestore(&wm_event.evt_lock, flags);
--}
--
- static int gdm_wimax_event_send(struct net_device *dev, char *buf, int size)
- {
- 	struct evt_entry *e;
-@@ -452,6 +443,22 @@ static struct net_device_stats *gdm_wimax_stats(struct net_device *dev)
- 	return &nic->stats;
- }
- 
-+static void gdm_wimax_ind_if_updown(struct net_device *dev, int if_up)
-+{
-+	u16 buf[32 / sizeof(u16)];
-+	struct hci_s *hci = (struct hci_s *)buf;
-+	unsigned char up_down;
-+
-+	up_down = if_up ? WIMAX_IF_UP : WIMAX_IF_DOWN;
-+
-+	/* Indicate updating fsm */
-+	hci->cmd_evt = H2B(WIMAX_IF_UPDOWN);
-+	hci->length = H2B(sizeof(up_down));
-+	hci->data[0] = up_down;
-+
-+	gdm_wimax_event_send(dev, (char *)hci, HCI_HEADER_SIZE+sizeof(up_down));
-+}
-+
- static int gdm_wimax_open(struct net_device *dev)
- {
- 	struct nic *nic = netdev_priv(dev);
-@@ -534,6 +541,20 @@ static void gdm_wimax_cleanup_ioctl(struct net_device *dev)
- 		kdelete(&nic->sdk_data[i].buf);
- }
- 
-+static void gdm_wimax_ind_fsm_update(struct net_device *dev, struct fsm_s *fsm)
-+{
-+	u16 buf[32 / sizeof(u16)];
-+	u8 *hci_pkt_buf = (u8 *)&buf[0];
-+
-+	/* Indicate updating fsm */
-+	buf[0] = H2B(WIMAX_FSM_UPDATE);
-+	buf[1] = H2B(sizeof(struct fsm_s));
-+	memcpy(&hci_pkt_buf[HCI_HEADER_SIZE], fsm, sizeof(struct fsm_s));
-+
-+	gdm_wimax_event_send(dev, hci_pkt_buf,
-+			     HCI_HEADER_SIZE + sizeof(struct fsm_s));
-+}
-+
- static void gdm_update_fsm(struct net_device *dev, struct fsm_s *new_fsm)
- {
- 	struct nic *nic = netdev_priv(dev);
-@@ -813,36 +834,6 @@ static void gdm_wimax_transmit_pkt(struct net_device *dev, char *buf, int len)
- 	}
- }
- 
--static void gdm_wimax_ind_fsm_update(struct net_device *dev, struct fsm_s *fsm)
--{
--	u16 buf[32 / sizeof(u16)];
--	u8 *hci_pkt_buf = (u8 *)&buf[0];
--
--	/* Indicate updating fsm */
--	buf[0] = H2B(WIMAX_FSM_UPDATE);
--	buf[1] = H2B(sizeof(struct fsm_s));
--	memcpy(&hci_pkt_buf[HCI_HEADER_SIZE], fsm, sizeof(struct fsm_s));
--
--	gdm_wimax_event_send(dev, hci_pkt_buf,
--			     HCI_HEADER_SIZE + sizeof(struct fsm_s));
--}
--
--static void gdm_wimax_ind_if_updown(struct net_device *dev, int if_up)
--{
--	u16 buf[32 / sizeof(u16)];
--	struct hci_s *hci = (struct hci_s *)buf;
--	unsigned char up_down;
--
--	up_down = if_up ? WIMAX_IF_UP : WIMAX_IF_DOWN;
--
--	/* Indicate updating fsm */
--	hci->cmd_evt = H2B(WIMAX_IF_UPDOWN);
--	hci->length = H2B(sizeof(up_down));
--	hci->data[0] = up_down;
--
--	gdm_wimax_event_send(dev, (char *)hci, HCI_HEADER_SIZE+sizeof(up_down));
--}
--
- static void rx_complete(void *arg, void *data, int len)
- {
- 	struct nic *nic = arg;
+You can safely remove the CPUIDLE_FLAG_TIMER_STOP in the cpuidle drivers 
+and I am pretty sure it will boot without problem.
+
 -- 
-1.8.4
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
