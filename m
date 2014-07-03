@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219AbaGCHeN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 03:34:13 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:42922 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755819AbaGCHeJ (ORCPT
+	id S964802AbaGCHeZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 03:34:25 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:52625 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932239AbaGCHeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 03:34:09 -0400
-Message-ID: <53B50760.3040708@siemens.com>
-Date: Thu, 03 Jul 2014 09:33:52 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Thu, 3 Jul 2014 03:34:22 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/K8uocFnkAJvF0ehqnr4Ls
+Date: Thu, 3 Jul 2014 00:34:11 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Robert Nelson <robertcnelson@gmail.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Felipe Balbi <balbi@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH] tty: serial: Add 8250-core based omap driver
+Message-ID: <20140703073411.GX28884@atomide.com>
+References: <1404316809-20637-1-git-send-email-bigeasy@linutronix.de>
+ <20140702160932.GF5541@saruman.home>
+ <20140702190944.GA567@drone.musicnaut.iki.fi>
+ <CAOCHtYgxMeA+Arfe40XeFDEKuCJ8qo1RqNR0hYBGr_Wp6sRfdA@mail.gmail.com>
 MIME-Version: 1.0
-To: Bandan Das <bsd@redhat.com>, Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Hu Robert <robert.hu@intel.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since
- race
-References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com>	<jpg7g3v7mk0.fsf@redhat.com> <20140703051142.GA2687@kernel> <jpg61jf9fis.fsf@redhat.com>
-In-Reply-To: <jpg61jf9fis.fsf@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOCHtYgxMeA+Arfe40XeFDEKuCJ8qo1RqNR0hYBGr_Wp6sRfdA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-03 07:29, Bandan Das wrote:
-> Wanpeng Li <wanpeng.li@linux.intel.com> writes:
+* Robert Nelson <robertcnelson@gmail.com> [140702 12:27]:
+> On Wed, Jul 2, 2014 at 2:09 PM, Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
+> > Hi,
+> >
+> > On Wed, Jul 02, 2014 at 11:09:32AM -0500, Felipe Balbi wrote:
+> >> > It has been only tested as console UART.
+> >> > The tty name is ttyS based instead of ttyO. How big is the pain here,
+> >> > what could be the easiest way to provide compatibility?
+> >>
+> >> have been considering that myself for months. You could pass an optional
+> >> argument to serial8250_register_8250_port() but that only solves part of
+> >> the problem :-(
+
+Some kind of compability layer sure would be nice.
+
+> > When ttyS -> ttyO change was done on OMAP, compatibility was not an issue.
+> > Why should we care about it now?
 > 
->> Hi Bandan,
->> On Wed, Jul 02, 2014 at 12:27:59PM -0400, Bandan Das wrote:
->>> Wanpeng Li <wanpeng.li@linux.intel.com> writes:
->>>
->>>> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=72381 
->>> I can also reproduce this easily with Linux as L1 by "slowing it down"
->>> eg. running with ept = 0
->>>
->>> I suggest changing the subject to -
->>> KVM: nVMX: Fix race that incorrectly injects L1's irq to L2
->>>
->>
->> Ok, I will fold this to next version. ;-)
->>
->>>> If we didn't inject a still-pending event to L1 since nested_run_pending,
->>>> KVM_REQ_EVENT should be requested after the vmexit in order to inject the 
->>>> event to L1. However, current log blindly request a KVM_REQ_EVENT even if 
->>>
->>> What's current "log" ? Do you mean current "code" ?
->>>
->>
->> Yeah, it's a typo. I mean "logic".
->>
->> [...]
->>> Also, I am wondering isn't it enough to just do this to avoid this race ?
->>>
->>> static int vmx_interrupt_allowed(struct kvm_vcpu *vcpu)
->>> {
->>> -       return (!to_vmx(vcpu)->nested.nested_run_pending &&
->>> +       return (!is_guest_mode(vcpu) &&
->>> +               !to_vmx(vcpu)->nested.nested_run_pending &&
->>>                vmcs_readl(GUEST_RFLAGS) & X86_EFLAGS_IF) &&
->>>                !(vmcs_read32(GUEST_INTERRUPTIBILITY_INFO) &
->>>
->>
->> I don't think you fix the root cause of the race, and there are two cases which 
->> I concern about your proposal:
->>
->> - If there is a special L1 which don't ask to exit on external intrs, you will 
->>   lose the intrs which L0 inject to L2.  
+> It would be a good opportunity to force everyone to update their bootloader. ;)
 > 
-> Oh didn't think about that case :), thanks for the pointing this out.
-> It's easy to check this with Xen as L1, I suppose.
+> Besides the BeagleBoard forum is quiet now, no one is complaining
+> about that old (ttyS -> ttyO) transition anymore..
 
-Xen most probably intercepts external interrupts, but Jailhouse
-definitely does not. We also have a unit test for that, but I will
-likely not expose the issue of lost events.
+How about a Kconfig option to provide ttyO by default? The not even
+do that if kernel has cmdline option nottyomap.
+ 
+> I'll just end up carrying a patch like, to support bb.org users over
+> the transition..
+> 
+> https://github.com/RobertCNelson/stable-kernel/blob/v3.7.x/patches/omap_beagle/0004-zeroMAP-Open-your-eyes.patch
 
-Jan
+Heh. Just to summarize the reason ttyO needs to be a separate name
+and device entry from ttyS is because we also have external 8250
+devices on GPMC and hotplug busses.
 
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+Regards,
+
+Tony
