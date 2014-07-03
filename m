@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030713AbaGCJql (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:46:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52263 "EHLO
+	id S1030736AbaGCJrU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:47:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52241 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030271AbaGCJYA (ORCPT
+	with ESMTP id S1030248AbaGCJXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:24:00 -0400
+	Thu, 3 Jul 2014 05:23:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 133/198] net: Move the permission check in sock_diag_put_filterinfo to packet_diag_dump
-Date: Thu,  3 Jul 2014 10:19:36 +0100
-Message-Id: <1404379241-8590-134-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 129/198] ima: introduce ima_kernel_read()
+Date: Thu,  3 Jul 2014 10:19:32 +0100
+Message-Id: <1404379241-8590-130-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,104 +28,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 
-commit a53b72c83a4216f2eb883ed45a0cbce014b8e62d upstream.
+commit 0430e49b6e7c6b5e076be8fefdee089958c9adad upstream.
 
-The permission check in sock_diag_put_filterinfo is wrong, and it is so removed
-from it's sources it is not clear why it is wrong.  Move the computation
-into packet_diag_dump and pass a bool of the result into sock_diag_filterinfo.
+Commit 8aac62706 "move exit_task_namespaces() outside of exit_notify"
+introduced the kernel opps since the kernel v3.10, which happens when
+Apparmor and IMA-appraisal are enabled at the same time.
 
-This does not yet correct the capability check but instead simply moves it to make
-it clear what is going on.
+----------------------------------------------------------------------
+[  106.750167] BUG: unable to handle kernel NULL pointer dereference at
+0000000000000018
+[  106.750221] IP: [<ffffffff811ec7da>] our_mnt+0x1a/0x30
+[  106.750241] PGD 0
+[  106.750254] Oops: 0000 [#1] SMP
+[  106.750272] Modules linked in: cuse parport_pc ppdev bnep rfcomm
+bluetooth rpcsec_gss_krb5 nfsd auth_rpcgss nfs_acl nfs lockd sunrpc
+fscache dm_crypt intel_rapl x86_pkg_temp_thermal intel_powerclamp
+kvm_intel snd_hda_codec_hdmi kvm crct10dif_pclmul crc32_pclmul
+ghash_clmulni_intel aesni_intel aes_x86_64 glue_helper lrw gf128mul
+ablk_helper cryptd snd_hda_codec_realtek dcdbas snd_hda_intel
+snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_seq_midi
+snd_seq_midi_event snd_rawmidi psmouse snd_seq microcode serio_raw
+snd_timer snd_seq_device snd soundcore video lpc_ich coretemp mac_hid lp
+parport mei_me mei nbd hid_generic e1000e usbhid ahci ptp hid libahci
+pps_core
+[  106.750658] CPU: 6 PID: 1394 Comm: mysqld Not tainted 3.13.0-rc7-kds+ #15
+[  106.750673] Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A08
+09/19/2012
+[  106.750689] task: ffff8800de804920 ti: ffff880400fca000 task.ti:
+ffff880400fca000
+[  106.750704] RIP: 0010:[<ffffffff811ec7da>]  [<ffffffff811ec7da>]
+our_mnt+0x1a/0x30
+[  106.750725] RSP: 0018:ffff880400fcba60  EFLAGS: 00010286
+[  106.750738] RAX: 0000000000000000 RBX: 0000000000000100 RCX:
+ffff8800d51523e7
+[  106.750764] RDX: ffffffffffffffea RSI: ffff880400fcba34 RDI:
+ffff880402d20020
+[  106.750791] RBP: ffff880400fcbae0 R08: 0000000000000000 R09:
+0000000000000001
+[  106.750817] R10: 0000000000000000 R11: 0000000000000001 R12:
+ffff8800d5152300
+[  106.750844] R13: ffff8803eb8df510 R14: ffff880400fcbb28 R15:
+ffff8800d51523e7
+[  106.750871] FS:  0000000000000000(0000) GS:ffff88040d200000(0000)
+knlGS:0000000000000000
+[  106.750910] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  106.750935] CR2: 0000000000000018 CR3: 0000000001c0e000 CR4:
+00000000001407e0
+[  106.750962] Stack:
+[  106.750981]  ffffffff813434eb ffff880400fcbb20 ffff880400fcbb18
+0000000000000000
+[  106.751037]  ffff8800de804920 ffffffff8101b9b9 0001800000000000
+0000000000000100
+[  106.751093]  0000010000000000 0000000000000002 000000000000000e
+ffff8803eb8df500
+[  106.751149] Call Trace:
+[  106.751172]  [<ffffffff813434eb>] ? aa_path_name+0x2ab/0x430
+[  106.751199]  [<ffffffff8101b9b9>] ? sched_clock+0x9/0x10
+[  106.751225]  [<ffffffff8134a68d>] aa_path_perm+0x7d/0x170
+[  106.751250]  [<ffffffff8101b945>] ? native_sched_clock+0x15/0x80
+[  106.751276]  [<ffffffff8134aa73>] aa_file_perm+0x33/0x40
+[  106.751301]  [<ffffffff81348c5e>] common_file_perm+0x8e/0xb0
+[  106.751327]  [<ffffffff81348d78>] apparmor_file_permission+0x18/0x20
+[  106.751355]  [<ffffffff8130c853>] security_file_permission+0x23/0xa0
+[  106.751382]  [<ffffffff811c77a2>] rw_verify_area+0x52/0xe0
+[  106.751407]  [<ffffffff811c789d>] vfs_read+0x6d/0x170
+[  106.751432]  [<ffffffff811cda31>] kernel_read+0x41/0x60
+[  106.751457]  [<ffffffff8134fd45>] ima_calc_file_hash+0x225/0x280
+[  106.751483]  [<ffffffff8134fb52>] ? ima_calc_file_hash+0x32/0x280
+[  106.751509]  [<ffffffff8135022d>] ima_collect_measurement+0x9d/0x160
+[  106.751536]  [<ffffffff810b552d>] ? trace_hardirqs_on+0xd/0x10
+[  106.751562]  [<ffffffff8134f07c>] ? ima_file_free+0x6c/0xd0
+[  106.751587]  [<ffffffff81352824>] ima_update_xattr+0x34/0x60
+[  106.751612]  [<ffffffff8134f0d0>] ima_file_free+0xc0/0xd0
+[  106.751637]  [<ffffffff811c9635>] __fput+0xd5/0x300
+[  106.751662]  [<ffffffff811c98ae>] ____fput+0xe/0x10
+[  106.751687]  [<ffffffff81086774>] task_work_run+0xc4/0xe0
+[  106.751712]  [<ffffffff81066fad>] do_exit+0x2bd/0xa90
+[  106.751738]  [<ffffffff8173c958>] ? retint_swapgs+0x13/0x1b
+[  106.751763]  [<ffffffff8106780c>] do_group_exit+0x4c/0xc0
+[  106.751788]  [<ffffffff81067894>] SyS_exit_group+0x14/0x20
+[  106.751814]  [<ffffffff8174522d>] system_call_fastpath+0x1a/0x1f
+[  106.751839] Code: c3 0f 1f 44 00 00 55 48 89 e5 e8 22 fe ff ff 5d c3
+0f 1f 44 00 00 55 65 48 8b 04 25 c0 c9 00 00 48 8b 80 28 06 00 00 48 89
+e5 5d <48> 8b 40 18 48 39 87 c0 00 00 00 0f 94 c0 c3 0f 1f 80 00 00 00
+[  106.752185] RIP  [<ffffffff811ec7da>] our_mnt+0x1a/0x30
+[  106.752214]  RSP <ffff880400fcba60>
+[  106.752236] CR2: 0000000000000018
+[  106.752258] ---[ end trace 3c520748b4732721 ]---
+----------------------------------------------------------------------
 
-Reported-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The reason for the oops is that IMA-appraisal uses "kernel_read()" when
+file is closed. kernel_read() honors LSM security hook which calls
+Apparmor handler, which uses current->nsproxy->mnt_ns. The 'guilty'
+commit changed the order of cleanup code so that nsproxy->mnt_ns was
+not already available for Apparmor.
+
+Discussion about the issue with Al Viro and Eric W. Biederman suggested
+that kernel_read() is too high-level for IMA. Another issue, except
+security checking, that was identified is mandatory locking. kernel_read
+honors it as well and it might prevent IMA from calculating necessary hash.
+It was suggested to use simplified version of the function without security
+and locking checks.
+
+This patch introduces special version ima_kernel_read(), which skips security
+and mandatory locking checking. It prevents the kernel oops to happen.
+
+Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Suggested-by: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/sock_diag.h | 2 +-
- net/core/sock_diag.c      | 4 ++--
- net/packet/diag.c         | 7 ++++++-
- 3 files changed, 9 insertions(+), 4 deletions(-)
+ security/integrity/ima/ima_crypto.c | 32 +++++++++++++++++++++++++++++++-
+ 1 file changed, 31 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/sock_diag.h b/include/linux/sock_diag.h
-index 302ab805b0bb..46cca4c06848 100644
---- a/include/linux/sock_diag.h
-+++ b/include/linux/sock_diag.h
-@@ -23,7 +23,7 @@ int sock_diag_check_cookie(void *sk, __u32 *cookie);
- void sock_diag_save_cookie(void *sk, __u32 *cookie);
+diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
+index a02e0791cf15..9da974c0f958 100644
+--- a/security/integrity/ima/ima_crypto.c
++++ b/security/integrity/ima/ima_crypto.c
+@@ -24,6 +24,36 @@
  
- int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attr);
--int sock_diag_put_filterinfo(struct sock *sk,
-+int sock_diag_put_filterinfo(bool may_report_filterinfo, struct sock *sk,
- 			     struct sk_buff *skb, int attrtype);
+ static struct crypto_shash *ima_shash_tfm;
  
- #endif
-diff --git a/net/core/sock_diag.c b/net/core/sock_diag.c
-index 6a7fae228634..c38e7a2b5a8e 100644
---- a/net/core/sock_diag.c
-+++ b/net/core/sock_diag.c
-@@ -49,7 +49,7 @@ int sock_diag_put_meminfo(struct sock *sk, struct sk_buff *skb, int attrtype)
- }
- EXPORT_SYMBOL_GPL(sock_diag_put_meminfo);
- 
--int sock_diag_put_filterinfo(struct sock *sk,
-+int sock_diag_put_filterinfo(bool may_report_filterinfo, struct sock *sk,
- 			     struct sk_buff *skb, int attrtype)
++/**
++ * ima_kernel_read - read file content
++ *
++ * This is a function for reading file content instead of kernel_read().
++ * It does not perform locking checks to ensure it cannot be blocked.
++ * It does not perform security checks because it is irrelevant for IMA.
++ *
++ */
++static int ima_kernel_read(struct file *file, loff_t offset,
++			   char *addr, unsigned long count)
++{
++	mm_segment_t old_fs;
++	char __user *buf = addr;
++	ssize_t ret;
++
++	if (!(file->f_mode & FMODE_READ))
++		return -EBADF;
++	if (!file->f_op->read && !file->f_op->aio_read)
++		return -EINVAL;
++
++	old_fs = get_fs();
++	set_fs(get_ds());
++	if (file->f_op->read)
++		ret = file->f_op->read(file, buf, count, &offset);
++	else
++		ret = do_sync_read(file, buf, count, &offset);
++	set_fs(old_fs);
++	return ret;
++}
++
+ int ima_init_crypto(void)
  {
- 	struct nlattr *attr;
-@@ -57,7 +57,7 @@ int sock_diag_put_filterinfo(struct sock *sk,
- 	unsigned int len;
- 	int err = 0;
+ 	long rc;
+@@ -70,7 +100,7 @@ int ima_calc_file_hash(struct file *file, char *digest)
+ 	while (offset < i_size) {
+ 		int rbuf_len;
  
--	if (!ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN)) {
-+	if (!may_report_filterinfo) {
- 		nla_reserve(skb, attrtype, 0);
- 		return 0;
- 	}
-diff --git a/net/packet/diag.c b/net/packet/diag.c
-index ec8b6e8a80b1..01cd1ac44ff5 100644
---- a/net/packet/diag.c
-+++ b/net/packet/diag.c
-@@ -127,6 +127,7 @@ static int pdiag_put_fanout(struct packet_sock *po, struct sk_buff *nlskb)
- 
- static int sk_diag_fill(struct sock *sk, struct sk_buff *skb,
- 			struct packet_diag_req *req,
-+			bool may_report_filterinfo,
- 			struct user_namespace *user_ns,
- 			u32 portid, u32 seq, u32 flags, int sk_ino)
- {
-@@ -171,7 +172,8 @@ static int sk_diag_fill(struct sock *sk, struct sk_buff *skb,
- 		goto out_nlmsg_trim;
- 
- 	if ((req->pdiag_show & PACKET_SHOW_FILTER) &&
--	    sock_diag_put_filterinfo(sk, skb, PACKET_DIAG_FILTER))
-+	    sock_diag_put_filterinfo(may_report_filterinfo, sk, skb,
-+				     PACKET_DIAG_FILTER))
- 		goto out_nlmsg_trim;
- 
- 	return nlmsg_end(skb, nlh);
-@@ -187,9 +189,11 @@ static int packet_diag_dump(struct sk_buff *skb, struct netlink_callback *cb)
- 	struct packet_diag_req *req;
- 	struct net *net;
- 	struct sock *sk;
-+	bool may_report_filterinfo;
- 
- 	net = sock_net(skb->sk);
- 	req = nlmsg_data(cb->nlh);
-+	may_report_filterinfo = ns_capable(net->user_ns, CAP_NET_ADMIN);
- 
- 	mutex_lock(&net->packet.sklist_lock);
- 	sk_for_each(sk, &net->packet.sklist) {
-@@ -199,6 +203,7 @@ static int packet_diag_dump(struct sk_buff *skb, struct netlink_callback *cb)
- 			goto next;
- 
- 		if (sk_diag_fill(sk, skb, req,
-+				 may_report_filterinfo,
- 				 sk_user_ns(NETLINK_CB(cb->skb).sk),
- 				 NETLINK_CB(cb->skb).portid,
- 				 cb->nlh->nlmsg_seq, NLM_F_MULTI,
+-		rbuf_len = kernel_read(file, offset, rbuf, PAGE_SIZE);
++		rbuf_len = ima_kernel_read(file, offset, rbuf, PAGE_SIZE);
+ 		if (rbuf_len < 0) {
+ 			rc = rbuf_len;
+ 			break;
 -- 
 1.9.1
 
