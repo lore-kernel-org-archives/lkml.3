@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662AbaGCTF3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 15:05:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63571 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751336AbaGCTF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 15:05:27 -0400
-Date: Thu, 3 Jul 2014 15:05:06 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        David Rientjes <rientjes@google.com>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm readahead: Fix sys_readahead breakage by reverting
- 2MB limit (bug 79111)
-Message-ID: <20140703190506.GA24683@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Fengguang Wu <fengguang.wu@intel.com>,
-	David Cohen <david.a.cohen@linux.intel.com>,
-	Al Viro <viro@zeniv.linux.org.uk>,
-	Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-	David Rientjes <rientjes@google.com>,
-	Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-	linux-mm <linux-mm@kvack.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <1404392547-11648-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
- <CA+55aFxOTqUAqEF7+83s890Q18qCHSQqDOxWqWHNjG_25hVhXg@mail.gmail.com>
- <53B59CB5.9060004@linux.vnet.ibm.com>
- <CA+55aFyRgYW6Y8paYKGfqE205enhiPsZ1C8wrKpFavVXq7ZAtA@mail.gmail.com>
- <CA+55aFwwSCrH5QDvrzzyHhRU5R849Mo8A3NdRMwm9OTeWH9diQ@mail.gmail.com>
- <53B5A343.4090402@linux.vnet.ibm.com>
- <CA+55aFyqK90YJkjtHR2QGFt4Mvn=mj8a4FkB_8nbTTj3=jp3NA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyqK90YJkjtHR2QGFt4Mvn=mj8a4FkB_8nbTTj3=jp3NA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756009AbaGCTPD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 15:15:03 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:47240 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698AbaGCTPA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 15:15:00 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Jingoo Han <jg1.han@samsung.com>, Alexandru Juncu <alexj@rosedu.org>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Joe Perches <joe@perches.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH V2] video: fbdev: matrox: matroxfb_base.c:  Cleaning up a null pointer checks that could never happen
+Date: Thu,  3 Jul 2014 21:16:13 +0200
+Message-Id: <1404414974-9676-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 11:53:57AM -0700, Linus Torvalds wrote:
- > On Thu, Jul 3, 2014 at 11:38 AM, Raghavendra K T
- > <raghavendra.kt@linux.vnet.ibm.com> wrote:
- > >
- > > Okay, how about something like 256MB? I would be happy to send a patch
- > > for that change.
- > 
- > I'd like to see some performance numbers. I know at least Fedora uses
- > "readahead()" in the startup scripts, do we have any performance
- > numbers for that?
+Removal of null pointer checks that could never happen
 
-this got rolled up into systemd a while ago, so it's not just Fedora.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/video/fbdev/matrox/matroxfb_base.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-re: numbers, systemd-analyze and systemd-bootchart look like the way
-to figure that out..
-https://wiki.archlinux.org/index.php/Improve_boot_performance
-
-	Dave
+diff --git a/drivers/video/fbdev/matrox/matroxfb_base.c b/drivers/video/fbdev/matrox/matroxfb_base.c
+index 7116c53..cd9dc88 100644
+--- a/drivers/video/fbdev/matrox/matroxfb_base.c
++++ b/drivers/video/fbdev/matrox/matroxfb_base.c
+@@ -1973,7 +1973,7 @@ static void matroxfb_register_device(struct matrox_fb_info* minfo) {
+ 	for (drv = matroxfb_driver_l(matroxfb_driver_list.next);
+ 	     drv != matroxfb_driver_l(&matroxfb_driver_list);
+ 	     drv = matroxfb_driver_l(drv->node.next)) {
+-		if (drv && drv->probe) {
++		if (drv->probe) {
+ 			void *p = drv->probe(minfo);
+ 			if (p) {
+ 				minfo->drivers_data[i] = p;
+-- 
+1.7.10.4
 
