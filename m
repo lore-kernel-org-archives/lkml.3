@@ -1,96 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288AbaGCJE5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:04:57 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52729 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752132AbaGCJEy (ORCPT
+	id S1756342AbaGCJFY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:05:24 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:39930 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755661AbaGCJFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:04:54 -0400
-Date: Thu, 3 Jul 2014 10:04:47 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Daniel Jeong <gshark.jeong@gmail.com>
-Cc: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        Daniel Jeong <daniel.jeong@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [RFC v4 2/2] backlight: device tree: add new tps611xx backlight
- binding
-Message-ID: <20140703090447.GC29837@leverpostej>
-References: <1404367277-12003-1-git-send-email-gshark.jeong@gmail.com>
- <1404367277-12003-3-git-send-email-gshark.jeong@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404367277-12003-3-git-send-email-gshark.jeong@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 3 Jul 2014 05:05:20 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Joe Perches <joe@perches.com>
+Subject: [RESEND PATCH] Documentation: devres: Add devm_kmalloc() et al
+Date: Thu,  3 Jul 2014 10:05:02 +0100
+Message-Id: <1404378302-32279-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1403522918-16509-1-git-send-email-daniel.thompson@linaro.org>
+References: <1403522918-16509-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 07:01:17AM +0100, Daniel Jeong wrote:
-> This commit is about tps611xx device tree documentation.
-> 
-> Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
-> ---
->  .../video/backlight/tps611xx-backlight.txt         |   24 ++++++++++++++++++++
->  1 file changed, 24 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/video/backlight/tps611xx-backlight.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/video/backlight/tps611xx-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps611xx-backlight.txt
-> new file mode 100644
-> index 0000000..7af8182
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/video/backlight/tps611xx-backlight.txt
-> @@ -0,0 +1,24 @@
-> +TPS611xx family of backlight driver based on EasyScale.
-> +
-> +EasyScale is a simple but flexible one pin interface to configure the current.
-> +
-> +Required properties:
-> +- compatible: should contain at least one of
-> +  "ti,tps61158_bl"
-> +  "ti,tps61161_bl"
-> +  "ti,tps61163_bl"
-> +  "ti,tps61165_bl"
+Commit 64c862a83... added new alloc variants to the devres managed
+API. These should be included in the list of managed API found in
+devres.txt.
 
-In v3 I asked you to get rid of the "_bl" suffix.
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Joe Perches <joe@perches.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+---
 
-> +- rfa-enable: enable request for acknowledge.
-> +  If RFA is enabled, the data byte includes the RFA bit and device will wait
-> +  and check acknowledge from device.
+Notes:
+    Greg: Tejun acked this and suggested that it should go via
+          driver-core-next.
 
-You didn't answer my question as to why this should be in the DT.
+ Documentation/driver-model/devres.txt | 3 +++
+ 1 file changed, 3 insertions(+)
 
-> +- es-gpio : GPIO for easy-scale communication.(see GPIO binding[0])
-> +
-> +[0]: Documentation/devicetree/bindings/gpio/gpio.txt
-> +
-> +Example:
-> +
-> +	backlight {
-> +		compatible = "ti,tps61163";
+diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
+index 1525e30..91f5633 100644
+--- a/Documentation/driver-model/devres.txt
++++ b/Documentation/driver-model/devres.txt
+@@ -234,7 +234,10 @@ certainly invest a bit more effort into libata core layer).
+   -----------------------------
+ 
+ MEM
++  devm_kmalloc()
+   devm_kzalloc()
++  devm_kmalloc_array()
++  devm_kcalloc()
+   devm_kfree()
+   devm_kmemdup()
+   devm_get_free_pages()
+-- 
+1.9.3
 
-This now doesn't match the Documentation above.
-
-Thanks,
-Mark.
-
-> +		rfa-enable;
-> +		es-gpio = <&gpio 45 0>;
-> +	};
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
