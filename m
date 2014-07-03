@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673AbaGCVkx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 17:40:53 -0400
-Received: from mout.gmx.net ([212.227.15.19]:54694 "EHLO mout.gmx.net"
+	id S1759435AbaGCVnP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 17:43:15 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53685 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752192AbaGCVkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 17:40:52 -0400
-Message-ID: <53B5CDDD.8000009@gmx.de>
-Date: Thu, 03 Jul 2014 23:40:45 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: commit message 8a5b20aebaa3 refers to non-existing commit ?
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:MQK2vyw3xS0PPkGCilO6zdiXLEa7g1uIixrbkqcRva5RhlsZX7q
- KDYaMPhlPLF3/S/Sad1uDRpOHyW6IkaASKrIGjReVjzzkDabCxAaZbMpmOpJl0+SCvRplE0
- qW38BxpFxSQtYINQhpzGEyutsIchW0LMdePhhKMhxLgQXdnro8yLT/xKx2pSmuzOhCFcB4V
- 36bhcn2fWhM/j3G1CtwSQ==
+	id S1752627AbaGCVnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 17:43:14 -0400
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [RFC PATCHES 0/7] Add support for showing headers in the hist browser.
+Date: Thu,  3 Jul 2014 18:42:53 -0300
+Message-Id: <1404423780-24026-1-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-in 
-commit 8a5b20aebaa3d0ade5b8381e64d35fb777b7b355
-Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Date:   Wed Jul 2 15:22:35 2014 -0700
+Hi Jiri,
 
-    slub: fix off by one in number of slab tests
+	As you guys know this allows showing the columns headers on the hists
+browsers, used in 'perf top' and 'perf report'. So, to test it, just apply,
+fire one of those tools and press 'H' repeatedly.
 
+	Please take a look, this should be mostly equivalent to your patchkit in
+intent, but fixes some problems and is more consistent with how I first designed
+the ui_browser code.
 
-you stated:
+	Please let me know if you are ok with it and if I can have your
+Acked-by and perhaps Tested-by tags for the code I wrote.
 
-    Fixes 91cb69620284 ("slub: make dead memcg caches discard free slabs
-    immediately").
+	Namhyung, since you reviewed the previous patchkit, I'd like to know
+if I can keep the acked-by and perhaps a tested-by too. This should address the
+problems that Jiri pointed out in our private conversation.
 
+Thanks,
 
-which I cannot find in main line currently. Pls could you point me to that commit ?
+- Arnaldo
+
+Arnaldo Carvalho de Melo (5):
+  perf ui browser: Add ->rows to disambiguate from ->height
+  perf ui browser: Allow overriding refresh_dimensions method
+  perf hists browser: Introduce gotorc method
+  perf hists browser: Override ui_browser refresh_dimensions method
+  perf hists browser: Add support for showing columns header
+
+Jiri Olsa (2):
+  perf hists browser: Display columns header text on 'H' press
+  perf hists browser: Add ui.show-headers config file option
+
+ tools/perf/ui/browser.c        |  37 ++++++------
+ tools/perf/ui/browser.h        |   3 +-
+ tools/perf/ui/browsers/hists.c | 128 +++++++++++++++++++++++++++++++++++------
+ tools/perf/util/config.c       |  13 +++++
+ tools/perf/util/symbol.c       |   1 +
+ tools/perf/util/symbol.h       |   3 +-
+ 6 files changed, 149 insertions(+), 36 deletions(-)
 
 -- 
-Toralf
+1.9.3
 
