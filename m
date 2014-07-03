@@ -1,102 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759604AbaGCVhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 17:37:17 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:45543 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753201AbaGCVhP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 17:37:15 -0400
-Date: Thu, 3 Jul 2014 14:37:12 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Sasha Levin <sasha.levin@oracle.com>
-cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: fs: use after free in /proc/pid/mountinfo
-In-Reply-To: <53B4CAB8.5070407@oracle.com>
-Message-ID: <alpine.DEB.2.02.1407031434470.10658@chino.kir.corp.google.com>
-References: <53B3F331.7090204@oracle.com> <53B4CAB8.5070407@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756673AbaGCVkx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 17:40:53 -0400
+Received: from mout.gmx.net ([212.227.15.19]:54694 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752192AbaGCVkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 17:40:52 -0400
+Message-ID: <53B5CDDD.8000009@gmx.de>
+Date: Thu, 03 Jul 2014 23:40:45 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: commit message 8a5b20aebaa3 refers to non-existing commit ?
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:MQK2vyw3xS0PPkGCilO6zdiXLEa7g1uIixrbkqcRva5RhlsZX7q
+ KDYaMPhlPLF3/S/Sad1uDRpOHyW6IkaASKrIGjReVjzzkDabCxAaZbMpmOpJl0+SCvRplE0
+ qW38BxpFxSQtYINQhpzGEyutsIchW0LMdePhhKMhxLgQXdnro8yLT/xKx2pSmuzOhCFcB4V
+ 36bhcn2fWhM/j3G1CtwSQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jul 2014, Sasha Levin wrote:
+in 
+commit 8a5b20aebaa3d0ade5b8381e64d35fb777b7b355
+Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Date:   Wed Jul 2 15:22:35 2014 -0700
 
-> > Hi all,
-> > 
-> > While fuzzing with trinity inside a KVM tools guest running the latest -next
-> > kernel I've stumbled on the following spew:
-> > 
-> > [ 3569.869749] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> > [ 3569.869769] Dumping ftrace buffer:
-> > [ 3569.869879]    (ftrace buffer empty)
-> > [ 3569.869894] Modules linked in:
-> > [ 3569.869900] CPU: 7 PID: 10239 Comm: trinity-c86 Tainted: G        W      3.16.0-rc3-next-20140701-sasha-00023-g4eb2544-dirty #759
-> > [ 3569.869906] task: ffff88039e873000 ti: ffff880393f8c000 task.ti: ffff880393f8c000
-> > [ 3569.869932] RIP: show_mountinfo (fs/proc_namespace.c:127)
-> > [ 3569.869938] RSP: 0018:ffff880393f8fd08  EFLAGS: 00010282
-> > [ 3569.869943] RAX: ffff880200c6d208 RBX: 6b6b6b6b6b6b6b03 RCX: 0000000000000074
-> > [ 3569.869946] RDX: 0000000000000000 RSI: 6b6b6b6b6b6b6b03 RDI: ffff880200c6d208
-> > [ 3569.869953] RBP: ffff880393f8fd58 R08: 0000000000000001 R09: ffff88039e873d38
-> > [ 3569.869957] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880200c6d208
-> > [ 3569.869962] R13: 6b6b6b6b6b6b6b6b R14: ffff880393f8ff50 R15: ffff880200c6d208
-> > [ 3569.869966] FS:  00007f6f20db9700(0000) GS:ffff8801ece00000(0000) knlGS:0000000000000000
-> > [ 3569.869969] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> > [ 3569.869974] CR2: 00007f6f20bee000 CR3: 00000003a0775000 CR4: 00000000000006a0
-> > [ 3569.869992] Stack:
-> > [ 3569.870011]  ffff880393f8ff50 ffff880200c6d208 ffff880393f8fd48 ffffffff984e10ea
-> > [ 3569.870025]  ffffffff9532c7fe ffff8802069a3b80 0000000000000065 6b6b6b6b6b6b6b6b
-> > [ 3569.870036]  ffff880393f8ff50 ffff880200c6d208 ffff880393f8fd68 ffffffff9532c756
-> > [ 3569.870038] Call Trace:
-> > [ 3569.870051] ? down_read (kernel/locking/rwsem.c:45 (discriminator 2))
-> > [ 3569.870059] ? m_start (kernel/module.c:3634)
-> > [ 3569.870069] m_show (kernel/module.c:3649)
-> > [ 3569.870076] seq_read (fs/seq_file.c:235)
-> > [ 3569.870081] ? single_open_size (fs/seq_file.c:166)
-> > [ 3569.870092] do_loop_readv_writev (fs/read_write.c:708)
-> > [ 3569.870098] ? single_open_size (fs/seq_file.c:166)
-> > [ 3569.870098] do_readv_writev (fs/read_write.c:840)
-> > [ 3569.870098] ? get_parent_ip (kernel/sched/core.c:2550)
-> > [ 3569.870098] ? mutex_lock_nested (./arch/x86/include/asm/preempt.h:98 kernel/locking/mutex.c:570 kernel/locking/mutex.c:587)
-> > [ 3569.870098] ? __fdget_pos (fs/file.c:714)
-> > [ 3569.870098] ? __fdget_pos (fs/file.c:714)
-> > [ 3569.870098] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
-> > [ 3569.870098] ? __fget_light (fs/file.c:685)
-> > [ 3569.870098] vfs_readv (fs/read_write.c:866)
-> > [ 3569.870098] SyS_readv (fs/read_write.c:892 fs/read_write.c:884)
-> > [ 3569.870098] tracesys (arch/x86/kernel/entry_64.S:542)
-> > [ 3569.870098] Code: 00 00 00 00 66 66 66 66 90 55 48 89 e5 48 83 ec 50 48 89 5d d8 48 89 f3 4c 89 65 e0 49 89 fc 4c 89 6d e8 4c 89 75 f0 4c 89 7d f8 <48> 8b 06 48 89 75 b0 4c 8b 76 08 8b 96 ec 00 00 00 48 89 45 b8
-> > All code
-> > ========
-> >    0:	00 00                	add    %al,(%rax)
-> >    2:	00 00                	add    %al,(%rax)
-> >    4:	66 66 66 66 90       	data32 data32 data32 xchg %ax,%ax
-> >    9:	55                   	push   %rbp
-> >    a:	48 89 e5             	mov    %rsp,%rbp
-> >    d:	48 83 ec 50          	sub    $0x50,%rsp
-> >   11:	48 89 5d d8          	mov    %rbx,-0x28(%rbp)
-> >   15:	48 89 f3             	mov    %rsi,%rbx
-> >   18:	4c 89 65 e0          	mov    %r12,-0x20(%rbp)
-> >   1c:	49 89 fc             	mov    %rdi,%r12
-> >   1f:	4c 89 6d e8          	mov    %r13,-0x18(%rbp)
-> >   23:	4c 89 75 f0          	mov    %r14,-0x10(%rbp)
-> >   27:	4c 89 7d f8          	mov    %r15,-0x8(%rbp)
-> >   2b:*	48 8b 06             	mov    (%rsi),%rax		<-- trapping instruction
-> >   2e:	48 89 75 b0          	mov    %rsi,-0x50(%rbp)
-> >   32:	4c 8b 76 08          	mov    0x8(%rsi),%r14
-> >   36:	8b 96 ec 00 00 00    	mov    0xec(%rsi),%edx
-> >   3c:	48 89 45 b8          	mov    %rax,-0x48(%rbp)
+    slub: fix off by one in number of slab tests
 
-Does this now reproduce on Linus's tree?  If so, does reverting commit
-058504edd026 ("fs/seq_file: fallback to vmalloc allocation") prevent this 
-issue?
 
-This is a use-after-free since the poison value is 0x6b and I'm presuming 
-that your /proc/self/mountinfo may be larger than PAGE_SIZE in your 
-testing environment.
+you stated:
+
+    Fixes 91cb69620284 ("slub: make dead memcg caches discard free slabs
+    immediately").
+
+
+which I cannot find in main line currently. Pls could you point me to that commit ?
+
+-- 
+Toralf
+
