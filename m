@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030649AbaGCJ0t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:26:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52712 "EHLO
+	id S1030661AbaGCJ1O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:27:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52683 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030598AbaGCJZa (ORCPT
+	with ESMTP id S1030578AbaGCJZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:25:30 -0400
+	Thu, 3 Jul 2014 05:25:25 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Jianguo Wu <wujianguo@huawei.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 197/198] lzo: properly check for overruns
-Date: Thu,  3 Jul 2014 10:20:40 +0100
-Message-Id: <1404379241-8590-198-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 193/198] ARM: 8037/1: mm: support big-endian page tables
+Date: Thu,  3 Jul 2014 10:20:36 +0100
+Message-Id: <1404379241-8590-194-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -27,181 +28,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Jianguo Wu <wujianguo@huawei.com>
 
-commit 206a81c18401c0cde6e579164f752c4b147324ce upstream.
+commit 86f40622af7329375e38f282f6c0aab95f3e5f72 upstream.
 
-The lzo decompressor can, if given some really crazy data, possibly
-overrun some variable types.  Modify the checking logic to properly
-detect overruns before they happen.
+When enable LPAE and big-endian in a hisilicon board, while specify
+mem=384M mem=512M@7680M, will get bad page state:
 
-Reported-by: "Don A. Bailey" <donb@securitymouse.com>
-Tested-by: "Don A. Bailey" <donb@securitymouse.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Freeing unused kernel memory: 180K (c0466000 - c0493000)
+BUG: Bad page state in process init  pfn:fa442
+page:c7749840 count:0 mapcount:-1 mapping:  (null) index:0x0
+page flags: 0x40000400(reserved)
+Modules linked in:
+CPU: 0 PID: 1 Comm: init Not tainted 3.10.27+ #66
+[<c000f5f0>] (unwind_backtrace+0x0/0x11c) from [<c000cbc4>] (show_stack+0x1n0/0x14)
+[<c000cbc4>] (show_stack+0x10/0x14) from [<c009e448>] (bad_page+0xd4/0x104)
+[<c009e448>] (bad_page+0xd4/0x104) from [<c009e520>] (free_pages_prepare+0xa8/0x14c)
+[<c009e520>] (free_pages_prepare+0xa8/0x14c) from [<c009f8ec>] (free_hot_cold_page+0x18/0xf0)
+[<c009f8ec>] (free_hot_cold_page+0x18/0xf0) from [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8)
+[<c00b5444>] (handle_pte_fault+0xcf4/0xdc8) from [<c00b6458>] (handle_mm_fault+0xf4/0x120)
+[<c00b6458>] (handle_mm_fault+0xf4/0x120) from [<c0013754>] (do_page_fault+0xfc/0x354)
+[<c0013754>] (do_page_fault+0xfc/0x354) from [<c0008400>] (do_DataAbort+0x2c/0x90)
+[<c0008400>] (do_DataAbort+0x2c/0x90) from [<c0008fb4>] (__dabt_usr+0x34/0x40)
+
+The bad pfn:fa442 is not system memory(mem=384M mem=512M@7680M), after debugging,
+I find in page fault handler, will get wrong pfn from pte just after set pte,
+as follow:
+do_anonymous_page()
+{
+	...
+	set_pte_at(mm, address, page_table, entry);
+
+	//debug code
+	pfn = pte_pfn(entry);
+	pr_info("pfn:0x%lx, pte:0x%llxn", pfn, pte_val(entry));
+
+	//read out the pte just set
+	new_pte = pte_offset_map(pmd, address);
+	new_pfn = pte_pfn(*new_pte);
+	pr_info("new pfn:0x%lx, new pte:0x%llxn", pfn, pte_val(entry));
+	...
+}
+
+pfn:   0x1fa4f5,     pte:0xc00001fa4f575f
+new_pfn:0xfa4f5, new_pte:0xc00000fa4f5f5f	//new pfn/pte is wrong.
+
+The bug is happened in cpu_v7_set_pte_ext(ptep, pte):
+An LPAE PTE is a 64bit quantity, passed to cpu_v7_set_pte_ext in the r2 and r3 registers.
+On an LE kernel, r2 contains the LSB of the PTE, and r3 the MSB.
+On a BE kernel, the assignment is reversed.
+
+Unfortunately, the current code always assumes the LE case,
+leading to corruption of the PTE when clearing/setting bits.
+
+This patch fixes this issue much like it has been done already in the
+cpu_v7_switch_mm case.
+
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- lib/lzo/lzo1x_decompress_safe.c | 62 +++++++++++++++++++++++++++--------------
- 1 file changed, 41 insertions(+), 21 deletions(-)
+ arch/arm/mm/proc-v7-3level.S | 18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/lib/lzo/lzo1x_decompress_safe.c b/lib/lzo/lzo1x_decompress_safe.c
-index 569985d522d5..8563081e8da3 100644
---- a/lib/lzo/lzo1x_decompress_safe.c
-+++ b/lib/lzo/lzo1x_decompress_safe.c
-@@ -19,11 +19,31 @@
- #include <linux/lzo.h>
- #include "lzodefs.h"
+diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
+index 01a719e18bb0..22e3ad63500c 100644
+--- a/arch/arm/mm/proc-v7-3level.S
++++ b/arch/arm/mm/proc-v7-3level.S
+@@ -64,6 +64,14 @@ ENTRY(cpu_v7_switch_mm)
+ 	mov	pc, lr
+ ENDPROC(cpu_v7_switch_mm)
  
--#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
--#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
--#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
--#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
--#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
-+#define HAVE_IP(t, x)					\
-+	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
-+	 (((t + x) >= t) && ((t + x) >= x)))
++#ifdef __ARMEB__
++#define rl r3
++#define rh r2
++#else
++#define rl r2
++#define rh r3
++#endif
 +
-+#define HAVE_OP(t, x)					\
-+	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
-+	 (((t + x) >= t) && ((t + x) >= x)))
-+
-+#define NEED_IP(t, x)					\
-+	do {						\
-+		if (!HAVE_IP(t, x))			\
-+			goto input_overrun;		\
-+	} while (0)
-+
-+#define NEED_OP(t, x)					\
-+	do {						\
-+		if (!HAVE_OP(t, x))			\
-+			goto output_overrun;		\
-+	} while (0)
-+
-+#define TEST_LB(m_pos)					\
-+	do {						\
-+		if ((m_pos) < out)			\
-+			goto lookbehind_overrun;	\
-+	} while (0)
- 
- int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
- 			  unsigned char *out, size_t *out_len)
-@@ -58,14 +78,14 @@ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
- 					while (unlikely(*ip == 0)) {
- 						t += 255;
- 						ip++;
--						NEED_IP(1);
-+						NEED_IP(1, 0);
- 					}
- 					t += 15 + *ip++;
- 				}
- 				t += 3;
- copy_literal_run:
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
-+				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
- 					const unsigned char *ie = ip + t;
- 					unsigned char *oe = op + t;
- 					do {
-@@ -81,8 +101,8 @@ copy_literal_run:
- 				} else
- #endif
- 				{
--					NEED_OP(t);
--					NEED_IP(t + 3);
-+					NEED_OP(t, 0);
-+					NEED_IP(t, 3);
- 					do {
- 						*op++ = *ip++;
- 					} while (--t > 0);
-@@ -95,7 +115,7 @@ copy_literal_run:
- 				m_pos -= t >> 2;
- 				m_pos -= *ip++ << 2;
- 				TEST_LB(m_pos);
--				NEED_OP(2);
-+				NEED_OP(2, 0);
- 				op[0] = m_pos[0];
- 				op[1] = m_pos[1];
- 				op += 2;
-@@ -119,10 +139,10 @@ copy_literal_run:
- 				while (unlikely(*ip == 0)) {
- 					t += 255;
- 					ip++;
--					NEED_IP(1);
-+					NEED_IP(1, 0);
- 				}
- 				t += 31 + *ip++;
--				NEED_IP(2);
-+				NEED_IP(2, 0);
- 			}
- 			m_pos = op - 1;
- 			next = get_unaligned_le16(ip);
-@@ -137,10 +157,10 @@ copy_literal_run:
- 				while (unlikely(*ip == 0)) {
- 					t += 255;
- 					ip++;
--					NEED_IP(1);
-+					NEED_IP(1, 0);
- 				}
- 				t += 7 + *ip++;
--				NEED_IP(2);
-+				NEED_IP(2, 0);
- 			}
- 			next = get_unaligned_le16(ip);
- 			ip += 2;
-@@ -154,7 +174,7 @@ copy_literal_run:
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
- 		if (op - m_pos >= 8) {
- 			unsigned char *oe = op + t;
--			if (likely(HAVE_OP(t + 15))) {
-+			if (likely(HAVE_OP(t, 15))) {
- 				do {
- 					COPY8(op, m_pos);
- 					op += 8;
-@@ -164,7 +184,7 @@ copy_literal_run:
- 					m_pos += 8;
- 				} while (op < oe);
- 				op = oe;
--				if (HAVE_IP(6)) {
-+				if (HAVE_IP(6, 0)) {
- 					state = next;
- 					COPY4(op, ip);
- 					op += next;
-@@ -172,7 +192,7 @@ copy_literal_run:
- 					continue;
- 				}
- 			} else {
--				NEED_OP(t);
-+				NEED_OP(t, 0);
- 				do {
- 					*op++ = *m_pos++;
- 				} while (op < oe);
-@@ -181,7 +201,7 @@ copy_literal_run:
- #endif
- 		{
- 			unsigned char *oe = op + t;
--			NEED_OP(t);
-+			NEED_OP(t, 0);
- 			op[0] = m_pos[0];
- 			op[1] = m_pos[1];
- 			op += 2;
-@@ -194,15 +214,15 @@ match_next:
- 		state = next;
- 		t = next;
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
-+		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
- 			COPY4(op, ip);
- 			op += t;
- 			ip += t;
- 		} else
- #endif
- 		{
--			NEED_IP(t + 3);
--			NEED_OP(t);
-+			NEED_IP(t, 3);
-+			NEED_OP(t, 0);
- 			while (t > 0) {
- 				*op++ = *ip++;
- 				t--;
+ /*
+  * cpu_v7_set_pte_ext(ptep, pte)
+  *
+@@ -73,13 +81,13 @@ ENDPROC(cpu_v7_switch_mm)
+  */
+ ENTRY(cpu_v7_set_pte_ext)
+ #ifdef CONFIG_MMU
+-	tst	r2, #L_PTE_VALID
++	tst	rl, #L_PTE_VALID
+ 	beq	1f
+-	tst	r3, #1 << (57 - 32)		@ L_PTE_NONE
+-	bicne	r2, #L_PTE_VALID
++	tst	rh, #1 << (57 - 32)		@ L_PTE_NONE
++	bicne	rl, #L_PTE_VALID
+ 	bne	1f
+-	tst	r3, #1 << (55 - 32)		@ L_PTE_DIRTY
+-	orreq	r2, #L_PTE_RDONLY
++	tst	rh, #1 << (55 - 32)		@ L_PTE_DIRTY
++	orreq	rl, #L_PTE_RDONLY
+ 1:	strd	r2, r3, [r0]
+ 	ALT_SMP(W(nop))
+ 	ALT_UP (mcr	p15, 0, r0, c7, c10, 1)		@ flush_pte
 -- 
 1.9.1
 
