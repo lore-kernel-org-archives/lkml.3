@@ -1,123 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030835AbaGCJul (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:50:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52157 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965117AbaGCJXf (ORCPT
+	id S1030852AbaGCJur (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:50:47 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:53664 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030837AbaGCJun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:23:35 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 103/198] rtc: rtc-at91rm9200: fix infinite wait for ACKUPD irq
-Date: Thu,  3 Jul 2014 10:19:06 +0100
-Message-Id: <1404379241-8590-104-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 3 Jul 2014 05:50:43 -0400
+Date: Thu, 3 Jul 2014 11:50:37 +0200
+From: Juri Lelli <juri.lelli@gmail.com>
+To: Zhihui Zhang <zzhsuny@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [sched] Don't account time after deadline twice
+Message-Id: <20140703115037.938f4c5dcd5a110529ff0df6@gmail.com>
+In-Reply-To: <CADFvMYKzpihC3GLwNFZW0KCrZQY5FDSH5EQd4iLmHLK+hauDWA@mail.gmail.com>
+References: <1404091570-5041-1-git-send-email-zzhsuny@gmail.com>
+	<20140701130816.GR6758@twins.programming.kicks-ass.net>
+	<20140701155915.55de01236e0540e1f0754560@gmail.com>
+	<CADFvMYKzpihC3GLwNFZW0KCrZQY5FDSH5EQd4iLmHLK+hauDWA@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.13 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, 2 Jul 2014 19:44:04 -0400
+Zhihui Zhang <zzhsuny@gmail.com> wrote:
 
-------------------
+> My point is that rq_clock(rq) - dl_se->deadline is already part of
+> dl_se->runtime, which is decremented before calling dl_runtime_exceeded().
 
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+But, we decrement dl_se->runtime looking at rq_clock_task(rq), that is
+in general <= rq_clock(rq), that we use to handle deadlines. So, if we
+do like you suggest, in some cases we could end up stealing some
+bandwidth from the system. Indeed, we prefer some pessimism here.
 
-commit 2fe121e1f5aa3bf31b418a9790db6c400e922291 upstream.
+Thanks,
 
-The rtc user must wait at least 1 sec between each time/calandar update
-(see atmel's datasheet chapter "Updating Time/Calendar").
+- Juri
 
-Use the 1Hz interrupt to update the at91_rtc_upd_rdy flag and wait for
-the at91_rtc_wait_upd_rdy event if the rtc is not ready.
-
-This patch fixes a deadlock in an uninterruptible wait when the RTC is
-updated more than once every second.  AFAICT the bug is here from the
-beginning, but I think we should at least backport this fix to 3.10 and
-the following longterm and stable releases.
-
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Reported-by: Bryan Evenson <bevenson@melinkcorp.com>
-Tested-by: Bryan Evenson <bevenson@melinkcorp.com>
-Cc: Andrew Victor <linux@maxim.org.za>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/rtc/rtc-at91rm9200.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
-index b86eec3ffba8..8ebf09f91fcf 100644
---- a/drivers/rtc/rtc-at91rm9200.c
-+++ b/drivers/rtc/rtc-at91rm9200.c
-@@ -48,6 +48,7 @@ struct at91_rtc_config {
- 
- static const struct at91_rtc_config *at91_rtc_config;
- static DECLARE_COMPLETION(at91_rtc_updated);
-+static DECLARE_COMPLETION(at91_rtc_upd_rdy);
- static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
- static void __iomem *at91_rtc_regs;
- static int irq;
-@@ -161,6 +162,8 @@ static int at91_rtc_settime(struct device *dev, struct rtc_time *tm)
- 		1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
- 		tm->tm_hour, tm->tm_min, tm->tm_sec);
- 
-+	wait_for_completion(&at91_rtc_upd_rdy);
-+
- 	/* Stop Time/Calendar from counting */
- 	cr = at91_rtc_read(AT91_RTC_CR);
- 	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL | AT91_RTC_UPDTIM);
-@@ -183,7 +186,9 @@ static int at91_rtc_settime(struct device *dev, struct rtc_time *tm)
- 
- 	/* Restart Time/Calendar */
- 	cr = at91_rtc_read(AT91_RTC_CR);
-+	at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_SECEV);
- 	at91_rtc_write(AT91_RTC_CR, cr & ~(AT91_RTC_UPDCAL | AT91_RTC_UPDTIM));
-+	at91_rtc_write_ier(AT91_RTC_SECEV);
- 
- 	return 0;
- }
-@@ -290,8 +295,10 @@ static irqreturn_t at91_rtc_interrupt(int irq, void *dev_id)
- 	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
- 		if (rtsr & AT91_RTC_ALARM)
- 			events |= (RTC_AF | RTC_IRQF);
--		if (rtsr & AT91_RTC_SECEV)
--			events |= (RTC_UF | RTC_IRQF);
-+		if (rtsr & AT91_RTC_SECEV) {
-+			complete(&at91_rtc_upd_rdy);
-+			at91_rtc_write_idr(AT91_RTC_SECEV);
-+		}
- 		if (rtsr & AT91_RTC_ACKUPD)
- 			complete(&at91_rtc_updated);
- 
-@@ -414,6 +421,11 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
- 	}
- 	platform_set_drvdata(pdev, rtc);
- 
-+	/* enable SECEV interrupt in order to initialize at91_rtc_upd_rdy
-+	 * completion.
-+	 */
-+	at91_rtc_write_ier(AT91_RTC_SECEV);
-+
- 	dev_info(&pdev->dev, "AT91 Real Time Clock driver.\n");
- 	return 0;
- 
--- 
-1.9.1
-
+> So the following line is not needed in the case of both overrun and missing
+> deadline:
+> 
+>     dl_se->runtime -= rq_clock(rq) - dl_se->deadline;
+> 
+> Or did I miss anything?
+> 
+> thanks,
+> 
+> 
+> On Tue, Jul 1, 2014 at 9:59 AM, Juri Lelli <juri.lelli@gmail.com> wrote:
+> 
+> > On Tue, 1 Jul 2014 15:08:16 +0200
+> > Peter Zijlstra <peterz@infradead.org> wrote:
+> >
+> > > On Sun, Jun 29, 2014 at 09:26:10PM -0400, Zhihui Zhang wrote:
+> > > > Unless we want to double-penalize an overrun task, the time after the
+> > deadline
+> > > > and before the current time is already accounted in the negative
+> > dl_se->runtime
+> > > > value. So we can leave it as is in the case of dmiss && rorun.
+> > >
+> > > Juri?
+> > >
+> > > > Signed-off-by: Zhihui Zhang <zzhsuny@gmail.com>
+> > > > ---
+> > > >  kernel/sched/deadline.c | 6 ++----
+> > > >  1 file changed, 2 insertions(+), 4 deletions(-)
+> > > >
+> > > > diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+> > > > index fc4f98b1..67df0d6 100644
+> > > > --- a/kernel/sched/deadline.c
+> > > > +++ b/kernel/sched/deadline.c
+> > > > @@ -579,10 +579,8 @@ int dl_runtime_exceeded(struct rq *rq, struct
+> > sched_dl_entity *dl_se)
+> > > >      * the next instance. Thus, if we do not account that, we are
+> > > >      * stealing bandwidth from the system at each deadline miss!
+> > > >      */
+> > > > -   if (dmiss) {
+> > > > -           dl_se->runtime = rorun ? dl_se->runtime : 0;
+> >
+> > If we didn't return 0 before, we are going to throttle (or replenish)
+> > the entity, and you want runtime to be <=0. So, this is needed.
+> >
+> > > > -           dl_se->runtime -= rq_clock(rq) - dl_se->deadline;
+> > > > -   }
+> >
+> > A little pessimism in some cases, due to the fact that we use both
+> > rq_clock and rq_clock_task (for the budget).
+> >
+> > Thanks,
+> >
+> > - Juri
+> >
+> > > > +   if (dmiss && !rorun)
+> > > > +           dl_se->runtime = dl_se->deadline - rq_clock(rq);
+> > > >
+> > > >     return 1;
+> > > >  }
+> > > > --
+> > > > 1.8.1.2
+> > > >
+> >
