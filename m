@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759041AbaGCKRI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:17:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51532 "EHLO
+	id S1759025AbaGCKRH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:17:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51536 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758083AbaGCJV2 (ORCPT
+	with ESMTP id S1758156AbaGCJV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Jul 2014 05:21:28 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Alessandro Miceli <angelofsky1980@gmail.com>,
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 028/198] Target/iser: Bail from accept_np if np_thread is trying to close
-Date: Thu,  3 Jul 2014 10:17:51 +0100
-Message-Id: <1404379241-8590-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 024/198] [media] rtl28xxu: add [1b80:d3af] Sveon STV27
+Date: Thu,  3 Jul 2014 10:17:47 +0100
+Message-Id: <1404379241-8590-25-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,42 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Alessandro Miceli <angelofsky1980@gmail.com>
 
-commit e346ab343f4f58c12a96725c7b13df9cc2ad56f6 upstream.
+commit 74a86272f05c3dae40f2d7b17ff09a0608cf3304 upstream.
 
-In case np_thread state is in RESET/SHUTDOWN/EXIT states,
-no point for isert to stall there as we may get a hang in
-case no one will wake it up later.
+Added support for Sveon STV27 device (rtl2832u + FC0013 tuner)
 
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Alessandro Miceli <angelofsky1980@gmail.com>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/media/dvb-core/dvb-usb-ids.h    | 1 +
+ drivers/media/usb/dvb-usb-v2/rtl28xxu.c | 2 ++
+ 2 files changed, 3 insertions(+)
 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index 8bb57deb86cc..b65e0c1c931c 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -2310,9 +2310,14 @@ accept_wait:
- 		return -ENODEV;
+diff --git a/drivers/media/dvb-core/dvb-usb-ids.h b/drivers/media/dvb-core/dvb-usb-ids.h
+index 4cfb9624d69c..8bdfad471882 100644
+--- a/drivers/media/dvb-core/dvb-usb-ids.h
++++ b/drivers/media/dvb-core/dvb-usb-ids.h
+@@ -373,4 +373,5 @@
+ #define USB_PID_CTVDIGDUAL_V2				0xe410
+ #define USB_PID_PCTV_2002E                              0x025c
+ #define USB_PID_PCTV_2002E_SE                           0x025d
++#define USB_PID_SVEON_STV27                             0xd3af
+ #endif
+diff --git a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+index fe8d9ec53be3..22c30ad72cab 100644
+--- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
++++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+@@ -1394,6 +1394,8 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
+ 		&rtl2832u_props, "Peak DVB-T USB", NULL) },
+ 	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, USB_PID_SVEON_STV20_RTL2832U,
+ 		&rtl2832u_props, "Sveon STV20", NULL) },
++	{ DVB_USB_DEVICE(USB_VID_KWORLD_2, USB_PID_SVEON_STV27,
++		&rtl2832u_props, "Sveon STV27", NULL) },
  
- 	spin_lock_bh(&np->np_thread_lock);
--	if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
-+	if (np->np_thread_state >= ISCSI_NP_THREAD_RESET) {
- 		spin_unlock_bh(&np->np_thread_lock);
--		pr_debug("ISCSI_NP_THREAD_RESET for isert_accept_np\n");
-+		pr_debug("np_thread_state %d for isert_accept_np\n",
-+			 np->np_thread_state);
-+		/**
-+		 * No point in stalling here when np_thread
-+		 * is in state RESET/SHUTDOWN/EXIT - bail
-+		 **/
- 		return -ENODEV;
- 	}
- 	spin_unlock_bh(&np->np_thread_lock);
+ 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
+ 		&rtl2832u_props, "Astrometa DVB-T2", NULL) },
 -- 
 1.9.1
 
