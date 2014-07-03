@@ -1,83 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664AbaGCIWL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 04:22:11 -0400
-Received: from mail01.baslerweb.com ([80.156.24.166]:6907 "EHLO
-	mail01.baslerweb.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755694AbaGCIWJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 04:22:09 -0400
-Message-ID: <53B512AE.2040802@baslerweb.com>
-Date: Thu, 3 Jul 2014 10:22:06 +0200
-From: Stefan Klug <stefan.klug@baslerweb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1757023AbaGCIXW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 04:23:22 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44643 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755694AbaGCIXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 04:23:20 -0400
+Message-ID: <53B5125A.8080908@ti.com>
+Date: Thu, 3 Jul 2014 13:50:42 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: <linux-usb@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][RFC] USB: zerocopy support for usbfs
-References: <Pine.LNX.4.44L0.1407021532370.874-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1407021532370.874-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [172.16.50.117]
+To: Roger Quadros <rogerq@ti.com>
+CC: <tony@atomide.com>, <paul@pwsan.com>, <nm@ti.com>, <kishon@ti.com>,
+        <george.cherian@ti.com>, <balbi@ti.com>, <balajitk@ti.com>,
+        <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] ARM: DRA7: hwmod: Add OCP2SCP3 module
+References: <1403093816-10960-2-git-send-email-rogerq@ti.com> <1403121040-22523-1-git-send-email-rogerq@ti.com>
+In-Reply-To: <1403121040-22523-1-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 19 June 2014 01:20 AM, Roger Quadros wrote:
+> This module is needed for the SATA and PCIe PHYs.
+> 
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Tested-by: Roger Quadros <rogerq@ti.com>
 
-On 02.07.2014 21:38, Alan Stern wrote:
-> On Wed, 2 Jul 2014, Oliver Neukum wrote:
->
->> 
-Stefan Klug
-Software Developer
+Reviewed-by: Rajendra Nayak <rnayak@ti.com>
 
-Basler AG
-An der Strusbek 60-62
-22926 Ahrensburg
-Germany
+> ---
+> v2:
+> - added .main_clk to hwmod.
+> - moved interface structure to the right place.
+> 
+>  arch/arm/mach-omap2/omap_hwmod_7xx_data.c | 24 ++++++++++++++++++++++++
+>  1 file changed, 24 insertions(+)
+> 
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> index 20b4398..c9daee4 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> @@ -1215,6 +1215,21 @@ static struct omap_hwmod dra7xx_ocp2scp1_hwmod = {
+>  	},
+>  };
+>  
+> +/* ocp2scp3 */
+> +static struct omap_hwmod dra7xx_ocp2scp3_hwmod = {
+> +	.name		= "ocp2scp3",
+> +	.class		= &dra7xx_ocp2scp_hwmod_class,
+> +	.clkdm_name	= "l3init_clkdm",
+> +	.main_clk	= "l4_root_clk_div",
+> +	.prcm = {
+> +		.omap4 = {
+> +			.clkctrl_offs = DRA7XX_CM_L3INIT_OCP2SCP3_CLKCTRL_OFFSET,
+> +			.context_offs = DRA7XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET,
+> +			.modulemode   = MODULEMODE_HWCTRL,
+> +		},
+> +	},
+> +};
+> +
+>  /*
+>   * 'qspi' class
+>   *
+> @@ -2326,6 +2341,14 @@ static struct omap_hwmod_ocp_if dra7xx_l4_cfg__ocp2scp1 = {
+>  	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+>  };
+>  
+> +/* l4_cfg -> ocp2scp3 */
+> +static struct omap_hwmod_ocp_if dra7xx_l4_cfg__ocp2scp3 = {
+> +	.master		= &dra7xx_l4_cfg_hwmod,
+> +	.slave		= &dra7xx_ocp2scp3_hwmod,
+> +	.clk		= "l4_root_clk_div",
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+>  static struct omap_hwmod_addr_space dra7xx_qspi_addrs[] = {
+>  	{
+>  		.pa_start	= 0x4b300000,
+> @@ -2672,6 +2695,7 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
+>  	&dra7xx_l4_per1__mmc4,
+>  	&dra7xx_l4_cfg__mpu,
+>  	&dra7xx_l4_cfg__ocp2scp1,
+> +	&dra7xx_l4_cfg__ocp2scp3,
+>  	&dra7xx_l3_main_1__qspi,
+>  	&dra7xx_l4_cfg__sata,
+>  	&dra7xx_l4_cfg__smartreflex_core,
+> 
 
-Tel. +49 4102 463 582
-Fax +49 4102 463 46 582
- 
-Stefan.Klug@baslerweb.com
-
-www.baslerweb.com
-
-Vorstand: Dr.-Ing. Dietmar Ley (Vorsitzender) · John P. Jennings · Arndt Bake · Hardy Mehl
-Aufsichtsratsvorsitzender: Norbert Basler 
-Basler AG · Amtsgericht Lübeck HRB 4090 · Ust-IdNr.: DE 135 098 121 · Steuer-Nr.: 30 292 04497 · WEEE-Reg.-Nr. DE 83888045
-On Wed, 2014-07-02 at 17:53 +0200, Stefan Klug wrote:
->>
->>> Implementation details:
->>> The patch only touches drivers/usb/core/devio.c.
->>> In procy_do_submiturb(), it is checked if zerocopy is allowed. This is
->>> currently a rough
->>> check which compares the number of required pages to
->>> ps->dev->bus->sg_tablesize.
->> It seems to me that the check is per call, so using
->> multiple calls one could still pin unlimited amounts
->> of memory.
-> usbfs keeps track of the total amount of pinned memory and enforces an
-> overall limit.  It will be necessary to add the size of the transfer
-> buffer to that total.
-Leaving the zerocopy transfers out of this limit was intentional. I 
-thought this is user-memory so we shouldn't add it to the overall limit 
-as it is not allocated by usbfs.
-But I didn't think of the pinning problem. So yes, I can add it to the 
-overall limit.
->>> I don't know if there is more to check there.
->>> Then the user memory provided inside the usbdevfs_urb structure is
->>> pinned to
->>> physical memory using get_user_pages_fast().
->>> All the user pages are added to the scatter-gather list and the logic
->>> continues as before.
->> How do you enforce the cache coherency rules?
-> There is no way to do this.  If the user program accesses memory when
-> it shouldn't, the transfer might not work right.
-So this one is fine, right?
->> Also you don't have a fall back if get_user_pages_fast()
->> returns less than requested. It seems to me that than you
->> ought to fall back buffered IO.
-> Agreed.
-Good point. I'll add the fallback to the next iteration.
