@@ -1,166 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560AbaGCCyF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 22:54:05 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:39244 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828AbaGCCyC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 22:54:02 -0400
-Date: Wed, 2 Jul 2014 19:53:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
- wakeups
-Message-ID: <20140703025354.GA16643@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140627142038.GA22942@linux.vnet.ibm.com>
- <20140702123412.GD19379@twins.programming.kicks-ass.net>
- <53B40D2B.7090406@redhat.com>
- <20140702165556.GR4603@linux.vnet.ibm.com>
+	id S1754687AbaGCC6e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 22:58:34 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59057 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750916AbaGCC6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 22:58:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,592,1400050800"; 
+   d="scan'208";a="538078261"
+Date: Thu, 3 Jul 2014 10:59:27 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Hu Robert <robert.hu@intel.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1
+ since race
+Message-ID: <20140703025927.GA5407@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com>
+ <53B3CA6A.4050902@siemens.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140702165556.GR4603@linux.vnet.ibm.com>
+In-Reply-To: <53B3CA6A.4050902@siemens.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070302-7164-0000-0000-000002DF02BD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 09:55:56AM -0700, Paul E. McKenney wrote:
-> On Wed, Jul 02, 2014 at 09:46:19AM -0400, Rik van Riel wrote:
-> > -----BEGIN PGP SIGNED MESSAGE-----
-> > Hash: SHA1
-> > 
-> > On 07/02/2014 08:34 AM, Peter Zijlstra wrote:
-> > > On Fri, Jun 27, 2014 at 07:20:38AM -0700, Paul E. McKenney wrote:
-> > >> An 80-CPU system with a context-switch-heavy workload can require
-> > >> so many NOCB kthread wakeups that the RCU grace-period kthreads
-> > >> spend several tens of percent of a CPU just awakening things.
-> > >> This clearly will not scale well: If you add enough CPUs, the RCU
-> > >> grace-period kthreads would get behind, increasing grace-period
-> > >> latency.
-> > >> 
-> > >> To avoid this problem, this commit divides the NOCB kthreads into
-> > >> leaders and followers, where the grace-period kthreads awaken the
-> > >> leaders each of whom in turn awakens its followers.  By default,
-> > >> the number of groups of kthreads is the square root of the number
-> > >> of CPUs, but this default may be overridden using the
-> > >> rcutree.rcu_nocb_leader_stride boot parameter. This reduces the
-> > >> number of wakeups done per grace period by the RCU grace-period
-> > >> kthread by the square root of the number of CPUs, but of course
-> > >> by shifting those wakeups to the leaders.  In addition, because 
-> > >> the leaders do grace periods on behalf of their respective
-> > >> followers, the number of wakeups of the followers decreases by up
-> > >> to a factor of two. Instead of being awakened once when new
-> > >> callbacks arrive and again at the end of the grace period, the
-> > >> followers are awakened only at the end of the grace period.
-> > >> 
-> > >> For a numerical example, in a 4096-CPU system, the grace-period
-> > >> kthread would awaken 64 leaders, each of which would awaken its
-> > >> 63 followers at the end of the grace period.  This compares
-> > >> favorably with the 79 wakeups for the grace-period kthread on an
-> > >> 80-CPU system.
-> > > 
-> > > Urgh, how about we kill the entire nocb nonsense and try again?
-> > > This is getting quite rediculous.
-> > 
-> > Some observations.
-> > 
-> > First, the rcuos/N threads are NOT bound to CPU N at all, but are
-> > free to float through the system.
-> 
-> I could easily bind each to its home CPU by default for CONFIG_NO_HZ_FULL=n.
-> For CONFIG_NO_HZ_FULL=y, they get bound to the non-nohz_full= CPUs.
-> 
-> > Second, the number of RCU callbacks at the end of each grace period
-> > is quite likely to be small most of the time.
-> > 
-> > This suggests that on a system with N CPUs, it may be perfectly
-> > sufficient to have a much smaller number of rcuos threads.
-> > 
-> > One thread can probably handle the RCU callbacks for as many as
-> > 16, or even 64 CPUs...
-> 
-> In many cases, one thread could handle the RCU callbacks for way more
-> than that.  In other cases, a single CPU could keep a single rcuo kthread
-> quite busy.  So something dynamic ends up being required.
-> 
-> But I suspect that the real solution here is to adjust the Kconfig setup
-> between NO_HZ_FULL and RCU_NOCB_CPU_ALL so that you have to specify boot
-> parameters to get callback offloading on systems built with NO_HZ_FULL.
-> Then add some boot-time code so that any CPU that has nohz_full= is
-> forced to also have rcu_nocbs= set.  This would have the good effect
-> of applying callback offloading only to those workloads for which it
-> was specifically designed, but allowing those workloads to gain the
-> latency-reduction benefits of callback offloading.
-> 
-> I do freely confess that I was hoping that callback offloading might one
-> day completely replace RCU_SOFTIRQ, but that hope now appears to be at
-> best premature.
-> 
-> Something like the attached patch.  Untested, probably does not even build.
+Hi Jan,
+On Wed, Jul 02, 2014 at 11:01:30AM +0200, Jan Kiszka wrote:
+>On 2014-07-02 08:54, Wanpeng Li wrote:
+>> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=72381 
+>> 
+>> If we didn't inject a still-pending event to L1 since nested_run_pending,
+>> KVM_REQ_EVENT should be requested after the vmexit in order to inject the 
+>> event to L1. However, current log blindly request a KVM_REQ_EVENT even if 
+>> there is no still-pending event to L1 which blocked by nested_run_pending. 
+>> There is a race which lead to an interrupt will be injected to L2 which 
+>> belong to L1 if L0 send an interrupt to L1 during this window. 
+>> 
+>>                VCPU0                               another thread 
+>> 
+>> L1 intr not blocked on L2 first entry
+>> vmx_vcpu_run req event 
+>> kvm check request req event 
+>> check_nested_events don't have any intr 
+>> not nested exit 
+>>                                             intr occur (8254, lapic timer etc)
+>> inject_pending_event now have intr 
+>> inject interrupt 
+>> 
+>> This patch fix this race by introduced a l1_events_blocked field in nested_vmx 
+>> which indicates there is still-pending event which blocked by nested_run_pending, 
+>> and smart request a KVM_REQ_EVENT if there is a still-pending event which blocked 
+>> by nested_run_pending.
+>
+>There are more, unrelated reasons why KVM_REQ_EVENT could be set. Why
+>aren't those able to trigger this scenario?
+>
 
-Against all odds, it builds and passes moderate rcutorture testing.
+Other KVM_REQ_EVENT has a specific intr or pending , however, the KVM_REQ_EVENT 
+which request after vmexit with nested_run_pending may or may not have a
+specific intr or pending.
 
-Although this doesn't satisfy the desire to wean RCU of softirq, it does
-allow NO_HZ_FULL kernels to maintain better compatibility with earlier
-kernel versions, which appears to be more important for the time being.
+Regards,
+Wanpeng Li 
 
-							Thanx, Paul
-
-> ------------------------------------------------------------------------
-> 
-> rcu: Don't offload callbacks unless specifically requested
-> 
-> <more here soon>
-> 
-> Not-yet-signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 9d76b99af1b9..9332d33346ac 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -737,7 +737,7 @@ choice
->  
->  config RCU_NOCB_CPU_NONE
->  	bool "No build_forced no-CBs CPUs"
-> -	depends on RCU_NOCB_CPU && !NO_HZ_FULL
-> +	depends on RCU_NOCB_CPU && !NO_HZ_FULL_ALL
->  	help
->  	  This option does not force any of the CPUs to be no-CBs CPUs.
->  	  Only CPUs designated by the rcu_nocbs= boot parameter will be
-> @@ -751,7 +751,7 @@ config RCU_NOCB_CPU_NONE
->  
->  config RCU_NOCB_CPU_ZERO
->  	bool "CPU 0 is a build_forced no-CBs CPU"
-> -	depends on RCU_NOCB_CPU && !NO_HZ_FULL
-> +	depends on RCU_NOCB_CPU && !NO_HZ_FULL_ALL
->  	help
->  	  This option forces CPU 0 to be a no-CBs CPU, so that its RCU
->  	  callbacks are invoked by a per-CPU kthread whose name begins
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index 58fbb8204d15..3b150bfcce3d 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
-> @@ -2473,6 +2473,9 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
->  
->  	if (rcu_nocb_mask == NULL)
->  		return;
-> +#ifdef CONFIG_NO_HZ_FULL
-> +	cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
-> +#endif /* #ifdef CONFIG_NO_HZ_FULL */
->  	if (ls == -1) {
->  		ls = int_sqrt(nr_cpu_ids);
->  		rcu_nocb_leader_stride = ls;
-
+>In any case, unconditionally setting KVM_REQ_EVENT seems strange and
+>should be changed.
+>
+>Jan
+>
+>> 
+>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>> ---
+>>  arch/x86/kvm/vmx.c | 20 +++++++++++++++-----
+>>  1 file changed, 15 insertions(+), 5 deletions(-)
+>> 
+>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+>> index f4e5aed..fe69c49 100644
+>> --- a/arch/x86/kvm/vmx.c
+>> +++ b/arch/x86/kvm/vmx.c
+>> @@ -372,6 +372,7 @@ struct nested_vmx {
+>>  	u64 vmcs01_tsc_offset;
+>>  	/* L2 must run next, and mustn't decide to exit to L1. */
+>>  	bool nested_run_pending;
+>> +	bool l1_events_blocked;
+>>  	/*
+>>  	 * Guest pages referred to in vmcs02 with host-physical pointers, so
+>>  	 * we must keep them pinned while L2 runs.
+>> @@ -7380,8 +7381,10 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
+>>  	 * we did not inject a still-pending event to L1 now because of
+>>  	 * nested_run_pending, we need to re-enable this bit.
+>>  	 */
+>> -	if (vmx->nested.nested_run_pending)
+>> +	if (to_vmx(vcpu)->nested.l1_events_blocked) {
+>> +		to_vmx(vcpu)->nested.l1_events_blocked = false;
+>>  		kvm_make_request(KVM_REQ_EVENT, vcpu);
+>> +	}
+>>  
+>>  	vmx->nested.nested_run_pending = 0;
+>>  
+>> @@ -8197,15 +8200,20 @@ static int vmx_check_nested_events(struct kvm_vcpu *vcpu, bool external_intr)
+>>  
+>>  	if (nested_cpu_has_preemption_timer(get_vmcs12(vcpu)) &&
+>>  	    vmx->nested.preemption_timer_expired) {
+>> -		if (vmx->nested.nested_run_pending)
+>> +		if (vmx->nested.nested_run_pending) {
+>> +			vmx->nested.l1_events_blocked = true;
+>>  			return -EBUSY;
+>> +		}
+>>  		nested_vmx_vmexit(vcpu, EXIT_REASON_PREEMPTION_TIMER, 0, 0);
+>>  		return 0;
+>>  	}
+>>  
+>>  	if (vcpu->arch.nmi_pending && nested_exit_on_nmi(vcpu)) {
+>> -		if (vmx->nested.nested_run_pending ||
+>> -		    vcpu->arch.interrupt.pending)
+>> +		if (vmx->nested.nested_run_pending) {
+>> +			vmx->nested.l1_events_blocked = true;
+>> +			return -EBUSY;
+>> +		}
+>> +		if (vcpu->arch.interrupt.pending)
+>>  			return -EBUSY;
+>>  		nested_vmx_vmexit(vcpu, EXIT_REASON_EXCEPTION_NMI,
+>>  				  NMI_VECTOR | INTR_TYPE_NMI_INTR |
+>> @@ -8221,8 +8229,10 @@ static int vmx_check_nested_events(struct kvm_vcpu *vcpu, bool external_intr)
+>>  
+>>  	if ((kvm_cpu_has_interrupt(vcpu) || external_intr) &&
+>>  	    nested_exit_on_intr(vcpu)) {
+>> -		if (vmx->nested.nested_run_pending)
+>> +		if (vmx->nested.nested_run_pending) {
+>> +			vmx->nested.l1_events_blocked = true;
+>>  			return -EBUSY;
+>> +		}
+>>  		nested_vmx_vmexit(vcpu, EXIT_REASON_EXTERNAL_INTERRUPT, 0, 0);
+>>  	}
+>>  
+>> 
+>
+>-- 
+>Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+>Corporate Competence Center Embedded Linux
