@@ -1,122 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757224AbaGCJGG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:06:06 -0400
-Received: from mout.web.de ([212.227.17.11]:62850 "EHLO mout.web.de"
+	id S1757367AbaGCJHI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:07:08 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46075 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755621AbaGCJGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:06:03 -0400
-Message-ID: <53B51CF3.8090102@web.de>
-Date: Thu, 03 Jul 2014 11:05:55 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1752078AbaGCJHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 05:07:07 -0400
+Message-ID: <53B51D0B.8070900@ti.com>
+Date: Thu, 3 Jul 2014 14:36:19 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Hui Wang <hui.wang@canonical.com>
-CC: Hui Wang <jason77.wang@gmail.com>, tiwai@suse.de,
-        alsa-devel@alsa-project.org, alex.hung@canonical.com, yk@canonical.com,
-        david.henningsson@canonical.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [V2 PATCH] ALSA: hda - Enable mute/mic-mute LEDs for more Thinkpads
- with Conexant codec
-References: <1385534846-20829-1-git-send-email-hui.wang@canonical.com> <53AFF992.5030403@web.de> <53B0C596.6090007@canonical.com> <53B1078B.4090101@web.de> <53B219DF.6090807@canonical.com> <53B26575.1000003@web.de> <53B27ED7.4070401@canonical.com> <53B50062.30200@web.de> <53B51B63.8060809@canonical.com>
-In-Reply-To: <53B51B63.8060809@canonical.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="2gGgX7Jca66EeWQTK6Abnf2BVl6Lj2mBU"
-X-Provags-ID: V03:K0:R2Hk51dZFRLb657jN/YSySy7/0mhxm+orfB0rgeAZsKKwFYxABH
- 3WAUlh+k10GKIr/ABgt/Pu5bCjYm5FYnwjqDKS4cfmIc2RL5/k8Cqt4lbwo+VIdnpjyTyxm
- cxcCZLnM57fjPGv+gW9LuTtgNaXUxUzQrDabcxjn0JkYqkgMp8uZn0rOB6HDI6ZQarU1uiO
- iU33MxihDG2bd0sa0bI0A==
+To: Lee Jones <lee.jones@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <kernel@stlinux.com>
+Subject: Re: [PATCH 1/5] phy: miphy365x: Add Device Tree bindings for the
+ MiPHY365x
+References: <1404133317-25953-1-git-send-email-lee.jones@linaro.org> <1404133317-25953-2-git-send-email-lee.jones@linaro.org> <53B3CFDD.5090504@ti.com> <20140702120601.GD16724@lee--X1>
+In-Reply-To: <20140702120601.GD16724@lee--X1>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---2gGgX7Jca66EeWQTK6Abnf2BVl6Lj2mBU
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On 2014-07-03 10:59, Hui Wang wrote:
-> On 07/03/2014 03:04 PM, Jan Kiszka wrote:
->> On 2014-07-01 11:26, Hui Wang wrote:
->>> On 07/01/2014 03:38 PM, Jan Kiszka wrote:
->>>> On 2014-07-01 04:15, Hui Wang wrote:
->>>>> On 06/30/2014 02:45 PM, Jan Kiszka wrote:
->>>>>> On 2014-06-30 04:04, Hui Wang wrote:
->>>>>>> On 06/29/2014 07:33 PM, Jan Kiszka wrote:
->>>>>>>> On 2013-11-27 07:47, Hui Wang wrote:
->>>>>>>>> Most Thinkpad Edge series laptops use conexant codec, so far
->>>>>>>>> although
->>> <snip>
->>>>>> Is there anything I can debug or any information I can collect
->>>>>> from my
->>>>>> box to examine this?
->>>>> What is the linux distribution on your machine? And use showkey to
->>>>> catch
->>>>> the keycode of that button.
->>>> I'm running OpenSUSE 13.1. The reported keycode of the power button =
-is
->>>> 116.
->>> It seems the keycode is correct, it is power keycode rather the mute
->>> keycode.
+On Wednesday 02 July 2014 05:36 PM, Lee Jones wrote:
+> On Wed, 02 Jul 2014, Kishon Vijay Abraham I wrote:
+>> On Monday 30 June 2014 06:31 PM, Lee Jones wrote:
+>>> The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+>>> devices. It has 2 ports which it can use for either; both SATA, both
+>>> PCIe or one of each in any configuration.
 >>>
->>> Could you please do some debug, let us find which line of code is the=
-
->>> root cause for this problem. for example:
+>>> Cc: Kishon Vijay Abraham I <kishon@ti.com>
+>>> Acked-by: Mark Rutland <mark.rutland@arm.com>
+>>> Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+>>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>> ---
+>>>  .../devicetree/bindings/phy/phy-miphy365x.txt      | 76 ++++++++++++++++++++++
+>>>  1 file changed, 76 insertions(+)
+>>>  create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy365x.txt
 >>>
->>> after running the line, the problem shows up:
->>>
->>> 1.     if (ACPI_SUCCESS(acpi_get_devices("LEN0068", acpi_check_cb,
->>> &found, NULL)) && found) // in the sound/pci/hda/thinkpad_helper.c,
->>> is_thinkpad()
->> This evaluates to true
+>>> diff --git a/Documentation/devicetree/bindings/phy/phy-miphy365x.txt b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
+>>> new file mode 100644
+>>> index 0000000..d75f300
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/phy/phy-miphy365x.txt
+>>> @@ -0,0 +1,76 @@
+>>> +STMicroelectronics STi MIPHY365x PHY binding
+>>> +============================================
+>>> +
+>>> +This binding describes a miphy device that is used to control PHY hardware
+>>> +for SATA and PCIe.
+>>> +
+>>> +Required properties:
+>>> +- compatible :	Should be "st,miphy365x-phy"
+>>> +- #phy-cells :	Should be 2 (See second example)
+>>> +		First cell is the port number from:
+>>> +			- MIPHY_PORT_0
+>>> +			- MIPHY_PORT_1
 >>
->>> 2.     return ACPI_SUCCESS(acpi_get_devices("IBM0068", acpi_check_cb,=
+>> I'm just thinking if we can directly give phandle to the sub-node
+>> (channel0/channel1 or port0/port1) we won't need this information in the PHY
+>> specifier. This might need some modification in the phy-core but that can be done.
+> 
+> If we do that, we need a new property to identify the port number.  I
+> figured using an existing cell to identify the port would be better
+> than to try an introduce yet another property.
 
->>> &found, NULL)) && found; // same as above
->>>
->>> 3.         if (led_set_func(TPACPI_LED_MUTE, false) >=3D 0) { //in th=
-e
->>> sound/pci/hda/thinkpad_helper.c, hda_fixup_thinkpad_acpi()
->> ...and this
->>
->>> 4. if (led_set_func(TPACPI_LED_MICMUTE, false) >=3D 0) { // same as a=
-bove
->>>
->> ...and this as well. spec->num_adc_nids is 1.
->=20
->=20
-> If we change the code like below, does the power button can work well?
->=20
-> in the thinkpad_helper.c, hda_fixup_thinkpad_acpi()
->=20
->=20
->         if (led_set_func(TPACPI_LED_MUTE, false) >=3D 0) {
->             /*
->             old_vmaster_hook =3D spec->vmaster_mute.hook;
->             spec->vmaster_mute.hook =3D update_tpacpi_mute_led;
->             removefunc =3D false;
->            */
+If we can directly give phandle to the sub-node where do you think port number
+would be used?
 
-Disabling only this block resolves the issue.
-
-Jan
-
-
-
---2gGgX7Jca66EeWQTK6Abnf2BVl6Lj2mBU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlO1HPQACgkQitSsb3rl5xR91QCg1egFFFkeT5rRM36GOoYRqeKs
-MtgAn38Tnk6j4Pf/BaN6/nSjfR44ltsW
-=1/Co
------END PGP SIGNATURE-----
-
---2gGgX7Jca66EeWQTK6Abnf2BVl6Lj2mBU--
+Thanks
+Kishon
