@@ -1,125 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759186AbaGCQgM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:36:12 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:51076 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753490AbaGCQgL (ORCPT
+	id S1759489AbaGCQgZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:36:25 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:63902 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759378AbaGCQgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 12:36:11 -0400
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        peterz@infradead.org, mingo@kernel.org
-Cc: rjw@rjwysocki.net, vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
-        preeti@linux.vnet.ibm.com, Dietmar.Eggemann@arm.com, pjt@google.com
-Subject: [RFCv2 PATCH 20/23] sched: Take task wakeups into account in energy estimates
-Date: Thu,  3 Jul 2014 17:26:07 +0100
-Message-Id: <1404404770-323-21-git-send-email-morten.rasmussen@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
-References: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
-X-OriginalArrivalTime: 03 Jul 2014 16:26:22.0865 (UTC) FILETIME=[87478810:01CF96DB]
-X-MC-Unique: 114070317262209401
-Content-Type: text/plain; charset=WINDOWS-1252
+	Thu, 3 Jul 2014 12:36:23 -0400
+Date: Thu, 3 Jul 2014 12:36:21 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Kosina <jkosina@suse.cz>,
+        Josh Poimboeuf <notifications@github.com>, linux-mips@linux-mips.org
+Subject: Re: [RFA][PATCH 07/27] MIPS: ftrace: Add call to
+ ftrace_graph_is_dead() in function graph code
+Message-ID: <20140703123621.38880cf9@gandalf.local.home>
+In-Reply-To: <20140626165849.321719498@goodmis.org>
+References: <20140626165221.736847419@goodmis.org>
+	<20140626165849.321719498@goodmis.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s63GaGdJ010800
 
-The energy cost of waking a cpu and sending it back to sleep can be
-quite significant for short running frequently waking tasks if placed on
-an idle cpu in a deep sleep state. By factoring task wakeups in such
-tasks can be placed on cpus where the wakeup energy cost is lower. For
-example, partly utilized cpus in a shallower idle state, or cpus in a
-cluster/die that is already awake.
+Ralf,
 
-Current cpu utilization of the target cpu is factored in to guess how
-many task wakeups translate into cpu wakeups (idle exits). It is a
-very naive approach, but it is virtually impossible to get an accurate
-estimate.
+Can you give me your Acked-by on this and patch 21. I'm still waiting
+on a few arch maintainers for acks before I can push this to my
+for-next branch.
 
-wake_energy(task) = unused_util(cpu) * wakeups(task) * wakeup_energy(cpu)
+Thanks,
 
-There is no per cpu wakeup tracking, so we can't estimate the energy
-savings when removing tasks from a cpu. It is also nearly impossible to
-figure out which task is the cause of cpu wakeups if multiple tasks are
-scheduled on the same cpu.
+-- Steve
 
-wakeup_energy for each idle-state is obtained from the idle_states array.
-A prediction of the most likely idle-state is needed. cpuidle is best
-placed to provide that. It is not implemented yet.
 
-Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
----
- kernel/sched/fair.c |   21 +++++++++++++++++----
- 1 file changed, 17 insertions(+), 4 deletions(-)
+On Thu, 26 Jun 2014 12:52:28 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6da8e2b..aebf3e2 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4367,11 +4367,13 @@ static inline unsigned long get_curr_capacity(int cpu);
-  *				+ (1-curr_util(sg)) * idle_power(sg)
-  *	energy_after = new_util(sg) * busy_power(sg)
-  *				+ (1-new_util(sg)) * idle_power(sg)
-+ *				+ (1-new_util(sg)) * task_wakeups
-+ *							* wakeup_energy(sg)
-  *	energy_diff += energy_before - energy_after
-  * }
-  *
-  */
--static int energy_diff_util(int cpu, int util)
-+static int energy_diff_util(int cpu, int util, int wakeups)
- {
- 	struct sched_domain *sd;
- 	int i;
-@@ -4476,7 +4478,8 @@ static int energy_diff_util(int cpu, int util)
- 		 * The utilization change has no impact at this level (or any
- 		 * parent level).
- 		 */
--		if (aff_util_bef == aff_util_aft && curr_cap_idx == new_cap_idx)
-+		if (aff_util_bef == aff_util_aft && curr_cap_idx == new_cap_idx
-+				&& unused_util_aft < 100)
- 			goto unlock;
- 
- 		/* Energy before */
-@@ -4486,6 +4489,14 @@ static int energy_diff_util(int cpu, int util)
- 		/* Energy after */
- 		nrg_diff += (aff_util_aft*new_state->power)/new_state->cap;
- 		nrg_diff += (unused_util_aft * is->power)/new_state->cap;
-+
-+		/*
-+		 * Estimate how many of the wakeups that happens while cpu is
-+		 * idle assuming they are uniformly distributed. Ignoring
-+		 * wakeups caused by other tasks.
-+		 */
-+		nrg_diff += (wakeups * is->wu_energy >> 10)
-+				* unused_util_aft/new_state->cap;
- 	}
- 
- 	/*
-@@ -4516,6 +4527,8 @@ static int energy_diff_util(int cpu, int util)
- 		/* Energy after */
- 		nrg_diff += (aff_util_aft*new_state->power)/new_state->cap;
- 		nrg_diff += (unused_util_aft * is->power)/new_state->cap;
-+		nrg_diff += (wakeups * is->wu_energy >> 10)
-+				* unused_util_aft/new_state->cap;
- 	}
- 
- unlock:
-@@ -4532,8 +4545,8 @@ static int energy_diff_task(int cpu, struct task_struct *p)
- 	if (!cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
- 		return INT_MAX;
- 
--	return energy_diff_util(cpu, p->se.avg.uw_load_avg_contrib);
--
-+	return energy_diff_util(cpu, p->se.avg.uw_load_avg_contrib,
-+			p->se.avg.wakeup_avg_sum);
- }
- 
- static int wake_wide(struct task_struct *p)
--- 
-1.7.9.5
-
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> 
+> ftrace_stop() is going away as it disables parts of function tracing
+> that affects users that should not be affected. But ftrace_graph_stop()
+> is built on ftrace_stop(). Here's another example of killing all of
+> function tracing because something went wrong with function graph
+> tracing.
+> 
+> Instead of disabling all users of function tracing on function graph
+> error, disable only function graph tracing. To do this, the arch code
+> must call ftrace_graph_is_dead() before it implements function graph.
+> 
+> Cc: Ralf Baechle <ralf@linux-mips.org>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  arch/mips/kernel/ftrace.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/arch/mips/kernel/ftrace.c b/arch/mips/kernel/ftrace.c
+> index 60e7e5e45af1..8b6538750fe1 100644
+> --- a/arch/mips/kernel/ftrace.c
+> +++ b/arch/mips/kernel/ftrace.c
+> @@ -302,6 +302,9 @@ void prepare_ftrace_return(unsigned long *parent_ra_addr, unsigned long self_ra,
+>  	    &return_to_handler;
+>  	int faulted, insns;
+>  
+> +	if (unlikely(ftrace_graph_is_dead()))
+> +		return;
+> +
+>  	if (unlikely(atomic_read(&current->tracing_graph_pause)))
+>  		return;
+>  
 
