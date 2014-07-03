@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030692AbaGCJgY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:36:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52505 "EHLO
+	id S1758095AbaGCJgk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:36:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52494 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030474AbaGCJYq (ORCPT
+	with ESMTP id S1030463AbaGCJYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:24:46 -0400
+	Thu, 3 Jul 2014 05:24:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Scott Wood <scottwood@freescale.com>, Michael Neuling <mikey@neuling.org>,
+        Emil Medve <Emilian.Medve@freescale.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 166/198] USB: cdc-acm: fix runtime PM imbalance at shutdown
-Date: Thu,  3 Jul 2014 10:20:09 +0100
-Message-Id: <1404379241-8590-167-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 162/198] powerpc: Don't skip ePAPR spin-table CPUs
+Date: Thu,  3 Jul 2014 10:20:05 +0100
+Message-Id: <1404379241-8590-163-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,55 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Scott Wood <scottwood@freescale.com>
 
-commit 5292afa657d0e790b7479ad8eef9450c1e040b3d upstream.
+commit 6663a4fa6711050036562ddfd2086edf735fae21 upstream.
 
-Make sure only to decrement the PM counters if they were actually
-incremented.
+Commit 59a53afe70fd530040bdc69581f03d880157f15a "powerpc: Don't setup
+CPUs with bad status" broke ePAPR SMP booting.  ePAPR says that CPUs
+that aren't presently running shall have status of disabled, with
+enable-method being used to determine whether the CPU can be enabled.
 
-Note that the USB PM counter, but not necessarily the driver core PM
-counter, is reset when the interface is unbound.
+Fix by checking for spin-table, which is currently the only supported
+enable-method.
 
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Scott Wood <scottwood@freescale.com>
+Cc: Michael Neuling <mikey@neuling.org>
+Cc: Emil Medve <Emilian.Medve@Freescale.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/class/cdc-acm.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/setup-common.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 83a19ae3c31c..a72b7f1f6e17 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -575,12 +575,13 @@ static void acm_port_shutdown(struct tty_port *port)
- 	struct urb *urb;
- 	struct acm_wb *wb;
- 	int i;
-+	int pm_err;
+diff --git a/arch/powerpc/kernel/setup-common.c b/arch/powerpc/kernel/setup-common.c
+index b12be98e0972..cbc63a3c9455 100644
+--- a/arch/powerpc/kernel/setup-common.c
++++ b/arch/powerpc/kernel/setup-common.c
+@@ -455,9 +455,17 @@ void __init smp_setup_cpu_maps(void)
+ 		}
  
- 	dev_dbg(&acm->control->dev, "%s\n", __func__);
- 
- 	mutex_lock(&acm->mutex);
- 	if (!acm->disconnected) {
--		usb_autopm_get_interface(acm->control);
-+		pm_err = usb_autopm_get_interface(acm->control);
- 		acm_set_control(acm, acm->ctrlout = 0);
- 
- 		for (;;) {
-@@ -598,7 +599,8 @@ static void acm_port_shutdown(struct tty_port *port)
- 		for (i = 0; i < acm->rx_buflimit; i++)
- 			usb_kill_urb(acm->read_urbs[i]);
- 		acm->control->needs_remote_wakeup = 0;
--		usb_autopm_put_interface(acm->control);
-+		if (!pm_err)
-+			usb_autopm_put_interface(acm->control);
- 	}
- 	mutex_unlock(&acm->mutex);
- }
+ 		for (j = 0; j < nthreads && cpu < nr_cpu_ids; j++) {
++			bool avail;
++
+ 			DBG("    thread %d -> cpu %d (hard id %d)\n",
+ 			    j, cpu, be32_to_cpu(intserv[j]));
+-			set_cpu_present(cpu, of_device_is_available(dn));
++
++			avail = of_device_is_available(dn);
++			if (!avail)
++				avail = !of_property_match_string(dn,
++						"enable-method", "spin-table");
++
++			set_cpu_present(cpu, avail);
+ 			set_hard_smp_processor_id(cpu, be32_to_cpu(intserv[j]));
+ 			set_cpu_possible(cpu, true);
+ 			cpu++;
 -- 
 1.9.1
 
