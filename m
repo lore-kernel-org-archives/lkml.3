@@ -1,219 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553AbaGCQ5S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:57:18 -0400
-Received: from 15.mo6.mail-out.ovh.net ([188.165.39.161]:40516 "EHLO
-	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753376AbaGCQ5R convert rfc822-to-8bit (ORCPT
+	id S1759074AbaGCQ6j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:58:39 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45222 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752324AbaGCQ6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 12:57:17 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.2\))
-Subject: Re: [PATCH 09/18] AT91: Call at91_register_devices in the board files
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-In-Reply-To: <1404396906-25194-15-git-send-email-maxime.ripard@free-electrons.com>
-Date: Thu, 3 Jul 2014 22:29:58 +0800
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux@maxim.org.za, Nicolas FERRE <nicolas.ferre@atmel.com>,
-        dwmw2@infradead.org, dbaryshkov@gmail.com, devicetree@vger.kernel.org,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        linux-kernel@vger.kernel.org,
-        Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D103F102-4B04-4CC6-8F20-58CEB0EC8E36@jcrosoft.com>
-References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com> <1404396906-25194-15-git-send-email-maxime.ripard@free-electrons.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-X-Mailer: Apple Mail (2.1878.2)
-X-Ovh-Tracer-Id: 7576180474429877181
-X-Ovh-Remote: 193.138.230.182 (182.230.138.193.client.dyn.strong-ba6.blackoakcomputers.com)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedrudegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedrudegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 3 Jul 2014 12:58:38 -0400
+Date: Thu, 3 Jul 2014 17:58:13 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
+Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com,
+        Nikesh Oswal <Nikesh.Oswal@wolfsonmicro.com>
+Message-ID: <20140703165813.GL410@sirena.org.uk>
+References: <1404400687-19035-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9axOBMfiLLqytT81"
+Content-Disposition: inline
+In-Reply-To: <1404400687-19035-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
+X-Cookie: Semper Fi, dude.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: arizona-ldo1: remove bypass functionality
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-no do this at SoC level
 
-Best Regards,
-J.
-On Jul 3, 2014, at 10:14 PM, Maxime Ripard <maxime.ripard@free-electrons.com> wrote:
+--9axOBMfiLLqytT81
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> Make every board call the register_devices callback so that the devices
-> declared by the SoC are registered.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
-> arch/arm/mach-at91/board-afeb-9260v1.c  | 2 ++
-> arch/arm/mach-at91/board-cam60.c        | 2 ++
-> arch/arm/mach-at91/board-cpu9krea.c     | 2 ++
-> arch/arm/mach-at91/board-flexibity.c    | 2 ++
-> arch/arm/mach-at91/board-sam9-l9260.c   | 2 ++
-> arch/arm/mach-at91/board-sam9260ek.c    | 2 ++
-> arch/arm/mach-at91/board-sam9261ek.c    | 2 ++
-> arch/arm/mach-at91/board-sam9263ek.c    | 2 ++
-> arch/arm/mach-at91/board-sam9m10g45ek.c | 2 ++
-> arch/arm/mach-at91/board-sam9rlek.c     | 2 ++
-> arch/arm/mach-at91/board-snapper9260.c  | 2 ++
-> 11 files changed, 22 insertions(+)
-> 
-> diff --git a/arch/arm/mach-at91/board-afeb-9260v1.c b/arch/arm/mach-at91/board-afeb-9260v1.c
-> index 597c649170aa..fc9621ccb606 100644
-> --- a/arch/arm/mach-at91/board-afeb-9260v1.c
-> +++ b/arch/arm/mach-at91/board-afeb-9260v1.c
-> @@ -167,6 +167,8 @@ static struct at91_cf_data afeb9260_cf_data = {
-> 
-> static void __init afeb9260_board_init(void)
-> {
-> +	at91_register_devices();
-> +
-> 	/* Serial */
-> 	/* DBGU on ttyS0. (Rx & Tx only) */
-> 	at91_register_uart(0, 0, 0);
-> diff --git a/arch/arm/mach-at91/board-cam60.c b/arch/arm/mach-at91/board-cam60.c
-> index a30502c8d379..283655bd86c1 100644
-> --- a/arch/arm/mach-at91/board-cam60.c
-> +++ b/arch/arm/mach-at91/board-cam60.c
-> @@ -170,6 +170,8 @@ static void __init cam60_add_device_nand(void)
-> 
-> static void __init cam60_board_init(void)
-> {
-> +	at91_register_devices();
-> +
-> 	/* Serial */
-> 	/* DBGU on ttyS0. (Rx & Tx only) */
-> 	at91_register_uart(0, 0, 0);
-> diff --git a/arch/arm/mach-at91/board-cpu9krea.c b/arch/arm/mach-at91/board-cpu9krea.c
-> index 2037f78c84e7..29a89032bb9a 100644
-> --- a/arch/arm/mach-at91/board-cpu9krea.c
-> +++ b/arch/arm/mach-at91/board-cpu9krea.c
-> @@ -322,6 +322,8 @@ static struct mci_platform_data __initdata cpu9krea_mci0_data = {
-> 
-> static void __init cpu9krea_board_init(void)
-> {
-> +	at91_register_devices();
-> +
-> 	/* NOR */
-> 	cpu9krea_add_device_nor();
-> 	/* Serial */
-> diff --git a/arch/arm/mach-at91/board-flexibity.c b/arch/arm/mach-at91/board-flexibity.c
-> index 68f1ab6bd08f..79bd411b0cee 100644
-> --- a/arch/arm/mach-at91/board-flexibity.c
-> +++ b/arch/arm/mach-at91/board-flexibity.c
-> @@ -138,6 +138,8 @@ static struct gpio_led flexibity_leds[] = {
-> 
-> static void __init flexibity_board_init(void)
-> {
-> +	at91_register_devices();
-> +
-> 	/* Serial */
-> 	/* DBGU on ttyS0. (Rx & Tx only) */
-> 	at91_register_uart(0, 0, 0);
-> diff --git a/arch/arm/mach-at91/board-sam9-l9260.c b/arch/arm/mach-at91/board-sam9-l9260.c
-> index d24dda67e2d3..70309404f366 100644
-> --- a/arch/arm/mach-at91/board-sam9-l9260.c
-> +++ b/arch/arm/mach-at91/board-sam9-l9260.c
-> @@ -187,6 +187,8 @@ static struct gpio_led ek_leds[] = {
-> 
-> static void __init ek_board_init(void)
-> {
-> +	at91_register_devices();
-> +
-> 	/* Serial */
-> 	/* DBGU on ttyS0. (Rx & Tx only) */
-> 	at91_register_uart(0, 0, 0);
-> diff --git a/arch/arm/mach-at91/board-sam9260ek.c b/arch/arm/mach-at91/board-sam9260ek.c
-> index 65dea12d685e..da9c5f1f2c49 100644
-> --- a/arch/arm/mach-at91/board-sam9260ek.c
-> +++ b/arch/arm/mach-at91/board-sam9260ek.c
-> @@ -307,6 +307,8 @@ static void __init ek_add_device_buttons(void) {}
-> 
-> static void __init ek_board_init(void)
-> {
-> +	at91_register_devices();
-> +
-> 	/* Serial */
-> 	/* DBGU on ttyS0. (Rx & Tx only) */
-> 	at91_register_uart(0, 0, 0);
-> diff --git a/arch/arm/mach-at91/board-sam9261ek.c b/arch/arm/mach-at91/board-sam9261ek.c
-> index 4637432de08f..d1be10b09ab3 100644
-> --- a/arch/arm/mach-at91/board-sam9261ek.c
-> +++ b/arch/arm/mach-at91/board-sam9261ek.c
-> @@ -561,6 +561,8 @@ static struct gpio_led ek_leds[] = {
-> 
-> static void __init ek_board_init(void)
-> {
-> +	at91_register_devices();
-> +
-> 	/* Serial */
-> 	/* DBGU on ttyS0. (Rx & Tx only) */
-> 	at91_register_uart(0, 0, 0);
-> diff --git a/arch/arm/mach-at91/board-sam9263ek.c b/arch/arm/mach-at91/board-sam9263ek.c
-> index cd2726ee5add..3f613d962d9b 100644
-> --- a/arch/arm/mach-at91/board-sam9263ek.c
-> +++ b/arch/arm/mach-at91/board-sam9263ek.c
-> @@ -405,6 +405,8 @@ static struct at91_can_data ek_can_data = {
-> 
-> static void __init ek_board_init(void)
-> {
-> +	at91_register_devices();
-> +
-> 	/* Serial */
-> 	/* DBGU on ttyS0. (Rx & Tx only) */
-> 	at91_register_uart(0, 0, 0);
-> diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
-> index 1ea61328f30d..33a7b19f7400 100644
-> --- a/arch/arm/mach-at91/board-sam9m10g45ek.c
-> +++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
-> @@ -450,6 +450,8 @@ static struct platform_device *devices[] __initdata = {
-> 
-> static void __init ek_board_init(void)
-> {
-> +	at91_register_devices();
-> +
-> 	/* Serial */
-> 	/* DGBU on ttyS0. (Rx & Tx only) */
-> 	at91_register_uart(0, 0, 0);
-> diff --git a/arch/arm/mach-at91/board-sam9rlek.c b/arch/arm/mach-at91/board-sam9rlek.c
-> index b64648b4a1fc..262e3f957d9f 100644
-> --- a/arch/arm/mach-at91/board-sam9rlek.c
-> +++ b/arch/arm/mach-at91/board-sam9rlek.c
-> @@ -292,6 +292,8 @@ static void __init ek_add_device_buttons(void) {}
-> 
-> static void __init ek_board_init(void)
-> {
-> +	at91_register_devices();
-> +
-> 	/* Serial */
-> 	/* DBGU on ttyS0. (Rx & Tx only) */
-> 	at91_register_uart(0, 0, 0);
-> diff --git a/arch/arm/mach-at91/board-snapper9260.c b/arch/arm/mach-at91/board-snapper9260.c
-> index 1b870e6def0c..2a817b85569f 100644
-> --- a/arch/arm/mach-at91/board-snapper9260.c
-> +++ b/arch/arm/mach-at91/board-snapper9260.c
-> @@ -154,6 +154,8 @@ static void __init snapper9260_add_device_nand(void)
-> 
-> static void __init snapper9260_board_init(void)
-> {
-> +	at91_register_devices();
-> +
-> 	at91_add_device_i2c(snapper9260_i2c_devices,
-> 			    ARRAY_SIZE(snapper9260_i2c_devices));
-> 
-> -- 
-> 2.0.1
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+On Thu, Jul 03, 2014 at 04:18:07PM +0100, Nikesh Oswal wrote:
+> From: Nikesh Oswal <Nikesh.Oswal@wolfsonmicro.com>
+>=20
+> WM5110/8280 devices do not support bypass mode for LDO1 so remove
+> the bypass callbacks registered with regulator core.
+>=20
+> Signed-off-by: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
 
+Please fix your configuration so that these two line up, it raises red
+flags that they don't even though it's fairly clear that they're most
+likely both for the same person.
+
+I'd recommend not using your corporate mail for community work since if
+you reply from it and get a mail footer added (as is standard) people
+will tend not to respond positively.
+
+--9axOBMfiLLqytT81
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTtYuiAAoJELSic+t+oim9R44QAIAYeB4615iWhEuXN5S4bx65
+mSlk+vXmJfJBevmNx1jGA8pEN7yEW96Ba8tJGWVQX5kOPYS1qD+0i8CmSRvX3jUH
+Xtbpw6SEbTzQipVP16d+sJRdyew5Fiiv19ic2B9HGyagkG8lm2WENlJFnFkapOKp
+6VEfWGby2dJ87E63yu8GtQeDgPwdByeGkhfiiOsrjJ2ySF1aqwe6ez7FE+6FAccD
+4zNeU6rbMtsH9rjuXEzv9fxxrqZJc/gdHRJ2KnIuy0GDSzst1WarX4awDFTVGhnr
+rdUyClW/0ZvZ3fXVyJKsNsrxqmFvFT+NDw6SwtH0ISTuW8+lLlHatGWbUxfsqa5N
+lBVrTJbd0i0uUTWGr2MVOpLMVGrFvCyoMOaecN4vlIhiKU6i2VvYNj11JprxeR/m
+Ggm+mII12jHFymd6/B/A9yQ7TNfQH6PThjoYsr8fATU3A8r7E/VQIknwt/0vPZtE
+ES/NU/D30cLvI+QLvzNQaUep+IdgkUDZD8c2m2DXiVfoc2kaV2RogSFX8WI3ENDa
+8VRQf6Ip5E9ZgtH/WNfN+841u2bk5U73cw+q6U9dFauLn6jDAfzLpCa1OSzEfVSi
+ulNCfQJ7cJJwLZWS02i2+zzuGjQKuuHXtGrSOD4xDmXQaiR3Ta7zrkE9yDsI7qnI
+NP3yqF4XOTHcxJBzExpp
+=njBQ
+-----END PGP SIGNATURE-----
+
+--9axOBMfiLLqytT81--
