@@ -1,69 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758944AbaGCUvy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 16:51:54 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:45849 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357AbaGCUvx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 16:51:53 -0400
-Message-ID: <1404420708.8764.54.camel@j-VirtualBox>
-Subject: Re: [RFC] Cancellable MCS spinlock rework
-From: Jason Low <jason.low2@hp.com>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, Peter Zijlstra <peterz@infradead.org>,
-        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        mingo@kernel.org, linux-kernel@vger.kernel.org, riel@redhat.com,
-        akpm@linux-foundation.org, hpa@zytor.com, andi@firstfloor.org,
-        James.Bottomley@hansenpartnership.com, rostedt@goodmis.org,
-        tim.c.chen@linux.intel.com, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Date: Thu, 03 Jul 2014 13:51:48 -0700
-In-Reply-To: <53B5BE99.1090008@hp.com>
-References: <1404318070-2856-1-git-send-email-jason.low2@hp.com>
-	  <20140702162749.GP19379@twins.programming.kicks-ass.net>
-	  <1404320356.3170.12.camel@j-VirtualBox>
-	  <20140702172333.GQ19379@twins.programming.kicks-ass.net>
-	  <1404322203.3170.17.camel@j-VirtualBox>
-	  <20140703073107.GS19379@twins.programming.kicks-ass.net>
-	  <1404407389.2498.3.camel@buesod1.americas.hpqcorp.net>
-	 <1404412485.8764.33.camel@j-VirtualBox> <53B5BE99.1090008@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759070AbaGCUxt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 16:53:49 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46556 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751842AbaGCUxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 16:53:47 -0400
+From: Suman Anna <s-anna@ti.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Suman Anna <s-anna@ti.com>
+Subject: [PATCH] rpmsg: compute number of buffers to allocate from vrings
+Date: Thu, 3 Jul 2014 15:53:35 -0500
+Message-ID: <1404420815-42108-1-git-send-email-s-anna@ti.com>
+X-Mailer: git-send-email 2.0.0
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-03 at 16:35 -0400, Waiman Long wrote:
-> On 07/03/2014 02:34 PM, Jason Low wrote:
-> > On Thu, 2014-07-03 at 10:09 -0700, Davidlohr Bueso wrote:
-> >> On Thu, 2014-07-03 at 09:31 +0200, Peter Zijlstra wrote:
-> >>> On Wed, Jul 02, 2014 at 10:30:03AM -0700, Jason Low wrote:
-> >>>> Would potentially reducing the size of the rw semaphore structure by 32
-> >>>> bits (for all architectures using optimistic spinning) be a nice
-> >>>> benefit?
-> >>> Possibly, although I had a look at the mutex structure and we didn't
-> >>> have a hole to place it in, unlike what you found with the rwsem.
-> >> Yeah, and currently struct rw_semaphore is the largest lock we have in
-> >> the kernel. Shaving off space is definitely welcome.
-> > Right, especially if it could help things like xfs inode.
-> >
-> 
-> I do see a point in reducing the size of the rwsem structure. However, I 
-> don't quite understand the point of converting pointers in the 
-> optimistic_spin_queue structure to atomic_t.
+The buffers to be used for communication are allocated during
+the rpmsg virtio driver's probe, and the number of buffers is
+currently hard-coded to 512. Remove this hard-coded value, as
+this can vary from one platform to another or between different
+remote processors. Instead, rely on the number of buffers the
+virtqueue vring is setup with in the first place.
 
-Converting the pointers in the optimistic_spin_queue to atomic_t would
-mean we're fully operating on atomic operations instead of using the
-potentially racy cmpxchg + ACCESS_ONCE stores on the pointers.
+This fixes the WARN_ON during the setup of the receive buffers
+for vrings with buffers less than 512.
 
-If we're in the process of using the CPU numbers in atomic_t, I thought
-we might as well fix that as well since it has actually been shown to
-result in lockups on some architectures. We can then avoid needing to
-implement the tricky architecture workarounds for optimistic spinning.
-Wouldn't that be a "nice-have"?
+NOTE: The number of buffers is already assumed to be symmetrical
+in each direction, and that logic is not unchanged.
 
-Jason
+Signed-off-by: Suman Anna <s-anna@ti.com>
+---
+ drivers/rpmsg/virtio_rpmsg_bus.c | 41 +++++++++++++++++++++++++---------------
+ 1 file changed, 26 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/rpmsg/virtio_rpmsg_bus.c b/drivers/rpmsg/virtio_rpmsg_bus.c
+index b6135d4..e9866a6 100644
+--- a/drivers/rpmsg/virtio_rpmsg_bus.c
++++ b/drivers/rpmsg/virtio_rpmsg_bus.c
+@@ -41,6 +41,7 @@
+  * @svq:	tx virtqueue
+  * @rbufs:	kernel address of rx buffers
+  * @sbufs:	kernel address of tx buffers
++ * @num_bufs:	total number of buffers for rx and tx
+  * @last_sbuf:	index of last tx buffer used
+  * @bufs_dma:	dma base addr of the buffers
+  * @tx_lock:	protects svq, sbufs and sleepers, to allow concurrent senders.
+@@ -60,6 +61,7 @@ struct virtproc_info {
+ 	struct virtio_device *vdev;
+ 	struct virtqueue *rvq, *svq;
+ 	void *rbufs, *sbufs;
++	unsigned int num_bufs;
+ 	int last_sbuf;
+ 	dma_addr_t bufs_dma;
+ 	struct mutex tx_lock;
+@@ -86,14 +88,14 @@ struct rpmsg_channel_info {
+ #define to_rpmsg_driver(d) container_of(d, struct rpmsg_driver, drv)
+ 
+ /*
+- * We're allocating 512 buffers of 512 bytes for communications, and then
+- * using the first 256 buffers for RX, and the last 256 buffers for TX.
++ * We're allocating buffers of 512 bytes each for communications. The
++ * number of buffers are computed from the number of buffers supported
++ * by the virtqueue vring and then use the first half of those buffers
++ * for RX, and the last half buffers for TX.
+  *
+  * Each buffer will have 16 bytes for the msg header and 496 bytes for
+  * the payload.
+  *
+- * This will require a total space of 256KB for the buffers.
+- *
+  * We might also want to add support for user-provided buffers in time.
+  * This will allow bigger buffer size flexibility, and can also be used
+  * to achieve zero-copy messaging.
+@@ -102,9 +104,7 @@ struct rpmsg_channel_info {
+  * can change this without changing anything in the firmware of the remote
+  * processor.
+  */
+-#define RPMSG_NUM_BUFS		(512)
+ #define RPMSG_BUF_SIZE		(512)
+-#define RPMSG_TOTAL_BUF_SPACE	(RPMSG_NUM_BUFS * RPMSG_BUF_SIZE)
+ 
+ /*
+  * Local addresses are dynamically allocated on-demand.
+@@ -579,7 +579,7 @@ static void *get_a_tx_buf(struct virtproc_info *vrp)
+ 	 * either pick the next unused tx buffer
+ 	 * (half of our buffers are used for sending messages)
+ 	 */
+-	if (vrp->last_sbuf < RPMSG_NUM_BUFS / 2)
++	if (vrp->last_sbuf < vrp->num_bufs / 2)
+ 		ret = vrp->sbufs + RPMSG_BUF_SIZE * vrp->last_sbuf++;
+ 	/* or recycle a used one */
+ 	else
+@@ -948,6 +948,7 @@ static int rpmsg_probe(struct virtio_device *vdev)
+ 	struct virtproc_info *vrp;
+ 	void *bufs_va;
+ 	int err = 0, i;
++	size_t total_buf_space;
+ 
+ 	vrp = kzalloc(sizeof(*vrp), GFP_KERNEL);
+ 	if (!vrp)
+@@ -968,10 +969,19 @@ static int rpmsg_probe(struct virtio_device *vdev)
+ 	vrp->rvq = vqs[0];
+ 	vrp->svq = vqs[1];
+ 
++	/*
++	 * We expect equal number of buffers for each direction as per current
++	 * code, so throw a warning if the configuration doesn't match. This can
++	 * easily be adjusted if needed.
++	 */
++	vrp->num_bufs = virtqueue_get_vring_size(vrp->rvq) * 2;
++	WARN_ON(virtqueue_get_vring_size(vrp->svq) != (vrp->num_bufs / 2));
++	total_buf_space = vrp->num_bufs * RPMSG_BUF_SIZE;
++
+ 	/* allocate coherent memory for the buffers */
+ 	bufs_va = dma_alloc_coherent(vdev->dev.parent->parent,
+-				RPMSG_TOTAL_BUF_SPACE,
+-				&vrp->bufs_dma, GFP_KERNEL);
++				     total_buf_space, &vrp->bufs_dma,
++				     GFP_KERNEL);
+ 	if (!bufs_va) {
+ 		err = -ENOMEM;
+ 		goto vqs_del;
+@@ -984,10 +994,10 @@ static int rpmsg_probe(struct virtio_device *vdev)
+ 	vrp->rbufs = bufs_va;
+ 
+ 	/* and half is dedicated for TX */
+-	vrp->sbufs = bufs_va + RPMSG_TOTAL_BUF_SPACE / 2;
++	vrp->sbufs = bufs_va + total_buf_space / 2;
+ 
+ 	/* set up the receive buffers */
+-	for (i = 0; i < RPMSG_NUM_BUFS / 2; i++) {
++	for (i = 0; i < vrp->num_bufs / 2; i++) {
+ 		struct scatterlist sg;
+ 		void *cpu_addr = vrp->rbufs + i * RPMSG_BUF_SIZE;
+ 
+@@ -1023,8 +1033,8 @@ static int rpmsg_probe(struct virtio_device *vdev)
+ 	return 0;
+ 
+ free_coherent:
+-	dma_free_coherent(vdev->dev.parent->parent, RPMSG_TOTAL_BUF_SPACE,
+-					bufs_va, vrp->bufs_dma);
++	dma_free_coherent(vdev->dev.parent->parent, total_buf_space,
++			  bufs_va, vrp->bufs_dma);
+ vqs_del:
+ 	vdev->config->del_vqs(vrp->vdev);
+ free_vrp:
+@@ -1042,6 +1052,7 @@ static int rpmsg_remove_device(struct device *dev, void *data)
+ static void rpmsg_remove(struct virtio_device *vdev)
+ {
+ 	struct virtproc_info *vrp = vdev->priv;
++	size_t total_buf_space = vrp->num_bufs * RPMSG_BUF_SIZE;
+ 	int ret;
+ 
+ 	vdev->config->reset(vdev);
+@@ -1057,8 +1068,8 @@ static void rpmsg_remove(struct virtio_device *vdev)
+ 
+ 	vdev->config->del_vqs(vrp->vdev);
+ 
+-	dma_free_coherent(vdev->dev.parent->parent, RPMSG_TOTAL_BUF_SPACE,
+-					vrp->rbufs, vrp->bufs_dma);
++	dma_free_coherent(vdev->dev.parent->parent, total_buf_space,
++			  vrp->rbufs, vrp->bufs_dma);
+ 
+ 	kfree(vrp);
+ }
+-- 
+2.0.0
 
