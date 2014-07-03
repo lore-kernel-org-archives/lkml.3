@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755037AbaGCFrS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 01:47:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:50110 "EHLO mga09.intel.com"
+	id S1755399AbaGCFsN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 01:48:13 -0400
+Received: from smtp2-g21.free.fr ([212.27.42.2]:7840 "EHLO smtp2-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751733AbaGCFrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 01:47:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,593,1400050800"; 
-   d="scan'208";a="538121595"
-Message-ID: <53B4EE63.3000507@intel.com>
-Date: Thu, 03 Jul 2014 13:47:15 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751311AbaGCFsL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 01:48:11 -0400
+Date: Thu, 3 Jul 2014 07:49:59 +0200
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Mark Brown <broonie@kernel.org>
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
+        lgirdwood@gmail.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
+        Dave Airlie <airlied@gmail.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ASoC: tda998x: add a codec to the HDMI transmitter
+Message-ID: <20140703074959.7c489912@armhf>
+In-Reply-To: <20140702194252.GN410@sirena.org.uk>
+References: <20140702183841.7c964832@armhf>
+	<20140702165628.GO20799@lunn.ch>
+	<20140702195154.47d6f6b4@armhf>
+	<20140702194252.GN410@sirena.org.uk>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
-        eranian@google.com, andi@firstfloor.org
-Subject: Re: [PATCH V4 02/16] perf, core: introduce pmu context switch callback
-References: <1404118253-19532-1-git-send-email-zheng.z.yan@intel.com> <1404118253-19532-3-git-send-email-zheng.z.yan@intel.com> <20140702101216.GV6758@twins.programming.kicks-ass.net>
-In-Reply-To: <20140702101216.GV6758@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2014 06:12 PM, Peter Zijlstra wrote:
-> On Mon, Jun 30, 2014 at 04:50:39PM +0800, Yan, Zheng wrote:
->> @@ -2362,6 +2363,58 @@ unlock:
->>  	}
->>  }
->>  
->> +void perf_sched_cb_disable(struct pmu *pmu)
->> +{
->> +	__get_cpu_var(perf_sched_cb_usages)--;
->> +}
->> +
->> +void perf_sched_cb_enable(struct pmu *pmu)
->> +{
->> +	__get_cpu_var(perf_sched_cb_usages)++;
->> +}
+On Wed, 2 Jul 2014 20:42:52 +0100
+Mark Brown <broonie@kernel.org> wrote:
+
+> > I tested this CODEC with both DAPM and DPCM. If the audio subsystem
+> > asks for streaming on both I2S and S/PDIF, only the last call is served
+> > (this depends on the order of the DAI links in the audio card creation
+> > table).  
 > 
-> Those should not be called {dis,en}able, they don't as such do that.
+> I'd expect this to return an error for the busy DAI rather than just
+> silently ignore it failing to start or (better) implement some control
+> to let the user select which of the DAIs is active.
 
-I can't think up a better name. what should they be called?
+Mark,
 
-Regards
-Yan, Zheng
+This is not an error. If the audio subsystem (DPCM, not the user)
+chooses to activate both I2S and S/PDIF, this means the HDMI audio may
+be taken either from I2S or from S/PDIF: both inputs have the right
+format and rate.
 
-> Also we have: this_cpu_{inc,dec} for this.
-> 
-
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
