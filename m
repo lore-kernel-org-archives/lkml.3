@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754383AbaGCBet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 21:34:49 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:53594 "EHLO
+	id S1754572AbaGCBhO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 21:37:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:12834 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752260AbaGCBeX (ORCPT
+	by vger.kernel.org with ESMTP id S1751424AbaGCBhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 21:34:23 -0400
-Message-Id: <20140703013419.439517631@goodmis.org>
-User-Agent: quilt/0.63-1
-Date: Wed, 02 Jul 2014 21:34:10 -0400
+	Wed, 2 Jul 2014 21:37:12 -0400
+Date: Wed, 2 Jul 2014 21:37:10 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        stable-rt@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH RT 1/2] Fix latency histogram after "hrtimer: Set expiry time before
- switch_hrtimer_base()"
-References: <20140703013409.809031176@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [for-next][PATCH] tracing: Remove ftrace_stop/start() from reading
+ the trace file
+Message-ID: <20140702213710.41f89563@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0001-Fix-latency-histogram-after-hrtimer-Set-expiry-time-.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4.94-rt117-rc1 stable review patch.
-If anyone has any objections, please let me know.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+for-next
 
-------------------
+Head SHA1: 099ed151675cd1d2dbeae1dac697975f6a68716d
 
-From: Ben Hutchings <ben@decadent.org.uk>
 
-In an rt-kernel with CONFIG_MISSED_TIMER_OFFSETS_HIST enabled,
-__hrtimer_start_range_ns() now crashes, as new_base is not assigned
-before it is used.
+Steven Rostedt (Red Hat) (1):
+      tracing: Remove ftrace_stop/start() from reading the trace file
 
-Tested-by: Carsten Emde <C.Emde@osadl.org>
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/hrtimer.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+----
+ kernel/trace/trace.c | 2 --
+ 1 file changed, 2 deletions(-)
+---------------------------
+commit 099ed151675cd1d2dbeae1dac697975f6a68716d
+Author: Steven Rostedt (Red Hat) <rostedt@goodmis.org>
+Date:   Tue Jun 24 23:50:09 2014 -0400
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index b62a3a7541c7..3f7d3b5b0717 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1038,6 +1038,11 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- #endif
- 	}
+    tracing: Remove ftrace_stop/start() from reading the trace file
+    
+    Disabling reading and writing to the trace file should not be able to
+    disable all function tracing callbacks. There's other users today
+    (like kprobes and perf). Reading a trace file should not stop those
+    from happening.
+    
+    Cc: stable@vger.kernel.org # 3.0+
+    Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 384ede311717..f243444a3772 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1396,7 +1396,6 @@ void tracing_start(void)
  
-+	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
-+
-+	/* Switch the timer base, if necessary: */
-+	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
-+
- #ifdef CONFIG_MISSED_TIMER_OFFSETS_HIST
- 	{
- 		ktime_t now = new_base->get_time();
-@@ -1049,11 +1054,6 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 	}
- #endif
+ 	arch_spin_unlock(&global_trace.max_lock);
  
--	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
--
--	/* Switch the timer base, if necessary: */
--	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
--
- 	timer_stats_hrtimer_set_start_info(timer);
+-	ftrace_start();
+  out:
+ 	raw_spin_unlock_irqrestore(&global_trace.start_lock, flags);
+ }
+@@ -1443,7 +1442,6 @@ void tracing_stop(void)
+ 	struct ring_buffer *buffer;
+ 	unsigned long flags;
  
- 	leftmost = enqueue_hrtimer(timer, new_base);
--- 
-2.0.0
-
-
+-	ftrace_stop();
+ 	raw_spin_lock_irqsave(&global_trace.start_lock, flags);
+ 	if (global_trace.stop_count++)
+ 		goto out;
