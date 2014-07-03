@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965431AbaGCKFa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:05:30 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:48258 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965277AbaGCKF0 (ORCPT
+	id S1030764AbaGCKFv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:05:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51771 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758405AbaGCJWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 06:05:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <1403868134-31741-1-git-send-email-acourbot@nvidia.com>
-References: <1403868134-31741-1-git-send-email-acourbot@nvidia.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Thu, 3 Jul 2014 19:05:05 +0900
-Message-ID: <CAAVeFuLWpfjqWFRyGqROdxw7qP2OkXFZTPkCHCtwzwE=VjjRgQ@mail.gmail.com>
-Subject: Re: [PATCH v3 0/2] drm: nouveau: memory coherency for ARM
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
-        Lucas Stach <dev@lynxeye.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 3 Jul 2014 05:22:20 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 065/198] USB: cdc-acm: fix write and suspend race
+Date: Thu,  3 Jul 2014 10:18:28 +0100
+Message-Id: <1404379241-8590-66-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
+References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While this series is more correct from the DMA API point of view, it
-is also much heavier as it strictly disables the use of any cache on
-all user-space mapped BOs, and is also much more restricted in terms
-of which memory it can use.
+3.11.10.13 -stable review patch.  If anyone has any objections, please let me know.
 
-I have a v4 in the works that lets us use TTM for user-mapped objects
-and only falls back to using the DMA API for kernel-only objects
-(fences & PBs basically). Will push it shortly but wanted to signal
-this revision as deprecated in the meantime.
+------------------
 
-On Fri, Jun 27, 2014 at 8:22 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> v2 was doing some pretty nasty things with the DMA API, so I took a different
-> approach for this v3.
->
-> As suggested, this version uses ttm_dma_populate() to populate BOs. The reason
-> for doing this was that it would entitle us to using the DMA sync functions,
-> but since the memory returned is already coherent anyway, we do not even
-> need to call these functions anymore.
->
-> So this series has turned into 2 small patches:
->
-> - The first attempts to make it more obvious that Nouveau can use different
-> ways to populate TTs, and make it possible to choose which method to use from
-> a single place.
-> - The second leverages this work to select the DMA allocator to populate TTs
-> on ARM.
->
-> Doing this solves all our coherency problems with Nouveau on Tegra, and
-> hopefully makes the code easier to read in the process.
->
-> Alexandre Courbot (2):
->   drm/nouveau: cleanup TTM population logic
->   drm/nouveau: use DMA TT population method on ARM
->
->  drivers/gpu/drm/nouveau/nouveau_bo.c  | 63 ++++++++++++++++++-----------------
->  drivers/gpu/drm/nouveau/nouveau_drm.h | 11 ++++++
->  drivers/gpu/drm/nouveau/nouveau_ttm.c | 17 ++++++++++
->  3 files changed, 61 insertions(+), 30 deletions(-)
->
-> --
-> 2.0.0
->
+From: Johan Hovold <jhovold@gmail.com>
+
+commit 5a345c20c17d87099224a4be12e69e5bd7023dca upstream.
+
+Fix race between write() and suspend() which could lead to writes being
+dropped (or I/O while suspended) if the device is runtime suspended
+while a write request is being processed.
+
+Specifically, suspend() releases the write_lock after determining the
+device is idle but before incrementing the susp_count, thus leaving a
+window where a concurrent write() can submit an urb.
+
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/usb/class/cdc-acm.c | 15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index 8b8236fd24cf..6ebcd38dfb06 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1420,18 +1420,15 @@ static int acm_suspend(struct usb_interface *intf, pm_message_t message)
+ 	struct acm *acm = usb_get_intfdata(intf);
+ 	int cnt;
+ 
++	spin_lock_irq(&acm->read_lock);
++	spin_lock(&acm->write_lock);
+ 	if (PMSG_IS_AUTO(message)) {
+-		int b;
+-
+-		spin_lock_irq(&acm->write_lock);
+-		b = acm->transmitting;
+-		spin_unlock_irq(&acm->write_lock);
+-		if (b)
++		if (acm->transmitting) {
++			spin_unlock(&acm->write_lock);
++			spin_unlock_irq(&acm->read_lock);
+ 			return -EBUSY;
++		}
+ 	}
+-
+-	spin_lock_irq(&acm->read_lock);
+-	spin_lock(&acm->write_lock);
+ 	cnt = acm->susp_count++;
+ 	spin_unlock(&acm->write_lock);
+ 	spin_unlock_irq(&acm->read_lock);
+-- 
+1.9.1
+
