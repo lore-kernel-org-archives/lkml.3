@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324AbaGCCKG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 22:10:06 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:58315 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822AbaGCCKD (ORCPT
+	id S1754399AbaGCCLh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 22:11:37 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:41944 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754004AbaGCCLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 22:10:03 -0400
-Message-ID: <53B4BB71.7030500@linux.vnet.ibm.com>
-Date: Thu, 03 Jul 2014 10:09:53 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 2 Jul 2014 22:11:35 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Mike Galbraith <umgwanakikbuti@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@linaro.org>,
-        Paul Turner <pjt@google.com>, Mel Gorman <mgorman@suse.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: select 'idle' cfs_rq per task-group to prevent
- tg-internal imbalance
-References: <53A11A89.5000602@linux.vnet.ibm.com> <20140623094251.GS19860@laptop.programming.kicks-ass.net> <53A8F1DE.2060908@linux.vnet.ibm.com> <20140701082020.GL6758@twins.programming.kicks-ass.net> <53B273A2.5050500@linux.vnet.ibm.com> <20140701085658.GM6758@twins.programming.kicks-ass.net> <53B372C6.5000107@linux.vnet.ibm.com> <20140702124918.GE19379@twins.programming.kicks-ass.net>
-In-Reply-To: <20140702124918.GE19379@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070302-3568-0000-0000-000005CA441E
+In-Reply-To: <53B4A718.3050702@codeaurora.org>
+References: <cover.1404231535.git.viresh.kumar@linaro.org>
+	<b26946cc4573904cd1ef0212ad053a983b547c23.1404231535.git.viresh.kumar@linaro.org>
+	<53B4A718.3050702@codeaurora.org>
+Date: Thu, 3 Jul 2014 07:41:34 +0530
+Message-ID: <CAKohpomqE5dw2OJMjQmWswHmKXsKmyw0LtjtQopd0ttOA6=hhQ@mail.gmail.com>
+Subject: Re: [PATCH 09/14] cpufreq: cpu0: Move per-cluster initialization code
+ to ->init()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Shawn Guo <shawn.guo@linaro.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <arvind.chauhan@arm.com>, linux-arm-msm@vger.kernel.org,
+        Sachin Kamat <spk.linux@gmail.com>,
+        Thomas P Abraham <thomas.ab@samsung.com>, Nishanth Menon <nm@ti.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2014 08:49 PM, Peter Zijlstra wrote:
-> On Wed, Jul 02, 2014 at 10:47:34AM +0800, Michael wang wrote:
->> The opinion on features actually make me a little confusing... I used to
->> think the scheduler is willing on providing kinds of way to adapt itself
->> to different situation, and some features do help on that, make them
->> only a debug option make the scheduler more static to users, but I know
->> that's not what I should touched...
->>
->> Anyway, the problem is still there and seems like we have to adopt some
->> optional solution to address it, we'll still working and practice on
->> that, please let us know if you have any ideas we could help on ;-)
-> 
-> No, its very much not intended as a user knob to adapt.
-> 
-> The problem with that approach to scheduling is that one set of knobs
-> runs workload A, while another set of knobs runs workload B, but what
-> happens if you need to run both A and B on the same machine?
+On 3 July 2014 06:13, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> drivers/cpufreq/cpufreq-generic.c:313:13: warning: 'cdev' may be used
+> uninitialized in this function [-Wmaybe-uninitialized]
+>
+> So I guess we should initialize it to NULL?
 
-That's actually what make me think the scheduler should be able to adapt
-itself, our performance testing mostly based on static kinds of
-workload, and that's too far away from the real world.
+I somehow didn't got this, I checked again. I have fixed it this way:
 
-We tested A, we tested B, we tested A + B, but what if C joined? what if
-folks only like A, don't care B?
+diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+index e6dc8ea..05a18bd 100644
+--- a/drivers/cpufreq/cpufreq-cpu0.c
++++ b/drivers/cpufreq/cpufreq-cpu0.c
+@@ -240,10 +240,11 @@ static int cpu0_cpufreq_init(struct
+cpufreq_policy *policy)
+                        dev_err(cpu_dev,
+                                "running cpufreq without cooling device: %ld\n",
+                                PTR_ERR(cdev));
++               else
++                       priv->cdev = cdev;
+        }
+        of_node_put(np);
 
-The key point here is, scheduler still can't promise that all kinds of
-situation is taking good care under it's static policy... it just
-running there, won't get any feedback from user, thinking it's doing the
-right thing, but sometimes not from admin's view.
-
-> 
-> So optional things and knobs are a complete fail and will not happen.
-
-But how could we promise that our static policy is the best?
-
-For example the 'sysctl_sched_min_granularity', why it should be 750k?
-is that the best on any kinds of platform to any kinds of workloads at
-any time?
-
-Regards,
-Michael Wang
-
-> 
-> Clearly I need to go take out all these things because people don't seem
-> to know this and SCHED_DEBUG isn't a big enough hint. Tedious.
-> 
-
+-       priv->cdev = cdev;
+        priv->cpu_dev = cpu_dev;
+        priv->cpu_reg = cpu_reg;
+        policy->driver_data = priv;
