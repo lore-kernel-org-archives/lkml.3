@@ -1,182 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932073AbaGCCri (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 22:47:38 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:60979 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753278AbaGCCrg convert rfc822-to-8bit (ORCPT
+	id S1754560AbaGCCyF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 22:54:05 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:39244 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaGCCyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 22:47:36 -0400
+	Wed, 2 Jul 2014 22:54:02 -0400
+Date: Wed, 2 Jul 2014 19:53:54 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
+ wakeups
+Message-ID: <20140703025354.GA16643@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140627142038.GA22942@linux.vnet.ibm.com>
+ <20140702123412.GD19379@twins.programming.kicks-ass.net>
+ <53B40D2B.7090406@redhat.com>
+ <20140702165556.GR4603@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1403606121-6368-8-git-send-email-antoine.tenart@free-electrons.com>
-References: <1403606121-6368-1-git-send-email-antoine.tenart@free-electrons.com>
-	<1403606121-6368-8-git-send-email-antoine.tenart@free-electrons.com>
-Date: Thu, 3 Jul 2014 08:17:34 +0530
-X-Google-Sender-Auth: t5nRMjvrnOk5JIVE-A43syxqDdc
-Message-ID: <CAGnW=BbA3gLdSv8AKkD_ysnYAaN0KoCdVW+wxWPB9zzGCh9+jQ@mail.gmail.com>
-Subject: Re: [PATCH v2 07/12] usb: chipidea: add a generic driver
-From: punnaiah choudary kalluri <punnaia@xilinx.com>
-To: =?UTF-8?Q?Antoine_T=C3=A9nart?= <antoine.tenart@free-electrons.com>
-Cc: sebastian.hesselbarth@gmail.com, Peter Chen <Peter.Chen@freescale.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140702165556.GR4603@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070302-7164-0000-0000-000002DF02BD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since its a generic driver, support for configuring the dma_mask using
-dma_coerce_mask_and_coherent would be good.
+On Wed, Jul 02, 2014 at 09:55:56AM -0700, Paul E. McKenney wrote:
+> On Wed, Jul 02, 2014 at 09:46:19AM -0400, Rik van Riel wrote:
+> > -----BEGIN PGP SIGNED MESSAGE-----
+> > Hash: SHA1
+> > 
+> > On 07/02/2014 08:34 AM, Peter Zijlstra wrote:
+> > > On Fri, Jun 27, 2014 at 07:20:38AM -0700, Paul E. McKenney wrote:
+> > >> An 80-CPU system with a context-switch-heavy workload can require
+> > >> so many NOCB kthread wakeups that the RCU grace-period kthreads
+> > >> spend several tens of percent of a CPU just awakening things.
+> > >> This clearly will not scale well: If you add enough CPUs, the RCU
+> > >> grace-period kthreads would get behind, increasing grace-period
+> > >> latency.
+> > >> 
+> > >> To avoid this problem, this commit divides the NOCB kthreads into
+> > >> leaders and followers, where the grace-period kthreads awaken the
+> > >> leaders each of whom in turn awakens its followers.  By default,
+> > >> the number of groups of kthreads is the square root of the number
+> > >> of CPUs, but this default may be overridden using the
+> > >> rcutree.rcu_nocb_leader_stride boot parameter. This reduces the
+> > >> number of wakeups done per grace period by the RCU grace-period
+> > >> kthread by the square root of the number of CPUs, but of course
+> > >> by shifting those wakeups to the leaders.  In addition, because 
+> > >> the leaders do grace periods on behalf of their respective
+> > >> followers, the number of wakeups of the followers decreases by up
+> > >> to a factor of two. Instead of being awakened once when new
+> > >> callbacks arrive and again at the end of the grace period, the
+> > >> followers are awakened only at the end of the grace period.
+> > >> 
+> > >> For a numerical example, in a 4096-CPU system, the grace-period
+> > >> kthread would awaken 64 leaders, each of which would awaken its
+> > >> 63 followers at the end of the grace period.  This compares
+> > >> favorably with the 79 wakeups for the grace-period kthread on an
+> > >> 80-CPU system.
+> > > 
+> > > Urgh, how about we kill the entire nocb nonsense and try again?
+> > > This is getting quite rediculous.
+> > 
+> > Some observations.
+> > 
+> > First, the rcuos/N threads are NOT bound to CPU N at all, but are
+> > free to float through the system.
+> 
+> I could easily bind each to its home CPU by default for CONFIG_NO_HZ_FULL=n.
+> For CONFIG_NO_HZ_FULL=y, they get bound to the non-nohz_full= CPUs.
+> 
+> > Second, the number of RCU callbacks at the end of each grace period
+> > is quite likely to be small most of the time.
+> > 
+> > This suggests that on a system with N CPUs, it may be perfectly
+> > sufficient to have a much smaller number of rcuos threads.
+> > 
+> > One thread can probably handle the RCU callbacks for as many as
+> > 16, or even 64 CPUs...
+> 
+> In many cases, one thread could handle the RCU callbacks for way more
+> than that.  In other cases, a single CPU could keep a single rcuo kthread
+> quite busy.  So something dynamic ends up being required.
+> 
+> But I suspect that the real solution here is to adjust the Kconfig setup
+> between NO_HZ_FULL and RCU_NOCB_CPU_ALL so that you have to specify boot
+> parameters to get callback offloading on systems built with NO_HZ_FULL.
+> Then add some boot-time code so that any CPU that has nohz_full= is
+> forced to also have rcu_nocbs= set.  This would have the good effect
+> of applying callback offloading only to those workloads for which it
+> was specifically designed, but allowing those workloads to gain the
+> latency-reduction benefits of callback offloading.
+> 
+> I do freely confess that I was hoping that callback offloading might one
+> day completely replace RCU_SOFTIRQ, but that hope now appears to be at
+> best premature.
+> 
+> Something like the attached patch.  Untested, probably does not even build.
 
-Regards,
-Punnaiah
+Against all odds, it builds and passes moderate rcutorture testing.
 
-On Tue, Jun 24, 2014 at 4:05 PM, Antoine Ténart
-<antoine.tenart@free-electrons.com> wrote:
-> Add a generic ChipIdea driver, with optional PHY and clock, to support
-> ChipIdea controllers that doesn't need specific functions.
->
-> Needed for the Marvell Berlin SoCs SUB controllers.
->
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> ---
->  drivers/usb/chipidea/Makefile          |   1 +
->  drivers/usb/chipidea/ci_hdrc_generic.c | 108 +++++++++++++++++++++++++++++++++
->  2 files changed, 109 insertions(+)
->  create mode 100644 drivers/usb/chipidea/ci_hdrc_generic.c
->
-> diff --git a/drivers/usb/chipidea/Makefile b/drivers/usb/chipidea/Makefile
-> index 2f099c7df7b5..c705f0fe7a00 100644
-> --- a/drivers/usb/chipidea/Makefile
-> +++ b/drivers/usb/chipidea/Makefile
-> @@ -20,4 +20,5 @@ endif
->
->  ifneq ($(CONFIG_OF),)
->         obj-$(CONFIG_USB_CHIPIDEA)      += usbmisc_imx.o ci_hdrc_imx.o
-> +       obj-$(CONFIG_USB_CHIPIDEA)      += ci_hdrc_generic.o
->  endif
-> diff --git a/drivers/usb/chipidea/ci_hdrc_generic.c b/drivers/usb/chipidea/ci_hdrc_generic.c
-> new file mode 100644
-> index 000000000000..27520710a1f7
-> --- /dev/null
-> +++ b/drivers/usb/chipidea/ci_hdrc_generic.c
-> @@ -0,0 +1,108 @@
-> +/*
-> + * Copyright (C) 2014 Marvell Technology Group Ltd.
-> + *
-> + * Antoine Ténart <antoine.tenart@free-electrons.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2. This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/usb/chipidea.h>
-> +#include <linux/usb/hcd.h>
-> +#include <linux/usb/ulpi.h>
-> +
-> +#include "ci.h"
-> +
-> +struct ci_hdrc_generic_priv {
-> +       struct platform_device  *ci_pdev;
-> +       struct clk              *clk;
-> +};
-> +
-> +static int ci_hdrc_generic_probe(struct platform_device *pdev)
-> +{
-> +       struct device *dev = &pdev->dev;
-> +       struct ci_hdrc_generic_priv *priv;
-> +       struct ci_hdrc_platform_data ci_pdata = {
-> +               .name           = "ci_hdrc",
-> +               .capoffset      = DEF_CAPOFFSET,
-> +               .flags          = CI_HDRC_REQUIRE_TRANSCEIVER |
-> +                                 CI_HDRC_DISABLE_STREAMING,
-> +       };
-> +       int ret;
-> +
-> +       priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
-> +       if (!priv)
-> +               return -ENOMEM;
-> +
-> +       priv->clk = devm_clk_get(dev, NULL);
-> +       if (!IS_ERR(priv->clk)) {
-> +               ret = clk_prepare_enable(priv->clk);
-> +               if (ret) {
-> +                       dev_err(dev, "failed to enable the clock: %d\n", ret);
-> +                       return ret;
-> +               }
-> +       }
-> +
-> +       ci_pdata.phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
-> +       if (IS_ERR(ci_pdata.phy))
-> +               /* PHY is optional */
-> +               ci_pdata.phy = NULL;
-> +
-> +       priv->ci_pdev = ci_hdrc_add_device(dev, pdev->resource,
-> +                                    pdev->num_resources, &ci_pdata);
-> +       if (IS_ERR(priv->ci_pdev)) {
-> +               ret = PTR_ERR(priv->ci_pdev);
-> +               if (ret != -EPROBE_DEFER)
-> +                       dev_err(dev,
-> +                               "failed to register ci_hdrc platform device: %d\n",
-> +                               ret);
-> +               goto clk_err;
-> +       }
-> +
-> +       platform_set_drvdata(pdev, priv);
-> +
-> +       pm_runtime_no_callbacks(dev);
-> +       pm_runtime_enable(dev);
-> +
-> +       return 0;
-> +
-> +clk_err:
-> +       clk_disable_unprepare(priv->clk);
-> +       return ret;
-> +}
-> +
-> +static int ci_hdrc_generic_remove(struct platform_device *pdev)
-> +{
-> +       struct ci_hdrc_generic_priv *priv = platform_get_drvdata(pdev);
-> +
-> +       pm_runtime_disable(&pdev->dev);
-> +       ci_hdrc_remove_device(priv->ci_pdev);
-> +       clk_disable_unprepare(priv->clk);
-> +
-> +       return 0;
-> +}
-> +
-> +static const struct of_device_id ci_hdrc_generic_of_match[] = {
-> +       { .compatible = "chipidea-usb" },
-> +       { }
-> +};
-> +MODULE_DEVICE_TABLE(of, ci_hdrc_generic_of_match);
-> +
-> +static struct platform_driver ci_hdrc_generic_driver = {
-> +       .probe  = ci_hdrc_generic_probe,
-> +       .remove = ci_hdrc_generic_remove,
-> +       .driver = {
-> +               .name           = "chipidea-usb",
-> +               .owner          = THIS_MODULE,
-> +               .of_match_table = ci_hdrc_generic_of_match,
-> +       },
-> +};
-> +module_platform_driver(ci_hdrc_generic_driver);
-> +
-> +MODULE_DESCRIPTION("Generic ChipIdea HDRC USB binding");
-> +MODULE_AUTHOR("Antoine Ténart <antoine.tenart@free-electrons.com>");
-> +MODULE_LICENSE("GPL");
-> --
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Although this doesn't satisfy the desire to wean RCU of softirq, it does
+allow NO_HZ_FULL kernels to maintain better compatibility with earlier
+kernel versions, which appears to be more important for the time being.
+
+							Thanx, Paul
+
+> ------------------------------------------------------------------------
+> 
+> rcu: Don't offload callbacks unless specifically requested
+> 
+> <more here soon>
+> 
+> Not-yet-signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 9d76b99af1b9..9332d33346ac 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -737,7 +737,7 @@ choice
+>  
+>  config RCU_NOCB_CPU_NONE
+>  	bool "No build_forced no-CBs CPUs"
+> -	depends on RCU_NOCB_CPU && !NO_HZ_FULL
+> +	depends on RCU_NOCB_CPU && !NO_HZ_FULL_ALL
+>  	help
+>  	  This option does not force any of the CPUs to be no-CBs CPUs.
+>  	  Only CPUs designated by the rcu_nocbs= boot parameter will be
+> @@ -751,7 +751,7 @@ config RCU_NOCB_CPU_NONE
+>  
+>  config RCU_NOCB_CPU_ZERO
+>  	bool "CPU 0 is a build_forced no-CBs CPU"
+> -	depends on RCU_NOCB_CPU && !NO_HZ_FULL
+> +	depends on RCU_NOCB_CPU && !NO_HZ_FULL_ALL
+>  	help
+>  	  This option forces CPU 0 to be a no-CBs CPU, so that its RCU
+>  	  callbacks are invoked by a per-CPU kthread whose name begins
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index 58fbb8204d15..3b150bfcce3d 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -2473,6 +2473,9 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+>  
+>  	if (rcu_nocb_mask == NULL)
+>  		return;
+> +#ifdef CONFIG_NO_HZ_FULL
+> +	cpumask_or(rcu_nocb_mask, rcu_nocb_mask, tick_nohz_full_mask);
+> +#endif /* #ifdef CONFIG_NO_HZ_FULL */
+>  	if (ls == -1) {
+>  		ls = int_sqrt(nr_cpu_ids);
+>  		rcu_nocb_leader_stride = ls;
+
