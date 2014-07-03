@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932277AbaGCNLC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 09:11:02 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:32942 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932104AbaGCNK6 (ORCPT
+	id S964825AbaGCNLH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 09:11:07 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:55341 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932282AbaGCNLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 09:10:58 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-51-53b5565f32fc
+	Thu, 3 Jul 2014 09:11:03 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-67-53b556658a96
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: Inki Dae <inki.dae@samsung.com>
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -18,182 +18,76 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org (open list),
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
-Subject: [PATCH 03/12] drm/exynos/ipp: remove struct exynos_drm_ipp_private
-Date: Thu, 03 Jul 2014 15:10:28 +0200
-Message-id: <1404393037-17299-4-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH 06/12] drm/exynos/ipp: remove incorrect checks of
+ list_first_entry result
+Date: Thu, 03 Jul 2014 15:10:31 +0200
+Message-id: <1404393037-17299-7-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1404393037-17299-1-git-send-email-a.hajda@samsung.com>
 References: <1404393037-17299-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOJMWRmVeSWpSXmKPExsVy+t/xK7rxYVuDDVYv1rW4te4cq8WVr+/Z
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCJMWRmVeSWpSXmKPExsVy+t/xK7qpYVuDDVbP1LK4te4cq8WVr+/Z
 	LCbdn8Bi8eLeRRaLs01v2C0u75rDZjHj/D4mi7VH7rJbzJj8ks2B0+N+93Emj74tqxg9Pm+S
-	C2CO4rJJSc3JLEst0rdL4MqYfb+FpWCOfsXeU/OYGxgvqHcxcnJICJhIfOm6yARhi0lcuLee
-	rYuRi0NIYCmjxKTrZ1kgnD4miftfz4BVsQloSvzdfJMNxBYRUJZYta+dHaSIWeAjk8SVpW+Y
-	QRLCAt4Sr56fYQexWQRUJW6eXA5m8wo4S/S+nsMMsU5O4uSxyawgNqeAi8ShmUsZQWwhoJq1
-	S+ayTWDkXcDIsIpRNLU0uaA4KT3XSK84Mbe4NC9dLzk/dxMjJLC+7mBceszqEKMAB6MSD+8L
-	/U3BQqyJZcWVuYcYJTiYlUR4K4K3BgvxpiRWVqUW5ccXleakFh9iZOLglGpgdHNnDtkXeGBG
-	cMq7uYtmXT5+12mliPT/DYkL4uXSym+sFPH56b3cKLpVvue2ytHQQCdzJZbj6ptWss7py1y6
-	Yie7Yv1dHdXtLxabqe28L/bhRd8+3i+cvCyHfzNZLj4Z8eRlQPnlZ4Wy23baBp6KT398VWtr
-	3ZbMA2suv5a8e9zX4uI/lk92lkosxRmJhlrMRcWJADf4RvsKAgAA
+	C2CO4rJJSc3JLEst0rdL4Mq433GDveA4T8XU+/oNjJO4uhg5OCQETCSWNEl0MXICmWISF+6t
+	Z+ti5OIQEljKKPGgfy8zhNPHJHHm/G9GkCo2AU2Jv5tvsoHYIgLKEqv2tbODFDELfGSSuLL0
+	DTPIVGGBaInlvZIgNSwCqhJbP71hB7F5BZwlzh+5zwixTU7i5LHJrCA2p4CLxKGZS8HiQkA1
+	a5fMZZvAyLuAkWEVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkhIfd3BuPSY1SFGAQ5GJR7e
+	F/qbgoVYE8uKK3MPMUpwMCuJ8FYEbw0W4k1JrKxKLcqPLyrNSS0+xMjEwSnVwDhZ8MHV9jt2
+	QmLHCmMmqF9KMUre1pH4qXXDWo7iWzleDZOe5vnrirDYtN46dddkh6pX5pugZGvDykLFNXaH
+	XhVYcRg3nZfLtzm7OVn2xMdjebrHJkR6zVmpNWHnNDux0ksH0ozjFp0X+vlYcEGn/LvDzDk/
+	rD+FVPy02bth7cG1m/3EXtkJeyqxFGckGmoxFxUnAgAQxj+DBwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct exynos_drm_ipp_private contains only one pointer so all occurrences
-of the struct can be replaced by the pointer itself.
+list_first_entry does not return NULL on empty list so this check
+does not make sense. Moreover there is already code which prevents calling
+list_first_entry on empty lists.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_drv.h |  6 +-----
- drivers/gpu/drm/exynos/exynos_drm_ipp.c | 30 +++++++++---------------------
- drivers/gpu/drm/exynos/exynos_drm_ipp.h |  4 ++--
- 3 files changed, 12 insertions(+), 28 deletions(-)
+ drivers/gpu/drm/exynos/exynos_drm_ipp.c | 15 ---------------
+ 1 file changed, 15 deletions(-)
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.h b/drivers/gpu/drm/exynos/exynos_drm_drv.h
-index 651f37a..5f027f2 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_drv.h
-+++ b/drivers/gpu/drm/exynos/exynos_drm_drv.h
-@@ -236,13 +236,9 @@ struct exynos_drm_g2d_private {
- 	struct list_head	userptr_list;
- };
- 
--struct exynos_drm_ipp_private {
--	struct device	*dev;
--};
--
- struct drm_exynos_file_private {
- 	struct exynos_drm_g2d_private	*g2d_priv;
--	struct exynos_drm_ipp_private	*ipp_priv;
-+	struct device			*ipp_dev;
- 	struct file			*anon_filp;
- };
- 
 diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-index 5fb89c02..34d185c 100644
+index f84ef8a..89ff7e3 100644
 --- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
 +++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-@@ -308,8 +308,7 @@ int exynos_drm_ipp_get_property(struct drm_device *drm_dev, void *data,
- 		struct drm_file *file)
- {
- 	struct drm_exynos_file_private *file_priv = file->driver_priv;
--	struct exynos_drm_ipp_private *priv = file_priv->ipp_priv;
--	struct device *dev = priv->dev;
-+	struct device *dev = file_priv->ipp_dev;
- 	struct ipp_context *ctx = get_ipp_context(dev);
- 	struct drm_exynos_ipp_prop_list *prop_list = data;
- 	struct exynos_drm_ippdrv *ippdrv;
-@@ -441,8 +440,7 @@ int exynos_drm_ipp_set_property(struct drm_device *drm_dev, void *data,
- 		struct drm_file *file)
- {
- 	struct drm_exynos_file_private *file_priv = file->driver_priv;
--	struct exynos_drm_ipp_private *priv = file_priv->ipp_priv;
--	struct device *dev = priv->dev;
-+	struct device *dev = file_priv->ipp_dev;
- 	struct ipp_context *ctx = get_ipp_context(dev);
- 	struct drm_exynos_ipp_property *property = data;
- 	struct exynos_drm_ippdrv *ippdrv;
-@@ -501,7 +499,7 @@ int exynos_drm_ipp_set_property(struct drm_device *drm_dev, void *data,
- 		property->prop_id, property->cmd, (int)ippdrv);
+@@ -1277,11 +1277,6 @@ static int ipp_start_property(struct exynos_drm_ippdrv *ippdrv,
  
- 	/* stored property information and ippdrv in private data */
--	c_node->priv = priv;
-+	c_node->dev = dev;
- 	c_node->property = *property;
- 	c_node->state = IPP_STATE_IDLE;
+ 			m_node = list_first_entry(head,
+ 				struct drm_exynos_ipp_mem_node, list);
+-			if (!m_node) {
+-				DRM_ERROR("failed to get node.\n");
+-				ret = -EFAULT;
+-				goto err_unlock;
+-			}
  
-@@ -929,8 +927,7 @@ int exynos_drm_ipp_queue_buf(struct drm_device *drm_dev, void *data,
- 		struct drm_file *file)
- {
- 	struct drm_exynos_file_private *file_priv = file->driver_priv;
--	struct exynos_drm_ipp_private *priv = file_priv->ipp_priv;
--	struct device *dev = priv->dev;
-+	struct device *dev = file_priv->ipp_dev;
- 	struct ipp_context *ctx = get_ipp_context(dev);
- 	struct drm_exynos_ipp_queue_buf *qbuf = data;
- 	struct drm_exynos_ipp_cmd_node *c_node;
-@@ -1061,9 +1058,8 @@ int exynos_drm_ipp_cmd_ctrl(struct drm_device *drm_dev, void *data,
- 		struct drm_file *file)
- {
- 	struct drm_exynos_file_private *file_priv = file->driver_priv;
--	struct exynos_drm_ipp_private *priv = file_priv->ipp_priv;
- 	struct exynos_drm_ippdrv *ippdrv = NULL;
--	struct device *dev = priv->dev;
-+	struct device *dev = file_priv->ipp_dev;
- 	struct ipp_context *ctx = get_ipp_context(dev);
- 	struct drm_exynos_ipp_cmd_ctrl *cmd_ctrl = data;
- 	struct drm_exynos_ipp_cmd_work *cmd_work;
-@@ -1775,16 +1771,10 @@ static int ipp_subdrv_open(struct drm_device *drm_dev, struct device *dev,
- 		struct drm_file *file)
- {
- 	struct drm_exynos_file_private *file_priv = file->driver_priv;
--	struct exynos_drm_ipp_private *priv;
--
--	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
--	if (!priv)
--		return -ENOMEM;
--	priv->dev = dev;
--	file_priv->ipp_priv = priv;
+ 			DRM_DEBUG_KMS("m_node[0x%x]\n", (int)m_node);
  
-+	file_priv->ipp_dev = dev;
+@@ -1539,11 +1534,6 @@ static int ipp_send_event(struct exynos_drm_ippdrv *ippdrv,
  
--	DRM_DEBUG_KMS("done priv[0x%x]\n", (int)priv);
-+	DRM_DEBUG_KMS("done priv[0x%x]\n", (int)dev);
+ 			m_node = list_first_entry(head,
+ 				struct drm_exynos_ipp_mem_node, list);
+-			if (!m_node) {
+-				DRM_ERROR("empty memory node.\n");
+-				ret = -ENOMEM;
+-				goto err_mem_unlock;
+-			}
  
- 	return 0;
- }
-@@ -1793,13 +1783,12 @@ static void ipp_subdrv_close(struct drm_device *drm_dev, struct device *dev,
- 		struct drm_file *file)
- {
- 	struct drm_exynos_file_private *file_priv = file->driver_priv;
--	struct exynos_drm_ipp_private *priv = file_priv->ipp_priv;
- 	struct exynos_drm_ippdrv *ippdrv = NULL;
- 	struct ipp_context *ctx = get_ipp_context(dev);
- 	struct drm_exynos_ipp_cmd_node *c_node, *tc_node;
- 	int count = 0;
+ 			tbuf_id[i] = m_node->buf_id;
+ 			DRM_DEBUG_KMS("%s buf_id[%d]\n",
+@@ -1580,11 +1570,6 @@ static int ipp_send_event(struct exynos_drm_ippdrv *ippdrv,
  
--	DRM_DEBUG_KMS("for priv[0x%x]\n", (int)priv);
-+	DRM_DEBUG_KMS("for priv[0x%x]\n", (int)file_priv->ipp_dev);
+ 		m_node = list_first_entry(head,
+ 			struct drm_exynos_ipp_mem_node, list);
+-		if (!m_node) {
+-			DRM_ERROR("empty memory node.\n");
+-			ret = -ENOMEM;
+-			goto err_mem_unlock;
+-		}
  
- 	list_for_each_entry(ippdrv, &exynos_drm_ippdrv_list, drv_list) {
- 		mutex_lock(&ippdrv->cmd_lock);
-@@ -1808,7 +1797,7 @@ static void ipp_subdrv_close(struct drm_device *drm_dev, struct device *dev,
- 			DRM_DEBUG_KMS("count[%d]ippdrv[0x%x]\n",
- 				count++, (int)ippdrv);
+ 		tbuf_id[EXYNOS_DRM_OPS_SRC] = m_node->buf_id;
  
--			if (c_node->priv == priv) {
-+			if (c_node->dev == file_priv->ipp_dev) {
- 				/*
- 				 * userland goto unnormal state. process killed.
- 				 * and close the file.
-@@ -1830,7 +1819,6 @@ static void ipp_subdrv_close(struct drm_device *drm_dev, struct device *dev,
- 		mutex_unlock(&ippdrv->cmd_lock);
- 	}
- 
--	kfree(priv);
- 	return;
- }
- 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.h b/drivers/gpu/drm/exynos/exynos_drm_ipp.h
-index 7aaeaae..6f48d62 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_ipp.h
-+++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.h
-@@ -48,7 +48,7 @@ struct drm_exynos_ipp_cmd_work {
- /*
-  * A structure of command node.
-  *
-- * @priv: IPP private information.
-+ * @dev: IPP device.
-  * @list: list head to command queue information.
-  * @event_list: list head of event.
-  * @mem_list: list head to source,destination memory queue information.
-@@ -64,7 +64,7 @@ struct drm_exynos_ipp_cmd_work {
-  * @state: state of command node.
-  */
- struct drm_exynos_ipp_cmd_node {
--	struct exynos_drm_ipp_private *priv;
-+	struct device		*dev;
- 	struct list_head	list;
- 	struct list_head	event_list;
- 	struct list_head	mem_list[EXYNOS_DRM_OPS_MAX];
 -- 
 1.9.1
 
