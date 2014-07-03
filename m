@@ -1,40 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759566AbaGCTP1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 15:15:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47047 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192AbaGCTPZ (ORCPT
+	id S1759614AbaGCTQM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 15:16:12 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:37559 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759590AbaGCTQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 15:15:25 -0400
-Date: Thu, 3 Jul 2014 12:19:37 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Konstantin Ryabitsev <mricon@kernel.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [PATCH kernel.org] Add 3.14 to list of longterm stable kernels
-Message-ID: <20140703191937.GA26066@kroah.com>
+	Thu, 3 Jul 2014 15:16:05 -0400
+Date: Thu, 3 Jul 2014 21:15:57 +0200
+From: Pawel Lebioda <pawel.lebioda89@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Julian Andres Klode <jak@jak-linux.org>, Marc Dietrich <marvin24@gmx.de>,
+        ac100@lists.launchpad.net, linux-tegra@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: nvec: insert blank lines after declarations
+Message-ID: <20140703191554.GA12029@ThinkPad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm going to be maintaining the 3.14 kernel as a "longterm" kernel for
-the next two years, so mention that on the kernel.org site.
+Hi,
 
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+This patch fixes coding style warnings reported by checkpatch.pl:
+"Missing a blank line after declarations".
 
-diff --git a/content/releases.rst b/content/releases.rst
-index d25137e142cb..f3b0f7b92713 100644
---- a/content/releases.rst
-+++ b/content/releases.rst
-@@ -40,6 +40,7 @@ Longterm
-     ======== ==================== ============ ==================
-     Version  Maintainer           Released     Projected EOL
-     ======== ==================== ============ ==================
-+    3.14     Greg Kroah-Hartman   2014-03-30   August 2016
-     3.12     Jiri Slaby           2013-11-03   2016
-     3.10     Greg Kroah-Hartman   2013-06-30   Sep, 2015
-     3.4      Greg Kroah-Hartman   2012-05-20   Oct, 2014
+Regards
+Pawel Lebioda
+
+Signed-off-by: Pawel Lebioda <pawel.lebioda89@gmail.com>
+ drivers/staging/nvec/nvec_paz00.c | 1 +
+ drivers/staging/nvec/nvec_power.c | 1 +
+ drivers/staging/nvec/nvec_ps2.c   | 2 ++
+ 3 files changed, 4 insertions(+)
+
+diff --git a/drivers/staging/nvec/nvec_paz00.c b/drivers/staging/nvec/nvec_paz00.c
+index 934b796..e2e675a 100644
+--- a/drivers/staging/nvec/nvec_paz00.c
++++ b/drivers/staging/nvec/nvec_paz00.c
+@@ -35,6 +35,7 @@ static void nvec_led_brightness_set(struct led_classdev *led_cdev,
+ {
+ 	struct nvec_led *led = to_nvec_led(led_cdev);
+ 	unsigned char buf[] = NVEC_LED_REQ;
++
+ 	buf[4] = value;
+ 
+ 	nvec_write_async(led->nvec, buf, sizeof(buf));
+diff --git a/drivers/staging/nvec/nvec_power.c b/drivers/staging/nvec/nvec_power.c
+index aacfcd6..6446e15 100644
+--- a/drivers/staging/nvec/nvec_power.c
++++ b/drivers/staging/nvec/nvec_power.c
+@@ -226,6 +226,7 @@ static int nvec_power_get_property(struct power_supply *psy,
+ 				   union power_supply_propval *val)
+ {
+ 	struct nvec_power *power = dev_get_drvdata(psy->dev->parent);
++
+ 	switch (psp) {
+ 	case POWER_SUPPLY_PROP_ONLINE:
+ 		val->intval = power->on;
+diff --git a/drivers/staging/nvec/nvec_ps2.c b/drivers/staging/nvec/nvec_ps2.c
+index 45b2f13..f56f1db 100644
+--- a/drivers/staging/nvec/nvec_ps2.c
++++ b/drivers/staging/nvec/nvec_ps2.c
+@@ -53,12 +53,14 @@ static struct nvec_ps2 ps2_dev;
+ static int ps2_startstreaming(struct serio *ser_dev)
+ {
+ 	unsigned char buf[] = { NVEC_PS2, AUTO_RECEIVE_N, PACKET_SIZE };
++
+ 	return nvec_write_async(ps2_dev.nvec, buf, sizeof(buf));
+ }
+ 
+ static void ps2_stopstreaming(struct serio *ser_dev)
+ {
+ 	unsigned char buf[] = { NVEC_PS2, CANCEL_AUTO_RECEIVE };
++
+ 	nvec_write_async(ps2_dev.nvec, buf, sizeof(buf));
+ }
+ 
