@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030919AbaGCJ4Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:56:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52034 "EHLO
+	id S1030486AbaGCJ4X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:56:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52035 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964955AbaGCJXP (ORCPT
+	with ESMTP id S965004AbaGCJXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Jul 2014 05:23:15 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bart Van Assche <bvanassche@acm.org>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: Michael Ellerman <mpe@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 101/198] IB/umad: Fix use-after-free on close
-Date: Thu,  3 Jul 2014 10:19:04 +0100
-Message-Id: <1404379241-8590-102-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 100/198] powerpc/mm: Check paca psize is up to date for huge mappings
+Date: Thu,  3 Jul 2014 10:19:03 +0100
+Message-Id: <1404379241-8590-101-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,167 +28,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Michael Ellerman <mpe@ellerman.id.au>
 
-commit 60e1751cb52cc6d1ae04b6bd3c2b96e770b5823f upstream.
+commit 09567e7fd44291bfc08accfdd67ad8f467842332 upstream.
 
-Avoid that closing /dev/infiniband/umad<n> or /dev/infiniband/issm<n>
-triggers a use-after-free.  __fput() invokes f_op->release() before it
-invokes cdev_put().  Make sure that the ib_umad_device structure is
-freed by the cdev_put() call instead of f_op->release().  This avoids
-that changing the port mode from IB into Ethernet and back to IB
-followed by restarting opensmd triggers the following kernel oops:
+We have a bug in our hugepage handling which exhibits as an infinite
+loop of hash faults. If the fault is being taken in the kernel it will
+typically trigger the softlockup detector, or the RCU stall detector.
 
-    general protection fault: 0000 [#1] PREEMPT SMP
-    RIP: 0010:[<ffffffff810cc65c>]  [<ffffffff810cc65c>] module_put+0x2c/0x170
-    Call Trace:
-     [<ffffffff81190f20>] cdev_put+0x20/0x30
-     [<ffffffff8118e2ce>] __fput+0x1ae/0x1f0
-     [<ffffffff8118e35e>] ____fput+0xe/0x10
-     [<ffffffff810723bc>] task_work_run+0xac/0xe0
-     [<ffffffff81002a9f>] do_notify_resume+0x9f/0xc0
-     [<ffffffff814b8398>] int_signal+0x12/0x17
+The bug is as follows:
 
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=75051
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Yann Droneaud <ydroneaud@opteya.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+ 1. mmap(0xa0000000, ..., MAP_FIXED | MAP_HUGE_TLB | MAP_ANONYMOUS ..)
+ 2. Slice code converts the slice psize to 16M.
+ 3. The code on lines 539-540 of slice.c in slice_get_unmapped_area()
+    synchronises the mm->context with the paca->context. So the paca slice
+    mask is updated to include the 16M slice.
+ 3. Either:
+    * mmap() fails because there are no huge pages available.
+    * mmap() succeeds and the mapping is then munmapped.
+    In both cases the slice psize remains at 16M in both the paca & mm.
+ 4. mmap(0xa0000000, ..., MAP_FIXED | MAP_ANONYMOUS ..)
+ 5. The slice psize is converted back to 64K. Because of the check on line 539
+    of slice.c we DO NOT update the paca->context. The paca slice mask is now
+    out of sync with the mm slice mask.
+ 6. User/kernel accesses 0xa0000000.
+ 7. The SLB miss handler slb_allocate_realmode() **uses the paca slice mask**
+    to create an SLB entry and inserts it in the SLB.
+18. With the 16M SLB entry in place the hardware does a hash lookup, no entry
+    is found so a data access exception is generated.
+19. The data access handler calls do_page_fault() -> handle_mm_fault().
+10. __handle_mm_fault() creates a THP mapping with do_huge_pmd_anonymous_page().
+11. The hardware retries the access, there is still nothing in the hash table
+    so once again a data access exception is generated.
+12. hash_page() calls into __hash_page_thp() and inserts a mapping in the
+    hash. Although the THP mapping maps 16M the hashing is done using 64K
+    as the segment page size.
+13. hash_page() returns immediately after calling __hash_page_thp(), skipping
+    over the code at line 1125. Resulting in the mismatch between the
+    paca->context and mm->context not being detected.
+14. The hardware retries the access, the hash it generates using the 16M
+    SLB entry does NOT match the hash we inserted.
+15. We take another data access and go into __hash_page_thp().
+16. We see a valid entry in the hpte_slot_array and so we call updatepp()
+    which succeeds.
+17. Goto 14.
+
+We could fix this in two ways. The first would be to remove or modify
+the check on line 539 of slice.c.
+
+The second option is to cause the check of paca psize in hash_page() on
+line 1125 to also be done for THP pages.
+
+We prefer the latter, because the check & update of the paca psize is
+not done until we know it's necessary. It's also done only on the
+current cpu, so we don't need to IPI all other cpus.
+
+Without further rearranging the code, the simplest fix is to pull out
+the code that checks paca psize and call it in two places. Firstly for
+THP/hugetlb, and secondly for other mappings as before.
+
+Thanks to Dave Jones for trinity, which originally found this bug.
+
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/core/user_mad.c | 30 +++++++++++++++++++-----------
- 1 file changed, 19 insertions(+), 11 deletions(-)
+ arch/powerpc/mm/hash_utils_64.c | 31 ++++++++++++++++++++-----------
+ 1 file changed, 20 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/infiniband/core/user_mad.c b/drivers/infiniband/core/user_mad.c
-index 9bdf576cd4ab..1acb99100556 100644
---- a/drivers/infiniband/core/user_mad.c
-+++ b/drivers/infiniband/core/user_mad.c
-@@ -98,7 +98,7 @@ struct ib_umad_port {
- 
- struct ib_umad_device {
- 	int                  start_port, end_port;
--	struct kref          ref;
-+	struct kobject       kobj;
- 	struct ib_umad_port  port[0];
- };
- 
-@@ -134,14 +134,18 @@ static DECLARE_BITMAP(dev_map, IB_UMAD_MAX_PORTS);
- static void ib_umad_add_one(struct ib_device *device);
- static void ib_umad_remove_one(struct ib_device *device);
- 
--static void ib_umad_release_dev(struct kref *ref)
-+static void ib_umad_release_dev(struct kobject *kobj)
- {
- 	struct ib_umad_device *dev =
--		container_of(ref, struct ib_umad_device, ref);
-+		container_of(kobj, struct ib_umad_device, kobj);
- 
- 	kfree(dev);
+diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
+index 6ecc38bd5b24..bbda76731fed 100644
+--- a/arch/powerpc/mm/hash_utils_64.c
++++ b/arch/powerpc/mm/hash_utils_64.c
+@@ -947,6 +947,22 @@ void hash_failure_debug(unsigned long ea, unsigned long access,
+ 		trap, vsid, ssize, psize, lpsize, pte);
  }
  
-+static struct kobj_type ib_umad_dev_ktype = {
-+	.release = ib_umad_release_dev,
-+};
++static void check_paca_psize(unsigned long ea, struct mm_struct *mm,
++			     int psize, bool user_region)
++{
++	if (user_region) {
++		if (psize != get_paca_psize(ea)) {
++			get_paca()->context = mm->context;
++			slb_flush_and_rebolt();
++		}
++	} else if (get_paca()->vmalloc_sllp !=
++		   mmu_psize_defs[mmu_vmalloc_psize].sllp) {
++		get_paca()->vmalloc_sllp =
++			mmu_psize_defs[mmu_vmalloc_psize].sllp;
++		slb_vmalloc_update();
++	}
++}
 +
- static int hdr_size(struct ib_umad_file *file)
- {
- 	return file->use_pkey_index ? sizeof (struct ib_user_mad_hdr) :
-@@ -812,7 +816,7 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
- 		goto out;
+ /* Result code is:
+  *  0 - handled
+  *  1 - normal page fault
+@@ -1068,6 +1084,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+ 			WARN_ON(1);
+ 		}
+ #endif
++		check_paca_psize(ea, mm, psize, user_region);
++
+ 		goto bail;
  	}
  
--	kref_get(&port->umad_dev->ref);
-+	kobject_get(&port->umad_dev->kobj);
- 
- out:
- 	mutex_unlock(&port->file_mutex);
-@@ -851,7 +855,7 @@ static int ib_umad_close(struct inode *inode, struct file *filp)
- 	mutex_unlock(&file->port->file_mutex);
- 
- 	kfree(file);
--	kref_put(&dev->ref, ib_umad_release_dev);
-+	kobject_put(&dev->kobj);
- 
- 	return 0;
- }
-@@ -902,7 +906,7 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
- 	if (ret)
- 		goto err_clr_sm_cap;
- 
--	kref_get(&port->umad_dev->ref);
-+	kobject_get(&port->umad_dev->kobj);
- 
- 	return 0;
- 
-@@ -932,7 +936,7 @@ static int ib_umad_sm_close(struct inode *inode, struct file *filp)
- 
- 	up(&port->sm_sem);
- 
--	kref_put(&port->umad_dev->ref, ib_umad_release_dev);
-+	kobject_put(&port->umad_dev->kobj);
- 
- 	return ret;
- }
-@@ -1000,6 +1004,7 @@ static int find_overflow_devnum(void)
- }
- 
- static int ib_umad_init_port(struct ib_device *device, int port_num,
-+			     struct ib_umad_device *umad_dev,
- 			     struct ib_umad_port *port)
- {
- 	int devnum;
-@@ -1032,6 +1037,7 @@ static int ib_umad_init_port(struct ib_device *device, int port_num,
- 
- 	cdev_init(&port->cdev, &umad_fops);
- 	port->cdev.owner = THIS_MODULE;
-+	port->cdev.kobj.parent = &umad_dev->kobj;
- 	kobject_set_name(&port->cdev.kobj, "umad%d", port->dev_num);
- 	if (cdev_add(&port->cdev, base, 1))
- 		goto err_cdev;
-@@ -1050,6 +1056,7 @@ static int ib_umad_init_port(struct ib_device *device, int port_num,
- 	base += IB_UMAD_MAX_PORTS;
- 	cdev_init(&port->sm_cdev, &umad_sm_fops);
- 	port->sm_cdev.owner = THIS_MODULE;
-+	port->sm_cdev.kobj.parent = &umad_dev->kobj;
- 	kobject_set_name(&port->sm_cdev.kobj, "issm%d", port->dev_num);
- 	if (cdev_add(&port->sm_cdev, base, 1))
- 		goto err_sm_cdev;
-@@ -1143,7 +1150,7 @@ static void ib_umad_add_one(struct ib_device *device)
- 	if (!umad_dev)
- 		return;
- 
--	kref_init(&umad_dev->ref);
-+	kobject_init(&umad_dev->kobj, &ib_umad_dev_ktype);
- 
- 	umad_dev->start_port = s;
- 	umad_dev->end_port   = e;
-@@ -1151,7 +1158,8 @@ static void ib_umad_add_one(struct ib_device *device)
- 	for (i = s; i <= e; ++i) {
- 		umad_dev->port[i - s].umad_dev = umad_dev;
- 
--		if (ib_umad_init_port(device, i, &umad_dev->port[i - s]))
-+		if (ib_umad_init_port(device, i, umad_dev,
-+				      &umad_dev->port[i - s]))
- 			goto err;
+@@ -1108,17 +1126,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+ #endif
+ 		}
  	}
+-	if (user_region) {
+-		if (psize != get_paca_psize(ea)) {
+-			get_paca()->context = mm->context;
+-			slb_flush_and_rebolt();
+-		}
+-	} else if (get_paca()->vmalloc_sllp !=
+-		   mmu_psize_defs[mmu_vmalloc_psize].sllp) {
+-		get_paca()->vmalloc_sllp =
+-			mmu_psize_defs[mmu_vmalloc_psize].sllp;
+-		slb_vmalloc_update();
+-	}
++
++	check_paca_psize(ea, mm, psize, user_region);
+ #endif /* CONFIG_PPC_64K_PAGES */
  
-@@ -1163,7 +1171,7 @@ err:
- 	while (--i >= s)
- 		ib_umad_kill_port(&umad_dev->port[i - s]);
- 
--	kref_put(&umad_dev->ref, ib_umad_release_dev);
-+	kobject_put(&umad_dev->kobj);
- }
- 
- static void ib_umad_remove_one(struct ib_device *device)
-@@ -1177,7 +1185,7 @@ static void ib_umad_remove_one(struct ib_device *device)
- 	for (i = 0; i <= umad_dev->end_port - umad_dev->start_port; ++i)
- 		ib_umad_kill_port(&umad_dev->port[i]);
- 
--	kref_put(&umad_dev->ref, ib_umad_release_dev);
-+	kobject_put(&umad_dev->kobj);
- }
- 
- static char *umad_devnode(struct device *dev, umode_t *mode)
+ #ifdef CONFIG_PPC_HAS_HASH_64K
 -- 
 1.9.1
 
