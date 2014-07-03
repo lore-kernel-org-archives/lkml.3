@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972AbaGCJVK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:21:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51407 "EHLO
+	id S1759260AbaGCKVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:21:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51435 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756647AbaGCJVD (ORCPT
+	with ESMTP id S1757921AbaGCJVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:21:03 -0400
+	Thu, 3 Jul 2014 05:21:09 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Jarosch <thomas.jarosch@intra2net.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 011/198] PCI: Add new ID for Intel GPU "spurious interrupt" quirk
-Date: Thu,  3 Jul 2014 10:17:34 +0100
-Message-Id: <1404379241-8590-12-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 016/198] iwlwifi: pcie: try to get ownership several times
+Date: Thu,  3 Jul 2014 10:17:39 +0100
+Message-Id: <1404379241-8590-17-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,42 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 7c82126a94e69bbbac586f0249e7ef11e681246c upstream.
+commit 501fd9895c1d7d8161ed56698ae2fccb10ef14f5 upstream.
 
-After a CPU upgrade while keeping the same mainboard, we faced "spurious
-interrupt" problems again.
+Some races with the hardware can happen when we take
+ownership of the device. Don't give up after the first try.
 
-It turned out that the new CPU also featured a new GPU with a different PCI
-ID.
-
-Add this PCI ID to the quirk table.  Probably all other Intel GPU PCI IDs
-are affected, too, but I don't want to add them without a test system.
-
-See f67fd55fa96f ("PCI: Add quirk for still enabled interrupts on Intel
-Sandy Bridge GPUs") for some history.
-
-[bhelgaas: add f67fd55fa96f reference, stable tag]
-Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/pci/quirks.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/iwlwifi/pcie/trans.c | 26 ++++++++++++++++----------
+ 1 file changed, 16 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index e85d23044ae0..176fb76ef4e2 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2953,6 +2953,7 @@ static void disable_igfx_irq(struct pci_dev *dev)
- }
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0152, disable_igfx_irq);
+diff --git a/drivers/net/wireless/iwlwifi/pcie/trans.c b/drivers/net/wireless/iwlwifi/pcie/trans.c
+index 6c61ee58caa9..8534fce2ae80 100644
+--- a/drivers/net/wireless/iwlwifi/pcie/trans.c
++++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
+@@ -345,6 +345,7 @@ static int iwl_pcie_prepare_card_hw(struct iwl_trans *trans)
+ {
+ 	int ret;
+ 	int t = 0;
++	int iter;
  
- /*
-  * Some devices may pass our check in pci_intx_mask_supported if
+ 	IWL_DEBUG_INFO(trans, "iwl_trans_prepare_card_hw enter\n");
+ 
+@@ -353,18 +354,23 @@ static int iwl_pcie_prepare_card_hw(struct iwl_trans *trans)
+ 	if (ret >= 0)
+ 		return 0;
+ 
+-	/* If HW is not ready, prepare the conditions to check again */
+-	iwl_set_bit(trans, CSR_HW_IF_CONFIG_REG,
+-		    CSR_HW_IF_CONFIG_REG_PREPARE);
++	for (iter = 0; iter < 10; iter++) {
++		/* If HW is not ready, prepare the conditions to check again */
++		iwl_set_bit(trans, CSR_HW_IF_CONFIG_REG,
++			    CSR_HW_IF_CONFIG_REG_PREPARE);
++
++		do {
++			ret = iwl_pcie_set_hw_ready(trans);
++			if (ret >= 0)
++				return 0;
+ 
+-	do {
+-		ret = iwl_pcie_set_hw_ready(trans);
+-		if (ret >= 0)
+-			return 0;
++			usleep_range(200, 1000);
++			t += 200;
++		} while (t < 150000);
++		msleep(25);
++	}
+ 
+-		usleep_range(200, 1000);
+-		t += 200;
+-	} while (t < 150000);
++	IWL_DEBUG_INFO(trans, "got NIC after %d iterations\n", iter);
+ 
+ 	return ret;
+ }
 -- 
 1.9.1
 
