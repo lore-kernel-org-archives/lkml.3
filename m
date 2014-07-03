@@ -1,72 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550AbaGCA0V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 20:26:21 -0400
-Received: from ozlabs.org ([103.22.144.67]:57723 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753305AbaGCA0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 20:26:18 -0400
-Date: Thu, 3 Jul 2014 10:26:10 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-kernel@vger.kernel.org, tj@kernel.org, rostedt@goodmis.org,
-        mingo@redhat.com, akpm@linux-foundation.org, andi@firstfloor.org,
-        paulmck@linux.vnet.ibm.com, pavel@ucw.cz, jirislaby@gmail.com,
-        Vojtech Pavlik <vojtech@suse.cz>, Michael Matz <matz@suse.de>,
-        Jiri Kosina <jkosina@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Josh Poimboeuf <jpoimboe@redhat.com>
-Subject: Re: kGraft to -next [was: 00/21 kGraft]
-Message-ID: <20140703102610.3014bf88@canb.auug.org.au>
-In-Reply-To: <53B3F556.7050002@suse.cz>
-References: <1403694329-3064-1-git-send-email-jslaby@suse.cz>
-	<53B3F556.7050002@suse.cz>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1752037AbaGCAhj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 20:37:39 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:39789 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaGCAhh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 20:37:37 -0400
+Message-ID: <53B4A5D0.9000702@infradead.org>
+Date: Wed, 02 Jul 2014 17:37:36 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/amV7uQR5piTwZ8DP._DY11B"; protocol="application/pgp-signature"
+To: Andi Kleen <ak@linux.intel.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz
+Subject: Re: mmotm 2014-07-02-15-07 uploaded (stack protector)
+References: <53b482d3.gR7nYB/K7hPREviI%akpm@linux-foundation.org> <53B493E2.2030905@infradead.org> <20140703002231.GR19781@tassilo.jf.intel.com>
+In-Reply-To: <20140703002231.GR19781@tassilo.jf.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/amV7uQR5piTwZ8DP._DY11B
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 07/02/14 17:22, Andi Kleen wrote:
+> On Wed, Jul 02, 2014 at 04:21:06PM -0700, Randy Dunlap wrote:
+>> On 07/02/14 15:08, akpm@linux-foundation.org wrote:
+>>> The mm-of-the-moment snapshot 2014-07-02-15-07 has been uploaded to
+>>>
+>>>    http://www.ozlabs.org/~akpm/mmotm/
+>>>
+>>> mmotm-readme.txt says
+>>>
+>>> README for mm-of-the-moment:
+>>>
+>>> http://www.ozlabs.org/~akpm/mmotm/
+>>>
+>>> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+>>> more than once a week.
+>>
+>> Hi Andi,
+>>
+>> Here is an extract from 10 randconfig builds:
+>>
+>>
+>> $ grep STACKPROTECTOR_STRONG config-r*
+>> config-r8735:CONFIG_CC_STACKPROTECTOR_STRONG=y
+>> config-r8736:CONFIG_CC_STACKPROTECTOR_STRONG=y
+>> config-r8737:# CONFIG_CC_STACKPROTECTOR_STRONG is not set
+>> config-r8738:# CONFIG_CC_STACKPROTECTOR_STRONG is not set
+>> config-r8739:CONFIG_CC_STACKPROTECTOR_STRONG=y
+>> config-r8740:CONFIG_CC_STACKPROTECTOR_STRONG=y
+>> config-r8741:CONFIG_CC_STACKPROTECTOR_STRONG=y
+>> config-r8742:# CONFIG_CC_STACKPROTECTOR_STRONG is not set
+>> config-r8743:# CONFIG_CC_STACKPROTECTOR_STRONG is not set
+>> config-r8744:# CONFIG_CC_STACKPROTECTOR_STRONG is not set
+>>
+>>
+>> but the captured output for each one says:
+>>
+>> grep STACKPROTECTOR_STRONG  build*.out
+>> build-r8735.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+>> build-r8736.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+>> build-r8736.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+>> build-r8737.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+>> build-r8739.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+>> build-r8740.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+>> build-r8740.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+>> build-r8741.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+>> build-r8741.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+>> build-r8742.out:/local/lnx/MM/mmotm-2014-0702-1507/Makefile:662: Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: -fstack-protector-strong not supported by compiler
+>>
+>>
+>> then the build goes on to produce many errors like this one:
+>>
+>>   CC      init/do_mounts.o
+>> gcc: error: unrecognized command line option '-fstack-protector-strong'
+>>
+>>
+>> Can you explain this, please?  or even better yet, fix it.
+> 
+> That's the code 
+> 
+> ifdef CONFIG_CC_STACKPROTECTOR_STRONG
+>   stackp-flag := -fstack-protector-strong
+>   ifeq ($(call cc-option, $(stackp-flag)),)
+>     $(warning Cannot use CONFIG_CC_STACKPROTECTOR_STRONG: \
+>               -fstack-protector-strong not supported by compiler)
+>   endif
+> else
+>   # Force off for distro compilers that enable stack protector by default.
+>   stackp-flag := $(call cc-option, -fno-stack-protector)
+> endif
+> endif
+> KBUILD_CFLAGS += $(stackp-flag)
+> 
+> So -fstack-protector-strong itself is never protected by a cc-option call.
 
-Hi Jiri,
+ouch.
 
-On Wed, 02 Jul 2014 14:04:38 +0200 Jiri Slaby <jslaby@suse.cz> wrote:
->
-> may I ask you to add the kGraft tree to -next?
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/jirislaby/kgraft.git#kgraft
+> You could add it to the stack-flag line, then it would only warn.
+> 
+>   stackp-flag := $(call cc-option, -fstack-protector-strong)
+> 
+> It's hard to tell what the original author wanted, perhaps they wanted
+> it to error out. It looks intentional. Clearly they didn't think of randconfig
+> though.
+> 
+> Or get a compiler that supports stack protection?
 
-Given the ongoing discussion, I think this needs to wait ...
+Yeah, I have plans to upgrade, just been too busy.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/amV7uQR5piTwZ8DP._DY11B
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTtKMnAAoJEMDTa8Ir7ZwV1VMP/3mpnTWVBv+SDMFC3aiWY9Bd
-o2JE+lSyi0f4OERnySfUHB9aXGlUZlFgjivsvCHbsj1BSH/nCYfqFzhzS21Ie8el
-5ByuCmtabm1XhhOLu963O62NaVPBO0nzfeV3t8/hM8qdhcalJR7Q18zgNYWEs/+j
-PpIZuWlHmu7njHXMgB24LxtYyaGrYKeSewCd1JlRkjJHh1I3yYvHYBS2HWAjE2pZ
-LSKtj9JzTzif5ZIrxy8DSnFhbdWsklO9cgAA9knEJNQsoaWH189VJvXchvU5ZQfN
-HiyL8Fv45sNgik1+BeDra7V1jKZmhznV2m33XhFk3VSybUW3WkQXKu8TqAKYrBnJ
-XFx/0rhKeRJdrFR0yJ3aipJ6+XGtsfdm8wzWYwDxSfLS+wUrBIsiqsfbLus5mkIv
-2bkiwqZQ6ro85ddkizzgPnv+FHrGV/nVO1FPMCF30PQu6RKcvlFOr52CKGn1nkjP
-jcQDvoFQfMfIkcIE+EGuqoSN1qiO9XOv40+OqpwwLGVDo7mY4SK6MDAiAud2wyT0
-E9FsxvjjKjatYQodDyiXtsXXaK6J8HCs+inEYrgswZkfBy2AHdmvIuMDtuK2skGd
-c7NU3L0igOEoqVKGYcuTOv8U4obSSaGyfbXIgNtlqp7l/M2Sal3e3zGJhuE2lxjh
-3slsVA90Yd0cIVSWhGHI
-=K2kI
------END PGP SIGNATURE-----
-
---Sig_/amV7uQR5piTwZ8DP._DY11B--
+thanks for your help.
+-- 
+~Randy
