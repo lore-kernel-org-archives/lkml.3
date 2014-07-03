@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759383AbaGCSLw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 14:11:52 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60311 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751726AbaGCSLv (ORCPT
+	id S1759509AbaGCSNe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 14:13:34 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:45870 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752874AbaGCSNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 14:11:51 -0400
-Date: Thu, 3 Jul 2014 19:10:59 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        David Riley <davidriley@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ritesh Harjain <ritesh.harjani@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv4 1/5] lib/genalloc.c: Add power aligned algorithm
-Message-ID: <20140703181059.GJ17372@arm.com>
-References: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
- <1404324218-4743-2-git-send-email-lauraa@codeaurora.org>
+	Thu, 3 Jul 2014 14:13:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404324218-4743-2-git-send-email-lauraa@codeaurora.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140703173421.GO16590@localhost>
+References: <20140703082830.GB16590@localhost> <1404407829-1815-1-git-send-email-janne.kanniainen@gmail.com>
+ <20140703173421.GO16590@localhost>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Thu, 3 Jul 2014 11:13:09 -0700
+Message-ID: <CAK5ve-+gmOEAKjSnKaWz2K_xs6LzDUP6LN2Y33J-22UV=eFM2Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2 v6] HID: gt683r: fix race condition
+To: Johan Hovold <johan@kernel.org>
+Cc: Janne Kanniainen <janne.kanniainen@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Greg Kroah-Hartman <greg@kroah.com>,
+        =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        linux-usb@vger.kernel.org,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 07:03:34PM +0100, Laura Abbott wrote:
-> 
-> One of the more common algorithms used for allocation
-> is to align the start address of the allocation to
-> the order of size requested. Add this as an algorithm
-> option for genalloc.
-> 
-> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
-> ---
->  include/linux/genalloc.h |  4 ++++
->  lib/genalloc.c           | 20 ++++++++++++++++++++
->  2 files changed, 24 insertions(+)
-> 
-> diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
-> index 1c2fdaa..3cd0934 100644
-> --- a/include/linux/genalloc.h
-> +++ b/include/linux/genalloc.h
-> @@ -110,6 +110,10 @@ extern void gen_pool_set_algo(struct gen_pool *pool, genpool_algo_t algo,
->  extern unsigned long gen_pool_first_fit(unsigned long *map, unsigned long size,
->  		unsigned long start, unsigned int nr, void *data);
->  
-> +extern unsigned long gen_pool_first_fit_order_align(unsigned long *map,
-> +		unsigned long size, unsigned long start, unsigned int nr,
-> +		void *data);
-> +
+On Thu, Jul 3, 2014 at 10:34 AM, Johan Hovold <johan@kernel.org> wrote:
+> On Thu, Jul 03, 2014 at 08:17:08PM +0300, Janne Kanniainen wrote:
+>> This will fix race condition noticed by Oliver Neukum. Sysfs files are
+>> created before mutex and work are initialized.
+>>
+>> Signed-off-by: Janne Kanniainen <janne.kanniainen@gmail.com>
+>
+> Reviewed-by: Johan Hovold <johan@kernel.org>
+>
 
-You could also update gen_pool_first_fit to call this new function instead.
+Good, merged to my tree.
+-Bryan
 
-Anyway, that's up to you:
-
-  Acked-by: Will Deacon <will.deacon@arm.com>
-
-Will
+>> ---
+>>  drivers/hid/hid-gt683r.c | 6 +++---
+>>  1 file changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/hid/hid-gt683r.c b/drivers/hid/hid-gt683r.c
+>> index 077f7a1..073bd80 100644
+>> --- a/drivers/hid/hid-gt683r.c
+>> +++ b/drivers/hid/hid-gt683r.c
+>> @@ -227,6 +227,9 @@ static int gt683r_led_probe(struct hid_device *hdev,
+>>       if (!led)
+>>               return -ENOMEM;
+>>
+>> +     mutex_init(&led->lock);
+>> +     INIT_WORK(&led->work, gt683r_led_work);
+>> +
+>>       led->mode = GT683R_LED_NORMAL;
+>>       led->hdev = hdev;
+>>       hid_set_drvdata(hdev, led);
+>> @@ -271,9 +274,6 @@ static int gt683r_led_probe(struct hid_device *hdev,
+>>               goto fail;
+>>       }
+>>
+>> -     mutex_init(&led->lock);
+>> -     INIT_WORK(&led->work, gt683r_led_work);
+>> -
+>>       return 0;
+>>
+>>  fail:
