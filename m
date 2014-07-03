@@ -1,37 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759903AbaGCV4O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 17:56:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47759 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073AbaGCV4M (ORCPT
+	id S1759746AbaGCV5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 17:57:45 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:44598 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192AbaGCV5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 17:56:12 -0400
-Date: Thu, 3 Jul 2014 15:00:29 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Konstantin Ryabitsev <mricon@kernel.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH kernel.org] Add 3.14 to list of longterm stable kernels
-Message-ID: <20140703220029.GA19593@kroah.com>
-References: <20140703191937.GA26066@kroah.com>
- <53B5C753.4020102@kernel.org>
+	Thu, 3 Jul 2014 17:57:43 -0400
+Date: Thu, 3 Jul 2014 14:57:41 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Nicholas Krause <xerofoify@gmail.com>
+cc: monstr@monstr.eu, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] microblaze: fixes includes in sigcontext.h
+In-Reply-To: <1404423935-5287-1-git-send-email-xerofoify@gmail.com>
+Message-ID: <alpine.DEB.2.02.1407031456430.10658@chino.kir.corp.google.com>
+References: <1404423935-5287-1-git-send-email-xerofoify@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B5C753.4020102@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 05:12:51PM -0400, Konstantin Ryabitsev wrote:
-> On 03/07/14 03:19 PM, Greg KH wrote:
-> > I'm going to be maintaining the 3.14 kernel as a "longterm" kernel for
-> > the next two years, so mention that on the kernel.org site.
-> 
-> 3.14 marked as longterm on the frontpage and in releases.
+On Thu, 3 Jul 2014, Nicholas Krause wrote:
 
-Ah, sorry for missing that in the pelicanconf.py file.  Many thanks for
-updating the site.
+> diff --git a/arch/microblaze/include/uapi/asm/sigcontext.h b/arch/microblaze/include/uapi/asm/sigcontext.h
+> index 55873c8..1180d9b 100644
+> --- a/arch/microblaze/include/uapi/asm/sigcontext.h
+> +++ b/arch/microblaze/include/uapi/asm/sigcontext.h
+> @@ -9,8 +9,7 @@
+>  #ifndef _ASM_MICROBLAZE_SIGCONTEXT_H
+>  #define _ASM_MICROBLAZE_SIGCONTEXT_H
+>  
+> -/* FIXME should be linux/ptrace.h */
+> -#include <asm/ptrace.h>
+> +#include <linux/ptrace.h>
+>  
+>  struct sigcontext {
+>  	struct pt_regs regs;
 
-greg k-h
+Umm, does this even compile?  How does sigcontext.h get the definition of 
+struct pt_regs?  Seems like it would be better to just do a forward 
+declaration.
