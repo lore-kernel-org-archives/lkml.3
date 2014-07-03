@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965218AbaGCKWk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:22:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51375 "EHLO
+	id S964999AbaGCKWj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:22:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51385 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757547AbaGCJU5 (ORCPT
+	with ESMTP id S1757592AbaGCJU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:20:57 -0400
+	Thu, 3 Jul 2014 05:20:58 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Asai Thambi S P <asamymuthupa@micron.com>,
-        Sam Bradshaw <sbradshaw@micron.com>, Jens Axboe <axboe@fb.com>,
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 006/198] mtip32xx: Fix ERO and NoSnoop values in PCIe upstream on AMD systems
-Date: Thu,  3 Jul 2014 10:17:29 +0100
-Message-Id: <1404379241-8590-7-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 007/198] extcon: max77693: Fix two NULL pointer exceptions on missing pdata
+Date: Thu,  3 Jul 2014 10:17:30 +0100
+Message-Id: <1404379241-8590-8-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,97 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Asai Thambi S P <asamymuthupa@micron.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit d1e714db8129a1d3670e449b87719c78e2c76f9f upstream.
+commit d5653f2b7304f05eeb45d84f123cf02f840b8537 upstream.
 
-A hardware quirk in P320h/P420m interfere with PCIe transactions on some
-AMD chipsets, making P320h/P420m unusable. This workaround is to disable
-ERO and NoSnoop bits in the parent and root complex for normal
-functioning of these devices
+Fix NULL pointer exceptions when platform data is not supplied.
 
-NOTE: This workaround is specific to AMD chipset with a PCIe upstream
-device with device id 0x5aXX
+Trace of one exception:
+Unable to handle kernel NULL pointer dereference at virtual address 00000008
+pgd = c0004000
+[00000008] *pgd=00000000
+Internal error: Oops: 5 [#1] PREEMPT SMP ARM
+Modules linked in:
+CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.14.0-12045-gead5dd4687a6-dirty #1628
+task: eea80000 ti: eea88000 task.ti: eea88000
+PC is at max77693_muic_probe+0x27c/0x528
+LR is at regmap_write+0x50/0x60
+pc : [<c041d1c8>]    lr : [<c02eba60>]    psr: 20000113
+sp : eea89e38  ip : 00000000  fp : c098a834
+r10: ee1a5a10  r9 : 00000005  r8 : c098a83c
+r7 : 0000000a  r6 : c098a774  r5 : 00000005  r4 : eeb006d0
+r3 : c0697bd8  r2 : 00000000  r1 : 00000001  r0 : 00000000
+Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+Control: 10c5387d  Table: 4000404a  DAC: 00000015
+Process swapper/0 (pid: 1, stack limit = 0xeea88240)
+Stack: (0xeea89e38 to 0xeea8a000)
+9e20:                                                       c08499fc eeb006d0
+9e40: 00000000 00000000 c0915f98 00000001 00000000 ee1a5a10 c098a730 c09a88b8
+9e60: 00000000 c098a730 c0915f98 00000000 00000000 c02d6aa0 c02d6a88 ee1a5a10
+9e80: c0a712c8 c02d54e4 00001204 c0628b00 ee1a5a10 c098a730 ee1a5a44 00000000
+9ea0: eea88000 c02d57b4 00000000 c098a730 c02d5728 c02d3a24 ee813e5c eeb9d534
+9ec0: c098a730 ee22f700 c097c720 c02d4b14 c08174ec c098a730 00000006 c098a730
+9ee0: 00000006 c092fd30 c09b8500 c02d5df8 00000000 c093cbb8 00000006 c0008928
+9f00: 000000c3 ef7fc785 00000000 ef7fc794 00000000 c08af968 00000072 eea89f30
+9f20: ef7fc85e c065f198 000000c3 c003e87c 00000003 00000000 c092fd3c 00000000
+9f40: c08af618 c0826d58 00000006 00000006 c0956f58 c093cbb8 00000006 c092fd30
+9f60: c09b8500 000000c3 c092fd3c c08e8510 00000000 c08e8bb0 00000006 00000006
+9f80: c08e8510 c0c0c0c0 00000000 c0628fac 00000000 00000000 00000000 00000000
+9fa0: 00000000 c0628fb4 00000000 c000f038 00000000 00000000 00000000 00000000
+9fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+9fe0: 00000000 00000000 00000000 00000000 00000013 00000000 c0c0c0c0 c0c0c0c0
+[<c041d1c8>] (max77693_muic_probe) from [<c02d6aa0>] (platform_drv_probe+0x18/0x48)
+[<c02d6aa0>] (platform_drv_probe) from [<c02d54e4>] (driver_probe_device+0x140/0x384)
+[<c02d54e4>] (driver_probe_device) from [<c02d57b4>] (__driver_attach+0x8c/0x90)
+[<c02d57b4>] (__driver_attach) from [<c02d3a24>] (bus_for_each_dev+0x54/0x88)
+[<c02d3a24>] (bus_for_each_dev) from [<c02d4b14>] (bus_add_driver+0xe8/0x204)
+[<c02d4b14>] (bus_add_driver) from [<c02d5df8>] (driver_register+0x78/0xf4)
+[<c02d5df8>] (driver_register) from [<c0008928>] (do_one_initcall+0xc4/0x174)
+[<c0008928>] (do_one_initcall) from [<c08e8bb0>] (kernel_init_freeable+0xfc/0x1c8)
+[<c08e8bb0>] (kernel_init_freeable) from [<c0628fb4>] (kernel_init+0x8/0xec)
+[<c0628fb4>] (kernel_init) from [<c000f038>] (ret_from_fork+0x14/0x3c)
+Code: caffffe7 e59d200c e3550001 b3a05001 (e5923008)
+---[ end trace 85db969ce011bde7 ]---
 
-Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
-Signed-off-by: Sam Bradshaw <sbradshaw@micron.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Fixes: 190d7cfc8632
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/mtip32xx/mtip32xx.c | 53 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
+ drivers/extcon/extcon-max77693.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index 6342c2190cca..560227b817fe 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -4289,6 +4289,57 @@ static DEFINE_HANDLER(5);
- static DEFINE_HANDLER(6);
- static DEFINE_HANDLER(7);
+diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+index b56bdaa27d4b..9966fc0a527f 100644
+--- a/drivers/extcon/extcon-max77693.c
++++ b/drivers/extcon/extcon-max77693.c
+@@ -1180,7 +1180,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
  
-+static void mtip_disable_link_opts(struct driver_data *dd, struct pci_dev *pdev)
-+{
-+	int pos;
-+	unsigned short pcie_dev_ctrl;
-+
-+	pos = pci_find_capability(pdev, PCI_CAP_ID_EXP);
-+	if (pos) {
-+		pci_read_config_word(pdev,
-+			pos + PCI_EXP_DEVCTL,
-+			&pcie_dev_ctrl);
-+		if (pcie_dev_ctrl & (1 << 11) ||
-+		    pcie_dev_ctrl & (1 << 4)) {
-+			dev_info(&dd->pdev->dev,
-+				"Disabling ERO/No-Snoop on bridge device %04x:%04x\n",
-+					pdev->vendor, pdev->device);
-+			pcie_dev_ctrl &= ~(PCI_EXP_DEVCTL_NOSNOOP_EN |
-+						PCI_EXP_DEVCTL_RELAX_EN);
-+			pci_write_config_word(pdev,
-+				pos + PCI_EXP_DEVCTL,
-+				pcie_dev_ctrl);
-+		}
-+	}
-+}
-+
-+static void mtip_fix_ero_nosnoop(struct driver_data *dd, struct pci_dev *pdev)
-+{
-+	/*
-+	 * This workaround is specific to AMD/ATI chipset with a PCI upstream
-+	 * device with device id 0x5aXX
-+	 */
-+	if (pdev->bus && pdev->bus->self) {
-+		if (pdev->bus->self->vendor == PCI_VENDOR_ID_ATI &&
-+		    ((pdev->bus->self->device & 0xff00) == 0x5a00)) {
-+			mtip_disable_link_opts(dd, pdev->bus->self);
-+		} else {
-+			/* Check further up the topology */
-+			struct pci_dev *parent_dev = pdev->bus->self;
-+			if (parent_dev->bus &&
-+				parent_dev->bus->parent &&
-+				parent_dev->bus->parent->self &&
-+				parent_dev->bus->parent->self->vendor ==
-+					 PCI_VENDOR_ID_ATI &&
-+				(parent_dev->bus->parent->self->device &
-+					0xff00) == 0x5a00) {
-+				mtip_disable_link_opts(dd,
-+					parent_dev->bus->parent->self);
-+			}
-+		}
-+	}
-+}
-+
- /*
-  * Called for each supported PCI device detected.
-  *
-@@ -4440,6 +4491,8 @@ static int mtip_pci_probe(struct pci_dev *pdev,
- 		goto block_initialize_err;
+ 
+ 	/* Initialize MUIC register by using platform data or default data */
+-	if (pdata->muic_data) {
++	if (pdata && pdata->muic_data) {
+ 		init_data = pdata->muic_data->init_data;
+ 		num_init_data = pdata->muic_data->num_init_data;
+ 	} else {
+@@ -1213,7 +1213,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
+ 				= init_data[i].data;
  	}
  
-+	mtip_fix_ero_nosnoop(dd, pdev);
-+
- 	/* Initialize the block layer. */
- 	rv = mtip_block_initialize(dd);
- 	if (rv < 0) {
+-	if (pdata->muic_data) {
++	if (pdata && pdata->muic_data) {
+ 		struct max77693_muic_platform_data *muic_pdata = pdata->muic_data;
+ 
+ 		/*
 -- 
 1.9.1
 
