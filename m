@@ -1,79 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758831AbaGCKI6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:08:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51715 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932281AbaGCJWI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S964780AbaGCJWI (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 3 Jul 2014 05:22:08 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 056/198] USB: sierra: fix urb and memory leak in resume error path
-Date: Thu,  3 Jul 2014 10:18:19 +0100
-Message-Id: <1404379241-8590-57-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+Received: from mx0.aculab.com ([213.249.233.131]:33604 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932239AbaGCJWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 05:22:03 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        Alexander Gordeev <agordeev@redhat.com>
+CC: "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: RE: [PATCH 1/3] PCI/MSI: Add pci_enable_msi_partial()
+Thread-Topic: [PATCH 1/3] PCI/MSI: Add pci_enable_msi_partial()
+Thread-Index: AQHPljNB2YNqvD5cNkq3/QaNLPhjzpuOEsDA
+Date: Thu, 3 Jul 2014 09:20:52 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1726BF4E@AcuExch.aculab.com>
+References: <cover.1402405331.git.agordeev@redhat.com>
+ <4fef62a2e647a7c38e9f2a1ea4244b3506a85e2b.1402405331.git.agordeev@redhat.com>
+ <20140702202201.GA28852@google.com>
+In-Reply-To: <20140702202201.GA28852@google.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s63A92u5007484
 
-3.11.10.13 -stable review patch.  If anyone has any objections, please let me know.
+From: Bjorn Helgaas
+> On Tue, Jun 10, 2014 at 03:10:30PM +0200, Alexander Gordeev wrote:
+> > There are PCI devices that require a particular value written
+> > to the Multiple Message Enable (MME) register while aligned on
+> > power of 2 boundary value of actually used MSI vectors 'nvec'
+> > is a lesser of that MME value:
+> >
+> > 	roundup_pow_of_two(nvec) < 'Multiple Message Enable'
+> >
+> > However the existing pci_enable_msi_block() interface is not
+> > able to configure such devices, since the value written to the
+> > MME register is calculated from the number of requested MSIs
+> > 'nvec':
+> >
+> > 	'Multiple Message Enable' = roundup_pow_of_two(nvec)
+> 
+> For MSI, software learns how many vectors a device requests by reading
+> the Multiple Message Capable (MMC) field.  This field is encoded, so a
+> device can only request 1, 2, 4, 8, etc., vectors.  It's impossible
+> for a device to request 3 vectors; it would have to round up that up
+> to a power of two and request 4 vectors.
+> 
+> Software writes similarly encoded values to MME to tell the device how
+> many vectors have been allocated for its use.  For example, it's
+> impossible to tell the device that it can use 3 vectors; the OS has to
+> round that up and tell the device it can use 4 vectors.
+> 
+> So if I understand correctly, the point of this series is to take
+> advantage of device-specific knowledge, e.g., the device requests 4
+> vectors via MMC, but we "know" the device is only capable of using 3.
+> Moreover, we tell the device via MME that 4 vectors are available, but
+> we've only actually set up 3 of them.
+...
 
-------------------
+Even if you do that, you ought to write valid interrupt information
+into the 4th slot (maybe replicating one of the earlier interrupts).
+Then, if the device does raise the 'unexpected' interrupt you don't
+get a write to a random kernel location.
 
-From: Johan Hovold <jhovold@gmail.com>
+Plausibly something similar should be done when a smaller number of
+interrupts is assigned.
 
-commit 7fdd26a01eb7b6cb6855ff8f69ef4a720720dfcb upstream.
+	David
 
-Neither the transfer buffer or the urb itself were released in the
-resume error path for delayed writes. Also on errors, the remainder of
-the queue was not even processed, which leads to further urb and buffer
-leaks.
-
-The same error path also failed to balance the outstanding-urb counter,
-something which results in degraded throughput or completely blocked
-writes.
-
-Fix this by releasing urb and buffer and balancing counters on errors,
-and by always processing the whole queue even when submission of one urb
-fails.
-
-Fixes: e6929a9020ac ("USB: support for autosuspend in sierra while
-online")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/usb/serial/sierra.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
-index efdb76a7b787..5f7f64f70044 100644
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -1012,8 +1012,12 @@ static int sierra_resume(struct usb_serial *serial)
- 			if (err < 0) {
- 				intfdata->in_flight--;
- 				usb_unanchor_urb(urb);
--				usb_scuttle_anchored_urbs(&portdata->delayed);
--				break;
-+				kfree(urb->transfer_buffer);
-+				usb_free_urb(urb);
-+				spin_lock(&portdata->lock);
-+				portdata->outstanding_urbs--;
-+				spin_unlock(&portdata->lock);
-+				continue;
- 			}
- 		}
- 
--- 
-1.9.1
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
