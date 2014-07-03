@@ -1,104 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759257AbaGCQSX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:18:23 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:16237 "EHLO
+	id S1030269AbaGCQSV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:18:21 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:3745 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759134AbaGCQMZ (ORCPT
+	by vger.kernel.org with ESMTP id S1759155AbaGCQM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 12:12:25 -0400
-Message-Id: <20140703160503.006976702@goodmis.org>
+	Thu, 3 Jul 2014 12:12:27 -0400
+Message-Id: <20140703161225.192042202@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Thu, 03 Jul 2014 12:05:03 -0400
+Date: Thu, 03 Jul 2014 12:05:13 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 00/21] tracing: Updates for 3.17
-X-RR-Connecting-IP: 107.14.168.118:25
+Subject: [for-next][PATCH 10/21] tracing: Make trace_seq_putmem_hex() more robust
+References: <20140703160503.006976702@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0010-tracing-Make-trace_seq_putmem_hex-more-robust.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is my current 3.17 queue. I'm still waiting on acks from various
-arch maintainers to add the ftrace_stop/start() removal code that I also
-want to add to this.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-This includes various clean ups and enhancements, but the big feature
-is the "trampoline" field added to the ftrace_ops. The only user of
-that currently is the function_graph tracer. This is because the
-function graph tracer normally jumps to the function tracer mcount
-trampoline, saves and restores regs without doing anything before it
-gets to the function graph code that also saves and restores regs
-(slightly differently mind you), and runs its code. Now, if function
-graph tracer is the only callback of a function, its code will be called
-directly, skipping the function trampoline entirely.
+Currently trace_seq_putmem_hex() can only take as a parameter a pointer
+to something that is 8 bytes or less, otherwise it will overflow the
+buffer. This is protected by a macro that encompasses the call to
+trace_seq_putmem_hex() that has a BUILD_BUG_ON() for the variable before
+it is passed in. This is not very robust and if trace_seq_putmem_hex() ever
+gets used outside that macro it will cause issues.
 
-The trace_seq code was also cleaned up. This opens up the possibility
-that the trace_seq can be converted to "seq_buf" and used for printing
-in NMI context.
+Instead of only being able to produce a hex output of memory that is for
+a single word, change it to be more robust and allow any size input.
 
-I'm still waiting on a Acked-by from the SCSI folks for a change to
-the trace_seq code that removes some open access of the trace_seq buffer.
-I wont push this to my next branch until I hear back from them.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/trace_seq.h   |  2 --
+ kernel/trace/trace_output.h |  1 -
+ kernel/trace/trace_seq.c    | 26 +++++++++++++++++++-------
+ 3 files changed, 19 insertions(+), 10 deletions(-)
 
-The way to push will also let people give me feedback before this becomes
-solidified in stone, as I don't like to rebase my for-next branch.
+diff --git a/include/linux/trace_seq.h b/include/linux/trace_seq.h
+index 1f05317f51c4..8283762ab7ef 100644
+--- a/include/linux/trace_seq.h
++++ b/include/linux/trace_seq.h
+@@ -25,8 +25,6 @@ trace_seq_init(struct trace_seq *s)
+ 	s->full = 0;
+ }
+ 
+-#define MAX_MEMHEX_BYTES	8
+-
+ /*
+  * Currently only defined when tracing is enabled.
+  */
+diff --git a/kernel/trace/trace_output.h b/kernel/trace/trace_output.h
+index bf7daf2237ed..80b25b585a70 100644
+--- a/kernel/trace/trace_output.h
++++ b/kernel/trace/trace_output.h
+@@ -43,7 +43,6 @@ do {							\
+ 
+ #define SEQ_PUT_HEX_FIELD_RET(s, x)			\
+ do {							\
+-	BUILD_BUG_ON(sizeof(x) > MAX_MEMHEX_BYTES);	\
+ 	if (!trace_seq_putmem_hex(s, &(x), sizeof(x)))	\
+ 		return TRACE_TYPE_PARTIAL_LINE;		\
+ } while (0)
+diff --git a/kernel/trace/trace_seq.c b/kernel/trace/trace_seq.c
+index 0fabca773e51..88c0f80f0a1f 100644
+--- a/kernel/trace/trace_seq.c
++++ b/kernel/trace/trace_seq.c
+@@ -291,6 +291,7 @@ int trace_seq_putmem(struct trace_seq *s, const void *mem, unsigned int len)
+ }
+ EXPORT_SYMBOL_GPL(trace_seq_putmem);
+ 
++#define MAX_MEMHEX_BYTES	8U
+ #define HEX_CHARS		(MAX_MEMHEX_BYTES*2 + 1)
+ 
+ /**
+@@ -310,22 +311,33 @@ int trace_seq_putmem_hex(struct trace_seq *s, const void *mem,
+ {
+ 	unsigned char hex[HEX_CHARS];
+ 	const unsigned char *data = mem;
++	unsigned int start_len;
+ 	int i, j;
++	int cnt = 0;
+ 
+ 	if (s->full)
+ 		return 0;
+ 
++	while (len) {
++		start_len = min(len, HEX_CHARS - 1);
+ #ifdef __BIG_ENDIAN
+-	for (i = 0, j = 0; i < len; i++) {
++		for (i = 0, j = 0; i < start_len; i++) {
+ #else
+-	for (i = len-1, j = 0; i >= 0; i--) {
++		for (i = start_len-1, j = 0; i >= 0; i--) {
+ #endif
+-		hex[j++] = hex_asc_hi(data[i]);
+-		hex[j++] = hex_asc_lo(data[i]);
+-	}
+-	hex[j++] = ' ';
++			hex[j++] = hex_asc_hi(data[i]);
++			hex[j++] = hex_asc_lo(data[i]);
++		}
++		if (WARN_ON_ONCE(j == 0 || j/2 > len))
++			break;
++
++		/* j increments twice per loop */
++		len -= j / 2;
++		hex[j++] = ' ';
+ 
+-	return trace_seq_putmem(s, hex, j);
++		cnt += trace_seq_putmem(s, hex, j);
++	}
++	return cnt;
+ }
+ EXPORT_SYMBOL_GPL(trace_seq_putmem_hex);
+ 
+-- 
+2.0.0
 
--- Steve
 
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-for-next
-
-Head SHA1: d048a8c7b509f35dd351e1415fe49fa99e4cb7ef
-
-
-Fabian Frederick (2):
-      tracing: Remove unnecessary null test before debugfs_remove()
-      tracing: Convert pr_warning() to pr_warn() in trace_events.c
-
-Masami Hiramatsu (1):
-      ftrace: Simplify ftrace_hash_disable/enable path in ftrace_hash_move
-
-Namhyung Kim (7):
-      ftrace: Get rid of obsolete global_start_up variable
-      ftrace: Fix memory leak on failure path in ftrace_allocate_pages()
-      ftrace: Do not copy hash if O_TRUNC is set
-      tracing: Add ftrace_graph_notrace boot parameter
-      tracing: Improve message of empty set_graph_notrace file
-      tracing: Improve message of empty set_ftrace_notrace file
-      tracing: Add description of set_graph_notrace to tracing/README
-
-Steven Rostedt (Red Hat) (10):
-      ftrace: Allow no regs if no more callbacks require it
-      ftrace: Use macros for numbers in ftrace rec shift bits
-      ftrace: Add ftrace_rec_counter() macro to simplify the code
-      ftrace: Optimize function graph to be called directly
-      ftrace: Add trampolines to enabled_functions debug file
-      tracing: Move the trace_seq_* functions into its own trace_seq.c file
-      tracing: Clean up trace_seq.c
-      tracing: Make trace_seq_putmem_hex() more robust
-      tracing: Remove trace_seq_reserve()
-      tracing: Add trace_seq_buffer_ptr() helper function
-
-Zhao Hongjiang (1):
-      tracing: Change trace event sample to use strlcpy instead of strncpy
-
-----
- Documentation/kernel-parameters.txt        |   6 +
- arch/x86/kernel/mcount_64.S                |   5 +
- arch/x86/kvm/mmutrace.h                    |   2 +-
- drivers/scsi/scsi_trace.c                  |  16 +-
- include/linux/ftrace.h                     |  24 +-
- include/linux/trace_seq.h                  |  36 ++-
- kernel/trace/Makefile                      |   1 +
- kernel/trace/ftrace.c                      | 394 ++++++++++++++++++++++----
- kernel/trace/trace.c                       |  31 +--
- kernel/trace/trace_events.c                |  56 ++--
- kernel/trace/trace_output.c                | 282 +------------------
- kernel/trace/trace_output.h                |   4 -
- kernel/trace/trace_seq.c                   | 428 +++++++++++++++++++++++++++++
- samples/trace_events/trace-events-sample.h |   2 +-
- 14 files changed, 870 insertions(+), 417 deletions(-)
