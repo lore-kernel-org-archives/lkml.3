@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758666AbaGCP70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 11:59:26 -0400
-Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.181]:39288 "EHLO
-	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753441AbaGCP7Z (ORCPT
+	id S1758937AbaGCP7c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 11:59:32 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45099 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758802AbaGCP73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 11:59:25 -0400
-X-RZG-AUTH: :IW0NeWC7b/q2i6W/qstXb1SBUuFnrGoheedClaTaNdBkW0QEOcx1Ft+DpaWf0qqN8/jSv6Kcuc3PZrnFbUtY5gcAIXMk1wD4hL5m
-X-RZG-CLASS-ID: mo05
-Message-ID: <53B57DDE.90603@denx.de>
-Date: Thu, 03 Jul 2014 17:59:26 +0200
-From: Stefan Roese <sr@denx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 3 Jul 2014 11:59:29 -0400
+Date: Thu, 3 Jul 2014 16:58:53 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Beniamino Galvani <b.galvani@gmail.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Wenyou Yang <wenyou.yang@atmel.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Heiko Stuebner <heiko@sntech.de>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Message-ID: <20140703155853.GH410@sirena.org.uk>
+References: <1403451105-31929-1-git-send-email-b.galvani@gmail.com>
+ <1403451105-31929-3-git-send-email-b.galvani@gmail.com>
 MIME-Version: 1.0
-To: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Lattice ECP3 FPGA: Correct endianness
-References: <CAL8zT=isq_2RT07a6z8imJ4N0w0v-yw6ysv3wf+S7sLsqZBCeg@mail.gmail.com>
-In-Reply-To: <CAL8zT=isq_2RT07a6z8imJ4N0w0v-yw6ysv3wf+S7sLsqZBCeg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OUFKJBnicyeI7VqU"
+Content-Disposition: inline
+In-Reply-To: <1403451105-31929-3-git-send-email-b.galvani@gmail.com>
+X-Cookie: Semper Fi, dude.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/5] regulator: act8865: set correct number of regulators
+ in pdata
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03.07.2014 17:54, Jean-Michel Hautbois wrote:
-> This patch corrects three big/little endian issues. Tested on i.MX6.
-> 
-> From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-> Date: Thu, 3 Jul 2014 17:49:47 +0200
-> Subject: [PATCH] Endianness corrections
-> 
-> ---
->   drivers/misc/lattice-ecp3-config.c | 8 ++++----
->   1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/misc/lattice-ecp3-config.c
-> b/drivers/misc/lattice-ecp3-config.c
-> index bb26f08..23d5c01 100644
-> --- a/drivers/misc/lattice-ecp3-config.c
-> +++ b/drivers/misc/lattice-ecp3-config.c
-> @@ -93,7 +93,7 @@ static void firmware_load(const struct firmware *fw,
-> void *context)
->       txbuf[0] = FPGA_CMD_READ_ID;
->       ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
->       dev_dbg(&spi->dev, "FPGA JTAG ID=%08x\n", *(u32 *)&rxbuf[4]);
-> -    jedec_id = *(u32 *)&rxbuf[4];
-> +    jedec_id = be32_to_cpu(*(u32 *)&rxbuf[4]);
-> 
->       for (i = 0; i < ARRAY_SIZE(ecp3_dev); i++) {
->           if (jedec_id == ecp3_dev[i].jedec_id)
-> @@ -142,7 +142,7 @@ static void firmware_load(const struct firmware
-> *fw, void *context)
->       for (i = 0; i < FPGA_CLEAR_LOOP_COUNT; i++) {
->           txbuf[0] = FPGA_CMD_READ_STATUS;
->           ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
-> -        status = *(u32 *)&rxbuf[4];
-> +        status = be32_to_cpu(*(u32 *)&rxbuf[4]);
->           if (status == FPGA_STATUS_CLEARED)
->               break;
-> 
-> @@ -165,8 +165,8 @@ static void firmware_load(const struct firmware
-> *fw, void *context)
-> 
->       txbuf[0] = FPGA_CMD_READ_STATUS;
->       ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
-> -    dev_dbg(&spi->dev, "FPGA Status=%08x\n", *(u32 *)&rxbuf[4]);
-> -    status = *(u32 *)&rxbuf[4];
-> +    dev_dbg(&spi->dev, "FPGA Status=%08x\n", be32_to_cpu(*(u32 *)&rxbuf[4]));
-> +    status = be32_to_cpu(*(u32 *)&rxbuf[4]);
 
-I know you didn't introduce this, but this re-ordering does look better:
+--OUFKJBnicyeI7VqU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-+    status = be32_to_cpu(*(u32 *)&rxbuf[4]);
-+    dev_dbg(&spi->dev, "FPGA Status=%08x\n", status);
+On Sun, Jun 22, 2014 at 05:31:42PM +0200, Beniamino Galvani wrote:
+> When platform data is populated from DT all the regulators are
+> instantiated and the value of num_regulators should be the number of
+> all available regulators rather than the number of matched ones.
 
-Other than that:
+Applied, thanks.
 
-Acked-by: Stefan Roese <sr@denx.de>
+--OUFKJBnicyeI7VqU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks,
-Stefan
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBAgAGBQJTtX25AAoJELSic+t+oim9sGgQAIpfZcSIWMeVc/yzHJQ0mMXi
+or7ZADZaOS0DNetatf+YH2jpKjY0+EZPOdSzNI3lbtelXLriwAk5VJ0K8a/civpl
+FSBQz8U1pbJfF3FLgb2RIG/Gw+aANPkw05kmxeM6EsEXhm2y0QiYiOIbezmnoKhz
+uGvXeAqa+wd32ncCnDsIkzVrfQmjndtEUBBSinlE/5v0PoSlYTR4wxGp6H1N96vK
+RHjEIqdTeL9Tr9rShjz/6K0EzT1Aksu5Bq77c0E8nN7fl43vvy3uW163p2/r4sKz
+US9trKEdMNJ8dbrVbsCeLcLigsK3fU/KluNASS8s4OH2OrTkpNbNa/jOAIAC0fzo
+80QrZebEhVdQQF1IXDgyjLU1ymxKjWkuzaQKSuJPzvJpWWMcjbI3hl0NHfjgPk0s
+97GyN6/SdNbm5GhqYCOioOyB5erWeLaj5zu64N9DCtoQufRV2rbQnGDkH+xKvzjH
+7AQf/77U6q6rRzZ6qSiWgisyOtyqRqEkHMmPRGzJlxsaEhZW55dKE1TeyCwvpkDX
+tYVvRSZvYFlxhB8zN1QPlRmO5GYdDKoKA7MBIE6syak36jsCQHQmSKn6Vk3MdD0k
+1HxBKdufSa0SfQLV81hTo9ZQlgHrr/Qt8geC0camax/dmhgvgjx4HWtMruFXxxuj
+S1K0LrfmneI8eS5Nh8er
+=97YU
+-----END PGP SIGNATURE-----
+
+--OUFKJBnicyeI7VqU--
