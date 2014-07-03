@@ -1,103 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918AbaGCAlH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 20:41:07 -0400
-Received: from mailout.micron.com ([137.201.242.129]:16149 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150AbaGCAlF convert rfc822-to-8bit (ORCPT
+	id S1752254AbaGCAnJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 20:43:09 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:46115 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424AbaGCAnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 20:41:05 -0400
-From: =?iso-2022-jp?B?QmVhbiBIdW8gGyRCcDlJTElMGyhCIChiZWFuaHVvKQ==?= 
-	<beanhuo@micron.com>
-To: "computersforpeace@gmail.com" <computersforpeace@gmail.com>
-CC: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [PATCH v3] mtd:nor:timeout:fix do_write_buffer() timeout error
-Thread-Topic: [PATCH v3] mtd:nor:timeout:fix do_write_buffer() timeout error
-Thread-Index: Ac+WV2N4Xrl0iVyNRZm8TM9iklwjbw==
-Date: Thu, 3 Jul 2014 00:40:29 +0000
-Message-ID: <A765B125120D1346A63912DDE6D8B6315D78BF@NTXXIAMBX02.xacn.micron.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.84.5]
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20794.002
-X-TM-AS-Result: No--8.707200-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-x-mt-checkinternalsenderrule: True
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Wed, 2 Jul 2014 20:43:07 -0400
+Message-ID: <53B4A718.3050702@codeaurora.org>
+Date: Wed, 02 Jul 2014 17:43:04 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@rjwysocki.net, shawn.guo@linaro.org, linaro-kernel@lists.linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arvind.chauhan@arm.com, linux-arm-msm@vger.kernel.org,
+        spk.linux@gmail.com, thomas.ab@samsung.com, nm@ti.com,
+        t.figa@samsung.com
+Subject: Re: [PATCH 09/14] cpufreq: cpu0: Move per-cluster initialization
+ code to ->init()
+References: <cover.1404231535.git.viresh.kumar@linaro.org> <b26946cc4573904cd1ef0212ad053a983b547c23.1404231535.git.viresh.kumar@linaro.org>
+In-Reply-To: <b26946cc4573904cd1ef0212ad053a983b547c23.1404231535.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The size of the buffer program has been increased from 256 to 512 , 2ms maximum timeout for do_write_buffer can not adapt to all the different vendor's norflash.There maximum timeout information in the CFI area,so the best way is to choose the result calculated according to timeout field of struct cfi_ident that probed from norflash's CFI aera.This is also a standard defined by CFI.
+On 07/01/14 09:32, Viresh Kumar wrote:
+> +static int cpu0_cpufreq_init(struct cpufreq_policy *policy)
+> +{
+> +	struct cpufreq_frequency_table *freq_table;
+> +	struct thermal_cooling_device *cdev;
 
-Without this change, if the size of buffer program is 512 or bigger than 256, due to timeout is the shorter than that the chip required,do_write_buffer sometimes fails.
+This..
 
-Tested with Micron JS28F512M29EWx and Micron MT28EW512ABA flash devices.
+> +	struct device_node *np;
+> +	struct private_data *priv;
+> +	
+[...]
+> ing them.
+> @@ -223,28 +242,92 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
+>  				"running cpufreq without cooling device: %ld\n",
+>  				PTR_ERR(cdev));
+>  	}
+> -
+>  	of_node_put(np);
+> +
+> +	priv->cdev = cdev;
 
-Signed-off-by: bean huo <beanhuo@micron.com>
----
-changes 
-	v1->v2:Deleted unused parameters in this patch (word_write_time_max and erase_time_max).
-Using usecs_to_jiffies instead of msecs_to_jiffies for convert timeout value into jiffies.
-	v2->v3:Removed unnecessary messages form comments and deleted trailing whitespace.
+Causes a build warning:
 
- drivers/mtd/chips/cfi_cmdset_0002.c |   27 ++++++++++++++++++++++++---
- 1 file changed, 24 insertions(+), 3 deletions(-)
+drivers/cpufreq/cpufreq-generic.c:313:13: warning: 'cdev' may be used
+uninitialized in this function [-Wmaybe-uninitialized]
 
-diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
-index e21fde9..f7098d6 100644
---- a/drivers/mtd/chips/cfi_cmdset_0002.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0002.c
-@@ -628,10 +628,24 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
- 		cfi->chips[i].word_write_time = 1<<cfi->cfiq->WordWriteTimeoutTyp;
- 		cfi->chips[i].buffer_write_time = 1<<cfi->cfiq->BufWriteTimeoutTyp;
- 		cfi->chips[i].erase_time = 1<<cfi->cfiq->BlockEraseTimeoutTyp;
-+		/*
-+		 * We first calculate the timeout max according to timeout
-+		 * field of struct cfi_ident that probed from chip's CFI
-+		 * aera,If haven't probed this information,we will specify
-+		 * a default value,and the time unit is us.
-+		 */
-+		if (cfi->cfiq->BufWriteTimeoutTyp &&
-+			cfi->cfiq->BufWriteTimeoutMax){
-+			cfi->chips[i].buffer_write_time_max =
-+				1<<(cfi->cfiq->BufWriteTimeoutTyp +
-+					cfi->cfiq->BufWriteTimeoutMax);
-+			} else {
-+			/* specify maximum timeout for buffer program 2000us */
-+				cfi->chips[i].buffer_write_time_max = 2000;
-+				}
- 		cfi->chips[i].ref_point_counter = 0;
- 		init_waitqueue_head(&(cfi->chips[i].wq));
- 	}
--
- 	map->fldrv = &cfi_amdstd_chipdrv;
- 
- 	return cfi_amdstd_setup(mtd);
-@@ -1462,8 +1476,15 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,  {
- 	struct cfi_private *cfi = map->fldrv_priv;
- 	unsigned long timeo = jiffies + HZ;
--	/* see comments in do_write_oneword() regarding uWriteTimeo. */
--	unsigned long uWriteTimeout = ( HZ / 1000 ) + 1;
-+	/* There maximum timeout information in the CFI area,so the
-+	 * best way is to choose the result calculated according to
-+	 * timeout field of struct cfi_ident that probed from
-+	 * norflash's CFI aera,see comments in cfi_cmdset_0002().
-+	 * uWriteTimeout is used for timeout step,it must be concerted
-+	 * into jiffies.
-+	 */
-+	unsigned long uWriteTimeout =
-+				usecs_to_jiffies(chip->buffer_write_time_max);
- 	int ret = -EIO;
- 	unsigned long cmd_adr;
- 	int z, words;
---
-1.7.9.5
+So I guess we should initialize it to NULL?
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
