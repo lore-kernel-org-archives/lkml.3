@@ -1,70 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757396AbaGCN0e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 09:26:34 -0400
-Received: from smtp6-g21.free.fr ([212.27.42.6]:43017 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932445AbaGCN0d convert rfc822-to-8bit (ORCPT
+	id S932486AbaGCN3d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 09:29:33 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:39216 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaGCN3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 09:26:33 -0400
-Date: Thu, 3 Jul 2014 15:28:26 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Mark Brown <broonie@kernel.org>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
-        lgirdwood@gmail.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        Dave Airlie <airlied@gmail.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ASoC: tda998x: add a codec to the HDMI transmitter
-Message-ID: <20140703152826.103c9d6c@armhf>
-In-Reply-To: <20140703115924.GY410@sirena.org.uk>
-References: <20140702183841.7c964832@armhf>
-	<20140702165628.GO20799@lunn.ch>
-	<20140702195154.47d6f6b4@armhf>
-	<20140702194252.GN410@sirena.org.uk>
-	<20140703074959.7c489912@armhf>
-	<20140703104432.GV410@sirena.org.uk>
-	<20140703133406.2d3e3a1d@armhf>
-	<20140703115924.GY410@sirena.org.uk>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; arm-unknown-linux-gnueabihf)
+	Thu, 3 Jul 2014 09:29:32 -0400
 MIME-Version: 1.0
+Date: Thu, 3 Jul 2014 18:59:31 +0530
+Message-ID: <CAKohpomvG-jEhMow=g5-nOAW7aBGBAfMjwRocOMU3rMfK9VTgA@mail.gmail.com>
+Subject: [Query/tick] Are we enqueing 'tick-sched' hrtimers in past ?
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jul 2014 12:59:24 +0100
-Mark Brown <broonie@kernel.org> wrote:
+Hi Thomas et al,
 
-> > > Your board happens to only be able to present the same input on both I2S
-> > > and S/PDIF but that might not apply to other boards, they may be able to
-> > > route different signals to each which would present a practical problem.  
-> 
-> > If there are two different streamss on I2S and S/PDIF, and if the audio
-> > subsystem wants to route these streams to the same connector (widget
-> > 'hdmi-out'), then, somewhere, there should be a software or a design
-> > bug. No?  
-> 
-> Yes, which is why the driver shouldn't silently ignore the situation.
-> 
-> > Anyway, the tda998x cannot know if the double route is wanted or not.  
-> 
-> It doesn't need to know, it just needs to identify something it can't
-> support either by providing a way to pick which interface is used or by
-> rejecting the second interface.
+I was analyzing few traces with 'trace-cmd' and realized that timings
+weren't matching properly. For example consider this trace:
 
-OK. no problem, I can do that: only the first stream is switched and
-the second is rejected.
+1            cat-1867  [000] d.h1   149.750891: hrtimer_expire_entry:
+hrtimer=ee7b3740 function=tick_sched_timer now=149740008694
+2            cat-1867  [000] d.h1   149.750900: softirq_raise: vec=1
+[action=TIMER]
+3            cat-1867  [000] d.h1   149.750905: softirq_raise: vec=9
+[action=RCU]
+4            cat-1867  [000] d.h2   149.750910: sched_stat_runtime:
+comm=cat pid=1867 runtime=1463250 [ns] vruntime=4777557704 [ns]
+5            cat-1867  [000] d.h1   149.750914: softirq_raise: vec=7
+[action=SCHED]
+6            cat-1867  [000] d.h1   149.750919: hrtimer_expire_exit:
+hrtimer=ee7b3740
+7            cat-1867  [000] d.h2   149.750922: hrtimer_start:
+hrtimer=ee7b3740 function=tick_sched_timer expires=149745000000
+softexpires=149745000000
 
-But, this means that there will be a lot of errors when DPCM will be
-used, because, in most cases for the Cubox (kirkwood audio + tda998x),
-both ways I2S and S/PDIF will be activated at the same time for a
-single stream (you may note that the routes from the second input
-cannot be blocked by the CODEC after it received the first input,
-because these routes have already been computed).
+Line 1: now=149.740008694 and trace-time: 149.750891. diff 10ms (consistently)
+Line 7: trace-time: 149.750922 and expires: 149.745000000, diff 5ms
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+
+So, either there is a mismatch of trace-times and required to be
+fixed? (@Steven)
+
+Or we are almost always adding the tick-sched hrtimer in past?
+
+
+I wasn't sure and tried to go through tick-sched and hrtimer core
+code again and this is what I realized.
+
+At certain points we are trying to make sure that 'jiffies' are updated
+for current-time with loops like:
+
+Lowres mode:
+
+                while (tick_nohz_reprogram(ts, now)) {
+                       now = ktime_get();
+                       tick_do_update_jiffies64(now);
+                }
+
+tick_nohz_reprogram() does check if expires is in past and returns
+-ETIME (right?). And so we are guaranteed to updated jiffies to
+current time and reprogram clkevt device in future.
+
+Highres mode:
+- First of all this kind of loop is missing from tick-handler:
+tick_sched_timer() as we are relying on hrtimer core to restart hrtimer
+for us and so we aren't trying to updated jiffies to latest values. And
+so we might (maybe always as shown in my traces) enqueue hrtimer
+in past.
+
+- At some places we do have a while loop:
+
+static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
+{
+        ...
+
+        while (1) {
+                /* Forward the time to expire in the future */
+                hrtimer_forward(&ts->sched_timer, now, tick_period);
+
+                if (ts->nohz_mode == NOHZ_MODE_HIGHRES) {
+                        hrtimer_start_expires(&ts->sched_timer,
+                                              HRTIMER_MODE_ABS_PINNED);
+                        /* Check, if the timer was already in the past */
+                        if (hrtimer_active(&ts->sched_timer))
+                                break;
+                } else {
+                        ...
+                }
+                ...
+       }
+}
+
+
+But I couldn't make out that this while loop will actually run for
+hres mode. Unlike tick_nohz_reprogram(), hrtimer_start_expires()
+never fails and calls enqueue_hrtimer() which does this:
+        timer->state |= HRTIMER_STATE_ENQUEUED;
+
+And so hrtimer_active() is guaranteed to return 'true' ? From the
+comment over hrtimer_active() here it looks we are trying to make
+sure that we aren't adding hrtimer in past, but code doesn't look
+like that.
+
+And so there is a possibility that hrtimers are getting added in past.
+
+I tried to go to the initial commit: 79bf2bb (tick-management:
+dyntick / highres functionality) and see if things were different there.
+
+But they weren't.
+
+Sorry for the long mail :)
+
+--
+viresh
