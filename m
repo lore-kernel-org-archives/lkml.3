@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030245AbaGCJXx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:23:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52186 "EHLO
+	id S1030773AbaGCJsU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:48:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52227 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030193AbaGCJXn (ORCPT
+	with ESMTP id S1030202AbaGCJXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:23:43 -0400
+	Thu, 3 Jul 2014 05:23:50 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Fabio Baltieri <fabio.baltieri@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 121/198] powerpc: Don't setup CPUs with bad status
-Date: Thu,  3 Jul 2014 10:19:24 +0100
-Message-Id: <1404379241-8590-122-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 127/198] hwmon: (ina2xx) Cast to s16 on shunt and current regs
+Date: Thu,  3 Jul 2014 10:19:30 +0100
+Message-Id: <1404379241-8590-128-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,40 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
 
-commit 59a53afe70fd530040bdc69581f03d880157f15a upstream.
+commit c0214f98943b1fe43f7be61b7782b0c8f0836f28 upstream.
 
-OPAL will mark a CPU that is guarded as "bad" in the status property of the CPU
-node.
+All devices supported by ina2xx are bidirectional and report the
+measured shunt voltage and power values as a signed 16 bit, but the
+current driver implementation caches all registers as u16, leading
+to an incorrect sign extension when reporting to userspace in
+ina2xx_get_value().
 
-Unfortunatley Linux doesn't check this property and will put the bad CPU in the
-present map.  This has caused hangs on booting when we try to unsplit the core.
+This patch fixes the problem by casting the signed registers to s16.
+Tested on an INA219.
 
-This patch checks the CPU is avaliable via this status property before putting
-it in the present map.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Tested-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kernel/setup-common.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hwmon/ina2xx.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/kernel/setup-common.c b/arch/powerpc/kernel/setup-common.c
-index ee0e0553ae0e..b12be98e0972 100644
---- a/arch/powerpc/kernel/setup-common.c
-+++ b/arch/powerpc/kernel/setup-common.c
-@@ -457,7 +457,7 @@ void __init smp_setup_cpu_maps(void)
- 		for (j = 0; j < nthreads && cpu < nr_cpu_ids; j++) {
- 			DBG("    thread %d -> cpu %d (hard id %d)\n",
- 			    j, cpu, be32_to_cpu(intserv[j]));
--			set_cpu_present(cpu, true);
-+			set_cpu_present(cpu, of_device_is_available(dn));
- 			set_hard_smp_processor_id(cpu, be32_to_cpu(intserv[j]));
- 			set_cpu_possible(cpu, true);
- 			cpu++;
+diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
+index d917a2d8c30f..5cb02dd74984 100644
+--- a/drivers/hwmon/ina2xx.c
++++ b/drivers/hwmon/ina2xx.c
+@@ -148,7 +148,8 @@ static int ina2xx_get_value(struct ina2xx_data *data, u8 reg)
+ 
+ 	switch (reg) {
+ 	case INA2XX_SHUNT_VOLTAGE:
+-		val = DIV_ROUND_CLOSEST(data->regs[reg],
++		/* signed register */
++		val = DIV_ROUND_CLOSEST((s16)data->regs[reg],
+ 					data->config->shunt_div);
+ 		break;
+ 	case INA2XX_BUS_VOLTAGE:
+@@ -160,8 +161,8 @@ static int ina2xx_get_value(struct ina2xx_data *data, u8 reg)
+ 		val = data->regs[reg] * data->config->power_lsb;
+ 		break;
+ 	case INA2XX_CURRENT:
+-		/* LSB=1mA (selected). Is in mA */
+-		val = data->regs[reg];
++		/* signed register, LSB=1mA (selected), in mA */
++		val = (s16)data->regs[reg];
+ 		break;
+ 	default:
+ 		/* programmer goofed */
 -- 
 1.9.1
 
