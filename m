@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030644AbaGCJZh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:25:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52695 "EHLO
+	id S1030629AbaGCJZf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:25:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52706 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030595AbaGCJZ2 (ORCPT
+	with ESMTP id S1030597AbaGCJZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:25:28 -0400
+	Thu, 3 Jul 2014 05:25:29 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin LaHaise <bcrl@kvack.org>, Mateusz Guzik <mguzik@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>,
+Cc: Mathias Krause <minipli@googlemail.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Jan Tore Morken <jantore@morken.priv.no>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 195/198] aio: fix kernel memory disclosure in io_getevents() introduced in v3.10
-Date: Thu,  3 Jul 2014 10:20:38 +0100
-Message-Id: <1404379241-8590-196-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 196/198] netfilter: ipt_ULOG: fix info leaks
+Date: Thu,  3 Jul 2014 10:20:39 +0100
+Message-Id: <1404379241-8590-197-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -29,44 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin LaHaise <bcrl@kvack.org>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit edfbbf388f293d70bf4b7c0bc38774d05e6f711a upstream.
+commit 278f2b3e2af5f32ea1afe34fa12a2518153e6e49 upstream.
 
-A kernel memory disclosure was introduced in aio_read_events_ring() in v3.10
-by commit a31ad380bed817aa25f8830ad23e1a0480fef797.  The changes made to
-aio_read_events_ring() failed to correctly limit the index into
-ctx->ring_pages[], allowing an attacked to cause the subsequent kmap() of
-an arbitrary page with a copy_to_user() to copy the contents into userspace.
-This vulnerability has been assigned CVE-2014-0206.  Thanks to Mateusz and
-Petr for disclosing this issue.
+The ulog messages leak heap bytes by the means of padding bytes and
+incompletely filled string arrays. Fix those by memset(0)'ing the
+whole struct before filling it.
 
-This patch applies to v3.12+.  A separate backport is needed for 3.10/3.11.
-
-[jmoyer@redhat.com: backported to 3.10]
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Mateusz Guzik <mguzik@redhat.com>
-Cc: Petr Matousek <pmatouse@redhat.com>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Jan Tore Morken <jantore@morken.priv.no>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/aio.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/netfilter/ipt_ULOG.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 48f02745b876..618021906aa9 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -719,6 +719,8 @@ static long aio_read_events_ring(struct kioctx *ctx,
- 	if (head == ctx->tail)
- 		goto out;
+diff --git a/net/ipv4/netfilter/ipt_ULOG.c b/net/ipv4/netfilter/ipt_ULOG.c
+index cbc22158af49..9cb993cd224b 100644
+--- a/net/ipv4/netfilter/ipt_ULOG.c
++++ b/net/ipv4/netfilter/ipt_ULOG.c
+@@ -220,6 +220,7 @@ static void ipt_ulog_packet(struct net *net,
+ 	ub->qlen++;
  
-+	head %= ctx->nr_events;
-+
- 	while (ret < nr) {
- 		long avail;
- 		struct io_event *ev;
+ 	pm = nlmsg_data(nlh);
++	memset(pm, 0, sizeof(*pm));
+ 
+ 	/* We might not have a timestamp, get one */
+ 	if (skb->tstamp.tv64 == 0)
+@@ -238,8 +239,6 @@ static void ipt_ulog_packet(struct net *net,
+ 	}
+ 	else if (loginfo->prefix[0] != '\0')
+ 		strncpy(pm->prefix, loginfo->prefix, sizeof(pm->prefix));
+-	else
+-		*(pm->prefix) = '\0';
+ 
+ 	if (in && in->hard_header_len > 0 &&
+ 	    skb->mac_header != skb->network_header &&
+@@ -251,13 +250,9 @@ static void ipt_ulog_packet(struct net *net,
+ 
+ 	if (in)
+ 		strncpy(pm->indev_name, in->name, sizeof(pm->indev_name));
+-	else
+-		pm->indev_name[0] = '\0';
+ 
+ 	if (out)
+ 		strncpy(pm->outdev_name, out->name, sizeof(pm->outdev_name));
+-	else
+-		pm->outdev_name[0] = '\0';
+ 
+ 	/* copy_len <= skb->len, so can't fail. */
+ 	if (skb_copy_bits(skb, 0, pm->payload, copy_len) < 0)
 -- 
 1.9.1
 
