@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758061AbaGCJVO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:21:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51393 "EHLO
+	id S1758094AbaGCJVS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:21:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51452 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757656AbaGCJVA (ORCPT
+	with ESMTP id S1758062AbaGCJVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:21:00 -0400
+	Thu, 3 Jul 2014 05:21:15 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Mike Frysinger <vapier@gentoo.org>, "H.J. Lu" <hjl.tools@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 009/198] bluetooth: hci_ldisc: fix deadlock condition
-Date: Thu,  3 Jul 2014 10:17:32 +0100
-Message-Id: <1404379241-8590-10-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 015/198] x86, x32: Use compat shims for io_{setup,submit}
+Date: Thu,  3 Jul 2014 10:17:38 +0100
+Message-Id: <1404379241-8590-16-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,104 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Mike Frysinger <vapier@gentoo.org>
 
-commit da64c27d3c93ee9f89956b9de86c4127eb244494 upstream.
+commit 7fd44dacdd803c0bbf38bf478d51d280902bb0f1 upstream.
 
-LDISCs shouldn't call tty->ops->write() from within
-->write_wakeup().
+The io_setup takes a pointer to a context id of type aio_context_t.
+This in turn is typed to a __kernel_ulong_t.  We could tweak the
+exported headers to define this as a 64bit quantity for specific
+ABIs, but since we already have a 32bit compat shim for the x86 ABI,
+let's just re-use that logic.  The libaio package is also written to
+expect this as a pointer type, so a compat shim would simplify that.
 
-->write_wakeup() is called with port lock taken and
-IRQs disabled, tty->ops->write() will try to acquire
-the same port lock and we will deadlock.
+The io_submit func operates on an array of pointers to iocb structs.
+Padding out the array to be 64bit aligned is a huge pain, so convert
+it over to the existing compat shim too.
 
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
-Reported-by: Huang Shijie <b32955@freescale.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Tested-by: Andreas Bießmann <andreas@biessmann.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+We don't convert io_getevents to the compat func as its only purpose
+is to handle the timespec struct, and the x32 ABI uses 64bit times.
+
+With this change, the libaio package can now pass its testsuite when
+built for the x32 ABI.
+
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Link: http://lkml.kernel.org/r/1399250595-5005-1-git-send-email-vapier@gentoo.org
+Cc: H.J. Lu <hjl.tools@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/bluetooth/hci_ldisc.c | 24 +++++++++++++++++++-----
- drivers/bluetooth/hci_uart.h  |  1 +
- 2 files changed, 20 insertions(+), 5 deletions(-)
+ arch/x86/syscalls/syscall_64.tbl | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
-index bc68a440d432..c4d2f0e48685 100644
---- a/drivers/bluetooth/hci_ldisc.c
-+++ b/drivers/bluetooth/hci_ldisc.c
-@@ -118,10 +118,6 @@ static inline struct sk_buff *hci_uart_dequeue(struct hci_uart *hu)
- 
- int hci_uart_tx_wakeup(struct hci_uart *hu)
- {
--	struct tty_struct *tty = hu->tty;
--	struct hci_dev *hdev = hu->hdev;
--	struct sk_buff *skb;
--
- 	if (test_and_set_bit(HCI_UART_SENDING, &hu->tx_state)) {
- 		set_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
- 		return 0;
-@@ -129,6 +125,22 @@ int hci_uart_tx_wakeup(struct hci_uart *hu)
- 
- 	BT_DBG("");
- 
-+	schedule_work(&hu->write_work);
-+
-+	return 0;
-+}
-+
-+static void hci_uart_write_work(struct work_struct *work)
-+{
-+	struct hci_uart *hu = container_of(work, struct hci_uart, write_work);
-+	struct tty_struct *tty = hu->tty;
-+	struct hci_dev *hdev = hu->hdev;
-+	struct sk_buff *skb;
-+
-+	/* REVISIT: should we cope with bad skbs or ->write() returning
-+	 * and error value ?
-+	 */
-+
- restart:
- 	clear_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
- 
-@@ -153,7 +165,6 @@ restart:
- 		goto restart;
- 
- 	clear_bit(HCI_UART_SENDING, &hu->tx_state);
--	return 0;
- }
- 
- static void hci_uart_init_work(struct work_struct *work)
-@@ -289,6 +300,7 @@ static int hci_uart_tty_open(struct tty_struct *tty)
- 	tty->receive_room = 65536;
- 
- 	INIT_WORK(&hu->init_ready, hci_uart_init_work);
-+	INIT_WORK(&hu->write_work, hci_uart_write_work);
- 
- 	spin_lock_init(&hu->rx_lock);
- 
-@@ -326,6 +338,8 @@ static void hci_uart_tty_close(struct tty_struct *tty)
- 	if (hdev)
- 		hci_uart_close(hdev);
- 
-+	cancel_work_sync(&hu->write_work);
-+
- 	if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
- 		if (hdev) {
- 			if (test_bit(HCI_UART_REGISTERED, &hu->flags))
-diff --git a/drivers/bluetooth/hci_uart.h b/drivers/bluetooth/hci_uart.h
-index fffa61ff5cb1..12df101ca942 100644
---- a/drivers/bluetooth/hci_uart.h
-+++ b/drivers/bluetooth/hci_uart.h
-@@ -68,6 +68,7 @@ struct hci_uart {
- 	unsigned long		hdev_flags;
- 
- 	struct work_struct	init_ready;
-+	struct work_struct	write_work;
- 
- 	struct hci_uart_proto	*proto;
- 	void			*priv;
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index 38ae65dfd14f..63a899304d27 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -212,10 +212,10 @@
+ 203	common	sched_setaffinity	sys_sched_setaffinity
+ 204	common	sched_getaffinity	sys_sched_getaffinity
+ 205	64	set_thread_area
+-206	common	io_setup		sys_io_setup
++206	64	io_setup		sys_io_setup
+ 207	common	io_destroy		sys_io_destroy
+ 208	common	io_getevents		sys_io_getevents
+-209	common	io_submit		sys_io_submit
++209	64	io_submit		sys_io_submit
+ 210	common	io_cancel		sys_io_cancel
+ 211	64	get_thread_area
+ 212	common	lookup_dcookie		sys_lookup_dcookie
+@@ -356,3 +356,5 @@
+ 540	x32	process_vm_writev	compat_sys_process_vm_writev
+ 541	x32	setsockopt		compat_sys_setsockopt
+ 542	x32	getsockopt		compat_sys_getsockopt
++543	x32	io_setup		compat_sys_io_setup
++544	x32	io_submit		compat_sys_io_submit
 -- 
 1.9.1
 
