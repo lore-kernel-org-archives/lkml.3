@@ -1,76 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759602AbaGCVfJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 17:35:09 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:3426 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073AbaGCVfH (ORCPT
+	id S1759604AbaGCVhR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 17:37:17 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:45543 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753201AbaGCVhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 17:35:07 -0400
-Message-ID: <53B5CC85.1040603@hp.com>
-Date: Thu, 03 Jul 2014 17:35:01 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Thu, 3 Jul 2014 17:37:15 -0400
+Date: Thu, 3 Jul 2014 14:37:12 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: fs: use after free in /proc/pid/mountinfo
+In-Reply-To: <53B4CAB8.5070407@oracle.com>
+Message-ID: <alpine.DEB.2.02.1407031434470.10658@chino.kir.corp.google.com>
+References: <53B3F331.7090204@oracle.com> <53B4CAB8.5070407@oracle.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Jason Low <jason.low2@hp.com>
-CC: Davidlohr Bueso <davidlohr@hp.com>, Peter Zijlstra <peterz@infradead.org>,
-        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        mingo@kernel.org, linux-kernel@vger.kernel.org, riel@redhat.com,
-        akpm@linux-foundation.org, hpa@zytor.com, andi@firstfloor.org,
-        James.Bottomley@hansenpartnership.com, rostedt@goodmis.org,
-        tim.c.chen@linux.intel.com, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [RFC] Cancellable MCS spinlock rework
-References: <1404318070-2856-1-git-send-email-jason.low2@hp.com>   <20140702162749.GP19379@twins.programming.kicks-ass.net>   <1404320356.3170.12.camel@j-VirtualBox>   <20140702172333.GQ19379@twins.programming.kicks-ass.net>   <1404322203.3170.17.camel@j-VirtualBox>   <20140703073107.GS19379@twins.programming.kicks-ass.net>   <1404407389.2498.3.camel@buesod1.americas.hpqcorp.net>  <1404412485.8764.33.camel@j-VirtualBox> <53B5BE99.1090008@hp.com> <1404420708.8764.54.camel@j-VirtualBox>
-In-Reply-To: <1404420708.8764.54.camel@j-VirtualBox>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2014 04:51 PM, Jason Low wrote:
-> On Thu, 2014-07-03 at 16:35 -0400, Waiman Long wrote:
->> On 07/03/2014 02:34 PM, Jason Low wrote:
->>> On Thu, 2014-07-03 at 10:09 -0700, Davidlohr Bueso wrote:
->>>> On Thu, 2014-07-03 at 09:31 +0200, Peter Zijlstra wrote:
->>>>> On Wed, Jul 02, 2014 at 10:30:03AM -0700, Jason Low wrote:
->>>>>> Would potentially reducing the size of the rw semaphore structure by 32
->>>>>> bits (for all architectures using optimistic spinning) be a nice
->>>>>> benefit?
->>>>> Possibly, although I had a look at the mutex structure and we didn't
->>>>> have a hole to place it in, unlike what you found with the rwsem.
->>>> Yeah, and currently struct rw_semaphore is the largest lock we have in
->>>> the kernel. Shaving off space is definitely welcome.
->>> Right, especially if it could help things like xfs inode.
->>>
->> I do see a point in reducing the size of the rwsem structure. However, I
->> don't quite understand the point of converting pointers in the
->> optimistic_spin_queue structure to atomic_t.
-> Converting the pointers in the optimistic_spin_queue to atomic_t would
-> mean we're fully operating on atomic operations instead of using the
-> potentially racy cmpxchg + ACCESS_ONCE stores on the pointers.
+On Wed, 2 Jul 2014, Sasha Levin wrote:
 
-Yes, the ACCESS_ONCE macro for data store does have problem on some 
-architectures. However, I prefer a more holistic solution to solve this 
-problem rather than a workaround by changing the pointers to atomic_t's. 
-It is because even if we make the change,  we are still not sure if that 
-will work for those architectures as we have no machine to verify that. 
-Why not let the champions of those architectures to propose changes 
-instead of making some untested changes now and penalize commonly used 
-architectures like x86.
+> > Hi all,
+> > 
+> > While fuzzing with trinity inside a KVM tools guest running the latest -next
+> > kernel I've stumbled on the following spew:
+> > 
+> > [ 3569.869749] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> > [ 3569.869769] Dumping ftrace buffer:
+> > [ 3569.869879]    (ftrace buffer empty)
+> > [ 3569.869894] Modules linked in:
+> > [ 3569.869900] CPU: 7 PID: 10239 Comm: trinity-c86 Tainted: G        W      3.16.0-rc3-next-20140701-sasha-00023-g4eb2544-dirty #759
+> > [ 3569.869906] task: ffff88039e873000 ti: ffff880393f8c000 task.ti: ffff880393f8c000
+> > [ 3569.869932] RIP: show_mountinfo (fs/proc_namespace.c:127)
+> > [ 3569.869938] RSP: 0018:ffff880393f8fd08  EFLAGS: 00010282
+> > [ 3569.869943] RAX: ffff880200c6d208 RBX: 6b6b6b6b6b6b6b03 RCX: 0000000000000074
+> > [ 3569.869946] RDX: 0000000000000000 RSI: 6b6b6b6b6b6b6b03 RDI: ffff880200c6d208
+> > [ 3569.869953] RBP: ffff880393f8fd58 R08: 0000000000000001 R09: ffff88039e873d38
+> > [ 3569.869957] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880200c6d208
+> > [ 3569.869962] R13: 6b6b6b6b6b6b6b6b R14: ffff880393f8ff50 R15: ffff880200c6d208
+> > [ 3569.869966] FS:  00007f6f20db9700(0000) GS:ffff8801ece00000(0000) knlGS:0000000000000000
+> > [ 3569.869969] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > [ 3569.869974] CR2: 00007f6f20bee000 CR3: 00000003a0775000 CR4: 00000000000006a0
+> > [ 3569.869992] Stack:
+> > [ 3569.870011]  ffff880393f8ff50 ffff880200c6d208 ffff880393f8fd48 ffffffff984e10ea
+> > [ 3569.870025]  ffffffff9532c7fe ffff8802069a3b80 0000000000000065 6b6b6b6b6b6b6b6b
+> > [ 3569.870036]  ffff880393f8ff50 ffff880200c6d208 ffff880393f8fd68 ffffffff9532c756
+> > [ 3569.870038] Call Trace:
+> > [ 3569.870051] ? down_read (kernel/locking/rwsem.c:45 (discriminator 2))
+> > [ 3569.870059] ? m_start (kernel/module.c:3634)
+> > [ 3569.870069] m_show (kernel/module.c:3649)
+> > [ 3569.870076] seq_read (fs/seq_file.c:235)
+> > [ 3569.870081] ? single_open_size (fs/seq_file.c:166)
+> > [ 3569.870092] do_loop_readv_writev (fs/read_write.c:708)
+> > [ 3569.870098] ? single_open_size (fs/seq_file.c:166)
+> > [ 3569.870098] do_readv_writev (fs/read_write.c:840)
+> > [ 3569.870098] ? get_parent_ip (kernel/sched/core.c:2550)
+> > [ 3569.870098] ? mutex_lock_nested (./arch/x86/include/asm/preempt.h:98 kernel/locking/mutex.c:570 kernel/locking/mutex.c:587)
+> > [ 3569.870098] ? __fdget_pos (fs/file.c:714)
+> > [ 3569.870098] ? __fdget_pos (fs/file.c:714)
+> > [ 3569.870098] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
+> > [ 3569.870098] ? __fget_light (fs/file.c:685)
+> > [ 3569.870098] vfs_readv (fs/read_write.c:866)
+> > [ 3569.870098] SyS_readv (fs/read_write.c:892 fs/read_write.c:884)
+> > [ 3569.870098] tracesys (arch/x86/kernel/entry_64.S:542)
+> > [ 3569.870098] Code: 00 00 00 00 66 66 66 66 90 55 48 89 e5 48 83 ec 50 48 89 5d d8 48 89 f3 4c 89 65 e0 49 89 fc 4c 89 6d e8 4c 89 75 f0 4c 89 7d f8 <48> 8b 06 48 89 75 b0 4c 8b 76 08 8b 96 ec 00 00 00 48 89 45 b8
+> > All code
+> > ========
+> >    0:	00 00                	add    %al,(%rax)
+> >    2:	00 00                	add    %al,(%rax)
+> >    4:	66 66 66 66 90       	data32 data32 data32 xchg %ax,%ax
+> >    9:	55                   	push   %rbp
+> >    a:	48 89 e5             	mov    %rsp,%rbp
+> >    d:	48 83 ec 50          	sub    $0x50,%rsp
+> >   11:	48 89 5d d8          	mov    %rbx,-0x28(%rbp)
+> >   15:	48 89 f3             	mov    %rsi,%rbx
+> >   18:	4c 89 65 e0          	mov    %r12,-0x20(%rbp)
+> >   1c:	49 89 fc             	mov    %rdi,%r12
+> >   1f:	4c 89 6d e8          	mov    %r13,-0x18(%rbp)
+> >   23:	4c 89 75 f0          	mov    %r14,-0x10(%rbp)
+> >   27:	4c 89 7d f8          	mov    %r15,-0x8(%rbp)
+> >   2b:*	48 8b 06             	mov    (%rsi),%rax		<-- trapping instruction
+> >   2e:	48 89 75 b0          	mov    %rsi,-0x50(%rbp)
+> >   32:	4c 8b 76 08          	mov    0x8(%rsi),%r14
+> >   36:	8b 96 ec 00 00 00    	mov    0xec(%rsi),%edx
+> >   3c:	48 89 45 b8          	mov    %rax,-0x48(%rbp)
 
-> If we're in the process of using the CPU numbers in atomic_t, I thought
-> we might as well fix that as well since it has actually been shown to
-> result in lockups on some architectures. We can then avoid needing to
-> implement the tricky architecture workarounds for optimistic spinning.
-> Wouldn't that be a "nice-have"?
->
-> Jason
->
+Does this now reproduce on Linus's tree?  If so, does reverting commit
+058504edd026 ("fs/seq_file: fallback to vmalloc allocation") prevent this 
+issue?
 
-I am not aware of any tricky architectural workarounds other than 
-disabling optimistic spinning for those that don't support it.
-
--Longman
-
+This is a use-after-free since the poison value is 0x6b and I'm presuming 
+that your /proc/self/mountinfo may be larger than PAGE_SIZE in your 
+testing environment.
