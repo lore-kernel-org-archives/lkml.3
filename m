@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759725AbaGCVsp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 17:48:45 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:53920 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192AbaGCVso (ORCPT
+	id S1759513AbaGCVwN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 17:52:13 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:53521 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753201AbaGCVwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 17:48:44 -0400
-Date: Thu, 3 Jul 2014 14:48:42 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org
-Subject: Re: commit message 8a5b20aebaa3 refers to non-existing commit ?
-In-Reply-To: <53B5CDDD.8000009@gmx.de>
-Message-ID: <alpine.DEB.2.02.1407031445390.10658@chino.kir.corp.google.com>
-References: <53B5CDDD.8000009@gmx.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 3 Jul 2014 17:52:11 -0400
+Date: Thu, 3 Jul 2014 22:52:00 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rob Clark <robdclark@gmail.com>
+Cc: Benjamin Gaignard <benjamin.gaignard@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>
+Subject: Re: [PATCH v5 00/11] Add DRM for stih4xx platforms
+Message-ID: <20140703215200.GG32514@n2100.arm.linux.org.uk>
+References: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org> <CAF6AEGsLbmos9nz-AYv2v0g33BYdAgKYTe8_ihDWEF3GK_=gjQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-666889341-1404424123=:10658"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAF6AEGsLbmos9nz-AYv2v0g33BYdAgKYTe8_ihDWEF3GK_=gjQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Thu, Jul 03, 2014 at 05:31:21PM -0400, Rob Clark wrote:
+> >From a brief look, it looks like my comments have been addressed, so I
+> think this is starting to shape up..
+> 
+> Laurent/Thierry/Russell, I don't suppose any of you are likely to have
+> time before 3.17 merge window to give sti one last once-over to see
+> what I missed ;-)
 
---531381512-666889341-1404424123=:10658
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+As this appears to be using the component helpers, it would be good for
+the author to be pre-warned about the change to the API.  I'm going to
+be doing this as a two step thing.
 
-On Thu, 3 Jul 2014, Toralf Förster wrote:
+The first stage of it has just been taken by Greg this evening.  This
+retires old behaviour that was needed for the initial versions of imx-drm,
+and fixes a bug.  More importantly, it introduces a new interface where
+you build the list of expected components before calling
+component_master_add(), passing it into that function.
 
-> in 
-> commit 8a5b20aebaa3d0ade5b8381e64d35fb777b7b355
-> Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Date:   Wed Jul 2 15:22:35 2014 -0700
-> 
->     slub: fix off by one in number of slab tests
-> 
-> 
-> you stated:
-> 
->     Fixes 91cb69620284 ("slub: make dead memcg caches discard free slabs
->     immediately").
-> 
-> 
-> which I cannot find in main line currently. Pls could you point me to that commit ?
-> 
+It is slightly less flexible from the driver writer's view point, but
+allows us to do more in the component helper, and support some features
+that others would like to see (such as being able to add additional
+optional components after the initial bind (that's not much interest
+to DRM though.)
 
-It hasn't been pushed to Linus yet, it's still sitting in the -mm tree:
-http://ozlabs.org/~akpm/mmotm/broken-out/slub-make-dead-memcg-caches-discard-free-slabs-immediately.patch
+This should make the v3.17 merge window.  I'm hoping that by forewarning
+about the change, that people can be aware of it and have patches
+prepared for v3.18 (or maybe even v3.17) to convert over to it, so we
+can get rid of the older interface before we get too many users of it.
 
-Not sure where the SHA1 came from, probably linux-next.  So the fix made 
-it to Linus before the offending commit, but the code is still correct.
---531381512-666889341-1404424123=:10658--
+I've just peeked at the binding document in the first patch.  I notice
+that it isn't making use of the of_graph stuff, which is a bit of a
+shame because I've sent a RFC patch adding drivers/gpu/drm/drm_of.c
+to provide a helper which encoders can use to get the CRTC mask from
+an of_graph representation.
+
+I'm using this not only for imx-drm, but also for tda998x - and that's
+where the problems are likely to start if we end up with different
+DRM implementations doing different solutions to the connectivity
+problem.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
