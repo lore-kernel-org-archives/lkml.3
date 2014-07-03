@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759380AbaGCQPG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:15:06 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:62039 "EHLO
+	id S1759366AbaGCQPD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:15:03 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:16237 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759229AbaGCQM3 (ORCPT
+	by vger.kernel.org with ESMTP id S932231AbaGCQM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Jul 2014 12:12:29 -0400
-Message-Id: <20140703161226.685605501@goodmis.org>
+Message-Id: <20140703161227.010531021@goodmis.org>
 User-Agent: quilt/0.63-1
-Date: Thu, 03 Jul 2014 12:05:22 -0400
+Date: Thu, 03 Jul 2014 12:05:24 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [for-next][PATCH 19/21] tracing: Improve message of empty set_graph_notrace file
+Subject: [for-next][PATCH 21/21] tracing: Add description of set_graph_notrace to tracing/README
 References: <20140703160503.006976702@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0019-tracing-Improve-message-of-empty-set_graph_notrace-f.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0021-tracing-Add-description-of-set_graph_notrace-to-trac.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,41 +27,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-When there's no entry in set_graph_notrace, it'll print below message
+It was missing the description of set_graph_notrace file.  Add it.
 
-  #### all functions enabled ####
+Link: http://lkml.kernel.org/p/1402590233-22321-5-git-send-email-namhyung@kernel.org
 
-While this is technically correct, it's better to print like below:
-
-  #### no functions disabled ####
-
-Link: http://lkml.kernel.org/p/1402590233-22321-3-git-send-email-namhyung@kernel.org
-
-Reported-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ kernel/trace/trace.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 17885a27281c..ee245c0659a6 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -4089,7 +4089,12 @@ static int g_show(struct seq_file *m, void *v)
- 		return 0;
- 
- 	if (ptr == (unsigned long *)1) {
--		seq_printf(m, "#### all functions enabled ####\n");
-+		struct ftrace_graph_data *fgd = m->private;
-+
-+		if (fgd->table == ftrace_graph_funcs)
-+			seq_printf(m, "#### all functions enabled ####\n");
-+		else
-+			seq_printf(m, "#### no functions disabled ####\n");
- 		return 0;
- 	}
- 
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 4caa814d41c3..822f6a0894f7 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3663,6 +3663,7 @@ static const char readme_msg[] =
+ #endif
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ 	"  set_graph_function\t- Trace the nested calls of a function (function_graph)\n"
++	"  set_graph_notrace\t- Do not trace the nested calls of a function (function_graph)\n"
+ 	"  max_graph_depth\t- Trace a limited depth of nested calls (0 is unlimited)\n"
+ #endif
+ #ifdef CONFIG_TRACER_SNAPSHOT
 -- 
 2.0.0
 
