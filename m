@@ -1,71 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757312AbaGCHbc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 03:31:32 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:55263 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755553AbaGCHbb (ORCPT
+	id S1757447AbaGCHbi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 03:31:38 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:44421 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756010AbaGCHbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 03:31:31 -0400
-Date: Thu, 3 Jul 2014 09:31:07 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        mingo@kernel.org, Waiman.Long@hp.com, davidlohr@hp.com,
-        linux-kernel@vger.kernel.org, riel@redhat.com,
-        akpm@linux-foundation.org, hpa@zytor.com, andi@firstfloor.org,
-        James.Bottomley@hansenpartnership.com, rostedt@goodmis.org,
-        tim.c.chen@linux.intel.com, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [RFC] Cancellable MCS spinlock rework
-Message-ID: <20140703073107.GS19379@twins.programming.kicks-ass.net>
-References: <1404318070-2856-1-git-send-email-jason.low2@hp.com>
- <20140702162749.GP19379@twins.programming.kicks-ass.net>
- <1404320356.3170.12.camel@j-VirtualBox>
- <20140702172333.GQ19379@twins.programming.kicks-ass.net>
- <1404322203.3170.17.camel@j-VirtualBox>
+	Thu, 3 Jul 2014 03:31:36 -0400
+Date: Thu, 3 Jul 2014 08:31:29 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Andrew Bresticker <abrestic@chromium.org>, swarren@wwwdotorg.org,
+        olof@lixom.net, Sonny Rao <sonnyrao@chromium.org>,
+        linux-samsung-soc@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Bill Richardson <wfrichar@chromium.org>, sjg@chromium.org,
+        Wolfram Sang <wsa@the-dreams.de>, broonie@kernel.org,
+        sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 08/10] mfd: cros_ec: Check result code from EC messages
+Message-ID: <20140703073129.GF30534@lee--X1>
+References: <1403115247-8853-1-git-send-email-dianders@chromium.org>
+ <1403115247-8853-9-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cxMSjUqMQBJIqbX5"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1404322203.3170.17.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1403115247-8853-9-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 18 Jun 2014, Doug Anderson wrote:
 
---cxMSjUqMQBJIqbX5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> From: Bill Richardson <wfrichar@chromium.org>
+> 
+> Just because the host was able to talk to the EC doesn't mean that the EC
+> was happy with what it was told. Errors in communincation are not the same
+> as error messages from the EC itself.
+> 
+> This change lets the EC report its errors separately.
+> 
+> [dianders: Added common function to cros_ec.c]
+> 
+> Signed-off-by: Bill Richardson <wfrichar@chromium.org>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+> Changes in v2:
+> - Added common function to cros_ec.c
+> - Changed to dev_dbg() as per http://crosreview.com/66726
+> 
+>  drivers/mfd/cros_ec.c       | 18 ++++++++++++++++++
+>  drivers/mfd/cros_ec_i2c.c   |  8 +++-----
+>  drivers/mfd/cros_ec_spi.c   | 19 ++++++-------------
+>  include/linux/mfd/cros_ec.h | 12 ++++++++++++
+>  4 files changed, 39 insertions(+), 18 deletions(-)
 
-On Wed, Jul 02, 2014 at 10:30:03AM -0700, Jason Low wrote:
-> Would potentially reducing the size of the rw semaphore structure by 32
-> bits (for all architectures using optimistic spinning) be a nice
-> benefit?
+Patch applied with Simon's Reviewed-by.
 
-Possibly, although I had a look at the mutex structure and we didn't
-have a hole to place it in, unlike what you found with the rwsem.
+Clause: There is a chance that this patch might not be seen in -next
+for ~24-48hrs.  If it's not there by 72hrs, feel free to poke.
 
---cxMSjUqMQBJIqbX5
-Content-Type: application/pgp-signature
+> diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
+> index 4851ed2..83e30c6 100644
+> --- a/drivers/mfd/cros_ec.c
+> +++ b/drivers/mfd/cros_ec.c
+> @@ -44,6 +44,24 @@ int cros_ec_prepare_tx(struct cros_ec_device *ec_dev,
+>  }
+>  EXPORT_SYMBOL(cros_ec_prepare_tx);
+>  
+> +int cros_ec_check_result(struct cros_ec_device *ec_dev,
+> +			 struct cros_ec_command *msg)
+> +{
+> +	switch (msg->result) {
+> +	case EC_RES_SUCCESS:
+> +		return 0;
+> +	case EC_RES_IN_PROGRESS:
+> +		dev_dbg(ec_dev->dev, "command 0x%02x in progress\n",
+> +			msg->command);
+> +		return -EAGAIN;
+> +	default:
+> +		dev_dbg(ec_dev->dev, "command 0x%02x returned %d\n",
+> +			msg->command, msg->result);
+> +		return 0;
+> +	}
+> +}
+> +EXPORT_SYMBOL(cros_ec_check_result);
+> +
+>  static irqreturn_t ec_irq_thread(int irq, void *data)
+>  {
+>  	struct cros_ec_device *ec_dev = data;
+> diff --git a/drivers/mfd/cros_ec_i2c.c b/drivers/mfd/cros_ec_i2c.c
+> index 5bb32f5..189e7d1 100644
+> --- a/drivers/mfd/cros_ec_i2c.c
+> +++ b/drivers/mfd/cros_ec_i2c.c
+> @@ -92,12 +92,10 @@ static int cros_ec_cmd_xfer_i2c(struct cros_ec_device *ec_dev,
+>  	}
+>  
+>  	/* check response error code */
+> -	if (i2c_msg[1].buf[0]) {
+> -		dev_warn(ec_dev->dev, "command 0x%02x returned an error %d\n",
+> -			 msg->command, i2c_msg[1].buf[0]);
+> -		ret = -EINVAL;
+> +	msg->result = i2c_msg[1].buf[0];
+> +	ret = cros_ec_check_result(ec_dev, msg);
+> +	if (ret)
+>  		goto done;
+> -	}
+>  
+>  	/* copy response packet payload and compute checksum */
+>  	sum = in_buf[0] + in_buf[1];
+> diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
+> index 09ca789..c975087 100644
+> --- a/drivers/mfd/cros_ec_spi.c
+> +++ b/drivers/mfd/cros_ec_spi.c
+> @@ -289,21 +289,14 @@ static int cros_ec_cmd_xfer_spi(struct cros_ec_device *ec_dev,
+>  		goto exit;
+>  	}
+>  
+> -	/* check response error code */
+>  	ptr = ec_dev->din;
+> -	if (ptr[0]) {
+> -		if (ptr[0] == EC_RES_IN_PROGRESS) {
+> -			dev_dbg(ec_dev->dev, "command 0x%02x in progress\n",
+> -				ec_msg->command);
+> -			ret = -EAGAIN;
+> -			goto exit;
+> -		}
+> -		dev_warn(ec_dev->dev, "command 0x%02x returned an error %d\n",
+> -			 ec_msg->command, ptr[0]);
+> -		debug_packet(ec_dev->dev, "in_err", ptr, len);
+> -		ret = -EINVAL;
+> +
+> +	/* check response error code */
+> +	ec_msg->result = ptr[0];
+> +	ret = cros_ec_check_result(ec_dev, ec_msg);
+> +	if (ret)
+>  		goto exit;
+> -	}
+> +
+>  	len = ptr[1];
+>  	sum = ptr[0] + ptr[1];
+>  	if (len > ec_msg->insize) {
+> diff --git a/include/linux/mfd/cros_ec.h b/include/linux/mfd/cros_ec.h
+> index 60c0880..1f79f16 100644
+> --- a/include/linux/mfd/cros_ec.h
+> +++ b/include/linux/mfd/cros_ec.h
+> @@ -143,6 +143,18 @@ int cros_ec_prepare_tx(struct cros_ec_device *ec_dev,
+>  		       struct cros_ec_command *msg);
+>  
+>  /**
+> + * cros_ec_check_result - Check ec_msg->result
+> + *
+> + * This is used by ChromeOS EC drivers to check the ec_msg->result for
+> + * errors and to warn about them.
+> + *
+> + * @ec_dev: EC device
+> + * @msg: Message to check
+> + */
+> +int cros_ec_check_result(struct cros_ec_device *ec_dev,
+> +			 struct cros_ec_command *msg);
+> +
+> +/**
+>   * cros_ec_remove - Remove a ChromeOS EC
+>   *
+>   * Call this to deregister a ChromeOS EC, then clean up any private data.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTtQa2AAoJEHZH4aRLwOS6+i4P/jm5zge4BYaDN0NKbCco8/E5
-6SW3Fe5jHQ2awMKb6DgmvOGC6dvD+vKqIHVkzVOSTjULdqUweAtaMj6r6UYHxr8v
-OKQn/Kkk1gHfwoFx/zchyE5Ic6gysWP1uKl2SS/VW1oetFXkPsHDLWl29tuKBkT0
-YnpVMqFKvOGzCBu1kRb7ZJoDBU4uOXmI4a9+xeurl3D8tQybxifGkmqTfZVhxc//
-jft6U0tAoZet+WTUmsF+cU9nXWkgs13M/DIQ/zOedKRB2s2PI2sRZspQKlgl5Dem
-jt2m1bCRPwgCvmPHrPDgih6tfe0gtD8sS4Yw7QieikHsGfhmGsS9+YsxgCVN2b2i
-0oChKy5xHWSyvFFelz8zkfQmfjiIqpiPjcT0YmSulEGxUwcNxu60PIlJD47DTp8E
-bSOXYoeqjqJBc5H6jaLRIdf5ZVp1jZAFPPXLL6LT57RwT5VJ5YuPxo/EPFxDp3Se
-9KEfmPOYKVWLpzTI9U6yhT7vCEVowJcj/cweAEcFiiVgwHXyVBmRmr3gFOYhtBc0
-LRnR9M92yFL6XzJ9JbfZ5nWpc19OmE1Ly6G+kUrCXwzxndvFjB2ja/H+iiTzaDK+
-0QcGPDVYn/j+WYhU+UZl7HRgx7TFizYzlKLtcCQVgNfpfIBXEqJ7JcIHyqXnE8Gf
-3P6p7a2GyzRvazsfog8T
-=fbmn
------END PGP SIGNATURE-----
-
---cxMSjUqMQBJIqbX5--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
