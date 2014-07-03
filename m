@@ -1,157 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965264AbaGCKFD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:05:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51784 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756262AbaGCJWY (ORCPT
+	id S965431AbaGCKFa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:05:30 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:48258 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965277AbaGCKF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:22:24 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 067/198] USB: cdc-acm: fix broken runtime suspend
-Date: Thu,  3 Jul 2014 10:18:30 +0100
-Message-Id: <1404379241-8590-68-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 3 Jul 2014 06:05:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <1403868134-31741-1-git-send-email-acourbot@nvidia.com>
+References: <1403868134-31741-1-git-send-email-acourbot@nvidia.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 3 Jul 2014 19:05:05 +0900
+Message-ID: <CAAVeFuLWpfjqWFRyGqROdxw7qP2OkXFZTPkCHCtwzwE=VjjRgQ@mail.gmail.com>
+Subject: Re: [PATCH v3 0/2] drm: nouveau: memory coherency for ARM
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
+        Lucas Stach <dev@lynxeye.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.13 -stable review patch.  If anyone has any objections, please let me know.
+While this series is more correct from the DMA API point of view, it
+is also much heavier as it strictly disables the use of any cache on
+all user-space mapped BOs, and is also much more restricted in terms
+of which memory it can use.
 
-------------------
+I have a v4 in the works that lets us use TTM for user-mapped objects
+and only falls back to using the DMA API for kernel-only objects
+(fences & PBs basically). Will push it shortly but wanted to signal
+this revision as deprecated in the meantime.
 
-From: Johan Hovold <jhovold@gmail.com>
-
-commit 140cb81ac8c625942a1d695875932c615767a526 upstream.
-
-The current ACM runtime-suspend implementation is broken in several
-ways:
-
-Firstly, it buffers only the first write request being made while
-suspended -- any further writes are silently dropped.
-
-Secondly, writes being dropped also leak write urbs, which are never
-reclaimed (until the device is unbound).
-
-Thirdly, even the single buffered write is not cleared at shutdown
-(which may happen before the device is resumed), something which can
-lead to another urb leak as well as a PM usage-counter leak.
-
-Fix this by implementing a delayed-write queue using urb anchors and
-making sure to discard the queue properly at shutdown.
-
-Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
-that support remote wakeup")
-
-Reported-by: Xiao Jin <jin.xiao@intel.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/usb/class/cdc-acm.c | 32 ++++++++++++++++++++++----------
- drivers/usb/class/cdc-acm.h |  2 +-
- 2 files changed, 23 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 2d9601da87b3..7b1ed4b06f6b 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -559,6 +559,8 @@ static void acm_port_destruct(struct tty_port *port)
- static void acm_port_shutdown(struct tty_port *port)
- {
- 	struct acm *acm = container_of(port, struct acm, port);
-+	struct urb *urb;
-+	struct acm_wb *wb;
- 	int i;
- 
- 	dev_dbg(&acm->control->dev, "%s\n", __func__);
-@@ -567,6 +569,16 @@ static void acm_port_shutdown(struct tty_port *port)
- 	if (!acm->disconnected) {
- 		usb_autopm_get_interface(acm->control);
- 		acm_set_control(acm, acm->ctrlout = 0);
-+
-+		for (;;) {
-+			urb = usb_get_from_anchor(&acm->delayed);
-+			if (!urb)
-+				break;
-+			wb = urb->context;
-+			wb->use = 0;
-+			usb_autopm_put_interface_async(acm->control);
-+		}
-+
- 		usb_kill_urb(acm->ctrlurb);
- 		for (i = 0; i < ACM_NW; i++)
- 			usb_kill_urb(acm->wb[i].urb);
-@@ -634,12 +646,9 @@ static int acm_tty_write(struct tty_struct *tty,
- 
- 	usb_autopm_get_interface_async(acm->control);
- 	if (acm->susp_count) {
--		if (!acm->delayed_wb)
--			acm->delayed_wb = wb;
--		else
--			usb_autopm_put_interface_async(acm->control);
-+		usb_anchor_urb(wb->urb, &acm->delayed);
- 		spin_unlock_irqrestore(&acm->write_lock, flags);
--		return count;	/* A white lie */
-+		return count;
- 	}
- 	usb_mark_last_busy(acm->dev);
- 
-@@ -1176,6 +1185,7 @@ made_compressed_probe:
- 		acm->bInterval = epread->bInterval;
- 	tty_port_init(&acm->port);
- 	acm->port.ops = &acm_port_ops;
-+	init_usb_anchor(&acm->delayed);
- 
- 	buf = usb_alloc_coherent(usb_dev, ctrlsize, GFP_KERNEL, &acm->ctrl_dma);
- 	if (!buf) {
-@@ -1445,7 +1455,7 @@ static int acm_suspend(struct usb_interface *intf, pm_message_t message)
- static int acm_resume(struct usb_interface *intf)
- {
- 	struct acm *acm = usb_get_intfdata(intf);
--	struct acm_wb *wb;
-+	struct urb *urb;
- 	int rv = 0;
- 
- 	spin_lock_irq(&acm->read_lock);
-@@ -1457,10 +1467,12 @@ static int acm_resume(struct usb_interface *intf)
- 	if (test_bit(ASYNCB_INITIALIZED, &acm->port.flags)) {
- 		rv = usb_submit_urb(acm->ctrlurb, GFP_ATOMIC);
- 
--		if (acm->delayed_wb) {
--			wb = acm->delayed_wb;
--			acm->delayed_wb = NULL;
--			acm_start_wb(acm, wb);
-+		for (;;) {
-+			urb = usb_get_from_anchor(&acm->delayed);
-+			if (!urb)
-+				break;
-+
-+			acm_start_wb(acm, urb->context);
- 		}
- 
- 		/*
-diff --git a/drivers/usb/class/cdc-acm.h b/drivers/usb/class/cdc-acm.h
-index 0f76e4af600e..1683ac161cf6 100644
---- a/drivers/usb/class/cdc-acm.h
-+++ b/drivers/usb/class/cdc-acm.h
-@@ -117,7 +117,7 @@ struct acm {
- 	unsigned int throttled:1;			/* actually throttled */
- 	unsigned int throttle_req:1;			/* throttle requested */
- 	u8 bInterval;
--	struct acm_wb *delayed_wb;			/* write queued for a device about to be woken */
-+	struct usb_anchor delayed;			/* writes queued for a device about to be woken */
- };
- 
- #define CDC_DATA_INTERFACE_TYPE	0x0a
--- 
-1.9.1
-
+On Fri, Jun 27, 2014 at 8:22 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+> v2 was doing some pretty nasty things with the DMA API, so I took a different
+> approach for this v3.
+>
+> As suggested, this version uses ttm_dma_populate() to populate BOs. The reason
+> for doing this was that it would entitle us to using the DMA sync functions,
+> but since the memory returned is already coherent anyway, we do not even
+> need to call these functions anymore.
+>
+> So this series has turned into 2 small patches:
+>
+> - The first attempts to make it more obvious that Nouveau can use different
+> ways to populate TTs, and make it possible to choose which method to use from
+> a single place.
+> - The second leverages this work to select the DMA allocator to populate TTs
+> on ARM.
+>
+> Doing this solves all our coherency problems with Nouveau on Tegra, and
+> hopefully makes the code easier to read in the process.
+>
+> Alexandre Courbot (2):
+>   drm/nouveau: cleanup TTM population logic
+>   drm/nouveau: use DMA TT population method on ARM
+>
+>  drivers/gpu/drm/nouveau/nouveau_bo.c  | 63 ++++++++++++++++++-----------------
+>  drivers/gpu/drm/nouveau/nouveau_drm.h | 11 ++++++
+>  drivers/gpu/drm/nouveau/nouveau_ttm.c | 17 ++++++++++
+>  3 files changed, 61 insertions(+), 30 deletions(-)
+>
+> --
+> 2.0.0
+>
