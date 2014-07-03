@@ -1,85 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176AbaGCGLK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 02:11:10 -0400
-Received: from moi001.1and1.com ([212.227.126.208]:56732 "EHLO moi.1and1.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750834AbaGCGLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 02:11:08 -0400
-Message-ID: <53B4F3D9.8050009@1und1.de>
-Date: Thu, 03 Jul 2014 08:10:33 +0200
-From: =?ISO-8859-1?Q?Thomas_Sch=F6bel-Theuer?= <tst@1und1.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755419AbaGCGLS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 02:11:18 -0400
+Received: from mail.alumni.tu-berlin.de ([130.149.5.29]:33067 "EHLO
+	mail-2.alumni.tu-berlin.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754368AbaGCGLM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 02:11:12 -0400
+X-tubIT-Incoming-IP: 91.47.47.4
+Message-ID: <53B4F3FB.6030108@math.tu-berlin.de>
+Date: Thu, 03 Jul 2014 08:11:07 +0200
+From: Thomas Richter <thor@math.tu-berlin.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Thomas Schoebel-Theuer <tst@schoebel-theuer.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 49/50] mars: generic pre-patch for mars
-References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de> <1404251250-22992-50-git-send-email-tst@schoebel-theuer.de> <20140701223644.GA30330@kroah.com> <53B3B283.7050800@schoebel-theuer.de> <20140702082400.GB10971@kroah.com> <20140702132708.GA26732@infradead.org> <53B418FA.80600@1und1.de> <20140702145024.GA19425@infradead.org> <53B43144.6010306@1und1.de> <20140702184143.GA3061@infradead.org>
-In-Reply-To: <20140702184143.GA3061@infradead.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Pavel Machek <pavel@ucw.cz>
+CC: linux-kernel@vger.kernel.org,
+        Ville Syrj?l? <ville.syrjala@linux.intel.com>,
+        Daniel Vetter <daniel@ffwll.ch>, rjw@sisk.pl
+Subject: Re: Kernel OOPS when reloading i915 after resume from suspend
+References: <53B05033.7070709@math.tu-berlin.de> <13976_1404336180_53B47834_13976_165_1_20140702212219.GA2842@xo-6d-61-c0.localdomain>
+In-Reply-To: <13976_1404336180_53B47834_13976_165_1_20140702212219.GA2842@xo-6d-61-c0.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Please take into account that MARS Light is not just a "device driver",
->> but a long-distance distributed system dealing with huge masses of state
->> information.
-> Which doesn't matter.  No kernel driver has a business messing with the
-> filesystem namespace.  Especially no maintaining magic symlink farms.
+Am 02.07.2014 23:22, schrieb Pavel Machek:
+> Hi!
 >
+>> still experimenting with the resume from suspend on the Fujitsu
+>> S6010. I can, however, still create a kernel oops. The kernel source
+>> comes from alm_fixes5, kernel 3.15.0-rc7+. For that, do the
+>> following:
+>>
+>> 1) Shut down X,
+>> 2) Unbind the consoles:
+>>
+>> echo 0 > /sys/class/vtconsole/vtcon1/bind
+>> echo 0 > /sys/class/vtconsole/vtcon0/bind
+>>
+>> 3) Remove the i915
+>>
+>> rmmod i915
+>>
+>> 4) Suspend the system
+>>
+>> pm-suspend
+>
+> Does it also break with plain echo mem > /sys/power/state?
 
-I see the following alternative solutions for this:
+No. If the modules stay resident, any user driven shutdown/resume events 
+by writing into /sys/power/state work just fine.
 
-a) MARS Light cannot go upstream because it is viewed as a driver
-violating the rules. In this case, I could retry submission some years
-laters when (subsets of) MARS Full strictly obey some hierarchy rules
-which I have to know completely in advance in order to no longer make
-any mistakes. However, I am not sure whether the limits in the solution
-space are really appropriate for the problem space; I would have to make
-new prototype implementations and compare them to other solutions. Only
-after that, I would be able to decide whether to go upstream at all, or
-to continue an out-of-tree project.
+> Does it break when you don't suspend at all?
 
-or
+No. Unloading and reloading i915 under normal conditions also works fine.
 
-b) you permit me exceptions from the rules, justified by the fact that a
-_distributed_ "driver" for long-distance replication of terabytes of
-data (constructed for long-distance replication of _whole_ _datacenters_
-) needs dynamically growing storage space for bulk data. In order to not
-re-invent the wheel, you permit me storing both data and metadata in a
-reserved filesystem instance. Storing metadata _together_ with the
-_corresponding_ (!) bulk data is justified by the fact that separate
-storage spaces would need some additional means for ensuring
-_consistency_ between them in case of node failures etc.
+>> 5) Resume the system by pressing on the power-button.
+>> 6) Reload the i915 module with
+>>
+>> modprobe i915.
+>>
+>> Result is a kernel-Oops:
+>
+> Sounds like problem in suspend/resume framework, actually :-(.
 
-or
+Good guess, but wrong. The BIOS leaves the 830GM in a state the i915 
+does not seem to like.
 
-c) MARS Light is viewed as a distributed system, similar to a cluster
-filesystem, which just happens to export a block device to userspace (at
-current stage of development; notice that the generic brick framework is
-not limited to the block device layer).
+Greetings,
+	Thomas
 
-or
-
-d) both MARS Light and the future Full is viewed as a new generic
-framework. In current stage, only some parts dealing with block devices
-are implemented. In later stages of MARS Full, the future hierarchy
-rules will be automatically checked / established by some future
-strategy bricks, according to IOP design principles as proposed in my
-papers / in my monography (a detailed discussion is probably out of
-scope of this discussion).
-
-Possibly there are further alternatives.
-
-At least in cases c) and d), the sourcecode should IMHO not go to
-drivers/block/ but somewhere else (please give me some suggestions; this
-is why ./rework-mars-for-upstream.pl has is easily configurable).
-
-Cheers,
-
-Thomas
 
