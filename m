@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaGCLcO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 07:32:14 -0400
-Received: from smtp2-g21.free.fr ([212.27.42.2]:5092 "EHLO smtp2-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750817AbaGCLcN convert rfc822-to-8bit (ORCPT
+	id S1753625AbaGCLcq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 07:32:46 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55157 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751398AbaGCLco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 07:32:13 -0400
-Date: Thu, 3 Jul 2014 13:34:06 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Mark Brown <broonie@kernel.org>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
-        lgirdwood@gmail.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        Dave Airlie <airlied@gmail.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ASoC: tda998x: add a codec to the HDMI transmitter
-Message-ID: <20140703133406.2d3e3a1d@armhf>
-In-Reply-To: <20140703104432.GV410@sirena.org.uk>
-References: <20140702183841.7c964832@armhf>
-	<20140702165628.GO20799@lunn.ch>
-	<20140702195154.47d6f6b4@armhf>
-	<20140702194252.GN410@sirena.org.uk>
-	<20140703074959.7c489912@armhf>
-	<20140703104432.GV410@sirena.org.uk>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; arm-unknown-linux-gnueabihf)
+	Thu, 3 Jul 2014 07:32:44 -0400
+Date: Thu, 3 Jul 2014 12:32:36 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [RESEND PATCH 5/5] devicetree: mfd: max14577: Add device tree
+ bindings document
+Message-ID: <20140703113236.GA28504@leverpostej>
+References: <1404198121-22989-1-git-send-email-k.kozlowski@samsung.com>
+ <1404198121-22989-6-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404198121-22989-6-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jul 2014 11:44:32 +0100
-Mark Brown <broonie@kernel.org> wrote:
+Hi,
 
-> > > I'd expect this to return an error for the busy DAI rather than just
-> > > silently ignore it failing to start or (better) implement some control
-> > > to let the user select which of the DAIs is active.  
+On Tue, Jul 01, 2014 at 08:02:00AM +0100, Krzysztof Kozlowski wrote:
+> Add document describing device tree bindings for MAX14577 MFD
+> drivers: MFD core, extcon, regulator and charger.
 > 
-> > This is not an error. If the audio subsystem (DPCM, not the user)
-> > chooses to activate both I2S and S/PDIF, this means the HDMI audio may
-> > be taken either from I2S or from S/PDIF: both inputs have the right
-> > format and rate.  
+> Both MAX14577 and MAX77836 chipsets are documented.
 > 
-> Your board happens to only be able to present the same input on both I2S
-> and S/PDIF but that might not apply to other boards, they may be able to
-> route different signals to each which would present a practical problem.
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Tomasz Figa <t.figa@samsung.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> Cc: Kumar Gala <galak@codeaurora.org>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> ---
+>  Documentation/devicetree/bindings/mfd/max14577.txt | 152 +++++++++++++++++++++
+>  1 file changed, 152 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/max14577.txt b/Documentation/devicetree/bindings/mfd/max14577.txt
+> new file mode 100644
+> index 000000000000..b235250a7b41
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/max14577.txt
+> @@ -0,0 +1,152 @@
+> +Maxim MAX14577/77836 Multi-Function Device
+> +
+> +MAX14577 is a Multi-Function Device with Micro-USB Interface Circuit, Li+
+> +Battery Charger and SFOUT LDO output for powering USB devices. It is
+> +interfaced to host controller using I2C.
+> +
+> +MAX77836 additionally contains PMIC (with two LDO regulators) and Fuel Gauge.
+> +
+> +
+> +Required properties:
+> +- compatible : Must be "maxim,max14577" or "maxim,max77836".
+> +- reg : I2C slave address for the max14577 chip (0x25 for max14577/max77836)
+> +- interrupts : IRQ line for the chip.
+> +- interrupt-parent :  The parent interrupt controller.
+> +
+> +
+> +Required nodes:
+> + - charger :
+> +	Node for configuring the charger driver.
+> +	Required properties:
+> +		- compatible : "maxim,max14577-charger"
+> +			or "maxim,max77836-charger"
+> +		- maxim,fast-charge-timer : Timer in hours to trigger the
+> +			INT3/MBCCHGERR interrupt; Valid values:
+> +			- 5, 6 or 7 (hours),
+> +			- 0 to disable.
 
-If there are two different streamss on I2S and S/PDIF, and if the audio
-subsystem wants to route these streams to the same connector (widget
-'hdmi-out'), then, somewhere, there should be a software or a design
-bug. No?
+I'm not sure I follow what this is any why it should be in the DT.
 
-Anyway, the tda998x cannot know if the double route is wanted or not.
+Could you explain what this is used for?
 
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+Thanks,
+Mark.
