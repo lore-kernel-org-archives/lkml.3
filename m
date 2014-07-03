@@ -1,101 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030621AbaGCJev (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:34:51 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:47889 "EHLO comal.ext.ti.com"
+	id S1030665AbaGCJfT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:35:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:50802 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964850AbaGCJet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:34:49 -0400
-Message-ID: <53B523AE.70601@ti.com>
-Date: Thu, 3 Jul 2014 12:34:38 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: <dmitry.torokhov@gmail.com>, <tony@atomide.com>
-CC: <rydberg@euromail.se>, <balbi@ti.com>, <dmurphy@ti.com>,
-        <mugunthanvnm@ti.com>, <nsekhar@ti.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v7 0/5] Input: pixcir_i2c_ts: Add Type-B Multi-touch and
- DT support
-References: <1402997507-9736-1-git-send-email-rogerq@ti.com>
-In-Reply-To: <1402997507-9736-1-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1030626AbaGCJfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 05:35:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,594,1400050800"; 
+   d="scan'208";a="564632607"
+Message-ID: <1404380071.5102.57.camel@smile.fi.intel.com>
+Subject: Re: [PATCH 1/6] lib / string_helpers: clean up test suite
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Thu, 03 Jul 2014 12:34:31 +0300
+In-Reply-To: <20140702145410.e1885ad85c25a6f4b6cef2c4@linux-foundation.org>
+References: <1404307229-19186-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1404307229-19186-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <20140702145410.e1885ad85c25a6f4b6cef2c4@linux-foundation.org>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On Wed, 2014-07-02 at 14:54 -0700, Andrew Morton wrote:
+> On Wed,  2 Jul 2014 16:20:24 +0300 Andy Shevchenko <andriy.shevchenko@linux.intel.com> wrote:
 
-Gentle reminder to pick this series for -next. Thanks :).
+[]
 
-cheers,
--roger
+> > +	pr_err("Test '%s' failed: flags = %u\n", name, flags);
+> > +
+> > +	print_hex_dump(KERN_WARNING, "Input: ", DUMP_PREFIX_NONE, 16, 1,
+> > +		       in, p, true);
+> > +	print_hex_dump(KERN_WARNING, "Expected: ", DUMP_PREFIX_NONE, 16, 1,
+> > +		       out_test, q_test, true);
+> > +	print_hex_dump(KERN_WARNING, "Got: ", DUMP_PREFIX_NONE, 16, 1,
+> > +		       out_real, q_real, true);
+> 
+> Seems strange to mix KERN_ERR and KERN_WARNING.  The code's always been
+> that way, but maybe it can be improved.
 
-On 06/17/2014 12:31 PM, Roger Quadros wrote:
-> Hi Dmitry,
-> 
-> These are the pending patches that didn't go through in the 3.16 merge window.
-> Please queue them for -next. Thanks.
-> 
-> The series does the following
-> - convert to Type-B multi touch protocol
-> - support upto 5 fingers with hardware supplied tracking IDs
-> - device tree support
-> 
-> Tony,
-> 
-> The last 2 patches fix the touch screen size property in the device tree since
-> we now use the unified touch screen properties.
-> 
-> cheers,
-> -roger
-> 
-> Changelog:
-> 
-> v7:
-> - Rebased on 3.16-rc1.
-> 
-> v6:
-> - Use unified touchscreen bindings.
-> - Update pointer math i.e. bufptr += 4 instead of &bufptr[4];
-> 
-> v5:
-> - Changed ts->exiting flag to ts->running in patch 2.
-> - Don't call pixcir_stop() from .suspend() if wakeup is required.
-> 
-> v4:
-> - Imporved pixcir_stop() as per Dmitry's suggestion.
-> - Removed unnecessary input_unregister_device() from .remove().
-> 
-> v3:
-> - Rebased to 3.15-rc3
-> - Fixed suspend while touchscreen in use
-> - Fixed module removal while touchscreen in use
-> 
-> v2:
-> - Addressed review comments and re-arranged patch order
-> 
-> v1:
-> - http://article.gmane.org/gmane.linux.kernel/1616417
-> 
-> --
-> 
-> Roger Quadros (5):
->   Input: pixcir_i2c_ts: Use Type-B Multi-Touch protocol
->   Input: pixcir_i2c_ts: support upto 5 fingers and hardware provided
->     tracking IDs
->   Input: pixcir_i2c_ts: Add device tree support
->   ARM: dts: am43x-epos-evm: Update binding for touchscreen size
->   ARM: dts: am437x-gp-evm: Update binding for touchscreen size
-> 
->  .../bindings/input/touchscreen/pixcir_i2c_ts.txt   |  26 +++
->  .../devicetree/bindings/vendor-prefixes.txt        |   1 +
->  arch/arm/boot/dts/am437x-gp-evm.dts                |   4 +-
->  arch/arm/boot/dts/am43x-epos-evm.dts               |   4 +-
->  drivers/input/touchscreen/pixcir_i2c_ts.c          | 251 ++++++++++++++++++---
->  include/linux/input/pixcir_ts.h                    |  12 +
->  6 files changed, 259 insertions(+), 39 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
-> 
+Will fix this.
+
+
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
 
