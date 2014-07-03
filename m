@@ -1,115 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030945AbaGCKBI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:01:08 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:62496 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030606AbaGCKBE (ORCPT
+	id S1030952AbaGCKBh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:01:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51883 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758621AbaGCJWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 06:01:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <53B51E81.4090700@redhat.com>
-References: <1404124096-21445-1-git-send-email-drysdale@google.com>
-	<53B51E81.4090700@redhat.com>
-Date: Thu, 3 Jul 2014 14:01:02 +0400
-Message-ID: <CAOp4FwQzN5Wuz60gtxx5kEDCXS0Q9ohL_hVFnDGEJkQ6sM+Hrg@mail.gmail.com>
-Subject: Re: [RFC PATCH 00/11] Adding FreeBSD's Capsicum security framework
- (part 1)
-From: Loganaden Velvindron <loganaden@gmail.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: David Drysdale <drysdale@google.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>, linux-api@vger.kernel.org,
-        qemu-devel <qemu-devel@nongnu.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 3 Jul 2014 05:22:45 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: James Hogan <james.hogan@imgtec.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>, kvm@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        Sanjay Lal <sanjayl@kymasys.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 079/198] MIPS: KVM: Allocate at least 16KB for exception handlers
+Date: Thu,  3 Jul 2014 10:18:42 +0100
+Message-Id: <1404379241-8590-80-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
+References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 3, 2014 at 1:12 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
-> Il 30/06/2014 12:28, David Drysdale ha scritto:
->>
->> Hi all,
->>
->> The last couple of versions of FreeBSD (9.x/10.x) have included the
->> Capsicum security framework [1], which allows security-aware
->> applications to sandbox themselves in a very fine-grained way.  For
->> example, OpenSSH now (>= 6.5) uses Capsicum in its FreeBSD version to
->> restrict sshd's credentials checking process, to reduce the chances of
->> credential leakage.
+3.11.10.13 -stable review patch.  If anyone has any objections, please let me know.
 
-Aside from OpenSSH, I've also been working on implementing Capsicum,
-in other userspace software.
+------------------
 
+From: James Hogan <james.hogan@imgtec.com>
 
+commit 7006e2dfda9adfa40251093604db76d7e44263b3 upstream.
 
->
->
-> Hi David,
->
-> we've had similar goals in QEMU.  QEMU can be used as a virtual machine
-> monitor from the command line, but it also has an API that lets a management
-> tool drive QEMU via AF_UNIX sockets.  Long term, we would like to have a
-> restricted mode for QEMU where all file descriptors are obtained via
-> SCM_RIGHTS or /dev/fd, and syscalls can be locked down.
->
-> Currently we do use seccomp v2 BPF filters, but unfortunately this didn't
-> help very much.  QEMU supports hotplugging hence the filter must whitelist
-> anything that _might_ be used in the future, which is generally... too much.
->
-> Something like Capsicum would be really nice because it attaches
-> capabilities to file descriptors.  However, I wonder however how extensible
-> Capsicum could be, and I am worried about the proliferation of capabilities
-> that its design naturally leads to.
->
-> Given Linux's previous experience with BPF filters, what do you think about
-> attaching specific BPF programs to file descriptors?  Then whenever a
-> syscall is run that affects a file descriptor, the BPF program for the file
-> descriptor (attached to a struct file* as in Capsicum) would run in addition
-> to the process-wide filter.
->
-> An equivalent of PR_SET_NO_NEW_PRIVS can also be added to file descriptors,
-> so that a program that doesn't lock down syscalls can still lock down the
-> operations (including fcntls and ioctls) on specific file descriptors.
->
-> Converting FreeBSD capabilities to BPF programs can be easily implemented in
-> userspace.
->
->>   [Capsicum also includes 'capability mode', which locks down the
->>   available syscalls so the rights restrictions can't just be bypassed
->>   by opening new file descriptors; I'll describe that separately later.]
->
->
-> This can also be implemented in userspace via seccomp and
-> PR_SET_NO_NEW_PRIVS.
->
->>   [Policing the rights checks anywhere else, for example at the system
->>   call boundary, isn't a good idea because it opens up the possibility
->>   of time-of-check/time-of-use (TOCTOU) attacks [2] where FDs are
->>   changed (as openat/close/dup2 are allowed in capability mode) between
->>   the 'check' at syscall entry and the 'use' at fget() invocation.]
->
->
-> In the case of BPF filters, I wonder if you could stash the BPF
-> "environment" somewhere and then use it at fget() invocation. Alternatively,
-> it can be reconstructed at fget() time, similar to your introduction of
-> fgetr().
->
-> Thanks,
->
-> Paolo
-> --
-> To unsubscribe from this list: send the line "unsubscribe
-> linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Each MIPS KVM guest has its own copy of the KVM exception vector. This
+contains the TLB refill exception handler at offset 0x000, the general
+exception handler at offset 0x180, and interrupt exception handlers at
+offset 0x200 in case Cause_IV=1. A common handler is copied to offset
+0x2000 and offset 0x3000 is used for temporarily storing k1 during entry
+from guest.
 
+However the amount of memory allocated for this purpose is calculated as
+0x200 rounded up to the next page boundary, which is insufficient if 4KB
+pages are in use. This can lead to the common handler at offset 0x2000
+being overwritten and infinitely recursive exceptions on the next exit
+from the guest.
 
+Increase the minimum size from 0x200 to 0x4000 to cover the full use of
+the page.
 
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Gleb Natapov <gleb@kernel.org>
+Cc: kvm@vger.kernel.org
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org
+Cc: Sanjay Lal <sanjayl@kymasys.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/mips/kvm/kvm_mips.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/mips/kvm/kvm_mips.c b/arch/mips/kvm/kvm_mips.c
+index dd203e59e6fd..426345ac6f6e 100644
+--- a/arch/mips/kvm/kvm_mips.c
++++ b/arch/mips/kvm/kvm_mips.c
+@@ -299,7 +299,7 @@ struct kvm_vcpu *kvm_arch_vcpu_create(struct kvm *kvm, unsigned int id)
+ 	if (cpu_has_veic || cpu_has_vint) {
+ 		size = 0x200 + VECTORSPACING * 64;
+ 	} else {
+-		size = 0x200;
++		size = 0x4000;
+ 	}
+ 
+ 	/* Save Linux EBASE */
 -- 
-This message is strictly personal and the opinions expressed do not
-represent those of my employers, either past or present.
+1.9.1
+
