@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702AbaGCBFB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 21:05:01 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:32770 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbaGCBE7 (ORCPT
+	id S1753977AbaGCBGM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 21:06:12 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:48568 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885AbaGCBGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 21:04:59 -0400
+	Wed, 2 Jul 2014 21:06:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140702065531.GS28884@atomide.com>
-References: <CAPDOMVgP83G4-znp=9kB-pBrfd2MUK+xvw1-_cRMXqi9P8hrww@mail.gmail.com>
-	<20140702065531.GS28884@atomide.com>
-Date: Wed, 2 Jul 2014 21:04:58 -0400
-Message-ID: <CAPDOMVi0E9vsfMsXfxM5SivnO8nDXaP+W+y0Nnuv32+WPQ05jg@mail.gmail.com>
-Subject: Re: FIX ME in function ocpi_enable in file arch/arm/mach-omap1/opci.c
+In-Reply-To: <20140702063224.GA13864@samfundet.no>
+References: <1404183899-5953-1-git-send-email-xerofoify@gmail.com>
+	<20140701065554.GA20782@samfundet.no>
+	<CAPDOMViGUR=QP+Dxbq+SYsSuv2ituygL4gMz638kLFwKDr0GXg@mail.gmail.com>
+	<20140702063224.GA13864@samfundet.no>
+Date: Wed, 2 Jul 2014 21:06:10 -0400
+Message-ID: <CAPDOMVh3KNcUfdR-DBneksbz6jEr0MvS3a8DdUVfS_fOzsqbmA@mail.gmail.com>
+Subject: Re: [PATCH] Remove memory start and memory end
 From: Nick Krause <xerofoify@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: =?UTF-8?Q?H=C3=A5vard_Skinnemoen?= <hskinnemoen@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Therefore I will send it a patch removing this FIXME.
+Sorry about the typo. Need time will prefix subsystem or area of kernel fixed.
 Cheers Nick
 
-On Wed, Jul 2, 2014 at 2:55 AM, Tony Lindgren <tony@atomide.com> wrote:
-> * Nick Krause <xerofoify@gmail.com> [140701 15:51]:
->> Hey Tony and Russel ,
->> There is a FIX ME message in this function of the file stated in my
->> subject line.
->> I was wondering what locking is needed  here due to not having experience with
->> omap subsystem(s).
+On Wed, Jul 2, 2014 at 2:32 AM, Hans-Christian Egtvedt
+<egtvedt@samfundet.no> wrote:
+> Around Tue 01 Jul 2014 18:22:53 -0400 or thereabout, Nick Krause wrote:
+>> No problem , just happy it was of help to you.
+>> Cheers Nick
 >
-> Looks like the locking for ocpi_enable would be needed if
-> it was called from multiple drivers. We are just enabling all
-> access, so no locking neeed for the current usage.
+> I did take the liberty of fixing a typo, uneeded => unneeded, and prefixing
+> the subject with avr32:. Have a nice day (-:
 >
-> Regards,
->
-> Tony
+>> On Tue, Jul 1, 2014 at 2:55 AM, Hans-Christian Egtvedt
+>> <egtvedt@samfundet.no> wrote:
+>>> Around Mon 30 Jun 2014 23:04:59 -0400 or thereabout, Nicholas Krause wrote:
+>>>> This patch removes the uneeded variables memory start and memory
+>>>> stated in FIXME message before declaring this variables as extern
+>>>> unsigned longs.
+>>>
+>>> Thanks for cleaning, I will append it to my for-linus branch. Queuing it for
+>>> 3.17 most likely.
+>>>
+>>>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>>>>
+>>>
+>>> Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+>>>
+>>>> ---
+>>>>  arch/avr32/include/asm/page.h | 3 ---
+>>>>  1 file changed, 3 deletions(-)
+>>>
+>>> <snipp diff>
+> --
+> mvh
+> Hans-Christian Egtvedt
