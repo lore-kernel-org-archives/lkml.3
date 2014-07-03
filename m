@@ -1,135 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965012AbaGCOwk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:52:40 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51820 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758571AbaGCOuG (ORCPT
+	id S965043AbaGCOw7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:52:59 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47059 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965014AbaGCOw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:50:06 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        dwmw2@infradead.org, dbaryshkov@gmail.com
-Cc: Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH RESEND 13/18] AT91: DT: Remove poweroff DT probing
-Date: Thu,  3 Jul 2014 16:41:28 +0200
-Message-Id: <1404398493-28907-14-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1404398493-28907-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1404398493-28907-1-git-send-email-maxime.ripard@free-electrons.com>
+	Thu, 3 Jul 2014 10:52:58 -0400
+Date: Thu, 3 Jul 2014 09:52:50 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Dan Murphy <dmurphy@ti.com>
+CC: <linux-sound@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>, <broonie@kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v4] ASoC: tas2552: Support TI TAS2552 Amplifier
+Message-ID: <20140703145250.GO5814@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1404398393-21497-1-git-send-email-dmurphy@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IYV9cRr2u6rjcP4B"
+Content-Disposition: inline
+In-Reply-To: <1404398393-21497-1-git-send-email-dmurphy@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the poweroff code is a driver of its own, remove the DT probing in
-mach-at91 and let the usual DT code do its job.
+--IYV9cRr2u6rjcP4B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/mach-at91/setup.c | 77 ----------------------------------------------
- 1 file changed, 77 deletions(-)
+Hi,
 
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index fe0601e0a3c0..ae269291d19d 100644
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -387,82 +387,6 @@ static void at91_dt_ramc(void)
- 	at91_pm_set_standby(of_id->data);
- }
- 
--static struct of_device_id shdwc_ids[] = {
--	{ .compatible = "atmel,at91sam9260-shdwc", },
--	{ .compatible = "atmel,at91sam9rl-shdwc", },
--	{ .compatible = "atmel,at91sam9x5-shdwc", },
--	{ /*sentinel*/ }
--};
--
--static const char *shdwc_wakeup_modes[] = {
--	[AT91_SHDW_WKMODE0_NONE]	= "none",
--	[AT91_SHDW_WKMODE0_HIGH]	= "high",
--	[AT91_SHDW_WKMODE0_LOW]		= "low",
--	[AT91_SHDW_WKMODE0_ANYLEVEL]	= "any",
--};
--
--const int at91_dtget_shdwc_wakeup_mode(struct device_node *np)
--{
--	const char *pm;
--	int err, i;
--
--	err = of_property_read_string(np, "atmel,wakeup-mode", &pm);
--	if (err < 0)
--		return AT91_SHDW_WKMODE0_ANYLEVEL;
--
--	for (i = 0; i < ARRAY_SIZE(shdwc_wakeup_modes); i++)
--		if (!strcasecmp(pm, shdwc_wakeup_modes[i]))
--			return i;
--
--	return -ENODEV;
--}
--
--static void at91_dt_shdwc(void)
--{
--	struct device_node *np;
--	int wakeup_mode;
--	u32 reg;
--	u32 mode = 0;
--
--	np = of_find_matching_node(NULL, shdwc_ids);
--	if (!np) {
--		pr_debug("unable to find compatible shutdown (shdwc) controller node in dtb\n");
--		return;
--	}
--
--	at91_shdwc_base = of_iomap(np, 0);
--	if (!at91_shdwc_base)
--		panic(pr_fmt("unable to map shdwc cpu registers\n"));
--
--	wakeup_mode = at91_dtget_shdwc_wakeup_mode(np);
--	if (wakeup_mode < 0) {
--		pr_warn("shdwc unknown wakeup mode\n");
--		goto end;
--	}
--
--	if (!of_property_read_u32(np, "atmel,wakeup-counter", &reg)) {
--		if (reg > AT91_SHDW_CPTWK0_MAX) {
--			pr_warn("shdwc wakeup counter 0x%x > 0x%x reduce it to 0x%x\n",
--				reg, AT91_SHDW_CPTWK0_MAX, AT91_SHDW_CPTWK0_MAX);
--			reg = AT91_SHDW_CPTWK0_MAX;
--		}
--		mode |= AT91_SHDW_CPTWK0_(reg);
--	}
--
--	if (of_property_read_bool(np, "atmel,wakeup-rtc-timer"))
--			mode |= AT91_SHDW_RTCWKEN;
--
--	if (of_property_read_bool(np, "atmel,wakeup-rtt-timer"))
--			mode |= AT91_SHDW_RTTWKEN;
--
--	at91_shdwc_write(AT91_SHDW_MR, wakeup_mode | mode);
--
--end:
--	pm_power_off = at91sam9_poweroff;
--
--	of_node_put(np);
--}
--
- void __init at91rm9200_dt_initialize(void)
- {
- 	at91_dt_ramc();
-@@ -480,7 +404,6 @@ void __init at91rm9200_dt_initialize(void)
- void __init at91_dt_initialize(void)
- {
- 	at91_dt_ramc();
--	at91_dt_shdwc();
- 
- 	/* Init clock subsystem */
- 	at91_dt_clock_init();
--- 
-2.0.1
+On Thu, Jul 03, 2014 at 09:39:53AM -0500, Dan Murphy wrote:
+> +static int tas2552_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
+> +{
+> +	u8 serial_format;
+> +	struct snd_soc_codec *codec =3D dai->codec;
+> +
+> +	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
+> +	case SND_SOC_DAIFMT_CBS_CFS:
+> +		serial_format =3D 0x00;
+> +		break;
+> +	case SND_SOC_DAIFMT_CBS_CFM:
+> +		serial_format =3D TAS2552_WORD_CLK_MASK;
+> +		break;
+> +	case SND_SOC_DAIFMT_CBM_CFS:
+> +		serial_format =3D TAS2552_BIT_CLK_MASK;
+> +		break;
+> +	case SND_SOC_DAIFMT_CBM_CFM:
+> +		serial_format =3D (TAS2552_BIT_CLK_MASK | TAS2552_WORD_CLK_MASK);
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +
+> +	pm_runtime_get_sync(codec->dev);
+> +
+> +	snd_soc_update_bits(codec, TAS2552_SER_CTRL_1,
+> +			    (TAS2552_BIT_CLK_MASK | TAS2552_WORD_CLK_MASK),
+> +			    serial_format);
+> +
+> +	pm_runtime_put(codec->dev);
 
+I have a feeling it's better to just put at the end of the function.
+Remember your pm_runtime_put() will issue i2c transfers which can take a
+looooooong time ;-)
+
+other than that, looks ok to me:
+
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+
+--=20
+balbi
+
+--IYV9cRr2u6rjcP4B
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTtW5CAAoJEIaOsuA1yqREyXkQAKh8Dz7Zh8OzSSeVcc2qC0yU
+NoIlVsT9SIIJfw0xdepXhF6l0fmVSHCk1zJb1DYj/gd+cvBh0yMbXljlWCDpfNYX
+jhWcJEYr1gceiltp9+OOnuoiBwtWQNoU6hsHZYLz91WkQwZLR7nhpJZJPe04kxyz
+PkMx6ffB/X/MU0IwRqAzc01qYy77NYX1TQgGcICQEk5XFySmF5zdkGVCnRX/ZZVN
+/AYIDOxld9NKYpnMk+TIyufujuXuBih+WZKcZ+KFySfezaGpV8zIU3QErKvD3pKP
+uL5ZC+s1mlSyFT9BRBOkSkTCwCxlrP3yiHvnQy1AanaGhQnVlzuIrVIl/azv6CoJ
+/R60+ZYIy55lf3ap/KYgNZ4kmNyOtRkOZak5uNahpVTwJ7GTZJsG3j/4TgAJx3zF
+EECNtmnTD7k1uywyYHAFU7nyYzL0s9ax5ePv374neP1j4vbUH/fHZWtro8KvVKRs
+jY/Bkgd1OfyOACoF5YG/qICQlectiA4L3X7jk9vyKL8vttoNRiB3K6K7CuauEXFc
+zuI/iCZLxJXivl1tvJuz7537PjYGLbW2ORNgjW2SMsUvWVqr37c6yYBYHip5JlSg
+vH4AeEV5SrHbPqSj2Ba7RB4TgfK4aRE6o4Y5LVSepAXEDUXCOUn2D6YGKzeoqG0r
+TgZxMiC1LD9t+NxgIXZS
+=BpwA
+-----END PGP SIGNATURE-----
+
+--IYV9cRr2u6rjcP4B--
