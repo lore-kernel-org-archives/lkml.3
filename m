@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285AbaGCVF4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 17:05:56 -0400
-Received: from p3plsmtpa12-05.prod.phx3.secureserver.net ([68.178.252.234]:32909
-	"EHLO p3plsmtpa12-05.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751336AbaGCVFz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 17:05:55 -0400
-X-Greylist: delayed 493 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jul 2014 17:05:55 EDT
-Date: Thu, 3 Jul 2014 13:57:40 -0700
-From: "Mark A. Greer" <mgreer@animalcreek.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-wireless@vger.kernel.org, linux-nfc@ml01.01.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [linux-nfc] [PATCH] NFC: trf7970a: Move trf7970a_init inside
- #ifdef CONFIG_PM_RUNTIME
-Message-ID: <20140703205740.GA19951@animalcreek.com>
-References: <1402923973-24316-1-git-send-email-geert@linux-m68k.org>
- <20140616155855.GA2539@animalcreek.com>
+	id S1758173AbaGCVIJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 17:08:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5981 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752570AbaGCVIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 17:08:07 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: ebiederm@xmission.com, hpa@zytor.com, mjg59@srcf.ucam.org, greg@kroah.com,
+        bp@alien8.de, dyoung@redhat.com, chaowang@redhat.com, bhe@redhat.com,
+        akpm@linux-foundation.org, dhowells@redhat.com, pjones@redhat.com,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: [PATCH 1/9] pkcs7: Forward declare struct key in pkcs7.h
+Date: Thu,  3 Jul 2014 17:07:13 -0400
+Message-Id: <1404421641-12691-2-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1404421641-12691-1-git-send-email-vgoyal@redhat.com>
+References: <1404421641-12691-1-git-send-email-vgoyal@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140616155855.GA2539@animalcreek.com>
-Organization: Animal Creek Technologies, Inc.
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 08:58:55AM -0700, Mark A. Greer wrote:
-> On Mon, Jun 16, 2014 at 03:06:13PM +0200, Geert Uytterhoeven wrote:
-> > If CONFIG_PM_RUNTIME=n:
-> > 
-> > drivers/nfc/trf7970a.c:755: warning: ‘trf7970a_init’ defined but not used
-> > 
-> > Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> 
-> Acked-by: Mark A. Greer <mgreer@animalcreek.com>
+Do a forward declaration of "struct key" in pkcs.h as one of the functions
+takes pointer to struct key as argument.
 
-Actually, I'd like to change my mind on this.  I've modified the code
-locally and I will have to move trf7970a_init() back to where it originally
-was again, if this patch is taken.  If you can tolerate the warning for
-another week or so, I'll have a new set of patches that will fix it.
+Otherwise when I include this header file in some other .c file where
+key.h is not included, I get following warning later in the series.
 
-Not a big deal if you still want to take it.
+In file included from arch/x86/kernel/mscode_parser.c:17:0:
+include/crypto/pkcs7.h:30:5: warning: ‘struct key’ declared inside parameter list [enabled by default]
+     bool *_trusted);
+     ^
+include/crypto/pkcs7.h:30:5: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
 
-Mark
---
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ include/crypto/pkcs7.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/crypto/pkcs7.h b/include/crypto/pkcs7.h
+index 167f914..4c227e3 100644
+--- a/include/crypto/pkcs7.h
++++ b/include/crypto/pkcs7.h
+@@ -10,6 +10,7 @@
+  */
+ 
+ struct pkcs7_message;
++struct key;
+ 
+ /*
+  * pkcs7_parser.c
+-- 
+1.9.0
+
