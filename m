@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759479AbaGCS3l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 14:29:41 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:47491 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459AbaGCS3j (ORCPT
+	id S1759409AbaGCSew (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 14:34:52 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:1797 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681AbaGCSev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 14:29:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyRgYW6Y8paYKGfqE205enhiPsZ1C8wrKpFavVXq7ZAtA@mail.gmail.com>
-References: <1404392547-11648-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-	<CA+55aFxOTqUAqEF7+83s890Q18qCHSQqDOxWqWHNjG_25hVhXg@mail.gmail.com>
-	<53B59CB5.9060004@linux.vnet.ibm.com>
-	<CA+55aFyRgYW6Y8paYKGfqE205enhiPsZ1C8wrKpFavVXq7ZAtA@mail.gmail.com>
-Date: Thu, 3 Jul 2014 11:29:38 -0700
-X-Google-Sender-Auth: vZNh72p28rPzNmErqC8FTEDqBuY
-Message-ID: <CA+55aFwwSCrH5QDvrzzyHhRU5R849Mo8A3NdRMwm9OTeWH9diQ@mail.gmail.com>
-Subject: Re: [PATCH] mm readahead: Fix sys_readahead breakage by reverting 2MB
- limit (bug 79111)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        David Rientjes <rientjes@google.com>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 3 Jul 2014 14:34:51 -0400
+Message-ID: <1404412485.8764.33.camel@j-VirtualBox>
+Subject: Re: [RFC] Cancellable MCS spinlock rework
+From: Jason Low <jason.low2@hp.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, mingo@kernel.org, Waiman.Long@hp.com,
+        linux-kernel@vger.kernel.org, riel@redhat.com,
+        akpm@linux-foundation.org, hpa@zytor.com, andi@firstfloor.org,
+        James.Bottomley@hansenpartnership.com, rostedt@goodmis.org,
+        tim.c.chen@linux.intel.com, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Date: Thu, 03 Jul 2014 11:34:45 -0700
+In-Reply-To: <1404407389.2498.3.camel@buesod1.americas.hpqcorp.net>
+References: <1404318070-2856-1-git-send-email-jason.low2@hp.com>
+	 <20140702162749.GP19379@twins.programming.kicks-ass.net>
+	 <1404320356.3170.12.camel@j-VirtualBox>
+	 <20140702172333.GQ19379@twins.programming.kicks-ass.net>
+	 <1404322203.3170.17.camel@j-VirtualBox>
+	 <20140703073107.GS19379@twins.programming.kicks-ass.net>
+	 <1404407389.2498.3.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 3, 2014 at 11:22 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> So the bugzilla entry worries me a bit - we definitely do not want to
-> regress in case somebody really relied on timing - but without more
-> specific information I still think the real bug is just in the
-> man-page.
+On Thu, 2014-07-03 at 10:09 -0700, Davidlohr Bueso wrote:
+> On Thu, 2014-07-03 at 09:31 +0200, Peter Zijlstra wrote:
+> > On Wed, Jul 02, 2014 at 10:30:03AM -0700, Jason Low wrote:
+> > > Would potentially reducing the size of the rw semaphore structure by 32
+> > > bits (for all architectures using optimistic spinning) be a nice
+> > > benefit?
+> > 
+> > Possibly, although I had a look at the mutex structure and we didn't
+> > have a hole to place it in, unlike what you found with the rwsem.
+> 
+> Yeah, and currently struct rw_semaphore is the largest lock we have in
+> the kernel. Shaving off space is definitely welcome.
 
-Side note: the 2MB limit may be too small. 2M is peanuts on modern
-machines, even for fairly slow IO, and there are lots of files (like
-glibc etc) that people might want to read-ahead during boot. We
-already do bigger read-ahead if people just do "read()" system calls.
-So I could certainly imagine that we should increase it.
+Right, especially if it could help things like xfs inode.
 
-I do *not* think we should bow down to insane man-pages that have
-always been wrong, though, and I don't think we should increase it to
-"let's just read-ahead a whole ISO image" kind of sizes..
-
-               Linus
