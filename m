@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828AbaGCBB6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 21:01:58 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:50205 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512AbaGCBB4 (ORCPT
+	id S1753702AbaGCBFB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 21:05:01 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:32770 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaGCBE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 21:01:56 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Thu, 3 Jul 2014 10:03:19 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v9] mm: support madvise(MADV_FREE)
-Message-ID: <20140703010318.GA2939@bbox>
-References: <1404174975-22019-1-git-send-email-minchan@kernel.org>
- <20140701145058.GA2084@node.dhcp.inet.fi>
+	Wed, 2 Jul 2014 21:04:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140701145058.GA2084@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140702065531.GS28884@atomide.com>
+References: <CAPDOMVgP83G4-znp=9kB-pBrfd2MUK+xvw1-_cRMXqi9P8hrww@mail.gmail.com>
+	<20140702065531.GS28884@atomide.com>
+Date: Wed, 2 Jul 2014 21:04:58 -0400
+Message-ID: <CAPDOMVi0E9vsfMsXfxM5SivnO8nDXaP+W+y0Nnuv32+WPQ05jg@mail.gmail.com>
+Subject: Re: FIX ME in function ocpi_enable in file arch/arm/mach-omap1/opci.c
+From: Nick Krause <xerofoify@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Therefore I will send it a patch removing this FIXME.
+Cheers Nick
 
-On Tue, Jul 01, 2014 at 05:50:58PM +0300, Kirill A. Shutemov wrote:
-> On Tue, Jul 01, 2014 at 09:36:15AM +0900, Minchan Kim wrote:
-> > +	do {
-> > +		/*
-> > +		 * XXX: We can optimize with supporting Hugepage free
-> > +		 * if the range covers.
-> > +		 */
-> > +		next = pmd_addr_end(addr, end);
-> > +		if (pmd_trans_huge(*pmd))
-> > +			split_huge_page_pmd(vma, addr, pmd);
-> 
-> Could you implement proper THP support before upstreaming the feature?
-> It shouldn't be a big deal.
-
-Okay, Hope to review.
-
-Thanks for the feedback!
-
--- 
-Kind regards,
-Minchan Kim
+On Wed, Jul 2, 2014 at 2:55 AM, Tony Lindgren <tony@atomide.com> wrote:
+> * Nick Krause <xerofoify@gmail.com> [140701 15:51]:
+>> Hey Tony and Russel ,
+>> There is a FIX ME message in this function of the file stated in my
+>> subject line.
+>> I was wondering what locking is needed  here due to not having experience with
+>> omap subsystem(s).
+>
+> Looks like the locking for ocpi_enable would be needed if
+> it was called from multiple drivers. We are just enabling all
+> access, so no locking neeed for the current usage.
+>
+> Regards,
+>
+> Tony
