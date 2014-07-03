@@ -1,70 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582AbaGCHAm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 03:00:42 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:64783 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754368AbaGCHAk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 03:00:40 -0400
+	id S1755676AbaGCHEK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 03:04:10 -0400
+Received: from mout.web.de ([212.227.17.12]:64521 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751135AbaGCHEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 03:04:08 -0400
+Message-ID: <53B50062.30200@web.de>
+Date: Thu, 03 Jul 2014 09:04:02 +0200
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-X-Originating-IP: [89.139.36.201]
-In-Reply-To: <53B47621.6090307@ti.com>
-References: <1398904476-26200-1-git-send-email-s-anna@ti.com>
- <1398904476-26200-4-git-send-email-s-anna@ti.com> <CAK=WgbakGbTaYz+4K24aT3vyRkDYwPKCm6XrcJvH667NMMfTTA@mail.gmail.com>
- <53B47621.6090307@ti.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Thu, 3 Jul 2014 10:00:18 +0300
-Message-ID: <CAK=WgbYtJ7TGqvjG3VAPPD5tVXx9-jEJU3iKEStUMxOvD1v=LQ@mail.gmail.com>
-Subject: Re: [PATCHv5 03/15] hwspinlock/core: maintain a list of registered
- hwspinlock banks
-To: Suman Anna <s-anna@ti.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Bjorn Andersson <bjorn@kryo.se>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Hui Wang <hui.wang@canonical.com>
+CC: Hui Wang <jason77.wang@gmail.com>, tiwai@suse.de,
+        alsa-devel@alsa-project.org, alex.hung@canonical.com, yk@canonical.com,
+        david.henningsson@canonical.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [V2 PATCH] ALSA: hda - Enable mute/mic-mute LEDs for more Thinkpads
+ with Conexant codec
+References: <1385534846-20829-1-git-send-email-hui.wang@canonical.com> <53AFF992.5030403@web.de> <53B0C596.6090007@canonical.com> <53B1078B.4090101@web.de> <53B219DF.6090807@canonical.com> <53B26575.1000003@web.de> <53B27ED7.4070401@canonical.com>
+In-Reply-To: <53B27ED7.4070401@canonical.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="wIRoUibvDoE2B02u7dbWPTjdw07uiX4bj"
+X-Provags-ID: V03:K0:WCE7FYy9OVTQKYtiGWiRUgfEUk08bt3ZnLGoQrXcgklC/Fl+WHG
+ DkRGkhxnGf2jRZTC//lGeOqOPB5VzmtgKenAUK/6VodZVhilT9H9zx8ncXrY23M/rdmNdn2
+ wMw2Sy7zXJFzSNQjoc8ZEUEUE7JeX8OxKisoR0gzs7S5mv17wkxlud18RQ/vK5j3x3TNzHq
+ hpelBUEQjb3814mzwL5Xg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suman,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--wIRoUibvDoE2B02u7dbWPTjdw07uiX4bj
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jul 3, 2014 at 12:14 AM, Suman Anna <s-anna@ti.com> wrote:
->> I'm not sure we need this patch.
->
-> This patch is needed if we use the controller-phandle + args specifier
-> for requesting hwlocks by a client, as we need to translate
-> controller-phandle to the corresponding hwspinlock_device.
->
-> Looks like we still don't have a closure on the semantics of how
-> clients have to request a lock in DT. You are suggesting something like
->     hwlocks = <global_lock1 global_lock2 ...>;
->
-> whereas this patch is built to support based on comments from
-> DT-maintainers,
->     hwlocks = <controller-phandle lock-specifier1>, <controller-phandle
-> lock-specifier2>...;
+On 2014-07-01 11:26, Hui Wang wrote:
+> On 07/01/2014 03:38 PM, Jan Kiszka wrote:
+>> On 2014-07-01 04:15, Hui Wang wrote:
+>>> On 06/30/2014 02:45 PM, Jan Kiszka wrote:
+>>>> On 2014-06-30 04:04, Hui Wang wrote:
+>>>>> On 06/29/2014 07:33 PM, Jan Kiszka wrote:
+>>>>>> On 2013-11-27 07:47, Hui Wang wrote:
+>>>>>>> Most Thinkpad Edge series laptops use conexant codec, so far
+>>>>>>> although
+> <snip>
+>>>>>>>
+>>>> Is there anything I can debug or any information I can collect from =
+my
+>>>> box to examine this?
+>>> What is the linux distribution on your machine? And use showkey to ca=
+tch
+>>> the keycode of that button.
+>> I'm running OpenSUSE 13.1. The reported keycode of the power button is=
 
-I'm actually ok with this suggestion and haven't suggested otherwise.
+>> 116.
+> It seems the keycode is correct, it is power keycode rather the mute
+> keycode.
+>=20
+> Could you please do some debug, let us find which line of code is the
+> root cause for this problem. for example:
+>=20
+> after running the line, the problem shows up:
+>=20
+> 1.     if (ACPI_SUCCESS(acpi_get_devices("LEN0068", acpi_check_cb,
+> &found, NULL)) && found) // in the sound/pci/hda/thinkpad_helper.c,
+> is_thinkpad()
 
-All I propose is that we add the base_id property to the controller
-node (as you have done in the subsequent patches), and then drivers
-will be able to infer the global lock id from the DT data by adding
-the controller's base_id to the lock specifier.
+This evaluates to true
 
-Controllers with non standard lock indexing may use an xlate() method
-if needed but frankly this is fictional right now. We can start
-without this, and add it later when needed, as this doesn't affect the
-DT data.
+>=20
+> 2.     return ACPI_SUCCESS(acpi_get_devices("IBM0068", acpi_check_cb,
+> &found, NULL)) && found; // same as above
+>=20
+> 3.         if (led_set_func(TPACPI_LED_MUTE, false) >=3D 0) { //in the
+> sound/pci/hda/thinkpad_helper.c, hda_fixup_thinkpad_acpi()
 
-With the global lock id in hand, drivers could simply use the existing
-hwspin_lock_request_specific API to obtain a specific lock, and then
-we don't need this patch.
+=2E..and this
 
-Thanks,
-Ohad.
+>=20
+> 4. if (led_set_func(TPACPI_LED_MICMUTE, false) >=3D 0) { // same as abo=
+ve
+>=20
+
+=2E..and this as well. spec->num_adc_nids is 1.
+
+Jan
+
+
+
+--wIRoUibvDoE2B02u7dbWPTjdw07uiX4bj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlO1AGIACgkQitSsb3rl5xQCvQCgyHPB2f7hTX5X9OPbMhnudaBz
+6iUAniHhhGy+m9CM12QO7+ROVDKvfF2W
+=mx87
+-----END PGP SIGNATURE-----
+
+--wIRoUibvDoE2B02u7dbWPTjdw07uiX4bj--
