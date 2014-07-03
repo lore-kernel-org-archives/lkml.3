@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759571AbaGCSpW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 14:45:22 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:50753 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759435AbaGCSpU (ORCPT
+	id S1759034AbaGCSyB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 14:54:01 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:60195 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854AbaGCSx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 14:45:20 -0400
+	Thu, 3 Jul 2014 14:53:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1407031331520.9641@jlaw-desktop.mno.stratus.com>
-References: <1400429439-11184-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<20140528112628.GB11953@infradead.org>
-	<alpine.DEB.2.02.1407031331520.9641@jlaw-desktop.mno.stratus.com>
-Date: Thu, 3 Jul 2014 20:45:18 +0200
-Message-ID: <CAFo99gaJ1oyXjAmiWCXBitBUe-G6a+4eHxHPSnv5h-+We7zv3Q@mail.gmail.com>
-Subject: Re: [PATCH] scsi: mpt2sas: mpt2sas_base.c: Fix for possible null
- pointer dereference
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Joe Lawrence <joe.lawrence@stratus.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <53B5A343.4090402@linux.vnet.ibm.com>
+References: <1404392547-11648-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+	<CA+55aFxOTqUAqEF7+83s890Q18qCHSQqDOxWqWHNjG_25hVhXg@mail.gmail.com>
+	<53B59CB5.9060004@linux.vnet.ibm.com>
+	<CA+55aFyRgYW6Y8paYKGfqE205enhiPsZ1C8wrKpFavVXq7ZAtA@mail.gmail.com>
+	<CA+55aFwwSCrH5QDvrzzyHhRU5R849Mo8A3NdRMwm9OTeWH9diQ@mail.gmail.com>
+	<53B5A343.4090402@linux.vnet.ibm.com>
+Date: Thu, 3 Jul 2014 11:53:57 -0700
+X-Google-Sender-Auth: 3wuyoZEiKVbE2tRqoLhkWgnfjcM
+Message-ID: <CA+55aFyqK90YJkjtHR2QGFt4Mvn=mj8a4FkB_8nbTTj3=jp3NA@mail.gmail.com>
+Subject: Re: [PATCH] mm readahead: Fix sys_readahead breakage by reverting 2MB
+ limit (bug 79111)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
+        David Rientjes <rientjes@google.com>,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-03 19:45 GMT+02:00 Joe Lawrence <joe.lawrence@stratus.com>:
-> On Wed, 28 May 2014, Christoph Hellwig wrote:
+On Thu, Jul 3, 2014 at 11:38 AM, Raghavendra K T
+<raghavendra.kt@linux.vnet.ibm.com> wrote:
 >
->> > -   ioc_status = le16_to_cpu(mpi_reply->IOCStatus) & MPI2_IOCSTATUS_MASK;
->> > +   if (mpi_reply) {
->> > +           ioc_status = le16_to_cpu(mpi_reply->IOCStatus) & MPI2_IOCSTATUS_MASK;
->> > +   }
->> >
->> >     if (ioc_status != MPI2_IOCSTATUS_SUCCESS)
->> >             ioc->port_enable_failed = 1;
->>
->> ioc_status isn't initialized without the reply and used here as well
->> as later in the function.  I think we'll need input from LSI or others
->> with the spec on what to do when we didn't get a reply.
->
-> Any update on this?
->
-> The mpt3 version checks for !mpi_reply and returns 1.  Which leads to
-> another question -- should mpt{2,3}sas_port_enable_done ever return 0 (as their
-> respective comments describe)?
->
-> Regards,
->
-> -- Joe
+> Okay, how about something like 256MB? I would be happy to send a patch
+> for that change.
 
+I'd like to see some performance numbers. I know at least Fedora uses
+"readahead()" in the startup scripts, do we have any performance
+numbers for that?
 
-Hi
+Also, I think 256MB is actually excessive. People still do have really
+slow devices out there. USB-2 is still common, and drives that read at
+15MB/s are not unusual. Do we really want to do readahead() that can
+take tens of seconds (and *will* take tens of seconds sycnhronously,
+because the IO requests fill up).
 
-Good questions Joe!
-And good someone else brought this up, because I guess it's not meant to me.
+So I wouldn't go from 2 to 256. That seems like an excessive jump. I
+was more thinking in the 4-8MB range. But even then, I think we should
+always have technical reasons (ie preferably numbers) for the change,
+not just randomly change it.
 
-And it looks however now that I've done quite a few more patches that
-there should not have been any {}
-And then, it is perhaps good to sett a start value for ioc_status. My
-suggestion is:
-
-u16 ioc_status = MPI2_IOCSTATUS_OP_STATE_NOT_SUPPORTED;
-
-
-Kind regards
-Rickard Strandqvist
+           Linus
