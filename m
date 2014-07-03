@@ -1,130 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759912AbaGCWQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 18:16:26 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:38911 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756206AbaGCWQX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 18:16:23 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        "Stephen Boyd" <sboyd@codeaurora.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <CAKohponRv6+rzJnO4cYFhXn6On1+4-KoxFSA2iU_nz130gvsug@mail.gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Lists linaro-kernel" <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Arvind Chauhan" <arvind.chauhan@arm.com>,
-        linux-arm-msm@vger.kernel.org, "Sachin Kamat" <spk.linux@gmail.com>,
-        "Thomas P Abraham" <thomas.ab@samsung.com>,
-        "Shawn Guo" <shawn.guo@linaro.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "Nishanth Menon" <nm@ti.com>, "Tomasz Figa" <t.figa@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Kukjin Kim" <kgene.kim@samsung.com>,
-        "Michal Simek" <michal.simek@xilinx.com>,
-        "Rob Herring" <rob.herring@linaro.org>,
-        "Santosh Shilimkar" <santosh.shilimkar@ti.com>,
-        "Simon Horman" <horms@verge.net.au>
-References: <cover.1404231535.git.viresh.kumar@linaro.org>
- <CAKohpomRttWnCBGEpR3cVsGYniJSnjWUnvtbg21AiYyrUnDjGw@mail.gmail.com>
- <53B4B0B3.9080000@codeaurora.org>
- <CAKohponRv6+rzJnO4cYFhXn6On1+4-KoxFSA2iU_nz130gvsug@mail.gmail.com>
-Message-ID: <20140703221609.11380.6884@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH 00/14] cpufreq: cpu0: Extend support beyond CPU0, V2
-Date: Thu, 03 Jul 2014 15:16:09 -0700
+	id S1759619AbaGCWVC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 18:21:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44226 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753035AbaGCWU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 18:20:59 -0400
+Date: Fri, 4 Jul 2014 08:20:48 +1000
+From: NeilBrown <neilb@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Bill <billstuff2001@sbcglobal.net>,
+        George Duffield <forumscollective@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux RAID <linux-raid@vger.kernel.org>
+Subject: [GIT PULL REQUEST] two minor bugfixes for md in 3.16.
+Message-ID: <20140704082048.4c0b5c59@notabene.brown>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/JpKUQlrh2DtXAe_ppXNhJFA"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Viresh Kumar (2014-07-02 19:44:04)
-> On 3 July 2014 06:54, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> > I gave it a spin. It works so you can have my
-> >
-> > Tested-by: Stephen Boyd <sboyd@codeaurora.org>
-> 
-> Thanks, all suggested improvements are made and pushed again with
-> your Tested-by..
-> 
-> > I'm still concerned about the patch where we figure out if the clocks
-> > are shared. I worry about a configuration where there are different
-> > clocks for on/off (i.e. gates) that are per-cpu but they all source from
-> > the same divider or something that is per-cluster. In DT this may be
-> > described as different clock provider outputs for the gates and in the
-> > cpu node we would have different clock specifiers but in reality all the
-> > CPUs in that cluster are affected by the same frequency scaling.
-> 
-> Yeah, this is probably what matches with Rob's doubt. These can
-> actually be different. Good point.
-> 
-> > In this case we'll need to get help from the clock framework to
-> > determine that those gates clocks don't have any .set_rate() callback so
-> > they can't actually change rate independently, and then walk up the tree
-> > to their parents to see if they have a common ancestor that does change
-> > rates. That's where it becomes useful to have a clock framework API for
-> > this, like clk_shares_rate(struct clk *clk, struct clk *peer) or
-> > something that can hide all this from cpufreq. Here's what I think it
-> > would look like (totally untested/uncompiled):
-> >
-> > static struct clk *find_rate_changer(struct clk *clk)
-> > {
-> >
-> >         if (!clk)
-> >                 return NULL;
-> >
-> >         do {
-> >                 /* Rate could change by changing parents */
-> >                 if (clk->num_parents > 1)
-> >                         return clk;
-> >
-> >                 /* Rate could change by calling clk_set_rate() */
-> >                 if (clk->ops->set_rate)
-> >                         return clk;
-> >
-> >                 /*
-> >                  * This is odd, clk_set_rate() doesn't propagate
-> >                  * and this clock can't change rate or parents
-> >                  * so we must be at the root and the clock we
-> >                  * started at can't change rates. Just return the
-> >                  * root so that we can see if the other clock shares
-> >                  * the same root although CPUfreq should never care.
-> >                  */
-> >                 if (!(clk->flags & CLK_SET_RATE_PARENT))
-> >                         return clk;
-> >         } while ((clk = clk->parent))
-> >
-> >         return NULL;
-> > }
-> >
-> > bool clk_shares_rate(struct clk *clk, struct clk *peer)
-> > {
-> >         struct clk *p1, *p2;
-> >
-> >         p1 = find_rate_changer(clk);
-> >         p2 = find_rate_changer(peer)
-> >
-> >         return p1 == p2;
-> > }
-> 
-> I find it much better then doing what I did initially, simply matching clk_get()
-> outputs. Lets see what Mike has to say..
+--Sig_/JpKUQlrh2DtXAe_ppXNhJFA
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Sorry for being dense, but I still do not get why trying to dynamically
-discover a shared rate-changeable clock is a better approach than simply
-describing the hardware in DT?
+The following changes since commit 4c834452aad01531db949414f94f817a86348d59:
 
-Is adding a property to the CPU binding that describes how the CPUs in a
-cluster expect to use a clock somehow a non-starter? It is certainly a
-win for readability when staring at DT and trying to understand how DVFS
-on that CPU is meant to work (as opposed to hiding that knowledge behind
-a tree walk).
+  Linux 3.16-rc3 (2014-06-29 14:11:36 -0700)
 
-Regards,
-Mike
+are available in the git repository at:
 
-> 
-> @Mike: Is this less ugly ? :)
+  git://neil.brown.name/md tags/md/3.16-fixes
+
+for you to fetch changes up to 133d4527eab8d199a62eee6bd433f0776842df2e:
+
+  md: flush writes before starting a recovery. (2014-07-03 10:44:45 +1000)
+
+----------------------------------------------------------------
+two minor bugfixes for md in 3.16.
+
+----------------------------------------------------------------
+NeilBrown (2):
+      md: make sure GET_ARRAY_INFO ioctl reports correct "clean" status
+      md: flush writes before starting a recovery.
+
+ drivers/md/md.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+--Sig_/JpKUQlrh2DtXAe_ppXNhJFA
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBU7XXQDnsnt1WYoG5AQI+xQ//b08gmYUSTWbLN1QBopUdy/fB/VUSoOrG
+LhS+ZETgiYCCov69Tbgf08mnoqYBNcQI+O28kC0FJpSWVN0janxbPPS83rT5v5mB
+QHhAQw67cqAO9pjw5a3OQCnevWVp5Kvlkj4/jWmgHBK6tbdopCBIpyE+ElWyJS4k
+61XpmdskQM1IEiGhWd4vNl1b1Q/HHonAyQSYfn+BzHq+nxzt8H9blBG85u4Vl6DK
+YKKMNAwS3KY+MvFrV4JYB7tVACoJKMFg5LSFivgoyNvz1a+Wp8FsGqxuRLaFXfRF
+hXCT2LqBogu+2vvGUFEaPrVKe8UpUCBssM/JzIgYS29FMo+7brUdMlNDGEkB/f/X
++FsRYw2My0raTDiEqcjiZKifIhRftQ7amDPiSIb1UgLlzJJttNSJik4ugLe04E8h
+HtlQiiFwqHm+3SdLiqfCFzf6LqyZKu87449lOHQaMHgwrG7j4todzRVUUlcPimOA
+uyaaDDjfBd/o2UntTqlhzzvJce5CezND/m4WqFtZHld0SBwxtkayrKK37Pab6wU4
+6/93lICrKQFSdLmUaqEN2W+UHsrPFM+pdLGr7qW5vTASXoimkdJ1ddp6pgBXtDxr
+ja9NWc0fRiptinZkje0dRrpmFu2janC0H7BjOktoKfcSicvhVzlKqpSYHKG0RdMv
+mMrp2ZGgTtk=
+=R4AJ
+-----END PGP SIGNATURE-----
+
+--Sig_/JpKUQlrh2DtXAe_ppXNhJFA--
