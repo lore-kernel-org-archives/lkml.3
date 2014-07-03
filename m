@@ -1,70 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758912AbaGCQOC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:14:02 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45132 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964984AbaGCQMc (ORCPT
+	id S1759329AbaGCQOO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:14:14 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:53776 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758556AbaGCQOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 12:12:32 -0400
-Date: Thu, 3 Jul 2014 17:12:08 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Rongjun Ying <rongjun.ying@csr.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Barry Song <baohua@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, Workgroup.linux@csr.com
-Message-ID: <20140703161208.GJ410@sirena.org.uk>
-References: <1404269142-3557-1-git-send-email-rongjun.ying@csr.com>
+	Thu, 3 Jul 2014 12:14:12 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4XBiSqiiHCIj6zoM"
-Content-Disposition: inline
-In-Reply-To: <1404269142-3557-1-git-send-email-rongjun.ying@csr.com>
-X-Cookie: Semper Fi, dude.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 0/2] ASoC: add CSR SiRFSoC audio USP interface driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140703161154.GF14305@arm.com>
+References: <CAGXu5jKJ07bXw_K+7uSAf=H_SDoeoaWPxS4rwuonbR71Svwwmw@mail.gmail.com>
+ <20140620172330.GA30656@arm.com> <CAGXu5jKg0didhwZTUq8AbMnwD=RV=EaWiZWBWuar625JXGnL6w@mail.gmail.com>
+ <CAGXu5j+bk3g0Dude8jfKM3dXxX8LE_46CMmcBCGdVMNX_Hu-6w@mail.gmail.com>
+ <20140623084608.GA9316@arm.com> <CAGXu5jLJRU21YoBXjXRpfHW1-jwy_PV0hpH_oUfew23xLF4gYg@mail.gmail.com>
+ <20140624085405.GA26013@arm.com> <53B5098B.9050801@linaro.org>
+ <20140703102450.GD12958@arm.com> <CALCETrWQdHmn0-so1JHFoT-2A02mgcxDUb3jphSQmBGn-SQ+pA@mail.gmail.com>
+ <20140703161154.GF14305@arm.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 3 Jul 2014 09:13:50 -0700
+Message-ID: <CALCETrXNQ0aLsE03mM0rdt-3mWP1Zze-nHSsME7Bwcf=5DyisA@mail.gmail.com>
+Subject: Re: [PATCH] arm: ptrace: fix syscall modification under PTRACE_O_TRACESECCOMP
+To: Will Deacon <will.deacon@arm.com>
+Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Kees Cook <keescook@chromium.org>,
+        =?UTF-8?Q?Andr=C3=A9_Hentschel?= <nerv@dawncrow.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ricky Zhou <rickyz@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 3, 2014 at 9:11 AM, Will Deacon <will.deacon@arm.com> wrote:
+> On Thu, Jul 03, 2014 at 04:39:21PM +0100, Andy Lutomirski wrote:
+>> On Thu, Jul 3, 2014 at 3:24 AM, Will Deacon <will.deacon@arm.com> wrote:
+>> > On Thu, Jul 03, 2014 at 08:43:07AM +0100, AKASHI Takahiro wrote:
+>> >> On 06/24/2014 05:54 PM, Will Deacon wrote:
+>> >> > On Mon, Jun 23, 2014 at 08:46:52PM +0100, Kees Cook wrote:
+>> >> >> What's the state of seccomp on arm64? I saw a series back in March,
+>> >> >> but nothing since then? It looked complete, but I haven't set up a
+>> >> >> test environment yet to verify.
+>> >> >
+>> >> > I think Akashi was going to repost `real soon now' so we can include them
+>> >> > for 3.17. He missed the merge window last time around.
+>> >>
+>> >> I took a quick look at the current implementation of ptrace.
+>> >> ptrace(PTRACE_GETREGSET/SETREGSET), eventually gpr_get/set(), handles only
+>> >> 'struct user_pt_regs', and we have no way to modify orig_x0 nor syscallno
+>> >> in 'struct pt_regs' directly.
+>> >> So it seems to me that we can't change a system call by ptrace().
+>> >> Do I misunderstand anything?
+>> >
+>> > No, it looks like you have a point here. I don't think userspace has any
+>> > business with orig_x0, but changing syscallno is certainly useful. I can
+>> > think of two ways to fix this:
+>> >
+>> >   (1) Updating syscallno based on w8, but this ties us to the current ABI
+>> >       and could get messy if this register changes in the future.
+>> >
+>> >   (2) Adding a PTRACE_SET_SYSCALL request, like we have for arch/arm/,
+>> >       but that means adding arch-specific stuff to arch_ptrace (which
+>> >       currently goes straight to ptrace_request on arm64).
+>> >
+>> > It looks like x86 uses orig_ax, which I *think* means we would go with
+>> > (1) above if we followed their lead.
+>>
+>> w8 is a real register, right?  On x86, at least orig_ax isn't a real
+>> register, so it's quite unlikely to conflict with hardware stuff.
+>
+> Yeah, w8 is the hardware register which the Linux ABI uses for the system
+> call number. I was thinking We could allow the debugger/tracer to update
+> the syscall number by updating that register, or do you see an issue with
+> that? (other than tying us to the current ABI).
 
---4XBiSqiiHCIj6zoM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Not immediately, but I'm not super-familiar with ptrace.
 
-On Wed, Jul 02, 2014 at 10:45:40AM +0800, Rongjun Ying wrote:
-> This patchset adds the SiRF USP controller driver, this
-> driver uses the USP as I2S or DSP_A mode interface.
+Is w8 clobbered or otherwise changed by syscalls?  Using w8 for this
+has the odd effect that tracers can't force a return with a specific
+value of w8 without executing the corresponding syscall.  If that's a
+meaningful limitation, then presumably some other channel should be
+used.
 
-Applied both, thanks.
+>
+>> On x86, the "user_struct" thing has nothing to do with any real kernel
+>> data structure, so it's extensible.  Can you just add syscallno to it?
+>
+> I'm really not keen on changing user-facing structures like that. For
+> example, KVM embeds user_pt_regs into kvm_regs.
 
---4XBiSqiiHCIj6zoM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Fair enough.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+>
+> We can add a new ptrace request if we have to.
+>
+> Will
 
-iQIcBAEBAgAGBQJTtYDVAAoJELSic+t+oim93A8P/0+bY4t28ElyrfsZ0mfvmp3D
-luvKqIXa0hUm3tCUTpr5NNwBv198XUB4P0CC1WMFPIVQYSWQCjF7h4AdYp2dpCQm
-3YFIXB/t4Ub5upxkS6BAT+Q/ZcLlkIqtUg0xHeUxjuIxa8c/OiGiqN47zxjbXj11
-LcPn+/cr0sTTKQFgFs+g9Gy6RArOqx3r7QFyrGmqn5TbytAasdtSzoBDxQy1dojd
-u1HOLXyKaiN4fTH7mG66U9EKD5WGjm7yQ7T8jDjqyDD3/XoYhr/ObdF8kZxnDZpy
-XjxzJmSruCsaLyGnqkNH8PoGCFSTckE5nsZOuBDjt4m4F7y62ULcyEY95pGNAem/
-iCeqyxSkXnNd1m/Yhm1m2q/ekPeSOGdHkpH7SVmRwbeFG1M77Sh3/qDjm9Ls/D6M
-JX+S4l1LNFPcJY4sWOuWRjCU3ocl4N5m88NYESQbNfST/GPStqzXQ/LAz5upv3KZ
-lK9EGTmGSIveKGAGO9zYVpFEMJeb3JNl30EnZVrfpe/w1q5BlrMmUR3zqSZ+6kuI
-IoR5eXEGkPo3DDOysDfE/HU/wVRo8OAHzLdANuyskYovMiCN3s1IiGbEmTErOwsc
-WpaP7E+aXOXzXM/8wiv9vr78jglLcMpMIoJTd9mfsri6cabUXDpPBUcAOG+czj2D
-epy1KMZ8xVPk03FMMxss
-=9Fe3
------END PGP SIGNATURE-----
 
---4XBiSqiiHCIj6zoM--
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
