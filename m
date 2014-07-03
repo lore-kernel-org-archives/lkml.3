@@ -1,143 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030854AbaGCKGf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:06:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51760 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755574AbaGCJWS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:22:18 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 063/198] USB: usb_wwan: fix potential NULL-deref at resume
-Date: Thu,  3 Jul 2014 10:18:26 +0100
-Message-Id: <1404379241-8590-64-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1758427AbaGCKHl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:07:41 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48376 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750987AbaGCKHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 06:07:39 -0400
+Message-ID: <53B52B3B.4010507@ti.com>
+Date: Thu, 3 Jul 2014 15:36:51 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <kernel@stlinux.com>, Alexandre Torgue <alexandre.torgue@st.com>
+Subject: Re: [PATCH 3/5] phy: miphy365x: Provide support for the MiPHY356x
+ Generic PHY
+References: <1404133317-25953-1-git-send-email-lee.jones@linaro.org> <1404133317-25953-4-git-send-email-lee.jones@linaro.org> <53B3DCBC.8000105@ti.com> <20140703080758.GI30534@lee--X1>
+In-Reply-To: <20140703080758.GI30534@lee--X1>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.13 -stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+On Thursday 03 July 2014 01:37 PM, Lee Jones wrote:
+> On Wed, 02 Jul 2014, Kishon Vijay Abraham I wrote:
+>> On Monday 30 June 2014 06:31 PM, Lee Jones wrote:
+>>> The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+>>> devices. It has 2 ports which it can use for either; both SATA, both
+>>> PCIe or one of each in any configuration.
+>>>
+>>> Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
+> 
+> Removed.
+> 
+>>> Acked-by: Mark Rutland <mark.rutland@arm.com>
+>>> Signed-off-by: Alexandre Torgue <alexandre.torgue@st.com>
+>>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>> ---
+>>>  drivers/phy/Kconfig         |  10 +
+>>>  drivers/phy/Makefile        |   1 +
+>>>  drivers/phy/phy-miphy365x.c | 630 ++++++++++++++++++++++++++++++++++++++++++++
+>>>  3 files changed, 641 insertions(+)
+>>>  create mode 100644 drivers/phy/phy-miphy365x.c
+> 
+> [...]
+> 
+>>> +struct miphy365x_dev {
+>>> +	struct device *dev;
+>>> +	struct mutex miphy_mutex;
+>>> +	struct miphy365x phys[ARRAY_SIZE(ports)];
+>>
+>> Avoid using fixed array sizes for ports or channels. Refer [1].
+> 
+> Just addressing this point in this mail.  Any other subsequent points
+> will either be fixed up or addressed in other correspondence.
+> 
+> I don't agree with this point.  I don't believe the number of channels
+> should be dictated by the number of DT sub-nodes supplied.  Instead,
 
-From: Johan Hovold <jhovold@gmail.com>
+But that's the way it is. The DT describes your hw and not the driver. However
+the driver may not support everything that is in the hw.
+> the driver should contain knowledge about what is supported and
+> validate the DT data accordingly.  If it's omitted we lose the ability
 
-commit 9096f1fbba916c2e052651e9de82fcfb98d4bea7 upstream.
+IMO the driver cannot validate DT data, it can just return error if there is
+something the _driver_ cannot support.
+> to conduct any kind of bounds checking, such like the following: 
+> 
+>         if (WARN_ON(port >= ARRAY_SIZE(ports)))
+>                 return ERR_PTR(-EINVAL);
 
-The interrupt urb was submitted unconditionally at resume, something
-which could lead to a NULL-pointer dereference in the urb completion
-handler as resume may be called after the port and port data is gone.
+Just as I mentioned in the other patch, 'ports' shouldn't be needed at all. If
+we directly give phandle to the sub-node, it won't be needed.
+> And
+>         if (child_count != ARRAY_SIZE(ports)) {
+>                 dev_err(&pdev->dev, "%d ports supported, %d supplied\n",
+>                         ARRAY_SIZE(ports), child_count);
+>                 return -EINVAL;
+>         }
+> 
+> If at a later point, we need to expand the driver to support a new
+> chip which supports more channels/ports then we need to expand the
+> bounds checking based on match data extracted from the supplied
+> compatible string.  For instance, if a 4 port controller is being used
+> and only 2 channels have been supplied, or vice versa then probe()
+> should fail.
 
-Fix this by making sure the interrupt urb is only submitted and active
-when the port is open.
+I don't think error checking of this sort should be done in driver. The dt
+_should_ know what is the controller that is being used.
 
-Fixes: 383cedc3bb43 ("USB: serial: full autosuspend support for the
-option driver")
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/usb/serial/usb_wwan.c | 43 +++++++++++++++++++------------------------
- 1 file changed, 19 insertions(+), 24 deletions(-)
-
-diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
-index ede88f1e09a3..be684101257c 100644
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -388,6 +388,14 @@ int usb_wwan_open(struct tty_struct *tty, struct usb_serial_port *port)
- 	portdata = usb_get_serial_port_data(port);
- 	intfdata = serial->private;
- 
-+	if (port->interrupt_in_urb) {
-+		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
-+		if (err) {
-+			dev_dbg(&port->dev, "%s: submit int urb failed: %d\n",
-+				__func__, err);
-+		}
-+	}
-+
- 	/* Start reading from the IN endpoint */
- 	for (i = 0; i < N_IN_URB; i++) {
- 		urb = portdata->in_urbs[i];
-@@ -432,6 +440,7 @@ void usb_wwan_close(struct usb_serial_port *port)
- 		usb_kill_urb(portdata->in_urbs[i]);
- 	for (i = 0; i < N_OUT_URB; i++)
- 		usb_kill_urb(portdata->out_urbs[i]);
-+	usb_kill_urb(port->interrupt_in_urb);
- 
- 	/* balancing - important as an error cannot be handled*/
- 	usb_autopm_get_interface_no_resume(serial->interface);
-@@ -469,7 +478,6 @@ int usb_wwan_port_probe(struct usb_serial_port *port)
- 	struct usb_wwan_port_private *portdata;
- 	struct urb *urb;
- 	u8 *buffer;
--	int err;
- 	int i;
- 
- 	if (!port->bulk_in_size || !port->bulk_out_size)
-@@ -509,13 +517,6 @@ int usb_wwan_port_probe(struct usb_serial_port *port)
- 
- 	usb_set_serial_port_data(port, portdata);
- 
--	if (port->interrupt_in_urb) {
--		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
--		if (err)
--			dev_dbg(&port->dev, "%s: submit irq_in urb failed %d\n",
--				__func__, err);
--	}
--
- 	return 0;
- 
- bail_out_error2:
-@@ -645,22 +646,6 @@ int usb_wwan_resume(struct usb_serial *serial)
- 	struct urb *urb;
- 	int err = 0;
- 
--	/* get the interrupt URBs resubmitted unconditionally */
--	for (i = 0; i < serial->num_ports; i++) {
--		port = serial->port[i];
--		if (!port->interrupt_in_urb) {
--			dev_dbg(&port->dev, "%s: No interrupt URB for port\n", __func__);
--			continue;
--		}
--		err = usb_submit_urb(port->interrupt_in_urb, GFP_NOIO);
--		dev_dbg(&port->dev, "Submitted interrupt URB for port (result %d)\n", err);
--		if (err < 0) {
--			dev_err(&port->dev, "%s: Error %d for interrupt URB\n",
--				__func__, err);
--			goto err_out;
--		}
--	}
--
- 	spin_lock_irq(&intfdata->susp_lock);
- 	for (i = 0; i < serial->num_ports; i++) {
- 		/* walk all ports */
-@@ -671,6 +656,16 @@ int usb_wwan_resume(struct usb_serial *serial)
- 		if (!portdata || !portdata->opened)
- 			continue;
- 
-+		if (port->interrupt_in_urb) {
-+			err = usb_submit_urb(port->interrupt_in_urb,
-+					GFP_ATOMIC);
-+			if (err) {
-+				dev_err(&port->dev,
-+					"%s: submit int urb failed: %d\n",
-+					__func__, err);
-+			}
-+		}
-+
- 		for (j = 0; j < N_IN_URB; j++) {
- 			urb = portdata->in_urbs[j];
- 			err = usb_submit_urb(urb, GFP_ATOMIC);
--- 
-1.9.1
-
+Cheers
+Kishon
