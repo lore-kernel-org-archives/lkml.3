@@ -1,92 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756767AbaGCHwa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 03:52:30 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:58669 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056AbaGCHw2 (ORCPT
+	id S1756089AbaGCH6F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 03:58:05 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:39283 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752907AbaGCH6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 03:52:28 -0400
-From: Zi Shen Lim <zlim.lnx@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Zi Shen Lim <zlim.lnx@gmail.com>, Alexei Starovoitov <ast@plumgrid.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH net-next] net: filter: move load_pointer() into filter.h
-Date: Thu,  3 Jul 2014 00:52:12 -0700
-Message-Id: <1404373932-10929-1-git-send-email-zlim.lnx@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 3 Jul 2014 03:58:04 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArhaAL0LtVN5LHZ8PGdsb2JhbABagw2DSoUIpBYBAgEBB5pVAYEIFwQBAQEBODWEAwEBBTocDxQQCAMYCSUPBSUDBxoTiEHHbxcYhViGDQGDJAeEQwWabJYMgVQr
+Date: Thu, 3 Jul 2014 17:56:44 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, linux-kernel@vger.kernel.org,
+        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        jason.low2@hp.com
+Subject: Re: [regression, 3.16-rc] rwsem: optimistic spinning causing
+ performance degradation
+Message-ID: <20140703075644.GR4453@dastard>
+References: <20140703023204.GN4453@dastard>
+ <1404358268.23839.13.camel@buesod1.americas.hpqcorp.net>
+ <20140703045933.GP4453@dastard>
+ <20140703053911.GQ4453@dastard>
+ <20140703073852.GV19379@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140703073852.GV19379@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-load_pointer() is already a static inline function.
-Let's move it into filter.h so BPF JIT implementations can reuse this
-function.
+On Thu, Jul 03, 2014 at 09:38:52AM +0200, Peter Zijlstra wrote:
+> On Thu, Jul 03, 2014 at 03:39:11PM +1000, Dave Chinner wrote:
+> > There's another regression with the optimisitic spinning in rwsems
+> > as well: it increases the size of the struct rw_semaphore by 16
+> > bytes. That has increased the size of the struct xfs_inode by 32
+> > bytes.
+> > 
+> > That's pretty damn significant - it's no uncommon to see machines
+> > with tens of millions of cached XFS inodes, so increasing the size
+> > of the inode by 4% is actually very significant. That's enough to go
+> > from having a well balanced workload to not being able to fit the
+> > working set of inodes in memory.
+> > 
+> > Filesystem developers will do almost anything to remove a few bytes
+> > from the struct inode because inode cache footprint is extremely
+> > important for performance. We also tend to get upset and
+> > unreasonable when other people undo that hard work by making changes
+> > that bloat the generic structures embedded in the inode
+> > structures....
+> 
+> Jason Low actually did a patch, yesterday, to shrink rwsem back to its
+> old size (on 64bit).
 
-Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
----
-This patch is based on discussion with Alexei in the context of
-reusing load_pointer for upcoming arm64 BPF JIT compiler. [1]
+That's good to know. Thanks, Peter.
 
-Compile tested on x86_64 and arm64.
+Cheers,
 
-[1] https://lkml.org/lkml/2014/7/3/14
-
- include/linux/filter.h | 13 +++++++++++++
- net/core/filter.c      |  9 ---------
- 2 files changed, 13 insertions(+), 9 deletions(-)
-
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index a7e3c48..2288e31 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -6,6 +6,7 @@
- 
- #include <linux/atomic.h>
- #include <linux/compat.h>
-+#include <linux/skbuff.h>
- #include <linux/workqueue.h>
- #include <uapi/linux/filter.h>
- 
-@@ -406,6 +407,18 @@ static inline u16 bpf_anc_helper(const struct sock_filter *ftest)
- 	}
- }
- 
-+void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb,
-+					   int k, unsigned int size);
-+
-+static inline void *load_pointer(const struct sk_buff *skb, int k,
-+				 unsigned int size, void *buffer)
-+{
-+	if (k >= 0)
-+		return skb_header_pointer(skb, k, size, buffer);
-+
-+	return bpf_internal_load_pointer_neg_helper(skb, k, size);
-+}
-+
- #ifdef CONFIG_BPF_JIT
- #include <stdarg.h>
- #include <linux/linkage.h>
-diff --git a/net/core/filter.c b/net/core/filter.c
-index 1dbf646..1c726ea 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -84,15 +84,6 @@ void *bpf_internal_load_pointer_neg_helper(const struct sk_buff *skb, int k, uns
- 	return NULL;
- }
- 
--static inline void *load_pointer(const struct sk_buff *skb, int k,
--				 unsigned int size, void *buffer)
--{
--	if (k >= 0)
--		return skb_header_pointer(skb, k, size, buffer);
--
--	return bpf_internal_load_pointer_neg_helper(skb, k, size);
--}
--
- /**
-  *	sk_filter - run a packet through a socket filter
-  *	@sk: sock associated with &sk_buff
+Dave.
 -- 
-1.9.1
-
+Dave Chinner
+david@fromorbit.com
