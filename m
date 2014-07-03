@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759105AbaGCQMH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 12:12:07 -0400
-Received: from smtprelay0126.hostedemail.com ([216.40.44.126]:33618 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758663AbaGCQMF (ORCPT
+	id S965064AbaGCQMm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 12:12:42 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:62039 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759160AbaGCQM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 12:12:05 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1714:1730:1747:1777:1792:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3872:3876:4321:4605:5007:7652:10004:10400:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: waves93_862a745d7e127
-X-Filterd-Recvd-Size: 1650
-Message-ID: <1404403920.14741.44.camel@joe-AO725>
-Subject: Re: [PATCH] Lattice ECP3 FPGA: Correct endianness
-From: Joe Perches <joe@perches.com>
-To: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, sr@denx.de
-Date: Thu, 03 Jul 2014 09:12:00 -0700
-In-Reply-To: <CAL8zT=isq_2RT07a6z8imJ4N0w0v-yw6ysv3wf+S7sLsqZBCeg@mail.gmail.com>
-References: <CAL8zT=isq_2RT07a6z8imJ4N0w0v-yw6ysv3wf+S7sLsqZBCeg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jul 2014 12:12:27 -0400
+Message-Id: <20140703161226.246757842@goodmis.org>
+User-Agent: quilt/0.63-1
+Date: Thu, 03 Jul 2014 12:05:19 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [for-next][PATCH 16/21] ftrace: Do not copy hash if O_TRUNC is set
+References: <20140703160503.006976702@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0016-ftrace-Do-not-copy-hash-if-O_TRUNC-is-set.patch
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-03 at 17:54 +0200, Jean-Michel Hautbois wrote:
-> This patch corrects three big/little endian issues. Tested on i.MX6.
+From: Namhyung Kim <namhyung@kernel.org>
 
-trivial:
+When a filter file is open for writing and O_TRUNC is set, there's no
+need to copy and free the filter entries.
 
-> diff --git a/drivers/misc/lattice-ecp3-config.c
-[]
-> @@ -165,8 +165,8 @@ static void firmware_load(const struct firmware
-> *fw, void *context)
-> 
->      txbuf[0] = FPGA_CMD_READ_STATUS;
->      ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
-> -    dev_dbg(&spi->dev, "FPGA Status=%08x\n", *(u32 *)&rxbuf[4]);
-> -    status = *(u32 *)&rxbuf[4];
-> +    dev_dbg(&spi->dev, "FPGA Status=%08x\n", be32_to_cpu(*(u32 *)&rxbuf[4]));
-> +    status = be32_to_cpu(*(u32 *)&rxbuf[4]);
+Link: http://lkml.kernel.org/p/1402474014-28655-2-git-send-email-namhyung@kernel.org
 
-This should emit a sparse error.
-It'd be simpler as:
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ftrace.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-	status = be32_to_cpu(*(__be32 *)&rxbuf[4]);
-	dev_dbg(&spi->dev, "FPGA Status=%08x\n", status);
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index e14ff4c1713e..232b898eebbd 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3010,7 +3010,13 @@ ftrace_regex_open(struct ftrace_ops *ops, int flag,
+ 		hash = ops->filter_hash;
+ 
+ 	if (file->f_mode & FMODE_WRITE) {
+-		iter->hash = alloc_and_copy_ftrace_hash(FTRACE_HASH_DEFAULT_BITS, hash);
++		const int size_bits = FTRACE_HASH_DEFAULT_BITS;
++
++		if (file->f_flags & O_TRUNC)
++			iter->hash = alloc_ftrace_hash(size_bits);
++		else
++			iter->hash = alloc_and_copy_ftrace_hash(size_bits, hash);
++
+ 		if (!iter->hash) {
+ 			trace_parser_put(&iter->parser);
+ 			kfree(iter);
+@@ -3019,10 +3025,6 @@ ftrace_regex_open(struct ftrace_ops *ops, int flag,
+ 		}
+ 	}
+ 
+-	if ((file->f_mode & FMODE_WRITE) &&
+-	    (file->f_flags & O_TRUNC))
+-		ftrace_filter_reset(iter->hash);
+-
+ 	if (file->f_mode & FMODE_READ) {
+ 		iter->pg = ftrace_pages_start;
+ 
+-- 
+2.0.0
 
 
