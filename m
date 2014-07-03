@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565AbaGCT4q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 15:56:46 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:40261 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaGCT4o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 15:56:44 -0400
-Date: Thu, 3 Jul 2014 12:54:36 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Hugh Dickins <hughd@google.com>
-cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: mm: memcontrol: rewrite uncharge API: problems
-In-Reply-To: <alpine.LSU.2.11.1407021518120.8299@eggly.anvils>
-Message-ID: <alpine.LSU.2.11.1407031219500.1370@eggly.anvils>
-References: <alpine.LSU.2.11.1406301558090.4572@eggly.anvils> <20140701174612.GC1369@cmpxchg.org> <20140702212004.GF1369@cmpxchg.org> <alpine.LSU.2.11.1407021518120.8299@eggly.anvils>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	id S1752501AbaGCT75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 15:59:57 -0400
+Received: from mga14.intel.com ([192.55.52.115]:27263 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751548AbaGCT74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 15:59:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,596,1400050800"; 
+   d="scan'208";a="557162580"
+From: Andi Kleen <andi@firstfloor.org>
+To: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 30/50] mars: add new file drivers/block/mars/xio_bricks/xio_aio.c
+References: <1404251250-22992-1-git-send-email-tst@schoebel-theuer.de>
+	<1404251250-22992-31-git-send-email-tst@schoebel-theuer.de>
+Date: Thu, 03 Jul 2014 12:59:52 -0700
+In-Reply-To: <1404251250-22992-31-git-send-email-tst@schoebel-theuer.de>
+	(Thomas Schoebel-Theuer's message of "Tue, 1 Jul 2014 23:47:10 +0200")
+Message-ID: <87bnt6tdqf.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jul 2014, Hugh Dickins wrote:
-> On Wed, 2 Jul 2014, Johannes Weiner wrote:
-> > 
-> > Could you give the following patch a spin?  I put it in the mmots
-> > stack on top of mm-memcontrol-rewrite-charge-api-fix-shmem_unuse-fix.
-> 
-> I'm just with the laptop until this evening.  I slapped it on top of
-> my 3.16-rc2-mm1 plus fixes (but obviously minus my memcg_batch one
-> - which incidentally continues to run without crashing on the G5),
-> and it quickly gave me this lockdep splat, which doesn't look very
-> different from the one before.
-> 
-> I see there's now an -rc3-mm1, I'll try it out on that in half an
-> hour... but unless I send word otherwise, assume that's the same.
+Thomas Schoebel-Theuer <tst@schoebel-theuer.de> writes:
+> +
+> +/************************ mmu faking (provisionary) ***********************/
+> +
+> +/* Kludge: our kernel threads will have no mm context, but need one
+> + * for stuff like ioctx_alloc() / aio_setup_ring() etc
+> + * which expect userspace resources.
+> + * We fake one.
+> + * TODO: factor out the userspace stuff from AIO such that
+> + * this fake is no longer necessary.
+> + * Even better: replace do_mmap() in AIO stuff by something
+> + * more friendly to kernelspace apps.
+> + */
 
-Yes, I get that lockdep report each time on -rc3-mm1 + your patch.
+That obviously has to be done before taking this patchkit any further.
 
-I also twice got a flurry of res_counter.c:28 underflow warnings.
-Hmm, 62 of them each time (I was checking for a number near 512,
-which would suggest a THP/4k confusion, but no).  The majority
-of them coming from mem_cgroup_reparent_charges.
+AFAIK the kernel already has totally usable internal AIO interfaces.
 
-But the laptop stayed up fine (for two hours before I had to stop
-it), and the G5 has run fine with that load for 16 hours now, no
-problems with release_pages, and not even a res_counter.c:28 (but
-I don't use lockdep on it).
+-Andi
 
-The x86 workstation ran fine for 4.5 hours, then hit some deadlock
-which I doubt had any connection to your changes: looked more like
-a jbd2 transaction was failing to complete (which, with me trying
-ext4 on loop on tmpfs, might be more my problem than anyone else's).
-
-Oh, but nearly forgot, I did an earlier run on the laptop last night,
-which crashed within minutes on
-
-VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM))
-mm/memcontrol.c:6680!
-page had count 1 mapcount 0 mapping anon index 0x196
-flags locked uptodate reclaim swapbacked, pcflags 1, memcg not root
-mem_cgroup_migrate < move_to_new_page < migrate_pages < compact_zone <
-compact_zone_order < try_to_compact_pages < __alloc_pages_direct_compact <
-__alloc_pages_nodemask < alloc_pages_vma < do_huge_pmd_anonymous_page <
-handle_mm_fault < __do_page_fault
-
-I was expecting to reproduce that quite easily on the laptop or
-workstation, and investigate more closely then; but in fact have
-not seen it since.
-
-Hugh
+-- 
+ak@linux.intel.com -- Speaking for myself only
