@@ -1,161 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767AbaGCCFF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 22:05:05 -0400
-Received: from mga09.intel.com ([134.134.136.24]:51127 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828AbaGCCER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 22:04:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,592,1400050800"; 
-   d="scan'208";a="567593303"
-From: kan.liang@intel.com
-To: peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, andi@firstfloor.org,
-        Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V2 2/3] perf protect LBR when Intel PT is enabled.
-Date: Wed,  2 Jul 2014 11:14:14 -0700
-Message-Id: <1404324855-15166-2-git-send-email-kan.liang@intel.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1404324855-15166-1-git-send-email-kan.liang@intel.com>
-References: <1404324855-15166-1-git-send-email-kan.liang@intel.com>
+	id S1753324AbaGCCKG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 22:10:06 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:58315 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822AbaGCCKD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jul 2014 22:10:03 -0400
+Message-ID: <53B4BB71.7030500@linux.vnet.ibm.com>
+Date: Thu, 03 Jul 2014 10:09:53 +0800
+From: Michael wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Mike Galbraith <umgwanakikbuti@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@linaro.org>,
+        Paul Turner <pjt@google.com>, Mel Gorman <mgorman@suse.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: select 'idle' cfs_rq per task-group to prevent
+ tg-internal imbalance
+References: <53A11A89.5000602@linux.vnet.ibm.com> <20140623094251.GS19860@laptop.programming.kicks-ass.net> <53A8F1DE.2060908@linux.vnet.ibm.com> <20140701082020.GL6758@twins.programming.kicks-ass.net> <53B273A2.5050500@linux.vnet.ibm.com> <20140701085658.GM6758@twins.programming.kicks-ass.net> <53B372C6.5000107@linux.vnet.ibm.com> <20140702124918.GE19379@twins.programming.kicks-ass.net>
+In-Reply-To: <20140702124918.GE19379@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070302-3568-0000-0000-000005CA441E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kan Liang <kan.liang@intel.com>
+On 07/02/2014 08:49 PM, Peter Zijlstra wrote:
+> On Wed, Jul 02, 2014 at 10:47:34AM +0800, Michael wang wrote:
+>> The opinion on features actually make me a little confusing... I used to
+>> think the scheduler is willing on providing kinds of way to adapt itself
+>> to different situation, and some features do help on that, make them
+>> only a debug option make the scheduler more static to users, but I know
+>> that's not what I should touched...
+>>
+>> Anyway, the problem is still there and seems like we have to adopt some
+>> optional solution to address it, we'll still working and practice on
+>> that, please let us know if you have any ideas we could help on ;-)
+> 
+> No, its very much not intended as a user knob to adapt.
+> 
+> The problem with that approach to scheduling is that one set of knobs
+> runs workload A, while another set of knobs runs workload B, but what
+> happens if you need to run both A and B on the same machine?
 
-If RTIT_CTL.TraceEn=1, any attempt to read or write the LBR or LER MSRs, including LBR_TOS, will result in a #GP.
-Since Intel PT can be enabled/disabled at runtime, LBR MSRs have to be protected by _safe() at runtime.
+That's actually what make me think the scheduler should be able to adapt
+itself, our performance testing mostly based on static kinds of
+workload, and that's too far away from the real world.
 
-Signed-off-by: Kan Liang <kan.liang@intel.com>
----
- arch/x86/kernel/cpu/perf_event.h           |  1 -
- arch/x86/kernel/cpu/perf_event_intel.c     |  3 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c | 38 +++++++++++++++++-------------
- 3 files changed, 21 insertions(+), 21 deletions(-)
+We tested A, we tested B, we tested A + B, but what if C joined? what if
+folks only like A, don't care B?
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 5d977b2..fafb809 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -458,7 +458,6 @@ struct x86_pmu {
- 	u64		lbr_sel_mask;		   /* LBR_SELECT valid bits */
- 	const int	*lbr_sel_map;		   /* lbr_select mappings */
- 	bool		lbr_double_abort;	   /* duplicated lbr aborts */
--	bool		lbr_msr_access;		   /* LBR MSR can be accessed */
- 	/*
- 	 * Extra registers for events
- 	 */
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 8011d42..ddd3590 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2565,9 +2565,6 @@ __init int intel_pmu_init(void)
- 		}
- 	}
- 
--	/* Access LBR MSR may cause #GP under certain circumstances. E.g. KVM doesn't support LBR MSR */
--	if (x86_pmu.lbr_nr)
--		x86_pmu.lbr_msr_access = test_msr_access(x86_pmu.lbr_tos) & test_msr_access(x86_pmu.lbr_from);
- 	/* Access extra MSR may cause #GP under certain circumstances. E.g. KVM doesn't support offcore event */
- 	if (x86_pmu.extra_regs)
- 		x86_pmu.extra_msr_access = test_msr_access(x86_pmu.extra_regs->msr);
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 9508d1e..980b8dc 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -157,7 +157,7 @@ static void intel_pmu_lbr_reset_32(void)
- 	int i;
- 
- 	for (i = 0; i < x86_pmu.lbr_nr; i++)
--		wrmsrl(x86_pmu.lbr_from + i, 0);
-+		wrmsrl_safe(x86_pmu.lbr_from + i, 0ULL);
- }
- 
- static void intel_pmu_lbr_reset_64(void)
-@@ -165,14 +165,14 @@ static void intel_pmu_lbr_reset_64(void)
- 	int i;
- 
- 	for (i = 0; i < x86_pmu.lbr_nr; i++) {
--		wrmsrl(x86_pmu.lbr_from + i, 0);
--		wrmsrl(x86_pmu.lbr_to   + i, 0);
-+		wrmsrl_safe(x86_pmu.lbr_from + i, 0ULL);
-+		wrmsrl_safe(x86_pmu.lbr_to   + i, 0ULL);
- 	}
- }
- 
- void intel_pmu_lbr_reset(void)
- {
--	if (!x86_pmu.lbr_nr  || !x86_pmu.lbr_msr_access)
-+	if (!x86_pmu.lbr_nr)
- 		return;
- 
- 	if (x86_pmu.intel_cap.lbr_format == LBR_FORMAT_32)
-@@ -237,19 +237,14 @@ void intel_pmu_lbr_disable_all(void)
- /*
-  * TOS = most recently recorded branch
-  */
--static inline u64 intel_pmu_lbr_tos(void)
-+static inline int intel_pmu_lbr_tos(u64 *tos)
- {
--	u64 tos;
--
--	rdmsrl(x86_pmu.lbr_tos, tos);
--
--	return tos;
-+	return rdmsrl_safe(x86_pmu.lbr_tos, tos);
- }
- 
--static void intel_pmu_lbr_read_32(struct cpu_hw_events *cpuc)
-+static void intel_pmu_lbr_read_32(struct cpu_hw_events *cpuc, u64 tos)
- {
- 	unsigned long mask = x86_pmu.lbr_nr - 1;
--	u64 tos = intel_pmu_lbr_tos();
- 	int i;
- 
- 	for (i = 0; i < x86_pmu.lbr_nr; i++) {
-@@ -278,11 +273,10 @@ static void intel_pmu_lbr_read_32(struct cpu_hw_events *cpuc)
-  * is the same as the linear address, allowing us to merge the LIP and EIP
-  * LBR formats.
-  */
--static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
-+static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc, u64 tos)
- {
- 	unsigned long mask = x86_pmu.lbr_nr - 1;
- 	int lbr_format = x86_pmu.intel_cap.lbr_format;
--	u64 tos = intel_pmu_lbr_tos();
- 	int i;
- 	int out = 0;
- 
-@@ -333,14 +327,24 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
- void intel_pmu_lbr_read(void)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	u64 tos;
- 
--	if (!cpuc->lbr_users || !x86_pmu.lbr_msr_access)
-+	if (!cpuc->lbr_users)
-+		return;
-+
-+	/*
-+	 * If KVM doesn't support LBR MSRs or Intel PT is enabled,
-+	 * accessing LBR MSRs cause GP#.
-+	 * Since Intel PT can be enabled/disabled at runtime,
-+	 * checking the LBR MSRs access right here.
-+	 */
-+	if (intel_pmu_lbr_tos(&tos) < 0)
- 		return;
- 
- 	if (x86_pmu.intel_cap.lbr_format == LBR_FORMAT_32)
--		intel_pmu_lbr_read_32(cpuc);
-+		intel_pmu_lbr_read_32(cpuc, tos);
- 	else
--		intel_pmu_lbr_read_64(cpuc);
-+		intel_pmu_lbr_read_64(cpuc, tos);
- 
- 	intel_pmu_lbr_filter(cpuc);
- }
--- 
-1.8.3.1
+The key point here is, scheduler still can't promise that all kinds of
+situation is taking good care under it's static policy... it just
+running there, won't get any feedback from user, thinking it's doing the
+right thing, but sometimes not from admin's view.
+
+> 
+> So optional things and knobs are a complete fail and will not happen.
+
+But how could we promise that our static policy is the best?
+
+For example the 'sysctl_sched_min_granularity', why it should be 750k?
+is that the best on any kinds of platform to any kinds of workloads at
+any time?
+
+Regards,
+Michael Wang
+
+> 
+> Clearly I need to go take out all these things because people don't seem
+> to know this and SCHED_DEBUG isn't a big enough hint. Tedious.
+> 
 
