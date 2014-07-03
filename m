@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759627AbaGCXGs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 19:06:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48013 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035AbaGCXGq (ORCPT
+	id S1759802AbaGCXHg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 19:07:36 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:49813 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759740AbaGCXHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 19:06:46 -0400
-Date: Thu, 3 Jul 2014 16:11:03 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Jan Beulich <JBeulich@suse.com>
-Cc: stable@kernel.org, "Don A. Bailey" <donb@securitymouse.com>
-Subject: [PATCH] lz4: add overrun checks to lz4_uncompress_unknownoutputsize()
-Message-ID: <20140703231103.GA4081@kroah.com>
+	Thu, 3 Jul 2014 19:07:35 -0400
+Message-ID: <53B5E2AF.5030208@gmail.com>
+Date: Thu, 03 Jul 2014 19:09:35 -0400
+From: Boris Ostrovsky <ostr.lkml@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jan Beulich <JBeulich@suse.com>
+CC: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH] x86-64: fix vDSO build
+References: <53B5861E02000078000204D1@mail.emea.novell.com>
+In-Reply-To: <53B5861E02000078000204D1@mail.emea.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On 07/03/2014 10:34 AM, Jan Beulich wrote:
+> Certain ld versions (observed with 2.20.0) put an empty .rela.dyn
+> section into shared object files, breaking the assumption on the number
+> of sections to be copied to the final output. Simply discard any empty
+> SHT_REL and SHT_RELA sections to address this.
 
-Jan points out that I forgot to make the needed fixes to the
-lz4_uncompress_unknownoutputsize() function to mirror the changes done
-in lz4_decompress() with regards to potential pointer overflows.
+Tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-The only in-kernel user of this function is the zram code, which only
-takes data from a valid compressed buffer that it made itself, so it's
-not a big issue.  But due to external kernel modules using this
-function, it's better to be safe here.
 
-Reported-by: Jan Beulich <JBeulich@suse.com>
-Cc: "Don A. Bailey" <donb@securitymouse.com>
-Cc: stable <stable@vger.kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> Cc: Andy Lutomirski <luto@amacapital.net>
+> ---
+>   arch/x86/vdso/vdso2c.h |    3 +++
+>   1 file changed, 3 insertions(+)
+>
+> --- 3.16-rc3/arch/x86/vdso/vdso2c.h
+> +++ 3.16-rc3-x86-vdso-build/arch/x86/vdso/vdso2c.h
+> @@ -93,6 +93,9 @@ static void BITSFUNC(copy_section)(struc
+>   	uint64_t flags = GET_LE(&in->sh_flags);
+>   
+>   	bool copy = flags & SHF_ALLOC &&
+> +		(GET_LE(&in->sh_size) ||
+> +		 (GET_LE(&in->sh_type) != SHT_RELA &&
+> +		  GET_LE(&in->sh_type) != SHT_REL)) &&
+>   		strcmp(name, ".altinstructions") &&
+>   		strcmp(name, ".altinstr_replacement");
+>   
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-diff --git a/lib/lz4/lz4_decompress.c b/lib/lz4/lz4_decompress.c
-index b74da447e81e..7a85967060a5 100644
---- a/lib/lz4/lz4_decompress.c
-+++ b/lib/lz4/lz4_decompress.c
-@@ -192,6 +192,8 @@ static int lz4_uncompress_unknownoutputsize(const char *source, char *dest,
- 			int s = 255;
- 			while ((ip < iend) && (s == 255)) {
- 				s = *ip++;
-+				if (unlikely(length > (size_t)(length + s)))
-+					goto _output_error;
- 				length += s;
- 			}
- 		}
-@@ -232,6 +234,8 @@ static int lz4_uncompress_unknownoutputsize(const char *source, char *dest,
- 		if (length == ML_MASK) {
- 			while (ip < iend) {
- 				int s = *ip++;
-+				if (unlikely(length > (size_t)(length + s)))
-+					goto _output_error;
- 				length += s;
- 				if (s == 255)
- 					continue;
-@@ -284,7 +288,7 @@ static int lz4_uncompress_unknownoutputsize(const char *source, char *dest,
- 
- 	/* write overflow error detected */
- _output_error:
--	return (int) (-(((char *) ip) - source));
-+	return -1;
- }
- 
- int lz4_decompress(const unsigned char *src, size_t *src_len,
