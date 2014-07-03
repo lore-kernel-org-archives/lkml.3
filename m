@@ -1,131 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755883AbaGCH3v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 03:29:51 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:57247 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756259AbaGCH3u (ORCPT
+	id S1757134AbaGCHad (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 03:30:33 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48283 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755410AbaGCHac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 03:29:50 -0400
-Date: Thu, 3 Jul 2014 08:29:43 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Andrew Bresticker <abrestic@chromium.org>, swarren@wwwdotorg.org,
-        olof@lixom.net, Sonny Rao <sonnyrao@chromium.org>,
-        linux-samsung-soc@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Bill Richardson <wfrichar@chromium.org>, sjg@chromium.org,
-        Wolfram Sang <wsa@the-dreams.de>, broonie@kernel.org,
-        sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 06/10] mfd: cros_ec: cleanup: remove unused fields
- from struct cros_ec_device
-Message-ID: <20140703072943.GD30534@lee--X1>
-References: <1403115247-8853-1-git-send-email-dianders@chromium.org>
- <1403115247-8853-7-git-send-email-dianders@chromium.org>
+	Thu, 3 Jul 2014 03:30:32 -0400
+Date: Thu, 3 Jul 2014 09:26:54 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Chen-Yu Tsai <wens@csie.org>, Emilio Lopez <emilio@elopez.com.ar>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com
+Subject: Re: [PATCH v4 0/6] clk: sunxi: fixes, cleanups and A23 basic clocks
+Message-ID: <20140703072654.GC31996@lukather>
+References: <1403798144-32188-1-git-send-email-wens@csie.org>
+ <20140702223552.7440.60829@quantum>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oJ71EGRlYNjSvfq7"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1403115247-8853-7-git-send-email-dianders@chromium.org>
+In-Reply-To: <20140702223552.7440.60829@quantum>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Jun 2014, Doug Anderson wrote:
 
-> From: Bill Richardson <wfrichar@chromium.org>
-> 
-> struct cros_ec_device has a superfluous "name" field. We can get all the
-> debugging info we need from the existing ec_name and phys_name fields, so
-> let's take out the extra field.
-> 
-> The printout also has sufficient info in it without explicitly adding
-> the transport.  Before this change:
->   cros-ec-spi spi2.0: Chrome EC (SPI)
-> 
-> After this change:
->   cros-ec-spi spi2.0: Chrome EC device registered
-> 
-> Signed-off-by: Bill Richardson <wfrichar@chromium.org>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> Reviewed-by: Simon Glass <sjg@chromium.org>
-> ---
-> Changes in v2:
-> - Include example printouts before/after in commit message.
+--oJ71EGRlYNjSvfq7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Patch applied.
+Hi Mike,
 
-Clause: There is a chance that this patch might not be seen in -next
-for ~24-48hrs.  If it's not there by 72hrs, feel free to poke.
+On Wed, Jul 02, 2014 at 03:35:52PM -0700, Mike Turquette wrote:
+> Quoting Chen-Yu Tsai (2014-06-26 08:55:38)
+> > Hi everyone,
+> >=20
+> > This is v4 of the sun8i clock series, which adds basic clock
+> > support for the A23 SoC. It is based on my initial sun8i bring
+> > up series [1]. This series was split up from the original A23
+> > series [2]. Yet to come are more clocks, reset controllers,
+> > prcm, pinctrl, and mmc.
+>=20
+> Hello Chen-Yu,
+>=20
+> This series looks good to me.
+>=20
+> Maxime,
+>=20
+> I see that you Acked it already. Are you planning to roll this into a
+> pull request later on?
 
->  drivers/mfd/cros_ec.c       | 2 +-
->  drivers/mfd/cros_ec_i2c.c   | 1 -
->  drivers/mfd/cros_ec_spi.c   | 1 -
->  include/linux/mfd/cros_ec.h | 2 --
->  4 files changed, 1 insertion(+), 5 deletions(-)
-> 
-> diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
-> index 2e86c28..49ed8c3 100644
-> --- a/drivers/mfd/cros_ec.c
-> +++ b/drivers/mfd/cros_ec.c
-> @@ -140,7 +140,7 @@ int cros_ec_register(struct cros_ec_device *ec_dev)
->  		goto fail_mfd;
->  	}
->  
-> -	dev_info(dev, "Chrome EC (%s)\n", ec_dev->name);
-> +	dev_info(dev, "Chrome EC device registered\n");
->  
->  	return 0;
->  
-> diff --git a/drivers/mfd/cros_ec_i2c.c b/drivers/mfd/cros_ec_i2c.c
-> index 37ed12f..5bb32f5 100644
-> --- a/drivers/mfd/cros_ec_i2c.c
-> +++ b/drivers/mfd/cros_ec_i2c.c
-> @@ -132,7 +132,6 @@ static int cros_ec_i2c_probe(struct i2c_client *client,
->  		return -ENOMEM;
->  
->  	i2c_set_clientdata(client, ec_dev);
-> -	ec_dev->name = "I2C";
->  	ec_dev->dev = dev;
->  	ec_dev->priv = client;
->  	ec_dev->irq = client->irq;
-> diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
-> index 2d713fe..09ca789 100644
-> --- a/drivers/mfd/cros_ec_spi.c
-> +++ b/drivers/mfd/cros_ec_spi.c
-> @@ -374,7 +374,6 @@ static int cros_ec_spi_probe(struct spi_device *spi)
->  	cros_ec_spi_dt_probe(ec_spi, dev);
->  
->  	spi_set_drvdata(spi, ec_dev);
-> -	ec_dev->name = "SPI";
->  	ec_dev->dev = dev;
->  	ec_dev->priv = ec_spi;
->  	ec_dev->irq = spi->irq;
-> diff --git a/include/linux/mfd/cros_ec.h b/include/linux/mfd/cros_ec.h
-> index f27c037..2b0c598 100644
-> --- a/include/linux/mfd/cros_ec.h
-> +++ b/include/linux/mfd/cros_ec.h
-> @@ -67,7 +67,6 @@ struct cros_ec_command {
->   * @command_recv: receive a response
->   * @command_sendrecv: send a command and receive a response
->   *
-> - * @name: Name of this EC interface
->   * @priv: Private data
->   * @irq: Interrupt to use
->   * @din: input buffer (for data from EC)
-> @@ -104,7 +103,6 @@ struct cros_ec_device {
->  				void *in_buf, int in_len);
->  
->  	/* These are used to implement the platform-specific interface */
-> -	const char *name;
->  	void *priv;
->  	int irq;
->  	uint8_t *din;
+I think that was an question Emilio asked a few days ago :)
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+It would probably be easier if we just handle all the sunxi clocks
+ourselves, so I guess Emilio can just send you a pull request later
+on.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--oJ71EGRlYNjSvfq7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTtQW+AAoJEBx+YmzsjxAgj9oP/2Qo0MeGNM1enHnroPBlpo82
++8Z3bN5CznqlZkshYnCDqa9VNvB/m/3kSo/JGUA80SyeqJ2KLcB1dvjUWjIxFGlR
+zUMFdTcD1mU3geWZuG3T09O4Y0ZmcYq54qjKdTz4ZBI9/zZnWIJP1gOGA+qinrmF
+1xibnDIy6PS4HiJud0trScKNfVc011ybhvr4A1pCv/jdjTWY//8M5m/5mQeNN0KY
+wBcOuEOEFeo7byGYlHy0237JnpfucZAYort1xwtt9h68+6wrg9njHwhjvpuWr5Q1
+ps9ZcSET9WRofda1/7kLOF/C44PeI3oSEDBXIbA0eocGyj2HLzzYDDQLcgTrkMaG
+8/WtPUN3PWWgZqoDpyZDg7ZflGQon+tV3hqLmQDJ6+gfsV0SJltq3fCRp4wFHXpD
+Gw98oRGq5QtfSzmAujF9uILOXYhlglCJaWg8An8Gi77pttWtOalsWSmMTW7FTECN
+TkmBpPcDDd9zLhtgFW0S5WtwSXmwxArg+d5MomGwxwLHgpirVZ3ZSYfDSIUR/MdB
+Ba8odBVQUJ6FyGTbYAp2SISKmLB17JLHyp769v/MDU7kaVp7/LPhaIrvkD0nESlF
+HD14IVoS+UTLhidU+hK6Vl4xiCHPveT+7dtd0+/dS7w9Qv1CAEFIOTiViF+dEg33
+fytonWnPLneVn20p2Hs/
+=00PN
+-----END PGP SIGNATURE-----
+
+--oJ71EGRlYNjSvfq7--
