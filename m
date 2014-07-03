@@ -1,151 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759564AbaGCVei (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 17:34:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56667 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073AbaGCVeg (ORCPT
+	id S1759602AbaGCVfJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 17:35:09 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:3426 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073AbaGCVfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 17:34:36 -0400
-Date: Thu, 3 Jul 2014 16:34:25 -0500
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: kbuild test robot <fengguang.wu@intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, kbuild-all@01.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Michael Halcrow <mhalcrow@us.ibm.com>, ecryptfs@vger.kernel.org
-Subject: Re: [trace:ftrace/core 1/3] include/trace/syscall.h:39:6: error:
- 'TIF_SYSCALL_TRACEPOINT' undeclared
-Message-ID: <20140703213425.GB5089@boyd>
-References: <53a1e7ba.ZIiv6DbOB78b9RzY%fengguang.wu@intel.com>
- <20140618211559.76bdea15@gandalf.local.home>
+	Thu, 3 Jul 2014 17:35:07 -0400
+Message-ID: <53B5CC85.1040603@hp.com>
+Date: Thu, 03 Jul 2014 17:35:01 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="St7VIuEGZ6dlpu13"
-Content-Disposition: inline
-In-Reply-To: <20140618211559.76bdea15@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jason Low <jason.low2@hp.com>
+CC: Davidlohr Bueso <davidlohr@hp.com>, Peter Zijlstra <peterz@infradead.org>,
+        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        mingo@kernel.org, linux-kernel@vger.kernel.org, riel@redhat.com,
+        akpm@linux-foundation.org, hpa@zytor.com, andi@firstfloor.org,
+        James.Bottomley@hansenpartnership.com, rostedt@goodmis.org,
+        tim.c.chen@linux.intel.com, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Subject: Re: [RFC] Cancellable MCS spinlock rework
+References: <1404318070-2856-1-git-send-email-jason.low2@hp.com>   <20140702162749.GP19379@twins.programming.kicks-ass.net>   <1404320356.3170.12.camel@j-VirtualBox>   <20140702172333.GQ19379@twins.programming.kicks-ass.net>   <1404322203.3170.17.camel@j-VirtualBox>   <20140703073107.GS19379@twins.programming.kicks-ass.net>   <1404407389.2498.3.camel@buesod1.americas.hpqcorp.net>  <1404412485.8764.33.camel@j-VirtualBox> <53B5BE99.1090008@hp.com> <1404420708.8764.54.camel@j-VirtualBox>
+In-Reply-To: <1404420708.8764.54.camel@j-VirtualBox>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/03/2014 04:51 PM, Jason Low wrote:
+> On Thu, 2014-07-03 at 16:35 -0400, Waiman Long wrote:
+>> On 07/03/2014 02:34 PM, Jason Low wrote:
+>>> On Thu, 2014-07-03 at 10:09 -0700, Davidlohr Bueso wrote:
+>>>> On Thu, 2014-07-03 at 09:31 +0200, Peter Zijlstra wrote:
+>>>>> On Wed, Jul 02, 2014 at 10:30:03AM -0700, Jason Low wrote:
+>>>>>> Would potentially reducing the size of the rw semaphore structure by 32
+>>>>>> bits (for all architectures using optimistic spinning) be a nice
+>>>>>> benefit?
+>>>>> Possibly, although I had a look at the mutex structure and we didn't
+>>>>> have a hole to place it in, unlike what you found with the rwsem.
+>>>> Yeah, and currently struct rw_semaphore is the largest lock we have in
+>>>> the kernel. Shaving off space is definitely welcome.
+>>> Right, especially if it could help things like xfs inode.
+>>>
+>> I do see a point in reducing the size of the rwsem structure. However, I
+>> don't quite understand the point of converting pointers in the
+>> optimistic_spin_queue structure to atomic_t.
+> Converting the pointers in the optimistic_spin_queue to atomic_t would
+> mean we're fully operating on atomic operations instead of using the
+> potentially racy cmpxchg + ACCESS_ONCE stores on the pointers.
 
---St7VIuEGZ6dlpu13
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, the ACCESS_ONCE macro for data store does have problem on some 
+architectures. However, I prefer a more holistic solution to solve this 
+problem rather than a workaround by changing the pointers to atomic_t's. 
+It is because even if we make the change,  we are still not sure if that 
+will work for those architectures as we have no machine to verify that. 
+Why not let the champions of those architectures to propose changes 
+instead of making some untested changes now and penalize commonly used 
+architectures like x86.
 
-On 2014-06-18 21:15:59, Steven Rostedt wrote:
-> On Thu, 19 Jun 2014 03:25:46 +0800
-> kbuild test robot <fengguang.wu@intel.com> wrote:
->=20
-> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-tra=
-ce.git ftrace/core
-> > head:   72fa1a896d8ef355e81270667803ceb16a3dd13f
-> > commit: 32def52ce8faec72c353b6304ca98176687e18f1 [1/3] tracing: Fix sys=
-call_*regfunc() vs copy_process() race
-> > config: make ARCH=3Dxtensa allyesconfig
-> >=20
-> > All error/warnings:
-> >=20
-> >    In file included from include/linux/syscalls.h:80:0,
-> >                     from fs/ecryptfs/keystore.c:29:
-> >    include/trace/syscall.h: In function 'syscall_tracepoint_update':
-> > >> include/trace/syscall.h:39:6: error: 'TIF_SYSCALL_TRACEPOINT' undecl=
-ared (first use in this function)
-> >    include/trace/syscall.h:39:6: note: each undeclared identifier is re=
-ported only once for each function it appears in
-> >=20
-> > vim +/TIF_SYSCALL_TRACEPOINT +39 include/trace/syscall.h
-> >=20
-> >     33		struct ftrace_event_call *exit_event;
-> >     34	};
-> >     35=09
-> >     36	#ifdef CONFIG_TRACEPOINTS
-> >     37	static inline void syscall_tracepoint_update(struct task_struct =
-*p)
-> >     38	{
-> >   > 39		if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
-> >     40			set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-> >     41		else
-> >     42			clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-> >=20
-> > ---
-> > 0-DAY kernel build testing backend              Open Source Technology =
-Center
-> > http://lists.01.org/mailman/listinfo/kbuild                 Intel Corpo=
-ration
->=20
-> My allyesconfig build passed with flying colors. Although we should
-> probably still add the include of thread_info.h into trace/syscalls.h,
-> there's no reason that ecryptfs/keystore.c includes linux/syscalls.h.
->=20
-> I suggest adding the patch below.
->=20
-> -- Steve
->=20
-> From 58029546c4acf896b9ce01a820e0093e37bb98be Mon Sep 17 00:00:00 2001
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> Date: Wed, 18 Jun 2014 21:12:38 -0400
-> Subject: [PATCH] ecryptfs: Remove unnecessary include of syscall.h in
->  keystore.c
->=20
-> There's no reason to include syscalls.h in keystore.c. Remove it.
->=20
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
+> If we're in the process of using the CPU numbers in atomic_t, I thought
+> we might as well fix that as well since it has actually been shown to
+> result in lockups on some architectures. We can then avoid needing to
+> implement the tricky architecture workarounds for optimistic spinning.
+> Wouldn't that be a "nice-have"?
+>
+> Jason
+>
 
-Hello! Sorry for not being active in this thread.
+I am not aware of any tricky architectural workarounds other than 
+disabling optimistic spinning for those that don't support it.
 
-I don't see a reason for keystore.c to include linux/syscalls.h. I'll
-get this patch applied to my next tree and push it during the next merge
-window. Thanks!
+-Longman
 
-Tyler
-
->  fs/ecryptfs/keystore.c | 1 -
->  1 file changed, 1 deletion(-)
->=20
-> diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-> index 4725a07f003c..831c5f8529be 100644
-> --- a/fs/ecryptfs/keystore.c
-> +++ b/fs/ecryptfs/keystore.c
-> @@ -26,7 +26,6 @@
->   */
-> =20
->  #include <linux/string.h>
-> -#include <linux/syscalls.h>
->  #include <linux/pagemap.h>
->  #include <linux/key.h>
->  #include <linux/random.h>
-> --=20
-> 2.0.0.rc2
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe ecryptfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
---St7VIuEGZ6dlpu13
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJTtcxhAAoJENaSAD2qAscK168P/1BBhOUCinPk5llgamWnsooh
-dRuD5LffZMrHBXKsNFz0JH+Idf2ywTbA/JVGu0RC6aZxpZTf+lssNA7TaeBQ3f9A
-WFky2e1YfA3FRyexaVY71Wi76T+nsu5/FdDWS96aZf1MbE/nv8F5xVstKJpaMy3O
-OMEwpqu88tVF8jJNgLfG1GjD0+82X3hlLGYpWzwshYbzTZ9EjpUnOr5wUfHyPRyo
-iBKPsiA07kiggULuVK/1PxHweJEXFIMJf6d4Ut/zKm7e9KZHkZbDsPWQ8OS68Vi4
-FPKfYyuvBYI4eAAwRQKoMYowr0FDuwL3fwh+4m3EGm5PMvl2rOjfQ1VCGZFQE8ID
-l27ynh6Vu1rD5ubLgEkA4Um8B81wSgpIrVIuDzUI3f8df3xNcOlUsyiinXTH25yO
-Iwy5bpYyZNulJJAKMdc44s6kWHdZERY2v8gUbwCfIynFbZUZUKf4HPzZJP5P5RCi
-nS4P4dEuMLIB0ZanUcGXl0GyeMkwxLjpSl4MUl0tOUPpZNKpOhoWFWJtMDyrjD+D
-dfHni2MDd4Zq56kPZNjZquc7Cp0uIqjmO7ssYfAWX8Fg884sMDh73hjw7u6lY3jD
-hoieFumhcmW/VZlmAVRpdILUGWUrR+wx/MddZRvFoRb29O+xantNd1+Cp1764Oc2
-HB5fo2W47oniPCjFDF3W
-=AOmM
------END PGP SIGNATURE-----
-
---St7VIuEGZ6dlpu13--
