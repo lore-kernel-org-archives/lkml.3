@@ -1,59 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030725AbaGCKAq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:00:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51892 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758624AbaGCJWp (ORCPT
+	id S1030945AbaGCKBI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:01:08 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:62496 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030606AbaGCKBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:22:45 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 083/198] drm/radeon: fix typo in radeon_connector_is_dp12_capable()
-Date: Thu,  3 Jul 2014 10:18:46 +0100
-Message-Id: <1404379241-8590-84-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 3 Jul 2014 06:01:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <53B51E81.4090700@redhat.com>
+References: <1404124096-21445-1-git-send-email-drysdale@google.com>
+	<53B51E81.4090700@redhat.com>
+Date: Thu, 3 Jul 2014 14:01:02 +0400
+Message-ID: <CAOp4FwQzN5Wuz60gtxx5kEDCXS0Q9ohL_hVFnDGEJkQ6sM+Hrg@mail.gmail.com>
+Subject: Re: [RFC PATCH 00/11] Adding FreeBSD's Capsicum security framework
+ (part 1)
+From: Loganaden Velvindron <loganaden@gmail.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: David Drysdale <drysdale@google.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>, linux-api@vger.kernel.org,
+        qemu-devel <qemu-devel@nongnu.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.13 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Jul 3, 2014 at 1:12 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> Il 30/06/2014 12:28, David Drysdale ha scritto:
+>>
+>> Hi all,
+>>
+>> The last couple of versions of FreeBSD (9.x/10.x) have included the
+>> Capsicum security framework [1], which allows security-aware
+>> applications to sandbox themselves in a very fine-grained way.  For
+>> example, OpenSSH now (>= 6.5) uses Capsicum in its FreeBSD version to
+>> restrict sshd's credentials checking process, to reduce the chances of
+>> credential leakage.
 
-------------------
+Aside from OpenSSH, I've also been working on implementing Capsicum,
+in other userspace software.
 
-From: Alex Deucher <alexander.deucher@amd.com>
 
-commit af5d36539dfe043f1cf0f8b7334d6bb12cd14e75 upstream.
 
-We were checking the ext clock rather than the display clock.
+>
+>
+> Hi David,
+>
+> we've had similar goals in QEMU.  QEMU can be used as a virtual machine
+> monitor from the command line, but it also has an API that lets a management
+> tool drive QEMU via AF_UNIX sockets.  Long term, we would like to have a
+> restricted mode for QEMU where all file descriptors are obtained via
+> SCM_RIGHTS or /dev/fd, and syscalls can be locked down.
+>
+> Currently we do use seccomp v2 BPF filters, but unfortunately this didn't
+> help very much.  QEMU supports hotplugging hence the filter must whitelist
+> anything that _might_ be used in the future, which is generally... too much.
+>
+> Something like Capsicum would be really nice because it attaches
+> capabilities to file descriptors.  However, I wonder however how extensible
+> Capsicum could be, and I am worried about the proliferation of capabilities
+> that its design naturally leads to.
+>
+> Given Linux's previous experience with BPF filters, what do you think about
+> attaching specific BPF programs to file descriptors?  Then whenever a
+> syscall is run that affects a file descriptor, the BPF program for the file
+> descriptor (attached to a struct file* as in Capsicum) would run in addition
+> to the process-wide filter.
+>
+> An equivalent of PR_SET_NO_NEW_PRIVS can also be added to file descriptors,
+> so that a program that doesn't lock down syscalls can still lock down the
+> operations (including fcntls and ioctls) on specific file descriptors.
+>
+> Converting FreeBSD capabilities to BPF programs can be easily implemented in
+> userspace.
+>
+>>   [Capsicum also includes 'capability mode', which locks down the
+>>   available syscalls so the rights restrictions can't just be bypassed
+>>   by opening new file descriptors; I'll describe that separately later.]
+>
+>
+> This can also be implemented in userspace via seccomp and
+> PR_SET_NO_NEW_PRIVS.
+>
+>>   [Policing the rights checks anywhere else, for example at the system
+>>   call boundary, isn't a good idea because it opens up the possibility
+>>   of time-of-check/time-of-use (TOCTOU) attacks [2] where FDs are
+>>   changed (as openat/close/dup2 are allowed in capability mode) between
+>>   the 'check' at syscall entry and the 'use' at fget() invocation.]
+>
+>
+> In the case of BPF filters, I wonder if you could stash the BPF
+> "environment" somewhere and then use it at fget() invocation. Alternatively,
+> it can be reconstructed at fget() time, similar to your introduction of
+> fgetr().
+>
+> Thanks,
+>
+> Paolo
+> --
+> To unsubscribe from this list: send the line "unsubscribe
+> linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Noticed by ArtForz on IRC.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/gpu/drm/radeon/radeon_connectors.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
-index 5a87c9fc78d3..fc604fc75797 100644
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -1345,7 +1345,7 @@ bool radeon_connector_is_dp12_capable(struct drm_connector *connector)
- 	struct radeon_device *rdev = dev->dev_private;
- 
- 	if (ASIC_IS_DCE5(rdev) &&
--	    (rdev->clock.dp_extclk >= 53900) &&
-+	    (rdev->clock.default_dispclk >= 53900) &&
- 	    radeon_connector_encoder_is_hbr2(connector)) {
- 		return true;
- 	}
 -- 
-1.9.1
-
+This message is strictly personal and the opinions expressed do not
+represent those of my employers, either past or present.
