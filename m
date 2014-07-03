@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756728AbaGDICO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:02:14 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48381 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753979AbaGDICK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:02:10 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt\@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: probe_event_disable()->synchronize_sched()
-References: <20140627170116.GA18298@redhat.com>
-	<20140627170136.GA18319@redhat.com>
-	<87k37z54lu.fsf@sejong.aot.lge.com>
-	<20140630184828.GA24594@redhat.com>
-	<20140701193147.GA32492@redhat.com> <53B4EE21.2040203@hitachi.com>
-	<87lhsa51kg.fsf@sejong.aot.lge.com> <53B5FCC3.8010303@hitachi.com>
-Date: Fri, 04 Jul 2014 17:01:47 +0900
-In-Reply-To: <53B5FCC3.8010303@hitachi.com> (Masami Hiramatsu's message of
-	"Fri, 04 Jul 2014 10:00:51 +0900")
-Message-ID: <87d2dl4kno.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S932102AbaGDIC2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:02:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62443 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753979AbaGDICR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 04:02:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,599,1400050800"; 
+   d="scan'208";a="538721013"
+Date: Fri, 4 Jul 2014 07:50:45 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "Dietmar.Eggemann@arm.com" <Dietmar.Eggemann@arm.com>,
+        "pjt@google.com" <pjt@google.com>
+Subject: Re: [RFCv2 PATCH 08/23] sched: Aggregate unweighted load contributed
+ by task entities on parenting cfs_rq
+Message-ID: <20140703235045.GB4881@intel.com>
+References: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
+ <1404404770-323-9-git-send-email-morten.rasmussen@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404404770-323-9-git-send-email-morten.rasmussen@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
+On Fri, Jul 04, 2014 at 12:25:55AM +0800, Morten Rasmussen wrote:
+> From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+> 
+> Energy aware scheduling relies on cpu utilization and to be able to
+> maintain it, we need a per run queue signal of the sum of the
+> unweighted, i.e. not scaled with task priority, load contribution of
+> runnable task entries.
+> 
+> The unweighted runnable load on a run queue is maintained alongside the
+> existing (weighted) runnable load.
+> 
+> This patch is the unweighted counterpart of "sched: Aggregate load
+> contributed by task entities on parenting cfs_rq" (commit id
+> 2dac754e10a5).
+> 
+Hi Dietmar and Morten,
 
-On Fri, 04 Jul 2014 10:00:51 +0900, Masami Hiramatsu wrote:
-> (2014/07/03 16:44), Namhyung Kim wrote:
->> Hi Masami,
->> 
->> On Thu, 03 Jul 2014 14:46:09 +0900, Masami Hiramatsu wrote:
->>> One possible scenario is here; someone disables an event and tries to remove
->>> it (both will be done by different syscalls). If we don't synchronize
->>> the first disabling, the event flag set disabled, but the event itself
->>> is not disabled. Thus event handler is still possible to be running
->>> somewhere when it is removed.
->> 
->> But, IIUC both of disable and remove path are protected by event_mutex.
->> So one cannot see the case of disabled event flag but enabled event, no?
->
-> No, the flag is not protect the trace event handler itself.
-> I meant that running handlers and the flag was not synchronized.
+You may or may not have noticed my patch the other day:
 
-Ah, right.  Thanks for explanation. :)
+sched: Rewrite per entity runnable load average tracking
+
+With this new load average tracking, unweighted load average will be very much
+simplifed to do.
 
 Thanks,
-Namhyung
+Yuyang
