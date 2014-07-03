@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625AbaGCLcq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 07:32:46 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55157 "EHLO
+	id S1752842AbaGCLgx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 07:36:53 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55249 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751398AbaGCLco (ORCPT
+	by vger.kernel.org with ESMTP id S1750774AbaGCLgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 07:32:44 -0400
-Date: Thu, 3 Jul 2014 12:32:36 +0100
+	Thu, 3 Jul 2014 07:36:51 -0400
+Date: Thu, 3 Jul 2014 12:36:45 +0100
 From: Mark Rutland <mark.rutland@arm.com>
 To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
@@ -21,81 +21,96 @@ Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [RESEND PATCH 5/5] devicetree: mfd: max14577: Add device tree
- bindings document
-Message-ID: <20140703113236.GA28504@leverpostej>
+        Jenny Tc <jenny.tc@intel.com>
+Subject: Re: [RESEND PATCH 3/5] charger: max14577: Configure
+ battery-dependent settings from DTS
+Message-ID: <20140703113645.GB28504@leverpostej>
 References: <1404198121-22989-1-git-send-email-k.kozlowski@samsung.com>
- <1404198121-22989-6-git-send-email-k.kozlowski@samsung.com>
+ <1404198121-22989-4-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404198121-22989-6-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1404198121-22989-4-git-send-email-k.kozlowski@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Jul 01, 2014 at 08:02:00AM +0100, Krzysztof Kozlowski wrote:
-> Add document describing device tree bindings for MAX14577 MFD
-> drivers: MFD core, extcon, regulator and charger.
+On Tue, Jul 01, 2014 at 08:01:58AM +0100, Krzysztof Kozlowski wrote:
+> Remove hard-coded values for:
+>  - Fast Charge current,
+>  - End Of Charge current,
+>  - Fast Charge timer,
+>  - Overvoltage Protection Threshold,
+>  - Battery Constant Voltage,
+> and use DTS to configure them. This allows using the max14577 charger
+> driver with different batteries.
 > 
-> Both MAX14577 and MAX77836 chipsets are documented.
+> Now the charger driver requires valid configuration data from DTS. In
+> case of wrong configuration data it fails during probe. Patch adds
+> of_compatible to the charger mfd cell in MFD driver core.
 > 
 > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 > Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Tomasz Figa <t.figa@samsung.com>
-> Cc: devicetree@vger.kernel.org
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Jenny Tc <jenny.tc@intel.com>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
 > ---
->  Documentation/devicetree/bindings/mfd/max14577.txt | 152 +++++++++++++++++++++
->  1 file changed, 152 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/max14577.txt b/Documentation/devicetree/bindings/mfd/max14577.txt
-> new file mode 100644
-> index 000000000000..b235250a7b41
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/max14577.txt
-> @@ -0,0 +1,152 @@
-> +Maxim MAX14577/77836 Multi-Function Device
-> +
-> +MAX14577 is a Multi-Function Device with Micro-USB Interface Circuit, Li+
-> +Battery Charger and SFOUT LDO output for powering USB devices. It is
-> +interfaced to host controller using I2C.
-> +
-> +MAX77836 additionally contains PMIC (with two LDO regulators) and Fuel Gauge.
-> +
-> +
-> +Required properties:
-> +- compatible : Must be "maxim,max14577" or "maxim,max77836".
-> +- reg : I2C slave address for the max14577 chip (0x25 for max14577/max77836)
-> +- interrupts : IRQ line for the chip.
-> +- interrupt-parent :  The parent interrupt controller.
-> +
-> +
-> +Required nodes:
-> + - charger :
-> +	Node for configuring the charger driver.
-> +	Required properties:
-> +		- compatible : "maxim,max14577-charger"
-> +			or "maxim,max77836-charger"
-> +		- maxim,fast-charge-timer : Timer in hours to trigger the
-> +			INT3/MBCCHGERR interrupt; Valid values:
-> +			- 5, 6 or 7 (hours),
-> +			- 0 to disable.
+>  drivers/mfd/max14577.c               |   5 +-
+>  drivers/power/max14577_charger.c     | 232 +++++++++++++++++++++++++++++++----
+>  include/linux/mfd/max14577-private.h |  16 +++
+>  include/linux/mfd/max14577.h         |   8 ++
+>  4 files changed, 233 insertions(+), 28 deletions(-)
 
-I'm not sure I follow what this is any why it should be in the DT.
+[...]
 
-Could you explain what this is used for?
+> +       pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+> +       if (!pdata) {
+> +               dev_err(&pdev->dev, "Memory alloc for charger pdata failed\n");
+> +               return ERR_PTR(-ENOMEM);
+> +       }
+> +
+> +       ret = of_property_read_u32(np, "maxim,fast-charge-timer",
+> +                       &pdata->fast_charge_timer);
+> +       if (ret)
+> +               return ERR_PTR(ret);
+> +
+> +       ret = of_property_read_u32(np, "maxim,constant-uvolt",
+> +                       &pdata->constant_uvolt);
+> +       if (ret)
+> +               return ERR_PTR(ret);
+> +
+> +       ret = of_property_read_u32(np, "maxim,fast-charge-uamp",
+> +                       &pdata->fast_charge_uamp);
+> +       if (ret)
+> +               return ERR_PTR(ret);
+> +
+> +       ret = of_property_read_u32(np, "maxim,eoc-uamp", &pdata->eoc_uamp);
+> +       if (ret)
+> +               return ERR_PTR(ret);
+> +
+> +       ret = of_property_read_u32(np, "maxim,ovp-uvolt", &pdata->ovp_uvolt);
+> +       if (ret)
+> +               return ERR_PTR(ret);
+
+None of the fields being read into are u32 per the structure definition
+below. Please use a u32 temporary variable or make the fields u32
+values.
+
+It would also be a good idea to print a warning as to _which_ field is
+missing and/or invalid as that really helps someone writing a DTS to
+figure out why the device isn't probing.
+
+[...]
+
+> +struct max14577_charger_platform_data {
+> +       unsigned int fast_charge_timer;
+> +       unsigned int constant_uvolt;
+> +       unsigned int fast_charge_uamp;
+> +       unsigned int eoc_uamp;
+> +       unsigned int ovp_uvolt;
+> +};
 
 Thanks,
 Mark.
