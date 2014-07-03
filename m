@@ -1,95 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756927AbaGCIbN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 04:31:13 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:39045 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182AbaGCI3K (ORCPT
+	id S1751070AbaGCIdi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 04:33:38 -0400
+Received: from smtp-out-164.synserver.de ([212.40.185.164]:1097 "EHLO
+	smtp-out-164.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408AbaGCIdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 04:29:10 -0400
-Date: Thu, 3 Jul 2014 10:29:01 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Subject: Re: [PATCH v9] mm: support madvise(MADV_FREE)
-Message-ID: <20140703102901.322bfdb0@mschwide>
-In-Reply-To: <20140703072954.GC2939@bbox>
-References: <1404174975-22019-1-git-send-email-minchan@kernel.org>
-	<20140701145058.GA2084@node.dhcp.inet.fi>
-	<20140703010318.GA2939@bbox>
-	<20140703072954.GC2939@bbox>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 3 Jul 2014 04:33:36 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 23798
+Message-ID: <53B5155E.7050103@metafoo.de>
+Date: Thu, 03 Jul 2014 10:33:34 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+MIME-Version: 1.0
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, vinod.koul@intel.com,
+        dan.j.williams@intel.com, tiwai@suse.de,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        joelf@ti.com, nsekhar@ti.com
+CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        dmaengine@vger.kernel.org
+Subject: Re: [PATCH v3 0/5] ALSA/ASoC/dmaengine: Fix 3 bytes physical sample
+ support
+References: <1404363116-10538-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1404363116-10538-1-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070308-5024-0000-0000-00000093FA41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jul 2014 16:29:54 +0900
-Minchan Kim <minchan@kernel.org> wrote:
+On 07/03/2014 06:51 AM, Peter Ujfalusi wrote:
+[...]
+>
+> First step is to add DMA_SLAVE_BUSWIDTH_3_BYTES to dma_slave_buswidth for
+> engines and users to select 3 bytes as bus width.
+>
+> Followed by:
+> In dmaengine_pcm_set_runtime_hwparams() we should check the slave_caps of the
+> dma if it supports the give sample physical width of the sample. Based on this
+> information we initialize the hw.formats: masking out all non supported formats
+> based on the physical width.
+> In case the dma driver does not implement the slave_caps the default assumption
+> is that it supports 1, 2 and 4 bytes widths.
 
-> Hello,
-> 
-> On Thu, Jul 03, 2014 at 10:03:19AM +0900, Minchan Kim wrote:
-> > Hello,
-> > 
-> > On Tue, Jul 01, 2014 at 05:50:58PM +0300, Kirill A. Shutemov wrote:
-> > > On Tue, Jul 01, 2014 at 09:36:15AM +0900, Minchan Kim wrote:
-> > > > +	do {
-> > > > +		/*
-> > > > +		 * XXX: We can optimize with supporting Hugepage free
-> > > > +		 * if the range covers.
-> > > > +		 */
-> > > > +		next = pmd_addr_end(addr, end);
-> > > > +		if (pmd_trans_huge(*pmd))
-> > > > +			split_huge_page_pmd(vma, addr, pmd);
-> > > 
-> > > Could you implement proper THP support before upstreaming the feature?
-> > > It shouldn't be a big deal.
-> > 
-> > Okay, Hope to review.
-> > 
-> > Thanks for the feedback!
-> > 
-> 
-> I tried to implement it but had a issue.
-> 
-> I need pmd_mkold, pmd_mkclean for MADV_FREE operation and pmd_dirty for
-> page_referenced. When I investigate all of arches supported THP,
-> it's not a big deal but s390 is not sure to me who has no idea of
-> soft tracking of s390 by storage key instead of page table information.
-> Cced s390 maintainer. Hope to help.
+The whole series looks good to me. Since both the DMA and ALSA bits changed 
+in this series are fairly trivial I think it is best to merge the whole 
+series through the ASoC tree.
 
-Storage key for dirty and referenced tracking is a thing of the past.
-The current code for s390 uses software tracking for dirty and referenced.
-There is one catch though, for ptes the software implementation covers
-dirty and referenced bit but for pmds only referenced bit is available.
-The reason is that there is no free bit left in the pmd entry for the
-software dirty bit.
- 
-> So, if there isn't any help from s390, I should introduce
-> HAVE_ARCH_THP_MADVFREE to disable MADV_FREE support of THP in s390 but
-> not want to introduce such new config.
-
-Why is the dirty bit for pmds needed for the MADV_FREE implementation?
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+- Lars
