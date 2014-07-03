@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334AbaGCIYN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 04:24:13 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:16335 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757079AbaGCIYK (ORCPT
+	id S1752652AbaGCI3O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 04:29:14 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:33452 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070AbaGCI3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 04:24:10 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-c5-53b5131d85c5
-Message-id: <53B5131B.1060702@samsung.com>
-Date: Thu, 03 Jul 2014 10:23:55 +0200
-From: Andrzej Hajda <a.hajda@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-Newsgroups: gmane.comp.video.dri.devel,gmane.linux.ports.tegra,gmane.linux.kernel
-To: Alexandre Courbot <acourbot@nvidia.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Terje Bergstrom <tbergstrom@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH 1/4] drm/dsi: Add flag for continuous clock behavior
-References: <1404303560-32209-1-git-send-email-acourbot@nvidia.com>
- <1404303560-32209-2-git-send-email-acourbot@nvidia.com>
-In-reply-to: <1404303560-32209-2-git-send-email-acourbot@nvidia.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t/xa7qywluDDbZNYrf4/vAUq8WVr+/Z
-	LC7vmsNm0fllFpvFq4NtLBan2mQtfu6ax+LA7rFz1l12j/vdx5k8epvfsXl83iTnsXFuaABr
-	FJdNSmpOZllqkb5dAldGx5QPLAVN3BUHes4xNTBO5exi5OSQEDCRWL90DSuELSZx4d56ti5G
-	Lg4hgaWMEgf2P2CFcD4xSky4e54FpIpXQEti79x1TCA2i4CqxO19q8C62QQ0Jf5uvskGYosK
-	REgc6HvGClEvKPFj8j2gXg4OPoFgie8nBEBmigisZpTYNHcp2BxmgQSJ58f/gs0XFvCQOLZ4
-	EiOILSRQK/H49ytmEJtTwEViwr+njBD1OhL7W6exQdjyEpvXvGWewCg4C8m6WUjKZiEpW8DI
-	vIpRNLU0uaA4KT3XSK84Mbe4NC9dLzk/dxMjJPS/7mBceszqEKMAB6MSD+8L/U3BQqyJZcWV
-	uYcYJTiYlUR4p2/eEizEm5JYWZValB9fVJqTWnyIkYmDU6qBsXbZqmeGvOYcSm47O7MW5QmK
-	hJ3tFZl//+9hxmcZ99I9p8dOXm4dctR0/dsYa61Hyvu8nm269kuVQe91pw7byU0Xsvr7hDcd
-	Lvm5cVfFy4/KdxNynN7avAmdIK6y32B5Vuf1dz+0Jsz04Nl446SCmvwLnaU+t9gEElezFMXo
-	nEjJshQsab0Wq8RSnJFoqMVcVJwIAOSinU9bAgAA
+	Thu, 3 Jul 2014 04:29:09 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Thu, 3 Jul 2014 10:28:30 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Janne Kanniainen <janne.kanniainen@gmail.com>
+Cc: johan@kernel.org, cooloney@gmail.com, jkosina@suse.cz, greg@kroah.com,
+        bjorn@mork.no, linux-kernel@vger.kernel.org,
+        linux-leds@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH 2/2 v5] HID: leds: move led_mode attribute to led-class
+ devices in MSI GT683R driver
+Message-ID: <20140703082830.GB16590@localhost>
+References: <20140701201627.GA30605@localhost>
+ <1404322679-19521-1-git-send-email-janne.kanniainen@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404322679-19521-1-git-send-email-janne.kanniainen@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi Alexandre,
-
-Thanks for the patch.
-
-On 07/02/2014 02:19 PM, Alexandre Courbot wrote:
-> As per section 5.6.1 of the DSI specification, all DSI transmitters must
-> support continuous clock behavior on the clock lane, while non-continuous
-> mode support is only optional. Add a flag that allows devices to indicate
-> that they require continuous clock mode to operate properly.
+On Wed, Jul 02, 2014 at 08:37:59PM +0300, Janne Kanniainen wrote:
+> Move led_mode attribute from HID device to led-class devices. This will also fix race condition by using attribute-groups.
 > 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->  include/drm/drm_mipi_dsi.h | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/include/drm/drm_mipi_dsi.h b/include/drm/drm_mipi_dsi.h
-> index 944f33f..5913ef4 100644
-> --- a/include/drm/drm_mipi_dsi.h
-> +++ b/include/drm/drm_mipi_dsi.h
-> @@ -94,6 +94,8 @@ void mipi_dsi_host_unregister(struct mipi_dsi_host *host);
->  #define MIPI_DSI_MODE_VSYNC_FLUSH	BIT(8)
->  /* disable EoT packets in HS mode */
->  #define MIPI_DSI_MODE_EOT_PACKET	BIT(9)
-> +/* use continuous clock behavior on the clock lane */
-> +#define MIPI_DSI_MODE_CLOCK_CONTINUOUS	BIT(10)
->  
+> Signed-off-by: Janne Kanniainen <janne.kanniainen@gmail.com>
 
-According to MIPI DSI specification "All DSI transmitters and receivers
-shall support continuous clock behavior on the Clock Lane, and
-optionally may support non-continuous clock behavior". It suggests that
-continuous clock should be default behavior. So maybe better is to
-introduce sth like:
-+#define MIPI_DSI_MODE_CLOCK_NON_CONTINUOUS	BIT(10)
+Looks good now. Thanks!
 
+Perhaps you can resend both patches as a series (call both v6) so it's
+easy to figure which version that is to be applied.
 
-Regards
-Andrzej
+I also noticed that your subject line is a bit long (will end up as the
+commit summary). Using for example
+
+	HID: gt683r: move mode attribute to led-class devices
+
+would make it more concise.
+
+Oh, and your commit message lacks line breaks (around 72 cols). You
+could fix that as well.
+
+Thanks again,
+Johan
