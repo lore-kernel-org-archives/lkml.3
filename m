@@ -1,101 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965043AbaGCOw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:52:59 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47059 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965014AbaGCOw6 (ORCPT
+	id S1758488AbaGCOuB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:50:01 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51784 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758376AbaGCOt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:52:58 -0400
-Date: Thu, 3 Jul 2014 09:52:50 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Dan Murphy <dmurphy@ti.com>
-CC: <linux-sound@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <broonie@kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4] ASoC: tas2552: Support TI TAS2552 Amplifier
-Message-ID: <20140703145250.GO5814@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1404398393-21497-1-git-send-email-dmurphy@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IYV9cRr2u6rjcP4B"
-Content-Disposition: inline
-In-Reply-To: <1404398393-21497-1-git-send-email-dmurphy@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 3 Jul 2014 10:49:57 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        dwmw2@infradead.org, dbaryshkov@gmail.com
+Cc: Boris Brezillon <boris@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH RESEND 01/18] power: reset: Add if statement isntead of multiple depends on
+Date: Thu,  3 Jul 2014 16:41:16 +0200
+Message-Id: <1404398493-28907-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1404398493-28907-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1404398493-28907-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---IYV9cRr2u6rjcP4B
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+All the config option so far are depending on the POWER_RESET symbol
 
-Hi,
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/power/reset/Kconfig | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-On Thu, Jul 03, 2014 at 09:39:53AM -0500, Dan Murphy wrote:
-> +static int tas2552_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
-> +{
-> +	u8 serial_format;
-> +	struct snd_soc_codec *codec =3D dai->codec;
-> +
-> +	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
-> +	case SND_SOC_DAIFMT_CBS_CFS:
-> +		serial_format =3D 0x00;
-> +		break;
-> +	case SND_SOC_DAIFMT_CBS_CFM:
-> +		serial_format =3D TAS2552_WORD_CLK_MASK;
-> +		break;
-> +	case SND_SOC_DAIFMT_CBM_CFS:
-> +		serial_format =3D TAS2552_BIT_CLK_MASK;
-> +		break;
-> +	case SND_SOC_DAIFMT_CBM_CFM:
-> +		serial_format =3D (TAS2552_BIT_CLK_MASK | TAS2552_WORD_CLK_MASK);
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	pm_runtime_get_sync(codec->dev);
-> +
-> +	snd_soc_update_bits(codec, TAS2552_SER_CTRL_1,
-> +			    (TAS2552_BIT_CLK_MASK | TAS2552_WORD_CLK_MASK),
-> +			    serial_format);
-> +
-> +	pm_runtime_put(codec->dev);
+diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+index bdcf5173e377..19d546c5edfa 100644
+--- a/drivers/power/reset/Kconfig
++++ b/drivers/power/reset/Kconfig
+@@ -6,15 +6,17 @@ menuconfig POWER_RESET
+ 
+ 	  Say Y here to enable board reset and power off
+ 
++if POWER_RESET
++
+ config POWER_RESET_AS3722
+ 	bool "ams AS3722 power-off driver"
+-	depends on MFD_AS3722 && POWER_RESET
++	depends on MFD_AS3722
+ 	help
+ 	  This driver supports turning off board via a ams AS3722 power-off.
+ 
+ config POWER_RESET_AXXIA
+ 	bool "LSI Axxia reset driver"
+-	depends on POWER_RESET && ARCH_AXXIA
++	depends on ARCH_AXXIA
+ 	help
+ 	  This driver supports restart for Axxia SoC.
+ 
+@@ -22,7 +24,7 @@ config POWER_RESET_AXXIA
+ 
+ config POWER_RESET_GPIO
+ 	bool "GPIO power-off driver"
+-	depends on OF_GPIO && POWER_RESET
++	depends on OF_GPIO
+ 	help
+ 	  This driver supports turning off your board via a GPIO line.
+ 	  If your board needs a GPIO high/low to power down, say Y and
+@@ -30,13 +32,13 @@ config POWER_RESET_GPIO
+ 
+ config POWER_RESET_MSM
+ 	bool "Qualcomm MSM power-off driver"
+-	depends on POWER_RESET && ARCH_QCOM
++	depends on ARCH_QCOM
+ 	help
+ 	  Power off and restart support for Qualcomm boards.
+ 
+ config POWER_RESET_QNAP
+ 	bool "QNAP power-off driver"
+-	depends on OF_GPIO && POWER_RESET && PLAT_ORION
++	depends on OF_GPIO && PLAT_ORION
+ 	help
+ 	  This driver supports turning off QNAP NAS devices by sending
+ 	  commands to the microcontroller which controls the main power.
+@@ -54,14 +56,13 @@ config POWER_RESET_RESTART
+ config POWER_RESET_SUN6I
+ 	bool "Allwinner A31 SoC reset driver"
+ 	depends on ARCH_SUNXI
+-	depends on POWER_RESET
+ 	help
+ 	  Reboot support for the Allwinner A31 SoCs.
+ 
+ config POWER_RESET_VEXPRESS
+ 	bool "ARM Versatile Express power-off and reset driver"
+ 	depends on ARM || ARM64
+-	depends on POWER_RESET && VEXPRESS_CONFIG
++	depends on VEXPRESS_CONFIG
+ 	help
+ 	  Power off and reset support for the ARM Ltd. Versatile
+ 	  Express boards.
+@@ -69,7 +70,6 @@ config POWER_RESET_VEXPRESS
+ config POWER_RESET_XGENE
+ 	bool "APM SoC X-Gene reset driver"
+ 	depends on ARM64
+-	depends on POWER_RESET
+ 	help
+ 	  Reboot support for the APM SoC X-Gene Eval boards.
+ 
+@@ -80,3 +80,4 @@ config POWER_RESET_KEYSTONE
+ 	help
+ 	  Reboot support for the KEYSTONE SoCs.
+ 
++endif
+-- 
+2.0.1
 
-I have a feeling it's better to just put at the end of the function.
-Remember your pm_runtime_put() will issue i2c transfers which can take a
-looooooong time ;-)
-
-other than that, looks ok to me:
-
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-
---=20
-balbi
-
---IYV9cRr2u6rjcP4B
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTtW5CAAoJEIaOsuA1yqREyXkQAKh8Dz7Zh8OzSSeVcc2qC0yU
-NoIlVsT9SIIJfw0xdepXhF6l0fmVSHCk1zJb1DYj/gd+cvBh0yMbXljlWCDpfNYX
-jhWcJEYr1gceiltp9+OOnuoiBwtWQNoU6hsHZYLz91WkQwZLR7nhpJZJPe04kxyz
-PkMx6ffB/X/MU0IwRqAzc01qYy77NYX1TQgGcICQEk5XFySmF5zdkGVCnRX/ZZVN
-/AYIDOxld9NKYpnMk+TIyufujuXuBih+WZKcZ+KFySfezaGpV8zIU3QErKvD3pKP
-uL5ZC+s1mlSyFT9BRBOkSkTCwCxlrP3yiHvnQy1AanaGhQnVlzuIrVIl/azv6CoJ
-/R60+ZYIy55lf3ap/KYgNZ4kmNyOtRkOZak5uNahpVTwJ7GTZJsG3j/4TgAJx3zF
-EECNtmnTD7k1uywyYHAFU7nyYzL0s9ax5ePv374neP1j4vbUH/fHZWtro8KvVKRs
-jY/Bkgd1OfyOACoF5YG/qICQlectiA4L3X7jk9vyKL8vttoNRiB3K6K7CuauEXFc
-zuI/iCZLxJXivl1tvJuz7537PjYGLbW2ORNgjW2SMsUvWVqr37c6yYBYHip5JlSg
-vH4AeEV5SrHbPqSj2Ba7RB4TgfK4aRE6o4Y5LVSepAXEDUXCOUn2D6YGKzeoqG0r
-TgZxMiC1LD9t+NxgIXZS
-=BpwA
------END PGP SIGNATURE-----
-
---IYV9cRr2u6rjcP4B--
