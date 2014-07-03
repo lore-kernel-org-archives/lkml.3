@@ -1,79 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759395AbaGCRw6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 13:52:58 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:31466 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753712AbaGCRw5 (ORCPT
+	id S1759445AbaGCRxH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 13:53:07 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59987 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753712AbaGCRxC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 13:52:57 -0400
-Date: Thu, 3 Jul 2014 13:52:22 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andrew Morton <akpm@linux-foundation.org>, luto@amacapital.net
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        boris.ostrovsky@oracle.com
-Subject: Re: [BUILD BUG][3.16-rc3] Error: too many copied sections (max = 13)
-Message-ID: <20140703175222.GA13710@konrad-lan.dumpdata.com>
-References: <20140701000913.5ea51f77@gandalf.local.home>
- <20140702142836.084d1ad63b049d53a2f51218@linux-foundation.org>
+	Thu, 3 Jul 2014 13:53:02 -0400
+Date: Thu, 3 Jul 2014 18:52:31 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Sneha Priya <sneha.cse@hotmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: Re: [PATCH 2/3] ARM: perf: disable the pagefault handler when
+ reading from user space
+Message-ID: <20140703175231.GF17372@arm.com>
+References: <1403881067-22690-1-git-send-email-jean.pihet@linaro.org>
+ <1403881067-22690-3-git-send-email-jean.pihet@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140702142836.084d1ad63b049d53a2f51218@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1403881067-22690-3-git-send-email-jean.pihet@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 02:28:36PM -0700, Andrew Morton wrote:
-> On Tue, 1 Jul 2014 00:09:13 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> > Testing the latest kernel (3.16-rc3) I hit this build bug:
-> > 
-> >   VDSO2C  arch/x86/vdso/vdso-image-64.c
-> > Error: too many copied sections (max = 13)
-> > /arch/x86/vdso/Makefile:61: recipe for target 'arch/x86/vdso/vdso-image-64.c' failed
-> > make[3]: *** [arch/x86/vdso/vdso-image-64.c] Error 1
-> > /scripts/Makefile.build:404: recipe for target 'arch/x86/vdso' failed
-> > make[2]: *** [arch/x86/vdso] Error 2
-> > 
-> > I bisected it down to this commit:
-> > 
-> > commit 0e3727a8839c988a3c56170bc8da76d55a16acad
-> > Author: Andy Lutomirski <luto@amacapital.net>
-> > Date:   Wed Jun 18 15:59:49 2014 -0700
-> > 
-> >     x86/vdso: Remove some redundant in-memory section headers
-> > 
-> > When I revert this commit, it compiles fine.
-> 
-> When I revert that I get
-> 
-> Error: cannot handle memsz != filesz
-> make[2]: *** [arch/x86/vdso/vdso-image-64.c] Error 1
-> make[1]: *** [arch/x86/vdso] Error 2
-> make[1]: *** Waiting for unfinished jobs....
-> In file included from include/linux/poll.h:11,
->                  from include/linux/ring_buffer.h:7,
->                  from include/linux/ftrace_event.h:5,
->                  from include/trace/syscall.h:6,
->                  from include/linux/syscalls.h:80,
->                  from kernel/capability.c:17:
-> 
-> Productivity decline...
+Hi Jean,
 
-When I revert that mentioned commit I get
-Error: too many copied sections (max = 16)
+On Fri, Jun 27, 2014 at 03:57:46PM +0100, Jean Pihet wrote:
+> As done on other architectures (ARM64, x86, Sparc etc.).
+> 
+> This prevents a deadlock on down_read in do_page_fault when unwinding
+> using fp and triggering on kernel tracepoints:
 
-But if I revert bfad381c0d1e19cae8461e105d8d4387dd2a14fe as well
-then everything is back to normal.
+So is this an issue because you could try setting tracepoints on the
+pagefault path? If so, the patch is a little brutal as it would break user
+backtracing as soon as we take any old page fault, no?
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Or am I missing something obvious?
+
+Will
+
+>   INFO: task stress:2116 blocked for more than 120 seconds.
+>         Not tainted 3.15.0-rc4-00364-g3401dfb-dirty #43
+>   "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>   stress          D c04b41e8     0  2116   2115 0x00000000
+>   [<c04b41e8>] (__schedule) from [<c04b46dc>] (schedule+0x40/0x90)
+>   [<c04b46dc>] (schedule) from [<c04b6ec8>] (__down_read+0xc4/0xfc)
+>   [<c04b6ec8>] (__down_read) from [<c04b69c0>] (down_read+0x18/0x1c)
+>   [<c04b69c0>] (down_read) from [<c001d41c>] (do_page_fault+0xac/0x420)
+>   [<c001d41c>] (do_page_fault) from [<c0008444>] (do_DataAbort+0x44/0xa8)
+>   [<c0008444>] (do_DataAbort) from [<c00136b8>] (__dabt_svc+0x38/0x60)
+>   Exception stack(0xecbc3af8 to 0xecbc3b40)
+>   3ae0:                                                       ecbc3b74 b6d72ff4
+>   3b00: ffffffec 00000000 b6d72ff4 ec0fc000 00000000 ec0fc000 0000007e 00000000
+>   3b20: ecbc2000 ecbc3bac 00000014 ecbc3b44 c0019e78 c021ef44 00000013 ffffffff
+>   [<c00136b8>] (__dabt_svc) from [<c021ef44>] (__copy_from_user+0xa4/0x3a0)
+> 
+> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+> Cc: Will Deacon <will.deacon@arm.com>
+> ---
+>  arch/arm/kernel/perf_event.c | 9 +++++++--
+>  1 file changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+> index 6493c4c..f5aeca2 100644
+> --- a/arch/arm/kernel/perf_event.c
+> +++ b/arch/arm/kernel/perf_event.c
+> @@ -560,11 +560,16 @@ user_backtrace(struct frame_tail __user *tail,
+>  	       struct perf_callchain_entry *entry)
+>  {
+>  	struct frame_tail buftail;
+> +	unsigned long err;
+>  
+> -	/* Also check accessibility of one struct frame_tail beyond */
+>  	if (!access_ok(VERIFY_READ, tail, sizeof(buftail)))
+>  		return NULL;
+> -	if (__copy_from_user_inatomic(&buftail, tail, sizeof(buftail)))
+> +
+> +	pagefault_disable();
+> +	err = __copy_from_user_inatomic(&buftail, tail, sizeof(buftail));
+> +	pagefault_enable();
+> +
+> +	if (err)
+>  		return NULL;
+>  
+>  	perf_callchain_store(entry, buftail.lr);
+> -- 
+> 1.8.1.2
+> 
+> 
