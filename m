@@ -1,160 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813AbaGCMyq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 08:54:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33792 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753398AbaGCMyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 08:54:45 -0400
-Message-ID: <53B55292.2080201@suse.cz>
-Date: Thu, 03 Jul 2014 14:54:42 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
+	id S1756298AbaGCMz3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 08:55:29 -0400
+Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.183]:60417 "EHLO
+	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756013AbaGCMz2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 08:55:28 -0400
+X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jul 2014 08:55:28 EDT
+X-RZG-AUTH: :IW0NeWC7b/q2i6W/qstXb1SBUuFnrGoheedClaTaNdBkW0QEOcx1Ft+DpaWf0qqN8/jSv6Kcuc3PZrnFbUtY5gcAIXMk1wD4hL5m
+X-RZG-CLASS-ID: mo05
+Message-ID: <53B5514E.5050504@denx.de>
+Date: Thu, 03 Jul 2014 14:49:18 +0200
+From: Stefan Roese <sr@denx.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>
-CC: Sasha Levin <sasha.levin@oracle.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] Revert "shmem: fix faulting into a hole while it's
- punched"
-References: <alpine.LSU.2.11.1407021204180.12131@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.11.1407021204180.12131@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jean-Michel Hautbois <jhautbois@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Lattice ECP3 FPGA with i.MX6
+References: <CAL8zT=gW-OCeeOhKZzqgVSxDE5gsWt2O9nQ9mt7diDZQvvRO=w@mail.gmail.com>
+In-Reply-To: <CAL8zT=gW-OCeeOhKZzqgVSxDE5gsWt2O9nQ9mt7diDZQvvRO=w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2014 09:09 PM, Hugh Dickins wrote:
-> This reverts commit f00cdc6df7d7cfcabb5b740911e6788cb0802bdb.
+On 03.07.2014 14:37, Jean-Michel Hautbois wrote:
+> I have a board, with a Freescale i.MX6 chip and a ECP3-35 FPGA on SPI.
+> I tried to load the firmware using the lattice-ecp3-config driver, but
+> it fails with this error :
 >
-> (a) It was buggy: Sasha sent a lockdep report to remind us that grabbing
-> i_mutex in the fault path is a no-no (write syscall may already hold
-> i_mutex while faulting user buffer), no matter that the patch took care
-> to drop mmap_sem first.
+> lattice-ecp3 spi32766.3: FPGA bitstream configuration driver registered
+> lattice-ecp3 spi32766.3: Error: No supported FPGA detected (JEDEC_ID=808004c2)!
 >
-> (b) It may be thought too elaborate: see the diffstat.
+> In the driver, the id is :
 >
-> (c) Vlastimil proposed a preferred approach, better for backporting to
-> v3.1..v3.4, which had madvise hole-punch support before the fallocate
-> infrastructure used in that commit - backporting being required once
-> the issue fixed was tagged with CVE-2014-4171.
+> #define ID_ECP3_35 0xc2048080
 >
-> (d) Hugh noticed a further pessimization fix needed in the same area.
->
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> Cc: Sasha Levin <sasha.levin@oracle.com>
+> Obviously, there is a big/little endian issue... Do I need to instruct
+> the device-tree in a specific way in order to get the bus in the
+> correct order ? Or is this a known issue maybe ?
 
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
+No. This driver was implemented and tested in a MPC5200 system. Most 
+likely I missed some endian issues as you already noticed. I suggest you 
+start with looking at this line:
 
-> Cc: Konstantin Khlebnikov <koct9i@gmail.com>
-> Cc: Lukas Czerner <lczerner@redhat.com>
-> Cc: Dave Jones <davej@redhat.com>
-> ---
->
->   mm/shmem.c |   56 +++------------------------------------------------
->   1 file changed, 4 insertions(+), 52 deletions(-)
->
-> --- 3.16-rc3/mm/shmem.c	2014-06-29 15:22:10.592003936 -0700
-> +++ linux/mm/shmem.c	2014-07-02 03:31:12.956546569 -0700
-> @@ -80,12 +80,11 @@ static struct vfsmount *shm_mnt;
->   #define SHORT_SYMLINK_LEN 128
->
->   /*
-> - * shmem_fallocate communicates with shmem_fault or shmem_writepage via
-> - * inode->i_private (with i_mutex making sure that it has only one user at
-> - * a time): we would prefer not to enlarge the shmem inode just for that.
-> + * shmem_fallocate and shmem_writepage communicate via inode->i_private
-> + * (with i_mutex making sure that it has only one user at a time):
-> + * we would prefer not to enlarge the shmem inode just for that.
->    */
->   struct shmem_falloc {
-> -	int	mode;		/* FALLOC_FL mode currently operating */
->   	pgoff_t start;		/* start of range currently being fallocated */
->   	pgoff_t next;		/* the next page offset to be fallocated */
->   	pgoff_t nr_falloced;	/* how many new pages have been fallocated */
-> @@ -760,7 +759,6 @@ static int shmem_writepage(struct page *
->   			spin_lock(&inode->i_lock);
->   			shmem_falloc = inode->i_private;
->   			if (shmem_falloc &&
-> -			    !shmem_falloc->mode &&
->   			    index >= shmem_falloc->start &&
->   			    index < shmem_falloc->next)
->   				shmem_falloc->nr_unswapped++;
-> @@ -1235,44 +1233,6 @@ static int shmem_fault(struct vm_area_st
->   	int error;
->   	int ret = VM_FAULT_LOCKED;
->
-> -	/*
-> -	 * Trinity finds that probing a hole which tmpfs is punching can
-> -	 * prevent the hole-punch from ever completing: which in turn
-> -	 * locks writers out with its hold on i_mutex.  So refrain from
-> -	 * faulting pages into the hole while it's being punched, and
-> -	 * wait on i_mutex to be released if vmf->flags permits.
-> -	 */
-> -	if (unlikely(inode->i_private)) {
-> -		struct shmem_falloc *shmem_falloc;
-> -
-> -		spin_lock(&inode->i_lock);
-> -		shmem_falloc = inode->i_private;
-> -		if (!shmem_falloc ||
-> -		    shmem_falloc->mode != FALLOC_FL_PUNCH_HOLE ||
-> -		    vmf->pgoff < shmem_falloc->start ||
-> -		    vmf->pgoff >= shmem_falloc->next)
-> -			shmem_falloc = NULL;
-> -		spin_unlock(&inode->i_lock);
-> -		/*
-> -		 * i_lock has protected us from taking shmem_falloc seriously
-> -		 * once return from shmem_fallocate() went back up that stack.
-> -		 * i_lock does not serialize with i_mutex at all, but it does
-> -		 * not matter if sometimes we wait unnecessarily, or sometimes
-> -		 * miss out on waiting: we just need to make those cases rare.
-> -		 */
-> -		if (shmem_falloc) {
-> -			if ((vmf->flags & FAULT_FLAG_ALLOW_RETRY) &&
-> -			   !(vmf->flags & FAULT_FLAG_RETRY_NOWAIT)) {
-> -				up_read(&vma->vm_mm->mmap_sem);
-> -				mutex_lock(&inode->i_mutex);
-> -				mutex_unlock(&inode->i_mutex);
-> -				return VM_FAULT_RETRY;
-> -			}
-> -			/* cond_resched? Leave that to GUP or return to user */
-> -			return VM_FAULT_NOPAGE;
-> -		}
-> -	}
-> -
->   	error = shmem_getpage(inode, vmf->pgoff, &vmf->page, SGP_CACHE, &ret);
->   	if (error)
->   		return ((error == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS);
-> @@ -1769,26 +1729,18 @@ static long shmem_fallocate(struct file
->
->   	mutex_lock(&inode->i_mutex);
->
-> -	shmem_falloc.mode = mode & ~FALLOC_FL_KEEP_SIZE;
-> -
->   	if (mode & FALLOC_FL_PUNCH_HOLE) {
->   		struct address_space *mapping = file->f_mapping;
->   		loff_t unmap_start = round_up(offset, PAGE_SIZE);
->   		loff_t unmap_end = round_down(offset + len, PAGE_SIZE) - 1;
->
-> -		shmem_falloc.start = unmap_start >> PAGE_SHIFT;
-> -		shmem_falloc.next = (unmap_end + 1) >> PAGE_SHIFT;
-> -		spin_lock(&inode->i_lock);
-> -		inode->i_private = &shmem_falloc;
-> -		spin_unlock(&inode->i_lock);
-> -
->   		if ((u64)unmap_end > (u64)unmap_start)
->   			unmap_mapping_range(mapping, unmap_start,
->   					    1 + unmap_end - unmap_start, 0);
->   		shmem_truncate_range(inode, offset, offset + len - 1);
->   		/* No need to unmap again: hole-punching leaves COWed pages */
->   		error = 0;
-> -		goto undone;
-> +		goto out;
->   	}
->
->   	/* We need to check rlimit even when FALLOC_FL_KEEP_SIZE */
->
+	jedec_id = *(u32 *)&rxbuf[4];
+
+And add some endian functions here, e.g. be32_to_cpu(). This might help 
+with the detection. But other endian related issues might still be 
+present in other parts of the driver as well.
+
+HTP.
+
+Thanks,
+Stefan
 
