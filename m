@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758895AbaGCOXW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:23:22 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51004 "EHLO
+	id S1758907AbaGCOXp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:23:45 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51001 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758609AbaGCOUk (ORCPT
+	with ESMTP id S1758591AbaGCOUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:20:40 -0400
+	Thu, 3 Jul 2014 10:20:39 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -17,9 +17,9 @@ Cc: Boris Brezillon <boris@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 04/18] AT91: Rework ramc mapping code
-Date: Thu,  3 Jul 2014 16:14:37 +0200
-Message-Id: <1404396906-25194-5-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 03/18] AT91: G45: DT: Declare a second ram controller
+Date: Thu,  3 Jul 2014 16:14:36 +0200
+Message-Id: <1404396906-25194-4-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -27,56 +27,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adapt the ramc mapping code to handle multiple ram controllers in the DT.
+The G45 has two identical ram controller, that are defined as a single one,
+with two reg cells.
+
+The proper way to support such a case is to have two separate DT nodes.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/mach-at91/setup.c | 26 ++++++++++++++------------
- 1 file changed, 14 insertions(+), 12 deletions(-)
+ arch/arm/boot/dts/at91sam9g45.dtsi | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index 9c4c7fb323fb..cc520596f23b 100644
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -393,24 +393,26 @@ static void at91_dt_ramc(void)
- {
- 	struct device_node *np;
- 	const struct of_device_id *of_id;
-+	int idx = 0;
+diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
+index ace6bf197b70..6f648b85b725 100644
+--- a/arch/arm/boot/dts/at91sam9g45.dtsi
++++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+@@ -75,8 +75,12 @@
  
--	np = of_find_matching_node(NULL, ramc_ids);
--	if (!np)
--		panic(pr_fmt("unable to find compatible ram controller node in dtb\n"));
-+	for_each_matching_node(np, ramc_ids) {
-+		at91_ramc_base[idx] = of_iomap(np, 0);
-+		if (!at91_ramc_base[idx])
-+			panic(pr_fmt("unable to map ramc[%d] cpu registers\n"), idx);
- 
--	at91_ramc_base[0] = of_iomap(np, 0);
--	if (!at91_ramc_base[0])
--		panic(pr_fmt("unable to map ramc[0] cpu registers\n"));
--	/* the controller may have 2 banks */
--	at91_ramc_base[1] = of_iomap(np, 1);
-+		idx++;
-+	}
+ 			ramc0: ramc@ffffe400 {
+ 				compatible = "atmel,at91sam9g45-ddramc";
+-				reg = <0xffffe400 0x200
+-				       0xffffe600 0x200>;
++				reg = <0xffffe400 0x200>;
++			};
 +
-+	if (!idx)
-+		panic(pr_fmt("unable to find compatible ram controller node in dtb\n"));
++			ramc1: ramc@ffffe600 {
++				compatible = "atmel,at91sam9g45-ddramc";
++				reg = <0xffffe600 0x200>;
+ 			};
  
- 	of_id = of_match_node(ramc_ids, np);
--	if (!of_id)
-+	if (!of_id) {
- 		pr_warn("ramc no standby function available\n");
--	else
--		at91_pm_set_standby(of_id->data);
-+		return;
-+	}
- 
--	of_node_put(np);
-+	at91_pm_set_standby(of_id->data);
- }
- 
- static struct of_device_id shdwc_ids[] = {
+ 			pmc: pmc@fffffc00 {
 -- 
 2.0.1
 
