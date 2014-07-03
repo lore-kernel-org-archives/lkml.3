@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679AbaGCSx7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 14:53:59 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:53513 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351AbaGCSx5 (ORCPT
+	id S1759550AbaGCSzx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 14:55:53 -0400
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:58741 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864AbaGCSzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 14:53:57 -0400
-Message-ID: <53B5A5FE.2080500@linux.vnet.ibm.com>
-Date: Fri, 04 Jul 2014 00:20:38 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Thu, 3 Jul 2014 14:55:51 -0400
+X-Greylist: delayed 461 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jul 2014 14:55:51 EDT
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Thu, 3 Jul 2014 14:48:08 -0400
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [RFC PATCH] tty: serial: Add 8250-core based omap driver
+Message-ID: <20140703184808.GD17769@csclub.uwaterloo.ca>
+References: <1404316809-20637-1-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        David Rientjes <rientjes@google.com>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm readahead: Fix sys_readahead breakage by reverting
- 2MB limit (bug 79111)
-References: <1404392547-11648-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <CA+55aFxOTqUAqEF7+83s890Q18qCHSQqDOxWqWHNjG_25hVhXg@mail.gmail.com> <53B59CB5.9060004@linux.vnet.ibm.com> <CA+55aFyRgYW6Y8paYKGfqE205enhiPsZ1C8wrKpFavVXq7ZAtA@mail.gmail.com> <CA+55aFwwSCrH5QDvrzzyHhRU5R849Mo8A3NdRMwm9OTeWH9diQ@mail.gmail.com> <53B5A343.4090402@linux.vnet.ibm.com>
-In-Reply-To: <53B5A343.4090402@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070318-3568-0000-0000-000005CB4784
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404316809-20637-1-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2014 12:08 AM, Raghavendra K T wrote:
-> On 07/03/2014 11:59 PM, Linus Torvalds wrote:
->> On Thu, Jul 3, 2014 at 11:22 AM, Linus Torvalds
->> <torvalds@linux-foundation.org> wrote:
-[...]
-t.
->>
->> I do *not* think we should bow down to insane man-pages that have
->> always been wrong, though, and I don't think we should increase it to
->> "let's just read-ahead a whole ISO image" kind of sizes..
->
-> Okay, how about something like 256MB? I would be happy to send a patch
-> for that change.
+On Wed, Jul 02, 2014 at 06:00:09PM +0200, Sebastian Andrzej Siewior wrote:
+> This patch provides a 8250-core based UART driver for the internal OMAP
+> UART. The longterm goal is to provide the same functionality as the
+> current OMAP uart driver and hopefully DMA support which could borrowed
+> from the 8250-core.
 
-Sorry I was too fast. I think some thing like 16MB? I 'll send patch
-with that (unless you different size in mind).
+This sounds interesting.  We are currently finding the omap serial driver
+awefully slow at handling serial traffic with ti's 3.12.y kernel branch,
+while the 3.8.y was seemingly a bit better (on the dra7xx eval board).
+Haven't had time to really investigate that yet though.
 
+> The whole PM-Runtime part is currently missing.
+> It has been only tested as console UART.
+> The tty name is ttyS based instead of ttyO. How big is the pain here,
+> what could be the easiest way to provide compatibility?
+
+I would certainly love to see ttyS instead of ttyO.  But of course I am
+working on a new system that isn't released yet so changing things is
+a complete non issue for me. :)
+
+I should give this driver a try and see how it compares so far.
+
+-- 
+Len Sorensen
