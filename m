@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758159AbaGCNRc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 09:17:32 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:60443 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757408AbaGCNRa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 09:17:30 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: [PATCH TRIVIAL -mm] fork: make mm_init_owner static
-Date: Thu, 3 Jul 2014 17:17:23 +0400
-Message-ID: <1404393443-14453-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1758099AbaGCNR0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 09:17:26 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:35219 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757449AbaGCNRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 09:17:04 -0400
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+To: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: Rob Herring <rob.herring@calxeda.com>, Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Stanimir Varbanov <svarbanov@mm-sol.com>
+Subject: [RFC PATCH v2 5/5] dt: rtc: add binding document for qpnp rtc
+Date: Thu,  3 Jul 2014 16:14:03 +0300
+Message-Id: <1404393243-7324-6-git-send-email-svarbanov@mm-sol.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1404393243-7324-1-git-send-email-svarbanov@mm-sol.com>
+References: <1404393243-7324-1-git-send-email-svarbanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's only used in fork.c:mm_init().
+Add devicetree binding document which describes the qpnp-rtc.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
 ---
- include/linux/sched.h |    5 -----
- kernel/fork.c         |   14 +++++++-------
- 2 files changed, 7 insertions(+), 12 deletions(-)
+ .../devicetree/bindings/rtc/qcom,rtc-qpnp.txt      |   24 ++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/rtc/qcom,rtc-qpnp.txt
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 322d4fc8976c..c1d6d46ce941 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2959,15 +2959,10 @@ static inline void inc_syscw(struct task_struct *tsk)
- 
- #ifdef CONFIG_MEMCG
- extern void mm_update_next_owner(struct mm_struct *mm);
--extern void mm_init_owner(struct mm_struct *mm, struct task_struct *p);
- #else
- static inline void mm_update_next_owner(struct mm_struct *mm)
- {
- }
--
--static inline void mm_init_owner(struct mm_struct *mm, struct task_struct *p)
--{
--}
- #endif /* CONFIG_MEMCG */
- 
- static inline unsigned long task_rlimit(const struct task_struct *tsk,
-diff --git a/kernel/fork.c b/kernel/fork.c
-index c3117443f42e..371cb7cc4f80 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -526,6 +526,13 @@ static void mm_init_aio(struct mm_struct *mm)
- #endif
- }
- 
-+static void mm_init_owner(struct mm_struct *mm, struct task_struct *p)
-+{
-+#ifdef CONFIG_MEMCG
-+	mm->owner = p;
-+#endif
-+}
+diff --git a/Documentation/devicetree/bindings/rtc/qcom,rtc-qpnp.txt b/Documentation/devicetree/bindings/rtc/qcom,rtc-qpnp.txt
+new file mode 100644
+index 0000000..a64e194
+--- /dev/null
++++ b/Documentation/devicetree/bindings/rtc/qcom,rtc-qpnp.txt
+@@ -0,0 +1,24 @@
++Qualcomm RTC QPNP
 +
- static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
- {
- 	mm->mmap = NULL;
-@@ -1098,13 +1105,6 @@ static void rt_mutex_init_task(struct task_struct *p)
- #endif
- }
- 
--#ifdef CONFIG_MEMCG
--void mm_init_owner(struct mm_struct *mm, struct task_struct *p)
--{
--	mm->owner = p;
--}
--#endif /* CONFIG_MEMCG */
--
- /*
-  * Initialize POSIX timer handling for a single task.
-  */
++The RTC device supports 32bit RTC module housed inside QPNP PMIC's.
++The driver utilizes SPMI interface to communicate with the RTC module.
++RTC device is divided into two sub-peripherals one which controls
++basic RTC and other for controlling alarm.
++
++Required properties :
++ - compatible:  Should be "qcom,qpnp-rtc".
++ - reg:         Specify the peripheral id for device. Currently there
++                are two sub-peripherals - rtc base and alarm base.
++ - reg-names:   Specify the reg property as strings. Should be "rtc"
++                and "alarm", defining the rtc and alarm bases.
++ - interrupts:  Specifies alarm interrupt, only for alarm sub-peripheral.
++                For more info about interrupt cells see
++                Documentation/devicetree/bindings/spmi/qcom,spmi-pmic-arb.txt
++
++Example:
++	rtc@6000 {
++		compatible = "qcom,qpnp-rtc";
++		reg = <0x6000 0x6100>;
++		reg-names = "rtc", "alarm";
++		interrupts = <0x0 0x61 0x1 IRQ_TYPE_EDGE_RISING>;
++	};
 -- 
-1.7.10.4
+1.7.0.4
 
