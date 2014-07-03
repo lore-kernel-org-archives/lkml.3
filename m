@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758094AbaGCJVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:21:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51452 "EHLO
+	id S1758179AbaGCJVa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:21:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51499 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758062AbaGCJVP (ORCPT
+	with ESMTP id S1758108AbaGCJVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:21:15 -0400
+	Thu, 3 Jul 2014 05:21:22 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Frysinger <vapier@gentoo.org>, "H.J. Lu" <hjl.tools@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+Cc: Michael Krufky <mkrufky@linuxtv.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 015/198] x86, x32: Use compat shims for io_{setup,submit}
-Date: Thu,  3 Jul 2014 10:17:38 +0100
-Message-Id: <1404379241-8590-16-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 023/198] [media] dib0700: add support for PCTV 2002e & PCTV 2002e SE
+Date: Thu,  3 Jul 2014 10:17:46 +0100
+Message-Id: <1404379241-8590-24-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,59 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Frysinger <vapier@gentoo.org>
+From: Michael Krufky <mkrufky@linuxtv.org>
 
-commit 7fd44dacdd803c0bbf38bf478d51d280902bb0f1 upstream.
+commit c859e6ef33ac0c9a5e9e934fe11a2232752b4e96 upstream.
 
-The io_setup takes a pointer to a context id of type aio_context_t.
-This in turn is typed to a __kernel_ulong_t.  We could tweak the
-exported headers to define this as a 64bit quantity for specific
-ABIs, but since we already have a 32bit compat shim for the x86 ABI,
-let's just re-use that logic.  The libaio package is also written to
-expect this as a pointer type, so a compat shim would simplify that.
-
-The io_submit func operates on an array of pointers to iocb structs.
-Padding out the array to be 64bit aligned is a huge pain, so convert
-it over to the existing compat shim too.
-
-We don't convert io_getevents to the compat func as its only purpose
-is to handle the timespec struct, and the x32 ABI uses 64bit times.
-
-With this change, the libaio package can now pass its testsuite when
-built for the x32 ABI.
-
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-Link: http://lkml.kernel.org/r/1399250595-5005-1-git-send-email-vapier@gentoo.org
-Cc: H.J. Lu <hjl.tools@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/syscalls/syscall_64.tbl | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/media/dvb-core/dvb-usb-ids.h        |  2 ++
+ drivers/media/usb/dvb-usb/dib0700_devices.c | 12 +++++++++++-
+ 2 files changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 38ae65dfd14f..63a899304d27 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -212,10 +212,10 @@
- 203	common	sched_setaffinity	sys_sched_setaffinity
- 204	common	sched_getaffinity	sys_sched_getaffinity
- 205	64	set_thread_area
--206	common	io_setup		sys_io_setup
-+206	64	io_setup		sys_io_setup
- 207	common	io_destroy		sys_io_destroy
- 208	common	io_getevents		sys_io_getevents
--209	common	io_submit		sys_io_submit
-+209	64	io_submit		sys_io_submit
- 210	common	io_cancel		sys_io_cancel
- 211	64	get_thread_area
- 212	common	lookup_dcookie		sys_lookup_dcookie
-@@ -356,3 +356,5 @@
- 540	x32	process_vm_writev	compat_sys_process_vm_writev
- 541	x32	setsockopt		compat_sys_setsockopt
- 542	x32	getsockopt		compat_sys_getsockopt
-+543	x32	io_setup		compat_sys_io_setup
-+544	x32	io_submit		compat_sys_io_submit
+diff --git a/drivers/media/dvb-core/dvb-usb-ids.h b/drivers/media/dvb-core/dvb-usb-ids.h
+index 143d90819ec3..4cfb9624d69c 100644
+--- a/drivers/media/dvb-core/dvb-usb-ids.h
++++ b/drivers/media/dvb-core/dvb-usb-ids.h
+@@ -371,4 +371,6 @@
+ #define USB_PID_TECHNISAT_USB2_DVB_S2			0x0500
+ #define USB_PID_CPYTO_REDI_PC50A			0xa803
+ #define USB_PID_CTVDIGDUAL_V2				0xe410
++#define USB_PID_PCTV_2002E                              0x025c
++#define USB_PID_PCTV_2002E_SE                           0x025d
+ #endif
+diff --git a/drivers/media/usb/dvb-usb/dib0700_devices.c b/drivers/media/usb/dvb-usb/dib0700_devices.c
+index f08136052f9c..829323e42ca0 100644
+--- a/drivers/media/usb/dvb-usb/dib0700_devices.c
++++ b/drivers/media/usb/dvb-usb/dib0700_devices.c
+@@ -3589,6 +3589,8 @@ struct usb_device_id dib0700_usb_id_table[] = {
+ 	{ USB_DEVICE(USB_VID_DIBCOM,    USB_PID_DIBCOM_TFE7790P) },
+ 	{ USB_DEVICE(USB_VID_DIBCOM,    USB_PID_DIBCOM_TFE8096P) },
+ /* 80 */{ USB_DEVICE(USB_VID_ELGATO,	USB_PID_ELGATO_EYETV_DTT_2) },
++	{ USB_DEVICE(USB_VID_PCTV,      USB_PID_PCTV_2002E) },
++	{ USB_DEVICE(USB_VID_PCTV,      USB_PID_PCTV_2002E_SE) },
+ 	{ 0 }		/* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, dib0700_usb_id_table);
+@@ -3993,12 +3995,20 @@ struct dvb_usb_device_properties dib0700_devices[] = {
+ 			}
+ 		},
+ 
+-		.num_device_descs = 1,
++		.num_device_descs = 3,
+ 		.devices = {
+ 			{   "Hauppauge Nova-TD Stick (52009)",
+ 				{ &dib0700_usb_id_table[35], NULL },
+ 				{ NULL },
+ 			},
++			{   "PCTV 2002e",
++				{ &dib0700_usb_id_table[81], NULL },
++				{ NULL },
++			},
++			{   "PCTV 2002e SE",
++				{ &dib0700_usb_id_table[82], NULL },
++				{ NULL },
++			},
+ 		},
+ 
+ 		.rc.core = {
 -- 
 1.9.1
 
