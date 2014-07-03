@@ -1,118 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690AbaGCIFg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 04:05:36 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48495 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755177AbaGCIF0 (ORCPT
+	id S1756905AbaGCIH3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 04:07:29 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:36256 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756220AbaGCIHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 04:05:26 -0400
-Date: Thu, 3 Jul 2014 10:05:22 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Lee Jones <lee.jones@linaro.org>, devicetree@vger.kernel.org,
-        Boris BREZILLON <b.brezillon.dev@gmail.com>, kernel@stlinux.com,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        "Gupta, Pekon\"" <pekon@ti.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Subject: Re: [PATCH] mtd: nand: stm_nand_bch: add new driver
-Message-ID: <20140703100522.756f9715@bbrezillon>
-In-Reply-To: <20140703002237.GM3599@ld-irv-0074>
-References: <1401268805-26043-1-git-send-email-lee.jones@linaro.org>
-	<20140703002237.GM3599@ld-irv-0074>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 3 Jul 2014 04:07:14 -0400
+Message-ID: <53B50EFD.2070007@st.com>
+Date: Thu, 3 Jul 2014 10:06:21 +0200
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>, Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Peter Griffin <peter.griffin@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <srinivas.kandagatla@gmail.com>, <patrice.chotard@st.com>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 0/4] Add reset controllers for STiH407 SoC
+References: <1404310129-14667-1-git-send-email-peter.griffin@linaro.org> <1404317194.4109.13.camel@paszta.hi.pengutronix.de> <20140702165924.GB17665@lee--X1>
+In-Reply-To: <20140702165924.GB17665@lee--X1>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
+ definitions=2014-07-03_03:2014-07-02,2014-07-03,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Brian,
-
-On Wed, 2 Jul 2014 17:22:37 -0700
-Brian Norris <computersforpeace@gmail.com> wrote:
-
-> Hi Lee,
-> 
-> On Wed, May 28, 2014 at 10:20:05AM +0100, Lee Jones wrote:
-> > This is a squashed version of the submission to avoid re-sending the
-> > entire set over and over, essentially clogging up the MLs.
-> 
-> Thanks. I think I'd prefer to accept your driver in a form like this
-> too. A few comments below.
-> 
-> And I'll get one big comment out of the way here: can you abstract your
-> ST BBT code into its own self-contained portion, preferably in a
-> separate source file, a la nand_bbt.c? Then, provide a way to optionally
-> use either your ST BBT or the existing BBT -- perhaps a NAND_BBT_ST flag
-> for chip->bbt_options, and a matching device tree property. That way,
-> even though you require a legacy format for bootloader interoperability,
-> someone can theoretically utilize more mainstream (albeit, not
-> necessarily better...) BBT support from nand_bbt.c. I think this will
-> provide the best balance between your existing product support and
-> upstream-friendly modularity/flexibility. I'm open to other suggestions,
-> of course.
-> 
-> > Cc: computersforpeace@gmail.com
-> > Cc: Gupta, Pekon" <pekon@ti.com>
-> > Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> > Cc: linux-mtd@lists.infradead.org
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> 
-> Please add versioning to your next patch(es), and describe changes here.
-> 
-> >  Documentation/devicetree/bindings/mtd/stm-nand.txt |   87 +
-> 
-> See:
-> 
->   Documentation/devicetree/bindings/submitting-patches.txt
-> 
-
-[...]
-
-> > +
-> > +	nand_timing0: nand-timing {
-> > +		sig-setup	= <10>;
-> > +		sig-hold	= <10>;
-> > +		CE-deassert	= <0>;
-> > +		WE-to-RBn	= <100>;
-> > +		wr-on		= <10>;
-> > +		wr-off		= <30>;
-> > +		rd-on		= <10>;
-> > +		rd-off		= <30>;
-> > +		chip-delay	= <30>;		/* delay in us */
-> > +	};
-> 
-> You didn't document any of this node. And I don't think we want to
-> specify every single timing parameter in DT; it may make sense to use
-> Boris Brezillon's approach (I note this further down, in the driver
-> code) for mapping non-ONFI NAND timings into a compatible ONFI timing
-> mode. This will greatly simplify the bindings needed, since it's
-> standardized and auto-detectable in many cases.
 
 
-AFAIR, the NAND timing representation for non-ONFI chips question was
-left unanswered:
+On 07/02/2014 06:59 PM, Lee Jones wrote:
+> On Wed, 02 Jul 2014, Philipp Zabel wrote:
+>
+>> Hi Peter,
+>>
+>> Am Mittwoch, den 02.07.2014, 15:08 +0100 schrieb Peter Griffin:
+>>> This series adds reset controller support for the STiH407 SoC.
+>>>
+>>> Changes since v1
+>>>   - Update copyright to 2014
+>>>   - Add const qualifier
+>>>   - Fix various whitespace issues
+>>>   - Remove THIS_OWNER
+>>>   - Move DT documentation into separate patch
+>>>
+>>> Peter Griffin (4):
+>>>    reset: stih407: Add softreset, powerdown and picophy controllers
+>>>    reset: sti: Document sti-picophyreset controllers bindings.
+>>>    ARM: sti: Add STiH407 Kconfig entry to select STIH407_RESET
+>>>    ARM: sti: Add STiH407 reset controller support.
+>>>
+>>>   .../bindings/reset/st,sti-picophyreset.txt         |  42 ++++++
+>>>   arch/arm/boot/dts/stih407.dtsi                     |  16 +++
+>>>   arch/arm/mach-sti/Kconfig                          |  10 ++
+>>>   drivers/reset/sti/Kconfig                          |   4 +
+>>>   drivers/reset/sti/Makefile                         |   1 +
+>>>   drivers/reset/sti/reset-stih407.c                  | 158 +++++++++++++++++++++
+>>>   .../dt-bindings/reset-controller/stih407-resets.h  |  61 ++++++++
+>>>   7 files changed, 292 insertions(+)
+>>>   create mode 100644 Documentation/devicetree/bindings/reset/st,sti-picophyreset.txt
+>>>   create mode 100644 drivers/reset/sti/reset-stih407.c
+>>>   create mode 100644 include/dt-bindings/reset-controller/stih407-resets.h
+>>
+>> Looks good to me now.
+>>
+>> Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
+>
+> Do you have a tree for Reset?  If not, which route do these patches
+> normally follow?
+>
 
-https://lkml.org/lkml/2014/5/20/581
+I will queue patch 4 to STi DT branch for v3.17.
+For now, no nodes uses reset for STiH407, so we don't need the 
+dt-bindings header file in the STi tree.
 
-I can definitely respin my NAND timings series, but I'd like to be sure
-this is how you want it done before doing so.
+If we have a DT node using a reset line before my pull-request, I might 
+have to integrate the series in the STi DT branch.
+Philipp, does that sound reasonable?
 
-Just as a reminder, you and Jason thought NAND timings for non-ONFI
-chips could be auto detected thanks to READID informations (by storing
-some sort of "NANDID <-> timings" association table).
-
-Best Regards,
-
-Boris
-
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Regards,
+Maxime
