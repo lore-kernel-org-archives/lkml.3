@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333AbaGCIl5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 04:41:57 -0400
-Received: from sauhun.de ([89.238.76.85]:48337 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751072AbaGCIld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 04:41:33 -0400
-Date: Thu, 3 Jul 2014 10:41:09 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Rickard Strandqvist'" <rickard_strandqvist@spectrumdigital.se>,
-        "'Grant Likely'" <grant.likely@linaro.org>,
-        "'Rob Herring'" <robh+dt@kernel.org>,
-        "'Leilei Shang'" <shangll@marvell.com>,
-        "'Peter Korsgaard'" <peter@korsgaard.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2] i2c: busses: i2c-pxa.c: Fix for possible null pointer
- dereferenc
-Message-ID: <20140703084108.GA3012@katana>
-References: <1404084516-901-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <1404084516-901-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <009301cf93f6$f938a270$eba9e750$%han@samsung.com>
- <CAFo99gY2qEEqwJgu-NQryAe2=o5AsDjL+SFaau6BA7CBMH8Xkg@mail.gmail.com>
- <003601cf9660$83368990$89a39cb0$%han@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"
-Content-Disposition: inline
-In-Reply-To: <003601cf9660$83368990$89a39cb0$%han@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756239AbaGCInX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 04:43:23 -0400
+Received: from zimbra13.linbit.com ([212.69.166.240]:45858 "EHLO
+	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754194AbaGCInS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 04:43:18 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 01/23] drbd: poison free'd device, resource and connection structs
+Date: Thu,  3 Jul 2014 10:42:53 +0200
+Message-Id: <1404376995-4877-2-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404376995-4877-1-git-send-email-philipp.reisner@linbit.com>
+References: <1404376995-4877-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
---vtzGhvizbBRQ85DL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Now that we have additional asynchronous kref_get/kref_put
+via debugfs, make sure we catch access after free.
 
-Hi Rickard, hi Jingoo,
+Poison struct drbd_device, drbd_connection and drbd_resource
+before kfree() with 0xfd, 0xfc, and 0xf2, respectively.
 
-> I also trust Wolfram. He is one of the most important and active
-> person for Linux kernel.
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_main.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-Oh, thanks. I'm flattered :)
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index 686c5a5..92547d1 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -2192,6 +2192,7 @@ void drbd_destroy_device(struct kref *kref)
+ 	blk_cleanup_queue(device->rq_queue);
+ 	kfree(device->rs_plan_s);
+ 	kfree(first_peer_device(device));
++	memset(device, 0xfd, sizeof(*device));
+ 	kfree(device);
+ 
+ 	for_each_connection(connection, resource)
+@@ -2285,6 +2286,7 @@ void drbd_destroy_resource(struct kref *kref)
+ 	idr_destroy(&resource->devices);
+ 	free_cpumask_var(resource->cpu_mask);
+ 	kfree(resource->name);
++	memset(resource, 0xf2, sizeof(*resource));
+ 	kfree(resource);
+ }
+ 
+@@ -2665,6 +2667,7 @@ void drbd_destroy_connection(struct kref *kref)
+ 	drbd_free_socket(&connection->data);
+ 	kfree(connection->int_dig_in);
+ 	kfree(connection->int_dig_vv);
++	memset(connection, 0xfc, sizeof(*connection));
+ 	kfree(connection);
+ 	kref_put(&resource->kref, drbd_destroy_resource);
+ }
+-- 
+1.9.1
 
-> Wolfram may mean devm_ioremap_resource(), not devm_ioremap().
-
-Yes, you are right. Sorry for missing this detail when suggesting an
-example to convert to devm_*. devm_ioremap_resource should be favoured
-over devm_ioremap.
-
-> 1. devm_ioremap_resource(): IS_ERR() can be used.
->=20
-> 	dev->virtbase =3D devm_ioremap_resource(&adev->dev, res));
-> 	if (IS_ERR(dev->virtbase)) {
-
-This is correct and preferred.
-
-BTW I don't care much about splitting up the patch as long as the commit
-message says that the original bug is a motivation to swicth to devm_*.
-
-Thanks Rickard for picking up the task, and thanks Jingoo for reviewing.
-
-Kind regards,
-
-   Wolfram
-
-
---vtzGhvizbBRQ85DL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTtRckAAoJEBQN5MwUoCm2XjkQAK8POEB0KElgjpP8k9x0j09h
-69ESNBt+P6f5NFWXfC2Ibw+iOc0/jvlkjGexAqVmCZy4W4O2r98/IVmZFzmJw/kp
-KPJz/N086s3VBx3vXJWk48pqwKfpGVdn7VT3+J9y0n/NZKZeqPlO2LK9K/4+WkKv
-uMoLggosM0fXOPqZDzYMO1JYBnjx/sdsVfAMQ00AWsUgeptEaNeUUjUWXbvNXtTB
-YziIrvJ9EYDNxF9yIC7rpko2zFge3V9vFqpH/6PAH6HLmpq7jftfLRANxpGeKCEo
-10J5C/eaKcWP6eICZUNDBCVLrnCsCY3s1vzbyVZGjnLWkE/zqBRFiC5GlOLnAy/2
-kjthNo0B0REOpUHqwsV5uTY2+roxyQnViXapV7o6724ceSbxRV88Wp3QAmLjG69b
-dqEeFSyTQcRLn1OQ0rxngYH34DPclcU5/q68vKsFPpzel0xjPOqvIUI62CHNdvXA
-SOkJ+deIX69TNkxuXAeM/FJjkaQloQfKdNC7e1+LMC6z3JdvQuanp+r5mz9wWdiM
-53Pma9Q+8v+nROBIe5FlkILTyKnebTza+FZoXMm/st/2Vb//e2rHP2vIcF1ZWBVa
-4A2tEjxbYsrng2vxPpH07DmCLM3/pIGnpq4ITQs5PHzp6uEN4P8cuK/NRC5weR0A
-81fTBxpFBRvPfOWJb7hB
-=GM6g
------END PGP SIGNATURE-----
-
---vtzGhvizbBRQ85DL--
