@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030932AbaGCKAr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:00:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51890 "EHLO
+	id S1030725AbaGCKAq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:00:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51892 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758622AbaGCJWp (ORCPT
+	with ESMTP id S1758624AbaGCJWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Jul 2014 05:22:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jukka Taimisto <jtt@codenomicon.com>,
-        Johan Hedberg <johan.hedberg@intel.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 082/198] Bluetooth: Fix L2CAP deadlock
-Date: Thu,  3 Jul 2014 10:18:45 +0100
-Message-Id: <1404379241-8590-83-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 083/198] drm/radeon: fix typo in radeon_connector_is_dp12_capable()
+Date: Thu,  3 Jul 2014 10:18:46 +0100
+Message-Id: <1404379241-8590-84-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,91 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jukka Taimisto <jtt@codenomicon.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 8a96f3cd22878fc0bb564a8478a6e17c0b8dca73 upstream.
+commit af5d36539dfe043f1cf0f8b7334d6bb12cd14e75 upstream.
 
--[0x01 Introduction
+We were checking the ext clock rather than the display clock.
 
-We have found a programming error causing a deadlock in Bluetooth subsystem
-of Linux kernel. The problem is caused by missing release_sock() call when
-L2CAP connection creation fails due full accept queue.
+Noticed by ArtForz on IRC.
 
-The issue can be reproduced with 3.15-rc5 kernel and is also present in
-earlier kernels.
-
--[0x02 Details
-
-The problem occurs when multiple L2CAP connections are created to a PSM which
-contains listening socket (like SDP) and left pending, for example,
-configuration (the underlying ACL link is not disconnected between
-connections).
-
-When L2CAP connection request is received and listening socket is found the
-l2cap_sock_new_connection_cb() function (net/bluetooth/l2cap_sock.c) is called.
-This function locks the 'parent' socket and then checks if the accept queue
-is full.
-
-1178         lock_sock(parent);
-1179
-1180         /* Check for backlog size */
-1181         if (sk_acceptq_is_full(parent)) {
-1182                 BT_DBG("backlog full %d", parent->sk_ack_backlog);
-1183                 return NULL;
-1184         }
-
-If case the accept queue is full NULL is returned, but the 'parent' socket
-is not released. Thus when next L2CAP connection request is received the code
-blocks on lock_sock() since the parent is still locked.
-
-Also note that for connections already established and waiting for
-configuration to complete a timeout will occur and l2cap_chan_timeout()
-(net/bluetooth/l2cap_core.c) will be called. All threads calling this
-function will also be blocked waiting for the channel mutex since the thread
-which is waiting on lock_sock() alread holds the channel mutex.
-
-We were able to reproduce this by sending continuously L2CAP connection
-request followed by disconnection request containing invalid CID. This left
-the created connections pending configuration.
-
-After the deadlock occurs it is impossible to kill bluetoothd, btmon will not
-get any more data etc. requiring reboot to recover.
-
--[0x03 Fix
-
-Releasing the 'parent' socket when l2cap_sock_new_connection_cb() returns NULL
-seems to fix the issue.
-
-Signed-off-by: Jukka Taimisto <jtt@codenomicon.com>
-Reported-by: Tommi Mäkilä <tmakila@codenomicon.com>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/bluetooth/l2cap_sock.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
-index 0098af80b213..07c9aea21244 100644
---- a/net/bluetooth/l2cap_sock.c
-+++ b/net/bluetooth/l2cap_sock.c
-@@ -949,13 +949,16 @@ static struct l2cap_chan *l2cap_sock_new_connection_cb(struct l2cap_chan *chan)
- 	/* Check for backlog size */
- 	if (sk_acceptq_is_full(parent)) {
- 		BT_DBG("backlog full %d", parent->sk_ack_backlog);
-+		release_sock(parent);
- 		return NULL;
+diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
+index 5a87c9fc78d3..fc604fc75797 100644
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -1345,7 +1345,7 @@ bool radeon_connector_is_dp12_capable(struct drm_connector *connector)
+ 	struct radeon_device *rdev = dev->dev_private;
+ 
+ 	if (ASIC_IS_DCE5(rdev) &&
+-	    (rdev->clock.dp_extclk >= 53900) &&
++	    (rdev->clock.default_dispclk >= 53900) &&
+ 	    radeon_connector_encoder_is_hbr2(connector)) {
+ 		return true;
  	}
- 
- 	sk = l2cap_sock_alloc(sock_net(parent), NULL, BTPROTO_L2CAP,
- 			      GFP_ATOMIC);
--	if (!sk)
-+	if (!sk) {
-+		release_sock(parent);
- 		return NULL;
-+        }
- 
- 	bt_sock_reclassify_lock(sk, BTPROTO_L2CAP);
- 
 -- 
 1.9.1
 
