@@ -1,120 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758013AbaGCOAn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:00:43 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:34048 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757641AbaGCOAi (ORCPT
+	id S1758102AbaGCOCN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:02:13 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:8588 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755096AbaGCOCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:00:38 -0400
-From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>, linux-kernel@vger.kernel.org,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Subject: [PATCH 3/4] perf kvm: Refactoring of cpu_isa_config()
-Date: Thu,  3 Jul 2014 17:59:51 +0400
-Message-Id: <1404395992-17095-4-git-send-email-yarygin@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404395992-17095-1-git-send-email-yarygin@linux.vnet.ibm.com>
-References: <1404395992-17095-1-git-send-email-yarygin@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070314-8372-0000-0000-0000006BFF9B
+	Thu, 3 Jul 2014 10:02:12 -0400
+Date: Thu, 3 Jul 2014 10:02:09 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <linux-arch@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Kosina <jkosina@suse.cz>,
+        Josh Poimboeuf <notifications@github.com>, Tony Lu <zlu@tilera.com>
+Subject: Re: [RFA][PATCH 17/27] tile: ftrace: Remove check of obsolete
+ variable function_trace_stop
+Message-ID: <20140703100209.394163c5@gandalf.local.home>
+In-Reply-To: <53B56061.3050601@tilera.com>
+References: <20140626165221.736847419@goodmis.org>
+	<20140626165852.012558348@goodmis.org>
+	<53B56061.3050601@tilera.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpu_isa_config() does two different things: searching for cpuid and
-initializing perf_kvm_stat struct with proper parameters.
+On Thu, 3 Jul 2014 09:53:37 -0400
+Chris Metcalf <cmetcalf@tilera.com> wrote:
 
-Let's move initialization to a separate function cpu_isa_init(), which
-is used to initialize all possible ISAs and can be used to init
-arch-depended things.
+> On 6/26/2014 12:52 PM, Steven Rostedt wrote:
+> > From: "Steven Rostedt (Red Hat)"<rostedt@goodmis.org>
+> >
+> > Nothing sets function_trace_stop to disable function tracing anymore.
+> > Remove the check for it in the arch code.
+> >
+> > [ Please test this on your arch ]
+> >
+> > Cc: Chris Metcalf<cmetcalf@tilera.com>
+> > Signed-off-by: Steven Rostedt<rostedt@goodmis.org>
+> 
+> I forwarded this internally to the guy who did the work at Tilera and he's happy with the change.
+> 
+> Acked-by: Zhigang Lu<zlu@tilera.com>
+> 
 
-Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-Reviewed-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/builtin-kvm.c |   39 +++++++++++++++++++++++----------------
- 1 file changed, 23 insertions(+), 16 deletions(-)
+Thanks!
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 75f3544..41dbeaf 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -835,36 +835,45 @@ static int process_sample_event(struct perf_tool *tool,
- 	return 0;
- }
- 
-+static int cpu_isa_init(struct perf_kvm_stat *kvm, const char *cpuid)
-+{
-+	if (strstr(cpuid, "Intel")) {
-+		kvm->exit_reasons = vmx_exit_reasons;
-+		kvm->exit_reasons_isa = "VMX";
-+	} else if (strstr(cpuid, "AMD")) {
-+		kvm->exit_reasons = svm_exit_reasons;
-+		kvm->exit_reasons_isa = "SVM";
-+	} else
-+		return -ENOTSUP;
-+
-+	return 0;
-+}
-+
- static int cpu_isa_config(struct perf_kvm_stat *kvm)
- {
- 	char buf[64], *cpuid;
--	int err, isa;
-+	int err;
- 
- 	if (kvm->live) {
- 		err = get_cpuid(buf, sizeof(buf));
- 		if (err != 0) {
--			pr_err("Failed to look up CPU type (Intel or AMD)\n");
-+			pr_err("Failed to look up CPU type\n");
- 			return err;
- 		}
- 		cpuid = buf;
- 	} else
- 		cpuid = kvm->session->header.env.cpuid;
- 
--	if (strstr(cpuid, "Intel"))
--		isa = 1;
--	else if (strstr(cpuid, "AMD"))
--		isa = 0;
--	else {
--		pr_err("CPU %s is not supported.\n", cpuid);
--		return -ENOTSUP;
-+	if (!cpuid) {
-+		pr_err("Failed to look up CPU type\n");
-+		return -EINVAL;
- 	}
- 
--	if (isa == 1) {
--		kvm->exit_reasons = vmx_exit_reasons;
--		kvm->exit_reasons_isa = "VMX";
--	}
-+	err = cpu_isa_init(kvm, cpuid);
-+	if (err == -ENOTSUP)
-+		pr_err("CPU %s is not supported.\n", cpuid);
- 
--	return 0;
-+	return err;
- }
- 
- static bool verify_vcpu(int vcpu)
-@@ -1583,8 +1592,6 @@ static int kvm_cmd_stat(const char *file_name, int argc, const char **argv)
- 		.report_event	= "vmexit",
- 		.sort_key	= "sample",
- 
--		.exit_reasons = svm_exit_reasons,
--		.exit_reasons_isa = "SVM",
- 	};
- 
- 	if (argc == 1) {
--- 
-1.7.9.5
-
+-- Steve
