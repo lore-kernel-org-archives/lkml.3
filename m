@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493AbaGCJvg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:51:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52144 "EHLO
+	id S965095AbaGCJXb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:23:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52109 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965070AbaGCJXc (ORCPT
+	with ESMTP id S965070AbaGCJX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:23:32 -0400
+	Thu, 3 Jul 2014 05:23:26 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gabor Juhos <juhosg@openwrt.org>, Wim Van Sebroeck <wim@iguana.be>,
+Cc: Thomas Glanzmann <thomas@glanzmann.de>,
+        Charalampos Pournaris <charpour@gmail.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 115/198] watchdog: ath79_wdt: avoid spurious restarts on AR934x
-Date: Thu,  3 Jul 2014 10:19:18 +0100
-Message-Id: <1404379241-8590-116-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 110/198] target: Set CMD_T_ACTIVE bit for Task Management Requests
+Date: Thu,  3 Jul 2014 10:19:13 +0100
+Message-Id: <1404379241-8590-111-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -27,57 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabor Juhos <juhosg@openwrt.org>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 23afeb613ec0e10aecfae7838a14d485db62ac52 upstream.
+commit f15e9cd910c4d9da7de43f2181f362082fc45f0f upstream.
 
-On some AR934x based systems, where the frequency of
-the AHB bus is relatively high, the built-in watchdog
-causes a spurious restart when it gets enabled.
+This patch fixes a bug where se_cmd descriptors associated with a
+Task Management Request (TMR) where not setting CMD_T_ACTIVE before
+being dispatched into target_tmr_work() process context.
 
-The possible cause of these restarts is that the timeout
-value written into the TIMER register does not reaches
-the hardware in time.
+This is required in order for transport_generic_free_cmd() ->
+transport_wait_for_tasks() to wait on se_cmd->t_transport_stop_comp
+if a session reset event occurs while an ABORT_TASK is outstanding
+waiting for another I/O to complete.
 
-Add an explicit delay into the ath79_wdt_enable function
-to avoid the spurious restarts.
-
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+Cc: Thomas Glanzmann <thomas@glanzmann.de>
+Cc: Charalampos Pournaris <charpour@gmail.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/watchdog/ath79_wdt.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/target/target_core_transport.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/watchdog/ath79_wdt.c b/drivers/watchdog/ath79_wdt.c
-index 37cb09b27b63..c97a47ca8971 100644
---- a/drivers/watchdog/ath79_wdt.c
-+++ b/drivers/watchdog/ath79_wdt.c
-@@ -20,6 +20,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/bitops.h>
-+#include <linux/delay.h>
- #include <linux/errno.h>
- #include <linux/fs.h>
- #include <linux/init.h>
-@@ -91,6 +92,15 @@ static inline void ath79_wdt_keepalive(void)
- static inline void ath79_wdt_enable(void)
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 2050727dc954..67e6bcf845e6 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -2871,6 +2871,12 @@ static void target_tmr_work(struct work_struct *work)
+ int transport_generic_handle_tmr(
+ 	struct se_cmd *cmd)
  {
- 	ath79_wdt_keepalive();
++	unsigned long flags;
 +
-+	/*
-+	 * Updating the TIMER register requires a few microseconds
-+	 * on the AR934x SoCs at least. Use a small delay to ensure
-+	 * that the TIMER register is updated within the hardware
-+	 * before enabling the watchdog.
-+	 */
-+	udelay(2);
++	spin_lock_irqsave(&cmd->t_state_lock, flags);
++	cmd->transport_state |= CMD_T_ACTIVE;
++	spin_unlock_irqrestore(&cmd->t_state_lock, flags);
 +
- 	ath79_wdt_wr(WDOG_REG_CTRL, WDOG_CTRL_ACTION_FCR);
- 	/* flush write */
- 	ath79_wdt_rr(WDOG_REG_CTRL);
+ 	INIT_WORK(&cmd->work, target_tmr_work);
+ 	queue_work(cmd->se_dev->tmr_wq, &cmd->work);
+ 	return 0;
 -- 
 1.9.1
 
