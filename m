@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797AbaGCIu1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 04:50:27 -0400
-Received: from zimbra13.linbit.com ([212.69.166.240]:45903 "EHLO
+	id S1755175AbaGCIuX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 04:50:23 -0400
+Received: from zimbra13.linbit.com ([212.69.166.240]:45906 "EHLO
 	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755505AbaGCInU (ORCPT
+	with ESMTP id S1755617AbaGCInU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Jul 2014 04:43:20 -0400
 From: Philipp Reisner <philipp.reisner@linbit.com>
 To: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
 Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 05/23] drbd: add lists to find oldest pending requests
-Date: Thu,  3 Jul 2014 10:42:57 +0200
-Message-Id: <1404376995-4877-6-git-send-email-philipp.reisner@linbit.com>
+Subject: [PATCH 07/23] drbd: improve throttling decisions of background resynchronisation
+Date: Thu,  3 Jul 2014 10:42:59 +0200
+Message-Id: <1404376995-4877-8-git-send-email-philipp.reisner@linbit.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404376995-4877-1-git-send-email-philipp.reisner@linbit.com>
 References: <1404376995-4877-1-git-send-email-philipp.reisner@linbit.com>
@@ -22,198 +22,259 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-Adding requests to per-device fifo lists as soon as possible after
-allocating them leaves a simple list_first_entry_or_null() to find the
-oldest request, regardless what it is still waiting for.
+Background resynchronisation does some "side-stepping", or throttles
+itself, if it detects application IO activity, and the current resync
+rate estimate is above the configured "cmin-rate".
+
+What was not detected: if there is no application IO,
+because it blocks on activity log transactions.
+
+Introduce a new atomic_t ap_actlog_cnt, tracking such blocked requests,
+and count non-zero as application IO activity.
+This counter is exposed at proc_details level 2 and above.
+
+Also make sure to release the currently locked resync extent
+if we side-step due to such voluntary throttling.
 
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
 ---
- drivers/block/drbd/drbd_int.h  | 11 ++++++++++-
- drivers/block/drbd/drbd_main.c |  7 ++++++-
- drivers/block/drbd/drbd_req.c  | 45 +++++++++++++++++++++++++++++++-----------
- 3 files changed, 49 insertions(+), 14 deletions(-)
+ drivers/block/drbd/drbd_actlog.c   | 29 ++++++++++++++++++++++++++---
+ drivers/block/drbd/drbd_int.h      |  4 +++-
+ drivers/block/drbd/drbd_main.c     |  1 +
+ drivers/block/drbd/drbd_proc.c     |  3 +++
+ drivers/block/drbd/drbd_receiver.c | 19 ++++++++++++-------
+ drivers/block/drbd/drbd_req.c      |  4 ++++
+ drivers/block/drbd/drbd_worker.c   |  9 ++-------
+ 7 files changed, 51 insertions(+), 18 deletions(-)
 
+diff --git a/drivers/block/drbd/drbd_actlog.c b/drivers/block/drbd/drbd_actlog.c
+index d7e8066..6ce5c76 100644
+--- a/drivers/block/drbd/drbd_actlog.c
++++ b/drivers/block/drbd/drbd_actlog.c
+@@ -991,6 +991,15 @@ int drbd_try_rs_begin_io(struct drbd_device *device, sector_t sector)
+ 	struct lc_element *e;
+ 	struct bm_extent *bm_ext;
+ 	int i;
++	bool throttle = drbd_rs_should_slow_down(device, sector, true);
++
++	/* If we need to throttle, a half-locked (only marked BME_NO_WRITES,
++	 * not yet BME_LOCKED) extent needs to be kicked out explicitly if we
++	 * need to throttle. There is at most one such half-locked extent,
++	 * which is remembered in resync_wenr. */
++
++	if (throttle && device->resync_wenr != enr)
++		return -EAGAIN;
+ 
+ 	spin_lock_irq(&device->al_lock);
+ 	if (device->resync_wenr != LC_FREE && device->resync_wenr != enr) {
+@@ -1014,8 +1023,10 @@ int drbd_try_rs_begin_io(struct drbd_device *device, sector_t sector)
+ 			D_ASSERT(device, test_bit(BME_NO_WRITES, &bm_ext->flags));
+ 			clear_bit(BME_NO_WRITES, &bm_ext->flags);
+ 			device->resync_wenr = LC_FREE;
+-			if (lc_put(device->resync, &bm_ext->lce) == 0)
++			if (lc_put(device->resync, &bm_ext->lce) == 0) {
++				bm_ext->flags = 0;
+ 				device->resync_locked--;
++			}
+ 			wake_up(&device->al_wait);
+ 		} else {
+ 			drbd_alert(device, "LOGIC BUG\n");
+@@ -1077,8 +1088,20 @@ proceed:
+ 	return 0;
+ 
+ try_again:
+-	if (bm_ext)
+-		device->resync_wenr = enr;
++	if (bm_ext) {
++		if (throttle) {
++			D_ASSERT(device, !test_bit(BME_LOCKED, &bm_ext->flags));
++			D_ASSERT(device, test_bit(BME_NO_WRITES, &bm_ext->flags));
++			clear_bit(BME_NO_WRITES, &bm_ext->flags);
++			device->resync_wenr = LC_FREE;
++			if (lc_put(device->resync, &bm_ext->lce) == 0) {
++				bm_ext->flags = 0;
++				device->resync_locked--;
++			}
++			wake_up(&device->al_wait);
++		} else
++			device->resync_wenr = enr;
++	}
+ 	spin_unlock_irq(&device->al_lock);
+ 	return -EAGAIN;
+ }
 diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index 08fa2dc..f29f107 100644
+index fa010ea..81f4af4 100644
 --- a/drivers/block/drbd/drbd_int.h
 +++ b/drivers/block/drbd/drbd_int.h
-@@ -318,6 +318,10 @@ struct drbd_request {
- 	struct list_head tl_requests; /* ring list in the transfer log */
- 	struct bio *master_bio;       /* master bio pointer */
- 
-+	/* see struct drbd_device */
-+	struct list_head req_pending_master_completion;
-+	struct list_head req_pending_local;
-+
- 	/* for generic IO accounting */
- 	unsigned long start_jif;
- 
-@@ -738,7 +742,7 @@ struct submit_worker {
- 	struct workqueue_struct *wq;
- 	struct work_struct worker;
- 
--	spinlock_t lock;
-+	/* protected by ..->resource->req_lock */
- 	struct list_head writes;
- };
- 
-@@ -795,6 +799,11 @@ struct drbd_device {
- 	struct rb_root read_requests;
- 	struct rb_root write_requests;
- 
-+	/* for statistics and timeouts */
-+	/* [0] read, [1] write */
-+	struct list_head pending_master_completion[2];
-+	struct list_head pending_completion[2];
-+
- 	/* use checksums for *this* resync */
- 	bool use_csums;
- 	/* blocks to resync in this run [unit BM_BLOCK_SIZE] */
+@@ -797,6 +797,7 @@ struct drbd_device {
+ 	unsigned int al_writ_cnt;
+ 	unsigned int bm_writ_cnt;
+ 	atomic_t ap_bio_cnt;	 /* Requests we need to complete */
++	atomic_t ap_actlog_cnt;  /* Requests waiting for activity log */
+ 	atomic_t ap_pending_cnt; /* AP data packets on the wire, ack expected */
+ 	atomic_t rs_pending_cnt; /* RS request/data packets on the wire */
+ 	atomic_t unacked_cnt;	 /* Need to send replies for */
+@@ -1454,7 +1455,8 @@ extern void drbd_endio_write_sec_final(struct drbd_peer_request *peer_req);
+ extern int drbd_receiver(struct drbd_thread *thi);
+ extern int drbd_asender(struct drbd_thread *thi);
+ extern bool drbd_rs_c_min_rate_throttle(struct drbd_device *device);
+-extern bool drbd_rs_should_slow_down(struct drbd_device *device, sector_t sector);
++extern bool drbd_rs_should_slow_down(struct drbd_device *device, sector_t sector,
++		bool throttle_if_app_is_waiting);
+ extern int drbd_submit_peer_request(struct drbd_device *,
+ 				    struct drbd_peer_request *, const unsigned,
+ 				    const int);
 diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 0baec7a..5886596 100644
+index 5886596..ad7c0e8 100644
 --- a/drivers/block/drbd/drbd_main.c
 +++ b/drivers/block/drbd/drbd_main.c
-@@ -1934,6 +1934,10 @@ void drbd_init_set_defaults(struct drbd_device *device)
- 	INIT_LIST_HEAD(&device->resync_work.list);
- 	INIT_LIST_HEAD(&device->unplug_work.list);
- 	INIT_LIST_HEAD(&device->bm_io_work.w.list);
-+	INIT_LIST_HEAD(&device->pending_master_completion[0]);
-+	INIT_LIST_HEAD(&device->pending_master_completion[1]);
-+	INIT_LIST_HEAD(&device->pending_completion[0]);
-+	INIT_LIST_HEAD(&device->pending_completion[1]);
+@@ -1909,6 +1909,7 @@ void drbd_init_set_defaults(struct drbd_device *device)
+ 	drbd_set_defaults(device);
  
- 	device->resync_work.cb  = w_resync_timer;
- 	device->unplug_work.cb  = w_send_write_hint;
-@@ -2268,6 +2272,8 @@ static void do_retry(struct work_struct *ws)
+ 	atomic_set(&device->ap_bio_cnt, 0);
++	atomic_set(&device->ap_actlog_cnt, 0);
+ 	atomic_set(&device->ap_pending_cnt, 0);
+ 	atomic_set(&device->rs_pending_cnt, 0);
+ 	atomic_set(&device->unacked_cnt, 0);
+diff --git a/drivers/block/drbd/drbd_proc.c b/drivers/block/drbd/drbd_proc.c
+index 9059d7b..06e6147 100644
+--- a/drivers/block/drbd/drbd_proc.c
++++ b/drivers/block/drbd/drbd_proc.c
+@@ -335,6 +335,9 @@ static int drbd_seq_show(struct seq_file *seq, void *v)
+ 			lc_seq_printf_stats(seq, device->act_log);
+ 			put_ldev(device);
+ 		}
++
++		if (proc_details >= 2)
++			seq_printf(seq, "\tblocked on activity log: %d\n", atomic_read(&device->ap_actlog_cnt));
  	}
- }
+ 	rcu_read_unlock();
  
-+/* called via drbd_req_put_completion_ref(),
-+ * holds resource->req_lock */
- void drbd_restart_request(struct drbd_request *req)
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 7a1078d..0d3cbd8 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -2417,13 +2417,14 @@ out_interrupted:
+  * The current sync rate used here uses only the most recent two step marks,
+  * to have a short time average so we can react faster.
+  */
+-bool drbd_rs_should_slow_down(struct drbd_device *device, sector_t sector)
++bool drbd_rs_should_slow_down(struct drbd_device *device, sector_t sector,
++		bool throttle_if_app_is_waiting)
  {
- 	unsigned long flags;
-@@ -2687,7 +2693,6 @@ static int init_submitter(struct drbd_device *device)
- 		return -ENOMEM;
+ 	struct lc_element *tmp;
+-	bool throttle = true;
++	bool throttle = drbd_rs_c_min_rate_throttle(device);
  
- 	INIT_WORK(&device->submit.worker, do_submit);
--	spin_lock_init(&device->submit.lock);
- 	INIT_LIST_HEAD(&device->submit.writes);
- 	return 0;
- }
+-	if (!drbd_rs_c_min_rate_throttle(device))
+-		return false;
++	if (!throttle || throttle_if_app_is_waiting)
++		return throttle;
+ 
+ 	spin_lock_irq(&device->al_lock);
+ 	tmp = lc_find(device->resync, BM_SECT_TO_EXT(sector));
+@@ -2431,7 +2432,8 @@ bool drbd_rs_should_slow_down(struct drbd_device *device, sector_t sector)
+ 		struct bm_extent *bm_ext = lc_entry(tmp, struct bm_extent, lce);
+ 		if (test_bit(BME_PRIORITY, &bm_ext->flags))
+ 			throttle = false;
+-		/* Do not slow down if app IO is already waiting for this extent */
++		/* Do not slow down if app IO is already waiting for this extent,
++		 * and our progress is necessary for application IO to complete. */
+ 	}
+ 	spin_unlock_irq(&device->al_lock);
+ 
+@@ -2456,7 +2458,9 @@ bool drbd_rs_c_min_rate_throttle(struct drbd_device *device)
+ 	curr_events = (int)part_stat_read(&disk->part0, sectors[0]) +
+ 		      (int)part_stat_read(&disk->part0, sectors[1]) -
+ 			atomic_read(&device->rs_sect_ev);
+-	if (!device->rs_last_events || curr_events - device->rs_last_events > 64) {
++
++	if (atomic_read(&device->ap_actlog_cnt)
++	    || !device->rs_last_events || curr_events - device->rs_last_events > 64) {
+ 		unsigned long rs_left;
+ 		int i;
+ 
+@@ -2646,7 +2650,8 @@ static int receive_DataRequest(struct drbd_connection *connection, struct packet
+ 	 * we would also throttle its application reads.
+ 	 * In that case, throttling is done on the SyncTarget only.
+ 	 */
+-	if (device->state.peer != R_PRIMARY && drbd_rs_should_slow_down(device, sector))
++	if (device->state.peer != R_PRIMARY
++	&& drbd_rs_should_slow_down(device, sector, false))
+ 		schedule_timeout_uninterruptible(HZ/10);
+ 	if (drbd_rs_begin_io(device, sector))
+ 		goto out_free_e;
 diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
-index 1319bea..23cd909 100644
+index 3f6a6ed..74ebef1 100644
 --- a/drivers/block/drbd/drbd_req.c
 +++ b/drivers/block/drbd/drbd_req.c
-@@ -84,6 +84,8 @@ static struct drbd_request *drbd_req_new(struct drbd_device *device,
+@@ -1218,6 +1218,7 @@ drbd_request_prepare(struct drbd_device *device, struct bio *bio, unsigned long
+ 	if (rw == WRITE && req->private_bio && req->i.size
+ 	&& !test_bit(AL_SUSPENDED, &device->flags)) {
+ 		if (!drbd_al_begin_io_fastpath(device, &req->i)) {
++			atomic_inc(&device->ap_actlog_cnt);
+ 			drbd_queue_write(device, req);
+ 			return NULL;
+ 		}
+@@ -1354,6 +1355,7 @@ static void submit_fast_path(struct drbd_device *device, struct list_head *incom
  
- 	INIT_LIST_HEAD(&req->tl_requests);
- 	INIT_LIST_HEAD(&req->w.list);
-+	INIT_LIST_HEAD(&req->req_pending_master_completion);
-+	INIT_LIST_HEAD(&req->req_pending_local);
+ 			req->rq_state |= RQ_IN_ACT_LOG;
+ 			req->in_actlog_jif = jiffies;
++			atomic_dec(&device->ap_actlog_cnt);
+ 		}
  
- 	/* one reference to be put by __drbd_make_request */
- 	atomic_set(&req->completion_ref, 1);
-@@ -120,12 +122,14 @@ void drbd_req_destroy(struct kref *kref)
- 		return;
- 	}
+ 		list_del_init(&req->tl_requests);
+@@ -1439,6 +1441,7 @@ skip_fast_path:
+ 		list_for_each_entry_safe(req, tmp, &pending, tl_requests) {
+ 			req->rq_state |= RQ_IN_ACT_LOG;
+ 			req->in_actlog_jif = jiffies;
++			atomic_dec(&device->ap_actlog_cnt);
+ 			list_del_init(&req->tl_requests);
+ 			drbd_send_and_submit(device, req);
+ 		}
+@@ -1454,6 +1457,7 @@ skip_fast_path:
+ 			if (!was_cold) {
+ 				req->rq_state |= RQ_IN_ACT_LOG;
+ 				req->in_actlog_jif = jiffies;
++				atomic_dec(&device->ap_actlog_cnt);
+ 				/* Corresponding extent was hot after all? */
+ 				drbd_send_and_submit(device, req);
+ 			} else {
+diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
+index 0ff8f46..48975a2 100644
+--- a/drivers/block/drbd/drbd_worker.c
++++ b/drivers/block/drbd/drbd_worker.c
+@@ -395,9 +395,6 @@ static int read_for_csum(struct drbd_peer_device *peer_device, sector_t sector,
+ 	if (!get_ldev(device))
+ 		return -EIO;
  
--	/* remove it from the transfer log.
--	 * well, only if it had been there in the first
--	 * place... if it had not (local only or conflicting
--	 * and never sent), it should still be "empty" as
--	 * initialized in drbd_req_new(), so we can list_del() it
--	 * here unconditionally */
-+	/* If called from mod_rq_state (expected normal case) or
-+	 * drbd_send_and_submit (the less likely normal path), this holds the
-+	 * req_lock, and req->tl_requests will typicaly be on ->transfer_log,
-+	 * though it may be still empty (never added to the transfer log).
-+	 *
-+	 * If called from do_retry(), we do NOT hold the req_lock, but we are
-+	 * still allowed to unconditionally list_del(&req->tl_requests),
-+	 * because it will be on a local on-stack list only. */
- 	list_del_init(&req->tl_requests);
+-	if (drbd_rs_should_slow_down(device, sector))
+-		goto defer;
+-
+ 	/* GFP_TRY, because if there is no memory available right now, this may
+ 	 * be rescheduled for later. It is "only" background resync, after all. */
+ 	peer_req = drbd_alloc_peer_req(peer_device, ID_SYNCER /* unused */, sector,
+@@ -651,8 +648,7 @@ next_sector:
  
- 	/* finally remove the request from the conflict detection
-@@ -312,8 +316,15 @@ void drbd_req_complete(struct drbd_request *req, struct bio_and_error *m)
+ 		sector = BM_BIT_TO_SECT(bit);
  
- 	if (req->i.waiting)
- 		wake_up(&device->misc_wait);
-+
-+	/* Either we are about to complete to upper layers,
-+	 * or we will restart this request.
-+	 * In either case, the request object will be destroyed soon,
-+	 * so better remove it from all lists. */
-+	list_del_init(&req->req_pending_master_completion);
- }
+-		if (drbd_rs_should_slow_down(device, sector) ||
+-		    drbd_try_rs_begin_io(device, sector)) {
++		if (drbd_try_rs_begin_io(device, sector)) {
+ 			device->bm_resync_fo = bit;
+ 			goto requeue;
+ 		}
+@@ -783,8 +779,7 @@ static int make_ov_request(struct drbd_device *device, int cancel)
  
-+/* still holds resource->req_lock */
- static int drbd_req_put_completion_ref(struct drbd_request *req, struct bio_and_error *m, int put)
- {
- 	struct drbd_device *device = req->device;
-@@ -400,6 +411,7 @@ static void mod_rq_state(struct drbd_request *req, struct bio_and_error *m,
- 			++k_put;
- 		else
- 			++c_put;
-+		list_del_init(&req->req_pending_local);
- 	}
+ 		size = BM_BLOCK_SIZE;
  
- 	if ((s & RQ_NET_PENDING) && (clear & RQ_NET_PENDING)) {
-@@ -1070,9 +1082,11 @@ drbd_submit_req_private_bio(struct drbd_request *req)
- 
- static void drbd_queue_write(struct drbd_device *device, struct drbd_request *req)
- {
--	spin_lock(&device->submit.lock);
-+	spin_lock_irq(&device->resource->req_lock);
- 	list_add_tail(&req->tl_requests, &device->submit.writes);
--	spin_unlock(&device->submit.lock);
-+	list_add_tail(&req->req_pending_master_completion,
-+			&device->pending_master_completion[1 /* WRITE */]);
-+	spin_unlock_irq(&device->resource->req_lock);
- 	queue_work(device->submit.wq, &device->submit.worker);
- }
- 
-@@ -1186,8 +1200,15 @@ static void drbd_send_and_submit(struct drbd_device *device, struct drbd_request
- 			no_remote = true;
- 	}
- 
-+	/* If it took the fast path in drbd_request_prepare, add it here.
-+	 * The slow path has added it already. */
-+	if (list_empty(&req->req_pending_master_completion))
-+		list_add_tail(&req->req_pending_master_completion,
-+			&device->pending_master_completion[rw == WRITE]);
- 	if (req->private_bio) {
- 		/* needs to be marked within the same spinlock */
-+		list_add_tail(&req->req_pending_local,
-+			&device->pending_completion[rw == WRITE]);
- 		_req_mod(req, TO_BE_SUBMITTED);
- 		/* but we need to give up the spinlock to submit */
- 		submit_private_bio = true;
-@@ -1278,9 +1299,9 @@ void do_submit(struct work_struct *ws)
- 	struct drbd_request *req, *tmp;
- 
- 	for (;;) {
--		spin_lock(&device->submit.lock);
-+		spin_lock_irq(&device->resource->req_lock);
- 		list_splice_tail_init(&device->submit.writes, &incoming);
--		spin_unlock(&device->submit.lock);
-+		spin_unlock_irq(&device->resource->req_lock);
- 
- 		submit_fast_path(device, &incoming);
- 		if (list_empty(&incoming))
-@@ -1304,9 +1325,9 @@ skip_fast_path:
- 			if (list_empty(&device->submit.writes))
- 				break;
- 
--			spin_lock(&device->submit.lock);
-+			spin_lock_irq(&device->resource->req_lock);
- 			list_splice_tail_init(&device->submit.writes, &more_incoming);
--			spin_unlock(&device->submit.lock);
-+			spin_unlock_irq(&device->resource->req_lock);
- 
- 			if (list_empty(&more_incoming))
- 				break;
+-		if (drbd_rs_should_slow_down(device, sector) ||
+-		    drbd_try_rs_begin_io(device, sector)) {
++		if (drbd_try_rs_begin_io(device, sector)) {
+ 			device->ov_position = sector;
+ 			goto requeue;
+ 		}
 -- 
 1.9.1
 
