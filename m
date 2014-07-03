@@ -1,76 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756805AbaGCJOs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:14:48 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:33319 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750908AbaGCJOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:14:45 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Alexei Starovoitov'" <ast@plumgrid.com>,
-        Chema Gonzalez <chema@google.com>
-CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
+	id S1757546AbaGCJPX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:15:23 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53057 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753260AbaGCJPT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 05:15:19 -0400
+Date: Thu, 3 Jul 2014 10:14:50 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Zi Shen Lim <zlim.lnx@gmail.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Daniel Borkmann <dborkman@redhat.com>,
-        Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Arnaldo Carvalho de Melo" <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, "Thomas Gleixner" <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        "Linux API" <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH RFC net-next 08/14] bpf: add eBPF verifier
-Thread-Topic: [PATCH RFC net-next 08/14] bpf: add eBPF verifier
-Thread-Index: AQHPlknrjjkyXHF39E2brFC82m+gmpuOD4YA
-Date: Thu, 3 Jul 2014 09:13:33 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1726BF1A@AcuExch.aculab.com>
-References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
-	<1403913966-4927-9-git-send-email-ast@plumgrid.com>
-	<CA+ZOOTODDPN=6SECq1uPPD7AGP1zgBJ+bfYaX9o3YhnaCTiHYQ@mail.gmail.com>
- <CAMEtUuxfrAUDDQVGNsNV2PeDii-6LAwQCbB2XGEHTJDwkkvyWg@mail.gmail.com>
-In-Reply-To: <CAMEtUuxfrAUDDQVGNsNV2PeDii-6LAwQCbB2XGEHTJDwkkvyWg@mail.gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Chema Gonzalez <chema@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH RFC] arm64: eBPF JIT compiler
+Message-ID: <20140703091450.GB12958@arm.com>
+References: <1404278424-31176-1-git-send-email-zlim.lnx@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404278424-31176-1-git-send-email-zlim.lnx@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s639ErSk006034
 
-From: Alexei Starovoitov
-> >> +#define _(OP) ({ int ret = OP; if (ret < 0) return ret; })
-> > +1 to removing the _ macro. If you want to avoid the 3 lines (is there
-> > anything in the style guide against "if ((err=OP) < 0) ..." ?), at
+Hello,
+
+On Wed, Jul 02, 2014 at 06:20:24AM +0100, Zi Shen Lim wrote:
+> The JIT compiler emits A64 instructions. It supports eBPF only.
+> Legacy BPF is supported thanks to conversion by BPF core.
 > 
-> assignment and function call inside 'if' ? I don't like such style.
+> JIT is enabled in the same way as for other architectures:
 > 
-> > least use some meaningful macro name (DO_AND_CHECK, or something like
-> > that).
+>         echo 1 > /proc/sys/net/core/bpf_jit_enable
+> 
+> Or for additional compiler output:
+> 
+>         echo 2 > /proc/sys/net/core/bpf_jit_enable
+> 
+> See Documentation/networking/filter.txt for more information.
+> 
+> The implementation passes all 57 tests in lib/test_bpf.c
+> on ARMv8 Foundation Model :)
 
-It would have to be RETURN_IF_NEGATIVE().
-But even then it is skipped by searches for 'return'.
+First off, this is really cool. Thanks for putting in the effort to get this
+supported on arm64! I'm happy to run tests on some real hardware if you tell
+me how to run them :)
 
-> Try replacing _ with any other name and see how bad it will look.
-> I tried with MACRO_NAME and with 'if (err) goto' and with 'if (err) return',
-> before I converged on _ macro.
-> I think it's a hidden gem of this patch.
+One general observation relates to your instruction encoding logic, e.g:
 
-No, it is one of those things that 'seems like a good idea at the time',
-but causes grief much later on.
+> +/* 5-bit Register Operand */
+> +#define A64_R(x)       x               /* R0-R30: General purpose */
+> +#define A64_FP         A64_R(29)       /* Frame pointer */
+> +#define A64_LR         A64_R(30)       /* Link register */
+> +#define A64_ZR         31              /* As source register operand */
+> +#define A64_SP         31              /* As load/store base register */
+> +
+> +#define BITSMASK(bits) ((1 << (bits)) - 1)
+> +
+> +/* Compare & branch (immediate) */
+> +static inline u32 A64_COMP_BRANCH_IMM(int sf, int op, int imm19, int Rt)
+> +{
+> +       sf &= BITSMASK(1);
+> +       op &= BITSMASK(1);
+> +       imm19 &= BITSMASK(19);
+> +       Rt &= BITSMASK(5);
+> +       return 0x34000000 | sf << 31 | op << 24 | imm19 << 5 | Rt;
+> +}
+> +#define A64_CBZ(sf, Rt, imm19)  A64_COMP_BRANCH_IMM(sf, 0, imm19, Rt)
+> +#define A64_CBNZ(sf, Rt, imm19) A64_COMP_BRANCH_IMM(sf, 1, imm19, Rt)
 
-Have you considered saving the error code into 'env' and making most of
-the functions return if an error is set?
-Then the calling code need not check the result of every function call.
+We already have some some basic instruction manipulation code in
+arch/arm64/kernel/insn.c and arch/arm64/include/asm/insn.h. Would you be
+able to move some of this there please (but only the bits that aren't tied
+to BPF?
 
-	David
+The reason I ask, is because we're inevitebly going to need this stuff
+for other subsystems (e.g. kprobes, dynamic code patching ("alternatives"))
+and I'd like to avoid a proliferation of magic numbers across the codebase.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Does this sound remotely feasible?
+
+Cheers,
+
+Will
