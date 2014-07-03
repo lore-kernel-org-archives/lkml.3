@@ -1,123 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596AbaGCHsM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 03:48:12 -0400
-Received: from mail01.baslerweb.com ([80.156.24.166]:24856 "EHLO
-	mail01.baslerweb.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755553AbaGCHsK convert rfc822-to-8bit (ORCPT
+	id S1756005AbaGCHw1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 03:52:27 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:58436 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009AbaGCHwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 03:48:10 -0400
-Message-ID: <53B50AB7.2090709@baslerweb.com>
-Date: Thu, 3 Jul 2014 09:48:07 +0200
-From: Stefan Klug <stefan.klug@baslerweb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][RFC] USB: zerocopy support for usbfs
-References: <Pine.LNX.4.44L0.1407021355060.874-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1407021355060.874-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [172.16.50.117]
+	Thu, 3 Jul 2014 03:52:25 -0400
+X-AuditID: cbfee690-b7fb56d000003439-49-53b50bb656cd
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: linux@arm.linux.org.uk, kgene.kim@samsung.com, t.figa@samsung.com
+Cc: kyungmin.park@samsung.com, ideal.song@samsung.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCH] ARM: dts: Add I2S dt node for Exynos3250
+Date: Thu, 03 Jul 2014 16:52:19 +0900
+Message-id: <1404373939-10510-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsWyRsSkWHc799Zgg3c3mCyuf3nOarHr731G
+	i94FV9kszja9YbfY9Pgaq8XlXXPYLGac38dkcfsyr8X6Ga9ZHDg9Wpp72Dw2L6n36NuyitHj
+	8ya5AJYoLpuU1JzMstQifbsErozz81ewF7RyVfy4sZytgXE2RxcjJ4eEgInEohvb2CFsMYkL
+	99azdTFycQgJLGWUePF9HhNcUdd8ZojEdEaJ28+boZwmJonWydMZQarYBLQk9r+4wQZiiwi4
+	Siw7soIFpIhZ4BijxLTfzWAJYQFLiSMfdwF1c3CwCKhK3P/uCxLmBarvfDOfEWKbnMSHPY+g
+	Tmpml3jzG6yGRUBA4tvkQywgrRICshKbDjBDlEhKHFxxg2UCo+ACRoZVjKKpBckFxUnpRSZ6
+	xYm5xaV56XrJ+bmbGIHBe/rfswk7GO8dsD7EmAw0biKzlGhyPjD480riDY3NjCxMTUyNjcwt
+	zUgTVhLnVXuUFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBMWHqp13HL+26Ilt/emZegk0h
+	x/uY+M53PuxNpzZvehKzcMHKkN73Rq0WnJfO5VZLXJ6gb9247uSZvT0soYu27F28631vtmpo
+	es1br34PdzHflPmNcyLl9vhUfXrHrpWwSOj6xIhXGteNl7TN2rxng5htzL+2HUddA2Jfnkoz
+	eLn2vPi8e8cm2ymxFGckGmoxFxUnAgDaGEQEdAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t9jQd1t3FuDDbrmmlpc//Kc1WLX3/uM
+	Fr0LrrJZnG16w26x6fE1VovLu+awWcw4v4/J4vZlXov1M16zOHB6tDT3sHlsXlLv0bdlFaPH
+	501yASxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6Z
+	OUCnKCmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgzzs9fwV7QylXx48Zy
+	tgbG2RxdjJwcEgImEou65jND2GISF+6tZ+ti5OIQEpjOKHH7eTMzhNPEJNE6eTojSBWbgJbE
+	/hc32EBsEQFXiWVHVrCAFDELHGOUmPa7GSwhLGApceTjLqBuDg4WAVWJ+999QcK8QPWdb+Yz
+	QmyTk/iw5xH7BEbuBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCo+OZ9A7GVQ0WhxgF
+	OBiVeHgd7LcEC7EmlhVX5h5ilOBgVhLhnb4ZKMSbklhZlVqUH19UmpNafIjRFGj5RGYp0eR8
+	YOTmlcQbGpuYGVkamRtaGBmbK4nzHmy1DhQSSE8sSc1OTS1ILYLpY+LglGpgVC9x+y57e+2M
+	lrtLFv7urZZoY4q6pyGolK24lTGjsDxwUol7EjNT/oed+k7TQtP4iydmGcgY/jvzkWWC24eY
+	qdabOnqLT3a9mfg8N3jdAwnfcOGPW28ouR+yWtKycbt0UaBkxbslZcu3vFVmkzzephfsbZXw
+	aNtxsXMSF7SOlp07PsfH69IjJZbijERDLeai4kQAhDN+BqQCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Tomasz Figa <t.figa@samsung.com>
 
-On 02.07.2014 20:24, Alan Stern wrote:
-> Overall this implementation seems quite straightforward.  However, it
-> appears that your email client has mangled the whitespace in the patch.
->
-> The patch contains many style violations; you should run it through
-> checkpatch.pl.  It also has one or two mistakes, such as the
-> calculation of u for the amount of memory used.
+This patch add I2S (Inter-IC Sound) dt node which supports 1-port stereo
+(1 channels) IIS-bus for audio interface with DMA-based operation.
 
-I'll fix these...
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Signed-off-by: Inha Song <ideal.song@samsung.com>
+Tested-by: Inha Song <ideal.song@samsung.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ arch/arm/boot/dts/exynos3250.dtsi | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
->> Questions/Notes:
->> - I'm quite unhappy with the added member async::is_user_mem. Is there a
->> better place
->>     where I could store this information?
-> No, async is the right place.  Why are you unhappy about it?
-A whole byte for this flag felt a bit like an overkill, but I'm fine 
-with that.
-
->> - I had a look at some other drivers using the get_user_pages ->
->> sg_set_page -> page_cache_release
->>     technique and didn't see any special code to handle corner cases.
->>     Are there corner cases? - Like usb controllers not supporting the
->> whole memory etc. ?
-> Indeed yes.  The page addresses have to be checked against the DMA
-> mask.  Also, many host controllers cannot handle arbitrary alignment.
-> It would be best to require that the buffer start at a page boundary.
-
-Is there any way to check if the host controller supports arbitrary 
-alignment?
-If I read the xhci spec correctly arbitrary alignment is explicitly 
-permitted. In my use case
-the user allocates large amounts of memory, which is passed down to 
-submiturb in smaller chunks.
-So asking the kernel for aligned memory for every chunk would force me 
-to recombine to urbs on the user side,
-adding another copy operation. So I would vote for a solution where the 
-user can allocate the memory and pass it down
-without restrictions.
-The system should fallback to copying in kernel space, if the buffer is 
-not supported by the
-host-controller (but this is only the case for USB 2 and 1, right?).
-
->
->> - In the kernel log I see messages like:
->>     xhci_hcd 0000:00:14.0: WARN Event TRB for slot 4 ep 8 with no TDs queued?
->>     after enabling zerocopy. Any idea where this might come from?
-> Not directly related; that's a bug in xhci-hcd.
-
-Whew. That saves me a lot of trouble :-)
->
-> Using a global module parameter to control the use of zerocopy (for
-> anything other than debugging or testing) is a bad idea.  If you think
-> people will have a reason for avoiding zerocopy then you should make it
-> possible to decide for each URB, by adding a new flag to struct
-> usbdevfs_urb.
-
-I'd like to leave the parameter in for debugging purposes mostly, at 
-least as long as this is not stable.
-And it is a security measure. If anything goes wrong with zerocopy (are 
-there buggy host-controllers out there?),
-the user is able to disable it on a system wide basis.
->
-> People will want to use zerocopy with isochronous transfers as well as
-> bulk.  Implementing that isn't going to be quite so easy; it will be
-> necessary for the user to set up a memory mapping.  In fact, once
-> that's done the same mechanism could be used for bulk transfers too.
->
-Yes you are right. I'll look into that. Is this a either both or nothing 
-decision?
-As I don't use isochronous transfers at all, it will be quite difficult 
-for me to correctly test that.
-
-
-Thanks a lot for your input.
-Stefan
-
---
-
-Stefan Klug
-Software Developer
-
-Basler AG
-An der Strusbek 60-62
-22926 Ahrensburg
-Germany
-
-Tel. +49 4102 463 582
-Fax +49 4102 463 46 582
+diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
+index 1f8384f..e9017ef 100644
+--- a/arch/arm/boot/dts/exynos3250.dtsi
++++ b/arch/arm/boot/dts/exynos3250.dtsi
+@@ -644,6 +644,19 @@
+ 			status = "disabled";
+ 		};
  
-Stefan.Klug@baslerweb.com
++		i2s: i2s@13970000 {
++			compatible = "samsung,s3c6410-i2s";
++			reg = <0x13970000 0x100>;
++			interrupts = <0 126 0>;
++			clocks = <&cmu CLK_I2S>, <&cmu CLK_SCLK_I2S>;
++			clock-names = "iis", "i2s_opclk0";
++			dmas = <&pdma0 14>, <&pdma0 13>;
++			dma-names = "tx", "rx";
++			pinctrl-0 = <&i2s2_bus>;
++			pinctrl-name = "default";
++			status = "disabled";
++		};
++
+ 		pwm: pwm@139D0000 {
+ 			compatible = "samsung,exynos4210-pwm";
+ 			reg = <0x139D0000 0x1000>;
+-- 
+1.8.0
 
-www.baslerweb.com
-
-Vorstand: Dr.-Ing. Dietmar Ley (Vorsitzender) · John P. Jennings · Arndt Bake · Hardy Mehl
-Aufsichtsratsvorsitzender: Norbert Basler 
-Basler AG · Amtsgericht Lübeck HRB 4090 · Ust-IdNr.: DE 135 098 121 · Steuer-Nr.: 30 292 04497 · WEEE-Reg.-Nr. DE 83888045
