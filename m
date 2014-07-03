@@ -1,129 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759656AbaGCTQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 15:16:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36381 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758464AbaGCTQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 15:16:23 -0400
-Date: Thu, 3 Jul 2014 15:16:20 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Jens Axboe <axboe@kernel.dk>
-cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] blk-lib: fix error reporting
-Message-ID: <alpine.LRH.2.02.1407031514320.3347@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1752978AbaGCTit (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 15:38:49 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:54137 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109AbaGCTis (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 15:38:48 -0400
+Date: Fri, 4 Jul 2014 01:08:40 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Jarod Wilson <jarod@wilsonet.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] staging: lirc: Introduce the use of managed interfaces
+Message-ID: <20140703193840.GA4358@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function bio_batch_end_io ignores -EOPNOTSUPP. It doesn't matter for
-discard (the device isn't required to discard anything, so missing the
-error code and reporting success shouldn't cause any trouble). However,
-for WRITE SAME command, missing the error code is obviously wrong. It may
-fool the user into thinking that the data were written while in fact they
-weren't.
+This patch introduces the use of managed interfaces like
+devm_request_mem_region and devm_request_irq and does away with the
+calls to free the allocated memory in the probe and remove functions.
+The remove function is no longer required and is removed completely.
 
-Note that in device mapper, devices may be dynamically reconfigured, so a
-device that supports WRITE SAME may stop supporting it at any time and
-return -EOPNOTSUPP. Ignoring -EOPNOTSUPP is wrong.
-
-This patch changes bio_batch->flags to an error field and stores the last
-error there - so that the error is reported accurately and it isn't
-ignored.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: stable@vger.kernel.org
-
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- block/blk-lib.c |   25 ++++++++++++-------------
- 1 file changed, 12 insertions(+), 13 deletions(-)
+ drivers/staging/media/lirc/lirc_serial.c | 37 ++++++--------------------------
+ 1 file changed, 7 insertions(+), 30 deletions(-)
 
-Index: linux-3.16-rc3/block/blk-lib.c
-===================================================================
---- linux-3.16-rc3.orig/block/blk-lib.c	2014-07-03 18:17:21.000000000 +0200
-+++ linux-3.16-rc3/block/blk-lib.c	2014-07-03 18:36:52.000000000 +0200
-@@ -11,7 +11,7 @@
- 
- struct bio_batch {
- 	atomic_t		done;
--	unsigned long		flags;
-+	int			error;
- 	struct completion	*wait;
- };
- 
-@@ -19,8 +19,8 @@ static void bio_batch_end_io(struct bio 
+diff --git a/drivers/staging/media/lirc/lirc_serial.c b/drivers/staging/media/lirc/lirc_serial.c
+index efe561c..bae0d46 100644
+--- a/drivers/staging/media/lirc/lirc_serial.c
++++ b/drivers/staging/media/lirc/lirc_serial.c
+@@ -782,7 +782,7 @@ static int lirc_serial_probe(struct platform_device *dev)
  {
- 	struct bio_batch *bb = bio->bi_private;
+ 	int i, nlow, nhigh, result;
  
--	if (err && (err != -EOPNOTSUPP))
--		clear_bit(BIO_UPTODATE, &bb->flags);
-+	if (unlikely(err))
-+		ACCESS_ONCE(bb->error) = err;
- 	if (atomic_dec_and_test(&bb->done))
- 		complete(bb->wait);
- 	bio_put(bio);
-@@ -78,7 +78,7 @@ int blkdev_issue_discard(struct block_de
+-	result = request_irq(irq, lirc_irq_handler,
++	result = devm_request_irq(&dev->dev, irq, lirc_irq_handler,
+ 			     (share_irq ? IRQF_SHARED : 0),
+ 			     LIRC_DRIVER_NAME, (void *)&hardware);
+ 	if (result < 0) {
+@@ -800,22 +800,22 @@ static int lirc_serial_probe(struct platform_device *dev)
+ 	 * for the NSLU2 it's done in boot code.
+ 	 */
+ 	if (((iommap != 0)
+-	     && (request_mem_region(iommap, 8 << ioshift,
+-				    LIRC_DRIVER_NAME) == NULL))
++	     && (devm_request_mem_region(&dev->dev, iommap, 8 << ioshift,
++					 LIRC_DRIVER_NAME) == NULL))
+ 	   || ((iommap == 0)
+-	       && (request_region(io, 8, LIRC_DRIVER_NAME) == NULL))) {
++	       && (devm_request_region(&dev->dev, io, 8,
++				       LIRC_DRIVER_NAME) == NULL))) {
+ 		dev_err(&dev->dev, "port %04x already in use\n", io);
+ 		dev_warn(&dev->dev, "use 'setserial /dev/ttySX uart none'\n");
+ 		dev_warn(&dev->dev,
+ 			 "or compile the serial port driver as module and\n");
+ 		dev_warn(&dev->dev, "make sure this module is loaded first\n");
+-		result = -EBUSY;
+-		goto exit_free_irq;
++		return -EBUSY;
  	}
  
- 	atomic_set(&bb.done, 1);
--	bb.flags = 1 << BIO_UPTODATE;
-+	bb.error = 0;
- 	bb.wait = &wait;
+ 	result = hardware_init_port();
+ 	if (result < 0)
+-		goto exit_release_region;
++		return result;
  
- 	blk_start_plug(&plug);
-@@ -134,8 +134,8 @@ int blkdev_issue_discard(struct block_de
- 	if (!atomic_dec_and_test(&bb.done))
- 		wait_for_completion_io(&wait);
+ 	/* Initialize pulse/space widths */
+ 	init_timing_params(duty_cycle, freq);
+@@ -847,28 +847,6 @@ static int lirc_serial_probe(struct platform_device *dev)
  
--	if (!test_bit(BIO_UPTODATE, &bb.flags))
--		ret = -EIO;
-+	if (likely(!ret))
-+		ret = bb.error;
- 
- 	return ret;
+ 	dprintk("Interrupt %d, port %04x obtained\n", irq, io);
+ 	return 0;
+-
+-exit_release_region:
+-	if (iommap != 0)
+-		release_mem_region(iommap, 8 << ioshift);
+-	else
+-		release_region(io, 8);
+-exit_free_irq:
+-	free_irq(irq, (void *)&hardware);
+-
+-	return result;
+-}
+-
+-static int lirc_serial_remove(struct platform_device *dev)
+-{
+-	free_irq(irq, (void *)&hardware);
+-
+-	if (iommap != 0)
+-		release_mem_region(iommap, 8 << ioshift);
+-	else
+-		release_region(io, 8);
+-
+-	return 0;
  }
-@@ -172,7 +172,7 @@ int blkdev_issue_write_same(struct block
- 		return -EOPNOTSUPP;
  
- 	atomic_set(&bb.done, 1);
--	bb.flags = 1 << BIO_UPTODATE;
-+	bb.error = 0;
- 	bb.wait = &wait;
+ static int set_use_inc(void *data)
+@@ -1081,7 +1059,6 @@ static int lirc_serial_resume(struct platform_device *dev)
  
- 	while (nr_sects) {
-@@ -208,8 +208,8 @@ int blkdev_issue_write_same(struct block
- 	if (!atomic_dec_and_test(&bb.done))
- 		wait_for_completion_io(&wait);
- 
--	if (!test_bit(BIO_UPTODATE, &bb.flags))
--		ret = -ENOTSUPP;
-+	if (likely(!ret))
-+		ret = bb.error;
- 
- 	return ret;
- }
-@@ -236,7 +236,7 @@ static int __blkdev_issue_zeroout(struct
- 	DECLARE_COMPLETION_ONSTACK(wait);
- 
- 	atomic_set(&bb.done, 1);
--	bb.flags = 1 << BIO_UPTODATE;
-+	bb.error = 0;
- 	bb.wait = &wait;
- 
- 	ret = 0;
-@@ -270,9 +270,8 @@ static int __blkdev_issue_zeroout(struct
- 	if (!atomic_dec_and_test(&bb.done))
- 		wait_for_completion_io(&wait);
- 
--	if (!test_bit(BIO_UPTODATE, &bb.flags))
--		/* One of bios in the batch was completed with error.*/
--		ret = -EIO;
-+	if (likely(!ret))
-+		ret = bb.error;
- 
- 	return ret;
- }
+ static struct platform_driver lirc_serial_driver = {
+ 	.probe		= lirc_serial_probe,
+-	.remove		= lirc_serial_remove,
+ 	.suspend	= lirc_serial_suspend,
+ 	.resume		= lirc_serial_resume,
+ 	.driver		= {
+-- 
+1.9.1
+
