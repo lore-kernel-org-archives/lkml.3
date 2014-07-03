@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759065AbaGCO0D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 10:26:03 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50990 "EHLO
+	id S932214AbaGCO03 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 10:26:29 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50954 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758506AbaGCOU3 (ORCPT
+	with ESMTP id S1758475AbaGCOU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 10:20:29 -0400
+	Thu, 3 Jul 2014 10:20:26 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -17,9 +17,9 @@ Cc: Boris Brezillon <boris@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 15/18] AT91: Remove poweroff code
-Date: Thu,  3 Jul 2014 16:15:00 +0200
-Message-Id: <1404396906-25194-28-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 14/18] AT91: Remove poweroff code
+Date: Thu,  3 Jul 2014 16:14:58 +0200
+Message-Id: <1404396906-25194-26-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -36,7 +36,7 @@ Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
  1 file changed, 6 deletions(-)
 
 diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index ae269291d19d..cdd717a4fa30 100644
+index 69967c21d5c0..7124b0334bb1 100644
 --- a/arch/arm/mach-at91/setup.c
 +++ b/arch/arm/mach-at91/setup.c
 @@ -321,17 +321,11 @@ void __init at91_map_io(void)
