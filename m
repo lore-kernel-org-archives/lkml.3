@@ -1,96 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300AbaGCCTc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jul 2014 22:19:32 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:55684 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587AbaGCCTa (ORCPT
+	id S1754133AbaGCCXf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jul 2014 22:23:35 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:36767 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaGCCXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jul 2014 22:19:30 -0400
+	Wed, 2 Jul 2014 22:23:34 -0400
+Date: Thu, 3 Jul 2014 10:23:26 +0800
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@gentwo.org>, David Rientjes <rientjes@google.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Wei Yang <weiyang@linux.vnet.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: mm: slub: invalid memory access in setup_object
+Message-ID: <20140703022326.GA5174@richard>
+Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
+References: <53AAFDF7.2010607@oracle.com>
+ <alpine.DEB.2.11.1406251228130.29216@gentwo.org>
+ <alpine.DEB.2.02.1406301500410.13545@chino.kir.corp.google.com>
+ <alpine.DEB.2.11.1407010956470.5353@gentwo.org>
+ <20140701144947.5ce3f93729759d8f38d7813a@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <53B4A607.7030001@codeaurora.org>
-References: <cover.1404231535.git.viresh.kumar@linaro.org>
-	<eb6df0f1f2c82db0d516b9b63820cfe0c0c97d5c.1404231535.git.viresh.kumar@linaro.org>
-	<20140702055330.GA3454@dragon>
-	<CAKohpomzPHRghqHD7-tDbj0gXzc=ANEb3qLv2kRKOZUyqatBew@mail.gmail.com>
-	<CAKohpomk-pyv6Risyq_b8h3DJNGxBoUWu1Y9cApvoz3CwOtL=w@mail.gmail.com>
-	<53B4A607.7030001@codeaurora.org>
-Date: Thu, 3 Jul 2014 07:49:29 +0530
-Message-ID: <CAKohpok0wt46-odR1+KiLLi9=iv+jvAozny9906UND6AgwBgJA@mail.gmail.com>
-Subject: Re: [PATCH 06/14] cpufreq: cpu0: defer probe if clock isn't
- registered yet
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Shawn Guo <shawn.guo@linaro.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <arvind.chauhan@arm.com>, linux-arm-msm@vger.kernel.org,
-        Sachin Kamat <spk.linux@gmail.com>,
-        Thomas P Abraham <thomas.ab@samsung.com>, Nishanth Menon <nm@ti.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140701144947.5ce3f93729759d8f38d7813a@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070302-9574-0000-0000-00000EACB0D6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 July 2014 06:08, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> Please make this a dev_dbg() or just remove it entirely. Sending a
-> message to the log on probe defer just duplicates what the driver core
-> is already doing.
+On Tue, Jul 01, 2014 at 02:49:47PM -0700, Andrew Morton wrote:
+>On Tue, 1 Jul 2014 09:58:52 -0500 (CDT) Christoph Lameter <cl@gentwo.org> wrote:
+>
+>> On Mon, 30 Jun 2014, David Rientjes wrote:
+>> 
+>> > It's not at all clear to me that that patch is correct.  Wei?
+>> 
+>> Looks ok to me. But I do not like the convoluted code in new_slab() which
+>> Wei's patch does not make easier to read. Makes it difficult for the
+>> reader to see whats going on.
+>> 
+>> Lets drop the use of the variable named "last".
+>> 
+>> 
+>> Subject: slub: Only call setup_object once for each object
+>> 
+>> Modify the logic for object initialization to be less convoluted
+>> and initialize an object only once.
+>> 
+>
+>Well, um.  Wei's changelog was much better:
+>
+>: When a kmem_cache is created with ctor, each object in the kmem_cache will
+>: be initialized before use.  In the slub implementation, the first object
+>: will be initialized twice.
+>: 
+>: This patch avoids the duplication of initialization of the first object.
+>: 
+>: Fixes commit 7656c72b5a63: ("SLUB: add macros for scanning objects in a
+>: slab").
+>
+>I can copy that text over and add the reported-by etc (ho hum) but I
+>have a tiny feeling that this patch hasn't been rigorously tested? 
+>Perhaps someone (Wei?) can do that?
 
-Updated as:
+The result of the simple test is the same. And my laptop works a whole day
+with this patch.
 
-Author: Viresh Kumar <viresh.kumar@linaro.org>
-Date:   Thu Jun 26 10:40:21 2014 +0530
+Thanks
 
-    cpufreq: cpu0: print relevant error when we defer probe
+>
+>And we still don't know why Sasha's kernel went oops.
 
-    Currently, we defer probe if regulator_get() returned -EPROBE_DEFER, i.e.
-    regulator isn't registered yet. We do a dev_err() in this case. Sending a
-    message to the log on probe defer just duplicates what the driver core is
-    already doing. Convert it to dev_dbg() instead.
+-- 
+Richard Yang
+Help you, Help me
 
-    We should defer in case of clk_get() as well.
-
-    Current code already does it, but it wasn't intentional probably.
-Its just that
-    we are returning the right error with wrong print message.
-
-    Fix print message to convey right error.
-
-    Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq-cpu0.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index 4273a5f..8a1166c 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -140,7 +140,7 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
-                 * not yet registered, we should try defering probe.
-                 */
-                if (PTR_ERR(cpu_reg) == -EPROBE_DEFER) {
--                       dev_err(cpu_dev, "cpu0 regulator not ready, retry\n");
-+                       dev_dbg(cpu_dev, "cpu0 regulator not ready, retry\n");
-                        ret = -EPROBE_DEFER;
-                        goto out_put_node;
-                }
-@@ -151,7 +151,16 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
-        cpu_clk = clk_get(cpu_dev, NULL);
-        if (IS_ERR(cpu_clk)) {
-                ret = PTR_ERR(cpu_clk);
--               pr_err("failed to get cpu0 clock: %d\n", ret);
-+
-+               /*
-+                * If cpu's clk node is present, but clock is not yet
-+                * registered, we should try defering probe.
-+                */
-+               if (ret == -EPROBE_DEFER)
-+                       dev_dbg(cpu_dev, "cpu0 clock not ready, retry\n");
-+               else
-+                       dev_err(cpu_dev, "failed to get cpu0 clock: %d\n", ret);
-+
-                goto out_put_reg;
-        }
