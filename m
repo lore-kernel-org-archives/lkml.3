@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758946AbaGCKLG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:11:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51672 "EHLO
+	id S1758329AbaGCJVw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:21:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51623 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758365AbaGCJV5 (ORCPT
+	with ESMTP id S1758292AbaGCJVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:21:57 -0400
+	Thu, 3 Jul 2014 05:21:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yann Droneaud <ydroneaud@opteya.com>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: Takashi Iwai <tiwai@suse.de>, Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 048/198] IB/mlx5: add missing padding at end of struct mlx5_ib_create_cq
-Date: Thu,  3 Jul 2014 10:18:11 +0100
-Message-Id: <1404379241-8590-49-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 041/198] [media] ivtv: Fix Oops when no firmware is loaded
+Date: Thu,  3 Jul 2014 10:18:04 +0100
+Message-Id: <1404379241-8590-42-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,117 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yann Droneaud <ydroneaud@opteya.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit a8237b32a3faab155a5dc8f886452147ce73da3e upstream.
+commit deb29e90221a6d4417aa67be971613c353180331 upstream.
 
-The i386 ABI disagrees with most other ABIs regarding alignment of
-data type larger than 4 bytes: on most ABIs a padding must be added at
-end of the structures, while it is not required on i386.
+When ivtv PCM device is accessed at the state where no firmware is
+loaded, it oopses like:
 
-So for most ABI struct mlx5_ib_create_cq get padded to be aligned on a
-8 bytes multiple, while for i386, such padding is not added.
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
+  IP: [<ffffffffa049a881>] try_mailbox.isra.0+0x11/0x50 [ivtv]
+  Call Trace:
+    [<ffffffffa049aa20>] ivtv_api_call+0x160/0x6b0 [ivtv]
+    [<ffffffffa049af86>] ivtv_api+0x16/0x40 [ivtv]
+    [<ffffffffa049b10c>] ivtv_vapi+0xac/0xc0 [ivtv]
+    [<ffffffffa049d40d>] ivtv_start_v4l2_encode_stream+0x19d/0x630 [ivtv]
+    [<ffffffffa0530653>] snd_ivtv_pcm_capture_open+0x173/0x1c0 [ivtv_alsa]
+    [<ffffffffa04526f1>] snd_pcm_open_substream+0x51/0x100 [snd_pcm]
+    [<ffffffffa0452853>] snd_pcm_open+0xb3/0x260 [snd_pcm]
+    [<ffffffffa0452a37>] snd_pcm_capture_open+0x37/0x50 [snd_pcm]
+    [<ffffffffa033f557>] snd_open+0xa7/0x1e0 [snd]
+    [<ffffffff8118a628>] chrdev_open+0x88/0x1d0
+    [<ffffffff811840be>] do_dentry_open+0x1de/0x270
+    [<ffffffff81193a73>] do_last+0x1c3/0xec0
+    [<ffffffff81194826>] path_openat+0xb6/0x670
+    [<ffffffff81195b65>] do_filp_open+0x35/0x80
+    [<ffffffff81185449>] do_sys_open+0x129/0x210
+    [<ffffffff815b782d>] system_call_fastpath+0x1a/0x1f
 
-The tool pahole can be used to find such implicit padding:
+This patch adds the check of firmware at PCM open callback like other
+open callbacks of this driver.
 
-  $ pahole --anon_include \
-  	 --nested_anon_include \
-  	 --recursive \
-  	 --class_name mlx5_ib_create_cq \
-  	 drivers/infiniband/hw/mlx5/mlx5_ib.o
+Bugzilla: https://apibugzilla.novell.com/show_bug.cgi?id=875440
 
-Then, structure layout can be compared between i386 and x86_64:
-
-  +++ obj-i386/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt    2014-03-28 11:43:07.386413682 +0100
-  --- obj-x86_64/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt  2014-03-27 13:06:17.788472721 +0100
-  @@ -34,9 +34,8 @@ struct mlx5_ib_create_cq {
-          __u64                      db_addr;              /*     8     8 */
-          __u32                      cqe_size;             /*    16     4 */
-
-  -       /* size: 20, cachelines: 1, members: 3 */
-  -       /* last cacheline: 20 bytes */
-  +       /* size: 24, cachelines: 1, members: 3 */
-  +       /* padding: 4 */
-  +       /* last cacheline: 24 bytes */
-   };
-
-This ABI disagreement will make an x86_64 kernel try to read past the
-buffer provided by an i386 binary.
-
-When boundary check will be implemented, a x86_64 kernel will refuse
-to read past the i386 userspace provided buffer and the uverb will
-fail.
-
-Anyway, if the structure lies in memory on a page boundary and next
-page is not mapped, ib_copy_from_udata() will fail when trying to read
-the 4 bytes of padding and the uverb will fail.
-
-This patch makes create_cq_user() takes care of the input data size to
-handle the case where no padding is provided.
-
-This way, x86_64 kernel will be able to handle struct
-mlx5_ib_create_cq as sent by unpatched and patched i386 libmlx5.
-
-Link: http://marc.info/?i=cover.1399309513.git.ydroneaud@opteya.com
-Fixes: e126ba97dba9e ("mlx5: Add driver for Mellanox Connect-IB adapter")
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/hw/mlx5/cq.c   | 13 ++++++++++++-
- drivers/infiniband/hw/mlx5/user.h |  1 +
- 2 files changed, 13 insertions(+), 1 deletion(-)
+ drivers/media/pci/ivtv/ivtv-alsa-pcm.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/infiniband/hw/mlx5/cq.c b/drivers/infiniband/hw/mlx5/cq.c
-index 344ab03948a3..706833ab7e7e 100644
---- a/drivers/infiniband/hw/mlx5/cq.c
-+++ b/drivers/infiniband/hw/mlx5/cq.c
-@@ -32,6 +32,7 @@
+diff --git a/drivers/media/pci/ivtv/ivtv-alsa-pcm.c b/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
+index e1863dbf4edc..7a9b98bc208b 100644
+--- a/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
++++ b/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
+@@ -159,6 +159,12 @@ static int snd_ivtv_pcm_capture_open(struct snd_pcm_substream *substream)
  
- #include <linux/kref.h>
- #include <rdma/ib_umem.h>
-+#include <rdma/ib_user_verbs.h>
- #include "mlx5_ib.h"
- #include "user.h"
- 
-@@ -518,14 +519,24 @@ static int create_cq_user(struct mlx5_ib_dev *dev, struct ib_udata *udata,
- 			  int *cqe_size, int *index, int *inlen)
- {
- 	struct mlx5_ib_create_cq ucmd;
-+	size_t ucmdlen;
- 	int page_shift;
- 	int npages;
- 	int ncont;
- 	int err;
- 
--	if (ib_copy_from_udata(&ucmd, udata, sizeof(ucmd)))
-+	ucmdlen =
-+		(udata->inlen - sizeof(struct ib_uverbs_cmd_hdr) <
-+		 sizeof(ucmd)) ? (sizeof(ucmd) -
-+				  sizeof(ucmd.reserved)) : sizeof(ucmd);
+ 	/* Instruct the CX2341[56] to start sending packets */
+ 	snd_ivtv_lock(itvsc);
 +
-+	if (ib_copy_from_udata(&ucmd, udata, ucmdlen))
- 		return -EFAULT;
- 
-+	if (ucmdlen == sizeof(ucmd) &&
-+	    ucmd.reserved != 0)
-+		return -EINVAL;
++	if (ivtv_init_on_first_open(itv)) {
++		snd_ivtv_unlock(itvsc);
++		return -ENXIO;
++	}
 +
- 	if (ucmd.cqe_size != 64 && ucmd.cqe_size != 128)
- 		return -EINVAL;
+ 	s = &itv->streams[IVTV_ENC_STREAM_TYPE_PCM];
  
-diff --git a/drivers/infiniband/hw/mlx5/user.h b/drivers/infiniband/hw/mlx5/user.h
-index a886de3e593c..e7da977e2548 100644
---- a/drivers/infiniband/hw/mlx5/user.h
-+++ b/drivers/infiniband/hw/mlx5/user.h
-@@ -84,6 +84,7 @@ struct mlx5_ib_create_cq {
- 	__u64	buf_addr;
- 	__u64	db_addr;
- 	__u32	cqe_size;
-+	__u32	reserved; /* explicit padding (optional on i386) */
- };
- 
- struct mlx5_ib_create_cq_resp {
+ 	v4l2_fh_init(&item.fh, s->vdev);
 -- 
 1.9.1
 
