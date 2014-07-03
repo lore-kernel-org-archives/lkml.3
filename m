@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502AbaGCJcF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:32:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52576 "EHLO
+	id S1030551AbaGCJc1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:32:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52571 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030551AbaGCJZD (ORCPT
+	with ESMTP id S1030544AbaGCJZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:25:03 -0400
+	Thu, 3 Jul 2014 05:25:01 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 177/198] arm64: ptrace: change fs when passing kernel pointer to regset code
-Date: Thu,  3 Jul 2014 10:20:20 +0100
-Message-Id: <1404379241-8590-178-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 176/198] USB: usbtest: add a timeout for scatter-gather tests
+Date: Thu,  3 Jul 2014 10:20:19 +0100
+Message-Id: <1404379241-8590-177-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -28,53 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit c168870704bcde6bb63d05f7882b620dd3985a46 upstream.
+commit 32b36eeae6a859670d2939a7d6136cb5e9ed64f8 upstream.
 
-Our compat PTRACE_POKEUSR implementation simply passes the user data to
-regset_copy_from_user after some simple range checking. Unfortunately,
-the data in question has already been copied to the kernel stack by this
-point, so the subsequent access_ok check fails and the ptrace request
-returns -EFAULT. This causes problems tracing fork() with older versions
-of strace.
+In usbtest, tests 5 - 8 use the scatter-gather library in usbcore
+without any sort of timeout.  If there's a problem in the gadget or
+host controller being tested, the test can hang.
 
-This patch briefly changes the fs to KERNEL_DS, so that the access_ok
-check passes even with a kernel address.
+This patch adds a 10-second timeout to the tests, so that they will
+fail gracefully with an ETIMEDOUT error instead of hanging.
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Huang Rui <ray.huang@amd.com>
+Tested-by: Huang Rui <ray.huang@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm64/kernel/ptrace.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/misc/usbtest.c | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-index c484d5625ffb..9fa78cd0f092 100644
---- a/arch/arm64/kernel/ptrace.c
-+++ b/arch/arm64/kernel/ptrace.c
-@@ -823,6 +823,7 @@ static int compat_ptrace_write_user(struct task_struct *tsk, compat_ulong_t off,
- 				    compat_ulong_t val)
- {
- 	int ret;
-+	mm_segment_t old_fs = get_fs();
+diff --git a/drivers/usb/misc/usbtest.c b/drivers/usb/misc/usbtest.c
+index 41bdbaf70a6d..98438b90838f 100644
+--- a/drivers/usb/misc/usbtest.c
++++ b/drivers/usb/misc/usbtest.c
+@@ -7,7 +7,7 @@
+ #include <linux/moduleparam.h>
+ #include <linux/scatterlist.h>
+ #include <linux/mutex.h>
+-
++#include <linux/timer.h>
+ #include <linux/usb.h>
  
- 	if (off & 3 || off >= COMPAT_USER_SZ)
- 		return -EIO;
-@@ -830,10 +831,13 @@ static int compat_ptrace_write_user(struct task_struct *tsk, compat_ulong_t off,
- 	if (off >= sizeof(compat_elf_gregset_t))
- 		return 0;
- 
-+	set_fs(KERNEL_DS);
- 	ret = copy_regset_from_user(tsk, &user_aarch32_view,
- 				    REGSET_COMPAT_GPR, off,
- 				    sizeof(compat_ulong_t),
- 				    &val);
-+	set_fs(old_fs);
-+
- 	return ret;
+ #define SIMPLE_IO_TIMEOUT	10000	/* in milliseconds */
+@@ -484,6 +484,14 @@ alloc_sglist(int nents, int max, int vary)
+ 	return sg;
  }
  
++static void sg_timeout(unsigned long _req)
++{
++	struct usb_sg_request	*req = (struct usb_sg_request *) _req;
++
++	req->status = -ETIMEDOUT;
++	usb_sg_cancel(req);
++}
++
+ static int perform_sglist(
+ 	struct usbtest_dev	*tdev,
+ 	unsigned		iterations,
+@@ -495,6 +503,9 @@ static int perform_sglist(
+ {
+ 	struct usb_device	*udev = testdev_to_usbdev(tdev);
+ 	int			retval = 0;
++	struct timer_list	sg_timer;
++
++	setup_timer_on_stack(&sg_timer, sg_timeout, (unsigned long) req);
+ 
+ 	while (retval == 0 && iterations-- > 0) {
+ 		retval = usb_sg_init(req, udev, pipe,
+@@ -505,7 +516,10 @@ static int perform_sglist(
+ 
+ 		if (retval)
+ 			break;
++		mod_timer(&sg_timer, jiffies +
++				msecs_to_jiffies(SIMPLE_IO_TIMEOUT));
+ 		usb_sg_wait(req);
++		del_timer_sync(&sg_timer);
+ 		retval = req->status;
+ 
+ 		/* FIXME check resulting data pattern */
 -- 
 1.9.1
 
