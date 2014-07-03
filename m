@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555AbaGCJWm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:22:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51830 "EHLO
+	id S1030962AbaGCKCX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:02:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51858 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758522AbaGCJWd (ORCPT
+	with ESMTP id S1758579AbaGCJWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:22:33 -0400
+	Thu, 3 Jul 2014 05:22:41 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Arik Nemtsov <arikx.nemtsov@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Bart Van Assche <bvanassche@acm.org>, Yann Droneaud <ydroneaud@opteya.com>,
+        Roland Dreier <roland@purestorage.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 074/198] mac80211: don't check netdev state for debugfs read/write
-Date: Thu,  3 Jul 2014 10:18:37 +0100
-Message-Id: <1404379241-8590-75-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 076/198] IB/umad: Fix error handling
+Date: Thu,  3 Jul 2014 10:18:39 +0100
+Message-Id: <1404379241-8590-77-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -29,45 +28,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arik Nemtsov <arik@wizery.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit 923eaf367206e01f22c97aee22300e332d071916 upstream.
+commit 8ec0a0e6b58218bdc1db91dd70ebfcd6ad8dd6cd upstream.
 
-Doing so will lead to an oops for a p2p-dev interface, since it has
-no netdev.
+Avoid leaking a kref count in ib_umad_open() if port->ib_dev == NULL
+or if nonseekable_open() fails.
 
-Signed-off-by: Arik Nemtsov <arikx.nemtsov@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Avoid leaking a kref count, that sm_sem is kept down and also that the
+IB_PORT_SM capability mask is not cleared in ib_umad_sm_open() if
+nonseekable_open() fails.
+
+Since container_of() never returns NULL, remove the code that tests
+whether container_of() returns NULL.
+
+Moving the kref_get() call from the start of ib_umad_*open() to the
+end is safe since it is the responsibility of the caller of these
+functions to ensure that the cdev pointer remains valid until at least
+when these functions return.
+
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+
+[ydroneaud@opteya.com: rework a bit to reduce the amount of code changed]
+
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+
+[ nonseekable_open() can't actually fail, but....  - Roland ]
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/mac80211/debugfs_netdev.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/infiniband/core/user_mad.c | 49 +++++++++++++++++++++-----------------
+ 1 file changed, 27 insertions(+), 22 deletions(-)
 
-diff --git a/net/mac80211/debugfs_netdev.c b/net/mac80211/debugfs_netdev.c
-index cafe614ef93d..8e41f0163c5a 100644
---- a/net/mac80211/debugfs_netdev.c
-+++ b/net/mac80211/debugfs_netdev.c
-@@ -34,8 +34,7 @@ static ssize_t ieee80211_if_read(
- 	ssize_t ret = -EINVAL;
+diff --git a/drivers/infiniband/core/user_mad.c b/drivers/infiniband/core/user_mad.c
+index f0d588f8859e..9bdf576cd4ab 100644
+--- a/drivers/infiniband/core/user_mad.c
++++ b/drivers/infiniband/core/user_mad.c
+@@ -780,27 +780,19 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
+ {
+ 	struct ib_umad_port *port;
+ 	struct ib_umad_file *file;
+-	int ret;
++	int ret = -ENXIO;
  
- 	read_lock(&dev_base_lock);
--	if (sdata->dev->reg_state == NETREG_REGISTERED)
--		ret = (*format)(sdata, buf, sizeof(buf));
-+	ret = (*format)(sdata, buf, sizeof(buf));
- 	read_unlock(&dev_base_lock);
+ 	port = container_of(inode->i_cdev, struct ib_umad_port, cdev);
+-	if (port)
+-		kref_get(&port->umad_dev->ref);
+-	else
+-		return -ENXIO;
  
- 	if (ret >= 0)
-@@ -62,8 +61,7 @@ static ssize_t ieee80211_if_write(
+ 	mutex_lock(&port->file_mutex);
  
- 	ret = -ENODEV;
- 	rtnl_lock();
--	if (sdata->dev->reg_state == NETREG_REGISTERED)
--		ret = (*write)(sdata, buf, count);
-+	ret = (*write)(sdata, buf, count);
- 	rtnl_unlock();
+-	if (!port->ib_dev) {
+-		ret = -ENXIO;
++	if (!port->ib_dev)
+ 		goto out;
+-	}
  
++	ret = -ENOMEM;
+ 	file = kzalloc(sizeof *file, GFP_KERNEL);
+-	if (!file) {
+-		kref_put(&port->umad_dev->ref, ib_umad_release_dev);
+-		ret = -ENOMEM;
++	if (!file)
+ 		goto out;
+-	}
+ 
+ 	mutex_init(&file->mutex);
+ 	spin_lock_init(&file->send_lock);
+@@ -814,6 +806,13 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
+ 	list_add_tail(&file->port_list, &port->file_list);
+ 
+ 	ret = nonseekable_open(inode, filp);
++	if (ret) {
++		list_del(&file->port_list);
++		kfree(file);
++		goto out;
++	}
++
++	kref_get(&port->umad_dev->ref);
+ 
+ out:
+ 	mutex_unlock(&port->file_mutex);
+@@ -880,10 +879,6 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
+ 	int ret;
+ 
+ 	port = container_of(inode->i_cdev, struct ib_umad_port, sm_cdev);
+-	if (port)
+-		kref_get(&port->umad_dev->ref);
+-	else
+-		return -ENXIO;
+ 
+ 	if (filp->f_flags & O_NONBLOCK) {
+ 		if (down_trylock(&port->sm_sem)) {
+@@ -898,17 +893,27 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
+ 	}
+ 
+ 	ret = ib_modify_port(port->ib_dev, port->port_num, 0, &props);
+-	if (ret) {
+-		up(&port->sm_sem);
+-		goto fail;
+-	}
++	if (ret)
++		goto err_up_sem;
+ 
+ 	filp->private_data = port;
+ 
+-	return nonseekable_open(inode, filp);
++	ret = nonseekable_open(inode, filp);
++	if (ret)
++		goto err_clr_sm_cap;
++
++	kref_get(&port->umad_dev->ref);
++
++	return 0;
++
++err_clr_sm_cap:
++	swap(props.set_port_cap_mask, props.clr_port_cap_mask);
++	ib_modify_port(port->ib_dev, port->port_num, 0, &props);
++
++err_up_sem:
++	up(&port->sm_sem);
+ 
+ fail:
+-	kref_put(&port->umad_dev->ref, ib_umad_release_dev);
  	return ret;
+ }
+ 
 -- 
 1.9.1
 
