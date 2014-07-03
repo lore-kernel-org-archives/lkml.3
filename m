@@ -1,89 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759922AbaGCV7W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 17:59:22 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:63130 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754056AbaGCV7U (ORCPT
+	id S1759354AbaGCWEs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 18:04:48 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:62951 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbaGCWEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 17:59:20 -0400
+	Thu, 3 Jul 2014 18:04:46 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140703215200.GG32514@n2100.arm.linux.org.uk>
-References: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org>
-	<CAF6AEGsLbmos9nz-AYv2v0g33BYdAgKYTe8_ihDWEF3GK_=gjQ@mail.gmail.com>
-	<20140703215200.GG32514@n2100.arm.linux.org.uk>
-Date: Thu, 3 Jul 2014 17:59:15 -0400
-Message-ID: <CAF6AEGsAtqCjrvrgcXmOY0nie89ppFHBcRPtt36ESHWBNqobTg@mail.gmail.com>
-Subject: Re: [PATCH v5 00/11] Add DRM for stih4xx platforms
-From: Rob Clark <robdclark@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Benjamin Gaignard <benjamin.gaignard@linaro.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>
+In-Reply-To: <7850906.HUE8jaYLrp@harkonnen>
+References: <280883016.9onmf0miLq@pcbe13110.cern.ch> <CAErSpo7dyfpcMdCv3QB=PQn3HskcVtdt4MXb8KUMcQC9+N3oBQ@mail.gmail.com>
+ <7850906.HUE8jaYLrp@harkonnen>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 3 Jul 2014 16:04:24 -0600
+Message-ID: <CAErSpo6Dgwn5QtHwBEcJsY++ZDUu73S6Jm1EVgD0AO-NaN2Wgw@mail.gmail.com>
+Subject: Re: PCIe bus enumeration
+To: Federico Vaga <federico.vaga@gmail.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michel Arruat <michel.arruat@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 3, 2014 at 5:52 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Thu, Jul 03, 2014 at 05:31:21PM -0400, Rob Clark wrote:
->> >From a brief look, it looks like my comments have been addressed, so I
->> think this is starting to shape up..
+On Thu, Jul 3, 2014 at 2:40 PM, Federico Vaga <federico.vaga@gmail.com> wrote:
+> On Thursday 03 July 2014 13:43:14 Bjorn Helgaas wrote:
+
+>> The /sys/bus/pci/slots/*/address files might help.  On my system, I
+>> have:
 >>
->> Laurent/Thierry/Russell, I don't suppose any of you are likely to have
->> time before 3.17 merge window to give sti one last once-over to see
->> what I missed ;-)
+>>   $ grep . /sys/bus/pci/slots/*/address /dev/null
+>>   /sys/bus/pci/slots/5/address:0000:03:00
 >
-> As this appears to be using the component helpers, it would be good for
-> the author to be pre-warned about the change to the API.  I'm going to
-> be doing this as a two step thing.
+> My slots directory is empty on 3.2, 3.6, 3.14. I have to compile the
+> kernel with a
+> particular configuration? Use a kernel parameter?
+
+Should be built-in, no parameter needed.  I think this is from
+pci_create_slot() in drivers/pci/slot.c.  That's called from
+register_slot() (drivers/acpi/pci_slot.c, which obviously depends on
+the BIOS) and indirectly from pciehp (which doesn't depend on the BIOS
+and reads a slot number from the PCIe capability).  "lspci -vv" will
+show you this slot number in the SltCap (if the port supports a slot),
+e.g.,
+
+  00:1c.3 PCI bridge: Intel Corporation Lynx Point-LP PCI Express Root Port 4
+        Capabilities: [40] Express (v2) Root Port (Slot+), MSI 00
+                SltCap: AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd-
+HotPlug- Surprise-
+                        Slot #3, PowerLimit 10.000W; Interlock- NoCompl+
+
+Since you don't see these, my guess is that your ports don't indicate
+that they support a slot, e.g., they might look like this:
+
+  00:1c.3 PCI bridge: Intel Corporation Lynx Point-LP PCI Express Root Port 4
+        Capabilities: [40] Express (v2) Root Port (Slot-), MSI 00
+
+The "Slot-" means the port doesn't have a slot, and lspci won't show
+you the SltCap register, and I think the kernel won't put anything in
+/sys/bus/pci/slots.
+
+>> "lspci -v" also shows:
+>>
+>>   03:00.0 Unassigned class [ff00]: Realtek Semiconductor Co., Ltd.
+>> Device 5227 (rev 01)
+>>         Physical Slot: 5
 >
-> The first stage of it has just been taken by Greg this evening.  This
-> retires old behaviour that was needed for the initial versions of imx-drm,
-> and fixes a bug.  More importantly, it introduces a new interface where
-> you build the list of expected components before calling
-> component_master_add(), passing it into that function.
+> My lspci hasn't the "Physical Slot" field. However, where does it take
+> this information?
+> From the BIOS I suppose, a recent BIOS.
+
+>From looking at the lspci source
+(git://git.kernel.org/pub/scm/utils/pciutils/pciutils.git), it looks
+like that "Physical Slot" comes from /sys/bus/pci/slots/..., so if you
+don't have anything there, you won't see "Physical Slot".
+
+>> I don't think the behavior should be different on PCIe, but maybe if
+>> you have an example, it will help me figure out why it is
+>> different.  My current machine has three Root Ports (which are
+>> treated as PCI-to-PCI bridges), and they all have secondary bus
+>> numbers assigned, even though only two have devices below them:
+>>
+>>            +-1c.0-[01]--
+>>            +-1c.3-[02]----00.0
+>>            +-1c.5-[03]----00.0
 >
-> It is slightly less flexible from the driver writer's view point, but
-> allows us to do more in the component helper, and support some features
-> that others would like to see (such as being able to add additional
-> optional components after the initial bind (that's not much interest
-> to DRM though.)
+> What I observed is that when several PCIe slot belong to a single PCI
+> Bridge, and you
+> plug a board in one on these, then it enumerates all secondary buses,
+> also the
+> empty ones (like your case, all your slot belong to device 1c).
 >
-> This should make the v3.17 merge window.  I'm hoping that by forewarning
-> about the change, that people can be aware of it and have patches
-> prepared for v3.18 (or maybe even v3.17) to convert over to it, so we
-> can get rid of the older interface before we get too many users of it.
->
-> I've just peeked at the binding document in the first patch.  I notice
-> that it isn't making use of the of_graph stuff, which is a bit of a
-> shame because I've sent a RFC patch adding drivers/gpu/drm/drm_of.c
-> to provide a helper which encoders can use to get the CRTC mask from
-> an of_graph representation.
+> But, if you un-plug the devices on secondary bus 02 and 03, you should
+> not see the
+> device 1c anymore. This is what is happening with my machine
+> [industrial backplane
+> with several PCI(e) slots and the motherboard plugged in a special
+> slot.].
 
-which reminds me, I need to have a look at the drm_of stuff..
+I think there's something unusual going on with your machine.  I can't
+remove the devices on my machine (a laptop), but normally the Root
+Ports or Downstream Ports leading to the slots continue to exist even
+if the slots are empty.  In your case, it sounds like there's some
+hardware that is turning off power to those ports when the slots are
+all empty.
 
-> I'm using this not only for imx-drm, but also for tda998x - and that's
-> where the problems are likely to start if we end up with different
-> DRM implementations doing different solutions to the connectivity
-> problem.
+I assume these ports don't support hotplug.  If they *did* support
+hotplug, those ports would have to exist because they handle the
+hotplug events (presence detect, etc.)
 
-If it simplifies merge-order stuff, I'd be ok with a follow-up patch
-that converts over (assuming it shouldn't have an impact on the DT
-bindings, which I'm only assuming it should not..)
+If you can collect the complete "lspci -vv" output from your machine
+(with a device plugged in, so we can see the port leading to it), that
+will help make this more concrete.  And maybe one with no devices
+plugged in, so we can see exactly what changes.
 
-Probably it would be a good idea if Benjamin at least had a patch
-ready to go to convert over which could be merged right after your
-stuff hits drm-next.
-
-BR,
--R
-
-> --
-> FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-> improving, and getting towards what was expected from it.
+Bjorn
