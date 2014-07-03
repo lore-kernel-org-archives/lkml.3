@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696AbaGCMSj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 08:18:39 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:43321 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751112AbaGCMSh (ORCPT
+	id S1755320AbaGCMV3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 08:21:29 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:54512 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904AbaGCMV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 08:18:37 -0400
-X-IronPort-AV: E=Sophos;i="5.00,826,1396972800"; 
-   d="scan'208";a="32794633"
-From: "chenhanxiao@cn.fujitsu.com" <chenhanxiao@cn.fujitsu.com>
-To: "Eric W. Biederman (ebiederm@xmission.com)" <ebiederm@xmission.com>,
-        "Serge Hallyn (serge.hallyn@ubuntu.com)" <serge.hallyn@ubuntu.com>,
-        "Oleg Nesterov (oleg@redhat.com)" <oleg@redhat.com>,
-        "Richard Weinberger (richard@nod.at)" <richard@nod.at>,
-        "Pavel Emelyanov (xemul@parallels.com)" <xemul@parallels.com>,
-        "Vasily Kulikov (segoon@openwall.com)" <segoon@openwall.com>,
-        "Gotou, Yasunori" <y-goto@jp.fujitsu.com>,
-        "'Daniel P. Berrange (berrange@redhat.com)'" <berrange@redhat.com>
-CC: "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [RFC]Pid conversion between pid namespace
-Thread-Topic: [RFC]Pid conversion between pid namespace
-Thread-Index: Ac+WpagelAqWSmeOTWy8zWQgFaQt9g==
-Date: Thu, 3 Jul 2014 12:18:33 +0000
-Message-ID: <5871495633F38949900D2BF2DC04883E55C374@G08CNEXMBPEKD02.g08.fujitsu.local>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.226.240]
-Content-Type: text/plain; charset="gb2312"
+	Thu, 3 Jul 2014 08:21:27 -0400
+Message-ID: <53B54AC2.5040908@linaro.org>
+Date: Thu, 03 Jul 2014 14:21:22 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: timers & suspend
+References: <f270ad9c-9906-445d-9e9a-4d3618787455@BY2FFO11FD039.protection.gbl>
+In-Reply-To: <f270ad9c-9906-445d-9e9a-4d3618787455@BY2FFO11FD039.protection.gbl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s63CIlO1008356
 
-Hi,
+On 06/30/2014 08:39 PM, SÃ¶ren Brinkmann wrote:
+> Hi,
+>
+> I'm currently working on suspend for Zynq and try to track down some
+> spurious wakes. It looks like the spurious wakes are caused by timers,
+> hence I was wondering whether there are any special requirements for
+> timer drivers when it comes to suspend support or if I just missed
+> something.
+>
+> Zynq sets the 'IRQCHIP_MASK_ON_SUSPEND' flag, which should mask all
+> interrupts but the wake source. Reading through kernel/irq/pm.c
+> indicates, that timer interrupts get some special treatment though.
+> Therefore I implemented some suspend/resume callbacks for the
+> cadence_ttc which disable and clear the timer's interrupts when going
+> into suspend. That seems to mitigate the issue quite a bit, but I still
+> saw spurious wakes - just a lot less often.
+> Digging a little deeper revealed, the spurious wakes are caused by the
+> ARM's smp_twd timer now. Given that that driver is probably used by a few
+> more ARM platforms, I get the feeling that I'm missing something.
 
-We had some discussions on how to carry out
-pid conversion between pid namespace via:
-syscall[1] and procfs[2].
+Do you receive any interrupt from the cadence_ttc ? (/proc/interrupts)
 
-Pavel suggested that a syscall like
-(ID, NS1, NS2) into (ID).
+That's funny because I realize that you cadence ttc timer is never used 
+as there are the architected timers. The cadence ttc would be only 
+useful if there were an idle state powering down the smp_twd timers but 
+it is not the case on this board, IIUC.
 
-Serge suggested that a syscall 
-pid_t getnspid(pid_t query_pid, pid_t observer_pid).
+> It's probably worth mentioning that the suspend state in Zynq does not
+> power off the CPU cores. It just asserts the resets on secondary cores
+> and the primary one waits in wfi.
 
+Why do you need to reset them ?
 
-Eric and Richard suggested a procfs solution is
-more appropriate.
+-- 
+  <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM SoCs
 
-Oleg suggested that we should expand /proc/pid/status
-to report this kind of information.
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-And Richard suggested adding a directory like
-/proc/<pidX>/ns/proc/ which would contain everything
-from /proc/<pidX inside the namespace>/.
-
-As procfs provided a more user friendly interface,
-how about expose all sets of tgid, pid, pgid, sid 
-by expanding /proc/PID/status in procfs?
-And we could also expose ns hierarchy under /proc,
-which could be another reference.
-
-Ex:
-    init_pid_ns    ns1         ns2
-t1  2
-t2   `- 3          1 
-t3       `- 4      `- 5        1
-
-We could get in /proc/t3/status:
-NSpid: 4 5 1
-We knew that pid 1 in container is pid 4 in init ns.
-
-And we could get ns hierarchy under /proc/ns_hierarchy like:
-init_ns->ns1->ns2		(as the result of readlink)
-         ->ns3
-We knew that t3 in ns2, and its hierarchy.
-
-How these ideas looks like?
-Any comments would be appreciated.
-
-Thanks,
-- Chen
-
-
-a) syscall
-http://lwn.net/Articles/602987/
-
-b) procfs
-http://www.spinics.net/lists/kernel/msg1751688.html
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
