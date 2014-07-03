@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030665AbaGCJfT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:35:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:50802 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030626AbaGCJfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:35:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,594,1400050800"; 
-   d="scan'208";a="564632607"
-Message-ID: <1404380071.5102.57.camel@smile.fi.intel.com>
-Subject: Re: [PATCH 1/6] lib / string_helpers: clean up test suite
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Thu, 03 Jul 2014 12:34:31 +0300
-In-Reply-To: <20140702145410.e1885ad85c25a6f4b6cef2c4@linux-foundation.org>
-References: <1404307229-19186-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1404307229-19186-2-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <20140702145410.e1885ad85c25a6f4b6cef2c4@linux-foundation.org>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1030692AbaGCJgY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:36:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52505 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030474AbaGCJYq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 05:24:46 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 166/198] USB: cdc-acm: fix runtime PM imbalance at shutdown
+Date: Thu,  3 Jul 2014 10:20:09 +0100
+Message-Id: <1404379241-8590-167-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
+References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-07-02 at 14:54 -0700, Andrew Morton wrote:
-> On Wed,  2 Jul 2014 16:20:24 +0300 Andy Shevchenko <andriy.shevchenko@linux.intel.com> wrote:
+3.11.10.13 -stable review patch.  If anyone has any objections, please let me know.
 
-[]
+------------------
 
-> > +	pr_err("Test '%s' failed: flags = %u\n", name, flags);
-> > +
-> > +	print_hex_dump(KERN_WARNING, "Input: ", DUMP_PREFIX_NONE, 16, 1,
-> > +		       in, p, true);
-> > +	print_hex_dump(KERN_WARNING, "Expected: ", DUMP_PREFIX_NONE, 16, 1,
-> > +		       out_test, q_test, true);
-> > +	print_hex_dump(KERN_WARNING, "Got: ", DUMP_PREFIX_NONE, 16, 1,
-> > +		       out_real, q_real, true);
-> 
-> Seems strange to mix KERN_ERR and KERN_WARNING.  The code's always been
-> that way, but maybe it can be improved.
+From: Johan Hovold <jhovold@gmail.com>
 
-Will fix this.
+commit 5292afa657d0e790b7479ad8eef9450c1e040b3d upstream.
 
+Make sure only to decrement the PM counters if they were actually
+incremented.
 
+Note that the USB PM counter, but not necessarily the driver core PM
+counter, is reset when the interface is unbound.
+
+Fixes: 11ea859d64b6 ("USB: additional power savings for cdc-acm devices
+that support remote wakeup")
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/usb/class/cdc-acm.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index 83a19ae3c31c..a72b7f1f6e17 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -575,12 +575,13 @@ static void acm_port_shutdown(struct tty_port *port)
+ 	struct urb *urb;
+ 	struct acm_wb *wb;
+ 	int i;
++	int pm_err;
+ 
+ 	dev_dbg(&acm->control->dev, "%s\n", __func__);
+ 
+ 	mutex_lock(&acm->mutex);
+ 	if (!acm->disconnected) {
+-		usb_autopm_get_interface(acm->control);
++		pm_err = usb_autopm_get_interface(acm->control);
+ 		acm_set_control(acm, acm->ctrlout = 0);
+ 
+ 		for (;;) {
+@@ -598,7 +599,8 @@ static void acm_port_shutdown(struct tty_port *port)
+ 		for (i = 0; i < acm->rx_buflimit; i++)
+ 			usb_kill_urb(acm->read_urbs[i]);
+ 		acm->control->needs_remote_wakeup = 0;
+-		usb_autopm_put_interface(acm->control);
++		if (!pm_err)
++			usb_autopm_put_interface(acm->control);
+ 	}
+ 	mutex_unlock(&acm->mutex);
+ }
 -- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
+1.9.1
 
