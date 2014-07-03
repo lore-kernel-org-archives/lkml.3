@@ -1,93 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759269AbaGCRkh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 13:40:37 -0400
-Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:46290
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755012AbaGCRkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 13:40:36 -0400
-Date: Thu, 3 Jul 2014 10:40:21 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: timers & suspend
-References: <f270ad9c-9906-445d-9e9a-4d3618787455@BY2FFO11FD039.protection.gbl>
- <53B54AC2.5040908@linaro.org>
- <83fa689b-a06a-4f1c-97cb-f7a7121a0f25@BL2FFO11FD041.protection.gbl>
- <53B5922A.7020006@linaro.org>
+	id S1759378AbaGCRk4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 13:40:56 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:35048 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759325AbaGCRky (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 13:40:54 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Thu, 3 Jul 2014 19:40:17 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Janne Kanniainen <janne.kanniainen@gmail.com>, cooloney@gmail.com
+Cc: johan@kernel.org, cooloney@gmail.com, jkosina@suse.cz, greg@kroah.com,
+        bjorn@mork.no, linux-kernel@vger.kernel.org,
+        linux-leds@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH 2/2 v6] HID: gt683r: move mode attribute to led-class
+ devices
+Message-ID: <20140703174017.GP16590@localhost>
+References: <20140703082830.GB16590@localhost>
+ <1404407829-1815-1-git-send-email-janne.kanniainen@gmail.com>
+ <1404407829-1815-2-git-send-email-janne.kanniainen@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53B5922A.7020006@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <12596549-d0f6-43b6-810d-ccd908404364@BL2FFO11FD055.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(438002)(189002)(199002)(24454002)(377454003)(479174003)(51704005)(377424004)(1496007)(70736001)(74316001)(80022001)(47776003)(85852003)(74502001)(50466002)(87936001)(92566001)(85202003)(92726001)(20776003)(81342001)(21056001)(86362001)(83322001)(81542001)(74662001)(83072002)(104016002)(95666004)(64706001)(50986999)(85182001)(76176999)(44976005)(31966008)(102836001)(54356999)(99396002)(93886003)(85306003)(53416004)(77096002)(83506001)(77982001)(33646001)(6806004)(76482001)(23676002)(107046002)(79102001)(46102001)(107986001);DIR:OUT;SFP:;SCL:1;SRVR:BL2FFO11HUB036;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-OriginatorOrg: xilinx.onmicrosoft.com
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0261CCEEDF
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
+In-Reply-To: <1404407829-1815-2-git-send-email-janne.kanniainen@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-03 at 07:26PM +0200, Daniel Lezcano wrote:
-> On 07/03/2014 06:09 PM, Sören Brinkmann wrote:
-> >On Thu, 2014-07-03 at 02:21PM +0200, Daniel Lezcano wrote:
-> >>On 06/30/2014 08:39 PM, Sören Brinkmann wrote:
-> >>>Hi,
-> >>>
-> >>>I'm currently working on suspend for Zynq and try to track down some
-> >>>spurious wakes. It looks like the spurious wakes are caused by timers,
-> >>>hence I was wondering whether there are any special requirements for
-> >>>timer drivers when it comes to suspend support or if I just missed
-> >>>something.
-> >>>
-> >>>Zynq sets the 'IRQCHIP_MASK_ON_SUSPEND' flag, which should mask all
-> >>>interrupts but the wake source. Reading through kernel/irq/pm.c
-> >>>indicates, that timer interrupts get some special treatment though.
-> >>>Therefore I implemented some suspend/resume callbacks for the
-> >>>cadence_ttc which disable and clear the timer's interrupts when going
-> >>>into suspend. That seems to mitigate the issue quite a bit, but I still
-> >>>saw spurious wakes - just a lot less often.
-> >>>Digging a little deeper revealed, the spurious wakes are caused by the
-> >>>ARM's smp_twd timer now. Given that that driver is probably used by a few
-> >>>more ARM platforms, I get the feeling that I'm missing something.
-> >>
-> >>Do you receive any interrupt from the cadence_ttc ? (/proc/interrupts)
-> >>
-> >>That's funny because I realize that you cadence ttc timer is never
-> >>used as there are the architected timers. The cadence ttc would be
-> >>only useful if there were an idle state powering down the smp_twd
-> >>timers but it is not the case on this board, IIUC.
-> >Yes they are used. They TTC is the only broadcast capable timer for
-> >Zynq. In my experience, I can not even boot without it (may have
-> >dependencies on CPUidle or something).
-> 
-> Actually the cpuidle driver is wrong. It assumes the state #1 will
-> power off the different cores with their architected timers and then
-> switch to the broadcast timer. But this one is not needed as we
-> don't power down the core with the twd timers, so no need to switch
-> to a backup timer device.
-> 
-> The implementation of the DDR self refresh idle state (incoming
-> patchset) removes the cpu_pm notifiers + the flag TIMER_STOP. The
-> result is 0 interrupts for ttc cadence timer. I removed in the dts
-> the cadence ttc and my board booted without problem (it is a zynq
-> 702).
-> 
-> Except I missed something, the cadence ttc is actually not used at all.
-I tested on the current master branch. I see TTC interrupts on CPU0 and
-timer_list shows the TTC to be the broadcast device. Removing the TTC
-nodes from my DT results in boot hanging - shortly after cpuidle is
-started.
+On Thu, Jul 03, 2014 at 08:17:09PM +0300, Janne Kanniainen wrote:
+> Move led_mode attribute from HID device to led-class devices and rename
+> it msi_mode. This will also fix race condition by using
 
-Removing cpuidle from my kernel makes the system boot. And it has no
-broadcast device anymore.
+There's a typo here (s/msi_mode/mode) but perhaps Bryan can just fix
+that up before applying?
 
-	Sören
+> attribute-groups.
+> 
+> Signed-off-by: Janne Kanniainen <janne.kanniainen@gmail.com>
+
+Reviewed-by: Johan Hovold <johan@kernel.org>
+
+Otherwise both patches (v6) are ready to be merged, Bryan.
+
+Thanks, Janne!
+
+Johan
+
+> ---
+> 
+> Changes in v3:
+> 	- Style fixes
+> 	- Rename sysfs-class-hid-driver-gt683r to sysfs-class-leds-driver-gt683r
+> 
+> Changes in v4:
+> 	- Rename sysfs-class-leds-driver-gt683r to sysfs-class-leds-gt683r
+> 	- Change "What: " to /sys/class/leds/<led>/gt683r/mode
+> 	- Change .name from gt683r_led to gt683r
+> 
+> Changes in v5:
+> 	- Move mode attribute to gt683r/mode
+> 
+> Changes in v6:
+> 	- Fix subject and commit message
+> 
+>  .../ABI/testing/sysfs-class-hid-driver-gt683r      | 14 ---------
+>  Documentation/ABI/testing/sysfs-class-leds-gt683r  | 16 ++++++++++
+>  drivers/hid/hid-gt683r.c                           | 36 ++++++++++++++--------
+>  3 files changed, 40 insertions(+), 26 deletions(-)
+>  delete mode 100644 Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
+>  create mode 100644 Documentation/ABI/testing/sysfs-class-leds-gt683r
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r b/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
+> deleted file mode 100644
+> index 317e9d5..0000000
+> --- a/Documentation/ABI/testing/sysfs-class-hid-driver-gt683r
+> +++ /dev/null
+> @@ -1,14 +0,0 @@
+> -What:		/sys/class/hidraw/<hidraw>/device/leds_mode
+> -Date:		Jun 2014
+> -KernelVersion:	3.17
+> -Contact:	Janne Kanniainen <janne.kanniainen@gmail.com>
+> -Description:
+> -		Set the mode of LEDs
+> -
+> -		0 - normal
+> -		1 - audio
+> -		2 - breathing
+> -
+> -		Normal: LEDs are fully on when enabled
+> -		Audio:  LEDs brightness depends on sound level
+> -		Breathing: LEDs brightness varies at human breathing rate
+> \ No newline at end of file
+> diff --git a/Documentation/ABI/testing/sysfs-class-leds-gt683r b/Documentation/ABI/testing/sysfs-class-leds-gt683r
+> new file mode 100644
+> index 0000000..e4fae60
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-class-leds-gt683r
+> @@ -0,0 +1,16 @@
+> +What:		/sys/class/leds/<led>/gt683r/mode
+> +Date:		Jun 2014
+> +KernelVersion:	3.17
+> +Contact:	Janne Kanniainen <janne.kanniainen@gmail.com>
+> +Description:
+> +		Set the mode of LEDs. You should notice that changing the mode
+> +		of one LED will update the mode of its two sibling devices as
+> +		well.
+> +
+> +		0 - normal
+> +		1 - audio
+> +		2 - breathing
+> +
+> +		Normal: LEDs are fully on when enabled
+> +		Audio:  LEDs brightness depends on sound level
+> +		Breathing: LEDs brightness varies at human breathing rate
+> \ No newline at end of file
+> diff --git a/drivers/hid/hid-gt683r.c b/drivers/hid/hid-gt683r.c
+> index 073bd80..0d6f135 100644
+> --- a/drivers/hid/hid-gt683r.c
+> +++ b/drivers/hid/hid-gt683r.c
+> @@ -84,12 +84,13 @@ static void gt683r_brightness_set(struct led_classdev *led_cdev,
+>  	}
+>  }
+>  
+> -static ssize_t leds_mode_show(struct device *dev,
+> +static ssize_t mode_show(struct device *dev,
+>  				struct device_attribute *attr,
+>  				char *buf)
+>  {
+>  	u8 sysfs_mode;
+> -	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
+> +	struct hid_device *hdev = container_of(dev->parent,
+> +					struct hid_device, dev);
+>  	struct gt683r_led *led = hid_get_drvdata(hdev);
+>  
+>  	if (led->mode == GT683R_LED_NORMAL)
+> @@ -102,12 +103,13 @@ static ssize_t leds_mode_show(struct device *dev,
+>  	return scnprintf(buf, PAGE_SIZE, "%u\n", sysfs_mode);
+>  }
+>  
+> -static ssize_t leds_mode_store(struct device *dev,
+> +static ssize_t mode_store(struct device *dev,
+>  				struct device_attribute *attr,
+>  				const char *buf, size_t count)
+>  {
+>  	u8 sysfs_mode;
+> -	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
+> +	struct hid_device *hdev = container_of(dev->parent,
+> +					struct hid_device, dev);
+>  	struct gt683r_led *led = hid_get_drvdata(hdev);
+>  
+>  
+> @@ -212,7 +214,22 @@ fail:
+>  	mutex_unlock(&led->lock);
+>  }
+>  
+> -static DEVICE_ATTR_RW(leds_mode);
+> +static DEVICE_ATTR_RW(mode);
+> +
+> +static struct attribute *gt683r_led_attrs[] = {
+> +	&dev_attr_mode.attr,
+> +	NULL
+> +};
+> +
+> +static const struct attribute_group gt683r_led_group = {
+> +	.name = "gt683r",
+> +	.attrs = gt683r_led_attrs,
+> +};
+> +
+> +static const struct attribute_group *gt683r_led_groups[] = {
+> +	&gt683r_led_group,
+> +	NULL
+> +};
+>  
+>  static int gt683r_led_probe(struct hid_device *hdev,
+>  			const struct hid_device_id *id)
+> @@ -261,6 +278,8 @@ static int gt683r_led_probe(struct hid_device *hdev,
+>  		led->led_devs[i].name = name;
+>  		led->led_devs[i].max_brightness = 1;
+>  		led->led_devs[i].brightness_set = gt683r_brightness_set;
+> +		led->led_devs[i].groups = gt683r_led_groups;
+> +
+>  		ret = led_classdev_register(&hdev->dev, &led->led_devs[i]);
+>  		if (ret) {
+>  			hid_err(hdev, "could not register led device\n");
+> @@ -268,12 +287,6 @@ static int gt683r_led_probe(struct hid_device *hdev,
+>  		}
+>  	}
+>  
+> -	ret = device_create_file(&led->hdev->dev, &dev_attr_leds_mode);
+> -	if (ret) {
+> -		hid_err(hdev, "could not make mode attribute file\n");
+> -		goto fail;
+> -	}
+> -
+>  	return 0;
+>  
+>  fail:
+> @@ -288,7 +301,6 @@ static void gt683r_led_remove(struct hid_device *hdev)
+>  	int i;
+>  	struct gt683r_led *led = hid_get_drvdata(hdev);
+>  
+> -	device_remove_file(&hdev->dev, &dev_attr_leds_mode);
+>  	for (i = 0; i < GT683R_LED_COUNT; i++)
+>  		led_classdev_unregister(&led->led_devs[i]);
+>  	flush_work(&led->work);
