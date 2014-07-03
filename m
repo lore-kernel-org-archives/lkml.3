@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030372AbaGCKPR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 06:15:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51591 "EHLO
+	id S1030397AbaGCKPp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 06:15:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51572 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758235AbaGCJVk (ORCPT
+	with ESMTP id S1752589AbaGCJVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:21:40 -0400
+	Thu, 3 Jul 2014 05:21:36 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>,
+Cc: Pekon Gupta <pekon@ti.com>, Brian Norris <computersforpeace@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 036/198] reiserfs: call truncate_setsize under tailpack mutex
-Date: Thu,  3 Jul 2014 10:17:59 +0100
-Message-Id: <1404379241-8590-37-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 034/198] mtd: nand: omap: fix BCHx ecc.correct to return detected bit-flips in erased-page
+Date: Thu,  3 Jul 2014 10:17:57 +0100
+Message-Id: <1404379241-8590-35-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
 References: <1404379241-8590-1-git-send-email-luis.henriques@canonical.com>
@@ -27,50 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: pekon gupta <pekon@ti.com>
 
-commit 22e7478ddbcb670e33fab72d0bbe7c394c3a2c84 upstream.
+commit f306e8c3b667632952f1a4a74ffb910bbc06255f upstream.
 
-Prior to commit 0e4f6a791b1e (Fix reiserfs_file_release()), reiserfs
-truncates serialized on i_mutex. They mostly still do, with the exception
-of reiserfs_file_release. That blocks out other writers via the tailpack
-mutex and the inode openers counter adjusted in reiserfs_file_open.
+fixes: commit 62116e5171e00f85a8d53f76e45b84423c89ff34
+       mtd: nand: omap2: Support for hardware BCH error correction.
 
-However, NFS will call reiserfs_setattr without having called ->open, so
-we end up with a race when nfs is calling ->setattr while another
-process is releasing the file. Ultimately, it triggers the
-BUG_ON(inode->i_size != new_file_size) check in maybe_indirect_to_direct.
+In omap_elm_correct_data(), if bitflip_count in an erased-page is within the
+correctable limit (< ecc.strength), then it is not indicated back to the caller
+ecc->read_page().
 
-The solution is to pull the lock into reiserfs_setattr to encompass the
-truncate_setsize call as well.
+This mis-guides upper layers like MTD and UBIFS layer to assume erased-page as
+perfectly clean and use it for writing even if actual bitflip_count was
+dangerously high (bitflip_count > mtd->bitflip_threshold).
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+This patch fixes this above issue, by returning 'stats' to caller
+ecc->read_page() under all scenarios.
+
+Reported-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Pekon Gupta <pekon@ti.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/reiserfs/inode.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/mtd/nand/omap2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
-index 0048cc16a6a8..9fa970e7b2cd 100644
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -3217,8 +3217,14 @@ int reiserfs_setattr(struct dentry *dentry, struct iattr *attr)
- 	    attr->ia_size != i_size_read(inode)) {
- 		error = inode_newsize_ok(inode, attr->ia_size);
- 		if (!error) {
-+			/*
-+			 * Could race against reiserfs_file_release
-+			 * if called from NFS, so take tailpack mutex.
-+			 */
-+			mutex_lock(&REISERFS_I(inode)->tailpack);
- 			truncate_setsize(inode, attr->ia_size);
--			reiserfs_vfs_truncate_file(inode);
-+			reiserfs_truncate_file(inode, 1);
-+			mutex_unlock(&REISERFS_I(inode)->tailpack);
- 		}
- 	}
+diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
+index 81b80af55872..8c4eb287bbdb 100644
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -1463,7 +1463,7 @@ static int omap_elm_correct_data(struct mtd_info *mtd, u_char *data,
  
+ 	/* Check if any error reported */
+ 	if (!is_error_reported)
+-		return 0;
++		return stat;
+ 
+ 	/* Decode BCH error using ELM module */
+ 	elm_decode_bch_error_page(info->elm_dev, ecc_vec, err_vec);
 -- 
 1.9.1
 
