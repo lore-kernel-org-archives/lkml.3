@@ -1,80 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759430AbaGCRnc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 13:43:32 -0400
-Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:15072
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751285AbaGCRnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 13:43:31 -0400
-From: Varun Sethi <Varun.Sethi@freescale.com>
-To: Alex Williamson <alex.williamson@redhat.com>,
-        Joerg Roedel <joro@8bytes.org>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/3] iommu: Expose IOMMU information in sysfs
-Thread-Topic: [PATCH 0/3] iommu: Expose IOMMU information in sysfs
-Thread-Index: AQHPhotyfmKXNHtW5kuAoU6+PbKknZtz3sKAgAACSICAGsQBAIAAGMCg
-Date: Thu, 3 Jul 2014 17:43:26 +0000
-Message-ID: <092459cf6aa04425bae1bd19b746f0fc@BL2PR03MB468.namprd03.prod.outlook.com>
-References: <20140612215954.2754.30263.stgit@bling.home>
-	 <20140616151619.GA31771@8bytes.org> <1402932269.3707.35.camel@ul30vt.home>
- <1404403726.1862.78.camel@ul30vt.home>
-In-Reply-To: <1404403726.1862.78.camel@ul30vt.home>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.169.1]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 0261CCEEDF
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(24454002)(377424004)(377454003)(164054003)(189002)(199002)(51704005)(13464003)(19580395003)(2656002)(87936001)(76482001)(81542001)(81342001)(105586002)(107046002)(19580405001)(106356001)(21056001)(106116001)(83322001)(76576001)(74316001)(101416001)(20776003)(86362001)(54356999)(93886003)(79102001)(99396002)(77982001)(85852003)(85306003)(46102001)(31966008)(64706001)(76176999)(99286002)(74662001)(83072002)(50986999)(95666004)(33646001)(80022001)(92566001)(74502001)(66066001)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB467;H:BL2PR03MB468.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1759461AbaGCRoI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 13:44:08 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:36096 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754859AbaGCRoG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 13:44:06 -0400
+Message-ID: <53B59664.3030809@linaro.org>
+Date: Thu, 03 Jul 2014 19:44:04 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-OriginatorOrg: freescale.com
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: timers & suspend
+References: <f270ad9c-9906-445d-9e9a-4d3618787455@BY2FFO11FD039.protection.gbl> <53B54AC2.5040908@linaro.org> <83fa689b-a06a-4f1c-97cb-f7a7121a0f25@BL2FFO11FD041.protection.gbl> <53B5922A.7020006@linaro.org> <b4b5a783-75cb-42f9-a501-7384b750b719@BN1AFFO11FD038.protection.gbl>
+In-Reply-To: <b4b5a783-75cb-42f9-a501-7384b750b719@BN1AFFO11FD038.protection.gbl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s63Hha8D011120
 
-Hi Alex,
-This is on my todo list. I have a requirement for adding sysfs support for PAMU.
+On 07/03/2014 07:30 PM, SÃ¶ren Brinkmann wrote:
+> On Thu, 2014-07-03 at 07:26PM +0200, Daniel Lezcano wrote:
+>> On 07/03/2014 06:09 PM, SÃ¶ren Brinkmann wrote:
+>>> On Thu, 2014-07-03 at 02:21PM +0200, Daniel Lezcano wrote:
+>>>> On 06/30/2014 08:39 PM, SÃ¶ren Brinkmann wrote:
+>>>>> Hi,
+>>>>>
+>>>>> I'm currently working on suspend for Zynq and try to track down some
+>>>>> spurious wakes. It looks like the spurious wakes are caused by timers,
+>>>>> hence I was wondering whether there are any special requirements for
+>>>>> timer drivers when it comes to suspend support or if I just missed
+>>>>> something.
+>>>>>
+>>>>> Zynq sets the 'IRQCHIP_MASK_ON_SUSPEND' flag, which should mask all
+>>>>> interrupts but the wake source. Reading through kernel/irq/pm.c
+>>>>> indicates, that timer interrupts get some special treatment though.
+>>>>> Therefore I implemented some suspend/resume callbacks for the
+>>>>> cadence_ttc which disable and clear the timer's interrupts when going
+>>>>> into suspend. That seems to mitigate the issue quite a bit, but I still
+>>>>> saw spurious wakes - just a lot less often.
+>>>>> Digging a little deeper revealed, the spurious wakes are caused by the
+>>>>> ARM's smp_twd timer now. Given that that driver is probably used by a few
+>>>>> more ARM platforms, I get the feeling that I'm missing something.
+>>>>
+>>>> Do you receive any interrupt from the cadence_ttc ? (/proc/interrupts)
+>>>>
+>>>> That's funny because I realize that you cadence ttc timer is never
+>>>> used as there are the architected timers. The cadence ttc would be
+>>>> only useful if there were an idle state powering down the smp_twd
+>>>> timers but it is not the case on this board, IIUC.
+>>> Yes they are used. They TTC is the only broadcast capable timer for
+>>> Zynq. In my experience, I can not even boot without it (may have
+>>> dependencies on CPUidle or something).
+>>
+>> Actually the cpuidle driver is wrong. It assumes the state #1 will
+>> power off the different cores with their architected timers and then
+>> switch to the broadcast timer. But this one is not needed as we
+>> don't power down the core with the twd timers, so no need to switch
+>> to a backup timer device.
+>>
+>> The implementation of the DDR self refresh idle state (incoming
+>> patchset) removes the cpu_pm notifiers + the flag TIMER_STOP. The
+>> result is 0 interrupts for ttc cadence timer. I removed in the dts
+>> the cadence ttc and my board booted without problem (it is a zynq
+>> 702).
+>>
+>> Except I missed something, the cadence ttc is actually not used at all.
+> You mean with your patches, or without? I'd have to check that.
 
-Regards
-Varun
-> -----Original Message-----
-> From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> Sent: Thursday, July 03, 2014 9:39 PM
-> To: Joerg Roedel
-> Cc: iommu@lists.linux-foundation.org; dwmw2@infradead.org; linux-
-> kernel@vger.kernel.org; Sethi Varun-B16395
-> Subject: Re: [PATCH 0/3] iommu: Expose IOMMU information in sysfs
-> 
-> On Mon, 2014-06-16 at 09:24 -0600, Alex Williamson wrote:
-> > On Mon, 2014-06-16 at 17:16 +0200, Joerg Roedel wrote:
-> > > On Thu, Jun 12, 2014 at 04:12:18PM -0600, Alex Williamson wrote:
-> > > > Alex Williamson (3):
-> > > >       iommu: Add sysfs support for IOMMUs
-> > > >       iommu/intel: Make use of IOMMU sysfs support
-> > > >       iommu/amd: Add sysfs support
-> > >
-> > > I like the general approach. But why do you only enable the x86
-> iommus?
-> > > Some ARM IOMMUs and PAMU would certainly also benefit from a sysfs
-> > > representation of which device is translated by which IOMMU.
-> >
-> > Only because I have no ability to test the others platforms.  I'd be
-> > thrilled if someone working on those IOMMUs could validate this on
-> > non-x86.  Thanks,
-> 
-> Should I re-send this series or are you hoping I'll attempt to piece
-> together a non-x86 user for which I have no hardware and can't test?
-> Varun, do you have any interest in this for the fsl iommu to try a proof
-> of concept?  Thanks,
-> 
-> Alex
+I meant with my patches.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>>>>> It's probably worth mentioning that the suspend state in Zynq does not
+>>>>> power off the CPU cores. It just asserts the resets on secondary cores
+>>>>> and the primary one waits in wfi.
+>>>>
+>>>> Why do you need to reset them ?
+>>> CPU0 is not reset, but all secondary cores are. That is as close to
+>>> power off as we get and works well with hotplug.
+>>
+>> Ok, I was not aware of this approach. Is there any patchset
+>> available in the net ?
+> It's in mainline for a while. arch/arm/mach-zynq/platsmp.c defines the
+> SMP ops. Zynq's cpu_die/kill result in the CPU reset being asserted. And
+> when the core is plugged in again, it gets deasserted and goes through
+> the secondary boot path.
+> That code is a little cleaned up in our vendor tree, but overall it
+> should be the same functionality wise.
+
+Ah, interesting. Thanks for the precision. I was pointing to v3.16-rc3 
+and I didn't see the upstream xilinx code. So my patchset is now 
+out-dated :(
+
+I will look at the code closely.
+
+Thanks
+   -- Daniel
+
+
+
+
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
