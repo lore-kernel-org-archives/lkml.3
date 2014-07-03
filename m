@@ -1,66 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584AbaGCJkX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 05:40:23 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34570 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932469AbaGCJkR (ORCPT
+	id S932601AbaGCJlB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 05:41:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52401 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030389AbaGCJYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 05:40:17 -0400
-Message-ID: <53B524FA.2090907@ti.com>
-Date: Thu, 3 Jul 2014 12:40:10 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 3 Jul 2014 05:24:31 -0400
+Message-ID: <53B52146.9050300@canonical.com>
+Date: Thu, 03 Jul 2014 17:24:22 +0800
+From: Hui Wang <hui.wang@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: <tony@atomide.com>, <kishon@ti.com>, <balbi@ti.com>, <nm@ti.com>
-CC: <nsekhar@ti.com>, <george.cherian@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Rajendra Nayak <rnayak@ti.com>, Tero Kristo <t-kristo@ti.com>
-Subject: [PATCH v2 1/6] ARM: dts: dra7-evm: Make VDDA_1V8_PHY supply always
- on
-References: <1404302638-3003-1-git-send-email-rogerq@ti.com> <1404302638-3003-2-git-send-email-rogerq@ti.com>
-In-Reply-To: <1404302638-3003-2-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Jan Kiszka <jan.kiszka@web.de>
+CC: Hui Wang <jason77.wang@gmail.com>, tiwai@suse.de,
+        alsa-devel@alsa-project.org, alex.hung@canonical.com, yk@canonical.com,
+        david.henningsson@canonical.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [V2 PATCH] ALSA: hda - Enable mute/mic-mute LEDs for more Thinkpads
+ with Conexant codec
+References: <1385534846-20829-1-git-send-email-hui.wang@canonical.com> <53AFF992.5030403@web.de> <53B0C596.6090007@canonical.com> <53B1078B.4090101@web.de> <53B219DF.6090807@canonical.com> <53B26575.1000003@web.de> <53B27ED7.4070401@canonical.com> <53B50062.30200@web.de> <53B51B63.8060809@canonical.com> <53B51CF3.8090102@web.de>
+In-Reply-To: <53B51CF3.8090102@web.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roger Quadros <rogerq@ti.com>
+On 07/03/2014 05:05 PM, Jan Kiszka wrote:
+> On 2014-07-03 10:59, Hui Wang wrote:
+>> On 07/03/2014 03:04 PM, Jan Kiszka wrote:
+>>> On 2014-07-01 11:26, Hui Wang wrote:
+>>>> On 07/01/2014 03:38 PM, Jan Kiszka wrote:
+>>>>> On 2014-07-01 04:15, Hui Wang wrote:
+>>>>>> On 06/30/2014 02:45 PM, Jan Kiszka wrote:
+>>>>>>> On 2014-06-30 04:04, Hui Wang wrote:
+>>>>>>>> On 06/29/2014 07:33 PM, Jan Kiszka wrote:
+>>>>>>>>> On 2013-11-27 07:47, Hui Wang wrote:
+>>>>>>>>>> Most Thinkpad Edge series laptops use conexant codec, so far
+>>>>>>>>>> although
+>>>> <snip>
+>>>>>>> Is there anything I can debug or any information I can collect
+>>>>>>> from my
+>>>>>>> box to examine this?
+>>>>>> What is the linux distribution on your machine? And use showkey to
+>>>>>> catch
+>>>>>> the keycode of that button.
+>>>>> I'm running OpenSUSE 13.1. The reported keycode of the power button is
+>>>>> 116.
+>>>> It seems the keycode is correct, it is power keycode rather the mute
+>>>> keycode.
+>>>>
+>>>> Could you please do some debug, let us find which line of code is the
+>>>> root cause for this problem. for example:
+>>>>
+>>>> after running the line, the problem shows up:
+>>>>
+>>>> 1.     if (ACPI_SUCCESS(acpi_get_devices("LEN0068", acpi_check_cb,
+>>>> &found, NULL)) && found) // in the sound/pci/hda/thinkpad_helper.c,
+>>>> is_thinkpad()
+>>> This evaluates to true
+>>>
+>>>> 2.     return ACPI_SUCCESS(acpi_get_devices("IBM0068", acpi_check_cb,
+>>>> &found, NULL)) && found; // same as above
+>>>>
+>>>> 3.         if (led_set_func(TPACPI_LED_MUTE, false) >= 0) { //in the
+>>>> sound/pci/hda/thinkpad_helper.c, hda_fixup_thinkpad_acpi()
+>>> ...and this
+>>>
+>>>> 4. if (led_set_func(TPACPI_LED_MICMUTE, false) >= 0) { // same as above
+>>>>
+>>> ...and this as well. spec->num_adc_nids is 1.
+>>
+>> If we change the code like below, does the power button can work well?
+>>
+>> in the thinkpad_helper.c, hda_fixup_thinkpad_acpi()
+>>
+>>
+>>          if (led_set_func(TPACPI_LED_MUTE, false) >= 0) {
+>>              /*
+>>              old_vmaster_hook = spec->vmaster_mute.hook;
+>>              spec->vmaster_mute.hook = update_tpacpi_mute_led;
+>>              removefunc = false;
+>>             */
+> Disabling only this block resolves the issue.
 
-After clarification from the hardware team it was found that
-this 1.8V PHY supply can't be switched OFF when SoC is Active.
+So Below two lines make the power button change to the reset button.
 
-Since the PHY IPs don't contain isolation logic built in the design to
-allow the power rail to be switched off, there is a very high risk
-of IP reliability and additional leakage paths which can result in
-additional power consumption.
+drivers/platform/x86/thinkpad_acpi.c  mute_led_on_off():
 
-The only scenario where this rail can be switched off is part of Power on
-reset sequencing, but it needs to be kept always-on during operation.
+acpi_get_handle(hkey_handle, "SSMS", &temp);
+acpi_evalf(hkey_handle, &output, "SSMS", "dd", 1);
 
-This patch is required for proper functionality of USB, SATA
-and PCIe on DRA7-evm.
 
-CC: Rajendra Nayak <rnayak@ti.com>
-CC: Tero Kristo <t-kristo@ti.com>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- arch/arm/boot/dts/dra7-evm.dts | 1 +
- 1 file changed, 1 insertion(+)
+@alexhung,
+Do you have any idea why this can affect the power button behavior?
 
-diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
-index 4adc280..8308954 100644
---- a/arch/arm/boot/dts/dra7-evm.dts
-+++ b/arch/arm/boot/dts/dra7-evm.dts
-@@ -240,6 +240,7 @@
- 					regulator-name = "ldo3";
- 					regulator-min-microvolt = <1800000>;
- 					regulator-max-microvolt = <1800000>;
-+					regulator-always-on;
- 					regulator-boot-on;
- 				};
- 
--- 
-1.8.3.2
+>
+> Jan
+>
+>
 
