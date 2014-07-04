@@ -1,222 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755773AbaGDRLT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 13:11:19 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:40816 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637AbaGDRLR (ORCPT
+	id S1753424AbaGDRPs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 13:15:48 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:38418 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350AbaGDRPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 13:11:17 -0400
-Date: Fri, 4 Jul 2014 13:11:13 -0400
+	Fri, 4 Jul 2014 13:15:47 -0400
+Date: Fri, 4 Jul 2014 13:15:44 -0400
 From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/5] cgroup: split cgroup_base_files[] into
- cgroup_{dfl|legacy}_base_files[]
-Message-ID: <20140704171113.GA11787@mtj.dyndns.org>
-References: <1404345055-8196-1-git-send-email-tj@kernel.org>
- <1404345055-8196-2-git-send-email-tj@kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Jens Axboe <axboe@fb.com>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: blk: NULL ptr deref in blk_throtl_drain
+Message-ID: <20140704171544.GB11787@mtj.dyndns.org>
+References: <53B6DA3E.40704@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404345055-8196-2-git-send-email-tj@kernel.org>
+In-Reply-To: <53B6DA3E.40704@oracle.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From f41924c8f07dcda07a31a08117bac077fde13626 Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Fri, 4 Jul 2014 13:06:42 -0400
+On Fri, Jul 04, 2014 at 12:45:50PM -0400, Sasha Levin wrote:
+> Hi all,
+> 
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel I've stumbled on the following spew:
+> 
+> [ 3660.610281] BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
+> [ 3660.612608] IP: blk_throtl_drain (block/blk-throttle.c:1639)
 
-Currently cgroup_base_files[] contains the cgroup core interface files
-for both legacy and default hierarchies with each file tagged with
-CFTYPE_INSANE and CFTYPE_ONLY_ON_DFL.  This is difficult to read.
+This is a problem which can also happen before the patch with lower
+frequency.  There was a fix proposed about a week ago which I
+suggested a different approach for.  I'll dig up that thread and ping.
 
-Let's separate it out to two separate tables, cgroup_dfl_base_files[]
-and cgroup_legacy_base_files[], and use the appropriate one in
-cgroup_mkdir() depending on the hierarchy type.  This makes tagging
-each file unnecessary.
+Thanks.
 
-This patch doesn't introduce any behavior changes.
-
-v2: cgroup_dfl_base_files[] was missing the termination entry
-    triggering WARN in cgroup_init_cftypes() for 0day kernel testing
-    robot.  Fixed.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jet Chen <jet.chen@intel.com>
----
- kernel/cgroup.c | 76 ++++++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 48 insertions(+), 28 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 1c56924..50858ff 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -180,7 +180,8 @@ static u64 css_serial_nr_next = 1;
-  */
- static int need_forkexit_callback __read_mostly;
- 
--static struct cftype cgroup_base_files[];
-+static struct cftype cgroup_dfl_base_files[];
-+static struct cftype cgroup_legacy_base_files[];
- 
- static void cgroup_put(struct cgroup *cgrp);
- static int rebind_subsystems(struct cgroup_root *dst_root,
-@@ -1558,6 +1559,7 @@ static int cgroup_setup_root(struct cgroup_root *root, unsigned int ss_mask)
- {
- 	LIST_HEAD(tmp_links);
- 	struct cgroup *root_cgrp = &root->cgrp;
-+	struct cftype *base_files;
- 	struct css_set *cset;
- 	int i, ret;
- 
-@@ -1595,7 +1597,12 @@ static int cgroup_setup_root(struct cgroup_root *root, unsigned int ss_mask)
- 	}
- 	root_cgrp->kn = root->kf_root->kn;
- 
--	ret = cgroup_addrm_files(root_cgrp, cgroup_base_files, true);
-+	if (root == &cgrp_dfl_root)
-+		base_files = cgroup_dfl_base_files;
-+	else
-+		base_files = cgroup_legacy_base_files;
-+
-+	ret = cgroup_addrm_files(root_cgrp, base_files, true);
- 	if (ret)
- 		goto destroy_root;
- 
-@@ -3985,7 +3992,8 @@ static int cgroup_clone_children_write(struct cgroup_subsys_state *css,
- 	return 0;
- }
- 
--static struct cftype cgroup_base_files[] = {
-+/* cgroup core interface files for the default hierarchy */
-+static struct cftype cgroup_dfl_base_files[] = {
- 	{
- 		.name = "cgroup.procs",
- 		.seq_start = cgroup_pidlist_start,
-@@ -3997,46 +4005,52 @@ static struct cftype cgroup_base_files[] = {
- 		.mode = S_IRUGO | S_IWUSR,
- 	},
- 	{
--		.name = "cgroup.clone_children",
--		.flags = CFTYPE_INSANE,
--		.read_u64 = cgroup_clone_children_read,
--		.write_u64 = cgroup_clone_children_write,
--	},
--	{
--		.name = "cgroup.sane_behavior",
--		.flags = CFTYPE_INSANE | CFTYPE_ONLY_ON_ROOT,
--		.seq_show = cgroup_sane_behavior_show,
--	},
--	{
- 		.name = "cgroup.controllers",
--		.flags = CFTYPE_ONLY_ON_DFL | CFTYPE_ONLY_ON_ROOT,
-+		.flags = CFTYPE_ONLY_ON_ROOT,
- 		.seq_show = cgroup_root_controllers_show,
- 	},
- 	{
- 		.name = "cgroup.controllers",
--		.flags = CFTYPE_ONLY_ON_DFL | CFTYPE_NOT_ON_ROOT,
-+		.flags = CFTYPE_NOT_ON_ROOT,
- 		.seq_show = cgroup_controllers_show,
- 	},
- 	{
- 		.name = "cgroup.subtree_control",
--		.flags = CFTYPE_ONLY_ON_DFL,
- 		.seq_show = cgroup_subtree_control_show,
- 		.write = cgroup_subtree_control_write,
- 	},
- 	{
- 		.name = "cgroup.populated",
--		.flags = CFTYPE_ONLY_ON_DFL | CFTYPE_NOT_ON_ROOT,
-+		.flags = CFTYPE_NOT_ON_ROOT,
- 		.seq_show = cgroup_populated_show,
- 	},
-+	{ }	/* terminate */
-+};
- 
--	/*
--	 * Historical crazy stuff.  These don't have "cgroup."  prefix and
--	 * don't exist if sane_behavior.  If you're depending on these, be
--	 * prepared to be burned.
--	 */
-+/* cgroup core interface files for the legacy hierarchies */
-+static struct cftype cgroup_legacy_base_files[] = {
-+	{
-+		.name = "cgroup.procs",
-+		.seq_start = cgroup_pidlist_start,
-+		.seq_next = cgroup_pidlist_next,
-+		.seq_stop = cgroup_pidlist_stop,
-+		.seq_show = cgroup_pidlist_show,
-+		.private = CGROUP_FILE_PROCS,
-+		.write = cgroup_procs_write,
-+		.mode = S_IRUGO | S_IWUSR,
-+	},
-+	{
-+		.name = "cgroup.clone_children",
-+		.read_u64 = cgroup_clone_children_read,
-+		.write_u64 = cgroup_clone_children_write,
-+	},
-+	{
-+		.name = "cgroup.sane_behavior",
-+		.flags = CFTYPE_ONLY_ON_ROOT,
-+		.seq_show = cgroup_sane_behavior_show,
-+	},
- 	{
- 		.name = "tasks",
--		.flags = CFTYPE_INSANE,		/* use "procs" instead */
- 		.seq_start = cgroup_pidlist_start,
- 		.seq_next = cgroup_pidlist_next,
- 		.seq_stop = cgroup_pidlist_stop,
-@@ -4047,13 +4061,12 @@ static struct cftype cgroup_base_files[] = {
- 	},
- 	{
- 		.name = "notify_on_release",
--		.flags = CFTYPE_INSANE,
- 		.read_u64 = cgroup_read_notify_on_release,
- 		.write_u64 = cgroup_write_notify_on_release,
- 	},
- 	{
- 		.name = "release_agent",
--		.flags = CFTYPE_INSANE | CFTYPE_ONLY_ON_ROOT,
-+		.flags = CFTYPE_ONLY_ON_ROOT,
- 		.seq_show = cgroup_release_agent_show,
- 		.write = cgroup_release_agent_write,
- 		.max_write_len = PATH_MAX - 1,
-@@ -4330,6 +4343,7 @@ static int cgroup_mkdir(struct kernfs_node *parent_kn, const char *name,
- 	struct cgroup_root *root;
- 	struct cgroup_subsys *ss;
- 	struct kernfs_node *kn;
-+	struct cftype *base_files;
- 	int ssid, ret;
- 
- 	parent = cgroup_kn_lock_live(parent_kn);
-@@ -4400,7 +4414,12 @@ static int cgroup_mkdir(struct kernfs_node *parent_kn, const char *name,
- 	if (ret)
- 		goto out_destroy;
- 
--	ret = cgroup_addrm_files(cgrp, cgroup_base_files, true);
-+	if (cgroup_on_dfl(cgrp))
-+		base_files = cgroup_dfl_base_files;
-+	else
-+		base_files = cgroup_legacy_base_files;
-+
-+	ret = cgroup_addrm_files(cgrp, base_files, true);
- 	if (ret)
- 		goto out_destroy;
- 
-@@ -4719,7 +4738,8 @@ int __init cgroup_init(void)
- 	unsigned long key;
- 	int ssid, err;
- 
--	BUG_ON(cgroup_init_cftypes(NULL, cgroup_base_files));
-+	BUG_ON(cgroup_init_cftypes(NULL, cgroup_dfl_base_files));
-+	BUG_ON(cgroup_init_cftypes(NULL, cgroup_legacy_base_files));
- 
- 	mutex_lock(&cgroup_mutex);
- 
 -- 
-1.9.3
-
+tejun
