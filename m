@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303AbaGDHWz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 03:22:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59609 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750924AbaGDHWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 03:22:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,599,1400050800"; 
-   d="scan'208";a="538707984"
-Date: Fri, 4 Jul 2014 07:19:50 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "Dietmar.Eggemann@arm.com" <Dietmar.Eggemann@arm.com>,
-        "pjt@google.com" <pjt@google.com>
-Subject: Re: [RFCv2 PATCH 00/23] sched: Energy cost model for energy-aware
- scheduling
-Message-ID: <20140703231950.GA4881@intel.com>
-References: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
+	id S1752087AbaGDH1z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 03:27:55 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:28624 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750988AbaGDH1x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 03:27:53 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18pP8hsSALM3JhuhMbjreCp
+Date: Fri, 4 Jul 2014 00:27:53 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pascal Huerst <pascal.huerst@gmail.com>
+Cc: santosh.shilimkar@ti.com, khilman@deeprootsystems.com,
+        linus.walleij@linaro.org, gnurou@gmail.com, linux-omap@vger.kernel.org,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Mack <daniel@zonque.org>
+Subject: Re: gpio-omap: wakeup mask
+Message-ID: <20140704072752.GC28884@atomide.com>
+References: <53B3F687.5050502@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53B3F687.5050502@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Morten,
-
-On Fri, Jul 04, 2014 at 12:25:47AM +0800, Morten Rasmussen wrote:
-> * Note that these energy savings are _not_ representative of what can be
-> achieved on a true SMP platform where all cpus are equally 
-> energy-efficient. There should be benefit for SMP platforms as well, 
-> however, it will be smaller.
+* Pascal Huerst <pascal.huerst@gmail.com> [140702 05:12]:
+> Hi everyone,
 > 
-> The energy model led to consolidation of the short tasks on the A7
-> cluster (more energy-efficient), while sysbench made use of all cpus as
-> the A7s didn't have sufficient compute capacity to handle the five
-> tasks.
+> we have a device with an am335x and are using some gpios on bank0 to
+> wake up the device from suspend to ram.
+> 
+> We have some user buttons which are configured in the devicetree as
+> gpio-keys and one power-key which should wake up the device:
+> 
+> &buttons {
+>         power {
+>                 label = "Power";
+>                 gpios = <&gpio0 6 1>;
+>                 linux,code = <116>;
+>                 gpio-key,wakeup;
+>         };
+> 
+>         one {
+>                 label = "One";
+>                 gpios = <&gpio0 11 1>;
+>                 linux,code = <2>;
+>         };
+> 
+>         : : :
+> }
+> 
+> The problem is, that the device wakes up on any trigger on bank 0. No
+> matter which button was pressed. "gpio-key,wakeup" seems not to have any
+> influence.
+> 
+> Now, if I comment the following lines out in drivers/gpio/gpio-omap.c :
+> set_gpio_trigger(...).
+> 
+> 321
+> 322 if (likely(!(bank->non_wakeup_gpios & gpio_bit))) {
+> 323    _gpio_rmw(base, bank->regs->wkup_en, gpio_bit, trigger != 0);
+> 324      bank->context.wake_en =
+> 325        readl_relaxed(bank->base + bank->regs->wkup_en);
+> 326 }
+> 327
+> 
+> Everything works as expected. But I don't really understand why? Is this
+> a bug, or does this break something else I have not discovered yet?
 
-Looks like this patchset is mainly for big.LITTLE? And can the patchset
-actually replace Global Task Scheduling?
+The GPIO wake-up events are working from off-idle for omap3
+the last time I checked, so sounds like this is some am335x
+related issue.
 
-Thanks,
-Yuyang
+What does your bank->context.wake_en mask get set to with this code?
+
+Regards,
+
+Tony
