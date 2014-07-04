@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031286AbaGDWV2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:21:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57506 "EHLO
+	id S1161021AbaGDWjJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:39:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57519 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031145AbaGDWVY (ORCPT
+	with ESMTP id S1031285AbaGDWV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:21:24 -0400
+	Fri, 4 Jul 2014 18:21:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Per Gundberg <per.gundberg@icomera.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Michael Brunner <michael.brunner@kontron.com>,
-        Wim Van Sebroeck <wim@iguana.be>
-Subject: [PATCH 3.14 20/59] watchdog: kempld-wdt: Use the correct value when configuring the prescaler with the watchdog
-Date: Fri,  4 Jul 2014 15:19:09 -0700
-Message-Id: <20140704221540.507915386@linuxfoundation.org>
+        hujianyang <hujianyang@huawei.com>,
+        Laurence Withers <lwithers@guralp.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [PATCH 3.10 13/46] UBIFS: fix an mmap and fsync race condition
+Date: Fri,  4 Jul 2014 15:19:17 -0700
+Message-Id: <20140704221602.883654862@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
-References: <20140704221539.544876024@linuxfoundation.org>
+In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
+References: <20140704221602.280733370@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,38 +26,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: gundberg <per.gundberg@icomera.com>
+From: hujianyang <hujianyang@huawei.com>
 
-commit a9e0436b303e94ba57d3bd4b1fcbeaa744b7ebeb upstream.
+commit 691a7c6f28ac90cccd0dbcf81348ea90b211bdd0 upstream.
 
-Use the prescaler index, rather than its value, to configure the watchdog.
-This will prevent a mismatch with the prescaler used to calculate the cycles.
+There is a race condition in UBIFS:
 
-Signed-off-by: Per Gundberg <per.gundberg@icomera.com>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Reviewed-by: Michael Brunner <michael.brunner@kontron.com>
-Tested-by: Michael Brunner <michael.brunner@kontron.com>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+Thread A (mmap)                        Thread B (fsync)
+
+->__do_fault                           ->write_cache_pages
+   -> ubifs_vm_page_mkwrite
+       -> budget_space
+       -> lock_page
+       -> release/convert_page_budget
+       -> SetPagePrivate
+       -> TestSetPageDirty
+       -> unlock_page
+                                       -> lock_page
+                                           -> TestClearPageDirty
+                                           -> ubifs_writepage
+                                               -> do_writepage
+                                                   -> release_budget
+                                                   -> ClearPagePrivate
+                                                   -> unlock_page
+   -> !(ret & VM_FAULT_LOCKED)
+   -> lock_page
+   -> set_page_dirty
+       -> ubifs_set_page_dirty
+           -> TestSetPageDirty (set page dirty without budgeting)
+   -> unlock_page
+
+This leads to situation where we have a diry page but no budget allocated for
+this page, so further write-back may fail with -ENOSPC.
+
+In this fix we return from page_mkwrite without performing unlock_page. We
+return VM_FAULT_LOCKED instead. After doing this, the race above will not
+happen.
+
+Signed-off-by: hujianyang <hujianyang@huawei.com>
+Tested-by: Laurence Withers <lwithers@guralp.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/watchdog/kempld_wdt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ubifs/file.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/watchdog/kempld_wdt.c
-+++ b/drivers/watchdog/kempld_wdt.c
-@@ -162,7 +162,7 @@ static int kempld_wdt_set_stage_timeout(
- 	kempld_get_mutex(pld);
- 	stage_cfg = kempld_read8(pld, KEMPLD_WDT_STAGE_CFG(stage->id));
- 	stage_cfg &= ~STAGE_CFG_PRESCALER_MASK;
--	stage_cfg |= STAGE_CFG_SET_PRESCALER(prescaler);
-+	stage_cfg |= STAGE_CFG_SET_PRESCALER(PRESCALER_21);
- 	kempld_write8(pld, KEMPLD_WDT_STAGE_CFG(stage->id), stage_cfg);
- 	kempld_write32(pld, KEMPLD_WDT_STAGE_TIMEOUT(stage->id),
- 			stage_timeout);
+--- a/fs/ubifs/file.c
++++ b/fs/ubifs/file.c
+@@ -1524,8 +1524,7 @@ static int ubifs_vm_page_mkwrite(struct
+ 	}
+ 
+ 	wait_for_stable_page(page);
+-	unlock_page(page);
+-	return 0;
++	return VM_FAULT_LOCKED;
+ 
+ out_unlock:
+ 	unlock_page(page);
 
 
