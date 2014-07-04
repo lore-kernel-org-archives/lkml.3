@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031070AbaGDWUn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:20:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57355 "EHLO
+	id S1031161AbaGDWVA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:21:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57434 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030825AbaGDWUg (ORCPT
+	with ESMTP id S1031145AbaGDWU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:20:36 -0400
+	Fri, 4 Jul 2014 18:20:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arun Ramamurthy <arun.ramamurthy@broadcom.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>
-Subject: [PATCH 3.14 18/59] watchdog: sp805: Set watchdog_device->timeout from ->set_timeout()
-Date: Fri,  4 Jul 2014 15:19:07 -0700
-Message-Id: <20140704221540.388041836@linuxfoundation.org>
+        Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.14 32/59] nfsd: getattr for FATTR4_WORD0_FILES_AVAIL needs the statfs buffer
+Date: Fri,  4 Jul 2014 15:19:21 -0700
+Message-Id: <20140704221541.086738004@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -30,50 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+From: Christoph Hellwig <hch@lst.de>
 
-commit 938626d96a3ffb9eb54552bb0d3a4f2b30ffdeb0 upstream.
+commit 12337901d654415d9f764b5f5ba50052e9700f37 upstream.
 
-Implementation of ->set_timeout() is supposed to set 'timeout' field of 'struct
-watchdog_device' passed to it. sp805 was rather setting this in a local
-variable. Fix it.
+Note nobody's ever noticed because the typical client probably never
+requests FILES_AVAIL without also requesting something else on the list.
 
-Reported-by: Arun Ramamurthy <arun.ramamurthy@broadcom.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/watchdog/sp805_wdt.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ fs/nfsd/nfs4xdr.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/watchdog/sp805_wdt.c
-+++ b/drivers/watchdog/sp805_wdt.c
-@@ -60,7 +60,6 @@
-  * @adev: amba device structure of wdt
-  * @status: current status of wdt
-  * @load_val: load value to be set for current timeout
-- * @timeout: current programmed timeout
-  */
- struct sp805_wdt {
- 	struct watchdog_device		wdd;
-@@ -69,7 +68,6 @@ struct sp805_wdt {
- 	struct clk			*clk;
- 	struct amba_device		*adev;
- 	unsigned int			load_val;
--	unsigned int			timeout;
- };
- 
- static bool nowayout = WATCHDOG_NOWAYOUT;
-@@ -99,7 +97,7 @@ static int wdt_setload(struct watchdog_d
- 	spin_lock(&wdt->lock);
- 	wdt->load_val = load;
- 	/* roundup timeout to closest positive integer value */
--	wdt->timeout = div_u64((load + 1) * 2 + (rate / 2), rate);
-+	wdd->timeout = div_u64((load + 1) * 2 + (rate / 2), rate);
- 	spin_unlock(&wdt->lock);
- 
- 	return 0;
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -2096,8 +2096,8 @@ nfsd4_encode_fattr(struct svc_fh *fhp, s
+ 	err = vfs_getattr(&path, &stat);
+ 	if (err)
+ 		goto out_nfserr;
+-	if ((bmval0 & (FATTR4_WORD0_FILES_FREE | FATTR4_WORD0_FILES_TOTAL |
+-			FATTR4_WORD0_MAXNAME)) ||
++	if ((bmval0 & (FATTR4_WORD0_FILES_AVAIL | FATTR4_WORD0_FILES_FREE |
++			FATTR4_WORD0_FILES_TOTAL | FATTR4_WORD0_MAXNAME)) ||
+ 	    (bmval1 & (FATTR4_WORD1_SPACE_AVAIL | FATTR4_WORD1_SPACE_FREE |
+ 		       FATTR4_WORD1_SPACE_TOTAL))) {
+ 		err = vfs_statfs(&path, &statfs);
 
 
