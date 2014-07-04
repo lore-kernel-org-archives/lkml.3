@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757565AbaGDKg6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 06:36:58 -0400
-Received: from 8bytes.org ([85.214.48.195]:42286 "EHLO mail.8bytes.org"
+	id S1758010AbaGDKhp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 06:37:45 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42664 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756975AbaGDKg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 06:36:56 -0400
-Date: Fri, 4 Jul 2014 12:36:53 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] iommu: Fix DMA alias problems
-Message-ID: <20140704103653.GU26537@8bytes.org>
-References: <20140703154428.8112.97562.stgit@gimli.home>
+	id S1757696AbaGDKhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 06:37:43 -0400
+Date: Fri, 4 Jul 2014 12:37:31 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>, rjw@rjwysocki.net
+Cc: lenb@kernel.org, tony.luck@intel.com, m.chehab@samsung.com, bp@suse.de,
+        linux-edac@vger.kernel.org, x86@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
+        rric@kernel.org
+Subject: Re: [PATCH v4 2/3] acpi, apei, ghes: Make NMI error notification to
+ be GHES architecture extension.
+Message-ID: <20140704103731.GA9246@pd.tnic>
+References: <1403610095-5354-1-git-send-email-tomasz.nowicki@linaro.org>
+ <1403610095-5354-3-git-send-email-tomasz.nowicki@linaro.org>
+ <20140702121645.GF1318@pd.tnic>
+ <53B64F3C.6080502@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140703154428.8112.97562.stgit@gimli.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri Jul  4 12:36:54 2014
-X-DSPAM-Confidence: 0.9985
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 53b683c620863354269530
+In-Reply-To: <53B64F3C.6080502@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 09:51:12AM -0600, Alex Williamson wrote:
-> Alex Williamson (7):
->       iommu: Remove pci.h
->       iommu/fsl: Use iommu_group_get_for_dev() for IOMMU groups
->       iommu/intel: Update to use PCI DMA aliases
->       iommu/intel: Use iommu_group_get_for_dev()
->       iommu/amd: Use iommu_group_get_for_dev()
->       iommu/amd: Update to use PCI DMA aliases
->       iommu: Create central IOMMU group lookup/creation interface
+On Fri, Jul 04, 2014 at 08:52:44AM +0200, Tomasz Nowicki wrote:
+> Right, I will fix that and thanks for all you acks.
 > 
-> 
->  drivers/iommu/amd_iommu.c           |  214 +++++++-----------------
->  drivers/iommu/amd_iommu_types.h     |    1 
->  drivers/iommu/fsl_pamu_domain.c     |   66 --------
->  drivers/iommu/intel-iommu.c         |  307 +++++++++++++----------------------
->  drivers/iommu/intel_irq_remapping.c |   55 ++++--
->  drivers/iommu/iommu.c               |  182 +++++++++++++++++++++
->  drivers/iommu/pci.h                 |   29 ---
->  include/linux/iommu.h               |    1 
->  8 files changed, 398 insertions(+), 457 deletions(-)
->  delete mode 100644 drivers/iommu/pci.h
+> BTW, who else should I asked for review to move upstream process one step
+> further?
 
-Applied to the core branch, thanks Alex.
+I think you have enough people on CC and if they would find cycles to
+review them, they're welcome to do so.
 
+But the patches have gotten pretty neat and clean in the meantime so I
+think Rafael could go over them quickly and maybe even pick them up...
 
+:-)
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
