@@ -1,54 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758216AbaGDJ7H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 05:59:07 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56985 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030302AbaGDJ4R (ORCPT
+	id S1758441AbaGDJ7i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 05:59:38 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:38115 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030180AbaGDJ4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 05:56:17 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <tony@atomide.com>, <kishon@ti.com>, <balbi@ti.com>
-CC: <nsekhar@ti.com>, <nm@ti.com>, <george.cherian@ti.com>,
-        <sergei.shtylyov@cogentembedded.com>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v2 6/6] ARM: dts: dra7-evm: Add regulator information to USB2 PHYs
-Date: Fri, 4 Jul 2014 12:55:48 +0300
-Message-ID: <1404467748-12154-7-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1404467748-12154-1-git-send-email-rogerq@ti.com>
-References: <1404467748-12154-1-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 4 Jul 2014 05:56:13 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v6 14/23] regmap: Add regmap_reg_copy function
+Date: Fri,  4 Jul 2014 11:55:13 +0200
+Message-Id: <1404467722-26687-15-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ldousb_reg regulator provides power to the USB1 and USB2
-High Speed PHYs.
+Some device drivers using the register map API need to copy the
+value from one register to another. Even though it can be done
+with a combination of regmap_read() and regmap_write(), it is
+better to have a function to avoid code duplication and also it
+sanity check and do it atomically by holding the regmap lock.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
- arch/arm/boot/dts/dra7-evm.dts | 8 ++++++++
- 1 file changed, 8 insertions(+)
 
-diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
-index 8308954..50f8022 100644
---- a/arch/arm/boot/dts/dra7-evm.dts
-+++ b/arch/arm/boot/dts/dra7-evm.dts
-@@ -496,3 +496,11 @@
- 		};
- 	};
- };
+Changes since v5: None
+
+Changes since v4: None
+
+Changes since v3: None
+---
+ drivers/base/regmap/regmap.c | 34 ++++++++++++++++++++++++++++++++++
+ include/linux/regmap.h       |  9 +++++++++
+ 2 files changed, 43 insertions(+)
+
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 74d8c06..a2e0b04 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -2555,6 +2555,40 @@ int regmap_parse_val(struct regmap *map, const void *buf,
+ }
+ EXPORT_SYMBOL_GPL(regmap_parse_val);
+ 
++/**
++ * regmap_reg_copy(): Copy a value from a single register to another one
++ *
++ * @map: Register map to operate on
++ * @dest: Register to copy the value to
++ * @src: Register to copy the value from
++ *
++ * A value of zero will be returned on success, a negative errno will
++ * be returned in error cases.
++ */
++int regmap_reg_copy(struct regmap *map, unsigned int dest, unsigned int src)
++{
++	int val;
++	int ret = 0;
 +
-+&usb2_phy1 {
-+	phy-supply = <&ldousb_reg>;
-+};
++	if (dest == src)
++		return ret;
 +
-+&usb2_phy2 {
-+	phy-supply = <&ldousb_reg>;
-+};
++	if (dest % map->reg_stride ||
++	    src % map->reg_stride)
++		return -EINVAL;
++
++	map->lock(map->lock_arg);
++
++	ret = _regmap_read(map, src, &val);
++	if (!ret)
++		ret = _regmap_write(map, dest, val);
++
++	map->unlock(map->lock_arg);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(regmap_reg_copy);
++
+ static int __init regmap_initcall(void)
+ {
+ 	regmap_debugfs_initcall();
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 7b0e4b4..116c22b 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -445,6 +445,8 @@ int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
+ int regmap_parse_val(struct regmap *map, const void *buf,
+ 				unsigned int *val);
+ 
++int regmap_reg_copy(struct regmap *map, unsigned int dest, unsigned int src);
++
+ static inline bool regmap_reg_in_range(unsigned int reg,
+ 				       const struct regmap_range *range)
+ {
+@@ -723,6 +725,13 @@ static inline int regmap_parse_val(struct regmap *map, const void *buf,
+ 	return -EINVAL;
+ }
+ 
++static inline int regmap_reg_copy(struct regmap *map, unsigned int dest,
++				  unsigned int src)
++{
++	WARN_ONCE(1, "regmap API is disabled");
++	return -EINVAL;
++}
++
+ static inline struct regmap *dev_get_regmap(struct device *dev,
+ 					    const char *name)
+ {
 -- 
-1.8.3.2
+2.0.0.rc2
 
