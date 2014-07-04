@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760163AbaGDVGq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 17:06:46 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:37830 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752725AbaGDVGo (ORCPT
+	id S1760092AbaGDVIJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 17:08:09 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:49258 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752725AbaGDVIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 17:06:44 -0400
-Message-ID: <53B7175B.1030109@samsung.com>
-Date: Sat, 05 Jul 2014 06:06:35 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
-MIME-Version: 1.0
-To: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-CC: linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Tarek Dakhran <t.dakhran@samsung.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Ben Dooks <ben-linux@fluff.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        "ARM/SAMSUNG ARM A..." <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: dts: exynos5410: Fill in CPU clock-frequency
-References: <1403466596-3347-1-git-send-email-afaerber@suse.de> <53A7DCF8.4090108@samsung.com> <53B690B9.2090906@suse.de>
-In-Reply-To: <53B690B9.2090906@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Fri, 4 Jul 2014 17:08:07 -0400
+Message-ID: <1404508083.2457.15.camel@buesod1.americas.hpqcorp.net>
+Subject: [PATCH] mm,vmacache: inline vmacache_valid_mm()
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: davidlohr@hp.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Fri, 04 Jul 2014 14:08:03 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/14 20:32, Andreas Färber wrote:
-> Am 23.06.2014 09:53, schrieb Tarek Dakhran:
->> On 06/22/2014 11:49 PM, Andreas Färber wrote:
->>> It's 1.6 GHz for the Cortex-A15.
->>>
->>> Avoids warnings like "/cpus/cpu@0 missing clock-frequency property".
->>>
->>> Signed-off-by: Andreas afaerber@suse.de>
->>> ---
->>>    arch/arm/boot/dts/exynos5410.dtsi | 4 ++++
->>>    1 file changed, 4 insertions(+)
->>>
->>> diff --git a/arch/arm/boot/dts/exynos5410.dtsi
->>> b/arch/arm/boot/dts/exynos5410.dtsi
->>> index 3839c26..9d0b8cc 100644
->>> --- a/arch/arm/boot/dts/exynos5410.dtsi
->>> +++ b/arch/arm/boot/dts/exynos5410.dtsi
->>> @@ -28,24 +28,28 @@
->>>                device_type = "cpu";
->>>                compatible = "arm,cortex-a15";
->>>                reg =<0x0>;
->>> +            clock-frequency =<1600000000>;
->>>
->>
->> Reviewed-by: Tarek Dakhran<t.dakhran@samsung.com>
->
-> Ping? Seems really trivial...
->
-Will apply.
+From: Davidlohr Bueso <davidlohr@hp.com>
 
-BTW Andreas, I can't use 'Färber' in my git tree so which one is right 
-or more preferred? Farber, Faerber, Ferber? Sorry.
+No brainer for this little function.
 
-Thanks,
-Kukjin
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ mm/vmacache.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/vmacache.c b/mm/vmacache.c
+index 9f25af8..e72b8ee 100644
+--- a/mm/vmacache.c
++++ b/mm/vmacache.c
+@@ -50,7 +50,7 @@ void vmacache_flush_all(struct mm_struct *mm)
+  * Also handle the case where a kernel thread has adopted this mm via use_mm().
+  * That kernel thread's vmacache is not applicable to this mm.
+  */
+-static bool vmacache_valid_mm(struct mm_struct *mm)
++static inline bool vmacache_valid_mm(struct mm_struct *mm)
+ {
+ 	return current->mm == mm && !(current->flags & PF_KTHREAD);
+ }
+-- 
+1.8.1.4
+
+
+
