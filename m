@@ -1,161 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085AbaGDOQH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 10:16:07 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:43565 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554AbaGDOQE (ORCPT
+	id S1755753AbaGDOVq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 10:21:46 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:18618 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751554AbaGDOVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 10:16:04 -0400
-Date: Fri, 4 Jul 2014 22:15:41 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        kbuild test robot <fengguang.wu@intel.com>, kbuild@01.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-crypto@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] DRBG: cleanup of preprocessor macros
-Message-ID: <20140704141541.GB27229@gondor.apana.org.au>
-References: <4927386.WYHrRe3NJm@myon.chronox.de>
- <3104100.drOBnqUFp8@myon.chronox.de>
- <53AFC322.2060109@infradead.org>
- <1616464.nTZ4WdyPoM@myon.chronox.de>
+	Fri, 4 Jul 2014 10:21:45 -0400
+Date: Fri, 4 Jul 2014 10:21:42 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Oleg Nesterov <oleg@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [RFC][PATCH 0/3] ftrace: Add dynamically allocated trampolines
+Message-ID: <20140704102142.7d276e4b@gandalf.local.home>
+In-Reply-To: <53B6AA0C.2080704@hitachi.com>
+References: <20140703200750.648550267@goodmis.org>
+	<53B6AA0C.2080704@hitachi.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1616464.nTZ4WdyPoM@myon.chronox.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 29, 2014 at 01:37:05PM +0200, Stephan Mueller wrote:
->
-> When looking into the documentation and trying it I found:
+On Fri, 04 Jul 2014 22:20:12 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+
+> (2014/07/04 5:07), Steven Rostedt wrote:
+> > [ NOT READY FOR INCLUSION! ]
+> > 
+> > Note, this is based off of my remove ftrace_start/stop() patch set.
+> > 
+> > I've been wanting to do this for years, and just never gotten around to it.
+> > But with all this talk of kpatch and kgraft live kernel patching using
+> > the ftrace infrastructure, it seems like a good time to do it.
+> > 
+> > The way the function callback mechanism works in ftrace is that if there's
+> > only one function callback registered, it will set the mcount/fentry
+> > trampoline to call that function directly. But as soon as you register
+> > another callback, the mcount trampoline calls a loop function that iterates
+> > over all the registered callbacks (ftrace_ops) checking their hash tables
+> > to see if the called function matches the ops before calling its callback.
+> > This happens even if the two registered functions are not even tracing
+> > the same function!
+> > 
+> > This really sucks if you are tracing all functions, and then add a kprobe
+> > or perf event that traces a single function. That will cause all the
+> > other functions being traced to perform the loop test.
 > 
-> - bool choices allow me to only select one option, and only one
+> Ah, I've thought that ftrace already had different trampoline for loop and
+> single and replaced each mcount-call instruction to appropriate one. But
+> this series actually does that, doesn't this? :)
+
+Well, I guess the answer to that is what do you consider the
+trampoline? I'm currently considering it to be the assembly code that
+the mcount/fentry call jumps to. We only have two trampolines (three if
+you count the function graph code that will be called directly come
+3.17). Those two are the normal ftrace_caller and the
+ftrace_regs_caller. Now what they call can be different. When only a
+single ftrace_ops is registered, they call the ftrace_ops->func
+directly. If there are more than one ftrace_ops registered, then they
+call the loop function directly.
+
+
 > 
-> - tristate choices allow me to only select one option, if the initial tristate 
-> is set to yes. If the initial tristate is set to module, it allows zero to all 
-> options to be set.
+> > Ideally, if only a single callback (ftrace_ops) is registered to a
+> > function, than that function should call a trampoline that will only
+> > call that one callback without doing any other tests.
+> > 
+> > This patch set adds this functionality to x86_64. If a callback is
+> > registered to a function and there's no other callback registered to
+> > that function that ftrace_ops will get its own trampoline allocated
+> > for it that will call the function directly.
+> > 
+> > Note, for dynamically allocated ftrace_ops (kprobes, perf, instance
+> > directory function tracing), the dynamic trampoline will only be created
+> > if CONFIG_PREEMPT is not set. That's because, until Paul finishes his
+> > rcu_call_task() code, there's no safe way to know if a task was preempted
+> > while on the trampoline and is waiting to run on it some more.
 > 
-> That said, neither covers my requirement here: require that at least one 
-> option is set, but allow more options.
+> Hmm, if we can declare "this ftrace_ops is permanent"(like finalizing) then
+> we can allocate trampoline for such dynamic one. Since the kprobes actually
+> doesn't need to free (or unregister) ftrace_ops, I can use it.
 
-I have added the following patch to solve this problem.
+Yeah, if we add a ftrace_ops PERMANENT flag, then we could allow them
+too.
 
-Please respin your patch against this.
+> 
+> 
+> > I need to write up a bunch of tests for this code, but currently it works
+> > on the few tests I did manually. I didn't even run this code yet under
+> > my full test suite, so it may very well have bugs in it that might be
+> > easily triggered. But I wanted to get the code out for review to see
+> > if anyone has any other idea to help enhance this feature.
+> 
+> Yeah, I'll review it.
 
-commit f2c89a10de4fd123a3d15223d26994f2fe1b95d8
-Author: Herbert Xu <herbert@gondor.apana.org.au>
-Date:   Fri Jul 4 22:15:08 2014 +0800
+Thanks!
 
-    crypto: drbg - Use Kconfig to ensure at least one RNG option is set
-    
-    This patch removes the build-time test that ensures at least one RNG
-    is set.  Instead we will simply not build drbg if no options are set
-    through Kconfig.
-    
-    This also fixes a typo in the name of the Kconfig option CRYTPO_DRBG
-    (should be CRYPTO_DRBG).
-    
-    Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+-- Steve
 
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 1dca374..6345c47 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -23,7 +23,7 @@ comment "Crypto core or helper"
- 
- config CRYPTO_FIPS
- 	bool "FIPS 200 compliance"
--	depends on (CRYPTO_ANSI_CPRNG || CRYTPO_DRBG) && !CRYPTO_MANAGER_DISABLE_TESTS
-+	depends on (CRYPTO_ANSI_CPRNG || CRYPTO_DRBG) && !CRYPTO_MANAGER_DISABLE_TESTS
- 	depends on MODULE_SIG
- 	help
- 	  This options enables the fips boot option which is
-@@ -1394,39 +1394,39 @@ config CRYPTO_ANSI_CPRNG
- 	  ANSI X9.31 A.2.4. Note that this option must be enabled if
- 	  CRYPTO_FIPS is selected
- 
--menuconfig CRYTPO_DRBG
-+menuconfig CRYPTO_DRBG_MENU
- 	tristate "NIST SP800-90A DRBG"
--	depends on CRYPTO
--	select CRYPTO_RNG
- 	help
- 	  NIST SP800-90A compliant DRBG. In the following submenu, one or
- 	  more of the DRBG types must be selected.
- 
--if CRYTPO_DRBG
-+if CRYPTO_DRBG_MENU
- 
- config CRYPTO_DRBG_HMAC
- 	bool "Enable HMAC DRBG"
- 	default y
--	depends on CRYTPO_DRBG
- 	select CRYPTO_HMAC
- 	help
- 	  Enable the HMAC DRBG variant as defined in NIST SP800-90A.
- 
- config CRYPTO_DRBG_HASH
- 	bool "Enable Hash DRBG"
--	depends on CRYTPO_DRBG
- 	select CRYPTO_HASH
- 	help
- 	  Enable the Hash DRBG variant as defined in NIST SP800-90A.
- 
- config CRYPTO_DRBG_CTR
- 	bool "Enable CTR DRBG"
--	depends on CRYTPO_DRBG
- 	select CRYPTO_AES
- 	help
- 	  Enable the CTR DRBG variant as defined in NIST SP800-90A.
- 
--endif #CRYTPO_DRBG
-+config CRYPTO_DRBG
-+	tristate
-+	default CRYPTO_DRBG_MENU if (CRYPTO_DRBG_HMAC || CRYPTO_DRBG_HASH || CRYPTO_DRBG_CTR)
-+	select CRYPTO_RNG
-+
-+endif	# if CRYPTO_DRBG_MENU
- 
- config CRYPTO_USER_API
- 	tristate
-diff --git a/crypto/Makefile b/crypto/Makefile
-index bfa94fa..cfa57b3 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -92,7 +92,7 @@ obj-$(CONFIG_CRYPTO_842) += 842.o
- obj-$(CONFIG_CRYPTO_RNG2) += rng.o
- obj-$(CONFIG_CRYPTO_RNG2) += krng.o
- obj-$(CONFIG_CRYPTO_ANSI_CPRNG) += ansi_cprng.o
--obj-$(CONFIG_CRYTPO_DRBG) += drbg.o
-+obj-$(CONFIG_CRYPTO_DRBG) += drbg.o
- obj-$(CONFIG_CRYPTO_TEST) += tcrypt.o
- obj-$(CONFIG_CRYPTO_GHASH) += ghash-generic.o
- obj-$(CONFIG_CRYPTO_USER_API) += af_alg.o
-diff --git a/crypto/drbg.c b/crypto/drbg.c
-index d6621a6..acc7523 100644
---- a/crypto/drbg.c
-+++ b/crypto/drbg.c
-@@ -99,12 +99,6 @@
- 
- #include <crypto/drbg.h>
- 
--#if !defined(CONFIG_CRYPTO_DRBG_HASH) && \
--	!defined(CONFIG_CRYPTO_DRBG_HMAC) && \
--	!defined(CONFIG_CRYPTO_DRBG_CTR)
--#warning "The DRBG code is useless without compiling at least one DRBG type"
--#endif
--
- /***************************************************************
-  * Backend cipher definitions available to DRBG
-  ***************************************************************/
 
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
