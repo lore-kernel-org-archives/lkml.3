@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760576AbaGDWQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:16:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57071 "EHLO
+	id S1760647AbaGDWQn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:16:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57103 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760559AbaGDWQX (ORCPT
+	with ESMTP id S1760578AbaGDWQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:16:23 -0400
+	Fri, 4 Jul 2014 18:16:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yann Droneaud <ydroneaud@opteya.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.15 27/66] IB/mlx5: add missing padding at end of struct mlx5_ib_create_srq
-Date: Fri,  4 Jul 2014 15:14:26 -0700
-Message-Id: <20140704221424.054108603@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.15 50/66] powerpc: Add AT_HWCAP2 to indicate V.CRYPTO category support
+Date: Fri,  4 Jul 2014 15:14:49 -0700
+Message-Id: <20140704221425.086507736@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -29,117 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yann Droneaud <ydroneaud@opteya.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 43bc889380c2ad9aa230eccc03a15cc52cf710d4 upstream.
+commit dd58a092c4202f2bd490adab7285b3ff77f8e467 upstream.
 
-The i386 ABI disagrees with most other ABIs regarding alignment of
-data type larger than 4 bytes: on most ABIs a padding must be added at
-end of the structures, while it is not required on i386.
+The Vector Crypto category instructions are supported by current POWER8
+chips, advertise them to userspace using a specific bit to properly
+differentiate with chips of the same architecture level that might not
+have them.
 
-So for most ABIs struct mlx5_ib_create_srq gets implicitly padded to be
-aligned on a 8 bytes multiple, while for i386, such padding is not
-added.
-
-Tool pahole could be used to find such implicit padding:
-
-  $ pahole --anon_include \
-           --nested_anon_include \
-           --recursive \
-           --class_name mlx5_ib_create_srq \
-           drivers/infiniband/hw/mlx5/mlx5_ib.o
-
-Then, structure layout can be compared between i386 and x86_64:
-
-#  +++ obj-i386/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt    2014-03-28 11:43:07.386413682 +0100
-#  --- obj-x86_64/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt  2014-03-27 13:06:17.788472721 +0100
-#  @@ -69,7 +68,6 @@ struct mlx5_ib_create_srq {
-#          __u64                      db_addr;              /*     8     8 */
-#          __u32                      flags;                /*    16     4 */
-#
-#  -       /* size: 20, cachelines: 1, members: 3 */
-#  -       /* last cacheline: 20 bytes */
-#  +       /* size: 24, cachelines: 1, members: 3 */
-#  +       /* padding: 4 */
-#  +       /* last cacheline: 24 bytes */
-#   };
-
-ABI disagreement will make an x86_64 kernel try to read past
-the buffer provided by an i386 binary.
-
-When boundary check will be implemented, the x86_64 kernel will
-refuse to read past the i386 userspace provided buffer and the
-uverb will fail.
-
-Anyway, if the structure lay in memory on a page boundary and
-next page is not mapped, ib_copy_from_udata() will fail and the
-uverb will fail.
-
-This patch makes create_srq_user() takes care of the input
-data size to handle the case where no padding was provided.
-
-This way, x86_64 kernel will be able to handle struct mlx5_ib_create_srq
-as sent by unpatched and patched i386 libmlx5.
-
-Link: http://marc.info/?i=cover.1399309513.git.ydroneaud@opteya.com
-Fixes: e126ba97dba9e ("mlx5: Add driver for Mellanox Connect-IB adapter")
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/mlx5/srq.c  |   14 +++++++++++++-
- drivers/infiniband/hw/mlx5/user.h |    1 +
- 2 files changed, 14 insertions(+), 1 deletion(-)
+ arch/powerpc/include/uapi/asm/cputable.h |    1 +
+ arch/powerpc/kernel/cputable.c           |    3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/infiniband/hw/mlx5/srq.c
-+++ b/drivers/infiniband/hw/mlx5/srq.c
-@@ -35,6 +35,7 @@
- #include <linux/mlx5/srq.h>
- #include <linux/slab.h>
- #include <rdma/ib_umem.h>
-+#include <rdma/ib_user_verbs.h>
+--- a/arch/powerpc/include/uapi/asm/cputable.h
++++ b/arch/powerpc/include/uapi/asm/cputable.h
+@@ -41,5 +41,6 @@
+ #define PPC_FEATURE2_EBB		0x10000000
+ #define PPC_FEATURE2_ISEL		0x08000000
+ #define PPC_FEATURE2_TAR		0x04000000
++#define PPC_FEATURE2_VEC_CRYPTO		0x02000000
  
- #include "mlx5_ib.h"
- #include "user.h"
-@@ -78,16 +79,27 @@ static int create_srq_user(struct ib_pd
- {
- 	struct mlx5_ib_dev *dev = to_mdev(pd->device);
- 	struct mlx5_ib_create_srq ucmd;
-+	size_t ucmdlen;
- 	int err;
- 	int npages;
- 	int page_shift;
- 	int ncont;
- 	u32 offset;
- 
--	if (ib_copy_from_udata(&ucmd, udata, sizeof(ucmd))) {
-+	ucmdlen =
-+		(udata->inlen - sizeof(struct ib_uverbs_cmd_hdr) <
-+		 sizeof(ucmd)) ? (sizeof(ucmd) -
-+				  sizeof(ucmd.reserved)) : sizeof(ucmd);
-+
-+	if (ib_copy_from_udata(&ucmd, udata, ucmdlen)) {
- 		mlx5_ib_dbg(dev, "failed copy udata\n");
- 		return -EFAULT;
- 	}
-+
-+	if (ucmdlen == sizeof(ucmd) &&
-+	    ucmd.reserved != 0)
-+		return -EINVAL;
-+
- 	srq->wq_sig = !!(ucmd.flags & MLX5_SRQ_FLAG_SIGNATURE);
- 
- 	srq->umem = ib_umem_get(pd->uobject->context, ucmd.buf_addr, buf_size,
---- a/drivers/infiniband/hw/mlx5/user.h
-+++ b/drivers/infiniband/hw/mlx5/user.h
-@@ -110,6 +110,7 @@ struct mlx5_ib_create_srq {
- 	__u64	buf_addr;
- 	__u64	db_addr;
- 	__u32	flags;
-+	__u32	reserved; /* explicit padding (optional on i386) */
- };
- 
- struct mlx5_ib_create_srq_resp {
+ #endif /* _UAPI__ASM_POWERPC_CPUTABLE_H */
+--- a/arch/powerpc/kernel/cputable.c
++++ b/arch/powerpc/kernel/cputable.c
+@@ -109,7 +109,8 @@ extern void __restore_cpu_e6500(void);
+ 				 PPC_FEATURE_PSERIES_PERFMON_COMPAT)
+ #define COMMON_USER2_POWER8	(PPC_FEATURE2_ARCH_2_07 | \
+ 				 PPC_FEATURE2_HTM_COMP | PPC_FEATURE2_DSCR | \
+-				 PPC_FEATURE2_ISEL | PPC_FEATURE2_TAR)
++				 PPC_FEATURE2_ISEL | PPC_FEATURE2_TAR | \
++				 PPC_FEATURE2_VEC_CRYPTO)
+ #define COMMON_USER_PA6T	(COMMON_USER_PPC64 | PPC_FEATURE_PA6T |\
+ 				 PPC_FEATURE_TRUE_LE | \
+ 				 PPC_FEATURE_HAS_ALTIVEC_COMP)
 
 
