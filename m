@@ -1,143 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760020AbaGDBQZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 21:16:25 -0400
-Received: from script.cs.helsinki.fi ([128.214.11.1]:44263 "EHLO
-	script.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756355AbaGDBPZ (ORCPT
+	id S1760059AbaGDBQp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 21:16:45 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:56343 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760030AbaGDBQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 21:15:25 -0400
-X-DKIM: Courier DKIM Filter v0.50+pk-2014-03-23 mail.cs.helsinki.fi Fri, 04 Jul 2014 04:09:52 +0300
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH v2 3/4] USB: EHCI: tegra: Fix probe order issue leading to broken USB
-Date: Fri,  4 Jul 2014 04:09:38 +0300
-Message-Id: <1404436179-10745-4-git-send-email-ttynkkynen@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404436179-10745-1-git-send-email-ttynkkynen@nvidia.com>
-References: <1404436179-10745-1-git-send-email-ttynkkynen@nvidia.com>
+	Thu, 3 Jul 2014 21:16:43 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgdfAKj/tVN5LHZ8PGdsb2JhbABagw2sbgEBAQEBAQaaVAGBCxcEAQEBATg1hAMBAQU6HCMQCAMOCgklDwUlAwcaE4hByTcXGIVYiTIHhEMFmnWLTIwVKy8
+Date: Fri, 4 Jul 2014 11:16:39 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Miller <davem@davemloft.net>,
+        Andres Freund <andres@2ndquadrant.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v2 1/4] define PAGECACHE_TAG_* as enumeration under
+ include/uapi
+Message-ID: <20140704011639.GG9508@dastard>
+References: <1404424335-30128-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1404424335-30128-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404424335-30128-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Tegra USB complex has a particularly annoying misdesign: some of the
-UTMI pad configuration registers are global for all the 3 USB controllers
-on the chip, but those registers are located in the first controller's
-register space and will be cleared when the reset to the first
-controller is asserted. Currently, this means that if the 1st controller
-were to finish probing after the 2nd or 3rd controller, USB would not
-work at all.
+On Thu, Jul 03, 2014 at 05:52:12PM -0400, Naoya Horiguchi wrote:
+> We need the pagecache tags to be exported to userspace later in this
+> series for fincore(2), so this patch moves the definition to the new
+> include file for preparation. We also use the number of pagecache tags,
+> so this patch also adds it.
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-Fix this situation by always resetting the 1st controller before doing
-any other setup to any of the controllers, and then never ever reset the
-first controller again. As the UTMI registers are related to the PHY,
-the PHY driver should probably reset the Tegra controllers instead,
-but since old device trees only have reset phandles in the EHCI nodes,
-do it here, which means a bit of device tree groveling. Those old DTs
-also won't get the reset fix from this commit, so we'll dev_warn() them,
-but the driver will still keep probing successfully.
+NACK.
 
-Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
----
-v2 changes: assume we can find the usb1 reset from the PHY DT node,
-            don't fail if it's not found but just issue a warning
- drivers/usb/host/ehci-tegra.c |   62 +++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 59 insertions(+), 3 deletions(-)
+The radix tree tags are deeply internal implementation details.
+They are an artifact of the current mark-and-sweep writeback
+algorithm, and as such should never, ever be exposed to userspace,
+let alone fixed in an ABI we need to support forever more.
 
-diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
-index 5590567..f495775 100644
---- a/drivers/usb/host/ehci-tegra.c
-+++ b/drivers/usb/host/ehci-tegra.c
-@@ -46,6 +46,7 @@
- #define DRV_NAME "tegra-ehci"
- 
- static struct hc_driver __read_mostly tegra_ehci_hc_driver;
-+static bool usb1_reset_attempted;
- 
- struct tegra_ehci_soc_config {
- 	bool has_hostpc;
-@@ -60,6 +61,61 @@ struct tegra_ehci_hcd {
- 	enum tegra_usb_phy_port_speed port_speed;
- };
- 
-+/*
-+ * The 1st USB controller contains some UTMI pad registers that are global for
-+ * all the controllers on the chip. Those registers are also cleared when
-+ * reset is asserted to the 1st controller. This means that the 1st controller
-+ * can only be reset when no other controlled has finished probing. So we'll
-+ * reset the 1st controller before doing any other setup on any of the
-+ * controllers, and then never again.
-+ *
-+ * Since this is a PHY issue, the Tegra PHY driver should probably be doing
-+ * the resetting of the USB controllers. But to keep compatibility with old
-+ * device trees that don't have reset phandles in the PHYs, do it here.
-+ * Those old DTs will be vulnerable to total USB breakage if the 1st EHCI
-+ * device isn't the first one to finish probing, so warn them.
-+ */
-+static int tegra_reset_usb_controller(struct platform_device *pdev)
-+{
-+	struct device_node *phy_np;
-+	struct usb_hcd *hcd = platform_get_drvdata(pdev);
-+	struct tegra_ehci_hcd *tegra =
-+		(struct tegra_ehci_hcd *)hcd_to_ehci(hcd)->priv;
-+
-+	phy_np = of_parse_phandle(pdev->dev.of_node, "nvidia,phy", 0);
-+	if (!phy_np)
-+		return -ENOENT;
-+
-+	if (!usb1_reset_attempted) {
-+		struct reset_control *usb1_reset;
-+
-+		usb1_reset = of_reset_control_get(phy_np, "usb");
-+		if (IS_ERR(usb1_reset)) {
-+			dev_warn(&pdev->dev,
-+				 "can't get utmi-pads reset from the PHY\n");
-+			dev_warn(&pdev->dev,
-+				 "continuing, but please update your DT\n");
-+		} else {
-+			reset_control_assert(usb1_reset);
-+			udelay(1);
-+			reset_control_deassert(usb1_reset);
-+		}
-+
-+		reset_control_put(usb1_reset);
-+		usb1_reset_attempted = true;
-+	}
-+
-+	if (!of_property_read_bool(phy_np, "nvidia,has-utmi-pad-registers")) {
-+		reset_control_assert(tegra->rst);
-+		udelay(1);
-+		reset_control_deassert(tegra->rst);
-+	}
-+
-+	of_node_put(phy_np);
-+
-+	return 0;
-+}
-+
- static int tegra_ehci_internal_port_reset(
- 	struct ehci_hcd	*ehci,
- 	u32 __iomem	*portsc_reg
-@@ -389,9 +445,9 @@ static int tegra_ehci_probe(struct platform_device *pdev)
- 	if (err)
- 		goto cleanup_hcd_create;
- 
--	reset_control_assert(tegra->rst);
--	udelay(1);
--	reset_control_deassert(tegra->rst);
-+	err = tegra_reset_usb_controller(pdev);
-+	if (err)
-+		goto cleanup_clk_en;
- 
- 	u_phy = devm_usb_get_phy_by_phandle(&pdev->dev, "nvidia,phy", 0);
- 	if (IS_ERR(u_phy)) {
+Cheers,
+
+Dave.
 -- 
-1.7.9.5
-
+Dave Chinner
+david@fromorbit.com
