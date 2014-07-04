@@ -1,77 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756187AbaGDAQH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 20:16:07 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44594 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275AbaGDAQF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 20:16:05 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <53B5F201.5070804@jp.fujitsu.com>
-Date: Fri, 4 Jul 2014 09:14:57 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1756277AbaGDAlP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 20:41:15 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:50136 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755662AbaGDAlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 20:41:13 -0400
+Date: Thu, 3 Jul 2014 20:41:04 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: mm: memcontrol: rewrite uncharge API: problems
+Message-ID: <20140704004104.GG1369@cmpxchg.org>
+References: <alpine.LSU.2.11.1406301558090.4572@eggly.anvils>
+ <20140701174612.GC1369@cmpxchg.org>
+ <20140702212004.GF1369@cmpxchg.org>
+ <alpine.LSU.2.11.1407021518120.8299@eggly.anvils>
+ <alpine.LSU.2.11.1407031219500.1370@eggly.anvils>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
-        <x86@kernel.org>, <toshi.kani@hp.com>, <imammedo@redhat.com>,
-        <huawei.libin@huawei.com>, <paul.gortmaker@windriver.com>,
-        <linux-kernel@vger.kernel.org>, <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] x86,cpu-hotplug: clear llc_shared_mask at CPU hotplug
-References: <53B3A991.2070502@jp.fujitsu.com> <20140702113253.GD1318@pd.tnic> <53B4E1A4.2050502@jp.fujitsu.com> <20140703095135.GA21776@pd.tnic>
-In-Reply-To: <20140703095135.GA21776@pd.tnic>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1407031219500.1370@eggly.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/07/03 18:51), Borislav Petkov wrote:
-> On Thu, Jul 03, 2014 at 01:52:52PM +0900, Yasuaki Ishimatsu wrote:
->> I think that the reason to apply CPU number to ACPI ID is that CPU is
->> used for the application without considering physical CPU. So even if
->> CPU number is changed, it is no matter.
->
-> I don't think I understand what you're saying here...
->
->> Thus the readded cores is numbered to unused CPU number.
->
-> Well, maybe we should use some method to number cores in a stable manner
-> so that they don't get new numbers when they reappear.
->
->> I think the mask has 2 meanings as follows:
->>    - representing CPUs that share same CPU cache.
->
-> ... that share the last level cache.
->
->>    - representing onlined CPUs
->
-> no, for that we have cpu_online_mask.
->
+On Thu, Jul 03, 2014 at 12:54:36PM -0700, Hugh Dickins wrote:
+> On Wed, 2 Jul 2014, Hugh Dickins wrote:
+> > On Wed, 2 Jul 2014, Johannes Weiner wrote:
+> > > 
+> > > Could you give the following patch a spin?  I put it in the mmots
+> > > stack on top of mm-memcontrol-rewrite-charge-api-fix-shmem_unuse-fix.
+> > 
+> > I'm just with the laptop until this evening.  I slapped it on top of
+> > my 3.16-rc2-mm1 plus fixes (but obviously minus my memcg_batch one
+> > - which incidentally continues to run without crashing on the G5),
+> > and it quickly gave me this lockdep splat, which doesn't look very
+> > different from the one before.
+> > 
+> > I see there's now an -rc3-mm1, I'll try it out on that in half an
+> > hour... but unless I send word otherwise, assume that's the same.
+> 
+> Yes, I get that lockdep report each time on -rc3-mm1 + your patch.
 
->> So even if we keep their old numbers, we should clear the mask when
->> offlinig CPU.
->
-> No, cpu_online_mask is for onlined cores. I think the mask which shows
-> which cores share a last level cache should not be changed *IF* the core
-> numbers remain stable, that is.
+There are two instances where I missed to make &rtpz->lock IRQ-safe:
 
-If so, why following maps are cleared by CPU offline?
-   - cpu_sigling_map
-   - cpu_core_map
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 91b621846e10..bbaa3f4cf4db 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3919,7 +3919,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+ 						    gfp_mask, &nr_scanned);
+ 		nr_reclaimed += reclaimed;
+ 		*total_scanned += nr_scanned;
+-		spin_lock(&mctz->lock);
++		spin_lock_irq(&mctz->lock);
+ 
+ 		/*
+ 		 * If we failed to reclaim anything from this memory cgroup
+@@ -3959,7 +3959,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+ 		 */
+ 		/* If excess == 0, no tree ops */
+ 		__mem_cgroup_insert_exceeded(mz, mctz, excess);
+-		spin_unlock(&mctz->lock);
++		spin_unlock_irq(&mctz->lock);
+ 		css_put(&mz->memcg->css);
+ 		loop++;
+ 		/*
 
-I think the masks are used by cpumask_weight(). So they must be cleared
-at CPU offline. And currently llc_shared_map is not used by cpumask_weight().
-So even if we don't clear the mask, there is no problem. But llc_shared_map
-will be used by cpumask_weight(). In this case, some problem will occur and
-we will spent time the investigation of the problem.
+That should make it complete - but the IRQ toggling costs are fairly
+high so I'm rewriting the batching code to use the page lists that
+most uncharges have anyway, and then batch the no-IRQ sections.
 
-So even if we keep CPU number, the mask should be cleared at CPU offline.
+> I also twice got a flurry of res_counter.c:28 underflow warnings.
+> Hmm, 62 of them each time (I was checking for a number near 512,
+> which would suggest a THP/4k confusion, but no).  The majority
+> of them coming from mem_cgroup_reparent_charges.
 
-Thanks,
-Yasuaki Ishimatsu
+I haven't seen these yet.  But the location makes sense: if there are
+any imbalances they'll be noticed during a group's final uncharges.
 
+> But the laptop stayed up fine (for two hours before I had to stop
+> it), and the G5 has run fine with that load for 16 hours now, no
+> problems with release_pages, and not even a res_counter.c:28 (but
+> I don't use lockdep on it).
 
+Great!
+
+> The x86 workstation ran fine for 4.5 hours, then hit some deadlock
+> which I doubt had any connection to your changes: looked more like
+> a jbd2 transaction was failing to complete (which, with me trying
+> ext4 on loop on tmpfs, might be more my problem than anyone else's).
+> 
+> Oh, but nearly forgot, I did an earlier run on the laptop last night,
+> which crashed within minutes on
+> 
+> VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM))
+> mm/memcontrol.c:6680!
+> page had count 1 mapcount 0 mapping anon index 0x196
+> flags locked uptodate reclaim swapbacked, pcflags 1, memcg not root
+> mem_cgroup_migrate < move_to_new_page < migrate_pages < compact_zone <
+> compact_zone_order < try_to_compact_pages < __alloc_pages_direct_compact <
+> __alloc_pages_nodemask < alloc_pages_vma < do_huge_pmd_anonymous_page <
+> handle_mm_fault < __do_page_fault
+
+Haven't seen that one yet, either.  The only way I can see this happen
+is when the same page gets selected for migration twice in a row.
+Maybe a race with putback, where it gets added to the LRU but isolated
+by compaction before putback drops the refcount - will verify that.
+
+Thanks for your reports!
