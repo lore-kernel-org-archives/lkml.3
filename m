@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192AbaGDIHw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:07:52 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:51437 "EHLO
+	id S1756062AbaGDIHt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:07:49 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:51439 "EHLO
 	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755646AbaGDIHl (ORCPT
+	with ESMTP id S1755648AbaGDIHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:07:41 -0400
+	Fri, 4 Jul 2014 04:07:42 -0400
 X-Original-SENDERIP: 10.177.220.145
 X-Original-MAILFROM: iamjoonsoo.kim@lge.com
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
@@ -30,9 +30,9 @@ Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
         Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 01/10] mm/page_alloc: remove unlikely macro on free_one_page()
-Date: Fri,  4 Jul 2014 16:57:46 +0900
-Message-Id: <1404460675-24456-2-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH 02/10] mm/page_alloc: correct to clear guard attribute in DEBUG_PAGEALLOC
+Date: Fri,  4 Jul 2014 16:57:47 +0900
+Message-Id: <1404460675-24456-3-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -40,27 +40,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Isolation is really rare case so !is_migrate_isolate() is
-likely case. Remove unlikely macro.
+In __free_one_page(), we check the buddy page if it is guard page.
+And, if so, we should clear guard attribute on the buddy page. But,
+currently, we clear original page's order rather than buddy one's.
+This doesn't have any problem, because resetting buddy's order
+is useless and the original page's order is re-assigned soon.
+But, it is better to correct code.
+
+Additionally, I change (set/clear)_page_guard_flag() to
+(set/clear)_page_guard() and makes these functions do all works
+needed for guard page. This may make code more understandable.
+
+One more thing, I did in this patch, is that fixing freepage accounting.
+If we clear guard page and link it onto isolate buddy list, we should
+not increase freepage count.
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 ---
- mm/page_alloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/page_alloc.c |   29 ++++++++++++++++-------------
+ 1 file changed, 16 insertions(+), 13 deletions(-)
 
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 8dac0f0..0d4cf7a 100644
+index 0d4cf7a..aeb51d1 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -735,7 +735,7 @@ static void free_one_page(struct zone *zone,
- 	zone->pages_scanned = 0;
- 
- 	__free_one_page(page, pfn, zone, order, migratetype);
--	if (unlikely(!is_migrate_isolate(migratetype)))
-+	if (!is_migrate_isolate(migratetype))
- 		__mod_zone_freepage_state(zone, 1 << order, migratetype);
- 	spin_unlock(&zone->lock);
+@@ -441,18 +441,28 @@ static int __init debug_guardpage_minorder_setup(char *buf)
  }
+ __setup("debug_guardpage_minorder=", debug_guardpage_minorder_setup);
+ 
+-static inline void set_page_guard_flag(struct page *page)
++static inline void set_page_guard(struct zone *zone, struct page *page,
++				unsigned int order, int migratetype)
+ {
+ 	__set_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
++	set_page_private(page, order);
++	/* Guard pages are not available for any usage */
++	__mod_zone_freepage_state(zone, -(1 << order), migratetype);
+ }
+ 
+-static inline void clear_page_guard_flag(struct page *page)
++static inline void clear_page_guard(struct zone *zone, struct page *page,
++				unsigned int order, int migratetype)
+ {
+ 	__clear_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
++	set_page_private(page, 0);
++	if (!is_migrate_isolate(migratetype))
++		__mod_zone_freepage_state(zone, (1 << order), migratetype);
+ }
+ #else
+-static inline void set_page_guard_flag(struct page *page) { }
+-static inline void clear_page_guard_flag(struct page *page) { }
++static inline void set_page_guard(struct zone *zone, struct page *page,
++				unsigned int order, int migratetype) {}
++static inline void clear_page_guard(struct zone *zone, struct page *page,
++				unsigned int order, int migratetype) {}
+ #endif
+ 
+ static inline void set_page_order(struct page *page, unsigned int order)
+@@ -594,10 +604,7 @@ static inline void __free_one_page(struct page *page,
+ 		 * merge with it and move up one order.
+ 		 */
+ 		if (page_is_guard(buddy)) {
+-			clear_page_guard_flag(buddy);
+-			set_page_private(page, 0);
+-			__mod_zone_freepage_state(zone, 1 << order,
+-						  migratetype);
++			clear_page_guard(zone, buddy, order, migratetype);
+ 		} else {
+ 			list_del(&buddy->lru);
+ 			zone->free_area[order].nr_free--;
+@@ -919,11 +926,7 @@ static inline void expand(struct zone *zone, struct page *page,
+ 			 * pages will stay not present in virtual address space
+ 			 */
+ 			INIT_LIST_HEAD(&page[size].lru);
+-			set_page_guard_flag(&page[size]);
+-			set_page_private(&page[size], high);
+-			/* Guard pages are not available for any usage */
+-			__mod_zone_freepage_state(zone, -(1 << high),
+-						  migratetype);
++			set_page_guard(zone, &page[size], high, migratetype);
+ 			continue;
+ 		}
+ #endif
 -- 
 1.7.9.5
 
