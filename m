@@ -1,92 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358AbaGDEvj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 00:51:39 -0400
-Received: from ozlabs.org ([103.22.144.67]:35410 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976AbaGDEvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 00:51:37 -0400
-Date: Fri, 4 Jul 2014 14:51:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Felipe Balbi <balbi@ti.com>, Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Daniel Mack <zonque@gmail.com>
-Subject: linux-next: manual merge of the usb-gadget tree with the
- usb.current tree
-Message-ID: <20140704145127.30008370@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1753380AbaGDE7U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 00:59:20 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:61799 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320AbaGDE7S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 00:59:18 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/5w9Um9aForBeZoI_HhigBRi"; protocol="application/pgp-signature"
+X-Originating-IP: [89.139.36.201]
+In-Reply-To: <53B59471.30703@ti.com>
+References: <1398904476-26200-1-git-send-email-s-anna@ti.com>
+ <1398904476-26200-5-git-send-email-s-anna@ti.com> <CAK=WgbbZvBLT7U638fBfPjF7-MJaP=4WJcrT_fEg6Uu3cXRAyg@mail.gmail.com>
+ <53B47626.4040506@ti.com> <CAK=WgbbJ6a17wrsEcvNq6tPiaciQ=E+22QE06t9EA8RFqicNRg@mail.gmail.com>
+ <53B59471.30703@ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Fri, 4 Jul 2014 07:58:56 +0300
+Message-ID: <CAK=WgbbZYwfOyeZuDTX2RXtEdYzsZc++crHZ-ZAqeiWds0BCcg@mail.gmail.com>
+Subject: Re: [PATCHv5 04/15] hwspinlock/core: add common OF helpers
+To: Suman Anna <s-anna@ti.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Bjorn Andersson <bjorn@kryo.se>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/5w9Um9aForBeZoI_HhigBRi
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Suman,
 
-Hi Felipe,
+On Thu, Jul 3, 2014 at 8:35 PM, Suman Anna <s-anna@ti.com> wrote:
+> Not at the moment, with the existing platform implementations. So, if I
+> understand you correctly, you are asking to leave out the xlate ops and
+> make the of_hwspin_lock_simple_xlate() internal until a need for an
+> xlate method arises.
 
-Today's linux-next merge of the usb-gadget tree got a conflict in
-drivers/usb/musb/musb_cppi41.c between commit c58d80f523ff ("usb: musb:
-Ensure that cppi41 timer gets armed on premature DMA TX irq") from the
-usb.current tree and commit 50aea6fca771 ("usb: musb: cppi41: fire
-hrtimer according to programmed channel length") from the usb-gadget
-tree.
+Yes, please. It seems to me this way we're reducing complexity without
+compromising anything.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+> This also means, we only support a value of 1 for #hwlock-cells.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+When a different #hwlock-cells value shows up, someone would have to
+write a new xlate implementation anyway. At the same time, the xlate
+ops could be brought back quite easily.
 
-diff --cc drivers/usb/musb/musb_cppi41.c
-index 5341bb223b7c,adfffe884891..000000000000
---- a/drivers/usb/musb/musb_cppi41.c
-+++ b/drivers/usb/musb/musb_cppi41.c
-@@@ -312,15 -271,13 +271,13 @@@ static void cppi41_dma_callback(void *p
-  				goto out;
-  			}
-  		}
-- 		if (is_isoc(hw_ep, 0)) {
-- 			schedule_work(&cppi41_channel->dma_completion);
-- 			goto out;
-- 		}
-  		list_add_tail(&cppi41_channel->tx_check,
-  				&controller->early_tx_list);
- -		if (!hrtimer_active(&controller->early_tx)) {
- +		if (!hrtimer_is_queued(&controller->early_tx)) {
-+ 			unsigned long usecs =3D cppi41_channel->total_len / 10;
-+=20
-  			hrtimer_start_range_ns(&controller->early_tx,
-- 				ktime_set(0, 140 * NSEC_PER_USEC),
-+ 				ktime_set(0, usecs * NSEC_PER_USEC),
-  				40 * NSEC_PER_USEC,
-  				HRTIMER_MODE_REL);
-  		}
+Since we're not imposing anything on the DT data, this doesn't affect
+our ability to support these scenarios in the future, but unless I'm
+missing a current use case, these scenarios right now seems somewhat
+fictional.
 
---Sig_/5w9Um9aForBeZoI_HhigBRi
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+> But, that would mean DT-based client users would have to invoke two
+> function calls to request a hwspinlock. We already have an API to get
+> the lock id given a hwspinlock - hwspin_lock_get_id(), so I added the OF
+> API for requesting a lock directly rather than giving an OF API for
+> getting the lock id. This is in keeping in convention with what other
+> drivers do normally - a regular get and an OF get. I can modify it if
+> you still prefer the OF API for getting a global lock id, but I feel its
+> a burden for client users.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Let's discuss this.
 
-iQIcBAEBCAAGBQJTtjLWAAoJEMDTa8Ir7ZwVQ2QP/jLvDZwzP+rsIuDjHaqgiKSB
-xTn9+G0cdmaUf78/PFDVmZ+U9rgaxTUfQhBkxRlcMG3bgSkMShfK5EG7BgFYFzYA
-9ixHIW8WGLMJZPu+j3mPFmGTSRNK4ITn5yny3MJRa9bqAJMCv+gXqeaf3uYZpYY7
-IXI2sXchYy4actuJO49aStNq8K+D31DdbTwsxaKn7BRlwfoZi7calw1FMknSLnhF
-L2YyhlJTW4iKwAdBPut6iWyoGA7Ny9fx6DYodjdDpRrqPjJTEHWkF3GI+OZn3bBp
-CwqX+EXtfRiTh8lN+sAlMyRna71/pTAaSLuOJHD2XHoaLHTlX8lWRprVXkC0w2Ey
-vg5PC5peyGHFdBP2vFyKz+YB628ffL8DP9xjWt6YOALDZWqy29e05cgRRJBONkQt
-EiSjKXyAsgvyd2MpQpH9UEyKf98F55huNZTHfJPkaLNtmyfDdrp1gBlelNl39UOh
-cApGgnBZM0ovkGA6thI5vIKj59mOD4JKn+gXvYFQN55XM3U3DVN1pLkG2ynOQzJt
-jJmqkVQdc+G/LT6YWt9QzbDKVfh1vlurye/+JTIxJIANbCp74fC1UE7ZBRqilLG+
-G/1FUh075fIRxQWPb5mL4FKC35CCxL+4DwFlghk+zQ5Xkw+X+gLLH1dho/ngQmtV
-ZjV689iqheMr1sDYxhhC
-=ENee
------END PGP SIGNATURE-----
+I was actually thinking of the more general use case of an heterogenous system:
 
---Sig_/5w9Um9aForBeZoI_HhigBRi--
+- driver gets the global lock id from a remote processor
+- driver then requests the specific lock
+
+Looking at these cases, the OF scenario only differs in the small part
+of fetching the lock id, and if we keep the regular request_specific
+API we'll have more common code between drivers.
+
+What do you think?
+
+> Also, do you prefer an open property-name in client users (like I am
+> doing at the moment) or imposing a standard property name "hwlocks"?
+
+Good point - I think we can start with an imposed "hwlocks" name, and
+evolve in the future as needed (again, only because we're not really
+imposing anything on the DT data - this is just kernel code that we
+could always extend as needed).
+
+Thanks,
+Ohad.
