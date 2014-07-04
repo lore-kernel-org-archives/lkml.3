@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245AbaGDH7L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 03:59:11 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:45304 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaGDH7E (ORCPT
+	id S1754074AbaGDH7I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 03:59:08 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:22032 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235AbaGDH7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 03:59:04 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-12-53b65ec4d061
+	Fri, 4 Jul 2014 03:59:05 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-d5-53b65ec69981
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
@@ -21,432 +21,208 @@ Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Jenny Tc <jenny.tc@intel.com>
-Subject: [PATCH v2 3/5] charger: max14577: Configure battery-dependent settings
- from DTS
-Date: Fri, 04 Jul 2014 09:58:27 +0200
-Message-id: <1404460709-17178-4-git-send-email-k.kozlowski@samsung.com>
+        Tomasz Figa <t.figa@samsung.com>, devicetree@vger.kernel.org
+Subject: [PATCH v2 5/5] devicetree: mfd: max14577: Add device tree bindings
+ document
+Date: Fri, 04 Jul 2014 09:58:29 +0200
+Message-id: <1404460709-17178-6-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1404460709-17178-1-git-send-email-k.kozlowski@samsung.com>
 References: <1404460709-17178-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t/xq7pH4rYFG9w+omCxccZ6VoupD5+w
-	WUx68p7ZYuLKycwW/W8Wslqce7WS0WLt1x52i9cvDC3ONr1ht7j/9SijxbcrHUwWl3fNYbNY
-	e+Quu8XS6xeZLCZMX8ti0br3CLvF6W5WB0GPNfPWMHpc7utl8tg56y67x8rlX9g8Nq/Q8li8
-	5yWTx6ZVnWwed67tYfOYdzLQo2/LKkaPz5vkArijuGxSUnMyy1KL9O0SuDJ+PbvAUrAtseLA
-	3yb2BsYDAV2MnBwSAiYSM9Z1MULYYhIX7q1n62Lk4hASWMoocWDaUUYIp49JYsPaf2wgVWwC
-	xhKbly8Bs0UEKiW+nT7BAlLELLCVRaLz9E12kISwQJTE05UbWUFsFgFViWt3j4Kt4BVwl9h2
-	bA47xDo5iZPHJoPVcAp4SHw6/Q5sqBBQTcOCyUwTGHkXMDKsYhRNLU0uKE5KzzXUK07MLS7N
-	S9dLzs/dxAgJ+C87GBcfszrEKMDBqMTD27hiQ7AQa2JZcWXuIUYJDmYlEd4qpW3BQrwpiZVV
-	qUX58UWlOanFhxiZODilGhjjumoubXV8y6utq+QsGzPr0c7Fzjfuqa+8nPfosKqe12qPFrnZ
-	f3xXp85w+V17w+bZDlNnKW/j/0JMZpZ3je6tvuzGaNXxvaLCw2nnx8JQ2Vdf73y19WG/6xuy
-	/wWTR4l9CufSCoEi9SXvruWbVTj7PJ+ZXWw7t5vBNmTBwwdTTn3Y7Lom5pMSS3FGoqEWc1Fx
-	IgAnyK/eVgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t/xq7rH4rYFG+z/zmaxccZ6VoupD5+w
+	WUx68p7ZYv6Rc6wWE1dOZrbof7OQ1eLcq5WMFq9fGFqcbXrDbnH/61FGi29XOpgsLu+aw2ax
+	9shddoul1y8yWUyYvpbFonXvEXaL092sFutnvGZxEPJYM28No8flvl4mj52z7rJ7rFz+hc1j
+	8wotj02rOtk87lzbw+Yx72SgR9+WVYwenzfJBXBFcdmkpOZklqUW6dslcGUs3tvMWPBPo+Lp
+	xinsDYxzFbsYOTkkBEwkrrw4xQ5hi0lcuLeerYuRi0NIYCmjxJn3x1kgnD4mifezp7GCVLEJ
+	GEtsXr6EDcQWEaiU+Hb6BFgRs8A1FonT3/eDFQkLhEncvT0HzGYRUJXY+30jM4jNK+Au0X1w
+	ExvEOjmJk8cmg9VwCnhIfDr9DiwuBFTTsGAy0wRG3gWMDKsYRVNLkwuKk9JzjfSKE3OLS/PS
+	9ZLzczcxQgL+6w7GpcesDjEKcDAq8fC+0N8ULMSaWFZcmXuIUYKDWUmEt0ppW7AQb0piZVVq
+	UX58UWlOavEhRiYOTqkGxv5+h1KNvr7G1DOy8S2J896+z1icJXkz6qOuQv5sxec7NVQZuFZ2
+	iSw6mhlz29PnmbpcdGT5g+Cf7h8b3mzVq/49W+bD3uZLW45OcXTTN0759lfO9eX2eqZbl+f4
+	SL6Rljp/vXbuxq9HJ3PtCDOMu7MgcEdkislph1NydYGR80UCIg1nbMjarcRSnJFoqMVcVJwI
+	ANhqMuVWAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove hard-coded values for:
- - Fast Charge current,
- - End Of Charge current,
- - Fast Charge timer,
- - Overvoltage Protection Threshold,
- - Battery Constant Voltage,
-and use DTS to configure them. This allows using the max14577 charger
-driver with different batteries.
+Add document describing device tree bindings for MAX14577 MFD
+drivers: MFD core, extcon, regulator and charger.
 
-Now the charger driver requires valid configuration data from DTS. In
-case of wrong configuration data it fails during probe. Patch adds
-of_compatible to the charger mfd cell in MFD driver core.
+Both MAX14577 and MAX77836 chipsets are documented.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Jenny Tc <jenny.tc@intel.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: devicetree@vger.kernel.org
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
 Cc: Mark Rutland <mark.rutland@arm.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 ---
- drivers/mfd/max14577.c               |   5 +-
- drivers/power/max14577_charger.c     | 240 +++++++++++++++++++++++++++++++----
- include/linux/mfd/max14577-private.h |  16 +++
- include/linux/mfd/max14577.h         |   8 ++
- 4 files changed, 241 insertions(+), 28 deletions(-)
+ Documentation/devicetree/bindings/mfd/max14577.txt | 152 +++++++++++++++++++++
+ 1 file changed, 152 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
 
-diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-index e6f25aa0ded8..b8af263be594 100644
---- a/drivers/mfd/max14577.c
-+++ b/drivers/mfd/max14577.c
-@@ -116,7 +116,10 @@ static const struct mfd_cell max14577_devs[] = {
- 		.name = "max14577-regulator",
- 		.of_compatible = "maxim,max14577-regulator",
- 	},
--	{ .name = "max14577-charger", },
-+	{
-+		.name = "max14577-charger",
-+		.of_compatible = "maxim,max14577-charger",
-+	},
- };
- 
- static const struct mfd_cell max77836_devs[] = {
-diff --git a/drivers/power/max14577_charger.c b/drivers/power/max14577_charger.c
-index 19c8f42abf24..ce0e3b652255 100644
---- a/drivers/power/max14577_charger.c
-+++ b/drivers/power/max14577_charger.c
-@@ -19,6 +19,7 @@
- #include <linux/platform_device.h>
- #include <linux/power_supply.h>
- #include <linux/mfd/max14577-private.h>
-+#include <linux/mfd/max14577.h>
- 
- struct max14577_charger {
- 	struct device *dev;
-@@ -27,6 +28,8 @@ struct max14577_charger {
- 
- 	unsigned int		charging_state;
- 	unsigned int		battery_state;
+diff --git a/Documentation/devicetree/bindings/mfd/max14577.txt b/Documentation/devicetree/bindings/mfd/max14577.txt
+new file mode 100644
+index 000000000000..b235250a7b41
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/max14577.txt
+@@ -0,0 +1,152 @@
++Maxim MAX14577/77836 Multi-Function Device
 +
-+	struct max14577_charger_platform_data	*pdata;
- };
- 
- /*
-@@ -178,15 +181,107 @@ static int max14577_get_present(struct max14577_charger *chg)
- 	return 1;
- }
- 
-+static inline int max14577_init_constant_voltage(struct max14577_charger *chg,
-+		unsigned int uvolt)
-+{
-+	u8 reg_data;
++MAX14577 is a Multi-Function Device with Micro-USB Interface Circuit, Li+
++Battery Charger and SFOUT LDO output for powering USB devices. It is
++interfaced to host controller using I2C.
 +
-+	if (uvolt < MAXIM_CHARGER_CONSTANT_VOLTAGE_MIN ||
-+			uvolt > MAXIM_CHARGER_CONSTANT_VOLTAGE_MAX)
-+		return -EINVAL;
++MAX77836 additionally contains PMIC (with two LDO regulators) and Fuel Gauge.
 +
-+	if (uvolt == 4200000)
-+		reg_data = 0x0;
-+	else if (uvolt == MAXIM_CHARGER_CONSTANT_VOLTAGE_MAX)
-+		reg_data = 0x1f;
-+	else if (uvolt <= 4280000) {
-+		unsigned int val = uvolt;
 +
-+		val -= MAXIM_CHARGER_CONSTANT_VOLTAGE_MIN;
-+		val /= MAXIM_CHARGER_CONSTANT_VOLTAGE_STEP;
-+		if (uvolt <= 4180000)
-+			reg_data = 0x1 + val;
-+		else
-+			reg_data = val; /* Fix for gap between 4.18V and 4.22V */
-+	} else
-+		return -EINVAL;
++Required properties:
++- compatible : Must be "maxim,max14577" or "maxim,max77836".
++- reg : I2C slave address for the max14577 chip (0x25 for max14577/max77836)
++- interrupts : IRQ line for the chip.
++- interrupt-parent :  The parent interrupt controller.
 +
-+	reg_data <<= CHGCTRL3_MBCCVWRC_SHIFT;
 +
-+	return max14577_write_reg(chg->max14577->regmap,
-+			MAX14577_CHG_REG_CHG_CTRL3, reg_data);
-+}
++Required nodes:
++ - charger :
++	Node for configuring the charger driver.
++	Required properties:
++		- compatible : "maxim,max14577-charger"
++			or "maxim,max77836-charger"
++		- maxim,fast-charge-timer : Timer in hours to trigger the
++			INT3/MBCCHGERR interrupt; Valid values:
++			- 5, 6 or 7 (hours),
++			- 0 to disable.
++		- maxim,fast-charge-uamp : Current in uA for Fast Charge;
++			Valid values:
++			- for max14577: 90000 - 950000;
++			- for max77836: 45000 - 475000;
++		- maxim,eoc-uamp : Current in uA for End-Of-Charge mode;
++			Valid values:
++			- for max14577: 50000 - 200000;
++			- for max77836: 5000 - 100000;
++		- maxim,ovp-uvolt : OverVoltage Protection Threshold in uV;
++			In an overvoltage condition, INT asserts and charging
++			stops. Valid values:
++			- 6000000, 6500000, 7000000, 7500000;
++		- maxim,constant-uvolt : Battery Constant Voltage in uV;
++			Valid values:
++			- 4000000 - 4280000 (step by 20000);
++			- 4350000;
 +
-+static inline int max14577_init_eoc(struct max14577_charger *chg,
-+		unsigned int uamp)
-+{
-+	unsigned int current_bits = 0xf;
-+	u8 reg_data;
 +
-+	switch (chg->max14577->dev_type) {
-+	case MAXIM_DEVICE_TYPE_MAX77836:
-+		if (uamp < 5000)
-+			return -EINVAL; /* Requested current is too low */
++Optional nodes:
++- max14577-muic/max77836-muic :
++	Node used only by extcon consumers.
++	Required properties:
++		- compatible : "maxim,max14577-muic" or "maxim,max77836-muic"
 +
-+		if (uamp >= 7500 && uamp < 10000)
-+			current_bits = 0x0;
-+		else if (uamp <= 50000) {
-+			/* <5000, 7499> and <10000, 50000> */
-+			current_bits = uamp / 5000;
-+		} else {
-+			uamp = min(uamp, 100000U) - 50000U;
-+			current_bits = 0xa + uamp / 10000;
-+		}
-+		break;
++- regulators :
++	Required properties:
++		- compatible : "maxim,max14577-regulator"
++			or "maxim,max77836-regulator"
 +
-+	case MAXIM_DEVICE_TYPE_MAX14577:
-+	default:
-+		if (uamp < MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN)
-+			return -EINVAL; /* Requested current is too low */
++	May contain a sub-node per regulator from the list below. Each
++	sub-node should contain the constraints and initialization information
++	for that regulator. See regulator.txt for a description of standard
++	properties for these sub-nodes.
 +
-+		uamp = min(uamp, MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX);
-+		uamp -= MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN;
-+		current_bits = uamp / MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP;
-+		break;
-+	}
++	List of valid regulator names:
++	- for max14577: CHARGER, SAFEOUT.
++	- for max77836: CHARGER, SAFEOUT, LDO1, LDO2.
 +
-+	reg_data = current_bits << CHGCTRL5_EOCS_SHIFT;
++	The SAFEOUT is a fixed voltage regulator so there is no need to specify
++	voltages for it.
 +
-+	return max14577_update_reg(chg->max14577->regmap,
-+			MAX14577_CHG_REG_CHG_CTRL5, CHGCTRL5_EOCS_MASK,
-+			reg_data);
-+}
 +
-+static inline int max14577_init_fast_charge(struct max14577_charger *chg,
-+		unsigned int uamp)
-+{
-+	u8 reg_data;
-+	int ret;
-+	const struct maxim_charger_current *limits =
-+		&maxim_charger_currents[chg->max14577->dev_type];
++Example:
 +
-+	ret = maxim_charger_calc_reg_current(limits, uamp, uamp, &reg_data);
-+	if (ret) {
-+		dev_err(chg->dev, "Wrong value for fast charge: %u\n", uamp);
-+		return ret;
-+	}
++#include <dt-bindings/interrupt-controller/irq.h>
 +
-+	return max14577_update_reg(chg->max14577->regmap,
-+			MAX14577_CHG_REG_CHG_CTRL4,
-+			CHGCTRL4_MBCICHWRCL_MASK | CHGCTRL4_MBCICHWRCH_MASK,
-+			reg_data);
-+}
++max14577@25 {
++	compatible = "maxim,max14577";
++	reg = <0x25>;
++	interrupt-parent = <&gpx1>;
++	interrupts = <5 IRQ_TYPE_NONE>;
 +
- /*
-  * Sets charger registers to proper and safe default values.
-  * Some of these values are equal to defaults in MAX14577E
-  * data sheet but there are minor differences.
-  */
--static void max14577_charger_reg_init(struct max14577_charger *chg)
-+static int max14577_charger_reg_init(struct max14577_charger *chg)
- {
- 	struct regmap *rmap = chg->max14577->regmap;
- 	u8 reg_data;
-+	int ret;
- 
- 	/*
- 	 * Charger-Type Manual Detection, default off (set CHGTYPMAN to 0)
-@@ -198,10 +293,6 @@ static void max14577_charger_reg_init(struct max14577_charger *chg)
- 			CDETCTRL1_CHGDETEN_MASK | CDETCTRL1_CHGTYPMAN_MASK,
- 			reg_data);
- 
--	/* Battery Fast-Charge Timer, set to: 6hrs */
--	reg_data = 0x3 << CHGCTRL1_TCHW_SHIFT;
--	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL1, reg_data);
--
- 	/*
- 	 * Wall-Adapter Rapid Charge, default on
- 	 * Battery-Charger, default on
-@@ -210,32 +301,57 @@ static void max14577_charger_reg_init(struct max14577_charger *chg)
- 	reg_data |= 0x1 << CHGCTRL2_MBCHOSTEN_SHIFT;
- 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL2, reg_data);
- 
--	/* Battery-Charger Constant Voltage (CV) Mode, set to: 4.35V */
--	reg_data = 0xf << CHGCTRL3_MBCCVWRC_SHIFT;
--	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL3, reg_data);
--
--	/*
--	 * Fast Battery-Charge Current Low,
--	 * default 200-950mA (max14577) / 100-475mA (max77836)
--	 *
--	 * Fast Battery-Charge Current High,
--	 * set to 450mA (max14577) / 225mA (max77836)
--	 */
--	reg_data = 0x1 << CHGCTRL4_MBCICHWRCL_SHIFT;
--	reg_data |= 0x5 << CHGCTRL4_MBCICHWRCH_SHIFT;
--	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL4, reg_data);
--
--	/* End-of-Charge Current, set to 50mA (max14577) / 7.5mA (max77836) */
--	reg_data = 0x0 << CHGCTRL5_EOCS_SHIFT;
--	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL5, reg_data);
--
- 	/* Auto Charging Stop, default off */
- 	reg_data = 0x0 << CHGCTRL6_AUTOSTOP_SHIFT;
- 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL6, reg_data);
- 
--	/* Overvoltage-Protection Threshold, set to 6.5V */
--	reg_data = 0x2 << CHGCTRL7_OTPCGHCVS_SHIFT;
-+	ret = max14577_init_constant_voltage(chg, chg->pdata->constant_uvolt);
-+	if (ret)
-+		return ret;
++	muic: max14577-muic {
++		compatible = "maxim,max14577-muic";
++	};
 +
-+	ret = max14577_init_eoc(chg, chg->pdata->eoc_uamp);
-+	if (ret)
-+		return ret;
++	regulators {
++		compatible = "maxim,max14577-regulator";
 +
-+	ret = max14577_init_fast_charge(chg, chg->pdata->fast_charge_uamp);
-+	if (ret)
-+		return ret;
++		SAFEOUT {
++			regulator-name = "SAFEOUT";
++		};
++		CHARGER {
++			regulator-name = "CHARGER";
++			regulator-min-microamp = <90000>;
++			regulator-max-microamp = <950000>;
++			regulator-boot-on;
++		};
++	};
 +
-+	/* Initialize Battery Fast-Charge Timer */
-+	switch (chg->pdata->fast_charge_timer) {
-+	case 5 ... 7:
-+		reg_data = chg->pdata->fast_charge_timer - 3;
-+		break;
-+	case 0:
-+		/* Disable */
-+		reg_data = 0x7;
-+	default:
-+		dev_err(chg->dev, "Wrong value for Fast-Charge Timer: %u\n",
-+				chg->pdata->fast_charge_timer);
-+		return -EINVAL;
-+	}
-+	reg_data <<= CHGCTRL1_TCHW_SHIFT;
-+	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL1, reg_data);
++	charger {
++		compatible = "maxim,max14577-charger";
 +
-+	/* Initialize Overvoltage-Protection Threshold */
-+	switch (chg->pdata->ovp_uvolt) {
-+	case 7500000:
-+		reg_data = 0x0;
-+		break;
-+	case 6000000:
-+	case 6500000:
-+	case 7000000:
-+		reg_data = 0x1 + (chg->pdata->ovp_uvolt - 6000000) / 500000;
-+		break;
-+	default:
-+		dev_err(chg->dev, "Wrong value for OVP: %u\n",
-+				chg->pdata->ovp_uvolt);
-+		return -EINVAL;
-+	}
-+	reg_data <<= CHGCTRL7_OTPCGHCVS_SHIFT;
- 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL7, reg_data);
-+
-+	return 0;
- }
- 
- /* Support property from charger */
-@@ -295,6 +411,66 @@ static int max14577_charger_get_property(struct power_supply *psy,
- 	return ret;
- }
- 
-+#ifdef CONFIG_OF
-+static struct max14577_charger_platform_data *max14577_charger_dt_init(
-+		struct platform_device *pdev)
-+{
-+	struct max14577_charger_platform_data *pdata;
-+	struct device_node *np = pdev->dev.of_node;
-+	int ret;
-+
-+	if (!np) {
-+		dev_err(&pdev->dev, "No charger OF node\n");
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata)
-+		return ERR_PTR(-ENOMEM);
-+
-+	ret = of_property_read_u32(np, "maxim,fast-charge-timer",
-+			&pdata->fast_charge_timer);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Cannot parse maxim,fast-charge-timer field from DT\n");
-+		return ERR_PTR(ret);
-+	}
-+
-+	ret = of_property_read_u32(np, "maxim,constant-uvolt",
-+			&pdata->constant_uvolt);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Cannot parse maxim,constant-uvolt field from DT\n");
-+		return ERR_PTR(ret);
-+	}
-+
-+	ret = of_property_read_u32(np, "maxim,fast-charge-uamp",
-+			&pdata->fast_charge_uamp);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Cannot parse maxim,fast-charge-uamp field from DT\n");
-+		return ERR_PTR(ret);
-+	}
-+
-+	ret = of_property_read_u32(np, "maxim,eoc-uamp", &pdata->eoc_uamp);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Cannot parse maxim,eoc-uamp field from DT\n");
-+		return ERR_PTR(ret);
-+	}
-+
-+	ret = of_property_read_u32(np, "maxim,ovp-uvolt", &pdata->ovp_uvolt);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Cannot parse maxim,ovp-uvolt field from DT\n");
-+		return ERR_PTR(ret);
-+	}
-+
-+	return pdata;
-+}
-+#else /* CONFIG_OF */
-+static struct max14577_charger_platform_data *max14577_charger_dt_init(
-+		struct platform_device *pdev)
-+{
-+	return NULL;
-+}
-+#endif /* CONFIG_OF */
-+
- static int max14577_charger_probe(struct platform_device *pdev)
- {
- 	struct max14577_charger *chg;
-@@ -309,7 +485,13 @@ static int max14577_charger_probe(struct platform_device *pdev)
- 	chg->dev = &pdev->dev;
- 	chg->max14577 = max14577;
- 
--	max14577_charger_reg_init(chg);
-+	chg->pdata = max14577_charger_dt_init(pdev);
-+	if (IS_ERR_OR_NULL(chg->pdata))
-+		return PTR_ERR(chg->pdata);
-+
-+	ret = max14577_charger_reg_init(chg);
-+	if (ret)
-+		return ret;
- 
- 	chg->charger.name = "max14577-charger",
- 	chg->charger.type = POWER_SUPPLY_TYPE_BATTERY,
-@@ -323,6 +505,10 @@ static int max14577_charger_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
-+	/* Check for valid values for charger */
-+	BUILD_BUG_ON(MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN +
-+			MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP * 0xf !=
-+			MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX);
- 	return 0;
- }
- 
-diff --git a/include/linux/mfd/max14577-private.h b/include/linux/mfd/max14577-private.h
-index 7d514839c764..5c842f3b6da5 100644
---- a/include/linux/mfd/max14577-private.h
-+++ b/include/linux/mfd/max14577-private.h
-@@ -293,6 +293,22 @@ enum max14577_charger_reg {
- #define MAX77836_CHARGER_CURRENT_LIMIT_HIGH_STEP	 25000U
- #define MAX77836_CHARGER_CURRENT_LIMIT_MAX		475000U
- 
-+/*
-+ * MAX14577 charger End-Of-Charge current limits
-+ * (as in CHGCTRL5 register), uA
-+ */
-+#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN		50000U
-+#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP		10000U
-+#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX		200000U
-+
-+/*
-+ * MAX14577/MAX77836 Battery Constant Voltage
-+ * (as in CHGCTRL3 register), uV
-+ */
-+#define MAXIM_CHARGER_CONSTANT_VOLTAGE_MIN		4000000U
-+#define MAXIM_CHARGER_CONSTANT_VOLTAGE_STEP		20000U
-+#define MAXIM_CHARGER_CONSTANT_VOLTAGE_MAX		4350000U
-+
- /* MAX14577 regulator SFOUT LDO voltage, fixed, uV */
- #define MAX14577_REGULATOR_SAFEOUT_VOLTAGE		4900000
- 
-diff --git a/include/linux/mfd/max14577.h b/include/linux/mfd/max14577.h
-index 3c098d57b1d1..f31affb2385f 100644
---- a/include/linux/mfd/max14577.h
-+++ b/include/linux/mfd/max14577.h
-@@ -54,6 +54,14 @@ struct max14577_regulator_platform_data {
- 	struct device_node *of_node;
- };
- 
-+struct max14577_charger_platform_data {
-+	u32 fast_charge_timer;
-+	u32 constant_uvolt;
-+	u32 fast_charge_uamp;
-+	u32 eoc_uamp;
-+	u32 ovp_uvolt;
++		maxim,fast-charge-timer = <6>;
++		maxim,constant-uvolt = <4350000>;
++		maxim,fast-charge-uamp = <450000>;
++		maxim,eoc-uamp = <50000>;
++		maxim,ovp-uvolt = <6500000>;
++	};
 +};
 +
- /*
-  * MAX14577 MFD platform data
-  */
++
++max77836@25 {
++	compatible = "maxim,max77836";
++	reg = <0x25>;
++	interrupt-parent = <&gpx1>;
++	interrupts = <5 IRQ_TYPE_NONE>;
++
++	muic: max77836-muic {
++		compatible = "maxim,max77836-muic";
++	};
++
++	regulators {
++		compatible = "maxim,max77836-regulator";
++
++		SAFEOUT {
++			regulator-name = "SAFEOUT";
++		};
++		CHARGER {
++			regulator-name = "CHARGER";
++			regulator-min-microamp = <90000>;
++			regulator-max-microamp = <950000>;
++			regulator-boot-on;
++		};
++		LDO1 {
++			regulator-name = "LDO1";
++			regulator-min-microvolt = <2700000>;
++			regulator-max-microvolt = <2700000>;
++		};
++		LDO2 {
++			regulator-name = "LDO2";
++			regulator-min-microvolt = <800000>;
++			regulator-max-microvolt = <3950000>;
++		};
++	};
++
++	charger {
++		compatible = "maxim,max77836-charger";
++
++		maxim,fast-charge-timer = <6>;
++		maxim,constant-uvolt = <4350000>;
++		maxim,fast-charge-uamp = <225000>;
++		maxim,eoc-uamp = <7500>;
++		maxim,ovp-uvolt = <6500000>;
++	};
++};
 -- 
 1.9.1
 
