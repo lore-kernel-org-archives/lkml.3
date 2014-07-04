@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760596AbaGDWQd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:16:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57078 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760559AbaGDWQ2 (ORCPT
+	id S1031784AbaGDXBe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 19:01:34 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:64433 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030360AbaGDXBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:16:28 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Dennis Dalessandro <dennis.dalessandro@intel.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.15 29/66] IB/ipath: Translate legacy diagpkt into newer extended diagpkt
-Date: Fri,  4 Jul 2014 15:14:28 -0700
-Message-Id: <20140704221424.146780086@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
-References: <20140704221422.813435485@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Fri, 4 Jul 2014 19:01:31 -0400
 MIME-Version: 1.0
+In-Reply-To: <1402398708-10722-1-git-send-email-thierry.reding@gmail.com>
+References: <1402398708-10722-1-git-send-email-thierry.reding@gmail.com>
+Date: Sat, 5 Jul 2014 01:01:30 +0200
+Message-ID: <CACRpkdaLG+f41ot0H7sRm0zq+5=HROBKpKeXJC2+JYkq6a4Yog@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] of: Add NVIDIA Tegra XUSB pad controller binding
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Jun 10, 2014 at 1:11 PM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
 
-------------------
+> From: Thierry Reding <treding@nvidia.com>
+>
+> This patch adds the device tree binding documentation for the XUSB pad
+> controller found on NVIDIA Tegra SoCs. It exposes both pinmuxing and PHY
+> capabilities.
+>
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> ---
+> Changes in v2:
+> - move header file to this patch and refer to it in the binding
+> - update example to match the latest binding
 
-From: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Stephen/Laxman: any comments on this patch?
 
-commit 7e6d3e5c70f13874fb06e6b67696ed90ce79bd48 upstream.
-
-This patch addresses an issue where the legacy diagpacket is sent in
-from the user, but the driver operates on only the extended
-diagpkt. This patch specifically initializes the extended diagpkt
-based on the legacy packet.
-
-Reported-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/infiniband/hw/ipath/ipath_diag.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
---- a/drivers/infiniband/hw/ipath/ipath_diag.c
-+++ b/drivers/infiniband/hw/ipath/ipath_diag.c
-@@ -346,6 +346,10 @@ static ssize_t ipath_diagpkt_write(struc
- 			ret = -EFAULT;
- 			goto bail;
- 		}
-+		dp.len = odp.len;
-+		dp.unit = odp.unit;
-+		dp.data = odp.data;
-+		dp.pbc_wd = 0;
- 	} else {
- 		ret = -EINVAL;
- 		goto bail;
-
-
+Yours,
+Linus Walleij
