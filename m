@@ -1,43 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358AbaGDIOv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:14:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56365 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752028AbaGDIOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:14:48 -0400
-Message-ID: <53B6626A.3080900@redhat.com>
-Date: Fri, 04 Jul 2014 10:14:34 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752035AbaGDIVf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:21:35 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:36820 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750987AbaGDIVc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 04:21:32 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoVQAEVjtlN5LHZ8PGdsb2JhbABagw2IUqQgAgEHmlYBgQsXBAEBAQE4NYQDAQEFOhwjEAgDFwEJJQ8FJQMHDA4TiEHKDBcYhViGDQGDJAeEQwWadZYOgVQr
+Date: Fri, 4 Jul 2014 18:21:28 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Peter Zijlstra <peterz@infradead.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [regression, 3.16-rc] rwsem: optimistic spinning causing
+ performance degradation
+Message-ID: <20140704082128.GL9508@dastard>
+References: <1404413420.8764.42.camel@j-VirtualBox>
+ <20140704010147.GY4453@dastard>
+ <1404438366.8764.121.camel@j-VirtualBox>
+ <1404438890.8764.125.camel@j-VirtualBox>
+ <20140704061306.GK9508@dastard>
+ <1404457579.8764.161.camel@j-VirtualBox>
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Jan Kiszka <jan.kiszka@siemens.com>, Bandan Das <bsd@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>, Hu Robert <robert.hu@intel.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since
- race
-References: <53B3CA6A.4050902@siemens.com> <jpgy4wb9g5t.fsf@redhat.com> <20140703065955.GA4236@kernel> <jpgk37u8iae.fsf@redhat.com> <20140704025250.GA2849@kernel> <53B63EF2.6000800@siemens.com> <20140704060831.GA3453@kernel> <53B6559A.6020406@siemens.com> <20140704073923.GA7188@kernel> <53B65BDE.9090902@redhat.com> <20140704075900.GA7447@kernel>
-In-Reply-To: <20140704075900.GA7447@kernel>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404457579.8764.161.camel@j-VirtualBox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 04/07/2014 09:59, Wanpeng Li ha scritto:
->> >You are not running the latest versions of the tests.
->> >
-> The last commit in my tree is
->
-> commit daeec9795d3e6d4e9636588b6cb5fcd6e00d6d46
-> Author: Bandan Das <bsd@redhat.com>
-> Date:   Mon Jun 9 17:04:54 2014 -0400
->
->     VMX: Updated test_vmclear and test_vmptrld
+On Fri, Jul 04, 2014 at 12:06:19AM -0700, Jason Low wrote:
+> On Fri, 2014-07-04 at 16:13 +1000, Dave Chinner wrote:
+> > On Thu, Jul 03, 2014 at 06:54:50PM -0700, Jason Low wrote:
+> > > On Thu, 2014-07-03 at 18:46 -0700, Jason Low wrote:
+> > > > On Fri, 2014-07-04 at 11:01 +1000, Dave Chinner wrote:
+> > > 
+> > > > > FWIW, the rwsems in the struct xfs_inode are often heavily
+> > > > > read/write contended, so there are lots of IO related workloads that
+> > > > > are going to regress on XFS without this optimisation...
+> > > > > 
+> > > > > Anyway, consider the patch:
+> > > > > 
+> > > > > Tested-by: Dave Chinner <dchinner@redhat.com>
+> > > > 
+> > > > Hi Dave,
+> > > > 
+> > > > Thanks for testing. I'll update the patch with an actual changelog.
+> > > 
+> > > ---
+> > > Subject: [PATCH] rwsem: In rwsem_can_spin_on_owner(), return false if no owner
+> > > 
+> > > It was found that the rwsem optimistic spinning feature can potentially degrade
+> > > performance when there are readers. Perf profiles indicate in some workloads
+> > > that significant time can be spent spinning on !owner. This is because we don't
+> > > set the lock owner when readers(s) obtain the rwsem.
+> > 
+> > I don't think you're being a little shifty with the truth here.
+> > There's no "potentially degrade performance" here - I reported a
+> > massive real world performance regression caused by optimistic
+> > spinning.
+> 
+> Sure, though I mainly used the word "potentially" since there can be
+> other workloads out there where spinning even when readers have the lock
+> is a positive thing.
+> 
+> And agreed that the changelog can be modified to try reflecting more on
+> it being a "regression fix" then a "new performance" addition.
+> 
+> So how about the following?
 
-Can you try recompiling x86/vmx.*?
+Looks good. Thanks!
 
-Paolo
-
+-Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
