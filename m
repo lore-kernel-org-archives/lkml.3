@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932317AbaGDRwA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 13:52:00 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:33588 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759525AbaGDRtF (ORCPT
+	id S965086AbaGDRwD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 13:52:03 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:48632 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759448AbaGDRtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 Jul 2014 13:49:05 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-33-53b6e90dc1a8
+X-AuditID: cbfec7f4-b7fac6d000006cfe-26-53b6e907e0fa
 From: Tomasz Figa <t.figa@samsung.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -17,216 +17,209 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Mark Brown <broonie@kernel.org>,
         =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
         Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [PATCH 15/19] cpufreq: s5pv210: Make the driver multiplatform aware
-Date: Fri, 04 Jul 2014 19:48:15 +0200
-Message-id: <1404496099-26708-16-git-send-email-t.figa@samsung.com>
+Subject: [PATCH 02/19] ARM: s5pv210: Migrate clock handling to Common Clock
+ Framework
+Date: Fri, 04 Jul 2014 19:48:02 +0200
+Message-id: <1404496099-26708-3-git-send-email-t.figa@samsung.com>
 X-Mailer: git-send-email 1.9.3
 In-reply-to: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
 References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprALMWRmVeSWpSXmKPExsVy+t/xy7q8L7cFGyyYwGrxd9IxdoupD5+w
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t/xy7rsL7cFG9zayGnxd9IxdoupD5+w
 	Wfx/9JrVonfBVTaLTY+vsVpc3jWHzWLG+X1MFmuP3GW3OHX9M5vFql1/GB24PH7/msTosXPW
-	XXaPTas62Tw2L6n3uHKiidWjb8sqRo/t1+Yxe3zeJBfAEcVlk5Kak1mWWqRvl8CVcffMX9aC
-	g6YVU6Z0sDUwbtDpYuTkkBAwkXj6uJMNwhaTuHBvPZDNxSEksJRRouvJbEaQhJBAH5PE9X3c
-	IDabgJrE54ZHYA0iAqoSn9sWsHcxcnAwC9xmkmgVBgkLC/hInF+4lwUkzAJUcqdDACTMK+As
-	saLzLivEKjmJ3m1vmEFsTqD4xHUXmCA2OUn8+T+fZQIj7wJGhlWMoqmlyQXFSem5hnrFibnF
-	pXnpesn5uZsYIaH4ZQfj4mNWhxgFOBiVeHgbV2wIFmJNLCuuzD3EKMHBrCTC+2fVtmAh3pTE
-	yqrUovz4otKc1OJDjEwcnFINjFFxSXwmgvMypUWbgt3KaydHvjVe8N64dP7VzXl8nH88rEyW
-	OzLqsR/ams9aXqITtegwwy6lT/ub2Monuv4I//vpq+iU7Ix09f0uns2ThLsuO37d6XGcYWdZ
-	duf13mKnuDB7s7iJs/U/KDrZ+zR8VmL49S9/Ae+/iuIfrKskeZ68PJn5JKdXiaU4I9FQi7mo
-	OBEA+QoPQiMCAAA=
+	XXaPTas62Tw2L6n3uHKiidWjb8sqRo/t1+Yxe3zeJBfAEcVlk5Kak1mWWqRvl8CVse7KXsaC
+	1doVpxbMYGtg7FPpYuTkkBAwkdi25S07hC0mceHeerYuRi4OIYGljBL3fr1khHD6mCQ+/LnB
+	BlLFJqAm8bnhEZgtIqAq8bltAVA3BwezwG0miVZhkLCwQLjElyUrmEFsFqCSI4/mM4LYvAJO
+	EnfbvzFBLJOT6N32BqyGU8BZYuK6C2BxIaCaP//ns0xg5F3AyLCKUTS1NLmgOCk911CvODG3
+	uDQvXS85P3cTIyQcv+xgXHzM6hCjAAejEg9v44oNwUKsiWXFlbmHGCU4mJVEeP+s2hYsxJuS
+	WFmVWpQfX1Sak1p8iJGJg1OqgXHGzhOxFleYN0w5oJB4OfRddPwSFv7uGy9y+cQ/aa6538ly
+	Nu2zUuc0b9YoxVOTa5W3fAk8XLr7T7jt3Y1XGZbfedQ399Ur3WjuokV68kfm5GndmNawWPyD
+	D8OxzkWTtW0kXz4tZNSIXFZ7QPN91XaxVz/z201ltylc1FDu+9xo0Rm7Z/6TkI1KLMUZiYZa
+	zEXFiQCHeilIJQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linux-pm@vger.kernel.org
----
- drivers/cpufreq/s5pv210-cpufreq.c | 131 +++++++++++++++++++++++++++++++++++---
- 1 file changed, 122 insertions(+), 9 deletions(-)
+From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
 
-diff --git a/drivers/cpufreq/s5pv210-cpufreq.c b/drivers/cpufreq/s5pv210-cpufreq.c
-index 19a10b8..9a68225 100644
---- a/drivers/cpufreq/s5pv210-cpufreq.c
-+++ b/drivers/cpufreq/s5pv210-cpufreq.c
-@@ -16,11 +16,70 @@
- #include <linux/clk.h>
- #include <linux/io.h>
- #include <linux/cpufreq.h>
+This patch migrates the s5pv210 platform to use new clock driver
+using Common Clock Framework.
+
+Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+[t.figa: Rebased and fixed merge conflicts.]
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+---
+ arch/arm/mach-s5pv210/Kconfig         |  9 +++++++++
+ arch/arm/mach-s5pv210/Makefile        |  4 ++--
+ arch/arm/mach-s5pv210/common.c        | 16 ++++++++++++++++
+ arch/arm/mach-s5pv210/common.h        |  9 +++++++++
+ arch/arm/mach-s5pv210/mach-goni.c     |  2 +-
+ arch/arm/mach-s5pv210/mach-smdkv210.c |  2 +-
+ arch/arm/plat-samsung/Kconfig         |  2 +-
+ 7 files changed, 39 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/mach-s5pv210/Kconfig b/arch/arm/mach-s5pv210/Kconfig
+index f60f286..60785ce 100644
+--- a/arch/arm/mach-s5pv210/Kconfig
++++ b/arch/arm/mach-s5pv210/Kconfig
+@@ -13,6 +13,7 @@ config CPU_S5PV210
+ 	bool
+ 	select ARM_AMBA
+ 	select PL330_DMA if DMADEVICES
++	select S5P_CLOCK if !COMMON_CLK
+ 	select S5P_EXT_INT
+ 	select S5P_PM if PM
+ 	select S5P_SLEEP if PM
+@@ -70,6 +71,14 @@ config S5PV210_SETUP_USB_PHY
+ 	help
+ 	  Common setup code for USB PHY controller
+ 
++config COMMON_CLK_S5PV210
++	bool "Common Clock Framework support"
++	default y
++	select COMMON_CLK_SAMSUNG
++	help
++	  Enable this option to use new clock driver
++	  based on Common Clock Framework.
++
+ menu "S5PC110 Machines"
+ 
+ config MACH_AQUILA
+diff --git a/arch/arm/mach-s5pv210/Makefile b/arch/arm/mach-s5pv210/Makefile
+index 1c4e419..d1a493a 100644
+--- a/arch/arm/mach-s5pv210/Makefile
++++ b/arch/arm/mach-s5pv210/Makefile
+@@ -12,8 +12,8 @@ obj-				:=
+ 
+ # Core
+ 
+-obj-y				+= common.o clock.o
+-
++obj-y				+= common.o
++obj-$(CONFIG_S5P_CLOCK)		+= clock.o
+ obj-$(CONFIG_PM)		+= pm.o
+ 
+ obj-y				+= dma.o
+diff --git a/arch/arm/mach-s5pv210/common.c b/arch/arm/mach-s5pv210/common.c
+index 7024dcd..2e2202a 100644
+--- a/arch/arm/mach-s5pv210/common.c
++++ b/arch/arm/mach-s5pv210/common.c
+@@ -25,6 +25,7 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/serial_core.h>
+ #include <linux/serial_s3c.h>
 +#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/platform_device.h>
- #include <linux/reboot.h>
- #include <linux/regulator/consumer.h>
  
--#include <mach/map.h>
--#include <mach/regs-clock.h>
-+static void __iomem *clk_base;
-+static void __iomem *dmc_base[2];
-+
-+#define S5P_CLKREG(x)		(clk_base + (x))
-+
-+#define S5P_APLL_LOCK		S5P_CLKREG(0x00)
-+#define S5P_APLL_CON		S5P_CLKREG(0x100)
-+#define S5P_CLK_SRC0		S5P_CLKREG(0x200)
-+#define S5P_CLK_SRC2		S5P_CLKREG(0x208)
-+#define S5P_CLK_DIV0		S5P_CLKREG(0x300)
-+#define S5P_CLK_DIV2		S5P_CLKREG(0x308)
-+#define S5P_CLK_DIV6		S5P_CLKREG(0x318)
-+#define S5P_CLKDIV_STAT0	S5P_CLKREG(0x1000)
-+#define S5P_CLKDIV_STAT1	S5P_CLKREG(0x1004)
-+#define S5P_CLKMUX_STAT0	S5P_CLKREG(0x1100)
-+#define S5P_CLKMUX_STAT1	S5P_CLKREG(0x1104)
-+
-+#define S5P_ARM_MCS_CON		S5P_CLKREG(0x6100)
-+
-+/* CLKSRC0 */
-+#define S5P_CLKSRC0_MUX200_SHIFT	(16)
-+#define S5P_CLKSRC0_MUX200_MASK		(0x1 << S5P_CLKSRC0_MUX200_SHIFT)
-+#define S5P_CLKSRC0_MUX166_MASK		(0x1<<20)
-+#define S5P_CLKSRC0_MUX133_MASK		(0x1<<24)
-+
-+/* CLKSRC2 */
-+#define S5P_CLKSRC2_G3D_SHIFT           (0)
-+#define S5P_CLKSRC2_G3D_MASK            (0x3 << S5P_CLKSRC2_G3D_SHIFT)
-+#define S5P_CLKSRC2_MFC_SHIFT           (4)
-+#define S5P_CLKSRC2_MFC_MASK            (0x3 << S5P_CLKSRC2_MFC_SHIFT)
-+
-+/* CLKDIV0 */
-+#define S5P_CLKDIV0_APLL_SHIFT		(0)
-+#define S5P_CLKDIV0_APLL_MASK		(0x7 << S5P_CLKDIV0_APLL_SHIFT)
-+#define S5P_CLKDIV0_A2M_SHIFT		(4)
-+#define S5P_CLKDIV0_A2M_MASK		(0x7 << S5P_CLKDIV0_A2M_SHIFT)
-+#define S5P_CLKDIV0_HCLK200_SHIFT	(8)
-+#define S5P_CLKDIV0_HCLK200_MASK	(0x7 << S5P_CLKDIV0_HCLK200_SHIFT)
-+#define S5P_CLKDIV0_PCLK100_SHIFT	(12)
-+#define S5P_CLKDIV0_PCLK100_MASK	(0x7 << S5P_CLKDIV0_PCLK100_SHIFT)
-+#define S5P_CLKDIV0_HCLK166_SHIFT	(16)
-+#define S5P_CLKDIV0_HCLK166_MASK	(0xF << S5P_CLKDIV0_HCLK166_SHIFT)
-+#define S5P_CLKDIV0_PCLK83_SHIFT	(20)
-+#define S5P_CLKDIV0_PCLK83_MASK		(0x7 << S5P_CLKDIV0_PCLK83_SHIFT)
-+#define S5P_CLKDIV0_HCLK133_SHIFT	(24)
-+#define S5P_CLKDIV0_HCLK133_MASK	(0xF << S5P_CLKDIV0_HCLK133_SHIFT)
-+#define S5P_CLKDIV0_PCLK66_SHIFT	(28)
-+#define S5P_CLKDIV0_PCLK66_MASK		(0x7 << S5P_CLKDIV0_PCLK66_SHIFT)
-+
-+/* CLKDIV2 */
-+#define S5P_CLKDIV2_G3D_SHIFT           (0)
-+#define S5P_CLKDIV2_G3D_MASK            (0xF << S5P_CLKDIV2_G3D_SHIFT)
-+#define S5P_CLKDIV2_MFC_SHIFT           (4)
-+#define S5P_CLKDIV2_MFC_MASK            (0xF << S5P_CLKDIV2_MFC_SHIFT)
-+
-+/* CLKDIV6 */
-+#define S5P_CLKDIV6_ONEDRAM_SHIFT       (28)
-+#define S5P_CLKDIV6_ONEDRAM_MASK        (0xF << S5P_CLKDIV6_ONEDRAM_SHIFT)
+ #include <asm/proc-fns.h>
+ #include <asm/mach/arch.h>
+@@ -35,7 +36,13 @@
+ #include <mach/regs-clock.h>
  
- static struct clk *dmc0_clk;
- static struct clk *dmc1_clk;
-@@ -142,9 +201,9 @@ static void s5pv210_set_refresh(enum s5pv210_dmc_port ch, unsigned long freq)
- 	void __iomem *reg = NULL;
+ #include <plat/cpu.h>
++
++#ifdef CONFIG_S5P_CLOCK
+ #include <plat/clock.h>
++#else
++#include <linux/clk-provider.h>
++#endif
++
+ #include <plat/devs.h>
+ #include <plat/sdhci.h>
+ #include <plat/adc-core.h>
+@@ -50,6 +57,9 @@
  
- 	if (ch == DMC0) {
--		reg = (S5P_VA_DMC0 + 0x30);
-+		reg = (dmc_base[0] + 0x30);
- 	} else if (ch == DMC1) {
--		reg = (S5P_VA_DMC1 + 0x30);
-+		reg = (dmc_base[1] + 0x30);
- 	} else {
- 		printk(KERN_ERR "Cannot find DMC port\n");
- 		return;
-@@ -472,7 +531,7 @@ static int __init s5pv210_cpu_init(struct cpufreq_policy *policy)
- 	 * check_mem_type : This driver only support LPDDR & LPDDR2.
- 	 * other memory type is not supported.
- 	 */
--	mem_type = check_mem_type(S5P_VA_DMC0);
-+	mem_type = check_mem_type(dmc_base[0]);
+ #include "common.h"
  
- 	if ((mem_type != LPDDR) && (mem_type != LPDDR2)) {
- 		printk(KERN_ERR "CPUFreq doesn't support this memory type\n");
-@@ -481,10 +540,10 @@ static int __init s5pv210_cpu_init(struct cpufreq_policy *policy)
- 	}
++/* External clock frequency */
++static unsigned long xusbxti_f;
++
+ static const char name_s5pv210[] = "S5PV210/S5PC110";
  
- 	/* Find current refresh counter and frequency each DMC */
--	s5pv210_dram_conf[0].refresh = (__raw_readl(S5P_VA_DMC0 + 0x30) * 1000);
-+	s5pv210_dram_conf[0].refresh = (__raw_readl(dmc_base[0] + 0x30) * 1000);
- 	s5pv210_dram_conf[0].freq = clk_get_rate(dmc0_clk);
+ static struct cpu_table cpu_ids[] __initdata = {
+@@ -229,18 +239,24 @@ void __init s5pv210_map_io(void)
  
--	s5pv210_dram_conf[1].refresh = (__raw_readl(S5P_VA_DMC1 + 0x30) * 1000);
-+	s5pv210_dram_conf[1].refresh = (__raw_readl(dmc_base[1] + 0x30) * 1000);
- 	s5pv210_dram_conf[1].freq = clk_get_rate(dmc1_clk);
- 
- 	policy->suspend_freq = SLEEP_FREQ;
-@@ -527,8 +586,55 @@ static struct notifier_block s5pv210_cpufreq_reboot_notifier = {
- 	.notifier_call = s5pv210_cpufreq_reboot_notifier_event,
- };
- 
--static int __init s5pv210_cpufreq_init(void)
-+static int s5pv210_cpufreq_probe(struct platform_device *pdev)
+ void __init s5pv210_init_clocks(int xtal)
  {
-+	struct device_node *np;
-+	int id;
-+
-+	/*
-+	 * HACK: This is a temporary workaround to get access to clock
-+	 * and DMC controller registers directly and remove static mappings
-+	 * and dependencies on platform headers. It is necessary to enable
-+	 * S5PV210 multi-platform support and will be removed together with
-+	 * this whole driver as soon as S5PV210 gets migrated to use
-+	 * cpufreq-cpu0 driver.
-+	 */
-+	np = of_find_compatible_node(NULL, NULL, "samsung,s5pv210-clock");
-+	if (!np) {
-+		pr_err("%s: failed to find clock controller DT node\n",
-+			__func__);
-+		return -ENODEV;
-+	}
-+
-+	clk_base = of_iomap(np, 0);
-+	if (!clk_base) {
-+		pr_err("%s: failed to map clock registers\n", __func__);
-+		return -EFAULT;
-+	}
-+
-+	for_each_compatible_node(np, NULL, "samsung,s5pv210-dmc") {
-+		id = of_alias_get_id(np, "dmc");
-+		if (id < 0 || id >= ARRAY_SIZE(dmc_base)) {
-+			pr_err("%s: failed to get alias of dmc node '%s'\n",
-+				__func__, np->name);
-+			return id;
-+		}
-+
-+		dmc_base[id] = of_iomap(np, 0);
-+		if (!dmc_base[id]) {
-+			pr_err("%s: failed to map dmc%d registers\n",
-+				__func__, id);
-+			return -EFAULT;
-+		}
-+	}
-+
-+	for (id = 0; id < ARRAY_SIZE(dmc_base); ++id) {
-+		if (!dmc_base[id]) {
-+			pr_err("%s: failed to find dmc%d node\n", __func__, id);
-+			return -ENODEV;
-+		}
-+	}
-+
- 	arm_regulator = regulator_get(NULL, "vddarm");
- 	if (IS_ERR(arm_regulator)) {
- 		pr_err("failed to get regulator vddarm");
-@@ -547,4 +653,11 @@ static int __init s5pv210_cpufreq_init(void)
- 	return cpufreq_register_driver(&s5pv210_driver);
++#ifdef CONFIG_S5P_CLOCK
+ 	printk(KERN_DEBUG "%s: initializing clocks\n", __func__);
+ 
+ 	s3c24xx_register_baseclocks(xtal);
+ 	s5p_register_clocks(xtal);
+ 	s5pv210_register_clocks();
+ 	s5pv210_setup_clocks();
++#else
++	xusbxti_f = xtal;
++#endif
  }
  
--late_initcall(s5pv210_cpufreq_init);
-+static struct platform_driver s5pv210_cpufreq_platdrv = {
-+	.driver = {
-+		.name	= "s5pv210-cpufreq",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe = s5pv210_cpufreq_probe,
-+};
-+module_platform_driver(s5pv210_cpufreq_platdrv);
+ void __init s5pv210_init_irq(void)
+ {
+ 	u32 vic[4];	/* S5PV210 supports 4 VIC */
+ 
++	s5pv210_clk_init(0, xusbxti_f, S3C_VA_SYS);
++
+ 	/* All the VICs are fully populated. */
+ 	vic[0] = ~0;
+ 	vic[1] = ~0;
+diff --git a/arch/arm/mach-s5pv210/common.h b/arch/arm/mach-s5pv210/common.h
+index fe1beb5..a2e85cb 100644
+--- a/arch/arm/mach-s5pv210/common.h
++++ b/arch/arm/mach-s5pv210/common.h
+@@ -14,6 +14,15 @@
+ 
+ #include <linux/reboot.h>
+ 
++#ifdef CONFIG_COMMON_CLK_S5PV210
++void s5pv210_clk_init(unsigned long xxti_f, unsigned long xusbxti_f,
++		      void __iomem *reg_base);
++#else
++static inline void s5pv210_clk_init(unsigned long xxti_f,
++				    unsigned long xusbxti_f,
++				    void __iomem *reg_base) {}
++#endif
++
+ void s5pv210_init_io(struct map_desc *mach_desc, int size);
+ void s5pv210_init_irq(void);
+ 
+diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-goni.c
+index c1ce921..0fc71be 100644
+--- a/arch/arm/mach-s5pv210/mach-goni.c
++++ b/arch/arm/mach-s5pv210/mach-goni.c
+@@ -849,7 +849,7 @@ static void __init goni_sound_init(void)
+ static void __init goni_map_io(void)
+ {
+ 	s5pv210_init_io(NULL, 0);
+-	s3c24xx_init_clocks(clk_xusbxti.rate);
++	s3c24xx_init_clocks(24000000);
+ 	s3c24xx_init_uarts(goni_uartcfgs, ARRAY_SIZE(goni_uartcfgs));
+ 	samsung_set_timer_source(SAMSUNG_PWM3, SAMSUNG_PWM4);
+ }
+diff --git a/arch/arm/mach-s5pv210/mach-smdkv210.c b/arch/arm/mach-s5pv210/mach-smdkv210.c
+index 2a6655f..1bde3a3 100644
+--- a/arch/arm/mach-s5pv210/mach-smdkv210.c
++++ b/arch/arm/mach-s5pv210/mach-smdkv210.c
+@@ -285,7 +285,7 @@ static struct platform_pwm_backlight_data smdkv210_bl_data = {
+ static void __init smdkv210_map_io(void)
+ {
+ 	s5pv210_init_io(NULL, 0);
+-	s3c24xx_init_clocks(clk_xusbxti.rate);
++	s3c24xx_init_clocks(24000000);
+ 	s3c24xx_init_uarts(smdkv210_uartcfgs, ARRAY_SIZE(smdkv210_uartcfgs));
+ 	samsung_set_timer_source(SAMSUNG_PWM2, SAMSUNG_PWM4);
+ }
+diff --git a/arch/arm/plat-samsung/Kconfig b/arch/arm/plat-samsung/Kconfig
+index 1c629c2..42f5d5b 100644
+--- a/arch/arm/plat-samsung/Kconfig
++++ b/arch/arm/plat-samsung/Kconfig
+@@ -78,7 +78,7 @@ config SAMSUNG_CLKSRC
+ 	  used by newer systems such as the S3C64XX.
+ 
+ config S5P_CLOCK
+-	def_bool ARCH_S5PV210
++	bool
+ 	help
+ 	  Support common clock part for ARCH_S5P and ARCH_EXYNOS SoCs
+ 
 -- 
 1.9.3
 
