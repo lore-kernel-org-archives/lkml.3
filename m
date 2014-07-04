@@ -1,94 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760170AbaGDV0R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 17:26:17 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:40886 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922AbaGDV0P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 17:26:15 -0400
-Date: Fri, 4 Jul 2014 15:26:12 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Federico Vaga <federico.vaga@gmail.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michel Arruat <michel.arruat@gmail.com>
-Subject: Re: PCIe bus enumeration
-Message-ID: <20140704212612.GA15618@google.com>
-References: <280883016.9onmf0miLq@pcbe13110.cern.ch>
- <7850906.HUE8jaYLrp@harkonnen>
- <CAErSpo6Dgwn5QtHwBEcJsY++ZDUu73S6Jm1EVgD0AO-NaN2Wgw@mail.gmail.com>
- <1807045.P44aWKLMe6@pcbe13110.cern.ch>
+	id S1757232AbaGDVhN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 17:37:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60591 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752922AbaGDVhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 17:37:10 -0400
+Message-ID: <53B71E83.3010005@suse.cz>
+Date: Fri, 04 Jul 2014 23:37:07 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1807045.P44aWKLMe6@pcbe13110.cern.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Randy Dunlap <rdunlap@infradead.org>, Sam Ravnborg <sam@ravnborg.org>
+CC: "J. Bruce Fields" <bfields@fieldses.org>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: relative objtree change broke tar builds?
+References: <20140617223854.GC6168@fieldses.org> <53A15684.9000002@suse.cz> <20140618122029.GA17790@fieldses.org> <53A18712.6030907@suse.cz> <20140618131452.GB17790@fieldses.org> <53A1B72E.7030907@infradead.org> <53A1ECD0.2030001@suse.cz> <20140618195259.GA21939@ravnborg.org> <53A200DD.3060004@infradead.org>
+In-Reply-To: <53A200DD.3060004@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04, 2014 at 09:55:20AM +0200, Federico Vaga wrote:
-> > I assume these ports don't support hotplug.  If they *did* support
-> > hotplug, those ports would have to exist because they handle the
-> > hotplug events (presence detect, etc.)
+Dne 18.6.2014 23:13, Randy Dunlap napsal(a):
+> On 06/18/14 12:52, Sam Ravnborg wrote:
+>> On Wed, Jun 18, 2014 at 09:47:28PM +0200, Michal Marek wrote:
+>>> Dne 18.6.2014 17:58, Randy Dunlap napsal(a):
+>>>> On 06/18/14 06:14, J. Bruce Fields wrote:
+>>>>> On Wed, Jun 18, 2014 at 02:33:22PM +0200, Michal Marek wrote:
+>>>>>> Dne 18.6.2014 14:20, J. Bruce Fields napsal(a):
+>>>>>>> On Wed, Jun 18, 2014 at 11:06:12AM +0200, Michal Marek wrote:
+>>>>>>>> Dne 18.6.2014 00:38, J. Bruce Fields napsal(a):
+>>>>>>>>> The changelog there says
+>>>>>>>>>
+>>>>>>>>> 	The main Makefile sets its working directory to the object tree
+>>>>>>>>> 	and never changes it again. Therefore, we can use '.' instead of
+>>>>>>>>> 	the absolute path.
+>>>>>>>>>
+>>>>>>>>> But the main Makefile also exports objtree, and a quick grep suggests
+>>>>>>>>> lots of other uses outside the main Makefile.
+>>>>>>>>
+>>>>>>>> Do you have examples? Besides your report, I'm only aware of make
+>>>>>>>> deb-pkg and make *docs. What else?
+>>>>>>>
+>>>>>>> I haven't looked.
+>>>>>>>
+>>>>>>> I only note that grep finds 47 files referencing that variable, and
+>>>>>>> absent some argument that the remaining ones are correct, I'd be
+>>>>>>> inclined to revert.
+>>>>>>
+>>>>>> Do these 47 files change the working directory before referencing the
+>>>>>> variable?
+>>>>>
+>>>>> Sorry, I'm not volunteering to check.
+>>>>>
+>>>>> Note also that other variables are defined in terms of objtree, and they
+>>>>> may be exported or passed to other scripts.
+>>>>
+>>>>
+>>>> I'll note one side effect that I really dislike:
+>>>> If not in silent mode, scripts/mkmakefile tells me that the it is
+>>>> generating ./Makefile.  I want to see the real path there instead of '.'.
+>>>
+>>> The idea is that one should be able to compare as much as possible
+>>> between the build of /usr/src/linux-<version_a> built in
+>>> /usr/src/linux-<version_a>/build and /usr/src/linux-<version_b> built in
+>>> /usr/src/linux-<version_b>/build. One can now even compare the build log
+>>> with -j1, although that was not the primary goal. So if the changed
+>>> message is considered problematic, I can change it to show the full path
+>>> again, like
+>>>
+>>> diff --git a/scripts/mkmakefile b/scripts/mkmakefile
+>>> index 84af27b..9d291f5 100644
+>>> --- a/scripts/mkmakefile
+>>> +++ b/scripts/mkmakefile
+>>> @@ -18,7 +18,7 @@ then
+>>>         exit 0
+>>>  fi
+>>>  if [ "${quiet}" != "silent_" ]; then
+>>> -       echo "  GEN     $2/Makefile"
+>>> +       echo "  GEN     $(cd $2 && /bin/pwd)/Makefile"
+>>>  fi
+>>>
+>>>  cat << EOF > $2/Makefile
+>>>
+>>> Opinions?
+>> I agree with Randy - the full path is more informative.
+>>
+>> 	Sam
 > 
-> I asked: yes, they do not support hotplug
-> 
-> > If you can collect the complete "lspci -vv" output from your machine
-> > (with a device plugged in, so we can see the port leading to it),
-> > that will help make this more concrete.  And maybe one with no
-> > devices plugged in, so we can see exactly what changes.
-> 
-> I attached two files with the output. I putted a card in slot 10 and 
-> took the output, then moved the card on slot 11 and took the output.
-> 
-> As you can see with diff the bridge behind the slot disappear when it 
-> is empty.
+> Yes, just '.' discards some very useful information.
 
-Perfect, thanks!  For some reason, it really helps me to be able to stare
-at the actual data.  Here's the situation with slot 10 occupied:
+With commit c2e28dc9 ("kbuild: Print the name of the build directory"),
+it now prints the full path at the beginning of each make invocation. So
+I think it is not necessary to repeat the full path a few lines later,
+do you agree?
 
-  00:01.0 82Q35 Root Port to [bus 05]          PCIe SltCap slot #21
-  05:00.0 CERN/ECP/EDU Device                  slot 10
-  00:1c.0 82801I Express Port 1 to [bus 04]    PCIe SltCap slot #22
-  00:1c.3 (not present at all)
-  00:1c.4 82801I Express Port 5 to [bus 03]    PCIe SltCap slot #0
-  03:00.0 Realtek NIC
-
-and here it is with slot 11 occupied:
-
-  00:01.0 (not present at all)
-  00:1c.0 82801I Express Port 1 to [bus 05]    PCIe SltCap slot #22
-  00:1c.3 82801I Express Port 4 to [bus 04]    PCIe SltCap slot #25
-  04:00.0 CERN/ECP/EDU Device                  slot 11
-  00:1c.4 82801I Express Port 5 to [bus 03]    PCIe SltCap slot #0
-  03:00.0 Realtek NIC
-
-I'm pretty sure this is a function of your BIOS.  There are often
-device-specific ways to enable or disable individual devices (like the root
-ports here), and the BIOS is likely disabling these ports when there is
-nothing below them.  I don't know why it would turn off 00:1c.3 when its
-slot is empty, but it doesn't turn off 00:1c.0, which also leads to an
-empty slot.  But I don't think Linux is involved in this, and if the BIOS
-disables devices, there really isn't anything Linux can do about it.
-
-If you can get to an EFI shell on this box, you might be able to confirm
-this with the "pci" command.  Booting Linux with "pci=earlydump" is similar
-in that it dumps PCI config space before we change anything.
-
-To solve this problem, I think you need slot information even when there's
-no hotplug.  This has been raised before [1, 2], and I think it's a good
-idea, but nobody has implemented it yet.
-
-Another curious thing is that you refer to "slot 10", but there's no
-obvious connection between that and the "slot 21" in the PCIe capability of
-the Root Port leading to that slot.  But I guess you said the slots are in
-a backplane (they're not an integral part of the motherboard).  In that
-case, there's no way for the motherboard to know what the labels on the
-backplane are.
-
-Bjorn
-
-[1] http://lkml.kernel.org/r/CAErSpo45sDNPt6=Yw-qgqdojYL8+_JNOVNEnVxRLatga+bY+2A@mail.gmail.com
-[2] https://bugzilla.kernel.org/show_bug.cgi?id=72681
+Thanks,
+Michal
