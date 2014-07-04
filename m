@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759410AbaGDRrZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 13:47:25 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:14602 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881AbaGDRrX (ORCPT
+	id S1759507AbaGDRs7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 13:48:59 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:25458 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754559AbaGDRs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 13:47:23 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-4a-53b6e8a940ad
+	Fri, 4 Jul 2014 13:48:57 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-23-53b6e906b0bd
 From: Tomasz Figa <t.figa@samsung.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -16,21 +16,21 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Mark Brown <broonie@kernel.org>,
         =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Tomasz Figa <t.figa@samsung.com>
+        Tomasz Figa <tomasz.figa@gmail.com>
 Subject: [PATCH 00/19] ARM: SAMSUNG: S5PV210 platform clean-up
-Date: Fri, 04 Jul 2014 19:46:22 +0200
-Message-id: <1404496001-26513-1-git-send-email-t.figa@samsung.com>
+Date: Fri, 04 Jul 2014 19:48:00 +0200
+Message-id: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
 X-Mailer: git-send-email 1.9.3
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPJMWRmVeSWpSXmKPExsVy+t/xy7orX2wLNtgxmdXi76Rj7BZTHz5h
-	s/j/6DWrRe+Cq2wWmx5fY7W4vGsOm8WM8/uYLNYeuctucer6ZzaL9TNes1is2vWH0YHb4/ev
-	SYweO2fdZffYtKqTzWPzknqPKyeaWD36tqxi9Nh+bR6zx+dNcgEcUVw2Kak5mWWpRfp2CVwZ
-	P/a2MhdcLqn4/7aHqYHxVlgXIyeHhICJxJ27nSwQtpjEhXvr2UBsIYGljBIXD6h1MXIB2X1M
-	Es2Lm8CK2ATUJD43PAIrEhFQlfjctoAdpIhZ4C+TxOT+F6xdjBwcwgJ2Elenh4DUsADVbP16
-	nBHE5hVwkvjQ2coMsUxOonfbG+YJjNwLGBlWMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoQE
-	2tcdjEuPWR1iFOBgVOLhbWjZFizEmlhWXJl7iFGCg1lJhPfPKqAQb0piZVVqUX58UWlOavEh
-	RiYOTqkGxu3nuvg4jdueMp7aOym4cd4+lW2tD8SsIjJXGsssCWjcIdt5nZfPb2Ky8NkuQc+Y
-	q/fXsHHb7k/qE2gJS/nhs/T/tWPRqTtPPDh/fJP4cYelallX7ObL+za9+pDIoriYK7DiysT/
-	wY3KNWWJVf13bVaeVX+ic/fsuoB7k5Qb5k5XeLn6ZI99kxJLcUaioRZzUXEiAOLFmTsSAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBJMWRmVeSWpSXmKPExsVy+t/xy7psL7cFG9zawmnxd9IxdoupD5+w
+	Wfx/9JrVonfBVTaLTY+vsVpc3jWHzWLG+X1MFmuP3GW3OHX9M5vFql1/GB24PH7/msTosXPW
+	XXaPTas62Tw2L6n3uHKiidWjb8sqRo/t1+Yxe3zeJBfAEcVlk5Kak1mWWqRvl8CV8WNvK3PB
+	5ZKK/297mBoYb4V1MXJySAiYSNzsfssKYYtJXLi3nq2LkYtDSGApo8TPr2uYQRJCAn1MEn+X
+	8YLYbAJqEp8bHrGB2CICqhKf2xawdzFycDAL3GaSaBUGMYUF7CSuTg8BqWABqni58RVYNa+A
+	k0TrrbdsEKvkJHq3vWGewMi9gJFhFaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIaH3Zwbj4
+	mNUhRgEORiUe3sYVG4KFWBPLiitzDzFKcDArifD+WbUtWIg3JbGyKrUoP76oNCe1+BAjEwen
+	VAOjZs4ms/+Zhy4FzPqYqv7M5UKi7aaWtX6VYdVpfBfPOVSsmxLz/cSq++fNS3YfVzHkOFky
+	e/P0ZYmTlgk1dHJvVs5PUp7/5xG3r9HhxFTFr9yse1YsOngmh7dALHKCo6emLCf7+rT9CQxp
+	urML4x5PuR4Wtu/fxdJp+c4hAY4prI/f7zv5mHWPEktxRqKhFnNRcSIAQKu4uwsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
