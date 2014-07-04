@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031478AbaGDWYn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:24:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57763 "EHLO
+	id S1031492AbaGDWZD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:25:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760858AbaGDWXF (ORCPT
+	with ESMTP id S1760850AbaGDWXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:23:05 -0400
+	Fri, 4 Jul 2014 18:23:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Jan Tore Morken <jantore@morken.priv.no>
-Subject: [PATCH 3.10 42/46] netfilter: ipt_ULOG: fix info leaks
-Date: Fri,  4 Jul 2014 15:19:46 -0700
-Message-Id: <20140704221604.205078424@linuxfoundation.org>
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Alexander Usyskin <alexander.usyskin@intel.com>
+Subject: [PATCH 3.10 40/46] mei: me: fix hw ready reset flow
+Date: Fri,  4 Jul 2014 15:19:44 -0700
+Message-Id: <20140704221604.119442752@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
 References: <20140704221602.280733370@linuxfoundation.org>
@@ -30,55 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Tomas Winkler <tomas.winkler@intel.com>
 
-commit 278f2b3e2af5f32ea1afe34fa12a2518153e6e49 upstream.
+commit b04ada92ffaabb868497a1fce8e4f6bf74e5488f upstream.
 
-The ulog messages leak heap bytes by the means of padding bytes and
-incompletely filled string arrays. Fix those by memset(0)'ing the
-whole struct before filling it.
+We cleared H_RST for H_CSR on spurious interrupt generated when ME_RDY
+while cleared and not while  ME_RDY is set. The spurious interrupt
+is not delivered on all platforms in this case the
+driver may fail to initialize.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Jan Tore Morken <jantore@morken.priv.no>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ipv4/netfilter/ipt_ULOG.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ drivers/misc/mei/hw-me.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/net/ipv4/netfilter/ipt_ULOG.c
-+++ b/net/ipv4/netfilter/ipt_ULOG.c
-@@ -220,6 +220,7 @@ static void ipt_ulog_packet(struct net *
- 	ub->qlen++;
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -164,6 +164,9 @@ static void mei_me_hw_reset_release(stru
+ 	hcsr |= H_IG;
+ 	hcsr &= ~H_RST;
+ 	mei_hcsr_set(hw, hcsr);
++
++	/* complete this write before we set host ready on another CPU */
++	mmiowb();
+ }
+ /**
+  * mei_me_hw_reset - resets fw via mei csr register.
+@@ -214,6 +217,7 @@ static void mei_me_hw_reset(struct mei_d
+ static void mei_me_host_set_ready(struct mei_device *dev)
+ {
+ 	struct mei_me_hw *hw = to_me_hw(dev);
++	hw->host_hw_state = mei_hcsr_read(hw);
+ 	hw->host_hw_state |= H_IE | H_IG | H_RDY;
+ 	mei_hcsr_set(hw, hw->host_hw_state);
+ }
+@@ -506,19 +510,15 @@ irqreturn_t mei_me_irq_thread_handler(in
+ 	/*  check if we need to start the dev */
+ 	if (!mei_host_is_ready(dev)) {
+ 		if (mei_hw_is_ready(dev)) {
++			mei_me_hw_reset_release(dev);
+ 			dev_dbg(&dev->pdev->dev, "we need to start the dev.\n");
  
- 	pm = nlmsg_data(nlh);
-+	memset(pm, 0, sizeof(*pm));
- 
- 	/* We might not have a timestamp, get one */
- 	if (skb->tstamp.tv64 == 0)
-@@ -238,8 +239,6 @@ static void ipt_ulog_packet(struct net *
+ 			dev->recvd_hw_ready = true;
+ 			wake_up_interruptible(&dev->wait_hw_ready);
+-
+-			mutex_unlock(&dev->device_lock);
+-			return IRQ_HANDLED;
+ 		} else {
+-			dev_dbg(&dev->pdev->dev, "Reset Completed.\n");
+-			mei_me_hw_reset_release(dev);
+-			mutex_unlock(&dev->device_lock);
+-			return IRQ_HANDLED;
++			dev_dbg(&dev->pdev->dev, "Spurious Interrupt\n");
+ 		}
++		goto end;
  	}
- 	else if (loginfo->prefix[0] != '\0')
- 		strncpy(pm->prefix, loginfo->prefix, sizeof(pm->prefix));
--	else
--		*(pm->prefix) = '\0';
- 
- 	if (in && in->hard_header_len > 0 &&
- 	    skb->mac_header != skb->network_header &&
-@@ -251,13 +250,9 @@ static void ipt_ulog_packet(struct net *
- 
- 	if (in)
- 		strncpy(pm->indev_name, in->name, sizeof(pm->indev_name));
--	else
--		pm->indev_name[0] = '\0';
- 
- 	if (out)
- 		strncpy(pm->outdev_name, out->name, sizeof(pm->outdev_name));
--	else
--		pm->outdev_name[0] = '\0';
- 
- 	/* copy_len <= skb->len, so can't fail. */
- 	if (skb_copy_bits(skb, 0, pm->payload, copy_len) < 0)
+ 	/* check slots available for reading */
+ 	slots = mei_count_full_read_slots(dev);
 
 
