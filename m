@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756474AbaGDAxR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 20:53:17 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:60030 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755557AbaGDAxP (ORCPT
+	id S1759779AbaGDA43 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 20:56:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48562 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755088AbaGDA42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 20:53:15 -0400
-Message-ID: <53B5FAF4.2050705@hitachi.com>
-Date: Fri, 04 Jul 2014 09:53:08 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 3 Jul 2014 20:56:28 -0400
+Date: Thu, 3 Jul 2014 18:00:45 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [GIT PULL] Driver core fixes for 3.16-rc4
+Message-ID: <20140704010045.GA21040@kroah.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] modules: Fix build error in moduleloader.h
-References: <20140703092121.082e0366@gandalf.local.home>
-In-Reply-To: <20140703092121.082e0366@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/07/03 22:21), Steven Rostedt wrote:
-> Fengguang Wu's build bot detected that if moduleloader.h is included in
-> a C file (used by ftrace and kprobes to access module_alloc() when
-> available), that it can fail to build if CONFIG_MODULES and
-> CONFIG_MODULES_USE_ELF_REL is not defined.
-> 
-> This is because there's a printk() that dereferences struct module to
-> print the name of the module. But as struct module does not exist when
-> CONFIG_MODULES is not defined we get this error:
-> 
->    include/linux/moduleloader.h: In function 'apply_relocate':
->>> include/linux/moduleloader.h:48:63: error: dereferencing pointer to incomplete type  
->      printk(KERN_ERR "module %s: REL relocation unsupported\n", me->name);
->                                                                   ^
-> Avoid the printk if CONFIG_MODULES is not set.
+The following changes since commit 4c834452aad01531db949414f94f817a86348d59:
 
-Looks OK to me. BTW, CONFIG_KPROBES depends on CONFIG_MODULES,
-so currently kprobes itself doesn't hit that problem.
+  Linux 3.16-rc3 (2014-06-29 14:11:36 -0700)
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+are available in the git repository at:
 
-Thank you, :)
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.16-rc4
 
-> 
-> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
-> diff --git a/include/linux/moduleloader.h b/include/linux/moduleloader.h
-> index 560ca53..d9da807 100644
-> --- a/include/linux/moduleloader.h
-> +++ b/include/linux/moduleloader.h
-> @@ -45,7 +45,10 @@ static inline int apply_relocate(Elf_Shdr *sechdrs,
->  				 unsigned int relsec,
->  				 struct module *me)
->  {
-> +/* me->name only exists if modules are enabled */
-> +#ifdef CONFIG_MODULES
->  	printk(KERN_ERR "module %s: REL relocation unsupported\n", me->name);
-> +#endif
->  	return -ENOEXEC;
->  }
->  #endif
-> 
+for you to fetch changes up to 4a3a99045177369700c60d074c0e525e8093b0fc:
 
+  lz4: add overrun checks to lz4_uncompress_unknownoutputsize() (2014-07-03 16:12:04 -0700)
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+----------------------------------------------------------------
+Driver core fixes for 3.16-rc4
 
+Well, one drivercore fix for kernfs to resolve a reported issue with
+sysfs files being updated from atomic contexts, and another lz4 bugfix
+for testing potential buffer overflows.
 
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Greg Kroah-Hartman (1):
+      lz4: add overrun checks to lz4_uncompress_unknownoutputsize()
+
+Tejun Heo (1):
+      kernfs: kernfs_notify() must be useable from non-sleepable contexts
+
+ fs/kernfs/file.c         | 69 ++++++++++++++++++++++++++++++++++++++----------
+ include/linux/kernfs.h   |  1 +
+ lib/lz4/lz4_decompress.c |  6 ++++-
+ 3 files changed, 61 insertions(+), 15 deletions(-)
