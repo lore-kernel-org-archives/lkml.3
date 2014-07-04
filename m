@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031222AbaGDWai (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:30:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57672 "EHLO
+	id S1760677AbaGDWW1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:22:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57639 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760671AbaGDWWe (ORCPT
+	with ESMTP id S1760314AbaGDWWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:22:34 -0400
+	Fri, 4 Jul 2014 18:22:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.10 30/46] powerpc: 64bit sendfile is capped at 2GB
-Date: Fri,  4 Jul 2014 15:19:34 -0700
-Message-Id: <20140704221603.655866019@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.14 55/59] tracing: Try again for saved cmdline if failed due to locking
+Date: Fri,  4 Jul 2014 15:19:44 -0700
+Message-Id: <20140704221542.152790470@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
-References: <20140704221602.280733370@linuxfoundation.org>
+In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
+References: <20140704221539.544876024@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,40 +24,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 5d73320a96fcce80286f1447864c481b5f0b96fa upstream.
+commit 379cfdac37923653c9d4242d10052378b7563005 upstream.
 
-commit 8f9c0119d7ba (compat: fs: Generic compat_sys_sendfile
-implementation) changed the PowerPC 64bit sendfile call from
-sys_sendile64 to sys_sendfile.
+In order to prevent the saved cmdline cache from being filled when
+tracing is not active, the comms are only recorded after a trace event
+is recorded.
 
-Unfortunately this broke sendfile of lengths greater than 2G because
-sys_sendfile caps at MAX_NON_LFS. Restore what we had previously which
-fixes the bug.
+The problem is, a comm can fail to be recorded if the trace_cmdline_lock
+is held. That lock is taken via a trylock to allow it to happen from
+any context (including NMI). If the lock fails to be taken, the comm
+is skipped. No big deal, as we will try again later.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+But! Because of the code that was added to only record after an event,
+we may not try again later as the recording is made as a oneshot per
+event per CPU.
+
+Only disable the recording of the comm if the comm is actually recorded.
+
+Fixes: 7ffbd48d5cab "tracing: Cache comms only after an event occurred"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/systbl.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/trace.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/arch/powerpc/include/asm/systbl.h
-+++ b/arch/powerpc/include/asm/systbl.h
-@@ -190,7 +190,7 @@ SYSCALL_SPU(getcwd)
- SYSCALL_SPU(capget)
- SYSCALL_SPU(capset)
- COMPAT_SYS(sigaltstack)
--COMPAT_SYS_SPU(sendfile)
-+SYSX_SPU(sys_sendfile64,compat_sys_sendfile,sys_sendfile)
- SYSCALL(ni_syscall)
- SYSCALL(ni_syscall)
- PPC_SYS(vfork)
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1449,12 +1449,12 @@ static void tracing_stop_tr(struct trace
+ 
+ void trace_stop_cmdline_recording(void);
+ 
+-static void trace_save_cmdline(struct task_struct *tsk)
++static int trace_save_cmdline(struct task_struct *tsk)
+ {
+ 	unsigned pid, idx;
+ 
+ 	if (!tsk->pid || unlikely(tsk->pid > PID_MAX_DEFAULT))
+-		return;
++		return 0;
+ 
+ 	/*
+ 	 * It's not the end of the world if we don't get
+@@ -1463,7 +1463,7 @@ static void trace_save_cmdline(struct ta
+ 	 * so if we miss here, then better luck next time.
+ 	 */
+ 	if (!arch_spin_trylock(&trace_cmdline_lock))
+-		return;
++		return 0;
+ 
+ 	idx = map_pid_to_cmdline[tsk->pid];
+ 	if (idx == NO_CMDLINE_MAP) {
+@@ -1488,6 +1488,8 @@ static void trace_save_cmdline(struct ta
+ 	memcpy(&saved_cmdlines[idx], tsk->comm, TASK_COMM_LEN);
+ 
+ 	arch_spin_unlock(&trace_cmdline_lock);
++
++	return 1;
+ }
+ 
+ void trace_find_cmdline(int pid, char comm[])
+@@ -1529,9 +1531,8 @@ void tracing_record_cmdline(struct task_
+ 	if (!__this_cpu_read(trace_cmdline_save))
+ 		return;
+ 
+-	__this_cpu_write(trace_cmdline_save, false);
+-
+-	trace_save_cmdline(tsk);
++	if (trace_save_cmdline(tsk))
++		__this_cpu_write(trace_cmdline_save, false);
+ }
+ 
+ void
 
 
