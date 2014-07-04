@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030872AbaGDWSx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:18:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57295 "EHLO
+	id S1030783AbaGDWR7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:17:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57279 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030760AbaGDWSB (ORCPT
+	with ESMTP id S1030760AbaGDWR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:18:01 -0400
+	Fri, 4 Jul 2014 18:17:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 18/19] ptrace,x86: force IRET path after a ptrace_stop()
-Date: Fri,  4 Jul 2014 15:15:28 -0700
-Message-Id: <20140704221437.270339236@linuxfoundation.org>
+        Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.4 14/19] nfsd: getattr for FATTR4_WORD0_FILES_AVAIL needs the statfs buffer
+Date: Fri,  4 Jul 2014 15:15:24 -0700
+Message-Id: <20140704221437.081382647@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221436.423715636@linuxfoundation.org>
 References: <20140704221436.423715636@linuxfoundation.org>
@@ -30,75 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Christoph Hellwig <hch@lst.de>
 
-commit b9cd18de4db3c9ffa7e17b0dc0ca99ed5aa4d43a upstream.
+commit 12337901d654415d9f764b5f5ba50052e9700f37 upstream.
 
-The 'sysret' fastpath does not correctly restore even all regular
-registers, much less any segment registers or reflags values.  That is
-very much part of why it's faster than 'iret'.
+Note nobody's ever noticed because the typical client probably never
+requests FILES_AVAIL without also requesting something else on the list.
 
-Normally that isn't a problem, because the normal ptrace() interface
-catches the process using the signal handler infrastructure, which
-always returns with an iret.
-
-However, some paths can get caught using ptrace_event() instead of the
-signal path, and for those we need to make sure that we aren't going to
-return to user space using 'sysret'.  Otherwise the modifications that
-may have been done to the register set by the tracer wouldn't
-necessarily take effect.
-
-Fix it by forcing IRET path by setting TIF_NOTIFY_RESUME from
-arch_ptrace_stop_needed() which is invoked from ptrace_stop().
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Andy Lutomirski <luto@amacapital.net>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/ptrace.h |   16 ++++++++++++++++
- include/linux/ptrace.h        |    3 +++
- 2 files changed, 19 insertions(+)
+ fs/nfsd/nfs4xdr.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/ptrace.h
-+++ b/arch/x86/include/asm/ptrace.h
-@@ -286,6 +286,22 @@ static inline unsigned long regs_get_ker
- 
- #define ARCH_HAS_USER_SINGLE_STEP_INFO
- 
-+/*
-+ * When hitting ptrace_stop(), we cannot return using SYSRET because
-+ * that does not restore the full CPU state, only a minimal set.  The
-+ * ptracer can change arbitrary register values, which is usually okay
-+ * because the usual ptrace stops run off the signal delivery path which
-+ * forces IRET; however, ptrace_event() stops happen in arbitrary places
-+ * in the kernel and don't force IRET path.
-+ *
-+ * So force IRET path after a ptrace stop.
-+ */
-+#define arch_ptrace_stop_needed(code, info)				\
-+({									\
-+	set_thread_flag(TIF_NOTIFY_RESUME);				\
-+	false;								\
-+})
-+
- struct user_desc;
- extern int do_get_thread_area(struct task_struct *p, int idx,
- 			      struct user_desc __user *info);
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -379,6 +379,9 @@ static inline void user_single_step_sigi
-  * calling arch_ptrace_stop() when it would be superfluous.  For example,
-  * if the thread has not been back to user mode since the last stop, the
-  * thread state might indicate that nothing needs to be done.
-+ *
-+ * This is guaranteed to be invoked once before a task stops for ptrace and
-+ * may include arch-specific operations necessary prior to a ptrace stop.
-  */
- #define arch_ptrace_stop_needed(code, info)	(0)
- #endif
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -2032,8 +2032,8 @@ nfsd4_encode_fattr(struct svc_fh *fhp, s
+ 	err = vfs_getattr(exp->ex_path.mnt, dentry, &stat);
+ 	if (err)
+ 		goto out_nfserr;
+-	if ((bmval0 & (FATTR4_WORD0_FILES_FREE | FATTR4_WORD0_FILES_TOTAL |
+-			FATTR4_WORD0_MAXNAME)) ||
++	if ((bmval0 & (FATTR4_WORD0_FILES_AVAIL | FATTR4_WORD0_FILES_FREE |
++			FATTR4_WORD0_FILES_TOTAL | FATTR4_WORD0_MAXNAME)) ||
+ 	    (bmval1 & (FATTR4_WORD1_SPACE_AVAIL | FATTR4_WORD1_SPACE_FREE |
+ 		       FATTR4_WORD1_SPACE_TOTAL))) {
+ 		err = vfs_statfs(&path, &statfs);
 
 
