@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760664AbaGDWQu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:16:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57107 "EHLO
+	id S1030367AbaGDWRH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:17:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57138 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760578AbaGDWQs (ORCPT
+	with ESMTP id S1030233AbaGDWRC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:16:48 -0400
+	Fri, 4 Jul 2014 18:17:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Scott Wood <scottwood@freescale.com>,
-        Michael Neuling <mikey@neuling.org>,
-        Emil Medve <Emilian.Medve@freescale.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.15 51/66] powerpc: Dont skip ePAPR spin-table CPUs
-Date: Fri,  4 Jul 2014 15:14:50 -0700
-Message-Id: <20140704221425.136337932@linuxfoundation.org>
+        Scott Mayhew <smayhew@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.15 40/66] nfs: Fix cache_validity check in nfs_write_pageuptodate()
+Date: Fri,  4 Jul 2014 15:14:39 -0700
+Message-Id: <20140704221424.631860703@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -31,48 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Scott Wood <scottwood@freescale.com>
+From: Scott Mayhew <smayhew@redhat.com>
 
-commit 6663a4fa6711050036562ddfd2086edf735fae21 upstream.
+commit 18dd78c427513fb0f89365138be66e6ee8700d1b upstream.
 
-Commit 59a53afe70fd530040bdc69581f03d880157f15a "powerpc: Don't setup
-CPUs with bad status" broke ePAPR SMP booting.  ePAPR says that CPUs
-that aren't presently running shall have status of disabled, with
-enable-method being used to determine whether the CPU can be enabled.
+NFS_INO_INVALID_DATA cannot be ignored, even if we have a delegation.
 
-Fix by checking for spin-table, which is currently the only supported
-enable-method.
+We're still having some problems with data corruption when multiple
+clients are appending to a file and those clients are being granted
+write delegations on open.
 
-Signed-off-by: Scott Wood <scottwood@freescale.com>
-Cc: Michael Neuling <mikey@neuling.org>
-Cc: Emil Medve <Emilian.Medve@Freescale.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To reproduce:
+
+Client A:
+vi /mnt/`hostname -s`
+while :; do echo "XXXXXXXXXXXXXXX" >>/mnt/file; sleep $(( $RANDOM % 5 )); done
+
+Client B:
+vi /mnt/`hostname -s`
+while :; do echo "YYYYYYYYYYYYYYY" >>/mnt/file; sleep $(( $RANDOM % 5 )); done
+
+What's happening is that in nfs_update_inode() we're recognizing that
+the file size has changed and we're setting NFS_INO_INVALID_DATA
+accordingly, but then we ignore the cache_validity flags in
+nfs_write_pageuptodate() because we have a delegation.  As a result,
+in nfs_updatepage() we're extending the write to cover the full page
+even though we've not read in the data to begin with.
+
+Signed-off-by: Scott Mayhew <smayhew@redhat.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/setup-common.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ fs/nfs/write.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/setup-common.c
-+++ b/arch/powerpc/kernel/setup-common.c
-@@ -459,9 +459,17 @@ void __init smp_setup_cpu_maps(void)
- 		}
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -913,12 +913,14 @@ static bool nfs_write_pageuptodate(struc
  
- 		for (j = 0; j < nthreads && cpu < nr_cpu_ids; j++) {
-+			bool avail;
-+
- 			DBG("    thread %d -> cpu %d (hard id %d)\n",
- 			    j, cpu, be32_to_cpu(intserv[j]));
--			set_cpu_present(cpu, of_device_is_available(dn));
-+
-+			avail = of_device_is_available(dn);
-+			if (!avail)
-+				avail = !of_property_match_string(dn,
-+						"enable-method", "spin-table");
-+
-+			set_cpu_present(cpu, avail);
- 			set_hard_smp_processor_id(cpu, be32_to_cpu(intserv[j]));
- 			set_cpu_possible(cpu, true);
- 			cpu++;
+ 	if (nfs_have_delegated_attributes(inode))
+ 		goto out;
+-	if (nfsi->cache_validity & (NFS_INO_INVALID_DATA|NFS_INO_REVAL_PAGECACHE))
++	if (nfsi->cache_validity & NFS_INO_REVAL_PAGECACHE)
+ 		return false;
+ 	smp_rmb();
+ 	if (test_bit(NFS_INO_INVALIDATING, &nfsi->flags))
+ 		return false;
+ out:
++	if (nfsi->cache_validity & NFS_INO_INVALID_DATA)
++		return false;
+ 	return PageUptodate(page) != 0;
+ }
+ 
 
 
