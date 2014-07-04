@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759761AbaGDB3J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 21:29:09 -0400
-Received: from kvm5.telegraphics.com.au ([98.124.60.144]:45467 "EHLO
-	kvm5.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958AbaGDB3H (ORCPT
+	id S1759736AbaGDBco (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 21:32:44 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:31868 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751850AbaGDBcm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 21:29:07 -0400
-Date: Fri, 4 Jul 2014 11:28:05 +1000 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: Nicholas Krause <xerofoify@gmail.com>
-cc: sammy@sammy.net, geert@linux-m68k.org, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] m68k: Remove FIXME comment in file sun3_pgalloc.h
-In-Reply-To: <1404351693-5588-1-git-send-email-xerofoify@gmail.com>
-Message-ID: <alpine.LNX.2.00.1407041125060.15901@nippy.intranet>
-References: <1404351693-5588-1-git-send-email-xerofoify@gmail.com>
+	Thu, 3 Jul 2014 21:32:42 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgdfAC8DtlN5LHZ8PGdsb2JhbABagw2sbQEBAQEBAQaaVAGBCxcEAQEBATg1hAMBAQU6HBYNEAgDGAklDwUlAwcaE4hByTkXGIVYiTIHhEMFmnWLTIwVKw
+Date: Fri, 4 Jul 2014 11:32:22 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: DNAME_INLINE_LEN versus CONFIG_GENERIC_LOCKBREAK
+Message-ID: <20140704013222.GH9508@dastard>
+References: <8761je94wk.fsf@rasmusvillemoes.dk>
+ <87fviite1u.fsf@tassilo.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87fviite1u.fsf@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Wed, 2 Jul 2014, Nicholas Krause wrote:
-
-> Removes a FIXME comment in this file due to it not compiling as it now 
-> compiles.
-
-What got fixed?
-
-It doesn't say "FIXME - this doesn't compile".
-
+On Thu, Jul 03, 2014 at 12:53:01PM -0700, Andi Kleen wrote:
+> Rasmus Villemoes <linux@rasmusvillemoes.dk> writes:
 > 
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->  arch/m68k/include/asm/sun3_pgalloc.h | 1 -
->  1 file changed, 1 deletion(-)
+> > In dcache.h, DNAME_INLINE_LEN is carefully chosen so that sizeof(struct
+> > dentry) is a (specific) multiple of 64 bytes. Obviously this breaks when
+> > certain debug options are chosen (DEBUG_LOCK_ALLOC and DEBUG_SPINLOCK),
+> > but also, AFAICT, on architectures with CONFIG_GENERIC_LOCKBREAK.
+> >
+> > I'm not sure it matters, but if it does, I'd suggest putting a
+> > BUILD_BUG_ON somewhere, protected by suitable #ifdefs, so that the code
+> > documents the assumptions that went into the particular choice of
+> > DNAME_INLINE_LEN (this would also help catch changes to some of the
+> > structures embedded in struct dentry which would violate those
+> > assumptions). 
 > 
-> diff --git a/arch/m68k/include/asm/sun3_pgalloc.h b/arch/m68k/include/asm/sun3_pgalloc.h
-> index f868506..1798f25 100644
-> --- a/arch/m68k/include/asm/sun3_pgalloc.h
-> +++ b/arch/m68k/include/asm/sun3_pgalloc.h
-> @@ -12,7 +12,6 @@
->  
->  #include <asm/tlb.h>
->  
-> -/* FIXME - when we get this compiling */
->  /* erm, now that it's compiling, what do we do with it? */
->  #define _KERNPG_TABLE 0
->  
-> 
+> The right fix would be to pad it correctly for these other variants
+> too.
 
+IF you've turned on debugging options, then you've already lost more
+performance that careful packing of the dentry slab cache gains you.
+There's no point in carefully tuning DNAME_INLINE_LEN for debug
+options - it's just code that will break and annoy people as debug
+implementations change.
+
+Cheers,
+
+Dave.
 -- 
+Dave Chinner
+david@fromorbit.com
