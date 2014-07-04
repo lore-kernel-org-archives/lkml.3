@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031828AbaGDXEQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 19:04:16 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:52205 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030901AbaGDXEL (ORCPT
+	id S1031835AbaGDXEh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 19:04:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57030 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760481AbaGDWQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 19:04:11 -0400
+	Fri, 4 Jul 2014 18:16:11 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jeff Layton <jeff.layton@primarydata.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.15 35/66] nfsd4: fix FREE_STATEID lockowner leak
+Date: Fri,  4 Jul 2014 15:14:34 -0700
+Message-Id: <20140704221424.412811022@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
+References: <20140704221422.813435485@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-In-Reply-To: <539A0FE9.1080802@wwwdotorg.org>
-References: <1402398708-10722-1-git-send-email-thierry.reding@gmail.com>
-	<1402398708-10722-2-git-send-email-thierry.reding@gmail.com>
-	<539A0FE9.1080802@wwwdotorg.org>
-Date: Sat, 5 Jul 2014 01:04:10 +0200
-Message-ID: <CACRpkdZvO-RZZKDtbFY6Uv5Td2NJ828xj0sVbTh2=ehx7Ha6fA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] pinctrl: Add NVIDIA Tegra XUSB pad controller support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 12, 2014 at 10:39 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 06/10/2014 05:11 AM, Thierry Reding wrote:
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
-> Aside from the issue Andrew pointed out, this series looks good to me.
-> I'll apply once that one issue is fixed.
->
-> Linus,
->
-> Patch 2 (pinctrl driver) depends on patch 1 (binding header), and there
-> are other patches that will also depend on the binding header in patch
-> 1. I guess I should apply patch 1 in a topic branch and send you a pull
-> request which you can merge before applying patch 2. Does that sound OK
-> to you?
+------------------
 
-Bah I've got some mess in my mailbox.
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-Please proceed as this Stephen, I trust your pull request will
-be fine.
+commit 48385408b45523d9a432c66292d47ef43efcbb94 upstream.
 
-Yours,
-Linus Walleij
+27b11428b7de ("nfsd4: remove lockowner when removing lock stateid")
+introduced a memory leak.
+
+Reported-by: Jeff Layton <jeff.layton@primarydata.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/nfsd/nfs4state.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -3726,7 +3726,7 @@ nfsd4_free_lock_stateid(struct nfs4_ol_s
+ 	 * correspondance, and we have to delete the lockowner when we
+ 	 * delete the lock stateid:
+ 	 */
+-	unhash_lockowner(lo);
++	release_lockowner(lo);
+ 	return nfs_ok;
+ }
+ 
+
+
