@@ -1,96 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756337AbaGDG3f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 02:29:35 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:13472 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755245AbaGDG3c (ORCPT
+	id S1760065AbaGDGaZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 02:30:25 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:62554 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755361AbaGDGaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 02:29:32 -0400
-Message-ID: <53B649BD.2010705@huawei.com>
-Date: Fri, 4 Jul 2014 14:29:17 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 4 Jul 2014 02:30:23 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/DcZZGKdK3LUhy4uY+PtAt
+Date: Thu, 3 Jul 2014 23:30:10 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Javier Martinez Canillas <javier@dowhile0.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        Robert Nelson <robertcnelson@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH] tty: serial: Add 8250-core based omap driver
+Message-ID: <20140704063010.GY28884@atomide.com>
+References: <CAOCHtYgxMeA+Arfe40XeFDEKuCJ8qo1RqNR0hYBGr_Wp6sRfdA@mail.gmail.com>
+ <20140703073411.GX28884@atomide.com>
+ <20140703132509.GA5814@saruman.home>
+ <CAOCHtYi0JwRO12gHa+KFGH1k7pPk4TL40igwhzRRxutw-tqf6A@mail.gmail.com>
+ <20140703140736.GF5814@saruman.home>
+ <20140703154425.GC23309@earth.universe>
+ <20140703155240.GU5814@saruman.home>
+ <20140703160622.GE23309@earth.universe>
+ <CABxcv=nGPyK7SeQZ+W1ZEfBPQ-RraVTawyYuKOGz02df0g=6Qg@mail.gmail.com>
+ <20140703170822.GB5814@saruman.home>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <hannes@cmpxchg.org>, <mhocko@suse.cz>, <vgoyal@redhat.com>,
-        <axboe@kernel.dk>
-Subject: Re: [PATCHSET cgroup/for-3.17] cgroup, blkcg, memcg: make blkcg depend
- on memcg on unified hierarchy
-References: <1403917392-32555-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1403917392-32555-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020205.53B649C3.0026,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: 36528b4bf55a32ac64186e09f9386020
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140703170822.GB5814@saruman.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+* Felipe Balbi <balbi@ti.com> [140703 10:10]:
+> On Thu, Jul 03, 2014 at 06:19:47PM +0200, Javier Martinez Canillas wrote:
+> > On Thu, Jul 3, 2014 at 6:06 PM, Sebastian Reichel <sre@kernel.org> wrote:
+> > > Hi,
+> > >
+> > > On Thu, Jul 03, 2014 at 10:52:40AM -0500, Felipe Balbi wrote:
+> > >> > DT is supposed to contain information about the hardware, so it
+> > >> > should stay the same? I think there is no non-hackish way to decide
+> > >>
+> > >> compatible would change, at a minimum.
+> > >
+> > > why? I would expect it to stay the same (and the current patch uses
+> > > the same compatible strings).
+> > >
+> > 
+> > Exactly, the new driver must support all the compatible strings
+> > defined in Documentation/devicetree/bindings/serial/omap_serial.tx
+> > (which already does as you pointed out).
+> > 
+> > Otherwise the current drivers/tty/serial/omap-serial.c could never be
+> > removed since that would mean breaking DT backward compatibility.
+> 
+> that settles it then... good. I'll start testing this next week.
 
-On 2014/6/28 9:03, Tejun Heo wrote:
-> Hello, guys.
-> 
-> Currently, the blkio subsystem attributes all of writeback IOs to the
-> root.  One of the issues is that there's no way to tell who originated
-> a writeback IO from block layer.  Those IOs are usually issued
-> asynchronously from a task which didn't have anything to do with
-> actually generating the dirty pages.  The memory subsystem, when
-> enabled, already keeps track of the ownership of each dirty page and
-> it's desirable for blkio to piggyback instead of adding its own
-> per-page tag.
+Yeah full compability is the way to go here.
 
-It's great to see this being worked on!
+FYI we cannot switch over completely until runtime PM works as it
+will block the deeper idle states for omaps and make it impossible
+to debug PM features.
 
-> 
-> This can be achieved on the unified hierarchy without too much
-> difficulty.  This patchset implements a dependency mechanism in the
-> cgroup such that a subsystem can depends on other subsystems.  If
-> available, the depended-upon subsystems are enabled together
-> implicitly when the subsystem is turned on.  Implicitly enabled
-> subsystems are invisible and the dependencies are transparent to
-> userland.
-> 
-> This patchset implements the dependency mechanism in cgroup core and
-> make blkcg depend on memcg.  This doesn't actually solve the writeback
-> problem yet but is an important step.
-> 
-> This patchset contains the following six patches.
-> 
->  0001-cgroup-reorganize-cgroup_subtree_control_write.patch
->  0002-cgroup-introduce-cgroup-subtree_control.patch
->  0003-cgroup-make-interface-files-visible-iff-enabled-on-c.patch
->  0004-cgroup-implement-cgroup_subsys-css_reset.patch
->  0005-cgroup-implement-cgroup_subsys-depends_on.patch
->  0006-blkcg-memcg-make-blkcg-depend-on-memcg-on-the-defaul.patch
-> 
-> 0001-0005 gradually implement the dependency mechanism.
-> 
-> 0006 makes blkcg depend on memcg.
-> 
-> This patchset is on top of a497c3ba1d97 ("Linux 3.16-rc2") and
-> available in the following git branch.
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup-dependency
-> 
-> diffstat follows.  Thanks.
-> 
->  Documentation/cgroups/cgroups.txt           |   14 +
->  Documentation/cgroups/unified-hierarchy.txt |   23 ++-
->  block/blk-cgroup.c                          |    7
->  include/linux/cgroup.h                      |   20 ++
->  kernel/cgroup.c                             |  201 ++++++++++++++++++++++------
->  mm/memcontrol.c                             |   24 +++
->  6 files changed, 243 insertions(+), 46 deletions(-)
-> 
+Regards,
 
-Acked-by: Li Zefan <lizefan@huawei.com>
-
+Tony
