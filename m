@@ -1,121 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756953AbaGDKvR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 06:51:17 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:31941 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764AbaGDKvO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 06:51:14 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7fac6d000006cfe-2e-53b6871fd0e2
-Content-transfer-encoding: 8BIT
-Message-id: <1404471072.14069.0.camel@AMDC1943>
-Subject: Re: [PATCH v6 02/23] mfd: max77686: Add power management support
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 04 Jul 2014 12:51:12 +0200
-In-reply-to: <1404467722-26687-3-git-send-email-javier.martinez@collabora.co.uk>
-References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
- <1404467722-26687-3-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: Evolution 3.10.4-0ubuntu1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e/4FV359m3BBi9OcFssuXiV3aJ5U7HF
-	1IdP2CzmHznHanF22UE2i6O/Cyx6F1xls7j/9SijxbcrHUwWmx5fY7W4vGsOm8WM8/uYLJ5O
-	uMhmcer6ZzaLvrWX2Cw2TN7NbjH3dyOrg6DH7IaLLB5/n19n8dhxdwmjx85Zd9k9Nq3qZPO4
-	c20Pm8fmJfUeV040sXr0bVnF6LH5dLXH9Hk/mTw+b5IL4InisklJzcksSy3St0vgynjS84Wt
-	YLZQRcfvj8wNjJf4uhg5OSQETCQ+77/IBGGLSVy4t54NxBYSWMooMeuxC4jNKyAo8WPyPZYu
-	Rg4OZgF5iSOXskHCzALqEpPmLWKGKP/MKLHmUA1Eub7E52mXWEFsYQFPiUvnfrGD2GwCxhKb
-	ly8BGy8iYCdxY/VDoF4uoDm3WCR+Ld8E1sAioCrxfeJfsCJOgQCJXZ+WsoIUCQlMZZSY9GkD
-	I8ShyhLz9h9jmsAoMAvJfbMQ7puF5L4FjMyrGEVTS5MLipPScw31ihNzi0vz0vWS83M3MUKi
-	8MsOxsXHrA4xCnAwKvHwNq7YECzEmlhWXJl7iFGCg1lJhPd3/bZgId6UxMqq1KL8+KLSnNTi
-	Q4xMHJxSDYyV/x86mr2Uf5U9/UDhM77jrMwWEjJT5gbt9HPMvPb/xOtnl1PZD2UXHfu30ajG
-	6ONphe+7zypUtPbF1O6cHcpc+tPe2ujLvr3a/vNZa5vjr/xiVrcKMjj0MUH8y1mZ6ExGXY2r
-	L94/uRDuJMK7NkH0N1NEloMB88HmstCk5udXimJYDixd5KPEUpyRaKjFXFScCAD74EP+oAIA	AA==
+	id S1757032AbaGDKxN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 06:53:13 -0400
+Received: from david.siemens.de ([192.35.17.14]:45181 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752885AbaGDKxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 06:53:11 -0400
+Message-ID: <53B68781.9080200@siemens.com>
+Date: Fri, 04 Jul 2014 12:52:49 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>, Bandan Das <bsd@redhat.com>
+CC: Gleb Natapov <gleb@kernel.org>, Hu Robert <robert.hu@intel.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since
+ race
+References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com> <53B3CA6A.4050902@siemens.com> <jpgy4wb9g5t.fsf@redhat.com> <20140703065955.GA4236@kernel> <jpgk37u8iae.fsf@redhat.com> <20140704025250.GA2849@kernel> <53B63EF2.6000800@siemens.com> <53B674CD.2090906@siemens.com> <53B67602.4040604@redhat.com>
+In-Reply-To: <53B67602.4040604@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pią, 2014-07-04 at 11:55 +0200, Javier Martinez Canillas wrote:
-> The driver doesn't have PM operations defined so add a suspend
-> and resume function handlers to allow the PMIC IRQ to wakeup
-> the system when it is put into a sleep state.
+On 2014-07-04 11:38, Paolo Bonzini wrote:
+> Il 04/07/2014 11:33, Jan Kiszka ha scritto:
+>>
+>> The compiler is not aware of the fact that push/pop exists in this
+>> function and, thus, places the vmcs parameter on the stack without
+>> reserving the space. So the pushfq will overwrite the vmcs pointer and
+>> let the function fail.
 > 
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
->  drivers/mfd/max77686.c | 40 ++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 40 insertions(+)
+> Is that just a missing "memory" clobber?  push/pop clobbers memory.
 
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Nope, we would needs some clobber like "stack". I wonder what is
+required to use push in inline assembly safely?
 
-Best regards,
-Krzysztof
+Jan
 
-
-> diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-> index 3cb41d0..a38e9ee 100644
-> --- a/drivers/mfd/max77686.c
-> +++ b/drivers/mfd/max77686.c
-> @@ -240,10 +240,50 @@ static const struct i2c_device_id max77686_i2c_id[] = {
->  };
->  MODULE_DEVICE_TABLE(i2c, max77686_i2c_id);
->  
-> +#ifdef CONFIG_PM_SLEEP
-> +static int max77686_suspend(struct device *dev)
-> +{
-> +	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-> +	struct max77686_dev *max77686 = i2c_get_clientdata(i2c);
-> +
-> +	if (device_may_wakeup(dev))
-> +		enable_irq_wake(max77686->irq);
-> +
-> +	/*
-> +	 * IRQ must be disabled during suspend because if it happens
-> +	 * while suspended it will be handled before resuming I2C.
-> +	 *
-> +	 * When device is woken up from suspend (e.g. by RTC wake alarm),
-> +	 * an interrupt occurs before resuming I2C bus controller.
-> +	 * Interrupt handler tries to read registers but this read
-> +	 * will fail because I2C is still suspended.
-> +	 */
-> +	disable_irq(max77686->irq);
-> +
-> +	return 0;
-> +}
-> +
-> +static int max77686_resume(struct device *dev)
-> +{
-> +	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-> +	struct max77686_dev *max77686 = i2c_get_clientdata(i2c);
-> +
-> +	if (device_may_wakeup(dev))
-> +		disable_irq_wake(max77686->irq);
-> +
-> +	enable_irq(max77686->irq);
-> +
-> +	return 0;
-> +}
-> +#endif /* CONFIG_PM_SLEEP */
-> +
-> +static SIMPLE_DEV_PM_OPS(max77686_pm, max77686_suspend, max77686_resume);
-> +
->  static struct i2c_driver max77686_i2c_driver = {
->  	.driver = {
->  		   .name = "max77686",
->  		   .owner = THIS_MODULE,
-> +		   .pm = &max77686_pm,
->  		   .of_match_table = of_match_ptr(max77686_pmic_dt_match),
->  	},
->  	.probe = max77686_i2c_probe,
-
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
