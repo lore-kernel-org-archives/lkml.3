@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760894AbaGDWXO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:23:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57771 "EHLO
+	id S1760911AbaGDWXS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:23:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57781 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760801AbaGDWXJ (ORCPT
+	with ESMTP id S1760801AbaGDWXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:23:09 -0400
+	Fri, 4 Jul 2014 18:23:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.10 44/46] tracing: Try again for saved cmdline if failed due to locking
-Date: Fri,  4 Jul 2014 15:19:48 -0700
-Message-Id: <20140704221604.296250547@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 46/46] ALSA: hda - Adjust speaker HPF and add LED support for HP Spectre 13
+Date: Fri,  4 Jul 2014 15:19:50 -0700
+Message-Id: <20140704221604.387295204@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
 References: <20140704221602.280733370@linuxfoundation.org>
@@ -28,79 +28,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 379cfdac37923653c9d4242d10052378b7563005 upstream.
+commit 8b3dfdaf0c25a584cb31d04d2574115cf2d422ab upstream.
 
-In order to prevent the saved cmdline cache from being filled when
-tracing is not active, the comms are only recorded after a trace event
-is recorded.
+HP Spectre 13 has the IDT 92HD95 codec, and BIOS seems to set the
+default high-pass filter in some "safer" range, which results in the
+very soft tone from the built-in speakers in contrast to Windows.
+Also, the mute LED control is missing, since 92HD95 codec still has no
+HP-specific fixups for GPIO setups.
 
-The problem is, a comm can fail to be recorded if the trace_cmdline_lock
-is held. That lock is taken via a trylock to allow it to happen from
-any context (including NMI). If the lock fails to be taken, the comm
-is skipped. No big deal, as we will try again later.
+This patch adds these missing features: the HPF is adjusted by the
+vendor-specific verb, and the LED is set up from a DMI string (but
+with the default polarity = 0 assumption due to the incomplete BIOS on
+the given machine).
 
-But! Because of the code that was added to only record after an event,
-we may not try again later as the recording is made as a oneshot per
-event per CPU.
-
-Only disable the recording of the comm if the comm is actually recorded.
-
-Fixes: 7ffbd48d5cab "tracing: Cache comms only after an event occurred"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=74841
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ Documentation/sound/alsa/HD-Audio-Models.txt |    5 ++
+ sound/pci/hda/patch_sigmatel.c               |   58 ++++++++++++++++++++++++++-
+ 2 files changed, 62 insertions(+), 1 deletion(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1400,12 +1400,12 @@ static void tracing_stop_tr(struct trace
+--- a/Documentation/sound/alsa/HD-Audio-Models.txt
++++ b/Documentation/sound/alsa/HD-Audio-Models.txt
+@@ -284,6 +284,11 @@ STAC92HD83*
+   hp-inv-led	HP with broken BIOS for inverted mute LED
+   auto		BIOS setup (default)
  
- void trace_stop_cmdline_recording(void);
- 
--static void trace_save_cmdline(struct task_struct *tsk)
-+static int trace_save_cmdline(struct task_struct *tsk)
- {
- 	unsigned pid, idx;
- 
- 	if (!tsk->pid || unlikely(tsk->pid > PID_MAX_DEFAULT))
--		return;
-+		return 0;
- 
- 	/*
- 	 * It's not the end of the world if we don't get
-@@ -1414,7 +1414,7 @@ static void trace_save_cmdline(struct ta
- 	 * so if we miss here, then better luck next time.
- 	 */
- 	if (!arch_spin_trylock(&trace_cmdline_lock))
--		return;
-+		return 0;
- 
- 	idx = map_pid_to_cmdline[tsk->pid];
- 	if (idx == NO_CMDLINE_MAP) {
-@@ -1439,6 +1439,8 @@ static void trace_save_cmdline(struct ta
- 	memcpy(&saved_cmdlines[idx], tsk->comm, TASK_COMM_LEN);
- 
- 	arch_spin_unlock(&trace_cmdline_lock);
++STAC92HD95
++==========
++  hp-led	LED support for HP laptops
++  hp-bass	Bass HPF setup for HP Spectre 13
 +
-+	return 1;
+ STAC9872
+ ========
+   vaio		VAIO laptop without SPDIF
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -121,6 +121,12 @@ enum {
+ };
+ 
+ enum {
++	STAC_92HD95_HP_LED,
++	STAC_92HD95_HP_BASS,
++	STAC_92HD95_MODELS
++};
++
++enum {
+ 	STAC_925x_REF,
+ 	STAC_M1,
+ 	STAC_M1_2,
+@@ -3560,6 +3566,48 @@ static const struct snd_pci_quirk stac92
+ 	{} /* terminator */
+ };
+ 
++static void stac92hd95_fixup_hp_led(struct hda_codec *codec,
++				    const struct hda_fixup *fix, int action)
++{
++	struct sigmatel_spec *spec = codec->spec;
++
++	if (action != HDA_FIXUP_ACT_PRE_PROBE)
++		return;
++
++	if (find_mute_led_cfg(codec, spec->default_polarity))
++		codec_dbg(codec, "mute LED gpio %d polarity %d\n",
++				spec->gpio_led,
++				spec->gpio_led_polarity);
++}
++
++static const struct hda_fixup stac92hd95_fixups[] = {
++	[STAC_92HD95_HP_LED] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = stac92hd95_fixup_hp_led,
++	},
++	[STAC_92HD95_HP_BASS] = {
++		.type = HDA_FIXUP_VERBS,
++		.v.verbs = (const struct hda_verb[]) {
++			{0x1a, 0x795, 0x00}, /* HPF to 100Hz */
++			{}
++		},
++		.chained = true,
++		.chain_id = STAC_92HD95_HP_LED,
++	},
++};
++
++static const struct snd_pci_quirk stac92hd95_fixup_tbl[] = {
++	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1911, "HP Spectre 13", STAC_92HD95_HP_BASS),
++	{} /* terminator */
++};
++
++static const struct hda_model_fixup stac92hd95_models[] = {
++	{ .id = STAC_92HD95_HP_LED, .name = "hp-led" },
++	{ .id = STAC_92HD95_HP_BASS, .name = "hp-bass" },
++	{}
++};
++
++
+ static int stac_parse_auto_config(struct hda_codec *codec)
+ {
+ 	struct sigmatel_spec *spec = codec->spec;
+@@ -4045,10 +4093,16 @@ static int patch_stac92hd95(struct hda_c
+ 	spec->gen.beep_nid = 0x19; /* digital beep */
+ 	spec->pwr_nids = stac92hd95_pwr_nids;
+ 	spec->num_pwrs = ARRAY_SIZE(stac92hd95_pwr_nids);
+-	spec->default_polarity = -1; /* no default cfg */
++	spec->default_polarity = 0;
+ 
+ 	codec->patch_ops = stac_patch_ops;
+ 
++	snd_hda_pick_fixup(codec, stac92hd95_models, stac92hd95_fixup_tbl,
++			   stac92hd95_fixups);
++	snd_hda_apply_fixup(codec, HDA_FIXUP_ACT_PRE_PROBE);
++
++	stac_setup_gpio(codec);
++
+ 	err = stac_parse_auto_config(codec);
+ 	if (err < 0) {
+ 		stac_free(codec);
+@@ -4057,6 +4111,8 @@ static int patch_stac92hd95(struct hda_c
+ 
+ 	codec->proc_widget_hook = stac92hd_proc_hook;
+ 
++	snd_hda_apply_fixup(codec, HDA_FIXUP_ACT_PROBE);
++
+ 	return 0;
  }
  
- void trace_find_cmdline(int pid, char comm[])
-@@ -1480,9 +1482,8 @@ void tracing_record_cmdline(struct task_
- 	if (!__this_cpu_read(trace_cmdline_save))
- 		return;
- 
--	__this_cpu_write(trace_cmdline_save, false);
--
--	trace_save_cmdline(tsk);
-+	if (trace_save_cmdline(tsk))
-+		__this_cpu_write(trace_cmdline_save, false);
- }
- 
- void
 
 
