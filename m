@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaGDH7D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 03:59:03 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:64497 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaGDH7A (ORCPT
+	id S1755672AbaGDH7O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 03:59:14 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:22032 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753178AbaGDH7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 03:59:00 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-05-53b65ec2dc39
+	Fri, 4 Jul 2014 03:59:04 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-d3-53b65ec5c2c9
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
@@ -20,79 +20,55 @@ Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 0/5] charger/mfd: max14577: Add support for MAX77836
-Date: Fri, 04 Jul 2014 09:58:24 +0200
-Message-id: <1404460709-17178-1-git-send-email-k.kozlowski@samsung.com>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Anton Vorontsov <anton@enomsg.org>
+Subject: [PATCH v2 4/5] power: max17040: Add ID for MAX77836 Fuel Gauge block
+Date: Fri, 04 Jul 2014 09:58:28 +0200
+Message-id: <1404460709-17178-5-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHLMWRmVeSWpSXmKPExsVy+t/xq7qH4rYFG3TPlbHYOGM9q8XUh0/Y
-	LCY9ec9sMXHlZGaL/jcLWS3OvVrJaPH6haHF2aY37Bb3vx5ltPh2pYPJ4vKuOWwWa4/cZbdY
-	ev0ik8WE6WtZLFr3HmG3ON3N6iDgsWbeGkaPy329TB47Z91l91i5/Aubx+YVWh6bVnWyedy5
-	tofNY97JQI++LasYPT5vkgvgiuKySUnNySxLLdK3S+DKOP5CpmCZQMXVveYNjOt4uhg5OSQE
-	TCRatq5nhrDFJC7cW88GYgsJLGWU+DhVtYuRC8juY5Jo3/UFrIhNwFhi8/IlYEUiApUS306f
-	YAEpYhaYxiLx724HE0hCWMBdYvX55WA2i4CqxPtTRxhBbF6geMflBSwQ2+QkTh6bzDqBkXsB
-	I8MqRtHU0uSC4qT0XEO94sTc4tK8dL3k/NxNjJAw/bKDcfExq0OMAhyMSjy8jSs2BAuxJpYV
-	V+YeYpTgYFYS4a1S2hYsxJuSWFmVWpQfX1Sak1p8iJGJg1OqgTGN/azyksfi3m/t1Rjk73M2
-	JORXmx/gu+8n3nihOCmy/3Odeh37k+v3zqwR694p8TmU92HW2WdTYncEGJq8/fWnX5lFI878
-	FfcKpq5D2pvfcNhO+Hrr2pkio870mb51a9olbn7lXnzGytKGe3Pf4Z49cZYaIQpSKUrMVUZ7
-	XKSUdrVVzX+4SYmlOCPRUIu5qDgRAFiPJEYxAgAA
+In-reply-to: <1404460709-17178-1-git-send-email-k.kozlowski@samsung.com>
+References: <1404460709-17178-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrELMWRmVeSWpSXmKPExsVy+t/xq7pH47YFG0xdJm5xcKumxcYZ61kt
+	pj58wmYx6cl7ZouJKyczW/S/Wchqce7VSkaL1y8MLc42vWG3uP/1KKPFtysdTBaXd81hs1h7
+	5C67xdLrF5ksJkxfy2LRuvcIu8XpblYHQY8189Ywelzu62XymND/idFj56y77B4rl39h89i8
+	Qstj06pONo871/awecw7GejRt2UVo8fnTXIB3FFcNimpOZllqUX6dglcGS/O7Wcv2MteMf/0
+	K/YGxk1sXYycHBICJhIHd31nhrDFJC7cWw8U5+IQEljKKDFh/mwWCKePSWLHw4/sIFVsAsYS
+	m5cvAesWEaiU+Hb6BFgRs8AeFonTm3+AJYQFfCX2btsKNpZFQFXiwIUJYM28Au4Sne+2Q62W
+	kzh5bDIriM0p4CHx6fQ7sLgQUE3DgslMExh5FzAyrGIUTS1NLihOSs810itOzC0uzUvXS87P
+	3cQICfevOxiXHrM6xCjAwajEw/tCf1OwEGtiWXFl7iFGCQ5mJRHeKqVtwUK8KYmVValF+fFF
+	pTmpxYcYmTg4pRoYrQ2Enkq9P7xhnnS/6OeAkqg9U1WOuHDO4D+bvnKDj9+HHJd+rec7siuO
+	+/Qb851Z8eB7m8L+qanRF2Uzo8KEVt/5UrtBSl2HS3PNXtW+BQ9buArk/eNf3n56RXllT9hv
+	s8/sIhHnrtze0iHDsf/tndxl+l92vhNfd2nivUNPlQ84JE7xV1SbqMRSnJFoqMVcVJwIAIGp
+	h1FVAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+MAX77836 has the same Fuel Gauge as MAX17040/17048. The max17040 driver
+can be safely re-used. The patch adds MAX77836 ID to array of
+i2c_device_id.
 
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Anton Vorontsov <anton@enomsg.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+---
+ drivers/power/max17040_battery.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-This is second version of patches adding support for MAX77836
-device to the max14577 drivers. The first part of patches (main MFD,
-extcon and regulator drivers) was merged already.
-
-The patches 1, 2 and 3 depend on each other so they should be
-pulled at once. Patches 4 and 5 can be applied independently.
-
-This patchset was already reviewed by some of the maintainers during
-previous submissions.
-
-I only need acks from power tree (patches: 1, 3, 4).
-
-
-Changes since v1
-================
-1. charger 3/5: Add an error message for each unsuccessful parse of DT
-   property (suggested by Mark Rutland).
-2. charger 3/5: Use 'u32' type for storing values from DT (suggested
-   by Mark Rutland).
-3. charger 3/5: Remove an error message for memory allocation failure.
-
-
-The patchset (first and second part of the MAX77836 drivers) has been
-on the lists since January. Changelog for the first part of drivers:
-https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg628696.html
-
-
-Best regards,
-Krzysztof Kozlowski
-
-
-Krzysztof Kozlowski (5):
-  charger: max14577: Add support for MAX77836 charger
-  regulator/mfd: max14577: Export symbols for calculating charger
-    current
-  charger: max14577: Configure battery-dependent settings from DTS
-  power: max17040: Add ID for MAX77836 Fuel Gauge block
-  devicetree: mfd: max14577: Add device tree bindings document
-
- Documentation/devicetree/bindings/mfd/max14577.txt | 152 +++++++++++
- drivers/mfd/max14577.c                             | 100 ++++++-
- drivers/power/Kconfig                              |   4 +-
- drivers/power/max14577_charger.c                   | 299 ++++++++++++++++++---
- drivers/power/max17040_battery.c                   |   1 +
- drivers/regulator/max14577.c                       |  80 +-----
- include/linux/mfd/max14577-private.h               |  92 +++++--
- include/linux/mfd/max14577.h                       |  31 +++
- 8 files changed, 622 insertions(+), 137 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
-
+diff --git a/drivers/power/max17040_battery.c b/drivers/power/max17040_battery.c
+index 0fbac861080d..165ffe381803 100644
+--- a/drivers/power/max17040_battery.c
++++ b/drivers/power/max17040_battery.c
+@@ -278,6 +278,7 @@ static SIMPLE_DEV_PM_OPS(max17040_pm_ops, max17040_suspend, max17040_resume);
+ 
+ static const struct i2c_device_id max17040_id[] = {
+ 	{ "max17040", 0 },
++	{ "max77836-battery", 0 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, max17040_id);
 -- 
 1.9.1
 
