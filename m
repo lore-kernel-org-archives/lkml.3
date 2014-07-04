@@ -1,135 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758742AbaGDQzl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 12:55:41 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41085 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752836AbaGDQzj (ORCPT
+	id S1759028AbaGDQ4H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 12:56:07 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:59697 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755262AbaGDQ4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 12:55:39 -0400
-Date: Fri, 4 Jul 2014 17:55:31 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: jianqun <xjq@rock-chips.com>
-Cc: "heiko@sntech.de" <heiko@sntech.de>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "zhangqing@rock-chips.com" <zhangqing@rock-chips.com>,
-        "hj@rock-chips.com" <hj@rock-chips.com>,
-        "kever.yang@rock-chips.com" <kever.yang@rock-chips.com>,
-        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
-        "zyw@rock-chips.com" <zyw@rock-chips.com>,
-        "yzq@rock-chips.com" <yzq@rock-chips.com>,
-        "zhenfu.fang@rock-chips.com" <zhenfu.fang@rock-chips.com>,
-        "cf@rock-chips.com" <cf@rock-chips.com>,
-        "kfx@rock-chips.com" <kfx@rock-chips.com>
-Subject: Re: [PATCH v2 1/2] ASoC: dt-bindings: add rockchip i2s bindings
-Message-ID: <20140704165531.GD7106@leverpostej>
-References: <1404203860-30712-2-git-send-email-xjq@rock-chips.com>
- <1404458796-6818-1-git-send-email-xjq@rock-chips.com>
+	Fri, 4 Jul 2014 12:56:05 -0400
+Date: Fri, 4 Jul 2014 17:55:52 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        peterz@infradead.org, mingo@kernel.org, rjw@rjwysocki.net,
+        vincent.guittot@linaro.org, daniel.lezcano@linaro.org,
+        preeti@linux.vnet.ibm.com, Dietmar.Eggemann@arm.com, pjt@google.com
+Subject: Re: [RFCv2 PATCH 00/23] sched: Energy cost model for energy-aware
+ scheduling
+Message-ID: <20140704165552.GB30016@arm.com>
+References: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404458796-6818-1-git-send-email-xjq@rock-chips.com>
+In-Reply-To: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04, 2014 at 08:26:36AM +0100, jianqun wrote:
-> From: Jianqun Xu <xjq@rock-chips.com>
+Hi Morten,
+
+On Thu, Jul 03, 2014 at 05:25:47PM +0100, Morten Rasmussen wrote:
+> This is an RFC and there are some loose ends that have not been
+> addressed here or in the code yet. The model and its infrastructure is
+> in place in the scheduler and it is being used for load-balancing
+> decisions. It is used for the select_task_rq_fair() path for
+> fork/exec/wake balancing and to guide the selection of the source cpu
+> for periodic or idle balance.
+
+IMHO, the series is on the right direction for addressing the energy
+aware scheduling (very complex) problem. But I have some high level
+comments below.
+
+> However, the main ideas and the primary focus of this RFC: The energy
+> model and energy_diff_{load, task, cpu}() are there.
 > 
-> Add devicetree bindings for i2s controller found on
-> rk3066, rk3188 and rk3288 processors from rockchip.
+> Due to limitation 1, the ARM TC2 platform (2xA15+3xA7) was setup to
+> disable frequency scaling and set frequencies to eliminate the
+> big.LITTLE performance difference. That basically turns TC2 into an SMP
+> platform where a subset of the cpus are less energy-efficient.
 > 
-> Signed-off-by: Jianqun Xu <xjq@rock-chips.com>
-> ---
-> Changes since v1:
-> - modify the description of clock-names property, adviced by Mark Rutland.
-> - modify the example to fit for rk3288.
+> Tests using a synthetic workload with seven short running periodic
+> tasks of different size and period, and the sysbench cpu benchmark with
+> five threads gave the following results:
 > 
->  .../devicetree/bindings/sound/rockchip-i2s.txt     |   36 ++++++++++++++++++++
->  1 file changed, 36 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/sound/rockchip-i2s.txt
+> cpu energy*	short tasks	sysbench
+> Mainline	100		100
+> EA		 49		 99
 > 
-> diff --git a/Documentation/devicetree/bindings/sound/rockchip-i2s.txt b/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
-> new file mode 100644
-> index 0000000..9fc577d
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
-> @@ -0,0 +1,36 @@
-> +* Rockchip I2S controller
-> +
-> +The I2S bus (Inter-IC sound bus) is a serial link for digital
-> +audio data transfer between devices in the system.
-> +
-> +Required properties:
-> +
-> +- compatible: should be one of the followings
-> +   - "rockchip,rk3066-i2s": for rk3066
-> +   - "rockchip,rk3188-i2s", "rockchip,rk3066-i2s": for rk3188
-> +   - "rockchip,rk3288-i2s", "rockchip,rk3066-i2s": for rk3288
-> +- reg: physical base address of the controller and length of memory mapped
-> +  region.
-> +- interrupts: The interrupt number to the cpu. The interrupt specifier format
-> +  depends on the interrupt controller.
+> * Note that these energy savings are _not_ representative of what can be
+> achieved on a true SMP platform where all cpus are equally 
+> energy-efficient. There should be benefit for SMP platforms as well, 
+> however, it will be smaller.
 
-Just state _which_ interrupt this is from the view of the device.
+My impression (and I may be wrong) is that you get bigger energy saving
+on a big.LITTLE vs SMP system exactly because of the asymmetry in power
+consumption. The algorithm proposed here ends up packing small tasks on
+the little CPUs as they are more energy efficient (which is the correct
+thing to do but I wonder what results you would get with 3xA7 vs
+2xA7+1xA15).
 
-> +- #address-cells: should be 1.
-> +- #size-cells: should be 0.
-> +- dmas: DMA specifiers for tx and rx dma. See the DMA client binding,
-> +	Documentation/devicetree/bindings/dma/dma.txt
-> +- dma-names: DMA request names should include "tx" and "rx" if present.
+For a symmetric system where all CPUs have the same energy model you
+could end up with several small threads balanced equally across the
+system. The only way the scheduler could avoid a CPU is if it somehow
+manages to get into a deeper idle state (and energy_diff_task() would
+show some asymmetry). But this wouldn't happen without the scheduler
+first deciding to leave that CPU idle for longer.
 
-Just say:
+Could this be addressed by making the scheduler more "proactive" and,
+rather than just looking at the current energy diff, guesstimate what it
+would be if not placing a task at all on the CPU? If for example there
+is no other task running on that CPU, could energy_diff_task() take into
+account the next deeper C-state rather than just the current one? This
+way we may be able to achieve more packing even on fully symmetric
+systems and allow CPUs to go into deeper sleep states.
 
-- dma-names: should include "tx" and "rx"
+Thanks.
 
-If we need more DMAs or descriptions thereof, expand into a bulleted
-list.
-
-> +- clocks: a list of phandle + clock-specifer pairs, one for each entry in clock-names.
-> +- clock-names: Shall be "i2s_hclk" for I2S bus and "i2s_clk" for master clock
-
-This was easier to read as a bulleted list than inline:
-
-- clock-names: should include:
-  - "i2s_hclk" for the I2S bus clock
-  - "i2s_clk" for the master clock
-
-> +
-> +Example, for rk3288 I2S controller:
-> +
-> +i2s0: i2s@ff890000 {
-> +	compatible = "rockchip,rk3066-i2s", "rockchip,rk3288-i2s";
-
-This is the wrong way around per the documentation of the compatible
-string.
-
-Thanks,
-Mark.
-
-> +	reg = <0xff890000 0x10000>;
-> +	interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>;
-> +	#address-cells = <1>;
-> +	#size-cells = <0>;
-> +	dmas = <&pdma1 0>, <&pdma1 1>;
-> +	dma-names = "rx", "tx";
-> +	clock-names = "i2s_hclk", "i2s_clk";
-> +	clocks = <&cru HCLK_I2S0>, <&cru SCLK_I2S0>;
-> +};
-> -- 
-> 1.7.9.5
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+-- 
+Catalin
