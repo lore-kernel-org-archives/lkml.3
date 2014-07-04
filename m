@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769AbaGDKVJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 06:21:09 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:50861 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901AbaGDKVH (ORCPT
+	id S1756218AbaGDKVz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 06:21:55 -0400
+Received: from flan.grepular.com ([198.211.125.252]:39373 "EHLO
+	flan.grepular.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978AbaGDKVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 06:21:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>,
-        Prabhakar Kushwaha <prabhakar@freescale.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: PCI(e) arch support
-Date: Fri, 04 Jul 2014 12:21 +0200
-Message-ID: <4342569.JSAyWBcJn2@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140704094440.GC6501@e106497-lin.cambridge.arm.com>
-References: <1404422876-1160-1-git-send-email-tinamdar@apm.com> <53B5F81B.8010801@freescale.com> <20140704094440.GC6501@e106497-lin.cambridge.arm.com>
+	Fri, 4 Jul 2014 06:21:54 -0400
+X-Greylist: delayed 508 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Jul 2014 06:21:54 EDT
+Date: Fri, 4 Jul 2014 11:13:11 +0100
+From: Mike Cardwell <linux@lists.grepular.com>
+To: linux-kernel@vger.kernel.org
+Subject: Procfs race condition bug
+Message-ID: <20140704101311.GA7020@glue.grepular.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:vIpnJImk0EYbiGUlhaX/2B0KXb/GmNgSYyEIuJJfxWU
- yRyXClPslnHbJSgNwTBO+uIfdhLwYwb/3t0mUBzeI2WSA2x8n1
- v+05E+uXpol1xeM+QeQxh6JdIe//NcL0C/gCMM1cY+vU9ycWED
- 7Ov945efvVfQ6B3SV2F3VMse2Of5Ubl5GAZQbxIwv+wxmuRoLE
- ORC+ffu4BCSnhWaelHAFj2rEC1j3IHslRKylIk4Er2bGZtK6YZ
- pu7MFhOvLX2vVP49RYJP8T9RMNtsTZC0Ib2RH0pp2H2MPmq4cH
- 0hiKuwRLF7lnIPPFzk7FOOgaC5Gzu0UYrOQ4hVdg3sRdz11MLK
- safkDLF3HnKprQhkhWB8=
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="jRHKVT23PllUwdXP"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 04 July 2014 10:44:40 Liviu Dudau wrote:
-> On Fri, Jul 04, 2014 at 01:40:59AM +0100, Prabhakar Kushwaha wrote:
-> > Hi Tanmay, Liviu,
-> > On 7/4/2014 2:57 AM, Tanmay Inamdar wrote:
-> > > Reposting on request of several people since previously posted one was
-> > > corrupted.
-> > >
-> > > This patch adds the arch support for PCI(e) for arm64. The files
-> > > added or modified in this patch are based on PCI(e) support in
-> > > 32bit arm.
-> > >
-> > > Please note that this patch is just for the reference. Liviu Dudau from ARM
-> > > has posted his v8 series of patch to support PCIe in arm64.
-> > >
-> > > The patch will apply against 3.13 Linux Kernel
-> > >
-> > > Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
-> > >
-> > 
-> > do we foresee similar type of changes in u-boot  to support PCI(e) for 
-> > ARM64.
-> 
-> I'm afraid I'm not familiar with u-boot's support for PCI(e), so I cannot
-> answer that. As a general matter, ARM has decided to officially support
-> UEFI as a bootloader for ARMv8 and that already has support for PCI(e),
-> one only needs a driver for the specific host bridge.
 
-Supporting just one boot loader is of course a bit silly, especially when
-you know that people will be using all sorts of boot loaders.
+--jRHKVT23PllUwdXP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-A more interesting aspect of this question is what the kernel can expect
-the boot loader to have done with the PCI host bridge when the kernel
-is entered.
+I originally posted this two years ago (*) but received no response. I
+just had a look and the problem still exists on the 3.14 kernel I am
+currently running.
 
-Traditionally, embedded ARM boot loaders have left the PCI host bridge
-alone unless they were booting from it, and Linux did all the setup.
-With the SBSA class of ARM servers, this is not really practical, and
-whatever runs before Linux (typically UEFI) should already set up the
-PCI bus and do resource allocation like every other server architecture
-does. I would assume that UEFI does this right, and if not we can consider
-that a bug.
+I *think* I've uncovered a race condition bug in procfs. If I attempt to
+open a file in /proc/net, eg "/proc/net/tcp" it works fine, but if I
+spawn a POSIX thread and attempt to do it from there, it *usually* fails
+with a "No such file or directory", but some times succeeds. If I do a
+system call inside the thread to look up the thread ID and then open
+"/proc/THREADID/net/tcp" instead, it works fine.
 
-However, what do we do about PCI hosts that can be used with different
-kinds of systems? Do we assume that they all do PCI resource allocation?
-Can we decide this on a per host driver basis, or do we need to introduce
-an extension to the PCI DT binding to make that decision?
+There are more details and some example code so you can replicate the
+problem on a stack overflow question I asked previously here:
+http://stackoverflow.com/questions/11580020/opening-proc-net-tcp-in-c-from-=
+a-posix-thread-fails-most-of-the-time
 
-	Arnd
+(*) https://lkml.org/lkml/2012/7/20/331
+
+--=20
+Mike Cardwell  https://grepular.com https://emailprivacytester.com
+OpenPGP Key    35BC AF1D 3AA2 1F84 3DC3   B0CF 70A5 F512 0018 461F
+XMPP OTR Key   8924 B06A 7917 AAF3 DBB1   BF1B 295C 3C78 3EF1 46B4
+
+--jRHKVT23PllUwdXP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+
+iQGGBAEBCgBwBQJTtn43MBSAAAAAACAAB3ByZWZlcnJlZC1lbWFpbC1lbmNvZGlu
+Z0BwZ3AuY29tcGdwbWltZTgUgAAAAAAVABpwa2EtYWRkcmVzc0BnbnVwZy5vcmdt
+aWtlLmNhcmR3ZWxsQGdyZXB1bGFyLmNvbQAKCRCdJiMBwdHnBIL+B/47CLWPEBvS
+2IWOQHsDP/GiJPelQ4A+u4YiHqXo5Q/RqwJFtxHxnJyZF/NjELSrcmChNcVN5Hi6
+DpZSB0cQUUPKnfdzwx00r5AC6wm7RViajbScNq9sKaDd0+h8qVLTLEPviLlyWIzH
+e9x25+XVSKRnoaXMNn1tsa8ZE9af9yJM2fzeX3DsfXx19Gmtgv4zvndcJ/TYHUeh
+NBJ06AMpE1qLG7aqH0SHRIZGPcJaisL0zIyxsY8YkZqq5OXHgZsxP3bYY6MrhfHk
+gXOZsfpTeVxLSKSSi9TgXY/MoMSZhGLxz429H+z/RpMY9KQuHZP2gIpM/wIFMeVW
+70DHmDeId2aQ
+=E37u
+-----END PGP SIGNATURE-----
+
+--jRHKVT23PllUwdXP--
