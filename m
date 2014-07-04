@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031576AbaGDW7g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:59:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57112 "EHLO
+	id S1760614AbaGDWQf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:16:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57074 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760623AbaGDWQt (ORCPT
+	with ESMTP id S1760563AbaGDWQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:16:49 -0400
+	Fri, 4 Jul 2014 18:16:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Plamen Petrov <plamen.sisi@gmail.com>,
-        Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>
-Subject: [PATCH 3.15 52/66] xfs: xfs_readsb needs to check for magic numbers
-Date: Fri,  4 Jul 2014 15:14:51 -0700
-Message-Id: <20140704221425.178494676@linuxfoundation.org>
+        Alex Estrin <alex.estrin@intel.com>,
+        Dennis Dalessandro <dennis.dalessandro@intel.com>,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.15 28/66] IB/qib: Fix port in pkey change event
+Date: Fri,  4 Jul 2014 15:14:27 -0700
+Message-Id: <20140704221424.103887950@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -30,70 +31,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Mike Marciniszyn <mike.marciniszyn@intel.com>
 
-commit 556b8883cfac3d3203557e161ea8005f8b5479b2 upstream.
+commit 911eccd284d13d78c92ec4f1f1092c03457d732a upstream.
 
-Commit daba542 ("xfs: skip verification on initial "guess"
-superblock read") dropped the use of a verifier for the initial
-superblock read so we can probe the sector size of the filesystem
-stored in the superblock. It, however, now fails to validate that
-what was read initially is actually an XFS superblock and hence will
-fail the sector size check and return ENOSYS.
+The code used a literal 1 in dispatching an IB_EVENT_PKEY_CHANGE.
 
-This causes probe-based mounts to fail because it expects XFS to
-return EINVAL when it doesn't recognise the superblock format.
+As of the dual port qib QDR card, this is not necessarily correct.
 
-Reported-by: Plamen Petrov <plamen.sisi@gmail.com>
-Tested-by: Plamen Petrov <plamen.sisi@gmail.com>
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
+Change to use the port as specified in the call.
+
+Reported-by: Alex Estrin <alex.estrin@intel.com>
+Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_mount.c |   23 +++++++++++++++++------
- 1 file changed, 17 insertions(+), 6 deletions(-)
+ drivers/infiniband/hw/qib/qib_mad.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/xfs/xfs_mount.c
-+++ b/fs/xfs/xfs_mount.c
-@@ -323,8 +323,19 @@ reread:
- 	/*
- 	 * Initialize the mount structure from the superblock.
- 	 */
--	xfs_sb_from_disk(&mp->m_sb, XFS_BUF_TO_SBP(bp));
--	xfs_sb_quota_from_disk(&mp->m_sb);
-+	xfs_sb_from_disk(sbp, XFS_BUF_TO_SBP(bp));
-+	xfs_sb_quota_from_disk(sbp);
-+
-+	/*
-+	 * If we haven't validated the superblock, do so now before we try
-+	 * to check the sector size and reread the superblock appropriately.
-+	 */
-+	if (sbp->sb_magicnum != XFS_SB_MAGIC) {
-+		if (loud)
-+			xfs_warn(mp, "Invalid superblock magic number");
-+		error = EINVAL;
-+		goto release_buf;
-+	}
+--- a/drivers/infiniband/hw/qib/qib_mad.c
++++ b/drivers/infiniband/hw/qib/qib_mad.c
+@@ -1028,7 +1028,7 @@ static int set_pkeys(struct qib_devdata
  
- 	/*
- 	 * We must be able to do sector-sized and sector-aligned IO.
-@@ -337,11 +348,11 @@ reread:
- 		goto release_buf;
+ 		event.event = IB_EVENT_PKEY_CHANGE;
+ 		event.device = &dd->verbs_dev.ibdev;
+-		event.element.port_num = 1;
++		event.element.port_num = port;
+ 		ib_dispatch_event(&event);
  	}
- 
--	/*
--	 * Re-read the superblock so the buffer is correctly sized,
--	 * and properly verified.
--	 */
- 	if (buf_ops == NULL) {
-+		/*
-+		 * Re-read the superblock so the buffer is correctly sized,
-+		 * and properly verified.
-+		 */
- 		xfs_buf_relse(bp);
- 		sector_size = sbp->sb_sectsize;
- 		buf_ops = loud ? &xfs_sb_buf_ops : &xfs_sb_quiet_buf_ops;
+ 	return 0;
 
 
