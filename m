@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759961AbaGDRth (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 13:49:37 -0400
+	id S1759796AbaGDRtP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 13:49:15 -0400
 Received: from mailout1.w1.samsung.com ([210.118.77.11]:48632 "EHLO
 	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759771AbaGDRtP (ORCPT
+	with ESMTP id S1759576AbaGDRtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 13:49:15 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-34-53b6e90d48bc
+	Fri, 4 Jul 2014 13:49:07 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-2b-53b6e9092ef5
 From: Tomasz Figa <t.figa@samsung.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -17,300 +17,320 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Mark Brown <broonie@kernel.org>,
         =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
         Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [PATCH 17/19] gpio: samsung: Remove legacy support of S5PV210
-Date: Fri, 04 Jul 2014 19:48:17 +0200
-Message-id: <1404496099-26708-18-git-send-email-t.figa@samsung.com>
+Subject: [PATCH 07/19] phy: Add support for S5PV210 to the Exynos USB 2.0 PHY
+ driver
+Date: Fri, 04 Jul 2014 19:48:07 +0200
+Message-id: <1404496099-26708-8-git-send-email-t.figa@samsung.com>
 X-Mailer: git-send-email 1.9.3
 In-reply-to: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
 References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnluLIzCtJLcpLzFFi42I5/e/4ZV3el9uCDZ7PsbL4O+kYu8XUh0/Y
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t/xy7qcL7cFG/zsULb4O+kYu8XUh0/Y
 	LP4/es1q0bvgKpvFpsfXWC0u75rDZjHj/D4mi7VH7rJbnLr+mc1i1a4/jA5cHr9/TWL02Dnr
-	LrvHplWdbB6bl9R7XDnRxOrRt2UVo8f2a/OYPT5vkgvgiOKySUnNySxLLdK3S+DKuPt1FUtB
-	u3HFnCXb2RoY56l1MXJwSAiYSBz/ldTFyAlkiklcuLeeDcQWEljKKPG3XR3C7mOSuL6PG8Rm
-	E1CT+NzwCKxGREBV4nPbAnaQMcwCt5kkWoVBwsICbhL3D7xhBLFZgEpeTO9gAbF5BZwlnvx/
-	xAqxSk6id9sbZhCbEyg+cd0FJohVThJ//s9nmcDIu4CRYRWjaGppckFxUnquoV5xYm5xaV66
-	XnJ+7iZGSCB+2cG4+JjVIUYBDkYlHt7GFRuChVgTy4orcw8xSnAwK4nw/lm1LViINyWxsiq1
-	KD++qDQntfgQIxMHp1QDo9Jk5pQw3QbhDz+naBRIVk2ZktURJ3r3nPM3+fh+O0bfmH/Zr+at
-	3L6xeC933bS75r9OtC9746+07rbarY+7ttxkVvza7N6kWqy2sVHB+bxvkepD+ZdyubZnf+Uf
-	32Z2ZEHxj9N2LsHTu8J3bMywCRELXyfHJ7dEXGqx8Xl10U+5Pq7zWheeU2Ipzkg01GIuKk4E
-	AK0ibPoiAgAA
+	LrvHplWdbB6bl9R7XDnRxOrRt2UVo8f2a/OYPT5vkgvgiOKySUnNySxLLdK3S+DKuHdrDVPB
+	K4+KZ/+usDcwrrHpYuTkkBAwkTh9ajILhC0mceHeerYuRi4OIYGljBJbbvQyQjh9TBJ7/q5j
+	BKliE1CT+NzwiA3EFhFQlfjctoC9i5GDg1ngNpNEqzBIWFggTOLrsylMIDYLUMm1L6uYQWxe
+	ASeJgxMOQi2Tk+jd9gYszingLDFx3QWweiGgmj//57NMYORdwMiwilE0tTS5oDgpPddQrzgx
+	t7g0L10vOT93EyMkHL/sYFx8zOoQowAHoxIPb+OKDcFCrIllxZW5hxglOJiVRHj/rNoWLMSb
+	klhZlVqUH19UmpNafIiRiYNTqoHRbMpk6Scrvv/0E0n/enF3r9OSbfvSH3wLYgp8qufhXeCe
+	91wq6Heb+avov7VvI1JDjIrXpN/sutXrIzvNcsvBRIm8XrczlrLzrz69OXm20UKmPfu7vzVf
+	eDWrYkqUz8zUt7Wc2zSmzplWc0j+QlKtinuCiOajTx6LTu/WXjxZecW3cl33/A1xSizFGYmG
+	WsxFxYkAtBY/myUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GPIO support of S5PV210 SoC is now fully handled by pinctrl-samsung
-driver making the old code in gpio-samsung driver unused. This patch
-removes it which will also let us remove more code from arch subtree.
+From: Mateusz Krawczuk <mat.krawczuk@gmail.com>
 
+Add support for the Samsung's S5PV210 SoC to the Exynos USB 2.0 PHY driver.
+
+Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+[k.debski@samsung.com: cleanup and commit description]
+[k.debski@samsung.com: make changes accordingly to the mailing list
+comments]
+Signed-off-by: Kamil Debski <k.debski@samsung.com>
+Signed-off-by: Mateusz Krawczuk <mat.krawczuk@gmail.com>
+[t.figa: rebased, fixed merge errors, neatened]
 Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>
-Cc: linux-gpio@vger.kernel.org
+Cc: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: devicetree@vger.kernel.org
 ---
- drivers/gpio/gpio-samsung.c | 240 --------------------------------------------
- 1 file changed, 240 deletions(-)
+ .../devicetree/bindings/phy/samsung-phy.txt        |   1 +
+ drivers/phy/Kconfig                                |  10 ++
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-s5pv210-usb2.c                     | 187 +++++++++++++++++++++
+ drivers/phy/phy-samsung-usb2.c                     |   6 +
+ drivers/phy/phy-samsung-usb2.h                     |   1 +
+ 6 files changed, 206 insertions(+)
+ create mode 100644 drivers/phy/phy-s5pv210-usb2.c
 
-diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
-index 7d4281e..27298fd 100644
---- a/drivers/gpio/gpio-samsung.c
-+++ b/drivers/gpio/gpio-samsung.c
-@@ -1169,234 +1169,9 @@ static struct samsung_gpio_chip s3c64xx_gpios_2bit[] = {
- #endif
+diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+index 2049261..7dce043 100644
+--- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
++++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+@@ -26,6 +26,7 @@ Samsung S5P/EXYNOS SoC series USB PHY
+ 
+ Required properties:
+ - compatible : should be one of the listed compatibles:
++	- "samsung,s5pv210-usb2-phy"
+ 	- "samsung,exynos4210-usb2-phy"
+ 	- "samsung,exynos4x12-usb2-phy"
+ 	- "samsung,exynos5250-usb2-phy"
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index 16a2f06..7153361 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -130,6 +130,16 @@ config PHY_SAMSUNG_USB2
+ 	  particular SoCs has to be enabled in addition to this driver. Number
+ 	  and type of supported phys depends on the SoC.
+ 
++config PHY_S5PV210_USB2
++	bool "Support for S5PV210"
++	depends on PHY_SAMSUNG_USB2
++	depends on ARCH_S5PV210
++	help
++	  Enable USB PHY support for S5PV210. This option requires that Samsung
++	  USB 2.0 PHY driver is enabled and means that support for this
++	  particular SoC is compiled in the driver. In case of S5PV210 two phys
++	  are available - device and host.
++
+ config PHY_EXYNOS4210_USB2
+ 	bool "Support for Exynos 4210"
+ 	depends on PHY_SAMSUNG_USB2
+diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+index b4f1d57..2983808 100644
+--- a/drivers/phy/Makefile
++++ b/drivers/phy/Makefile
+@@ -18,5 +18,6 @@ phy-exynos-usb2-y			+= phy-samsung-usb2.o
+ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4210_USB2)	+= phy-exynos4210-usb2.o
+ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4X12_USB2)	+= phy-exynos4x12-usb2.o
+ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
++phy-exynos-usb2-$(CONFIG_PHY_S5PV210_USB2)	+= phy-s5pv210-usb2.o
+ obj-$(CONFIG_PHY_EXYNOS5_USBDRD)	+= phy-exynos5-usbdrd.o
+ obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
+diff --git a/drivers/phy/phy-s5pv210-usb2.c b/drivers/phy/phy-s5pv210-usb2.c
+new file mode 100644
+index 0000000..004d320
+--- /dev/null
++++ b/drivers/phy/phy-s5pv210-usb2.c
+@@ -0,0 +1,187 @@
++/*
++ * Samsung SoC USB 1.1/2.0 PHY driver - S5PV210 support
++ *
++ * Copyright (C) 2013 Samsung Electronics Co., Ltd.
++ * Authors: Kamil Debski <k.debski@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/delay.h>
++#include <linux/io.h>
++#include <linux/phy/phy.h>
++#include "phy-samsung-usb2.h"
++
++/* Exynos USB PHY registers */
++
++/* PHY power control */
++#define S5PV210_UPHYPWR			0x0
++
++#define S5PV210_UPHYPWR_PHY0_SUSPEND	BIT(0)
++#define S5PV210_UPHYPWR_PHY0_PWR	BIT(3)
++#define S5PV210_UPHYPWR_PHY0_OTG_PWR	BIT(4)
++#define S5PV210_UPHYPWR_PHY0	( \
++	S5PV210_UPHYPWR_PHY0_SUSPEND | \
++	S5PV210_UPHYPWR_PHY0_PWR | \
++	S5PV210_UPHYPWR_PHY0_OTG_PWR)
++
++#define S5PV210_UPHYPWR_PHY1_SUSPEND	BIT(6)
++#define S5PV210_UPHYPWR_PHY1_PWR	BIT(7)
++#define S5PV210_UPHYPWR_PHY1 ( \
++	S5PV210_UPHYPWR_PHY1_SUSPEND | \
++	S5PV210_UPHYPWR_PHY1_PWR)
++
++/* PHY clock control */
++#define S5PV210_UPHYCLK			0x4
++
++#define S5PV210_UPHYCLK_PHYFSEL_MASK	(0x3 << 0)
++#define S5PV210_UPHYCLK_PHYFSEL_48MHZ	(0x0 << 0)
++#define S5PV210_UPHYCLK_PHYFSEL_24MHZ	(0x3 << 0)
++#define S5PV210_UPHYCLK_PHYFSEL_12MHZ	(0x2 << 0)
++
++#define S5PV210_UPHYCLK_PHY0_ID_PULLUP	BIT(2)
++#define S5PV210_UPHYCLK_PHY0_COMMON_ON	BIT(4)
++#define S5PV210_UPHYCLK_PHY1_COMMON_ON	BIT(7)
++
++/* PHY reset control */
++#define S5PV210_UPHYRST			0x8
++
++#define S5PV210_URSTCON_PHY0		BIT(0)
++#define S5PV210_URSTCON_OTG_HLINK	BIT(1)
++#define S5PV210_URSTCON_OTG_PHYLINK	BIT(2)
++#define S5PV210_URSTCON_PHY1_ALL	BIT(3)
++#define S5PV210_URSTCON_HOST_LINK_ALL	BIT(4)
++
++/* Isolation, configured in the power management unit */
++#define S5PV210_USB_ISOL_OFFSET		0x680c
++#define S5PV210_USB_ISOL_DEVICE		BIT(0)
++#define S5PV210_USB_ISOL_HOST		BIT(1)
++
++
++enum s5pv210_phy_id {
++	S5PV210_DEVICE,
++	S5PV210_HOST,
++	S5PV210_NUM_PHYS,
++};
++
++/*
++ * s5pv210_rate_to_clk() converts the supplied clock rate to the value that
++ * can be written to the phy register.
++ */
++static int s5pv210_rate_to_clk(unsigned long rate, u32 *reg)
++{
++	switch (rate) {
++	case 12 * MHZ:
++		*reg = S5PV210_UPHYCLK_PHYFSEL_12MHZ;
++		break;
++	case 24 * MHZ:
++		*reg = S5PV210_UPHYCLK_PHYFSEL_24MHZ;
++		break;
++	case 48 * MHZ:
++		*reg = S5PV210_UPHYCLK_PHYFSEL_48MHZ;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static void s5pv210_isol(struct samsung_usb2_phy_instance *inst, bool on)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++	u32 mask;
++
++	switch (inst->cfg->id) {
++	case S5PV210_DEVICE:
++		mask = S5PV210_USB_ISOL_DEVICE;
++		break;
++	case S5PV210_HOST:
++		mask = S5PV210_USB_ISOL_HOST;
++		break;
++	default:
++		return;
++	};
++
++	regmap_update_bits(drv->reg_pmu, S5PV210_USB_ISOL_OFFSET,
++							mask, on ? 0 : mask);
++}
++
++static void s5pv210_phy_pwr(struct samsung_usb2_phy_instance *inst, bool on)
++{
++	struct samsung_usb2_phy_driver *drv = inst->drv;
++	u32 rstbits = 0;
++	u32 phypwr = 0;
++	u32 rst;
++	u32 pwr;
++
++	switch (inst->cfg->id) {
++	case S5PV210_DEVICE:
++		phypwr =	S5PV210_UPHYPWR_PHY0;
++		rstbits =	S5PV210_URSTCON_PHY0;
++		break;
++	case S5PV210_HOST:
++		phypwr =	S5PV210_UPHYPWR_PHY1;
++		rstbits =	S5PV210_URSTCON_PHY1_ALL |
++				S5PV210_URSTCON_HOST_LINK_ALL;
++		break;
++	};
++
++	if (on) {
++		writel(drv->ref_reg_val, drv->reg_phy + S5PV210_UPHYCLK);
++
++		pwr = readl(drv->reg_phy + S5PV210_UPHYPWR);
++		pwr &= ~phypwr;
++		writel(pwr, drv->reg_phy + S5PV210_UPHYPWR);
++
++		rst = readl(drv->reg_phy + S5PV210_UPHYRST);
++		rst |= rstbits;
++		writel(rst, drv->reg_phy + S5PV210_UPHYRST);
++		udelay(10);
++		rst &= ~rstbits;
++		writel(rst, drv->reg_phy + S5PV210_UPHYRST);
++	} else {
++		pwr = readl(drv->reg_phy + S5PV210_UPHYPWR);
++		pwr |= phypwr;
++		writel(pwr, drv->reg_phy + S5PV210_UPHYPWR);
++	}
++}
++
++static int s5pv210_power_on(struct samsung_usb2_phy_instance *inst)
++{
++	s5pv210_isol(inst, 0);
++	s5pv210_phy_pwr(inst, 1);
++
++	return 0;
++}
++
++static int s5pv210_power_off(struct samsung_usb2_phy_instance *inst)
++{
++	s5pv210_phy_pwr(inst, 0);
++	s5pv210_isol(inst, 1);
++
++	return 0;
++}
++
++static const struct samsung_usb2_common_phy s5pv210_phys[S5PV210_NUM_PHYS] = {
++	[S5PV210_DEVICE] = {
++		.label		= "device",
++		.id		= S5PV210_DEVICE,
++		.power_on	= s5pv210_power_on,
++		.power_off	= s5pv210_power_off,
++	},
++	[S5PV210_HOST] = {
++		.label		= "host",
++		.id		= S5PV210_HOST,
++		.power_on	= s5pv210_power_on,
++		.power_off	= s5pv210_power_off,
++	},
++};
++
++const struct samsung_usb2_phy_config s5pv210_usb2_phy_config = {
++	.num_phys	= ARRAY_SIZE(s5pv210_phys),
++	.phys		= s5pv210_phys,
++	.rate_to_clk	= s5pv210_rate_to_clk,
++};
+diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-samsung-usb2.c
+index 8a8c6bc..6d7439c 100644
+--- a/drivers/phy/phy-samsung-usb2.c
++++ b/drivers/phy/phy-samsung-usb2.c
+@@ -87,6 +87,12 @@ static struct phy *samsung_usb2_phy_xlate(struct device *dev,
+ }
+ 
+ static const struct of_device_id samsung_usb2_phy_of_match[] = {
++#ifdef CONFIG_PHY_S5PV210_USB2
++	{
++		.compatible = "samsung,s5pv210-usb2-phy",
++		.data = &s5pv210_usb2_phy_config,
++	},
++#endif
+ #ifdef CONFIG_PHY_EXYNOS4210_USB2
+ 	{
+ 		.compatible = "samsung,exynos4210-usb2-phy",
+diff --git a/drivers/phy/phy-samsung-usb2.h b/drivers/phy/phy-samsung-usb2.h
+index 45b3170..1c55795 100644
+--- a/drivers/phy/phy-samsung-usb2.h
++++ b/drivers/phy/phy-samsung-usb2.h
+@@ -61,6 +61,7 @@ struct samsung_usb2_phy_config {
+ 	bool has_mode_switch;
  };
  
--/*
-- * Followings are the gpio banks in S5PV210/S5PC110
-- *
-- * The 'config' member when left to NULL, is initialized to the default
-- * structure samsung_gpio_cfgs[3] in the init function below.
-- *
-- * The 'base' member is also initialized in the init function below.
-- * Note: The initialization of 'base' member of samsung_gpio_chip structure
-- * uses the above macro and depends on the banks being listed in order here.
-- */
--
--static struct samsung_gpio_chip s5pv210_gpios_4bit[] = {
--#ifdef CONFIG_CPU_S5PV210
--	{
--		.chip	= {
--			.base	= S5PV210_GPA0(0),
--			.ngpio	= S5PV210_GPIO_A0_NR,
--			.label	= "GPA0",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPA1(0),
--			.ngpio	= S5PV210_GPIO_A1_NR,
--			.label	= "GPA1",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPB(0),
--			.ngpio	= S5PV210_GPIO_B_NR,
--			.label	= "GPB",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPC0(0),
--			.ngpio	= S5PV210_GPIO_C0_NR,
--			.label	= "GPC0",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPC1(0),
--			.ngpio	= S5PV210_GPIO_C1_NR,
--			.label	= "GPC1",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPD0(0),
--			.ngpio	= S5PV210_GPIO_D0_NR,
--			.label	= "GPD0",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPD1(0),
--			.ngpio	= S5PV210_GPIO_D1_NR,
--			.label	= "GPD1",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPE0(0),
--			.ngpio	= S5PV210_GPIO_E0_NR,
--			.label	= "GPE0",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPE1(0),
--			.ngpio	= S5PV210_GPIO_E1_NR,
--			.label	= "GPE1",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPF0(0),
--			.ngpio	= S5PV210_GPIO_F0_NR,
--			.label	= "GPF0",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPF1(0),
--			.ngpio	= S5PV210_GPIO_F1_NR,
--			.label	= "GPF1",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPF2(0),
--			.ngpio	= S5PV210_GPIO_F2_NR,
--			.label	= "GPF2",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPF3(0),
--			.ngpio	= S5PV210_GPIO_F3_NR,
--			.label	= "GPF3",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPG0(0),
--			.ngpio	= S5PV210_GPIO_G0_NR,
--			.label	= "GPG0",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPG1(0),
--			.ngpio	= S5PV210_GPIO_G1_NR,
--			.label	= "GPG1",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPG2(0),
--			.ngpio	= S5PV210_GPIO_G2_NR,
--			.label	= "GPG2",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPG3(0),
--			.ngpio	= S5PV210_GPIO_G3_NR,
--			.label	= "GPG3",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPI(0),
--			.ngpio	= S5PV210_GPIO_I_NR,
--			.label	= "GPI",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPJ0(0),
--			.ngpio	= S5PV210_GPIO_J0_NR,
--			.label	= "GPJ0",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPJ1(0),
--			.ngpio	= S5PV210_GPIO_J1_NR,
--			.label	= "GPJ1",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPJ2(0),
--			.ngpio	= S5PV210_GPIO_J2_NR,
--			.label	= "GPJ2",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPJ3(0),
--			.ngpio	= S5PV210_GPIO_J3_NR,
--			.label	= "GPJ3",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_GPJ4(0),
--			.ngpio	= S5PV210_GPIO_J4_NR,
--			.label	= "GPJ4",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_MP01(0),
--			.ngpio	= S5PV210_GPIO_MP01_NR,
--			.label	= "MP01",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_MP02(0),
--			.ngpio	= S5PV210_GPIO_MP02_NR,
--			.label	= "MP02",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_MP03(0),
--			.ngpio	= S5PV210_GPIO_MP03_NR,
--			.label	= "MP03",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_MP04(0),
--			.ngpio	= S5PV210_GPIO_MP04_NR,
--			.label	= "MP04",
--		},
--	}, {
--		.chip	= {
--			.base	= S5PV210_MP05(0),
--			.ngpio	= S5PV210_GPIO_MP05_NR,
--			.label	= "MP05",
--		},
--	}, {
--		.base	= (S5P_VA_GPIO + 0xC00),
--		.irq_base = IRQ_EINT(0),
--		.chip	= {
--			.base	= S5PV210_GPH0(0),
--			.ngpio	= S5PV210_GPIO_H0_NR,
--			.label	= "GPH0",
--			.to_irq = samsung_gpiolib_to_irq,
--		},
--	}, {
--		.base	= (S5P_VA_GPIO + 0xC20),
--		.irq_base = IRQ_EINT(8),
--		.chip	= {
--			.base	= S5PV210_GPH1(0),
--			.ngpio	= S5PV210_GPIO_H1_NR,
--			.label	= "GPH1",
--			.to_irq = samsung_gpiolib_to_irq,
--		},
--	}, {
--		.base	= (S5P_VA_GPIO + 0xC40),
--		.irq_base = IRQ_EINT(16),
--		.chip	= {
--			.base	= S5PV210_GPH2(0),
--			.ngpio	= S5PV210_GPIO_H2_NR,
--			.label	= "GPH2",
--			.to_irq = samsung_gpiolib_to_irq,
--		},
--	}, {
--		.base	= (S5P_VA_GPIO + 0xC60),
--		.irq_base = IRQ_EINT(24),
--		.chip	= {
--			.base	= S5PV210_GPH3(0),
--			.ngpio	= S5PV210_GPIO_H3_NR,
--			.label	= "GPH3",
--			.to_irq = samsung_gpiolib_to_irq,
--		},
--	},
--#endif
--};
--
- /* TODO: cleanup soc_is_* */
- static __init int samsung_gpiolib_init(void)
- {
--	struct samsung_gpio_chip *chip;
--	int i, nr_chips;
--	int group = 0;
--
- 	/*
- 	 * Currently there are two drivers that can provide GPIO support for
- 	 * Samsung SoCs. For device tree enabled platforms, the new
-@@ -1420,21 +1195,6 @@ static __init int samsung_gpiolib_init(void)
- 				S3C64XX_VA_GPIO);
- 		samsung_gpiolib_add_4bit2_chips(s3c64xx_gpios_4bit2,
- 				ARRAY_SIZE(s3c64xx_gpios_4bit2));
--	} else if (soc_is_s5pv210()) {
--		group = 0;
--		chip = s5pv210_gpios_4bit;
--		nr_chips = ARRAY_SIZE(s5pv210_gpios_4bit);
--
--		for (i = 0; i < nr_chips; i++, chip++) {
--			if (!chip->config) {
--				chip->config = &samsung_gpio_cfgs[3];
--				chip->group = group++;
--			}
--		}
--		samsung_gpiolib_add_4bit_chips(s5pv210_gpios_4bit, nr_chips, S5P_VA_GPIO);
--#if defined(CONFIG_CPU_S5PV210) && defined(CONFIG_S5P_GPIO_INT)
--		s5p_register_gpioint_bank(IRQ_GPIOINT, 0, S5P_GPIOINT_GROUP_MAXNR);
--#endif
- 	} else {
- 		WARN(1, "Unknown SoC in gpio-samsung, no GPIOs added\n");
- 		return -ENODEV;
++extern const struct samsung_usb2_phy_config s5pv210_usb2_phy_config;
+ extern const struct samsung_usb2_phy_config exynos4210_usb2_phy_config;
+ extern const struct samsung_usb2_phy_config exynos4x12_usb2_phy_config;
+ extern const struct samsung_usb2_phy_config exynos5250_usb2_phy_config;
 -- 
 1.9.3
 
