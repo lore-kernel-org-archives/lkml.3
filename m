@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756453AbaGDCpG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 22:45:06 -0400
-Received: from smtprelay0085.hostedemail.com ([216.40.44.85]:44491 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752012AbaGDCpE (ORCPT
+	id S1756144AbaGDCu6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 22:50:58 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:56568 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250AbaGDCu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 22:45:04 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2551:2553:2559:2562:2693:2828:2895:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3874:4321:4605:5007:7576:7652:10004:10400:10848:11658:11914:12043:12050:12517:12519:12740:13069:13095:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: toad74_8310fdb75863e
-X-Filterd-Recvd-Size: 2391
-Message-ID: <1404441898.6384.7.camel@joe-AO725>
-Subject: Re: FW: [PATCH 04/16] MAINTAINERS: Update clk/sirf patterns
-From: Joe Perches <joe@perches.com>
-To: Barry Song <21cnbao@gmail.com>
-Cc: Barry Song <Barry.Song@csr.com>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
-Date: Thu, 03 Jul 2014 19:44:58 -0700
-In-Reply-To: <CAGsJ_4wkWcczu=EN=ZeKCS_++D2aH3nWxdC_oion+j6au=idCA@mail.gmail.com>
-References: <cover.1404425176.git.joe@perches.com>
-	 <32eedc96dfe8761925d0663e50cd29aaac32e9af.1404425176.git.joe@perches.com>
-	 <5EB3BFCD089AD643B9BB63439F5FD5E9012BF6F220@SHAASIEXM01.ASIA.ROOT.PRI>
-	 <CAGsJ_4wkWcczu=EN=ZeKCS_++D2aH3nWxdC_oion+j6au=idCA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jul 2014 22:50:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <53B524BC.6040301@mev.co.uk>
+References: <1403930876-27678-1-git-send-email-chase.southwood@gmail.com>
+	<1404353739-28607-1-git-send-email-chase.southwood@gmail.com>
+	<53B524BC.6040301@mev.co.uk>
+Date: Thu, 3 Jul 2014 21:50:56 -0500
+Message-ID: <CA+jnaaX+n4v=G-Zqxd41c-uDVAN9yP=yqA0HK7c+Ey8o2n6ACw@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] staging: comedi: addi_apci_1564: miscellaneous
+ fixes and cleanups
+From: Chase Southwood <chase.southwood@gmail.com>
+To: Ian Abbott <abbotti@mev.co.uk>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        hsweeten@visionengravers.com,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-04 at 09:33 +0800, Barry Song wrote:
-> >> -----Original Message-----
-> >> From: Joe Perches [mailto:joe@perches.com]
-> >> Sent: Friday, July 04, 2014 6:08 AM
-[]
-> >> commit 7bf21bc81f28 ("clk: sirf: re-arch to make the codes support both
-> >> prima2 and atlas6") moved the files, update the patterns.
-[]
-> >> diff --git a/MAINTAINERS b/MAINTAINERS
-[]
-> >> @@ -894,7 +894,7 @@ L:        linux-arm-kernel@lists.infradead.org
-> >> (moderated for non-subscribers)
-> >>  T:   git git://git.kernel.org/pub/scm/linux/kernel/git/baohua/linux.git
-> >>  S:   Maintained
-> >>  F:   arch/arm/mach-prima2/
-> >> -F:   drivers/clk/clk-prima2.c
-> >> +F:   drivers/clk/sirf/
-> 
-> has "N:   [^a-z]sirf" included this?
+On Thu, Jul 3, 2014 at 4:39 AM, Ian Abbott <abbotti@mev.co.uk> wrote:
+> On 2014-07-03 03:15, Chase Southwood wrote:
+>>
+>> This patchset moves a misplaced include to the proper file, swaps out an
+>> overly
+>> aggressive placement of apci1564_reset(), and cleans up
+>> apci1564_interrupt().
+>>
+>> Chase Southwood (3):
+>>    staging: comedi: addi_apci_1564: move addi_watchdog.h include to
+>>      addi_apci_1564.c
+>>    staging: comedi: addi_apci_1564: fix use of apci1564_reset() to
+>>      disable DI interrupts
+>>    staging: comedi: addi_apci_1564: clean up apci1564_interrupt()
+>>
+>>   .../comedi/drivers/addi-data/hwdrv_apci1564.c      |   2 -
+>>   drivers/staging/comedi/drivers/addi_apci_1564.c    | 139
+>> +++++----------------
+>>   2 files changed, 32 insertions(+), 109 deletions(-)
+>>
+>
+> Looks good!  You didn't list the v2 changes though.  Maybe you could
+> summarize them here?
 
-Kinda.  From MAINTAINERS:
+I always forget to do _something_, don't I?  Here are the changes:
 
-	N: Files and directories with regex patterns.
-	   N:	[^a-z]tegra	all files whose path contains the word tegra
-	   One pattern per line.  Multiple N: lines acceptable.
-	   scripts/get_maintainer.pl has different behavior for files that
-	   match F: pattern and matches of N: patterns.  By default,
-	   get_maintainer will not look at git log history when an F: pattern
-	   match occurs.  When an N: match occurs, git log history is used
-	   to also notify the people that have git commit signatures.
+CHANGES FROM V1:
+*Patches 1 and 2 did not change.
+*In Patch 3, check for interrupts from unknown sources has been removed.
+*Individual status variables for the subdevices in the interrupt
+handler have been swapped out in favor of a single status variable
+that is reused for all subdevices.
 
-
+Thanks,
+Chase
+>
+> Reviewed-by: Ian Abbott <abbotti@mev.co.uk.>
+>
+>
+> --
+> -=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+> -=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
