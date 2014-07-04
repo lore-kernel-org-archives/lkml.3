@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761059AbaGDXLE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 19:11:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56850 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760266AbaGDWPa (ORCPT
+	id S1030955AbaGDXMQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 19:12:16 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:55790 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761074AbaGDXMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:15:30 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christophe Vu-Brugier <cvubrugier@yahoo.fr>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.15 03/66] iscsi-target: Explicily clear login response PDU in exception path
-Date: Fri,  4 Jul 2014 15:14:02 -0700
-Message-Id: <20140704221422.977770506@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
-References: <20140704221422.813435485@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Fri, 4 Jul 2014 19:12:15 -0400
 MIME-Version: 1.0
+In-Reply-To: <1404295551-13470-3-git-send-email-rob.jones@codethink.co.uk>
+References: <1404295551-13470-1-git-send-email-rob.jones@codethink.co.uk>
+	<1404295551-13470-3-git-send-email-rob.jones@codethink.co.uk>
+Date: Sat, 5 Jul 2014 01:12:14 +0200
+Message-ID: <CACRpkdbA3YJ6O+-cbywP+-DPMT2Q9oRzqvdqjeueUvDP=oWwcQ@mail.gmail.com>
+Subject: Re: [PATCH V2 2/3] gpio: allow gpio array requests for managed devices
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Rob Jones <rob.jones@codethink.co.uk>
+Cc: Alexandre Courbot <gnurou@gmail.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-kernel@codethink.co.uk, Ian Molton <ian.molton@codethink.co.uk>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Jul 2, 2014 at 12:05 PM, Rob Jones <rob.jones@codethink.co.uk> wrote:
 
-------------------
+> Add functions devm_gpio_request_array() and devm_gpio_free_array()
+> which are exactly analogous to the equivalent non-managed device
+> functions gpio_request_array() and gpio_free_array(), which can be
+> found in the module gpiolib.c.
+>
+> Reviewed-by: Ian Molton <ian.molton@codethink.co.uk>
+> Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+OK I guess this needs to be merged through the regulator tree
+so here is:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-commit 683497566d48f86e04d026de1ee658dd74fc1077 upstream.
-
-This patch adds a explicit memset to the login response PDU
-exception path in iscsit_tx_login_rsp().
-
-This addresses a regression bug introduced in commit baa4d64b
-where the initiator would end up not receiving the login
-response and associated status class + detail, before closing
-the login connection.
-
-Reported-by: Christophe Vu-Brugier <cvubrugier@yahoo.fr>
-Tested-by: Christophe Vu-Brugier <cvubrugier@yahoo.fr>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/target/iscsi/iscsi_target_util.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -1295,6 +1295,8 @@ int iscsit_tx_login_rsp(struct iscsi_con
- 	login->login_failed = 1;
- 	iscsit_collect_login_stats(conn, status_class, status_detail);
- 
-+	memset(&login->rsp[0], 0, ISCSI_HDR_LEN);
-+
- 	hdr	= (struct iscsi_login_rsp *)&login->rsp[0];
- 	hdr->opcode		= ISCSI_OP_LOGIN_RSP;
- 	hdr->status_class	= status_class;
-
-
+Yours,
+Linus Walleij
