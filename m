@@ -1,71 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759470AbaGDS2v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 14:28:51 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:15371 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759361AbaGDS2u (ORCPT
+	id S1759361AbaGDScO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 14:32:14 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.219]:29808 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992AbaGDScM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 14:28:50 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmMPAFPxtlNbsGwr/2dsb2JhbABagw6scAUBAQEBAQEFAW4BkiiHP4ELF3WECwIkLyNJOQcRN4guAxUBtUmOLA2GUheFcIcKgigZBAmEJAWOG4lvbIIAiBGFZ4YUg0U7gTo
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Eric Van Hensbergen <ericvh@gmail.com>,
-        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
-        v9fs-developer@lists.sourceforge.net
-Subject: [PATCH 1/1] 9p: kerneldoc warning fixes
-Date: Fri,  4 Jul 2014 20:28:44 +0200
-Message-Id: <1404498524-12123-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	Fri, 4 Jul 2014 14:32:12 -0400
+X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ekfyrejs0ialTxoY/iPPu2PXDa3bE8LSg7
+X-RZG-CLASS-ID: mo00
+Message-ID: <53B6F30E.2000706@schoebel-theuer.de>
+Date: Fri, 04 Jul 2014 20:31:42 +0200
+From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Richard Weinberger <richard.weinberger@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: Selling Points for MARS Light
+References: <53B6897F.6020802@schoebel-theuer.de> <CAFLxGvynFuCh0puda06kTH1P3i=701dQO-+opjLnQrd2KqUTHA@mail.gmail.com>
+In-Reply-To: <CAFLxGvynFuCh0puda06kTH1P3i=701dQO-+opjLnQrd2KqUTHA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-options argument was removed from v9fs_session_info in commit 4b53e4b50077
-("9p: remove unnecessary v9fses->options which duplicates the mount string")
+> We are interested in the real low level design ideas. i.e. Why do you
+need all syscalls exported?
 
-iov and nr_segs were removed from v9fs_direct_IO
-in commit d8d3d94b80aa
-("pass iov_iter to ->direct_IO()")
+OK, simple question, simple first-order answer, more complicated
+second-order answer.
 
-Cc: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: Ron Minnich <rminnich@sandia.gov>
-Cc: Latchesar Ionkov <lucho@ionkov.net>
-Cc: v9fs-developer@lists.sourceforge.net
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/9p/v9fs.h     | 1 -
- fs/9p/vfs_addr.c | 2 --
- 2 files changed, 3 deletions(-)
+First-order answer:
 
-diff --git a/fs/9p/v9fs.h b/fs/9p/v9fs.h
-index 099c771..fb9ffcb 100644
---- a/fs/9p/v9fs.h
-+++ b/fs/9p/v9fs.h
-@@ -78,7 +78,6 @@ enum p9_cache_modes {
-  * @cache: cache mode of type &p9_cache_modes
-  * @cachetag: the tag of the cache associated with this session
-  * @fscache: session cookie associated with FS-Cache
-- * @options: copy of options string given by user
-  * @uname: string user name to mount hierarchy as
-  * @aname: mount specifier for remote hierarchy
-  * @maxdata: maximum data to be sent/recvd per protocol message
-diff --git a/fs/9p/vfs_addr.c b/fs/9p/vfs_addr.c
-index cc1cfae..076d3ef 100644
---- a/fs/9p/vfs_addr.c
-+++ b/fs/9p/vfs_addr.c
-@@ -243,9 +243,7 @@ static int v9fs_launder_page(struct page *page)
-  * v9fs_direct_IO - 9P address space operation for direct I/O
-  * @rw: direction (read or write)
-  * @iocb: target I/O control block
-- * @iov: array of vectors that define I/O buffer
-  * @pos: offset in file to begin the operation
-- * @nr_segs: size of iovec array
-  *
-  * The presence of v9fs_direct_IO() in the address space ops vector
-  * allowes open() O_DIRECT flags which would have failed otherwise.
--- 
-1.9.1
+Exporting all syscalls was a mistake made by me. It's not needed. Only a
+handful is really needed. Of course, I am willing to correct my mistake.
+
+A first-order fix for this is really simple. A second-order fix
+(avoiding _any_ additional exports, or almost any) would get much more
+complicated.
+
+Second-order answer to the more detailed question behind your question:
+why does tst need filesystem operations like *_symlink() or *_readlink()
+at the low level?
+
+I tried to explain the general high-level rationale behind the
+architecture of MARS in the last part of my "marketing drone" appraisal
+(which I also hated some years ago, but I had to learn how to produce
+such an evil thing when changing from academia to the industry).
+
+Detailed steps of the rationale, with some non-obvious intermediate steps:
+
+Due to the enterprise-class dynamic shared store needed for masses of
+backlog data (as explained in the last part of my former posting), I had
+the low-level implementation choice of
+
+a) just re-using existing filesystem technology for that, or
+
+b) implementing my own filesystem-like dynamic store for that.
+
+I also examined another potential alternative c), namely trying to use
+LVM / DM for that. I looked at the concepts and some parts of the
+interfaces, as well as of the implemention (all in a rather old kernel
+as used in production!!!), and found some clashes at concept level, and
+therefore got the impression that it could likely become very
+cumbersome, so I precluded this potential alternative at a rather early
+stage.
+
+At that time, my office was next door to the IT operations system
+architect, who became a friend of mine. So we were discussing many
+political as well as detailed technical implementation problems in a
+very small team (sometimes when drinking a beer together).
+
+At that time, the rationale was to produce a POC (proof of concept)
+ASAP, in order to aquire some resources for the emerging MARS project
+internally. Around that time, we decided jointly to postpone all
+"expensive" efforts to a later version called "MARS FULL" (originally
+all in capital letters), and to try to get a quick-win called "MARS
+LIGHT" ASAP.
+
+Under that premise, it becomes immediately clear that a) had to be taken
+for MARS Light, and whenever b) should turn out a better alternative
+(which I think is quite possible), we decided to do it "later".
+
+An additional advantage of a) is that ordinary sysadmin commands such as
+"ls -l" can be used for inspection of the internal state of MARS, since
+implementation of a key->value store this way has the low-level
+advantage that you can easily experiment with it or even workaround some
+bugs via "ln -s" and friends.
+
+Not as an excuse, but please believe me that MARS originally started as
+a strictly _internal_ 1&1 project, and it took quite a while until I got
+the official permission from our CTO to publish it under GPL (before
+that, I had to convince many other people). Until that point, we had no
+official thoughts of ever going kernel upstream, probably besides some
+drinking of beer in very small group ;)
+
+Yes, well, life is not straightforward....   not only some letters were
+lowercased, but the rollout of MARS Light to practice, as originally
+planned, took much longer than expected (due to reasons which are out of
+scope here).
+
+In the meantime, MARS Light got into production in _another_ sysadmin
+team as originally planned. They just took it, and it just worked for them.
+
+Of course, that was fantastic for me in first order.
+
+But a second-order consequence now is that any changes in low-level data
+formats (such as replacing the symlinks by other formats such as files)
+_must_ provide an upgrade path for them.
+
+If I am not operating very carefully, this could become a problem in
+future. I have to avoid any bigger forks between the out-of-tree and the
+potential in-tree versions; at least I have to provide an easy and
+robust upgrade path between them (probably in both directions).
+
+In addition, I have to ensure that the timescale for parallel
+maintainance of two major flavours is limited. If I did things which
+would prolifer the version split ad infinitum, this would very likely
+become a no-go for going upstream.
+
+I hope you can understand that. In no way I want to put pressure on you.
+It's just the diverging pressure I am trapped in.
+
+Now, the discussion here showed up some painpoints for me (in my
+subjective view).
+
+In oder to try to resolve the complaints about the "symlink farms", I
+could try to replace some operations, such as the symlink operations, by
+file operations. But I am not sure whether this really helps. It just
+complicates things.
+
+Therefore I will continue trying to convince you whether we could
+jointly find a solution for both sides, which both does not
+unnecessarily violate the upstream rules, while not consuming too much
+of my valuable manpower for maintaining both versions in a compatible
+manner from a luser's perspective.
+
+Now my posting got longer than intended. But I hope it could contribute
+to a better mutual understanding.
+
+Cheers,
+
+yours sincerly Thomas
 
