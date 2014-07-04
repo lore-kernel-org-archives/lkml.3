@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030567AbaGDWRe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:17:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57194 "EHLO
+	id S1030632AbaGDWRm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:17:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57214 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030233AbaGDWRa (ORCPT
+	with ESMTP id S1030570AbaGDWRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:30 -0400
+	Fri, 4 Jul 2014 18:17:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.15 62/66] tracing: Fix syscall_*regfunc() vs copy_process() race
-Date: Fri,  4 Jul 2014 15:15:01 -0700
-Message-Id: <20140704221425.652550123@linuxfoundation.org>
+        Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.15 57/66] MIPS: KVM: Fix memory leak on VCPU
+Date: Fri,  4 Jul 2014 15:14:56 -0700
+Message-Id: <20140704221425.408058029@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -30,72 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>
 
-commit 4af4206be2bd1933cae20c2b6fb2058dbc887f7c upstream.
+commit 8c9eb041cf76038eb3b62ee259607eec9b89f48d upstream.
 
-syscall_regfunc() and syscall_unregfunc() should set/clear
-TIF_SYSCALL_TRACEPOINT system-wide, but do_each_thread() can race
-with copy_process() and miss the new child which was not added to
-the process/thread lists yet.
+kvm_arch_vcpu_free() is called in 2 code paths:
 
-Change copy_process() to update the child's TIF_SYSCALL_TRACEPOINT
-under tasklist.
+1) kvm_vm_ioctl()
+       kvm_vm_ioctl_create_vcpu()
+           kvm_arch_vcpu_destroy()
+               kvm_arch_vcpu_free()
+2) kvm_put_kvm()
+       kvm_destroy_vm()
+           kvm_arch_destroy_vm()
+               kvm_mips_free_vcpus()
+                   kvm_arch_vcpu_free()
 
-Link: http://lkml.kernel.org/p/20140413185854.GB20668@redhat.com
+Neither of the paths handles VCPU free. We need to do it in
+kvm_arch_vcpu_free() corresponding to the memory allocation in
+kvm_arch_vcpu_create().
 
-Fixes: a871bd33a6c0 "tracing: Add syscall tracepoints"
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/trace/syscall.h |   15 +++++++++++++++
- kernel/fork.c           |    2 ++
- 2 files changed, 17 insertions(+)
+ arch/mips/kvm/kvm_mips.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/include/trace/syscall.h
-+++ b/include/trace/syscall.h
-@@ -4,6 +4,7 @@
- #include <linux/tracepoint.h>
- #include <linux/unistd.h>
- #include <linux/ftrace_event.h>
-+#include <linux/thread_info.h>
+--- a/arch/mips/kvm/kvm_mips.c
++++ b/arch/mips/kvm/kvm_mips.c
+@@ -389,6 +389,7 @@ void kvm_arch_vcpu_free(struct kvm_vcpu
  
- #include <asm/ptrace.h>
+ 	kfree(vcpu->arch.guest_ebase);
+ 	kfree(vcpu->arch.kseg0_commpage);
++	kfree(vcpu);
+ }
  
-@@ -32,4 +33,18 @@ struct syscall_metadata {
- 	struct ftrace_event_call *exit_event;
- };
- 
-+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_HAVE_SYSCALL_TRACEPOINTS)
-+static inline void syscall_tracepoint_update(struct task_struct *p)
-+{
-+	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
-+		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-+	else
-+		clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-+}
-+#else
-+static inline void syscall_tracepoint_update(struct task_struct *p)
-+{
-+}
-+#endif
-+
- #endif /* _TRACE_SYSCALL_H */
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1487,7 +1487,9 @@ static struct task_struct *copy_process(
- 
- 	total_forks++;
- 	spin_unlock(&current->sighand->siglock);
-+	syscall_tracepoint_update(p);
- 	write_unlock_irq(&tasklist_lock);
-+
- 	proc_fork_connector(p);
- 	cgroup_post_fork(p);
- 	if (clone_flags & CLONE_THREAD)
+ void kvm_arch_vcpu_destroy(struct kvm_vcpu *vcpu)
 
 
