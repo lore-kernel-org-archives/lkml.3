@@ -1,144 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902AbaGDGjh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 02:39:37 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:48828 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046AbaGDGjf (ORCPT
+	id S1756297AbaGDGlB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 02:41:01 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:58760 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011AbaGDGk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 02:39:35 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Fri, 4 Jul 2014 15:41:02 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Subject: Re: [PATCH v9] mm: support madvise(MADV_FREE)
-Message-ID: <20140704064102.GH2939@bbox>
-References: <1404174975-22019-1-git-send-email-minchan@kernel.org>
- <20140701145058.GA2084@node.dhcp.inet.fi>
- <20140703010318.GA2939@bbox>
- <20140703072954.GC2939@bbox>
- <20140703102901.322bfdb0@mschwide>
- <20140703083729.GE2939@bbox>
- <20140703180100.5f24a139@mschwide>
+	Fri, 4 Jul 2014 02:40:59 -0400
+Message-ID: <53B64C5F.5090200@gmail.com>
+Date: Fri, 04 Jul 2014 14:40:31 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140703180100.5f24a139@mschwide>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>,
+        peterz@infradead.org, mingo@kernel.org, tim.c.chen@linux.intel.com,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Miller <davem@davemloft.net>, lauraa@codeaurora.org
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arch/score/include/asm/pci.h: Use generic 'pci.h' instead
+ of the original one
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Original 'pci.h' is empty, and some modules in allmodconfig may need
+contents which can be found in generic 'pci.h', so use generic one
+instead of original.
 
-On Thu, Jul 03, 2014 at 06:01:00PM +0200, Martin Schwidefsky wrote:
-> On Thu, 3 Jul 2014 17:37:29 +0900
-> Minchan Kim <minchan@kernel.org> wrote:
-> 
-> > Hello,
-> > 
-> > On Thu, Jul 03, 2014 at 10:29:01AM +0200, Martin Schwidefsky wrote:
-> > > On Thu, 3 Jul 2014 16:29:54 +0900
-> > > Minchan Kim <minchan@kernel.org> wrote:
-> > > 
-> > > > Hello,
-> > > > 
-> > > > On Thu, Jul 03, 2014 at 10:03:19AM +0900, Minchan Kim wrote:
-> > > > > Hello,
-> > > > > 
-> > > > > On Tue, Jul 01, 2014 at 05:50:58PM +0300, Kirill A. Shutemov wrote:
-> > > > > > On Tue, Jul 01, 2014 at 09:36:15AM +0900, Minchan Kim wrote:
-> > > > > > > +	do {
-> > > > > > > +		/*
-> > > > > > > +		 * XXX: We can optimize with supporting Hugepage free
-> > > > > > > +		 * if the range covers.
-> > > > > > > +		 */
-> > > > > > > +		next = pmd_addr_end(addr, end);
-> > > > > > > +		if (pmd_trans_huge(*pmd))
-> > > > > > > +			split_huge_page_pmd(vma, addr, pmd);
-> > > > > > 
-> > > > > > Could you implement proper THP support before upstreaming the feature?
-> > > > > > It shouldn't be a big deal.
-> > > > > 
-> > > > > Okay, Hope to review.
-> > > > > 
-> > > > > Thanks for the feedback!
-> > > > > 
-> > > > 
-> > > > I tried to implement it but had a issue.
-> > > > 
-> > > > I need pmd_mkold, pmd_mkclean for MADV_FREE operation and pmd_dirty for
-> > > > page_referenced. When I investigate all of arches supported THP,
-> > > > it's not a big deal but s390 is not sure to me who has no idea of
-> > > > soft tracking of s390 by storage key instead of page table information.
-> > > > Cced s390 maintainer. Hope to help.
-> > > 
-> > > Storage key for dirty and referenced tracking is a thing of the past.
-> > > The current code for s390 uses software tracking for dirty and referenced.
-> > > There is one catch though, for ptes the software implementation covers
-> > > dirty and referenced bit but for pmds only referenced bit is available.
-> > > The reason is that there is no free bit left in the pmd entry for the
-> > > software dirty bit.
-> > 
-> > Thanks for the quick reply.
-> > 
-> > >  
-> > > > So, if there isn't any help from s390, I should introduce
-> > > > HAVE_ARCH_THP_MADVFREE to disable MADV_FREE support of THP in s390 but
-> > > > not want to introduce such new config.
-> > > 
-> > > Why is the dirty bit for pmds needed for the MADV_FREE implementation?
-> > 
-> > MADV_FREE semantic want it.
-> > 
-> > When madvise syscall is called, VM clears dirty bit of ptes of
-> > the range. If memory pressure happens, VM checks dirty bit of
-> > page table and if it found still "clean", it means it's a
-> > "lazyfree pages" so VM could discard the page instead of swapping out.
-> > Once there was store operation for the page before VM peek a page
-> > to reclaim, dirty bit is set so VM can swap out the page instead of
-> > discarding to keep up-to-date contents.
-> > 
-> > If it's hard on s390, maybe we could use just reference bit
-> > instead of dirty bit to check recent access but it might change
-> > semantic a bit with other OSes. :(
-> 
-> Just discussed this with Gerald and we found a trick how we can add
-> a dirty bit to the pmd entries. That will be a non-trivial patch but
-> we can do it. Until that time you could just define pmd_dirty to 
-> always return true and the code should "work" in the sense that it
-> does not break anything.
+The related error (allmodconfig under score):
 
-Will work.
-I will post a patch when I finish the work.
-Hope to review.
-Thanks for your advise!
+    CC [M]  drivers/scsi/scsi_lib.o
+  drivers/scsi/scsi_lib.c: In function 'scsi_calculate_bounce_limit':
+  drivers/scsi/scsi_lib.c:1615:7: error: 'PCI_DMA_BUS_IS_PHYS' undeclared (first use in this function)
+    if (!PCI_DMA_BUS_IS_PHYS)
+         ^
+  drivers/scsi/scsi_lib.c:1615:7: note: each undeclared identifier is reported only once for each function it appears in
+  make[2]: *** [drivers/scsi/scsi_lib.o] Error 1
+  make[1]: *** [drivers/scsi] Error 2
+  make: *** [drivers] Error 2
 
-> 
-> -- 
-> blue skies,
->    Martin.
-> 
-> "Reality continues to ruin my life." - Calvin.
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ arch/score/include/asm/Kbuild | 1 +
+ arch/score/include/asm/pci.h  | 4 ----
+ 2 files changed, 1 insertion(+), 4 deletions(-)
+ delete mode 100644 arch/score/include/asm/pci.h
+
+diff --git a/arch/score/include/asm/Kbuild b/arch/score/include/asm/Kbuild
+index aad2091..bfb31569 100644
+--- a/arch/score/include/asm/Kbuild
++++ b/arch/score/include/asm/Kbuild
+@@ -7,6 +7,7 @@ generic-y += clkdev.h
+ generic-y += cputime.h
+ generic-y += hash.h
+ generic-y += mcs_spinlock.h
++generic-y += pci.h
+ generic-y += preempt.h
+ generic-y += scatterlist.h
+ generic-y += trace_clock.h
+diff --git a/arch/score/include/asm/pci.h b/arch/score/include/asm/pci.h
+deleted file mode 100644
+index 3f3cfd8..0000000
+--- a/arch/score/include/asm/pci.h
++++ /dev/null
+@@ -1,4 +0,0 @@
+-#ifndef _ASM_SCORE_PCI_H
+-#define _ASM_SCORE_PCI_H
+-
+-#endif /* _ASM_SCORE_PCI_H */
 -- 
-Kind regards,
-Minchan Kim
+1.9.2.459.g68773ac
