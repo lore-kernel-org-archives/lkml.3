@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760059AbaGDBQp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 21:16:45 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:56343 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760030AbaGDBQn (ORCPT
+	id S1755928AbaGDBXQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 21:23:16 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57016 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850AbaGDBXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 21:16:43 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgdfAKj/tVN5LHZ8PGdsb2JhbABagw2sbgEBAQEBAQaaVAGBCxcEAQEBATg1hAMBAQU6HCMQCAMOCgklDwUlAwcaE4hByTcXGIVYiTIHhEMFmnWLTIwVKy8
-Date: Fri, 4 Jul 2014 11:16:39 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Miller <davem@davemloft.net>,
-        Andres Freund <andres@2ndquadrant.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH v2 1/4] define PAGECACHE_TAG_* as enumeration under
- include/uapi
-Message-ID: <20140704011639.GG9508@dastard>
-References: <1404424335-30128-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1404424335-30128-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404424335-30128-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 3 Jul 2014 21:23:15 -0400
+X-Original-SENDERIP: 165.186.175.61
+X-Original-MAILFROM: hyogi.gim@lge.com
+From: Hyogi Gim <hyogi.gim@lge.com>
+To: Alessandro Zummo <a.zummo@towertech.it>,
+        John Stultz <john.stultz@linaro.org>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        Hyogi Gim <hyogi.gim@lge.com>
+Subject: [PATCH] drivers/rtc/interface.c: check the error after __rtc_read_time()
+Date: Fri,  4 Jul 2014 10:22:26 +0900
+Message-Id: <1404436946-28354-1-git-send-email-hyogi.gim@lge.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 05:52:12PM -0400, Naoya Horiguchi wrote:
-> We need the pagecache tags to be exported to userspace later in this
-> series for fincore(2), so this patch moves the definition to the new
-> include file for preparation. We also use the number of pagecache tags,
-> so this patch also adds it.
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+In __rtc_set_alarm(), the error after __rtc_read_time() is not checked.
+If rtc device fail to read time, we cannot guarantee the following process.
 
-NACK.
+Add the verification code for returned __rtc_read_time() error.
 
-The radix tree tags are deeply internal implementation details.
-They are an artifact of the current mark-and-sweep writeback
-algorithm, and as such should never, ever be exposed to userspace,
-let alone fixed in an ABI we need to support forever more.
+Signed-off-by: Hyogi Gim <hyogi.gim@lge.com>
+---
+ drivers/rtc/interface.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Cheers,
-
-Dave.
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index 5813fa5..5b2717f 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -348,6 +348,8 @@ static int __rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+ 
+ 	/* Make sure we're not setting alarms in the past */
+ 	err = __rtc_read_time(rtc, &tm);
++	if (err)
++		return err;
+ 	rtc_tm_to_time(&tm, &now);
+ 	if (scheduled <= now)
+ 		return -ETIME;
 -- 
-Dave Chinner
-david@fromorbit.com
+1.8.3.2
+
