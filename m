@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941AbaGDES0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 00:18:26 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49800 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897AbaGDESZ (ORCPT
+	id S1751641AbaGDEVo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 00:21:44 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:53329 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932AbaGDEVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 00:18:25 -0400
-Date: Thu, 03 Jul 2014 21:18:20 -0700 (PDT)
-Message-Id: <20140703.211820.1674895115102216877.davem@davemloft.net>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, akpm@linux-foundation.org,
-        tglx@linutronix.de, masami.hiramatsu.pt@hitachi.com, hpa@zytor.com,
-        linux-arch@vger.kernel.org, rjw@rjwysocki.net, jkosina@suse.cz,
-        notifications@github.com, sparclinux@vger.kernel.org
-Subject: Re: [RFA][PATCH 18/27] sparc64,ftrace: Remove check of obsolete
- variable function_trace_stop
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140703124146.3a93668f@gandalf.local.home>
-References: <20140626165221.736847419@goodmis.org>
-	<20140626165852.160038235@goodmis.org>
-	<20140703124146.3a93668f@gandalf.local.home>
-X-Mailer: Mew version 6.3 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 03 Jul 2014 21:18:25 -0700 (PDT)
+	Fri, 4 Jul 2014 00:21:40 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, preeti@linux.vnet.ibm.com,
+        daniel.lezcano@linaro.org
+Subject: [PATCH 0/2] clockevents: introduce ->set_dev_mode() and convert a few drivers
+Date: Thu,  3 Jul 2014 21:21:34 -0700
+Message-Id: <1404447696-4105-1-git-send-email-khilman@linaro.org>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
-Date: Thu, 3 Jul 2014 12:41:46 -0400
+Currently, the ->set_mode() method of a clockevent device is not
+allowed to fail, so it has no return value.  In order to add new
+clockevent modes, and allow the setting of those modes to fail, we
+need the clockevent core to be able to detect when setting a mode
+fails.
 
-> Do you have any problem with this patch going through my tree? It
-> compiles, but I do not have any hardware to test it. If you can verify
-> that this patch works and ack it, it would be much appreciated.
-> 
-> This code is at:
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> 
-> branch: rfc/remove-function-trace-stop
+Rather than changing the current ->set_mode() and requiring all
+clockevent devices to change immedately, introduce a new mode setting
+method ->set_dev_mode() which returns 'int'.
 
-I can look at this next week at the earliest.  But frankly I have no problem
-if you just merge it as-is now, we can sort out any fallout later.
+In addition, migrate a few drivers over to the new method to
+demonstrate how the new method is to be used, and how to convert.
 
-Thanks.
+Proposal for new method originally suggested by Thomas Gleixner[1].
+
+[1] https://lkml.org/lkml/2014/5/10/86
+
+
+Viresh Kumar (2):
+  clockevents: introduce ->set_dev_mode() which can return error
+  clockevents: migrate some drivers to new ->set_dev_mode()
+
+ drivers/clocksource/arm_arch_timer.c     | 46 +++++++++++++++++---------------
+ drivers/clocksource/bcm2835_timer.c      | 10 +++----
+ drivers/clocksource/bcm_kona_timer.c     | 15 ++++++++---
+ drivers/clocksource/i8253.c              | 11 +++++---
+ drivers/clocksource/time-armada-370-xp.c | 21 +++++++++++----
+ include/linux/clockchips.h               |  5 +++-
+ kernel/time/clockevents.c                | 21 ++++++++++++---
+ kernel/time/timer_list.c                 |  5 +++-
+ 8 files changed, 91 insertions(+), 43 deletions(-)
+
+-- 
+1.9.2
+
