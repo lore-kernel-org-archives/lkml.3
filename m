@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759939AbaGDCS4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 22:18:56 -0400
+	id S1760000AbaGDCS7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 22:18:59 -0400
 Received: from cn.fujitsu.com ([59.151.112.132]:2120 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752056AbaGDCSy (ORCPT
+	with ESMTP id S1752151AbaGDCS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 22:18:54 -0400
+	Thu, 3 Jul 2014 22:18:56 -0400
 X-IronPort-AV: E=Sophos;i="5.00,829,1396972800"; 
-   d="scan'208";a="32823461"
-Message-ID: <53B60EE7.8020001@cn.fujitsu.com>
-Date: Fri, 4 Jul 2014 10:18:15 +0800
+   d="scan'208";a="32823463"
+Message-ID: <53B60EF1.6030307@cn.fujitsu.com>
+Date: Fri, 4 Jul 2014 10:18:25 +0800
 From: Tang Chen <tangchen@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
 To: Gleb Natapov <gleb@kernel.org>
 CC: <mtosatti@redhat.com>, <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
         <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>
+        <linux-kernel@vger.kernel.org>, Tang Chen <tangchen@cn.fujitsu.com>
 Subject: Re: [PATCH 4/4] kvm, mem-hotplug: Update apic access page when it
  is migrated.
 References: <1404291637-15048-1-git-send-email-tangchen@cn.fujitsu.com> <1404291637-15048-5-git-send-email-tangchen@cn.fujitsu.com> <20140703135507.GM18167@minantech.com>
