@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617AbaGDCkJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 22:40:09 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:23725 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751617AbaGDCkG (ORCPT
+	id S1756453AbaGDCpG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 22:45:06 -0400
+Received: from smtprelay0085.hostedemail.com ([216.40.44.85]:44491 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752012AbaGDCpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 22:40:06 -0400
-X-AuditID: cbfee68f-b7fef6d000003970-81-53b614033a9f
-Message-id: <53B61403.7040602@samsung.com>
-Date: Fri, 04 Jul 2014 11:40:03 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>, chris@printf.net,
-        ulf.hansson@linaro.org, tgih.jun@samsung.com, aaron.lu@intel.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jackey.shen@amd.com, gregkh@linuxfoundation.org
-Subject: Re: One bug of SDHCI driver
-References: <53B249A4.2040404@linux.intel.com>
- <53B57B23.4020607@linux.intel.com>
-In-reply-to: <53B57B23.4020607@linux.intel.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsWyRsSkRJdZZFuwwdEHuhab+n6zWUy4vJ3R
-	onnxeiDr3kRWi8u75rBZHPnfz2jx4f5FZovja8Mt2i9dZHbg9Gi99JfNY/Gel0wed67tYfOY
-	dzLQY//cNeweN14tZPLo27KK0ePzJrkAjigum5TUnMyy1CJ9uwSujOYJW5gKTrNWbFzxjKmB
-	cRtLFyMnh4SAiUTToRlQtpjEhXvr2boYuTiEBJYyStw7vBSu6P3nT4wQiUWMEk/O/2aFcF4z
-	SnxvbmMGqeIV0JK4duwRG4jNIqAqMb1vMlg3m4COxPZvx5lAbFGBMIlDbfOYIOoFJX5MvscC
-	MkhE4AujxOlHjUBTOTiEBVQk5r7lB6kREgiWuLnuIyuIzSmgL/HwzE9GEJsZaOb+1mlsELa8
-	xOY1b5lB5kgIPGKXWPDwNSvEEQIS3yYfYgGZKSEgK7HpADPEN5ISB1fcYJnAKDoLyRmzkIyd
-	hWTsAkbmVYyiqQXJBcVJ6UXGesWJucWleel6yfm5mxiB8Xj637P+HYx3D1gfYkwGWjmRWUo0
-	OR8Yz3kl8YbGZkYWpiamxkbmlmakCSuJ895/mBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1Oq
-	gTHy8lwNvgjfW0Y5R3RuLAy5cklAUrlhXh4j06vpSaGNx/V4+2a8fDPXISpC7fO5NfO82bpm
-	JLUuuG5j2nnxo+Cdk6/SqiNaRRY/Zpl7sC1tX3lmiWPS/U8qu7l5LkWt9ptop+jRJLjmtPT9
-	KXcCfzA3Hyr5WP++6Lb3FPlecZmuix7JLt0/1JVYijMSDbWYi4oTAS0sjgPdAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t9jAV1mkW3BBn0HVC029f1ms5hweTuj
-	RfPi9UDWvYmsFpd3zWGzOPK/n9Hiw/2LzBbH14ZbtF+6yOzA6dF66S+bx+I9L5k87lzbw+Yx
-	72Sgx/65a9g9brxayOTRt2UVo8fnTXIBHFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYG
-	hrqGlhbmSgp5ibmptkouPgG6bpk5QOcpKZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLr
-	MTJAAwlrGDOaJ2xhKjjNWrFxxTOmBsZtLF2MnBwSAiYS7z9/YoSwxSQu3FvP1sXIxSEksIhR
-	4sn536wQzmtGie/NbcwgVbwCWhLXjj1iA7FZBFQlpvdNBpvEJqAjsf3bcSYQW1QgTOJQ2zwm
-	iHpBiR+T77GADBIR+MIocfpRI9BUDg5hARWJuW/5QWqEBIIlbq77yApicwroSzw88xPsImag
-	mftbp7FB2PISm9e8ZZ7AyD8LydhZSMpmISlbwMi8ilE0tSC5oDgpPddQrzgxt7g0L10vOT93
-	EyM42p9J7WBc2WBxiFGAg1GJh9ejaGuwEGtiWXFl7iFGCQ5mJRHeALZtwUK8KYmVValF+fFF
-	pTmpxYcYTYG+nsgsJZqcD0xEeSXxhsYmZkaWRuaGFkbG5krivAdarQOFBNITS1KzU1MLUotg
-	+pg4OKUaGFNaBQS0Mjp2BEh/0dTWrbBfFv51ol5+q+yao/YzjAKf8JxTu1zxcbM8I0upSFmu
-	6kXelSca/15V+h7Y3v/OZv91dX27c+WMSqc12sK2PbFuj//KPiHoRNdzp7yYYz+2r7BMnJRm
-	krfxtF1xwhyO+NjbG1OEtXg4E03eLZT285xZ7rukSTVMiaU4I9FQi7moOBEAVJv1WQwDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 3 Jul 2014 22:45:04 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2551:2553:2559:2562:2693:2828:2895:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3874:4321:4605:5007:7576:7652:10004:10400:10848:11658:11914:12043:12050:12517:12519:12740:13069:13095:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: toad74_8310fdb75863e
+X-Filterd-Recvd-Size: 2391
+Message-ID: <1404441898.6384.7.camel@joe-AO725>
+Subject: Re: FW: [PATCH 04/16] MAINTAINERS: Update clk/sirf patterns
+From: Joe Perches <joe@perches.com>
+To: Barry Song <21cnbao@gmail.com>
+Cc: Barry Song <Barry.Song@csr.com>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+Date: Thu, 03 Jul 2014 19:44:58 -0700
+In-Reply-To: <CAGsJ_4wkWcczu=EN=ZeKCS_++D2aH3nWxdC_oion+j6au=idCA@mail.gmail.com>
+References: <cover.1404425176.git.joe@perches.com>
+	 <32eedc96dfe8761925d0663e50cd29aaac32e9af.1404425176.git.joe@perches.com>
+	 <5EB3BFCD089AD643B9BB63439F5FD5E9012BF6F220@SHAASIEXM01.ASIA.ROOT.PRI>
+	 <CAGsJ_4wkWcczu=EN=ZeKCS_++D2aH3nWxdC_oion+j6au=idCA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 2014-07-04 at 09:33 +0800, Barry Song wrote:
+> >> -----Original Message-----
+> >> From: Joe Perches [mailto:joe@perches.com]
+> >> Sent: Friday, July 04, 2014 6:08 AM
+[]
+> >> commit 7bf21bc81f28 ("clk: sirf: re-arch to make the codes support both
+> >> prima2 and atlas6") moved the files, update the patterns.
+[]
+> >> diff --git a/MAINTAINERS b/MAINTAINERS
+[]
+> >> @@ -894,7 +894,7 @@ L:        linux-arm-kernel@lists.infradead.org
+> >> (moderated for non-subscribers)
+> >>  T:   git git://git.kernel.org/pub/scm/linux/kernel/git/baohua/linux.git
+> >>  S:   Maintained
+> >>  F:   arch/arm/mach-prima2/
+> >> -F:   drivers/clk/clk-prima2.c
+> >> +F:   drivers/clk/sirf/
+> 
+> has "N:   [^a-z]sirf" included this?
 
-just use the MMC_CAP2_SDIO_IRQ_NOTHREAD?
+Kinda.  From MAINTAINERS:
 
-if (!err && host->sdio_irq && !(host->quirks & MMC_CAP2_SDIO_IRQ_NOTHREAD))
-	wake_up_process(host->sdio_irq_thread);
+	N: Files and directories with regex patterns.
+	   N:	[^a-z]tegra	all files whose path contains the word tegra
+	   One pattern per line.  Multiple N: lines acceptable.
+	   scripts/get_maintainer.pl has different behavior for files that
+	   match F: pattern and matches of N: patterns.  By default,
+	   get_maintainer will not look at git log history when an F: pattern
+	   match occurs.  When an N: match occurs, git log history is used
+	   to also notify the people that have git commit signatures.
 
-I didn't test this..but i believe that it will be fixed.
-
-Best Regards,
-Jaehoon Chung
-
-On 07/04/2014 12:47 AM, Fu, Zhonghui wrote:
-> 
-> Hi, all
-> 
-> The statement "mmc->caps2 |= MMC_CAP2_SDIO_IRQ_NOTHREAD;" is added in "sdhci_add_host" function in host/sdhci.c file. In some cases, this will make  "host->sdio_irq_thread" a NULL pointer in "mmc_sdio_resume" functon of core/sdio.c file and lead to resume failure. Could you please give me some advice how to fix this bug?
-> 
-> 
-> 
-> Thanks,
-> Zhonghui
-> 
-> 
-> 
-> 
-> 
-> 
 
