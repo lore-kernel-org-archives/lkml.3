@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760001AbaGDRuE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 13:50:04 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:48632 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759696AbaGDRtM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759672AbaGDRtM (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 4 Jul 2014 13:49:12 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-cf-53b6e90c0c0f
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:14618 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759402AbaGDRtB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 13:49:01 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-27-53b6e908091d
 From: Tomasz Figa <t.figa@samsung.com>
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -17,44 +17,55 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Mark Brown <broonie@kernel.org>,
         =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
         Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [PATCH 14/19] ARM: s5pv210: Register cpufreq platform device
-Date: Fri, 04 Jul 2014 19:48:14 +0200
-Message-id: <1404496099-26708-15-git-send-email-t.figa@samsung.com>
+Subject: [PATCH 04/19] serial: samsung: Remove support for legacy clock code
+Date: Fri, 04 Jul 2014 19:48:04 +0200
+Message-id: <1404496099-26708-5-git-send-email-t.figa@samsung.com>
 X-Mailer: git-send-email 1.9.3
 In-reply-to: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
 References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t/xy7o8L7cFGxz8pG7xd9IxdoupD5+w
-	Wfx/9JrVonfBVTaLTY+vsVpc3jWHzWLG+X1MFmuP3GW3OHX9M5vFql1/GB24PH7/msTosXPW
-	XXaPTas62Tw2L6n3uHKiidWjb8sqRo/t1+Yxe3zeJBfAEcVlk5Kak1mWWqRvl8CVsf/0cfaC
-	fSwVM8+vZGtgfMncxcjJISFgInHp9zdGCFtM4sK99WxdjFwcQgJLGSX+zJvCDuH0MUnMfHWL
-	CaSKTUBN4nPDIzYQW0RAVeJz2wKgIg4OZoHbTBKtwiBhYQFXiYtfVrKA2CxAJbePXASzeQWc
-	Jc5PnMoOsUxOonfbG7AjOIHiE9ddABsvJOAk8ef/fJYJjLwLGBlWMYqmliYXFCel5xrpFSfm
-	Fpfmpesl5+duYoSE49cdjEuPWR1iFOBgVOLhbWjZFizEmlhWXJl7iFGCg1lJhPfPKqAQb0pi
-	ZVVqUX58UWlOavEhRiYOTqkGxkkdr6U3JQioHlTi4UrNmfwpSNxbakear8SDvZ29VYcstk6e
-	fFVN9vCTCxIP+uIV71ox3j3LnMEcc1k7f2J38TdxQ9GAxD0LTC6ZTc6c5vJ+TkvjFPOt017/
-	nvBkcvnzs5kzIxYoNmYYZOxUzpwktDoi27eVXVYm+v8Pn13+GZOElx+OMyz+o8RSnJFoqMVc
-	VJwIAM9Q3AMlAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t/xy7ocL7cFG0xv4bX4O+kYu8XUh0/Y
+	LP4/es1q0bvgKpvFpsfXWC0u75rDZjHj/D4mi7VH7rJbnLr+mc1i1a4/jA5cHr9/TWL02Dnr
+	LrvHplWdbB6bl9R7XDnRxOrRt2UVo8f2a/OYPT5vkgvgiOKySUnNySxLLdK3S+DKeHd6LXPB
+	AvaKWS9msDQwTmHrYuTkkBAwkZjTt5kdwhaTuHBvPVCci0NIYCmjxKN/7ewQTh+TxIc/N8A6
+	2ATUJD43PAKzRQRUJT63LQAq4uBgFrjNJNEqDBIWFvCReN16DGwoC1DJ82OHwcp5BZwkbjbu
+	ZoJYJifRu+0NM4jNKeAsMXHdBbC4EFDNn//zWSYw8i5gZFjFKJpamlxQnJSea6hXnJhbXJqX
+	rpecn7uJERKOX3YwLj5mdYhRgINRiYe3ccWGYCHWxLLiytxDjBIczEoivH9WbQsW4k1JrKxK
+	LcqPLyrNSS0+xMjEwSnVwCjxxWPvXXefs4+P8TG2r1yhc+b/I7UdZXNZd0/stp93Jei/tk3/
+	jT18wh3J669Gn7HcZ2CzpsGnboX8Cd8jl3Kdg6ZfuFB68U3XdrM56tfVGopuiq9rO2HxOCTU
+	rLbF7XLAN0U2o6dyTr6ZppsEPhv+4Obv/fak5U5Me823tYtM1ZjNJZVnbVNiKc5INNRiLipO
+	BAD8Or/CJQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
----
- arch/arm/mach-s5pv210/s5pv210.c | 1 +
- 1 file changed, 1 insertion(+)
+All Samsung platforms are now using the Common Clock Framework and the
+legacy clock code is being removed, so remove related dead code from
+samsung-serial driver as well.
 
-diff --git a/arch/arm/mach-s5pv210/s5pv210.c b/arch/arm/mach-s5pv210/s5pv210.c
-index 35db1ce..53feff3 100644
---- a/arch/arm/mach-s5pv210/s5pv210.c
-+++ b/arch/arm/mach-s5pv210/s5pv210.c
-@@ -59,6 +59,7 @@ static void s5pv210_dt_restart(enum reboot_mode mode, const char *cmd)
+Reported-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org> (maintainer:SERIAL DRIVERS)
+Cc: Jiri Slaby <jslaby@suse.cz> (supporter:TTY LAYER)
+Cc: linux-serial@vger.kernel.org (open list:SERIAL DRIVERS)
+---
+ drivers/tty/serial/samsung.c | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
+index 36c7747..cae8ebd 100644
+--- a/drivers/tty/serial/samsung.c
++++ b/drivers/tty/serial/samsung.c
+@@ -47,10 +47,6 @@
  
- static void __init s5pv210_dt_init_late(void)
- {
-+	platform_device_register_simple("s5pv210-cpufreq", -1, NULL, 0);
- 	s5pv210_pm_init();
- }
+ #include <asm/irq.h>
  
+-#ifdef CONFIG_SAMSUNG_CLOCK
+-#include <plat/clock.h>
+-#endif
+-
+ #include "samsung.h"
+ 
+ #if	defined(CONFIG_SERIAL_SAMSUNG_DEBUG) &&	\
 -- 
 1.9.3
 
