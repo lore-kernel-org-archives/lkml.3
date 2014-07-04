@@ -1,198 +1,378 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964786AbaGDKNV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 06:13:21 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:32886 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932194AbaGDKNP (ORCPT
+	id S1757294AbaGDKND (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 06:13:03 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:64396 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729AbaGDKM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 06:13:15 -0400
-Date: Fri, 4 Jul 2014 13:13:10 +0300
-From: Gleb Natapov <gleb@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: mtosatti@redhat.com, kvm@vger.kernel.org, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, guz.fnst@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] kvm, mem-hotplug: Update apic access page when it is
- migrated.
-Message-ID: <20140704101310.GE4399@minantech.com>
-References: <1404291637-15048-1-git-send-email-tangchen@cn.fujitsu.com>
- <1404291637-15048-5-git-send-email-tangchen@cn.fujitsu.com>
- <20140703135507.GM18167@minantech.com>
- <53B60EF1.6030307@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B60EF1.6030307@cn.fujitsu.com>
+	Fri, 4 Jul 2014 06:12:58 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-c4-53b67e273ff7
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Anton Vorontsov <anton@enomsg.org>
+Subject: [PATCH v3 1/6] charger: max14577: Add support for MAX77836 charger
+Date: Fri, 04 Jul 2014 12:12:40 +0200
+Message-id: <1404468765-10818-2-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1404468765-10818-1-git-send-email-k.kozlowski@samsung.com>
+References: <1404468765-10818-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsVy+t/xK7rqdduCDd4cVbE4uFXTYuOM9awW
+	Ux8+YbOY9OQ9s8XElZOZLfrfLGS1OPdqJaPF6xeGFmeb3rBb3P96lNHi25UOJovN3zvYLC7v
+	msNmsfbIXXaLpdcvMllMmL6WxaJ17xF2i9PdrA5CHmvmrWH0uNzXy+Qxof8To8fOWXfZPVYu
+	/8LmsXmFlsemVZ1sHneu7WHzmHcy0KNvyypGj8+b5AK4o7hsUlJzMstSi/TtErgyjj8MK/iR
+	UfF4kXADY19kFyMnh4SAicTF/tfMELaYxIV769m6GLk4hASWMkq8P32SCcLpY5Lo272CDaSK
+	TcBYYvPyJWBVIgLTGCUWb5jICOIwC+xhkTi9+QdYlbCAt8SMpRNYQGwWAVWJP9fegu3gFXCX
+	mHSigQ1in5zEyWOTWUFsTgEPiRVtxxhBbCGgmkct31gnMPIuYGRYxSiaWppcUJyUnmuoV5yY
+	W1yal66XnJ+7iRES9l92MC4+ZnWIUYCDUYmHt3HFhmAh1sSy4srcQ4wSHMxKIrxvq7cFC/Gm
+	JFZWpRblxxeV5qQWH2Jk4uCUamCUXcXJ9vLNnmabgDncq9LVxBKvm017UGysuKX16IO3p//e
+	vKea7NXWYaUiYbhESiLNZJbcRye//qN1DzNqpc9tUr2WpBT59pbdq70/qtkNW2pqi8slZG7V
+	S0VYnm5vKdfpDLsmFx120ZLLeHG5y2ql8sceHqV/i9fLTe6TWPeJSTzO/3PMDSWW4oxEQy3m
+	ouJEAGDBAdpZAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04, 2014 at 10:18:25AM +0800, Tang Chen wrote:
-> Hi Gleb,
-> 
-> Thanks for the advices. Please see below.
-> 
-> On 07/03/2014 09:55 PM, Gleb Natapov wrote:
-> ......
-> >>@@ -575,6 +575,7 @@ struct kvm_arch {
-> >>
-> >>  	unsigned int tss_addr;
-> >>  	struct page *apic_access_page;
-> >>+	bool apic_access_page_migrated;
-> >Better have two requests KVM_REQ_APIC_PAGE_MAP, KVM_REQ_APIC_PAGE_UNMAP IMO.
-> >
-> 
-> vcpu->requests is an unsigned long, and we can only has 64 requests. Isn't
-> adding two requests for apic page and another similar two for ept page too
-> many ?  Not sure.
-> 
-Lets not worry about that for now. May be it is enough to have only one
-KVM_REQ_APIC_PAGE_RELOAD request set apic_access_page to a new value
-before sending the request and reload whatever is in apic_access_page
-during KVM_REQ_APIC_PAGE_RELOAD processing. Or we can even reload
-apic_access_page as part of mmu reload and reuse KVM_REQ_MMU_RELOAD.
+Add support for MAX77836 charger to the max14577 driver. The MAX77836
+charger is almost the same as 14577 model except:
+ - No dead-battery detection;
+ - Support for special charger (like in MAX77693);
+ - Support for DX over-voltage protection (like in MAX77693);
+ - Lower values of charging current (two times lower current for
+   slow/fast charge, much lower EOC current);
+ - Slightly different values in ChgTyp field of STATUS2 register. On
+   MAX14577 0x6 is reserved and 0x7 dead battery. On the MAX77836 the
+   0x6 means special charger and 0x7 is reserved. Regardless of these
+   differences the driver maps them to one enum max14577_muic_charger_type.
 
-> >>
-> >>  	gpa_t wall_clock;
-> >>
-> >>@@ -739,6 +740,7 @@ struct kvm_x86_ops {
-> >>  	void (*hwapic_isr_update)(struct kvm *kvm, int isr);
-> >>  	void (*load_eoi_exitmap)(struct kvm_vcpu *vcpu, u64 *eoi_exit_bitmap);
-> >>  	void (*set_virtual_x2apic_mode)(struct kvm_vcpu *vcpu, bool set);
-> >>+	void (*set_apic_access_page_addr)(struct kvm *kvm, hpa_t hpa);
-> >>  	void (*deliver_posted_interrupt)(struct kvm_vcpu *vcpu, int vector);
-> >>  	void (*sync_pir_to_irr)(struct kvm_vcpu *vcpu);
-> >>  	int (*set_tss_addr)(struct kvm *kvm, unsigned int addr);
-> >>diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> >>index c0d72f6..a655444 100644
-> >>--- a/arch/x86/kvm/mmu.c
-> >>+++ b/arch/x86/kvm/mmu.c
-> >>@@ -3436,6 +3436,21 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
-> >>  		kvm_make_request(KVM_REQ_MIGRATE_EPT, vcpu);
-> >>  	}
-> >>
-> >>+	if (gpa == VMX_APIC_ACCESS_PAGE_ADDR&&
-> >>+	    vcpu->kvm->arch.apic_access_page_migrated) {
-> >Why check arch.apic_access_page_migrated here? Isn't it enough that the fault is on apic
-> >address.
-> >
-> 
-> True. It's enough. Followed.
-> 
-> >>+		int i;
-> >>+
-> >>+		vcpu->kvm->arch.apic_access_page_migrated = false;
-> >>+
-> >>+		/*
-> >>+		 * We need update APIC_ACCESS_ADDR pointer in each VMCS of
-> >>+		 * all the online vcpus.
-> >>+		 */
-> >>+		for (i = 0; i<  atomic_read(&vcpu->kvm->online_vcpus); i++)
-> >>+			kvm_make_request(KVM_REQ_MIGRATE_APIC,
-> >>+					 vcpu->kvm->vcpus[i]);
-> >make_all_cpus_request(). You need to kick all vcpus from a guest mode.
-> >
-> 
-> OK, followed. But would you please explain more about this. :)
-> Why need to kick all vcpus from guest mode when making request to all vcpus
-> ?
-Because if you do not force other vcpus from a guest mode they will not reload
-apic_access_page value till next vmexit, but since EPT page table now has a mapping
-for 0xfee00000 access to this address will not cause EPT violation and will not cause
-apic exit either.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Anton Vorontsov <anton@enomsg.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/power/Kconfig                |  4 +-
+ drivers/power/max14577_charger.c     | 77 +++++++++++++++++++++++++++++-------
+ include/linux/mfd/max14577-private.h | 54 ++++++++++++++++++-------
+ 3 files changed, 104 insertions(+), 31 deletions(-)
 
-> 
-> >>+	}
-> >>+
-> >>  	spin_unlock(&vcpu->kvm->mmu_lock);
-> >>
-> >>  	return r;
-> >>diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> >>index c336cb3..abc152f 100644
-> >>--- a/arch/x86/kvm/vmx.c
-> >>+++ b/arch/x86/kvm/vmx.c
-> >>@@ -3988,7 +3988,7 @@ static int alloc_apic_access_page(struct kvm *kvm)
-> >>  	if (r)
-> >>  		goto out;
-> >>
-> >>-	page = gfn_to_page(kvm, VMX_APIC_ACCESS_PAGE_ADDR>>  PAGE_SHIFT);
-> >>+	page = gfn_to_page_no_pin(kvm, VMX_APIC_ACCESS_PAGE_ADDR>>  PAGE_SHIFT);
-> >>  	if (is_error_page(page)) {
-> >>  		r = -EFAULT;
-> >>  		goto out;
-> >>@@ -7075,6 +7075,12 @@ static void vmx_set_virtual_x2apic_mode(struct kvm_vcpu *vcpu, bool set)
-> >>  	vmx_set_msr_bitmap(vcpu);
-> >>  }
-> >>
-> >>+static void vmx_set_apic_access_page_addr(struct kvm *kvm, hpa_t hpa)
-> >>+{
-> >>+	if (vm_need_virtualize_apic_accesses(kvm))
-> >This shouldn't even been called if apic access page is not supported. Nor
-> >mmu_notifier path neither tdp_page_fault path should ever see 0xfee00000
-> >address. BUG() is more appropriate here.
-> >
-> 
-> I don't quite understand. Why calling this function here will leed to bug ?
-> (Sorry, I'm not quite understand the internal of KVM. Please help.)
-I didn't say that calling this function here will lead to a bug. I am saying that
-if vm_need_virtualize_apic_accesses() is false this function should not be called
-at all, so this check is redundant.
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index ba6975123071..94086a5238c6 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -318,11 +318,11 @@ config CHARGER_MANAGER
+           with help of suspend_again support.
+ 
+ config CHARGER_MAX14577
+-	tristate "Maxim MAX14577 MUIC battery charger driver"
++	tristate "Maxim MAX14577/77836 battery charger driver"
+ 	depends on MFD_MAX14577
+ 	help
+ 	  Say Y to enable support for the battery charger control sysfs and
+-	  platform data of MAX14577 MUICs.
++	  platform data of MAX14577/77836 MUICs.
+ 
+ config CHARGER_MAX8997
+ 	tristate "Maxim MAX8997/MAX8966 PMIC battery charger driver"
+diff --git a/drivers/power/max14577_charger.c b/drivers/power/max14577_charger.c
+index fad2a75b3604..19c8f42abf24 100644
+--- a/drivers/power/max14577_charger.c
++++ b/drivers/power/max14577_charger.c
+@@ -1,7 +1,7 @@
+ /*
+- * Battery charger driver for the Maxim 14577
++ * max14577_charger.c - Battery charger driver for the Maxim 14577/77836
+  *
+- * Copyright (C) 2013 Samsung Electronics
++ * Copyright (C) 2013,2014 Samsung Electronics
+  * Krzysztof Kozlowski <k.kozlowski@samsung.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+@@ -25,10 +25,35 @@ struct max14577_charger {
+ 	struct max14577	*max14577;
+ 	struct power_supply	charger;
+ 
+-	unsigned int	charging_state;
+-	unsigned int	battery_state;
++	unsigned int		charging_state;
++	unsigned int		battery_state;
+ };
+ 
++/*
++ * Helper function for mapping values of STATUS2/CHGTYP register on max14577
++ * and max77836 chipsets to enum maxim_muic_charger_type.
++ */
++static enum max14577_muic_charger_type maxim_get_charger_type(
++		enum maxim_device_type dev_type, u8 val) {
++	switch (val) {
++	case MAX14577_CHARGER_TYPE_NONE:
++	case MAX14577_CHARGER_TYPE_USB:
++	case MAX14577_CHARGER_TYPE_DOWNSTREAM_PORT:
++	case MAX14577_CHARGER_TYPE_DEDICATED_CHG:
++	case MAX14577_CHARGER_TYPE_SPECIAL_500MA:
++	case MAX14577_CHARGER_TYPE_SPECIAL_1A:
++		return val;
++	case MAX14577_CHARGER_TYPE_DEAD_BATTERY:
++	case MAX14577_CHARGER_TYPE_RESERVED:
++		if (dev_type == MAXIM_DEVICE_TYPE_MAX77836)
++			val |= 0x8;
++		return val;
++	default:
++		WARN_ONCE(1, "max14577: Unsupported chgtyp register value 0x%02x", val);
++		return val;
++	}
++}
++
+ static int max14577_get_charger_state(struct max14577_charger *chg)
+ {
+ 	struct regmap *rmap = chg->max14577->regmap;
+@@ -89,19 +114,23 @@ static int max14577_get_online(struct max14577_charger *chg)
+ {
+ 	struct regmap *rmap = chg->max14577->regmap;
+ 	u8 reg_data;
++	enum max14577_muic_charger_type chg_type;
+ 
+ 	max14577_read_reg(rmap, MAX14577_MUIC_REG_STATUS2, &reg_data);
+ 	reg_data = ((reg_data & STATUS2_CHGTYP_MASK) >> STATUS2_CHGTYP_SHIFT);
+-	switch (reg_data) {
++	chg_type = maxim_get_charger_type(chg->max14577->dev_type, reg_data);
++	switch (chg_type) {
+ 	case MAX14577_CHARGER_TYPE_USB:
+ 	case MAX14577_CHARGER_TYPE_DEDICATED_CHG:
+ 	case MAX14577_CHARGER_TYPE_SPECIAL_500MA:
+ 	case MAX14577_CHARGER_TYPE_SPECIAL_1A:
+ 	case MAX14577_CHARGER_TYPE_DEAD_BATTERY:
++	case MAX77836_CHARGER_TYPE_SPECIAL_BIAS:
+ 		return 1;
+ 	case MAX14577_CHARGER_TYPE_NONE:
+ 	case MAX14577_CHARGER_TYPE_DOWNSTREAM_PORT:
+ 	case MAX14577_CHARGER_TYPE_RESERVED:
++	case MAX77836_CHARGER_TYPE_RESERVED:
+ 	default:
+ 		return 0;
+ 	}
+@@ -118,10 +147,12 @@ static int max14577_get_battery_health(struct max14577_charger *chg)
+ 	struct regmap *rmap = chg->max14577->regmap;
+ 	int state = POWER_SUPPLY_HEALTH_GOOD;
+ 	u8 reg_data;
++	enum max14577_muic_charger_type chg_type;
+ 
+ 	max14577_read_reg(rmap, MAX14577_MUIC_REG_STATUS2, &reg_data);
+ 	reg_data = ((reg_data & STATUS2_CHGTYP_MASK) >> STATUS2_CHGTYP_SHIFT);
+-	if (reg_data == MAX14577_CHARGER_TYPE_DEAD_BATTERY) {
++	chg_type = maxim_get_charger_type(chg->max14577->dev_type, reg_data);
++	if (chg_type == MAX14577_CHARGER_TYPE_DEAD_BATTERY) {
+ 		state = POWER_SUPPLY_HEALTH_DEAD;
+ 		goto state_set;
+ 	}
+@@ -167,7 +198,7 @@ static void max14577_charger_reg_init(struct max14577_charger *chg)
+ 			CDETCTRL1_CHGDETEN_MASK | CDETCTRL1_CHGTYPMAN_MASK,
+ 			reg_data);
+ 
+-	/* Battery Fast-Charge Timer, from SM-V700: 6hrs */
++	/* Battery Fast-Charge Timer, set to: 6hrs */
+ 	reg_data = 0x3 << CHGCTRL1_TCHW_SHIFT;
+ 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL1, reg_data);
+ 
+@@ -179,19 +210,22 @@ static void max14577_charger_reg_init(struct max14577_charger *chg)
+ 	reg_data |= 0x1 << CHGCTRL2_MBCHOSTEN_SHIFT;
+ 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL2, reg_data);
+ 
+-	/* Battery-Charger Constant Voltage (CV) Mode, from SM-V700: 4.35V */
++	/* Battery-Charger Constant Voltage (CV) Mode, set to: 4.35V */
+ 	reg_data = 0xf << CHGCTRL3_MBCCVWRC_SHIFT;
+ 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL3, reg_data);
+ 
+ 	/*
+-	 * Fast Battery-Charge Current Low, default 200-950mA
+-	 * Fast Battery-Charge Current High, from SM-V700: 450mA
++	 * Fast Battery-Charge Current Low,
++	 * default 200-950mA (max14577) / 100-475mA (max77836)
++	 *
++	 * Fast Battery-Charge Current High,
++	 * set to 450mA (max14577) / 225mA (max77836)
+ 	 */
+ 	reg_data = 0x1 << CHGCTRL4_MBCICHWRCL_SHIFT;
+ 	reg_data |= 0x5 << CHGCTRL4_MBCICHWRCH_SHIFT;
+ 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL4, reg_data);
+ 
+-	/* End-of-Charge Current, from SM-V700: 50mA */
++	/* End-of-Charge Current, set to 50mA (max14577) / 7.5mA (max77836) */
+ 	reg_data = 0x0 << CHGCTRL5_EOCS_SHIFT;
+ 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL5, reg_data);
+ 
+@@ -199,7 +233,7 @@ static void max14577_charger_reg_init(struct max14577_charger *chg)
+ 	reg_data = 0x0 << CHGCTRL6_AUTOSTOP_SHIFT;
+ 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL6, reg_data);
+ 
+-	/* Overvoltage-Protection Threshold, from SM-V700: 6.5V */
++	/* Overvoltage-Protection Threshold, set to 6.5V */
+ 	reg_data = 0x2 << CHGCTRL7_OTPCGHCVS_SHIFT;
+ 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL7, reg_data);
+ }
+@@ -215,7 +249,11 @@ static enum power_supply_property max14577_charger_props[] = {
+ 	POWER_SUPPLY_PROP_MANUFACTURER,
+ };
+ 
+-static const char *model_name = "MAX14577";
++static const char * const model_names[] = {
++	[MAXIM_DEVICE_TYPE_UNKNOWN]	= "MAX14577-like",
++	[MAXIM_DEVICE_TYPE_MAX14577]	= "MAX14577",
++	[MAXIM_DEVICE_TYPE_MAX77836]	= "MAX77836",
++};
+ static const char *manufacturer = "Maxim Integrated";
+ 
+ static int max14577_charger_get_property(struct power_supply *psy,
+@@ -244,7 +282,8 @@ static int max14577_charger_get_property(struct power_supply *psy,
+ 		val->intval = max14577_get_online(chg);
+ 		break;
+ 	case POWER_SUPPLY_PROP_MODEL_NAME:
+-		val->strval = model_name;
++		BUILD_BUG_ON(ARRAY_SIZE(model_names) != MAXIM_DEVICE_TYPE_NUM);
++		val->strval = model_names[chg->max14577->dev_type];
+ 		break;
+ 	case POWER_SUPPLY_PROP_MANUFACTURER:
+ 		val->strval = manufacturer;
+@@ -296,6 +335,13 @@ static int max14577_charger_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct platform_device_id max14577_charger_id[] = {
++	{ "max14577-charger", MAXIM_DEVICE_TYPE_MAX14577, },
++	{ "max77836-charger", MAXIM_DEVICE_TYPE_MAX77836, },
++	{ }
++};
++MODULE_DEVICE_TABLE(platform, max14577_regulator_id);
++
+ static struct platform_driver max14577_charger_driver = {
+ 	.driver = {
+ 		.owner	= THIS_MODULE,
+@@ -303,9 +349,10 @@ static struct platform_driver max14577_charger_driver = {
+ 	},
+ 	.probe		= max14577_charger_probe,
+ 	.remove		= max14577_charger_remove,
++	.id_table	= max14577_charger_id,
+ };
+ module_platform_driver(max14577_charger_driver);
+ 
+ MODULE_AUTHOR("Krzysztof Kozlowski <k.kozlowski@samsung.com>");
+-MODULE_DESCRIPTION("MAXIM 14577 charger driver");
++MODULE_DESCRIPTION("Maxim 14577/77836 charger driver");
+ MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/max14577-private.h b/include/linux/mfd/max14577-private.h
+index 499253604026..d6f321699b89 100644
+--- a/include/linux/mfd/max14577-private.h
++++ b/include/linux/mfd/max14577-private.h
+@@ -72,15 +72,33 @@ enum max14577_muic_reg {
+ 	MAX14577_MUIC_REG_END,
+ };
+ 
++/*
++ * Combined charger types for max14577 and max77836.
++ *
++ * On max14577 three lower bits map to STATUS2/CHGTYP field.
++ * However the max77836 has different two last values of STATUS2/CHGTYP.
++ * To indicate the difference enum has two additional values for max77836.
++ * These values are just a register value bitwise OR with 0x8.
++ */
+ enum max14577_muic_charger_type {
+-	MAX14577_CHARGER_TYPE_NONE = 0,
+-	MAX14577_CHARGER_TYPE_USB,
+-	MAX14577_CHARGER_TYPE_DOWNSTREAM_PORT,
+-	MAX14577_CHARGER_TYPE_DEDICATED_CHG,
+-	MAX14577_CHARGER_TYPE_SPECIAL_500MA,
+-	MAX14577_CHARGER_TYPE_SPECIAL_1A,
+-	MAX14577_CHARGER_TYPE_RESERVED,
+-	MAX14577_CHARGER_TYPE_DEAD_BATTERY = 7,
++	MAX14577_CHARGER_TYPE_NONE		= 0x0,
++	MAX14577_CHARGER_TYPE_USB		= 0x1,
++	MAX14577_CHARGER_TYPE_DOWNSTREAM_PORT	= 0x2,
++	MAX14577_CHARGER_TYPE_DEDICATED_CHG	= 0x3,
++	MAX14577_CHARGER_TYPE_SPECIAL_500MA	= 0x4,
++	/* Special 1A or 2A charger */
++	MAX14577_CHARGER_TYPE_SPECIAL_1A	= 0x5,
++	/* max14577: reserved, used on max77836 */
++	MAX14577_CHARGER_TYPE_RESERVED		= 0x6,
++	/* max14577: dead-battery charing with maximum current 100mA */
++	MAX14577_CHARGER_TYPE_DEAD_BATTERY	= 0x7,
++	/*
++	 * max77836: special charger (bias on D+/D-),
++	 * matches register value of 0x6
++	 */
++	MAX77836_CHARGER_TYPE_SPECIAL_BIAS	= 0xe,
++	/* max77836: reserved, register value 0x7 */
++	MAX77836_CHARGER_TYPE_RESERVED		= 0xf,
+ };
+ 
+ /* MAX14577 interrupts */
+@@ -121,13 +139,15 @@ enum max14577_muic_charger_type {
+ #define STATUS2_CHGTYP_SHIFT		0
+ #define STATUS2_CHGDETRUN_SHIFT		3
+ #define STATUS2_DCDTMR_SHIFT		4
+-#define STATUS2_DBCHG_SHIFT		5
++#define MAX14577_STATUS2_DBCHG_SHIFT	5
++#define MAX77836_STATUS2_DXOVP_SHIFT	5
+ #define STATUS2_VBVOLT_SHIFT		6
+ #define MAX77836_STATUS2_VIDRM_SHIFT	7
+ #define STATUS2_CHGTYP_MASK		(0x7 << STATUS2_CHGTYP_SHIFT)
+ #define STATUS2_CHGDETRUN_MASK		BIT(STATUS2_CHGDETRUN_SHIFT)
+ #define STATUS2_DCDTMR_MASK		BIT(STATUS2_DCDTMR_SHIFT)
+-#define STATUS2_DBCHG_MASK		BIT(STATUS2_DBCHG_SHIFT)
++#define MAX14577_STATUS2_DBCHG_MASK	BIT(MAX14577_STATUS2_DBCHG_SHIFT)
++#define MAX77836_STATUS2_DXOVP_MASK	BIT(MAX77836_STATUS2_DXOVP_SHIFT)
+ #define STATUS2_VBVOLT_MASK		BIT(STATUS2_VBVOLT_SHIFT)
+ #define MAX77836_STATUS2_VIDRM_MASK	BIT(MAX77836_STATUS2_VIDRM_SHIFT)
+ 
+@@ -177,9 +197,11 @@ enum max14577_muic_charger_type {
+ #define CTRL3_JIGSET_SHIFT		0
+ #define CTRL3_BOOTSET_SHIFT		2
+ #define CTRL3_ADCDBSET_SHIFT		4
++#define CTRL3_WBTH_SHIFT		6
+ #define CTRL3_JIGSET_MASK		(0x3 << CTRL3_JIGSET_SHIFT)
+ #define CTRL3_BOOTSET_MASK		(0x3 << CTRL3_BOOTSET_SHIFT)
+ #define CTRL3_ADCDBSET_MASK		(0x3 << CTRL3_ADCDBSET_SHIFT)
++#define CTRL3_WBTH_MASK			(0x3 << CTRL3_WBTH_SHIFT)
+ 
+ /* Slave addr = 0x4A: Charger */
+ enum max14577_charger_reg {
+@@ -210,16 +232,20 @@ enum max14577_charger_reg {
+ #define CDETCTRL1_CHGTYPMAN_SHIFT	1
+ #define CDETCTRL1_DCDEN_SHIFT		2
+ #define CDETCTRL1_DCD2SCT_SHIFT		3
+-#define CDETCTRL1_DCHKTM_SHIFT		4
+-#define CDETCTRL1_DBEXIT_SHIFT		5
++#define MAX14577_CDETCTRL1_DCHKTM_SHIFT	4
++#define MAX77836_CDETCTRL1_CDLY_SHIFT	4
++#define MAX14577_CDETCTRL1_DBEXIT_SHIFT	5
++#define MAX77836_CDETCTRL1_DCDCPL_SHIFT	5
+ #define CDETCTRL1_DBIDLE_SHIFT		6
+ #define CDETCTRL1_CDPDET_SHIFT		7
+ #define CDETCTRL1_CHGDETEN_MASK		BIT(CDETCTRL1_CHGDETEN_SHIFT)
+ #define CDETCTRL1_CHGTYPMAN_MASK	BIT(CDETCTRL1_CHGTYPMAN_SHIFT)
+ #define CDETCTRL1_DCDEN_MASK		BIT(CDETCTRL1_DCDEN_SHIFT)
+ #define CDETCTRL1_DCD2SCT_MASK		BIT(CDETCTRL1_DCD2SCT_SHIFT)
+-#define CDETCTRL1_DCHKTM_MASK		BIT(CDETCTRL1_DCHKTM_SHIFT)
+-#define CDETCTRL1_DBEXIT_MASK		BIT(CDETCTRL1_DBEXIT_SHIFT)
++#define MAX14577_CDETCTRL1_DCHKTM_MASK	BIT(MAX14577_CDETCTRL1_DCHKTM_SHIFT)
++#define MAX77836_CDETCTRL1_CDDLY_MASK	BIT(MAX77836_CDETCTRL1_CDDLY_SHIFT)
++#define MAX14577_CDETCTRL1_DBEXIT_MASK	BIT(MAX14577_CDETCTRL1_DBEXIT_SHIFT)
++#define MAX77836_CDETCTRL1_DCDCPL_MASK	BIT(MAX77836_CDETCTRL1_DCDCPL_SHIFT)
+ #define CDETCTRL1_DBIDLE_MASK		BIT(CDETCTRL1_DBIDLE_SHIFT)
+ #define CDETCTRL1_CDPDET_MASK		BIT(CDETCTRL1_CDPDET_SHIFT)
+ 
+-- 
+1.9.1
 
-> 
-> >
-> >>+		vmcs_write64(APIC_ACCESS_ADDR, hpa);
-> >>+}
-> >>+
-> >>  static void vmx_hwapic_isr_update(struct kvm *kvm, int isr)
-> >>  {
-> >>  	u16 status;
-> >>@@ -8846,6 +8852,7 @@ static struct kvm_x86_ops vmx_x86_ops = {
-> >>  	.enable_irq_window = enable_irq_window,
-> >>  	.update_cr8_intercept = update_cr8_intercept,
-> >>  	.set_virtual_x2apic_mode = vmx_set_virtual_x2apic_mode,
-> >>+	.set_apic_access_page_addr = vmx_set_apic_access_page_addr,
-> >svm needs that too.
-> >
-> 
-> OK, will add one for svm.
-> 
-> >>  	.vm_has_apicv = vmx_vm_has_apicv,
-> >>  	.load_eoi_exitmap = vmx_load_eoi_exitmap,
-> >>  	.hwapic_irr_update = vmx_hwapic_irr_update,
-> >>diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> >>index a26524f..14e7174 100644
-> >>--- a/arch/x86/kvm/x86.c
-> >>+++ b/arch/x86/kvm/x86.c
-> >>@@ -5943,6 +5943,24 @@ static void vcpu_migrated_page_update_ept(struct kvm_vcpu *vcpu)
-> >>  	}
-> >>  }
-> >>
-> >>+static void vcpu_migrated_page_update_apic(struct kvm_vcpu *vcpu)
-> >>+{
-> >>+	struct kvm *kvm = vcpu->kvm;
-> >>+
-> >>+	if (kvm->arch.apic_access_page_migrated) {
-> >>+		if (kvm->arch.apic_access_page)
-> >>+			kvm->arch.apic_access_page = pfn_to_page(0);
-> >All vcpus will access apic_access_page without locking here. May be
-> >set kvm->arch.apic_access_page to zero in mmu_notifier and here call
-> >  kvm_x86_ops->set_apic_access_page_addr(kvm, kvm->arch.apic_access_page);
-> >
-> 
-> I'm a little confused. apic access page's phys_addr is stored in vmcs, and
-> I think it will be used by vcpu directly to access the physical page.
-> Setting kvm->arch.apic_access_page to zero will not stop it, right ?
-> 
-Right, kvm->arch.apic_access_page is just a shadow value for whatever is written
-in vmcs. After setting it all vcpus need to update their vmcs values.
-
-> I'm wondering what happens when apic page is migrated, but the vmcs is still
-> holding its old phys_addr before the vcpu request is handled.
-> 
-apic page should not be migrated untill all vpus are forced out of a guest mode and
-instructed to reload new value on a next guest entry. That's what we are trying to
-achieve here.
-
---
-			Gleb.
