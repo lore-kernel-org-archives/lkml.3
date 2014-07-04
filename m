@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760940AbaGDW5V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:57:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57157 "EHLO
+	id S1760924AbaGDW5U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:57:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57161 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030369AbaGDWRN (ORCPT
+	with ESMTP id S1030378AbaGDWRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 Jul 2014 18:17:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Anton Blanchard <anton@samba.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.15 44/66] powerpc/serial: Use saner flags when creating legacy ports
-Date: Fri,  4 Jul 2014 15:14:43 -0700
-Message-Id: <20140704221424.820133197@linuxfoundation.org>
+Subject: [PATCH 3.15 45/66] powerpc: 64bit sendfile is capped at 2GB
+Date: Fri,  4 Jul 2014 15:14:44 -0700
+Message-Id: <20140704221424.860936698@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -28,82 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Anton Blanchard <anton@samba.org>
 
-commit c4cad90f9e9dcb85afc5e75a02ae3522ed077296 upstream.
+commit 5d73320a96fcce80286f1447864c481b5f0b96fa upstream.
 
-We had a mix & match of flags used when creating legacy ports
-depending on where we found them in the device-tree. Among others
-we were missing UPF_SKIP_TEST for some kind of ISA ports which is
-a problem as quite a few UARTs out there don't support the loopback
-test (such as a lot of BMCs).
+commit 8f9c0119d7ba (compat: fs: Generic compat_sys_sendfile
+implementation) changed the PowerPC 64bit sendfile call from
+sys_sendile64 to sys_sendfile.
 
-Let's pick the set of flags used by the SoC code and generalize it
-which means autoconf, no loopback test, irq maybe shared and fixed
-port.
+Unfortunately this broke sendfile of lengths greater than 2G because
+sys_sendfile caps at MAX_NON_LFS. Restore what we had previously which
+fixes the bug.
 
-Sending to stable as the lack of UPF_SKIP_TEST is breaking
-serial on some machines so I want this back into distros
-
+Signed-off-by: Anton Blanchard <anton@samba.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/legacy_serial.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ arch/powerpc/include/asm/systbl.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/legacy_serial.c
-+++ b/arch/powerpc/kernel/legacy_serial.c
-@@ -48,6 +48,9 @@ static struct of_device_id legacy_serial
- static unsigned int legacy_serial_count;
- static int legacy_serial_console = -1;
- 
-+static const upf_t legacy_port_flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST |
-+	UPF_SHARE_IRQ | UPF_FIXED_PORT;
-+
- static unsigned int tsi_serial_in(struct uart_port *p, int offset)
- {
- 	unsigned int tmp;
-@@ -153,8 +156,6 @@ static int __init add_legacy_soc_port(st
- {
- 	u64 addr;
- 	const __be32 *addrp;
--	upf_t flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST | UPF_SHARE_IRQ
--		| UPF_FIXED_PORT;
- 	struct device_node *tsi = of_get_parent(np);
- 
- 	/* We only support ports that have a clock frequency properly
-@@ -185,9 +186,11 @@ static int __init add_legacy_soc_port(st
- 	 * IO port value. It will be fixed up later along with the irq
- 	 */
- 	if (tsi && !strcmp(tsi->type, "tsi-bridge"))
--		return add_legacy_port(np, -1, UPIO_TSI, addr, addr, NO_IRQ, flags, 0);
-+		return add_legacy_port(np, -1, UPIO_TSI, addr, addr,
-+				       NO_IRQ, legacy_port_flags, 0);
- 	else
--		return add_legacy_port(np, -1, UPIO_MEM, addr, addr, NO_IRQ, flags, 0);
-+		return add_legacy_port(np, -1, UPIO_MEM, addr, addr,
-+				       NO_IRQ, legacy_port_flags, 0);
- }
- 
- static int __init add_legacy_isa_port(struct device_node *np,
-@@ -233,7 +236,7 @@ static int __init add_legacy_isa_port(st
- 
- 	/* Add port, irq will be dealt with later */
- 	return add_legacy_port(np, index, UPIO_PORT, be32_to_cpu(reg[1]),
--			       taddr, NO_IRQ, UPF_BOOT_AUTOCONF, 0);
-+			       taddr, NO_IRQ, legacy_port_flags, 0);
- 
- }
- 
-@@ -306,7 +309,7 @@ static int __init add_legacy_pci_port(st
- 	 * IO port value. It will be fixed up later along with the irq
- 	 */
- 	return add_legacy_port(np, index, iotype, base, addr, NO_IRQ,
--			       UPF_BOOT_AUTOCONF, np != pci_dev);
-+			       legacy_port_flags, np != pci_dev);
- }
- #endif
- 
+--- a/arch/powerpc/include/asm/systbl.h
++++ b/arch/powerpc/include/asm/systbl.h
+@@ -190,7 +190,7 @@ SYSCALL_SPU(getcwd)
+ SYSCALL_SPU(capget)
+ SYSCALL_SPU(capset)
+ COMPAT_SYS(sigaltstack)
+-COMPAT_SYS_SPU(sendfile)
++SYSX_SPU(sys_sendfile64,compat_sys_sendfile,sys_sendfile)
+ SYSCALL(ni_syscall)
+ SYSCALL(ni_syscall)
+ PPC_SYS(vfork)
 
 
