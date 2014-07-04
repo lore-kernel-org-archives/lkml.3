@@ -1,341 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760246AbaGDUah (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 16:30:37 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:32959 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107AbaGDUad (ORCPT
+	id S1760249AbaGDUbE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 16:31:04 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:38636 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965070AbaGDUZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 16:30:33 -0400
-Date: Fri, 4 Jul 2014 22:30:27 +0200
-From: Pawel Lebioda <pawel.lebioda89@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: bcm: add missing blank lines after declarations
-Message-ID: <20140704203024.GA11946@ThinkPad>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 4 Jul 2014 16:25:19 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v7 06/24] mfd: max77686: Make error checking consistent
+Date: Fri,  4 Jul 2014 22:24:09 +0200
+Message-Id: <1404505467-26526-7-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <1404505467-26526-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1404505467-26526-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Error checking across the driver is mostly consistent besides
+a few exceptions, so change these exceptions for consistency.
 
-This patch fixes almost all 'missing blank line after declaration'
-warnings reported by checkpatch.pl for drivers/staging/bcm.
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/mfd/max77686.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Regards
-Pawel Lebioda
+diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+index ada4976..87fe52e 100644
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -134,7 +134,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 
+ 	max77686 = devm_kzalloc(&i2c->dev,
+ 				sizeof(struct max77686_dev), GFP_KERNEL);
+-	if (max77686 == NULL)
++	if (!max77686)
+ 		return -ENOMEM;
+ 
+ 	i2c_set_clientdata(i2c, max77686);
+@@ -153,8 +153,8 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 		return ret;
+ 	}
+ 
+-	if (regmap_read(max77686->regmap,
+-			 MAX77686_REG_DEVICE_ID, &data) < 0) {
++	ret = regmap_read(max77686->regmap, MAX77686_REG_DEVICE_ID, &data);
++	if (ret < 0) {
+ 		dev_err(max77686->dev,
+ 			"device not found on this channel (this is not an error)\n");
+ 		return -ENODEV;
+@@ -180,7 +180,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
+ 				  IRQF_SHARED, 0, &max77686_irq_chip,
+ 				  &max77686->irq_data);
+-	if (ret != 0) {
++	if (ret) {
+ 		dev_err(&i2c->dev, "failed to add PMIC irq chip: %d\n", ret);
+ 		goto err_unregister_i2c;
+ 	}
+@@ -188,7 +188,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
+ 				  IRQF_SHARED, 0, &max77686_rtc_irq_chip,
+ 				  &max77686->rtc_irq_data);
+-	if (ret != 0) {
++	if (ret) {
+ 		dev_err(&i2c->dev, "failed to add RTC irq chip: %d\n", ret);
+ 		goto err_del_irqc;
+ 	}
+-- 
+2.0.0.rc2
 
-Signed-off-by: Pawel Lebioda <pawel.lebioda89@gmail.com>
- drivers/staging/bcm/CmHost.c        | 1 +
- drivers/staging/bcm/IPv6Protocol.c  | 6 ++++++
- drivers/staging/bcm/InterfaceDld.c  | 1 +
- drivers/staging/bcm/InterfaceInit.c | 1 +
- drivers/staging/bcm/InterfaceMisc.c | 1 +
- drivers/staging/bcm/InterfaceTx.c   | 2 +-
- drivers/staging/bcm/PHSModule.c     | 1 +
- drivers/staging/bcm/Qos.c           | 9 ++++++++-
- drivers/staging/bcm/Transmit.c      | 1 +
- drivers/staging/bcm/led_control.c   | 4 ++++
- drivers/staging/bcm/nvm.c           | 6 ++++++
- 11 files changed, 31 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/bcm/CmHost.c b/drivers/staging/bcm/CmHost.c
-index 3dbdf0e..adca0ce 100644
---- a/drivers/staging/bcm/CmHost.c
-+++ b/drivers/staging/bcm/CmHost.c
-@@ -972,6 +972,7 @@ static VOID DumpCmControlPacket(PVOID pvBuffer)
- 		pstAddIndication->sfAuthorizedSet.bValid = 1;
- 	for (nIndex = 0; nIndex < nCurClassifierCnt; nIndex++) {
- 		struct bcm_convergence_types *psfCSType = NULL;
-+
- 		psfCSType =  &pstAddIndication->sfAuthorizedSet.cConvergenceSLTypes[nIndex];
- 
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, DUMP_CONTROL, DBG_LVL_ALL, "psfCSType = %p", psfCSType);
-diff --git a/drivers/staging/bcm/IPv6Protocol.c b/drivers/staging/bcm/IPv6Protocol.c
-index cd16067..e013c5a 100644
---- a/drivers/staging/bcm/IPv6Protocol.c
-+++ b/drivers/staging/bcm/IPv6Protocol.c
-@@ -45,6 +45,7 @@ static UCHAR *GetNextIPV6ChainedHeader(UCHAR **ppucPayload,
- 	case IPV6HDR_TYPE_ROUTING:
- 		{
- 			struct bcm_ipv6_routing_hdr *pstIpv6RoutingHeader;
-+
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV6_DBG,
- 					DBG_LVL_ALL, "\nIPv6 Routing Header");
- 			pstIpv6RoutingHeader = (struct bcm_ipv6_routing_hdr *)pucPayloadPtr;
-@@ -66,6 +67,7 @@ static UCHAR *GetNextIPV6ChainedHeader(UCHAR **ppucPayload,
- 		{
- 			struct bcm_ipv6_dest_options_hdr *pstIpv6DestOptsHdr = (struct bcm_ipv6_dest_options_hdr *)pucPayloadPtr;
- 			int nTotalOptions = pstIpv6DestOptsHdr->ucHdrExtLen;
-+
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV6_DBG,
- 					DBG_LVL_ALL,
- 					"\nIPv6 DestOpts Header Header");
-@@ -78,6 +80,7 @@ static UCHAR *GetNextIPV6ChainedHeader(UCHAR **ppucPayload,
- 		{
- 			struct bcm_ipv6_authentication_hdr *pstIpv6AuthHdr = (struct bcm_ipv6_authentication_hdr *)pucPayloadPtr;
- 			int nHdrLen = pstIpv6AuthHdr->ucLength;
-+
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV6_DBG,
- 					DBG_LVL_ALL,
- 					"\nIPv6 Authentication Header");
-@@ -275,6 +278,7 @@ USHORT	IpVersion6(struct bcm_mini_adapter *Adapter, PVOID pcIpHeader,
- 
- 	if (bClassificationSucceed == TRUE) {
- 		INT iMatchedSFQueueIndex = 0;
-+
- 		iMatchedSFQueueIndex = SearchSfid(Adapter, pstClassifierRule->ulSFID);
- 		if (iMatchedSFQueueIndex >= NO_OF_QUEUES) {
- 			bClassificationSucceed = false;
-@@ -407,6 +411,7 @@ VOID DumpIpv6Address(ULONG *puIpv6Address)
- 	UINT uiIpv6AddrNoLongWords = 4;
- 	UINT uiIpv6AddIndex = 0;
- 	struct bcm_mini_adapter *Adapter = GET_BCM_ADAPTER(gblpnetdev);
-+
- 	for (uiIpv6AddIndex = 0; uiIpv6AddIndex < uiIpv6AddrNoLongWords; uiIpv6AddIndex++) {
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV6_DBG, DBG_LVL_ALL,
- 				":%lx", puIpv6Address[uiIpv6AddIndex]);
-@@ -419,6 +424,7 @@ static VOID DumpIpv6Header(struct bcm_ipv6_hdr *pstIpv6Header)
- 	UCHAR ucVersion;
- 	UCHAR ucPrio;
- 	struct bcm_mini_adapter *Adapter = GET_BCM_ADAPTER(gblpnetdev);
-+
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV6_DBG, DBG_LVL_ALL,
- 			"----Ipv6 Header---");
- 	ucVersion = pstIpv6Header->ucVersionPrio & 0xf0;
-diff --git a/drivers/staging/bcm/InterfaceDld.c b/drivers/staging/bcm/InterfaceDld.c
-index e1925bd..abc7a7a 100644
---- a/drivers/staging/bcm/InterfaceDld.c
-+++ b/drivers/staging/bcm/InterfaceDld.c
-@@ -244,6 +244,7 @@ static INT buffDnld(struct bcm_mini_adapter *Adapter,
- {
- 	unsigned int len = 0;
- 	int retval = STATUS_SUCCESS;
-+
- 	len = u32FirmwareLength;
- 
- 	while (u32FirmwareLength) {
-diff --git a/drivers/staging/bcm/InterfaceInit.c b/drivers/staging/bcm/InterfaceInit.c
-index bef13a6..bb61d34 100644
---- a/drivers/staging/bcm/InterfaceInit.c
-+++ b/drivers/staging/bcm/InterfaceInit.c
-@@ -440,6 +440,7 @@ static int select_alternate_setting_for_highspeed_modem(
- 			 * Else USB_IF will fail.
- 			 */
- 			UINT _uiData = ntohl(EP2_CFG_INT);
-+
- 			BCM_DEBUG_PRINT(psAd, DBG_TYPE_INITEXIT, DRV_ENTRY,
- 					DBG_LVL_ALL,
- 					"Reverting Bulk to INT as it is in Full Speed mode.\n");
-diff --git a/drivers/staging/bcm/InterfaceMisc.c b/drivers/staging/bcm/InterfaceMisc.c
-index 4173fd7..61a81dc 100644
---- a/drivers/staging/bcm/InterfaceMisc.c
-+++ b/drivers/staging/bcm/InterfaceMisc.c
-@@ -208,6 +208,7 @@ void putUsbSuspend(struct work_struct *work)
- {
- 	struct bcm_interface_adapter *psIntfAdapter = NULL;
- 	struct usb_interface *intf = NULL;
-+
- 	psIntfAdapter = container_of(work, struct bcm_interface_adapter, usbSuspendWork);
- 	intf = psIntfAdapter->interface;
- 
-diff --git a/drivers/staging/bcm/InterfaceTx.c b/drivers/staging/bcm/InterfaceTx.c
-index ea7707b..e113a7d 100644
---- a/drivers/staging/bcm/InterfaceTx.c
-+++ b/drivers/staging/bcm/InterfaceTx.c
-@@ -161,8 +161,8 @@ static int TransmitTcb(struct bcm_interface_adapter *psIntfAdapter, struct bcm_u
- int InterfaceTransmitPacket(PVOID arg, PVOID data, UINT len)
- {
- 	struct bcm_usb_tcb *pTcb = NULL;
--
- 	struct bcm_interface_adapter *psIntfAdapter = arg;
-+
- 	pTcb = GetBulkOutTcb(psIntfAdapter);
- 	if (pTcb == NULL) {
- 		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_PRINTK, 0, 0, "No URB to transmit packet, dropping packet");
-diff --git a/drivers/staging/bcm/PHSModule.c b/drivers/staging/bcm/PHSModule.c
-index bd68c6f..4b6de76 100644
---- a/drivers/staging/bcm/PHSModule.c
-+++ b/drivers/staging/bcm/PHSModule.c
-@@ -287,6 +287,7 @@ int phs_init(struct bcm_phs_extension *pPhsdeviceExtension, struct bcm_mini_adap
- 	pstServiceFlowTable = pPhsdeviceExtension->pstServiceFlowPhsRulesTable;
- 	for (i = 0; i < MAX_SERVICEFLOWS; i++) {
- 		struct bcm_phs_entry sServiceFlow = pstServiceFlowTable->stSFList[i];
-+
- 		sServiceFlow.pstClassifierTable = kzalloc(sizeof(struct bcm_phs_classifier_table), GFP_KERNEL);
- 		if (!sServiceFlow.pstClassifierTable) {
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, PHS_DISPATCH, DBG_LVL_ALL, "\nAllocation failed");
-diff --git a/drivers/staging/bcm/Qos.c b/drivers/staging/bcm/Qos.c
-index 42c1351..c5213b3 100644
---- a/drivers/staging/bcm/Qos.c
-+++ b/drivers/staging/bcm/Qos.c
-@@ -94,8 +94,8 @@ static bool MatchDestIpAddress(struct bcm_classifier_rule *pstClassifierRule, UL
- **************************************************************************/
- static bool MatchTos(struct bcm_classifier_rule *pstClassifierRule, UCHAR ucTypeOfService)
- {
--
- 	struct bcm_mini_adapter *Adapter = GET_BCM_ADAPTER(gblpnetdev);
-+
- 	if (3 != pstClassifierRule->ucIPTypeOfServiceLength)
- 		return TRUE;
- 
-@@ -121,6 +121,7 @@ bool MatchProtocol(struct bcm_classifier_rule *pstClassifierRule, UCHAR ucProtoc
- {
- 	UCHAR ucLoopIndex = 0;
- 	struct bcm_mini_adapter *Adapter = GET_BCM_ADAPTER(gblpnetdev);
-+
- 	if (0 == pstClassifierRule->ucProtocolLength)
- 		return TRUE;
- 	for (ucLoopIndex = 0; ucLoopIndex < pstClassifierRule->ucProtocolLength; ucLoopIndex++) {
-@@ -269,6 +270,7 @@ static USHORT	IpVersion4(struct bcm_mini_adapter *Adapter,
- 
- 	if (TRUE == bClassificationSucceed) {
- 		INT iMatchedSFQueueIndex = 0;
-+
- 		iMatchedSFQueueIndex = SearchSfid(Adapter, pstClassifierRule->ulSFID);
- 		if (iMatchedSFQueueIndex >= NO_OF_QUEUES)
- 			bClassificationSucceed = false;
-@@ -580,6 +582,7 @@ USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter, struct sk_buff *skb)
- 			 * Create Frag CLS Entry
- 			 */
- 			struct bcm_fragmented_packet_info stFragPktInfo;
-+
- 			stFragPktInfo.bUsed = TRUE;
- 			stFragPktInfo.ulSrcIpAddress = pIpHeader->saddr;
- 			stFragPktInfo.usIpIdentification = pIpHeader->id;
-@@ -601,6 +604,7 @@ static bool EthCSMatchSrcMACAddress(struct bcm_classifier_rule *pstClassifierRul
- {
- 	UINT i = 0;
- 	struct bcm_mini_adapter *Adapter = GET_BCM_ADAPTER(gblpnetdev);
-+
- 	if (pstClassifierRule->ucEthCSSrcMACLen == 0)
- 		return TRUE;
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "%s\n", __func__);
-@@ -617,6 +621,7 @@ static bool EthCSMatchDestMACAddress(struct bcm_classifier_rule *pstClassifierRu
- {
- 	UINT i = 0;
- 	struct bcm_mini_adapter *Adapter = GET_BCM_ADAPTER(gblpnetdev);
-+
- 	if (pstClassifierRule->ucEthCSDestMACLen == 0)
- 		return TRUE;
- 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "%s\n", __func__);
-@@ -632,6 +637,7 @@ static bool EthCSMatchDestMACAddress(struct bcm_classifier_rule *pstClassifierRu
- static bool EthCSMatchEThTypeSAP(struct bcm_classifier_rule *pstClassifierRule, struct sk_buff *skb, struct bcm_eth_packet_info *pstEthCsPktInfo)
- {
- 	struct bcm_mini_adapter *Adapter = GET_BCM_ADAPTER(gblpnetdev);
-+
- 	if ((pstClassifierRule->ucEtherTypeLen == 0) ||
- 		(pstClassifierRule->au8EthCSEtherType[0] == 0))
- 		return TRUE;
-@@ -719,6 +725,7 @@ static bool EThCSClassifyPkt(struct bcm_mini_adapter *Adapter, struct sk_buff *s
- 				B_UINT8 EthCSCupport)
- {
- 	bool bClassificationSucceed = false;
-+
- 	bClassificationSucceed = EthCSMatchSrcMACAddress(pstClassifierRule, ((struct bcm_eth_header *)(skb->data))->au8SourceAddress);
- 	if (!bClassificationSucceed)
- 		return false;
-diff --git a/drivers/staging/bcm/Transmit.c b/drivers/staging/bcm/Transmit.c
-index 4976746..cd27bd8 100644
---- a/drivers/staging/bcm/Transmit.c
-+++ b/drivers/staging/bcm/Transmit.c
-@@ -148,6 +148,7 @@ int SetupNextSend(struct bcm_mini_adapter *Adapter,  struct sk_buff *Packet, USH
- 				status);
- 	} else {
- 		struct net_device_stats *netstats = &Adapter->dev->stats;
-+
- 		Adapter->PackInfo[QueueIndex].uiTotalTxBytes += Leader.PLength;
- 
- 		netstats->tx_bytes += Leader.PLength;
-diff --git a/drivers/staging/bcm/led_control.c b/drivers/staging/bcm/led_control.c
-index 8353677..074fc39 100644
---- a/drivers/staging/bcm/led_control.c
-+++ b/drivers/staging/bcm/led_control.c
-@@ -6,6 +6,7 @@
- static B_UINT16 CFG_CalculateChecksum(B_UINT8 *pu8Buffer, B_UINT32 u32Size)
- {
- 	B_UINT16 u16CheckSum = 0;
-+
- 	while (u32Size--) {
- 		u16CheckSum += (B_UINT8)~(*pu8Buffer);
- 		pu8Buffer++;
-@@ -16,6 +17,7 @@ static B_UINT16 CFG_CalculateChecksum(B_UINT8 *pu8Buffer, B_UINT32 u32Size)
- bool IsReqGpioIsLedInNVM(struct bcm_mini_adapter *Adapter, UINT gpios)
- {
- 	INT Status;
-+
- 	Status = (Adapter->gpioBitMap & gpios) ^ gpios;
- 	if (Status)
- 		return false;
-@@ -489,6 +491,7 @@ static int ReadConfigFileStructure(struct bcm_mini_adapter *Adapter,
- 	PUCHAR puCFGData	= NULL;
- 	UCHAR bData = 0;
- 	struct bcm_led_state_info *curr_led_state;
-+
- 	memset(GPIO_Array, DISABLE_GPIO_NUM, NUM_OF_LEDS+1);
- 
- 	if (!Adapter->pstargetparams || IS_ERR(Adapter->pstargetparams)) {
-@@ -715,6 +718,7 @@ static void handle_adapter_driver_state(struct bcm_mini_adapter *ad,
- 			UCHAR GPIO_num_rx = DISABLE_GPIO_NUM;
- 			UCHAR uiLEDTx = 0;
- 			UCHAR uiLEDRx = 0;
-+
- 			currdriverstate = NORMAL_OPERATION;
- 			ad->LEDInfo.bIdle_led_off = false;
- 
-diff --git a/drivers/staging/bcm/nvm.c b/drivers/staging/bcm/nvm.c
-index 99b82d8..8ce4d41 100644
---- a/drivers/staging/bcm/nvm.c
-+++ b/drivers/staging/bcm/nvm.c
-@@ -361,6 +361,7 @@ int BeceemEEPROMBulkRead(struct bcm_mini_adapter *Adapter,
- 		} else {
- 			/* Handle the reads less than 4 bytes... */
- 			PUCHAR pCharBuff = (PUCHAR)pBuffer;
-+
- 			pCharBuff += uiIndex;
- 			if (ReadBeceemEEPROM(Adapter, uiOffset, &uiData[0]) == 0) {
- 				memcpy(pCharBuff, &uiData[0], uiBytesRemaining); /* copy only bytes requested. */
-@@ -914,6 +915,7 @@ static int flashWriteStatus(struct bcm_mini_adapter *Adapter,
- static VOID BcmRestoreBlockProtectStatus(struct bcm_mini_adapter *Adapter, ULONG ulWriteStatus)
- {
- 	unsigned int value;
-+
- 	value = (FLASH_CMD_WRITE_ENABLE << 24);
- 	wrmalt(Adapter, FLASH_SPI_CMDQ_REG, &value, sizeof(value));
- 
-@@ -1154,6 +1156,7 @@ static int BeceemFlashBulkWrite(struct bcm_mini_adapter *Adapter,
- 			if (STATUS_SUCCESS == BeceemFlashBulkRead(Adapter, (PUINT)ucReadBk, uiOffsetFromSectStart + uiIndex, MAX_RW_SIZE)) {
- 				if (Adapter->ulFlashWriteSize == 1) {
- 					unsigned int uiReadIndex = 0;
-+
- 					for (uiReadIndex = 0; uiReadIndex < 16; uiReadIndex++) {
- 						if (ucReadBk[uiReadIndex] != pTempBuff[uiIndex + uiReadIndex]) {
- 							if (STATUS_SUCCESS != (*Adapter->fpFlashWriteWithStatusCheck)(Adapter, uiPartOffset + uiIndex + uiReadIndex, &pTempBuff[uiIndex+uiReadIndex])) {
-@@ -1868,6 +1871,7 @@ int BeceemNVMWrite(struct bcm_mini_adapter *Adapter,
- 			if ((uiOffset + uiNumBytes) > EEPROM_CALPARAM_START) {
- 				ULONG ulBytesTobeSkipped = 0;
- 				PUCHAR pcBuffer = (PUCHAR)pBuffer; /* char pointer to take care of odd byte cases. */
-+
- 				uiNumBytes -= (EEPROM_CALPARAM_START - uiOffset);
- 				ulBytesTobeSkipped += (EEPROM_CALPARAM_START - uiOffset);
- 				uiOffset += (EEPROM_CALPARAM_START - uiOffset);
-@@ -2455,6 +2459,7 @@ static int BcmGetFlashCSInfo(struct bcm_mini_adapter *Adapter)
- 	#endif
- 
- 	unsigned int uiFlashLayoutMajorVersion;
-+
- 	Adapter->uiFlashLayoutMinorVersion = 0;
- 	Adapter->uiFlashLayoutMajorVersion = 0;
- 	Adapter->ulFlashControlSectionStart = FLASH_CS_INFO_START_ADDR;
-@@ -4319,6 +4324,7 @@ static int ReadISOSignature(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_s
- static int ReadISOPriority(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_section_val iso)
- {
- 	unsigned int ISOPri = STATUS_FAILURE;
-+
- 	if (IsSectionWritable(Adapter, iso)) {
- 		if (ReadISOSignature(Adapter, iso) == ISO_IMAGE_MAGIC_NUMBER) {
- 			BcmFlash2xBulkRead(Adapter,
