@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030335AbaGDJ4T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 05:56:19 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:38132 "EHLO
+	id S1030365AbaGDJ41 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 05:56:27 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:38139 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030290AbaGDJ4P (ORCPT
+	with ESMTP id S1030290AbaGDJ4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 05:56:15 -0400
+	Fri, 4 Jul 2014 05:56:23 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
@@ -21,9 +21,9 @@ Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v6 15/23] regulator: max77686: Setup DVS-related GPIOs on probe
-Date: Fri,  4 Jul 2014 11:55:14 +0200
-Message-Id: <1404467722-26687-16-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v6 16/23] mfd: max77686: Add documentation for DVS bindings
+Date: Fri,  4 Jul 2014 11:55:15 +0200
+Message-Id: <1404467722-26687-17-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -31,89 +31,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAX77686 PMIC support Dyamic Voltage Scaling (DVS) on a set
-of Buck regulators. A number of GPIO are connected to these
-lines and are requested by the mfd driver. Setup the GPIO
-pins from the regulator driver.
+The MAX77686 PMIC submodule has Dynamic Voltage Scaling (DVS)
+support on some regulators. Now that the regulator driver has
+bindings to configure it, these bindings have to be documented.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
- drivers/regulator/max77686.c | 34 ++++++++++++++++++++++++++++++++++
+ Documentation/devicetree/bindings/mfd/max77686.txt | 34 ++++++++++++++++++++++
  1 file changed, 34 insertions(+)
 
-diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
-index ef1af2d..ecce77a 100644
---- a/drivers/regulator/max77686.c
-+++ b/drivers/regulator/max77686.c
-@@ -435,6 +435,12 @@ static int max77686_pmic_dt_parse_pdata(struct platform_device *pdev,
- }
- #endif /* CONFIG_OF */
+diff --git a/Documentation/devicetree/bindings/mfd/max77686.txt b/Documentation/devicetree/bindings/mfd/max77686.txt
+index 678f3cf..daf1c07 100644
+--- a/Documentation/devicetree/bindings/mfd/max77686.txt
++++ b/Documentation/devicetree/bindings/mfd/max77686.txt
+@@ -10,12 +10,38 @@ PMIC submodule.
+ Binding for the built-in 32k clock generator block is defined separately
+ in bindings/clk/maxim,max77686.txt file.
  
-+static inline bool max77686_is_dvs_buck(int id)
-+{
-+	/* BUCK 2,3 and 4 support DVS */
-+	return (id >= MAX77686_BUCK2 && id <= MAX77686_BUCK4);
-+}
++Buck regulators 2, 3 and 4 include Dynamic Voltage Scaling (DVS) that allows
++each output voltage to change dynamically. Each Buck output voltage is selected
++using a set of external inputs: DVS1-3 and SELB2, 3 and 4.
 +
- static int max77686_pmic_probe(struct platform_device *pdev)
- {
- 	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
-@@ -442,6 +448,9 @@ static int max77686_pmic_probe(struct platform_device *pdev)
- 	struct max77686_data *max77686;
- 	int i, ret = 0;
- 	struct regulator_config config = { };
-+	unsigned int reg;
-+	int buck_default_idx;
-+	int buck_old_idx;
++There are 8 DVS registers that can be used to configure the output voltage
++for each Buck regulator and which one is active is controled by DVSx lines.
++
++SELBx lines are used to control if individual Buck lines are ON or OFF.
++
+ Required properties:
+ - compatible : Must be "maxim,max77686";
+ - reg : Specifies the i2c slave address of PMIC block.
+ - interrupts : This i2c device has an IRQ line connected to the main SoC.
+ - interrupt-parent : The parent interrupt controller.
  
- 	dev_dbg(&pdev->dev, "%s\n", __func__);
++Optional properties:
++- max77686,pmic-buck-default-dvs-idx: We'll always write this DVS index in the
++  PMIC for Bucks with DVS.
++  NOTE: at the moment these bindings don't include enough details for actual
++  GPIO-DVS--this just lets you choose which single slot to use.
++
++- max77686,pmic-buck-dvs-gpios: A GPIO array where each GPIO is connected to a
++  DVS line. We'll try to set these GPIOs to match pmic-buck-default-dvs-idx at
++  probe time if they are defined. If some or all of these GPIOs are not defined
++  it's assumed that the board has any missing GPIOs hardwired to match
++  pmic-buck-default-dvs-idx.
++
++- max77686,pmic-buck-selb-gpios: A GPIO array where each GPIO is connected to a
++  SELBx line. Should be three values: 2, 3 and 4. It is strongly suggested to
++  include these GPIOs if there's any chance that changing DVS GPIOs one line at
++  a time might glitch your DVS values.
++
+ Optional node:
+ - voltage-regulators : The regulators of max77686 have to be instantiated
+   under subnode named "voltage-regulators" using the following format.
+@@ -42,6 +68,14 @@ Example:
+ 		interrupts = <26 0>;
+ 		reg = <0x09>;
  
-@@ -472,13 +481,34 @@ static int max77686_pmic_probe(struct platform_device *pdev)
- 	config.driver_data = max77686;
- 	platform_set_drvdata(pdev, max77686);
- 
-+	buck_default_idx = pdata->buck_default_idx;
-+	buck_old_idx = max77686_read_gpios(pdata);
++		max77686,pmic-buck-default-dvs-idx = <1>;
++		max77686,pmic-buck-dvs-gpios = <&gpy7 6 0>,
++					       <&gpj4 2 0>,
++					       <&gpj4 3 0>;
++		max77686,pmic-buck-selb-gpios = <&gph0 1 0>,
++						<&gph0 2 0>,
++						<&gph0 3 0>,
 +
- 	for (i = 0; i < MAX77686_REGULATORS; i++) {
- 		struct regulator_dev *rdev;
-+		int id = pdata->regulators[i].id;
- 
- 		config.init_data = pdata->regulators[i].initdata;
- 		config.of_node = pdata->regulators[i].of_node;
- 
- 		max77686->opmode[i] = regulators[i].enable_mask;
-+
-+		if (max77686_is_dvs_buck(id)) {
-+			/* Try to copy over data so we keep firmware settings */
-+			reg = regulators[i].vsel_reg;
-+
-+			ret = regmap_reg_copy(iodev->regmap,
-+					      reg + buck_default_idx,
-+					      reg + buck_old_idx);
-+
-+			if (ret)
-+				dev_warn(&pdev->dev, "Copy err %d => %d (%d)\n",
-+					 reg + buck_old_idx,
-+					 reg + buck_default_idx, ret);
-+
-+			regulators[i].vsel_reg += buck_default_idx;
-+		}
-+
- 		rdev = devm_regulator_register(&pdev->dev,
- 						&regulators[i], &config);
- 		if (IS_ERR(rdev)) {
-@@ -488,6 +518,10 @@ static int max77686_pmic_probe(struct platform_device *pdev)
- 		}
- 	}
- 
-+	ret = max77686_setup_gpios(iodev->dev);
-+	if (ret)
-+		return ret;
-+
- 	return 0;
- }
- 
+ 		voltage-regulators {
+ 			ldo11_reg {
+ 				regulator-compatible = "LDO11";
 -- 
 2.0.0.rc2
 
