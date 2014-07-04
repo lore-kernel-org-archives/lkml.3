@@ -1,91 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306AbaGDKuQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 06:50:16 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:49768 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729AbaGDKuO (ORCPT
+	id S1756953AbaGDKvR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 06:51:17 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:31941 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764AbaGDKvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 06:50:14 -0400
-Date: Fri, 4 Jul 2014 13:50:03 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Stephan Mueller <smueller@chronox.de>,
-        kbuild test robot <fengguang.wu@intel.com>, kbuild@01.org,
-        linux-kernel@vger.kernel.org,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: [PATCH] Potential NULL pointer deference in drbg_ctr_df
-Message-ID: <20140704105003.GA25934@mwanda>
-References: <20140620202418.GZ5015@mwanda>
- <4892293.kf6KiPx6BS@myon.chronox.de>
- <20140625090646.GB8727@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140625090646.GB8727@gondor.apana.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Fri, 4 Jul 2014 06:51:14 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7fac6d000006cfe-2e-53b6871fd0e2
+Content-transfer-encoding: 8BIT
+Message-id: <1404471072.14069.0.camel@AMDC1943>
+Subject: Re: [PATCH v6 02/23] mfd: max77686: Add power management support
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 04 Jul 2014 12:51:12 +0200
+In-reply-to: <1404467722-26687-3-git-send-email-javier.martinez@collabora.co.uk>
+References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1404467722-26687-3-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: Evolution 3.10.4-0ubuntu1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e/4FV359m3BBi9OcFssuXiV3aJ5U7HF
+	1IdP2CzmHznHanF22UE2i6O/Cyx6F1xls7j/9SijxbcrHUwWmx5fY7W4vGsOm8WM8/uYLJ5O
+	uMhmcer6ZzaLvrWX2Cw2TN7NbjH3dyOrg6DH7IaLLB5/n19n8dhxdwmjx85Zd9k9Nq3qZPO4
+	c20Pm8fmJfUeV040sXr0bVnF6LH5dLXH9Hk/mTw+b5IL4InisklJzcksSy3St0vgynjS84Wt
+	YLZQRcfvj8wNjJf4uhg5OSQETCQ+77/IBGGLSVy4t54NxBYSWMooMeuxC4jNKyAo8WPyPZYu
+	Rg4OZgF5iSOXskHCzALqEpPmLWKGKP/MKLHmUA1Eub7E52mXWEFsYQFPiUvnfrGD2GwCxhKb
+	ly8BGy8iYCdxY/VDoF4uoDm3WCR+Ld8E1sAioCrxfeJfsCJOgQCJXZ+WsoIUCQlMZZSY9GkD
+	I8ShyhLz9h9jmsAoMAvJfbMQ7puF5L4FjMyrGEVTS5MLipPScw31ihNzi0vz0vWS83M3MUKi
+	8MsOxsXHrA4xCnAwKvHwNq7YECzEmlhWXJl7iFGCg1lJhPd3/bZgId6UxMqq1KL8+KLSnNTi
+	Q4xMHJxSDYyV/x86mr2Uf5U9/UDhM77jrMwWEjJT5gbt9HPMvPb/xOtnl1PZD2UXHfu30ajG
+	6ONphe+7zypUtPbF1O6cHcpc+tPe2ujLvr3a/vNZa5vjr/xiVrcKMjj0MUH8y1mZ6ExGXY2r
+	L94/uRDuJMK7NkH0N1NEloMB88HmstCk5udXimJYDixd5KPEUpyRaKjFXFScCAD74EP+oAIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 05:06:46PM +0800, Herbert Xu wrote:
-> On Sat, Jun 21, 2014 at 02:26:29PM +0200, Stephan Mueller wrote:
-> > The handling of additional input data / personalization string data may
-> > be subject to a NULL pointer deference for the CTR DRBG. The
-> > caller-provided data may be NULL which must be caught by the DRBG.
-> > 
-> > Reported-by: kbuild test robot <fengguang.wu@intel.com>
-
-
-Oh, huh.  This bug was actually reported by me but I forgot to change
-the from header and apparently my smtp server allows me to send emails
-as if I work for Intel.  :P
-
-Fengguang is much nicer than I am.  :P
-
-> > Signed-off-by: Stephan Mueller <smueller@chronox.de>
-> > ---
-> >  crypto/drbg.c | 23 +++++++++++++----------
-> >  1 file changed, 13 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/crypto/drbg.c b/crypto/drbg.c
-> > index faaa2ce..8e7c302 100644
-> > --- a/crypto/drbg.c
-> > +++ b/crypto/drbg.c
-> > @@ -513,17 +513,20 @@ static int drbg_ctr_df(struct drbg_state *drbg,
-> >  	drbg_string_fill(&S2, L_N, sizeof(L_N));
-> >  	drbg_string_fill(&S4, pad, padlen);
-> >  	S1.next = &S2;
-> > -	S2.next = addtl;
-> >  
-> > -	/*
-> > -	 * splice in addtl between S2 and S4 -- we place S4 at the end of the
-> > -	 * input data chain
-> > -	 */
-> > -	tempstr = addtl;
-> > -	for (; NULL != tempstr; tempstr = tempstr->next)
-> > -		if (NULL == tempstr->next)
-> > -			break;
-> > -	tempstr->next = &S4;
-> > +	if (NULL == addtl) {
-> > +		S2.next = &S4;
-> > +	} else {
-> > +		/*
-> > +		 * splice in addtl between S2 and S4 -- we place S4 at the end
-> > +		 * of the input data chain
-> > +		 */
-> > +		S2.next = addtl;
-> > +		tempstr = addtl;
-> > +		while (tempstr->next)
-> > +			tempstr = tempstr->next;
-> > +		tempstr->next = &S4;
+On pią, 2014-07-04 at 11:55 +0200, Javier Martinez Canillas wrote:
+> The driver doesn't have PM operations defined so add a suspend
+> and resume function handlers to allow the PMIC IRQ to wakeup
+> the system when it is put into a sleep state.
 > 
-> You've still got exactly the same NULL dereference.
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> ---
+>  drivers/mfd/max77686.c | 40 ++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 40 insertions(+)
 
-I was offline for a bit so I'm coming into this late.  It's weird that
-Stephan isn't defending his patch but it looks ok to me...
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-regards,
-dan carpenter
+Best regards,
+Krzysztof
+
+
+> diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+> index 3cb41d0..a38e9ee 100644
+> --- a/drivers/mfd/max77686.c
+> +++ b/drivers/mfd/max77686.c
+> @@ -240,10 +240,50 @@ static const struct i2c_device_id max77686_i2c_id[] = {
+>  };
+>  MODULE_DEVICE_TABLE(i2c, max77686_i2c_id);
+>  
+> +#ifdef CONFIG_PM_SLEEP
+> +static int max77686_suspend(struct device *dev)
+> +{
+> +	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
+> +	struct max77686_dev *max77686 = i2c_get_clientdata(i2c);
+> +
+> +	if (device_may_wakeup(dev))
+> +		enable_irq_wake(max77686->irq);
+> +
+> +	/*
+> +	 * IRQ must be disabled during suspend because if it happens
+> +	 * while suspended it will be handled before resuming I2C.
+> +	 *
+> +	 * When device is woken up from suspend (e.g. by RTC wake alarm),
+> +	 * an interrupt occurs before resuming I2C bus controller.
+> +	 * Interrupt handler tries to read registers but this read
+> +	 * will fail because I2C is still suspended.
+> +	 */
+> +	disable_irq(max77686->irq);
+> +
+> +	return 0;
+> +}
+> +
+> +static int max77686_resume(struct device *dev)
+> +{
+> +	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
+> +	struct max77686_dev *max77686 = i2c_get_clientdata(i2c);
+> +
+> +	if (device_may_wakeup(dev))
+> +		disable_irq_wake(max77686->irq);
+> +
+> +	enable_irq(max77686->irq);
+> +
+> +	return 0;
+> +}
+> +#endif /* CONFIG_PM_SLEEP */
+> +
+> +static SIMPLE_DEV_PM_OPS(max77686_pm, max77686_suspend, max77686_resume);
+> +
+>  static struct i2c_driver max77686_i2c_driver = {
+>  	.driver = {
+>  		   .name = "max77686",
+>  		   .owner = THIS_MODULE,
+> +		   .pm = &max77686_pm,
+>  		   .of_match_table = of_match_ptr(max77686_pmic_dt_match),
+>  	},
+>  	.probe = max77686_i2c_probe,
 
