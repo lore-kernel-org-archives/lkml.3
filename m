@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759433AbaGDRlJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 13:41:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55736 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559AbaGDRlI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 13:41:08 -0400
-Date: Fri, 4 Jul 2014 10:40:51 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: pramod gurav <pramod.gurav.etc@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Driver core fixes for 3.16-rc4
-Message-ID: <20140704174051.GE25992@kroah.com>
-References: <20140704010045.GA21040@kroah.com>
- <CAMf-jSnFqUcyCNOa-UecW3SwmVr45Nvo2Qj3DKDu2-CnPgv2pw@mail.gmail.com>
+	id S1759277AbaGDRnR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 13:43:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28870 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754559AbaGDRnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 13:43:15 -0400
+Date: Fri, 4 Jul 2014 12:31:07 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: =?iso-8859-1?Q?C=E9dric?= Villemain <cedric@2ndquadrant.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Miller <davem@davemloft.net>,
+        Andres Freund <andres@2ndquadrant.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v2 2/4] mm: introduce fincore()
+Message-ID: <20140704163107.GA17877@nhori>
+References: <1404424335-30128-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1404424335-30128-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20140704101230.GA24688@infradead.org>
+ <5816450.BPnLjGgtl5@obelix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAMf-jSnFqUcyCNOa-UecW3SwmVr45Nvo2Qj3DKDu2-CnPgv2pw@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5816450.BPnLjGgtl5@obelix>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04, 2014 at 11:52:16AM +0530, pramod gurav wrote:
-> On Fri, Jul 4, 2014 at 6:30 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > The following changes since commit 4c834452aad01531db949414f94f817a86348d59:
-> >
-> >   Linux 3.16-rc3 (2014-06-29 14:11:36 -0700)
-> >
-> > are available in the git repository at:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.16-rc4
-> >
-> > for you to fetch changes up to 4a3a99045177369700c60d074c0e525e8093b0fc:
-> >
-> >   lz4: add overrun checks to lz4_uncompress_unknownoutputsize() (2014-07-03 16:12:04 -0700)
-> >
-> > ----------------------------------------------------------------
-> > Driver core fixes for 3.16-rc4
-> 
-> Hi Greg,
-> 
-> What should I do if I come across some coding guidelines issues,
-> compile warning in some core drivers like fs/, cpuidle etc?
-> 
-> For exa: A fix in CPUIdle
-> https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg668109.html
-> 
-> Shall I continue sending the corrections?  Will they be accepted at
-> this point of time? Because I saw no response as a lot of code was
-> being added to these drivers (read cpuidle).
+On Fri, Jul 04, 2014 at 05:15:59PM +0200, Cédric Villemain wrote:
+> Le vendredi 4 juillet 2014 03:12:30 Christoph Hellwig a écrit :
+> > On Thu, Jul 03, 2014 at 05:52:13PM -0400, Naoya Horiguchi wrote:
+> > > This patch provides a new system call fincore(2), which provides
+> > > mincore()- like information, i.e. page residency of a given file.
+> > > But unlike mincore(), fincore() has a mode flag which allows us to
+> > > extract detailed information about page cache like pfn and page
+> > > flag. This kind of information is very helpful, for example when
+> > > applications want to know the file cache status to control the IO
+> > > on their own way.
+> > 
+> > It's still a nasty multiplexer for multiple different reporting
+> > formats in a single system call.  How about your really just do a
+> > fincore that mirrors mincore instead of piggybacking exports of
+> > various internal flags (tags and page flags onto it.
 
-It all depends on the maintainers of those drivers / files, please
-discuss it with them, I have no control over that.
+We can do it in mincore-compatible way with FINCORE_BMAP mode.
+If you choose it, you don't care about any details about other modes.
+I don't make no default mode, but if we have a good reason, I'm OK
+to set FINCORE_BMAP as default mode.
 
-best of luck,
+> The fincore à la mincore got some arguments against it too. It seems this 
+> implementations try (I've not tested nor have a close look yet) to 
+> answer both concerns : have details and also possible to have 
+> aggregation function not too expansive.
 
-greg k-h
+Correct, that's the motivation of this non-trivial interface.
+This could finally obsoletes messy /proc/kpage{flags,count} and/or
+/proc/pid/pagemap kind of things, and we will not have to collect
+information over all these interfaces (so that's less expensive.)
+
+Thanks,
+Naoya Horiguchi
