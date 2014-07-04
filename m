@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992AbaGDMuc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 08:50:32 -0400
-Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:58166
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751804AbaGDMub convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 08:50:31 -0400
-From: Varun Sethi <Varun.Sethi@freescale.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>
-Subject: RE: [PATCH 2/3] iommu/fsl: Fix the device domain attach condition.
-Thread-Topic: [PATCH 2/3] iommu/fsl: Fix the device domain attach condition.
-Thread-Index: AQHPj/FcSATGvxFAdUS7z9ALjFjLD5uPzMeAgAAf3LA=
-Date: Fri, 4 Jul 2014 12:50:28 +0000
-Message-ID: <23ace98ce7e145b0909a1f5f5d1fd2dd@BL2PR03MB468.namprd03.prod.outlook.com>
-References: <1403618237-26248-1-git-send-email-Varun.Sethi@freescale.com>
- <1403618237-26248-3-git-send-email-Varun.Sethi@freescale.com>
- <20140704105430.GE13434@8bytes.org>
-In-Reply-To: <20140704105430.GE13434@8bytes.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.169.1]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 02622CEF0A
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(377454003)(189002)(52314003)(199002)(51704005)(24454002)(13464003)(85852003)(92566001)(76576001)(21056001)(64706001)(80022001)(76176999)(66066001)(83322001)(2656002)(46102001)(19580405001)(99396002)(79102001)(85306003)(50986999)(20776003)(86362001)(101416001)(87936001)(106356001)(105586002)(95666004)(33646001)(81542001)(106116001)(4396001)(31966008)(81342001)(74316001)(74502001)(76482001)(83072002)(19580395003)(74662001)(99286002)(54356999)(110136001)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB465;H:BL2PR03MB468.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757805AbaGDMvE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 08:51:04 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53204 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756513AbaGDMvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 08:51:02 -0400
+Date: Fri, 4 Jul 2014 09:50:55 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC PATCHES 0/7] Add support for showing headers in the hist
+ browser.
+Message-ID: <20140704125055.GD11267@kernel.org>
+References: <1404423780-24026-1-git-send-email-acme@kernel.org>
+ <20140703214811.GC11267@kernel.org>
+ <878uo94ia9.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878uo94ia9.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Fri, Jul 04, 2014 at 05:53:02PM +0900, Namhyung Kim escreveu:
+> On Thu, 3 Jul 2014 18:48:11 -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Thu, Jul 03, 2014 at 06:42:53PM -0300, Arnaldo Carvalho de Melo escreveu:
+> >> 	Namhyung, since you reviewed the previous patchkit, I'd like to know
+> >> if I can keep the acked-by and perhaps a tested-by too. This should address the
+> >> problems that Jiri pointed out in our private conversation.
 
+> > Forgot to mention, it is available in this branch:
 
-> -----Original Message-----
-> From: Joerg Roedel [mailto:joro@8bytes.org]
-> Sent: Friday, July 04, 2014 4:25 PM
-> To: Sethi Varun-B16395
-> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org;
-> linuxppc-dev@lists.ozlabs.org; alex.williamson@redhat.com
-> Subject: Re: [PATCH 2/3] iommu/fsl: Fix the device domain attach
-> condition.
-> 
-> Hmm,
-> 
-> On Tue, Jun 24, 2014 at 07:27:16PM +0530, Varun Sethi wrote:
-> > -	old_domain_info = find_domain(dev);
-> > +	old_domain_info = dev->archdata.iommu_domain;
-> >  	if (old_domain_info && old_domain_info->domain != dma_domain) {
-> >  		spin_unlock_irqrestore(&device_domain_lock, flags);
-> >  		detach_device(dev, old_domain_info->domain);
-> 
-> Wouldn't this set dev->archdata.iommu_domain to NULL anyway, so that ...
-> 
-Not for the case where device has multiple LIODNs.
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git
+> >   tmp.perf/ui/show_headers
 
-> > @@ -399,7 +394,7 @@ static void attach_device(struct fsl_dma_domain
-> *dma_domain, int liodn, struct d
-> >  	 * the info for the first LIODN as all
-> >  	 * LIODNs share the same domain
-> >  	 */
-> > -	if (!old_domain_info)
-> > +	if (!dev->archdata.iommu_domain)
-> >  		dev->archdata.iommu_domain = info;
-> 
-> We already know that it _must_ be NULL here?
-> 
+> Thanks, you can keep my acks with fixing 7/7 changelog typo
+> (s/true/false/).
 
-That won't be true for devices having multiple LIODNs
+Ok
+ 
+> I think it might even go to the perf/urgent as the cumulative children
+> patchset added a new children column which might confuse old users (like
+> you ;-) ).
 
-> >  	spin_unlock_irqrestore(&device_domain_lock, flags);
-> 
-> This would shrink down the patch to:
-> 
-> diff --git a/drivers/iommu/fsl_pamu_domain.c
-> b/drivers/iommu/fsl_pamu_domain.c index 93072ba..d21b554 100644
-> --- a/drivers/iommu/fsl_pamu_domain.c
-> +++ b/drivers/iommu/fsl_pamu_domain.c
-> @@ -399,8 +399,7 @@ static void attach_device(struct fsl_dma_domain
-> *dma_domain, int liodn, struct d
->  	 * the info for the first LIODN as all
->  	 * LIODNs share the same domain
->  	 */
-> -	if (!old_domain_info)
-> -		dev->archdata.iommu_domain = info;
-> +	dev->archdata.iommu_domain = info;
+Unsure about that, quite a lot of patches :-)
 
-For devices having multiple LIODNs, we don't want to overwrite the info.
+> But I also think it needs to fix column/header alignment
+> first, hmm...
 
--Varun
+Yeah, I noticed that after posting the patches, and it is even worse in
+'perf top', it gets worse over time, as new symbols are added, etc. Will
+take a look at that.
 
+- Arnaldo
