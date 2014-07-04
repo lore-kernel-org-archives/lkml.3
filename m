@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030632AbaGDWRm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:17:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57214 "EHLO
+	id S1030759AbaGDWR5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:17:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57258 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030570AbaGDWRk (ORCPT
+	with ESMTP id S1030716AbaGDWRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:40 -0400
+	Fri, 4 Jul 2014 18:17:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.15 57/66] MIPS: KVM: Fix memory leak on VCPU
-Date: Fri,  4 Jul 2014 15:14:56 -0700
-Message-Id: <20140704221425.408058029@linuxfoundation.org>
+        Alex Estrin <alex.estrin@intel.com>,
+        Dennis Dalessandro <dennis.dalessandro@intel.com>,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.4 08/19] IB/qib: Fix port in pkey change event
+Date: Fri,  4 Jul 2014 15:15:18 -0700
+Message-Id: <20140704221436.821551093@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
-References: <20140704221422.813435485@linuxfoundation.org>
+In-Reply-To: <20140704221436.423715636@linuxfoundation.org>
+References: <20140704221436.423715636@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,48 +27,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>
+From: Mike Marciniszyn <mike.marciniszyn@intel.com>
 
-commit 8c9eb041cf76038eb3b62ee259607eec9b89f48d upstream.
+commit 911eccd284d13d78c92ec4f1f1092c03457d732a upstream.
 
-kvm_arch_vcpu_free() is called in 2 code paths:
+The code used a literal 1 in dispatching an IB_EVENT_PKEY_CHANGE.
 
-1) kvm_vm_ioctl()
-       kvm_vm_ioctl_create_vcpu()
-           kvm_arch_vcpu_destroy()
-               kvm_arch_vcpu_free()
-2) kvm_put_kvm()
-       kvm_destroy_vm()
-           kvm_arch_destroy_vm()
-               kvm_mips_free_vcpus()
-                   kvm_arch_vcpu_free()
+As of the dual port qib QDR card, this is not necessarily correct.
 
-Neither of the paths handles VCPU free. We need to do it in
-kvm_arch_vcpu_free() corresponding to the memory allocation in
-kvm_arch_vcpu_create().
+Change to use the port as specified in the call.
 
-Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Reported-by: Alex Estrin <alex.estrin@intel.com>
+Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kvm/kvm_mips.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/infiniband/hw/qib/qib_mad.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/mips/kvm/kvm_mips.c
-+++ b/arch/mips/kvm/kvm_mips.c
-@@ -389,6 +389,7 @@ void kvm_arch_vcpu_free(struct kvm_vcpu
+--- a/drivers/infiniband/hw/qib/qib_mad.c
++++ b/drivers/infiniband/hw/qib/qib_mad.c
+@@ -1005,7 +1005,7 @@ static int set_pkeys(struct qib_devdata
  
- 	kfree(vcpu->arch.guest_ebase);
- 	kfree(vcpu->arch.kseg0_commpage);
-+	kfree(vcpu);
- }
- 
- void kvm_arch_vcpu_destroy(struct kvm_vcpu *vcpu)
+ 		event.event = IB_EVENT_PKEY_CHANGE;
+ 		event.device = &dd->verbs_dev.ibdev;
+-		event.element.port_num = 1;
++		event.element.port_num = port;
+ 		ib_dispatch_event(&event);
+ 	}
+ 	return 0;
 
 
