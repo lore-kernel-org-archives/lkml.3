@@ -1,74 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344AbaGDIG2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:06:28 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:46381 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753856AbaGDIGT (ORCPT
+	id S1755584AbaGDIHY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:07:24 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35044 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753788AbaGDIHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:06:19 -0400
-Message-ID: <53B66066.4030202@gmail.com>
-Date: Fri, 04 Jul 2014 10:05:58 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 4 Jul 2014 04:07:09 -0400
+Date: Fri, 4 Jul 2014 09:07:02 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [RESEND PATCH 5/5] devicetree: mfd: max14577: Add device tree
+ bindings document
+Message-ID: <20140704080702.GA31812@leverpostej>
+References: <1404198121-22989-1-git-send-email-k.kozlowski@samsung.com>
+ <1404198121-22989-6-git-send-email-k.kozlowski@samsung.com>
+ <20140703113236.GA28504@leverpostej>
+ <1404387874.21377.8.camel@AMDC1943>
 MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>, linux@arm.linux.org.uk,
-        kgene.kim@samsung.com, t.figa@samsung.com
-CC: kyungmin.park@samsung.com, ideal.song@samsung.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dts: Add I2S dt node for Exynos3250
-References: <1404373939-10510-1-git-send-email-cw00.choi@samsung.com>
-In-Reply-To: <1404373939-10510-1-git-send-email-cw00.choi@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404387874.21377.8.camel@AMDC1943>
+Thread-Topic: [RESEND PATCH 5/5] devicetree: mfd: max14577: Add device tree
+ bindings document
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chanwoo,
-
-On 03.07.2014 09:52, Chanwoo Choi wrote:
-> From: Tomasz Figa <t.figa@samsung.com>
+On Thu, Jul 03, 2014 at 12:44:34PM +0100, Krzysztof Kozlowski wrote:
+> On czw, 2014-07-03 at 12:32 +0100, Mark Rutland wrote:
+> > Hi,
+> > 
+> > On Tue, Jul 01, 2014 at 08:02:00AM +0100, Krzysztof Kozlowski wrote:
+> > > Add document describing device tree bindings for MAX14577 MFD
+> > > drivers: MFD core, extcon, regulator and charger.
+> > > 
+> > > Both MAX14577 and MAX77836 chipsets are documented.
+> > > 
+> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > > Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> > > Cc: Tomasz Figa <t.figa@samsung.com>
+> > > Cc: devicetree@vger.kernel.org
+> > > Cc: Rob Herring <robh+dt@kernel.org>
+> > > Cc: Pawel Moll <pawel.moll@arm.com>
+> > > Cc: Mark Rutland <mark.rutland@arm.com>
+> > > Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> > > Cc: Kumar Gala <galak@codeaurora.org>
+> > > Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> > > ---
+> > >  Documentation/devicetree/bindings/mfd/max14577.txt | 152 +++++++++++++++++++++
+> > >  1 file changed, 152 insertions(+)
+> > >  create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
+> > > 
+> > > diff --git a/Documentation/devicetree/bindings/mfd/max14577.txt b/Documentation/devicetree/bindings/mfd/max14577.txt
+> > > new file mode 100644
+> > > index 000000000000..b235250a7b41
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/mfd/max14577.txt
+> > > @@ -0,0 +1,152 @@
+> > > +Maxim MAX14577/77836 Multi-Function Device
+> > > +
+> > > +MAX14577 is a Multi-Function Device with Micro-USB Interface Circuit, Li+
+> > > +Battery Charger and SFOUT LDO output for powering USB devices. It is
+> > > +interfaced to host controller using I2C.
+> > > +
+> > > +MAX77836 additionally contains PMIC (with two LDO regulators) and Fuel Gauge.
+> > > +
+> > > +
+> > > +Required properties:
+> > > +- compatible : Must be "maxim,max14577" or "maxim,max77836".
+> > > +- reg : I2C slave address for the max14577 chip (0x25 for max14577/max77836)
+> > > +- interrupts : IRQ line for the chip.
+> > > +- interrupt-parent :  The parent interrupt controller.
+> > > +
+> > > +
+> > > +Required nodes:
+> > > + - charger :
+> > > +	Node for configuring the charger driver.
+> > > +	Required properties:
+> > > +		- compatible : "maxim,max14577-charger"
+> > > +			or "maxim,max77836-charger"
+> > > +		- maxim,fast-charge-timer : Timer in hours to trigger the
+> > > +			INT3/MBCCHGERR interrupt; Valid values:
+> > > +			- 5, 6 or 7 (hours),
+> > > +			- 0 to disable.
+> > 
+> > I'm not sure I follow what this is any why it should be in the DT.
+> > 
+> > Could you explain what this is used for?
 > 
-> This patch add I2S (Inter-IC Sound) dt node which supports 1-port stereo
-> (1 channels) IIS-bus for audio interface with DMA-based operation.
+> Hi,
 > 
-> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> Signed-off-by: Inha Song <ideal.song@samsung.com>
-> Tested-by: Inha Song <ideal.song@samsung.com>
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  arch/arm/boot/dts/exynos3250.dtsi | 13 +++++++++++++
->  1 file changed, 13 insertions(+)
+> These are settings for max14577 battery charger. Actually this
+> particular setting does not look like board-specific but other (like
+> battery voltage) do.
 > 
-> diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
-> index 1f8384f..e9017ef 100644
-> --- a/arch/arm/boot/dts/exynos3250.dtsi
-> +++ b/arch/arm/boot/dts/exynos3250.dtsi
-> @@ -644,6 +644,19 @@
->  			status = "disabled";
->  		};
->  
-> +		i2s: i2s@13970000 {
+> The timer above is used by device to stop charging and to trigger
+> interrupt.
 
-Shouldn't the label be rather called "i2s2" as the pinctrl entry below
-suggests?
+Ok. What I don't get is why this should be in the DT, it sounds like a
+configuration option that would better be set at run time.
 
-> +			compatible = "samsung,s3c6410-i2s";
-> +			reg = <0x13970000 0x100>;
-> +			interrupts = <0 126 0>;
-> +			clocks = <&cmu CLK_I2S>, <&cmu CLK_SCLK_I2S>;
-> +			clock-names = "iis", "i2s_opclk0";
-> +			dmas = <&pdma0 14>, <&pdma0 13>;
-> +			dma-names = "tx", "rx";
-> +			pinctrl-0 = <&i2s2_bus>;
-> +			pinctrl-name = "default";
-
-"pinctrl-name" is not a valid property. I suppose it should be
-"pinctrl-names".
-
-Best regards,
-Tomasz
+Thanks,
+Mark.
