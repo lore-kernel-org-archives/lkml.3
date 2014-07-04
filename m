@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031228AbaGDW6P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:58:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57143 "EHLO
+	id S1031265AbaGDW6h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:58:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57132 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030336AbaGDWRE (ORCPT
+	with ESMTP id S1030286AbaGDWQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:04 -0400
+	Fri, 4 Jul 2014 18:16:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.15 41/66] powerpc/pseries: Fix overwritten PE state
-Date: Fri,  4 Jul 2014 15:14:40 -0700
-Message-Id: <20140704221424.679243273@linuxfoundation.org>
+        James Hogan <james.hogan@imgtec.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        kvm@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips@linux-mips.org, Sanjay Lal <sanjayl@kymasys.com>
+Subject: [PATCH 3.15 56/66] MIPS: KVM: Remove redundant NULL checks before kfree()
+Date: Fri,  4 Jul 2014 15:14:55 -0700
+Message-Id: <20140704221425.362135909@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -29,32 +31,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Shan <gwshan@linux.vnet.ibm.com>
+From: James Hogan <james.hogan@imgtec.com>
 
-commit 54f112a3837d4e7532bbedbbbf27c0de277be510 upstream.
+commit c6c0a6637f9da54f9472144d44f71cf847f92e20 upstream.
 
-In pseries_eeh_get_state(), EEH_STATE_UNAVAILABLE is always
-overwritten by EEH_STATE_NOT_SUPPORT because of the missed
-"break" there. The patch fixes the issue.
+The kfree() function already NULL checks the parameter so remove the
+redundant NULL checks before kfree() calls in arch/mips/kvm/.
 
-Reported-by: Joe Perches <joe@perches.com>
-Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Gleb Natapov <gleb@kernel.org>
+Cc: kvm@vger.kernel.org
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org
+Cc: Sanjay Lal <sanjayl@kymasys.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/pseries/eeh_pseries.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/mips/kvm/kvm_mips.c |   12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
---- a/arch/powerpc/platforms/pseries/eeh_pseries.c
-+++ b/arch/powerpc/platforms/pseries/eeh_pseries.c
-@@ -464,6 +464,7 @@ static int pseries_eeh_get_state(struct
- 			} else {
- 				result = EEH_STATE_NOT_SUPPORT;
- 			}
-+			break;
- 		default:
- 			result = EEH_STATE_NOT_SUPPORT;
- 		}
+--- a/arch/mips/kvm/kvm_mips.c
++++ b/arch/mips/kvm/kvm_mips.c
+@@ -149,9 +149,7 @@ void kvm_mips_free_vcpus(struct kvm *kvm
+ 		if (kvm->arch.guest_pmap[i] != KVM_INVALID_PAGE)
+ 			kvm_mips_release_pfn_clean(kvm->arch.guest_pmap[i]);
+ 	}
+-
+-	if (kvm->arch.guest_pmap)
+-		kfree(kvm->arch.guest_pmap);
++	kfree(kvm->arch.guest_pmap);
+ 
+ 	kvm_for_each_vcpu(i, vcpu, kvm) {
+ 		kvm_arch_vcpu_free(vcpu);
+@@ -389,12 +387,8 @@ void kvm_arch_vcpu_free(struct kvm_vcpu
+ 
+ 	kvm_mips_dump_stats(vcpu);
+ 
+-	if (vcpu->arch.guest_ebase)
+-		kfree(vcpu->arch.guest_ebase);
+-
+-	if (vcpu->arch.kseg0_commpage)
+-		kfree(vcpu->arch.kseg0_commpage);
+-
++	kfree(vcpu->arch.guest_ebase);
++	kfree(vcpu->arch.kseg0_commpage);
+ }
+ 
+ void kvm_arch_vcpu_destroy(struct kvm_vcpu *vcpu)
 
 
