@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031053AbaGDWUk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:20:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57362 "EHLO
+	id S1031070AbaGDWUn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:20:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57355 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031032AbaGDWUh (ORCPT
+	with ESMTP id S1030825AbaGDWUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:20:37 -0400
+	Fri, 4 Jul 2014 18:20:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gabor Juhos <juhosg@openwrt.org>, Guenter Roeck <linux@roeck-us.net>,
-        Wim Van Sebroeck <wim@iguana.be>
-Subject: [PATCH 3.14 19/59] watchdog: ath79_wdt: avoid spurious restarts on AR934x
-Date: Fri,  4 Jul 2014 15:19:08 -0700
-Message-Id: <20140704221540.436839677@linuxfoundation.org>
+        Arun Ramamurthy <arun.ramamurthy@broadcom.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>
+Subject: [PATCH 3.14 18/59] watchdog: sp805: Set watchdog_device->timeout from ->set_timeout()
+Date: Fri,  4 Jul 2014 15:19:07 -0700
+Message-Id: <20140704221540.388041836@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -29,55 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabor Juhos <juhosg@openwrt.org>
+From: Viresh Kumar <viresh.kumar@linaro.org>
 
-commit 23afeb613ec0e10aecfae7838a14d485db62ac52 upstream.
+commit 938626d96a3ffb9eb54552bb0d3a4f2b30ffdeb0 upstream.
 
-On some AR934x based systems, where the frequency of
-the AHB bus is relatively high, the built-in watchdog
-causes a spurious restart when it gets enabled.
+Implementation of ->set_timeout() is supposed to set 'timeout' field of 'struct
+watchdog_device' passed to it. sp805 was rather setting this in a local
+variable. Fix it.
 
-The possible cause of these restarts is that the timeout
-value written into the TIMER register does not reaches
-the hardware in time.
-
-Add an explicit delay into the ath79_wdt_enable function
-to avoid the spurious restarts.
-
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Reported-by: Arun Ramamurthy <arun.ramamurthy@broadcom.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/watchdog/ath79_wdt.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/watchdog/sp805_wdt.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/drivers/watchdog/ath79_wdt.c
-+++ b/drivers/watchdog/ath79_wdt.c
-@@ -20,6 +20,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+--- a/drivers/watchdog/sp805_wdt.c
++++ b/drivers/watchdog/sp805_wdt.c
+@@ -60,7 +60,6 @@
+  * @adev: amba device structure of wdt
+  * @status: current status of wdt
+  * @load_val: load value to be set for current timeout
+- * @timeout: current programmed timeout
+  */
+ struct sp805_wdt {
+ 	struct watchdog_device		wdd;
+@@ -69,7 +68,6 @@ struct sp805_wdt {
+ 	struct clk			*clk;
+ 	struct amba_device		*adev;
+ 	unsigned int			load_val;
+-	unsigned int			timeout;
+ };
  
- #include <linux/bitops.h>
-+#include <linux/delay.h>
- #include <linux/errno.h>
- #include <linux/fs.h>
- #include <linux/init.h>
-@@ -91,6 +92,15 @@ static inline void ath79_wdt_keepalive(v
- static inline void ath79_wdt_enable(void)
- {
- 	ath79_wdt_keepalive();
-+
-+	/*
-+	 * Updating the TIMER register requires a few microseconds
-+	 * on the AR934x SoCs at least. Use a small delay to ensure
-+	 * that the TIMER register is updated within the hardware
-+	 * before enabling the watchdog.
-+	 */
-+	udelay(2);
-+
- 	ath79_wdt_wr(WDOG_REG_CTRL, WDOG_CTRL_ACTION_FCR);
- 	/* flush write */
- 	ath79_wdt_rr(WDOG_REG_CTRL);
+ static bool nowayout = WATCHDOG_NOWAYOUT;
+@@ -99,7 +97,7 @@ static int wdt_setload(struct watchdog_d
+ 	spin_lock(&wdt->lock);
+ 	wdt->load_val = load;
+ 	/* roundup timeout to closest positive integer value */
+-	wdt->timeout = div_u64((load + 1) * 2 + (rate / 2), rate);
++	wdd->timeout = div_u64((load + 1) * 2 + (rate / 2), rate);
+ 	spin_unlock(&wdt->lock);
+ 
+ 	return 0;
 
 
