@@ -1,65 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779AbaGDIko (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:40:44 -0400
-Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:52312 "EHLO
-	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754394AbaGDIkk (ORCPT
+	id S1756135AbaGDIlU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:41:20 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:39213 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232AbaGDIlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:40:40 -0400
-Message-ID: <1404463234.2457.4.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [regression, 3.16-rc] rwsem: optimistic spinning causing
- performance degradation
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jason Low <jason.low2@hp.com>, Dave Chinner <david@fromorbit.com>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 04 Jul 2014 01:40:34 -0700
-In-Reply-To: <20140704075247.GZ19379@twins.programming.kicks-ass.net>
-References: <1404413420.8764.42.camel@j-VirtualBox>
-	 <20140704010147.GY4453@dastard> <1404438366.8764.121.camel@j-VirtualBox>
-	 <1404438890.8764.125.camel@j-VirtualBox>
-	 <20140704075247.GZ19379@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Jul 2014 04:41:17 -0400
+X-AuditID: cbfee690-b7fb56d000003439-e4-53b668ab0ba9
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
+        "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>,
+        "'Sachin Kamat'" <sachin.kamat@linaro.org>,
+        "'Tomasz Figa'" <t.figa@samsung.com>
+References: <1403783163-28638-1-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1403783163-28638-1-git-send-email-k.kozlowski@samsung.com>
+Subject: RE: [PATCH RESEND] ARM: EXYNOS: Do not calculate boot address twice
+Date: Fri, 04 Jul 2014 17:41:15 +0900
+Message-id: <032901cf9763$b7733150$265993f0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQITnyXVBaau3GWu2o69hEk1jowg/psHiPMA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAIsWRmVeSWpSXmKPExsVy+t8zfd3VGduCDS5/F7XYOGM9q8XrF4YW
+	Z5vesFtsenyN1eLyrjlsFjPO72OyuH2Z12LtkbvsFif/9DJarJ/xmsWBy6OluYfN4861PWwe
+	m5fUe/RtWcXo8XmTXABrFJdNSmpOZllqkb5dAlfG/Z3H2Av+clZs2vqTuYGxjaOLkZNDQsBE
+	4tuil2wQtpjEhXvrgWwuDiGBZYwSD3/vYoUpaui9zQiRWMQoMfnDXRYI5y+jxLk1kxlBqtgE
+	NCQOv3/GDmKLCBxnlDjbEQxSxCzwilFiyb23YEVCAu4S11b8YgaxOQU8JL483gfWICzgI7H9
+	0lqwOIuAqsTPDe/BVvMKWEr8O7uSEcIWlPgx+R4LiM0soCWxeVsTK4QtL7F5zVtmiFMVJHac
+	fc0IcYSRxI8HO5kgakQk9r14B/aChMBfdonNPw+yQCwTkPg2+RCQzQGUkJXYdABqjqTEwRU3
+	WCYwSsxCsnoWktWzkKyehWTFAkaWVYyiqQXJBcVJ6UUmesWJucWleel6yfm5mxghsT1hB+O9
+	A9aHGJOB1k9klhJNzgemhrySeENjMyMLUxNTYyNzSzPShJXEedUeJQUJCaQnlqRmp6YWpBbF
+	F5XmpBYfYmTi4JRqYPRwv7A82MdJ7e35l0tmL+d6LZRftqwx0LzxrZN68LM6lk0714eFPDt5
+	+fCsqTnXFEL2zd2/K/VTeB572iSGYxcyVlyROSa211XFdNnhx9OXznCQz384y4O56+Zj1oft
+	y0wWJSzfIGRqd+hx9kW12gXPZTflSX05H/ppZmOwc2/+7l/pGwXCGycosRRnJBpqMRcVJwIA
+	1S7ydAMDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPKsWRmVeSWpSXmKPExsVy+t9jAd3VGduCDS5dE7TYOGM9q8XrF4YW
+	Z5vesFtsenyN1eLyrjlsFjPO72OyuH2Z12LtkbvsFif/9DJarJ/xmsWBy6OluYfN4861PWwe
+	m5fUe/RtWcXo8XmTXABrVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5i
+	bqqtkotPgK5bZg7QTUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjPs7
+	j7EX/OWs2LT1J3MDYxtHFyMnh4SAiURD721GCFtM4sK99WxdjFwcQgKLGCUmf7jLAuH8ZZQ4
+	t2YyWBWbgIbE4ffP2EFsEYHjjBJnO4JBipgFXjFKLLn3FqxISMBd4tqKX8wgNqeAh8SXx/vA
+	GoQFfCS2X1oLFmcRUJX4ueE9K4jNK2Ap8e/sSkYIW1Dix+R7LCA2s4CWxOZtTawQtrzE5jVv
+	mSFOVZDYcfY1I8QRRhI/HuxkgqgRkdj34h3jBEahWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQ
+	nJSea6hXnJhbXJqXrpecn7uJEZw4nkntYFzZYHGIUYCDUYmH16Noa7AQa2JZcWXuIUYJDmYl
+	Ed7klG3BQrwpiZVVqUX58UWlOanFhxhNgT6dyCwlmpwPTGp5JfGGxiZmRpZGZhZGJubmSuK8
+	B1qtA4UE0hNLUrNTUwtSi2D6mDg4pRoY5//lu7bphp/zi+TXX3SbJtz4rjTbZKqT6MI8YUUD
+	z2McYd1lV4Vft/FuYjkquTZZY6mlTEvr1A8KBlbemhsTK9lnCYZM5jht5rfqnkW13Ox1bJlJ
+	3xsMCj+8bFnHKfnMinGdm3PVw9TZZ9Yrf1SyXFgm/nJ6c1fQu0bl2O1Gy7teTMk34n+gxFKc
+	kWioxVxUnAgAGL8LzjIDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-04 at 09:52 +0200, Peter Zijlstra wrote:
-> On Thu, Jul 03, 2014 at 06:54:50PM -0700, Jason Low wrote:
-> > Subject: [PATCH] rwsem: In rwsem_can_spin_on_owner(), return false if no owner
-> > 
-> > It was found that the rwsem optimistic spinning feature can potentially degrade
-> > performance when there are readers. Perf profiles indicate in some workloads
-> > that significant time can be spent spinning on !owner. This is because we don't
-> > set the lock owner when readers(s) obtain the rwsem.
-> > 
-> > In this patch, we'll modify rwsem_can_spin_on_owner() such that we'll return
-> > false if there is no lock owner. The rationale is that if we just entered the
-> > slowpath, yet there is no lock owner, then there is a possibility that a reader
-> > has the lock. To be conservative, we'll avoid spinning in these situations.
-> > 
-> > Dave Chinner found performance benefits with this patch in the xfs_repair
-> > workload, where the total run time went from approximately 4 minutes 24 seconds,
-> > down to approximately 1 minute 26 seconds with the patch.
-> > 
-> > Tested-by: Dave Chinner <dchinner@redhat.com>
-> > Signed-off-by: Jason Low <jason.low2@hp.com>
+Krzysztof Kozlowski wrote:
 > 
-> Davidlohr, you'll be running this through your AIM and other benchmarks,
-> I suppose?
+> Commit b3205dea8fbf ("ARM: EXYNOS: Map SYSRAM through generic DT
+> bindings") introduced local variable boot_reg where boot address from
+> cpu_boot_reg() call is stored. Re-use it instead calling cpu_boot_reg()
+> again.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  arch/arm/mach-exynos/platsmp.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
+> index 1c8d31e39520..55ed2e6729c5 100644
+> --- a/arch/arm/mach-exynos/platsmp.c
+> +++ b/arch/arm/mach-exynos/platsmp.c
+> @@ -155,7 +155,7 @@ static int exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
+>  				ret = PTR_ERR(boot_reg);
+>  				goto fail;
+>  			}
+> -			__raw_writel(boot_addr, cpu_boot_reg(phys_cpu));
+> +			__raw_writel(boot_addr, boot_reg);
+>  		}
+> 
+>  		call_firmware_op(cpu_boot, phys_cpu);
+> @@ -242,7 +242,7 @@ static void __init exynos_smp_prepare_cpus(unsigned int max_cpus)
+> 
+>  			if (IS_ERR(boot_reg))
+>  				break;
+> -			__raw_writel(boot_addr, cpu_boot_reg(phys_cpu));
+> +			__raw_writel(boot_addr, boot_reg);
+>  		}
+>  	}
+>  }
+> --
+> 1.9.1
 
-I ran it through aim7, and as I suspected we take a performance hit with
-'custom' ~-14% throughput for > 300 users (which is still overall quite
-higher than rwsems without opt spinning, at around ~+45%), and we
-actually improve a bit (~+15%) in 'disk' with >1000 users -- which
-afaict resembles Dave's workload a bit. So all in all I'm quite happy
-with this patch.
+Oh, good catch. will apply :-)
 
-Acked-by: Davidlohr Bueso <davidlohr@hp.com>
+Thanks,
+Kukjin
 
