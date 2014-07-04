@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759162AbaGDS2H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 14:28:07 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:53064 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752914AbaGDS2F (ORCPT
+	id S1759470AbaGDS2v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 14:28:51 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:15371 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759361AbaGDS2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 14:28:05 -0400
-Date: Fri, 4 Jul 2014 23:57:56 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Vikas Chaudhary <vikas.chaudhary@qlogic.com>, iscsi-driver@qlogic.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] qla4xxx: Return -ENOMEM on memory allocation failure
-Message-ID: <20140704182756.GA9319@himangi-Dell>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 4 Jul 2014 14:28:50 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmMPAFPxtlNbsGwr/2dsb2JhbABagw6scAUBAQEBAQEFAW4BkiiHP4ELF3WECwIkLyNJOQcRN4guAxUBtUmOLA2GUheFcIcKgigZBAmEJAWOG4lvbIIAiBGFZ4YUg0U7gTo
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        v9fs-developer@lists.sourceforge.net
+Subject: [PATCH 1/1] 9p: kerneldoc warning fixes
+Date: Fri,  4 Jul 2014 20:28:44 +0200
+Message-Id: <1404498524-12123-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this code, 0 is returned on memory allocation failure, even though
-other failures return -ENOMEM or other similar values.
+options argument was removed from v9fs_session_info in commit 4b53e4b50077
+("9p: remove unnecessary v9fses->options which duplicates the mount string")
 
-A simplified version of the Coccinelle semantic match that finds this
-problem is as follows:
+iov and nr_segs were removed from v9fs_direct_IO
+in commit d8d3d94b80aa
+("pass iov_iter to ->direct_IO()")
 
-// <smpl>
-@@
-expression ret;
-expression x,e1,e2,e3;
-identifier alloc;
-@@
-
-ret = 0
-... when != ret = e1
-*x = alloc(...)
-... when != ret = e2
-if (x == NULL) { ... when != ret = e3
-  return ret;
-}
-// </smpl>
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>
+Cc: Ron Minnich <rminnich@sandia.gov>
+Cc: Latchesar Ionkov <lucho@ionkov.net>
+Cc: v9fs-developer@lists.sourceforge.net
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/scsi/qla4xxx/ql4_os.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/9p/v9fs.h     | 1 -
+ fs/9p/vfs_addr.c | 2 --
+ 2 files changed, 3 deletions(-)
 
-diff --git a/drivers/scsi/qla4xxx/ql4_os.c b/drivers/scsi/qla4xxx/ql4_os.c
-index c5d9564..72ba671 100644
---- a/drivers/scsi/qla4xxx/ql4_os.c
-+++ b/drivers/scsi/qla4xxx/ql4_os.c
-@@ -1050,6 +1050,7 @@ static int qla4xxx_get_host_stats(struct Scsi_Host *shost, char *buf, int len)
- 	if (!ql_iscsi_stats) {
- 		ql4_printk(KERN_ERR, ha,
- 			   "Unable to allocate memory for iscsi stats\n");
-+		ret = -ENOMEM;
- 		goto exit_host_stats;
- 	}
- 
+diff --git a/fs/9p/v9fs.h b/fs/9p/v9fs.h
+index 099c771..fb9ffcb 100644
+--- a/fs/9p/v9fs.h
++++ b/fs/9p/v9fs.h
+@@ -78,7 +78,6 @@ enum p9_cache_modes {
+  * @cache: cache mode of type &p9_cache_modes
+  * @cachetag: the tag of the cache associated with this session
+  * @fscache: session cookie associated with FS-Cache
+- * @options: copy of options string given by user
+  * @uname: string user name to mount hierarchy as
+  * @aname: mount specifier for remote hierarchy
+  * @maxdata: maximum data to be sent/recvd per protocol message
+diff --git a/fs/9p/vfs_addr.c b/fs/9p/vfs_addr.c
+index cc1cfae..076d3ef 100644
+--- a/fs/9p/vfs_addr.c
++++ b/fs/9p/vfs_addr.c
+@@ -243,9 +243,7 @@ static int v9fs_launder_page(struct page *page)
+  * v9fs_direct_IO - 9P address space operation for direct I/O
+  * @rw: direction (read or write)
+  * @iocb: target I/O control block
+- * @iov: array of vectors that define I/O buffer
+  * @pos: offset in file to begin the operation
+- * @nr_segs: size of iovec array
+  *
+  * The presence of v9fs_direct_IO() in the address space ops vector
+  * allowes open() O_DIRECT flags which would have failed otherwise.
 -- 
 1.9.1
 
