@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760050AbaGDTtI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 15:49:08 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:60786 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759559AbaGDTtH (ORCPT
+	id S1760060AbaGDTvQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 15:51:16 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:51831 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752107AbaGDTvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 15:49:07 -0400
+	Fri, 4 Jul 2014 15:51:15 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53B705B1.3000403@roeck-us.net>
+Date: Fri, 04 Jul 2014 12:51:13 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140704180408.GA15032@redhat.com>
-References: <100531b7498c9148eaf7163ead7adef263d9981c.1404340903.git.luto@amacapital.net>
- <CALCETrVkg7_GzR0QqyW-hNS8iJGr3i_R6AbrjwjwwUboWCiNOw@mail.gmail.com>
- <CALCETrVRJZeLam5jbNrgptETbXbsnPXMBgLwcO_uAMK6CSF65g@mail.gmail.com>
- <CA+55aFzMSswoVaHhM41rATubj+rqBsa4jyQaBVPNHO_-BpyHJg@mail.gmail.com>
- <CALCETrUDCDfm8+xEFiPDwJbSu25yo2xNKYYfCiU9RO5C_X=bDg@mail.gmail.com>
- <CA+55aFwehdBTK=dXFQkXK2ZB6GYXxEcnY7Eg8jwSV5E6yaJNTQ@mail.gmail.com>
- <20140703184215.GA21542@redhat.com> <20140704161316.GA6241@redhat.com> <20140704180408.GA15032@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 4 Jul 2014 12:48:44 -0700
-Message-ID: <CALCETrXbmKviiOBmfqa=+oTng6keZ2bZ35NPDd3XWWmJLWVsHA@mail.gmail.com>
-Subject: Re: [PATCH] x86: kill ptregscall_common
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Rob Herring <robh@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v2] platform_get_irq: Revert to platform_get_resource
+ if of_irq_get fails
+References: <1403045462-24204-1-git-send-email-linux@roeck-us.net> <CAL_Jsq+Xi4UnFHouTqJQGyNVHpCcbNBRNgbQ3OY-+EsCDKFHLw@mail.gmail.com> <20140630161835.GA14632@roeck-us.net> <20140630162250.GA24179@kroah.com>
+In-Reply-To: <20140630162250.GA24179@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 4, 2014 at 11:04 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> It has no users since commit b3af11afe06a "x86: get rid of pt_regs
-> argument of iopl(2)".
-
-Looks good to me.
-
---Andy
-
+On 06/30/2014 09:22 AM, Greg Kroah-Hartman wrote:
+> On Mon, Jun 30, 2014 at 09:18:35AM -0700, Guenter Roeck wrote:
+>> On Mon, Jun 23, 2014 at 10:48:33AM -0500, Rob Herring wrote:
+>>> On Tue, Jun 17, 2014 at 5:51 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>> Commits 9ec36ca (of/irq: do irq resolution in platform_get_irq)
+>>>> and ad69674 (of/irq: do irq resolution in platform_get_irq_byname)
+>>>> change the semantics of platform_get_irq and platform_get_irq_byname
+>>>> to always rely on devicetree information if devicetree is enabled
+>>>> and if a devicetree node is attached to the device. The functions
+>>>> now return an error if the devicetree data does not include interrupt
+>>>> information, even if the information is available as platform resource
+>>>> data.
+>>>>
+>>>> This causes mfd client drivers to fail if the interrupt number is
+>>>> passed via platform resources. Therefore, if of_irq_get fails, try
+>>>> platform_get_resource as method of last resort. This restores the
+>>>> original functionality for drivers depending on platform resources
+>>>> to get irq information.
+>>>>
+>>>> Cc: Russell King <linux@arm.linux.org.uk>
+>>>> Cc: Rob Herring <robh@kernel.org>
+>>>> Cc: Tony Lindgren <tony@atomide.com>
+>>>> Cc: Grant Likely <grant.likely@linaro.org>
+>>>> Cc: Grygorii Strashko <grygorii.strashko@ti.com>
+>>>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>>>
+>>> Acked-by: Rob Herring <robh@kernel.org>
+>>>
+>>> Greg should take this for 3.16.
+>>>
+>> Doesn't seem to go anywhere. Guess it's one more patch I'll have to carry
+>> locally :-(. If anyone has a better idea how to fix the problem, please
+>> let me know.
 >
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  arch/x86/kernel/entry_64.S |   13 -------------
->  1 files changed, 0 insertions(+), 13 deletions(-)
->
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index b25ca96..fa64128 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -640,19 +640,6 @@ END(\label)
->         FORK_LIKE  vfork
->         FIXED_FRAME stub_iopl, sys_iopl
->
-> -ENTRY(ptregscall_common)
-> -       DEFAULT_FRAME 1 8       /* offset 8: return address */
-> -       RESTORE_TOP_OF_STACK %r11, 8
-> -       movq_cfi_restore R15+8, r15
-> -       movq_cfi_restore R14+8, r14
-> -       movq_cfi_restore R13+8, r13
-> -       movq_cfi_restore R12+8, r12
-> -       movq_cfi_restore RBP+8, rbp
-> -       movq_cfi_restore RBX+8, rbx
-> -       ret $REST_SKIP          /* pop extended registers */
-> -       CFI_ENDPROC
-> -END(ptregscall_common)
-> -
->  ENTRY(stub_execve)
->         CFI_STARTPROC
->         addq $8, %rsp
-> --
-> 1.5.5.1
->
+> I can still queue this up, I was hoping that Grant would chime in...
 >
 
+Doesn't look like it.
+
+Guenter
 
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
