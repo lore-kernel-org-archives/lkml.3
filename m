@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756994AbaGDKKI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 06:10:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57356 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752764AbaGDKKF (ORCPT
+	id S1756782AbaGDKMz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 06:12:55 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:44761 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689AbaGDKMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 06:10:05 -0400
-Date: Fri, 4 Jul 2014 12:07:47 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-sunxi <linux-sunxi@googlegroups.com>
-Subject: Re: [PATCH v4 0/6] clk: sunxi: fixes, cleanups and A23 basic clocks
-Message-ID: <20140704100747.GD13487@lukather>
-References: <1403798144-32188-1-git-send-email-wens@csie.org>
- <20140702223552.7440.60829@quantum>
- <CAGb2v67ceT8X-zmB7ULPg6Kqd8PRpmo0x_Vu9iF4s_6euXg_FQ@mail.gmail.com>
+	Fri, 4 Jul 2014 06:12:54 -0400
+Date: Fri, 4 Jul 2014 03:13:02 -0700
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Alex =?iso-8859-1?Q?Benn=E9e?= <alex.bennee@linaro.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm64: KVM: export demux regids as KVM_REG_ARM64
+Message-ID: <20140704101302.GD20451@cbox>
+References: <1404229993-14522-1-git-send-email-alex.bennee@linaro.org>
+ <53B2DA42.40604@arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kvUQC+jR9YzypDnK"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAGb2v67ceT8X-zmB7ULPg6Kqd8PRpmo0x_Vu9iF4s_6euXg_FQ@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53B2DA42.40604@arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 01, 2014 at 04:56:50PM +0100, Marc Zyngier wrote:
+> On 01/07/14 16:53, Alex Bennée wrote:
+> > I suspect this is a -ECUTPASTE fault from the initial implementation. If
+> > we don't declare the register ID to be KVM_REG_ARM64 the KVM_GET_ONE_REG
+> > implementation kvm_arm_get_reg() returns -EINVAL and hilarity ensues.
+> > 
+> > The kvm/api.txt document describes all arm64 registers as starting with
+> > 0x60xx... (i.e KVM_REG_ARM64).
+> > 
+> > Signed-off-by: Alex Bennée <alex.bennee@linaro.org>
+> > Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
+> > ---
+> >  arch/arm64/kvm/sys_regs.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/arm64/kvm/sys_regs.c b/arch/arm64/kvm/sys_regs.c
+> > index 0324458..5ee99e4 100644
+> > --- a/arch/arm64/kvm/sys_regs.c
+> > +++ b/arch/arm64/kvm/sys_regs.c
+> > @@ -962,7 +962,7 @@ static unsigned int num_demux_regs(void)
+> >  
+> >  static int write_demux_regids(u64 __user *uindices)
+> >  {
+> > -	u64 val = KVM_REG_ARM | KVM_REG_SIZE_U32 | KVM_REG_ARM_DEMUX;
+> > +	u64 val = KVM_REG_ARM64 | KVM_REG_SIZE_U32 | KVM_REG_ARM_DEMUX;
+> >  	unsigned int i;
+> >  
+> >  	val |= KVM_REG_ARM_DEMUX_ID_CCSIDR;
+> > 
+> 
+> -EBROWNPAPERBAG.
+> 
+> Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+> 
+Applied to kvmarm/master,
 
---kvUQC+jR9YzypDnK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, Jul 03, 2014 at 03:37:36PM +0800, Chen-Yu Tsai wrote:
-> On Thu, Jul 3, 2014 at 6:35 AM, Mike Turquette <mturquette@linaro.org> wr=
-ote:
-> > Quoting Chen-Yu Tsai (2014-06-26 08:55:38)
-> >> Hi everyone,
-> >>
-> >> This is v4 of the sun8i clock series, which adds basic clock
-> >> support for the A23 SoC. It is based on my initial sun8i bring
-> >> up series [1]. This series was split up from the original A23
-> >> series [2]. Yet to come are more clocks, reset controllers,
-> >> prcm, pinctrl, and mmc.
-> >
-> > Hello Chen-Yu,
-> >
-> > This series looks good to me.
->=20
-> Thanks. Assuming no one else raises any issues, I consider this
-> series merged. I'll send the next sun8i series later today.
->=20
-> The remaining series still have some clock patches, so thanks
-> in advance.
-
-I just merged it all in sunxi/dt-for-3.17 and sunxi/clocks-for-3.17.
-
-Thanks!
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---kvUQC+jR9YzypDnK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTtnzzAAoJEBx+YmzsjxAg7AgQALxfGqF80RCk3v3dmgCOn4uR
-gL1BoiGcY9m8DAHnVrScF9m6kvaAwaNiODMvmq0MJvBTTsPXrk7cnfMqP+BmEGr7
-9bybzWMkHj2meSMwE8B6TnC1FjSBUT1xuXlE+uuwuGsJhbme/yajgQoifPwyvrTB
-L2+GQMfICKij3K76ihLR6aqONwIJuNGNt+J/R62zgUmqMsUY/ZA0o1BHraVY5ZCN
-tlCqm61YQEVWhI3hKWb9hvfdzBOHM5FHVOaVTkLgZKvuGfKnGd5jqZvlNAT/S6vP
-EfOyjkDz16Xm+w06B/cLvJVthRwxOobiurtZToL+YE/rcvsAqW6Vko4OlYtQv1xq
-wN0cfDWln3f5dYlK9C4vHEaq32EbNrdF9fTQKBoOXXg4CEFNwfPAy5lEGzjqhOOd
-k2S+i20dO3Vv2dFQb7IH4DzUJ+U4wt3FBkPdvsTKOV6odeK/7d1PiZ6CtxRs+rMH
-kSUihm/IXOEEjAUTf/XzAYGznQv9K1a1aeJ/eqTuYOBVrsYiY292Zir0CN3fL3Tl
-wpnQXQvRWOYCKyw6ySsFQ35QRM5kXM1r5s9IpppK6Q/X7zXCEw6RuecJC4Qls1L9
-K13+tpJoBccaD35GYPpBw5YL7Ct6oJJtq2M9CN2vgn7DR57A7lMDaUtSjKvy+PwC
-TFQjyVs7C3lNYLO1Erf2
-=5BNR
------END PGP SIGNATURE-----
-
---kvUQC+jR9YzypDnK--
+thanks.
