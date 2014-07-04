@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853AbaGDJNK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 05:13:10 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:53098 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751537AbaGDJNE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 05:13:04 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Alexander Gordeev'" <agordeev@redhat.com>
-CC: "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: RE: [PATCH 1/3] PCI/MSI: Add pci_enable_msi_partial()
-Thread-Topic: [PATCH 1/3] PCI/MSI: Add pci_enable_msi_partial()
-Thread-Index: AQHPljNB2YNqvD5cNkq3/QaNLPhjzpuOEsDAgAF8RoCAABKQ0A==
-Date: Fri, 4 Jul 2014 09:11:50 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1726C717@AcuExch.aculab.com>
-References: <cover.1402405331.git.agordeev@redhat.com>
- <4fef62a2e647a7c38e9f2a1ea4244b3506a85e2b.1402405331.git.agordeev@redhat.com>
- <20140702202201.GA28852@google.com>
- <063D6719AE5E284EB5DD2968C1650D6D1726BF4E@AcuExch.aculab.com>
- <20140704085816.GB12247@dhcp-26-207.brq.redhat.com>
-In-Reply-To: <20140704085816.GB12247@dhcp-26-207.brq.redhat.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1755435AbaGDJO2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 05:14:28 -0400
+Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:3292
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751198AbaGDJO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 05:14:26 -0400
+From: Liu Ying <Ying.Liu@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <shawn.guo@freescale.com>, <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH] bus: imx-weim: populate devices on a simple bus
+Date: Fri, 4 Jul 2014 17:00:41 +0800
+Message-ID: <1404464441-31755-1-git-send-email-Ying.Liu@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199002)(189002)(6806004)(31966008)(79102001)(68736004)(4396001)(19580405001)(44976005)(77982001)(77156001)(110136001)(76482001)(2351001)(19580395003)(107046002)(69596002)(80022001)(97736001)(50226001)(46102001)(99396002)(81156004)(50986999)(20776003)(50466002)(106466001)(104166001)(105606002)(26826002)(48376002)(87936001)(102836001)(36756003)(21056001)(74502001)(74662001)(92566001)(83072002)(104016002)(84676001)(64706001)(83322001)(95666004)(62966002)(47776003)(88136002)(85306003)(229853001)(89996001)(92726001)(87286001)(86362001)(85852003)(81542001)(81342001)(93916002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB342;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02622CEF0A
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Ying.Liu@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Gordeev
-...
-> > Even if you do that, you ought to write valid interrupt information
-> > into the 4th slot (maybe replicating one of the earlier interrupts).
-> > Then, if the device does raise the 'unexpected' interrupt you don't
-> > get a write to a random kernel location.
-> 
-> I might be missing something, but we are talking of MSI address space
-> here, aren't we? I am not getting how we could end up with a 'write'
-> to a random kernel location when a unclaimed MSI vector sent. We could
-> only expect a spurious interrupt at worst, which is handled and reported.
-> 
-> Anyway, as I described in my reply to Bjorn, this is not a concern IMO.
+There could be some memory map devices located in
+a certain chip select region of the i.MX WEIM.
+The devices could be attached to a simple bus(for
+example, a AXI bus) whose root node is one child
+device tree node of the i.MX WEIM device tree node.
+There should be a bridge(very likely, software
+transparent) bewteen the i.MX WEIM and the simple bus.
+This patch makes the i.MX WEIM driver possible to
+populate devices on a simple bus.  In this way, people
+may try various IPs(in a FPGA, maybe) outside of i.MX
+chips with the i.MX WEIM embedded.
 
-I'm thinking of the following - which might be MSI-X ?
-1) Hardware requests some interrupts and tells the host the BAR (and offset)
-   where the 'vectors' should be written.
-2) To raise an interrupt the hardware uses the 'vector' as the address
-   of a normal PCIe write cycle.
+Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+---
+ drivers/bus/imx-weim.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-So if the hardware requests 4 interrupts, but the driver (believing it
-will only use 3) only write 3 vectors, and then the hardware uses the
-4th vector it can write to a random location.
-
-Debugging that would be hard!
-
-	David
-
-
+diff --git a/drivers/bus/imx-weim.c b/drivers/bus/imx-weim.c
+index f8ee13c..75c9681 100644
+--- a/drivers/bus/imx-weim.c
++++ b/drivers/bus/imx-weim.c
+@@ -162,7 +162,9 @@ static int __init weim_parse_dt(struct platform_device *pdev,
+ 		}
+ 	}
+ 
+-	ret = of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
++	ret = of_platform_populate(pdev->dev.of_node,
++				   of_default_bus_match_table,
++				   NULL, &pdev->dev);
+ 	if (ret)
+ 		dev_err(&pdev->dev, "%s fail to create devices.\n",
+ 			pdev->dev.of_node->full_name);
+-- 
+1.7.9.5
 
