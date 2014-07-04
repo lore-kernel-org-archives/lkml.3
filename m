@@ -1,85 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087AbaGDH1z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 03:27:55 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:28624 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750988AbaGDH1x (ORCPT
+	id S1752680AbaGDH2M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 03:28:12 -0400
+Received: from regular1.263xmail.com ([211.150.99.133]:41367 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149AbaGDH2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 03:27:53 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18pP8hsSALM3JhuhMbjreCp
-Date: Fri, 4 Jul 2014 00:27:53 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pascal Huerst <pascal.huerst@gmail.com>
-Cc: santosh.shilimkar@ti.com, khilman@deeprootsystems.com,
-        linus.walleij@linaro.org, gnurou@gmail.com, linux-omap@vger.kernel.org,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Mack <daniel@zonque.org>
-Subject: Re: gpio-omap: wakeup mask
-Message-ID: <20140704072752.GC28884@atomide.com>
-References: <53B3F687.5050502@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B3F687.5050502@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 4 Jul 2014 03:28:10 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: xjq@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: xjq@rock-chips.com
+X-UNIQUE-TAG: <7a18386a481d7fd1e88afc79aa2adabe>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: jianqun <xjq@rock-chips.com>
+To: heiko@sntech.de, lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz,
+        tiwai@suse.de, grant.likely@linaro.org, robh+dt@kernel.org
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        devicetree@vger.kernel.org, zhangqing@rock-chips.com,
+        hj@rock-chips.com, kever.yang@rock-chips.com, huangtao@rock-chips.com,
+        zyw@rock-chips.com, yzq@rock-chips.com, zhenfu.fang@rock-chips.com,
+        cf@rock-chips.com, kfx@rock-chips.com, Jianqun Xu <xjq@rock-chips.com>
+Subject: [PATCH v2 1/2] ASoC: dt-bindings: add rockchip i2s bindings
+Date: Fri,  4 Jul 2014 15:26:36 +0800
+Message-Id: <1404458796-6818-1-git-send-email-xjq@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1404203860-30712-2-git-send-email-xjq@rock-chips.com>
+References: <1404203860-30712-2-git-send-email-xjq@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pascal Huerst <pascal.huerst@gmail.com> [140702 05:12]:
-> Hi everyone,
-> 
-> we have a device with an am335x and are using some gpios on bank0 to
-> wake up the device from suspend to ram.
-> 
-> We have some user buttons which are configured in the devicetree as
-> gpio-keys and one power-key which should wake up the device:
-> 
-> &buttons {
->         power {
->                 label = "Power";
->                 gpios = <&gpio0 6 1>;
->                 linux,code = <116>;
->                 gpio-key,wakeup;
->         };
-> 
->         one {
->                 label = "One";
->                 gpios = <&gpio0 11 1>;
->                 linux,code = <2>;
->         };
-> 
->         : : :
-> }
-> 
-> The problem is, that the device wakes up on any trigger on bank 0. No
-> matter which button was pressed. "gpio-key,wakeup" seems not to have any
-> influence.
-> 
-> Now, if I comment the following lines out in drivers/gpio/gpio-omap.c :
-> set_gpio_trigger(...).
-> 
-> 321
-> 322 if (likely(!(bank->non_wakeup_gpios & gpio_bit))) {
-> 323    _gpio_rmw(base, bank->regs->wkup_en, gpio_bit, trigger != 0);
-> 324      bank->context.wake_en =
-> 325        readl_relaxed(bank->base + bank->regs->wkup_en);
-> 326 }
-> 327
-> 
-> Everything works as expected. But I don't really understand why? Is this
-> a bug, or does this break something else I have not discovered yet?
+From: Jianqun Xu <xjq@rock-chips.com>
 
-The GPIO wake-up events are working from off-idle for omap3
-the last time I checked, so sounds like this is some am335x
-related issue.
+Add devicetree bindings for i2s controller found on
+rk3066, rk3188 and rk3288 processors from rockchip.
 
-What does your bank->context.wake_en mask get set to with this code?
+Signed-off-by: Jianqun Xu <xjq@rock-chips.com>
+---
+Changes since v1:
+- modify the description of clock-names property, adviced by Mark Rutland.
+- modify the example to fit for rk3288.
 
-Regards,
+ .../devicetree/bindings/sound/rockchip-i2s.txt     |   36 ++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/sound/rockchip-i2s.txt
 
-Tony
+diff --git a/Documentation/devicetree/bindings/sound/rockchip-i2s.txt b/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
+new file mode 100644
+index 0000000..9fc577d
+--- /dev/null
++++ b/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
+@@ -0,0 +1,36 @@
++* Rockchip I2S controller
++
++The I2S bus (Inter-IC sound bus) is a serial link for digital
++audio data transfer between devices in the system.
++
++Required properties:
++
++- compatible: should be one of the followings
++   - "rockchip,rk3066-i2s": for rk3066
++   - "rockchip,rk3188-i2s", "rockchip,rk3066-i2s": for rk3188
++   - "rockchip,rk3288-i2s", "rockchip,rk3066-i2s": for rk3288
++- reg: physical base address of the controller and length of memory mapped
++  region.
++- interrupts: The interrupt number to the cpu. The interrupt specifier format
++  depends on the interrupt controller.
++- #address-cells: should be 1.
++- #size-cells: should be 0.
++- dmas: DMA specifiers for tx and rx dma. See the DMA client binding,
++	Documentation/devicetree/bindings/dma/dma.txt
++- dma-names: DMA request names should include "tx" and "rx" if present.
++- clocks: a list of phandle + clock-specifer pairs, one for each entry in clock-names.
++- clock-names: Shall be "i2s_hclk" for I2S bus and "i2s_clk" for master clock
++
++Example, for rk3288 I2S controller:
++
++i2s0: i2s@ff890000 {
++	compatible = "rockchip,rk3066-i2s", "rockchip,rk3288-i2s";
++	reg = <0xff890000 0x10000>;
++	interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>;
++	#address-cells = <1>;
++	#size-cells = <0>;
++	dmas = <&pdma1 0>, <&pdma1 1>;
++	dma-names = "rx", "tx";
++	clock-names = "i2s_hclk", "i2s_clk";
++	clocks = <&cru HCLK_I2S0>, <&cru SCLK_I2S0>;
++};
+-- 
+1.7.9.5
+
+
