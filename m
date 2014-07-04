@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760846AbaGDWiI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:38:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57541 "EHLO
+	id S1031153AbaGDWib (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:38:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57535 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031311AbaGDWVg (ORCPT
+	with ESMTP id S1031305AbaGDWVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:21:36 -0400
+	Fri, 4 Jul 2014 18:21:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>, Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.14 44/59] powerpc: Dont setup CPUs with bad status
-Date: Fri,  4 Jul 2014 15:19:33 -0700
-Message-Id: <20140704221541.645351976@linuxfoundation.org>
+        Arun Ramamurthy <arun.ramamurthy@broadcom.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>
+Subject: [PATCH 3.10 15/46] watchdog: sp805: Set watchdog_device->timeout from ->set_timeout()
+Date: Fri,  4 Jul 2014 15:19:19 -0700
+Message-Id: <20140704221602.965490240@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
-References: <20140704221539.544876024@linuxfoundation.org>
+In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
+References: <20140704221602.280733370@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,42 +26,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Viresh Kumar <viresh.kumar@linaro.org>
 
-commit 59a53afe70fd530040bdc69581f03d880157f15a upstream.
+commit 938626d96a3ffb9eb54552bb0d3a4f2b30ffdeb0 upstream.
 
-OPAL will mark a CPU that is guarded as "bad" in the status property of the CPU
-node.
+Implementation of ->set_timeout() is supposed to set 'timeout' field of 'struct
+watchdog_device' passed to it. sp805 was rather setting this in a local
+variable. Fix it.
 
-Unfortunatley Linux doesn't check this property and will put the bad CPU in the
-present map.  This has caused hangs on booting when we try to unsplit the core.
-
-This patch checks the CPU is avaliable via this status property before putting
-it in the present map.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Tested-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Arun Ramamurthy <arun.ramamurthy@broadcom.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/setup-common.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/watchdog/sp805_wdt.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/arch/powerpc/kernel/setup-common.c
-+++ b/arch/powerpc/kernel/setup-common.c
-@@ -458,7 +458,7 @@ void __init smp_setup_cpu_maps(void)
- 		for (j = 0; j < nthreads && cpu < nr_cpu_ids; j++) {
- 			DBG("    thread %d -> cpu %d (hard id %d)\n",
- 			    j, cpu, be32_to_cpu(intserv[j]));
--			set_cpu_present(cpu, true);
-+			set_cpu_present(cpu, of_device_is_available(dn));
- 			set_hard_smp_processor_id(cpu, be32_to_cpu(intserv[j]));
- 			set_cpu_possible(cpu, true);
- 			cpu++;
+--- a/drivers/watchdog/sp805_wdt.c
++++ b/drivers/watchdog/sp805_wdt.c
+@@ -60,7 +60,6 @@
+  * @adev: amba device structure of wdt
+  * @status: current status of wdt
+  * @load_val: load value to be set for current timeout
+- * @timeout: current programmed timeout
+  */
+ struct sp805_wdt {
+ 	struct watchdog_device		wdd;
+@@ -69,7 +68,6 @@ struct sp805_wdt {
+ 	struct clk			*clk;
+ 	struct amba_device		*adev;
+ 	unsigned int			load_val;
+-	unsigned int			timeout;
+ };
+ 
+ static bool nowayout = WATCHDOG_NOWAYOUT;
+@@ -99,7 +97,7 @@ static int wdt_setload(struct watchdog_d
+ 	spin_lock(&wdt->lock);
+ 	wdt->load_val = load;
+ 	/* roundup timeout to closest positive integer value */
+-	wdt->timeout = div_u64((load + 1) * 2 + (rate / 2), rate);
++	wdd->timeout = div_u64((load + 1) * 2 + (rate / 2), rate);
+ 	spin_unlock(&wdt->lock);
+ 
+ 	return 0;
 
 
