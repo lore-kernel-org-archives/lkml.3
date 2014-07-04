@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031649AbaGDWfl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:35:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57571 "EHLO
+	id S1031671AbaGDWgE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:36:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57556 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031347AbaGDWVn (ORCPT
+	with ESMTP id S1031334AbaGDWVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:21:43 -0400
+	Fri, 4 Jul 2014 18:21:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Plamen Petrov <plamen.sisi@gmail.com>,
-        Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>
-Subject: [PATCH 3.14 47/59] xfs: xfs_readsb needs to check for magic numbers
-Date: Fri,  4 Jul 2014 15:19:36 -0700
-Message-Id: <20140704221541.785787745@linuxfoundation.org>
+        Joe Perches <joe@perches.com>, Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.14 37/59] powerpc/pseries: Fix overwritten PE state
+Date: Fri,  4 Jul 2014 15:19:26 -0700
+Message-Id: <20140704221541.319507236@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -30,70 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Gavin Shan <gwshan@linux.vnet.ibm.com>
 
-commit 556b8883cfac3d3203557e161ea8005f8b5479b2 upstream.
+commit 54f112a3837d4e7532bbedbbbf27c0de277be510 upstream.
 
-Commit daba542 ("xfs: skip verification on initial "guess"
-superblock read") dropped the use of a verifier for the initial
-superblock read so we can probe the sector size of the filesystem
-stored in the superblock. It, however, now fails to validate that
-what was read initially is actually an XFS superblock and hence will
-fail the sector size check and return ENOSYS.
+In pseries_eeh_get_state(), EEH_STATE_UNAVAILABLE is always
+overwritten by EEH_STATE_NOT_SUPPORT because of the missed
+"break" there. The patch fixes the issue.
 
-This causes probe-based mounts to fail because it expects XFS to
-return EINVAL when it doesn't recognise the superblock format.
-
-Reported-by: Plamen Petrov <plamen.sisi@gmail.com>
-Tested-by: Plamen Petrov <plamen.sisi@gmail.com>
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
+Reported-by: Joe Perches <joe@perches.com>
+Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_mount.c |   23 +++++++++++++++++------
- 1 file changed, 17 insertions(+), 6 deletions(-)
+ arch/powerpc/platforms/pseries/eeh_pseries.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/xfs/xfs_mount.c
-+++ b/fs/xfs/xfs_mount.c
-@@ -320,8 +320,19 @@ reread:
- 	/*
- 	 * Initialize the mount structure from the superblock.
- 	 */
--	xfs_sb_from_disk(&mp->m_sb, XFS_BUF_TO_SBP(bp));
--	xfs_sb_quota_from_disk(&mp->m_sb);
-+	xfs_sb_from_disk(sbp, XFS_BUF_TO_SBP(bp));
-+	xfs_sb_quota_from_disk(sbp);
-+
-+	/*
-+	 * If we haven't validated the superblock, do so now before we try
-+	 * to check the sector size and reread the superblock appropriately.
-+	 */
-+	if (sbp->sb_magicnum != XFS_SB_MAGIC) {
-+		if (loud)
-+			xfs_warn(mp, "Invalid superblock magic number");
-+		error = EINVAL;
-+		goto release_buf;
-+	}
- 
- 	/*
- 	 * We must be able to do sector-sized and sector-aligned IO.
-@@ -334,11 +345,11 @@ reread:
- 		goto release_buf;
- 	}
- 
--	/*
--	 * Re-read the superblock so the buffer is correctly sized,
--	 * and properly verified.
--	 */
- 	if (buf_ops == NULL) {
-+		/*
-+		 * Re-read the superblock so the buffer is correctly sized,
-+		 * and properly verified.
-+		 */
- 		xfs_buf_relse(bp);
- 		sector_size = sbp->sb_sectsize;
- 		buf_ops = loud ? &xfs_sb_buf_ops : &xfs_sb_quiet_buf_ops;
+--- a/arch/powerpc/platforms/pseries/eeh_pseries.c
++++ b/arch/powerpc/platforms/pseries/eeh_pseries.c
+@@ -464,6 +464,7 @@ static int pseries_eeh_get_state(struct
+ 			} else {
+ 				result = EEH_STATE_NOT_SUPPORT;
+ 			}
++			break;
+ 		default:
+ 			result = EEH_STATE_NOT_SUPPORT;
+ 		}
 
 
