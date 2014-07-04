@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760707AbaGDWWd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:22:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57659 "EHLO
+	id S1031222AbaGDWai (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:30:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57672 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760671AbaGDWW0 (ORCPT
+	with ESMTP id S1760671AbaGDWWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:22:26 -0400
+	Fri, 4 Jul 2014 18:22:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 57/59] ALSA: usb-audio: Fix races at disconnection and PCM closing
-Date: Fri,  4 Jul 2014 15:19:46 -0700
-Message-Id: <20140704221542.239710678@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.10 30/46] powerpc: 64bit sendfile is capped at 2GB
+Date: Fri,  4 Jul 2014 15:19:34 -0700
+Message-Id: <20140704221603.655866019@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
-References: <20140704221539.544876024@linuxfoundation.org>
+In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
+References: <20140704221602.280733370@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,128 +25,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Anton Blanchard <anton@samba.org>
 
-commit 92a586bdc06de6629dae1b357dac221253f55ff8 upstream.
+commit 5d73320a96fcce80286f1447864c481b5f0b96fa upstream.
 
-When a USB-audio device is disconnected while PCM is still running, we
-still see some race: the disconnect callback calls
-snd_usb_endpoint_free() that calls release_urbs() and then kfree()
-while a PCM stream would be closed at the same time and calls
-stop_endpoints() that leads to wait_clear_urbs().  That is, the EP
-object might be deallocated while a PCM stream is syncing with
-wait_clear_urbs() with the same EP.
+commit 8f9c0119d7ba (compat: fs: Generic compat_sys_sendfile
+implementation) changed the PowerPC 64bit sendfile call from
+sys_sendile64 to sys_sendfile.
 
-Basically calling multiple wait_clear_urbs() would work fine, also
-calling wait_clear_urbs() and release_urbs() would work, too, as
-wait_clear_urbs() just reads some fields in ep.  The problem is the
-succeeding kfree() in snd_pcm_endpoint_free().
+Unfortunately this broke sendfile of lengths greater than 2G because
+sys_sendfile caps at MAX_NON_LFS. Restore what we had previously which
+fixes the bug.
 
-This patch moves out the EP deallocation into the later point, the
-destructor callback.  At this stage, all PCMs must have been already
-closed, so it's safe to free the objects.
-
-Reported-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/card.c     |   13 ++++++++++---
- sound/usb/endpoint.c |   17 ++++++++++++++---
- sound/usb/endpoint.h |    1 +
- 3 files changed, 25 insertions(+), 6 deletions(-)
+ arch/powerpc/include/asm/systbl.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/usb/card.c
-+++ b/sound/usb/card.c
-@@ -304,6 +304,11 @@ static int snd_usb_create_streams(struct
- 
- static int snd_usb_audio_free(struct snd_usb_audio *chip)
- {
-+	struct list_head *p, *n;
-+
-+	list_for_each_safe(p, n, &chip->ep_list)
-+		snd_usb_endpoint_free(p);
-+
- 	mutex_destroy(&chip->mutex);
- 	kfree(chip);
- 	return 0;
-@@ -580,7 +585,7 @@ static void snd_usb_audio_disconnect(str
- 				     struct snd_usb_audio *chip)
- {
- 	struct snd_card *card;
--	struct list_head *p, *n;
-+	struct list_head *p;
- 
- 	if (chip == (void *)-1L)
- 		return;
-@@ -593,14 +598,16 @@ static void snd_usb_audio_disconnect(str
- 	mutex_lock(&register_mutex);
- 	chip->num_interfaces--;
- 	if (chip->num_interfaces <= 0) {
-+		struct snd_usb_endpoint *ep;
-+
- 		snd_card_disconnect(card);
- 		/* release the pcm resources */
- 		list_for_each(p, &chip->pcm_list) {
- 			snd_usb_stream_disconnect(p);
- 		}
- 		/* release the endpoint resources */
--		list_for_each_safe(p, n, &chip->ep_list) {
--			snd_usb_endpoint_free(p);
-+		list_for_each_entry(ep, &chip->ep_list, list) {
-+			snd_usb_endpoint_release(ep);
- 		}
- 		/* release the midi resources */
- 		list_for_each(p, &chip->midi_list) {
---- a/sound/usb/endpoint.c
-+++ b/sound/usb/endpoint.c
-@@ -981,19 +981,30 @@ void snd_usb_endpoint_deactivate(struct
- }
- 
- /**
-+ * snd_usb_endpoint_release: Tear down an snd_usb_endpoint
-+ *
-+ * @ep: the endpoint to release
-+ *
-+ * This function does not care for the endpoint's use count but will tear
-+ * down all the streaming URBs immediately.
-+ */
-+void snd_usb_endpoint_release(struct snd_usb_endpoint *ep)
-+{
-+	release_urbs(ep, 1);
-+}
-+
-+/**
-  * snd_usb_endpoint_free: Free the resources of an snd_usb_endpoint
-  *
-  * @ep: the list header of the endpoint to free
-  *
-- * This function does not care for the endpoint's use count but will tear
-- * down all the streaming URBs immediately and free all resources.
-+ * This free all resources of the given ep.
-  */
- void snd_usb_endpoint_free(struct list_head *head)
- {
- 	struct snd_usb_endpoint *ep;
- 
- 	ep = list_entry(head, struct snd_usb_endpoint, list);
--	release_urbs(ep, 1);
- 	kfree(ep);
- }
- 
---- a/sound/usb/endpoint.h
-+++ b/sound/usb/endpoint.h
-@@ -23,6 +23,7 @@ void snd_usb_endpoint_stop(struct snd_us
- void snd_usb_endpoint_sync_pending_stop(struct snd_usb_endpoint *ep);
- int  snd_usb_endpoint_activate(struct snd_usb_endpoint *ep);
- void snd_usb_endpoint_deactivate(struct snd_usb_endpoint *ep);
-+void snd_usb_endpoint_release(struct snd_usb_endpoint *ep);
- void snd_usb_endpoint_free(struct list_head *head);
- 
- int snd_usb_endpoint_implicit_feedback_sink(struct snd_usb_endpoint *ep);
+--- a/arch/powerpc/include/asm/systbl.h
++++ b/arch/powerpc/include/asm/systbl.h
+@@ -190,7 +190,7 @@ SYSCALL_SPU(getcwd)
+ SYSCALL_SPU(capget)
+ SYSCALL_SPU(capset)
+ COMPAT_SYS(sigaltstack)
+-COMPAT_SYS_SPU(sendfile)
++SYSX_SPU(sys_sendfile64,compat_sys_sendfile,sys_sendfile)
+ SYSCALL(ni_syscall)
+ SYSCALL(ni_syscall)
+ PPC_SYS(vfork)
 
 
