@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031466AbaGDWWJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:22:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57618 "EHLO
+	id S1760279AbaGDWWa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:22:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57653 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030398AbaGDWWH (ORCPT
+	with ESMTP id S1760466AbaGDWWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:22:07 -0400
+	Fri, 4 Jul 2014 18:22:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Smith <alex.smith@imgtec.com>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.10 11/46] recordmcount/MIPS: Fix possible incorrect mcount_loc table entries in modules
-Date: Fri,  4 Jul 2014 15:19:15 -0700
-Message-Id: <20140704221602.786116745@linuxfoundation.org>
+        Jeff Layton <jlayton@primarydata.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.10 28/46] nfsd: dont halt scanning the DRC LRU list when theres an RC_INPROG entry
+Date: Fri,  4 Jul 2014 15:19:32 -0700
+Message-Id: <20140704221603.567885672@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
 References: <20140704221602.280733370@linuxfoundation.org>
@@ -29,62 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Smith <alex.smith@imgtec.com>
+From: Jeff Layton <jlayton@primarydata.com>
 
-commit 91ad11d7cc6f4472ebf177a6252fbf0fd100d798 upstream.
+commit 1b19453d1c6abcfa7c312ba6c9f11a277568fc94 upstream.
 
-On MIPS calls to _mcount in modules generate 2 instructions to load
-the _mcount address (and therefore 2 relocations). The mcount_loc
-table should only reference the first of these, so the second is
-filtered out by checking the relocation offset and ignoring ones that
-immediately follow the previous one seen.
+Currently, the DRC cache pruner will stop scanning the list when it
+hits an entry that is RC_INPROG. It's possible however for a call to
+take a *very* long time. In that case, we don't want it to block other
+entries from being pruned if they are expired or we need to trim the
+cache to get back under the limit.
 
-However if a module has an _mcount call at offset 0, the second
-relocation would not be filtered out due to old_r_offset == 0
-being taken to mean that the current relocation is the first one
-seen, and both would end up in the mcount_loc table.
+Fix the DRC cache pruner to just ignore RC_INPROG entries.
 
-This results in ftrace_make_nop() patching both (adjacent)
-instructions to branches over the _mcount call sequence like so:
-
-  0xffffffffc08a8000:  04 00 00 10     b       0xffffffffc08a8014
-  0xffffffffc08a8004:  04 00 00 10     b       0xffffffffc08a8018
-  0xffffffffc08a8008:  2d 08 e0 03     move    at,ra
-  ...
-
-The second branch is in the delay slot of the first, which is
-defined to be unpredictable - on the platform on which this bug was
-encountered, it triggers a reserved instruction exception.
-
-Fix by initializing old_r_offset to ~0 and using that instead of 0
-to determine whether the current relocation is the first seen.
-
-Signed-off-by: Alex Smith <alex.smith@imgtec.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/7098/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/recordmcount.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/nfsd/nfscache.c |   17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
---- a/scripts/recordmcount.h
-+++ b/scripts/recordmcount.h
-@@ -163,11 +163,11 @@ static int mcount_adjust = 0;
+--- a/fs/nfsd/nfscache.c
++++ b/fs/nfsd/nfscache.c
+@@ -221,13 +221,6 @@ hash_refile(struct svc_cacherep *rp)
+ 	hlist_add_head(&rp->c_hash, cache_hash + hash_32(rp->c_xid, maskbits));
+ }
  
- static int MIPS_is_fake_mcount(Elf_Rel const *rp)
- {
--	static Elf_Addr old_r_offset;
-+	static Elf_Addr old_r_offset = ~(Elf_Addr)0;
- 	Elf_Addr current_r_offset = _w(rp->r_offset);
- 	int is_fake;
+-static inline bool
+-nfsd_cache_entry_expired(struct svc_cacherep *rp)
+-{
+-	return rp->c_state != RC_INPROG &&
+-	       time_after(jiffies, rp->c_timestamp + RC_EXPIRE);
+-}
+-
+ /*
+  * Walk the LRU list and prune off entries that are older than RC_EXPIRE.
+  * Also prune the oldest ones when the total exceeds the max number of entries.
+@@ -238,8 +231,14 @@ prune_cache_entries(void)
+ 	struct svc_cacherep *rp, *tmp;
  
--	is_fake = old_r_offset &&
-+	is_fake = (old_r_offset != ~(Elf_Addr)0) &&
- 		(current_r_offset - old_r_offset == MIPS_FAKEMCOUNT_OFFSET);
- 	old_r_offset = current_r_offset;
- 
+ 	list_for_each_entry_safe(rp, tmp, &lru_head, c_lru) {
+-		if (!nfsd_cache_entry_expired(rp) &&
+-		    num_drc_entries <= max_drc_entries)
++		/*
++		 * Don't free entries attached to calls that are still
++		 * in-progress, but do keep scanning the list.
++		 */
++		if (rp->c_state == RC_INPROG)
++			continue;
++		if (num_drc_entries <= max_drc_entries &&
++		    time_before(jiffies, rp->c_timestamp + RC_EXPIRE))
+ 			break;
+ 		nfsd_reply_cache_free_locked(rp);
+ 	}
 
 
