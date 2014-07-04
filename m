@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030240AbaGDJ4J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 05:56:09 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:38072 "EHLO
+	id S1758645AbaGDKAp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 06:00:45 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:38106 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964984AbaGDJ4B (ORCPT
+	with ESMTP id S1030243AbaGDJ4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 05:56:01 -0400
+	Fri, 4 Jul 2014 05:56:10 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
@@ -21,9 +21,9 @@ Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v6 10/23] clk: max77686: Add DT include for MAX77686 PMIC clock
-Date: Fri,  4 Jul 2014 11:55:09 +0200
-Message-Id: <1404467722-26687-11-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v6 13/23] clk: max77686: Improve Maxim 77686 PMIC clocks binding
+Date: Fri,  4 Jul 2014 11:55:12 +0200
+Message-Id: <1404467722-26687-14-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -31,76 +31,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a dt-binding include for Maxim 77686
-PMIC clock IDs that can be used by both the max77686
-clock driver and Device Tree source files.
+Like most clock drivers, the Maxim 77686 PMIC clock binding
+follows the convention that the "#clock-cells" property is
+used to specify the number of cells in a clock provider.
+
+But the binding document is not clear enough that it shall
+be set to 1 since the PMIC support multiple clocks outputs.
+
+Also, explain that the clocks identifiers are defined in a
+header file that can be included by Device Tree source with
+client nodes to avoid using magic numbers.
+
+Finally, add "clock-output-names" as an optional property
+since now is supported by the clock driver.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Reviewed-by: Doug Anderson <dianders@chromium.org>
 Reviewed-by: Mike Turquette <mturquette@linaro.org>
 ---
 
 Changes since v5:
- - Improve wording in commit message. Suggested by Andreas Farber.
+  - Add "clock-output-names" as an optional property now that is supported.
 
 Changes since v4: None
 
 Changes since v3:
- - Keep the note that this patch needs another change due wakeup
-   ordering problems.
+ - Don't change clock-names property to make clear that it's
+   the consumer clock name and should not match the producer clock.
+   Suggested by Doug Anderson.
 ---
- drivers/clk/clk-max77686.c                 |  7 +------
- include/dt-bindings/clock/maxim,max77686.h | 23 +++++++++++++++++++++++
- 2 files changed, 24 insertions(+), 6 deletions(-)
- create mode 100644 include/dt-bindings/clock/maxim,max77686.h
+ .../devicetree/bindings/clock/maxim,max77686.txt         | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/clk/clk-max77686.c b/drivers/clk/clk-max77686.c
-index 3d7e8dd..185b611 100644
---- a/drivers/clk/clk-max77686.c
-+++ b/drivers/clk/clk-max77686.c
-@@ -30,12 +30,7 @@
- #include <linux/mutex.h>
- #include <linux/clkdev.h>
+diff --git a/Documentation/devicetree/bindings/clock/maxim,max77686.txt b/Documentation/devicetree/bindings/clock/maxim,max77686.txt
+index 96ce71b..9c40739 100644
+--- a/Documentation/devicetree/bindings/clock/maxim,max77686.txt
++++ b/Documentation/devicetree/bindings/clock/maxim,max77686.txt
+@@ -9,13 +9,21 @@ The MAX77686 contains three 32.768khz clock outputs that can be controlled
+ Following properties should be presend in main device node of the MFD chip.
  
--enum {
--	MAX77686_CLK_AP = 0,
--	MAX77686_CLK_CP,
--	MAX77686_CLK_PMIC,
--	MAX77686_CLKS_NUM,
--};
-+#include <dt-bindings/clock/maxim,max77686.h>
+ Required properties:
+-- #clock-cells: simple one-cell clock specifier format is used, where the
+-  only cell is used as an index of the clock inside the provider. Following
+-  indices are allowed:
++
++- #clock-cells: from common clock binding; shall be set to 1.
++
++Optional properties:
++- clock-output-names: From common clock binding.
++
++Each clock is assigned an identifier and client nodes can use this identifier
++to specify the clock which they consume. Following indices are allowed:
+     - 0: 32khz_ap clock,
+     - 1: 32khz_cp clock,
+     - 2: 32khz_pmic clock.
  
- struct max77686_clk {
- 	struct max77686_dev *iodev;
-diff --git a/include/dt-bindings/clock/maxim,max77686.h b/include/dt-bindings/clock/maxim,max77686.h
-new file mode 100644
-index 0000000..7b28b09
---- /dev/null
-+++ b/include/dt-bindings/clock/maxim,max77686.h
-@@ -0,0 +1,23 @@
-+/*
-+ * Copyright (C) 2014 Google, Inc
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Device Tree binding constants clocks for the Maxim 77686 PMIC.
-+ */
++Clocks are defined as preprocessor macros in dt-bindings/clock/maxim,max77686.h
++header and can be used in device tree sources.
 +
-+#ifndef _DT_BINDINGS_CLOCK_MAXIM_MAX77686_CLOCK_H
-+#define _DT_BINDINGS_CLOCK_MAXIM_MAX77686_CLOCK_H
-+
-+/* Fixed rate clocks. */
-+
-+#define MAX77686_CLK_AP		0
-+#define MAX77686_CLK_CP		1
-+#define MAX77686_CLK_PMIC	2
-+
-+/* Total number of clocks. */
-+#define MAX77686_CLKS_NUM		(MAX77686_CLK_PMIC + 1)
-+
-+#endif /* _DT_BINDINGS_CLOCK_MAXIM_MAX77686_CLOCK_H */
+ Example: Node of the MFD chip
+ 
+ 	max77686: max77686@09 {
+@@ -34,5 +42,5 @@ Example: Clock consumer node
+ 		compatible = "bar,foo";
+ 		/* ... */
+ 		clock-names = "my-clock";
+-		clocks = <&max77686 2>;
++		clocks = <&max77686 MAX77686_CLK_PMIC>;
+ 	};
 -- 
 2.0.0.rc2
 
