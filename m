@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031643AbaGDWfJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:35:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57575 "EHLO
+	id S1031649AbaGDWfl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:35:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031358AbaGDWVo (ORCPT
+	with ESMTP id S1031347AbaGDWVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:21:44 -0400
+	Fri, 4 Jul 2014 18:21:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Bart Van Assche <bvanassche@acm.org>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.10 19/46] IB/srp: Fix a sporadic crash triggered by cable pulling
-Date: Fri,  4 Jul 2014 15:19:23 -0700
-Message-Id: <20140704221603.146008976@linuxfoundation.org>
+        Plamen Petrov <plamen.sisi@gmail.com>,
+        Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Dave Chinner <david@fromorbit.com>
+Subject: [PATCH 3.14 47/59] xfs: xfs_readsb needs to check for magic numbers
+Date: Fri,  4 Jul 2014 15:19:36 -0700
+Message-Id: <20140704221541.785787745@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
-References: <20140704221602.280733370@linuxfoundation.org>
+In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
+References: <20140704221539.544876024@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,46 +26,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit 024ca90151f5e4296d30f72c13ff9a075e23c9ec upstream.
+commit 556b8883cfac3d3203557e161ea8005f8b5479b2 upstream.
 
-Avoid that the loops that iterate over the request ring can encounter
-a pointer to a SCSI command in req->scmnd that is no longer associated
-with that request. If the function srp_unmap_data() is invoked twice
-for a SCSI command that is not in flight then that would cause
-ib_fmr_pool_unmap() to be invoked with an invalid pointer as argument,
-resulting in a kernel oops.
+Commit daba542 ("xfs: skip verification on initial "guess"
+superblock read") dropped the use of a verifier for the initial
+superblock read so we can probe the sector size of the filesystem
+stored in the superblock. It, however, now fails to validate that
+what was read initially is actually an XFS superblock and hence will
+fail the sector size check and return ENOSYS.
 
-Reported-by: Sagi Grimberg <sagig@mellanox.com>
-Reference: http://thread.gmane.org/gmane.linux.drivers.rdma/19068/focus=19069
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+This causes probe-based mounts to fail because it expects XFS to
+return EINVAL when it doesn't recognise the superblock format.
+
+Reported-by: Plamen Petrov <plamen.sisi@gmail.com>
+Tested-by: Plamen Petrov <plamen.sisi@gmail.com>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srp/ib_srp.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/xfs/xfs_mount.c |   23 +++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
 
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -1409,6 +1409,12 @@ err_unmap:
- err_iu:
- 	srp_put_tx_iu(target, iu, SRP_IU_CMD);
- 
-+	/*
-+	 * Avoid that the loops that iterate over the request ring can
-+	 * encounter a dangling SCSI command pointer.
-+	 */
-+	req->scmnd = NULL;
+--- a/fs/xfs/xfs_mount.c
++++ b/fs/xfs/xfs_mount.c
+@@ -320,8 +320,19 @@ reread:
+ 	/*
+ 	 * Initialize the mount structure from the superblock.
+ 	 */
+-	xfs_sb_from_disk(&mp->m_sb, XFS_BUF_TO_SBP(bp));
+-	xfs_sb_quota_from_disk(&mp->m_sb);
++	xfs_sb_from_disk(sbp, XFS_BUF_TO_SBP(bp));
++	xfs_sb_quota_from_disk(sbp);
 +
- 	spin_lock_irqsave(&target->lock, flags);
- 	list_add(&req->list, &target->free_reqs);
++	/*
++	 * If we haven't validated the superblock, do so now before we try
++	 * to check the sector size and reread the superblock appropriately.
++	 */
++	if (sbp->sb_magicnum != XFS_SB_MAGIC) {
++		if (loud)
++			xfs_warn(mp, "Invalid superblock magic number");
++		error = EINVAL;
++		goto release_buf;
++	}
  
+ 	/*
+ 	 * We must be able to do sector-sized and sector-aligned IO.
+@@ -334,11 +345,11 @@ reread:
+ 		goto release_buf;
+ 	}
+ 
+-	/*
+-	 * Re-read the superblock so the buffer is correctly sized,
+-	 * and properly verified.
+-	 */
+ 	if (buf_ops == NULL) {
++		/*
++		 * Re-read the superblock so the buffer is correctly sized,
++		 * and properly verified.
++		 */
+ 		xfs_buf_relse(bp);
+ 		sector_size = sbp->sb_sectsize;
+ 		buf_ops = loud ? &xfs_sb_buf_ops : &xfs_sb_quiet_buf_ops;
 
 
