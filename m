@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751383AbaGDEON (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 00:14:13 -0400
-Received: from smtprelay0099.hostedemail.com ([216.40.44.99]:45073 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750932AbaGDEOM (ORCPT
+	id S1751941AbaGDES0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 00:18:26 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:49800 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897AbaGDESZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 00:14:12 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1560:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3867:3870:3871:4321:5007:6120:7652:7901:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: air47_245d902fa4a11
-X-Filterd-Recvd-Size: 1306
-Message-ID: <1404447248.6384.10.camel@joe-AO725>
-Subject: Re: [PATCH 09/16] MAINTAINERS: Update Samsunt MFD drivers pattern
-From: Joe Perches <joe@perches.com>
-To: Sachin Kamat <spk.linux@gmail.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        open list <linux-kernel@vger.kernel.org>
-Date: Thu, 03 Jul 2014 21:14:08 -0700
-In-Reply-To: <CAK5sBcHPE8wqyu2UVouzCMJen+h7Ta+WBmo+wnPqvtGk0nq79g@mail.gmail.com>
-References: <cover.1404425176.git.joe@perches.com>
-	 <169fb51c0d59b216636d48810792f67ecfb5179d.1404425176.git.joe@perches.com>
-	 <014701cf9719$f4bac090$de3041b0$@samsung.com>
-	 <CAK5sBcHPE8wqyu2UVouzCMJen+h7Ta+WBmo+wnPqvtGk0nq79g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
+	Fri, 4 Jul 2014 00:18:25 -0400
+Date: Thu, 03 Jul 2014 21:18:20 -0700 (PDT)
+Message-Id: <20140703.211820.1674895115102216877.davem@davemloft.net>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, akpm@linux-foundation.org,
+        tglx@linutronix.de, masami.hiramatsu.pt@hitachi.com, hpa@zytor.com,
+        linux-arch@vger.kernel.org, rjw@rjwysocki.net, jkosina@suse.cz,
+        notifications@github.com, sparclinux@vger.kernel.org
+Subject: Re: [RFA][PATCH 18/27] sparc64,ftrace: Remove check of obsolete
+ variable function_trace_stop
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140703124146.3a93668f@gandalf.local.home>
+References: <20140626165221.736847419@goodmis.org>
+	<20140626165852.160038235@goodmis.org>
+	<20140703124146.3a93668f@gandalf.local.home>
+X-Mailer: Mew version 6.3 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 03 Jul 2014 21:18:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-04 at 09:15 +0530, Sachin Kamat wrote:
-> In any case, if this patch is going to be appled, please fix typo in subject
+From: Steven Rostedt <rostedt@goodmis.org>
+Date: Thu, 3 Jul 2014 12:41:46 -0400
+
+> Do you have any problem with this patch going through my tree? It
+> compiles, but I do not have any hardware to test it. If you can verify
+> that this patch works and ack it, it would be much appreciated.
 > 
-> s/Samsunt/Samsung
+> This code is at:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> 
+> branch: rfc/remove-function-trace-stop
 
-I think Sangboem is going to submit something appropriate
-instead.
+I can look at this next week at the earliest.  But frankly I have no problem
+if you just merge it as-is now, we can sort out any fallout later.
 
-
+Thanks.
