@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760637AbaGDWkw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:40:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57474 "EHLO
+	id S1760236AbaGDWkv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:40:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57484 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031215AbaGDWVM (ORCPT
+	with ESMTP id S1031220AbaGDWVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:21:12 -0400
+	Fri, 4 Jul 2014 18:21:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Estrin <alex.estrin@intel.com>,
-        Dennis Dalessandro <dennis.dalessandro@intel.com>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Bart Van Assche <bvanassche@acm.org>,
         Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.14 24/59] IB/qib: Fix port in pkey change event
-Date: Fri,  4 Jul 2014 15:19:13 -0700
-Message-Id: <20140704221540.701798423@linuxfoundation.org>
+Subject: [PATCH 3.14 26/59] IB/srp: Fix a sporadic crash triggered by cable pulling
+Date: Fri,  4 Jul 2014 15:19:15 -0700
+Message-Id: <20140704221540.790761052@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -31,36 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit 911eccd284d13d78c92ec4f1f1092c03457d732a upstream.
+commit 024ca90151f5e4296d30f72c13ff9a075e23c9ec upstream.
 
-The code used a literal 1 in dispatching an IB_EVENT_PKEY_CHANGE.
+Avoid that the loops that iterate over the request ring can encounter
+a pointer to a SCSI command in req->scmnd that is no longer associated
+with that request. If the function srp_unmap_data() is invoked twice
+for a SCSI command that is not in flight then that would cause
+ib_fmr_pool_unmap() to be invoked with an invalid pointer as argument,
+resulting in a kernel oops.
 
-As of the dual port qib QDR card, this is not necessarily correct.
-
-Change to use the port as specified in the call.
-
-Reported-by: Alex Estrin <alex.estrin@intel.com>
-Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Reported-by: Sagi Grimberg <sagig@mellanox.com>
+Reference: http://thread.gmane.org/gmane.linux.drivers.rdma/19068/focus=19069
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
 Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/qib/qib_mad.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/ulp/srp/ib_srp.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/infiniband/hw/qib/qib_mad.c
-+++ b/drivers/infiniband/hw/qib/qib_mad.c
-@@ -1028,7 +1028,7 @@ static int set_pkeys(struct qib_devdata
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -1576,6 +1576,12 @@ err_unmap:
+ err_iu:
+ 	srp_put_tx_iu(target, iu, SRP_IU_CMD);
  
- 		event.event = IB_EVENT_PKEY_CHANGE;
- 		event.device = &dd->verbs_dev.ibdev;
--		event.element.port_num = 1;
-+		event.element.port_num = port;
- 		ib_dispatch_event(&event);
- 	}
- 	return 0;
++	/*
++	 * Avoid that the loops that iterate over the request ring can
++	 * encounter a dangling SCSI command pointer.
++	 */
++	req->scmnd = NULL;
++
+ 	spin_lock_irqsave(&target->lock, flags);
+ 	list_add(&req->list, &target->free_reqs);
+ 
 
 
