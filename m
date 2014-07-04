@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030530AbaGDWR2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:17:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57184 "EHLO
+	id S1030567AbaGDWRe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:17:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57194 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030233AbaGDWRY (ORCPT
+	with ESMTP id S1030233AbaGDWRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:24 -0400
+	Fri, 4 Jul 2014 18:17:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jacob Keller <jacob.e.keller@intel.com>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.15 60/66] Documentation/SubmittingPatches: describe the Fixes: tag
-Date: Fri,  4 Jul 2014 15:14:59 -0700
-Message-Id: <20140704221425.566407832@linuxfoundation.org>
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.15 62/66] tracing: Fix syscall_*regfunc() vs copy_process() race
+Date: Fri,  4 Jul 2014 15:15:01 -0700
+Message-Id: <20140704221425.652550123@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -33,70 +30,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jacob Keller <jacob.e.keller@intel.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 8401aa1f59975c03eeebd3ac6d264cbdfe9af5de upstream.
+commit 4af4206be2bd1933cae20c2b6fb2058dbc887f7c upstream.
 
-Update the SubmittingPatches process to include howto about the new
-'Fixes:' tag to be used when a patch fixes an issue in a previous commit
-(found by git-bisect for example).
+syscall_regfunc() and syscall_unregfunc() should set/clear
+TIF_SYSCALL_TRACEPOINT system-wide, but do_each_thread() can race
+with copy_process() and miss the new child which was not added to
+the process/thread lists yet.
 
-Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Change copy_process() to update the child's TIF_SYSCALL_TRACEPOINT
+under tasklist.
+
+Link: http://lkml.kernel.org/p/20140413185854.GB20668@redhat.com
+
+Fixes: a871bd33a6c0 "tracing: Add syscall tracepoints"
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/SubmittingPatches |   22 +++++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
+ include/trace/syscall.h |   15 +++++++++++++++
+ kernel/fork.c           |    2 ++
+ 2 files changed, 17 insertions(+)
 
---- a/Documentation/SubmittingPatches
-+++ b/Documentation/SubmittingPatches
-@@ -132,6 +132,20 @@ Example:
- 	platform_set_drvdata(), but left the variable "dev" unused,
- 	delete it.
+--- a/include/trace/syscall.h
++++ b/include/trace/syscall.h
+@@ -4,6 +4,7 @@
+ #include <linux/tracepoint.h>
+ #include <linux/unistd.h>
+ #include <linux/ftrace_event.h>
++#include <linux/thread_info.h>
  
-+If your patch fixes a bug in a specific commit, e.g. you found an issue using
-+git-bisect, please use the 'Fixes:' tag with the first 12 characters of the
-+SHA-1 ID, and the one line summary.
-+Example:
+ #include <asm/ptrace.h>
+ 
+@@ -32,4 +33,18 @@ struct syscall_metadata {
+ 	struct ftrace_event_call *exit_event;
+ };
+ 
++#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_HAVE_SYSCALL_TRACEPOINTS)
++static inline void syscall_tracepoint_update(struct task_struct *p)
++{
++	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
++		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
++	else
++		clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
++}
++#else
++static inline void syscall_tracepoint_update(struct task_struct *p)
++{
++}
++#endif
 +
-+	Fixes: e21d2170f366 ("video: remove unnecessary platform_set_drvdata()")
+ #endif /* _TRACE_SYSCALL_H */
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1487,7 +1487,9 @@ static struct task_struct *copy_process(
+ 
+ 	total_forks++;
+ 	spin_unlock(&current->sighand->siglock);
++	syscall_tracepoint_update(p);
+ 	write_unlock_irq(&tasklist_lock);
 +
-+The following git-config settings can be used to add a pretty format for
-+outputting the above style in the git log or git show commands
-+
-+	[core]
-+		abbrev = 12
-+	[pretty]
-+		fixes = Fixes: %h (\"%s\")
- 
- 3) Separate your changes.
- 
-@@ -443,7 +457,7 @@ person it names.  This tag documents tha
- have been included in the discussion
- 
- 
--14) Using Reported-by:, Tested-by:, Reviewed-by: and Suggested-by:
-+14) Using Reported-by:, Tested-by:, Reviewed-by:, Suggested-by: and Fixes:
- 
- If this patch fixes a problem reported by somebody else, consider adding a
- Reported-by: tag to credit the reporter for their contribution.  Please
-@@ -498,6 +512,12 @@ idea was not posted in a public forum. T
- idea reporters, they will, hopefully, be inspired to help us again in the
- future.
- 
-+A Fixes: tag indicates that the patch fixes an issue in a previous commit. It
-+is used to make it easy to determine where a bug originated, which can help
-+review a bug fix. This tag also assists the stable kernel team in determining
-+which stable kernel versions should receive your fix. This is the preferred
-+method for indicating a bug fixed by the patch. See #2 above for more details.
-+
- 
- 15) The canonical patch format
- 
+ 	proc_fork_connector(p);
+ 	cgroup_post_fork(p);
+ 	if (clone_flags & CLONE_THREAD)
 
 
