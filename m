@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757064AbaGDKg4 (ORCPT <rfc822;w@1wt.eu>);
+	id S1757565AbaGDKg6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 06:36:58 -0400
+Received: from 8bytes.org ([85.214.48.195]:42286 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756975AbaGDKg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 Jul 2014 06:36:56 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:61915 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754150AbaGDKgy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 06:36:54 -0400
-From: Tushar Behera <tushar.b@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Cc: kgene.kim@samsung.com, airlied@linux.ie, kyungmin.park@samsung.com,
-        sw0312.kim@samsung.com, jy0922.shim@samsung.com, inki.dae@samsung.com,
-        trblinux@gmail.com
-Subject: [PATCH] drm/exynos: fimd: Keep power enabled during fimd_bind
-Date: Fri,  4 Jul 2014 16:03:19 +0530
-Message-Id: <1404469999-21147-1-git-send-email-tushar.b@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
+Date: Fri, 4 Jul 2014 12:36:53 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/7] iommu: Fix DMA alias problems
+Message-ID: <20140704103653.GU26537@8bytes.org>
+References: <20140703154428.8112.97562.stgit@gimli.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140703154428.8112.97562.stgit@gimli.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Jul  4 12:36:54 2014
+X-DSPAM-Confidence: 0.9985
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 53b683c620863354269530
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under some conditions (when IOMMU is enabled), fimd_bind() accesses
-hardware registers and power-domain should be enabled during that time.
+On Thu, Jul 03, 2014 at 09:51:12AM -0600, Alex Williamson wrote:
+> Alex Williamson (7):
+>       iommu: Remove pci.h
+>       iommu/fsl: Use iommu_group_get_for_dev() for IOMMU groups
+>       iommu/intel: Update to use PCI DMA aliases
+>       iommu/intel: Use iommu_group_get_for_dev()
+>       iommu/amd: Use iommu_group_get_for_dev()
+>       iommu/amd: Update to use PCI DMA aliases
+>       iommu: Create central IOMMU group lookup/creation interface
+> 
+> 
+>  drivers/iommu/amd_iommu.c           |  214 +++++++-----------------
+>  drivers/iommu/amd_iommu_types.h     |    1 
+>  drivers/iommu/fsl_pamu_domain.c     |   66 --------
+>  drivers/iommu/intel-iommu.c         |  307 +++++++++++++----------------------
+>  drivers/iommu/intel_irq_remapping.c |   55 ++++--
+>  drivers/iommu/iommu.c               |  182 +++++++++++++++++++++
+>  drivers/iommu/pci.h                 |   29 ---
+>  include/linux/iommu.h               |    1 
+>  8 files changed, 398 insertions(+), 457 deletions(-)
+>  delete mode 100644 drivers/iommu/pci.h
 
-fimd_bind --> fimd_mgr_initialize --> fimd_clear_channel
+Applied to the core branch, thanks Alex.
 
-If the power-domain is disabled by that time, we get a boot-time crash.
-It would be better to keep power-domain enabled explicitly.
-
-Unhandled fault: external abort on non-linefetch (0x1008) at 0xf0180034
-Internal error: : 1008 [#1] PREEMPT SMP ARM
-...
-PC is at fimd_bind+0x84/0x134
-LR is at component_bind_all+0xb4/0x1d8
-
-Signed-off-by: Tushar Behera <tushar.b@samsung.com>
----
- drivers/gpu/drm/exynos/exynos_drm_fimd.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_fimd.c b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
-index 33161ad..34275fb 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_fimd.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_fimd.c
-@@ -888,11 +888,15 @@ static int fimd_bind(struct device *dev, struct device *master, void *data)
- 	struct fimd_context *ctx = fimd_manager.ctx;
- 	struct drm_device *drm_dev = data;
- 
-+	pm_runtime_get_sync(dev);
-+
- 	fimd_mgr_initialize(&fimd_manager, drm_dev);
- 	exynos_drm_crtc_create(&fimd_manager);
- 	if (ctx->display)
- 		exynos_drm_create_enc_conn(drm_dev, ctx->display);
- 
-+	pm_runtime_put_sync(dev);
-+
- 	return 0;
- 
- }
--- 
-1.7.9.5
 
