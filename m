@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031535AbaGDWr0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:47:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57378 "EHLO
+	id S1031608AbaGDWrp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:47:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57374 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031048AbaGDWUk (ORCPT
+	with ESMTP id S1031044AbaGDWUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:20:40 -0400
+	Fri, 4 Jul 2014 18:20:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.14 07/59] Input: elantech - deal with clickpads reporting right button events
-Date: Fri,  4 Jul 2014 15:18:56 -0700
-Message-Id: <20140704221539.882666330@linuxfoundation.org>
+Subject: [PATCH 3.14 06/59] Input: synaptics - fix resolution for manually provided min/max
+Date: Fri,  4 Jul 2014 15:18:55 -0700
+Message-Id: <20140704221539.840842462@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -29,79 +30,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit cd9e83e2754465856097f31c7ab933ce74c473f8 upstream.
+commit d49cb7aeebb974713f9f7ab2991352d3050b095b upstream.
 
-At least the Dell Vostro 5470 elantech *clickpad* reports right button
-clicks when clicked in the right bottom area:
+commit 421e08c41fda fixed the reported min/max for the X and Y axis,
+but unfortunately, it broke the resolution of those same axis.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1103528
+On the t540p, the resolution is the same regarding X and Y. It is not
+a problem for xf86-input-synaptics because this driver is only interested
+in the ratio between X and Y.
+Unfortunately, xf86-input-cmt uses directly the resolution, and having a
+null resolution leads to some divide by 0 errors, which are translated by
+-infinity in the resulting coordinates.
 
-This is different from how (elantech) clickpads normally operate, normally
-no matter where the user clicks on the pad the pad always reports a left
-button event, since there is only 1 hardware button beneath the path.
-
-It looks like Dell has put 2 buttons under the pad, one under each bottom
-corner, causing this.
-
-Since this however still clearly is a real clickpad hardware-wise, we still
-want to report it as such to userspace, so that things like finger movement
-in the bottom area can be properly ignored as it should be on clickpads.
-
-So deal with this weirdness by simply mapping a right click to a left click
-on elantech clickpads. As an added advantage this is something which we can
-simply do on all elantech clickpads, so no need to add special quirks for
-this weird model.
-
-Reported-and-tested-by: Elder Marco <eldermarco@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Reported-by: Peter Hutterer <peter.hutterer@who-t.net>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: stable@vger.kernel.org
 Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/elantech.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+ drivers/input/mouse/synaptics.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -473,8 +473,15 @@ static void elantech_report_absolute_v3(
- 	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
- 	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
- 	input_report_key(dev, BTN_TOOL_TRIPLETAP, fingers == 3);
--	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
--	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+
-+	/* For clickpads map both buttons to BTN_LEFT */
-+	if (etd->fw_version & 0x001000) {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
-+	} else {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-+		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -347,15 +347,6 @@ static int synaptics_resolution(struct p
+ 	unsigned char resp[3];
+ 	int i;
+ 
+-	for (i = 0; min_max_pnpid_table[i].pnp_ids; i++)
+-		if (matches_pnp_id(psmouse, min_max_pnpid_table[i].pnp_ids)) {
+-			priv->x_min = min_max_pnpid_table[i].x_min;
+-			priv->x_max = min_max_pnpid_table[i].x_max;
+-			priv->y_min = min_max_pnpid_table[i].y_min;
+-			priv->y_max = min_max_pnpid_table[i].y_max;
+-			return 0;
+-		}
+-
+ 	if (SYN_ID_MAJOR(priv->identity) < 4)
+ 		return 0;
+ 
+@@ -366,6 +357,16 @@ static int synaptics_resolution(struct p
+ 		}
+ 	}
+ 
++	for (i = 0; min_max_pnpid_table[i].pnp_ids; i++) {
++		if (matches_pnp_id(psmouse, min_max_pnpid_table[i].pnp_ids)) {
++			priv->x_min = min_max_pnpid_table[i].x_min;
++			priv->x_max = min_max_pnpid_table[i].x_max;
++			priv->y_min = min_max_pnpid_table[i].y_min;
++			priv->y_max = min_max_pnpid_table[i].y_max;
++			return 0;
++		}
 +	}
 +
- 	input_report_abs(dev, ABS_PRESSURE, pres);
- 	input_report_abs(dev, ABS_TOOL_WIDTH, width);
- 
-@@ -484,10 +491,17 @@ static void elantech_report_absolute_v3(
- static void elantech_input_sync_v4(struct psmouse *psmouse)
- {
- 	struct input_dev *dev = psmouse->dev;
-+	struct elantech_data *etd = psmouse->private;
- 	unsigned char *packet = psmouse->packet;
- 
--	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
--	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	/* For clickpads map both buttons to BTN_LEFT */
-+	if (etd->fw_version & 0x001000) {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
-+	} else {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-+		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	}
-+
- 	input_mt_report_pointer_emulation(dev, true);
- 	input_sync(dev);
- }
+ 	if (SYN_EXT_CAP_REQUESTS(priv->capabilities) >= 5 &&
+ 	    SYN_CAP_MAX_DIMENSIONS(priv->ext_cap_0c)) {
+ 		if (synaptics_send_cmd(psmouse, SYN_QUE_EXT_MAX_COORDS, resp)) {
 
 
