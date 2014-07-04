@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759751AbaGDTcc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 15:32:32 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47329 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753115AbaGDTca (ORCPT
+	id S1759734AbaGDThQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 15:37:16 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:48385 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752644AbaGDThO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 15:32:30 -0400
-Date: Fri, 4 Jul 2014 20:32:11 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tushar Behera <tushar.b@samsung.com>
-Cc: alsa-devel@alsa-project.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        dianders@chromium.org, tiwai@suse.de, perex@perex.cz,
-        lgirdwood@gmail.com, galak@codeaurora.org, kgene.kim@samsung.com,
-        ijc+devicetree@hellion.org.uk, mark.rutland@arm.com,
-        pawel.moll@arm.com, robh+dt@kernel.org, trblinux@gmail.com
-Message-ID: <20140704193211.GJ14896@sirena.org.uk>
-References: <1404463980-25027-1-git-send-email-tushar.b@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9aCKuHbn5v2q3RVc"
-Content-Disposition: inline
-In-Reply-To: <1404463980-25027-1-git-send-email-tushar.b@samsung.com>
-X-Cookie: This bag is recyclable.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] ASoC: samsung: Update sound-card name for Snow
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Fri, 4 Jul 2014 15:37:14 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvMMAD4Bt1NbsGwr/2dsb2JhbABagw6scAUBAQEBAQEFAW4BkiiHP4ELF3WECwIkLyOBCRE3iEYBtU6VCxeFcIkyHYQtBZgKgmyUDINFOw
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: [PATCH 1/1] drm/radeon: remove null test before kfree
+Date: Fri,  4 Jul 2014 21:37:09 +0200
+Message-Id: <1404502629-32229-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix checkpatch warning:
+WARNING: kfree(NULL) is safe this check is probably not required
 
---9aCKuHbn5v2q3RVc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Cc: Alex Deucher <alexander.deucher@amd.com>
+Cc: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/gpu/drm/radeon/radeon_pm.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-On Fri, Jul 04, 2014 at 02:22:59PM +0530, Tushar Behera wrote:
-> Snow sound-card driver supports multiple boards with different
-> audio codecs. Updating the sound card name per board basis would provide
-> some more information to the end-user.
+diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
+index e447e39..a06afee 100644
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -1400,9 +1400,7 @@ static void radeon_pm_fini_old(struct radeon_device *rdev)
+ 	}
+ 
+ 	radeon_hwmon_fini(rdev);
+-
+-	if (rdev->pm.power_state)
+-		kfree(rdev->pm.power_state);
++	kfree(rdev->pm.power_state);
+ }
+ 
+ static void radeon_pm_fini_dpm(struct radeon_device *rdev)
+@@ -1421,9 +1419,7 @@ static void radeon_pm_fini_dpm(struct radeon_device *rdev)
+ 	radeon_dpm_fini(rdev);
+ 
+ 	radeon_hwmon_fini(rdev);
+-
+-	if (rdev->pm.power_state)
+-		kfree(rdev->pm.power_state);
++	kfree(rdev->pm.power_state);
+ }
+ 
+ void radeon_pm_fini(struct radeon_device *rdev)
+-- 
+1.9.1
 
-Applied, thanks.
-
---9aCKuHbn5v2q3RVc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTtwE4AAoJELSic+t+oim9eBQP+wSTOTDTRhu+W6zH+JqKRs1z
-4k5RWU2uTnqSmdJQ3nP9NzbSg4r1RstICOwHY+SC39eTbTpG6J4aYyw0wUAgaQv/
-UnDeNqPFTiW9WMzJ01fIFlac8kiSONvB35si1uLf3NSEl3mLdOGd3HSub4sVrfE4
-VT156VXGg9oxDhWBWiqX/0ukV9xwW3x+TJ0raXTXGbB+AiQol2MU+bXxURs+v//y
-soVUPK1cTUApAU1KNVMOqzS7hIxa5Ijan6LafljJc4+Ef4nF0IN+rI1TF1ubHBDu
-QdMNrLKchEXRiGohqNhNjDLMby3lTLtnyDsrLhx/YeY836SGrgxh573rseQ47Dq/
-NnY8d5tnhgnv4y+8/BTgiEGJLwECEvMHL0EA0xPLWkPMSKUphhgtMqGACd+zljdV
-NsQjMTUWUtRYuO9+I9Nx0wjzWp5qZjtdFNHx5LeAiQz5urGoQN7kgyCw7KaWBAuo
-CF0+YULm1ifVl49i9DL3PuwmzKgPDKjdrESmQPs/KLJoZGDOAcmQhiKqAKjy8M/r
-adjnCzhTGlHanIpYYcihZlHW4sEiEnI1h37W9Wlwxvm0CL8julgLnPZWhm775RRj
-3ARGVrmw1RDMgV/zTur6RNBQotBtxWTBKm1kbMApCJw5hwbsINZJ/iEYAb+7RAuv
-R7vGX6KxRhf+fKpWxN8q
-=M42b
------END PGP SIGNATURE-----
-
---9aCKuHbn5v2q3RVc--
