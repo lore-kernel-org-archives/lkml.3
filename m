@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031265AbaGDW6h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:58:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57132 "EHLO
+	id S1031308AbaGDW7D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:59:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57120 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030286AbaGDWQz (ORCPT
+	with ESMTP id S1760666AbaGDWQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:16:55 -0400
+	Fri, 4 Jul 2014 18:16:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Hogan <james.hogan@imgtec.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        kvm@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        linux-mips@linux-mips.org, Sanjay Lal <sanjayl@kymasys.com>
-Subject: [PATCH 3.15 56/66] MIPS: KVM: Remove redundant NULL checks before kfree()
-Date: Fri,  4 Jul 2014 15:14:55 -0700
-Message-Id: <20140704221425.362135909@linuxfoundation.org>
+        Ed Swarthout <Ed.Swarthout@freescale.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.15 54/66] cpufreq: ppc-corenet-cpu-freq: do_div use quotient
+Date: Fri,  4 Jul 2014 15:14:53 -0700
+Message-Id: <20140704221425.278311922@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -31,54 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Hogan <james.hogan@imgtec.com>
+From: Ed Swarthout <Ed.Swarthout@freescale.com>
 
-commit c6c0a6637f9da54f9472144d44f71cf847f92e20 upstream.
+commit 906fe033145aab7d65a428bfda2cf19c75720894 upstream.
 
-The kfree() function already NULL checks the parameter so remove the
-redundant NULL checks before kfree() calls in arch/mips/kvm/.
+Commit 6712d2931933 (cpufreq: ppc-corenet-cpufreq: Fix __udivdi3 modpost
+error) used the remainder from do_div instead of the quotient.  Fix that
+and add one to ensure minimum is met.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Gleb Natapov <gleb@kernel.org>
-Cc: kvm@vger.kernel.org
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org
-Cc: Sanjay Lal <sanjayl@kymasys.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Fixes: 6712d2931933 (cpufreq: ppc-corenet-cpufreq: Fix __udivdi3 modpost error)
+Signed-off-by: Ed Swarthout <Ed.Swarthout@freescale.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kvm/kvm_mips.c |   12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
+ drivers/cpufreq/ppc-corenet-cpufreq.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/arch/mips/kvm/kvm_mips.c
-+++ b/arch/mips/kvm/kvm_mips.c
-@@ -149,9 +149,7 @@ void kvm_mips_free_vcpus(struct kvm *kvm
- 		if (kvm->arch.guest_pmap[i] != KVM_INVALID_PAGE)
- 			kvm_mips_release_pfn_clean(kvm->arch.guest_pmap[i]);
- 	}
--
--	if (kvm->arch.guest_pmap)
--		kfree(kvm->arch.guest_pmap);
-+	kfree(kvm->arch.guest_pmap);
+--- a/drivers/cpufreq/ppc-corenet-cpufreq.c
++++ b/drivers/cpufreq/ppc-corenet-cpufreq.c
+@@ -138,7 +138,7 @@ static int corenet_cpufreq_cpu_init(stru
+ 	struct cpufreq_frequency_table *table;
+ 	struct cpu_data *data;
+ 	unsigned int cpu = policy->cpu;
+-	u64 transition_latency_hz;
++	u64 u64temp;
  
- 	kvm_for_each_vcpu(i, vcpu, kvm) {
- 		kvm_arch_vcpu_free(vcpu);
-@@ -389,12 +387,8 @@ void kvm_arch_vcpu_free(struct kvm_vcpu
+ 	np = of_get_cpu_node(cpu, NULL);
+ 	if (!np)
+@@ -206,9 +206,10 @@ static int corenet_cpufreq_cpu_init(stru
+ 	for_each_cpu(i, per_cpu(cpu_mask, cpu))
+ 		per_cpu(cpu_data, i) = data;
  
- 	kvm_mips_dump_stats(vcpu);
+-	transition_latency_hz = 12ULL * NSEC_PER_SEC;
+-	policy->cpuinfo.transition_latency =
+-		do_div(transition_latency_hz, fsl_get_sys_freq());
++	/* Minimum transition latency is 12 platform clocks */
++	u64temp = 12ULL * NSEC_PER_SEC;
++	do_div(u64temp, fsl_get_sys_freq());
++	policy->cpuinfo.transition_latency = u64temp + 1;
  
--	if (vcpu->arch.guest_ebase)
--		kfree(vcpu->arch.guest_ebase);
--
--	if (vcpu->arch.kseg0_commpage)
--		kfree(vcpu->arch.kseg0_commpage);
--
-+	kfree(vcpu->arch.guest_ebase);
-+	kfree(vcpu->arch.kseg0_commpage);
- }
+ 	of_node_put(np);
  
- void kvm_arch_vcpu_destroy(struct kvm_vcpu *vcpu)
 
 
