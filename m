@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031632AbaGDWdf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:33:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57609 "EHLO
+	id S1031637AbaGDWeD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:34:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57596 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031433AbaGDWWE (ORCPT
+	with ESMTP id S1031400AbaGDWVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:22:04 -0400
+	Fri, 4 Jul 2014 18:21:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Asai Thambi S P <asamymuthupa@micron.com>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.10 10/46] mtip32xx: Remove dfs_parent after pci unregister
-Date: Fri,  4 Jul 2014 15:19:14 -0700
-Message-Id: <20140704221602.742859779@linuxfoundation.org>
+        Bart Van Assche <bvanassche@acm.org>,
+        Yann Droneaud <ydroneaud@opteya.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.10 21/46] IB/umad: Fix use-after-free on close
+Date: Fri,  4 Jul 2014 15:19:25 -0700
+Message-Id: <20140704221603.246128872@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
 References: <20140704221602.280733370@linuxfoundation.org>
@@ -28,42 +30,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Asai Thambi S P <asamymuthupa@micron.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit af5ded8ccf21627f9614afc03b356712666ed225 upstream.
+commit 60e1751cb52cc6d1ae04b6bd3c2b96e770b5823f upstream.
 
-In module exit, dfs_parent and it's subtree were removed before
-unregistering with pci. When debugfs entry for each device is attempted
-to remove in pci_remove() context, they don't exist, as dfs_parent and
-its children were already ripped apart.
+Avoid that closing /dev/infiniband/umad<n> or /dev/infiniband/issm<n>
+triggers a use-after-free.  __fput() invokes f_op->release() before it
+invokes cdev_put().  Make sure that the ib_umad_device structure is
+freed by the cdev_put() call instead of f_op->release().  This avoids
+that changing the port mode from IB into Ethernet and back to IB
+followed by restarting opensmd triggers the following kernel oops:
 
-Modified to first unregister with pci and then remove dfs_parent.
+    general protection fault: 0000 [#1] PREEMPT SMP
+    RIP: 0010:[<ffffffff810cc65c>]  [<ffffffff810cc65c>] module_put+0x2c/0x170
+    Call Trace:
+     [<ffffffff81190f20>] cdev_put+0x20/0x30
+     [<ffffffff8118e2ce>] __fput+0x1ae/0x1f0
+     [<ffffffff8118e35e>] ____fput+0xe/0x10
+     [<ffffffff810723bc>] task_work_run+0xac/0xe0
+     [<ffffffff81002a9f>] do_notify_resume+0x9f/0xc0
+     [<ffffffff814b8398>] int_signal+0x12/0x17
 
-Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=75051
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/mtip32xx/mtip32xx.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/infiniband/core/user_mad.c |   30 +++++++++++++++++++-----------
+ 1 file changed, 19 insertions(+), 11 deletions(-)
 
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -4784,13 +4784,13 @@ static int __init mtip_init(void)
-  */
- static void __exit mtip_exit(void)
- {
--	debugfs_remove_recursive(dfs_parent);
--
- 	/* Release the allocated major block device number. */
- 	unregister_blkdev(mtip_major, MTIP_DRV_NAME);
+--- a/drivers/infiniband/core/user_mad.c
++++ b/drivers/infiniband/core/user_mad.c
+@@ -98,7 +98,7 @@ struct ib_umad_port {
  
- 	/* Unregister the PCI driver. */
- 	pci_unregister_driver(&mtip_pci_driver);
-+
-+	debugfs_remove_recursive(dfs_parent);
+ struct ib_umad_device {
+ 	int                  start_port, end_port;
+-	struct kref          ref;
++	struct kobject       kobj;
+ 	struct ib_umad_port  port[0];
+ };
+ 
+@@ -134,14 +134,18 @@ static DECLARE_BITMAP(dev_map, IB_UMAD_M
+ static void ib_umad_add_one(struct ib_device *device);
+ static void ib_umad_remove_one(struct ib_device *device);
+ 
+-static void ib_umad_release_dev(struct kref *ref)
++static void ib_umad_release_dev(struct kobject *kobj)
+ {
+ 	struct ib_umad_device *dev =
+-		container_of(ref, struct ib_umad_device, ref);
++		container_of(kobj, struct ib_umad_device, kobj);
+ 
+ 	kfree(dev);
  }
  
- MODULE_AUTHOR("Micron Technology, Inc");
++static struct kobj_type ib_umad_dev_ktype = {
++	.release = ib_umad_release_dev,
++};
++
+ static int hdr_size(struct ib_umad_file *file)
+ {
+ 	return file->use_pkey_index ? sizeof (struct ib_user_mad_hdr) :
+@@ -812,7 +816,7 @@ static int ib_umad_open(struct inode *in
+ 		goto out;
+ 	}
+ 
+-	kref_get(&port->umad_dev->ref);
++	kobject_get(&port->umad_dev->kobj);
+ 
+ out:
+ 	mutex_unlock(&port->file_mutex);
+@@ -851,7 +855,7 @@ static int ib_umad_close(struct inode *i
+ 	mutex_unlock(&file->port->file_mutex);
+ 
+ 	kfree(file);
+-	kref_put(&dev->ref, ib_umad_release_dev);
++	kobject_put(&dev->kobj);
+ 
+ 	return 0;
+ }
+@@ -902,7 +906,7 @@ static int ib_umad_sm_open(struct inode
+ 	if (ret)
+ 		goto err_clr_sm_cap;
+ 
+-	kref_get(&port->umad_dev->ref);
++	kobject_get(&port->umad_dev->kobj);
+ 
+ 	return 0;
+ 
+@@ -932,7 +936,7 @@ static int ib_umad_sm_close(struct inode
+ 
+ 	up(&port->sm_sem);
+ 
+-	kref_put(&port->umad_dev->ref, ib_umad_release_dev);
++	kobject_put(&port->umad_dev->kobj);
+ 
+ 	return ret;
+ }
+@@ -1000,6 +1004,7 @@ static int find_overflow_devnum(void)
+ }
+ 
+ static int ib_umad_init_port(struct ib_device *device, int port_num,
++			     struct ib_umad_device *umad_dev,
+ 			     struct ib_umad_port *port)
+ {
+ 	int devnum;
+@@ -1032,6 +1037,7 @@ static int ib_umad_init_port(struct ib_d
+ 
+ 	cdev_init(&port->cdev, &umad_fops);
+ 	port->cdev.owner = THIS_MODULE;
++	port->cdev.kobj.parent = &umad_dev->kobj;
+ 	kobject_set_name(&port->cdev.kobj, "umad%d", port->dev_num);
+ 	if (cdev_add(&port->cdev, base, 1))
+ 		goto err_cdev;
+@@ -1050,6 +1056,7 @@ static int ib_umad_init_port(struct ib_d
+ 	base += IB_UMAD_MAX_PORTS;
+ 	cdev_init(&port->sm_cdev, &umad_sm_fops);
+ 	port->sm_cdev.owner = THIS_MODULE;
++	port->sm_cdev.kobj.parent = &umad_dev->kobj;
+ 	kobject_set_name(&port->sm_cdev.kobj, "issm%d", port->dev_num);
+ 	if (cdev_add(&port->sm_cdev, base, 1))
+ 		goto err_sm_cdev;
+@@ -1143,7 +1150,7 @@ static void ib_umad_add_one(struct ib_de
+ 	if (!umad_dev)
+ 		return;
+ 
+-	kref_init(&umad_dev->ref);
++	kobject_init(&umad_dev->kobj, &ib_umad_dev_ktype);
+ 
+ 	umad_dev->start_port = s;
+ 	umad_dev->end_port   = e;
+@@ -1151,7 +1158,8 @@ static void ib_umad_add_one(struct ib_de
+ 	for (i = s; i <= e; ++i) {
+ 		umad_dev->port[i - s].umad_dev = umad_dev;
+ 
+-		if (ib_umad_init_port(device, i, &umad_dev->port[i - s]))
++		if (ib_umad_init_port(device, i, umad_dev,
++				      &umad_dev->port[i - s]))
+ 			goto err;
+ 	}
+ 
+@@ -1163,7 +1171,7 @@ err:
+ 	while (--i >= s)
+ 		ib_umad_kill_port(&umad_dev->port[i - s]);
+ 
+-	kref_put(&umad_dev->ref, ib_umad_release_dev);
++	kobject_put(&umad_dev->kobj);
+ }
+ 
+ static void ib_umad_remove_one(struct ib_device *device)
+@@ -1177,7 +1185,7 @@ static void ib_umad_remove_one(struct ib
+ 	for (i = 0; i <= umad_dev->end_port - umad_dev->start_port; ++i)
+ 		ib_umad_kill_port(&umad_dev->port[i]);
+ 
+-	kref_put(&umad_dev->ref, ib_umad_release_dev);
++	kobject_put(&umad_dev->kobj);
+ }
+ 
+ static char *umad_devnode(struct device *dev, umode_t *mode)
 
 
