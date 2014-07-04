@@ -1,60 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031528AbaGDW0h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:26:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57729 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760812AbaGDWWw (ORCPT
+	id S1031548AbaGDW0o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:26:44 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:53301 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031531AbaGDW0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:22:52 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.10 25/46] nfsd: getattr for FATTR4_WORD0_FILES_AVAIL needs the statfs buffer
-Date: Fri,  4 Jul 2014 15:19:29 -0700
-Message-Id: <20140704221603.415204370@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
-References: <20140704221602.280733370@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Fri, 4 Jul 2014 18:26:41 -0400
+Date: Sat, 5 Jul 2014 02:26:37 +0400
+From: Dmitry Popov <ixaphire@qrator.net>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ip_tunnel: fix ip_tunnel_lookup
+Message-Id: <20140705022637.73152ff57309c468c1fdb563@qrator.net>
+X-Mailer: Sylpheed 3.4.2 (GTK+ 2.24.24; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+This patch fixes 3 similar bugs where incoming packets might be routed into
+wrong non-wildcard tunnels:
 
-------------------
+1) Consider the following setup:
+    ip address add 1.1.1.1/24 dev eth0
+    ip address add 1.1.1.2/24 dev eth0
+    ip tunnel add ipip1 remote 2.2.2.2 local 1.1.1.1 mode ipip dev eth0
+    ip link set ipip1 up
 
-From: Christoph Hellwig <hch@lst.de>
+Incoming ipip packets from 2.2.2.2 were routed into ipip1 even if it has dst =
+1.1.1.2. Moreover even if there was wildcard tunnel like
+   ip tunnel add ipip0 remote 2.2.2.2 local any mode ipip dev eth0
+but it was created before explicit one (with local 1.1.1.1), incoming ipip
+packets with src = 2.2.2.2 and dst = 1.1.1.2 were still routed into ipip1.
 
-commit 12337901d654415d9f764b5f5ba50052e9700f37 upstream.
+Same issue existed with all tunnels that use ip_tunnel_lookup (gre, vti)
 
-Note nobody's ever noticed because the typical client probably never
-requests FILES_AVAIL without also requesting something else on the list.
+2)  ip address add 1.1.1.1/24 dev eth0
+    ip tunnel add ipip1 remote 2.2.146.85 local 1.1.1.1 mode ipip dev eth0
+    ip link set ipip1 up
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Incoming ipip packets with dst = 1.1.1.1 were routed into ipip1, no matter what
+src address is. Any remote ip address which has ip_tunnel_hash = 0 raised this 
+issue, 2.2.146.85 is just an example, there are more than 4 million of them.
+And again, wildcard tunnel like
+   ip tunnel add ipip0 remote any local 1.1.1.1 mode ipip dev eth0
+wouldn't be ever matched if it was created before explicit tunnel like above.
 
+Gre & vti tunnels had the same issue.
+
+3)  ip address add 1.1.1.1/24 dev eth0
+    ip tunnel add gre1 remote 2.2.146.84 local 1.1.1.1 key 1 mode gre dev eth0
+    ip link set gre1 up
+
+Any incoming gre packet with key = 1 were routed into gre1, no matter what 
+src/dst addresses are. Any remote ip address which has ip_tunnel_hash = 0 raised
+the issue, 2.2.146.84 is just an example, there are more than 4 million of them.
+Wildcard tunnel like
+   ip tunnel add gre2 remote any local any key 1 mode gre dev eth0
+wouldn't be ever matched if it was created before explicit tunnel like above.
+
+All this stuff happened because while looking for a wildcard tunnel we didn't
+check that matched tunnel is a wildcard one. Fixed.
+
+Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
 ---
- fs/nfsd/nfs4xdr.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -2035,8 +2035,8 @@ nfsd4_encode_fattr(struct svc_fh *fhp, s
- 	err = vfs_getattr(&path, &stat);
- 	if (err)
- 		goto out_nfserr;
--	if ((bmval0 & (FATTR4_WORD0_FILES_FREE | FATTR4_WORD0_FILES_TOTAL |
--			FATTR4_WORD0_MAXNAME)) ||
-+	if ((bmval0 & (FATTR4_WORD0_FILES_AVAIL | FATTR4_WORD0_FILES_FREE |
-+			FATTR4_WORD0_FILES_TOTAL | FATTR4_WORD0_MAXNAME)) ||
- 	    (bmval1 & (FATTR4_WORD1_SPACE_AVAIL | FATTR4_WORD1_SPACE_FREE |
- 		       FATTR4_WORD1_SPACE_TOTAL))) {
- 		err = vfs_statfs(&path, &statfs);
-
-
+ net/ipv4/ip_tunnel.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
+index 54b6731..6f9de61 100644
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -169,6 +169,7 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
+ 
+ 	hlist_for_each_entry_rcu(t, head, hash_node) {
+ 		if (remote != t->parms.iph.daddr ||
++		    t->parms.iph.saddr != 0 ||
+ 		    !(t->dev->flags & IFF_UP))
+ 			continue;
+ 
+@@ -185,10 +186,11 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
+ 	head = &itn->tunnels[hash];
+ 
+ 	hlist_for_each_entry_rcu(t, head, hash_node) {
+-		if ((local != t->parms.iph.saddr &&
+-		     (local != t->parms.iph.daddr ||
+-		      !ipv4_is_multicast(local))) ||
+-		    !(t->dev->flags & IFF_UP))
++		if ((local != t->parms.iph.saddr || t->parms.iph.daddr != 0) &&
++		    (local != t->parms.iph.daddr || !ipv4_is_multicast(local)))
++			continue;
++
++		if (!(t->dev->flags & IFF_UP))
+ 			continue;
+ 
+ 		if (!ip_tunnel_key_match(&t->parms, flags, key))
+@@ -205,6 +207,8 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
+ 
+ 	hlist_for_each_entry_rcu(t, head, hash_node) {
+ 		if (t->parms.i_key != key ||
++		    t->parms.iph.saddr != 0 ||
++		    t->parms.iph.daddr != 0 ||
+ 		    !(t->dev->flags & IFF_UP))
+ 			continue;
+ 
