@@ -1,101 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030497AbaGDUb6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 16:31:58 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:38591 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760119AbaGDUZD (ORCPT
+	id S1760017AbaGDUhd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 16:37:33 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:24924
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752906AbaGDUhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 16:25:03 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v7 02/24] mfd: max77686: Add power management support
-Date: Fri,  4 Jul 2014 22:24:05 +0200
-Message-Id: <1404505467-26526-3-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1404505467-26526-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1404505467-26526-1-git-send-email-javier.martinez@collabora.co.uk>
+	Fri, 4 Jul 2014 16:37:31 -0400
+X-IronPort-AV: E=Sophos;i="5.01,603,1400018400"; 
+   d="scan'208";a="70197370"
+Date: Fri, 4 Jul 2014 22:37:26 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+cc: Himangi Saraogi <himangi774@gmail.com>,
+        Vikas Chaudhary <vikas.chaudhary@qlogic.com>,
+        "iscsi-driver@qlogic.com" <iscsi-driver@qlogic.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] qla4xxx: Return -ENOMEM on memory allocation failure
+In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958B866EB@G9W0745.americas.hpqcorp.net>
+Message-ID: <alpine.DEB.2.02.1407042235390.1984@localhost6.localdomain6>
+References: <20140704182756.GA9319@himangi-Dell> <94D0CD8314A33A4D9D801C0FE68B402958B866EB@G9W0745.americas.hpqcorp.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver doesn't have PM operations defined so add a suspend
-and resume function handlers to allow the PMIC IRQ to wakeup
-the system when it is put into a sleep state.
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/mfd/max77686.c | 40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
 
-diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-index 3cb41d0..a38e9ee 100644
---- a/drivers/mfd/max77686.c
-+++ b/drivers/mfd/max77686.c
-@@ -240,10 +240,50 @@ static const struct i2c_device_id max77686_i2c_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, max77686_i2c_id);
- 
-+#ifdef CONFIG_PM_SLEEP
-+static int max77686_suspend(struct device *dev)
-+{
-+	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-+	struct max77686_dev *max77686 = i2c_get_clientdata(i2c);
-+
-+	if (device_may_wakeup(dev))
-+		enable_irq_wake(max77686->irq);
-+
-+	/*
-+	 * IRQ must be disabled during suspend because if it happens
-+	 * while suspended it will be handled before resuming I2C.
-+	 *
-+	 * When device is woken up from suspend (e.g. by RTC wake alarm),
-+	 * an interrupt occurs before resuming I2C bus controller.
-+	 * Interrupt handler tries to read registers but this read
-+	 * will fail because I2C is still suspended.
-+	 */
-+	disable_irq(max77686->irq);
-+
-+	return 0;
-+}
-+
-+static int max77686_resume(struct device *dev)
-+{
-+	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
-+	struct max77686_dev *max77686 = i2c_get_clientdata(i2c);
-+
-+	if (device_may_wakeup(dev))
-+		disable_irq_wake(max77686->irq);
-+
-+	enable_irq(max77686->irq);
-+
-+	return 0;
-+}
-+#endif /* CONFIG_PM_SLEEP */
-+
-+static SIMPLE_DEV_PM_OPS(max77686_pm, max77686_suspend, max77686_resume);
-+
- static struct i2c_driver max77686_i2c_driver = {
- 	.driver = {
- 		   .name = "max77686",
- 		   .owner = THIS_MODULE,
-+		   .pm = &max77686_pm,
- 		   .of_match_table = of_match_ptr(max77686_pmic_dt_match),
- 	},
- 	.probe = max77686_i2c_probe,
--- 
-2.0.0.rc2
+On Fri, 4 Jul 2014, Elliott, Robert (Server Storage) wrote:
 
+> 
+> 
+> > -----Original Message-----
+> > From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
+> > owner@vger.kernel.org] On Behalf Of Himangi Saraogi
+> > Sent: Friday, 04 July, 2014 1:28 PM
+> > To: Vikas Chaudhary; iscsi-driver@qlogic.com; James E.J. Bottomley; linux-
+> > scsi@vger.kernel.org; linux-kernel@vger.kernel.org
+> > Cc: julia.lawall@lip6.fr
+> > Subject: [PATCH] qla4xxx: Return -ENOMEM on memory allocation failure
+> > 
+> > In this code, 0 is returned on memory allocation failure, even though
+> > other failures return -ENOMEM or other similar values.
+> > 
+> > A simplified version of the Coccinelle semantic match that finds this
+> > problem is as follows:
+> > 
+> > // <smpl>
+> > @@
+> > expression ret;
+> > expression x,e1,e2,e3;
+> > identifier alloc;
+> > @@
+> > 
+> > ret = 0
+> > ... when != ret = e1
+> > *x = alloc(...)
+> > ... when != ret = e2
+> > if (x == NULL) { ... when != ret = e3
+> >   return ret;
+> > }
+> > // </smpl>
+> > 
+> > Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> > Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> > ---
+> >  drivers/scsi/qla4xxx/ql4_os.c | 1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/drivers/scsi/qla4xxx/ql4_os.c b/drivers/scsi/qla4xxx/ql4_os.c
+> > index c5d9564..72ba671 100644
+> > --- a/drivers/scsi/qla4xxx/ql4_os.c
+> > +++ b/drivers/scsi/qla4xxx/ql4_os.c
+> > @@ -1050,6 +1050,7 @@ static int qla4xxx_get_host_stats(struct Scsi_Host
+> > *shost, char *buf, int len)
+> >  	if (!ql_iscsi_stats) {
+> >  		ql4_printk(KERN_ERR, ha,
+> >  			   "Unable to allocate memory for iscsi stats\n");
+> > +		ret = -ENOMEM;
+> >  		goto exit_host_stats;
+> >  	}
+> > 
+> 
+> Also, the only caller of this function doesn't use the return 
+> value - it's overwritten by another function call:
+> 
+> drivers/scsi/scsi_transport_iscsi.c:
+>                 err = transport->get_host_stats(shost, buf, host_stats_size);
+> 
+>                 actual_size = nlmsg_total_size(sizeof(*ev) + host_stats_size);
+>                 skb_trim(skbhost_stats, NLMSG_ALIGN(actual_size));
+>                 nlhhost_stats->nlmsg_len = actual_size;
+> 
+>                 err = iscsi_multicast_skb(skbhost_stats, ISCSI_NL_GRP_ISCSID,
+>                                           GFP_KERNEL);
+
+Maybe that is intentional?  If get_host_stats fails, eg because of a lack 
+of memory, the worst that will happen is that a region of the buffer will 
+be 0.  If the loop is done again, there seems to be a risk of an infinite 
+loop.
+
+julia
