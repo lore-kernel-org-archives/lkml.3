@@ -1,187 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759357AbaGDRHw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 13:07:52 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:33939 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759042AbaGDRHu (ORCPT
+	id S1755773AbaGDRLT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 13:11:19 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:40816 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637AbaGDRLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 13:07:50 -0400
+	Fri, 4 Jul 2014 13:11:17 -0400
+Date: Fri, 4 Jul 2014 13:11:13 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/5] cgroup: split cgroup_base_files[] into
+ cgroup_{dfl|legacy}_base_files[]
+Message-ID: <20140704171113.GA11787@mtj.dyndns.org>
+References: <1404345055-8196-1-git-send-email-tj@kernel.org>
+ <1404345055-8196-2-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20140704091000.GA4738@lianli>
-References: <1404418756-10550-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<1404418756-10550-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<20140704091000.GA4738@lianli>
-Date: Fri, 4 Jul 2014 19:07:48 +0200
-Message-ID: <CAFo99gYU6v_ohZa6rSfHwUhk6Lw1dCtVWOQsLk3tZ_GRyqExbg@mail.gmail.com>
-Subject: Re: [PATCH v3] i2c: busses: i2c-pxa.c: Fix for possible null pointer dereferenc
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Emil Goode <emilgoode@gmail.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Jingoo Han <jg1.han@samsung.com>,
-        Leilei Shang <shangll@marvell.com>,
-        Peter Korsgaard <peter@korsgaard.com>, linux-i2c@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404345055-8196-2-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-04 11:10 GMT+02:00 Emil Goode <emilgoode@gmail.com>:
-> Hello Rickard,
->
-> Since this is a probe function there is also no need to release the devm_*
-> resources in the i2c_pxa_remove function, this leads to double free.
->
-> Also I have a few nit-pick comments below.
->
-> On Thu, Jul 03, 2014 at 10:19:16PM +0200, Rickard Strandqvist wrote:
->> Fix for possible null pointer dereferenc, and there is a risk for memory leak if something unexpected happens and the function returns.
->> It now use Managed Device Resource instead.
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>  drivers/i2c/busses/i2c-pxa.c |   37 ++++++++++++++++---------------------
->>  1 file changed, 16 insertions(+), 21 deletions(-)
->>
->> diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
->> index be671f7..2edb633 100644
->> --- a/drivers/i2c/busses/i2c-pxa.c
->> +++ b/drivers/i2c/busses/i2c-pxa.c
->> @@ -1141,10 +1141,10 @@ static int i2c_pxa_probe(struct platform_device *dev)
->>       struct resource *res = NULL;
->>       int ret, irq;
->>
->> -     i2c = kzalloc(sizeof(struct pxa_i2c), GFP_KERNEL);
->> +     i2c = devm_kzalloc(&dev->dev, sizeof(struct pxa_i2c), GFP_KERNEL);
->>       if (!i2c) {
->>               ret = -ENOMEM;
->> -             goto emalloc;
->> +             goto err_nothing_to_release;
->
-> Perhaps its a good idea to return directly here, then the label
-> err_nothing_to_release can be removed.
->
->>       }
->>
->>       /* Default adapter num to device id; i2c_pxa_probe_dt can override. */
->> @@ -1154,18 +1154,19 @@ static int i2c_pxa_probe(struct platform_device *dev)
->>       if (ret > 0)
->>               ret = i2c_pxa_probe_pdata(dev, i2c, &i2c_type);
->>       if (ret < 0)
->> -             goto eclk;
->> +             goto err_nothing_to_release;
->
-> Same here.
->
->>
->>       res = platform_get_resource(dev, IORESOURCE_MEM, 0);
->>       irq = platform_get_irq(dev, 0);
->>       if (res == NULL || irq < 0) {
->>               ret = -ENODEV;
->> -             goto eclk;
->> +             goto err_nothing_to_release;
->
-> Same here.
->
->>       }
->>
->> -     if (!request_mem_region(res->start, resource_size(res), res->name)) {
->> +     if (!devm_request_mem_region(&dev->dev, res->start,
->> +                             resource_size(res), res->name)) {
->>               ret = -ENOMEM;
->> -             goto eclk;
->> +             goto emalloc;
->
-> We could also return directly here since the release_mem_region call should
-> be removed, as mentioned in Jingoos reply.
->
->>       }
->>
->>       i2c->adap.owner   = THIS_MODULE;
->> @@ -1176,16 +1177,16 @@ static int i2c_pxa_probe(struct platform_device *dev)
->>
->>       strlcpy(i2c->adap.name, "pxa_i2c-i2c", sizeof(i2c->adap.name));
->>
->> -     i2c->clk = clk_get(&dev->dev, NULL);
->> +     i2c->clk = devm_clk_get(&dev->dev, NULL);
->>       if (IS_ERR(i2c->clk)) {
->>               ret = PTR_ERR(i2c->clk);
->> -             goto eclk;
->> +             goto emalloc;
->
-> Same here.
->
->>       }
->>
->> -     i2c->reg_base = ioremap(res->start, resource_size(res));
->> -     if (!i2c->reg_base) {
->> +     i2c->reg_base = devm_ioremap_resource(&adev->dev, res));
->> +     if (IS_ERR(i2c->reg_base)) {
->>               ret = -EIO;
->> -             goto eremap;
->> +             goto emalloc;
->
-> Same here.
->
->>       }
->>
->>       i2c->reg_ibmr = i2c->reg_base + pxa_reg_layout[i2c_type].ibmr;
->> @@ -1227,10 +1228,10 @@ static int i2c_pxa_probe(struct platform_device *dev)
->>               i2c->adap.algo = &i2c_pxa_pio_algorithm;
->>       } else {
->>               i2c->adap.algo = &i2c_pxa_algorithm;
->> -             ret = request_irq(irq, i2c_pxa_handler, IRQF_SHARED,
->> -                               dev_name(&dev->dev), i2c);
->> +             ret = devm_request_irq(&dev->dev, irq, i2c_pxa_handler,
->> +                              IRQF_SHARED, dev_name(&dev->dev), i2c);
->>               if (ret)
->> -                     goto ereqirq;
->> +                     goto emalloc;
->
-> Same here.
->
->>       }
->>
->>       i2c_pxa_reset(i2c);
->> @@ -1261,15 +1262,9 @@ static int i2c_pxa_probe(struct platform_device *dev)
->>  eadapt:
->>       if (!i2c->use_pio)
->>               free_irq(irq, i2c);
->
-> The free_irq() call should also be removed since devm_request_irq() was used.
->
->> -ereqirq:
->> -     clk_disable_unprepare(i2c->clk);
->> -     iounmap(i2c->reg_base);
->> -eremap:
->> -     clk_put(i2c->clk);
->> -eclk:
->> -     kfree(i2c);
->>  emalloc:
->>       release_mem_region(res->start, resource_size(res));
->> +err_nothing_to_release:
->>       return ret;
->>  }
->>
->
-> Best regards,
->
-> Emil Goode
+>From f41924c8f07dcda07a31a08117bac077fde13626 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Fri, 4 Jul 2014 13:06:42 -0400
 
-Hi All!
+Currently cgroup_base_files[] contains the cgroup core interface files
+for both legacy and default hierarchies with each file tagged with
+CFTYPE_INSANE and CFTYPE_ONLY_ON_DFL.  This is difficult to read.
 
-Ok, so there is literally nothing to do release anymore.
-A good system Devres, I understand you want everyone to use it.
+Let's separate it out to two separate tables, cgroup_dfl_base_files[]
+and cgroup_legacy_base_files[], and use the appropriate one in
+cgroup_mkdir() depending on the hierarchy type.  This makes tagging
+each file unnecessary.
 
-I also think it is also better to return directly then.
-But who decides, Wolfram?
+This patch doesn't introduce any behavior changes.
 
-Would appreciate if I did not have to do more than one patch more.
+v2: cgroup_dfl_base_files[] was missing the termination entry
+    triggering WARN in cgroup_init_cftypes() for 0day kernel testing
+    robot.  Fixed.
 
-And thanks Jingoo for spelling, etc.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jet Chen <jet.chen@intel.com>
+---
+ kernel/cgroup.c | 76 ++++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 48 insertions(+), 28 deletions(-)
 
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 1c56924..50858ff 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -180,7 +180,8 @@ static u64 css_serial_nr_next = 1;
+  */
+ static int need_forkexit_callback __read_mostly;
+ 
+-static struct cftype cgroup_base_files[];
++static struct cftype cgroup_dfl_base_files[];
++static struct cftype cgroup_legacy_base_files[];
+ 
+ static void cgroup_put(struct cgroup *cgrp);
+ static int rebind_subsystems(struct cgroup_root *dst_root,
+@@ -1558,6 +1559,7 @@ static int cgroup_setup_root(struct cgroup_root *root, unsigned int ss_mask)
+ {
+ 	LIST_HEAD(tmp_links);
+ 	struct cgroup *root_cgrp = &root->cgrp;
++	struct cftype *base_files;
+ 	struct css_set *cset;
+ 	int i, ret;
+ 
+@@ -1595,7 +1597,12 @@ static int cgroup_setup_root(struct cgroup_root *root, unsigned int ss_mask)
+ 	}
+ 	root_cgrp->kn = root->kf_root->kn;
+ 
+-	ret = cgroup_addrm_files(root_cgrp, cgroup_base_files, true);
++	if (root == &cgrp_dfl_root)
++		base_files = cgroup_dfl_base_files;
++	else
++		base_files = cgroup_legacy_base_files;
++
++	ret = cgroup_addrm_files(root_cgrp, base_files, true);
+ 	if (ret)
+ 		goto destroy_root;
+ 
+@@ -3985,7 +3992,8 @@ static int cgroup_clone_children_write(struct cgroup_subsys_state *css,
+ 	return 0;
+ }
+ 
+-static struct cftype cgroup_base_files[] = {
++/* cgroup core interface files for the default hierarchy */
++static struct cftype cgroup_dfl_base_files[] = {
+ 	{
+ 		.name = "cgroup.procs",
+ 		.seq_start = cgroup_pidlist_start,
+@@ -3997,46 +4005,52 @@ static struct cftype cgroup_base_files[] = {
+ 		.mode = S_IRUGO | S_IWUSR,
+ 	},
+ 	{
+-		.name = "cgroup.clone_children",
+-		.flags = CFTYPE_INSANE,
+-		.read_u64 = cgroup_clone_children_read,
+-		.write_u64 = cgroup_clone_children_write,
+-	},
+-	{
+-		.name = "cgroup.sane_behavior",
+-		.flags = CFTYPE_INSANE | CFTYPE_ONLY_ON_ROOT,
+-		.seq_show = cgroup_sane_behavior_show,
+-	},
+-	{
+ 		.name = "cgroup.controllers",
+-		.flags = CFTYPE_ONLY_ON_DFL | CFTYPE_ONLY_ON_ROOT,
++		.flags = CFTYPE_ONLY_ON_ROOT,
+ 		.seq_show = cgroup_root_controllers_show,
+ 	},
+ 	{
+ 		.name = "cgroup.controllers",
+-		.flags = CFTYPE_ONLY_ON_DFL | CFTYPE_NOT_ON_ROOT,
++		.flags = CFTYPE_NOT_ON_ROOT,
+ 		.seq_show = cgroup_controllers_show,
+ 	},
+ 	{
+ 		.name = "cgroup.subtree_control",
+-		.flags = CFTYPE_ONLY_ON_DFL,
+ 		.seq_show = cgroup_subtree_control_show,
+ 		.write = cgroup_subtree_control_write,
+ 	},
+ 	{
+ 		.name = "cgroup.populated",
+-		.flags = CFTYPE_ONLY_ON_DFL | CFTYPE_NOT_ON_ROOT,
++		.flags = CFTYPE_NOT_ON_ROOT,
+ 		.seq_show = cgroup_populated_show,
+ 	},
++	{ }	/* terminate */
++};
+ 
+-	/*
+-	 * Historical crazy stuff.  These don't have "cgroup."  prefix and
+-	 * don't exist if sane_behavior.  If you're depending on these, be
+-	 * prepared to be burned.
+-	 */
++/* cgroup core interface files for the legacy hierarchies */
++static struct cftype cgroup_legacy_base_files[] = {
++	{
++		.name = "cgroup.procs",
++		.seq_start = cgroup_pidlist_start,
++		.seq_next = cgroup_pidlist_next,
++		.seq_stop = cgroup_pidlist_stop,
++		.seq_show = cgroup_pidlist_show,
++		.private = CGROUP_FILE_PROCS,
++		.write = cgroup_procs_write,
++		.mode = S_IRUGO | S_IWUSR,
++	},
++	{
++		.name = "cgroup.clone_children",
++		.read_u64 = cgroup_clone_children_read,
++		.write_u64 = cgroup_clone_children_write,
++	},
++	{
++		.name = "cgroup.sane_behavior",
++		.flags = CFTYPE_ONLY_ON_ROOT,
++		.seq_show = cgroup_sane_behavior_show,
++	},
+ 	{
+ 		.name = "tasks",
+-		.flags = CFTYPE_INSANE,		/* use "procs" instead */
+ 		.seq_start = cgroup_pidlist_start,
+ 		.seq_next = cgroup_pidlist_next,
+ 		.seq_stop = cgroup_pidlist_stop,
+@@ -4047,13 +4061,12 @@ static struct cftype cgroup_base_files[] = {
+ 	},
+ 	{
+ 		.name = "notify_on_release",
+-		.flags = CFTYPE_INSANE,
+ 		.read_u64 = cgroup_read_notify_on_release,
+ 		.write_u64 = cgroup_write_notify_on_release,
+ 	},
+ 	{
+ 		.name = "release_agent",
+-		.flags = CFTYPE_INSANE | CFTYPE_ONLY_ON_ROOT,
++		.flags = CFTYPE_ONLY_ON_ROOT,
+ 		.seq_show = cgroup_release_agent_show,
+ 		.write = cgroup_release_agent_write,
+ 		.max_write_len = PATH_MAX - 1,
+@@ -4330,6 +4343,7 @@ static int cgroup_mkdir(struct kernfs_node *parent_kn, const char *name,
+ 	struct cgroup_root *root;
+ 	struct cgroup_subsys *ss;
+ 	struct kernfs_node *kn;
++	struct cftype *base_files;
+ 	int ssid, ret;
+ 
+ 	parent = cgroup_kn_lock_live(parent_kn);
+@@ -4400,7 +4414,12 @@ static int cgroup_mkdir(struct kernfs_node *parent_kn, const char *name,
+ 	if (ret)
+ 		goto out_destroy;
+ 
+-	ret = cgroup_addrm_files(cgrp, cgroup_base_files, true);
++	if (cgroup_on_dfl(cgrp))
++		base_files = cgroup_dfl_base_files;
++	else
++		base_files = cgroup_legacy_base_files;
++
++	ret = cgroup_addrm_files(cgrp, base_files, true);
+ 	if (ret)
+ 		goto out_destroy;
+ 
+@@ -4719,7 +4738,8 @@ int __init cgroup_init(void)
+ 	unsigned long key;
+ 	int ssid, err;
+ 
+-	BUG_ON(cgroup_init_cftypes(NULL, cgroup_base_files));
++	BUG_ON(cgroup_init_cftypes(NULL, cgroup_dfl_base_files));
++	BUG_ON(cgroup_init_cftypes(NULL, cgroup_legacy_base_files));
+ 
+ 	mutex_lock(&cgroup_mutex);
+ 
+-- 
+1.9.3
 
-Kind regards
-Rickard Strandqvist
