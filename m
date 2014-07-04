@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760401AbaGDWP6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:15:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56969 "EHLO
+	id S1031578AbaGDXHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 19:07:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56989 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760372AbaGDWPy (ORCPT
+	with ESMTP id S1760398AbaGDWP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:15:54 -0400
+	Fri, 4 Jul 2014 18:15:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Philipp Wolfer <ph.wolfer@gmail.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.15 07/66] Input: elantech - dont set bit 1 of reg_10 when the no_hw_res quirk is set
-Date: Fri,  4 Jul 2014 15:14:06 -0700
-Message-Id: <20140704221423.162156949@linuxfoundation.org>
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Sam Bradshaw <sbradshaw@micron.com>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.15 10/66] mtip32xx: Fix ERO and NoSnoop values in PCIe upstream on AMD systems
+Date: Fri,  4 Jul 2014 15:14:09 -0700
+Message-Id: <20140704221423.302157302@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -30,52 +29,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Asai Thambi S P <asamymuthupa@micron.com>
 
-commit fb4f8f568a9def02240ef9bf7aabd246dc63a081 upstream.
+commit d1e714db8129a1d3670e449b87719c78e2c76f9f upstream.
 
-The touchpad on the GIGABYTE U2442 not only stops communicating when we try
-to set bit 3 (enable real hardware resolution) of reg_10, but on some BIOS
-versions also when we set bit 1 (enable two finger mode auto correct).
+A hardware quirk in P320h/P420m interfere with PCIe transactions on some
+AMD chipsets, making P320h/P420m unusable. This workaround is to disable
+ERO and NoSnoop bits in the parent and root complex for normal
+functioning of these devices
 
-I've asked the original reporter of:
-https://bugzilla.kernel.org/show_bug.cgi?id=61151
+NOTE: This workaround is specific to AMD chipset with a PCIe upstream
+device with device id 0x5aXX
 
-To check that not setting bit 1 does not lead to any adverse effects on his
-model / BIOS revision, and it does not, so this commit fixes the touchpad
-not working on these versions by simply never setting bit 1 for laptop
-models with the no_hw_res quirk.
-
-Reported-and-tested-by: James Lademann <jwlademann@gmail.com>
-Tested-by: Philipp Wolfer <ph.wolfer@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
+Signed-off-by: Sam Bradshaw <sbradshaw@micron.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/elantech.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/block/mtip32xx/mtip32xx.c |   53 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
 
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -849,7 +849,7 @@ static int elantech_set_absolute_mode(st
- 		if (etd->set_hw_resolution)
- 			etd->reg_10 = 0x0b;
- 		else
--			etd->reg_10 = 0x03;
-+			etd->reg_10 = 0x01;
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -4479,6 +4479,57 @@ static DEFINE_HANDLER(5);
+ static DEFINE_HANDLER(6);
+ static DEFINE_HANDLER(7);
  
- 		if (elantech_write_reg(psmouse, 0x10, etd->reg_10))
- 			rc = -1;
-@@ -1350,7 +1350,8 @@ static int elantech_reconnect(struct psm
- }
- 
++static void mtip_disable_link_opts(struct driver_data *dd, struct pci_dev *pdev)
++{
++	int pos;
++	unsigned short pcie_dev_ctrl;
++
++	pos = pci_find_capability(pdev, PCI_CAP_ID_EXP);
++	if (pos) {
++		pci_read_config_word(pdev,
++			pos + PCI_EXP_DEVCTL,
++			&pcie_dev_ctrl);
++		if (pcie_dev_ctrl & (1 << 11) ||
++		    pcie_dev_ctrl & (1 << 4)) {
++			dev_info(&dd->pdev->dev,
++				"Disabling ERO/No-Snoop on bridge device %04x:%04x\n",
++					pdev->vendor, pdev->device);
++			pcie_dev_ctrl &= ~(PCI_EXP_DEVCTL_NOSNOOP_EN |
++						PCI_EXP_DEVCTL_RELAX_EN);
++			pci_write_config_word(pdev,
++				pos + PCI_EXP_DEVCTL,
++				pcie_dev_ctrl);
++		}
++	}
++}
++
++static void mtip_fix_ero_nosnoop(struct driver_data *dd, struct pci_dev *pdev)
++{
++	/*
++	 * This workaround is specific to AMD/ATI chipset with a PCI upstream
++	 * device with device id 0x5aXX
++	 */
++	if (pdev->bus && pdev->bus->self) {
++		if (pdev->bus->self->vendor == PCI_VENDOR_ID_ATI &&
++		    ((pdev->bus->self->device & 0xff00) == 0x5a00)) {
++			mtip_disable_link_opts(dd, pdev->bus->self);
++		} else {
++			/* Check further up the topology */
++			struct pci_dev *parent_dev = pdev->bus->self;
++			if (parent_dev->bus &&
++				parent_dev->bus->parent &&
++				parent_dev->bus->parent->self &&
++				parent_dev->bus->parent->self->vendor ==
++					 PCI_VENDOR_ID_ATI &&
++				(parent_dev->bus->parent->self->device &
++					0xff00) == 0x5a00) {
++				mtip_disable_link_opts(dd,
++					parent_dev->bus->parent->self);
++			}
++		}
++	}
++}
++
  /*
-- * Some hw_version 3 models go into error state when we try to set bit 3 of r10
-+ * Some hw_version 3 models go into error state when we try to set
-+ * bit 3 and/or bit 1 of r10.
-  */
- static const struct dmi_system_id no_hw_res_dmi_table[] = {
- #if defined(CONFIG_DMI) && defined(CONFIG_X86)
+  * Called for each supported PCI device detected.
+  *
+@@ -4630,6 +4681,8 @@ static int mtip_pci_probe(struct pci_dev
+ 		goto msi_initialize_err;
+ 	}
+ 
++	mtip_fix_ero_nosnoop(dd, pdev);
++
+ 	/* Initialize the block layer. */
+ 	rv = mtip_block_initialize(dd);
+ 	if (rv < 0) {
 
 
