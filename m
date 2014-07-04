@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161032AbaGDWpI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:45:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57414 "EHLO
+	id S1031107AbaGDWUv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:20:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57409 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031090AbaGDWUw (ORCPT
+	with ESMTP id S1031090AbaGDWUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:20:52 -0400
+	Fri, 4 Jul 2014 18:20:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Herbszt <herbszt@gmx.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 01/46] target: Fix left-over se_lun->lun_sep pointer OOPs
-Date: Fri,  4 Jul 2014 15:19:05 -0700
-Message-Id: <20140704221602.341869733@linuxfoundation.org>
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.14 29/59] SUNRPC: Fix a module reference leak in svc_handle_xprt
+Date: Fri,  4 Jul 2014 15:19:18 -0700
+Message-Id: <20140704221540.945713545@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
-References: <20140704221602.280733370@linuxfoundation.org>
+In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
+References: <20140704221539.544876024@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,40 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 83ff42fcce070801a3aa1cd6a3269d7426271a8d upstream.
+commit c789102c20bbbdda6831a273e046715be9d6af79 upstream.
 
-This patch fixes a left-over se_lun->lun_sep pointer OOPs when one
-of the /sys/kernel/config/target/$FABRIC/$WWPN/$TPGT/lun/$LUN/alua*
-attributes is accessed after the $DEVICE symlink has been removed.
+If the accept() call fails, we need to put the module reference.
 
-To address this bug, go ahead and clear se_lun->lun_sep memory in
-core_dev_unexport(), so that the existing checks for show/store
-ALUA attributes in target_core_fabric_configfs.c work as expected.
-
-Reported-by: Sebastian Herbszt <herbszt@gmx.de>
-Tested-by: Sebastian Herbszt <herbszt@gmx.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_device.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/sunrpc/svc_xprt.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -614,6 +614,7 @@ void core_dev_unexport(
- 	dev->export_count--;
- 	spin_unlock(&hba->device_lock);
- 
-+	lun->lun_sep = NULL;
- 	lun->lun_se_dev = NULL;
- }
- 
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -730,6 +730,8 @@ static int svc_handle_xprt(struct svc_rq
+ 		newxpt = xprt->xpt_ops->xpo_accept(xprt);
+ 		if (newxpt)
+ 			svc_add_new_temp_xprt(serv, newxpt);
++		else
++			module_put(xprt->xpt_class->xcl_owner);
+ 	} else if (xprt->xpt_ops->xpo_has_wspace(xprt)) {
+ 		/* XPT_DATA|XPT_DEFERRED case: */
+ 		dprintk("svc: server %p, pool %u, transport %p, inuse=%d\n",
 
 
