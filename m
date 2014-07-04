@@ -1,134 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759811AbaGDBBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 21:01:52 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:55009 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755662AbaGDBBv (ORCPT
+	id S1756651AbaGDBHa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 21:07:30 -0400
+Received: from g5t1625.atlanta.hp.com ([15.192.137.8]:47795 "EHLO
+	g5t1625.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755431AbaGDBH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 21:01:51 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ao5dACX8tVN5LHZ8PGdsb2JhbABagw2sbAEBAQEBB5pUAYELFwQBAQEBODWEAwEBBScTHCMQCAMYCSUPBSUDBxoTHogjyTkXGIVYhg0BgyQHhEMFmnWWDYFUKw
-Date: Fri, 4 Jul 2014 11:01:47 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Jason Low <jason.low2@hp.com>
+	Thu, 3 Jul 2014 21:07:29 -0400
+Message-ID: <1404436043.8764.95.camel@j-VirtualBox>
+Subject: Re: [RFC] Cancellable MCS spinlock rework
+From: Jason Low <jason.low2@hp.com>
+To: Waiman Long <waiman.long@hp.com>
 Cc: Davidlohr Bueso <davidlohr@hp.com>, Peter Zijlstra <peterz@infradead.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [regression, 3.16-rc] rwsem: optimistic spinning causing
- performance degradation
-Message-ID: <20140704010147.GY4453@dastard>
-References: <1404413420.8764.42.camel@j-VirtualBox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404413420.8764.42.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        mingo@kernel.org, linux-kernel@vger.kernel.org, riel@redhat.com,
+        akpm@linux-foundation.org, hpa@zytor.com, andi@firstfloor.org,
+        James.Bottomley@hansenpartnership.com, rostedt@goodmis.org,
+        tim.c.chen@linux.intel.com, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Date: Thu, 03 Jul 2014 18:07:23 -0700
+In-Reply-To: <53B5BE99.1090008@hp.com>
+References: <1404318070-2856-1-git-send-email-jason.low2@hp.com>
+	  <20140702162749.GP19379@twins.programming.kicks-ass.net>
+	  <1404320356.3170.12.camel@j-VirtualBox>
+	  <20140702172333.GQ19379@twins.programming.kicks-ass.net>
+	  <1404322203.3170.17.camel@j-VirtualBox>
+	  <20140703073107.GS19379@twins.programming.kicks-ass.net>
+	  <1404407389.2498.3.camel@buesod1.americas.hpqcorp.net>
+	 <1404412485.8764.33.camel@j-VirtualBox> <53B5BE99.1090008@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[re-added lkml]
+On Thu, 2014-07-03 at 16:35 -0400, Waiman Long wrote:
 
-On Thu, Jul 03, 2014 at 11:50:20AM -0700, Jason Low wrote:
-> On Wed, Jul 2, 2014 at 7:32 PM, Dave Chinner <david@fromorbit.com> wrote:
-> > This is what the kernel profile looks like on the strided run:
-> >
-> > -  83.06%  [kernel]  [k] osq_lock
-> >    - osq_lock
-> >       - 100.00% rwsem_down_write_failed
-> >          - call_rwsem_down_write_failed
-> >             - 99.55% sys_mprotect
-> >                  tracesys
-> >                  __GI___mprotect
-> > -  12.02%  [kernel]  [k] rwsem_down_write_failed
+> I do see a point in reducing the size of the rwsem structure. However, I 
+> don't quite understand the point of converting pointers in the 
+> optimistic_spin_queue structure to atomic_t. The structure is cacheline 
+> aligned and there is no saving in size. Converting them to atomic_t does 
+> have a bit of additional overhead of converting the encoded cpu number 
+> back to the actual pointer.
 > 
-> Hi Dave,
-> 
-> So with no sign of rwsem_spin_on_owner(), yet with such heavy contention in
-> osq_lock, this makes me wonder if it's spending most of its time spinning
-> on !owner while a reader has the lock? (We don't set sem->owner for the readers.)
-> 
-> If that's an issue, maybe the below is worth a test, in which we'll just
-> avoid spinning if rwsem_can_spin_on_owner() finds that there is no owner.
-> If we just had to enter the slowpath yet there is no owner, we'll be conservative
-> and assume readers have the lock.
+> So my suggestion is to just change what is stored in the mutex and rwsem 
+> structure to atomic_t, but keep the pointers in the 
+> optimistic_spin_queue structure.
 
-That makes it quite a bit faster:
+Peter, would you prefer going with the above?
 
-        XFS_REPAIR Summary    Fri Jul  4 10:39:32 2014
+If we were to keep the pointers to the next and prev nodes in the struct
+optimistic_spin_queue instead of converting them to atomic_t to store
+their cpu #, we'd still need to keep track of the cpu #. In the unqueue
+phase of osq_lock, we might have to reload prev = node->prev which we
+then may cmpxchg() it with the lock tail.
 
-Phase           Start           End             Duration
-Phase 1:        07/04 10:38:04  07/04 10:38:05  1 second
-Phase 2:        07/04 10:38:05  07/04 10:38:08  3 seconds
-Phase 3:        07/04 10:38:08  07/04 10:39:12  1 minute, 4 seconds
-Phase 4:        07/04 10:39:12  07/04 10:39:21  9 seconds
-Phase 5:        07/04 10:39:21  07/04 10:39:22  1 second
-Phase 6:        07/04 10:39:22  07/04 10:39:30  8 seconds
-Phase 7:        07/04 10:39:30  07/04 10:39:30  
+The method we can think of so far would be to add a regular int variable
+to optimistic_spin_queue and initialize it to the CPU #, during the time
+we also initialize node->locked and node->next at the beginning of
+osq_lock. The cost wouldn't be much of an issue since
+optimistic_spin_queue is cache aligned.
 
-Total run time: 1 minute, 26 seconds
-done
-
-real    1m28.504s
-user    1m23.990s
-sys     3m20.132s
-
-So system time goes down massively, and speed comes up to within 30%
-of the single AG run.  But it's still 2-3000 IOPS down, but it's
-acceptible for the moment.
-
-FWIW, the kernel profile ifor the multi-AG run now looks like:
-
-  29.64%  [kernel]  [k] _raw_spin_unlock_irq
-   - _raw_spin_unlock_irq
-      + 35.34% __schedule
-      - 34.15% call_rwsem_down_write_failed
-         + 99.27% sys_mprotect
-      - 30.02% call_rwsem_down_read_failed
-           95.59% __do_page_fault
--  24.65%  [kernel]  [k] _raw_spin_unlock_irqrestore
-   - _raw_spin_unlock_irqrestore
-      - 69.38% rwsem_wake
-         - call_rwsem_wake
-            - 83.32% sys_mprotect
-            + 15.54% __do_page_fault
-      + 22.55% try_to_wake_up
-+   9.77%  [kernel]  [k] default_send_IPI_mask_sequence_phys
--   3.21%  [kernel]  [k] smp_call_function_many
-   - smp_call_function_many
-      - 99.22% flush_tlb_page
-+   2.51%  [kernel]  [k] rwsem_down_write_failed
-
-It's much more like the 3.15 profile - it's only wasting half the
-CPU spinning on the internal spinlock and it's now going fast enough
-to be blowing another 10-12% of the CPU time sending tlb flushes to
-other CPUs....
-
-One thing I did notice, even with the single-AG-at-a-time run, is
-that the system time is *significantly* reduced with this patch,
-even though it doesn't change performance.
-
-ie unpatched:
-
-	unpatched	patched
-runtime   0m58s		  1m2s
-systime   4m55s		  1m1s
-
-So not spinning when there are read holders is a major win even
-when there are few threads contending on read/write.
-
-FWIW, the rwsems in the struct xfs_inode are often heavily
-read/write contended, so there are lots of IO related workloads that
-are going to regress on XFS without this optimisation...
-
-Anyway, consider the patch:
-
-Tested-by: Dave Chinner <dchinner@redhat.com>
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
