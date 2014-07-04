@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759256AbaGDRhr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 13:37:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55727 "EHLO
+	id S1759393AbaGDRj2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 13:39:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55731 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755999AbaGDRhq (ORCPT
+	with ESMTP id S1754559AbaGDRj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 13:37:46 -0400
-Date: Fri, 4 Jul 2014 10:37:19 -0700
+	Fri, 4 Jul 2014 13:39:27 -0400
+Date: Fri, 4 Jul 2014 10:39:10 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Thomas =?iso-8859-1?Q?Sch=F6bel-Theuer?= 
-	<thomas@schoebel-theuer.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: Selling Points for MARS Light
-Message-ID: <20140704173719.GC25992@kroah.com>
-References: <53B6897F.6020802@schoebel-theuer.de>
- <CAFLxGvynFuCh0puda06kTH1P3i=701dQO-+opjLnQrd2KqUTHA@mail.gmail.com>
+To: Frank Haverkamp <haver@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org,
+        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/4] GenWQE: patches to improve RAS features (v2)
+Message-ID: <20140704173910.GD25992@kroah.com>
+References: <1403713327-27976-1-git-send-email-klebers@linux.vnet.ibm.com>
+ <1403772933.25754.1.camel@oc7383187364.ibm.com>
+ <1404459427.11076.2.camel@oc7383187364.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFLxGvynFuCh0puda06kTH1P3i=701dQO-+opjLnQrd2KqUTHA@mail.gmail.com>
+In-Reply-To: <1404459427.11076.2.camel@oc7383187364.ibm.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04, 2014 at 03:04:07PM +0200, Richard Weinberger wrote:
-> On Fri, Jul 4, 2014 at 1:01 PM, Thomas Schöbel-Theuer
-> <thomas@schoebel-theuer.de> wrote:
-> > Hi together,
-> >
-> > since not all people have attended my presentations on MARS Light, and
-> > since probably not all are willing to click at links such as to the
-> > presentation slides
-> > https://github.com/schoebel/mars/blob/master/docu/MARS_LinuxTag2014.pdf?raw=true
-> > , I will try to explain something which goes beyond the presentations,
-> > but nevertheless I don't want to repeat too much from the slides.
-> >
-> > So the following is hopefully also interesting for people who attended
-> > the presentations.
-> >
-> > My main selling point:
-> >
-> > To my knowledge, MARS Light is the only enterprise-grade opensource
-> > solution constructed for mass replication of whole datacenters
-> > (thousands to tenthousands of instances) over _long_ _distances_, aka
-> > _geo-redundancy_.
+On Fri, Jul 04, 2014 at 09:37:07AM +0200, Frank Haverkamp wrote:
+> Hi Greg,
 > 
-> I think hch meant not a high level marketing-drone -ready design document
-> by "explain and sell your design".
-> We are interested in the real low level design ideas.
-> i.e. Why do you need all syscalls exported?
+> Am Donnerstag, den 26.06.2014, 10:55 +0200 schrieb Frank Haverkamp:
+> > Hi Kleber,
+> > 
+> > Am Mittwoch, den 25.06.2014, 13:22 -0300 schrieb Kleber Sacilotto de
+> > Souza:
+> > > Hi,
+> > > 
+> > > I'm sending a v2 of this patch series, removing the patch that bumps the
+> > > driver version number, and including a trivial one that removes an unnecessary
+> > > include.
+> > > 
+> > > Kleber Sacilotto de Souza (4):
+> > >   GenWQE: Add sysfs interface for bitstream reload
+> > >   GenWQE: Add support for EEH error recovery
+> > >   GenWQE: Improve hardware error recovery
+> > >   GenWQE: Remove unecessary include
+> > > 
+> > >  Documentation/ABI/testing/sysfs-driver-genwqe |    9 +
+> > >  drivers/misc/genwqe/Kconfig                   |    6 +
+> > >  drivers/misc/genwqe/card_base.c               |  215 +++++++++++++++++++++++--
+> > >  drivers/misc/genwqe/card_base.h               |    2 +
+> > >  drivers/misc/genwqe/card_ddcb.c               |   24 +++-
+> > >  drivers/misc/genwqe/card_debugfs.c            |    7 +
+> > >  drivers/misc/genwqe/card_dev.c                |    5 +
+> > >  drivers/misc/genwqe/card_sysfs.c              |   25 +++
+> > >  drivers/misc/genwqe/card_utils.c              |   10 ++
+> > >  include/uapi/linux/genwqe/genwqe_card.h       |    1 +
+> > >  10 files changed, 285 insertions(+), 19 deletions(-)
+> > > 
+> > 
+> > Thanks for resubmitting the patches.
+> > 
+> > Acked-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
+> > 
+> 
+> ping. Do you already have an idea when you might find the time to review
+> Klebers patches?
 
-Exactly, normally we don't care about any high-level things, I want to
-know why you think you have to call remove within a kernel module when
-no one else does that.
+When I return from vacation on Monday I will start to work on my very
+large backlog of patches...
 
-Also, I doubt you handle the namespace issue properly, but given that it
-is impossible to review the 50+ patches as sent, it might be correct, or
-might not, I don't know...
+thanks,
 
 greg k-h
