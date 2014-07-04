@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031396AbaGDWo2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:44:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57423 "EHLO
+	id S1031452AbaGDWot (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:44:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57417 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031122AbaGDWUy (ORCPT
+	with ESMTP id S1031113AbaGDWUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:20:54 -0400
+	Fri, 4 Jul 2014 18:20:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>,
-        Arshad Hussain <arshad.hussain@calsoftinc.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 02/46] iscsi-target: Avoid rejecting incorrect ITT for Data-Out
-Date: Fri,  4 Jul 2014 15:19:06 -0700
-Message-Id: <20140704221602.384534916@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.14 30/59] pNFS: Handle allocation errors correctly in filelayout_alloc_layout_hdr()
+Date: Fri,  4 Jul 2014 15:19:19 -0700
+Message-Id: <20140704221540.993112653@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
-References: <20140704221602.280733370@linuxfoundation.org>
+In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
+References: <20140704221539.544876024@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,42 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 97c99b47ac58bacb7c09e1f47d5d184434f6b06a upstream.
+commit 6df200f5d5191bdde4d2e408215383890f956781 upstream.
 
-This patch changes iscsit_check_dataout_hdr() to dump the incoming
-Data-Out payload when the received ITT is not associated with a
-WRITE, instead of calling iscsit_reject_cmd() for the non WRITE
-ITT descriptor.
+Return the NULL pointer when the allocation fails.
 
-This addresses a bug where an initiator sending an Data-Out for
-an ITT associated with a READ would end up generating a reject
-for the READ, eventually resulting in list corruption.
-
-Reported-by: Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>
-Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target.c |    2 +-
+ fs/nfs/nfs4filelayout.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -1313,7 +1313,7 @@ iscsit_check_dataout_hdr(struct iscsi_co
- 	if (cmd->data_direction != DMA_TO_DEVICE) {
- 		pr_err("Command ITT: 0x%08x received DataOUT for a"
- 			" NON-WRITE command.\n", cmd->init_task_tag);
--		return iscsit_reject_cmd(cmd, ISCSI_REASON_PROTOCOL_ERROR, buf);
-+		return iscsit_dump_data_payload(conn, payload_length, 1);
- 	}
- 	se_cmd = &cmd->se_cmd;
- 	iscsit_mod_dataout_timer(cmd);
+--- a/fs/nfs/nfs4filelayout.c
++++ b/fs/nfs/nfs4filelayout.c
+@@ -1330,7 +1330,7 @@ filelayout_alloc_layout_hdr(struct inode
+ 	struct nfs4_filelayout *flo;
+ 
+ 	flo = kzalloc(sizeof(*flo), gfp_flags);
+-	return &flo->generic_hdr;
++	return flo != NULL ? &flo->generic_hdr : NULL;
+ }
+ 
+ static void
 
 
