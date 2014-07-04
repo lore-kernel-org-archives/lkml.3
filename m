@@ -1,69 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625AbaGDOvc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 10:51:32 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39723 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752914AbaGDOva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 10:51:30 -0400
-Date: Fri, 4 Jul 2014 16:51:18 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com,
-        mjg59@srcf.ucam.org, greg@kroah.com, dyoung@redhat.com,
-        chaowang@redhat.com, bhe@redhat.com, akpm@linux-foundation.org,
-        dhowells@redhat.com, pjones@redhat.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH 0/9] kexec: Verify signature of PE signed bzImage
-Message-ID: <20140704145118.GD3340@pd.tnic>
-References: <1404421641-12691-1-git-send-email-vgoyal@redhat.com>
+	id S1755967AbaGDOyB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 10:54:01 -0400
+Received: from static.88-198-71-155.clients.your-server.de ([88.198.71.155]:59561
+	"EHLO socrates.bennee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104AbaGDOx7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 10:53:59 -0400
+From: =?UTF-8?q?Alex=20Benn=C3=A9e?= <alex.bennee@linaro.org>
+To: kvmarm@lists.cs.columbia.edu, linux-arm-kernel@lists.infradead.org
+Cc: kvm@vger.kernel.org,
+        =?UTF-8?q?Alex=20Benn=C3=A9e?= <alex.bennee@linaro.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, Gleb Natapov <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] arm64: KVM: allow export and import of generic timer regs
+Date: Fri,  4 Jul 2014 15:54:14 +0100
+Message-Id: <1404485654-32674-1-git-send-email-alex.bennee@linaro.org>
+X-Mailer: git-send-email 2.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1404421641-12691-1-git-send-email-vgoyal@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 127.0.0.1
+X-SA-Exim-Mail-From: alex.bennee@linaro.org
+X-SA-Exim-Scanned: No (on socrates.bennee.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 05:07:12PM -0400, Vivek Goyal wrote:
-> Hi,
-> 
-> This patch series enables signature verification of signed PE bzimage. This
-> patches series needs two more patch series before it.
-> 
-> First one is kexec_file_load() syscall support posted here.
-> 
-> https://lkml.org/lkml/2014/6/26/497
-> 
-> This patch seris is also available in -mm tree now.
-> 
-> Second one is PKCS7 signature parsing and verification support. These
-> patches are available in David Howells's modsign tree in pkcs7 branch.
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-modsign.git/log/?h=pkcs7
-> 
-> This patch series is based on David Howells's work of PE file parsing
-> and PKCS7 signature verificaiton. Now PKCS7 signature part is available
-> in his tree. So I have taken PE file parsing patches, changed them a
-> bit and posting these here.
+For correct guest suspend/resume behaviour we need to ensure we include
+the generic timer registers for 64 bit guests. As CONFIG_KVM_ARM_TIMER is
+always set for arm64 we don't need to worry about null implementations.
+However I have re-jigged the kvm_arm_timer_set/get_reg declarations to
+be in the common include/kvm/arm_arch_timer.h headers.
 
-Ok, now this looks strange. You're referring to those patches without
-posting them together with yours. And they're in some repo. Normally in
-such cases people post the *whole* patchset and do not refer to some
-other tree.
+Signed-off-by: Alex Bennée <alex.bennee@linaro.org>
+---
+ arch/arm/include/asm/kvm_host.h |  3 --
+ arch/arm/kvm/guest.c            | 10 ------
+ arch/arm64/kvm/guest.c          | 68 ++++++++++++++++++++++++++++++++++++++++-
+ include/kvm/arm_arch_timer.h    | 14 +++++++++
+ 4 files changed, 81 insertions(+), 14 deletions(-)
 
->From looking at them, they're part of the pull request which Linus did
-shot down already last year:
-
-https://lkml.org/lkml/2013/2/21/228
-
-And he explicitly stated then that we don't want PE file parsing in the
-kernel, AFAICR. What changed since then?
-
+diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
+index 09af149..bce6d32 100644
+--- a/arch/arm/include/asm/kvm_host.h
++++ b/arch/arm/include/asm/kvm_host.h
+@@ -228,7 +228,4 @@ static inline int kvm_arch_dev_ioctl_check_extension(long ext)
+ int kvm_perf_init(void);
+ int kvm_perf_teardown(void);
+ 
+-u64 kvm_arm_timer_get_reg(struct kvm_vcpu *, u64 regid);
+-int kvm_arm_timer_set_reg(struct kvm_vcpu *, u64 regid, u64 value);
+-
+ #endif /* __ARM_KVM_HOST_H__ */
+diff --git a/arch/arm/kvm/guest.c b/arch/arm/kvm/guest.c
+index b23a59c..986e625 100644
+--- a/arch/arm/kvm/guest.c
++++ b/arch/arm/kvm/guest.c
+@@ -124,16 +124,6 @@ static bool is_timer_reg(u64 index)
+ 	return false;
+ }
+ 
+-int kvm_arm_timer_set_reg(struct kvm_vcpu *vcpu, u64 regid, u64 value)
+-{
+-	return 0;
+-}
+-
+-u64 kvm_arm_timer_get_reg(struct kvm_vcpu *vcpu, u64 regid)
+-{
+-	return 0;
+-}
+-
+ #else
+ 
+ #define NUM_TIMER_REGS 3
+diff --git a/arch/arm64/kvm/guest.c b/arch/arm64/kvm/guest.c
+index 0874557..205f0d8 100644
+--- a/arch/arm64/kvm/guest.c
++++ b/arch/arm64/kvm/guest.c
+@@ -136,13 +136,67 @@ static unsigned long num_core_regs(void)
+ }
+ 
+ /**
++ * ARM64 versions of the TIMER registers, always available on arm64
++ */
++
++#define NUM_TIMER_REGS 3
++
++static bool is_timer_reg(u64 index)
++{
++	switch (index) {
++	case KVM_REG_ARM_TIMER_CTL:
++	case KVM_REG_ARM_TIMER_CNT:
++	case KVM_REG_ARM_TIMER_CVAL:
++		return true;
++	}
++	return false;
++}
++
++static int copy_timer_indices(struct kvm_vcpu *vcpu, u64 __user *uindices)
++{
++	if (put_user(KVM_REG_ARM_TIMER_CTL, uindices))
++		return -EFAULT;
++	uindices++;
++	if (put_user(KVM_REG_ARM_TIMER_CNT, uindices))
++		return -EFAULT;
++	uindices++;
++	if (put_user(KVM_REG_ARM_TIMER_CVAL, uindices))
++		return -EFAULT;
++
++	return 0;
++}
++
++static int set_timer_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg)
++{
++	void __user *uaddr = (void __user *)(long)reg->addr;
++	u64 val;
++	int ret;
++
++	ret = copy_from_user(&val, uaddr, KVM_REG_SIZE(reg->id));
++	if (ret != 0)
++		return ret;
++
++	return kvm_arm_timer_set_reg(vcpu, reg->id, val);
++}
++
++static int get_timer_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg)
++{
++	void __user *uaddr = (void __user *)(long)reg->addr;
++	u64 val;
++
++	val = kvm_arm_timer_get_reg(vcpu, reg->id);
++	return copy_to_user(uaddr, &val, KVM_REG_SIZE(reg->id));
++}
++
++/**
+  * kvm_arm_num_regs - how many registers do we present via KVM_GET_ONE_REG
+  *
+  * This is for all registers.
+  */
+ unsigned long kvm_arm_num_regs(struct kvm_vcpu *vcpu)
+ {
+-	return num_core_regs() + kvm_arm_num_sys_reg_descs(vcpu);
++	return num_core_regs() + kvm_arm_num_sys_reg_descs(vcpu)
++                + NUM_TIMER_REGS;
+ }
+ 
+ /**
+@@ -154,6 +208,7 @@ int kvm_arm_copy_reg_indices(struct kvm_vcpu *vcpu, u64 __user *uindices)
+ {
+ 	unsigned int i;
+ 	const u64 core_reg = KVM_REG_ARM64 | KVM_REG_SIZE_U64 | KVM_REG_ARM_CORE;
++	int ret;
+ 
+ 	for (i = 0; i < sizeof(struct kvm_regs) / sizeof(__u32); i++) {
+ 		if (put_user(core_reg | i, uindices))
+@@ -161,6 +216,11 @@ int kvm_arm_copy_reg_indices(struct kvm_vcpu *vcpu, u64 __user *uindices)
+ 		uindices++;
+ 	}
+ 
++	ret = copy_timer_indices(vcpu, uindices);
++	if (ret)
++		return ret;
++	uindices += NUM_TIMER_REGS;
++
+ 	return kvm_arm_copy_sys_reg_indices(vcpu, uindices);
+ }
+ 
+@@ -174,6 +234,9 @@ int kvm_arm_get_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg)
+ 	if ((reg->id & KVM_REG_ARM_COPROC_MASK) == KVM_REG_ARM_CORE)
+ 		return get_core_reg(vcpu, reg);
+ 
++	if (is_timer_reg(reg->id))
++		return get_timer_reg(vcpu, reg);
++
+ 	return kvm_arm_sys_reg_get_reg(vcpu, reg);
+ }
+ 
+@@ -187,6 +250,9 @@ int kvm_arm_set_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg)
+ 	if ((reg->id & KVM_REG_ARM_COPROC_MASK) == KVM_REG_ARM_CORE)
+ 		return set_core_reg(vcpu, reg);
+ 
++	if (is_timer_reg(reg->id))
++		return set_timer_reg(vcpu, reg);
++
+ 	return kvm_arm_sys_reg_set_reg(vcpu, reg);
+ }
+ 
+diff --git a/include/kvm/arm_arch_timer.h b/include/kvm/arm_arch_timer.h
+index 6d9aedd..ad9db60 100644
+--- a/include/kvm/arm_arch_timer.h
++++ b/include/kvm/arm_arch_timer.h
+@@ -67,6 +67,10 @@ void kvm_timer_vcpu_init(struct kvm_vcpu *vcpu);
+ void kvm_timer_flush_hwstate(struct kvm_vcpu *vcpu);
+ void kvm_timer_sync_hwstate(struct kvm_vcpu *vcpu);
+ void kvm_timer_vcpu_terminate(struct kvm_vcpu *vcpu);
++
++u64 kvm_arm_timer_get_reg(struct kvm_vcpu *, u64 regid);
++int kvm_arm_timer_set_reg(struct kvm_vcpu *, u64 regid, u64 value);
++
+ #else
+ static inline int kvm_timer_hyp_init(void)
+ {
+@@ -84,6 +88,16 @@ static inline void kvm_timer_vcpu_init(struct kvm_vcpu *vcpu) {}
+ static inline void kvm_timer_flush_hwstate(struct kvm_vcpu *vcpu) {}
+ static inline void kvm_timer_sync_hwstate(struct kvm_vcpu *vcpu) {}
+ static inline void kvm_timer_vcpu_terminate(struct kvm_vcpu *vcpu) {}
++
++static inline int kvm_arm_timer_set_reg(struct kvm_vcpu *vcpu, u64 regid, u64 value)
++{
++	return 0;
++}
++
++static inline u64 kvm_arm_timer_get_reg(struct kvm_vcpu *vcpu, u64 regid)
++{
++	return 0;
++}
+ #endif
+ 
+ #endif
 -- 
-Regards/Gruss,
-    Boris.
+2.0.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
