@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936AbaGDIE3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:04:29 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62867 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163AbaGDIE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:04:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,599,1400050800"; 
-   d="scan'208";a="538725280"
-Date: Fri, 4 Jul 2014 15:59:00 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>, Bandan Das <bsd@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>, Hu Robert <robert.hu@intel.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1
- since race
-Message-ID: <20140704075900.GA7447@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <53B3CA6A.4050902@siemens.com>
- <jpgy4wb9g5t.fsf@redhat.com>
- <20140703065955.GA4236@kernel>
- <jpgk37u8iae.fsf@redhat.com>
- <20140704025250.GA2849@kernel>
- <53B63EF2.6000800@siemens.com>
- <20140704060831.GA3453@kernel>
- <53B6559A.6020406@siemens.com>
- <20140704073923.GA7188@kernel>
- <53B65BDE.9090902@redhat.com>
+	id S1754584AbaGDIGL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:06:11 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:51176 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753984AbaGDIF7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 04:05:59 -0400
+Date: Fri, 4 Jul 2014 10:05:56 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Suman Anna <s-anna@ti.com>, Jassi Brar <jaswinder.singh@linaro.org>,
+        Dave Gerlach <d-gerlach@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH 2/6] mailbox/omap: add support for parsing dt devices
+Message-ID: <20140704080556.GA16274@amd.pavel.ucw.cz>
+References: <1403660878-56350-1-git-send-email-s-anna@ti.com>
+ <1403660878-56350-3-git-send-email-s-anna@ti.com>
+ <20140628170709.GB23634@xo-6d-61-c0.localdomain>
+ <53B18999.2020506@ti.com>
+ <20140630185942.GA5410@amd.pavel.ucw.cz>
+ <53B1BBA8.5090507@ti.com>
+ <20140630203225.GA3893@amd.pavel.ucw.cz>
+ <20140704064547.GZ28884@atomide.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53B65BDE.9090902@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140704064547.GZ28884@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04, 2014 at 09:46:38AM +0200, Paolo Bonzini wrote:
->Il 04/07/2014 09:39, Wanpeng Li ha scritto:
->>PASS: test vmxon with FEATURE_CONTROL cleared
->>PASS: test vmxon without FEATURE_CONTROL lock
->>PASS: test enable VMX in FEATURE_CONTROL
->>PASS: test FEATURE_CONTROL lock bit
->>PASS: test vmxon
->>PASS: test vmptrld
->>PASS: test vmclear
->>PASS: test vmptrst
->>PASS: test vmxoff
->
->You are not running the latest versions of the tests.
->
+Hi!
 
-The last commit in my tree is 
+> > > >>>> The non-DT support has to be maintained for now to not break
+> > > >>>> OMAP3 legacy boot, and the legacy-style code will be cleaned
+> > > >>>> up once OMAP3 is also converted to DT-boot only.
+> > > >>>
+> > > >>>> @@ -587,24 +606,157 @@ static int omap_mbox_unregister(struct omap_mbox_device *mdev)
+> > > >>>>  	return 0;
+> > > >>>>  }
+> > > >>>>  
+> > > >>>> +static const struct omap_mbox_device_data omap2_data = {
+> > > >>>> +	.num_users	= 4,
+> > > >>>> +	.num_fifos	= 6,
+> > > >>>> +	.intr_type	= MBOX_INTR_CFG_TYPE1,
+> > > >>>> +};
+> > > >>>> +
+> > > >>>> +static const struct omap_mbox_device_data omap3_data = {
+> > > >>>> +	.num_users	= 2,
+> > > >>>> +	.num_fifos	= 2,
+> > > >>>> +	.intr_type	= MBOX_INTR_CFG_TYPE1,
+> > > >>>> +};
+> > > >>>> +
+> > > >>>> +static const struct omap_mbox_device_data am335x_data = {
+> > > >>>> +	.num_users	= 4,
+> > > >>>> +	.num_fifos	= 8,
+> > > >>>> +	.intr_type	= MBOX_INTR_CFG_TYPE2,
+> > > >>>> +};
+> > > >>>
 
-commit daeec9795d3e6d4e9636588b6cb5fcd6e00d6d46
-Author: Bandan Das <bsd@redhat.com>
-Date:   Mon Jun 9 17:04:54 2014 -0400
+> > Aha, ok, then the intr_type should be derived from
+> > compatible-string. Or rather... you should have three
+> > compatible-strings for the three possibilities? (And then subtype,
+> > currently unused, in case there are more hw differences).
+> 
+> The compatible string can and should be separate for each revision
+> unless they are the same exacat hardware revision.
 
-    VMX: Updated test_vmclear and test_vmptrld
+ACK.
 
+> > > two are HW IP design parameters, so in general putting them in DT isn't
+> > > completely a bad idea, but I will wait to see if there are any further
+> > > comments on this from Tony or DT maintainers before I make changes.
+> > 
+> > Ok, right... I'd vote for putting them into DT.
+> 
+> I would avoid adding custom DT properties where possible and let the
+> driver just initialize the right data based on the compatible flag.
 
->Paolo
->--
->To unsubscribe from this list: send the line "unsubscribe kvm" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+If these are HW IP design parameters, we can expect to see many
+different combinations. Yet we know ahead of time how to handle
+different parameters HW people select.
+
+Thus IMO we should do it in the device tree.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
