@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031153AbaGDWib (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:38:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57535 "EHLO
+	id S1031557AbaGDWiv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:38:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57523 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031305AbaGDWVe (ORCPT
+	with ESMTP id S1031145AbaGDWV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:21:34 -0400
+	Fri, 4 Jul 2014 18:21:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arun Ramamurthy <arun.ramamurthy@broadcom.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>
-Subject: [PATCH 3.10 15/46] watchdog: sp805: Set watchdog_device->timeout from ->set_timeout()
-Date: Fri,  4 Jul 2014 15:19:19 -0700
-Message-Id: <20140704221602.965490240@linuxfoundation.org>
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.14 42/59] powerpc/perf: Ensure all EBB register state is cleared on fork()
+Date: Fri,  4 Jul 2014 15:19:31 -0700
+Message-Id: <20140704221541.550677908@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
-References: <20140704221602.280733370@linuxfoundation.org>
+In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
+References: <20140704221539.544876024@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,54 +25,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+From: Michael Ellerman <mpe@ellerman.id.au>
 
-commit 938626d96a3ffb9eb54552bb0d3a4f2b30ffdeb0 upstream.
+commit 3df48c981d5a9610e02e9270b1bc4274fb536710 upstream.
 
-Implementation of ->set_timeout() is supposed to set 'timeout' field of 'struct
-watchdog_device' passed to it. sp805 was rather setting this in a local
-variable. Fix it.
+In commit 330a1eb "Core EBB support for 64-bit book3s" I messed up
+clear_task_ebb(). It clears some but not all of the task's Event Based
+Branch (EBB) registers when we duplicate a task struct.
 
-Reported-by: Arun Ramamurthy <arun.ramamurthy@broadcom.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+That allows a child task to observe the EBBHR & EBBRR of its parent,
+which it should not be able to do.
+
+Fix it by clearing EBBHR & EBBRR.
+
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/watchdog/sp805_wdt.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ arch/powerpc/include/asm/switch_to.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/watchdog/sp805_wdt.c
-+++ b/drivers/watchdog/sp805_wdt.c
-@@ -60,7 +60,6 @@
-  * @adev: amba device structure of wdt
-  * @status: current status of wdt
-  * @load_val: load value to be set for current timeout
-- * @timeout: current programmed timeout
-  */
- struct sp805_wdt {
- 	struct watchdog_device		wdd;
-@@ -69,7 +68,6 @@ struct sp805_wdt {
- 	struct clk			*clk;
- 	struct amba_device		*adev;
- 	unsigned int			load_val;
--	unsigned int			timeout;
- };
- 
- static bool nowayout = WATCHDOG_NOWAYOUT;
-@@ -99,7 +97,7 @@ static int wdt_setload(struct watchdog_d
- 	spin_lock(&wdt->lock);
- 	wdt->load_val = load;
- 	/* roundup timeout to closest positive integer value */
--	wdt->timeout = div_u64((load + 1) * 2 + (rate / 2), rate);
-+	wdd->timeout = div_u64((load + 1) * 2 + (rate / 2), rate);
- 	spin_unlock(&wdt->lock);
- 
- 	return 0;
+--- a/arch/powerpc/include/asm/switch_to.h
++++ b/arch/powerpc/include/asm/switch_to.h
+@@ -84,6 +84,8 @@ static inline void clear_task_ebb(struct
+ {
+ #ifdef CONFIG_PPC_BOOK3S_64
+     /* EBB perf events are not inherited, so clear all EBB state. */
++    t->thread.ebbrr = 0;
++    t->thread.ebbhr = 0;
+     t->thread.bescr = 0;
+     t->thread.mmcr2 = 0;
+     t->thread.mmcr0 = 0;
 
 
