@@ -1,134 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759225AbaGDQ50 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 12:57:26 -0400
-Received: from smtprelay0205.hostedemail.com ([216.40.44.205]:53877 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752622AbaGDQ5Z (ORCPT
+	id S1759332AbaGDQ5o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 12:57:44 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:63228 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759256AbaGDQ5l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 12:57:25 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3355:3622:3865:3867:3868:3870:3871:3872:3874:4250:4321:5007:6117:6119:6235:7557:7558:7652:7903:10004:10400:10848:10967:11026:11232:11473:11658:11914:12043:12438:12517:12519:12740:13972:14093:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:
-X-HE-Tag: quill56_61e4df56bc58
-X-Filterd-Recvd-Size: 4297
-Message-ID: <1404493040.6384.21.camel@joe-AO725>
-Subject: Re: [PATCH 3/4] DRBG: Fix format string for debugging statements
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Stephan Mueller <smueller@chronox.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        kbuild test robot <fengguang.wu@intel.com>, kbuild@01.org,
-        linux-crypto@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 04 Jul 2014 09:57:20 -0700
-In-Reply-To: <20140704112116.GC25934@mwanda>
-References: <4927386.WYHrRe3NJm@myon.chronox.de>
-	 <10901956.0EDQunEZJL@myon.chronox.de>
-	 <20140629122402.0fd014d8@canb.auug.org.au>
-	 <4311965.FMe9YfRAnU@myon.chronox.de> <1404013999.9064.50.camel@joe-AO725>
-	 <20140704112116.GC25934@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Jul 2014 12:57:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <53B6DB74.2050401@linutronix.de>
+References: <1404316809-20637-1-git-send-email-bigeasy@linutronix.de>
+	<20140702160932.GF5541@saruman.home>
+	<20140702190944.GA567@drone.musicnaut.iki.fi>
+	<CAOCHtYgxMeA+Arfe40XeFDEKuCJ8qo1RqNR0hYBGr_Wp6sRfdA@mail.gmail.com>
+	<20140703073411.GX28884@atomide.com>
+	<53B6DB74.2050401@linutronix.de>
+Date: Fri, 4 Jul 2014 11:57:40 -0500
+Message-ID: <CAOCHtYhJODfoB10VXKtGC=_UaB4uVSZOtDwYG-XxL1wvcxi+fA@mail.gmail.com>
+Subject: Re: [RFC PATCH] tty: serial: Add 8250-core based omap driver
+From: Robert Nelson <robertcnelson@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Tony Lindgren <tony@atomide.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Felipe Balbi <balbi@ti.com>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-04 at 14:21 +0300, Dan Carpenter wrote:
-> On Sat, Jun 28, 2014 at 08:53:19PM -0700, Joe Perches wrote:
-> > On Sun, 2014-06-29 at 05:46 +0200, Stephan Mueller wrote:
-> > > Am Sonntag, 29. Juni 2014, 12:24:02 schrieb Stephen Rothwell:
-> > > 
-> > > Hi Stephen,
-> > > 
-> > > > Hi Stephan,
-> > > > 
-> > > > On Sat, 28 Jun 2014 22:01:46 +0200 Stephan Mueller <smueller@chronox.de> 
-> > > wrote:
-> > > > > @@ -1987,8 +1987,9 @@ static int __init drbg_init(void)
-> > > > > 
-> > > > >  	if (ARRAY_SIZE(drbg_cores) * 2 > ARRAY_SIZE(drbg_algs)) {
-> > > > >  	
-> > > > >  		pr_info("DRBG: Cannot register all DRBG types"
-> > > > > 
-> > > > > -			"(slots needed: %lu, slots available: %lu)\n",
-> > > > > -			ARRAY_SIZE(drbg_cores) * 2, ARRAY_SIZE(drbg_algs));
-> > > > > +			"(slots needed: %u, slots available: %u)\n",
-> > > > > +			(unsigned int)ARRAY_SIZE(drbg_cores) * 2,
-> > > > > +			(unsigned int)ARRAY_SIZE(drbg_algs));
-> > > > 
-> > > > Doesn't ARRAY_SIZE() always return a size_t?  In which case surely we
-> > > > need no casts, but need to us %zu in the format string.
-> > > 
-> > > Unfortunately not at all. On my x86_64, I get the compiler warning that 
-> > > ARRAY_SIZE is a long unsigned int without the cast.
+On Fri, Jul 4, 2014 at 11:51 AM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
+> On 07/03/2014 09:34 AM, Tony Lindgren wrote:
+>> Heh. Just to summarize the reason ttyO needs to be a separate name
+>> and device entry from ttyS is because we also have external 8250
+>> devices on GPMC and hotplug busses.
+>
+> So the GPMC devices will first get a higher minor/device number. The
+> internal serial ports should show up first. I don't see the problem
+> (yet).
+>
+> If you need a separate major number (and name) like we do have it now
+> (between ttySx and ttyOx) then one of requirements would be to tell
+> Kconfig that one driver can be active at a time.
+>
+> For me the ttyS vs ttyO thing is purely cosmetic. I personally don't
+> like that it is different on different platforms like ttymxc, ttySC,
+> ttyTHS, …
 
-It doesn't seem to for 4.8.
-Is there some specific gcc version where this occurs?
+Maybe it's time to migrate them all to one name? (ttyS)  Does the end
+user really care if they have a soc with an omap/imx serial port
+driver? Or do they just want to access /dev/ttySx and connect to their
+device?
 
-> > diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-[]
-> > -#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + __must_be_array(arr))
-> > +#define ARRAY_SIZE(arr)						\
-> > +	(sizeof(arr) / sizeof((arr)[0]) + (size_t)__must_be_array(arr))
-> 
-> 
-> This change is a no-op isn't it?
+Regards,
 
-Yes, it is.  Dumb idea.
-Assuming there's some odd promotion, size_t should have been around the
-whole thing
-#define ARRAY_SIZE(arr)						\
-	((size_t)((sizeof(arr) / sizeof((arr)[0]) + __must_be_array(arr)))
-
-> I think Stephen Rothwell's suggestion
-> is correct.  In linux-next this was changed to %lu which also works...
-> 
-> Are there arches %zu and %lu are different?
-
-I get the same output types and error warnings compiling this
-either -m32 or -m64
-
-#include <stdio.h>
-#include <stdlib.h>
-
-#define typecheck(type, x)			\
-({						\
-	type __dummy;				\
-	typeof(x) __dummy2;			\
-	(void)(&__dummy == &__dummy2);		\
-	1;					\
-})
-
-#define BUILD_BUG_ON_ZERO(e) (sizeof(struct { int:-!!(e); }))
-
-#define __same_type(a, b) __builtin_types_compatible_p(typeof(a), typeof(b))
-#define __must_be_array(a) BUILD_BUG_ON_ZERO(__same_type((a), &(a)[0]))
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + __must_be_array(arr))
-
-int main(int argc, char **argv)
-{
-	char foo[100];
-	size_t array = sizeof(foo);
-	typeof (ARRAY_SIZE(foo)) member = ARRAY_SIZE(foo);
-
-	int member1 = ARRAY_SIZE(foo);
-	size_t member2 = ARRAY_SIZE(foo);
-
-	typecheck(size_t, member);
-	typecheck(int, member);
-
-	typecheck(size_t, member1);
-	typecheck(int, member1);
-
-	typecheck(size_t, member2);
-	typecheck(int, member2);
-
-	printf("array: %zu, member: %zu\n", array, (int)member);
-
-	return 0;
-}
-
-
+-- 
+Robert Nelson
+http://www.rcn-ee.com/
