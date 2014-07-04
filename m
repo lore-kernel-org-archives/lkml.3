@@ -1,213 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052AbaGDNLX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 09:11:23 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:24353 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786AbaGDNLU (ORCPT
+	id S1758378AbaGDNLp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 09:11:45 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:39555 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758135AbaGDNLn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 09:11:20 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7fac6d000006cfe-3e-53b6a7f4aaef
-Content-transfer-encoding: 8BIT
-Message-id: <1404479478.2653.5.camel@AMDC1943>
-Subject: Re: [PATCH v6 22/23] rtc: Add driver for Maxim 77802 PMIC
- Real-Time-Clock
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 04 Jul 2014 15:11:18 +0200
-In-reply-to: <53B6A3A3.9090300@collabora.co.uk>
-References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
- <1404467722-26687-23-git-send-email-javier.martinez@collabora.co.uk>
- <1404474972.14069.20.camel@AMDC1943> <53B6A3A3.9090300@collabora.co.uk>
-X-Mailer: Evolution 3.10.4-0ubuntu1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e/4Vd0vy7cFG0z+yWex5OJVdovmTcUW
-	Ux8+YbOYf+Qcq8XZZQfZLI7+LrDoXXCVzeL+16OMFt+udDBZbHp8jdXi8q45bBYzzu9jsng6
-	4SKbxanrn9ks+tZeYrPYMHk3u8Xc342sDoIesxsusnj8fX6dxWPH3SWMHjtn3WX32LSqk83j
-	zrU9bB6bl9R7XDnRxOrRt2UVo8fm09Ue0+f9ZPL4vEkugCeKyyYlNSezLLVI3y6BK+PpvN+M
-	Bb8MK5oWPmZtYNyr3sXIySEhYCKx9UInE4QtJnHh3nq2LkYuDiGBpYwS79rPMIIkeAUEJX5M
-	vsfSxcjBwSwgL3HkUjZImFlAXWLSvEXMEPWfGSX2vFwOVa8ncavhKNhQYYEQiYuNfWA2m4Cx
-	xOblS9hAbBEBO4kbqx+CNTML3GKR+LV8EytIgkVAVWL9vFvsIMs4BfQl7k8KhVjwgFHi66ml
-	UJcqS8zbf4xpAqPALCT3zUK4bxaS+xYwMq9iFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECInD
-	LzsYFx+zOsQowMGoxMPbuGJDsBBrYllxZe4hRgkOZiURXq0524KFeFMSK6tSi/Lji0pzUosP
-	MTJxcEo1MEaJBNz8eXy27wuO5grZG49Obp51cnqrT/r9t26FvJs/hLh0HzlrJhzEv2vP/jtz
-	mA7z6ZWGXhKaqDazUSas6OI2e9ctReblT0KPn6gt/L5WwV/+Fedul3aVNTJtr5Y7K9pf4p8T
-	3OrffWRPZ45B3BTuzTv3CWaeYor99vTS/luG+42OXJR8vUeJpTgj0VCLuag4EQB4/ErSoQIA	AA==
+	Fri, 4 Jul 2014 09:11:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <1404403920.14741.44.camel@joe-AO725>
+References: <CAL8zT=isq_2RT07a6z8imJ4N0w0v-yw6ysv3wf+S7sLsqZBCeg@mail.gmail.com>
+	<1404403920.14741.44.camel@joe-AO725>
+Date: Fri, 4 Jul 2014 15:11:42 +0200
+Message-ID: <CAPwkgkOjr6y2M8FMytx6Ooz_LJwUtDckU1Q2piuV0mR0vOnD1w@mail.gmail.com>
+Subject: Re: [PATCH] Lattice ECP3 FPGA: Correct endianness
+From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, sr@denx.de
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pią, 2014-07-04 at 14:52 +0200, Javier Martinez Canillas wrote:
-> Hello Krzysztof,
-> 
-> Thanks a lot for your feedback.
-> 
-> On 07/04/2014 01:56 PM, Krzysztof Kozlowski wrote:
-> > On pią, 2014-07-04 at 11:55 +0200, Javier Martinez Canillas wrote:
-> >> The MAX7802 PMIC has a Real-Time-Clock (RTC) with two alarms.
-> >> This patch adds support for the RTC and is based on a driver
-> >> added by Simon Glass to the Chrome OS kernel 3.8 tree.
-> >> 
-> >> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> >> ---
-> >> 
-> >> Changes since v5: None
-> >> 
-> >> Changes since v4: None
-> >> 
-> >> Changes since v3: None
-> >> ---
-> >>  drivers/rtc/Kconfig        |  10 +
-> >>  drivers/rtc/Makefile       |   1 +
-> >>  drivers/rtc/rtc-max77802.c | 637 +++++++++++++++++++++++++++++++++++++++++++++
-> >>  3 files changed, 648 insertions(+)
-> >>  create mode 100644 drivers/rtc/rtc-max77802.c
-> >> 
-> >> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-> >> index a672dd1..243ac72 100644
-> >> --- a/drivers/rtc/Kconfig
-> >> +++ b/drivers/rtc/Kconfig
-> >> @@ -288,6 +288,16 @@ config RTC_DRV_MAX77686
-> >>  	  This driver can also be built as a module. If so, the module
-> >>  	  will be called rtc-max77686.
-> >>  
-> >> +config RTC_DRV_MAX77802
-> >> +	tristate "Maxim 77802 RTC"
-> >> +	depends on MFD_MAX77686
-> >> +	help
-> >> +	  If you say yes here you will get support for the
-> >> +	  RTC of Maxim MAX77802 PMIC.
-> >> +
-> >> +	  This driver can also be built as a module. If so, the module
-> >> +	  will be called rtc-max77802.
-> >> +
-> >>  config RTC_DRV_RS5C372
-> >>  	tristate "Ricoh R2025S/D, RS5C372A/B, RV5C386, RV5C387A"
-> >>  	help
-> >> diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-> >> index 70347d0..247de78 100644
-> >> --- a/drivers/rtc/Makefile
-> >> +++ b/drivers/rtc/Makefile
-> >> @@ -81,6 +81,7 @@ obj-$(CONFIG_RTC_DRV_MAX8998)	+= rtc-max8998.o
-> >>  obj-$(CONFIG_RTC_DRV_MAX8997)	+= rtc-max8997.o
-> >>  obj-$(CONFIG_RTC_DRV_MAX6902)	+= rtc-max6902.o
-> >>  obj-$(CONFIG_RTC_DRV_MAX77686)	+= rtc-max77686.o
-> >> +obj-$(CONFIG_RTC_DRV_MAX77802)  += rtc-max77802.o
-> >>  obj-$(CONFIG_RTC_DRV_MC13XXX)	+= rtc-mc13xxx.o
-> >>  obj-$(CONFIG_RTC_DRV_MCP795)	+= rtc-mcp795.o
-> >>  obj-$(CONFIG_RTC_DRV_MSM6242)	+= rtc-msm6242.o
-> >> diff --git a/drivers/rtc/rtc-max77802.c b/drivers/rtc/rtc-max77802.c
-> >> new file mode 100644
-> >> index 0000000..2f4fc2e
-> >> --- /dev/null
-> >> +++ b/drivers/rtc/rtc-max77802.c
-> >> @@ -0,0 +1,637 @@
-> >> +/*
-> >> + * RTC driver for Maxim MAX77802
-> >> + *
-> >> + * Copyright (C) 2013 Google, Inc
-> >> + *
-> >> + * Copyright (C) 2012 Samsung Electronics Co.Ltd
-> >> + *
-> >> + *  based on rtc-max8997.c
-> >> + *
-> >> + *  This program is free software; you can redistribute  it and/or modify it
-> >> + *  under  the terms of  the GNU General  Public License as published by the
-> >> + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> >> + *  option) any later version.
-> >> + *
-> >> + */
-> >> +
-> >> +#include <linux/slab.h>
-> >> +#include <linux/rtc.h>
-> >> +#include <linux/delay.h>
-> >> +#include <linux/mutex.h>
-> >> +#include <linux/module.h>
-> >> +#include <linux/platform_device.h>
-> >> +#include <linux/mfd/max77686-private.h>
-> >> +#include <linux/irqdomain.h>
-> >> +#include <linux/regmap.h>
-> >> +
-> >> +/* RTC Control Register */
-> >> +#define BCD_EN_SHIFT			0
-> >> +#define BCD_EN_MASK			(1 << BCD_EN_SHIFT)
-> >> +#define MODEL24_SHIFT			1
-> >> +#define MODEL24_MASK			(1 << MODEL24_SHIFT)
-> >> +/* RTC Update Register1 */
-> >> +#define RTC_UDR_SHIFT			0
-> >> +#define RTC_UDR_MASK			(1 << RTC_UDR_SHIFT)
-> >> +#define RTC_RBUDR_SHIFT			4
-> >> +#define RTC_RBUDR_MASK			(1 << RTC_RBUDR_SHIFT)
-> >> +/* WTSR and SMPL Register */
-> >> +#define WTSRT_SHIFT			0
-> >> +#define SMPLT_SHIFT			2
-> >> +#define WTSR_EN_SHIFT			6
-> >> +#define SMPL_EN_SHIFT			7
-> >> +#define WTSRT_MASK			(3 << WTSRT_SHIFT)
-> >> +#define SMPLT_MASK			(3 << SMPLT_SHIFT)
-> >> +#define WTSR_EN_MASK			(1 << WTSR_EN_SHIFT)
-> >> +#define SMPL_EN_MASK			(1 << SMPL_EN_SHIFT)
-> >> +/* RTC Hour register */
-> >> +#define HOUR_PM_SHIFT			6
-> >> +#define HOUR_PM_MASK			(1 << HOUR_PM_SHIFT)
-> >> +/* RTC Alarm Enable */
-> >> +#define ALARM_ENABLE_SHIFT		7
-> >> +#define ALARM_ENABLE_MASK		(1 << ALARM_ENABLE_SHIFT)
-> >> +
-> >> +/* For the RTCAE1 register, we write this value to enable the alarm */
-> >> +#define ALARM_ENABLE_VALUE		0x77
-> >> +
-> >> +#define MAX77802_RTC_UPDATE_DELAY_US	200
-> >> +#undef MAX77802_RTC_WTSR_SMPL
-> > 
-> > Hmmm... I am not sure what is the purpose of this undef. It disables
-> > some functions below. I saw same code in 77686 RTC driver but this does
-> > not help me :).
-> > 
-> > If this is on purpose can you add a comment explaining the
-> > purpose/cause?
-> > 
-> 
-> This is a left over from when a combined 77686/802 driver was attempted since as
-> you said the 77686 RTC driver does the same.
-> 
-> I just checked MAX77802 data sheet and the MAX77802_RTC_WTSR_SMPL register is to
-> control the SMPL (Sudden Momentary Power Loss) and WTSR (Watchdog Timeout and
-> Software Resets) features.
-> 
-> Now, I wanted to figure out why the 77686 driver unset that register and have
-> those conditionals but git blame shows me that this was already in the original
-> commit that added the driver: fca1dd03 ("rtc: max77686: add Maxim 77686 driver").
-> 
-> Also, I see that the MAX8997 driver (drivers/rtc/rtc-max8997.c) also has a
-> similar register but actually uses it and doesn't have the conditionals if is
-> disabled. But this driver has two module parameters to control if these features
-> are enabled or not (wtsr_en and smpl_en).
-> 
-> If these two features have been disabled since the max77686 driver was merged
-> then I guess that the dead code should be removed from that driver as well? Or
-> do you have more hints about why it has been disabled?
+2014-07-03 18:12 GMT+02:00 Joe Perches <joe@perches.com>:
+>
+> On Thu, 2014-07-03 at 17:54 +0200, Jean-Michel Hautbois wrote:
+> > This patch corrects three big/little endian issues. Tested on i.MX6.
+>
+> trivial:
+>
+> > diff --git a/drivers/misc/lattice-ecp3-config.c
+> []
+> > @@ -165,8 +165,8 @@ static void firmware_load(const struct firmware
+> > *fw, void *context)
+> >
+> >      txbuf[0] = FPGA_CMD_READ_STATUS;
+> >      ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
+> > -    dev_dbg(&spi->dev, "FPGA Status=%08x\n", *(u32 *)&rxbuf[4]);
+> > -    status = *(u32 *)&rxbuf[4];
+> > +    dev_dbg(&spi->dev, "FPGA Status=%08x\n", be32_to_cpu(*(u32 *)&rxbuf[4]));
+> > +    status = be32_to_cpu(*(u32 *)&rxbuf[4]);
+>
+> This should emit a sparse error.
+> It'd be simpler as:
+>
+>         status = be32_to_cpu(*(__be32 *)&rxbuf[4]);
+>         dev_dbg(&spi->dev, "FPGA Status=%08x\n", status);
+>
+>
 
-If the max77802 driver in current form works fine for your setup then I
-think these functions can be removed completely. It should not harm
-since this is dead code anyway and it will simplify the driver.
-
-I think the same applies to max77686 (especially that as you said - this
-is dead since beginning). Just remove it in separate patch.
-
-Best regards,
-Krzysztof
+OK, do you want me to send a new patch including this modification ?
 
 
+JM
