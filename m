@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099AbaGDI4j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:56:39 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:34705 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755815AbaGDI4g (ORCPT
+	id S1756438AbaGDI4p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:56:45 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:40768 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755815AbaGDI4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:56:36 -0400
+	Fri, 4 Jul 2014 04:56:41 -0400
 From: Tushar Behera <tushar.b@samsung.com>
 To: alsa-devel@alsa-project.org, linux-samsung-soc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
@@ -15,58 +15,53 @@ Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         kgene.kim@samsung.com, ijc+devicetree@hellion.org.uk,
         mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org,
         trblinux@gmail.com
-Subject: [PATCH 1/2] ASoC: samsung: Update sound-card name for Snow
-Date: Fri,  4 Jul 2014 14:22:59 +0530
-Message-Id: <1404463980-25027-1-git-send-email-tushar.b@samsung.com>
+Subject: [PATCH 2/2] ASoC: core: Fix possible NULL pointer dereference
+Date: Fri,  4 Jul 2014 14:23:00 +0530
+Message-Id: <1404463980-25027-2-git-send-email-tushar.b@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1404463980-25027-1-git-send-email-tushar.b@samsung.com>
+References: <1404463980-25027-1-git-send-email-tushar.b@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Snow sound-card driver supports multiple boards with different
-audio codecs. Updating the sound card name per board basis would provide
-some more information to the end-user.
+snd_soc_of_parse_card_name() may be called before card->dev has been
+set, which results in a kernel panic.
+
+Unable to handle kernel NULL pointer dereference at virtual address 00000210
+PC is at snd_soc_of_parse_card_name+0x18/0x54
+LR is at snow_probe+0x5c/0xd4
+
+Add an error check in snd_soc_of_parse_card_name() to take care of this
+case and print out a message in case of error.
 
 Signed-off-by: Tushar Behera <tushar.b@samsung.com>
 ---
- Documentation/devicetree/bindings/sound/snow.txt |    4 ++++
- sound/soc/samsung/snow.c                         |    3 +++
- 2 files changed, 7 insertions(+)
+ sound/soc/soc-core.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/sound/snow.txt b/Documentation/devicetree/bindings/sound/snow.txt
-index e0b7a82..6df74f1 100644
---- a/Documentation/devicetree/bindings/sound/snow.txt
-+++ b/Documentation/devicetree/bindings/sound/snow.txt
-@@ -8,11 +8,15 @@ Required properties:
- - samsung,i2s-controller: The phandle of the Samsung I2S controller
- - samsung,audio-codec: The phandle of the audio codec
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index c4db07f..2e4bdc0 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -4391,9 +4391,16 @@ EXPORT_SYMBOL_GPL(snd_soc_unregister_codec);
+ int snd_soc_of_parse_card_name(struct snd_soc_card *card,
+ 			       const char *propname)
+ {
+-	struct device_node *np = card->dev->of_node;
++	struct device_node *np;
+ 	int ret;
  
-+Optional:
-+- samsung,model: The name of the sound-card
++	if (!card->dev) {
++		pr_err("card->dev is not set before calling %s\n", __func__);
++		return -EINVAL;
++	}
 +
- Example:
- 
- sound {
- 		compatible = "google,snow-audio-max98095";
- 
-+		samsung,model = "Snow-I2S-MAX98095";
- 		samsung,i2s-controller = <&i2s0>;
- 		samsung,audio-codec = <&max98095>;
- };
-diff --git a/sound/soc/samsung/snow.c b/sound/soc/samsung/snow.c
-index 8bbd348..0acf5d0 100644
---- a/sound/soc/samsung/snow.c
-+++ b/sound/soc/samsung/snow.c
-@@ -92,6 +92,9 @@ static int snow_probe(struct platform_device *pdev)
- 
- 	card->dev = &pdev->dev;
- 
-+	/* Update card-name if provided through DT, else use default name */
-+	snd_soc_of_parse_card_name(card, "samsung,model");
++	np = card->dev->of_node;
 +
- 	ret = devm_snd_soc_register_card(&pdev->dev, card);
- 	if (ret) {
- 		dev_err(&pdev->dev, "snd_soc_register_card failed (%d)\n", ret);
+ 	ret = of_property_read_string_index(np, propname, 0, &card->name);
+ 	/*
+ 	 * EINVAL means the property does not exist. This is fine providing
 -- 
 1.7.9.5
 
