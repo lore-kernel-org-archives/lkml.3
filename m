@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031145AbaGDW5w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:57:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57149 "EHLO
+	id S1031228AbaGDW6P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:58:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57143 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617AbaGDWRH (ORCPT
+	with ESMTP id S1030336AbaGDWRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:07 -0400
+	Fri, 4 Jul 2014 18:17:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
+        Joe Perches <joe@perches.com>, Gavin Shan <gwshan@linux.vnet.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.15 42/66] powernv: Fix permissions on sysparam sysfs entries
-Date: Fri,  4 Jul 2014 15:14:41 -0700
-Message-Id: <20140704221424.729981391@linuxfoundation.org>
+Subject: [PATCH 3.15 41/66] powerpc/pseries: Fix overwritten PE state
+Date: Fri,  4 Jul 2014 15:14:40 -0700
+Message-Id: <20140704221424.679243273@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -29,34 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Gavin Shan <gwshan@linux.vnet.ibm.com>
 
-commit 1bd098903fda069cb96fe8b5cb4595b46c683385 upstream.
+commit 54f112a3837d4e7532bbedbbbf27c0de277be510 upstream.
 
-Everyone can write to these files, which is not what we want.
+In pseries_eeh_get_state(), EEH_STATE_UNAVAILABLE is always
+overwritten by EEH_STATE_NOT_SUPPORT because of the missed
+"break" there. The patch fixes the issue.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
+Reported-by: Joe Perches <joe@perches.com>
+Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/powernv/opal-sysparam.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/platforms/pseries/eeh_pseries.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/powerpc/platforms/powernv/opal-sysparam.c
-+++ b/arch/powerpc/platforms/powernv/opal-sysparam.c
-@@ -260,10 +260,10 @@ void __init opal_sys_param_init(void)
- 			attr[i].kobj_attr.attr.mode = S_IRUGO;
- 			break;
- 		case OPAL_SYSPARAM_WRITE:
--			attr[i].kobj_attr.attr.mode = S_IWUGO;
-+			attr[i].kobj_attr.attr.mode = S_IWUSR;
- 			break;
- 		case OPAL_SYSPARAM_RW:
--			attr[i].kobj_attr.attr.mode = S_IRUGO | S_IWUGO;
-+			attr[i].kobj_attr.attr.mode = S_IRUGO | S_IWUSR;
- 			break;
+--- a/arch/powerpc/platforms/pseries/eeh_pseries.c
++++ b/arch/powerpc/platforms/pseries/eeh_pseries.c
+@@ -464,6 +464,7 @@ static int pseries_eeh_get_state(struct
+ 			} else {
+ 				result = EEH_STATE_NOT_SUPPORT;
+ 			}
++			break;
  		default:
- 			break;
+ 			result = EEH_STATE_NOT_SUPPORT;
+ 		}
 
 
