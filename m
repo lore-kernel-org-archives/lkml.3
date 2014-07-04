@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031462AbaGDWqA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:46:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57399 "EHLO
+	id S1031458AbaGDWqb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:46:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57393 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031072AbaGDWUp (ORCPT
+	with ESMTP id S1031060AbaGDWUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:20:45 -0400
+	Fri, 4 Jul 2014 18:20:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Herbszt <herbszt@gmx.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 02/59] target: Fix left-over se_lun->lun_sep pointer OOPs
-Date: Fri,  4 Jul 2014 15:18:51 -0700
-Message-Id: <20140704221539.661339539@linuxfoundation.org>
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        David Airlie <airlied@redhat.com>
+Subject: [PATCH 3.14 10/59] PCI: Fix incorrect vgaarb conditional in WARN_ON()
+Date: Fri,  4 Jul 2014 15:18:59 -0700
+Message-Id: <20140704221540.009801191@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -29,36 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit 83ff42fcce070801a3aa1cd6a3269d7426271a8d upstream.
+commit 67ebd8140dc8923c65451fa0f6a8eee003c4dcd3 upstream.
 
-This patch fixes a left-over se_lun->lun_sep pointer OOPs when one
-of the /sys/kernel/config/target/$FABRIC/$WWPN/$TPGT/lun/$LUN/alua*
-attributes is accessed after the $DEVICE symlink has been removed.
+3448a19da479 "vgaarb: use bridges to control VGA routing where possible"
+added the "flags & PCI_VGA_STATE_CHANGE_DECODES" condition to an existing
+WARN_ON(), but used bitwise AND (&) instead of logical AND (&&), so the
+condition is never true.  Replace with logical AND.
 
-To address this bug, go ahead and clear se_lun->lun_sep memory in
-core_dev_unexport(), so that the existing checks for show/store
-ALUA attributes in target_core_fabric_configfs.c work as expected.
+Found by Coverity (CID 142811).
 
-Reported-by: Sebastian Herbszt <herbszt@gmx.de>
-Tested-by: Sebastian Herbszt <herbszt@gmx.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Fixes: 3448a19da479 "vgaarb: use bridges to control VGA routing where possible"
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Acked-by: David Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_device.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/pci/pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -616,6 +616,7 @@ void core_dev_unexport(
- 	dev->export_count--;
- 	spin_unlock(&hba->device_lock);
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -4102,7 +4102,7 @@ int pci_set_vga_state(struct pci_dev *de
+ 	u16 cmd;
+ 	int rc;
  
-+	lun->lun_sep = NULL;
- 	lun->lun_se_dev = NULL;
- }
+-	WARN_ON((flags & PCI_VGA_STATE_CHANGE_DECODES) & (command_bits & ~(PCI_COMMAND_IO|PCI_COMMAND_MEMORY)));
++	WARN_ON((flags & PCI_VGA_STATE_CHANGE_DECODES) && (command_bits & ~(PCI_COMMAND_IO|PCI_COMMAND_MEMORY)));
  
+ 	/* ARCH specific VGA enables */
+ 	rc = pci_set_vga_state_arch(dev, decode, command_bits, flags);
 
 
