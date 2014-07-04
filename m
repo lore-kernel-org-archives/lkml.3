@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031742AbaGDWxe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:53:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57218 "EHLO
+	id S1030601AbaGDWRj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:17:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57207 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030611AbaGDWRl (ORCPT
+	with ESMTP id S1030570AbaGDWRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:41 -0400
+	Fri, 4 Jul 2014 18:17:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.4 01/19] Input: elantech - deal with clickpads reporting right button events
-Date: Fri,  4 Jul 2014 15:15:11 -0700
-Message-Id: <20140704221436.506312958@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.15 65/66] ALSA: hda - Adjust speaker HPF and add LED support for HP Spectre 13
+Date: Fri,  4 Jul 2014 15:15:04 -0700
+Message-Id: <20140704221425.789779201@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221436.423715636@linuxfoundation.org>
-References: <20140704221436.423715636@linuxfoundation.org>
+In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
+References: <20140704221422.813435485@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,83 +24,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit cd9e83e2754465856097f31c7ab933ce74c473f8 upstream.
+commit 8b3dfdaf0c25a584cb31d04d2574115cf2d422ab upstream.
 
-At least the Dell Vostro 5470 elantech *clickpad* reports right button
-clicks when clicked in the right bottom area:
+HP Spectre 13 has the IDT 92HD95 codec, and BIOS seems to set the
+default high-pass filter in some "safer" range, which results in the
+very soft tone from the built-in speakers in contrast to Windows.
+Also, the mute LED control is missing, since 92HD95 codec still has no
+HP-specific fixups for GPIO setups.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1103528
+This patch adds these missing features: the HPF is adjusted by the
+vendor-specific verb, and the LED is set up from a DMI string (but
+with the default polarity = 0 assumption due to the incomplete BIOS on
+the given machine).
 
-This is different from how (elantech) clickpads normally operate, normally
-no matter where the user clicks on the pad the pad always reports a left
-button event, since there is only 1 hardware button beneath the path.
-
-It looks like Dell has put 2 buttons under the pad, one under each bottom
-corner, causing this.
-
-Since this however still clearly is a real clickpad hardware-wise, we still
-want to report it as such to userspace, so that things like finger movement
-in the bottom area can be properly ignored as it should be on clickpads.
-
-So deal with this weirdness by simply mapping a right click to a left click
-on elantech clickpads. As an added advantage this is something which we can
-simply do on all elantech clickpads, so no need to add special quirks for
-this weird model.
-
-Reported-and-tested-by: Elder Marco <eldermarco@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=74841
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/elantech.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+ Documentation/sound/alsa/HD-Audio-Models.txt |    5 ++
+ sound/pci/hda/patch_sigmatel.c               |   58 ++++++++++++++++++++++++++-
+ 2 files changed, 62 insertions(+), 1 deletion(-)
 
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -472,8 +472,15 @@ static void elantech_report_absolute_v3(
- 	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
- 	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
- 	input_report_key(dev, BTN_TOOL_TRIPLETAP, fingers == 3);
--	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
--	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+
-+	/* For clickpads map both buttons to BTN_LEFT */
-+	if (etd->fw_version & 0x001000) {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
-+	} else {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-+		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	}
-+
- 	input_report_abs(dev, ABS_PRESSURE, pres);
- 	input_report_abs(dev, ABS_TOOL_WIDTH, width);
+--- a/Documentation/sound/alsa/HD-Audio-Models.txt
++++ b/Documentation/sound/alsa/HD-Audio-Models.txt
+@@ -286,6 +286,11 @@ STAC92HD83*
+   hp-inv-led	HP with broken BIOS for inverted mute LED
+   auto		BIOS setup (default)
  
-@@ -483,10 +490,17 @@ static void elantech_report_absolute_v3(
- static void elantech_input_sync_v4(struct psmouse *psmouse)
++STAC92HD95
++==========
++  hp-led	LED support for HP laptops
++  hp-bass	Bass HPF setup for HP Spectre 13
++
+ STAC9872
+ ========
+   vaio		VAIO laptop without SPDIF
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -122,6 +122,12 @@ enum {
+ };
+ 
+ enum {
++	STAC_92HD95_HP_LED,
++	STAC_92HD95_HP_BASS,
++	STAC_92HD95_MODELS
++};
++
++enum {
+ 	STAC_925x_REF,
+ 	STAC_M1,
+ 	STAC_M1_2,
+@@ -4128,6 +4134,48 @@ static const struct snd_pci_quirk stac92
+ 	{} /* terminator */
+ };
+ 
++static void stac92hd95_fixup_hp_led(struct hda_codec *codec,
++				    const struct hda_fixup *fix, int action)
++{
++	struct sigmatel_spec *spec = codec->spec;
++
++	if (action != HDA_FIXUP_ACT_PRE_PROBE)
++		return;
++
++	if (find_mute_led_cfg(codec, spec->default_polarity))
++		codec_dbg(codec, "mute LED gpio %d polarity %d\n",
++				spec->gpio_led,
++				spec->gpio_led_polarity);
++}
++
++static const struct hda_fixup stac92hd95_fixups[] = {
++	[STAC_92HD95_HP_LED] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = stac92hd95_fixup_hp_led,
++	},
++	[STAC_92HD95_HP_BASS] = {
++		.type = HDA_FIXUP_VERBS,
++		.v.verbs = (const struct hda_verb[]) {
++			{0x1a, 0x795, 0x00}, /* HPF to 100Hz */
++			{}
++		},
++		.chained = true,
++		.chain_id = STAC_92HD95_HP_LED,
++	},
++};
++
++static const struct snd_pci_quirk stac92hd95_fixup_tbl[] = {
++	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1911, "HP Spectre 13", STAC_92HD95_HP_BASS),
++	{} /* terminator */
++};
++
++static const struct hda_model_fixup stac92hd95_models[] = {
++	{ .id = STAC_92HD95_HP_LED, .name = "hp-led" },
++	{ .id = STAC_92HD95_HP_BASS, .name = "hp-bass" },
++	{}
++};
++
++
+ static int stac_parse_auto_config(struct hda_codec *codec)
  {
- 	struct input_dev *dev = psmouse->dev;
-+	struct elantech_data *etd = psmouse->private;
- 	unsigned char *packet = psmouse->packet;
+ 	struct sigmatel_spec *spec = codec->spec;
+@@ -4580,10 +4628,16 @@ static int patch_stac92hd95(struct hda_c
+ 	spec->gen.beep_nid = 0x19; /* digital beep */
+ 	spec->pwr_nids = stac92hd95_pwr_nids;
+ 	spec->num_pwrs = ARRAY_SIZE(stac92hd95_pwr_nids);
+-	spec->default_polarity = -1; /* no default cfg */
++	spec->default_polarity = 0;
  
--	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
--	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	/* For clickpads map both buttons to BTN_LEFT */
-+	if (etd->fw_version & 0x001000) {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
-+	} else {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-+		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	}
+ 	codec->patch_ops = stac_patch_ops;
+ 
++	snd_hda_pick_fixup(codec, stac92hd95_models, stac92hd95_fixup_tbl,
++			   stac92hd95_fixups);
++	snd_hda_apply_fixup(codec, HDA_FIXUP_ACT_PRE_PROBE);
 +
- 	input_mt_report_pointer_emulation(dev, true);
- 	input_sync(dev);
++	stac_setup_gpio(codec);
++
+ 	err = stac_parse_auto_config(codec);
+ 	if (err < 0) {
+ 		stac_free(codec);
+@@ -4592,6 +4646,8 @@ static int patch_stac92hd95(struct hda_c
+ 
+ 	codec->proc_widget_hook = stac92hd_proc_hook;
+ 
++	snd_hda_apply_fixup(codec, HDA_FIXUP_ACT_PROBE);
++
+ 	return 0;
  }
+ 
 
 
