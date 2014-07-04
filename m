@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760647AbaGDWQn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:16:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57103 "EHLO
+	id S1760630AbaGDWQi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:16:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57084 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760578AbaGDWQk (ORCPT
+	with ESMTP id S1760578AbaGDWQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:16:40 -0400
+	Fri, 4 Jul 2014 18:16:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.15 50/66] powerpc: Add AT_HWCAP2 to indicate V.CRYPTO category support
-Date: Fri,  4 Jul 2014 15:14:49 -0700
-Message-Id: <20140704221425.086507736@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Yann Droneaud <ydroneaud@opteya.com>,
+        Steve Wise <swise@opengridcomputing.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.15 20/66] RDMA/cxgb4: Add missing padding at end of struct c4iw_create_cq_resp
+Date: Fri,  4 Jul 2014 15:14:19 -0700
+Message-Id: <20140704221423.741859407@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -28,43 +31,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Yann Droneaud <ydroneaud@opteya.com>
 
-commit dd58a092c4202f2bd490adab7285b3ff77f8e467 upstream.
+commit b6f04d3d21458818073a2f5af5339f958864bf71 upstream.
 
-The Vector Crypto category instructions are supported by current POWER8
-chips, advertise them to userspace using a specific bit to properly
-differentiate with chips of the same architecture level that might not
-have them.
+The i386 ABI disagrees with most other ABIs regarding alignment of
+data types larger than 4 bytes: on most ABIs a padding must be added
+at end of the structures, while it is not required on i386.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+So for most ABI struct c4iw_create_cq_resp gets implicitly padded
+to be aligned on a 8 bytes multiple, while for i386, such padding
+is not added.
+
+The tool pahole can be used to find such implicit padding:
+
+  $ pahole --anon_include \
+           --nested_anon_include \
+           --recursive \
+           --class_name c4iw_create_cq_resp \
+           drivers/infiniband/hw/cxgb4/iw_cxgb4.o
+
+Then, structure layout can be compared between i386 and x86_64:
+
+#  +++ obj-i386/drivers/infiniband/hw/cxgb4/iw_cxgb4.o.pahole.txt   2014-03-28 11:43:05.547432195 +0100
+#  --- obj-x86_64/drivers/infiniband/hw/cxgb4/iw_cxgb4.o.pahole.txt 2014-03-28 10:55:10.990133017 +0100
+#  @@ -14,9 +13,8 @@ struct c4iw_create_cq_resp {
+#          __u32                      size;                 /*    28     4 */
+#          __u32                      qid_mask;             /*    32     4 */
+#
+#  -       /* size: 36, cachelines: 1, members: 6 */
+#  -       /* last cacheline: 36 bytes */
+#  +       /* size: 40, cachelines: 1, members: 6 */
+#  +       /* padding: 4 */
+#  +       /* last cacheline: 40 bytes */
+#   };
+
+This ABI disagreement will make an x86_64 kernel try to write past the
+buffer provided by an i386 binary.
+
+When boundary check will be implemented, the x86_64 kernel will refuse
+to write past the i386 userspace provided buffer and the uverbs will
+fail.
+
+If the structure is on a page boundary and the next page is not
+mapped, ib_copy_to_udata() will fail and the uverb will fail.
+
+This patch adds an explicit padding at end of structure
+c4iw_create_cq_resp, and, like 92b0ca7cb149 ("IB/mlx5: Fix stack info
+leak in mlx5_ib_alloc_ucontext()"), makes function c4iw_create_cq()
+not writting this padding field to userspace. This way, x86_64 kernel
+will be able to write struct c4iw_create_cq_resp as expected by
+unpatched and patched i386 libcxgb4.
+
+Link: http://marc.info/?i=cover.1399309513.git.ydroneaud@opteya.com
+Fixes: cfdda9d764362 ("RDMA/cxgb4: Add driver for Chelsio T4 RNIC")
+Fixes: e24a72a3302a6 ("RDMA/cxgb4: Fix four byte info leak in c4iw_create_cq()")
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Acked-by: Steve Wise <swise@opengridcomputing.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/uapi/asm/cputable.h |    1 +
- arch/powerpc/kernel/cputable.c           |    3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/infiniband/hw/cxgb4/cq.c   |    4 ++--
+ drivers/infiniband/hw/cxgb4/user.h |    1 +
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/include/uapi/asm/cputable.h
-+++ b/arch/powerpc/include/uapi/asm/cputable.h
-@@ -41,5 +41,6 @@
- #define PPC_FEATURE2_EBB		0x10000000
- #define PPC_FEATURE2_ISEL		0x08000000
- #define PPC_FEATURE2_TAR		0x04000000
-+#define PPC_FEATURE2_VEC_CRYPTO		0x02000000
+--- a/drivers/infiniband/hw/cxgb4/cq.c
++++ b/drivers/infiniband/hw/cxgb4/cq.c
+@@ -940,7 +940,6 @@ struct ib_cq *c4iw_create_cq(struct ib_d
+ 		if (!mm2)
+ 			goto err4;
  
- #endif /* _UAPI__ASM_POWERPC_CPUTABLE_H */
---- a/arch/powerpc/kernel/cputable.c
-+++ b/arch/powerpc/kernel/cputable.c
-@@ -109,7 +109,8 @@ extern void __restore_cpu_e6500(void);
- 				 PPC_FEATURE_PSERIES_PERFMON_COMPAT)
- #define COMMON_USER2_POWER8	(PPC_FEATURE2_ARCH_2_07 | \
- 				 PPC_FEATURE2_HTM_COMP | PPC_FEATURE2_DSCR | \
--				 PPC_FEATURE2_ISEL | PPC_FEATURE2_TAR)
-+				 PPC_FEATURE2_ISEL | PPC_FEATURE2_TAR | \
-+				 PPC_FEATURE2_VEC_CRYPTO)
- #define COMMON_USER_PA6T	(COMMON_USER_PPC64 | PPC_FEATURE_PA6T |\
- 				 PPC_FEATURE_TRUE_LE | \
- 				 PPC_FEATURE_HAS_ALTIVEC_COMP)
+-		memset(&uresp, 0, sizeof(uresp));
+ 		uresp.qid_mask = rhp->rdev.cqmask;
+ 		uresp.cqid = chp->cq.cqid;
+ 		uresp.size = chp->cq.size;
+@@ -951,7 +950,8 @@ struct ib_cq *c4iw_create_cq(struct ib_d
+ 		uresp.gts_key = ucontext->key;
+ 		ucontext->key += PAGE_SIZE;
+ 		spin_unlock(&ucontext->mmap_lock);
+-		ret = ib_copy_to_udata(udata, &uresp, sizeof uresp);
++		ret = ib_copy_to_udata(udata, &uresp,
++				       sizeof(uresp) - sizeof(uresp.reserved));
+ 		if (ret)
+ 			goto err5;
+ 
+--- a/drivers/infiniband/hw/cxgb4/user.h
++++ b/drivers/infiniband/hw/cxgb4/user.h
+@@ -48,6 +48,7 @@ struct c4iw_create_cq_resp {
+ 	__u32 cqid;
+ 	__u32 size;
+ 	__u32 qid_mask;
++	__u32 reserved; /* explicit padding (optional for i386) */
+ };
+ 
+ 
 
 
