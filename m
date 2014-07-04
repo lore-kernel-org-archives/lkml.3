@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168AbaGDK5X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 06:57:23 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:45208 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755421AbaGDK5W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 06:57:22 -0400
-Date: Fri, 4 Jul 2014 11:57:00 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "eparis@redhat.com" <eparis@redhat.com>,
-        "rgb@redhat.com" <rgb@redhat.com>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v10 1/3] arm64: Add __NR_* definitions for compat syscalls
-Message-ID: <20140704105700.GD16404@arm.com>
-References: <1404458911-8214-1-git-send-email-takahiro.akashi@linaro.org>
- <1404458911-8214-2-git-send-email-takahiro.akashi@linaro.org>
- <5418828.mxvNk2rT0e@wuerfel>
+	id S1757004AbaGDK7Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 06:59:25 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:48434 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751989AbaGDK7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 06:59:24 -0400
+Date: Fri, 4 Jul 2014 12:59:13 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        toshi.kani@hp.com, imammedo@redhat.com, huawei.libin@huawei.com,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Subject: Re: [PATCH] x86,cpu-hotplug: clear llc_shared_mask at CPU hotplug
+Message-ID: <20140704105913.GB9246@pd.tnic>
+References: <53B3A991.2070502@jp.fujitsu.com>
+ <20140702113253.GD1318@pd.tnic>
+ <53B4E1A4.2050502@jp.fujitsu.com>
+ <20140703095135.GA21776@pd.tnic>
+ <53B5F201.5070804@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5418828.mxvNk2rT0e@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53B5F201.5070804@jp.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04, 2014 at 11:06:07AM +0100, Arnd Bergmann wrote:
-> On Friday 04 July 2014 16:28:29 AKASHI Takahiro wrote:
-> > From: Catalin Marinas <catalin.marinas@arm.com>
-> > 
-> > This patch adds __NR_* definitions to asm/unistd32.h, moves the
-> > __NR_compat_* definitions to asm/unistd.h and removes all the explicit
-> > unistd32.h includes apart from the one building the compat syscall
-> > table. The aim is to have the compat __NR_* definitions available but
-> > without colliding with the native syscall definitions.
-> > 
-> > And adds more syscall definitions for 3.16.
-> 
-> Can you explain in more detail why you want to add those macros? I've
-> looked at all three patches in the series but can't find any code using
-> them.
-> 
-> I would expect that we don't need to define those macros at all for
-> compat mode, since they are meant primarily for user space (glibc)
-> compilation, which gets them from arch/arm/include/asm/unistd.h.
+On Fri, Jul 04, 2014 at 09:14:57AM +0900, Yasuaki Ishimatsu wrote:
+> If so, why following maps are cleared by CPU offline?
+>   - cpu_sigling_map
+>   - cpu_core_map
 
-That's coming from commit 4b58841149dc (audit: Add generic compat
-syscall support). The compat_audit.c code reuses some of the existing
-asm-generic/audit_*.h headers which depend on __NR_* definitions (rather
-than __NR_COMPAT_*). Akashi's suggestion was to include a unistd32.h,
-hence this patch.
+I'll let you figure that out on your own by doing some quality code
+staring. Hint: search for usages outside of the CPU hotplug path.
+
+In any case, let me try to explain it to you one more time: if the core
+numbers are static and don't change across physical hotplug, the cores
+which share last level cache also remain the same. This is a static
+property which doesn't simply change.
+
+For example, if cores 6-11 and 34-41 have been sharing the last level
+cache, then if the node containing them gets unplugged and replugged
+back again - then the same cores share that exact same cache and nothing
+has changed.
+
+Except the core numbers, as you've shown. Which would be not only a
+problem for the llc_shared_mask but also a big annoyance for sysadmins
+and users having to realize that the topology enumeration has changed
+and trying to make sense of what node went where and why isn't it the
+same as when the machine booted.
+
+So what I'm trying to say is, we should keep the core numbering stable
+across hotplug to avoid unnecessary confusion; the llc_shared_mask is
+just a small issue which results from not doing that.
 
 -- 
-Catalin
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
