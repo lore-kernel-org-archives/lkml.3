@@ -1,116 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758312AbaGDLn4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 07:43:56 -0400
-Received: from mga03.intel.com ([143.182.124.21]:24353 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752932AbaGDLnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 07:43:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,600,1400050800"; 
-   d="scan'208";a="453310473"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH 1/2] perf tools: convert to asprintf()
-Date: Fri,  4 Jul 2014 14:43:48 +0300
-Message-Id: <1404474229-15272-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.0.1
+	id S1753174AbaGDLwz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 07:52:55 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:19675 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714AbaGDLwx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 07:52:53 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 04 Jul 2014 04:46:11 -0700
+Message-ID: <53B69590.6070004@nvidia.com>
+Date: Fri, 4 Jul 2014 14:52:48 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Wei Ni <wni@nvidia.com>, "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        "edubezval@gmail.com" <edubezval@gmail.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Matthew Longnecker <MLongnecker@nvidia.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 6/6] thermal: Add Tegra SOCTHERM thermal management driver
+References: <1403856699-2140-1-git-send-email-mperttunen@nvidia.com> <1403856699-2140-7-git-send-email-mperttunen@nvidia.com> <53B66915.4040309@nvidia.com>
+In-Reply-To: <53B66915.4040309@nvidia.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following snippet
-	V = malloc(S);
-	if (!V) { }
-	sprintf(V, ...)
-conuld be easily changed to a one line:
-	if (asprintf(&V, ...) < 0) { }
+On 04/07/14 11:43, Wei Ni wrote:
+> On 06/27/2014 04:11 PM, Mikko Perttunen wrote:
+>> This adds support for the Tegra SOCTHERM thermal sensing and management
+>> system found in the Tegra124 system-on-chip. This initial driver supports
+>> the four thermal zones with hardware-tracked trip points.
+>
+>> diff --git a/drivers/thermal/tegra_soctherm.c b/drivers/thermal/tegra_soctherm.c
+>
+>> +static int calculate_shared_calibration(struct tsensor_shared_calibration *r)
+>> +{
+>> +       u32 val;
+>> +       u32 shifted_cp, shifted_ft;
+>> +       int err;
+>> +
+>> +       err = tegra_fuse_readl(FUSE_TSENSOR8_CALIB, &val);
+>> +       if (err)
+>> +               return err;
+>> +       r->base_cp = val & 0x3ff;
+>> +       r->base_ft = (val & (0x7ff << 10)) >> 10;
+>> +
+>> +       err = tegra_fuse_readl(FUSE_SPARE_REALIGNMENT_REG_0, &val);
+>> +       if (err)
+>> +               return err;
+>> +       /* Sign extend from 6 bits to 32 bits */
+>> +       shifted_cp = (s32)((val & 0x1f) | ((val & 0x20) ? 0xffffffe0 : 0x0));
+>> +       val = ((val & (0x1f << 21)) >> 21);
+>> +       /* Sign extend from 5 bits to 32 bits */
+>> +       shifted_ft = (s32)((val & 0xf) | ((val & 0x10) ? 0xfffffff0 : 0x0));
+>> +
+>> +       r->actual_temp_cp = 2 * 25 + shifted_cp;
+> Do we need to define the "25" as constant, just like below line.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- tools/perf/util/trace-event-info.c | 12 +++---------
- tools/perf/util/util.c             |  9 ++-------
- 2 files changed, 5 insertions(+), 16 deletions(-)
+I believe downstream just uses "25" which is the reason I used it, but 
+yes, a constant would be nicer.
 
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index 7e6fcfe..c3bba88 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -191,12 +191,10 @@ static int copy_event_system(const char *sys, struct tracepoint_path *tps)
- 		    strcmp(dent->d_name, "..") == 0 ||
- 		    !name_in_tp_list(dent->d_name, tps))
- 			continue;
--		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
--		if (!format) {
-+		if (asprintf(&format, "%s/%s/format", sys, dent->d_name) < 0) {
- 			err = -ENOMEM;
- 			goto out;
- 		}
--		sprintf(format, "%s/%s/format", sys, dent->d_name);
- 		ret = stat(format, &st);
- 		free(format);
- 		if (ret < 0)
-@@ -217,12 +215,10 @@ static int copy_event_system(const char *sys, struct tracepoint_path *tps)
- 		    strcmp(dent->d_name, "..") == 0 ||
- 		    !name_in_tp_list(dent->d_name, tps))
- 			continue;
--		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
--		if (!format) {
-+		if (asprintf(&format, "%s/%s/format", sys, dent->d_name) < 0) {
- 			err = -ENOMEM;
- 			goto out;
- 		}
--		sprintf(format, "%s/%s/format", sys, dent->d_name);
- 		ret = stat(format, &st);
- 
- 		if (ret >= 0) {
-@@ -317,12 +313,10 @@ static int record_event_files(struct tracepoint_path *tps)
- 		    strcmp(dent->d_name, "ftrace") == 0 ||
- 		    !system_in_tp_list(dent->d_name, tps))
- 			continue;
--		sys = malloc(strlen(path) + strlen(dent->d_name) + 2);
--		if (!sys) {
-+		if (asprintf(&sys, "%s/%s", path, dent->d_name) < 0) {
- 			err = -ENOMEM;
- 			goto out;
- 		}
--		sprintf(sys, "%s/%s", path, dent->d_name);
- 		ret = stat(sys, &st);
- 		if (ret >= 0) {
- 			ssize_t size = strlen(dent->d_name) + 1;
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 95aefa7..e4132ae 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -333,12 +333,9 @@ const char *find_tracing_dir(void)
- 	if (!debugfs)
- 		return NULL;
- 
--	tracing = malloc(strlen(debugfs) + 9);
--	if (!tracing)
-+	if (asprintf(&tracing, "%s/tracing", debugfs) < 0)
- 		return NULL;
- 
--	sprintf(tracing, "%s/tracing", debugfs);
--
- 	tracing_found = 1;
- 	return tracing;
- }
-@@ -352,11 +349,9 @@ char *get_tracing_file(const char *name)
- 	if (!tracing)
- 		return NULL;
- 
--	file = malloc(strlen(tracing) + strlen(name) + 2);
--	if (!file)
-+	if (asprintf(&file, "%s/%s", tracing, name) < 0)
- 		return NULL;
- 
--	sprintf(file, "%s/%s", tracing, name);
- 	return file;
- }
- 
--- 
-2.0.1
+>
+>> +       r->actual_temp_ft = 2 * NOMINAL_CALIB_FT_T124 + shifted_ft;
+>> +
+>> +       return 0;
+>> +}
+>
+>> +
+>> +static irqreturn_t soctherm_isr(int irq, void *dev_id)
+>> +{
+>> +       struct tegra_thermctl_zone *zone = dev_id;
+>> +       u32 val;
+>> +       u32 intr_mask = 0x03 << t124_thermctl_shifts[zone->sensor];
+>> +
+>> +       val = readl(zone->tegra->regs + THERMCTL_INTR_STATUS);
+>> +
+>> +       if ((val & intr_mask) == 0)
+>> +               return IRQ_NONE;
+>> +
+>> +       writel(val & intr_mask, zone->tegra->regs + THERMCTL_INTR_STATUS);
+> I think we need to disable the interrupt here, and enable it again after
+> updating the high/low limited values. If not, there will trigger mass of
+> interrupts.
+>
 
+Good point. It works now because of-thermal will set up the new trip 
+points during soctherm_thread_isr, and apparently the interrupt is kept 
+disabled until after that.
+
+>> +
+>> +static struct platform_driver tegra_soctherm_driver = {
+>> +       .probe = tegra_soctherm_probe,
+>> +       .remove = tegra_soctherm_remove,
+>> +       .driver = {
+>> +               .name = "tegra_soctherm",
+>> +               .owner = THIS_MODULE,
+>> +               .of_match_table = tegra_soctherm_of_match,
+>> +       },
+>> +};
+> Will you consider to add suspend/resume support?
+
+I guess for this one it should be simple; same driver probe and teardown 
+as normally. Although currently suspend doesn't support LP0 so no-op is 
+enough.
+
+>
+> Thanks.
+> Wei.
+>
+
+Thanks
