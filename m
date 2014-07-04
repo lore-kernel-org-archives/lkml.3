@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759219AbaGDKDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 06:03:51 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:38016 "EHLO
+	id S1759286AbaGDKEY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 06:04:24 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:37994 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756954AbaGDJzr (ORCPT
+	with ESMTP id S1756840AbaGDJzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 05:55:47 -0400
+	Fri, 4 Jul 2014 05:55:41 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
@@ -21,9 +21,9 @@ Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v6 05/23] mfd: max77686: Return correct error when pdata isn't found
-Date: Fri,  4 Jul 2014 11:55:04 +0200
-Message-Id: <1404467722-26687-6-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v6 03/23] mfd: max77686: Don't define dummy function if OF isn't enabled
+Date: Fri,  4 Jul 2014 11:55:02 +0200
+Message-Id: <1404467722-26687-4-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -31,28 +31,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When platform data is not found an -EIO (I/O error) code is returned.
-This doesn't seem to be the correct error so better return -EINVAL
-(Invalid argument) which is what most drivers do in this case.
+When the CONFIG_OF option was not enabled, a dummy function
+max77686_i2c_parse_dt_pdata() was defined since this is called
+unconditionally on probe(). Just always define the real function
+and conditionally call it if CONFIG_OF is enabled instead.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
- drivers/mfd/max77686.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mfd/max77686.c | 10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
 
 diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-index 12d4c17..ada4976 100644
+index a38e9ee..d1f9d04 100644
 --- a/drivers/mfd/max77686.c
 +++ b/drivers/mfd/max77686.c
-@@ -129,7 +129,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+@@ -96,7 +96,6 @@ static const struct regmap_irq_chip max77686_rtc_irq_chip = {
+ 	.num_irqs		= ARRAY_SIZE(max77686_rtc_irqs),
+ };
+ 
+-#ifdef CONFIG_OF
+ static const struct of_device_id max77686_pmic_dt_match[] = {
+ 	{.compatible = "maxim,max77686", .data = NULL},
+ 	{},
+@@ -116,13 +115,6 @@ static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
+ 	dev->platform_data = pd;
+ 	return pd;
+ }
+-#else
+-static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
+-								  *dev)
+-{
+-	return 0;
+-}
+-#endif
+ 
+ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 			      const struct i2c_device_id *id)
+@@ -132,7 +124,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 	unsigned int data;
+ 	int ret = 0;
+ 
+-	if (i2c->dev.of_node)
++	if (IS_ENABLED(CONFIG_OF) && i2c->dev.of_node)
+ 		pdata = max77686_i2c_parse_dt_pdata(&i2c->dev);
  
  	if (!pdata) {
- 		dev_err(&i2c->dev, "No platform data found.\n");
--		return -EIO;
-+		return -EINVAL;
- 	}
- 
- 	max77686 = devm_kzalloc(&i2c->dev,
 -- 
 2.0.0.rc2
 
