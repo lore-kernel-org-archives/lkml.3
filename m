@@ -1,219 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758551AbaGDMHr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 08:07:47 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:59121 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158AbaGDMGs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 08:06:48 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-83-53b698d5cb3d
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        dmitry.kasatkin@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH v3 2/3] ima: introduce multi-page collect buffers
-Date: Fri, 04 Jul 2014 15:05:27 +0300
-Message-id: <ccd18f0b0c7147090793d08ecc64c4f182b64e99.1404475462.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <cover.1404475462.git.d.kasatkin@samsung.com>
-References: <cover.1404475462.git.d.kasatkin@samsung.com>
-In-reply-to: <cover.1404475462.git.d.kasatkin@samsung.com>
-References: <cover.1404475462.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphluLIzCtJLcpLzFFi42I5/e/4Zd2rM7YFG/Te5La49Xcvs8WXpXUW
-	9+/9ZLJ4OWMeu8XlXXPYLD70PGKz+LRiErMDu8fOWXfZPR4c2szisXvBZyaPvi2rGD0+b5IL
-	YI3isklJzcksSy3St0vgyrj8+BtrwRbdin9v2tkbGL+pdDFyckgImEh0T5zNBGGLSVy4t56t
-	i5GLQ0hgKaPEjldnWSCcTiaJvTuWsIBUsQnoSWxo/sEOYosI5EhMOnOBGaSIWaCVUeLAo+/M
-	IAlhAUeJuS0PwGwWAVWJI5e6wGxegTiJpbPOsUGsk5M4eWwyK4jNKWAlsWDiW6AaDqBtlhKn
-	H8fgEJ7AyL+AkWEVo2hqaXJBcVJ6rqFecWJucWleul5yfu4mRkgIftnBuPiY1SFGAQ5GJR7e
-	xhUbgoVYE8uKK3MPMUpwMCuJ8B7o2xYsxJuSWFmVWpQfX1Sak1p8iJGJg1OqgVHSLk54nmxY
-	v88bzo83Dp7hUlmbf9Cp/H09Y8YRwY/7tu++aPXwkW+46L5yob7n8pd0CyYtcRUM/y3x40jI
-	m/4tq3TjDm5Wm+hS+vrcxJAVr/5M1tVYVVXoHB1b+tuo4ZSRld5mlbJVtmmehp9/nJJ9wLjY
-	+UKCCnflhi35VqKe+dkrjwu0OyqxFGckGmoxFxUnAgA/AlsWHwIAAA==
+	id S932115AbaGDMLZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 08:11:25 -0400
+Received: from imap.thunk.org ([74.207.234.97]:45056 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750714AbaGDMLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 08:11:23 -0400
+Date: Fri, 4 Jul 2014 08:11:19 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: kernel list <linux-kernel@vger.kernel.org>, adilger.kernel@dilger.ca,
+        linux-ext4@vger.kernel.org
+Subject: Re: ext4: media error but where?
+Message-ID: <20140704121119.GB10514@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Pavel Machek <pavel@ucw.cz>,
+	kernel list <linux-kernel@vger.kernel.org>,
+	adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org
+References: <20140626202021.GA8512@xo-6d-61-c0.localdomain>
+ <20140626203052.GA9449@xo-6d-61-c0.localdomain>
+ <20140627024659.GF6826@thunk.org>
+ <20140629202516.GA11430@amd.pavel.ucw.cz>
+ <20140629210428.GD2162@thunk.org>
+ <20140630064644.GA23079@amd.pavel.ucw.cz>
+ <20140630134313.GA3753@thunk.org>
+ <20140704102307.GA19252@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140704102307.GA19252@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use of multiple-page collect buffers reduces:
-1) the number of block IO requests
-2) the number of asynchronous hash update requests
+On Fri, Jul 04, 2014 at 12:23:07PM +0200, Pavel Machek wrote:
+> 
+> pavel@duo:~$ uname -a
+> Linux duo 3.15.0-rc8+ #365 SMP Mon Jun 9 09:18:29 CEST 2014 i686
+> GNU/Linux
+> 
+> EXT4-fs (sda3): error count: 11
+> EXT4-fs (sda3): initial error at 1401714179: ext4_mb_generate_buddy:756
+> EXT4-fs (sda3): last error at 1401714179: ext4_reserve_inode_write:4877
+> 
+> That sounds like media error to me?
 
-Second is important for HW accelerated hashing, because significant
-amount of time is spent for preparation of hash update operation,
-which includes configuring acceleration HW, DMA engine, etc...
-Thus, HW accelerators are more efficient when working on large
-chunks of data.
+If you search your system logs since the last fsck, you should find 11
+instances of "EXT4-fs error" message, which means that there was some
+file system inconsisntencies detected.  The first error was detected at:
 
-This patch introduces usage of multi-page collect buffers. Buffer size
-can be specified using 'ahash_bufsize' module parameter. Default buffer
-size is 4096 bytes.
+% date -d @1401714179
+Mon Jun  2 09:02:59 EDT 2014
 
-Changes in v3:
-- kernel parameter replaced with module parameter
+... which means that you haven't rebooted in a month, or your boot
+scripts aren't automatically running fsck, or your clock is
+incorrect.
 
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
----
- Documentation/kernel-parameters.txt |  8 +++
- security/integrity/ima/ima_crypto.c | 98 ++++++++++++++++++++++++++++++++++++-
- 2 files changed, 104 insertions(+), 2 deletions(-)
+The first inconsistency was detected in the function
+ext4_mb_generate_buddy(), in line 756.  This means there's an
+inconsistency between the number of blocks marked as in use in a block
+allocation bitmap, and summary statistics in the block group
+descriptor.  This can be caused by a hardware hiccup, or some kind of
+kernel bug.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 03c8452..7d7c38d 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1327,6 +1327,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			different crypto accelerators. This option can be used
- 			to achieve best performance for particular HW.
- 
-+	ima.ahash_bufsize= [IMA] Asynchronous hash buffer size
-+			Format: <bufsize>
-+			Set hashing buffer size. Default: 4k.
-+
-+			ahash performance varies for different chunk sizes on
-+			different crypto accelerators. This option can be used
-+			to achieve best performance for particular HW.
-+
- 	init=		[KNL]
- 			Format: <full_path>
- 			Run specified binary instead of /sbin/init as init
-diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-index bc38160..2340238 100644
---- a/security/integrity/ima/ima_crypto.c
-+++ b/security/integrity/ima/ima_crypto.c
-@@ -37,6 +37,33 @@ static unsigned long ima_ahash_minsize;
- module_param_named(ahash_minsize, ima_ahash_minsize, ulong, 0644);
- MODULE_PARM_DESC(ahash_minsize, "Minimum file size for ahash use");
- 
-+/* default is 0 - 1 page. */
-+static int ima_maxorder;
-+static unsigned int ima_bufsize = PAGE_SIZE;
-+
-+static int param_set_bufsize(const char *val, const struct kernel_param *kp)
-+{
-+	unsigned long long size;
-+	int order;
-+
-+	size = memparse(val, NULL);
-+	order = get_order(size);
-+	if (order >= MAX_ORDER)
-+		return -EINVAL;
-+	ima_maxorder = order;
-+	ima_bufsize = PAGE_SIZE << order;
-+	return 0;
-+}
-+
-+static struct kernel_param_ops param_ops_bufsize = {
-+	.set = param_set_bufsize,
-+	.get = param_get_uint,
-+};
-+#define param_check_bufsize(name, p) __param_check(name, p, unsigned int)
-+
-+module_param_named(ahash_bufsize, ima_bufsize, bufsize, 0644);
-+MODULE_PARM_DESC(ahash_bufsize, "Maximum ahash buffer size");
-+
- static struct crypto_shash *ima_shash_tfm;
- static struct crypto_ahash *ima_ahash_tfm;
- 
-@@ -106,6 +133,68 @@ static void ima_free_tfm(struct crypto_shash *tfm)
- 		crypto_free_shash(tfm);
- }
- 
-+/**
-+ * ima_alloc_pages() - Allocated contiguous pages.
-+ * @max_size:       Maximum amount of memory to allocate.
-+ * @allocated_size: Returned size of actual allocation.
-+ * @last_warn:      Should the min_size allocation warn or not.
-+ *
-+ * Tries to do opportunistic allocation for memory first trying to allocate
-+ * max_size amount of memory and then splitting that until zero order is
-+ * reached. Allocation is tried without generating allocation warnings unless
-+ * last_warn is set. Last_warn set affects only last allocation of zero order.
-+ *
-+ * By default, ima_maxorder is 0 and it is equivalent to kmalloc(GFP_KERNEL)
-+ *
-+ * Return pointer to allocated memory, or NULL on failure.
-+ */
-+static void *ima_alloc_pages(loff_t max_size, size_t *allocated_size,
-+			     int last_warn)
-+{
-+	void *ptr;
-+	int order = ima_maxorder;
-+	gfp_t gfp_mask = __GFP_WAIT | __GFP_NOWARN | __GFP_NORETRY;
-+
-+	if (order)
-+		order = min(get_order(max_size), order);
-+
-+	for (; order; order--) {
-+		ptr = (void *)__get_free_pages(gfp_mask, order);
-+		if (ptr) {
-+			*allocated_size = PAGE_SIZE << order;
-+			return ptr;
-+		}
-+	}
-+
-+	/* order is zero - one page */
-+
-+	gfp_mask = GFP_KERNEL;
-+
-+	if (!last_warn)
-+		gfp_mask |= __GFP_NOWARN;
-+
-+	ptr = (void *)__get_free_pages(gfp_mask, 0);
-+	if (ptr) {
-+		*allocated_size = PAGE_SIZE;
-+		return ptr;
-+	}
-+
-+	*allocated_size = 0;
-+	return NULL;
-+}
-+
-+/**
-+ * ima_free_pages() - Free pages allocated by ima_alloc_pages().
-+ * @ptr:  Pointer to allocated pages.
-+ * @size: Size of allocated buffer.
-+ */
-+static void ima_free_pages(void *ptr, size_t size)
-+{
-+	if (!ptr)
-+		return;
-+	free_pages((unsigned long)ptr, get_order(size));
-+}
-+
- static struct crypto_ahash *ima_alloc_atfm(enum hash_algo algo)
- {
- 	struct crypto_ahash *tfm = ima_ahash_tfm;
-@@ -169,6 +258,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
- 	struct ahash_request *req;
- 	struct scatterlist sg[1];
- 	struct ahash_completion res;
-+	size_t rbuf_size;
- 
- 	hash->length = crypto_ahash_digestsize(tfm);
- 
-@@ -190,7 +280,11 @@ static int ima_calc_file_hash_atfm(struct file *file,
- 	if (i_size == 0)
- 		goto out2;
- 
--	rbuf = kzalloc(PAGE_SIZE, GFP_KERNEL);
-+	/*
-+	 * Try to allocate maximum size of memory.
-+	 * Fail if not even single page cannot be allocated.
-+	 */
-+	rbuf = ima_alloc_pages(i_size, &rbuf_size, 1);
- 	if (!rbuf) {
- 		rc = -ENOMEM;
- 		goto out1;
-@@ -219,7 +313,7 @@ static int ima_calc_file_hash_atfm(struct file *file,
- 	}
- 	if (read)
- 		file->f_mode &= ~FMODE_READ;
--	kfree(rbuf);
-+	ima_free_pages(rbuf, rbuf_size);
- out2:
- 	if (!rc) {
- 		ahash_request_set_crypt(req, NULL, hash->digest, 0);
--- 
-1.9.1
+People have been reporting an increased incidence rate of this bug
+since 3.15, so it's something we're trying to track down.  There have
+been some reports of eMMC bugs in 3.15 (see one such report at:
+https://lkml.org/lkml/2014/6/12/19).  But other people are reporting
+this on SSD's such as the Samsung 840 PRO, which is a SATA attached
+device.  See some of the messages on ext4 with the subject line:
+"ext4: journal has aborted").
 
+At this point I suspect we have multiple causes that result in the
+same symptom that have all appeared at about the same time, which has
+made tracking down the root cause(s) very difficult.
+
+It does seem to happen more often after an unclean shutdown, and there
+does seem to be a very high correlation with eMMC devices.  It's
+possible there is a jbd2 bug that got introduced recently, where ext4
+is modifying some field outside of a journal transaction.  But I
+haven't been able to reproduce this yet in controlled circumstances.
+
+What I need from people reporting problems: 
+
+* What is the HDD/SSD/eMMC device involved
+
+* What kernel version were you running
+
+* What distribution are you running (more so I know what the init
+  scripts might or might not have been doing vis-a-vis running fsck
+  after a crash)
+
+* Was there an unclean shutdown / power drop / hard reset involved?
+  If so, did the HDD/SSD/eMMC lose power, or was the reset button hit
+  on the machine?
+
+* What sort of workload / application / test program running before
+  the crash, if any?
+
+
+I really need all of this information, especially since at this point
+I suspect there may be more than one cause with similar symptoms.  So
+it's important that just because someone else reports a similar
+symptom, that folks not assume because one person has reported one set
+of hardware / software details, that it's the same problem as theirs,
+and so they don't need to report anymore info.  I need as many data
+points as possible at this point.
+
+						- Ted
