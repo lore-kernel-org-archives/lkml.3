@@ -1,74 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997AbaGCXxT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 19:53:19 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:17734 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957AbaGCXxR (ORCPT
+	id S1756095AbaGDABi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 20:01:38 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:42537 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957AbaGDABg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 19:53:17 -0400
-X-AuditID: cbfee691-b7f2f6d0000040c4-83-53b5ecebe6aa
-From: Sangbeom Kim <sbkim73@samsung.com>
-To: "'Joe Perches'" <joe@perches.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-References: <cover.1404425176.git.joe@perches.com>
- <169fb51c0d59b216636d48810792f67ecfb5179d.1404425176.git.joe@perches.com>
-In-reply-to: <169fb51c0d59b216636d48810792f67ecfb5179d.1404425176.git.joe@perches.com>
-Subject: RE: [PATCH 09/16] MAINTAINERS: Update Samsunt MFD drivers pattern
-Date: Fri, 04 Jul 2014 08:53:15 +0900
-Message-id: <014701cf9719$f4bac090$de3041b0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQLmzc28w+FOEJkCiZX3RQKys6BU5wMADycMmUiVvtA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCIsWRmVeSWpSXmKPExsVy+t8zA93Xb7YGG/RsVbCYs34Nm8Xs+49Z
-	LC7vmsPmwOxxYsZvFo8vq64xe3zeJBfAHMVlk5Kak1mWWqRvl8CVcefWJqaCA0wVR17sZWtg
-	/MfYxcjJISFgIvFw4Q42CFtM4sK99UA2F4eQwDJGiV8L/zN1MXKAFTVdtoGIL2KUeLPrPTOE
-	85tR4uSGXawg3WwCGhIrd78FmyQiECDR+v0CmM0soCDx694msBohgTqJJxsWsYDYnAIREm1v
-	3oJdISzgJbHg+hlmEJtFQFXi1uHXYL28ApYS+2+8ZoKwBSV+TL7HAjFTS2L9zuNMELa8xOY1
-	b5khPlCQ2HH2NSPEDVYSd7dsZYaoEZHY9+IdI8jREgL72CUW3ZrLDrFMQOLb5EMsEF/KSmw6
-	ADVHUuLgihssExglZiFZPQvJ6llIVs9CsmIBI8sqRtHUguSC4qT0IlO94sTc4tK8dL3k/NxN
-	jJAYnLiD8f4B60OMyUDrJzJLiSbnA2M4ryTe0NjMyMLUxNTYyNzSjDRhJXHe9EdJQUIC6Ykl
-	qdmpqQWpRfFFpTmpxYcYmTg4pRoY8z/uTLoubbfni7iAmpX45Y/B8lL16huXCm9qtSvgPXh3
-	xgcL6eOa4hc3eiz8J2z5pCupZ2EsM2vwlmoFjkkqi39feOI6e+baZq3l5/Z8zUpckmp4qODu
-	rN19E7Qkun3/PLJ3Z5z/PKp9mrxgWPvk5E1fo1fMKOBe5XbivM6xmOaSbqOz9pGsSizFGYmG
-	WsxFxYkA8BMEcdcCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t9jAd3Xb7YGGxw/KGMxZ/0aNovZ9x+z
-	WFzeNYfNgdnjxIzfLB5fVl1j9vi8SS6AOaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzA
-	UNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaJOSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILge
-	IwM0kLCOMePOrU1MBQeYKo682MvWwPiPsYuRg0NCwESi6bJNFyMnkCkmceHeerYuRi4OIYFF
-	jBJvdr1nhnB+M0qc3LCLFaSKTUBDYuXut2wgtohAgETr9wtgNrOAgsSve5vAaoQE6iSebFjE
-	AmJzCkRItL15ywhiCwt4SSy4foYZxGYRUJW4dfg1WC+vgKXE/huvmSBsQYkfk++xQMzUkli/
-	8zgThC0vsXnNW2aISxUkdpx9zQhxg5XE3S1bmSFqRCT2vXjHOIFRaBaSUbOQjJqFZNQsJC0L
-	GFlWMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgRH+DOpHYwrGywOMQpwMCrx8HoUbQ0WYk0s
-	K67MPcQowcGsJMK74gFQiDclsbIqtSg/vqg0J7X4EKMp0KcTmaVEk/OBySevJN7Q2MTMyNLI
-	zMLIxNxcSZz3QKt1oJBAemJJanZqakFqEUwfEwenVANj+g6hCZwPghVf7L1cMI159bbWT5lC
-	DA9qG4z1Wld1K903Lj9TFmieuHTpki0NBiVVu7QqJuYy3wqXEj3Vmt50a+69GfK/buocF1ny
-	wkHphPFiPivf7j3eJ61Z7tU6ypa21Z0oniZe8Kdzl0NRlr4OD3NhrExj0G7L+e+9l/1ZwzJP
-	tiBMS0CJpTgj0VCLuag4EQA4IX7PBgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 3 Jul 2014 20:01:36 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, rdunlap@infradead.org,
+        linux-doc@vger.kernel.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] Documentation: Fix typo in DocBook/mtdnand.tmpl
+Date: Fri,  4 Jul 2014 09:01:10 +0900
+Message-Id: <1404432070-16619-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 2.0.0.390.gcb682f8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 04, 2014 7:08 AM, Joe Perches wrote:
+This patch fixed spelling typo found in DocBook/mtdnand.tmpl.
 
->  F:	drivers/regulator/s2m*.c
->  F:	drivers/regulator/s5m*.c
-> -F:	drivers/rtc/rtc-sec.c
->  F:	include/linux/mfd/samsung/
-> 
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ Documentation/DocBook/mtdnand.tmpl | 30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
 
-Yes, You are right.
-There is no rtc-sec.c
-Instead, rtc-s5m.c was upstreamed.
-I will post update patch.
-
-Thanks,
-Sangbeom.
+diff --git a/Documentation/DocBook/mtdnand.tmpl b/Documentation/DocBook/mtdnand.tmpl
+index cd11926..a3b50c1 100644
+--- a/Documentation/DocBook/mtdnand.tmpl
++++ b/Documentation/DocBook/mtdnand.tmpl
+@@ -91,7 +91,7 @@
+ 		<listitem><para>
+ 	  	[MTD Interface]</para><para>
+ 		These functions provide the interface to the MTD kernel API. 
+-		They are not replacable and provide functionality
++		They are not replaceable and provide functionality
+ 		which is complete hardware independent.
+ 		</para></listitem>
+ 		<listitem><para>
+@@ -100,14 +100,14 @@
+ 		</para></listitem>
+ 		<listitem><para>
+ 	  	[GENERIC]</para><para>
+-		Generic functions are not replacable and provide functionality
++		Generic functions are not replaceable and provide functionality
+ 		which is complete hardware independent.
+ 		</para></listitem>
+ 		<listitem><para>
+ 	  	[DEFAULT]</para><para>
+ 		Default functions provide hardware related functionality which is suitable
+ 		for most of the implementations. These functions can be replaced by the
+-		board driver if neccecary. Those functions are called via pointers in the
++		board driver if necessary. Those functions are called via pointers in the
+ 		NAND chip description structure. The board driver can set the functions which
+ 		should be replaced by board dependent functions before calling nand_scan().
+ 		If the function pointer is NULL on entry to nand_scan() then the pointer
+@@ -264,7 +264,7 @@ static void board_hwcontrol(struct mtd_info *mtd, int cmd)
+ 			is set up nand_scan() is called. This function tries to
+ 			detect and identify then chip. If a chip is found all the
+ 			internal data fields are initialized accordingly.
+-			The structure(s) have to be zeroed out first and then filled with the neccecary 
++			The structure(s) have to be zeroed out first and then filled with the necessary 
+ 			information about the device.
+ 		</para>
+ 		<programlisting>
+@@ -327,7 +327,7 @@ module_init(board_init);
+ 	<sect1 id="Exit_function">
+ 		<title>Exit function</title>
+ 		<para>
+-			The exit function is only neccecary if the driver is
++			The exit function is only necessary if the driver is
+ 			compiled as a module. It releases all resources which
+ 			are held by the chip driver and unregisters the partitions
+ 			in the MTD layer.
+@@ -494,7 +494,7 @@ static void board_select_chip (struct mtd_info *mtd, int chip)
+ 				in this case. See rts_from4.c and diskonchip.c for 
+ 				implementation reference. In those cases we must also
+ 				use bad block tables on FLASH, because the ECC layout is
+-				interferring with the bad block marker positions.
++				interfering with the bad block marker positions.
+ 				See bad block table support for details.
+ 			</para>
+ 		</sect2>
+@@ -542,7 +542,7 @@ static void board_select_chip (struct mtd_info *mtd, int chip)
+ 		<para>	
+ 			nand_scan() calls the function nand_default_bbt(). 
+ 			nand_default_bbt() selects appropriate default
+-			bad block table desriptors depending on the chip information
++			bad block table descriptors depending on the chip information
+ 			which was retrieved by nand_scan().
+ 		</para>
+ 		<para>
+@@ -554,7 +554,7 @@ static void board_select_chip (struct mtd_info *mtd, int chip)
+ 		<sect2 id="Flash_based_tables">
+ 			<title>Flash based tables</title>
+ 			<para>
+-				It may be desired or neccecary to keep a bad block table in FLASH. 
++				It may be desired or necessary to keep a bad block table in FLASH. 
+ 				For AG-AND chips this is mandatory, as they have no factory marked
+ 				bad blocks. They have factory marked good blocks. The marker pattern
+ 				is erased when the block is erased to be reused. So in case of
+@@ -565,10 +565,10 @@ static void board_select_chip (struct mtd_info *mtd, int chip)
+ 				of the blocks.
+ 			</para>
+ 			<para>
+-				The blocks in which the tables are stored are procteted against
++				The blocks in which the tables are stored are protected against
+ 				accidental access by marking them bad in the memory bad block
+ 				table. The bad block table management functions are allowed
+-				to circumvernt this protection.
++				to circumvent this protection.
+ 			</para>
+ 			<para>
+ 				The simplest way to activate the FLASH based bad block table support 
+@@ -592,7 +592,7 @@ static void board_select_chip (struct mtd_info *mtd, int chip)
+ 				User defined tables are created by filling out a 
+ 				nand_bbt_descr structure and storing the pointer in the
+ 				nand_chip structure member bbt_td before calling nand_scan(). 
+-				If a mirror table is neccecary a second structure must be
++				If a mirror table is necessary a second structure must be
+ 				created and a pointer to this structure must be stored
+ 				in bbt_md inside the nand_chip structure. If the bbt_md 
+ 				member is set to NULL then only the main table is used
+@@ -666,7 +666,7 @@ static void board_select_chip (struct mtd_info *mtd, int chip)
+ 				<para>
+ 				For automatic placement some blocks must be reserved for
+ 				bad block table storage. The number of reserved blocks is defined 
+-				in the maxblocks member of the babd block table description structure.
++				in the maxblocks member of the bad block table description structure.
+ 				Reserving 4 blocks for mirrored tables should be a reasonable number. 
+ 				This also limits the number of blocks which are scanned for the bad
+ 				block table ident pattern.
+@@ -1068,11 +1068,11 @@ in this page</entry>
+   <chapter id="filesystems">
+      	<title>Filesystem support</title>
+ 	<para>
+-		The NAND driver provides all neccecary functions for a
++		The NAND driver provides all necessary functions for a
+ 		filesystem via the MTD interface.
+ 	</para>
+ 	<para>
+-		Filesystems must be aware of the NAND pecularities and
++		Filesystems must be aware of the NAND peculiarities and
+ 		restrictions. One major restrictions of NAND Flash is, that you cannot 
+ 		write as often as you want to a page. The consecutive writes to a page, 
+ 		before erasing it again, are restricted to 1-3 writes, depending on the 
+@@ -1222,7 +1222,7 @@ in this page</entry>
+ #define NAND_BBT_VERSION	0x00000100
+ /* Create a bbt if none axists */
+ #define NAND_BBT_CREATE		0x00000200
+-/* Write bbt if neccecary */
++/* Write bbt if necessary */
+ #define NAND_BBT_WRITE		0x00001000
+ /* Read and write back block contents when writing bbt */
+ #define NAND_BBT_SAVECONTENT	0x00002000
+-- 
+2.0.0.390.gcb682f8
 
