@@ -1,139 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655AbaGDNyX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 09:54:23 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:58589 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989AbaGDNyW convert rfc822-to-8bit (ORCPT
+	id S1758600AbaGDNzd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 09:55:33 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:34383 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600AbaGDNzb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 09:54:22 -0400
+	Fri, 4 Jul 2014 09:55:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+M3ks4BU3MTaeCeMPbu8LqW=H27ZAdF-qZLUiG3UXJzbA89Fw@mail.gmail.com>
-References: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org>
-	<CAF6AEGsLbmos9nz-AYv2v0g33BYdAgKYTe8_ihDWEF3GK_=gjQ@mail.gmail.com>
-	<20140703215200.GG32514@n2100.arm.linux.org.uk>
-	<CAF6AEGsAtqCjrvrgcXmOY0nie89ppFHBcRPtt36ESHWBNqobTg@mail.gmail.com>
-	<CA+M3ks4BU3MTaeCeMPbu8LqW=H27ZAdF-qZLUiG3UXJzbA89Fw@mail.gmail.com>
-Date: Fri, 4 Jul 2014 15:54:21 +0200
-Message-ID: <CA+M3ks5osUkkEY64t=M1zEp7DA5rn+MxxqiJhQm5QiEFUPBL+A@mail.gmail.com>
-Subject: Re: [PATCH v5 00/11] Add DRM for stih4xx platforms
-From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-To: Rob Clark <robdclark@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>
+In-Reply-To: <1404133317-25953-4-git-send-email-lee.jones@linaro.org>
+References: <1404133317-25953-1-git-send-email-lee.jones@linaro.org>
+	<1404133317-25953-4-git-send-email-lee.jones@linaro.org>
+Date: Fri, 4 Jul 2014 15:55:31 +0200
+Message-ID: <CAG374jB6YjMDjaEk=+etrw46mUkXgBHBUhPTPUCyo-P_Wzn32g@mail.gmail.com>
+Subject: Re: [PATCH 3/5] phy: miphy365x: Provide support for the MiPHY356x
+ Generic PHY
+From: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kishon <kishon@ti.com>, "kernel@stlinux.com" <kernel@stlinux.com>,
+        Alexandre Torgue <alexandre.torgue@st.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-I have following Russel advice to rebase my patches on top of the new
-component helpers API.
-
-A new branch "drm_kms_for_next-v6" is available here
-git://git.linaro.org/people/benjamin.gaignard/kernel.git
-
-Regards,
-Benjamin
-
-
-2014-07-04 10:39 GMT+02:00 Benjamin Gaignard <benjamin.gaignard@linaro.org>:
-> Rob, Russel,
+On 30 June 2014 15:01, Lee Jones <lee.jones@linaro.org> wrote:
+> The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
+> devices. It has 2 ports which it can use for either; both SATA, both
+> PCIe or one of each in any configuration.
 >
-> What I can do is to rebase my driver on driver-core-next branch from
-> Greg tree (git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git).
+> Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
+> Acked-by: Mark Rutland <mark.rutland@arm.com>
+> Signed-off-by: Alexandre Torgue <alexandre.torgue@st.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/phy/Kconfig         |  10 +
+>  drivers/phy/Makefile        |   1 +
+>  drivers/phy/phy-miphy365x.c | 630 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 641 insertions(+)
+>  create mode 100644 drivers/phy/phy-miphy365x.c
 >
-> Does that could help ?
->
-> Regards,
-> Benjamin
->
->
-> 2014-07-03 23:59 GMT+02:00 Rob Clark <robdclark@gmail.com>:
->> On Thu, Jul 3, 2014 at 5:52 PM, Russell King - ARM Linux
->> <linux@arm.linux.org.uk> wrote:
->>> On Thu, Jul 03, 2014 at 05:31:21PM -0400, Rob Clark wrote:
->>>> >From a brief look, it looks like my comments have been addressed, so I
->>>> think this is starting to shape up..
->>>>
->>>> Laurent/Thierry/Russell, I don't suppose any of you are likely to have
->>>> time before 3.17 merge window to give sti one last once-over to see
->>>> what I missed ;-)
->>>
->>> As this appears to be using the component helpers, it would be good for
->>> the author to be pre-warned about the change to the API.  I'm going to
->>> be doing this as a two step thing.
->>>
->>> The first stage of it has just been taken by Greg this evening.  This
->>> retires old behaviour that was needed for the initial versions of imx-drm,
->>> and fixes a bug.  More importantly, it introduces a new interface where
->>> you build the list of expected components before calling
->>> component_master_add(), passing it into that function.
->>>
->>> It is slightly less flexible from the driver writer's view point, but
->>> allows us to do more in the component helper, and support some features
->>> that others would like to see (such as being able to add additional
->>> optional components after the initial bind (that's not much interest
->>> to DRM though.)
->>>
->>> This should make the v3.17 merge window.  I'm hoping that by forewarning
->>> about the change, that people can be aware of it and have patches
->>> prepared for v3.18 (or maybe even v3.17) to convert over to it, so we
->>> can get rid of the older interface before we get too many users of it.
->>>
->>> I've just peeked at the binding document in the first patch.  I notice
->>> that it isn't making use of the of_graph stuff, which is a bit of a
->>> shame because I've sent a RFC patch adding drivers/gpu/drm/drm_of.c
->>> to provide a helper which encoders can use to get the CRTC mask from
->>> an of_graph representation.
->>
->> which reminds me, I need to have a look at the drm_of stuff..
->>
->>> I'm using this not only for imx-drm, but also for tda998x - and that's
->>> where the problems are likely to start if we end up with different
->>> DRM implementations doing different solutions to the connectivity
->>> problem.
->>
->> If it simplifies merge-order stuff, I'd be ok with a follow-up patch
->> that converts over (assuming it shouldn't have an impact on the DT
->> bindings, which I'm only assuming it should not..)
->>
->> Probably it would be a good idea if Benjamin at least had a patch
->> ready to go to convert over which could be merged right after your
->> stuff hits drm-next.
->>
->> BR,
->> -R
->>
->>> --
->>> FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
->>> improving, and getting towards what was expected from it.
->
->
->
-> --
-> Benjamin Gaignard
->
-> Graphic Working Group
->
-> Linaro.org │ Open source software for ARM SoCs
->
-> Follow Linaro: Facebook | Twitter | Blog
 
+[...]
 
+> diff --git a/drivers/phy/phy-miphy365x.c b/drivers/phy/phy-miphy365x.c
+> new file mode 100644
+> index 0000000..1109f42
+> --- /dev/null
+> +++ b/drivers/phy/phy-miphy365x.c
+> @@ -0,0 +1,630 @@
+> +/*
+> + * Copyright (C) 2014 STMicroelectronics
+> + *
+> + * STMicroelectronics PHY driver MiPHY365 (for SoC STiH416).
+> + *
+> + * Author: Alexandre Torgue <alexandre.torgue@st.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2, as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#include <linux/platform_device.h>
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/clk.h>
+> +#include <linux/phy/phy.h>
+> +#include <linux/delay.h>
+> +#include <linux/mfd/syscon.h>
+> +#include <linux/regmap.h>
+> +
+> +#include <dt-bindings/phy/phy-miphy365x.h>
+> +
+> +#define HFC_TIMEOUT            50
+> +
+> +#define SYSCFG_2521            0x824
+> +#define SYSCFG_2522            0x828
+> +#define SYSCFG_PCIE_SATA_MASK  BIT(1)
+> +#define SYSCFG_PCIE_SATA_POS   1
+> +
+> +/* MiPHY365x register definitiona */
 
--- 
-Benjamin Gaignard
+definition in Brazilian is 'definição', not 'definitiona' ...
+:)
 
-Graphic Working Group
+[...]
 
-Linaro.org │ Open source software for ARM SoCs
+> +struct miphy365x {
+> +       struct phy *phy;
+> +       void __iomem *base;
+> +       void __iomem *sata;
+> +       void __iomem *pcie;
+> +       u8 type;
+> +       u8 port;
+> +};
+> +
+> +struct miphy365x_dev {
+> +       struct device *dev;
+> +       struct mutex miphy_mutex;
+> +       struct miphy365x phys[ARRAY_SIZE(ports)];
+> +       bool pcie_tx_pol_inv;
+> +       bool sata_tx_pol_inv;
+> +       u32 sata_gen;
+> +       struct regmap *regmap;
+> +};
+> +
+> +/*
 
-Follow Linaro: Facebook | Twitter | Blog
+[...]
+
+> +static int miphy365x_of_probe(struct device_node *np,
+> +                             struct miphy365x_dev *phy_dev)
+> +{
+> +       phy_dev->regmap = syscon_regmap_lookup_by_phandle(np, "st,syscfg");
+> +       if (IS_ERR(phy_dev->regmap)) {
+> +               dev_err(phy_dev->dev, "No syscfg phandle specified\n");
+> +               return PTR_ERR(phy_dev->regmap);
+> +       }
+> +
+> +       of_property_read_u32(np, "st,sata-gen", &phy_dev->sata_gen);
+> +       if (!phy_dev->sata_gen)
+> +               phy_dev->sata_gen = SATA_GEN1;
+> +
+> +       phy_dev->pcie_tx_pol_inv =
+> +               of_property_read_bool(np, "st,pcie-tx-pol-inv");
+> +
+> +       phy_dev->sata_tx_pol_inv =
+> +               of_property_read_bool(np, "st,sata-tx-pol-inv");
+> +
+
+"st,sata-gen", "st,pcie-tx-pol-inv", "st,sata-tx-pol-inv" should be
+defined in the sub-node ?
+
+if yes then declare pcie_tx_pol_inv, sata_tx_pol_inv and sata_gen
+in struct miphy365x instead struct miphy365x_dev.
+
+[...]
+
+Best Regards
+
+Gabriel
