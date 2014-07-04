@@ -1,113 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277AbaGDAlP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 20:41:15 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:50136 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755662AbaGDAlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 20:41:13 -0400
-Date: Thu, 3 Jul 2014 20:41:04 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: mm: memcontrol: rewrite uncharge API: problems
-Message-ID: <20140704004104.GG1369@cmpxchg.org>
-References: <alpine.LSU.2.11.1406301558090.4572@eggly.anvils>
- <20140701174612.GC1369@cmpxchg.org>
- <20140702212004.GF1369@cmpxchg.org>
- <alpine.LSU.2.11.1407021518120.8299@eggly.anvils>
- <alpine.LSU.2.11.1407031219500.1370@eggly.anvils>
+	id S1759731AbaGDAl1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 20:41:27 -0400
+Received: from mail-bn1lp0141.outbound.protection.outlook.com ([207.46.163.141]:42406
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756385AbaGDAlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jul 2014 20:41:19 -0400
+Message-ID: <53B5F81B.8010801@freescale.com>
+Date: Fri, 4 Jul 2014 06:10:59 +0530
+From: Prabhakar Kushwaha <prabhakar@freescale.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1407031219500.1370@eggly.anvils>
+To: Tanmay Inamdar <tinamdar@apm.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <liviu.dudau@arm.com>, <galak@codeaurora.org>
+Subject: Re: [PATCH] arm64: PCI(e) arch support
+References: <1404422876-1160-1-git-send-email-tinamdar@apm.com>
+In-Reply-To: <1404422876-1160-1-git-send-email-tinamdar@apm.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(24454002)(479174003)(51704005)(377454003)(189002)(199002)(107046002)(74662001)(44976005)(36756003)(76176999)(54356999)(80022001)(83072002)(19580395003)(65956001)(69596002)(77982001)(33656002)(85852003)(21056001)(65816999)(6806004)(95666004)(83322001)(74502001)(83506001)(50986999)(104016002)(87266999)(99396002)(102836001)(80316001)(85306003)(68736004)(46102001)(65806001)(50466002)(20776003)(97736001)(92566001)(59896001)(64706001)(81542001)(76482001)(84676001)(86362001)(105606002)(64126003)(26826002)(106466001)(81156004)(31966008)(87936001)(81342001)(92726001)(23756003)(47776003)(4396001)(19580405001)(79102001)(2201001)(2101003);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB374;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 02622CEF0A
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=prabhakar@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 12:54:36PM -0700, Hugh Dickins wrote:
-> On Wed, 2 Jul 2014, Hugh Dickins wrote:
-> > On Wed, 2 Jul 2014, Johannes Weiner wrote:
-> > > 
-> > > Could you give the following patch a spin?  I put it in the mmots
-> > > stack on top of mm-memcontrol-rewrite-charge-api-fix-shmem_unuse-fix.
-> > 
-> > I'm just with the laptop until this evening.  I slapped it on top of
-> > my 3.16-rc2-mm1 plus fixes (but obviously minus my memcg_batch one
-> > - which incidentally continues to run without crashing on the G5),
-> > and it quickly gave me this lockdep splat, which doesn't look very
-> > different from the one before.
-> > 
-> > I see there's now an -rc3-mm1, I'll try it out on that in half an
-> > hour... but unless I send word otherwise, assume that's the same.
-> 
-> Yes, I get that lockdep report each time on -rc3-mm1 + your patch.
+Hi Tanmay, Liviu,
+On 7/4/2014 2:57 AM, Tanmay Inamdar wrote:
+> Reposting on request of several people since previously posted one was
+> corrupted.
+>
+> This patch adds the arch support for PCI(e) for arm64. The files
+> added or modified in this patch are based on PCI(e) support in
+> 32bit arm.
+>
+> Please note that this patch is just for the reference. Liviu Dudau from ARM
+> has posted his v8 series of patch to support PCIe in arm64.
+>
+> The patch will apply against 3.13 Linux Kernel
+>
+> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
+>
 
-There are two instances where I missed to make &rtpz->lock IRQ-safe:
+do we foresee similar type of changes in u-boot  to support PCI(e) for 
+ARM64.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 91b621846e10..bbaa3f4cf4db 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3919,7 +3919,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
- 						    gfp_mask, &nr_scanned);
- 		nr_reclaimed += reclaimed;
- 		*total_scanned += nr_scanned;
--		spin_lock(&mctz->lock);
-+		spin_lock_irq(&mctz->lock);
- 
- 		/*
- 		 * If we failed to reclaim anything from this memory cgroup
-@@ -3959,7 +3959,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
- 		 */
- 		/* If excess == 0, no tree ops */
- 		__mem_cgroup_insert_exceeded(mz, mctz, excess);
--		spin_unlock(&mctz->lock);
-+		spin_unlock_irq(&mctz->lock);
- 		css_put(&mz->memcg->css);
- 		loop++;
- 		/*
+Regards,
+Prabhakar
 
-That should make it complete - but the IRQ toggling costs are fairly
-high so I'm rewriting the batching code to use the page lists that
-most uncharges have anyway, and then batch the no-IRQ sections.
 
-> I also twice got a flurry of res_counter.c:28 underflow warnings.
-> Hmm, 62 of them each time (I was checking for a number near 512,
-> which would suggest a THP/4k confusion, but no).  The majority
-> of them coming from mem_cgroup_reparent_charges.
-
-I haven't seen these yet.  But the location makes sense: if there are
-any imbalances they'll be noticed during a group's final uncharges.
-
-> But the laptop stayed up fine (for two hours before I had to stop
-> it), and the G5 has run fine with that load for 16 hours now, no
-> problems with release_pages, and not even a res_counter.c:28 (but
-> I don't use lockdep on it).
-
-Great!
-
-> The x86 workstation ran fine for 4.5 hours, then hit some deadlock
-> which I doubt had any connection to your changes: looked more like
-> a jbd2 transaction was failing to complete (which, with me trying
-> ext4 on loop on tmpfs, might be more my problem than anyone else's).
-> 
-> Oh, but nearly forgot, I did an earlier run on the laptop last night,
-> which crashed within minutes on
-> 
-> VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM))
-> mm/memcontrol.c:6680!
-> page had count 1 mapcount 0 mapping anon index 0x196
-> flags locked uptodate reclaim swapbacked, pcflags 1, memcg not root
-> mem_cgroup_migrate < move_to_new_page < migrate_pages < compact_zone <
-> compact_zone_order < try_to_compact_pages < __alloc_pages_direct_compact <
-> __alloc_pages_nodemask < alloc_pages_vma < do_huge_pmd_anonymous_page <
-> handle_mm_fault < __do_page_fault
-
-Haven't seen that one yet, either.  The only way I can see this happen
-is when the same page gets selected for migration twice in a row.
-Maybe a race with putback, where it gets added to the LRU but isolated
-by compaction before putback drops the refcount - will verify that.
-
-Thanks for your reports!
