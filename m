@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759860AbaGDTQl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 15:16:41 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:54661 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754821AbaGDTQk (ORCPT
+	id S1759988AbaGDTR0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 15:17:26 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:37206 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759615AbaGDTRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 15:16:40 -0400
-Date: Fri, 4 Jul 2014 20:16:33 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Anca Emanuel <anca.emanuel@gmail.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Eric W . Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        Borislav Petkov <bp@alien8.de>, dyoung@redhat.com, chaowang@redhat.com,
-        bhe@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
-        dhowells@redhat.com, pjones@redhat.com
-Subject: Re: [PATCH 2/9] Provide PE binary definitions
-Message-ID: <20140704191633.GA27756@srcf.ucam.org>
-References: <1404421641-12691-1-git-send-email-vgoyal@redhat.com>
- <1404421641-12691-3-git-send-email-vgoyal@redhat.com>
- <CAJL_dMuFj7sZA3PMznNbnS6ezjcJ-WbzGkc2PVJKCNK_C3QnDA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJL_dMuFj7sZA3PMznNbnS6ezjcJ-WbzGkc2PVJKCNK_C3QnDA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Fri, 4 Jul 2014 15:17:25 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvMMAEL9tlNbsGwr/2dsb2JhbABagw6scAUBAQEBAQEFAW4BkiiHP4ELF3WECwJTI4ECBxE3iC4DFQG1TY4qDYZSF4VwhwqCKB2ELQWYCmyCAI14hhSDRTs
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, David Airlie <airlied@linux.ie>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        dri-devel@lists.freedesktop.org
+Subject: [PATCH 1/1] drm/omap: remove null test before kfree
+Date: Fri,  4 Jul 2014 21:17:15 +0200
+Message-Id: <1404501435-22838-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04, 2014 at 10:12:51PM +0300, Anca Emanuel wrote:
-> Wow MZ ? EXE for MSDOS and Windows ???
-> 
-> After more research, http://en.wikipedia.org/wiki/Portable_Executable
-> [quote]PE is a modified version of the Unix COFF (Common Object File
-> Format).[/quote]
-> 
-> How can anyone be sure that Microsoft will not sue about this ?
+Fix checkpatch warning:
+WARNING: kfree(NULL) is safe this check is probably not required
 
-We already build a kernel that's a valid PE executable for UEFI systems.
+Cc: David Airlie <airlied@linux.ie>
+Cc: David Herrmann <dh.herrmann@gmail.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: dri-devel@lists.freedesktop.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/gpu/drm/omapdrm/omap_gem.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
+diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_gem.c
+index 95dbce2..be0c2e8 100644
+--- a/drivers/gpu/drm/omapdrm/omap_gem.c
++++ b/drivers/gpu/drm/omapdrm/omap_gem.c
+@@ -1183,9 +1183,7 @@ int omap_gem_op_sync(struct drm_gem_object *obj, enum omap_gem_op op)
+ 			}
+ 		}
+ 		spin_unlock(&sync_lock);
+-
+-		if (waiter)
+-			kfree(waiter);
++		kfree(waiter);
+ 	}
+ 	return ret;
+ }
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.9.1
+
