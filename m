@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630AbaGDFKf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 01:10:35 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:44438 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081AbaGDFKc (ORCPT
+	id S1752286AbaGDFVn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 01:21:43 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:55321 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914AbaGDFVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 01:10:32 -0400
+	Fri, 4 Jul 2014 01:21:42 -0400
+Message-ID: <53B639DE.8030102@hitachi.com>
+Date: Fri, 04 Jul 2014 14:21:34 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <20140625163820.GC3935@laptop>
-References: <53A9E0A5.5040402@wwwdotorg.org>
-	<20140625051234.GD6758@twins.programming.kicks-ass.net>
-	<20140625051721.GG3588@twins.programming.kicks-ass.net>
-	<53AA6E11.1000404@linux.vnet.ibm.com>
-	<20140625093657.GN19860@laptop.programming.kicks-ass.net>
-	<20140625093944.GV16155@laptop.programming.kicks-ass.net>
-	<53AA9B68.4050104@linux.vnet.ibm.com>
-	<53AA9C43.3020903@linux.vnet.ibm.com>
-	<20140625101915.GO19860@laptop.programming.kicks-ass.net>
-	<53AAF779.8060006@wwwdotorg.org>
-	<20140625163820.GC3935@laptop>
-Date: Fri, 4 Jul 2014 10:40:30 +0530
-Message-ID: <CAK5sBcG5R6kyUydpGB_mQy5oFy-D_5hNuGnAiiJbWRiX_s_Mgg@mail.gmail.com>
-Subject: Re: [PATCH 2/6] irq_work: Implement remote queueing
-From: Sachin Kamat <spk.linux@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: __trace_remove_event_dirs() leaks file->filter ? (Was: probe_event_disable()->synchronize_sched())
+References: <20140627170116.GA18298@redhat.com> <20140627170136.GA18319@redhat.com> <87k37z54lu.fsf@sejong.aot.lge.com> <20140630184828.GA24594@redhat.com> <20140701193147.GA32492@redhat.com> <53B4EE21.2040203@hitachi.com> <20140703162211.GB5610@redhat.com> <20140703170109.GA10208@redhat.com>
+In-Reply-To: <20140703170109.GA10208@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 10:08 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Jun 25, 2014 at 10:23:21AM -0600, Stephen Warren wrote:
->> On 06/25/2014 04:19 AM, Peter Zijlstra wrote:
->> > On Wed, Jun 25, 2014 at 03:24:11PM +0530, Srivatsa S. Bhat wrote:
->> >> Wait, that was a stupid idea. hotplug_cfd() already invokes irq_work_run
->> >> indirectly via flush_smp_call_function_queue(). So irq_work_cpu_notify()
->> >> doesn't need to invoke it again, AFAIU. So perhaps we can get rid of
->> >> irq_work_cpu_notify() altogether?
->> >
->> > Just so...
->> >
->> > getting up at 6am and sitting in an airport terminal doesn't seem to
->> > agree with me; any more silly fail here?
->> >
->> > ---
->> > Subject: irq_work: Remove BUG_ON in irq_work_run()
->> > From: Peter Zijlstra <peterz@infradead.org>
->> > Date: Wed Jun 25 07:13:07 CEST 2014
->> >
->> > Because of a collision with 8d056c48e486 ("CPU hotplug, smp: flush any
->> > pending IPI callbacks before CPU offline"), which ends up calling
->> > hotplug_cfd()->flush_smp_call_function_queue()->irq_work_run(), which
->> > is not from IRQ context.
->> >
->> > And since that already calls irq_work_run() from the hotplug path,
->> > remove our entire hotplug handling.
+(2014/07/04 2:01), Oleg Nesterov wrote:
+> On 07/03, Oleg Nesterov wrote:
 >>
->> Tested-by: Stephen Warren <swarren@nvidia.com>
->>
->> [with the s/static// already mentioned in this thread, obviously:-)]
->
-> Right; I pushed out a fixed version right before loosing my tubes at the
-> airport :-)
->
-> https://git.kernel.org/cgit/linux/kernel/git/peterz/queue.git/commit/?h=timers/nohz&id=921d8b81281ecdca686369f52165d04fa3505bd7
+>> Hmm. Off-topic, but it seems that instance_rmdir() leaks the memory? Say,
+>> file->filter?
+> 
+> Perhaps I am totally confused, but don't we need something like the patch
+> below? I'll try to recheck later...
+> 
+> Better yet, we can probably move destroy_preds() from event_remove() to
+> remove_event_file_dir()... not sure, need to recheck.
 
-This patch fixes boot issue on Exynos5420/5800 based boards with bL
-switcher enabled.
+Ah, yes, it seems event_remove releases preds, and remove_event_file_dir()
+called from event_trace_del_tracer() doesn't release it.
 
-FWIW,
-Tested-by: Sachin Kamat <sachin.kamat@samsung.com>
+BTW, with following patch, we'd better remove destroy_preds() from
+event_remove() and add destroy_call_preds() at the very last of the
+function.
+
+Thank you,
+
+> 
+> Oleg.
+> 
+> --- x/kernel/trace/trace_events.c
+> +++ x/kernel/trace/trace_events.c
+> @@ -470,6 +470,7 @@ static void remove_event_file_dir(struct ftrace_event_file *file)
+>  
+>  	list_del(&file->list);
+>  	remove_subsystem(file->system);
+> +	destroy_file_preds(file);
+>  	kmem_cache_free(file_cachep, file);
+>  }
+>  
+> 
+> 
+
 
 -- 
-Regards,
-Sachin.
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
