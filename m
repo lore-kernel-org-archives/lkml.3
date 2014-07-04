@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161021AbaGDWjJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:39:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57519 "EHLO
+	id S1031691AbaGDWjc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:39:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57514 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031285AbaGDWV2 (ORCPT
+	with ESMTP id S1031280AbaGDWV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:21:28 -0400
+	Fri, 4 Jul 2014 18:21:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        hujianyang <hujianyang@huawei.com>,
-        Laurence Withers <lwithers@guralp.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [PATCH 3.10 13/46] UBIFS: fix an mmap and fsync race condition
-Date: Fri,  4 Jul 2014 15:19:17 -0700
-Message-Id: <20140704221602.883654862@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.14 41/59] powerpc: fix typo CONFIG_PMAC
+Date: Fri,  4 Jul 2014 15:19:30 -0700
+Message-Id: <20140704221541.509256013@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
-References: <20140704221602.280733370@linuxfoundation.org>
+In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
+References: <20140704221539.544876024@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,67 +25,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: hujianyang <hujianyang@huawei.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit 691a7c6f28ac90cccd0dbcf81348ea90b211bdd0 upstream.
+commit 6e0fdf9af216887e0032c19d276889aad41cad00 upstream.
 
-There is a race condition in UBIFS:
+Commit b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling
+perf_event_do_pending") added a check for CONFIG_PMAC were a check for
+CONFIG_PPC_PMAC was clearly intended.
 
-Thread A (mmap)                        Thread B (fsync)
-
-->__do_fault                           ->write_cache_pages
-   -> ubifs_vm_page_mkwrite
-       -> budget_space
-       -> lock_page
-       -> release/convert_page_budget
-       -> SetPagePrivate
-       -> TestSetPageDirty
-       -> unlock_page
-                                       -> lock_page
-                                           -> TestClearPageDirty
-                                           -> ubifs_writepage
-                                               -> do_writepage
-                                                   -> release_budget
-                                                   -> ClearPagePrivate
-                                                   -> unlock_page
-   -> !(ret & VM_FAULT_LOCKED)
-   -> lock_page
-   -> set_page_dirty
-       -> ubifs_set_page_dirty
-           -> TestSetPageDirty (set page dirty without budgeting)
-   -> unlock_page
-
-This leads to situation where we have a diry page but no budget allocated for
-this page, so further write-back may fail with -ENOSPC.
-
-In this fix we return from page_mkwrite without performing unlock_page. We
-return VM_FAULT_LOCKED instead. After doing this, the race above will not
-happen.
-
-Signed-off-by: hujianyang <hujianyang@huawei.com>
-Tested-by: Laurence Withers <lwithers@guralp.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Fixes: b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling perf_event_do_pending")
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ubifs/file.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/powerpc/kernel/time.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ubifs/file.c
-+++ b/fs/ubifs/file.c
-@@ -1524,8 +1524,7 @@ static int ubifs_vm_page_mkwrite(struct
- 	}
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -511,7 +511,7 @@ void timer_interrupt(struct pt_regs * re
+ 	may_hard_irq_enable();
  
- 	wait_for_stable_page(page);
--	unlock_page(page);
--	return 0;
-+	return VM_FAULT_LOCKED;
  
- out_unlock:
- 	unlock_page(page);
+-#if defined(CONFIG_PPC32) && defined(CONFIG_PMAC)
++#if defined(CONFIG_PPC32) && defined(CONFIG_PPC_PMAC)
+ 	if (atomic_read(&ppc_n_lost_interrupts) != 0)
+ 		do_IRQ(regs);
+ #endif
 
 
