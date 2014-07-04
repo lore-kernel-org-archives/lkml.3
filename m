@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466AbaGDIul (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:50:41 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:58439 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163AbaGDIuj (ORCPT
+	id S1753753AbaGDIxW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:53:22 -0400
+Received: from g5t1626.atlanta.hp.com ([15.192.137.9]:14157 "EHLO
+	g5t1626.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012AbaGDIxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:50:39 -0400
-Message-ID: <53B66A9F.6040404@hisilicon.com>
-Date: Fri, 4 Jul 2014 16:49:35 +0800
-From: xuwei <xuwei5@hisilicon.com>
-Organization: hisilicon
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Li Zefan <lizefan@huawei.com>, Haojian Zhuang <haojian.zhuang@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        "Olof Johansson" <olof@lixom.net>, Kevin Hilman <khilman@kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] MAINTAINERS:ARM:hisi: add Hisilicon SoC family
-Content-Type: text/plain; charset="ISO-8859-1"
+	Fri, 4 Jul 2014 04:53:20 -0400
+Message-ID: <1404463996.2457.10.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [regression, 3.16-rc] rwsem: optimistic spinning causing
+ performance degradation
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: Dave Chinner <david@fromorbit.com>, Peter Zijlstra <peterz@infradead.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 04 Jul 2014 01:53:16 -0700
+In-Reply-To: <1404457579.8764.161.camel@j-VirtualBox>
+References: <1404413420.8764.42.camel@j-VirtualBox>
+	 <20140704010147.GY4453@dastard> <1404438366.8764.121.camel@j-VirtualBox>
+	 <1404438890.8764.125.camel@j-VirtualBox> <20140704061306.GK9508@dastard>
+	 <1404457579.8764.161.camel@j-VirtualBox>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.75.104]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020202.53B66AAA.0010,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: 424472b81105c2b6fb549f6f0359ca85
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a new mach-hisi that will support Hisilicon SoCs based on ARMv7
-and I am taking maintainership for it.
+On Fri, 2014-07-04 at 00:06 -0700, Jason Low 
+> Subject: [PATCH] rwsem: In rwsem_can_spin_on_owner(), return false if no owner
 
-Signed-off-by: Wei Xu <xuwei5@hisilicon.com>
----
- MAINTAINERS | 8 ++++++++
- 1 file changed, 8 insertions(+)
+Could we change the subject to something more descriptive, ie:
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 134483f..a4f700a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -972,6 +972,14 @@ F:	arch/arm/mach-pxa/hx4700.c
- F:	arch/arm/mach-pxa/include/mach/hx4700.h
- F:	sound/soc/pxa/hx4700.c
- 
-+ARM/Hisilicon SoC support
-+M:	Wei Xu <xuwei5@hisilicon.com>
-+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-+W:	www.hisilicon.com
-+S:	Supported
-+T:	git git://github.com/hisilicon/linux-hisi.git
-+F:	arch/arm/mach-hisi/
-+
- ARM/HP JORNADA 7XX MACHINE SUPPORT
- M:	Kristoffer Ericson <kristoffer.ericson@gmail.com>
- W:	www.jlime.com
--- 
-1.8.1.2
+rwsem: Allow conservative optimistic spinning for reader/writer paths
+
+Thanks,
+Davidlohr
+
+> Commit 4fc828e24cd9 ("locking/rwsem: Support optimistic spinning")
+> introduced a major performance regression for workloads such as
+> xfs_repair which mix read and write locking of the mmap_sem across
+> many threads. The result was xfs_repair ran 5x slower on 3.16-rc2
+> than on 3.15 and using 20x more system CPU time.
+> 
+> Perf profiles indicate in some workloads that significant time can
+> be spent spinning on !owner. This is because we don't set the lock
+> owner when readers(s) obtain the rwsem.
+> 
+> In this patch, we'll modify rwsem_can_spin_on_owner() such that we'll
+> return false if there is no lock owner. The rationale is that if we
+> just entered the slowpath, yet there is no lock owner, then there is
+> a possibility that a reader has the lock. To be conservative, we'll
+> avoid spinning in these situations.
+> 
+> This patch reduced the total run time of the xfs_repair workload from
+> about 4 minutes 24 seconds down to approximately 1 minute 26 seconds,
+> back to close to the same performance as on 3.15.
+> 
+> Tested-by: Dave Chinner <dchinner@redhat.com>
+> Signed-off-by: Jason Low <jason.low2@hp.com>
+> ---
+>  kernel/locking/rwsem-xadd.c |   10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
+> index dacc321..c40c7d2 100644
+> --- a/kernel/locking/rwsem-xadd.c
+> +++ b/kernel/locking/rwsem-xadd.c
+> @@ -285,10 +285,10 @@ static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
+>  static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
+>  {
+>  	struct task_struct *owner;
+> -	bool on_cpu = true;
+> +	bool on_cpu = false;
+>  
+>  	if (need_resched())
+> -		return 0;
+> +		return false;
+>  
+>  	rcu_read_lock();
+>  	owner = ACCESS_ONCE(sem->owner);
+> @@ -297,9 +297,9 @@ static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
+>  	rcu_read_unlock();
+>  
+>  	/*
+> -	 * If sem->owner is not set, the rwsem owner may have
+> -	 * just acquired it and not set the owner yet or the rwsem
+> -	 * has been released.
+> +	 * If sem->owner is not set, yet we have just recently entered the
+> +	 * slowpath, then there is a possibility reader(s) may have the lock.
+> +	 * To be safe, avoid spinning in these situations.
+>  	 */
+>  	return on_cpu;
+>  }
+
 
