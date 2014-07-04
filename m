@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031712AbaGDWta (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:49:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57334 "EHLO
+	id S1031664AbaGDWt2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:49:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57338 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030974AbaGDWUR (ORCPT
+	with ESMTP id S1030527AbaGDWUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:20:17 -0400
+	Fri, 4 Jul 2014 18:20:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Asai Thambi S P <asamymuthupa@micron.com>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.14 13/59] mtip32xx: Remove dfs_parent after pci unregister
-Date: Fri,  4 Jul 2014 15:19:02 -0700
-Message-Id: <20140704221540.160502462@linuxfoundation.org>
+        Alex Smith <alex.smith@imgtec.com>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.14 14/59] recordmcount/MIPS: Fix possible incorrect mcount_loc table entries in modules
+Date: Fri,  4 Jul 2014 15:19:03 -0700
+Message-Id: <20140704221540.209045415@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -28,42 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Asai Thambi S P <asamymuthupa@micron.com>
+From: Alex Smith <alex.smith@imgtec.com>
 
-commit af5ded8ccf21627f9614afc03b356712666ed225 upstream.
+commit 91ad11d7cc6f4472ebf177a6252fbf0fd100d798 upstream.
 
-In module exit, dfs_parent and it's subtree were removed before
-unregistering with pci. When debugfs entry for each device is attempted
-to remove in pci_remove() context, they don't exist, as dfs_parent and
-its children were already ripped apart.
+On MIPS calls to _mcount in modules generate 2 instructions to load
+the _mcount address (and therefore 2 relocations). The mcount_loc
+table should only reference the first of these, so the second is
+filtered out by checking the relocation offset and ignoring ones that
+immediately follow the previous one seen.
 
-Modified to first unregister with pci and then remove dfs_parent.
+However if a module has an _mcount call at offset 0, the second
+relocation would not be filtered out due to old_r_offset == 0
+being taken to mean that the current relocation is the first one
+seen, and both would end up in the mcount_loc table.
 
-Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+This results in ftrace_make_nop() patching both (adjacent)
+instructions to branches over the _mcount call sequence like so:
+
+  0xffffffffc08a8000:  04 00 00 10     b       0xffffffffc08a8014
+  0xffffffffc08a8004:  04 00 00 10     b       0xffffffffc08a8018
+  0xffffffffc08a8008:  2d 08 e0 03     move    at,ra
+  ...
+
+The second branch is in the delay slot of the first, which is
+defined to be unpredictable - on the platform on which this bug was
+encountered, it triggers a reserved instruction exception.
+
+Fix by initializing old_r_offset to ~0 and using that instead of 0
+to determine whether the current relocation is the first seen.
+
+Signed-off-by: Alex Smith <alex.smith@imgtec.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7098/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/mtip32xx/mtip32xx.c |    4 ++--
+ scripts/recordmcount.h |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -4990,13 +4990,13 @@ static int __init mtip_init(void)
-  */
- static void __exit mtip_exit(void)
+--- a/scripts/recordmcount.h
++++ b/scripts/recordmcount.h
+@@ -163,11 +163,11 @@ static int mcount_adjust = 0;
+ 
+ static int MIPS_is_fake_mcount(Elf_Rel const *rp)
  {
--	debugfs_remove_recursive(dfs_parent);
--
- 	/* Release the allocated major block device number. */
- 	unregister_blkdev(mtip_major, MTIP_DRV_NAME);
+-	static Elf_Addr old_r_offset;
++	static Elf_Addr old_r_offset = ~(Elf_Addr)0;
+ 	Elf_Addr current_r_offset = _w(rp->r_offset);
+ 	int is_fake;
  
- 	/* Unregister the PCI driver. */
- 	pci_unregister_driver(&mtip_pci_driver);
-+
-+	debugfs_remove_recursive(dfs_parent);
- }
+-	is_fake = old_r_offset &&
++	is_fake = (old_r_offset != ~(Elf_Addr)0) &&
+ 		(current_r_offset - old_r_offset == MIPS_FAKEMCOUNT_OFFSET);
+ 	old_r_offset = current_r_offset;
  
- MODULE_AUTHOR("Micron Technology, Inc");
 
 
