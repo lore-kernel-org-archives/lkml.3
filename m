@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030940AbaGDXKm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 19:10:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56853 "EHLO
+	id S1761059AbaGDXLE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 19:11:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56850 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760268AbaGDWPb (ORCPT
+	with ESMTP id S1760266AbaGDWPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:15:31 -0400
+	Fri, 4 Jul 2014 18:15:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Asai Thambi S P <asamymuthupa@micron.com>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.15 12/66] mtip32xx: Remove dfs_parent after pci unregister
-Date: Fri,  4 Jul 2014 15:14:11 -0700
-Message-Id: <20140704221423.383402127@linuxfoundation.org>
+        Christophe Vu-Brugier <cvubrugier@yahoo.fr>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.15 03/66] iscsi-target: Explicily clear login response PDU in exception path
+Date: Fri,  4 Jul 2014 15:14:02 -0700
+Message-Id: <20140704221422.977770506@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -28,42 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Asai Thambi S P <asamymuthupa@micron.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit af5ded8ccf21627f9614afc03b356712666ed225 upstream.
+commit 683497566d48f86e04d026de1ee658dd74fc1077 upstream.
 
-In module exit, dfs_parent and it's subtree were removed before
-unregistering with pci. When debugfs entry for each device is attempted
-to remove in pci_remove() context, they don't exist, as dfs_parent and
-its children were already ripped apart.
+This patch adds a explicit memset to the login response PDU
+exception path in iscsit_tx_login_rsp().
 
-Modified to first unregister with pci and then remove dfs_parent.
+This addresses a regression bug introduced in commit baa4d64b
+where the initiator would end up not receiving the login
+response and associated status class + detail, before closing
+the login connection.
 
-Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Reported-by: Christophe Vu-Brugier <cvubrugier@yahoo.fr>
+Tested-by: Christophe Vu-Brugier <cvubrugier@yahoo.fr>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/mtip32xx/mtip32xx.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/target/iscsi/iscsi_target_util.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -4992,13 +4992,13 @@ static int __init mtip_init(void)
-  */
- static void __exit mtip_exit(void)
- {
--	debugfs_remove_recursive(dfs_parent);
--
- 	/* Release the allocated major block device number. */
- 	unregister_blkdev(mtip_major, MTIP_DRV_NAME);
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -1295,6 +1295,8 @@ int iscsit_tx_login_rsp(struct iscsi_con
+ 	login->login_failed = 1;
+ 	iscsit_collect_login_stats(conn, status_class, status_detail);
  
- 	/* Unregister the PCI driver. */
- 	pci_unregister_driver(&mtip_pci_driver);
++	memset(&login->rsp[0], 0, ISCSI_HDR_LEN);
 +
-+	debugfs_remove_recursive(dfs_parent);
- }
- 
- MODULE_AUTHOR("Micron Technology, Inc");
+ 	hdr	= (struct iscsi_login_rsp *)&login->rsp[0];
+ 	hdr->opcode		= ISCSI_OP_LOGIN_RSP;
+ 	hdr->status_class	= status_class;
 
 
