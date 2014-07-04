@@ -1,77 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845AbaGDGrJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 02:47:09 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:33268 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752807AbaGDGrG (ORCPT
+	id S1751356AbaGDGwt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 02:52:49 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:45692 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787AbaGDGwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 02:47:06 -0400
-Message-ID: <53B64DA4.3070400@gmail.com>
-Date: Fri, 04 Jul 2014 12:15:56 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-Organization: CDAC-HYD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 4 Jul 2014 02:52:47 -0400
+Message-ID: <53B64F3C.6080502@linaro.org>
+Date: Fri, 04 Jul 2014 08:52:44 +0200
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Varka Bhadram <varkabhadram@gmail.com>, linux-gpio@vger.kernel.org
-CC: linus.walleij@linaro.org, gnurou@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/gpio/gpio-sch311x: check return value of gpiochip_remove()
-References: <1404455851-9996-1-git-send-email-varkab@cdac.in>
-In-Reply-To: <1404455851-9996-1-git-send-email-varkab@cdac.in>
+To: Borislav Petkov <bp@alien8.de>
+CC: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com,
+        m.chehab@samsung.com, bp@suse.de, linux-edac@vger.kernel.org,
+        x86@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
+        rric@kernel.org
+Subject: Re: [PATCH v4 2/3] acpi, apei, ghes: Make NMI error notification
+ to be GHES architecture extension.
+References: <1403610095-5354-1-git-send-email-tomasz.nowicki@linaro.org> <1403610095-5354-3-git-send-email-tomasz.nowicki@linaro.org> <20140702121645.GF1318@pd.tnic>
+In-Reply-To: <20140702121645.GF1318@pd.tnic>
 Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Please drop this patch which generating an another warning.
-
-I will send v2 for this.
-
-Thanks.
-
-On 07/04/2014 12:07 PM, Varka Bhadram wrote:
-> This patch eliminates the following warning
+On 02.07.2014 14:16, Borislav Petkov wrote:
+> On Tue, Jun 24, 2014 at 01:41:34PM +0200, Tomasz Nowicki wrote:
+>> Currently APEI depends on x86 architecture. It is because of NMI hardware
+>> error notification of GHES which is currently supported by x86 only.
+>> However, many other APEI features can be still used perfectly by other
+>> architectures.
+>>
+>> This commit adds two symbols:
+>> 1. HAVE_ACPI_APEI for those archs which support APEI.
+>> 2. HAVE_ACPI_APEI_NMI which is used for NMI code isolation in ghes.c
+>>     file. NMI related data and functions are grouped so they can be wrapped
+>>     inside one #ifdef section. Appropriate function stubs are provided for
+>>     !NMI case.
+>>
+>> Note there is no functional changes for x86 due to hard selected
+>> HAVE_ACPI_APEI and HAVE_ACPI_APEI_NMI symbols.
+>>
+>> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+>> ---
+>>   arch/x86/Kconfig          |    2 +
+>>   drivers/acpi/apei/Kconfig |    8 ++-
+>>   drivers/acpi/apei/ghes.c  |  149 +++++++++++++++++++++++++++++----------------
+>>   include/linux/nmi.h       |    4 ++
+>>   4 files changed, 110 insertions(+), 53 deletions(-)
+>>
 >
-> drivers/gpio/gpio-sch311x.c: In function ‘sch311x_gpio_probe’:
-> drivers/gpio/gpio-sch311x.c:286:18: warning: ignoring return value of ‘gpiochip_remove’, declared with attribute warn_unused_result
+> ...
 >
-> Signed-off-by: Varka Bhadram <varkab@cdac.in>
-> ---
->   drivers/gpio/gpio-sch311x.c |    8 ++++++--
->   1 file changed, 6 insertions(+), 2 deletions(-)
+>> @@ -894,11 +892,71 @@ static unsigned long ghes_esource_prealloc_size(
+>>   	return prealloc_size;
+>>   }
+>>
+>> +static void ghes_estatus_pool_shrink(unsigned long len)
+>> +{
+>> +	ghes_estatus_pool_size_request -= PAGE_ALIGN(len);
+>> +}
+>> +
+>> +static void ghes_nmi_add(struct ghes *ghes)
+>> +{
+>> +	unsigned long len;
+>> +
+>> +	len = ghes_esource_prealloc_size(ghes->generic);
+>> +	ghes_estatus_pool_expand(len);
+>> +	mutex_lock(&ghes_list_mutex);
+>> +	if (list_empty(&ghes_nmi))
+>> +		register_nmi_handler(NMI_LOCAL, ghes_notify_nmi, 0, "ghes");
+>> +	list_add_rcu(&ghes->list, &ghes_nmi);
+>> +	mutex_unlock(&ghes_list_mutex);
+>> +}
+>> +
+>> +static void ghes_nmi_remove(struct ghes *ghes)
+>> +{
+>> +	unsigned long len;
+>> +
+>> +	mutex_lock(&ghes_list_mutex);
+>> +	list_del_rcu(&ghes->list);
+>> +	if (list_empty(&ghes_nmi))
+>> +		unregister_nmi_handler(NMI_LOCAL, "ghes");
+>> +	mutex_unlock(&ghes_list_mutex);
+>> +	/*
+>> +	 * To synchronize with NMI handler, ghes can only be
+>> +	 * freed after NMI handler finishes.
+>> +	 */
+>> +	synchronize_rcu();
+>> +	len = ghes_esource_prealloc_size(ghes->generic);
+>> +	ghes_estatus_pool_shrink(len);
+>> +}
+>> +
+>> +static void ghes_nmi_init_cxt(void)
+>> +{
+>> +	init_irq_work(&ghes_proc_irq_work, ghes_proc_in_irq);
+>> +}
+>> +#else
 >
-> diff --git a/drivers/gpio/gpio-sch311x.c b/drivers/gpio/gpio-sch311x.c
-> index f942b80..8a4ab8f 100644
-> --- a/drivers/gpio/gpio-sch311x.c
-> +++ b/drivers/gpio/gpio-sch311x.c
-> @@ -232,7 +232,7 @@ static int sch311x_gpio_probe(struct platform_device *pdev)
->   	struct sch311x_pdev_data *pdata = pdev->dev.platform_data;
->   	struct sch311x_gpio_priv *priv;
->   	struct sch311x_gpio_block *block;
-> -	int err, i;
-> +	int err, i, ret;
->   
->   	/* we can register all GPIO data registers at once */
->   	if (!request_region(pdata->runtime_reg + GP1, 6, DRV_NAME)) {
-> @@ -283,7 +283,11 @@ exit_err:
->   	release_region(pdata->runtime_reg + GP1, 6);
->   	/* release already registered chips */
->   	for (--i; i >= 0; i--)
-> -		gpiochip_remove(&priv->blocks[i].chip);
-> +		ret = gpiochip_remove(&priv->blocks[i].chip);
-> +
-> +		WARN(ret, "%s(): gpiochip_remove() failed, ret=%d\n",
-> +		     __func__, ret);
-> +
->   	return err;
->   }
->   
+> Markers please to know to which CONFIG_ symbol this #else refers to:
+>
+> #else /* CONFIG_HAVE_ACPI_APEI_NMI */
+>
+>> +static inline void ghes_nmi_add(struct ghes *ghes)
+>> +{
+>> +	pr_err(GHES_PFX "ID: %d, trying to add NMI notification which is not supported!\n",
+>> +	       ghes->generic->header.source_id);
+>> +	BUG();
+>> +}
+>> +
+>> +static inline void ghes_nmi_remove(struct ghes *ghes)
+>> +{
+>> +	pr_err(GHES_PFX "ID: %d, trying to remove NMI notification which is not supported!\n",
+>> +	       ghes->generic->header.source_id);
+>> +	BUG();
+>> +}
+>> +
+>> +static inline void ghes_nmi_init_cxt(void)
+>> +{
+>> +}
+>> +#endif
+>
+> Ditto.
+>
 
+Right, I will fix that and thanks for all you acks.
 
--- 
-Cheers,
-Varka Bhadram.
+BTW, who else should I asked for review to move upstream process one 
+step further?
 
+Regards,
+Tomasz
