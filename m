@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760924AbaGDW5U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:57:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57161 "EHLO
+	id S1031145AbaGDW5w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:57:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030378AbaGDWRN (ORCPT
+	with ESMTP id S1753617AbaGDWRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:13 -0400
+	Fri, 4 Jul 2014 18:17:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Anton Blanchard <anton@samba.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.15 45/66] powerpc: 64bit sendfile is capped at 2GB
-Date: Fri,  4 Jul 2014 15:14:44 -0700
-Message-Id: <20140704221424.860936698@linuxfoundation.org>
+Subject: [PATCH 3.15 42/66] powernv: Fix permissions on sysparam sysfs entries
+Date: Fri,  4 Jul 2014 15:14:41 -0700
+Message-Id: <20140704221424.729981391@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -31,34 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Anton Blanchard <anton@samba.org>
 
-commit 5d73320a96fcce80286f1447864c481b5f0b96fa upstream.
+commit 1bd098903fda069cb96fe8b5cb4595b46c683385 upstream.
 
-commit 8f9c0119d7ba (compat: fs: Generic compat_sys_sendfile
-implementation) changed the PowerPC 64bit sendfile call from
-sys_sendile64 to sys_sendfile.
-
-Unfortunately this broke sendfile of lengths greater than 2G because
-sys_sendfile caps at MAX_NON_LFS. Restore what we had previously which
-fixes the bug.
+Everyone can write to these files, which is not what we want.
 
 Signed-off-by: Anton Blanchard <anton@samba.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/systbl.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/platforms/powernv/opal-sysparam.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/include/asm/systbl.h
-+++ b/arch/powerpc/include/asm/systbl.h
-@@ -190,7 +190,7 @@ SYSCALL_SPU(getcwd)
- SYSCALL_SPU(capget)
- SYSCALL_SPU(capset)
- COMPAT_SYS(sigaltstack)
--COMPAT_SYS_SPU(sendfile)
-+SYSX_SPU(sys_sendfile64,compat_sys_sendfile,sys_sendfile)
- SYSCALL(ni_syscall)
- SYSCALL(ni_syscall)
- PPC_SYS(vfork)
+--- a/arch/powerpc/platforms/powernv/opal-sysparam.c
++++ b/arch/powerpc/platforms/powernv/opal-sysparam.c
+@@ -260,10 +260,10 @@ void __init opal_sys_param_init(void)
+ 			attr[i].kobj_attr.attr.mode = S_IRUGO;
+ 			break;
+ 		case OPAL_SYSPARAM_WRITE:
+-			attr[i].kobj_attr.attr.mode = S_IWUGO;
++			attr[i].kobj_attr.attr.mode = S_IWUSR;
+ 			break;
+ 		case OPAL_SYSPARAM_RW:
+-			attr[i].kobj_attr.attr.mode = S_IRUGO | S_IWUGO;
++			attr[i].kobj_attr.attr.mode = S_IRUGO | S_IWUSR;
+ 			break;
+ 		default:
+ 			break;
 
 
