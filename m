@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760537AbaGDWQS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:16:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57043 "EHLO
+	id S1760557AbaGDWQW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:16:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57064 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760373AbaGDWQQ (ORCPT
+	with ESMTP id S1760244AbaGDWQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:16:16 -0400
+	Fri, 4 Jul 2014 18:16:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arun Ramamurthy <arun.ramamurthy@broadcom.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>, Wim Van Sebroeck <wim@iguana.be>
-Subject: [PATCH 3.15 22/66] watchdog: sp805: Set watchdog_device->timeout from ->set_timeout()
-Date: Fri,  4 Jul 2014 15:14:21 -0700
-Message-Id: <20140704221423.835221834@linuxfoundation.org>
+        Don Zickus <dzickus@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        Peter Wu <peter@lekensteyn.nl>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.15 25/66] kernel/watchdog.c: remove preemption restrictions when restarting lockup detector
+Date: Fri,  4 Jul 2014 15:14:24 -0700
+Message-Id: <20140704221423.964472475@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -30,50 +31,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+From: Don Zickus <dzickus@redhat.com>
 
-commit 938626d96a3ffb9eb54552bb0d3a4f2b30ffdeb0 upstream.
+commit bde92cf455a03a91badb7046855592d8c008e929 upstream.
 
-Implementation of ->set_timeout() is supposed to set 'timeout' field of 'struct
-watchdog_device' passed to it. sp805 was rather setting this in a local
-variable. Fix it.
+Peter Wu noticed the following splat on his machine when updating
+/proc/sys/kernel/watchdog_thresh:
 
-Reported-by: Arun Ramamurthy <arun.ramamurthy@broadcom.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+  BUG: sleeping function called from invalid context at mm/slub.c:965
+  in_atomic(): 1, irqs_disabled(): 0, pid: 1, name: init
+  3 locks held by init/1:
+   #0:  (sb_writers#3){.+.+.+}, at: [<ffffffff8117b663>] vfs_write+0x143/0x180
+   #1:  (watchdog_proc_mutex){+.+.+.}, at: [<ffffffff810e02d3>] proc_dowatchdog+0x33/0x110
+   #2:  (cpu_hotplug.lock){.+.+.+}, at: [<ffffffff810589c2>] get_online_cpus+0x32/0x80
+  Preemption disabled at:[<ffffffff810e0384>] proc_dowatchdog+0xe4/0x110
+
+  CPU: 0 PID: 1 Comm: init Not tainted 3.16.0-rc1-testing #34
+  Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+  Call Trace:
+    dump_stack+0x4e/0x7a
+    __might_sleep+0x11d/0x190
+    kmem_cache_alloc_trace+0x4e/0x1e0
+    perf_event_alloc+0x55/0x440
+    perf_event_create_kernel_counter+0x26/0xe0
+    watchdog_nmi_enable+0x75/0x140
+    update_timers_all_cpus+0x53/0xa0
+    proc_dowatchdog+0xe4/0x110
+    proc_sys_call_handler+0xb3/0xc0
+    proc_sys_write+0x14/0x20
+    vfs_write+0xad/0x180
+    SyS_write+0x49/0xb0
+    system_call_fastpath+0x16/0x1b
+  NMI watchdog: disabled (cpu0): hardware events not enabled
+
+What happened is after updating the watchdog_thresh, the lockup detector
+is restarted to utilize the new value.  Part of this process involved
+disabling preemption.  Once preemption was disabled, perf tried to
+allocate a new event (as part of the restart).  This caused the above
+BUG_ON as you can't sleep with preemption disabled.
+
+The preemption restriction seemed agressive as we are not doing anything
+on that particular cpu, but with all the online cpus (which are
+protected by the get_online_cpus lock).  Remove the restriction and the
+BUG_ON goes away.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Reported-by: Peter Wu <peter@lekensteyn.nl>
+Tested-by: Peter Wu <peter@lekensteyn.nl>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/watchdog/sp805_wdt.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ kernel/watchdog.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/watchdog/sp805_wdt.c
-+++ b/drivers/watchdog/sp805_wdt.c
-@@ -59,7 +59,6 @@
-  * @adev: amba device structure of wdt
-  * @status: current status of wdt
-  * @load_val: load value to be set for current timeout
-- * @timeout: current programmed timeout
-  */
- struct sp805_wdt {
- 	struct watchdog_device		wdd;
-@@ -68,7 +67,6 @@ struct sp805_wdt {
- 	struct clk			*clk;
- 	struct amba_device		*adev;
- 	unsigned int			load_val;
--	unsigned int			timeout;
- };
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -527,10 +527,8 @@ static void update_timers_all_cpus(void)
+ 	int cpu;
  
- static bool nowayout = WATCHDOG_NOWAYOUT;
-@@ -98,7 +96,7 @@ static int wdt_setload(struct watchdog_d
- 	spin_lock(&wdt->lock);
- 	wdt->load_val = load;
- 	/* roundup timeout to closest positive integer value */
--	wdt->timeout = div_u64((load + 1) * 2 + (rate / 2), rate);
-+	wdd->timeout = div_u64((load + 1) * 2 + (rate / 2), rate);
- 	spin_unlock(&wdt->lock);
+ 	get_online_cpus();
+-	preempt_disable();
+ 	for_each_online_cpu(cpu)
+ 		update_timers(cpu);
+-	preempt_enable();
+ 	put_online_cpus();
+ }
  
- 	return 0;
 
 
