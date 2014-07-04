@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759657AbaGDSf2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 14:35:28 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:46982 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755493AbaGDSf1 (ORCPT
+	id S1756656AbaGDSmL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 14:42:11 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:7269 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752670AbaGDSmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 14:35:27 -0400
-MIME-Version: 1.0
-Date: Fri, 4 Jul 2014 20:35:26 +0200
-X-Google-Sender-Auth: x8nZzV8b4vycJTyZPJiPSjZwyP4
-Message-ID: <CAPhOmC5=zWfJixgxYbscYYNRLvLJYNVQuWtJNk4aSG1cjdMp0g@mail.gmail.com>
-Subject: Patch for a buggy Jabra GN9350 (HID)
-From: Patrick Plattes <patrick@erdbeere.net>
+	Fri, 4 Jul 2014 14:42:10 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvAMAAn1tlNbsGwr/2dsb2JhbABagw6scAUBAQEBAQEFAW4BmWeBCxd1hDEvI4EaN4hGAbVPlQsXhXCJMh2ELQEEmnaUDINFOw
+From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Cc: Fabian Frederick <fabf@skynet.be>, Hannes Reinecke <hare@suse.de>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH 1/1] aic79xx: replace kmalloc/memset 0 by kzalloc
+Date: Fri,  4 Jul 2014 20:42:04 +0200
+Message-Id: <1404499324-14284-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey all :),
+Cc: Hannes Reinecke <hare@suse.de>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/scsi/aic7xxx/aic79xx_core.c | 3 +--
+ drivers/scsi/aic7xxx/aic79xx_osm.c  | 3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-I've the problem, that the buttons of my (USB) mouse stop working when
-I activate my USB headset. The headset tells the kernel, that it is a
-HID, so I 'blacklisted it with te following patch. Now its working
-fine :)
+diff --git a/drivers/scsi/aic7xxx/aic79xx_core.c b/drivers/scsi/aic7xxx/aic79xx_core.c
+index 0bcacf7..9ce383c 100644
+--- a/drivers/scsi/aic7xxx/aic79xx_core.c
++++ b/drivers/scsi/aic7xxx/aic79xx_core.c
+@@ -10437,14 +10437,13 @@ ahd_handle_en_lun(struct ahd_softc *ahd, struct cam_sim *sim, union ccb *ccb)
+ 				return;
+ 			}
+ 		}
+-		lstate = kmalloc(sizeof(*lstate), GFP_ATOMIC);
++		lstate = kzalloc(sizeof(*lstate), GFP_ATOMIC);
+ 		if (lstate == NULL) {
+ 			xpt_print_path(ccb->ccb_h.path);
+ 			printk("Couldn't allocate lstate\n");
+ 			ccb->ccb_h.status = CAM_RESRC_UNAVAIL;
+ 			return;
+ 		}
+-		memset(lstate, 0, sizeof(*lstate));
+ 		status = xpt_create_path(&lstate->path, /*periph*/NULL,
+ 					 xpt_path_path_id(ccb->ccb_h.path),
+ 					 xpt_path_target_id(ccb->ccb_h.path),
+diff --git a/drivers/scsi/aic7xxx/aic79xx_osm.c b/drivers/scsi/aic7xxx/aic79xx_osm.c
+index 69d5c43..76b5fec 100644
+--- a/drivers/scsi/aic7xxx/aic79xx_osm.c
++++ b/drivers/scsi/aic7xxx/aic79xx_osm.c
+@@ -1325,10 +1325,9 @@ int
+ ahd_platform_alloc(struct ahd_softc *ahd, void *platform_arg)
+ {
+ 	ahd->platform_data =
+-	    kmalloc(sizeof(struct ahd_platform_data), GFP_ATOMIC);
++	    kzalloc(sizeof(struct ahd_platform_data), GFP_ATOMIC);
+ 	if (ahd->platform_data == NULL)
+ 		return (ENOMEM);
+-	memset(ahd->platform_data, 0, sizeof(struct ahd_platform_data));
+ 	ahd->platform_data->irq = AHD_LINUX_NOIRQ;
+ 	ahd_lockinit(ahd);
+ 	ahd->seltime = (aic79xx_seltime & 0x3) << 4;
+-- 
+1.9.1
 
-I don't know if it is the right place to do, feedback would be welcome.
-
-Thanks to all kernel devs for the great work over the last years ... decades,
- Patrick
-
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 6d00bb9..7de25aa 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -488,6 +488,7 @@
- #define USB_VENDOR_ID_JABRA            0x0b0e
- #define USB_DEVICE_ID_JABRA_SPEAK_410  0x0412
- #define USB_DEVICE_ID_JABRA_SPEAK_510  0x0420
-+#define USB_DEVICE_ID_JABRA_GN9350     0x9350
-
- #define USB_VENDOR_ID_JESS             0x0c45
- #define USB_DEVICE_ID_JESS_YUREX       0x1010
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 59badc1..fdfee8f 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -122,6 +122,8 @@ static const struct hid_blacklist {
-        { USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_QUAD_HD,
-HID_QUIRK_NO_INIT_REPORTS },
-        { USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_TP_V103,
-HID_QUIRK_NO_INIT_REPORTS },
-
-+       { USB_VENDOR_ID_JABRA, USB_DEVICE_ID_JABRA_GN9350, HID_QUIRK_IGNORE},
-+
-        { 0, 0 }
- };
