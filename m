@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279AbaGDVU2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 17:20:28 -0400
-Received: from mail.efficios.com ([78.47.125.74]:41028 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753535AbaGDVU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 17:20:27 -0400
-Date: Fri, 4 Jul 2014 21:20:28 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: gregkh <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Message-ID: <1983136768.8892.1404508828693.JavaMail.zimbra@efficios.com>
-In-Reply-To: <1086604719.8856.1404508237223.JavaMail.zimbra@efficios.com>
-Subject: Qualcomm "All Rights Reserved" in Linux staging
+	id S1760132AbaGDVUj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 17:20:39 -0400
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:44855 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759909AbaGDVUe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 17:20:34 -0400
+X-Originating-IP: 50.43.32.211
+Date: Fri, 4 Jul 2014 14:20:25 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Christopher Li <sparse@chrisli.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-Sparse <linux-sparse@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] sparse: Add CLOG option for saving warning
+Message-ID: <20140704212025.GA3052@thin>
+References: <CANeU7Q=a82YmUE49uZ1sOxZn0KGLuktSXuj7YsmUb=wXQEpPXA@mail.gmail.com>
+ <CANeU7QmT=vzOGd6bBdkr-kNkt7yfzCWQF5QujiwV7Q8Q9hZw=w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [173.246.29.13]
-X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF30 (Linux)/8.0.7_GA_6021)
-Thread-Topic: Qualcomm "All Rights Reserved" in Linux staging
-Thread-Index: tgcKZKbNVfJceP4iPxp9HIhuQxSLBQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANeU7QmT=vzOGd6bBdkr-kNkt7yfzCWQF5QujiwV7Q8Q9hZw=w@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Fri, Jul 04, 2014 at 12:48:00AM -0700, Christopher Li wrote:
+> On Mon, Jun 30, 2014 at 1:57 AM, Christopher Li <sparse@chrisli.org> wrote:
+> >
+> > Add the CLOG=<logname> option in command line to
+> > save the sparse warning into individual log file.
+> >
+> > Typical usage:
+> >
+> > make -j8 C=2 CLOG=<logname>
+> 
+> Any feed back for this change? I want to clarify that this patch
+> is for the Linux kernel kbuild system, not sparse.
 
-Reading this story about Qualcomm lawyers shooting
-DMCA takedown requests lightly against github projects:
+Seems reasonable to me.
 
-http://linux.slashdot.org/story/14/07/04/1455200/qualcomm-takes-down-100-github-repositories-with-dmca-notice
-http://www.phoronix.com/scan.php?page=news_item&px=MTczNDU
-https://github.com/github/dmca/blob/master/2014-07-02-Qualcomm.md
-
-It appears to me that the mere presence of those lines
-in Linux staging:
-
-grep -r "Qualcomm" . |grep -i "rights"
-./drivers/staging/ft1000/ft1000-usb/ft1000_usb.c: * CopyRight (C) 2007 Qualcomm Inc. All Rights Reserved.
-./drivers/staging/ft1000/ft1000-usb/ft1000_download.c:* CopyRight (C) 2007 Qualcomm Inc. All Rights Reserved.
-./drivers/staging/ft1000/ft1000-usb/ft1000_hw.c:/* CopyRight (C) 2007 Qualcomm Inc. All Rights Reserved.
-
-might be contradicting the Dual MPL/GPL license
-expressed by MODULE_LICENSE() for those files.
-Perhaps we should ask some clarification on
-licensing of those files to Qualcomm ?
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+- Josh Triplett
