@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928AbaGDBXQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 21:23:16 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57016 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850AbaGDBXP (ORCPT
+	id S1759761AbaGDB3J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 21:29:09 -0400
+Received: from kvm5.telegraphics.com.au ([98.124.60.144]:45467 "EHLO
+	kvm5.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958AbaGDB3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 21:23:15 -0400
-X-Original-SENDERIP: 165.186.175.61
-X-Original-MAILFROM: hyogi.gim@lge.com
-From: Hyogi Gim <hyogi.gim@lge.com>
-To: Alessandro Zummo <a.zummo@towertech.it>,
-        John Stultz <john.stultz@linaro.org>
-Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        Hyogi Gim <hyogi.gim@lge.com>
-Subject: [PATCH] drivers/rtc/interface.c: check the error after __rtc_read_time()
-Date: Fri,  4 Jul 2014 10:22:26 +0900
-Message-Id: <1404436946-28354-1-git-send-email-hyogi.gim@lge.com>
-X-Mailer: git-send-email 1.8.3.2
+	Thu, 3 Jul 2014 21:29:07 -0400
+Date: Fri, 4 Jul 2014 11:28:05 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: Nicholas Krause <xerofoify@gmail.com>
+cc: sammy@sammy.net, geert@linux-m68k.org, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] m68k: Remove FIXME comment in file sun3_pgalloc.h
+In-Reply-To: <1404351693-5588-1-git-send-email-xerofoify@gmail.com>
+Message-ID: <alpine.LNX.2.00.1407041125060.15901@nippy.intranet>
+References: <1404351693-5588-1-git-send-email-xerofoify@gmail.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In __rtc_set_alarm(), the error after __rtc_read_time() is not checked.
-If rtc device fail to read time, we cannot guarantee the following process.
 
-Add the verification code for returned __rtc_read_time() error.
+On Wed, 2 Jul 2014, Nicholas Krause wrote:
 
-Signed-off-by: Hyogi Gim <hyogi.gim@lge.com>
----
- drivers/rtc/interface.c | 2 ++
- 1 file changed, 2 insertions(+)
+> Removes a FIXME comment in this file due to it not compiling as it now 
+> compiles.
 
-diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
-index 5813fa5..5b2717f 100644
---- a/drivers/rtc/interface.c
-+++ b/drivers/rtc/interface.c
-@@ -348,6 +348,8 @@ static int __rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
- 
- 	/* Make sure we're not setting alarms in the past */
- 	err = __rtc_read_time(rtc, &tm);
-+	if (err)
-+		return err;
- 	rtc_tm_to_time(&tm, &now);
- 	if (scheduled <= now)
- 		return -ETIME;
+What got fixed?
+
+It doesn't say "FIXME - this doesn't compile".
+
+> 
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> ---
+>  arch/m68k/include/asm/sun3_pgalloc.h | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/arch/m68k/include/asm/sun3_pgalloc.h b/arch/m68k/include/asm/sun3_pgalloc.h
+> index f868506..1798f25 100644
+> --- a/arch/m68k/include/asm/sun3_pgalloc.h
+> +++ b/arch/m68k/include/asm/sun3_pgalloc.h
+> @@ -12,7 +12,6 @@
+>  
+>  #include <asm/tlb.h>
+>  
+> -/* FIXME - when we get this compiling */
+>  /* erm, now that it's compiling, what do we do with it? */
+>  #define _KERNPG_TABLE 0
+>  
+> 
+
 -- 
-1.8.3.2
-
