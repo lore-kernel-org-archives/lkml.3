@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532AbaGDIk0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:40:26 -0400
-Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.182]:53608 "EHLO
-	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750787AbaGDIkY (ORCPT
+	id S1755779AbaGDIko (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:40:44 -0400
+Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:52312 "EHLO
+	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754394AbaGDIkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:40:24 -0400
-X-RZG-AUTH: :IW0NeWC7b/q2i6W/qstXb1SBUuFnrGoheedClaTaNdBkW0QEOcx1Ft+DpaWf0qqN8/jSv6KcucO/Jal+pWlFmof8RwlK56M1DtI=
-X-RZG-CLASS-ID: mo05
-Message-ID: <53B6687A.3070108@denx.de>
-Date: Fri, 04 Jul 2014 10:40:26 +0200
-From: Stefan Roese <sr@denx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Jean-Michel Hautbois <jhautbois@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Lattice ECP3 load firmware
-References: <CAL8zT=jVVJ7WB7PtXwbKji5efoZHxWVwD4LgVsuXc3gsW+9=kw@mail.gmail.com>
-In-Reply-To: <CAL8zT=jVVJ7WB7PtXwbKji5efoZHxWVwD4LgVsuXc3gsW+9=kw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Fri, 4 Jul 2014 04:40:40 -0400
+Message-ID: <1404463234.2457.4.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [regression, 3.16-rc] rwsem: optimistic spinning causing
+ performance degradation
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jason Low <jason.low2@hp.com>, Dave Chinner <david@fromorbit.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 04 Jul 2014 01:40:34 -0700
+In-Reply-To: <20140704075247.GZ19379@twins.programming.kicks-ass.net>
+References: <1404413420.8764.42.camel@j-VirtualBox>
+	 <20140704010147.GY4453@dastard> <1404438366.8764.121.camel@j-VirtualBox>
+	 <1404438890.8764.125.camel@j-VirtualBox>
+	 <20140704075247.GZ19379@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean-Michel,
+On Fri, 2014-07-04 at 09:52 +0200, Peter Zijlstra wrote:
+> On Thu, Jul 03, 2014 at 06:54:50PM -0700, Jason Low wrote:
+> > Subject: [PATCH] rwsem: In rwsem_can_spin_on_owner(), return false if no owner
+> > 
+> > It was found that the rwsem optimistic spinning feature can potentially degrade
+> > performance when there are readers. Perf profiles indicate in some workloads
+> > that significant time can be spent spinning on !owner. This is because we don't
+> > set the lock owner when readers(s) obtain the rwsem.
+> > 
+> > In this patch, we'll modify rwsem_can_spin_on_owner() such that we'll return
+> > false if there is no lock owner. The rationale is that if we just entered the
+> > slowpath, yet there is no lock owner, then there is a possibility that a reader
+> > has the lock. To be conservative, we'll avoid spinning in these situations.
+> > 
+> > Dave Chinner found performance benefits with this patch in the xfs_repair
+> > workload, where the total run time went from approximately 4 minutes 24 seconds,
+> > down to approximately 1 minute 26 seconds with the patch.
+> > 
+> > Tested-by: Dave Chinner <dchinner@redhat.com>
+> > Signed-off-by: Jason Low <jason.low2@hp.com>
+> 
+> Davidlohr, you'll be running this through your AIM and other benchmarks,
+> I suppose?
 
-On 04.07.2014 10:24, Jean-Michel Hautbois wrote:
-> I noticed you (Stefan) are using request_firmware_nowait() call. This
-> means user needs to explicitly call it using
->
-> $ echo 1 > /sys/class/firmware/lattice-ecp3.0/loading
-> $ cat lattice-ecp3.bit > /sys/class/firmware/lattice-ecp3.0/data
-> $ echo 0 > /sys/class/firmware/lattice-ecp3.0/loading
->
-> Or did I miss something ?
+I ran it through aim7, and as I suspected we take a performance hit with
+'custom' ~-14% throughput for > 300 users (which is still overall quite
+higher than rwsems without opt spinning, at around ~+45%), and we
+actually improve a bit (~+15%) in 'disk' with >1000 users -- which
+afaict resembles Dave's workload a bit. So all in all I'm quite happy
+with this patch.
 
-No, thats correct. This is how we use it on our platform.
-
-> I would like to have it load the firmware bitstream when booting if
-> there is a specific .bit file in /lib/firmware. Maybe don't you want
-> to have this behaviour, though... ?
-
-No. We don't want this. Please don't ask me about the details. Its quite 
-a while ago that I worked on this platform. And I don't have access to 
-this platform any more.
-
-Thanks,
-Stefan
+Acked-by: Davidlohr Bueso <davidlohr@hp.com>
 
