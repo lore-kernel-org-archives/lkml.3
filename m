@@ -1,72 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782AbaGDKMz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 06:12:55 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:44761 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689AbaGDKMy (ORCPT
+	id S1757775AbaGDKNF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 06:13:05 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:29856 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689AbaGDKM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 06:12:54 -0400
-Date: Fri, 4 Jul 2014 03:13:02 -0700
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Alex =?iso-8859-1?Q?Benn=E9e?= <alex.bennee@linaro.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: KVM: export demux regids as KVM_REG_ARM64
-Message-ID: <20140704101302.GD20451@cbox>
-References: <1404229993-14522-1-git-send-email-alex.bennee@linaro.org>
- <53B2DA42.40604@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53B2DA42.40604@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 4 Jul 2014 06:12:57 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-bf-53b67e26261e
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v3 0/6] charger/mfd: max14577: Add support for MAX77836
+Date: Fri, 04 Jul 2014 12:12:39 +0200
+Message-id: <1404468765-10818-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKLMWRmVeSWpSXmKPExsVy+t/xK7pqdduCDU7NNLXYOGM9q8XUh0/Y
+	LCY9ec9sMXHlZGaL/jcLWS3OvVrJaPH6haHF2aY37Bb3vx5ltPh2pYPJYvP3DjaLy7vmsFms
+	PXKX3WLp9YtMFhOmr2WxaN17hN3idDerg6DHmnlrGD0u9/UyeeycdZfdY+XyL2wem1doeWxa
+	1cnmcefaHjaPeScDPfq2rGL0+LxJLoArissmJTUnsyy1SN8ugStj2s+DzAVHRCq+L7/D1sB4
+	k7+LkZ1DQsBEopWvi5ETyBKTuHBvPVsXIxeHkMBSRonul7+YIZw+JolbW/+xgFSxCRhLbF6+
+	BKxKRGAao8TiDRMZQRxmgWksEv/udjCBVAkLuEt0XlnBDGKzCKhKPNr/kxXE5gWKN3x/zwqx
+	T07i5LHJrBMYuRcwMqxiFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECAnaLzsYFx+zOsQowMGo
+	xMPbuGJDsBBrYllxZe4hRgkOZiUR3rfV24KFeFMSK6tSi/Lji0pzUosPMTJxcEo1MC4K2yX1
+	8vqHxFdz5z+SkjM+t0dlctSdD/xV7jm5lWa7818+zmv/1R0or5iXf/DRlK2Tlz83ljh+2XaL
+	6v0XR84vVn291Edx/run6/7+Wf530gWnRAlXg8cfZNcdCDRtLdqwtGXe7qja9dvuaZRnbRTT
+	Voji+L34KtOZ049WPVq4z2XFOsUJPks+K7EUZyQaajEXFScCAKlA+FM4AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 01, 2014 at 04:56:50PM +0100, Marc Zyngier wrote:
-> On 01/07/14 16:53, Alex Bennée wrote:
-> > I suspect this is a -ECUTPASTE fault from the initial implementation. If
-> > we don't declare the register ID to be KVM_REG_ARM64 the KVM_GET_ONE_REG
-> > implementation kvm_arm_get_reg() returns -EINVAL and hilarity ensues.
-> > 
-> > The kvm/api.txt document describes all arm64 registers as starting with
-> > 0x60xx... (i.e KVM_REG_ARM64).
-> > 
-> > Signed-off-by: Alex Bennée <alex.bennee@linaro.org>
-> > Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
-> > ---
-> >  arch/arm64/kvm/sys_regs.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/arm64/kvm/sys_regs.c b/arch/arm64/kvm/sys_regs.c
-> > index 0324458..5ee99e4 100644
-> > --- a/arch/arm64/kvm/sys_regs.c
-> > +++ b/arch/arm64/kvm/sys_regs.c
-> > @@ -962,7 +962,7 @@ static unsigned int num_demux_regs(void)
-> >  
-> >  static int write_demux_regids(u64 __user *uindices)
-> >  {
-> > -	u64 val = KVM_REG_ARM | KVM_REG_SIZE_U32 | KVM_REG_ARM_DEMUX;
-> > +	u64 val = KVM_REG_ARM64 | KVM_REG_SIZE_U32 | KVM_REG_ARM_DEMUX;
-> >  	unsigned int i;
-> >  
-> >  	val |= KVM_REG_ARM_DEMUX_ID_CCSIDR;
-> > 
-> 
-> -EBROWNPAPERBAG.
-> 
-> Acked-by: Marc Zyngier <marc.zyngier@arm.com>
-> 
-Applied to kvmarm/master,
+Hi,
 
-thanks.
+
+This is third version of patches adding support for MAX77836
+device to the max14577 drivers. The first part of patches (main MFD,
+extcon and regulator drivers) was merged already.
+
+The patches 1, 2 and 3 depend on each other so they should be
+pulled at once. Patches 4, 5 and 6 can be applied independently.
+
+This patchset was already reviewed by some of the maintainers during
+previous submissions.
+
+I only need acks from power tree (patches: 1, 3, 4, 6).
+
+
+Changes since v2
+================
+1. charger: Use sysfs instead of DTS for setting the fast charge timer.
+   The charger driver now selects the CONFIG_SYSFS and exports
+   a DEVICE_ATTR. (suggested by Mark Rutland)
+2. Add patch 6 with documentation of exported sysfs entry for fast
+   charge timer.
+3. charger 3/6: Add missing 'break' in switch parsing valid values
+   for fast charge timer.
+
+Changes since v1
+================
+1. charger 3/5: Add an error message for each unsuccessful parse of DT
+   property (suggested by Mark Rutland).
+2. charger 3/5: Use 'u32' type for storing values from DT (suggested
+   by Mark Rutland).
+3. charger 3/5: Remove an error message for memory allocation failure.
+
+
+The patchset (first and second part of the MAX77836 drivers) has been
+on the lists since January. Changelog for the first part of drivers:
+https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg628696.html
+
+
+Best regards,
+Krzysztof Kozlowski
+
+Krzysztof Kozlowski (6):
+  charger: max14577: Add support for MAX77836 charger
+  regulator/mfd: max14577: Export symbols for calculating charger
+    current
+  charger: max14577: Configure battery-dependent settings from DTS and
+    sysfs
+  power: max17040: Add ID for MAX77836 Fuel Gauge block
+  devicetree: mfd: max14577: Add device tree bindings document
+  Documentation: charger: max14577: Document exported sysfs entry
+
+ Documentation/ABI/testing/sysfs-class-power        |  14 +
+ Documentation/devicetree/bindings/mfd/max14577.txt | 146 ++++++++
+ drivers/mfd/max14577.c                             | 100 +++++-
+ drivers/power/Kconfig                              |   5 +-
+ drivers/power/max14577_charger.c                   | 370 +++++++++++++++++++--
+ drivers/power/max17040_battery.c                   |   1 +
+ drivers/regulator/max14577.c                       |  80 +----
+ include/linux/mfd/max14577-private.h               |  95 ++++--
+ include/linux/mfd/max14577.h                       |  30 ++
+ 9 files changed, 703 insertions(+), 138 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
+
+-- 
+1.9.1
+
