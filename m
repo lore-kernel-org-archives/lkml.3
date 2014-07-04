@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030890AbaGDWTP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:19:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57288 "EHLO
+	id S1030906AbaGDWTj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:19:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57283 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030776AbaGDWR7 (ORCPT
+	with ESMTP id S1030716AbaGDWR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:59 -0400
+	Fri, 4 Jul 2014 18:17:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>,
+        Joe Perches <joe@perches.com>, Gavin Shan <gwshan@linux.vnet.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.4 16/19] powerpc: fix typo CONFIG_PMAC
-Date: Fri,  4 Jul 2014 15:15:26 -0700
-Message-Id: <20140704221437.180861977@linuxfoundation.org>
+Subject: [PATCH 3.4 15/19] powerpc/pseries: Fix overwritten PE state
+Date: Fri,  4 Jul 2014 15:15:25 -0700
+Message-Id: <20140704221437.130717539@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221436.423715636@linuxfoundation.org>
 References: <20140704221436.423715636@linuxfoundation.org>
@@ -29,33 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: Gavin Shan <gwshan@linux.vnet.ibm.com>
 
-commit 6e0fdf9af216887e0032c19d276889aad41cad00 upstream.
+commit 54f112a3837d4e7532bbedbbbf27c0de277be510 upstream.
 
-Commit b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling
-perf_event_do_pending") added a check for CONFIG_PMAC were a check for
-CONFIG_PPC_PMAC was clearly intended.
+In pseries_eeh_get_state(), EEH_STATE_UNAVAILABLE is always
+overwritten by EEH_STATE_NOT_SUPPORT because of the missed
+"break" there. The patch fixes the issue.
 
-Fixes: b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling perf_event_do_pending")
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Reported-by: Joe Perches <joe@perches.com>
+Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/time.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/platforms/pseries/eeh_pseries.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -496,7 +496,7 @@ void timer_interrupt(struct pt_regs * re
- 
- 	__get_cpu_var(irq_stat).timer_irqs++;
- 
--#if defined(CONFIG_PPC32) && defined(CONFIG_PMAC)
-+#if defined(CONFIG_PPC32) && defined(CONFIG_PPC_PMAC)
- 	if (atomic_read(&ppc_n_lost_interrupts) != 0)
- 		do_IRQ(regs);
- #endif
+--- a/arch/powerpc/platforms/pseries/eeh_pseries.c
++++ b/arch/powerpc/platforms/pseries/eeh_pseries.c
+@@ -319,6 +319,7 @@ static int pseries_eeh_get_state(struct
+ 			} else {
+ 				result = EEH_STATE_NOT_SUPPORT;
+ 			}
++			break;
+ 		default:
+ 			result = EEH_STATE_NOT_SUPPORT;
+ 		}
 
 
