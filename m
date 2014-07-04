@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031308AbaGDW7D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:59:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57120 "EHLO
+	id S1031576AbaGDW7g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:59:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57112 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760666AbaGDWQw (ORCPT
+	with ESMTP id S1760623AbaGDWQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:16:52 -0400
+	Fri, 4 Jul 2014 18:16:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ed Swarthout <Ed.Swarthout@freescale.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.15 54/66] cpufreq: ppc-corenet-cpu-freq: do_div use quotient
-Date: Fri,  4 Jul 2014 15:14:53 -0700
-Message-Id: <20140704221425.278311922@linuxfoundation.org>
+        Plamen Petrov <plamen.sisi@gmail.com>,
+        Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Dave Chinner <david@fromorbit.com>
+Subject: [PATCH 3.15 52/66] xfs: xfs_readsb needs to check for magic numbers
+Date: Fri,  4 Jul 2014 15:14:51 -0700
+Message-Id: <20140704221425.178494676@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -29,47 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ed Swarthout <Ed.Swarthout@freescale.com>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit 906fe033145aab7d65a428bfda2cf19c75720894 upstream.
+commit 556b8883cfac3d3203557e161ea8005f8b5479b2 upstream.
 
-Commit 6712d2931933 (cpufreq: ppc-corenet-cpufreq: Fix __udivdi3 modpost
-error) used the remainder from do_div instead of the quotient.  Fix that
-and add one to ensure minimum is met.
+Commit daba542 ("xfs: skip verification on initial "guess"
+superblock read") dropped the use of a verifier for the initial
+superblock read so we can probe the sector size of the filesystem
+stored in the superblock. It, however, now fails to validate that
+what was read initially is actually an XFS superblock and hence will
+fail the sector size check and return ENOSYS.
 
-Fixes: 6712d2931933 (cpufreq: ppc-corenet-cpufreq: Fix __udivdi3 modpost error)
-Signed-off-by: Ed Swarthout <Ed.Swarthout@freescale.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+This causes probe-based mounts to fail because it expects XFS to
+return EINVAL when it doesn't recognise the superblock format.
+
+Reported-by: Plamen Petrov <plamen.sisi@gmail.com>
+Tested-by: Plamen Petrov <plamen.sisi@gmail.com>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/ppc-corenet-cpufreq.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ fs/xfs/xfs_mount.c |   23 +++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
 
---- a/drivers/cpufreq/ppc-corenet-cpufreq.c
-+++ b/drivers/cpufreq/ppc-corenet-cpufreq.c
-@@ -138,7 +138,7 @@ static int corenet_cpufreq_cpu_init(stru
- 	struct cpufreq_frequency_table *table;
- 	struct cpu_data *data;
- 	unsigned int cpu = policy->cpu;
--	u64 transition_latency_hz;
-+	u64 u64temp;
+--- a/fs/xfs/xfs_mount.c
++++ b/fs/xfs/xfs_mount.c
+@@ -323,8 +323,19 @@ reread:
+ 	/*
+ 	 * Initialize the mount structure from the superblock.
+ 	 */
+-	xfs_sb_from_disk(&mp->m_sb, XFS_BUF_TO_SBP(bp));
+-	xfs_sb_quota_from_disk(&mp->m_sb);
++	xfs_sb_from_disk(sbp, XFS_BUF_TO_SBP(bp));
++	xfs_sb_quota_from_disk(sbp);
++
++	/*
++	 * If we haven't validated the superblock, do so now before we try
++	 * to check the sector size and reread the superblock appropriately.
++	 */
++	if (sbp->sb_magicnum != XFS_SB_MAGIC) {
++		if (loud)
++			xfs_warn(mp, "Invalid superblock magic number");
++		error = EINVAL;
++		goto release_buf;
++	}
  
- 	np = of_get_cpu_node(cpu, NULL);
- 	if (!np)
-@@ -206,9 +206,10 @@ static int corenet_cpufreq_cpu_init(stru
- 	for_each_cpu(i, per_cpu(cpu_mask, cpu))
- 		per_cpu(cpu_data, i) = data;
+ 	/*
+ 	 * We must be able to do sector-sized and sector-aligned IO.
+@@ -337,11 +348,11 @@ reread:
+ 		goto release_buf;
+ 	}
  
--	transition_latency_hz = 12ULL * NSEC_PER_SEC;
--	policy->cpuinfo.transition_latency =
--		do_div(transition_latency_hz, fsl_get_sys_freq());
-+	/* Minimum transition latency is 12 platform clocks */
-+	u64temp = 12ULL * NSEC_PER_SEC;
-+	do_div(u64temp, fsl_get_sys_freq());
-+	policy->cpuinfo.transition_latency = u64temp + 1;
- 
- 	of_node_put(np);
- 
+-	/*
+-	 * Re-read the superblock so the buffer is correctly sized,
+-	 * and properly verified.
+-	 */
+ 	if (buf_ops == NULL) {
++		/*
++		 * Re-read the superblock so the buffer is correctly sized,
++		 * and properly verified.
++		 */
+ 		xfs_buf_relse(bp);
+ 		sector_size = sbp->sb_sectsize;
+ 		buf_ops = loud ? &xfs_sb_buf_ops : &xfs_sb_quiet_buf_ops;
 
 
