@@ -1,114 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351AbaGDIjO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:39:14 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:41503 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163AbaGDIjL convert rfc822-to-8bit (ORCPT
+	id S1755532AbaGDIk0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:40:26 -0400
+Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.182]:53608 "EHLO
+	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787AbaGDIkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:39:11 -0400
+	Fri, 4 Jul 2014 04:40:24 -0400
+X-RZG-AUTH: :IW0NeWC7b/q2i6W/qstXb1SBUuFnrGoheedClaTaNdBkW0QEOcx1Ft+DpaWf0qqN8/jSv6KcucO/Jal+pWlFmof8RwlK56M1DtI=
+X-RZG-CLASS-ID: mo05
+Message-ID: <53B6687A.3070108@denx.de>
+Date: Fri, 04 Jul 2014 10:40:26 +0200
+From: Stefan Roese <sr@denx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CAF6AEGsAtqCjrvrgcXmOY0nie89ppFHBcRPtt36ESHWBNqobTg@mail.gmail.com>
-References: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org>
-	<CAF6AEGsLbmos9nz-AYv2v0g33BYdAgKYTe8_ihDWEF3GK_=gjQ@mail.gmail.com>
-	<20140703215200.GG32514@n2100.arm.linux.org.uk>
-	<CAF6AEGsAtqCjrvrgcXmOY0nie89ppFHBcRPtt36ESHWBNqobTg@mail.gmail.com>
-Date: Fri, 4 Jul 2014 10:39:10 +0200
-Message-ID: <CA+M3ks4BU3MTaeCeMPbu8LqW=H27ZAdF-qZLUiG3UXJzbA89Fw@mail.gmail.com>
-Subject: Re: [PATCH v5 00/11] Add DRM for stih4xx platforms
-From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-To: Rob Clark <robdclark@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Jean-Michel Hautbois <jhautbois@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Lattice ECP3 load firmware
+References: <CAL8zT=jVVJ7WB7PtXwbKji5efoZHxWVwD4LgVsuXc3gsW+9=kw@mail.gmail.com>
+In-Reply-To: <CAL8zT=jVVJ7WB7PtXwbKji5efoZHxWVwD4LgVsuXc3gsW+9=kw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob, Russel,
+Hi Jean-Michel,
 
-What I can do is to rebase my driver on driver-core-next branch from
-Greg tree (git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git).
-
-Does that could help ?
-
-Regards,
-Benjamin
-
-
-2014-07-03 23:59 GMT+02:00 Rob Clark <robdclark@gmail.com>:
-> On Thu, Jul 3, 2014 at 5:52 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->> On Thu, Jul 03, 2014 at 05:31:21PM -0400, Rob Clark wrote:
->>> >From a brief look, it looks like my comments have been addressed, so I
->>> think this is starting to shape up..
->>>
->>> Laurent/Thierry/Russell, I don't suppose any of you are likely to have
->>> time before 3.17 merge window to give sti one last once-over to see
->>> what I missed ;-)
->>
->> As this appears to be using the component helpers, it would be good for
->> the author to be pre-warned about the change to the API.  I'm going to
->> be doing this as a two step thing.
->>
->> The first stage of it has just been taken by Greg this evening.  This
->> retires old behaviour that was needed for the initial versions of imx-drm,
->> and fixes a bug.  More importantly, it introduces a new interface where
->> you build the list of expected components before calling
->> component_master_add(), passing it into that function.
->>
->> It is slightly less flexible from the driver writer's view point, but
->> allows us to do more in the component helper, and support some features
->> that others would like to see (such as being able to add additional
->> optional components after the initial bind (that's not much interest
->> to DRM though.)
->>
->> This should make the v3.17 merge window.  I'm hoping that by forewarning
->> about the change, that people can be aware of it and have patches
->> prepared for v3.18 (or maybe even v3.17) to convert over to it, so we
->> can get rid of the older interface before we get too many users of it.
->>
->> I've just peeked at the binding document in the first patch.  I notice
->> that it isn't making use of the of_graph stuff, which is a bit of a
->> shame because I've sent a RFC patch adding drivers/gpu/drm/drm_of.c
->> to provide a helper which encoders can use to get the CRTC mask from
->> an of_graph representation.
+On 04.07.2014 10:24, Jean-Michel Hautbois wrote:
+> I noticed you (Stefan) are using request_firmware_nowait() call. This
+> means user needs to explicitly call it using
 >
-> which reminds me, I need to have a look at the drm_of stuff..
+> $ echo 1 > /sys/class/firmware/lattice-ecp3.0/loading
+> $ cat lattice-ecp3.bit > /sys/class/firmware/lattice-ecp3.0/data
+> $ echo 0 > /sys/class/firmware/lattice-ecp3.0/loading
 >
->> I'm using this not only for imx-drm, but also for tda998x - and that's
->> where the problems are likely to start if we end up with different
->> DRM implementations doing different solutions to the connectivity
->> problem.
->
-> If it simplifies merge-order stuff, I'd be ok with a follow-up patch
-> that converts over (assuming it shouldn't have an impact on the DT
-> bindings, which I'm only assuming it should not..)
->
-> Probably it would be a good idea if Benjamin at least had a patch
-> ready to go to convert over which could be merged right after your
-> stuff hits drm-next.
->
-> BR,
-> -R
->
->> --
->> FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
->> improving, and getting towards what was expected from it.
+> Or did I miss something ?
 
+No, thats correct. This is how we use it on our platform.
 
+> I would like to have it load the firmware bitstream when booting if
+> there is a specific .bit file in /lib/firmware. Maybe don't you want
+> to have this behaviour, though... ?
 
--- 
-Benjamin Gaignard
+No. We don't want this. Please don't ask me about the details. Its quite 
+a while ago that I worked on this platform. And I don't have access to 
+this platform any more.
 
-Graphic Working Group
+Thanks,
+Stefan
 
-Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro: Facebook | Twitter | Blog
