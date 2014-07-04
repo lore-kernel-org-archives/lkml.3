@@ -1,50 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718AbaGDJuG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 05:50:06 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54375 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754510AbaGDJuA (ORCPT
+	id S1756155AbaGDJw3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 05:52:29 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:51624 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751537AbaGDJw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 05:50:00 -0400
-Message-ID: <53B678C1.4000807@ti.com>
-Date: Fri, 4 Jul 2014 12:49:53 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Paul Walmsley <paul@pwsan.com>, <tony@atomide.com>
-CC: <rnayak@ti.com>, <kishon@ti.com>, <george.cherian@ti.com>, <balbi@ti.com>,
-        <balajitk@ti.com>, <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] ARM: DRA7: hwmod: Add OCP2SCP3 module
-References: <1404385274-5093-1-git-send-email-rogerq@ti.com> <1404385274-5093-2-git-send-email-rogerq@ti.com> <alpine.DEB.2.02.1407031948110.1515@utopia.booyaka.com>
-In-Reply-To: <alpine.DEB.2.02.1407031948110.1515@utopia.booyaka.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Fri, 4 Jul 2014 05:52:27 -0400
+Message-ID: <1404467544.27680.22.camel@x220>
+Subject: Re: [PATCH] crypto: caam - Check for CAAM block presence before
+ registering with crypto layer
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ruchika Gupta <ruchika.gupta@freescale.com>
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        herbert@gondor.apana.org.au, davem@davemloft.net,
+        alexandru.porosanu@freescale.com, horia.geanta@freescale.com,
+        NiteshNarayanLal@freescale.com, vakul@freescale.com, marex@denx.de,
+        kim.phillips@freescale.com
+Date: Fri, 04 Jul 2014 11:52:24 +0200
+In-Reply-To: <1404474048-30767-1-git-send-email-ruchika.gupta@freescale.com>
+References: <1404474048-30767-1-git-send-email-ruchika.gupta@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Jul 2014 09:52:25.0517 (UTC) FILETIME=[A8BC35D0:01CF976D]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul & Tony,
-
-On 07/03/2014 10:48 PM, Paul Walmsley wrote:
-> On Thu, 3 Jul 2014, Roger Quadros wrote:
+On Fri, 2014-07-04 at 17:10 +0530, Ruchika Gupta wrote:
+> The layer which registers with the crypto API should check for the presence of
+> the CAAM device it is going to use.  If the platform's device tree doesn't have
+> the required CAAM node, the layer should return an error and not register the
+> algorithms with crypto API layer.
 > 
->> This module is needed for the SATA and PCIe PHYs.
->>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> Reviewed-by: Rajendra Nayak <rnayak@ti.com>
->> Tested-by: Sekhar Nori <nsekhar@ti.com>>
+> Signed-off-by: Ruchika Gupta <ruchika.gupta@freescale.com>
+> Reviewed-by: Horia Ioan Geanta Neag <horia.geanta@freescale.com>
+
+Just a thing I noticed because the time on this message is (at this
+moment) in the future, putting this message a the top of its folder. Not
+really a valid reason to have a look at a patch, but I did anyway.
+
+> ---
+>  drivers/crypto/caam/caamalg.c  | 27 +++++++++++++++++++++++++++
+>  drivers/crypto/caam/caamhash.c | 26 ++++++++++++++++++++++++++
+>  drivers/crypto/caam/caamrng.c  | 26 ++++++++++++++++++++++++++
+>  3 files changed, 79 insertions(+)
 > 
-> This looks like adding support for a new device, so, after 
-> discussing with Tony, queuing for v3.17.
+> diff --git a/drivers/crypto/caam/caamalg.c b/drivers/crypto/caam/caamalg.c
+> index 87d9de4..d479dfb 100644
+> --- a/drivers/crypto/caam/caamalg.c
+> +++ b/drivers/crypto/caam/caamalg.c
+> @@ -2441,8 +2441,35 @@ static struct caam_crypto_alg *caam_alg_alloc(struct caam_alg_template
+>  
+>  static int __init caam_algapi_init(void)
+>  {
+> +	struct device_node *dev_node;
+> +	struct platform_device *pdev;
+> +	struct device *ctrldev;
+> +	void *priv;
+>  	int i = 0, err = 0;
+>  
+> +	dev_node = of_find_compatible_node(NULL, NULL, "fsl,sec-v4.0");
+> +	if (!dev_node) {
+> +		dev_node = of_find_compatible_node(NULL, NULL, "fsl,sec4.0");
+> +		if (!dev_node)
+> +			return -ENODEV;
+> +	}
+> +
+> +	pdev = of_find_device_by_node(dev_node);
+> +	if (!pdev)
 
-We should treat it as missing device (bug) rather than new device (feature) as the corresponding device tree node is already present.
-Without this patch we get the following message in kernel boot log
+Doesn't this leak a reference to dev_node here?
 
-[    0.261680] platform 4a090000.ocp2scp: Cannot lookup hwmod 'ocp2scp3'
+> +		return -ENODEV;
+> +
+> +	ctrldev = &pdev->dev;
+> +	priv = dev_get_drvdata(ctrldev);
+> +	of_node_put(dev_node);
+> +
+> +	/*
+> +	 * If priv is NULL, it's probably because the caam driver wasn't
+> +	 * properly initialized (e.g. RNG4 init failed). Thus, bail out here.
+> +	 */
+> +	if (!priv)
+> +		return -ENODEV;
+> +
+> +
+>  	INIT_LIST_HEAD(&alg_list);
+>  
+>  	/* register crypto algorithms the device supports */
+> diff --git a/drivers/crypto/caam/caamhash.c b/drivers/crypto/caam/caamhash.c
+> index 2ab057b..5e172a2 100644
+> --- a/drivers/crypto/caam/caamhash.c
+> +++ b/drivers/crypto/caam/caamhash.c
+> @@ -1793,8 +1793,34 @@ caam_hash_alloc(struct caam_hash_template *template,
+>  
+>  static int __init caam_algapi_hash_init(void)
+>  {
+> +	struct device_node *dev_node;
+> +	struct platform_device *pdev;
+> +	struct device *ctrldev;
+> +	void *priv;
+>  	int i = 0, err = 0;
+>  
+> +	dev_node = of_find_compatible_node(NULL, NULL, "fsl,sec-v4.0");
+> +	if (!dev_node) {
+> +		dev_node = of_find_compatible_node(NULL, NULL, "fsl,sec4.0");
+> +		if (!dev_node)
+> +			return -ENODEV;
+> +	}
+> +
+> +	pdev = of_find_device_by_node(dev_node);
+> +	if (!pdev)
 
-I would consider this patch as a fix rather than a new feature.
+Ditto.
 
-cheers,
--roger
+> +		return -ENODEV;
+> +
+> +	ctrldev = &pdev->dev;
+> +	priv = dev_get_drvdata(ctrldev);
+> +	of_node_put(dev_node);
+> +
+> +	/*
+> +	 * If priv is NULL, it's probably because the caam driver wasn't
+> +	 * properly initialized (e.g. RNG4 init failed). Thus, bail out here.
+> +	 */
+> +	if (!priv)
+> +		return -ENODEV;
+> +
+>  	INIT_LIST_HEAD(&hash_list);
+>  
+>  	/* register crypto algorithms the device supports */
+> diff --git a/drivers/crypto/caam/caamrng.c b/drivers/crypto/caam/caamrng.c
+> index 8c07d31..c4c36c4 100644
+> --- a/drivers/crypto/caam/caamrng.c
+> +++ b/drivers/crypto/caam/caamrng.c
+> @@ -278,6 +278,32 @@ static void __exit caam_rng_exit(void)
+>  static int __init caam_rng_init(void)
+>  {
+>  	struct device *dev;
+> +	struct device_node *dev_node;
+> +	struct platform_device *pdev;
+> +	struct device *ctrldev;
+> +	void *priv;
+> +
+> +	dev_node = of_find_compatible_node(NULL, NULL, "fsl,sec-v4.0");
+> +	if (!dev_node) {
+> +		dev_node = of_find_compatible_node(NULL, NULL, "fsl,sec4.0");
+> +		if (!dev_node)
+> +			return -ENODEV;
+> +	}
+> +
+> +	pdev = of_find_device_by_node(dev_node);
+> +	if (!pdev)
+
+Ditto.
+
+> +		return -ENODEV;
+> +
+> +	ctrldev = &pdev->dev;
+> +	priv = dev_get_drvdata(ctrldev);
+> +	of_node_put(dev_node);
+> +
+> +	/*
+> +	 * If priv is NULL, it's probably because the caam driver wasn't
+> +	 * properly initialized (e.g. RNG4 init failed). Thus, bail out here.
+> +	 */
+> +	if (!priv)
+> +		return -ENODEV;
+>  
+>  	dev = caam_jr_alloc();
+>  	if (IS_ERR(dev)) {
+
+
+
+Paul Bolle
+
