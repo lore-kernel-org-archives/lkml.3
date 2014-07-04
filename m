@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030902AbaGDWoE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:44:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57431 "EHLO
+	id S1031125AbaGDWUy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:20:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57405 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031129AbaGDWU4 (ORCPT
+	with ESMTP id S1030825AbaGDWUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:20:56 -0400
+	Fri, 4 Jul 2014 18:20:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christophe Vu-Brugier <cvubrugier@yahoo.fr>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 03/46] iscsi-target: Explicily clear login response PDU in exception path
-Date: Fri,  4 Jul 2014 15:19:07 -0700
-Message-Id: <20140704221602.426008703@linuxfoundation.org>
+        Don Zickus <dzickus@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        Peter Wu <peter@lekensteyn.nl>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 21/59] kernel/watchdog.c: remove preemption restrictions when restarting lockup detector
+Date: Fri,  4 Jul 2014 15:19:10 -0700
+Message-Id: <20140704221540.551499232@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
-References: <20140704221602.280733370@linuxfoundation.org>
+In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
+References: <20140704221539.544876024@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,41 +27,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Don Zickus <dzickus@redhat.com>
 
-commit 683497566d48f86e04d026de1ee658dd74fc1077 upstream.
+commit bde92cf455a03a91badb7046855592d8c008e929 upstream.
 
-This patch adds a explicit memset to the login response PDU
-exception path in iscsit_tx_login_rsp().
+Peter Wu noticed the following splat on his machine when updating
+/proc/sys/kernel/watchdog_thresh:
 
-This addresses a regression bug introduced in commit baa4d64b
-where the initiator would end up not receiving the login
-response and associated status class + detail, before closing
-the login connection.
+  BUG: sleeping function called from invalid context at mm/slub.c:965
+  in_atomic(): 1, irqs_disabled(): 0, pid: 1, name: init
+  3 locks held by init/1:
+   #0:  (sb_writers#3){.+.+.+}, at: [<ffffffff8117b663>] vfs_write+0x143/0x180
+   #1:  (watchdog_proc_mutex){+.+.+.}, at: [<ffffffff810e02d3>] proc_dowatchdog+0x33/0x110
+   #2:  (cpu_hotplug.lock){.+.+.+}, at: [<ffffffff810589c2>] get_online_cpus+0x32/0x80
+  Preemption disabled at:[<ffffffff810e0384>] proc_dowatchdog+0xe4/0x110
 
-Reported-by: Christophe Vu-Brugier <cvubrugier@yahoo.fr>
-Tested-by: Christophe Vu-Brugier <cvubrugier@yahoo.fr>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+  CPU: 0 PID: 1 Comm: init Not tainted 3.16.0-rc1-testing #34
+  Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+  Call Trace:
+    dump_stack+0x4e/0x7a
+    __might_sleep+0x11d/0x190
+    kmem_cache_alloc_trace+0x4e/0x1e0
+    perf_event_alloc+0x55/0x440
+    perf_event_create_kernel_counter+0x26/0xe0
+    watchdog_nmi_enable+0x75/0x140
+    update_timers_all_cpus+0x53/0xa0
+    proc_dowatchdog+0xe4/0x110
+    proc_sys_call_handler+0xb3/0xc0
+    proc_sys_write+0x14/0x20
+    vfs_write+0xad/0x180
+    SyS_write+0x49/0xb0
+    system_call_fastpath+0x16/0x1b
+  NMI watchdog: disabled (cpu0): hardware events not enabled
+
+What happened is after updating the watchdog_thresh, the lockup detector
+is restarted to utilize the new value.  Part of this process involved
+disabling preemption.  Once preemption was disabled, perf tried to
+allocate a new event (as part of the restart).  This caused the above
+BUG_ON as you can't sleep with preemption disabled.
+
+The preemption restriction seemed agressive as we are not doing anything
+on that particular cpu, but with all the online cpus (which are
+protected by the get_online_cpus lock).  Remove the restriction and the
+BUG_ON goes away.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Reported-by: Peter Wu <peter@lekensteyn.nl>
+Tested-by: Peter Wu <peter@lekensteyn.nl>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_util.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/watchdog.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target_util.c
-+++ b/drivers/target/iscsi/iscsi_target_util.c
-@@ -1288,6 +1288,8 @@ int iscsit_tx_login_rsp(struct iscsi_con
- 	login->login_failed = 1;
- 	iscsit_collect_login_stats(conn, status_class, status_detail);
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -524,10 +524,8 @@ static void update_timers_all_cpus(void)
+ 	int cpu;
  
-+	memset(&login->rsp[0], 0, ISCSI_HDR_LEN);
-+
- 	hdr	= (struct iscsi_login_rsp *)&login->rsp[0];
- 	hdr->opcode		= ISCSI_OP_LOGIN_RSP;
- 	hdr->status_class	= status_class;
+ 	get_online_cpus();
+-	preempt_disable();
+ 	for_each_online_cpu(cpu)
+ 		update_timers(cpu);
+-	preempt_enable();
+ 	put_online_cpus();
+ }
+ 
 
 
