@@ -1,166 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759985AbaGDGYI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 02:24:08 -0400
-Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:21559
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755807AbaGDGYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 02:24:06 -0400
-From: Ruchika Gupta <ruchika.gupta@freescale.com>
-To: <linux-crypto@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <herbert@gondor.apana.org.au>
-CC: <davem@davemloft.net>, <alexandru.porosanu@freescale.com>,
-        <horia.geanta@freescale.com>, <NiteshNarayanLal@freescale.com>,
-        <vakul@freescale.com>, <marex@denx.de>, <kim.phillips@freescale.com>,
-        Ruchika Gupta <ruchika.gupta@freescale.com>
-Subject: [PATCH] crypto: caam - Check for CAAM block presence before registering with crypto layer
-Date: Fri, 4 Jul 2014 17:10:48 +0530
-Message-ID: <1404474048-30767-1-git-send-email-ruchika.gupta@freescale.com>
-X-Mailer: git-send-email 1.8.1.4
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(76482001)(81542001)(81342001)(26826002)(44976005)(19580395003)(87936001)(105606002)(6806004)(21056001)(87286001)(107046002)(19580405001)(68736004)(50226001)(77156001)(83322001)(92726001)(89996001)(2201001)(84676001)(20776003)(106466001)(86362001)(48376002)(36756003)(77982001)(99396002)(85852003)(85306003)(46102001)(31966008)(79102001)(104016002)(47776003)(97736001)(64706001)(62966002)(74662001)(83072002)(50986999)(33646001)(95666004)(93916002)(80022001)(88136002)(104166001)(102836001)(50466002)(4396001)(229853001)(74502001)(92566001)(61793002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB467;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+	id S1754776AbaGDG3X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 02:29:23 -0400
+Received: from smtp.gaealink.net ([108.166.122.24]:52094 "EHLO
+	smtp.gaealink.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989AbaGDG3V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 02:29:21 -0400
+Message-ID: <53B649A6.60501@julianfamily.org>
+Date: Thu, 03 Jul 2014 23:28:54 -0700
+From: Joe Julian <joe@julianfamily.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02622CEF0A
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=ruchika.gupta@freescale.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-OriginatorOrg: freescale.com
+To: Joe Lawrence <joe.lawrence@stratus.com>, linux-kernel@vger.kernel.org
+Subject: Re: mpt2sas stuck installing
+References: <20140704013250.088477de@jlaw-desktop.mno.stratus.com>
+In-Reply-To: <20140704013250.088477de@jlaw-desktop.mno.stratus.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The layer which registers with the crypto API should check for the presence of
-the CAAM device it is going to use.  If the platform's device tree doesn't have
-the required CAAM node, the layer should return an error and not register the
-algorithms with crypto API layer.
 
-Signed-off-by: Ruchika Gupta <ruchika.gupta@freescale.com>
-Reviewed-by: Horia Ioan Geanta Neag <horia.geanta@freescale.com>
----
- drivers/crypto/caam/caamalg.c  | 27 +++++++++++++++++++++++++++
- drivers/crypto/caam/caamhash.c | 26 ++++++++++++++++++++++++++
- drivers/crypto/caam/caamrng.c  | 26 ++++++++++++++++++++++++++
- 3 files changed, 79 insertions(+)
+On 07/03/2014 10:32 PM, Joe Lawrence wrote:
+> On Thu, Jul 3 2014 Joe Julian wrote:
+>
+>> I have a knox enclosure with an unresponsive drive. When the mpt2sas
+>> module is loaded the module loading process hangs. modprobe/insmod is
+>> stuck and any further attempts to load modules also hang. By
+>> blacklisting the module and loading it last, I can get the computer to
+>> boot, but attempting to manually load the module will still hang. When I
+>> shut down, I get the following:
+>>
+>> [55473.508343] mpt2sas1: _config_request: timeout
+>> [55474.510395] BUG: unable to handle kernel paging request at ffffc90020ae0000
+>> [55474.513048] IP: [<ffffffffa03c00f0>] mpt2sas_base_get_iocstate+0x10/0x30 [mpt2sas]
+>> [55474.525196] PGD 103f80c067 PUD 203f003067 PMD 1026dca067 PTE 0
+>> [55474.526115] Oops: 0000 [#1] SMP
+>> [55474.527837] Modules linked in: raid456 async_pq async_xor xor async_memcpy async_raid6_recov raid6_pq async_tx ses enclosure mpt2sas raid_class rdma_ucm ib_ucm rdma_cm iw_cm ib_addr ib_ipoib ib_cm ib_uverbs ib_umad mlx4_en mlx4_ib(-) ib_sa ib_mad ib_core coretemp mlx4_core kvm_intel kvm 8021q garp stp ghash_clmulni_intel llc aesni_intel ablk_helper cryptd nfsd lrw aes_x86_64 xts psmouse gf128mul sb_edac nfs_acl auth_rpcgss edac_core mei microcode serio_raw mac_hid lp lpc_ich nfs fscache parport lockd sunrpc ext2 isci libsas ahci libahci e1000e scsi_transport_sas [last unloaded: mlx4_core]
+>> [55474.538831] CPU 2
+>> [55474.539218] Pid: 3516, comm: scsi_eh_10 Not tainted 3.8.0-38-generic #56~precise1-Ubuntu Quanta F03R /Winterfell
+>> [55474.541004] RIP: 0010:[<ffffffffa03c00f0>] [<ffffffffa03c00f0>] mpt2sas_base_get_iocstate+0x10/0x30 [mpt2sas]
+>> [55474.542772] RSP: 0018:ffff881019a39ae8  EFLAGS: 00010246
+>> [55474.543590] RAX: ffffc90020ae0000 RBX: ffff88100fd1e6b0 RCX: 0000000000000000
+>> [55474.546285] RDX: ffff881019a39fd8 RSI: 0000000000000001 RDI: ffff88100fd1e6b0
+>> [55474.548451] RBP: ffff881019a39ae8 R08: 0000000000000000 R09: 0000000000000000
+>> [55474.549585] R10: 00000000000007db R11: 00000000000007da R12: 0000000000000001
+>> [55474.550689] R13: ffff881019a39bbc R14: 000000000000ffff R15: ffff881019a39c80
+>> [55474.551791] FS:  0000000000000000(0000) GS:ffff88103fc40000(0000) knlGS:0000000000000000
+>> [55474.553044] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>> [55474.553928] CR2: ffffc90020ae0000 CR3: 0000000001c0d000 CR4: 00000000000407e0
+>> [55474.555187] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> [55474.557030] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> [55474.558139] Process scsi_eh_10 (pid: 3516, threadinfo ffff881019a38000, task ffff8810257b5d00)
+>> [55474.560748] Stack:
+>> [55474.561069]  ffff881019a39b98 ffffffffa03c183a 0000000000000006 0000000000000006
+>> [55474.562218]  ffff88100fd1eb00 ffff88100fd1eaf8 ffff88100fd1e6d0 0000000000000000
+>> [55474.563343]  ffff881019a30000 ffffffff8105b3ea ffff88100fd1ead8 0000000000000000
+>> [55474.564595] Call Trace:
+>> [55474.565003]  [<ffffffffa03c183a>] _config_request.constprop.5+0x15a/0x590 [mpt2sas]
+>> [55474.568223]  [<ffffffff8105b3ea>] ? console_unlock+0x1a/0x30
+>> [55474.569896]  [<ffffffffa03c2a3a>] mpt2sas_config_get_expander_pg0+0x8a/0xf0 [mpt2sas]
+>> [55474.571322]  [<ffffffffa03c589c>] _scsih_search_responding_expanders+0x5c/0xe0 [mpt2sas]
+>> [55474.572582]  [<ffffffffa03c4599>] ?  _scsih_search_responding_sas_devices+0xa9/0xc0 [mpt2sas]
+>> [55474.573912]  [<ffffffffa03cd43e>] mpt2sas_scsih_reset_handler+0xbe/0x1a0 [mpt2sas]
+>> [55474.575191]  [<ffffffffa03bf91f>] _base_reset_handler+0x1f/0x40 [mpt2sas]
+>> [55474.576250]  [<ffffffffa03c0d9e>] mpt2sas_base_hard_reset_handler+0x1ae/0x1e0 [mpt2sas]
+>> [55474.577500]  [<ffffffffa03c499c>] _scsih_host_reset+0x5c/0xb0 [mpt2sas]
+>> [55474.578554]  [<ffffffff814ac2f3>] scsi_try_host_reset+0x53/0x110
+>> [55474.579729]  [<ffffffff814adbbc>] scsi_eh_host_reset+0x4c/0x170
+>> [55474.580764]  [<ffffffff814ae532>] scsi_eh_ready_devs+0x82/0xa0
+>> [55474.581866]  [<ffffffff814aef2d>] scsi_unjam_host+0xed/0x1d0
+>> [55474.584848]  [<ffffffff814af175>] scsi_error_handler+0x165/0x1c0
+>> [55474.585984]  [<ffffffff814af010>] ? scsi_unjam_host+0x1d0/0x1d0
+>> [55474.592375]  [<ffffffff8107f2e0>] kthread+0xc0/0xd0
+>> [55474.594325]  [<ffffffff8107f220>] ? flush_kthread_worker+0xb0/0xb0
+>> [55474.595654]  [<ffffffff816ff1ac>] ret_from_fork+0x7c/0xb0
+>> [55474.598729]  [<ffffffff8107f220>] ? flush_kthread_worker+0xb0/0xb0
+>> [55474.607501] Code: c7 c2 f8 7d 3d a0 48 c7 c7 52 ac 3d a0 31 c0 e8 f1 de 31 e1 e9 f6 fe ff ff 66 90 66 66 66 66 90 55 48 8b 87 88 00 00 00 48 89 e5 <8b> 00 89 c2 81 e2 00 00 00 f0 85 f6 0f 45 c2 5d c3 66 66 66 66
+>> [55474.611823] RIP  [<ffffffffa03c00f0>] mpt2sas_base_get_iocstate+0x10/0x30 [mpt2sas]
+>> [55474.613007]  RSP <ffff881019a39ae8>
+>> [55474.613548] CR2: ffffc90020ae0000
+>> [55474.614183] ---[ end trace a817d8e30eb9f07c ]---
+> Hi Joe,
+>
+> I was investigating a crash inside mpt2sas_base_get_iocstate just
+> earlier today.  In my case, it appeared that ioc->chip had been cleared
+> when mpt2sas_base_get_iocstate tried to reference through it.  This was
+> with a newer kernel on RHEL7, but it also occured early in
+> mpt2sas_base_get_iocstate and EAX held the bogo address.
+>
+> A few follow up questions:
+>
+> Do you happen to have kdump enabled?
+> Were there any other interesting log messages after loading the driver?
+> Is this crash easily reproducible?
+>
+> Regards,
+>
+> -- Joe
+This was a production server, so no kdump enabled. There's no relevant 
+log messages.
 
-diff --git a/drivers/crypto/caam/caamalg.c b/drivers/crypto/caam/caamalg.c
-index 87d9de4..d479dfb 100644
---- a/drivers/crypto/caam/caamalg.c
-+++ b/drivers/crypto/caam/caamalg.c
-@@ -2441,8 +2441,35 @@ static struct caam_crypto_alg *caam_alg_alloc(struct caam_alg_template
- 
- static int __init caam_algapi_init(void)
- {
-+	struct device_node *dev_node;
-+	struct platform_device *pdev;
-+	struct device *ctrldev;
-+	void *priv;
- 	int i = 0, err = 0;
- 
-+	dev_node = of_find_compatible_node(NULL, NULL, "fsl,sec-v4.0");
-+	if (!dev_node) {
-+		dev_node = of_find_compatible_node(NULL, NULL, "fsl,sec4.0");
-+		if (!dev_node)
-+			return -ENODEV;
-+	}
-+
-+	pdev = of_find_device_by_node(dev_node);
-+	if (!pdev)
-+		return -ENODEV;
-+
-+	ctrldev = &pdev->dev;
-+	priv = dev_get_drvdata(ctrldev);
-+	of_node_put(dev_node);
-+
-+	/*
-+	 * If priv is NULL, it's probably because the caam driver wasn't
-+	 * properly initialized (e.g. RNG4 init failed). Thus, bail out here.
-+	 */
-+	if (!priv)
-+		return -ENODEV;
-+
-+
- 	INIT_LIST_HEAD(&alg_list);
- 
- 	/* register crypto algorithms the device supports */
-diff --git a/drivers/crypto/caam/caamhash.c b/drivers/crypto/caam/caamhash.c
-index 2ab057b..5e172a2 100644
---- a/drivers/crypto/caam/caamhash.c
-+++ b/drivers/crypto/caam/caamhash.c
-@@ -1793,8 +1793,34 @@ caam_hash_alloc(struct caam_hash_template *template,
- 
- static int __init caam_algapi_hash_init(void)
- {
-+	struct device_node *dev_node;
-+	struct platform_device *pdev;
-+	struct device *ctrldev;
-+	void *priv;
- 	int i = 0, err = 0;
- 
-+	dev_node = of_find_compatible_node(NULL, NULL, "fsl,sec-v4.0");
-+	if (!dev_node) {
-+		dev_node = of_find_compatible_node(NULL, NULL, "fsl,sec4.0");
-+		if (!dev_node)
-+			return -ENODEV;
-+	}
-+
-+	pdev = of_find_device_by_node(dev_node);
-+	if (!pdev)
-+		return -ENODEV;
-+
-+	ctrldev = &pdev->dev;
-+	priv = dev_get_drvdata(ctrldev);
-+	of_node_put(dev_node);
-+
-+	/*
-+	 * If priv is NULL, it's probably because the caam driver wasn't
-+	 * properly initialized (e.g. RNG4 init failed). Thus, bail out here.
-+	 */
-+	if (!priv)
-+		return -ENODEV;
-+
- 	INIT_LIST_HEAD(&hash_list);
- 
- 	/* register crypto algorithms the device supports */
-diff --git a/drivers/crypto/caam/caamrng.c b/drivers/crypto/caam/caamrng.c
-index 8c07d31..c4c36c4 100644
---- a/drivers/crypto/caam/caamrng.c
-+++ b/drivers/crypto/caam/caamrng.c
-@@ -278,6 +278,32 @@ static void __exit caam_rng_exit(void)
- static int __init caam_rng_init(void)
- {
- 	struct device *dev;
-+	struct device_node *dev_node;
-+	struct platform_device *pdev;
-+	struct device *ctrldev;
-+	void *priv;
-+
-+	dev_node = of_find_compatible_node(NULL, NULL, "fsl,sec-v4.0");
-+	if (!dev_node) {
-+		dev_node = of_find_compatible_node(NULL, NULL, "fsl,sec4.0");
-+		if (!dev_node)
-+			return -ENODEV;
-+	}
-+
-+	pdev = of_find_device_by_node(dev_node);
-+	if (!pdev)
-+		return -ENODEV;
-+
-+	ctrldev = &pdev->dev;
-+	priv = dev_get_drvdata(ctrldev);
-+	of_node_put(dev_node);
-+
-+	/*
-+	 * If priv is NULL, it's probably because the caam driver wasn't
-+	 * properly initialized (e.g. RNG4 init failed). Thus, bail out here.
-+	 */
-+	if (!priv)
-+		return -ENODEV;
- 
- 	dev = caam_jr_alloc();
- 	if (IS_ERR(dev)) {
--- 
-1.8.1.4
-
+I do have a staging environment I can test in, and yes, I think I can 
+easily repro this.
