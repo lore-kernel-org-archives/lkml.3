@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332AbaGDHhQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 03:37:16 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:60345 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaGDHhN (ORCPT
+	id S1752624AbaGDHiB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 03:38:01 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:65296 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751149AbaGDHh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 03:37:13 -0400
-Subject: Re: [PATCH 0/4] GenWQE: patches to improve RAS features (v2)
-From: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Reply-To: haver@linux.vnet.ibm.com
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org,
-        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
-In-Reply-To: <1403772933.25754.1.camel@oc7383187364.ibm.com>
-References: <1403713327-27976-1-git-send-email-klebers@linux.vnet.ibm.com>
-	 <1403772933.25754.1.camel@oc7383187364.ibm.com>
+	Fri, 4 Jul 2014 03:37:59 -0400
+Message-ID: <1404459477.27680.10.camel@x220>
+Subject: usb: gadget: net2280: CONFIG_USB_GADGET_PDEBUG_FILES?
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 04 Jul 2014 09:37:57 +0200
 Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Fri, 04 Jul 2014 09:37:07 +0200
-Message-ID: <1404459427.11076.2.camel@oc7383187364.ibm.com>
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070407-8372-0000-0000-0000006D8ED3
+X-OriginalArrivalTime: 04 Jul 2014 07:37:57.0902 (UTC) FILETIME=[E00FDAE0:01CF975A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Commit e56e69cc0ff4 ("usb: gadget: net2280: Use pr_* function") is
+included in today's linux-next (ie, next-20140704).
 
-Am Donnerstag, den 26.06.2014, 10:55 +0200 schrieb Frank Haverkamp:
-> Hi Kleber,
-> 
-> Am Mittwoch, den 25.06.2014, 13:22 -0300 schrieb Kleber Sacilotto de
-> Souza:
-> > Hi,
-> > 
-> > I'm sending a v2 of this patch series, removing the patch that bumps the
-> > driver version number, and including a trivial one that removes an unnecessary
-> > include.
-> > 
-> > Kleber Sacilotto de Souza (4):
-> >   GenWQE: Add sysfs interface for bitstream reload
-> >   GenWQE: Add support for EEH error recovery
-> >   GenWQE: Improve hardware error recovery
-> >   GenWQE: Remove unecessary include
-> > 
-> >  Documentation/ABI/testing/sysfs-driver-genwqe |    9 +
-> >  drivers/misc/genwqe/Kconfig                   |    6 +
-> >  drivers/misc/genwqe/card_base.c               |  215 +++++++++++++++++++++++--
-> >  drivers/misc/genwqe/card_base.h               |    2 +
-> >  drivers/misc/genwqe/card_ddcb.c               |   24 +++-
-> >  drivers/misc/genwqe/card_debugfs.c            |    7 +
-> >  drivers/misc/genwqe/card_dev.c                |    5 +
-> >  drivers/misc/genwqe/card_sysfs.c              |   25 +++
-> >  drivers/misc/genwqe/card_utils.c              |   10 ++
-> >  include/uapi/linux/genwqe/genwqe_card.h       |    1 +
-> >  10 files changed, 285 insertions(+), 19 deletions(-)
-> > 
-> 
-> Thanks for resubmitting the patches.
-> 
-> Acked-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
-> 
+It contains this odd chunk:
+    @@ -1566,7 +1563,7 @@ static const struct usb_gadget_ops net2280_ops = {
+     
+     /*-------------------------------------------------------------------------*/
+     
+    -#ifdef CONFIG_USB_GADGET_DEBUG_FILES
+    +#ifdef CONFIG_USB_GADGET_PDEBUG_FILES
+     
+     /* FIXME move these into procfs, and use seq_file.
+      * Sysfs _still_ doesn't behave for arbitrarily sized files,
 
-ping. Do you already have an idea when you might find the time to review
-Klebers patches?
+(Commit b7ca96655ddd ("usb: gadget: Gadget directory cleanup - group UDC
+drivers"), also included in today's linux-next, moved that new check for
+CONFIG_USB_GADGET_PDEBUG_FILES to drivers/usb/gadget/udc/net2280.c.)
 
-Thanks
+Using CONFIG_USB_GADGET_PDEBUG_FILES appears to be just an editing
+mistake. Would Ricardo like to submit the trivial patch to clean it up
+or should I do that?
 
-Frank
+
+Paul Bolle
 
