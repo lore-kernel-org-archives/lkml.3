@@ -1,117 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759310AbaGDRWN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 13:22:13 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46050 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753335AbaGDRWM (ORCPT
+	id S1754172AbaGDRZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 13:25:26 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:34388 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752832AbaGDRZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 13:22:12 -0400
-Date: Fri, 4 Jul 2014 19:21:04 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        kernel list <linux-kernel@vger.kernel.org>, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org
-Subject: Re: ext4: media error but where?
-Message-ID: <20140704172104.GA4877@xo-6d-61-c0.localdomain>
-References: <20140626202021.GA8512@xo-6d-61-c0.localdomain>
- <20140626203052.GA9449@xo-6d-61-c0.localdomain>
- <20140627024659.GF6826@thunk.org>
- <20140629202516.GA11430@amd.pavel.ucw.cz>
- <20140629210428.GD2162@thunk.org>
- <20140630064644.GA23079@amd.pavel.ucw.cz>
- <20140630134313.GA3753@thunk.org>
- <20140704102307.GA19252@amd.pavel.ucw.cz>
- <20140704121119.GB10514@thunk.org>
+	Fri, 4 Jul 2014 13:25:24 -0400
+Date: Fri, 4 Jul 2014 19:24:57 +0200
+From: Emil Goode <emilgoode@gmail.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Jingoo Han <jg1.han@samsung.com>,
+        Leilei Shang <shangll@marvell.com>,
+        Peter Korsgaard <peter@korsgaard.com>, linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3] i2c: busses: i2c-pxa.c: Fix for possible null pointer
+ dereferenc
+Message-ID: <20140704172457.GA3404@lianli>
+References: <1404418756-10550-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <1404418756-10550-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <20140704091000.GA4738@lianli>
+ <CAFo99gYU6v_ohZa6rSfHwUhk6Lw1dCtVWOQsLk3tZ_GRyqExbg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140704121119.GB10514@thunk.org>
+In-Reply-To: <CAFo99gYU6v_ohZa6rSfHwUhk6Lw1dCtVWOQsLk3tZ_GRyqExbg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hello,
 
-> > pavel@duo:~$ uname -a
-> > Linux duo 3.15.0-rc8+ #365 SMP Mon Jun 9 09:18:29 CEST 2014 i686
-> > GNU/Linux
-> > 
-> > EXT4-fs (sda3): error count: 11
-> > EXT4-fs (sda3): initial error at 1401714179: ext4_mb_generate_buddy:756
-> > EXT4-fs (sda3): last error at 1401714179: ext4_reserve_inode_write:4877
-> > 
-> > That sounds like media error to me?
+I noticed one more thing.
+
+On Fri, Jul 04, 2014 at 07:07:48PM +0200, Rickard Strandqvist wrote:
+> 2014-07-04 11:10 GMT+02:00 Emil Goode <emilgoode@gmail.com>:
+> > Hello Rickard,
+> >
+> > Since this is a probe function there is also no need to release the devm_*
+> > resources in the i2c_pxa_remove function, this leads to double free.
+> >
+> > Also I have a few nit-pick comments below.
+> >
+> > On Thu, Jul 03, 2014 at 10:19:16PM +0200, Rickard Strandqvist wrote:
+> >> Fix for possible null pointer dereferenc, and there is a risk for memory leak if something unexpected happens and the function returns.
+> >> It now use Managed Device Resource instead.
+> >>
+> >> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> >> ---
+> >>  drivers/i2c/busses/i2c-pxa.c |   37 ++++++++++++++++---------------------
+> >>  1 file changed, 16 insertions(+), 21 deletions(-)
+> >>
+> >> diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
+> >> index be671f7..2edb633 100644
+> >> --- a/drivers/i2c/busses/i2c-pxa.c
+> >> +++ b/drivers/i2c/busses/i2c-pxa.c
+> >> @@ -1141,10 +1141,10 @@ static int i2c_pxa_probe(struct platform_device *dev)
+> >>       struct resource *res = NULL;
+> >>       int ret, irq;
+> >>
+> >> -     i2c = kzalloc(sizeof(struct pxa_i2c), GFP_KERNEL);
+> >> +     i2c = devm_kzalloc(&dev->dev, sizeof(struct pxa_i2c), GFP_KERNEL);
+> >>       if (!i2c) {
+> >>               ret = -ENOMEM;
+> >> -             goto emalloc;
+> >> +             goto err_nothing_to_release;
+> >
+> > Perhaps its a good idea to return directly here, then the label
+> > err_nothing_to_release can be removed.
+> >
+> >>       }
+> >>
+> >>       /* Default adapter num to device id; i2c_pxa_probe_dt can override. */
+> >> @@ -1154,18 +1154,19 @@ static int i2c_pxa_probe(struct platform_device *dev)
+> >>       if (ret > 0)
+> >>               ret = i2c_pxa_probe_pdata(dev, i2c, &i2c_type);
+> >>       if (ret < 0)
+> >> -             goto eclk;
+> >> +             goto err_nothing_to_release;
+> >
+> > Same here.
+> >
+> >>
+> >>       res = platform_get_resource(dev, IORESOURCE_MEM, 0);
+> >>       irq = platform_get_irq(dev, 0);
+> >>       if (res == NULL || irq < 0) {
+> >>               ret = -ENODEV;
+> >> -             goto eclk;
+> >> +             goto err_nothing_to_release;
+> >
+> > Same here.
+> >
+> >>       }
+> >>
+> >> -     if (!request_mem_region(res->start, resource_size(res), res->name)) {
+> >> +     if (!devm_request_mem_region(&dev->dev, res->start,
+> >> +                             resource_size(res), res->name)) {
+> >>               ret = -ENOMEM;
+> >> -             goto eclk;
+> >> +             goto emalloc;
+> >
+> > We could also return directly here since the release_mem_region call should
+> > be removed, as mentioned in Jingoos reply.
+> >
+> >>       }
+> >>
+> >>       i2c->adap.owner   = THIS_MODULE;
+> >> @@ -1176,16 +1177,16 @@ static int i2c_pxa_probe(struct platform_device *dev)
+> >>
+> >>       strlcpy(i2c->adap.name, "pxa_i2c-i2c", sizeof(i2c->adap.name));
+> >>
+> >> -     i2c->clk = clk_get(&dev->dev, NULL);
+> >> +     i2c->clk = devm_clk_get(&dev->dev, NULL);
+> >>       if (IS_ERR(i2c->clk)) {
+> >>               ret = PTR_ERR(i2c->clk);
+> >> -             goto eclk;
+> >> +             goto emalloc;
+> >
+> > Same here.
+> >
+> >>       }
+> >>
+> >> -     i2c->reg_base = ioremap(res->start, resource_size(res));
+> >> -     if (!i2c->reg_base) {
+> >> +     i2c->reg_base = devm_ioremap_resource(&adev->dev, res));
+> >> +     if (IS_ERR(i2c->reg_base)) {
+> >>               ret = -EIO;
+> >> -             goto eremap;
+> >> +             goto emalloc;
+> >
+> > Same here.
+> >
+> >>       }
+> >>
+> >>       i2c->reg_ibmr = i2c->reg_base + pxa_reg_layout[i2c_type].ibmr;
+> >> @@ -1227,10 +1228,10 @@ static int i2c_pxa_probe(struct platform_device *dev)
+> >>               i2c->adap.algo = &i2c_pxa_pio_algorithm;
+> >>       } else {
+> >>               i2c->adap.algo = &i2c_pxa_algorithm;
+> >> -             ret = request_irq(irq, i2c_pxa_handler, IRQF_SHARED,
+> >> -                               dev_name(&dev->dev), i2c);
+> >> +             ret = devm_request_irq(&dev->dev, irq, i2c_pxa_handler,
+> >> +                              IRQF_SHARED, dev_name(&dev->dev), i2c);
+> >>               if (ret)
+> >> -                     goto ereqirq;
+> >> +                     goto emalloc;
+> >
+> > Same here.
+> >
+> >>       }
+> >>
+> >>       i2c_pxa_reset(i2c);
+> >> @@ -1261,15 +1262,9 @@ static int i2c_pxa_probe(struct platform_device *dev)
+> >>  eadapt:
+> >>       if (!i2c->use_pio)
+> >>               free_irq(irq, i2c);
+> >
+> > The free_irq() call should also be removed since devm_request_irq() was used.
+> >
+> >> -ereqirq:
+> >> -     clk_disable_unprepare(i2c->clk);
+
+I think we should keep the clk_disable_unprepare() call.
+
+> >> -     iounmap(i2c->reg_base);
+> >> -eremap:
+> >> -     clk_put(i2c->clk);
+> >> -eclk:
+> >> -     kfree(i2c);
+> >>  emalloc:
+> >>       release_mem_region(res->start, resource_size(res));
+> >> +err_nothing_to_release:
+> >>       return ret;
+> >>  }
+> >>
+> >
+> > Best regards,
+> >
+> > Emil Goode
 > 
-> If you search your system logs since the last fsck, you should find 11
-> instances of "EXT4-fs error" message, which means that there was some
-> file system inconsisntencies detected.  The first error was detected at:
+> Hi All!
 > 
-> % date -d @1401714179
-> Mon Jun  2 09:02:59 EDT 2014
-
-Interesting. I always assumed 140... was block number.
-
-> ... which means that you haven't rebooted in a month, or your boot
-> scripts aren't automatically running fsck, or your clock is
-> incorrect.
-
-I suspect something is wrong with the reporting. I got this in kernel log _while
-running fsck_. fsck was clean (take a look in the original email). I got weird
-report with fsck -c, it told me filesystem modified but I don't think I got bad
-blocks there.
-
-I believe my scripts are running fsck automatically, and yes, I rebooted a lot
-in a last month. It _may_ be possible that last month this x60 had different hard drive,
-and I copied it bit-by-bit.
-
-> It does seem to happen more often after an unclean shutdown, and there
-> does seem to be a very high correlation with eMMC devices.  It's
-> possible there is a jbd2 bug that got introduced recently, where ext4
-> is modifying some field outside of a journal transaction.  But I
-> haven't been able to reproduce this yet in controlled circumstances.
+> Ok, so there is literally nothing to do release anymore.
+> A good system Devres, I understand you want everyone to use it.
 > 
-> What I need from people reporting problems: 
-> 
-> * What is the HDD/SSD/eMMC device involved
+> I also think it is also better to return directly then.
+> But who decides, Wolfram?
 
-SATA hdd, will get you exact data.
+Yes, Wolfram is the maintainer.
 
-> * What kernel version were you running
-
-For last month? Various, 3.10 to 3.16-rc, mostly 3.15+.
-
-> * What distribution are you running (more so I know what the init
->   scripts might or might not have been doing vis-a-vis running fsck
->   after a crash)
-
-Debian 6.
- 
-> * Was there an unclean shutdown / power drop / hard reset involved?
->   If so, did the HDD/SSD/eMMC lose power, or was the reset button hit
->   on the machine?
-
-Crash in last month? Probably yes.
-
-> * What sort of workload / application / test program running before
->   the crash, if any?
-
-Just usual desktop / kernel development.
-
-> and so they don't need to report anymore info.  I need as many data
-> points as possible at this point.
-
-You'll get them.
-
-Is it possible that my fsck is so old it does not clear this "filesystem
-had error in past" flag? Because I strongly suspect I'll boot into
-init=/bin/bash, run fsck, it will tell me "all clean", and the messages
-will repeat in the middle of fsck run.
+Personally I would do the devm_* convertion in a second patch.
 
 Best regards,
-								Pavel
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Emil Goode
+
