@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760194AbaGDVWd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 17:22:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60473 "EHLO mx2.suse.de"
+	id S1760069AbaGDVZq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 17:25:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60498 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753582AbaGDVWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 17:22:32 -0400
-Date: Fri, 4 Jul 2014 23:22:29 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Olaf Hering <olaf@aepfle.de>
-cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 13/72] floppy: bail out in open() if drive is not
- responding to block0 read
-In-Reply-To: <20140703101233.GA28675@aepfle.de>
-Message-ID: <alpine.LNX.2.00.1407042322030.1655@pobox.suse.cz>
-References: <cover.1397812482.git.jslaby@suse.cz> <e6732e00c9ffc318d21fca56e747f59f85d078a1.1397812482.git.jslaby@suse.cz> <20140703101233.GA28675@aepfle.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753039AbaGDVZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 17:25:45 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] kbuild: Fix packaging targets with relative $(srctree)
+Date: Fri,  4 Jul 2014 23:24:54 +0200
+Message-Id: <1404509094-22033-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jul 2014, Olaf Hering wrote:
+All other users of Makefile.build set $(obj) to the name of the
+subdirectory to build. Do the same for the packaging targets, otherwise
+the build fails if $(srctree) is a relative directory:
 
-> > From: Jiri Kosina <jkosina@suse.cz>
-> 
-> > commit 7b7b68bba5ef23734c35ffb0d8d82079ed604d33 upstream.
-> 
-> > +static void floppy_rb0_cb(struct bio *bio, int err)
-> >  {
-> > -	complete((struct completion *)bio->bi_private);
-> > +	struct rb0_cbdata *cbdata = (struct rb0_cbdata *)bio->bi_private;
-> > +	int drive = cbdata->drive;
-> > +
-> > +	if (err) {
-> > +		pr_info("floppy: error %d while reading block 0", err);
-> 
-> This change lacks a newline...
+    $ make O=build tar-pkg
+    make[1]: Entering directory `/home/mmarek/linux-2.6/build'
+      CHK     include/config/kernel.release
+    ../scripts/Makefile.build:44: ../../scripts/package/Makefile: No such file or directory
+    make[2]: *** No rule to make target `../../scripts/package/Makefile'.  Stop.
 
-Fixed by 1c65df3d7 in Linus' tree.
+Fixes: 9da0763b ("kbuild: Use relative path when building in a subdir of the source tree")
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/Makefile b/Makefile
+index 1a5f9f3..347d6c7 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1176,7 +1176,7 @@ distclean: mrproper
+ # Packaging of the kernel to various formats
+ # ---------------------------------------------------------------------------
+ # rpm target kept for backward compatibility
+-package-dir	:= $(srctree)/scripts/package
++package-dir	:= scripts/package
+ 
+ %src-pkg: FORCE
+ 	$(Q)$(MAKE) $(build)=$(package-dir) $@
 -- 
-Jiri Kosina
-SUSE Labs
+1.8.4.5
+
