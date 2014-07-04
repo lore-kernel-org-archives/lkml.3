@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840AbaGDKYR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 06:24:17 -0400
-Received: from mga01.intel.com ([192.55.52.88]:32032 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752631AbaGDKYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 06:24:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,600,1400050800"; 
-   d="scan'208";a="557424563"
-Message-ID: <53B68068.2060102@intel.com>
-Date: Fri, 04 Jul 2014 18:22:32 +0800
-From: "xinhui.pan" <xinhuix.pan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1755353AbaGDK1N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 06:27:13 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:59241 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958AbaGDK1L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 06:27:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: get rid of hardcoded assumptions about kernel stack size
+Date: Fri, 04 Jul 2014 12:27:04 +0200
+Message-ID: <4429781.iuSvvPCxYj@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53B6541B.6000702@samsung.com>
+References: <1403099422-850-1-git-send-email-a.ryabinin@samsung.com> <201407032224.28386.arnd@arndb.de> <53B6541B.6000702@samsung.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, agk@redhat.com, snitzer@redhat.com,
-        dm-devel@redhat.com
-CC: yanmin_zhang@linux.intel.com, "Liu, ShuoX" <shuox.liu@intel.com>
-Subject: [PATCH] md/dm-ioctl.c: optimize memory allocation in copy_params
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:umN1ztHvhSOG/w7LYpvkxXO8gLuCk9sKMoRjdm0bd2F
+ xFts66eXjHO7HUjMhMix7oFNk7ZJNDqRylX9fSeJpnKfbCY40Q
+ idvTOv8i14fcv88Qn5rGSObTJReu9ofR00mnFm/9CHfS+NKtWW
+ bTfGA8Vo6LqSh+4NR+SRfL0ke2wEoqZTTaj2yhhR1Gr73WrG8x
+ Iju4OJZqzlgoEAV4UhLaM/SIqVbwYD56QuQ8/kFSgAG3IL0gTN
+ ibZX6xtViCQtTwQRAIV5GLEytvZrb2UEMsS0msf95e9mEo76lH
+ s690DSJIHqlmdzyDtNmfRKHi+W+2PgtJKKn7a7XxuN2F6JL/GK
+ zZI8xxPtdjhrjHOOBWbk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KMALLOC_MAX_SIZE is too big, it easily cause memory fragmented and low memory when param_kernel->data_size
-is also big. That's not nice. So use vmalloc instead of kmalloc when size is larger than (PAGE_SIZE << 2).
-There are other drivers using kmalloc to gain a big size memory. And that cause our devices to hit hang and
-many worse issues. We don't benefit much when using kmalloc in such scenario.
+On Friday 04 July 2014 11:13:31 Andrey Ryabinin wrote:
+> > 
+> > but I wonder if there is a way to avoid the extra include here, as it might also
+> > cause a general slowdown because of asm/memory.h getting pulled into more .c
+> > files. Would it be reasonable to hardcode PAGE_SIZE here?
+> > 
+> 
+> IMO it's a bug of iop13xx platform, that it includes "higlevel" linux/reboot.h
+> from a very "lowlevel" header mach/iop13xx.h. I think it should be fixed with a patch above.
+> Slowing down of kernel build for a few more seconds is not good enough reason for me to
+> hardcode PAGE_SIZE here.
 
-Signed-off-by: xinhui.pan <xinhuiX.pan@intel.com>
-Signed-off-by: yanmin.zhang <yanmin_zhang@linux.intel.com>
----
- drivers/md/dm-ioctl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I don't think we can pinpoint a specific header that is "wrong" here, the
+fundamental problem is that our header files are a bit messy when it comes
+to recursive inclusion and we'd be better off if we generally were a little
+more careful about including headers from other headers.
 
-diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
-index 5152142..31c3af9 100644
---- a/drivers/md/dm-ioctl.c
-+++ b/drivers/md/dm-ioctl.c
-@@ -1709,7 +1709,7 @@ static int copy_params(struct dm_ioctl __user *user, struct dm_ioctl *param_kern
-         * Use kmalloc() rather than vmalloc() when we can.
-         */
-        dmi = NULL;
--       if (param_kernel->data_size <= KMALLOC_MAX_SIZE) {
-+       if (param_kernel->data_size <= (PAGE_SIZE << 2)) {
-                dmi = kmalloc(param_kernel->data_size, GFP_NOIO | __GFP_NORETRY | __GFP_NOMEMALLOC | __GFP_NOWARN);
-                if (dmi)
-                        *param_flags |= DM_PARAMS_KMALLOC;
--- 
-1.7.9.5
+It's also very hard to retroactively clean this up on a large scale.
+
+	Arnd
