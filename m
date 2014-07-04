@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031362AbaGDWVo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:21:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57561 "EHLO
+	id S1031498AbaGDWer (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:34:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57578 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030360AbaGDWVk (ORCPT
+	with ESMTP id S1030360AbaGDWVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:21:40 -0400
+	Fri, 4 Jul 2014 18:21:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Scott Wood <scottwood@freescale.com>,
-        Michael Neuling <mikey@neuling.org>,
-        Emil Medve <Emilian.Medve@freescale.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.14 46/59] powerpc: Dont skip ePAPR spin-table CPUs
-Date: Fri,  4 Jul 2014 15:19:35 -0700
-Message-Id: <20140704221541.742511549@linuxfoundation.org>
+        Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.14 48/59] reiserfs: call truncate_setsize under tailpack mutex
+Date: Fri,  4 Jul 2014 15:19:37 -0700
+Message-Id: <20140704221541.832002855@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -31,48 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Scott Wood <scottwood@freescale.com>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit 6663a4fa6711050036562ddfd2086edf735fae21 upstream.
+commit 22e7478ddbcb670e33fab72d0bbe7c394c3a2c84 upstream.
 
-Commit 59a53afe70fd530040bdc69581f03d880157f15a "powerpc: Don't setup
-CPUs with bad status" broke ePAPR SMP booting.  ePAPR says that CPUs
-that aren't presently running shall have status of disabled, with
-enable-method being used to determine whether the CPU can be enabled.
+Prior to commit 0e4f6a791b1e (Fix reiserfs_file_release()), reiserfs
+truncates serialized on i_mutex. They mostly still do, with the exception
+of reiserfs_file_release. That blocks out other writers via the tailpack
+mutex and the inode openers counter adjusted in reiserfs_file_open.
 
-Fix by checking for spin-table, which is currently the only supported
-enable-method.
+However, NFS will call reiserfs_setattr without having called ->open, so
+we end up with a race when nfs is calling ->setattr while another
+process is releasing the file. Ultimately, it triggers the
+BUG_ON(inode->i_size != new_file_size) check in maybe_indirect_to_direct.
 
-Signed-off-by: Scott Wood <scottwood@freescale.com>
-Cc: Michael Neuling <mikey@neuling.org>
-Cc: Emil Medve <Emilian.Medve@Freescale.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+The solution is to pull the lock into reiserfs_setattr to encompass the
+truncate_setsize call as well.
+
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/setup-common.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ fs/reiserfs/inode.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/setup-common.c
-+++ b/arch/powerpc/kernel/setup-common.c
-@@ -456,9 +456,17 @@ void __init smp_setup_cpu_maps(void)
+--- a/fs/reiserfs/inode.c
++++ b/fs/reiserfs/inode.c
+@@ -3220,8 +3220,14 @@ int reiserfs_setattr(struct dentry *dent
+ 	    attr->ia_size != i_size_read(inode)) {
+ 		error = inode_newsize_ok(inode, attr->ia_size);
+ 		if (!error) {
++			/*
++			 * Could race against reiserfs_file_release
++			 * if called from NFS, so take tailpack mutex.
++			 */
++			mutex_lock(&REISERFS_I(inode)->tailpack);
+ 			truncate_setsize(inode, attr->ia_size);
+-			reiserfs_vfs_truncate_file(inode);
++			reiserfs_truncate_file(inode, 1);
++			mutex_unlock(&REISERFS_I(inode)->tailpack);
  		}
+ 	}
  
- 		for (j = 0; j < nthreads && cpu < nr_cpu_ids; j++) {
-+			bool avail;
-+
- 			DBG("    thread %d -> cpu %d (hard id %d)\n",
- 			    j, cpu, be32_to_cpu(intserv[j]));
--			set_cpu_present(cpu, of_device_is_available(dn));
-+
-+			avail = of_device_is_available(dn);
-+			if (!avail)
-+				avail = !of_property_match_string(dn,
-+						"enable-method", "spin-table");
-+
-+			set_cpu_present(cpu, avail);
- 			set_hard_smp_processor_id(cpu, be32_to_cpu(intserv[j]));
- 			set_cpu_possible(cpu, true);
- 			cpu++;
 
 
