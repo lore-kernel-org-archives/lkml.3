@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031458AbaGDWqb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:46:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57393 "EHLO
+	id S1031530AbaGDWqr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:46:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57386 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031060AbaGDWUm (ORCPT
+	with ESMTP id S1031056AbaGDWUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:20:42 -0400
+	Fri, 4 Jul 2014 18:20:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        David Airlie <airlied@redhat.com>
-Subject: [PATCH 3.14 10/59] PCI: Fix incorrect vgaarb conditional in WARN_ON()
-Date: Fri,  4 Jul 2014 15:18:59 -0700
-Message-Id: <20140704221540.009801191@linuxfoundation.org>
+        Thomas Jarosch <thomas.jarosch@intra2net.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.14 09/59] PCI: Add new ID for Intel GPU "spurious interrupt" quirk
+Date: Fri,  4 Jul 2014 15:18:58 -0700
+Message-Id: <20140704221539.970370820@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -29,37 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
 
-commit 67ebd8140dc8923c65451fa0f6a8eee003c4dcd3 upstream.
+commit 7c82126a94e69bbbac586f0249e7ef11e681246c upstream.
 
-3448a19da479 "vgaarb: use bridges to control VGA routing where possible"
-added the "flags & PCI_VGA_STATE_CHANGE_DECODES" condition to an existing
-WARN_ON(), but used bitwise AND (&) instead of logical AND (&&), so the
-condition is never true.  Replace with logical AND.
+After a CPU upgrade while keeping the same mainboard, we faced "spurious
+interrupt" problems again.
 
-Found by Coverity (CID 142811).
+It turned out that the new CPU also featured a new GPU with a different PCI
+ID.
 
-Fixes: 3448a19da479 "vgaarb: use bridges to control VGA routing where possible"
+Add this PCI ID to the quirk table.  Probably all other Intel GPU PCI IDs
+are affected, too, but I don't want to add them without a test system.
+
+See f67fd55fa96f ("PCI: Add quirk for still enabled interrupts on Intel
+Sandy Bridge GPUs") for some history.
+
+[bhelgaas: add f67fd55fa96f reference, stable tag]
+Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: David Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pci/quirks.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -4102,7 +4102,7 @@ int pci_set_vga_state(struct pci_dev *de
- 	u16 cmd;
- 	int rc;
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2949,6 +2949,7 @@ static void disable_igfx_irq(struct pci_
+ }
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0152, disable_igfx_irq);
  
--	WARN_ON((flags & PCI_VGA_STATE_CHANGE_DECODES) & (command_bits & ~(PCI_COMMAND_IO|PCI_COMMAND_MEMORY)));
-+	WARN_ON((flags & PCI_VGA_STATE_CHANGE_DECODES) && (command_bits & ~(PCI_COMMAND_IO|PCI_COMMAND_MEMORY)));
- 
- 	/* ARCH specific VGA enables */
- 	rc = pci_set_vga_state_arch(dev, decode, command_bits, flags);
+ /*
+  * PCI devices which are on Intel chips can skip the 10ms delay
 
 
