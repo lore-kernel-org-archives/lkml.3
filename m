@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031750AbaGDWyc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:54:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57204 "EHLO
+	id S1031762AbaGDWys (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:54:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57199 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030536AbaGDWRd (ORCPT
+	with ESMTP id S1030534AbaGDWRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:33 -0400
+	Fri, 4 Jul 2014 18:17:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pierre Ossman <pierre@ossman.eu>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.15 64/66] ALSA: hda - hdmi: call overridden init on resume
-Date: Fri,  4 Jul 2014 15:15:03 -0700
-Message-Id: <20140704221425.740359237@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.15 63/66] ALSA: usb-audio: Fix races at disconnection and PCM closing
+Date: Fri,  4 Jul 2014 15:15:02 -0700
+Message-Id: <20140704221425.696362515@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -28,35 +28,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pierre Ossman <pierre@ossman.eu>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit a283368382c50345dff61525f493ea307f21ec9b upstream.
+commit 92a586bdc06de6629dae1b357dac221253f55ff8 upstream.
 
-We need to call the proper init function in case it has been
-overridden, as it might restore things that the generic routing
-doesn't know anything about. E.g. AMD cards have special verbs
-that need resetting.
+When a USB-audio device is disconnected while PCM is still running, we
+still see some race: the disconnect callback calls
+snd_usb_endpoint_free() that calls release_urbs() and then kfree()
+while a PCM stream would be closed at the same time and calls
+stop_endpoints() that leads to wait_clear_urbs().  That is, the EP
+object might be deallocated while a PCM stream is syncing with
+wait_clear_urbs() with the same EP.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=77901
-Fixes: 5a61358433b1 ('ALSA: hda - hdmi: Add ATI/AMD multi-channel audio support')
-Signed-off-by: Pierre Ossman <pierre@ossman.eu>
+Basically calling multiple wait_clear_urbs() would work fine, also
+calling wait_clear_urbs() and release_urbs() would work, too, as
+wait_clear_urbs() just reads some fields in ep.  The problem is the
+succeeding kfree() in snd_pcm_endpoint_free().
+
+This patch moves out the EP deallocation into the later point, the
+destructor callback.  At this stage, all PCMs must have been already
+closed, so it's safe to free the objects.
+
+Reported-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/usb/card.c     |   13 ++++++++++---
+ sound/usb/endpoint.c |   17 ++++++++++++++---
+ sound/usb/endpoint.h |    1 +
+ 3 files changed, 25 insertions(+), 6 deletions(-)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -2208,7 +2208,7 @@ static int generic_hdmi_resume(struct hd
- 	struct hdmi_spec *spec = codec->spec;
- 	int pin_idx;
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -307,6 +307,11 @@ static int snd_usb_create_streams(struct
  
--	generic_hdmi_init(codec);
-+	codec->patch_ops.init(codec);
- 	snd_hda_codec_resume_amp(codec);
- 	snd_hda_codec_resume_cache(codec);
+ static int snd_usb_audio_free(struct snd_usb_audio *chip)
+ {
++	struct list_head *p, *n;
++
++	list_for_each_safe(p, n, &chip->ep_list)
++		snd_usb_endpoint_free(p);
++
+ 	mutex_destroy(&chip->mutex);
+ 	kfree(chip);
+ 	return 0;
+@@ -585,7 +590,7 @@ static void snd_usb_audio_disconnect(str
+ 				     struct snd_usb_audio *chip)
+ {
+ 	struct snd_card *card;
+-	struct list_head *p, *n;
++	struct list_head *p;
  
+ 	if (chip == (void *)-1L)
+ 		return;
+@@ -598,14 +603,16 @@ static void snd_usb_audio_disconnect(str
+ 	mutex_lock(&register_mutex);
+ 	chip->num_interfaces--;
+ 	if (chip->num_interfaces <= 0) {
++		struct snd_usb_endpoint *ep;
++
+ 		snd_card_disconnect(card);
+ 		/* release the pcm resources */
+ 		list_for_each(p, &chip->pcm_list) {
+ 			snd_usb_stream_disconnect(p);
+ 		}
+ 		/* release the endpoint resources */
+-		list_for_each_safe(p, n, &chip->ep_list) {
+-			snd_usb_endpoint_free(p);
++		list_for_each_entry(ep, &chip->ep_list, list) {
++			snd_usb_endpoint_release(ep);
+ 		}
+ 		/* release the midi resources */
+ 		list_for_each(p, &chip->midi_list) {
+--- a/sound/usb/endpoint.c
++++ b/sound/usb/endpoint.c
+@@ -987,19 +987,30 @@ void snd_usb_endpoint_deactivate(struct
+ }
+ 
+ /**
++ * snd_usb_endpoint_release: Tear down an snd_usb_endpoint
++ *
++ * @ep: the endpoint to release
++ *
++ * This function does not care for the endpoint's use count but will tear
++ * down all the streaming URBs immediately.
++ */
++void snd_usb_endpoint_release(struct snd_usb_endpoint *ep)
++{
++	release_urbs(ep, 1);
++}
++
++/**
+  * snd_usb_endpoint_free: Free the resources of an snd_usb_endpoint
+  *
+  * @ep: the list header of the endpoint to free
+  *
+- * This function does not care for the endpoint's use count but will tear
+- * down all the streaming URBs immediately and free all resources.
++ * This free all resources of the given ep.
+  */
+ void snd_usb_endpoint_free(struct list_head *head)
+ {
+ 	struct snd_usb_endpoint *ep;
+ 
+ 	ep = list_entry(head, struct snd_usb_endpoint, list);
+-	release_urbs(ep, 1);
+ 	kfree(ep);
+ }
+ 
+--- a/sound/usb/endpoint.h
++++ b/sound/usb/endpoint.h
+@@ -23,6 +23,7 @@ void snd_usb_endpoint_stop(struct snd_us
+ void snd_usb_endpoint_sync_pending_stop(struct snd_usb_endpoint *ep);
+ int  snd_usb_endpoint_activate(struct snd_usb_endpoint *ep);
+ void snd_usb_endpoint_deactivate(struct snd_usb_endpoint *ep);
++void snd_usb_endpoint_release(struct snd_usb_endpoint *ep);
+ void snd_usb_endpoint_free(struct list_head *head);
+ 
+ int snd_usb_endpoint_implicit_feedback_sink(struct snd_usb_endpoint *ep);
 
 
