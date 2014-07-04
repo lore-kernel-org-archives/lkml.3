@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760902AbaGDW4x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:56:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57170 "EHLO
+	id S1760940AbaGDW5V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:57:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57157 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030414AbaGDWRR (ORCPT
+	with ESMTP id S1030369AbaGDWRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:17 -0400
+	Fri, 4 Jul 2014 18:17:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.15 38/66] NFS: Use raw_write_seqcount_begin/end int nfs4_reclaim_open_state
-Date: Fri,  4 Jul 2014 15:14:37 -0700
-Message-Id: <20140704221424.551732478@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.15 44/66] powerpc/serial: Use saner flags when creating legacy ports
+Date: Fri,  4 Jul 2014 15:14:43 -0700
+Message-Id: <20140704221424.820133197@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -28,48 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit abbec2da13f0e4c5d9b78b7e2c025a3e617228ba upstream.
+commit c4cad90f9e9dcb85afc5e75a02ae3522ed077296 upstream.
 
-The addition of lockdep code to write_seqcount_begin/end has lead to
-a bunch of false positive claims of ABBA deadlocks with the so_lock
-spinlock. Audits show that this simply cannot happen because the
-read side code does not spin while holding so_lock.
+We had a mix & match of flags used when creating legacy ports
+depending on where we found them in the device-tree. Among others
+we were missing UPF_SKIP_TEST for some kind of ISA ports which is
+a problem as quite a few UARTs out there don't support the loopback
+test (such as a lot of BMCs).
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Let's pick the set of flags used by the SoC code and generalize it
+which means autoconf, no loopback test, irq maybe shared and fixed
+port.
+
+Sending to stable as the lack of UPF_SKIP_TEST is breaking
+serial on some machines so I want this back into distros
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4state.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/powerpc/kernel/legacy_serial.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1456,7 +1456,7 @@ static int nfs4_reclaim_open_state(struc
- 	 * server that doesn't support a grace period.
+--- a/arch/powerpc/kernel/legacy_serial.c
++++ b/arch/powerpc/kernel/legacy_serial.c
+@@ -48,6 +48,9 @@ static struct of_device_id legacy_serial
+ static unsigned int legacy_serial_count;
+ static int legacy_serial_console = -1;
+ 
++static const upf_t legacy_port_flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST |
++	UPF_SHARE_IRQ | UPF_FIXED_PORT;
++
+ static unsigned int tsi_serial_in(struct uart_port *p, int offset)
+ {
+ 	unsigned int tmp;
+@@ -153,8 +156,6 @@ static int __init add_legacy_soc_port(st
+ {
+ 	u64 addr;
+ 	const __be32 *addrp;
+-	upf_t flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST | UPF_SHARE_IRQ
+-		| UPF_FIXED_PORT;
+ 	struct device_node *tsi = of_get_parent(np);
+ 
+ 	/* We only support ports that have a clock frequency properly
+@@ -185,9 +186,11 @@ static int __init add_legacy_soc_port(st
+ 	 * IO port value. It will be fixed up later along with the irq
  	 */
- 	spin_lock(&sp->so_lock);
--	write_seqcount_begin(&sp->so_reclaim_seqcount);
-+	raw_write_seqcount_begin(&sp->so_reclaim_seqcount);
- restart:
- 	list_for_each_entry(state, &sp->so_states, open_states) {
- 		if (!test_and_clear_bit(ops->state_flag_bit, &state->flags))
-@@ -1519,13 +1519,13 @@ restart:
- 		spin_lock(&sp->so_lock);
- 		goto restart;
- 	}
--	write_seqcount_end(&sp->so_reclaim_seqcount);
-+	raw_write_seqcount_end(&sp->so_reclaim_seqcount);
- 	spin_unlock(&sp->so_lock);
- 	return 0;
- out_err:
- 	nfs4_put_open_state(state);
- 	spin_lock(&sp->so_lock);
--	write_seqcount_end(&sp->so_reclaim_seqcount);
-+	raw_write_seqcount_end(&sp->so_reclaim_seqcount);
- 	spin_unlock(&sp->so_lock);
- 	return status;
+ 	if (tsi && !strcmp(tsi->type, "tsi-bridge"))
+-		return add_legacy_port(np, -1, UPIO_TSI, addr, addr, NO_IRQ, flags, 0);
++		return add_legacy_port(np, -1, UPIO_TSI, addr, addr,
++				       NO_IRQ, legacy_port_flags, 0);
+ 	else
+-		return add_legacy_port(np, -1, UPIO_MEM, addr, addr, NO_IRQ, flags, 0);
++		return add_legacy_port(np, -1, UPIO_MEM, addr, addr,
++				       NO_IRQ, legacy_port_flags, 0);
  }
+ 
+ static int __init add_legacy_isa_port(struct device_node *np,
+@@ -233,7 +236,7 @@ static int __init add_legacy_isa_port(st
+ 
+ 	/* Add port, irq will be dealt with later */
+ 	return add_legacy_port(np, index, UPIO_PORT, be32_to_cpu(reg[1]),
+-			       taddr, NO_IRQ, UPF_BOOT_AUTOCONF, 0);
++			       taddr, NO_IRQ, legacy_port_flags, 0);
+ 
+ }
+ 
+@@ -306,7 +309,7 @@ static int __init add_legacy_pci_port(st
+ 	 * IO port value. It will be fixed up later along with the irq
+ 	 */
+ 	return add_legacy_port(np, index, iotype, base, addr, NO_IRQ,
+-			       UPF_BOOT_AUTOCONF, np != pci_dev);
++			       legacy_port_flags, np != pci_dev);
+ }
+ #endif
+ 
 
 
