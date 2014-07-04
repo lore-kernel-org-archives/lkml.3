@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286AbaGDFVn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 01:21:43 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:55321 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914AbaGDFVm (ORCPT
+	id S1752258AbaGDFcz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 01:32:55 -0400
+Received: from p01c11o148.mxlogic.net ([208.65.144.71]:37476 "EHLO
+	p01c11o148.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897AbaGDFcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 01:21:42 -0400
-Message-ID: <53B639DE.8030102@hitachi.com>
-Date: Fri, 04 Jul 2014 14:21:34 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 4 Jul 2014 01:32:53 -0400
+X-MXL-Hash: 53b63c85618e06ab-74bc2dc08529564a2168d17fde09bd2405f88242
+Date: Fri, 4 Jul 2014 01:32:50 -0400
+From: Joe Lawrence <joe.lawrence@stratus.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Joe Julian <joe@julianfamily.org>, Joe Lawrence <joe.lawrence@stratus.com>
+Subject: RE: mpt2sas stuck installing
+Message-ID: <20140704013250.088477de@jlaw-desktop.mno.stratus.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+In-Reply-To: 53B57FF1.8000307@julianfamily.org
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: __trace_remove_event_dirs() leaks file->filter ? (Was: probe_event_disable()->synchronize_sched())
-References: <20140627170116.GA18298@redhat.com> <20140627170136.GA18319@redhat.com> <87k37z54lu.fsf@sejong.aot.lge.com> <20140630184828.GA24594@redhat.com> <20140701193147.GA32492@redhat.com> <53B4EE21.2040203@hitachi.com> <20140703162211.GB5610@redhat.com> <20140703170109.GA10208@redhat.com>
-In-Reply-To: <20140703170109.GA10208@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-AnalysisOut: [v=2.1 cv=B6430YdM c=1 sm=1 tr=0 a=VNTQBUOG7PJoPU2GWtE7Ww==]
+X-AnalysisOut: [:117 a=VNTQBUOG7PJoPU2GWtE7Ww==:17 a=_KQqW7t0BisA:10 a=BLc]
+X-AnalysisOut: [eEmwcHowA:10 a=kj9zAlcOel0A:10 a=uelBKuKpAAAA:8 a=YlVTAMxI]
+X-AnalysisOut: [AAAA:8 a=YXLd4tlW0xAumYdOWK8A:9 a=CjuIK1q_8ugA:10]
+X-Spam: [F=0.5000000000; CM=0.500; MH=0.500(2014070315); S=0.200(2014051901)]
+X-MAIL-FROM: <joe.lawrence@stratus.com>
+X-SOURCE-IP: [134.111.1.17]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/07/04 2:01), Oleg Nesterov wrote:
-> On 07/03, Oleg Nesterov wrote:
->>
->> Hmm. Off-topic, but it seems that instance_rmdir() leaks the memory? Say,
->> file->filter?
+On Thu, Jul 3 2014 Joe Julian wrote:
+
+> I have a knox enclosure with an unresponsive drive. When the mpt2sas 
+> module is loaded the module loading process hangs. modprobe/insmod is 
+> stuck and any further attempts to load modules also hang. By 
+> blacklisting the module and loading it last, I can get the computer to 
+> boot, but attempting to manually load the module will still hang. When I 
+> shut down, I get the following:
 > 
-> Perhaps I am totally confused, but don't we need something like the patch
-> below? I'll try to recheck later...
-> 
-> Better yet, we can probably move destroy_preds() from event_remove() to
-> remove_event_file_dir()... not sure, need to recheck.
+> [55473.508343] mpt2sas1: _config_request: timeout
+> [55474.510395] BUG: unable to handle kernel paging request at ffffc90020ae0000
+> [55474.513048] IP: [<ffffffffa03c00f0>] mpt2sas_base_get_iocstate+0x10/0x30 [mpt2sas]
+> [55474.525196] PGD 103f80c067 PUD 203f003067 PMD 1026dca067 PTE 0
+> [55474.526115] Oops: 0000 [#1] SMP
+> [55474.527837] Modules linked in: raid456 async_pq async_xor xor async_memcpy async_raid6_recov raid6_pq async_tx ses enclosure mpt2sas raid_class rdma_ucm ib_ucm rdma_cm iw_cm ib_addr ib_ipoib ib_cm ib_uverbs ib_umad mlx4_en mlx4_ib(-) ib_sa ib_mad ib_core coretemp mlx4_core kvm_intel kvm 8021q garp stp ghash_clmulni_intel llc aesni_intel ablk_helper cryptd nfsd lrw aes_x86_64 xts psmouse gf128mul sb_edac nfs_acl auth_rpcgss edac_core mei microcode serio_raw mac_hid lp lpc_ich nfs fscache parport lockd sunrpc ext2 isci libsas ahci libahci e1000e scsi_transport_sas [last unloaded: mlx4_core]
+> [55474.538831] CPU 2
+> [55474.539218] Pid: 3516, comm: scsi_eh_10 Not tainted 3.8.0-38-generic #56~precise1-Ubuntu Quanta F03R /Winterfell
+> [55474.541004] RIP: 0010:[<ffffffffa03c00f0>] [<ffffffffa03c00f0>] mpt2sas_base_get_iocstate+0x10/0x30 [mpt2sas]
+> [55474.542772] RSP: 0018:ffff881019a39ae8  EFLAGS: 00010246
+> [55474.543590] RAX: ffffc90020ae0000 RBX: ffff88100fd1e6b0 RCX: 0000000000000000
+> [55474.546285] RDX: ffff881019a39fd8 RSI: 0000000000000001 RDI: ffff88100fd1e6b0
+> [55474.548451] RBP: ffff881019a39ae8 R08: 0000000000000000 R09: 0000000000000000
+> [55474.549585] R10: 00000000000007db R11: 00000000000007da R12: 0000000000000001
+> [55474.550689] R13: ffff881019a39bbc R14: 000000000000ffff R15: ffff881019a39c80
+> [55474.551791] FS:  0000000000000000(0000) GS:ffff88103fc40000(0000) knlGS:0000000000000000
+> [55474.553044] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [55474.553928] CR2: ffffc90020ae0000 CR3: 0000000001c0d000 CR4: 00000000000407e0
+> [55474.555187] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [55474.557030] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [55474.558139] Process scsi_eh_10 (pid: 3516, threadinfo ffff881019a38000, task ffff8810257b5d00)
+> [55474.560748] Stack:
+> [55474.561069]  ffff881019a39b98 ffffffffa03c183a 0000000000000006 0000000000000006
+> [55474.562218]  ffff88100fd1eb00 ffff88100fd1eaf8 ffff88100fd1e6d0 0000000000000000
+> [55474.563343]  ffff881019a30000 ffffffff8105b3ea ffff88100fd1ead8 0000000000000000
+> [55474.564595] Call Trace:
+> [55474.565003]  [<ffffffffa03c183a>] _config_request.constprop.5+0x15a/0x590 [mpt2sas]
+> [55474.568223]  [<ffffffff8105b3ea>] ? console_unlock+0x1a/0x30
+> [55474.569896]  [<ffffffffa03c2a3a>] mpt2sas_config_get_expander_pg0+0x8a/0xf0 [mpt2sas]
+> [55474.571322]  [<ffffffffa03c589c>] _scsih_search_responding_expanders+0x5c/0xe0 [mpt2sas]
+> [55474.572582]  [<ffffffffa03c4599>] ?  _scsih_search_responding_sas_devices+0xa9/0xc0 [mpt2sas]
+> [55474.573912]  [<ffffffffa03cd43e>] mpt2sas_scsih_reset_handler+0xbe/0x1a0 [mpt2sas]
+> [55474.575191]  [<ffffffffa03bf91f>] _base_reset_handler+0x1f/0x40 [mpt2sas]
+> [55474.576250]  [<ffffffffa03c0d9e>] mpt2sas_base_hard_reset_handler+0x1ae/0x1e0 [mpt2sas]
+> [55474.577500]  [<ffffffffa03c499c>] _scsih_host_reset+0x5c/0xb0 [mpt2sas]
+> [55474.578554]  [<ffffffff814ac2f3>] scsi_try_host_reset+0x53/0x110
+> [55474.579729]  [<ffffffff814adbbc>] scsi_eh_host_reset+0x4c/0x170
+> [55474.580764]  [<ffffffff814ae532>] scsi_eh_ready_devs+0x82/0xa0
+> [55474.581866]  [<ffffffff814aef2d>] scsi_unjam_host+0xed/0x1d0
+> [55474.584848]  [<ffffffff814af175>] scsi_error_handler+0x165/0x1c0
+> [55474.585984]  [<ffffffff814af010>] ? scsi_unjam_host+0x1d0/0x1d0
+> [55474.592375]  [<ffffffff8107f2e0>] kthread+0xc0/0xd0
+> [55474.594325]  [<ffffffff8107f220>] ? flush_kthread_worker+0xb0/0xb0
+> [55474.595654]  [<ffffffff816ff1ac>] ret_from_fork+0x7c/0xb0
+> [55474.598729]  [<ffffffff8107f220>] ? flush_kthread_worker+0xb0/0xb0
+> [55474.607501] Code: c7 c2 f8 7d 3d a0 48 c7 c7 52 ac 3d a0 31 c0 e8 f1 de 31 e1 e9 f6 fe ff ff 66 90 66 66 66 66 90 55 48 8b 87 88 00 00 00 48 89 e5 <8b> 00 89 c2 81 e2 00 00 00 f0 85 f6 0f 45 c2 5d c3 66 66 66 66
+> [55474.611823] RIP  [<ffffffffa03c00f0>] mpt2sas_base_get_iocstate+0x10/0x30 [mpt2sas]
+> [55474.613007]  RSP <ffff881019a39ae8>
+> [55474.613548] CR2: ffffc90020ae0000
+> [55474.614183] ---[ end trace a817d8e30eb9f07c ]---
 
-Ah, yes, it seems event_remove releases preds, and remove_event_file_dir()
-called from event_trace_del_tracer() doesn't release it.
+Hi Joe,
 
-BTW, with following patch, we'd better remove destroy_preds() from
-event_remove() and add destroy_call_preds() at the very last of the
-function.
+I was investigating a crash inside mpt2sas_base_get_iocstate just
+earlier today.  In my case, it appeared that ioc->chip had been cleared
+when mpt2sas_base_get_iocstate tried to reference through it.  This was
+with a newer kernel on RHEL7, but it also occured early in
+mpt2sas_base_get_iocstate and EAX held the bogo address.
 
-Thank you,
+A few follow up questions:
 
-> 
-> Oleg.
-> 
-> --- x/kernel/trace/trace_events.c
-> +++ x/kernel/trace/trace_events.c
-> @@ -470,6 +470,7 @@ static void remove_event_file_dir(struct ftrace_event_file *file)
->  
->  	list_del(&file->list);
->  	remove_subsystem(file->system);
-> +	destroy_file_preds(file);
->  	kmem_cache_free(file_cachep, file);
->  }
->  
-> 
-> 
+Do you happen to have kdump enabled?
+Were there any other interesting log messages after loading the driver?
+Is this crash easily reproducible?
 
+Regards,
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+-- Joe
