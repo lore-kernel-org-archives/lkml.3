@@ -1,147 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759361AbaGDScO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 14:32:14 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.219]:29808 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992AbaGDScM (ORCPT
+	id S1759552AbaGDSdS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 14:33:18 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47240 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670AbaGDSdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 14:32:12 -0400
-X-RZG-AUTH: :OH8QVVOrc/CP6za/qRmbF3BWedPGA1vjs2ekfyrejs0ialTxoY/iPPu2PXDa3bE8LSg7
-X-RZG-CLASS-ID: mo00
-Message-ID: <53B6F30E.2000706@schoebel-theuer.de>
-Date: Fri, 04 Jul 2014 20:31:42 +0200
-From: Thomas Schoebel-Theuer <tst@schoebel-theuer.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 4 Jul 2014 14:33:16 -0400
+Date: Fri, 4 Jul 2014 19:32:49 +0100
+From: Mark Brown <broonie@kernel.org>
+To: addy ke <addy.ke@rock-chips.com>
+Cc: heiko@sntech.de, grant.likely@linaro.org, robh+dt@kernel.org,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
+        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
+        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
+        zhangqing@rock-chips.com, wei.luo@rock-chips.com
+Message-ID: <20140704183249.GC14896@sirena.org.uk>
+References: <1403582852-9751-1-git-send-email-addy.ke@rock-chips.com>
+ <1404176639-3315-1-git-send-email-addy.ke@rock-chips.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard.weinberger@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: Selling Points for MARS Light
-References: <53B6897F.6020802@schoebel-theuer.de> <CAFLxGvynFuCh0puda06kTH1P3i=701dQO-+opjLnQrd2KqUTHA@mail.gmail.com>
-In-Reply-To: <CAFLxGvynFuCh0puda06kTH1P3i=701dQO-+opjLnQrd2KqUTHA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="E/DnYTRukya0zdZ1"
+Content-Disposition: inline
+In-Reply-To: <1404176639-3315-1-git-send-email-addy.ke@rock-chips.com>
+X-Cookie: This bag is recyclable.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 2/2] spi: add driver for Rockchip RK3xxx SoCs
+ integrated SPI
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> We are interested in the real low level design ideas. i.e. Why do you
-need all syscalls exported?
 
-OK, simple question, simple first-order answer, more complicated
-second-order answer.
+--E/DnYTRukya0zdZ1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-First-order answer:
+On Tue, Jul 01, 2014 at 09:03:59AM +0800, addy ke wrote:
+> In order to facilitate understanding, rockchip SPI controller IP design
+> looks similar in its registers to designware. But IC implementation
+> is different from designware, So we need a dedicated driver for Rockchip
+> RK3XXX SoCs integrated SPI. The main differences:
 
-Exporting all syscalls was a mistake made by me. It's not needed. Only a
-handful is really needed. Of course, I am willing to correct my mistake.
+This looks good overall, a nice clean driver.  I've applied it but there
+are a few small issues that need fixing up which I've noted below, can
+you please send followup patches dealing with these?
 
-A first-order fix for this is really simple. A second-order fix
-(avoiding _any_ additional exports, or almost any) would get much more
-complicated.
+> +	 * static void spi_set_cs(struct spi_device *spi, bool enable)
+> +	 * {
+> +	 *		if (spi->mode & SPI_CS_HIGH)
+> +	 *			enable = !enable;
+> +	 *
+> +	 *		if (spi->cs_gpio >= 0)
+> +	 *			gpio_set_value(spi->cs_gpio, !enable);
+> +	 *		else if (spi->master->set_cs)
+> +	 *		spi->master->set_cs(spi, !enable);
+> +	 * }
+> +	 *
+> +	 * Note: enable(rockchip_spi_set_cs) = !enable(spi_set_cs)
+> +	 */
 
-Second-order answer to the more detailed question behind your question:
-why does tst need filesystem operations like *_symlink() or *_readlink()
-at the low level?
+So, the point here is that chip select is an active low signal by
+default which means that if chip select is asserted we have a low logic
+level and the parameter means "asserted" not "logic level for the
+output".  It doesn't really matter but it might be clearer to say so
+directly.
 
-I tried to explain the general high-level rationale behind the
-architecture of MARS in the last part of my "marketing drone" appraisal
-(which I also hated some years ago, but I had to learn how to produce
-such an evil thing when changing from academia to the industry).
+> +	if (spi->mode & SPI_CS_HIGH) {
+> +		dev_err(rs->dev, "spi_cs_hign: not support\n");
+> +		return -EINVAL;
 
-Detailed steps of the rationale, with some non-obvious intermediate steps:
+Typo here (high).
 
-Due to the enterprise-class dynamic shared store needed for masses of
-backlog data (as explained in the last part of my former posting), I had
-the low-level implementation choice of
+> +static int rockchip_spi_unprepare_message(struct spi_master *master,
+> +		struct spi_message *msg)
+> +{
+> +	unsigned long flags;
+> +	struct rockchip_spi *rs = spi_master_get_devdata(master);
+> +
+> +	spin_lock_irqsave(&rs->lock, flags);
+> +
+> +	if (rs->use_dma) {
+> +		if (rs->state & RXBUSY) {
+> +			dmaengine_terminate_all(rs->dma_rx.ch);
+> +			flush_fifo(rs);
+> +		}
+> +
+> +		if (rs->state & TXBUSY)
+> +			dmaengine_terminate_all(rs->dma_tx.ch);
+> +	}
 
-a) just re-using existing filesystem technology for that, or
+This initially looks wrong - the DMA should all be quiesced by the time
+that we get to unpreparing the hardware, otherwise the transfer might be
+ongoing while the chip select is deasserted.  However this is really
+just error handling in case something went wrong which is sensible and
+reasonable, a comment explaining this would help so can you please send
+a followup patch adding one.
 
-b) implementing my own filesystem-like dynamic store for that.
+The error handling here is actually a good point - we should probably
+add a callback for the core to use when it times out since the issue
+also applies if there are further transactions queued with the hardware.
+I'll look into that later unless someone does it first.
 
-I also examined another potential alternative c), namely trying to use
-LVM / DM for that. I looked at the concepts and some parts of the
-interfaces, as well as of the implemention (all in a rather old kernel
-as used in production!!!), and found some clashes at concept level, and
-therefore got the impression that it could likely become very
-cumbersome, so I precluded this potential alternative at a rather early
-stage.
+> +	/* Delay until the FIFO data completely */
+> +	if (xfer->tx_buf)
+> +		xfer->delay_usecs
+> +			= rs->fifo_len * rs->bpw * 1000000 / rs->speed;
 
-At that time, my office was next door to the IT operations system
-architect, who became a friend of mine. So we were discussing many
-political as well as detailed technical implementation problems in a
-very small team (sometimes when drinking a beer together).
+The driver shouldn't be doing this, if it needs a delay it needs to
+implement it itself.  delay_usecs can be set by devices if they need a
+delay between transfers, it should be in addition to the time taken for
+the transfer to complete.
 
-At that time, the rationale was to produce a POC (proof of concept)
-ASAP, in order to aquire some resources for the emerging MARS project
-internally. Around that time, we decided jointly to postpone all
-"expensive" efforts to a later version called "MARS FULL" (originally
-all in capital letters), and to try to get a quick-win called "MARS
-LIGHT" ASAP.
+Please send a followup patch fixing this.
 
-Under that premise, it becomes immediately clear that a) had to be taken
-for MARS Light, and whenever b) should turn out a better alternative
-(which I think is quite possible), we decided to do it "later".
+> +static bool rockchip_spi_can_dma(struct spi_master *master,
+> +		struct spi_device *spi,
+> +		struct spi_transfer *xfer)
+> +{
+> +	struct rockchip_spi *rs = spi_master_get_devdata(master);
+> +
+> +	return (xfer->len > rs->fifo_len);
+> +}
 
-An additional advantage of a) is that ordinary sysadmin commands such as
-"ls -l" can be used for inspection of the internal state of MARS, since
-implementation of a key->value store this way has the low-level
-advantage that you can easily experiment with it or even workaround some
-bugs via "ln -s" and friends.
+We should factor this out into the core as well, just let the driver set
+the minimum size for DMA since it's such a common pattern.  I'll look
+into this as well.
 
-Not as an excuse, but please believe me that MARS originally started as
-a strictly _internal_ 1&1 project, and it took quite a while until I got
-the official permission from our CTO to publish it under GPL (before
-that, I had to convince many other people). Until that point, we had no
-official thoughts of ever going kernel upstream, probably besides some
-drinking of beer in very small group ;)
+> +	master = spi_alloc_master(&pdev->dev, sizeof(struct rockchip_spi));
+> +	if (!master) {
+> +		dev_err(&pdev->dev, "No memory for spi_master\n");
+> +		return -ENOMEM;
+> +	}
 
-Yes, well, life is not straightforward....   not only some letters were
-lowercased, but the rollout of MARS Light to practice, as originally
-planned, took much longer than expected (due to reasons which are out of
-scope here).
+No need to print an error message - OOM messags from the memory
+management subsystem are already noisy enough as it is.
 
-In the meantime, MARS Light got into production in _another_ sysadmin
-team as originally planned. They just took it, and it just worked for them.
+> +	dev_info(&pdev->dev, "Rockchip SPI controller initialized\n");
 
-Of course, that was fantastic for me in first order.
+Please send a followup patch removing this, it's not really adding
+anything and there's core debug messages that can be enabled - usually
+these prints are done when there is some information that has been read
+back from the hardware (eg, IP revisions).
 
-But a second-order consequence now is that any changes in low-level data
-formats (such as replacing the symlinks by other formats such as files)
-_must_ provide an upgrade path for them.
+> +static const struct of_device_id rockchip_spi_dt_match[] = {
+> +	{ .compatible = "rockchip,rk3066-spi", },
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, rockchip_spi_dt_match);
 
-If I am not operating very carefully, this could become a problem in
-future. I have to avoid any bigger forks between the out-of-tree and the
-potential in-tree versions; at least I have to provide an easy and
-robust upgrade path between them (probably in both directions).
+Your DT binding defined some additional compatible strings, please add
+those to the driver.
 
-In addition, I have to ensure that the timescale for parallel
-maintainance of two major flavours is limited. If I did things which
-would prolifer the version split ad infinitum, this would very likely
-become a no-go for going upstream.
+--E/DnYTRukya0zdZ1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I hope you can understand that. In no way I want to put pressure on you.
-It's just the diverging pressure I am trapped in.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Now, the discussion here showed up some painpoints for me (in my
-subjective view).
+iQIcBAEBAgAGBQJTtvNOAAoJELSic+t+oim9AZ0QAJTDMzcAA9zy8yPpNZCO/3qs
+/60RdNNIAbrqWO2X4nl3ihEoCHflUtf0LgEhKhubvXSS21bVG0056Q6Bba69YaL6
+4Z7DgBdHJ3Hx2h1HRZLtpXztJcd5hZa3+7mePGWE0ucXeyFbnTTpr7fEvyl3In71
+5MapcJhM+rcFrOAbBCbMrBP89WVHCH1tK04NExPRivM8M3lAuJpDzIm93tbo8DMP
+dYnvMYH3X0q4+qGY9kMXAD5pK5l6yCk/DGg9xcwBm4hzTkunQq7TniUo3xmsl+qt
+0Fo8wSWk+wTnIJ0YRCwEwEzxiffY6PjroCAji4NY6CuVyuuLS1rCTiWcNWT0CgRc
+8T7Kmv+u/p9OC78mKRdauhlCMgjMxY69X6Nb6swd8+hO0wAsPtC4OU+7GFnEVrEu
+q35hpYz+tk/thx0JGV9QAfD37O/0IEeRq91ZVXBJJUaLhpj+3r5Y5r4vMtbAvHVX
+ShVBCUXIQVOXrrkqFHKzgl9ZNmONOxHaee46/HrMIbUAn4Q0G5li9CSce0HerwFG
+vqpoB40CYcETpsk3wc32aPym+1DsjjmaWNYkkpAyd6wzITaX7x+reZmKOSCVdYDa
+itL+dUu2AYunV9qtmKc88N6eQ3QQYKo7QPiF2diB35gvmgxWhGAFytRzFtCwytgI
+aS3y/2XspxVDHGu3epL0
+=ZtBZ
+-----END PGP SIGNATURE-----
 
-In oder to try to resolve the complaints about the "symlink farms", I
-could try to replace some operations, such as the symlink operations, by
-file operations. But I am not sure whether this really helps. It just
-complicates things.
-
-Therefore I will continue trying to convince you whether we could
-jointly find a solution for both sides, which both does not
-unnecessarily violate the upstream rules, while not consuming too much
-of my valuable manpower for maintaining both versions in a compatible
-manner from a luser's perspective.
-
-Now my posting got longer than intended. But I hope it could contribute
-to a better mutual understanding.
-
-Cheers,
-
-yours sincerly Thomas
-
+--E/DnYTRukya0zdZ1--
