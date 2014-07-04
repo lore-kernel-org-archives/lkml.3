@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546AbaGDJ3B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 05:29:01 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:36378 "EHLO
+	id S1755991AbaGDJ30 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 05:29:26 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:36635 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198AbaGDJ27 (ORCPT
+	with ESMTP id S1752141AbaGDJ3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 05:28:59 -0400
-Message-ID: <53B673CF.2040101@huawei.com>
-Date: Fri, 4 Jul 2014 17:28:47 +0800
+	Fri, 4 Jul 2014 05:29:25 -0400
+Message-ID: <53B673F4.1050205@huawei.com>
+Date: Fri, 4 Jul 2014 17:29:24 +0800
 From: Yijing Wang <wangyijing@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
 To: Joerg Roedel <joro@8bytes.org>
 CC: David Woodhouse <dwmw2@infradead.org>, <iommu@lists.linux-foundation.org>,
         <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] iommu/vt-d: move up no_iommu and dmar_disabled check
-References: <1400589472-8544-1-git-send-email-wangyijing@huawei.com> <1400589472-8544-3-git-send-email-wangyijing@huawei.com> <20140704090640.GS26537@8bytes.org>
-In-Reply-To: <20140704090640.GS26537@8bytes.org>
+Subject: Re: [PATCH 0/6] trivial cleanup for iommu/vt-d
+References: <1400589472-8544-1-git-send-email-wangyijing@huawei.com> <20140704092209.GA13434@8bytes.org>
+In-Reply-To: <20140704092209.GA13434@8bytes.org>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.177.27.212]
@@ -26,50 +26,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
->> index e020dcf..6b71608 100644
->> --- a/drivers/iommu/intel-iommu.c
->> +++ b/drivers/iommu/intel-iommu.c
->> @@ -3948,6 +3948,9 @@ int __init intel_iommu_init(void)
->>  	/* VT-d is required for a TXT/tboot launch, so enforce that */
->>  	force_on = tboot_force_iommu();
->>  
->> +	if (no_iommu || dmar_disabled)
->> +		return ret;
->> +
->>  	if (iommu_init_mempool()) {
->>  		if (force_on)
->>  			panic("tboot: Failed to initialize iommu memory\n");
->> @@ -3974,9 +3977,6 @@ int __init intel_iommu_init(void)
->>  		goto out_free_dmar;
->>  	}
->>  
->> -	if (no_iommu || dmar_disabled)
->> -		goto out_free_dmar;
->> -
->>  	if (list_empty(&dmar_rmrr_units))
->>  		printk(KERN_INFO "DMAR: No RMRR found\n");
+On 2014/7/4 17:22, Joerg Roedel wrote:
+> On Tue, May 20, 2014 at 08:37:46PM +0800, Yijing Wang wrote:
+>>
+>> Yijing Wang (6):
+>>   iommu/vt-d: Use list_for_each_safe() to simplify code
+>>   iommu/vt-d: move up no_iommu and dmar_disabled check
+>>   iommu/vt-d: clear the redundant assignment in dmar_enable_qi
+>>   iommu/vt-d: clear the redundant assignment for domain->nid
+>>   iommu/vt-d: use inline function dma_pte_superpage instead of macros
+>>   iommu/vt-d: fix reference count in iommu_prepare_isa
 > 
-> This breaks the kexec case were the old kernel had VT-d enabled and the
-> new one disabled. In this case the new kernel might need to disable the
-> IOMMUs.
+> Applied patches 1, 3, 4, 5 and 6, thanks. Also added another patch
+> on-top, see below.
 
-Hi Joerg,
-   Thanks for your review and comments! You are right, I didn't consider the kexec case,
-I will drop this patch.
+Thanks a lot!
 
-Thanks!
 Yijing.
 
-
 > 
+>>From 77c704bebc5d023ece7af32ea18bc3508cdb0007 Mon Sep 17 00:00:00 2001
+> From: Joerg Roedel <jroedel@suse.de>
+> Date: Fri, 4 Jul 2014 11:19:10 +0200
+> Subject: [PATCH] iommu/vt-d: Don't use magic number in dma_pte_superpage
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Use the already defined DMA_PTE_LARGE_PAGE for testing
+> instead of hardcoding the value again.
 > 
+> Signed-off-by: Joerg Roedel <jroedel@suse.de>
+> ---
+>  drivers/iommu/intel-iommu.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+> index 9b9f28e..5d86e93 100644
+> --- a/drivers/iommu/intel-iommu.c
+> +++ b/drivers/iommu/intel-iommu.c
+> @@ -304,7 +304,7 @@ static inline bool dma_pte_present(struct dma_pte *pte)
+>  
+>  static inline bool dma_pte_superpage(struct dma_pte *pte)
+>  {
+> -	return (pte->val & (1 << 7));
+> +	return (pte->val & DMA_PTE_LARGE_PAGE);
+>  }
+>  
+>  static inline int first_pte_in_page(struct dma_pte *pte)
 > 
 
 
