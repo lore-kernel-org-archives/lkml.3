@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031612AbaGDWcC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:32:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57633 "EHLO
+	id S1760854AbaGDWcZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:32:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57629 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760252AbaGDWWR (ORCPT
+	with ESMTP id S1760155AbaGDWWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:22:17 -0400
+	Fri, 4 Jul 2014 18:22:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.10 22/46] SUNRPC: Fix a module reference leak in svc_handle_xprt
-Date: Fri,  4 Jul 2014 15:19:26 -0700
-Message-Id: <20140704221603.287982130@linuxfoundation.org>
+        Scott Mayhew <smayhew@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.14 36/59] nfs: Fix cache_validity check in nfs_write_pageuptodate()
+Date: Fri,  4 Jul 2014 15:19:25 -0700
+Message-Id: <20140704221541.274934865@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
-References: <20140704221602.280733370@linuxfoundation.org>
+In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
+References: <20140704221539.544876024@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,34 +25,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Scott Mayhew <smayhew@redhat.com>
 
-commit c789102c20bbbdda6831a273e046715be9d6af79 upstream.
+commit 18dd78c427513fb0f89365138be66e6ee8700d1b upstream.
 
-If the accept() call fails, we need to put the module reference.
+NFS_INO_INVALID_DATA cannot be ignored, even if we have a delegation.
 
+We're still having some problems with data corruption when multiple
+clients are appending to a file and those clients are being granted
+write delegations on open.
+
+To reproduce:
+
+Client A:
+vi /mnt/`hostname -s`
+while :; do echo "XXXXXXXXXXXXXXX" >>/mnt/file; sleep $(( $RANDOM % 5 )); done
+
+Client B:
+vi /mnt/`hostname -s`
+while :; do echo "YYYYYYYYYYYYYYY" >>/mnt/file; sleep $(( $RANDOM % 5 )); done
+
+What's happening is that in nfs_update_inode() we're recognizing that
+the file size has changed and we're setting NFS_INO_INVALID_DATA
+accordingly, but then we ignore the cache_validity flags in
+nfs_write_pageuptodate() because we have a delegation.  As a result,
+in nfs_updatepage() we're extending the write to cover the full page
+even though we've not read in the data to begin with.
+
+Signed-off-by: Scott Mayhew <smayhew@redhat.com>
 Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/svc_xprt.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/nfs/write.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -730,6 +730,8 @@ static int svc_handle_xprt(struct svc_rq
- 		newxpt = xprt->xpt_ops->xpo_accept(xprt);
- 		if (newxpt)
- 			svc_add_new_temp_xprt(serv, newxpt);
-+		else
-+			module_put(xprt->xpt_class->xcl_owner);
- 	} else if (xprt->xpt_ops->xpo_has_wspace(xprt)) {
- 		/* XPT_DATA|XPT_DEFERRED case: */
- 		dprintk("svc: server %p, pool %u, transport %p, inuse=%d\n",
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -913,12 +913,14 @@ static bool nfs_write_pageuptodate(struc
+ 
+ 	if (nfs_have_delegated_attributes(inode))
+ 		goto out;
+-	if (nfsi->cache_validity & (NFS_INO_INVALID_DATA|NFS_INO_REVAL_PAGECACHE))
++	if (nfsi->cache_validity & NFS_INO_REVAL_PAGECACHE)
+ 		return false;
+ 	smp_rmb();
+ 	if (test_bit(NFS_INO_INVALIDATING, &nfsi->flags))
+ 		return false;
+ out:
++	if (nfsi->cache_validity & NFS_INO_INVALID_DATA)
++		return false;
+ 	return PageUptodate(page) != 0;
+ }
+ 
 
 
