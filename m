@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760009AbaGDGUU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 02:20:20 -0400
-Received: from kvm5.telegraphics.com.au ([98.124.60.144]:47142 "EHLO
-	kvm5.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004AbaGDGUT (ORCPT
+	id S1755814AbaGDGWT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 02:22:19 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:50569 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443AbaGDGWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 02:20:19 -0400
-Date: Fri, 4 Jul 2014 16:19:14 +1000 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: Nick Krause <xerofoify@gmail.com>
-cc: sammy@sammy.net, Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] m68k: Remove FIXME comment in file sun3_pgalloc.h
-In-Reply-To: <CAPDOMVhvuvWesMev-5dOFA78Sf67o0kUCXR2VkdhE-xeiYQ=6w@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1407041615280.8188@nippy.intranet>
-References: <1404351693-5588-1-git-send-email-xerofoify@gmail.com> <alpine.LNX.2.00.1407041125060.15901@nippy.intranet> <CAPDOMVhvuvWesMev-5dOFA78Sf67o0kUCXR2VkdhE-xeiYQ=6w@mail.gmail.com>
+	Fri, 4 Jul 2014 02:22:17 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140704010045.GA21040@kroah.com>
+References: <20140704010045.GA21040@kroah.com>
+Date: Fri, 4 Jul 2014 11:52:16 +0530
+Message-ID: <CAMf-jSnFqUcyCNOa-UecW3SwmVr45Nvo2Qj3DKDu2-CnPgv2pw@mail.gmail.com>
+Subject: Re: [GIT PULL] Driver core fixes for 3.16-rc4
+From: pramod gurav <pramod.gurav.etc@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 4, 2014 at 6:30 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> The following changes since commit 4c834452aad01531db949414f94f817a86348d59:
+>
+>   Linux 3.16-rc3 (2014-06-29 14:11:36 -0700)
+>
+> are available in the git repository at:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.16-rc4
+>
+> for you to fetch changes up to 4a3a99045177369700c60d074c0e525e8093b0fc:
+>
+>   lz4: add overrun checks to lz4_uncompress_unknownoutputsize() (2014-07-03 16:12:04 -0700)
+>
+> ----------------------------------------------------------------
+> Driver core fixes for 3.16-rc4
 
-On Fri, 4 Jul 2014, Nick Krause wrote:
+Hi Greg,
 
-> What are these two lines for them another compile issue?
+What should I do if I come across some coding guidelines issues,
+compile warning in some core drivers like fs/, cpuidle etc?
 
-I don't see why those two lines are important.
+For exa: A fix in CPUIdle
+https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg668109.html
 
-> >> -/* FIXME - when we get this compiling */
-> >>  /* erm, now that it's compiling, what do we do with it? */
-> >>  #define _KERNPG_TABLE 0
+Shall I continue sending the corrections?  Will they be accepted at
+this point of time? Because I saw no response as a lot of code was
+being added to these drivers (read cpuidle).
 
-Presumably it is the third line that the "FIXME" refers to.
-
-I didn't write this code, but obviously it isn't supposed to be read as 
-
-/* FIXME - this comment needs to be deleted */
 
 -- 
+Thanks and Regards
+Pramod
