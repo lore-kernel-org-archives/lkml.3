@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028AbaGDJPE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 05:15:04 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45954 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128AbaGDJPB (ORCPT
+	id S1756310AbaGDJPw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 05:15:52 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:59560 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752622AbaGDJPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 05:15:01 -0400
-Message-ID: <53B6708E.5030106@suse.cz>
-Date: Fri, 04 Jul 2014 11:14:54 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>, Jiri Kosina <jkosina@suse.cz>
-CC: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org, tj@kernel.org, rostedt@goodmis.org,
-        mingo@redhat.com, akpm@linux-foundation.org, andi@firstfloor.org,
-        paulmck@linux.vnet.ibm.com, jirislaby@gmail.com,
-        Vojtech Pavlik <vojtech@suse.cz>, Michael Matz <matz@suse.de>,
-        Udo Seidel <udoseidel@gmx.de>
-Subject: Re: [PATCH -repost 05/21] kgr: update Kconfig documentation
-References: <1403694435-3180-1-git-send-email-jslaby@suse.cz> <1403694435-3180-5-git-send-email-jslaby@suse.cz> <20140625134212.4fb38e14@alan.etchedpixels.co.uk> <53ABD8FB.9000700@suse.cz> <alpine.LNX.2.00.1406261030210.15939@pobox.suse.cz> <20140627191845.GA1408@xo-6d-61-c0.localdomain>
-In-Reply-To: <20140627191845.GA1408@xo-6d-61-c0.localdomain>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Jul 2014 05:15:50 -0400
+From: Tushar Behera <tushar.b@samsung.com>
+To: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Cc: tiwai@suse.de, perex@perex.cz, broonie@kernel.org, lgirdwood@gmail.com,
+        trblinux@gmail.com
+Subject: [PATCH 1/2] ASoC: max98090: Add check for CODEC type
+Date: Fri,  4 Jul 2014 14:42:16 +0530
+Message-Id: <1404465137-14295-1-git-send-email-tushar.b@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2014 09:18 PM, Pavel Machek wrote:
->>> This now writes:
->>> +       help
->>> +         Select this to enable kGraft online kernel patching. The
->>> +         runtime price is nearly zero, so it is safe to say Y here
->>> +         provided you are aware of all the consequences (e.g. in
->>> +         security).
->>>
->>> Is it OK with you?
->>
->> This might cause a false impression that we are actually opening a 
->> security hole into a system, which is not true at all.
->>
->> Yes, backdoor writeres might (or might not) make use of kGraft API, but 
->> they have gazillion of other comparable options (*probes, ftrace, 
->> text_poke(), ...).
->>
->> I'd perhaps propose something like
->>
->> "Select this to enable kGraft live kernel patching. The runtime penalty is 
->> nearly zero, so it is safe to say Y here if you want the kernel to expose 
->> API for live patching to modules".
-> 
-> Well. People that are not distro vendors will not prepare patches for
-> themselves, right?
+CODEC type (MAX98090/MAX98091) can be specified from device-tree file,
+it can also be obtained from the CODEC during runtime.
 
-Hi, why do you believe so? But it is not so important, see below.
+Add an explicit check to figure out if both are matching, else print
+a message warning about the same.
 
-> And patches prepared for suse will not work on
-> self-configured kernels.
-> 
-> So probably everyone should say "N" here...
+Signed-off-by: Tushar Behera <tushar.b@samsung.com>
+---
+ sound/soc/codecs/max98090.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-The text is formulated correctly and satisfies your concerns, I think.
-Say Y, if you want the API...
-
-thanks,
+diff --git a/sound/soc/codecs/max98090.c b/sound/soc/codecs/max98090.c
+index ca74f502..1ed06d9 100644
+--- a/sound/soc/codecs/max98090.c
++++ b/sound/soc/codecs/max98090.c
+@@ -2215,6 +2215,7 @@ static int max98090_probe(struct snd_soc_codec *codec)
+ {
+ 	struct max98090_priv *max98090 = snd_soc_codec_get_drvdata(codec);
+ 	struct max98090_cdata *cdata;
++	enum max98090_type devtype;
+ 	int ret = 0;
+ 
+ 	dev_dbg(codec->dev, "max98090_probe\n");
+@@ -2250,16 +2251,21 @@ static int max98090_probe(struct snd_soc_codec *codec)
+ 	}
+ 
+ 	if ((ret >= M98090_REVA) && (ret <= M98090_REVA + 0x0f)) {
+-		max98090->devtype = MAX98090;
++		devtype = MAX98090;
+ 		dev_info(codec->dev, "MAX98090 REVID=0x%02x\n", ret);
+ 	} else if ((ret >= M98091_REVA) && (ret <= M98091_REVA + 0x0f)) {
+-		max98090->devtype = MAX98091;
++		devtype = MAX98091;
+ 		dev_info(codec->dev, "MAX98091 REVID=0x%02x\n", ret);
+ 	} else {
+-		max98090->devtype = MAX98090;
++		devtype = MAX98090;
+ 		dev_err(codec->dev, "Unrecognized revision 0x%02x\n", ret);
+ 	}
+ 
++	if (max98090->devtype != devtype) {
++		dev_warn(codec->dev, "Mismatch in DT specified CODEC type.\n");
++		max98090->devtype = devtype;
++	}
++
+ 	max98090->jack_state = M98090_JACK_STATE_NO_HEADSET;
+ 
+ 	INIT_DELAYED_WORK(&max98090->jack_work, max98090_jack_work);
 -- 
-js
-suse labs
+1.7.9.5
+
