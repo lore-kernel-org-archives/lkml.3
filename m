@@ -1,112 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971AbaGDOza (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 10:55:30 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38464 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754315AbaGDOz2 (ORCPT
+	id S1757160AbaGDO56 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 10:57:58 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:59126 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989AbaGDO5z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 10:55:28 -0400
-Message-ID: <53B6C051.2060704@oracle.com>
-Date: Fri, 04 Jul 2014 10:55:13 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 4 Jul 2014 10:57:55 -0400
+Date: Fri, 4 Jul 2014 15:57:52 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v7 4/6] pci: Introduce a domain number for
+ pci_host_bridge.
+Message-ID: <20140704145752.GJ6501@e106497-lin.cambridge.arm.com>
+References: <1394811272-1547-1-git-send-email-Liviu.Dudau@arm.com>
+ <1394811272-1547-5-git-send-email-Liviu.Dudau@arm.com>
+ <20140405000007.GD15806@google.com>
+ <20140407084623.GG17163@e106497-lin.cambridge.arm.com>
+ <1396862058.3671.40.camel@pasglop>
+ <20140407100715.GI17163@e106497-lin.cambridge.arm.com>
+ <CAErSpo7h+Yew2hBztzkOzcHU5r4OQebxFbcZGkNUwJwfTFsbfg@mail.gmail.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: fs: use after free in /proc/pid/mountinfo
-References: <53B3F331.7090204@oracle.com> <53B4CAB8.5070407@oracle.com> <alpine.DEB.2.02.1407031434470.10658@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1407031434470.10658@chino.kir.corp.google.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <CAErSpo7h+Yew2hBztzkOzcHU5r4OQebxFbcZGkNUwJwfTFsbfg@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 04 Jul 2014 14:57:52.0694 (UTC) FILETIME=[54957D60:01CF9798]
+X-MC-Unique: 114070415575302101
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2014 05:37 PM, David Rientjes wrote:
-> On Wed, 2 Jul 2014, Sasha Levin wrote:
+On Mon, Apr 07, 2014 at 11:44:51PM +0100, Bjorn Helgaas wrote:
+> On Mon, Apr 7, 2014 at 4:07 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> > On Mon, Apr 07, 2014 at 10:14:18AM +0100, Benjamin Herrenschmidt wrote:
+> >> On Mon, 2014-04-07 at 09:46 +0100, Liviu Dudau wrote:
+> >> >
+> >> > *My* strategy is to get rid of pci_domain_nr(). I don't see why we need
+> >> > to have arch specific way of providing the number, specially after looking
+> >> > at the existing implementations that return a value from a variable that
+> >> > is never touched or incremented. My guess is that pci_domain_nr() was
+> >> > created to work around the fact that there was no domain_nr maintainance in
+> >> > the generic code.
+> >>
+> >> Well, there was no generic host bridge structure. There is one now, it should
+> >> go there.
+> >
+> > Exactly! Hence my patch. After it gets accepted I will go through architectures
+> > and remove their version of pci_domain_nr().
 > 
->>> Hi all,
->>>
->>> While fuzzing with trinity inside a KVM tools guest running the latest -next
->>> kernel I've stumbled on the following spew:
->>>
->>> [ 3569.869749] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->>> [ 3569.869769] Dumping ftrace buffer:
->>> [ 3569.869879]    (ftrace buffer empty)
->>> [ 3569.869894] Modules linked in:
->>> [ 3569.869900] CPU: 7 PID: 10239 Comm: trinity-c86 Tainted: G        W      3.16.0-rc3-next-20140701-sasha-00023-g4eb2544-dirty #759
->>> [ 3569.869906] task: ffff88039e873000 ti: ffff880393f8c000 task.ti: ffff880393f8c000
->>> [ 3569.869932] RIP: show_mountinfo (fs/proc_namespace.c:127)
->>> [ 3569.869938] RSP: 0018:ffff880393f8fd08  EFLAGS: 00010282
->>> [ 3569.869943] RAX: ffff880200c6d208 RBX: 6b6b6b6b6b6b6b03 RCX: 0000000000000074
->>> [ 3569.869946] RDX: 0000000000000000 RSI: 6b6b6b6b6b6b6b03 RDI: ffff880200c6d208
->>> [ 3569.869953] RBP: ffff880393f8fd58 R08: 0000000000000001 R09: ffff88039e873d38
->>> [ 3569.869957] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880200c6d208
->>> [ 3569.869962] R13: 6b6b6b6b6b6b6b6b R14: ffff880393f8ff50 R15: ffff880200c6d208
->>> [ 3569.869966] FS:  00007f6f20db9700(0000) GS:ffff8801ece00000(0000) knlGS:0000000000000000
->>> [ 3569.869969] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->>> [ 3569.869974] CR2: 00007f6f20bee000 CR3: 00000003a0775000 CR4: 00000000000006a0
->>> [ 3569.869992] Stack:
->>> [ 3569.870011]  ffff880393f8ff50 ffff880200c6d208 ffff880393f8fd48 ffffffff984e10ea
->>> [ 3569.870025]  ffffffff9532c7fe ffff8802069a3b80 0000000000000065 6b6b6b6b6b6b6b6b
->>> [ 3569.870036]  ffff880393f8ff50 ffff880200c6d208 ffff880393f8fd68 ffffffff9532c756
->>> [ 3569.870038] Call Trace:
->>> [ 3569.870051] ? down_read (kernel/locking/rwsem.c:45 (discriminator 2))
->>> [ 3569.870059] ? m_start (kernel/module.c:3634)
->>> [ 3569.870069] m_show (kernel/module.c:3649)
->>> [ 3569.870076] seq_read (fs/seq_file.c:235)
->>> [ 3569.870081] ? single_open_size (fs/seq_file.c:166)
->>> [ 3569.870092] do_loop_readv_writev (fs/read_write.c:708)
->>> [ 3569.870098] ? single_open_size (fs/seq_file.c:166)
->>> [ 3569.870098] do_readv_writev (fs/read_write.c:840)
->>> [ 3569.870098] ? get_parent_ip (kernel/sched/core.c:2550)
->>> [ 3569.870098] ? mutex_lock_nested (./arch/x86/include/asm/preempt.h:98 kernel/locking/mutex.c:570 kernel/locking/mutex.c:587)
->>> [ 3569.870098] ? __fdget_pos (fs/file.c:714)
->>> [ 3569.870098] ? __fdget_pos (fs/file.c:714)
->>> [ 3569.870098] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
->>> [ 3569.870098] ? __fget_light (fs/file.c:685)
->>> [ 3569.870098] vfs_readv (fs/read_write.c:866)
->>> [ 3569.870098] SyS_readv (fs/read_write.c:892 fs/read_write.c:884)
->>> [ 3569.870098] tracesys (arch/x86/kernel/entry_64.S:542)
->>> [ 3569.870098] Code: 00 00 00 00 66 66 66 66 90 55 48 89 e5 48 83 ec 50 48 89 5d d8 48 89 f3 4c 89 65 e0 49 89 fc 4c 89 6d e8 4c 89 75 f0 4c 89 7d f8 <48> 8b 06 48 89 75 b0 4c 8b 76 08 8b 96 ec 00 00 00 48 89 45 b8
->>> All code
->>> ========
->>>    0:	00 00                	add    %al,(%rax)
->>>    2:	00 00                	add    %al,(%rax)
->>>    4:	66 66 66 66 90       	data32 data32 data32 xchg %ax,%ax
->>>    9:	55                   	push   %rbp
->>>    a:	48 89 e5             	mov    %rsp,%rbp
->>>    d:	48 83 ec 50          	sub    $0x50,%rsp
->>>   11:	48 89 5d d8          	mov    %rbx,-0x28(%rbp)
->>>   15:	48 89 f3             	mov    %rsi,%rbx
->>>   18:	4c 89 65 e0          	mov    %r12,-0x20(%rbp)
->>>   1c:	49 89 fc             	mov    %rdi,%r12
->>>   1f:	4c 89 6d e8          	mov    %r13,-0x18(%rbp)
->>>   23:	4c 89 75 f0          	mov    %r14,-0x10(%rbp)
->>>   27:	4c 89 7d f8          	mov    %r15,-0x8(%rbp)
->>>   2b:*	48 8b 06             	mov    (%rsi),%rax		<-- trapping instruction
->>>   2e:	48 89 75 b0          	mov    %rsi,-0x50(%rbp)
->>>   32:	4c 8b 76 08          	mov    0x8(%rsi),%r14
->>>   36:	8b 96 ec 00 00 00    	mov    0xec(%rsi),%edx
->>>   3c:	48 89 45 b8          	mov    %rax,-0x48(%rbp)
+> Currently the arch has to supply pci_domain_nr() because that's the
+> only way for the generic code to learn the domain.  After you add
+> pci_create_root_bus_in_domain(), the arch can supply the domain that
+> way, and we won't need the arch-specific pci_domain_nr().  Right?
+> That makes more sense to me; thanks for the explanation.
 > 
-> Does this now reproduce on Linus's tree?  If so, does reverting commit
-> 058504edd026 ("fs/seq_file: fallback to vmalloc allocation") prevent this 
-> issue?
+> Let me try to explain my concern about the
+> pci_create_root_bus_in_domain() interface.  We currently have these
+> interfaces:
 > 
-> This is a use-after-free since the poison value is 0x6b and I'm presuming 
-> that your /proc/self/mountinfo may be larger than PAGE_SIZE in your 
-> testing environment.
+>   pci_scan_root_bus()
+>   pci_scan_bus()
+>   pci_scan_bus_parented()
+>   pci_create_root_bus()
 > 
+> pci_scan_root_bus() is a higher-level interface than
+> pci_create_root_bus(), so I'm trying to migrate toward it because it
+> lets us remove a little code from the arch, e.g., pci_scan_child_bus()
+> and pci_bus_add_devices().
+> 
+> I think we can only remove the arch-specific pci_domain_nr() if that
+> arch uses pci_create_root_bus_in_domain().  When we convert an arch
+> from using scan_bus interfaces to using
+> pci_create_root_bus_in_domain(), we will have to move the rest of the
+> scan_bus code (pci_scan_child_bus(), pci_bus_add_devices()) back into
+> the arch code.
+> 
+> One alternative is to add an _in_domain() variant of each of these
+> interfaces, but that doesn't seem very convenient either.  My idea of
+> passing in a structure would also require adding variants, so there's
+> not really an advantage there, but I am thinking of the next
+> unification effort, e.g., for NUMA node info.  I don't really want to
+> have to change all the _in_domain() interfaces to also take yet
+> another parameter for the node number.
 
-Good call, reverting that patch made both issues go away.
+Bjorn,
+
+I'm coming around to your way of thinking and I want to suggest a strategy
+for adding the domain number into the PCI framework.
+
+My understanding is that when pci_host_bridge structure was introduced
+you were trying to keep the APIs unchanged and hence the creation of a
+bridge was hidden inside the pci_create_root_bus() function.
+
+If we want to store the domain_nr information in the host bridge structure,
+together with a pointer to sysdata, then we need to break up the creation
+of the pci_host_bridge from the creation of a root bus. At that moment,
+pci_scan_root_bus() will need to be changed to accept a pci_host_bridge
+pointer, while pci_scan_bus() and pci_scan_bus_parented() will create
+the host bridge in the body of their function.
+
+Did I understood correctly this time your intentions? Do you agree with
+this plan?
+
+Best regards,
+Liviu
 
 
-Thanks,
-Sasha
+> 
+> Bjorn
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
+
