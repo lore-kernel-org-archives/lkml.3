@@ -1,106 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809AbaGDHvm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 03:51:42 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:35178 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871AbaGDHvl (ORCPT
+	id S1754477AbaGDHwr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 03:52:47 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:43013 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329AbaGDHwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 03:51:41 -0400
-Date: Fri, 4 Jul 2014 09:51:22 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: Waiman Long <waiman.long@hp.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        mingo@kernel.org, linux-kernel@vger.kernel.org, riel@redhat.com,
-        akpm@linux-foundation.org, hpa@zytor.com, andi@firstfloor.org,
-        James.Bottomley@hansenpartnership.com, rostedt@goodmis.org,
-        tim.c.chen@linux.intel.com, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [RFC] Cancellable MCS spinlock rework
-Message-ID: <20140704075122.GY19379@twins.programming.kicks-ass.net>
-References: <1404318070-2856-1-git-send-email-jason.low2@hp.com>
- <20140702162749.GP19379@twins.programming.kicks-ass.net>
- <1404320356.3170.12.camel@j-VirtualBox>
- <20140702172333.GQ19379@twins.programming.kicks-ass.net>
- <1404322203.3170.17.camel@j-VirtualBox>
- <20140703073107.GS19379@twins.programming.kicks-ass.net>
- <1404407389.2498.3.camel@buesod1.americas.hpqcorp.net>
- <1404412485.8764.33.camel@j-VirtualBox>
- <53B5BE99.1090008@hp.com>
- <1404436043.8764.95.camel@j-VirtualBox>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HACzHn9G0kmbdSJa"
-Content-Disposition: inline
-In-Reply-To: <1404436043.8764.95.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 4 Jul 2014 03:52:45 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH 00/10] fix freepage count problems due to memory isolation
+Date: Fri,  4 Jul 2014 16:57:45 +0900
+Message-Id: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---HACzHn9G0kmbdSJa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patchset aims at fixing problems due to memory isolation found by
+testing my patchset [1].
 
-On Thu, Jul 03, 2014 at 06:07:23PM -0700, Jason Low wrote:
-> On Thu, 2014-07-03 at 16:35 -0400, Waiman Long wrote:
->=20
-> > I do see a point in reducing the size of the rwsem structure. However, =
-I=20
-> > don't quite understand the point of converting pointers in the=20
-> > optimistic_spin_queue structure to atomic_t. The structure is cacheline=
-=20
-> > aligned and there is no saving in size. Converting them to atomic_t doe=
-s=20
-> > have a bit of additional overhead of converting the encoded cpu number=
-=20
-> > back to the actual pointer.
-> >=20
-> > So my suggestion is to just change what is stored in the mutex and rwse=
-m=20
-> > structure to atomic_t, but keep the pointers in the=20
-> > optimistic_spin_queue structure.
->=20
-> Peter, would you prefer going with the above?
->=20
-> If we were to keep the pointers to the next and prev nodes in the struct
-> optimistic_spin_queue instead of converting them to atomic_t to store
-> their cpu #, we'd still need to keep track of the cpu #. In the unqueue
-> phase of osq_lock, we might have to reload prev =3D node->prev which we
-> then may cmpxchg() it with the lock tail.
->=20
-> The method we can think of so far would be to add a regular int variable
-> to optimistic_spin_queue and initialize it to the CPU #, during the time
-> we also initialize node->locked and node->next at the beginning of
-> osq_lock. The cost wouldn't be much of an issue since
-> optimistic_spin_queue is cache aligned.
+These are really subtle problems so I can be wrong. If you find what I am
+missing, please let me know.
 
-Let me try and have an actual look at the patch; I'm in the tail end of
-a flu and my head isn't quite set for details, but I'll buckle up and go
-look, gimme a few :-)
+Before describing bugs itself, I first explain definition of freepage.
 
---HACzHn9G0kmbdSJa
-Content-Type: application/pgp-signature
+1. pages on buddy list are counted as freepage.
+2. pages on isolate migratetype buddy list are *not* counted as freepage.
+3. pages on cma buddy list are counted as CMA freepage, too.
+4. pages for guard are *not* counted as freepage.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Now, I describe problems and related patch.
 
-iQIcBAEBAgAGBQJTtlz6AAoJEHZH4aRLwOS6GMoQAI1Ns72tK+JsQLLRsugBsqbM
-VLdbKe41ZhsTIr1uPYuJJ2B7HgTvhF4H9TTIi5m86BCH9kB45lgoA/tSC1v0btFr
-RrheM3h1ESbGCMQZWVGibOtWJbRfHO9k3bCaWZigb7d6VRz1Mq5VJGWW8FlPmtdh
-41VYu+Jnr0dxOxwY034Nh009HkPrLbh/K+9ssjCnucgQVhT0Sh2GOxDBa/+17iM0
-DRMu/MVnlzd822FqLp0F2IvR7gV3w822fDdejgAH/s0CCqmyPg3FXtA3um+3LpCj
-6Gab5nIAIVp+z+UM+Muc1ghy3tkScswn7wnGtA1AzkA+Y1DRz4bNoKEr3bGavMEi
-g1hE0hCvG81/fc94bKmwrgEJrplM88f+oRdO21ZhV9ftYBTi4Wg7R6CnzP9iRfcJ
-KLaEndxEutmypcqHmYrn4DAGBHhL5IqLAXWaBYBcwqQq07zy+hZJYq4AD4MO0EUG
-55/X34ZfCALs1cKZ8oHKrzimyPnwmpBLSnZFF0nJARdPBlg18zB/zopKrVHznUlE
-J0RXchgfrHlm5pxH16H3uRBkL1iy9Zkfswm1kRPkQkCuvABKBILMM6q309214nrl
-N1vxqG5kElLJyxmubs0NXxMwSc5w6wEj/dSHkgu309wzlLHziUGZfiAoJ85rppCR
-hcrJsmEkd+LtwB/bCOwH
-=Fpab
------END PGP SIGNATURE-----
+1. Patch 2: If guard page are cleared and merged into isolate buddy list,
+we should not add freepage count.
 
---HACzHn9G0kmbdSJa--
+2. Patch 3: When the page return back from pcp to buddy, we should
+account it to freepage counter. In this case, we should check the
+pageblock migratetype of the page and should insert the page into
+appropriate buddy list. Although we checked it in current code, we
+didn't insert the page into appropriate buddy list so that freepage
+counting can be wrong.
+
+3. Patch 4: There is race condition so that some freepages could be
+on isolate buddy list. If so, we can't use this page until next isolation
+attempt on this pageblock.
+
+4. Patch 5: There is race condition that page on isolate pageblock
+can go into non-isolate buddy list. If so, buddy allocator would
+merge pages on non-isolate buddy list and isolate buddy list, respectively,
+and freepage count will be wrong.
+
+5. Patch 9: move_freepages(_block) returns *not* number of moved pages.
+Instead, it returns number of pages linked in that migratetype buddy list.
+So accouting with this return value makes freepage count wrong.
+
+6. Patch 10: buddy allocator would merge pages on non-isolate buddy list
+and isolate buddy list, respectively. This leads to freepage counting
+problem so fix it by stopping merging in this case.
+
+Without patchset [1], above problem doesn't happens on my CMA allocation
+test, because CMA reserved pages aren't used at all. So there is no
+chance for above race.
+
+With patchset [1], I did simple CMA allocation test and get below result.
+
+- Virtual machine, 4 cpus, 1024 MB memory, 256 MB CMA reservation
+- run kernel build (make -j16) on background
+- 30 times CMA allocation(8MB * 30 = 240MB) attempts in 5 sec interval
+- Result: more than 5000 freepage count are missed
+
+With patchset [1] and this patchset, I found that no freepage count are
+missed so that I conclude that problems are solved.
+
+These problems can be possible on memory hot remove users, although
+I didn't check it further.
+
+Other patches are either for the base to fix these problems or for
+simple clean-up. Please see individual patches for more information.
+
+This patchset is based on linux-next-20140703.
+
+Thanks.
+
+[1]: Aggressively allocate the pages on cma reserved memory
+     https://lkml.org/lkml/2014/5/30/291
+
+
+Joonsoo Kim (10):
+  mm/page_alloc: remove unlikely macro on free_one_page()
+  mm/page_alloc: correct to clear guard attribute in DEBUG_PAGEALLOC
+  mm/page_alloc: handle page on pcp correctly if it's pageblock is
+    isolated
+  mm/page_alloc: carefully free the page on isolate pageblock
+  mm/page_alloc: optimize and unify pageblock migratetype check in free
+    path
+  mm/page_alloc: separate freepage migratetype interface
+  mm/page_alloc: store migratetype of the buddy list into freepage
+    correctly
+  mm/page_alloc: use get_onbuddy_migratetype() to get buddy list type
+  mm/page_alloc: fix possible wrongly calculated freepage counter
+  mm/page_alloc: Stop merging pages on non-isolate and isolate buddy
+    list
+
+ include/linux/mm.h             |   30 +++++++--
+ include/linux/mmzone.h         |    5 ++
+ include/linux/page-isolation.h |    8 +++
+ mm/page_alloc.c                |  138 +++++++++++++++++++++++++++++-----------
+ mm/page_isolation.c            |   18 ++----
+ 5 files changed, 147 insertions(+), 52 deletions(-)
+
+-- 
+1.7.9.5
+
