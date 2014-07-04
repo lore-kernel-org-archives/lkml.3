@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760731AbaGDWlf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:41:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57471 "EHLO
+	id S1031201AbaGDWVJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:21:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57454 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031206AbaGDWVL (ORCPT
+	with ESMTP id S1031181AbaGDWVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:21:11 -0400
+	Fri, 4 Jul 2014 18:21:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yann Droneaud <ydroneaud@opteya.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.14 23/59] IB/mlx5: add missing padding at end of struct mlx5_ib_create_srq
-Date: Fri,  4 Jul 2014 15:19:12 -0700
-Message-Id: <20140704221540.653367967@linuxfoundation.org>
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.14 34/59] NFS: Use raw_write_seqcount_begin/end int nfs4_reclaim_open_state
+Date: Fri,  4 Jul 2014 15:19:23 -0700
+Message-Id: <20140704221541.187785219@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -29,117 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yann Droneaud <ydroneaud@opteya.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 43bc889380c2ad9aa230eccc03a15cc52cf710d4 upstream.
+commit abbec2da13f0e4c5d9b78b7e2c025a3e617228ba upstream.
 
-The i386 ABI disagrees with most other ABIs regarding alignment of
-data type larger than 4 bytes: on most ABIs a padding must be added at
-end of the structures, while it is not required on i386.
+The addition of lockdep code to write_seqcount_begin/end has lead to
+a bunch of false positive claims of ABBA deadlocks with the so_lock
+spinlock. Audits show that this simply cannot happen because the
+read side code does not spin while holding so_lock.
 
-So for most ABIs struct mlx5_ib_create_srq gets implicitly padded to be
-aligned on a 8 bytes multiple, while for i386, such padding is not
-added.
-
-Tool pahole could be used to find such implicit padding:
-
-  $ pahole --anon_include \
-           --nested_anon_include \
-           --recursive \
-           --class_name mlx5_ib_create_srq \
-           drivers/infiniband/hw/mlx5/mlx5_ib.o
-
-Then, structure layout can be compared between i386 and x86_64:
-
-#  +++ obj-i386/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt    2014-03-28 11:43:07.386413682 +0100
-#  --- obj-x86_64/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt  2014-03-27 13:06:17.788472721 +0100
-#  @@ -69,7 +68,6 @@ struct mlx5_ib_create_srq {
-#          __u64                      db_addr;              /*     8     8 */
-#          __u32                      flags;                /*    16     4 */
-#
-#  -       /* size: 20, cachelines: 1, members: 3 */
-#  -       /* last cacheline: 20 bytes */
-#  +       /* size: 24, cachelines: 1, members: 3 */
-#  +       /* padding: 4 */
-#  +       /* last cacheline: 24 bytes */
-#   };
-
-ABI disagreement will make an x86_64 kernel try to read past
-the buffer provided by an i386 binary.
-
-When boundary check will be implemented, the x86_64 kernel will
-refuse to read past the i386 userspace provided buffer and the
-uverb will fail.
-
-Anyway, if the structure lay in memory on a page boundary and
-next page is not mapped, ib_copy_from_udata() will fail and the
-uverb will fail.
-
-This patch makes create_srq_user() takes care of the input
-data size to handle the case where no padding was provided.
-
-This way, x86_64 kernel will be able to handle struct mlx5_ib_create_srq
-as sent by unpatched and patched i386 libmlx5.
-
-Link: http://marc.info/?i=cover.1399309513.git.ydroneaud@opteya.com
-Fixes: e126ba97dba9e ("mlx5: Add driver for Mellanox Connect-IB adapter")
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/mlx5/srq.c  |   14 +++++++++++++-
- drivers/infiniband/hw/mlx5/user.h |    1 +
- 2 files changed, 14 insertions(+), 1 deletion(-)
+ fs/nfs/nfs4state.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/infiniband/hw/mlx5/srq.c
-+++ b/drivers/infiniband/hw/mlx5/srq.c
-@@ -35,6 +35,7 @@
- #include <linux/mlx5/srq.h>
- #include <linux/slab.h>
- #include <rdma/ib_umem.h>
-+#include <rdma/ib_user_verbs.h>
- 
- #include "mlx5_ib.h"
- #include "user.h"
-@@ -78,16 +79,27 @@ static int create_srq_user(struct ib_pd
- {
- 	struct mlx5_ib_dev *dev = to_mdev(pd->device);
- 	struct mlx5_ib_create_srq ucmd;
-+	size_t ucmdlen;
- 	int err;
- 	int npages;
- 	int page_shift;
- 	int ncont;
- 	u32 offset;
- 
--	if (ib_copy_from_udata(&ucmd, udata, sizeof(ucmd))) {
-+	ucmdlen =
-+		(udata->inlen - sizeof(struct ib_uverbs_cmd_hdr) <
-+		 sizeof(ucmd)) ? (sizeof(ucmd) -
-+				  sizeof(ucmd.reserved)) : sizeof(ucmd);
-+
-+	if (ib_copy_from_udata(&ucmd, udata, ucmdlen)) {
- 		mlx5_ib_dbg(dev, "failed copy udata\n");
- 		return -EFAULT;
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1456,7 +1456,7 @@ static int nfs4_reclaim_open_state(struc
+ 	 * server that doesn't support a grace period.
+ 	 */
+ 	spin_lock(&sp->so_lock);
+-	write_seqcount_begin(&sp->so_reclaim_seqcount);
++	raw_write_seqcount_begin(&sp->so_reclaim_seqcount);
+ restart:
+ 	list_for_each_entry(state, &sp->so_states, open_states) {
+ 		if (!test_and_clear_bit(ops->state_flag_bit, &state->flags))
+@@ -1519,13 +1519,13 @@ restart:
+ 		spin_lock(&sp->so_lock);
+ 		goto restart;
  	}
-+
-+	if (ucmdlen == sizeof(ucmd) &&
-+	    ucmd.reserved != 0)
-+		return -EINVAL;
-+
- 	srq->wq_sig = !!(ucmd.flags & MLX5_SRQ_FLAG_SIGNATURE);
- 
- 	srq->umem = ib_umem_get(pd->uobject->context, ucmd.buf_addr, buf_size,
---- a/drivers/infiniband/hw/mlx5/user.h
-+++ b/drivers/infiniband/hw/mlx5/user.h
-@@ -110,6 +110,7 @@ struct mlx5_ib_create_srq {
- 	__u64	buf_addr;
- 	__u64	db_addr;
- 	__u32	flags;
-+	__u32	reserved; /* explicit padding (optional on i386) */
- };
- 
- struct mlx5_ib_create_srq_resp {
+-	write_seqcount_end(&sp->so_reclaim_seqcount);
++	raw_write_seqcount_end(&sp->so_reclaim_seqcount);
+ 	spin_unlock(&sp->so_lock);
+ 	return 0;
+ out_err:
+ 	nfs4_put_open_state(state);
+ 	spin_lock(&sp->so_lock);
+-	write_seqcount_end(&sp->so_reclaim_seqcount);
++	raw_write_seqcount_end(&sp->so_reclaim_seqcount);
+ 	spin_unlock(&sp->so_lock);
+ 	return status;
+ }
 
 
