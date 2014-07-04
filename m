@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760472AbaGDWQI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:16:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56996 "EHLO
+	id S1760515AbaGDWQP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:16:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57018 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760373AbaGDWQB (ORCPT
+	with ESMTP id S1760373AbaGDWQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:16:01 -0400
+	Fri, 4 Jul 2014 18:16:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>,
-        Arshad Hussain <arshad.hussain@calsoftinc.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.15 02/66] iscsi-target: Avoid rejecting incorrect ITT for Data-Out
-Date: Fri,  4 Jul 2014 15:14:01 -0700
-Message-Id: <20140704221422.926016914@linuxfoundation.org>
+        Bart Van Assche <bvanassche@acm.org>,
+        Yann Droneaud <ydroneaud@opteya.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.15 32/66] IB/umad: Fix use-after-free on close
+Date: Fri,  4 Jul 2014 15:14:31 -0700
+Message-Id: <20140704221424.281479463@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -30,38 +30,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit 97c99b47ac58bacb7c09e1f47d5d184434f6b06a upstream.
+commit 60e1751cb52cc6d1ae04b6bd3c2b96e770b5823f upstream.
 
-This patch changes iscsit_check_dataout_hdr() to dump the incoming
-Data-Out payload when the received ITT is not associated with a
-WRITE, instead of calling iscsit_reject_cmd() for the non WRITE
-ITT descriptor.
+Avoid that closing /dev/infiniband/umad<n> or /dev/infiniband/issm<n>
+triggers a use-after-free.  __fput() invokes f_op->release() before it
+invokes cdev_put().  Make sure that the ib_umad_device structure is
+freed by the cdev_put() call instead of f_op->release().  This avoids
+that changing the port mode from IB into Ethernet and back to IB
+followed by restarting opensmd triggers the following kernel oops:
 
-This addresses a bug where an initiator sending an Data-Out for
-an ITT associated with a READ would end up generating a reject
-for the READ, eventually resulting in list corruption.
+    general protection fault: 0000 [#1] PREEMPT SMP
+    RIP: 0010:[<ffffffff810cc65c>]  [<ffffffff810cc65c>] module_put+0x2c/0x170
+    Call Trace:
+     [<ffffffff81190f20>] cdev_put+0x20/0x30
+     [<ffffffff8118e2ce>] __fput+0x1ae/0x1f0
+     [<ffffffff8118e35e>] ____fput+0xe/0x10
+     [<ffffffff810723bc>] task_work_run+0xac/0xe0
+     [<ffffffff81002a9f>] do_notify_resume+0x9f/0xc0
+     [<ffffffff814b8398>] int_signal+0x12/0x17
 
-Reported-by: Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>
-Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=75051
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/core/user_mad.c |   30 +++++++++++++++++++-----------
+ 1 file changed, 19 insertions(+), 11 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -1309,7 +1309,7 @@ iscsit_check_dataout_hdr(struct iscsi_co
- 	if (cmd->data_direction != DMA_TO_DEVICE) {
- 		pr_err("Command ITT: 0x%08x received DataOUT for a"
- 			" NON-WRITE command.\n", cmd->init_task_tag);
--		return iscsit_reject_cmd(cmd, ISCSI_REASON_PROTOCOL_ERROR, buf);
-+		return iscsit_dump_data_payload(conn, payload_length, 1);
+--- a/drivers/infiniband/core/user_mad.c
++++ b/drivers/infiniband/core/user_mad.c
+@@ -98,7 +98,7 @@ struct ib_umad_port {
+ 
+ struct ib_umad_device {
+ 	int                  start_port, end_port;
+-	struct kref          ref;
++	struct kobject       kobj;
+ 	struct ib_umad_port  port[0];
+ };
+ 
+@@ -134,14 +134,18 @@ static DECLARE_BITMAP(dev_map, IB_UMAD_M
+ static void ib_umad_add_one(struct ib_device *device);
+ static void ib_umad_remove_one(struct ib_device *device);
+ 
+-static void ib_umad_release_dev(struct kref *ref)
++static void ib_umad_release_dev(struct kobject *kobj)
+ {
+ 	struct ib_umad_device *dev =
+-		container_of(ref, struct ib_umad_device, ref);
++		container_of(kobj, struct ib_umad_device, kobj);
+ 
+ 	kfree(dev);
+ }
+ 
++static struct kobj_type ib_umad_dev_ktype = {
++	.release = ib_umad_release_dev,
++};
++
+ static int hdr_size(struct ib_umad_file *file)
+ {
+ 	return file->use_pkey_index ? sizeof (struct ib_user_mad_hdr) :
+@@ -812,7 +816,7 @@ static int ib_umad_open(struct inode *in
+ 		goto out;
  	}
- 	se_cmd = &cmd->se_cmd;
- 	iscsit_mod_dataout_timer(cmd);
+ 
+-	kref_get(&port->umad_dev->ref);
++	kobject_get(&port->umad_dev->kobj);
+ 
+ out:
+ 	mutex_unlock(&port->file_mutex);
+@@ -851,7 +855,7 @@ static int ib_umad_close(struct inode *i
+ 	mutex_unlock(&file->port->file_mutex);
+ 
+ 	kfree(file);
+-	kref_put(&dev->ref, ib_umad_release_dev);
++	kobject_put(&dev->kobj);
+ 
+ 	return 0;
+ }
+@@ -902,7 +906,7 @@ static int ib_umad_sm_open(struct inode
+ 	if (ret)
+ 		goto err_clr_sm_cap;
+ 
+-	kref_get(&port->umad_dev->ref);
++	kobject_get(&port->umad_dev->kobj);
+ 
+ 	return 0;
+ 
+@@ -932,7 +936,7 @@ static int ib_umad_sm_close(struct inode
+ 
+ 	up(&port->sm_sem);
+ 
+-	kref_put(&port->umad_dev->ref, ib_umad_release_dev);
++	kobject_put(&port->umad_dev->kobj);
+ 
+ 	return ret;
+ }
+@@ -1000,6 +1004,7 @@ static int find_overflow_devnum(void)
+ }
+ 
+ static int ib_umad_init_port(struct ib_device *device, int port_num,
++			     struct ib_umad_device *umad_dev,
+ 			     struct ib_umad_port *port)
+ {
+ 	int devnum;
+@@ -1032,6 +1037,7 @@ static int ib_umad_init_port(struct ib_d
+ 
+ 	cdev_init(&port->cdev, &umad_fops);
+ 	port->cdev.owner = THIS_MODULE;
++	port->cdev.kobj.parent = &umad_dev->kobj;
+ 	kobject_set_name(&port->cdev.kobj, "umad%d", port->dev_num);
+ 	if (cdev_add(&port->cdev, base, 1))
+ 		goto err_cdev;
+@@ -1050,6 +1056,7 @@ static int ib_umad_init_port(struct ib_d
+ 	base += IB_UMAD_MAX_PORTS;
+ 	cdev_init(&port->sm_cdev, &umad_sm_fops);
+ 	port->sm_cdev.owner = THIS_MODULE;
++	port->sm_cdev.kobj.parent = &umad_dev->kobj;
+ 	kobject_set_name(&port->sm_cdev.kobj, "issm%d", port->dev_num);
+ 	if (cdev_add(&port->sm_cdev, base, 1))
+ 		goto err_sm_cdev;
+@@ -1143,7 +1150,7 @@ static void ib_umad_add_one(struct ib_de
+ 	if (!umad_dev)
+ 		return;
+ 
+-	kref_init(&umad_dev->ref);
++	kobject_init(&umad_dev->kobj, &ib_umad_dev_ktype);
+ 
+ 	umad_dev->start_port = s;
+ 	umad_dev->end_port   = e;
+@@ -1151,7 +1158,8 @@ static void ib_umad_add_one(struct ib_de
+ 	for (i = s; i <= e; ++i) {
+ 		umad_dev->port[i - s].umad_dev = umad_dev;
+ 
+-		if (ib_umad_init_port(device, i, &umad_dev->port[i - s]))
++		if (ib_umad_init_port(device, i, umad_dev,
++				      &umad_dev->port[i - s]))
+ 			goto err;
+ 	}
+ 
+@@ -1163,7 +1171,7 @@ err:
+ 	while (--i >= s)
+ 		ib_umad_kill_port(&umad_dev->port[i - s]);
+ 
+-	kref_put(&umad_dev->ref, ib_umad_release_dev);
++	kobject_put(&umad_dev->kobj);
+ }
+ 
+ static void ib_umad_remove_one(struct ib_device *device)
+@@ -1177,7 +1185,7 @@ static void ib_umad_remove_one(struct ib
+ 	for (i = 0; i <= umad_dev->end_port - umad_dev->start_port; ++i)
+ 		ib_umad_kill_port(&umad_dev->port[i]);
+ 
+-	kref_put(&umad_dev->ref, ib_umad_release_dev);
++	kobject_put(&umad_dev->kobj);
+ }
+ 
+ static char *umad_devnode(struct device *dev, umode_t *mode)
 
 
