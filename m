@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031578AbaGDXHo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 19:07:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56989 "EHLO
+	id S1760764AbaGDXIP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 19:08:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56941 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760398AbaGDWP6 (ORCPT
+	with ESMTP id S1760356AbaGDWPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:15:58 -0400
+	Fri, 4 Jul 2014 18:15:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Sam Bradshaw <sbradshaw@micron.com>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.15 10/66] mtip32xx: Fix ERO and NoSnoop values in PCIe upstream on AMD systems
-Date: Fri,  4 Jul 2014 15:14:09 -0700
-Message-Id: <20140704221423.302157302@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.15 04/66] iscsi-target: fix iscsit_del_np deadlock on unload
+Date: Fri,  4 Jul 2014 15:14:03 -0700
+Message-Id: <20140704221423.017141921@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -29,95 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Asai Thambi S P <asamymuthupa@micron.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit d1e714db8129a1d3670e449b87719c78e2c76f9f upstream.
+commit 81a9c5e72bdf7109a65102ca61d8cbd722cf4021 upstream.
 
-A hardware quirk in P320h/P420m interfere with PCIe transactions on some
-AMD chipsets, making P320h/P420m unusable. This workaround is to disable
-ERO and NoSnoop bits in the parent and root complex for normal
-functioning of these devices
+On uniprocessor preemptible kernel, target core deadlocks on unload. The
+following events happen:
+* iscsit_del_np is called
+* it calls send_sig(SIGINT, np->np_thread, 1);
+* the scheduler switches to the np_thread
+* the np_thread is woken up, it sees that kthread_should_stop() returns
+  false, so it doesn't terminate
+* the np_thread clears signals with flush_signals(current); and goes back
+  to sleep in iscsit_accept_np
+* the scheduler switches back to iscsit_del_np
+* iscsit_del_np calls kthread_stop(np->np_thread);
+* the np_thread is waiting in iscsit_accept_np and it doesn't respond to
+  kthread_stop
 
-NOTE: This workaround is specific to AMD chipset with a PCIe upstream
-device with device id 0x5aXX
+The deadlock could be resolved if the administrator sends SIGINT signal to
+the np_thread with killall -INT iscsi_np
 
-Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
-Signed-off-by: Sam Bradshaw <sbradshaw@micron.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+The reproducible deadlock was introduced in commit
+db6077fd0b7dd41dc6ff18329cec979379071f87, but the thread-stopping code was
+racy even before.
+
+This patch fixes the problem. Using kthread_should_stop to stop the
+np_thread is unreliable, so we test np_thread_state instead. If
+np_thread_state equals ISCSI_NP_THREAD_SHUTDOWN, the thread exits.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/mtip32xx/mtip32xx.c |   53 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
+ drivers/target/iscsi/iscsi_target_login.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -4479,6 +4479,57 @@ static DEFINE_HANDLER(5);
- static DEFINE_HANDLER(6);
- static DEFINE_HANDLER(7);
- 
-+static void mtip_disable_link_opts(struct driver_data *dd, struct pci_dev *pdev)
-+{
-+	int pos;
-+	unsigned short pcie_dev_ctrl;
-+
-+	pos = pci_find_capability(pdev, PCI_CAP_ID_EXP);
-+	if (pos) {
-+		pci_read_config_word(pdev,
-+			pos + PCI_EXP_DEVCTL,
-+			&pcie_dev_ctrl);
-+		if (pcie_dev_ctrl & (1 << 11) ||
-+		    pcie_dev_ctrl & (1 << 4)) {
-+			dev_info(&dd->pdev->dev,
-+				"Disabling ERO/No-Snoop on bridge device %04x:%04x\n",
-+					pdev->vendor, pdev->device);
-+			pcie_dev_ctrl &= ~(PCI_EXP_DEVCTL_NOSNOOP_EN |
-+						PCI_EXP_DEVCTL_RELAX_EN);
-+			pci_write_config_word(pdev,
-+				pos + PCI_EXP_DEVCTL,
-+				pcie_dev_ctrl);
-+		}
-+	}
-+}
-+
-+static void mtip_fix_ero_nosnoop(struct driver_data *dd, struct pci_dev *pdev)
-+{
-+	/*
-+	 * This workaround is specific to AMD/ATI chipset with a PCI upstream
-+	 * device with device id 0x5aXX
-+	 */
-+	if (pdev->bus && pdev->bus->self) {
-+		if (pdev->bus->self->vendor == PCI_VENDOR_ID_ATI &&
-+		    ((pdev->bus->self->device & 0xff00) == 0x5a00)) {
-+			mtip_disable_link_opts(dd, pdev->bus->self);
-+		} else {
-+			/* Check further up the topology */
-+			struct pci_dev *parent_dev = pdev->bus->self;
-+			if (parent_dev->bus &&
-+				parent_dev->bus->parent &&
-+				parent_dev->bus->parent->self &&
-+				parent_dev->bus->parent->self->vendor ==
-+					 PCI_VENDOR_ID_ATI &&
-+				(parent_dev->bus->parent->self->device &
-+					0xff00) == 0x5a00) {
-+				mtip_disable_link_opts(dd,
-+					parent_dev->bus->parent->self);
-+			}
-+		}
-+	}
-+}
-+
- /*
-  * Called for each supported PCI device detected.
-  *
-@@ -4630,6 +4681,8 @@ static int mtip_pci_probe(struct pci_dev
- 		goto msi_initialize_err;
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -1216,7 +1216,7 @@ old_sess_out:
+ static int __iscsi_target_login_thread(struct iscsi_np *np)
+ {
+ 	u8 *buffer, zero_tsih = 0;
+-	int ret = 0, rc, stop;
++	int ret = 0, rc;
+ 	struct iscsi_conn *conn = NULL;
+ 	struct iscsi_login *login;
+ 	struct iscsi_portal_group *tpg = NULL;
+@@ -1230,6 +1230,9 @@ static int __iscsi_target_login_thread(s
+ 	if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
+ 		np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
+ 		complete(&np->np_restart_comp);
++	} else if (np->np_thread_state == ISCSI_NP_THREAD_SHUTDOWN) {
++		spin_unlock_bh(&np->np_thread_lock);
++		goto exit;
+ 	} else {
+ 		np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
+ 	}
+@@ -1422,10 +1425,8 @@ old_sess_out:
  	}
  
-+	mtip_fix_ero_nosnoop(dd, pdev);
+ out:
+-	stop = kthread_should_stop();
+-	/* Wait for another socket.. */
+-	if (!stop)
+-		return 1;
++	return 1;
 +
- 	/* Initialize the block layer. */
- 	rv = mtip_block_initialize(dd);
- 	if (rv < 0) {
+ exit:
+ 	iscsi_stop_login_thread_timer(np);
+ 	spin_lock_bh(&np->np_thread_lock);
+@@ -1442,7 +1443,7 @@ int iscsi_target_login_thread(void *arg)
+ 
+ 	allow_signal(SIGINT);
+ 
+-	while (!kthread_should_stop()) {
++	while (1) {
+ 		ret = __iscsi_target_login_thread(np);
+ 		/*
+ 		 * We break and exit here unless another sock_accept() call
 
 
