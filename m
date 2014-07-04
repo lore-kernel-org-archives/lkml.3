@@ -1,42 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031797AbaGDXCw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 19:02:52 -0400
-Received: from h5.144.133.40.static.ip.windstream.net ([40.133.144.5]:40618
-	"EHLO mail.bscn.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1030771AbaGDXCv convert rfc822-to-8bit (ORCPT
+	id S1031803AbaGDXDI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 19:03:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57048 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760519AbaGDWQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 19:02:51 -0400
-X-Greylist: delayed 1978 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Jul 2014 19:02:50 EDT
-X-Default-Received-SPF: pass (skip=loggedin (res=PASS)) x-ip-name=41.203.69.3;
-Content-Type: text/plain; charset=US-ASCII
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: PROTECT YOUR ACCOUNT!!!
+	Fri, 4 Jul 2014 18:16:17 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-From: "ONLINE WEBMAIL TEAM" <juarez@bscn.com>
-Date: Fri, 04 Jul 2014 23:29:36 +0100
-Reply-To: onlinewebmailteam1@gmail.com
-Message-ID: <1404512371_58064@mail.bscn.com>
-X-Authenticated-User: juarez@bscn.com 
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Gabor Juhos <juhosg@openwrt.org>, Guenter Roeck <linux@roeck-us.net>,
+        Wim Van Sebroeck <wim@iguana.be>
+Subject: [PATCH 3.15 23/66] watchdog: ath79_wdt: avoid spurious restarts on AR934x
+Date: Fri,  4 Jul 2014 15:14:22 -0700
+Message-Id: <20140704221423.878536595@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
+References: <20140704221422.813435485@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Help Desk
-onlinewebmailteam1@gmail.com
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
-Security Notification,
+------------------
+
+From: Gabor Juhos <juhosg@openwrt.org>
+
+commit 23afeb613ec0e10aecfae7838a14d485db62ac52 upstream.
+
+On some AR934x based systems, where the frequency of
+the AHB bus is relatively high, the built-in watchdog
+causes a spurious restart when it gets enabled.
+
+The possible cause of these restarts is that the timeout
+value written into the TIMER register does not reaches
+the hardware in time.
+
+Add an explicit delay into the ath79_wdt_enable function
+to avoid the spurious restarts.
+
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/watchdog/ath79_wdt.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+--- a/drivers/watchdog/ath79_wdt.c
++++ b/drivers/watchdog/ath79_wdt.c
+@@ -20,6 +20,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
  
-A DGTJTO virus has been detected in your folders. Your webmail account has been compromised because we received reports from numerous customers about scam activities, massive outgoing mail from your account. Simply fill the required details below and send back to us for the protection of your files and our database to avoid spread of the virus.
- 
-Email:
-Password:
-Retype-Password:
-Anti Virus Code:
- 
-Webmail Support Centre. Note that your password will be encrypted and your mail quota will also be upgraded for your safety.
- 
-Thank you for your cooperation.
-Webmail Support Centre.
+ #include <linux/bitops.h>
++#include <linux/delay.h>
+ #include <linux/errno.h>
+ #include <linux/fs.h>
+ #include <linux/io.h>
+@@ -90,6 +91,15 @@ static inline void ath79_wdt_keepalive(v
+ static inline void ath79_wdt_enable(void)
+ {
+ 	ath79_wdt_keepalive();
++
++	/*
++	 * Updating the TIMER register requires a few microseconds
++	 * on the AR934x SoCs at least. Use a small delay to ensure
++	 * that the TIMER register is updated within the hardware
++	 * before enabling the watchdog.
++	 */
++	udelay(2);
++
+ 	ath79_wdt_wr(WDOG_REG_CTRL, WDOG_CTRL_ACTION_FCR);
+ 	/* flush write */
+ 	ath79_wdt_rr(WDOG_REG_CTRL);
+
+
