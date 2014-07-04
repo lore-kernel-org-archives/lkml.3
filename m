@@ -1,242 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212AbaGDP3Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 11:29:25 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:58323 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600AbaGDP3X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 11:29:23 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>
-Cc: Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Dave Martin <Dave.Martin@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, Olav Haugan <ohaugan@codeaurora.org>,
-        Varun Sethi <varun.sethi@freescale.com>, devicetree@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
-Date: Fri,  4 Jul 2014 17:29:17 +0200
-Message-Id: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.0.1
+	id S1754708AbaGDPdh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 11:33:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57386 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751742AbaGDPdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 11:33:35 -0400
+Message-ID: <53B6C947.1070603@suse.cz>
+Date: Fri, 04 Jul 2014 17:33:27 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/10] fix freepage count problems due to memory isolation
+References: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+On 07/04/2014 09:57 AM, Joonsoo Kim wrote:
+> Hello,
 
-This commit introduces a generic device tree binding for IOMMU devices.
-Only a very minimal subset is described here, but it is enough to cover
-the requirements of both the Exynos System MMU and Tegra SMMU as
-discussed here:
+Hi Joonsoo,
 
-    https://lkml.org/lkml/2014/4/27/346
+please CC me on further updates, this is relevant to me.
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
-Changes in v4:
-- clarify that disabling an IOMMU DT node may not disable translation
-- be more explicit that examples are only examples
-- add multi-ID master example
+> This patchset aims at fixing problems due to memory isolation found by
+> testing my patchset [1].
+> 
+> These are really subtle problems so I can be wrong. If you find what I am
+> missing, please let me know.
+> 
+> Before describing bugs itself, I first explain definition of freepage.
+> 
+> 1. pages on buddy list are counted as freepage.
+> 2. pages on isolate migratetype buddy list are *not* counted as freepage.
 
-Changes in v3:
-- use #iommu-cells instead of #address-cells/#size-cells
-- drop optional iommu-names property
+I think the second point is causing us a lot of trouble. And I wonder if it's really
+justified! We already have some is_migrate_isolate() checks in the fast path and now you
+would add more, mostly just to keep this accounting correct.
 
-Changes in v2:
-- add notes about "dma-ranges" property (drop note from commit message)
-- document priorities of "iommus" property vs. "dma-ranges" property
-- drop #iommu-cells in favour of #address-cells and #size-cells
-- remove multiple-master device example
+So the question is, does it have to be correct? And (admiteddly not after a completely
+exhaustive analysis) I think the answer is, surprisingly, that it doesn't :)
 
- Documentation/devicetree/bindings/iommu/iommu.txt | 172 ++++++++++++++++++++++
- 1 file changed, 172 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/iommu/iommu.txt
+Well I of course don't mean that the freepage accounts could go random completely, but
+what if we allowed them to drift a bit, limiting both the max error and the timeframe
+where errors are possible? After all, watermarks checking is already racy so I don't think
+it would be hurt that much.
 
-diff --git a/Documentation/devicetree/bindings/iommu/iommu.txt b/Documentation/devicetree/bindings/iommu/iommu.txt
-new file mode 100644
-index 000000000000..464a81eaaf61
---- /dev/null
-+++ b/Documentation/devicetree/bindings/iommu/iommu.txt
-@@ -0,0 +1,172 @@
-+This document describes the generic device tree binding for IOMMUs and their
-+master(s).
-+
-+
-+IOMMU device node:
-+==================
-+
-+An IOMMU can provide the following services:
-+
-+* Remap address space to allow devices to access physical memory ranges that
-+  they otherwise wouldn't be capable of accessing.
-+
-+  Example: 32-bit DMA to 64-bit physical addresses
-+
-+* Implement scatter-gather at page level granularity so that the device does
-+  not have to.
-+
-+* Provide system protection against "rogue" DMA by forcing all accesses to go
-+  through the IOMMU and faulting when encountering accesses to unmapped
-+  address regions.
-+
-+* Provide address space isolation between multiple contexts.
-+
-+  Example: Virtualization
-+
-+Device nodes compatible with this binding represent hardware with some of the
-+above capabilities.
-+
-+IOMMUs can be single-master or multiple-master. Single-master IOMMU devices
-+typically have a fixed association to the master device, whereas multiple-
-+master IOMMU devices can translate accesses from more than one master.
-+
-+The device tree node of the IOMMU device's parent bus must contain a valid
-+"dma-ranges" property that describes how the physical address space of the
-+IOMMU maps to memory. An empty "dma-ranges" property means that there is a
-+1:1 mapping from IOMMU to memory.
-+
-+Required properties:
-+--------------------
-+- #iommu-cells: The number of cells in an IOMMU specifier needed to encode an
-+  address.
-+
-+The meaning of the IOMMU specifier is defined by the device tree binding of
-+the specific IOMMU. Below are a few examples of typical use-cases:
-+
-+- #iommu-cells = <0>: Single master IOMMU devices are not configurable and
-+  therefore no additional information needs to be encoded in the specifier.
-+  This may also apply to multiple master IOMMU devices that do not allow the
-+  association of masters to be configured. Note that an IOMMU can by design
-+  be multi-master yet only expose a single master in a given configuration.
-+  In such cases the number of cells will usually be 1 as in the next case.
-+- #iommu-cells = <1>: Multiple master IOMMU devices may need to be configured
-+  in order to enable translation for a given master. In such cases the single
-+  address cell corresponds to the master device's ID. In some cases more than
-+  one cell can be required to represent a single master ID.
-+- #iommu-cells = <4>: Some IOMMU devices allow the DMA window for masters to
-+  be configured. The first cell of the address in this may contain the master
-+  device's ID for example, while the second cell could contain the start of
-+  the DMA window for the given device. The length of the DMA window is given
-+  by the third and fourth cells.
-+
-+Note that these are merely examples and real-world use-cases may use different
-+definitions to represent their individual needs. Always refer to the specific
-+IOMMU binding for the exact meaning of the cells that make up the specifier.
-+
-+
-+IOMMU master node:
-+==================
-+
-+Devices that access memory through an IOMMU are called masters. A device can
-+have multiple master interfaces (to one or more IOMMU devices).
-+
-+Required properties:
-+--------------------
-+- iommus: A list of phandle and IOMMU specifier pairs that describe the IOMMU
-+  master interfaces of the device. One entry in the list describes one master
-+  interface of the device.
-+
-+When an "iommus" property is specified in a device tree node, the IOMMU will
-+be used for address translation. If a "dma-ranges" property exists in the
-+device's parent node it will be ignored. An exception to this rule is if the
-+referenced IOMMU is disabled, in which case the "dma-ranges" property of the
-+parent shall take effect. Note that merely disabling a device tree node does
-+not guarantee that the IOMMU is really disabled since the hardware may not
-+have a means to turn off translation.
-+
-+
-+Notes:
-+======
-+
-+One possible extension to the above is to use an "iommus" property along with
-+a "dma-ranges" property in a bus device node (such as PCI host bridges). This
-+can be useful to describe how children on the bus relate to the IOMMU if they
-+are not explicitly listed in the device tree (e.g. PCI devices). However, the
-+requirements of that use-case haven't been fully determined yet. Implementing
-+this is therefore not recommended without further discussion and extension of
-+this binding.
-+
-+
-+Examples:
-+=========
-+
-+Single-master IOMMU:
-+--------------------
-+
-+	iommu {
-+		#iommu-cells = <0>;
-+	};
-+
-+	master {
-+		iommus = <&/iommu>;
-+	};
-+
-+Multiple-master IOMMU with fixed associations:
-+----------------------------------------------
-+
-+	/* multiple-master IOMMU */
-+	iommu {
-+		/*
-+		 * Masters are statically associated with this IOMMU and
-+		 * address translation is always enabled.
-+		 */
-+		#iommu-cells = <0>;
-+	};
-+
-+	/* static association with IOMMU */
-+	master@1 {
-+		reg = <1>;
-+		iommus = <&/iommu>;
-+	};
-+
-+	/* static association with IOMMU */
-+	master@2 {
-+		reg = <2>;
-+		iommus = <&/iommu>;
-+	};
-+
-+Multiple-master IOMMU:
-+----------------------
-+
-+	iommu {
-+		/* the specifier represents the ID of the master */
-+		#iommu-cells = <1>;
-+	};
-+
-+	master@1 {
-+		/* device has master ID 42 in the IOMMU */
-+		iommus = <&/iommu 42>;
-+	};
-+
-+	master@2 {
-+		/* device has master IDs 23 and 24 in the IOMMU */
-+		iommus = <&/iommu 23>, <&/iommu 24>;
-+	};
-+
-+Multiple-master IOMMU with configurable DMA window:
-+---------------------------------------------------
-+
-+	/ {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+
-+		iommu {
-+			/* master ID, address and length of DMA window */
-+			#iommu-cells = <4>;
-+		};
-+
-+		master {
-+			/* master ID 42, 4 GiB DMA window starting at 0 */
-+			iommus = <&/iommu  42  0  0x1 0x0>;
-+		};
-+	};
--- 
-2.0.1
+Now if we look at what both CMA and memory hot-remove does is:
+
+1. Mark a MAX_ORDER-aligned buch of pageblocks as MIGRATE_ISOLATE through
+start_isolate_page_range(). As part of this, all free pages in that area are
+moved on the isolate freelist through move_freepages_block().
+
+2. Try to migrate away all non-free pages in the range. Also drain pcplists and lru_add
+caches.
+
+3. Check if everything was successfully isolated by test_pages_isolated(). Restart and/or
+undo pageblock isolation if not.
+
+So my idea is to throw away all special-casing of is_migrate_isolate() in the buddy
+allocator, which would therefore account free pages on the isolate freelist as normal free
+pages.
+The accounting of isolated pages would be instead done only on the top level of CMA/hot
+remove in the three steps outlined above, which would be modified as follows:
+
+1. Calculate N as the target number of pages to be isolated. Perform the actions of step 1
+as usual. Calculate X as the number of pages that move_freepages_block() has moved.
+Subtract X from freepages (this is the same as it is done now), but also *remember the
+value of X*
+
+2. Migrate and drain pcplists as usual. The new free pages will either end up correctly on
+isolate freelist, or not. We don't care, they will be accounted as freepages either way.
+This is where some inaccuracy in accounted freepages would build up.
+
+3. If test_pages_isolated() checks pass, subtract (N - X) from freepages. The result is
+that we have a isolated range of N pages that nobody can steal now as everything is on
+isolate freelist and is MAX_ORDER aligned. And we have in total subtracted N pages (first
+X, then N-X). So the accounting matches reality.
+
+If we have to undo, we undo the isolation and as part of this, we use
+move_freepages_block() to move pages from isolate freelist to the normal ones. But we
+don't care how many pages were moved. We simply add the remembered value of X to the
+number of freepages, undoing the change from step 1. Again, the accounting matches reality.
+
+
+The final point is that if we do this per MAX_ORDER blocks, the error in accounting cannot
+be ever larger than 4MB and will be visible only during time a single MAX_ORDER block is
+handled.
+
+As a possible improvement, we can assume during phase 2 that every page freed by migration
+will end up correctly on isolate free list. So we create M free pages by migration, and
+subtract M from freepage account. Then in phase 3 we either subtract (N - X - M), or add X
++ M in the undo case. (Ideally, if we succeed, X + M should be equal to N, but due to
+pages on pcplists and the possible races it will be less). I think with this improvement,
+any error would be negligible.
+
+Thoughts?
+
+> 3. pages on cma buddy list are counted as CMA freepage, too.
+> 4. pages for guard are *not* counted as freepage.
+> 
+> Now, I describe problems and related patch.
+> 
+> 1. Patch 2: If guard page are cleared and merged into isolate buddy list,
+> we should not add freepage count.
+> 
+> 2. Patch 3: When the page return back from pcp to buddy, we should
+> account it to freepage counter. In this case, we should check the
+> pageblock migratetype of the page and should insert the page into
+> appropriate buddy list. Although we checked it in current code, we
+> didn't insert the page into appropriate buddy list so that freepage
+> counting can be wrong.
+> 
+> 3. Patch 4: There is race condition so that some freepages could be
+> on isolate buddy list. If so, we can't use this page until next isolation
+> attempt on this pageblock.
+> 
+> 4. Patch 5: There is race condition that page on isolate pageblock
+> can go into non-isolate buddy list. If so, buddy allocator would
+> merge pages on non-isolate buddy list and isolate buddy list, respectively,
+> and freepage count will be wrong.
+> 
+> 5. Patch 9: move_freepages(_block) returns *not* number of moved pages.
+> Instead, it returns number of pages linked in that migratetype buddy list.
+> So accouting with this return value makes freepage count wrong.
+> 
+> 6. Patch 10: buddy allocator would merge pages on non-isolate buddy list
+> and isolate buddy list, respectively. This leads to freepage counting
+> problem so fix it by stopping merging in this case.
+> 
+> Without patchset [1], above problem doesn't happens on my CMA allocation
+> test, because CMA reserved pages aren't used at all. So there is no
+> chance for above race.
+> 
+> With patchset [1], I did simple CMA allocation test and get below result.
+> 
+> - Virtual machine, 4 cpus, 1024 MB memory, 256 MB CMA reservation
+> - run kernel build (make -j16) on background
+> - 30 times CMA allocation(8MB * 30 = 240MB) attempts in 5 sec interval
+> - Result: more than 5000 freepage count are missed
+> 
+> With patchset [1] and this patchset, I found that no freepage count are
+> missed so that I conclude that problems are solved.
+> 
+> These problems can be possible on memory hot remove users, although
+> I didn't check it further.
+> 
+> Other patches are either for the base to fix these problems or for
+> simple clean-up. Please see individual patches for more information.
+> 
+> This patchset is based on linux-next-20140703.
+> 
+> Thanks.
+> 
+> [1]: Aggressively allocate the pages on cma reserved memory
+>      https://lkml.org/lkml/2014/5/30/291
+> 
+> 
+> Joonsoo Kim (10):
+>   mm/page_alloc: remove unlikely macro on free_one_page()
+>   mm/page_alloc: correct to clear guard attribute in DEBUG_PAGEALLOC
+>   mm/page_alloc: handle page on pcp correctly if it's pageblock is
+>     isolated
+>   mm/page_alloc: carefully free the page on isolate pageblock
+>   mm/page_alloc: optimize and unify pageblock migratetype check in free
+>     path
+>   mm/page_alloc: separate freepage migratetype interface
+>   mm/page_alloc: store migratetype of the buddy list into freepage
+>     correctly
+>   mm/page_alloc: use get_onbuddy_migratetype() to get buddy list type
+>   mm/page_alloc: fix possible wrongly calculated freepage counter
+>   mm/page_alloc: Stop merging pages on non-isolate and isolate buddy
+>     list
+> 
+>  include/linux/mm.h             |   30 +++++++--
+>  include/linux/mmzone.h         |    5 ++
+>  include/linux/page-isolation.h |    8 +++
+>  mm/page_alloc.c                |  138 +++++++++++++++++++++++++++++-----------
+>  mm/page_isolation.c            |   18 ++----
+>  5 files changed, 147 insertions(+), 52 deletions(-)
+> 
 
