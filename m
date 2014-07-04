@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031554AbaGDW1g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:27:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57716 "EHLO
+	id S1031564AbaGDW17 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:27:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57711 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760795AbaGDWWt (ORCPT
+	with ESMTP id S1760781AbaGDWWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:22:49 -0400
+	Fri, 4 Jul 2014 18:22:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 52/59] ptrace,x86: force IRET path after a ptrace_stop()
-Date: Fri,  4 Jul 2014 15:19:41 -0700
-Message-Id: <20140704221542.023281594@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.10 23/46] pNFS: Handle allocation errors correctly in filelayout_alloc_layout_hdr()
+Date: Fri,  4 Jul 2014 15:19:27 -0700
+Message-Id: <20140704221603.329521956@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
-References: <20140704221539.544876024@linuxfoundation.org>
+In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
+References: <20140704221602.280733370@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,79 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit b9cd18de4db3c9ffa7e17b0dc0ca99ed5aa4d43a upstream.
+commit 6df200f5d5191bdde4d2e408215383890f956781 upstream.
 
-The 'sysret' fastpath does not correctly restore even all regular
-registers, much less any segment registers or reflags values.  That is
-very much part of why it's faster than 'iret'.
+Return the NULL pointer when the allocation fails.
 
-Normally that isn't a problem, because the normal ptrace() interface
-catches the process using the signal handler infrastructure, which
-always returns with an iret.
-
-However, some paths can get caught using ptrace_event() instead of the
-signal path, and for those we need to make sure that we aren't going to
-return to user space using 'sysret'.  Otherwise the modifications that
-may have been done to the register set by the tracer wouldn't
-necessarily take effect.
-
-Fix it by forcing IRET path by setting TIF_NOTIFY_RESUME from
-arch_ptrace_stop_needed() which is invoked from ptrace_stop().
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Andy Lutomirski <luto@amacapital.net>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/ptrace.h |   16 ++++++++++++++++
- include/linux/ptrace.h        |    3 +++
- 2 files changed, 19 insertions(+)
+ fs/nfs/nfs4filelayout.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/ptrace.h
-+++ b/arch/x86/include/asm/ptrace.h
-@@ -231,6 +231,22 @@ static inline unsigned long regs_get_ker
+--- a/fs/nfs/nfs4filelayout.c
++++ b/fs/nfs/nfs4filelayout.c
+@@ -1300,7 +1300,7 @@ filelayout_alloc_layout_hdr(struct inode
+ 	struct nfs4_filelayout *flo;
  
- #define ARCH_HAS_USER_SINGLE_STEP_INFO
+ 	flo = kzalloc(sizeof(*flo), gfp_flags);
+-	return &flo->generic_hdr;
++	return flo != NULL ? &flo->generic_hdr : NULL;
+ }
  
-+/*
-+ * When hitting ptrace_stop(), we cannot return using SYSRET because
-+ * that does not restore the full CPU state, only a minimal set.  The
-+ * ptracer can change arbitrary register values, which is usually okay
-+ * because the usual ptrace stops run off the signal delivery path which
-+ * forces IRET; however, ptrace_event() stops happen in arbitrary places
-+ * in the kernel and don't force IRET path.
-+ *
-+ * So force IRET path after a ptrace stop.
-+ */
-+#define arch_ptrace_stop_needed(code, info)				\
-+({									\
-+	set_thread_flag(TIF_NOTIFY_RESUME);				\
-+	false;								\
-+})
-+
- struct user_desc;
- extern int do_get_thread_area(struct task_struct *p, int idx,
- 			      struct user_desc __user *info);
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -334,6 +334,9 @@ static inline void user_single_step_sigi
-  * calling arch_ptrace_stop() when it would be superfluous.  For example,
-  * if the thread has not been back to user mode since the last stop, the
-  * thread state might indicate that nothing needs to be done.
-+ *
-+ * This is guaranteed to be invoked once before a task stops for ptrace and
-+ * may include arch-specific operations necessary prior to a ptrace stop.
-  */
- #define arch_ptrace_stop_needed(code, info)	(0)
- #endif
+ static void
 
 
