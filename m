@@ -1,138 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965040AbaGDNEW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 09:04:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4514 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932429AbaGDNER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 09:04:17 -0400
-From: Denys Vlasenko <dvlasenk@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Denys Vlasenko <dvlasenk@redhat.com>, Jim Keniston <jkenisto@us.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 3/3] uprobe: fix 2-byte opcode table
-Date: Fri,  4 Jul 2014 15:03:46 +0200
-Message-Id: <1404479026-9894-3-git-send-email-dvlasenk@redhat.com>
-In-Reply-To: <1404479026-9894-1-git-send-email-dvlasenk@redhat.com>
-References: <1404479026-9894-1-git-send-email-dvlasenk@redhat.com>
+	id S1030243AbaGDNEc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 09:04:32 -0400
+Received: from mail.emea.novell.com ([130.57.118.101]:42264 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965050AbaGDNE3 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Fri, 4 Jul 2014 09:04:29 -0400
+Message-Id: <53B6C1D70200007800020BE7@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.0 
+Date: Fri, 04 Jul 2014 14:01:43 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Greg KH" <gregkh@linuxfoundation.org>,
+        "Don A. Bailey" <donb@securitymouse.com>
+Cc: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Subject: Re: [PATCH] lz4: add overrun checks to
+ lz4_uncompress_unknownoutputsize()
+References: <20140703231103.GA4081@kroah.com> 
+In-Reply-To: 
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enabled probing of lar, lsl, popcnt, lddqu, prefetch insns.
-They should be safe to probe, they throw no exceptions.
+>>> On 04.07.14 at 08:12, Jan Beulich wrote:
+>>>> On 04.07.14 at 01:11, <gregkh@linuxfoundation.org> wrote:
+> > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > 
+> > Jan points out that I forgot to make the needed fixes to the
+> > lz4_uncompress_unknownoutputsize() function to mirror the changes done
+> > in lz4_decompress() with regards to potential pointer overflows.
+> 
+> Except that meanwhile Don agreed with my statement that neither
+> this nor the two earlier patches really fix the issue. So rather than
+> pushing this into 3.16 and stable trees, I wonder whether the two
+> earlier ones shouldn't be reverted and then a clean and correct
+> fix be applied.
 
-Enabled probing of 3-byte opcodes 0f 38-3f xx - these are
-vector isns, so should be safe.
+So here's a patch which I think adds the missing pieces.
 
-Enabled probing of many currently undefined 0f xx insns.
-At the rate new vector instructions are getting added,
-we don't want to constantly enable more bits.
-We want to only occasionally *disable* ones which
-for some reason can't be probed.
-This includes 0f 24,26 opcodes, which are undefined
-since Pentium. On 486, they were "mov to/from test register".
+Jan
 
-Explained more fully what 0f 78,79 opcodes are.
+lz4: check for underruns
 
-Explained what 0f ae opcode is. (It's unclear why we don't allow
-probing it, but let's not change it for now).
+While overruns are already being taken care of, underruns (resulting
+from overflows in the respective "op + length" (or similar) operations
+weren't. Fix this, allowing commits 4a3a990451, 4148c1f67a, and
+206204a116 to be reverted (perhaps apart from the return value
+adjustments two of the three do).
 
-Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-CC: Jim Keniston <jkenisto@us.ibm.com>
-CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Ingo Molnar <mingo@kernel.org>
-CC: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 ---
- arch/x86/kernel/uprobes.c | 52 ++++++++++++++++-------------------------------
- 1 file changed, 17 insertions(+), 35 deletions(-)
+The patch applies correctly with or without said reverts carried out.
 
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 40dfb4e..11619e1 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -189,61 +189,43 @@ static volatile u32 good_insns_64[256 / 32] = {
-  * 0f 01 - SGDT/SIDT/LGDT/LIDT/SMSW/-/LMSW/INVLPG group.
-  *	Also encodes tons of other system insns if mod=11.
-  *	Some are in fact non-system: xend, xtest, rdtscp, maybe more
-- * 0f 02 - lar (why? should be safe, it throws no exceptipons)
-- * 0f 03 - lsl (why? should be safe, it throws no exceptipons)
-- * 0f 04 - undefined
-  * 0f 05 - syscall
-  * 0f 06 - clts (CPL0 insn)
-  * 0f 07 - sysret
-  * 0f 08 - invd (CPL0 insn)
-  * 0f 09 - wbinvd (CPL0 insn)
-- * 0f 0a - undefined
-  * 0f 0b - ud2
-- * 0f 0c - undefined
-- * 0f 0d - prefetchFOO (amd prefetch insns)
-- * 0f 18 - prefetchBAR (intel prefetch insns)
-- * 0f 24 - mov from test regs (perhaps entire 20-27 area can be disabled (special reg ops))
-- * 0f 25 - undefined
-- * 0f 26 - mov to test regs
-- * 0f 27 - undefined
-- * 0f 30 - wrmsr (CPL0 insn)
-+ * 0f 30 - wrmsr (CPL0 insn) (then why rdmsr is allowed, it's also CPL0 insn?)
-  * 0f 34 - sysenter
-  * 0f 35 - sysexit
-- * 0f 36 - undefined
-  * 0f 37 - getsec
-- * 0f 38-3f - 3-byte opcodes (why?? all look safe)
-- * 0f 78 - vmread
-- * 0f 79 - vmwrite
-- * 0f 7a - undefined
-- * 0f 7b - undefined
-- * 0f 7c - undefined
-- * 0f 7d - undefined
-- * 0f a6 - undefined
-- * 0f a7 - undefined
-- * 0f b8 - popcnt (why?? it's an ordinary ALU op)
-- * 0f d0 - undefined
-- * 0f f0 - lddqu (why?? it's an ordinary vector load op)
-- * 0f ff - undefined
-+ * 0f 78 - vmread (Intel VMX. CPL0 insn)
-+ * 0f 79 - vmwrite (Intel VMX. CPL0 insn)
-+ *	Note: with prefixes, these two opcodes are
-+ *	extrq/insertq/AVX512 convert vector ops.
-+ * 0f ae - group15: [f]xsave,[f]xrstor,[v]{ld,st}mxcsr,clflush[opt],
-+ *	{rd,wr}{fs,gs}base,{s,l,m}fence.
-+ *	Why? They are all user-executable.
-  */
- static volatile u32 good_2byte_insns[256 / 32] = {
- 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
- 	/*      ----------------------------------------------         */
--	W(0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1) | /* 00 */
--	W(0x10, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1) , /* 10 */
--	W(0x20, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1) | /* 20 */
--	W(0x30, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) , /* 30 */
-+	W(0x00, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1) | /* 00 */
-+	W(0x10, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 10 */
-+	W(0x20, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 20 */
-+	W(0x30, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1) , /* 30 */
- 	W(0x40, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 40 */
- 	W(0x50, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 50 */
- 	W(0x60, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 60 */
--	W(0x70, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1) , /* 70 */
-+	W(0x70, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1) , /* 70 */
- 	W(0x80, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 80 */
- 	W(0x90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 90 */
--	W(0xa0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1) | /* a0 */
--	W(0xb0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1) , /* b0 */
-+	W(0xa0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1) | /* a0 */
-+	W(0xb0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* b0 */
- 	W(0xc0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* c0 */
--	W(0xd0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* d0 */
-+	W(0xd0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* d0 */
- 	W(0xe0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* e0 */
--	W(0xf0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)   /* f0 */
-+	W(0xf0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)   /* f0 */
- 	/*      ----------------------------------------------         */
- 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
- };
--- 
-1.8.1.4
+--- a/lib/lz4/lz4_decompress.c
++++ b/lib/lz4/lz4_decompress.c
+@@ -89,6 +89,8 @@ static int lz4_uncompress(const char *so
+ 			ip += length;
+ 			break; /* EOF */
+ 		}
++		if (unlikely((unsigned long)cpy < (unsigned long)op))
++			goto _output_error;
+ 		LZ4_WILDCOPY(ip, op, cpy);
+ 		ip -= (op - cpy);
+ 		op = cpy;
+@@ -147,6 +149,8 @@ static int lz4_uncompress(const char *so
+ 				goto _output_error;
+ 			continue;
+ 		}
++		if (unlikely((unsigned long)cpy < (unsigned long)op))
++			goto _output_error;
+ 		LZ4_SECURECOPY(ref, op, cpy);
+ 		op = cpy; /* correction */
+ 	}
+@@ -209,6 +213,8 @@ static int lz4_uncompress_unknownoutputs
+ 			op += length;
+ 			break;/* Necessarily EOF, due to parsing restrictions */
+ 		}
++		if (unlikely((unsigned long)cpy < (unsigned long)op))
++			goto _output_error;
+ 		LZ4_WILDCOPY(ip, op, cpy);
+ 		ip -= (op - cpy);
+ 		op = cpy;
+@@ -272,6 +278,8 @@ static int lz4_uncompress_unknownoutputs
+ 				goto _output_error;
+ 			continue;
+ 		}
++		if (unlikely((unsigned long)cpy < (unsigned long)op))
++			goto _output_error;
+ 		LZ4_SECURECOPY(ref, op, cpy);
+ 		op = cpy; /* correction */
+ 	}
+
+
 
