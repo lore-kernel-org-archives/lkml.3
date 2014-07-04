@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758997AbaGDKDF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 06:03:05 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:47638 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932347AbaGDJzy (ORCPT
+	id S1759112AbaGDKDh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 06:03:37 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:38035 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932197AbaGDJzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 05:55:54 -0400
-From: Tushar Behera <tushar.b@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
-Cc: gnurou@gmail.com, linus.walleij@linaro.org, trblinux@gmail.com
-Subject: [PATCH] gpiolib: of: Update debug messages for of_get_named_gpiod_flags
-Date: Fri,  4 Jul 2014 15:22:09 +0530
-Message-Id: <1404467529-26301-1-git-send-email-tushar.b@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 4 Jul 2014 05:55:51 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v6 07/23] mfd: max77686: Remove unneeded OOM error message
+Date: Fri,  4 Jul 2014 11:55:06 +0200
+Message-Id: <1404467722-26687-8-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following is the debug output (only a few examples) before and after the patch.
+There is no need to print out-of-memory errors since this is already
+done by the memory management subsystem which even calls dump_stack().
 
-$ dmesg | grep of_get_named_gpiod_flags
-
-Before:
-of_get_named_gpiod_flags: can't parse gpios property of node '/mmc@12220000[0]'
-of_get_named_gpiod_flags exited with status 0
-
-After:
-of_get_named_gpiod_flags: can't parse 'wp-gpios' property of node '/mmc@12220000[0]'
-of_get_named_gpiod_flags: parsed 'gpios' property of node '/gpio-keys/power[0]' - status (0)
-
-Signed-off-by: Tushar Behera <tushar.b@samsung.com>
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
- drivers/gpio/gpiolib-of.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/mfd/max77686.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
-index af7e25c..e60cdab 100644
---- a/drivers/gpio/gpiolib-of.c
-+++ b/drivers/gpio/gpiolib-of.c
-@@ -82,15 +82,16 @@ struct gpio_desc *of_get_named_gpiod_flags(struct device_node *np,
- 	ret = of_parse_phandle_with_args(np, propname, "#gpio-cells", index,
- 					 &gg_data.gpiospec);
- 	if (ret) {
--		pr_debug("%s: can't parse gpios property of node '%s[%d]'\n",
--			__func__, np->full_name, index);
-+		pr_debug("%s: can't parse '%s' property of node '%s[%d]'\n",
-+			__func__, propname, np->full_name, index);
- 		return ERR_PTR(ret);
- 	}
+diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+index 87fe52e..8650832 100644
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -107,10 +107,8 @@ static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
+ 	struct max77686_platform_data *pd;
  
- 	gpiochip_find(&gg_data, of_gpiochip_find_and_xlate);
+ 	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
+-	if (!pd) {
+-		dev_err(dev, "could not allocate memory for pdata\n");
++	if (!pd)
+ 		return NULL;
+-	}
  
- 	of_node_put(gg_data.gpiospec.np);
--	pr_debug("%s exited with status %d\n", __func__,
-+	pr_debug("%s: parsed '%s' property of node '%s[%d]' - status (%d)\n",
-+		 __func__, propname, np->full_name, index,
- 		 PTR_ERR_OR_ZERO(gg_data.out_gpio));
- 	return gg_data.out_gpio;
- }
+ 	dev->platform_data = pd;
+ 	return pd;
 -- 
-1.7.9.5
+2.0.0.rc2
 
