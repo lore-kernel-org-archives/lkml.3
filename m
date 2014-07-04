@@ -1,243 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760233AbaGDUa0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 16:30:26 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:38658 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107AbaGDUZZ (ORCPT
+	id S1760246AbaGDUah (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 16:30:37 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:32959 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752107AbaGDUad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 16:25:25 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v7 08/24] mfd: max77686: Add Dynamic Voltage Scaling (DVS) support
-Date: Fri,  4 Jul 2014 22:24:11 +0200
-Message-Id: <1404505467-26526-9-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1404505467-26526-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1404505467-26526-1-git-send-email-javier.martinez@collabora.co.uk>
+	Fri, 4 Jul 2014 16:30:33 -0400
+Date: Fri, 4 Jul 2014 22:30:27 +0200
+From: Pawel Lebioda <pawel.lebioda89@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: bcm: add missing blank lines after declarations
+Message-ID: <20140704203024.GA11946@ThinkPad>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some regulators on the MAX77686 PMIC have Dynamic Voltage Scaling
-(DVS) support that allows output voltage to change dynamically.
+Hi,
 
-For MAX77686, these regulators are Buck regulators 2, 3 and 4.
+This patch fixes almost all 'missing blank line after declaration'
+warnings reported by checkpatch.pl for drivers/staging/bcm.
 
-Each Buck output voltage is selected using a set of external
-inputs: DVS1-3 and SELB2-4.
+Regards
+Pawel Lebioda
 
-DVS registers can be used to configure the output voltages for each
-Buck regulator and which one is active is controled by DVSx lines.
+Signed-off-by: Pawel Lebioda <pawel.lebioda89@gmail.com>
+ drivers/staging/bcm/CmHost.c        | 1 +
+ drivers/staging/bcm/IPv6Protocol.c  | 6 ++++++
+ drivers/staging/bcm/InterfaceDld.c  | 1 +
+ drivers/staging/bcm/InterfaceInit.c | 1 +
+ drivers/staging/bcm/InterfaceMisc.c | 1 +
+ drivers/staging/bcm/InterfaceTx.c   | 2 +-
+ drivers/staging/bcm/PHSModule.c     | 1 +
+ drivers/staging/bcm/Qos.c           | 9 ++++++++-
+ drivers/staging/bcm/Transmit.c      | 1 +
+ drivers/staging/bcm/led_control.c   | 4 ++++
+ drivers/staging/bcm/nvm.c           | 6 ++++++
+ 11 files changed, 31 insertions(+), 2 deletions(-)
 
-SELBx lines are used to control if individual Buck lines are ON or OFF.
-
-This patch adds support to configure the DVSx and SELBx lines
-from DT and to setup and read the GPIO lines connected to them.
-
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
-
-Changes since v6:
- - Add a comment that max77686_read_gpios() function can sleep.
-   Sugggested by Krzysztof Kozlowski
----
- drivers/mfd/max77686.c       | 119 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/max77686.h |  18 ++++---
- 2 files changed, 129 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-index 8650832..d193873 100644
---- a/drivers/mfd/max77686.c
-+++ b/drivers/mfd/max77686.c
-@@ -32,8 +32,10 @@
- #include <linux/mfd/core.h>
- #include <linux/mfd/max77686.h>
- #include <linux/mfd/max77686-private.h>
-+#include <linux/gpio/consumer.h>
- #include <linux/err.h>
- #include <linux/of.h>
-+#include <linux/export.h>
+diff --git a/drivers/staging/bcm/CmHost.c b/drivers/staging/bcm/CmHost.c
+index 3dbdf0e..adca0ce 100644
+--- a/drivers/staging/bcm/CmHost.c
++++ b/drivers/staging/bcm/CmHost.c
+@@ -972,6 +972,7 @@ static VOID DumpCmControlPacket(PVOID pvBuffer)
+ 		pstAddIndication->sfAuthorizedSet.bValid = 1;
+ 	for (nIndex = 0; nIndex < nCurClassifierCnt; nIndex++) {
+ 		struct bcm_convergence_types *psfCSType = NULL;
++
+ 		psfCSType =  &pstAddIndication->sfAuthorizedSet.cConvergenceSLTypes[nIndex];
  
- #define I2C_ADDR_RTC	(0x0C >> 1)
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, DUMP_CONTROL, DBG_LVL_ALL, "psfCSType = %p", psfCSType);
+diff --git a/drivers/staging/bcm/IPv6Protocol.c b/drivers/staging/bcm/IPv6Protocol.c
+index cd16067..e013c5a 100644
+--- a/drivers/staging/bcm/IPv6Protocol.c
++++ b/drivers/staging/bcm/IPv6Protocol.c
+@@ -45,6 +45,7 @@ static UCHAR *GetNextIPV6ChainedHeader(UCHAR **ppucPayload,
+ 	case IPV6HDR_TYPE_ROUTING:
+ 		{
+ 			struct bcm_ipv6_routing_hdr *pstIpv6RoutingHeader;
++
+ 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV6_DBG,
+ 					DBG_LVL_ALL, "\nIPv6 Routing Header");
+ 			pstIpv6RoutingHeader = (struct bcm_ipv6_routing_hdr *)pucPayloadPtr;
+@@ -66,6 +67,7 @@ static UCHAR *GetNextIPV6ChainedHeader(UCHAR **ppucPayload,
+ 		{
+ 			struct bcm_ipv6_dest_options_hdr *pstIpv6DestOptsHdr = (struct bcm_ipv6_dest_options_hdr *)pucPayloadPtr;
+ 			int nTotalOptions = pstIpv6DestOptsHdr->ucHdrExtLen;
++
+ 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV6_DBG,
+ 					DBG_LVL_ALL,
+ 					"\nIPv6 DestOpts Header Header");
+@@ -78,6 +80,7 @@ static UCHAR *GetNextIPV6ChainedHeader(UCHAR **ppucPayload,
+ 		{
+ 			struct bcm_ipv6_authentication_hdr *pstIpv6AuthHdr = (struct bcm_ipv6_authentication_hdr *)pucPayloadPtr;
+ 			int nHdrLen = pstIpv6AuthHdr->ucLength;
++
+ 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV6_DBG,
+ 					DBG_LVL_ALL,
+ 					"\nIPv6 Authentication Header");
+@@ -275,6 +278,7 @@ USHORT	IpVersion6(struct bcm_mini_adapter *Adapter, PVOID pcIpHeader,
  
-@@ -101,9 +103,119 @@ static const struct of_device_id max77686_pmic_dt_match[] = {
- 	{},
- };
- 
-+static void max77686_dt_parse_dvs_gpio(struct device *dev)
-+{
-+	struct max77686_platform_data *pd = dev_get_platdata(dev);
-+	int i;
+ 	if (bClassificationSucceed == TRUE) {
+ 		INT iMatchedSFQueueIndex = 0;
 +
-+	/*
-+	 * NOTE: we don't consider GPIO errors fatal; board may have some lines
-+	 * directly pulled high or low and thus doesn't specify them.
-+	 */
-+	for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_dvs); i++)
-+		pd->buck_gpio_dvs[i] =
-+			devm_gpiod_get_index(dev, "max77686,pmic-buck-dvs", i);
+ 		iMatchedSFQueueIndex = SearchSfid(Adapter, pstClassifierRule->ulSFID);
+ 		if (iMatchedSFQueueIndex >= NO_OF_QUEUES) {
+ 			bClassificationSucceed = false;
+@@ -407,6 +411,7 @@ VOID DumpIpv6Address(ULONG *puIpv6Address)
+ 	UINT uiIpv6AddrNoLongWords = 4;
+ 	UINT uiIpv6AddIndex = 0;
+ 	struct bcm_mini_adapter *Adapter = GET_BCM_ADAPTER(gblpnetdev);
 +
-+	for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_selb); i++)
-+		pd->buck_gpio_selb[i] =
-+			devm_gpiod_get_index(dev, "max77686,pmic-buck-selb", i);
-+}
+ 	for (uiIpv6AddIndex = 0; uiIpv6AddIndex < uiIpv6AddrNoLongWords; uiIpv6AddIndex++) {
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV6_DBG, DBG_LVL_ALL,
+ 				":%lx", puIpv6Address[uiIpv6AddIndex]);
+@@ -419,6 +424,7 @@ static VOID DumpIpv6Header(struct bcm_ipv6_hdr *pstIpv6Header)
+ 	UCHAR ucVersion;
+ 	UCHAR ucPrio;
+ 	struct bcm_mini_adapter *Adapter = GET_BCM_ADAPTER(gblpnetdev);
 +
-+/**
-+ * max77686_setup_gpios() - init DVS-related GPIOs
-+ * @dev: device whose platform data contains the dvs GPIOs information
-+ *
-+ * This function claims / initalizations GPIOs related to DVS if they are
-+ * defined. This may have the effect of switching voltages if the
-+ * pdata->buck_default_idx does not match the boot time state of pins.
-+ */
-+int max77686_setup_gpios(struct device *dev)
-+{
-+	struct max77686_platform_data *pd = dev_get_platdata(dev);
-+	int buck_default_idx = pd->buck_default_idx;
-+	int ret;
-+	int i;
-+
-+	/* Set all SELB high to avoid glitching while DVS is changing */
-+	for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_selb); i++) {
-+		struct gpio_desc *gpio = pd->buck_gpio_selb[i];
-+
-+		/* OK if some GPIOs aren't defined */
-+		if (IS_ERR(gpio))
-+			continue;
-+
-+		ret = gpiod_direction_output_raw(gpio, 1);
-+		if (ret) {
-+			dev_err(dev, "can't set gpio[%d] dir: %d\n", i, ret);
-+			return ret;
-+		}
-+	}
-+
-+	/* Set our initial setting */
-+	for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_dvs); i++) {
-+		struct gpio_desc *gpio = pd->buck_gpio_dvs[i];
-+
-+		/* OK if some GPIOs aren't defined */
-+		if (IS_ERR(gpio))
-+			continue;
-+
-+		/* If a GPIO is valid, set it */
-+		gpiod_direction_output(gpio, (buck_default_idx >> i) & 1);
-+		if (ret) {
-+			dev_err(dev, "can't set gpio[%d]: dir %d\n", i, ret);
-+			return ret;
-+		}
-+	}
-+
-+	/* Now set SELB low to take effect */
-+	for (i = 0; i < ARRAY_SIZE(pd->buck_gpio_selb); i++) {
-+		struct gpio_desc *gpio = pd->buck_gpio_selb[i];
-+
-+		if (!IS_ERR(gpio))
-+			gpiod_set_value(gpio, 0);
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(max77686_setup_gpios);
-+
-+/**
-+ * max77686_read_gpios() - read the current state of the dvs GPIOs
-+ * @pdata: platform data that contains the dvs GPIOs information
-+ *
-+ * We call this function at bootup to detect what slot the firmware was
-+ * using for the DVS GPIOs.  That way we can properly preserve the firmware's
-+ * voltage settings
-+ *
-+ * This function can sleep so must not be called from atomic context.
-+ */
-+int max77686_read_gpios(struct max77686_platform_data *pdata)
-+{
-+	int buck_default_idx = pdata->buck_default_idx;
-+	int result = 0;
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(pdata->buck_gpio_dvs); i++) {
-+		struct gpio_desc *gpio = pdata->buck_gpio_dvs[i];
-+
-+		/* OK if some GPIOs aren't defined; we'll use default */
-+		if (IS_ERR(gpio)) {
-+			result |= buck_default_idx & (1 << i);
-+			continue;
-+		}
-+
-+		if (gpiod_get_value_cansleep(gpio))
-+			result |= 1 << i;
-+	}
-+
-+	return result;
-+}
-+EXPORT_SYMBOL_GPL(max77686_read_gpios);
-+
- static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
- 								  *dev)
+ 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV6_DBG, DBG_LVL_ALL,
+ 			"----Ipv6 Header---");
+ 	ucVersion = pstIpv6Header->ucVersionPrio & 0xf0;
+diff --git a/drivers/staging/bcm/InterfaceDld.c b/drivers/staging/bcm/InterfaceDld.c
+index e1925bd..abc7a7a 100644
+--- a/drivers/staging/bcm/InterfaceDld.c
++++ b/drivers/staging/bcm/InterfaceDld.c
+@@ -244,6 +244,7 @@ static INT buffDnld(struct bcm_mini_adapter *Adapter,
  {
-+	struct device_node *np = dev->of_node;
- 	struct max77686_platform_data *pd;
- 
- 	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
-@@ -111,6 +223,13 @@ static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
- 		return NULL;
- 
- 	dev->platform_data = pd;
+ 	unsigned int len = 0;
+ 	int retval = STATUS_SUCCESS;
 +
-+	/* Read default index and ignore errors, since default is 0 */
-+	of_property_read_u32(np, "max77686,pmic-buck-default-dvs-idx",
-+			     &pd->buck_default_idx);
-+
-+	max77686_dt_parse_dvs_gpio(dev);
-+
- 	return pd;
- }
+ 	len = u32FirmwareLength;
  
-diff --git a/include/linux/mfd/max77686.h b/include/linux/mfd/max77686.h
-index 4cbcc13..46a736b 100644
---- a/include/linux/mfd/max77686.h
-+++ b/include/linux/mfd/max77686.h
-@@ -99,15 +99,17 @@ struct max77686_platform_data {
- 	struct max77686_opmode_data *opmode_data;
- 
- 	/*
--	 * GPIO-DVS feature is not enabled with the current version of
--	 * MAX77686 driver. Buck2/3/4_voltages[0] is used as the default
--	 * voltage at probe. DVS/SELB gpios are set as OUTPUT-LOW.
-+	 * GPIO-DVS feature is not fully enabled with the current version of
-+	 * MAX77686 driver, but the driver does support using a DVS index other
-+	 * than the default of 0.
- 	 */
--	int buck234_gpio_dvs[3]; /* GPIO of [0]DVS1, [1]DVS2, [2]DVS3 */
--	int buck234_gpio_selb[3]; /* [0]SELB2, [1]SELB3, [2]SELB4 */
--	unsigned int buck2_voltage[8]; /* buckx_voltage in uV */
--	unsigned int buck3_voltage[8];
--	unsigned int buck4_voltage[8];
-+	struct gpio_desc *buck_gpio_dvs[3]; /* GPIO of [0]DVS1, [1]DVS2, [2]DVS3 */
-+	int buck_default_idx; /* Default value of DVS1, 2, 3 */
+ 	while (u32FirmwareLength) {
+diff --git a/drivers/staging/bcm/InterfaceInit.c b/drivers/staging/bcm/InterfaceInit.c
+index bef13a6..bb61d34 100644
+--- a/drivers/staging/bcm/InterfaceInit.c
++++ b/drivers/staging/bcm/InterfaceInit.c
+@@ -440,6 +440,7 @@ static int select_alternate_setting_for_highspeed_modem(
+ 			 * Else USB_IF will fail.
+ 			 */
+ 			UINT _uiData = ntohl(EP2_CFG_INT);
 +
-+	struct gpio_desc *buck_gpio_selb[3]; /* Buck regulators 2, 3, 4 */
- };
- 
-+extern int max77686_setup_gpios(struct device *dev);
-+extern int max77686_read_gpios(struct max77686_platform_data *pdata);
+ 			BCM_DEBUG_PRINT(psAd, DBG_TYPE_INITEXIT, DRV_ENTRY,
+ 					DBG_LVL_ALL,
+ 					"Reverting Bulk to INT as it is in Full Speed mode.\n");
+diff --git a/drivers/staging/bcm/InterfaceMisc.c b/drivers/staging/bcm/InterfaceMisc.c
+index 4173fd7..61a81dc 100644
+--- a/drivers/staging/bcm/InterfaceMisc.c
++++ b/drivers/staging/bcm/InterfaceMisc.c
+@@ -208,6 +208,7 @@ void putUsbSuspend(struct work_struct *work)
+ {
+ 	struct bcm_interface_adapter *psIntfAdapter = NULL;
+ 	struct usb_interface *intf = NULL;
 +
- #endif /* __LINUX_MFD_MAX77686_H */
--- 
-2.0.0.rc2
-
+ 	psIntfAdapter = container_of(work, struct bcm_interface_adapter, usbSuspendWork);
+ 	intf = psIntfAdapter->interface;
+ 
+diff --git a/drivers/staging/bcm/InterfaceTx.c b/drivers/staging/bcm/InterfaceTx.c
+index ea7707b..e113a7d 100644
+--- a/drivers/staging/bcm/InterfaceTx.c
++++ b/drivers/staging/bcm/InterfaceTx.c
+@@ -161,8 +161,8 @@ static int TransmitTcb(struct bcm_interface_adapter *psIntfAdapter, struct bcm_u
+ int InterfaceTransmitPacket(PVOID arg, PVOID data, UINT len)
+ {
+ 	struct bcm_usb_tcb *pTcb = NULL;
+-
+ 	struct bcm_interface_adapter *psIntfAdapter = arg;
++
+ 	pTcb = GetBulkOutTcb(psIntfAdapter);
+ 	if (pTcb == NULL) {
+ 		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_PRINTK, 0, 0, "No URB to transmit packet, dropping packet");
+diff --git a/drivers/staging/bcm/PHSModule.c b/drivers/staging/bcm/PHSModule.c
+index bd68c6f..4b6de76 100644
+--- a/drivers/staging/bcm/PHSModule.c
++++ b/drivers/staging/bcm/PHSModule.c
+@@ -287,6 +287,7 @@ int phs_init(struct bcm_phs_extension *pPhsdeviceExtension, struct bcm_mini_adap
+ 	pstServiceFlowTable = pPhsdeviceExtension->pstServiceFlowPhsRulesTable;
+ 	for (i = 0; i < MAX_SERVICEFLOWS; i++) {
+ 		struct bcm_phs_entry sServiceFlow = pstServiceFlowTable->stSFList[i];
++
+ 		sServiceFlow.pstClassifierTable = kzalloc(sizeof(struct bcm_phs_classifier_table), GFP_KERNEL);
+ 		if (!sServiceFlow.pstClassifierTable) {
+ 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, PHS_DISPATCH, DBG_LVL_ALL, "\nAllocation failed");
+diff --git a/drivers/staging/bcm/Qos.c b/drivers/staging/bcm/Qos.c
+index 42c1351..c5213b3 100644
+--- a/drivers/staging/bcm/Qos.c
++++ b/drivers/staging/bcm/Qos.c
+@@ -94,8 +94,8 @@ static bool MatchDestIpAddress(struct bcm_classifier_rule *pstClassifierRule, UL
+ **************************************************************************/
+ static bool MatchTos(struct bcm_classifier_rule *pstClassifierRule, UCHAR ucTypeOfService)
+ {
+-
+ 	struct bcm_mini_adapter *Adapter = GET_BCM_ADAPTER(gblpnetdev);
++
+ 	if (3 != pstClassifierRule->ucIPTypeOfServiceLength)
+ 		return TRUE;
+ 
+@@ -121,6 +121,7 @@ bool MatchProtocol(struct bcm_classifier_rule *pstClassifierRule, UCHAR ucProtoc
+ {
+ 	UCHAR ucLoopIndex = 0;
+ 	struct bcm_mini_adapter *Adapter = GET_BCM_ADAPTER(gblpnetdev);
++
+ 	if (0 == pstClassifierRule->ucProtocolLength)
+ 		return TRUE;
+ 	for (ucLoopIndex = 0; ucLoopIndex < pstClassifierRule->ucProtocolLength; ucLoopIndex++) {
+@@ -269,6 +270,7 @@ static USHORT	IpVersion4(struct bcm_mini_adapter *Adapter,
+ 
+ 	if (TRUE == bClassificationSucceed) {
+ 		INT iMatchedSFQueueIndex = 0;
++
+ 		iMatchedSFQueueIndex = SearchSfid(Adapter, pstClassifierRule->ulSFID);
+ 		if (iMatchedSFQueueIndex >= NO_OF_QUEUES)
+ 			bClassificationSucceed = false;
+@@ -580,6 +582,7 @@ USHORT ClassifyPacket(struct bcm_mini_adapter *Adapter, struct sk_buff *skb)
+ 			 * Create Frag CLS Entry
+ 			 */
+ 			struct bcm_fragmented_packet_info stFragPktInfo;
++
+ 			stFragPktInfo.bUsed = TRUE;
+ 			stFragPktInfo.ulSrcIpAddress = pIpHeader->saddr;
+ 			stFragPktInfo.usIpIdentification = pIpHeader->id;
+@@ -601,6 +604,7 @@ static bool EthCSMatchSrcMACAddress(struct bcm_classifier_rule *pstClassifierRul
+ {
+ 	UINT i = 0;
+ 	struct bcm_mini_adapter *Adapter = GET_BCM_ADAPTER(gblpnetdev);
++
+ 	if (pstClassifierRule->ucEthCSSrcMACLen == 0)
+ 		return TRUE;
+ 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL,  "%s\n", __func__);
+@@ -617,6 +621,7 @@ static bool EthCSMatchDestMACAddress(struct bcm_classifier_rule *pstClassifierRu
+ {
+ 	UINT i = 0;
+ 	struct bcm_mini_adapter *Adapter = GET_BCM_ADAPTER(gblpnetdev);
++
+ 	if (pstClassifierRule->ucEthCSDestMACLen == 0)
+ 		return TRUE;
+ 	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, IPV4_DBG, DBG_LVL_ALL, "%s\n", __func__);
+@@ -632,6 +637,7 @@ static bool EthCSMatchDestMACAddress(struct bcm_classifier_rule *pstClassifierRu
+ static bool EthCSMatchEThTypeSAP(struct bcm_classifier_rule *pstClassifierRule, struct sk_buff *skb, struct bcm_eth_packet_info *pstEthCsPktInfo)
+ {
+ 	struct bcm_mini_adapter *Adapter = GET_BCM_ADAPTER(gblpnetdev);
++
+ 	if ((pstClassifierRule->ucEtherTypeLen == 0) ||
+ 		(pstClassifierRule->au8EthCSEtherType[0] == 0))
+ 		return TRUE;
+@@ -719,6 +725,7 @@ static bool EThCSClassifyPkt(struct bcm_mini_adapter *Adapter, struct sk_buff *s
+ 				B_UINT8 EthCSCupport)
+ {
+ 	bool bClassificationSucceed = false;
++
+ 	bClassificationSucceed = EthCSMatchSrcMACAddress(pstClassifierRule, ((struct bcm_eth_header *)(skb->data))->au8SourceAddress);
+ 	if (!bClassificationSucceed)
+ 		return false;
+diff --git a/drivers/staging/bcm/Transmit.c b/drivers/staging/bcm/Transmit.c
+index 4976746..cd27bd8 100644
+--- a/drivers/staging/bcm/Transmit.c
++++ b/drivers/staging/bcm/Transmit.c
+@@ -148,6 +148,7 @@ int SetupNextSend(struct bcm_mini_adapter *Adapter,  struct sk_buff *Packet, USH
+ 				status);
+ 	} else {
+ 		struct net_device_stats *netstats = &Adapter->dev->stats;
++
+ 		Adapter->PackInfo[QueueIndex].uiTotalTxBytes += Leader.PLength;
+ 
+ 		netstats->tx_bytes += Leader.PLength;
+diff --git a/drivers/staging/bcm/led_control.c b/drivers/staging/bcm/led_control.c
+index 8353677..074fc39 100644
+--- a/drivers/staging/bcm/led_control.c
++++ b/drivers/staging/bcm/led_control.c
+@@ -6,6 +6,7 @@
+ static B_UINT16 CFG_CalculateChecksum(B_UINT8 *pu8Buffer, B_UINT32 u32Size)
+ {
+ 	B_UINT16 u16CheckSum = 0;
++
+ 	while (u32Size--) {
+ 		u16CheckSum += (B_UINT8)~(*pu8Buffer);
+ 		pu8Buffer++;
+@@ -16,6 +17,7 @@ static B_UINT16 CFG_CalculateChecksum(B_UINT8 *pu8Buffer, B_UINT32 u32Size)
+ bool IsReqGpioIsLedInNVM(struct bcm_mini_adapter *Adapter, UINT gpios)
+ {
+ 	INT Status;
++
+ 	Status = (Adapter->gpioBitMap & gpios) ^ gpios;
+ 	if (Status)
+ 		return false;
+@@ -489,6 +491,7 @@ static int ReadConfigFileStructure(struct bcm_mini_adapter *Adapter,
+ 	PUCHAR puCFGData	= NULL;
+ 	UCHAR bData = 0;
+ 	struct bcm_led_state_info *curr_led_state;
++
+ 	memset(GPIO_Array, DISABLE_GPIO_NUM, NUM_OF_LEDS+1);
+ 
+ 	if (!Adapter->pstargetparams || IS_ERR(Adapter->pstargetparams)) {
+@@ -715,6 +718,7 @@ static void handle_adapter_driver_state(struct bcm_mini_adapter *ad,
+ 			UCHAR GPIO_num_rx = DISABLE_GPIO_NUM;
+ 			UCHAR uiLEDTx = 0;
+ 			UCHAR uiLEDRx = 0;
++
+ 			currdriverstate = NORMAL_OPERATION;
+ 			ad->LEDInfo.bIdle_led_off = false;
+ 
+diff --git a/drivers/staging/bcm/nvm.c b/drivers/staging/bcm/nvm.c
+index 99b82d8..8ce4d41 100644
+--- a/drivers/staging/bcm/nvm.c
++++ b/drivers/staging/bcm/nvm.c
+@@ -361,6 +361,7 @@ int BeceemEEPROMBulkRead(struct bcm_mini_adapter *Adapter,
+ 		} else {
+ 			/* Handle the reads less than 4 bytes... */
+ 			PUCHAR pCharBuff = (PUCHAR)pBuffer;
++
+ 			pCharBuff += uiIndex;
+ 			if (ReadBeceemEEPROM(Adapter, uiOffset, &uiData[0]) == 0) {
+ 				memcpy(pCharBuff, &uiData[0], uiBytesRemaining); /* copy only bytes requested. */
+@@ -914,6 +915,7 @@ static int flashWriteStatus(struct bcm_mini_adapter *Adapter,
+ static VOID BcmRestoreBlockProtectStatus(struct bcm_mini_adapter *Adapter, ULONG ulWriteStatus)
+ {
+ 	unsigned int value;
++
+ 	value = (FLASH_CMD_WRITE_ENABLE << 24);
+ 	wrmalt(Adapter, FLASH_SPI_CMDQ_REG, &value, sizeof(value));
+ 
+@@ -1154,6 +1156,7 @@ static int BeceemFlashBulkWrite(struct bcm_mini_adapter *Adapter,
+ 			if (STATUS_SUCCESS == BeceemFlashBulkRead(Adapter, (PUINT)ucReadBk, uiOffsetFromSectStart + uiIndex, MAX_RW_SIZE)) {
+ 				if (Adapter->ulFlashWriteSize == 1) {
+ 					unsigned int uiReadIndex = 0;
++
+ 					for (uiReadIndex = 0; uiReadIndex < 16; uiReadIndex++) {
+ 						if (ucReadBk[uiReadIndex] != pTempBuff[uiIndex + uiReadIndex]) {
+ 							if (STATUS_SUCCESS != (*Adapter->fpFlashWriteWithStatusCheck)(Adapter, uiPartOffset + uiIndex + uiReadIndex, &pTempBuff[uiIndex+uiReadIndex])) {
+@@ -1868,6 +1871,7 @@ int BeceemNVMWrite(struct bcm_mini_adapter *Adapter,
+ 			if ((uiOffset + uiNumBytes) > EEPROM_CALPARAM_START) {
+ 				ULONG ulBytesTobeSkipped = 0;
+ 				PUCHAR pcBuffer = (PUCHAR)pBuffer; /* char pointer to take care of odd byte cases. */
++
+ 				uiNumBytes -= (EEPROM_CALPARAM_START - uiOffset);
+ 				ulBytesTobeSkipped += (EEPROM_CALPARAM_START - uiOffset);
+ 				uiOffset += (EEPROM_CALPARAM_START - uiOffset);
+@@ -2455,6 +2459,7 @@ static int BcmGetFlashCSInfo(struct bcm_mini_adapter *Adapter)
+ 	#endif
+ 
+ 	unsigned int uiFlashLayoutMajorVersion;
++
+ 	Adapter->uiFlashLayoutMinorVersion = 0;
+ 	Adapter->uiFlashLayoutMajorVersion = 0;
+ 	Adapter->ulFlashControlSectionStart = FLASH_CS_INFO_START_ADDR;
+@@ -4319,6 +4324,7 @@ static int ReadISOSignature(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_s
+ static int ReadISOPriority(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_section_val iso)
+ {
+ 	unsigned int ISOPri = STATUS_FAILURE;
++
+ 	if (IsSectionWritable(Adapter, iso)) {
+ 		if (ReadISOSignature(Adapter, iso) == ISO_IMAGE_MAGIC_NUMBER) {
+ 			BcmFlash2xBulkRead(Adapter,
