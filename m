@@ -1,107 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135AbaGDIlU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:41:20 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:39213 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232AbaGDIlR (ORCPT
+	id S1756175AbaGDImQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:42:16 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:51252 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232AbaGDImN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:41:17 -0400
-X-AuditID: cbfee690-b7fb56d000003439-e4-53b668ab0ba9
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
-        "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>,
-        "'Tomasz Figa'" <t.figa@samsung.com>
-References: <1403783163-28638-1-git-send-email-k.kozlowski@samsung.com>
-In-reply-to: <1403783163-28638-1-git-send-email-k.kozlowski@samsung.com>
-Subject: RE: [PATCH RESEND] ARM: EXYNOS: Do not calculate boot address twice
-Date: Fri, 04 Jul 2014 17:41:15 +0900
-Message-id: <032901cf9763$b7733150$265993f0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQITnyXVBaau3GWu2o69hEk1jowg/psHiPMA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAIsWRmVeSWpSXmKPExsVy+t8zfd3VGduCDS5/F7XYOGM9q8XrF4YW
-	Z5vesFtsenyN1eLyrjlsFjPO72OyuH2Z12LtkbvsFif/9DJarJ/xmsWBy6OluYfN4861PWwe
-	m5fUe/RtWcXo8XmTXABrFJdNSmpOZllqkb5dAlfG/Z3H2Av+clZs2vqTuYGxjaOLkZNDQsBE
-	4tuil2wQtpjEhXvrgWwuDiGBZYwSD3/vYoUpaui9zQiRWMQoMfnDXRYI5y+jxLk1kxlBqtgE
-	NCQOv3/GDmKLCBxnlDjbEQxSxCzwilFiyb23YEVCAu4S11b8YgaxOQU8JL483gfWICzgI7H9
-	0lqwOIuAqsTPDe/BVvMKWEr8O7uSEcIWlPgx+R4LiM0soCWxeVsTK4QtL7F5zVtmiFMVJHac
-	fc0IcYSRxI8HO5kgakQk9r14B/aChMBfdonNPw+yQCwTkPg2+RCQzQGUkJXYdABqjqTEwRU3
-	WCYwSsxCsnoWktWzkKyehWTFAkaWVYyiqQXJBcVJ6UUmesWJucWleel6yfm5mxghsT1hB+O9
-	A9aHGJOB1k9klhJNzgemhrySeENjMyMLUxNTYyNzSzPShJXEedUeJQUJCaQnlqRmp6YWpBbF
-	F5XmpBYfYmTi4JRqYPRwv7A82MdJ7e35l0tmL+d6LZRftqwx0LzxrZN68LM6lk0714eFPDt5
-	+fCsqTnXFEL2zd2/K/VTeB572iSGYxcyVlyROSa211XFdNnhx9OXznCQz384y4O56+Zj1oft
-	y0wWJSzfIGRqd+hx9kW12gXPZTflSX05H/ppZmOwc2/+7l/pGwXCGycosRRnJBpqMRcVJwIA
-	1S7ydAMDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPKsWRmVeSWpSXmKPExsVy+t9jAd3VGduCDS5dE7TYOGM9q8XrF4YW
-	Z5vesFtsenyN1eLyrjlsFjPO72OyuH2Z12LtkbvsFif/9DJarJ/xmsWBy6OluYfN4861PWwe
-	m5fUe/RtWcXo8XmTXABrVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5i
-	bqqtkotPgK5bZg7QTUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjPs7
-	j7EX/OWs2LT1J3MDYxtHFyMnh4SAiURD721GCFtM4sK99WxdjFwcQgKLGCUmf7jLAuH8ZZQ4
-	t2YyWBWbgIbE4ffP2EFsEYHjjBJnO4JBipgFXjFKLLn3FqxISMBd4tqKX8wgNqeAh8SXx/vA
-	GoQFfCS2X1oLFmcRUJX4ueE9K4jNK2Ap8e/sSkYIW1Dix+R7LCA2s4CWxOZtTawQtrzE5jVv
-	mSFOVZDYcfY1I8QRRhI/HuxkgqgRkdj34h3jBEahWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQ
-	nJSea6hXnJhbXJqXrpecn7uJEZw4nkntYFzZYHGIUYCDUYmH16Noa7AQa2JZcWXuIUYJDmYl
-	Ed7klG3BQrwpiZVVqUX58UWlOanFhxhNgT6dyCwlmpwPTGp5JfGGxiZmRpZGZhZGJubmSuK8
-	B1qtA4UE0hNLUrNTUwtSi2D6mDg4pRoY5//lu7bphp/zi+TXX3SbJtz4rjTbZKqT6MI8YUUD
-	z2McYd1lV4Vft/FuYjkquTZZY6mlTEvr1A8KBlbemhsTK9lnCYZM5jht5rfqnkW13Ox1bJlJ
-	3xsMCj+8bFnHKfnMinGdm3PVw9TZZ9Yrf1SyXFgm/nJ6c1fQu0bl2O1Gy7teTMk34n+gxFKc
-	kWioxVxUnAgAGL8LzjIDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 4 Jul 2014 04:42:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140704164251.7dc67e07@canb.auug.org.au>
+References: <20140704164251.7dc67e07@canb.auug.org.au>
+Date: Fri, 4 Jul 2014 14:12:11 +0530
+Message-ID: <CAK5sBcGq54sOSzJKXrEbhAUTZZh=+9NuVh294Qxn0dQvbh-G8w@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jul 4
+From: Sachin Kamat <spk.linux@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Krzysztof Kozlowski wrote:
-> 
-> Commit b3205dea8fbf ("ARM: EXYNOS: Map SYSRAM through generic DT
-> bindings") introduced local variable boot_reg where boot address from
-> cpu_boot_reg() call is stored. Re-use it instead calling cpu_boot_reg()
-> again.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  arch/arm/mach-exynos/platsmp.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
-> index 1c8d31e39520..55ed2e6729c5 100644
-> --- a/arch/arm/mach-exynos/platsmp.c
-> +++ b/arch/arm/mach-exynos/platsmp.c
-> @@ -155,7 +155,7 @@ static int exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
->  				ret = PTR_ERR(boot_reg);
->  				goto fail;
->  			}
-> -			__raw_writel(boot_addr, cpu_boot_reg(phys_cpu));
-> +			__raw_writel(boot_addr, boot_reg);
->  		}
-> 
->  		call_firmware_op(cpu_boot, phys_cpu);
-> @@ -242,7 +242,7 @@ static void __init exynos_smp_prepare_cpus(unsigned int max_cpus)
-> 
->  			if (IS_ERR(boot_reg))
->  				break;
-> -			__raw_writel(boot_addr, cpu_boot_reg(phys_cpu));
-> +			__raw_writel(boot_addr, boot_reg);
->  		}
->  	}
->  }
-> --
-> 1.9.1
+Hi Stephen,
 
-Oh, good catch. will apply :-)
+Was bisecting a kernel crash on Arndale octa board (Exynos5420). It
+points to a merge
+commit:
+40556a4c485d12d324f1ea196cc30f590e564237 is the first bad commit
+("Merge remote-tracking branch 'nfsd/nfsd-next'").
 
-Thanks,
-Kukjin
+How do I proceed with this?
 
+Bisect log as follows:
+
+git bisect start
+# good: [4c834452aad01531db949414f94f817a86348d59] Linux 3.16-rc3
+git bisect good 4c834452aad01531db949414f94f817a86348d59
+# bad: [bb62c798798659624c53e3727bbc18cf47eb7ae8] Add linux-next
+specific files for 20140704
+git bisect bad bb62c798798659624c53e3727bbc18cf47eb7ae8
+# bad: [de5ea10b7647b299d27a40511772f024629b466d] Merge
+remote-tracking branch 'md/for-next'
+git bisect bad de5ea10b7647b299d27a40511772f024629b466d
+# bad: [3ca365b4451d1bab28adc72a985d9bbdf535df0e] Merge
+remote-tracking branch 'dmaengine/next'
+git bisect bad 3ca365b4451d1bab28adc72a985d9bbdf535df0e
+# good: [d72d4e47cb1e8ac1259a5f5935320ae1e7022066] Merge
+remote-tracking branch 'renesas/next'
+git bisect good d72d4e47cb1e8ac1259a5f5935320ae1e7022066
+# good: [fdb82f0a3d19eaa0661d799b980d0a9b689fcf75] Merge
+remote-tracking branch 'nfs/linux-next'
+git bisect good fdb82f0a3d19eaa0661d799b980d0a9b689fcf75
+# bad: [fc48eed8cd350e4be1227ff3c990d48906afd00a] Merge
+remote-tracking branch 'hwmon-staging/hwmon-next'
+git bisect bad fc48eed8cd350e4be1227ff3c990d48906afd00a
+# bad: [7d3f94ee2f2808b13dd3a96f6e6ca754a954d4b9] Merge
+remote-tracking branch 'ubifs/linux-next'
+git bisect bad 7d3f94ee2f2808b13dd3a96f6e6ca754a954d4b9
+# good: [8cdb8b21b1d00856b885734c514821627c8078bc] NFSD: Avoid warning
+message when compile at i686 arch
+git bisect good 8cdb8b21b1d00856b885734c514821627c8078bc
+# good: [da575690c01993471e38faf3eee1991ee69d7b20] nfsd: clean up
+nfsd4_close_open_stateid
+git bisect good da575690c01993471e38faf3eee1991ee69d7b20
+# good: [95217c1e686bdd7c27b8483bbdda1c09d6fa9a92] nfsd: Don't get a
+session reference without a client reference
+git bisect good 95217c1e686bdd7c27b8483bbdda1c09d6fa9a92
+# good: [bdd79ee31bf842051365c798effaffe0e647b501] nfsd: Allow struct
+nfsd4_compound_state to cache the nfs4_client
+git bisect good bdd79ee31bf842051365c798effaffe0e647b501
+# good: [e9110361a9a4e258b072b14bd44eb78cf11453cb] UBI: fix the
+volumes tree sorting criteria
+git bisect good e9110361a9a4e258b072b14bd44eb78cf11453cb
+# bad: [40556a4c485d12d324f1ea196cc30f590e564237] Merge
+remote-tracking branch 'nfsd/nfsd-next'
+git bisect bad 40556a4c485d12d324f1ea196cc30f590e564237
+
+Regards,
+Sachin.
+
+On Fri, Jul 4, 2014 at 12:12 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Changes since 20140703:
+>
+> My fixes tree contains:
+>         powerpc: Disable RELOCATABLE for COMPILE_TEST with PPC64
+>
+> The net tree gained a build failure for which I reverted a commit.
+>
+> The usb-gadget tree gained a conflict against the usb.current tree.
+>
+> The staging tree still had its build failure for which I disabled a driver.
+>
+> The akpm-current tree still had its build failure for which I applied a
+> patch.
+>
+> Non-merge commits (relative to Linus' tree): 3478
+>  3383 files changed, 134181 insertions(+), 185822 deletions(-)
+>
+> ----------------------------------------------------------------------------
+>
+> I have created today's linux-next tree at
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> (patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
+> are tracking the linux-next tree using git, you should not use "git pull"
+> to do so as that will try to merge the new linux-next release with the
+> old one.  You should use "git fetch" and checkout or reset to the new
+> master.
+>
