@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030685AbaGDWRt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:17:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57228 "EHLO
+	id S1031666AbaGDWwR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:52:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57246 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030570AbaGDWRn (ORCPT
+	with ESMTP id S1030677AbaGDWRt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:43 -0400
+	Fri, 4 Jul 2014 18:17:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bart Van Assche <bvanassche@acm.org>,
-        Yann Droneaud <ydroneaud@opteya.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.4 11/19] IB/umad: Fix error handling
-Date: Fri,  4 Jul 2014 15:15:21 -0700
-Message-Id: <20140704221436.946857104@linuxfoundation.org>
+        Markos Chandras <markos.chandras@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.4 05/19] MIPS: MSC: Prevent out-of-bounds writes to MIPS SC ioremapd region
+Date: Fri,  4 Jul 2014 15:15:15 -0700
+Message-Id: <20140704221436.692604248@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221436.423715636@linuxfoundation.org>
 References: <20140704221436.423715636@linuxfoundation.org>
@@ -30,132 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Markos Chandras <markos.chandras@imgtec.com>
 
-commit 8ec0a0e6b58218bdc1db91dd70ebfcd6ad8dd6cd upstream.
+commit ab6c15bc6620ebe220970cc040b29bcb2757f373 upstream.
 
-Avoid leaking a kref count in ib_umad_open() if port->ib_dev == NULL
-or if nonseekable_open() fails.
+Previously, the lower limit for the MIPS SC initialization loop was
+set incorrectly allowing one extra loop leading to writes
+beyond the MSC ioremap'd space. More precisely, the value of the 'imp'
+in the last loop increased beyond the msc_irqmap_t boundaries and
+as a result of which, the 'n' variable was loaded with an incorrect
+value. This value was used later on to calculate the offset in the
+MSC01_IC_SUP which led to random crashes like the following one:
 
-Avoid leaking a kref count, that sm_sem is kept down and also that the
-IB_PORT_SM capability mask is not cleared in ib_umad_sm_open() if
-nonseekable_open() fails.
+CPU 0 Unable to handle kernel paging request at virtual address e75c0200,
+epc == 8058dba4, ra == 8058db90
+[...]
+Call Trace:
+[<8058dba4>] init_msc_irqs+0x104/0x154
+[<8058b5bc>] arch_init_irq+0xd8/0x154
+[<805897b0>] start_kernel+0x220/0x36c
 
-Since container_of() never returns NULL, remove the code that tests
-whether container_of() returns NULL.
+Kernel panic - not syncing: Attempted to kill the idle task!
 
-Moving the kref_get() call from the start of ib_umad_*open() to the
-end is safe since it is the responsibility of the caller of these
-functions to ensure that the cdev pointer remains valid until at least
-when these functions return.
+This patch fixes the problem
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-
-[ydroneaud@opteya.com: rework a bit to reduce the amount of code changed]
-
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-
-[ nonseekable_open() can't actually fail, but....  - Roland ]
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Reviewed-by: James Hogan <james.hogan@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7118/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/core/user_mad.c |   49 ++++++++++++++++++++-----------------
- 1 file changed, 27 insertions(+), 22 deletions(-)
+ arch/mips/kernel/irq-msc01.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/infiniband/core/user_mad.c
-+++ b/drivers/infiniband/core/user_mad.c
-@@ -780,27 +780,19 @@ static int ib_umad_open(struct inode *in
- {
- 	struct ib_umad_port *port;
- 	struct ib_umad_file *file;
--	int ret;
-+	int ret = -ENXIO;
+--- a/arch/mips/kernel/irq-msc01.c
++++ b/arch/mips/kernel/irq-msc01.c
+@@ -131,7 +131,7 @@ void __init init_msc_irqs(unsigned long
  
- 	port = container_of(inode->i_cdev, struct ib_umad_port, cdev);
--	if (port)
--		kref_get(&port->umad_dev->ref);
--	else
--		return -ENXIO;
+ 	board_bind_eic_interrupt = &msc_bind_eic_interrupt;
  
- 	mutex_lock(&port->file_mutex);
+-	for (; nirq >= 0; nirq--, imp++) {
++	for (; nirq > 0; nirq--, imp++) {
+ 		int n = imp->im_irq;
  
--	if (!port->ib_dev) {
--		ret = -ENXIO;
-+	if (!port->ib_dev)
- 		goto out;
--	}
- 
-+	ret = -ENOMEM;
- 	file = kzalloc(sizeof *file, GFP_KERNEL);
--	if (!file) {
--		kref_put(&port->umad_dev->ref, ib_umad_release_dev);
--		ret = -ENOMEM;
-+	if (!file)
- 		goto out;
--	}
- 
- 	mutex_init(&file->mutex);
- 	spin_lock_init(&file->send_lock);
-@@ -814,6 +806,13 @@ static int ib_umad_open(struct inode *in
- 	list_add_tail(&file->port_list, &port->file_list);
- 
- 	ret = nonseekable_open(inode, filp);
-+	if (ret) {
-+		list_del(&file->port_list);
-+		kfree(file);
-+		goto out;
-+	}
-+
-+	kref_get(&port->umad_dev->ref);
- 
- out:
- 	mutex_unlock(&port->file_mutex);
-@@ -880,10 +879,6 @@ static int ib_umad_sm_open(struct inode
- 	int ret;
- 
- 	port = container_of(inode->i_cdev, struct ib_umad_port, sm_cdev);
--	if (port)
--		kref_get(&port->umad_dev->ref);
--	else
--		return -ENXIO;
- 
- 	if (filp->f_flags & O_NONBLOCK) {
- 		if (down_trylock(&port->sm_sem)) {
-@@ -898,17 +893,27 @@ static int ib_umad_sm_open(struct inode
- 	}
- 
- 	ret = ib_modify_port(port->ib_dev, port->port_num, 0, &props);
--	if (ret) {
--		up(&port->sm_sem);
--		goto fail;
--	}
-+	if (ret)
-+		goto err_up_sem;
- 
- 	filp->private_data = port;
- 
--	return nonseekable_open(inode, filp);
-+	ret = nonseekable_open(inode, filp);
-+	if (ret)
-+		goto err_clr_sm_cap;
-+
-+	kref_get(&port->umad_dev->ref);
-+
-+	return 0;
-+
-+err_clr_sm_cap:
-+	swap(props.set_port_cap_mask, props.clr_port_cap_mask);
-+	ib_modify_port(port->ib_dev, port->port_num, 0, &props);
-+
-+err_up_sem:
-+	up(&port->sm_sem);
- 
- fail:
--	kref_put(&port->umad_dev->ref, ib_umad_release_dev);
- 	return ret;
- }
- 
+ 		switch (imp->im_type) {
 
 
