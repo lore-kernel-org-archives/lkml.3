@@ -1,160 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417AbaGDQPr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 12:15:47 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:47723 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129AbaGDQPp (ORCPT
+	id S1758632AbaGDQRm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 12:17:42 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:35236 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202AbaGDQRk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 12:15:45 -0400
-From: Grant Likely <grant.likely@linaro.org>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>, Pawel Moll <pawel.moll@arm.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Subject: [PATCH] of/platform: Fix of_platform_device_destroy iteration of devices
-Date: Fri,  4 Jul 2014 17:15:33 +0100
-Message-Id: <1404490533-7817-1-git-send-email-grant.likely@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Fri, 4 Jul 2014 12:17:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPDOMVh4V_JLdXoL4SH6nWFwxnjXENWbyApkioK8eNE892iZ9A@mail.gmail.com>
+References: <1404351693-5588-1-git-send-email-xerofoify@gmail.com>
+	<alpine.LNX.2.00.1407041125060.15901@nippy.intranet>
+	<CAPDOMVhvuvWesMev-5dOFA78Sf67o0kUCXR2VkdhE-xeiYQ=6w@mail.gmail.com>
+	<alpine.LNX.2.00.1407041615280.8188@nippy.intranet>
+	<CAPDOMVh4V_JLdXoL4SH6nWFwxnjXENWbyApkioK8eNE892iZ9A@mail.gmail.com>
+Date: Fri, 4 Jul 2014 18:17:38 +0200
+X-Google-Sender-Auth: d7mjStWeiYg5QLf_9RlP8Iwxw8o
+Message-ID: <CAMuHMdWJ=6FDzZg0p-_9eFaJ7sKrmmsJBy0sM5tsrGLFL0PgVg@mail.gmail.com>
+Subject: Re: [PATCH] m68k: Remove FIXME comment in file sun3_pgalloc.h
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Nick Krause <xerofoify@gmail.com>
+Cc: Finn Thain <fthain@telegraphics.com.au>, Sam Creasey <sammy@sammy.net>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_platform_destroy does not work properly, since the tree
-population test was iterating on all devices having as its parent
-the given platform device.
+On Fri, Jul 4, 2014 at 6:10 PM, Nick Krause <xerofoify@gmail.com> wrote:
+> Very well then seems I should resend this patch removing the define
+> line as it seems to have no use
+> in this file.
 
-The check was intended to check whether any other platform or amba
-devices created by of_platform_populate were still populated, but
-instead checked for every kind of device. This is wrong, since platform
-devices typically create a subsystem regular device and set themselves
-as parents.
+Indeed. Thanks in advance!
+FYI, the last user of _KERNPG_TABLE was removed in 2.5.18.
 
-Instead, go ahead and call the unregister functions for any devices
-created with of_platform_populate. The driver core will take care of
-unbinding drivers, and drivers are responsible for getting rid of any
-child devices that weren't created by of_platform_populate.
+> Cheers Nick
+>
+> On Fri, Jul 4, 2014 at 2:19 AM, Finn Thain <fthain@telegraphics.com.au> wrote:
+>>
+>> On Fri, 4 Jul 2014, Nick Krause wrote:
+>>
+>>> What are these two lines for them another compile issue?
+>>
+>> I don't see why those two lines are important.
+>>
+>>> >> -/* FIXME - when we get this compiling */
+>>> >>  /* erm, now that it's compiling, what do we do with it? */
+>>> >>  #define _KERNPG_TABLE 0
+>>
+>> Presumably it is the third line that the "FIXME" refers to.
+>>
+>> I didn't write this code, but obviously it isn't supposed to be read as
+>>
+>> /* FIXME - this comment needs to be deleted */
 
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
----
- drivers/of/platform.c       | 32 +++++++++-----------------------
- include/linux/of.h          |  1 +
- include/linux/of_platform.h |  7 ++-----
- 3 files changed, 12 insertions(+), 28 deletions(-)
+Gr{oetje,eeting}s,
 
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 500436f9be7f..0197725e033a 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -422,6 +422,7 @@ static int of_platform_bus_create(struct device_node *bus,
- 			break;
- 		}
- 	}
-+	of_node_set_flag(bus, OF_POPULATED_BUS);
- 	return rc;
- }
- 
-@@ -508,19 +509,13 @@ EXPORT_SYMBOL_GPL(of_platform_populate);
- 
- static int of_platform_device_destroy(struct device *dev, void *data)
- {
--	bool *children_left = data;
--
- 	/* Do not touch devices not populated from the device tree */
--	if (!dev->of_node || !of_node_check_flag(dev->of_node, OF_POPULATED)) {
--		*children_left = true;
-+	if (!dev->of_node || !of_node_check_flag(dev->of_node, OF_POPULATED))
- 		return 0;
--	}
- 
--	/* Recurse, but don't touch this device if it has any children left */
--	if (of_platform_depopulate(dev) != 0) {
--		*children_left = true;
--		return 0;
--	}
-+	/* Recurse for any nodes that were treated as busses */
-+	if (of_node_check_flag(dev->of_node, OF_POPULATED_BUS))
-+		device_for_each_child(dev, NULL, of_platform_device_destroy);
- 
- 	if (dev->bus == &platform_bus_type)
- 		platform_device_unregister(to_platform_device(dev));
-@@ -528,19 +523,15 @@ static int of_platform_device_destroy(struct device *dev, void *data)
- 	else if (dev->bus == &amba_bustype)
- 		amba_device_unregister(to_amba_device(dev));
- #endif
--	else {
--		*children_left = true;
--		return 0;
--	}
- 
- 	of_node_clear_flag(dev->of_node, OF_POPULATED);
--
-+	of_node_clear_flag(dev->of_node, OF_POPULATED_BUS);
- 	return 0;
- }
- 
- /**
-  * of_platform_depopulate() - Remove devices populated from device tree
-- * @parent: device which childred will be removed
-+ * @parent: device which children will be removed
-  *
-  * Complementary to of_platform_populate(), this function removes children
-  * of the given device (and, recurrently, their children) that have been
-@@ -550,14 +541,9 @@ static int of_platform_device_destroy(struct device *dev, void *data)
-  * Returns 0 when all children devices have been removed or
-  * -EBUSY when some children remained.
-  */
--int of_platform_depopulate(struct device *parent)
-+void of_platform_depopulate(struct device *parent)
- {
--	bool children_left = false;
--
--	device_for_each_child(parent, &children_left,
--			      of_platform_device_destroy);
--
--	return children_left ? -EBUSY : 0;
-+	device_for_each_child(parent, NULL, of_platform_device_destroy);
- }
- EXPORT_SYMBOL_GPL(of_platform_depopulate);
- 
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 196b34c1ef4e..abf829a1f150 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -204,6 +204,7 @@ static inline unsigned long of_read_ulong(const __be32 *cell, int size)
- #define OF_DYNAMIC	1 /* node and properties were allocated via kmalloc */
- #define OF_DETACHED	2 /* node has been detached from the device tree */
- #define OF_POPULATED	3 /* device already created for the node */
-+#define OF_POPULATED_BUS	4 /* of_platform_populate recursed to children of this node */
- 
- #define OF_IS_DYNAMIC(x) test_bit(OF_DYNAMIC, &x->_flags)
- #define OF_MARK_DYNAMIC(x) set_bit(OF_DYNAMIC, &x->_flags)
-diff --git a/include/linux/of_platform.h b/include/linux/of_platform.h
-index d96e1badbee0..c2b0627a2317 100644
---- a/include/linux/of_platform.h
-+++ b/include/linux/of_platform.h
-@@ -72,7 +72,7 @@ extern int of_platform_populate(struct device_node *root,
- 				const struct of_device_id *matches,
- 				const struct of_dev_auxdata *lookup,
- 				struct device *parent);
--extern int of_platform_depopulate(struct device *parent);
-+extern void of_platform_depopulate(struct device *parent);
- #else
- static inline int of_platform_populate(struct device_node *root,
- 					const struct of_device_id *matches,
-@@ -81,10 +81,7 @@ static inline int of_platform_populate(struct device_node *root,
- {
- 	return -ENODEV;
- }
--static inline int of_platform_depopulate(struct device *parent)
--{
--	return -ENODEV;
--}
-+static inline void of_platform_depopulate(struct device *parent) { }
- #endif
- 
- #endif	/* _LINUX_OF_PLATFORM_H */
--- 
-1.9.1
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
