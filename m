@@ -1,108 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964957AbaGDJ4A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 05:56:00 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:38055 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932394AbaGDJz4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 05:55:56 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v6 09/23] rtc: max77686: Allow the max77686 rtc to wakeup the system
-Date: Fri,  4 Jul 2014 11:55:08 +0200
-Message-Id: <1404467722-26687-10-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.0.0.rc2
-In-Reply-To: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
+	id S1030299AbaGDJ4P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 05:56:15 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45682 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964984AbaGDJ4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 05:56:10 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>, <kishon@ti.com>, <balbi@ti.com>
+CC: <nsekhar@ti.com>, <nm@ti.com>, <george.cherian@ti.com>,
+        <sergei.shtylyov@cogentembedded.com>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Roger Quadros <rogerq@ti.com>
+Subject: [PATCH v2 4/6] phy: core: Add phy-supply to DT binding documentation
+Date: Fri, 4 Jul 2014 12:55:46 +0300
+Message-ID: <1404467748-12154-5-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1404467748-12154-1-git-send-email-rogerq@ti.com>
+References: <1404467748-12154-1-git-send-email-rogerq@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Doug Anderson <dianders@chromium.org>
+phy-supply is a phandle to the regulator that provides power to the
+PHY. This regulator is managed during the PHY power on/off sequence
+by the phy core driver.
 
-The max77686 includes an RTC that keeps power during suspend.  It's
-convenient to be able to use it as a wakeup source.
-
-NOTE: due to wakeup ordering problems this patch alone doesn't work so
-well on exynos5250-snow.  You also need something that brings the i2c
-bus up before the max77686 wakeup runs.
-
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
+ Documentation/devicetree/bindings/phy/phy-bindings.txt | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-Changes since v5:
- - Fix $SUBJECT since the patch does not actually touch the mfd subsys.
-   Suggested by Lee Jones.
-
-Changes since v4: None
-
-Changes since v3:
- - Keep the note that this patch needs another change due wakeup
-   ordering problems.
----
- drivers/rtc/rtc-max77686.c | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
-
-diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
-index d20a7f0..c1c6055 100644
---- a/drivers/rtc/rtc-max77686.c
-+++ b/drivers/rtc/rtc-max77686.c
-@@ -583,6 +583,33 @@ static void max77686_rtc_shutdown(struct platform_device *pdev)
- #endif /* MAX77686_RTC_WTSR_SMPL */
- }
+diff --git a/Documentation/devicetree/bindings/phy/phy-bindings.txt b/Documentation/devicetree/bindings/phy/phy-bindings.txt
+index 8ae844f..2aa1840 100644
+--- a/Documentation/devicetree/bindings/phy/phy-bindings.txt
++++ b/Documentation/devicetree/bindings/phy/phy-bindings.txt
+@@ -10,6 +10,10 @@ Required Properties:
+ 		provider can use the values in cells to find the appropriate
+ 		PHY.
  
-+#ifdef CONFIG_PM_SLEEP
-+static int max77686_rtc_suspend(struct device *dev)
-+{
-+	if (device_may_wakeup(dev)) {
-+		struct max77686_rtc_info *info = dev_get_drvdata(dev);
++Optional Properties:
++phy-supply:	Phandle to a regulator that provides power to the PHY. This
++		regulator will be managed during the PHY power on/off sequence.
 +
-+		return enable_irq_wake(info->virq);
-+	}
-+
-+	return 0;
-+}
-+
-+static int max77686_rtc_resume(struct device *dev)
-+{
-+	if (device_may_wakeup(dev)) {
-+		struct max77686_rtc_info *info = dev_get_drvdata(dev);
-+
-+		return disable_irq_wake(info->virq);
-+	}
-+
-+	return 0;
-+}
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(max77686_rtc_pm_ops,
-+			 max77686_rtc_suspend, max77686_rtc_resume);
-+
- static const struct platform_device_id rtc_id[] = {
- 	{ "max77686-rtc", 0 },
- 	{},
-@@ -592,6 +619,7 @@ static struct platform_driver max77686_rtc_driver = {
- 	.driver		= {
- 		.name	= "max77686-rtc",
- 		.owner	= THIS_MODULE,
-+		.pm	= &max77686_rtc_pm_ops,
- 	},
- 	.probe		= max77686_rtc_probe,
- 	.shutdown	= max77686_rtc_shutdown,
+ For example:
+ 
+ phys: phy {
 -- 
-2.0.0.rc2
+1.8.3.2
 
