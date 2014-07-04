@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031235AbaGDWVP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:21:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57478 "EHLO
+	id S1031252AbaGDWVT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:21:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57490 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031145AbaGDWVM (ORCPT
+	with ESMTP id S1031145AbaGDWVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:21:12 -0400
+	Fri, 4 Jul 2014 18:21:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Dennis Dalessandro <dennis.dalessandro@intel.com>,
+        Bart Van Assche <bvanassche@acm.org>,
+        Yann Droneaud <ydroneaud@opteya.com>,
         Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.14 25/59] IB/ipath: Translate legacy diagpkt into newer extended diagpkt
-Date: Fri,  4 Jul 2014 15:19:14 -0700
-Message-Id: <20140704221540.745909746@linuxfoundation.org>
+Subject: [PATCH 3.14 27/59] IB/umad: Fix error handling
+Date: Fri,  4 Jul 2014 15:19:16 -0700
+Message-Id: <20140704221540.842629004@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -31,37 +30,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dennis Dalessandro <dennis.dalessandro@intel.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit 7e6d3e5c70f13874fb06e6b67696ed90ce79bd48 upstream.
+commit 8ec0a0e6b58218bdc1db91dd70ebfcd6ad8dd6cd upstream.
 
-This patch addresses an issue where the legacy diagpacket is sent in
-from the user, but the driver operates on only the extended
-diagpkt. This patch specifically initializes the extended diagpkt
-based on the legacy packet.
+Avoid leaking a kref count in ib_umad_open() if port->ib_dev == NULL
+or if nonseekable_open() fails.
 
-Reported-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Avoid leaking a kref count, that sm_sem is kept down and also that the
+IB_PORT_SM capability mask is not cleared in ib_umad_sm_open() if
+nonseekable_open() fails.
+
+Since container_of() never returns NULL, remove the code that tests
+whether container_of() returns NULL.
+
+Moving the kref_get() call from the start of ib_umad_*open() to the
+end is safe since it is the responsibility of the caller of these
+functions to ensure that the cdev pointer remains valid until at least
+when these functions return.
+
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+
+[ydroneaud@opteya.com: rework a bit to reduce the amount of code changed]
+
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+
+[ nonseekable_open() can't actually fail, but....  - Roland ]
+
 Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/ipath/ipath_diag.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/infiniband/core/user_mad.c |   49 ++++++++++++++++++++-----------------
+ 1 file changed, 27 insertions(+), 22 deletions(-)
 
---- a/drivers/infiniband/hw/ipath/ipath_diag.c
-+++ b/drivers/infiniband/hw/ipath/ipath_diag.c
-@@ -346,6 +346,10 @@ static ssize_t ipath_diagpkt_write(struc
- 			ret = -EFAULT;
- 			goto bail;
- 		}
-+		dp.len = odp.len;
-+		dp.unit = odp.unit;
-+		dp.data = odp.data;
-+		dp.pbc_wd = 0;
- 	} else {
- 		ret = -EINVAL;
- 		goto bail;
+--- a/drivers/infiniband/core/user_mad.c
++++ b/drivers/infiniband/core/user_mad.c
+@@ -780,27 +780,19 @@ static int ib_umad_open(struct inode *in
+ {
+ 	struct ib_umad_port *port;
+ 	struct ib_umad_file *file;
+-	int ret;
++	int ret = -ENXIO;
+ 
+ 	port = container_of(inode->i_cdev, struct ib_umad_port, cdev);
+-	if (port)
+-		kref_get(&port->umad_dev->ref);
+-	else
+-		return -ENXIO;
+ 
+ 	mutex_lock(&port->file_mutex);
+ 
+-	if (!port->ib_dev) {
+-		ret = -ENXIO;
++	if (!port->ib_dev)
+ 		goto out;
+-	}
+ 
++	ret = -ENOMEM;
+ 	file = kzalloc(sizeof *file, GFP_KERNEL);
+-	if (!file) {
+-		kref_put(&port->umad_dev->ref, ib_umad_release_dev);
+-		ret = -ENOMEM;
++	if (!file)
+ 		goto out;
+-	}
+ 
+ 	mutex_init(&file->mutex);
+ 	spin_lock_init(&file->send_lock);
+@@ -814,6 +806,13 @@ static int ib_umad_open(struct inode *in
+ 	list_add_tail(&file->port_list, &port->file_list);
+ 
+ 	ret = nonseekable_open(inode, filp);
++	if (ret) {
++		list_del(&file->port_list);
++		kfree(file);
++		goto out;
++	}
++
++	kref_get(&port->umad_dev->ref);
+ 
+ out:
+ 	mutex_unlock(&port->file_mutex);
+@@ -880,10 +879,6 @@ static int ib_umad_sm_open(struct inode
+ 	int ret;
+ 
+ 	port = container_of(inode->i_cdev, struct ib_umad_port, sm_cdev);
+-	if (port)
+-		kref_get(&port->umad_dev->ref);
+-	else
+-		return -ENXIO;
+ 
+ 	if (filp->f_flags & O_NONBLOCK) {
+ 		if (down_trylock(&port->sm_sem)) {
+@@ -898,17 +893,27 @@ static int ib_umad_sm_open(struct inode
+ 	}
+ 
+ 	ret = ib_modify_port(port->ib_dev, port->port_num, 0, &props);
+-	if (ret) {
+-		up(&port->sm_sem);
+-		goto fail;
+-	}
++	if (ret)
++		goto err_up_sem;
+ 
+ 	filp->private_data = port;
+ 
+-	return nonseekable_open(inode, filp);
++	ret = nonseekable_open(inode, filp);
++	if (ret)
++		goto err_clr_sm_cap;
++
++	kref_get(&port->umad_dev->ref);
++
++	return 0;
++
++err_clr_sm_cap:
++	swap(props.set_port_cap_mask, props.clr_port_cap_mask);
++	ib_modify_port(port->ib_dev, port->port_num, 0, &props);
++
++err_up_sem:
++	up(&port->sm_sem);
+ 
+ fail:
+-	kref_put(&port->umad_dev->ref, ib_umad_release_dev);
+ 	return ret;
+ }
+ 
 
 
