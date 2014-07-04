@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031580AbaGDW2U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:28:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57709 "EHLO
+	id S1031591AbaGDW2l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:28:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57696 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760778AbaGDWWr (ORCPT
+	with ESMTP id S1760768AbaGDWWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:22:47 -0400
+	Fri, 4 Jul 2014 18:22:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.10 36/46] MIPS: KVM: Fix memory leak on VCPU
-Date: Fri,  4 Jul 2014 15:19:40 -0700
-Message-Id: <20140704221603.929389138@linuxfoundation.org>
+        Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.10 34/46] reiserfs: call truncate_setsize under tailpack mutex
+Date: Fri,  4 Jul 2014 15:19:38 -0700
+Message-Id: <20140704221603.835590059@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
 References: <20140704221602.280733370@linuxfoundation.org>
@@ -30,44 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit 8c9eb041cf76038eb3b62ee259607eec9b89f48d upstream.
+commit 22e7478ddbcb670e33fab72d0bbe7c394c3a2c84 upstream.
 
-kvm_arch_vcpu_free() is called in 2 code paths:
+Prior to commit 0e4f6a791b1e (Fix reiserfs_file_release()), reiserfs
+truncates serialized on i_mutex. They mostly still do, with the exception
+of reiserfs_file_release. That blocks out other writers via the tailpack
+mutex and the inode openers counter adjusted in reiserfs_file_open.
 
-1) kvm_vm_ioctl()
-       kvm_vm_ioctl_create_vcpu()
-           kvm_arch_vcpu_destroy()
-               kvm_arch_vcpu_free()
-2) kvm_put_kvm()
-       kvm_destroy_vm()
-           kvm_arch_destroy_vm()
-               kvm_mips_free_vcpus()
-                   kvm_arch_vcpu_free()
+However, NFS will call reiserfs_setattr without having called ->open, so
+we end up with a race when nfs is calling ->setattr while another
+process is releasing the file. Ultimately, it triggers the
+BUG_ON(inode->i_size != new_file_size) check in maybe_indirect_to_direct.
 
-Neither of the paths handles VCPU free. We need to do it in
-kvm_arch_vcpu_free() corresponding to the memory allocation in
-kvm_arch_vcpu_create().
+The solution is to pull the lock into reiserfs_setattr to encompass the
+truncate_setsize call as well.
 
-Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@imgtec.com>
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kvm/kvm_mips.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/reiserfs/inode.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/arch/mips/kvm/kvm_mips.c
-+++ b/arch/mips/kvm/kvm_mips.c
-@@ -384,6 +384,7 @@ void kvm_arch_vcpu_free(struct kvm_vcpu
+--- a/fs/reiserfs/inode.c
++++ b/fs/reiserfs/inode.c
+@@ -3211,8 +3211,14 @@ int reiserfs_setattr(struct dentry *dent
+ 	    attr->ia_size != i_size_read(inode)) {
+ 		error = inode_newsize_ok(inode, attr->ia_size);
+ 		if (!error) {
++			/*
++			 * Could race against reiserfs_file_release
++			 * if called from NFS, so take tailpack mutex.
++			 */
++			mutex_lock(&REISERFS_I(inode)->tailpack);
+ 			truncate_setsize(inode, attr->ia_size);
+-			reiserfs_vfs_truncate_file(inode);
++			reiserfs_truncate_file(inode, 1);
++			mutex_unlock(&REISERFS_I(inode)->tailpack);
+ 		}
+ 	}
  
- 	kfree(vcpu->arch.guest_ebase);
- 	kfree(vcpu->arch.kseg0_commpage);
-+	kfree(vcpu);
- }
- 
- void kvm_arch_vcpu_destroy(struct kvm_vcpu *vcpu)
 
 
