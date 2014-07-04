@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760677AbaGDWW1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:22:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57639 "EHLO
+	id S1760517AbaGDWWX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:22:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57642 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760314AbaGDWWS (ORCPT
+	with ESMTP id S1753661AbaGDWWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:22:18 -0400
+	Fri, 4 Jul 2014 18:22:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.14 55/59] tracing: Try again for saved cmdline if failed due to locking
-Date: Fri,  4 Jul 2014 15:19:44 -0700
-Message-Id: <20140704221542.152790470@linuxfoundation.org>
+        Jeff Layton <jlayton@redhat.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.10 27/46] nfsd: dont try to reuse an expired DRC entry off the list
+Date: Fri,  4 Jul 2014 15:19:31 -0700
+Message-Id: <20140704221603.515056385@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
-References: <20140704221539.544876024@linuxfoundation.org>
+In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
+References: <20140704221602.280733370@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,83 +25,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 379cfdac37923653c9d4242d10052378b7563005 upstream.
+commit a0ef5e19684f0447da9ff0654a12019c484f57ca upstream.
 
-In order to prevent the saved cmdline cache from being filled when
-tracing is not active, the comms are only recorded after a trace event
-is recorded.
+Currently when we are processing a request, we try to scrape an expired
+or over-limit entry off the list in preference to allocating a new one
+from the slab.
 
-The problem is, a comm can fail to be recorded if the trace_cmdline_lock
-is held. That lock is taken via a trylock to allow it to happen from
-any context (including NMI). If the lock fails to be taken, the comm
-is skipped. No big deal, as we will try again later.
+This is unnecessarily complicated. Just use the slab layer.
 
-But! Because of the code that was added to only record after an event,
-we may not try again later as the recording is made as a oneshot per
-event per CPU.
-
-Only disable the recording of the comm if the comm is actually recorded.
-
-Fixes: 7ffbd48d5cab "tracing: Cache comms only after an event occurred"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ fs/nfsd/nfscache.c |   36 ++++--------------------------------
+ 1 file changed, 4 insertions(+), 32 deletions(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1449,12 +1449,12 @@ static void tracing_stop_tr(struct trace
+--- a/fs/nfsd/nfscache.c
++++ b/fs/nfsd/nfscache.c
+@@ -129,13 +129,6 @@ nfsd_reply_cache_alloc(void)
+ }
  
- void trace_stop_cmdline_recording(void);
- 
--static void trace_save_cmdline(struct task_struct *tsk)
-+static int trace_save_cmdline(struct task_struct *tsk)
+ static void
+-nfsd_reply_cache_unhash(struct svc_cacherep *rp)
+-{
+-	hlist_del_init(&rp->c_hash);
+-	list_del_init(&rp->c_lru);
+-}
+-
+-static void
+ nfsd_reply_cache_free_locked(struct svc_cacherep *rp)
  {
- 	unsigned pid, idx;
- 
- 	if (!tsk->pid || unlikely(tsk->pid > PID_MAX_DEFAULT))
--		return;
-+		return 0;
+ 	if (rp->c_type == RC_REPLBUFF && rp->c_replvec.iov_base) {
+@@ -402,22 +395,8 @@ nfsd_cache_lookup(struct svc_rqst *rqstp
  
  	/*
- 	 * It's not the end of the world if we don't get
-@@ -1463,7 +1463,7 @@ static void trace_save_cmdline(struct ta
- 	 * so if we miss here, then better luck next time.
+ 	 * Since the common case is a cache miss followed by an insert,
+-	 * preallocate an entry. First, try to reuse the first entry on the LRU
+-	 * if it works, then go ahead and prune the LRU list.
++	 * preallocate an entry.
  	 */
- 	if (!arch_spin_trylock(&trace_cmdline_lock))
--		return;
-+		return 0;
- 
- 	idx = map_pid_to_cmdline[tsk->pid];
- 	if (idx == NO_CMDLINE_MAP) {
-@@ -1488,6 +1488,8 @@ static void trace_save_cmdline(struct ta
- 	memcpy(&saved_cmdlines[idx], tsk->comm, TASK_COMM_LEN);
- 
- 	arch_spin_unlock(&trace_cmdline_lock);
-+
-+	return 1;
- }
- 
- void trace_find_cmdline(int pid, char comm[])
-@@ -1529,9 +1531,8 @@ void tracing_record_cmdline(struct task_
- 	if (!__this_cpu_read(trace_cmdline_save))
- 		return;
- 
--	__this_cpu_write(trace_cmdline_save, false);
+-	spin_lock(&cache_lock);
+-	if (!list_empty(&lru_head)) {
+-		rp = list_first_entry(&lru_head, struct svc_cacherep, c_lru);
+-		if (nfsd_cache_entry_expired(rp) ||
+-		    num_drc_entries >= max_drc_entries) {
+-			nfsd_reply_cache_unhash(rp);
+-			prune_cache_entries();
+-			goto search_cache;
+-		}
+-	}
 -
--	trace_save_cmdline(tsk);
-+	if (trace_save_cmdline(tsk))
-+		__this_cpu_write(trace_cmdline_save, false);
- }
+-	/* No expired ones available, allocate a new one. */
+-	spin_unlock(&cache_lock);
+ 	rp = nfsd_reply_cache_alloc();
+ 	spin_lock(&cache_lock);
+ 	if (likely(rp)) {
+@@ -425,7 +404,9 @@ nfsd_cache_lookup(struct svc_rqst *rqstp
+ 		drc_mem_usage += sizeof(*rp);
+ 	}
  
- void
+-search_cache:
++	/* go ahead and prune the cache */
++	prune_cache_entries();
++
+ 	found = nfsd_cache_search(rqstp, csum);
+ 	if (found) {
+ 		if (likely(rp))
+@@ -439,15 +420,6 @@ search_cache:
+ 		goto out;
+ 	}
+ 
+-	/*
+-	 * We're keeping the one we just allocated. Are we now over the
+-	 * limit? Prune one off the tip of the LRU in trade for the one we
+-	 * just allocated if so.
+-	 */
+-	if (num_drc_entries >= max_drc_entries)
+-		nfsd_reply_cache_free_locked(list_first_entry(&lru_head,
+-						struct svc_cacherep, c_lru));
+-
+ 	nfsdstats.rcmisses++;
+ 	rqstp->rq_cacherep = rp;
+ 	rp->c_state = RC_INPROG;
 
 
