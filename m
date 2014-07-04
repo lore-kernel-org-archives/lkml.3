@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031591AbaGDW2l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:28:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57696 "EHLO
+	id S1760812AbaGDW3G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:29:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57690 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760768AbaGDWWp (ORCPT
+	with ESMTP id S1760746AbaGDWWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:22:45 -0400
+	Fri, 4 Jul 2014 18:22:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.10 34/46] reiserfs: call truncate_setsize under tailpack mutex
-Date: Fri,  4 Jul 2014 15:19:38 -0700
-Message-Id: <20140704221603.835590059@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.10 32/46] powerpc: fix typo CONFIG_PPC_CPU
+Date: Fri,  4 Jul 2014 15:19:36 -0700
+Message-Id: <20140704221603.741873552@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
 References: <20140704221602.280733370@linuxfoundation.org>
@@ -28,48 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit 22e7478ddbcb670e33fab72d0bbe7c394c3a2c84 upstream.
+commit b69a1da94f3d1589d1942b5d1b384d8cfaac4500 upstream.
 
-Prior to commit 0e4f6a791b1e (Fix reiserfs_file_release()), reiserfs
-truncates serialized on i_mutex. They mostly still do, with the exception
-of reiserfs_file_release. That blocks out other writers via the tailpack
-mutex and the inode openers counter adjusted in reiserfs_file_open.
+Commit cd64d1697cf0 ("powerpc: mtmsrd not defined") added a check for
+CONFIG_PPC_CPU were a check for CONFIG_PPC_FPU was clearly intended.
 
-However, NFS will call reiserfs_setattr without having called ->open, so
-we end up with a race when nfs is calling ->setattr while another
-process is releasing the file. Ultimately, it triggers the
-BUG_ON(inode->i_size != new_file_size) check in maybe_indirect_to_direct.
-
-The solution is to pull the lock into reiserfs_setattr to encompass the
-truncate_setsize call as well.
-
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Fixes: cd64d1697cf0 ("powerpc: mtmsrd not defined")
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/reiserfs/inode.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ arch/powerpc/lib/sstep.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -3211,8 +3211,14 @@ int reiserfs_setattr(struct dentry *dent
- 	    attr->ia_size != i_size_read(inode)) {
- 		error = inode_newsize_ok(inode, attr->ia_size);
- 		if (!error) {
-+			/*
-+			 * Could race against reiserfs_file_release
-+			 * if called from NFS, so take tailpack mutex.
-+			 */
-+			mutex_lock(&REISERFS_I(inode)->tailpack);
- 			truncate_setsize(inode, attr->ia_size);
--			reiserfs_vfs_truncate_file(inode);
-+			reiserfs_truncate_file(inode, 1);
-+			mutex_unlock(&REISERFS_I(inode)->tailpack);
- 		}
- 	}
+--- a/arch/powerpc/lib/sstep.c
++++ b/arch/powerpc/lib/sstep.c
+@@ -1395,7 +1395,7 @@ int __kprobes emulate_step(struct pt_reg
+ 				regs->gpr[rd] = byterev_4(val);
+ 			goto ldst_done;
  
+-#ifdef CONFIG_PPC_CPU
++#ifdef CONFIG_PPC_FPU
+ 		case 535:	/* lfsx */
+ 		case 567:	/* lfsux */
+ 			if (!(regs->msr & MSR_FP))
 
 
