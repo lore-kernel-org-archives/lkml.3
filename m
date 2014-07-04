@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717AbaGDJ4f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 05:56:35 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:38149 "EHLO
+	id S1030390AbaGDJ4i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 05:56:38 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:38169 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030364AbaGDJ42 (ORCPT
+	with ESMTP id S1757274AbaGDJ4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 05:56:28 -0400
+	Fri, 4 Jul 2014 05:56:34 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Lee Jones <lee.jones@linaro.org>
 Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
@@ -21,9 +21,9 @@ Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v6 17/23] mfd: max77686: Add Maxim 77802 PMIC support
-Date: Fri,  4 Jul 2014 11:55:16 +0200
-Message-Id: <1404467722-26687-18-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v6 19/23] regulator: Add driver for Maxim 77802 PMIC regulators
+Date: Fri,  4 Jul 2014 11:55:18 +0200
+Message-Id: <1404467722-26687-20-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.0.0.rc2
 In-Reply-To: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -31,690 +31,680 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maxim MAX77802 is a power management chip that contains 10 high
-efficiency Buck regulators, 32 Low-dropout (LDO) regulators used
-to power up application processors and peripherals, a 2-channel
-32kHz clock outputs, a Real-Time-Clock (RTC) and a I2C interface
-to program the individual regulators, clocks outputs and the RTC.
-
-This patch adds support for MAX77802 to the MAX77686 driver and is
-based on a driver added to the Chrome OS kernel 3.8 by Simon Glass.
+The MAX77802 PMIC has 10 high-efficiency Buck and 32 Low-dropout
+(LDO) regulators. This patch adds support for all these regulators
+found on the MAX77802 PMIC and is based on a driver added by Simon
+Glass to the Chrome OS kernel 3.8 tree.
 
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Tested-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 ---
 
-    NOTE: I didn't carry previous {Review,Acked,Tested}-by tags since
-    this patch extending MAX77686 is quite different than the old one
-    adding a new mfd driver. So review and test is highly appreciated.
+Changes since v5:
+ - Take out the mfd changes from v4 that were squashed by mistake.
+   Suggested by Lee Jones.
 
-    Changes since v5:
-     - Extend the 77686 driver to support 77802 instead of adding a new driver.
-       Suggested by Lee Jones.
+Changes since v4: None
 
-    Changes since v4:
-     - Use consistent expressions when checking for NULL values.
-       Suggested by Krzysztof Kozlowski.
-     - Remove unused defines. Suggested by Krzysztof Kozlowski.
-     - Explain why IRQ is disabled on suspend. Suggested by Krzysztof Kozlowski.
-
-    Changes since v3:
-     - Remove unnecessary OOM error message since the mm subsystem already logs it.
-
-    Changes since v2:
-     - Split the DT binding docs in a separate patch and improve the documentation.
-       Suggested by Mark Brown.
-     - Add all the devices in the MFD driver instead of doing in separate patches.
-       Suggested by Mark Brown.
-
-    Changes since v1:
-     - Convert max77{686,802} to regmap irq API and get rid of max77{686,802}-irq.c
-       Suggested by Krzysztof Kozlowski.
-     - Don't protect max77802 mfd_cells using Kconfig options since mfd core omits
-       devices that don't match. Suggested by Lee Jones.
-     - Change mfd driver to be tristate instead of boolean. Suggested by Mark Brown.
-     - Change binding "voltage-regulators" property to "regulators" to be consistent
-       with other PMIC drivers. Suggested by Mark Brown.
-     - Use regulators node names instead of the deprecated "regulator-compatible"
-       property. Suggested by Mark Brown.
-     - Use the new descriptor-based GPIO interface instead of the deprecated
+Changes since v3:
+ - Set the supply_name for regulators to lookup their parent supply node.
+   Suggested by Mark Brown.
+ - Change Exyno5 for Exynos5420/Exynos5800 in regulator driver Kconfig.
+   Suggested by Doug Anderson.
 ---
- drivers/mfd/Kconfig                  |   6 +-
- drivers/mfd/max77686.c               | 187 ++++++++++++++++++++++++++-----
- include/linux/mfd/max77686-private.h | 208 ++++++++++++++++++++++++++++++++++-
- include/linux/mfd/max77686.h         |  60 +++++++++-
- 4 files changed, 428 insertions(+), 33 deletions(-)
+ drivers/regulator/Kconfig    |   9 +
+ drivers/regulator/Makefile   |   1 +
+ drivers/regulator/max77802.c | 609 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 619 insertions(+)
+ create mode 100644 drivers/regulator/max77802.c
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 3010204..de5abf2 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -380,15 +380,15 @@ config MFD_MAX14577
- 	  of the device.
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 789eb46..96d1c68 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -377,6 +377,15 @@ config REGULATOR_MAX77693
+ 	  and one current regulator 'CHARGER'. This is suitable for
+ 	  Exynos-4x12 chips.
  
- config MFD_MAX77686
--	bool "Maxim Semiconductor MAX77686 PMIC Support"
-+	bool "Maxim Semiconductor MAX77686/802 PMIC Support"
- 	depends on I2C=y
- 	select MFD_CORE
- 	select REGMAP_I2C
- 	select REGMAP_IRQ
- 	select IRQ_DOMAIN
- 	help
--	  Say yes here to add support for Maxim Semiconductor MAX77686.
--	  This is a Power Management IC with RTC on chip.
-+	  Say yes here to add support for Maxim Semiconductor MAX77686 and
-+	  MAX77802 which are Power Management IC with an RTC on chip.
- 	  This driver provides common support for accessing the device;
- 	  additional drivers must be enabled in order to use the functionality
- 	  of the device.
-diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-index 648d564..c0db750 100644
---- a/drivers/mfd/max77686.c
-+++ b/drivers/mfd/max77686.c
-@@ -1,5 +1,5 @@
- /*
-- * max77686.c - mfd core driver for the Maxim 77686
-+ * max77686.c - mfd core driver for the Maxim 77686/802
-  *
-  * Copyright (C) 2012 Samsung Electronics
-  * Chiwoong Byun <woong.byun@smasung.com>
-@@ -45,6 +45,74 @@ static const struct mfd_cell max77686_devs[] = {
- 	{ .name = "max77686-clk", },
- };
++config REGULATOR_MAX77802
++	tristate "Maxim 77802 regulator"
++	depends on MFD_MAX77686
++	help
++	  This driver controls a Maxim 77802 regulator
++	  via I2C bus. The provided regulator is suitable for
++	  Exynos5420/Exynos5800 SoCs to control various voltages.
++	  It includes support for control of voltage and ramp speed.
++
+ config REGULATOR_MC13XXX_CORE
+ 	tristate
  
-+static const struct mfd_cell max77802_devs[] = {
-+	{ .name = "max77802-pmic", },
-+	{ .name = "max77802-clk", },
-+	{ .name = "max77802-rtc", },
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index d461110..2aea4b6 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -51,6 +51,7 @@ obj-$(CONFIG_REGULATOR_MAX8997) += max8997.o
+ obj-$(CONFIG_REGULATOR_MAX8998) += max8998.o
+ obj-$(CONFIG_REGULATOR_MAX77686) += max77686.o
+ obj-$(CONFIG_REGULATOR_MAX77693) += max77693.o
++obj-$(CONFIG_REGULATOR_MAX77802) += max77802.o
+ obj-$(CONFIG_REGULATOR_MC13783) += mc13783-regulator.o
+ obj-$(CONFIG_REGULATOR_MC13892) += mc13892-regulator.o
+ obj-$(CONFIG_REGULATOR_MC13XXX_CORE) +=  mc13xxx-regulator-core.o
+diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
+new file mode 100644
+index 0000000..23b2488
+--- /dev/null
++++ b/drivers/regulator/max77802.c
+@@ -0,0 +1,609 @@
++/*
++ * max77802.c - Regulator driver for the Maxim 77802
++ *
++ * Copyright (C) 2013-2014 Google, Inc
++ * Simon Glass <sjg@chromium.org>
++ *
++ * Copyright (C) 2012 Samsung Electronics
++ * Chiwoong Byun <woong.byun@smasung.com>
++ * Jonghwa Lee <jonghwa3.lee@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * This driver is based on max8997.c
++ */
++
++#include <linux/kernel.h>
++#include <linux/bug.h>
++#include <linux/err.h>
++#include <linux/gpio.h>
++#include <linux/slab.h>
++#include <linux/gpio/consumer.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
++#include <linux/regulator/of_regulator.h>
++#include <linux/mfd/max77686.h>
++#include <linux/mfd/max77686-private.h>
++
++/* Default ramp delay in case it is not manually set */
++#define MAX77802_RAMP_DELAY		100000		/* uV/us */
++
++#define MAX77802_OPMODE_SHIFT_LDO	6
++#define MAX77802_OPMODE_BUCK234_SHIFT	4
++#define MAX77802_OPMODE_MASK		0x3
++
++#define MAX77802_VSEL_MASK		0x3F
++#define MAX77802_DVS_VSEL_MASK		0xFF
++
++#define MAX77802_RAMP_RATE_MASK_2BIT	0xC0
++#define MAX77802_RAMP_RATE_SHIFT_2BIT	6
++#define MAX77802_RAMP_RATE_MASK_4BIT	0xF0
++#define MAX77802_RAMP_RATE_SHIFT_4BIT	4
++
++/* MAX77802 has two register formats: 2-bit and 4-bit */
++static const unsigned int ramp_table_77802_2bit[] = {
++	12500,
++	25000,
++	50000,
++	100000,
 +};
 +
-+static bool max77802_pmic_is_accessible_reg(struct device *dev,
-+					    unsigned int reg)
-+{
-+	return (reg >= MAX77802_REG_DEVICE_ID && reg < MAX77802_REG_PMIC_END);
-+}
-+
-+static bool max77802_rtc_is_accessible_reg(struct device *dev,
-+					   unsigned int reg)
-+{
-+	return (reg >= MAX77802_RTC_INT && reg < MAX77802_RTC_END);
-+}
-+
-+static bool max77802_is_accessible_reg(struct device *dev, unsigned int reg)
-+{
-+	return (max77802_pmic_is_accessible_reg(dev, reg) ||
-+		max77802_rtc_is_accessible_reg(dev, reg));
-+}
-+
-+static bool max77802_pmic_is_precious_reg(struct device *dev, unsigned int reg)
-+{
-+	return (reg == MAX77802_REG_INTSRC || reg == MAX77802_REG_INT1 ||
-+		reg == MAX77802_REG_INT2);
-+}
-+
-+static bool max77802_rtc_is_precious_reg(struct device *dev, unsigned int reg)
-+{
-+	return (reg == MAX77802_RTC_INT ||
-+		reg == MAX77802_RTC_UPDATE0 ||
-+		reg == MAX77802_RTC_UPDATE1);
-+}
-+
-+static bool max77802_is_precious_reg(struct device *dev, unsigned int reg)
-+{
-+	return (max77802_pmic_is_precious_reg(dev, reg) ||
-+		max77802_rtc_is_precious_reg(dev, reg));
-+}
-+
-+static bool max77802_pmic_is_volatile_reg(struct device *dev, unsigned int reg)
-+{
-+	return (max77802_is_precious_reg(dev, reg) ||
-+		reg == MAX77802_REG_STATUS1 || reg == MAX77802_REG_STATUS2 ||
-+		reg == MAX77802_REG_PWRON);
-+}
-+
-+static bool max77802_rtc_is_volatile_reg(struct device *dev, unsigned int reg)
-+{
-+	return (max77802_rtc_is_precious_reg(dev, reg) ||
-+		reg == MAX77802_RTC_SEC ||
-+		reg == MAX77802_RTC_MIN ||
-+		reg == MAX77802_RTC_HOUR ||
-+		reg == MAX77802_RTC_WEEKDAY ||
-+		reg == MAX77802_RTC_MONTH ||
-+		reg == MAX77802_RTC_YEAR ||
-+		reg == MAX77802_RTC_DATE);
-+}
-+
-+static bool max77802_is_volatile_reg(struct device *dev, unsigned int reg)
-+{
-+	return (max77802_pmic_is_volatile_reg(dev, reg) ||
-+		max77802_rtc_is_volatile_reg(dev, reg));
-+}
-+
- static struct regmap_config max77686_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
-@@ -55,6 +123,17 @@ static struct regmap_config max77686_rtc_regmap_config = {
- 	.val_bits = 8,
- };
- 
-+static struct regmap_config max77802_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+	.writeable_reg = max77802_is_accessible_reg,
-+	.readable_reg = max77802_is_accessible_reg,
-+	.precious_reg = max77802_is_precious_reg,
-+	.volatile_reg = max77802_is_volatile_reg,
-+	.name = "max77802-pmic",
-+	.cache_type = REGCACHE_RBTREE,
++static unsigned int ramp_table_77802_4bit[] = {
++	1000,	2000,	3030,	4000,
++	5000,	5880,	7140,	8330,
++	9090,	10000,	11110,	12500,
++	16670,	25000,	50000,	100000,
 +};
 +
- static const struct regmap_irq max77686_irqs[] = {
- 	/* INT1 interrupts */
- 	{ .reg_offset = 0, .mask = MAX77686_INT1_PWRONF_MSK, },
-@@ -98,9 +177,34 @@ static const struct regmap_irq_chip max77686_rtc_irq_chip = {
- 	.num_irqs		= ARRAY_SIZE(max77686_rtc_irqs),
- };
- 
-+static const struct regmap_irq_chip max77802_irq_chip = {
-+	.name			= "max77802-pmic",
-+	.status_base		= MAX77802_REG_INT1,
-+	.mask_base		= MAX77802_REG_INT1MSK,
-+	.num_regs		= 2,
-+	.irqs			= max77686_irqs, /* same masks than 77686 */
-+	.num_irqs		= ARRAY_SIZE(max77686_irqs),
++struct max77802_regulator_prv {
++	int num_regulators;
++	struct regulator_dev *rdev[MAX77802_REG_MAX];
++	unsigned int opmode[MAX77802_REG_MAX];
 +};
 +
-+static const struct regmap_irq_chip max77802_rtc_irq_chip = {
-+	.name			= "max77802-rtc",
-+	.status_base		= MAX77802_RTC_INT,
-+	.mask_base		= MAX77802_RTC_INTM,
-+	.num_regs		= 1,
-+	.irqs			= max77686_rtc_irqs, /* same masks than 77686 */
-+	.num_irqs		= ARRAY_SIZE(max77686_rtc_irqs),
-+};
++static int max77802_get_opmode_shift(int id)
++{
++	if (id >= MAX77802_LDO1 && id <= MAX77802_LDO35)
++		return MAX77802_OPMODE_SHIFT_LDO;
++	else if (id == MAX77802_BUCK1 || (id >= MAX77802_BUCK5 &&
++					  id <= MAX77802_BUCK10))
++		return 0;
++	else if (id >= MAX77802_BUCK2 && id <= MAX77802_BUCK4)
++		return MAX77802_OPMODE_BUCK234_SHIFT;
++	else
++		return -EINVAL;
++}
 +
- static const struct of_device_id max77686_pmic_dt_match[] = {
--	{.compatible = "maxim,max77686", .data = NULL},
--	{},
-+	{
-+		.compatible = "maxim,max77686",
-+		.data = (void *)TYPE_MAX77686,
-+	},
-+	{
-+		.compatible = "maxim,max77802",
-+		.data = (void *)TYPE_MAX77802,
-+	},
-+	{ },
- };
- 
- static void max77686_dt_parse_dvs_gpio(struct device *dev)
-@@ -236,6 +340,12 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
- 	struct max77686_platform_data *pdata = dev_get_platdata(&i2c->dev);
- 	unsigned int data;
- 	int ret = 0;
-+	const struct regmap_config *config;
-+	const struct regmap_irq_chip *irq_chip;
-+	const struct regmap_irq_chip *rtc_irq_chip;
-+	struct regmap **rtc_regmap;
-+	const struct mfd_cell *cells;
-+	int n_devs;
- 
- 	if (IS_ENABLED(CONFIG_OF) && i2c->dev.of_node && !pdata)
- 		pdata = max77686_i2c_parse_dt_pdata(&i2c->dev);
-@@ -258,56 +368,77 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
- 	max77686->wakeup = pdata->wakeup;
- 	max77686->irq = i2c->irq;
- 
--	max77686->regmap = devm_regmap_init_i2c(i2c, &max77686_regmap_config);
-+	if (max77686->type == TYPE_MAX77686) {
-+		config = &max77686_regmap_config;
-+		irq_chip = &max77686_irq_chip;
-+		rtc_irq_chip = &max77686_rtc_irq_chip;
-+		rtc_regmap = &max77686->rtc_regmap;
-+		cells =  max77686_devs;
-+		n_devs = ARRAY_SIZE(max77686_devs);
-+	} else {
-+		config = &max77802_regmap_config;
-+		irq_chip = &max77802_irq_chip;
-+		rtc_irq_chip = &max77802_rtc_irq_chip;
-+		rtc_regmap = &max77686->regmap;
-+		cells =  max77802_devs;
-+		n_devs = ARRAY_SIZE(max77802_devs);
++/*
++ * Some BUCKS supports Normal[ON/OFF] mode during suspend
++ *
++ * BUCK 1, 6, 2-4, 5, 7-10 (all)
++ *
++ * The other mode (0x02) will make PWRREQ switch between normal
++ * and low power.
++ */
++static int max77802_buck_set_suspend_disable(struct regulator_dev *rdev)
++{
++	unsigned int val = MAX77802_OPMODE_STANDBY;
++	struct max77802_regulator_prv *max77802 = rdev_get_drvdata(rdev);
++	int id = rdev_get_id(rdev);
++	int shift = max77802_get_opmode_shift(id);
++
++	max77802->opmode[id] = val;
++	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
++				  rdev->desc->enable_mask, val << shift);
++}
++
++/*
++ * Some LDOs supports LPM-ON/OFF/Normal-ON mode during suspend state
++ * (Enable Control Logic1 by PWRREQ)
++ *
++ * LDOs 2, 4-19, 22-35.
++ *
++ */
++static int max77802_ldo_set_suspend_mode_logic1(struct regulator_dev *rdev,
++						unsigned int mode)
++{
++	struct max77802_regulator_prv *max77802 = rdev_get_drvdata(rdev);
++	int id = rdev_get_id(rdev);
++	unsigned int val;
++	int shift = max77802_get_opmode_shift(id);
++
++	switch (mode) {
++	case REGULATOR_MODE_IDLE:			/* ON in LP Mode */
++		val = MAX77802_OPMODE_LP;
++		break;
++	case REGULATOR_MODE_NORMAL:			/* ON in Normal Mode */
++		val = MAX77802_OPMODE_NORMAL;
++		break;
++	case REGULATOR_MODE_STANDBY:			/* ON/OFF by PWRREQ */
++		val = MAX77802_OPMODE_STANDBY;
++		break;
++	default:
++		dev_warn(&rdev->dev, "%s: regulator mode: 0x%x not supported\n",
++			 rdev->desc->name, mode);
++		return -EINVAL;
 +	}
 +
-+	max77686->regmap = devm_regmap_init_i2c(i2c, config);
- 	if (IS_ERR(max77686->regmap)) {
- 		ret = PTR_ERR(max77686->regmap);
- 		dev_err(max77686->dev, "Failed to allocate register map: %d\n",
--				ret);
-+			ret);
- 		return ret;
- 	}
- 
- 	ret = regmap_read(max77686->regmap, MAX77686_REG_DEVICE_ID, &data);
- 	if (ret < 0) {
- 		dev_err(max77686->dev,
--			"device not found on this channel (this is not an error)\n");
--		return -ENODEV;
--	}
--
--	max77686->rtc = i2c_new_dummy(i2c->adapter, I2C_ADDR_RTC);
--	if (!max77686->rtc) {
--		dev_err(max77686->dev, "Failed to allocate I2C device for RTC\n");
-+			"device not found on this channel\n");
- 		return -ENODEV;
- 	}
--	i2c_set_clientdata(max77686->rtc, max77686);
- 
--	max77686->rtc_regmap = devm_regmap_init_i2c(max77686->rtc,
--						    &max77686_rtc_regmap_config);
--	if (IS_ERR(max77686->rtc_regmap)) {
--		ret = PTR_ERR(max77686->rtc_regmap);
--		dev_err(max77686->dev, "failed to allocate RTC regmap: %d\n",
--			ret);
--		goto err_unregister_i2c;
-+	if (max77686->type == TYPE_MAX77686) {
-+		max77686->rtc = i2c_new_dummy(i2c->adapter, I2C_ADDR_RTC);
-+		if (!max77686->rtc) {
-+			dev_err(max77686->dev,
-+				"Failed to allocate I2C device for RTC\n");
-+			return -ENODEV;
++	max77802->opmode[rdev_get_id(rdev)] = val;
++	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
++				  rdev->desc->enable_mask, val << shift);
++}
++
++/*
++ * Mode 1 (Output[ON/OFF] by PWRREQ) is not supported on some LDOs
++ * (Enable Control Logic2 by PWRREQ)
++ *
++ * LDOs 1, 20, 21, and 3,
++ *
++ */
++static int max77802_ldo_set_suspend_mode_logic2(struct regulator_dev *rdev,
++						unsigned int mode)
++{
++	struct max77802_regulator_prv *max77802 = rdev_get_drvdata(rdev);
++	int id = rdev_get_id(rdev);
++	unsigned int val;
++	int shift = max77802_get_opmode_shift(id);
++
++	switch (mode) {
++	case REGULATOR_MODE_IDLE:			/* ON in LP Mode */
++		val = MAX77802_OPMODE_LP;
++		break;
++	case REGULATOR_MODE_NORMAL:			/* ON in Normal Mode */
++		val = MAX77802_OPMODE_NORMAL;
++		break;
++	default:
++		dev_warn(&rdev->dev, "%s: regulator mode: 0x%x not supported\n",
++			 rdev->desc->name, mode);
++		return -EINVAL;
++	}
++
++	max77802->opmode[rdev_get_id(rdev)] = val;
++	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
++				  rdev->desc->enable_mask, val << shift);
++}
++
++static int max77802_enable(struct regulator_dev *rdev)
++{
++	struct max77802_regulator_prv *max77802 = rdev_get_drvdata(rdev);
++	int id = rdev_get_id(rdev);
++	int shift = max77802_get_opmode_shift(id);
++
++	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
++				  rdev->desc->enable_mask,
++				  max77802->opmode[id] << shift);
++}
++
++static int max77802_find_ramp_value(struct regulator_dev *rdev,
++				    const unsigned int limits[], int size,
++				    unsigned int ramp_delay)
++{
++	int i;
++
++	for (i = 0; i < size; i++) {
++		if (ramp_delay <= limits[i])
++			return i;
++	}
++
++	/* Use maximum value for no ramp control */
++	dev_warn(&rdev->dev, "%s: ramp_delay: %d not supported, setting 100000\n",
++		 rdev->desc->name, ramp_delay);
++	return size - 1;
++}
++
++/* Used for BUCKs 2-4 */
++static int max77802_set_ramp_delay_2bit(struct regulator_dev *rdev,
++					int ramp_delay)
++{
++	int id = rdev_get_id(rdev);
++	unsigned int ramp_value;
++
++	if (id > MAX77802_BUCK4) {
++			dev_warn(&rdev->dev,
++				 "%s: regulator: ramp delay not supported\n",
++				 rdev->desc->name);
++		return -EINVAL;
++	}
++	ramp_value = max77802_find_ramp_value(rdev, ramp_table_77802_2bit,
++				ARRAY_SIZE(ramp_table_77802_2bit), ramp_delay);
++
++	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
++				  MAX77802_RAMP_RATE_MASK_2BIT,
++				  ramp_value << MAX77802_RAMP_RATE_SHIFT_2BIT);
++}
++
++/* For BUCK1, 6 */
++static int max77802_set_ramp_delay_4bit(struct regulator_dev *rdev,
++					    int ramp_delay)
++{
++	unsigned int ramp_value;
++
++	ramp_value = max77802_find_ramp_value(rdev, ramp_table_77802_4bit,
++				ARRAY_SIZE(ramp_table_77802_4bit), ramp_delay);
++
++	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
++				  MAX77802_RAMP_RATE_MASK_4BIT,
++				  ramp_value << MAX77802_RAMP_RATE_SHIFT_4BIT);
++}
++
++/*
++ * LDOs 2, 4-19, 22-35
++ */
++static struct regulator_ops max77802_ldo_ops_logic1 = {
++	.list_voltage		= regulator_list_voltage_linear,
++	.map_voltage		= regulator_map_voltage_linear,
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= max77802_enable,
++	.disable		= regulator_disable_regmap,
++	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
++	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
++	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
++	.set_suspend_mode	= max77802_ldo_set_suspend_mode_logic1,
++};
++
++/*
++ * LDOs 1, 20, 21, 3
++ */
++static struct regulator_ops max77802_ldo_ops_logic2 = {
++	.list_voltage		= regulator_list_voltage_linear,
++	.map_voltage		= regulator_map_voltage_linear,
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= max77802_enable,
++	.disable		= regulator_disable_regmap,
++	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
++	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
++	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
++	.set_suspend_mode	= max77802_ldo_set_suspend_mode_logic2,
++};
++
++/* BUCKS 1, 6 */
++static struct regulator_ops max77802_buck_16_dvs_ops = {
++	.list_voltage		= regulator_list_voltage_linear,
++	.map_voltage		= regulator_map_voltage_linear,
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= max77802_enable,
++	.disable		= regulator_disable_regmap,
++	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
++	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
++	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
++	.set_ramp_delay		= max77802_set_ramp_delay_4bit,
++	.set_suspend_disable	= max77802_buck_set_suspend_disable,
++};
++
++/* BUCKs 2-4, 5, 7-10 */
++static struct regulator_ops max77802_buck_dvs_ops = {
++	.list_voltage		= regulator_list_voltage_linear,
++	.map_voltage		= regulator_map_voltage_linear,
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= max77802_enable,
++	.disable		= regulator_disable_regmap,
++	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
++	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
++	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
++	.set_ramp_delay		= max77802_set_ramp_delay_2bit,
++	.set_suspend_disable	= max77802_buck_set_suspend_disable,
++};
++
++/* LDOs 3-7, 9-14, 18-26, 28, 29, 32-34 */
++#define regulator_77802_desc_p_ldo(num, supply, log)	{		\
++	.name		= "LDO"#num,					\
++	.id		= MAX77802_LDO##num,				\
++	.supply_name	= "inl"#supply,					\
++	.ops		= &max77802_ldo_ops_logic##log,			\
++	.type		= REGULATOR_VOLTAGE,				\
++	.owner		= THIS_MODULE,					\
++	.min_uV		= 800000,					\
++	.uV_step	= 50000,					\
++	.ramp_delay	= MAX77802_RAMP_DELAY,				\
++	.n_voltages	= 1 << 6,					\
++	.vsel_reg	= MAX77802_REG_LDO1CTRL1 + num - 1,		\
++	.vsel_mask	= MAX77802_VSEL_MASK,				\
++	.enable_reg	= MAX77802_REG_LDO1CTRL1 + num - 1,		\
++	.enable_mask	= MAX77802_OPMODE_MASK << MAX77802_OPMODE_SHIFT_LDO, \
++}
++
++/* LDOs 1, 2, 8, 15, 17, 27, 30, 35 */
++#define regulator_77802_desc_n_ldo(num, supply, log)   {		\
++	.name		= "LDO"#num,					\
++	.id		= MAX77802_LDO##num,				\
++	.supply_name	= "inl"#supply,					\
++	.ops		= &max77802_ldo_ops_logic##log,			\
++	.type		= REGULATOR_VOLTAGE,				\
++	.owner		= THIS_MODULE,					\
++	.min_uV		= 800000,					\
++	.uV_step	= 25000,					\
++	.ramp_delay	= MAX77802_RAMP_DELAY,				\
++	.n_voltages	= 1 << 6,					\
++	.vsel_reg	= MAX77802_REG_LDO1CTRL1 + num - 1,		\
++	.vsel_mask	= MAX77802_VSEL_MASK,				\
++	.enable_reg	= MAX77802_REG_LDO1CTRL1 + num - 1,		\
++	.enable_mask	= MAX77802_OPMODE_MASK << MAX77802_OPMODE_SHIFT_LDO, \
++}
++
++/* BUCKs 1, 6 */
++#define regulator_77802_desc_16_buck(num)	{		\
++	.name		= "BUCK"#num,					\
++	.id		= MAX77802_BUCK##num,				\
++	.supply_name	= "inb"#num,					\
++	.ops		= &max77802_buck_16_dvs_ops,			\
++	.type		= REGULATOR_VOLTAGE,				\
++	.owner		= THIS_MODULE,					\
++	.min_uV		= 612500,					\
++	.uV_step	= 6250,						\
++	.ramp_delay	= MAX77802_RAMP_DELAY,				\
++	.n_voltages	= 1 << 8,					\
++	.vsel_reg	= MAX77802_REG_BUCK ## num ## DVS1,		\
++	.vsel_mask	= MAX77802_DVS_VSEL_MASK,			\
++	.enable_reg	= MAX77802_REG_BUCK ## num ## CTRL,		\
++	.enable_mask	= MAX77802_OPMODE_MASK,				\
++}
++
++/* BUCKS 2-4 */
++#define regulator_77802_desc_234_buck(num)	{		\
++	.name		= "BUCK"#num,					\
++	.id		= MAX77802_BUCK##num,				\
++	.supply_name	= "inb"#num,					\
++	.ops		= &max77802_buck_dvs_ops,			\
++	.type		= REGULATOR_VOLTAGE,				\
++	.owner		= THIS_MODULE,					\
++	.min_uV		= 600000,					\
++	.uV_step	= 6250,						\
++	.ramp_delay	= MAX77802_RAMP_DELAY,				\
++	.n_voltages	= 0x91,						\
++	.vsel_reg	= MAX77802_REG_BUCK ## num ## DVS1,		\
++	.vsel_mask	= MAX77802_DVS_VSEL_MASK,			\
++	.enable_reg	= MAX77802_REG_BUCK ## num ## CTRL1,		\
++	.enable_mask	= MAX77802_OPMODE_MASK <<			\
++				MAX77802_OPMODE_BUCK234_SHIFT,		\
++}
++
++/* BUCK 5 */
++#define regulator_77802_desc_buck5(num)		{		\
++	.name		= "BUCK"#num,					\
++	.id		= MAX77802_BUCK##num,				\
++	.supply_name	= "inb"#num,					\
++	.ops		= &max77802_buck_dvs_ops,			\
++	.type		= REGULATOR_VOLTAGE,				\
++	.owner		= THIS_MODULE,					\
++	.min_uV		= 750000,					\
++	.uV_step	= 50000,					\
++	.ramp_delay	= MAX77802_RAMP_DELAY,				\
++	.n_voltages	= 1 << 6,					\
++	.vsel_reg	= MAX77802_REG_BUCK5OUT,			\
++	.vsel_mask	= MAX77802_VSEL_MASK,				\
++	.enable_reg	= MAX77802_REG_BUCK5CTRL,			\
++	.enable_mask	= MAX77802_OPMODE_MASK,				\
++}
++
++/* BUCKs 7-10 */
++#define regulator_77802_desc_buck7_10(num)	{		\
++	.name		= "BUCK"#num,					\
++	.id		= MAX77802_BUCK##num,				\
++	.supply_name	= "inb"#num,					\
++	.ops		= &max77802_buck_dvs_ops,			\
++	.type		= REGULATOR_VOLTAGE,				\
++	.owner		= THIS_MODULE,					\
++	.min_uV		= 750000,					\
++	.uV_step	= 50000,					\
++	.ramp_delay	= MAX77802_RAMP_DELAY,				\
++	.n_voltages	= 1 << 6,					\
++	.vsel_reg	= MAX77802_REG_BUCK7OUT + (num - 7) * 3,	\
++	.vsel_mask	= MAX77802_VSEL_MASK,				\
++	.enable_reg	= MAX77802_REG_BUCK7CTRL + (num - 7) * 3,	\
++	.enable_mask	= MAX77802_OPMODE_MASK,				\
++}
++
++static struct regulator_desc regulators[] = {
++	regulator_77802_desc_16_buck(1),
++	regulator_77802_desc_234_buck(2),
++	regulator_77802_desc_234_buck(3),
++	regulator_77802_desc_234_buck(4),
++	regulator_77802_desc_buck5(5),
++	regulator_77802_desc_16_buck(6),
++	regulator_77802_desc_buck7_10(7),
++	regulator_77802_desc_buck7_10(8),
++	regulator_77802_desc_buck7_10(9),
++	regulator_77802_desc_buck7_10(10),
++	regulator_77802_desc_n_ldo(1, 10, 2),
++	regulator_77802_desc_n_ldo(2, 10, 1),
++	regulator_77802_desc_p_ldo(3, 3, 2),
++	regulator_77802_desc_p_ldo(4, 6, 1),
++	regulator_77802_desc_p_ldo(5, 3, 1),
++	regulator_77802_desc_p_ldo(6, 3, 1),
++	regulator_77802_desc_p_ldo(7, 3, 1),
++	regulator_77802_desc_n_ldo(8, 1, 1),
++	regulator_77802_desc_p_ldo(9, 5, 1),
++	regulator_77802_desc_p_ldo(10, 4, 1),
++	regulator_77802_desc_p_ldo(11, 4, 1),
++	regulator_77802_desc_p_ldo(12, 9, 1),
++	regulator_77802_desc_p_ldo(13, 4, 1),
++	regulator_77802_desc_p_ldo(14, 4, 1),
++	regulator_77802_desc_n_ldo(15, 1, 1),
++	regulator_77802_desc_n_ldo(17, 2, 1),
++	regulator_77802_desc_p_ldo(18, 7, 1),
++	regulator_77802_desc_p_ldo(19, 5, 1),
++	regulator_77802_desc_p_ldo(20, 7, 2),
++	regulator_77802_desc_p_ldo(21, 6, 2),
++	regulator_77802_desc_p_ldo(23, 9, 1),
++	regulator_77802_desc_p_ldo(24, 6, 1),
++	regulator_77802_desc_p_ldo(25, 9, 1),
++	regulator_77802_desc_p_ldo(26, 9, 1),
++	regulator_77802_desc_n_ldo(27, 2, 1),
++	regulator_77802_desc_p_ldo(28, 7, 1),
++	regulator_77802_desc_p_ldo(29, 7, 1),
++	regulator_77802_desc_n_ldo(30, 2, 1),
++	regulator_77802_desc_p_ldo(32, 9, 1),
++	regulator_77802_desc_p_ldo(33, 6, 1),
++	regulator_77802_desc_p_ldo(34, 9, 1),
++	regulator_77802_desc_n_ldo(35, 2, 1),
++};
++
++#ifdef CONFIG_OF
++static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
++					struct max77686_platform_data *pdata)
++{
++	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
++	struct device_node *pmic_np, *regulators_np;
++	struct max77686_regulator_data *rdata;
++	struct of_regulator_match rmatch;
++	unsigned int i;
++
++	pmic_np = iodev->dev->of_node;
++	regulators_np = of_get_child_by_name(pmic_np, "regulators");
++	if (!regulators_np) {
++		dev_err(&pdev->dev, "could not find regulators sub-node\n");
++		return -EINVAL;
++	}
++
++	pdata->num_regulators = ARRAY_SIZE(regulators);
++	rdata = devm_kzalloc(&pdev->dev, sizeof(*rdata) *
++			     pdata->num_regulators, GFP_KERNEL);
++	if (!rdata) {
++		of_node_put(regulators_np);
++		return -ENOMEM;
++	}
++
++	for (i = 0; i < pdata->num_regulators; i++) {
++		rmatch.name = regulators[i].name;
++		rmatch.init_data = NULL;
++		rmatch.of_node = NULL;
++		if (of_regulator_match(&pdev->dev, regulators_np, &rmatch,
++				       1) != 1) {
++			dev_warn(&pdev->dev, "No matching regulator for '%s'\n",
++				 rmatch.name);
++			continue;
 +		}
-+		i2c_set_clientdata(max77686->rtc, max77686);
++		rdata[i].initdata = rmatch.init_data;
++		rdata[i].of_node = rmatch.of_node;
++		rdata[i].id = regulators[i].id;
++	}
 +
-+		max77686->rtc_regmap =
-+			devm_regmap_init_i2c(max77686->rtc,
-+					     &max77686_rtc_regmap_config);
-+		if (IS_ERR(max77686->rtc_regmap)) {
-+			ret = PTR_ERR(max77686->rtc_regmap);
-+			dev_err(max77686->dev,
-+				"failed to allocate RTC regmap: %d\n",
-+				ret);
-+			goto err_unregister_i2c;
++	pdata->regulators = rdata;
++	of_node_put(regulators_np);
++
++	return 0;
++}
++#else
++static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
++					struct max77686_platform_data *pdata)
++{
++	return 0;
++}
++#endif /* CONFIG_OF */
++
++static inline bool max77802_is_dvs_buck(int id)
++{
++	/* BUCK 1,2,3,4 and 6 support DVS */
++	return ((id >= MAX77802_BUCK1 && id <= MAX77802_BUCK4) ||
++		(id == MAX77802_BUCK6));
++}
++
++static int max77802_pmic_probe(struct platform_device *pdev)
++{
++	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
++	struct max77686_platform_data *pdata = dev_get_platdata(iodev->dev);
++	struct max77802_regulator_prv *max77802;
++	int i, ret = 0, val;
++	struct regulator_config config = { };
++	unsigned int reg;
++	int buck_default_idx;
++	int buck_old_idx;
++
++	/* This is allocated by the MFD driver */
++	if (!pdata) {
++		dev_err(&pdev->dev, "no platform data found for regulator\n");
++		return -ENODEV;
++	}
++
++	max77802 = devm_kzalloc(&pdev->dev,
++				sizeof(struct max77802_regulator_prv),
++				GFP_KERNEL);
++	if (!max77802)
++		return -ENOMEM;
++
++	if (iodev->dev->of_node) {
++		ret = max77802_pmic_dt_parse_pdata(pdev, pdata);
++		if (ret)
++			return ret;
++	}
++
++	config.dev = iodev->dev;
++	config.regmap = iodev->regmap;
++	config.driver_data = max77802;
++	platform_set_drvdata(pdev, max77802);
++
++	buck_default_idx = pdata->buck_default_idx;
++	buck_old_idx = max77686_read_gpios(pdata);
++
++	for (i = 0; i < MAX77802_REG_MAX; i++) {
++		struct regulator_dev *rdev;
++		int id = pdata->regulators[i].id;
++		int shift = max77802_get_opmode_shift(id);
++
++		config.init_data = pdata->regulators[i].initdata;
++		config.of_node = pdata->regulators[i].of_node;
++
++		ret = regmap_read(iodev->regmap, regulators[i].enable_reg, &val);
++		max77802->opmode[id] = val >> shift & MAX77802_OPMODE_MASK;
++
++		if (max77802_is_dvs_buck(id)) {
++			/* Try to copy over data so we keep firmware settings */
++			reg = regulators[i].vsel_reg;
++
++			ret = regmap_reg_copy(iodev->regmap,
++					      reg + buck_default_idx,
++					      reg + buck_old_idx);
++
++			if (ret)
++				dev_warn(&pdev->dev, "Copy err %d => %d (%d)\n",
++					 reg + buck_old_idx,
++					 reg + buck_default_idx, ret);
++
++			regulators[i].vsel_reg += buck_default_idx;
 +		}
- 	}
- 
- 	ret = regmap_add_irq_chip(max77686->regmap, max77686->irq,
- 				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
--				  IRQF_SHARED, 0, &max77686_irq_chip,
-+				  IRQF_SHARED, 0, irq_chip,
- 				  &max77686->irq_data);
- 	if (ret) {
- 		dev_err(&i2c->dev, "failed to add PMIC irq chip: %d\n", ret);
- 		goto err_unregister_i2c;
- 	}
--	ret = regmap_add_irq_chip(max77686->rtc_regmap, max77686->irq,
 +
-+	ret = regmap_add_irq_chip(*rtc_regmap, max77686->irq,
- 				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
--				  IRQF_SHARED, 0, &max77686_rtc_irq_chip,
-+				  IRQF_SHARED, 0, rtc_irq_chip,
- 				  &max77686->rtc_irq_data);
- 	if (ret) {
- 		dev_err(&i2c->dev, "failed to add RTC irq chip: %d\n", ret);
- 		goto err_del_irqc;
- 	}
- 
--	ret = mfd_add_devices(max77686->dev, -1, max77686_devs,
--			      ARRAY_SIZE(max77686_devs), NULL, 0, NULL);
-+	ret = mfd_add_devices(max77686->dev, -1, cells, n_devs, NULL, 0, NULL);
- 	if (ret < 0) {
- 		dev_err(&i2c->dev, "failed to add MFD devices: %d\n", ret);
- 		goto err_del_rtc_irqc;
-@@ -320,7 +451,8 @@ err_del_rtc_irqc:
- err_del_irqc:
- 	regmap_del_irq_chip(max77686->irq, max77686->irq_data);
- err_unregister_i2c:
--	i2c_unregister_device(max77686->rtc);
-+	if (max77686->type == TYPE_MAX77686)
-+		i2c_unregister_device(max77686->rtc);
- 
- 	return ret;
- }
-@@ -341,6 +473,7 @@ static int max77686_i2c_remove(struct i2c_client *i2c)
- 
- static const struct i2c_device_id max77686_i2c_id[] = {
- 	{ "max77686", TYPE_MAX77686 },
-+	{ "max77802", TYPE_MAX77802 },
- 	{ }
- };
- MODULE_DEVICE_TABLE(i2c, max77686_i2c_id);
-@@ -409,6 +542,6 @@ static void __exit max77686_i2c_exit(void)
- }
- module_exit(max77686_i2c_exit);
- 
--MODULE_DESCRIPTION("MAXIM 77686 multi-function core driver");
-+MODULE_DESCRIPTION("MAXIM 77686/802 multi-function core driver");
- MODULE_AUTHOR("Chiwoong Byun <woong.byun@samsung.com>");
- MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/max77686-private.h b/include/linux/mfd/max77686-private.h
-index 8e17780..0d60b38 100644
---- a/include/linux/mfd/max77686-private.h
-+++ b/include/linux/mfd/max77686-private.h
-@@ -1,5 +1,5 @@
- /*
-- * max77686-private.h - Voltage regulator driver for the Maxim 77686
-+ * max77686-private.h - Voltage regulator driver for the Maxim 77686/802
-  *
-  *  Copyright (C) 2012 Samsung Electrnoics
-  *  Chiwoong Byun <woong.byun@samsung.com>
-@@ -28,6 +28,7 @@
- 
- #define MAX77686_REG_INVALID		(0xff)
- 
-+/* MAX77686 PMIC registers */
- enum max77686_pmic_reg {
- 	MAX77686_REG_DEVICE_ID		= 0x00,
- 	MAX77686_REG_INTSRC		= 0x01,
-@@ -181,6 +182,210 @@ enum max77686_rtc_reg {
- 	MAX77686_ALARM2_DATE		= 0x1B,
- };
- 
-+/* MAX77802 PMIC registers */
-+enum max77802_pmic_reg {
-+	MAX77802_REG_DEVICE_ID		= 0x00,
-+	MAX77802_REG_INTSRC		= 0x01,
-+	MAX77802_REG_INT1		= 0x02,
-+	MAX77802_REG_INT2		= 0x03,
++		rdev = devm_regulator_register(&pdev->dev,
++					       &regulators[i], &config);
++		if (IS_ERR(rdev)) {
++			dev_err(&pdev->dev,
++				"regulator init failed for %d\n", i);
++			return PTR_ERR(rdev);
++		}
++	}
 +
-+	MAX77802_REG_INT1MSK		= 0x04,
-+	MAX77802_REG_INT2MSK		= 0x05,
++	ret = max77686_setup_gpios(iodev->dev);
++	if (ret)
++		return ret;
 +
-+	MAX77802_REG_STATUS1		= 0x06,
-+	MAX77802_REG_STATUS2		= 0x07,
++	return 0;
++}
 +
-+	MAX77802_REG_PWRON		= 0x08,
-+	/* Reserved: 0x09 */
-+	MAX77802_REG_MRSTB		= 0x0A,
-+	MAX77802_REG_EPWRHOLD		= 0x0B,
-+	/* Reserved: 0x0C-0x0D */
-+	MAX77802_REG_BOOSTCTRL		= 0x0E,
-+	MAX77802_REG_BOOSTOUT		= 0x0F,
++static const struct platform_device_id max77802_pmic_id[] = {
++	{"max77802-pmic", 0},
++	{ },
++};
++MODULE_DEVICE_TABLE(platform, max77802_pmic_id);
 +
-+	MAX77802_REG_BUCK1CTRL		= 0x10,
-+	MAX77802_REG_BUCK1DVS1		= 0x11,
-+	MAX77802_REG_BUCK1DVS2		= 0x12,
-+	MAX77802_REG_BUCK1DVS3		= 0x13,
-+	MAX77802_REG_BUCK1DVS4		= 0x14,
-+	MAX77802_REG_BUCK1DVS5		= 0x15,
-+	MAX77802_REG_BUCK1DVS6		= 0x16,
-+	MAX77802_REG_BUCK1DVS7		= 0x17,
-+	MAX77802_REG_BUCK1DVS8		= 0x18,
-+	/* Reserved: 0x19 */
-+	MAX77802_REG_BUCK2CTRL1		= 0x1A,
-+	MAX77802_REG_BUCK2CTRL2		= 0x1B,
-+	MAX77802_REG_BUCK2PHTRAN	= 0x1C,
-+	MAX77802_REG_BUCK2DVS1		= 0x1D,
-+	MAX77802_REG_BUCK2DVS2		= 0x1E,
-+	MAX77802_REG_BUCK2DVS3		= 0x1F,
-+	MAX77802_REG_BUCK2DVS4		= 0x20,
-+	MAX77802_REG_BUCK2DVS5		= 0x21,
-+	MAX77802_REG_BUCK2DVS6		= 0x22,
-+	MAX77802_REG_BUCK2DVS7		= 0x23,
-+	MAX77802_REG_BUCK2DVS8		= 0x24,
-+	/* Reserved: 0x25-0x26 */
-+	MAX77802_REG_BUCK3CTRL1		= 0x27,
-+	MAX77802_REG_BUCK3DVS1		= 0x28,
-+	MAX77802_REG_BUCK3DVS2		= 0x29,
-+	MAX77802_REG_BUCK3DVS3		= 0x2A,
-+	MAX77802_REG_BUCK3DVS4		= 0x2B,
-+	MAX77802_REG_BUCK3DVS5		= 0x2C,
-+	MAX77802_REG_BUCK3DVS6		= 0x2D,
-+	MAX77802_REG_BUCK3DVS7		= 0x2E,
-+	MAX77802_REG_BUCK3DVS8		= 0x2F,
-+	/* Reserved: 0x30-0x36 */
-+	MAX77802_REG_BUCK4CTRL1		= 0x37,
-+	MAX77802_REG_BUCK4DVS1		= 0x38,
-+	MAX77802_REG_BUCK4DVS2		= 0x39,
-+	MAX77802_REG_BUCK4DVS3		= 0x3A,
-+	MAX77802_REG_BUCK4DVS4		= 0x3B,
-+	MAX77802_REG_BUCK4DVS5		= 0x3C,
-+	MAX77802_REG_BUCK4DVS6		= 0x3D,
-+	MAX77802_REG_BUCK4DVS7		= 0x3E,
-+	MAX77802_REG_BUCK4DVS8		= 0x3F,
-+	/* Reserved: 0x40 */
-+	MAX77802_REG_BUCK5CTRL		= 0x41,
-+	MAX77802_REG_BUCK5OUT		= 0x42,
-+	/* Reserved: 0x43 */
-+	MAX77802_REG_BUCK6CTRL		= 0x44,
-+	MAX77802_REG_BUCK6DVS1		= 0x45,
-+	MAX77802_REG_BUCK6DVS2		= 0x46,
-+	MAX77802_REG_BUCK6DVS3		= 0x47,
-+	MAX77802_REG_BUCK6DVS4		= 0x48,
-+	MAX77802_REG_BUCK6DVS5		= 0x49,
-+	MAX77802_REG_BUCK6DVS6		= 0x4A,
-+	MAX77802_REG_BUCK6DVS7		= 0x4B,
-+	MAX77802_REG_BUCK6DVS8		= 0x4C,
-+	/* Reserved: 0x4D */
-+	MAX77802_REG_BUCK7CTRL		= 0x4E,
-+	MAX77802_REG_BUCK7OUT		= 0x4F,
-+	/* Reserved: 0x50 */
-+	MAX77802_REG_BUCK8CTRL		= 0x51,
-+	MAX77802_REG_BUCK8OUT		= 0x52,
-+	/* Reserved: 0x53 */
-+	MAX77802_REG_BUCK9CTRL		= 0x54,
-+	MAX77802_REG_BUCK9OUT		= 0x55,
-+	/* Reserved: 0x56 */
-+	MAX77802_REG_BUCK10CTRL		= 0x57,
-+	MAX77802_REG_BUCK10OUT		= 0x58,
-+
-+	/* Reserved: 0x59-0x5F */
-+
-+	MAX77802_REG_LDO1CTRL1		= 0x60,
-+	MAX77802_REG_LDO2CTRL1		= 0x61,
-+	MAX77802_REG_LDO3CTRL1		= 0x62,
-+	MAX77802_REG_LDO4CTRL1		= 0x63,
-+	MAX77802_REG_LDO5CTRL1		= 0x64,
-+	MAX77802_REG_LDO6CTRL1		= 0x65,
-+	MAX77802_REG_LDO7CTRL1		= 0x66,
-+	MAX77802_REG_LDO8CTRL1		= 0x67,
-+	MAX77802_REG_LDO9CTRL1		= 0x68,
-+	MAX77802_REG_LDO10CTRL1		= 0x69,
-+	MAX77802_REG_LDO11CTRL1		= 0x6A,
-+	MAX77802_REG_LDO12CTRL1		= 0x6B,
-+	MAX77802_REG_LDO13CTRL1		= 0x6C,
-+	MAX77802_REG_LDO14CTRL1		= 0x6D,
-+	MAX77802_REG_LDO15CTRL1		= 0x6E,
-+	/* Reserved: 0x6F */
-+	MAX77802_REG_LDO17CTRL1		= 0x70,
-+	MAX77802_REG_LDO18CTRL1		= 0x71,
-+	MAX77802_REG_LDO19CTRL1		= 0x72,
-+	MAX77802_REG_LDO20CTRL1		= 0x73,
-+	MAX77802_REG_LDO21CTRL1		= 0x74,
-+	MAX77802_REG_LDO22CTRL1		= 0x75,
-+	MAX77802_REG_LDO23CTRL1		= 0x76,
-+	MAX77802_REG_LDO24CTRL1		= 0x77,
-+	MAX77802_REG_LDO25CTRL1		= 0x78,
-+	MAX77802_REG_LDO26CTRL1		= 0x79,
-+	MAX77802_REG_LDO27CTRL1		= 0x7A,
-+	MAX77802_REG_LDO28CTRL1		= 0x7B,
-+	MAX77802_REG_LDO29CTRL1		= 0x7C,
-+	MAX77802_REG_LDO30CTRL1		= 0x7D,
-+	/* Reserved: 0x7E */
-+	MAX77802_REG_LDO32CTRL1		= 0x7F,
-+	MAX77802_REG_LDO33CTRL1		= 0x80,
-+	MAX77802_REG_LDO34CTRL1		= 0x81,
-+	MAX77802_REG_LDO35CTRL1		= 0x82,
-+	/* Reserved: 0x83-0x8F */
-+	MAX77802_REG_LDO1CTRL2		= 0x90,
-+	MAX77802_REG_LDO2CTRL2		= 0x91,
-+	MAX77802_REG_LDO3CTRL2		= 0x92,
-+	MAX77802_REG_LDO4CTRL2		= 0x93,
-+	MAX77802_REG_LDO5CTRL2		= 0x94,
-+	MAX77802_REG_LDO6CTRL2		= 0x95,
-+	MAX77802_REG_LDO7CTRL2		= 0x96,
-+	MAX77802_REG_LDO8CTRL2		= 0x97,
-+	MAX77802_REG_LDO9CTRL2		= 0x98,
-+	MAX77802_REG_LDO10CTRL2		= 0x99,
-+	MAX77802_REG_LDO11CTRL2		= 0x9A,
-+	MAX77802_REG_LDO12CTRL2		= 0x9B,
-+	MAX77802_REG_LDO13CTRL2		= 0x9C,
-+	MAX77802_REG_LDO14CTRL2		= 0x9D,
-+	MAX77802_REG_LDO15CTRL2		= 0x9E,
-+	/* Reserved: 0x9F */
-+	MAX77802_REG_LDO17CTRL2		= 0xA0,
-+	MAX77802_REG_LDO18CTRL2		= 0xA1,
-+	MAX77802_REG_LDO19CTRL2		= 0xA2,
-+	MAX77802_REG_LDO20CTRL2		= 0xA3,
-+	MAX77802_REG_LDO21CTRL2		= 0xA4,
-+	MAX77802_REG_LDO22CTRL2		= 0xA5,
-+	MAX77802_REG_LDO23CTRL2		= 0xA6,
-+	MAX77802_REG_LDO24CTRL2		= 0xA7,
-+	MAX77802_REG_LDO25CTRL2		= 0xA8,
-+	MAX77802_REG_LDO26CTRL2		= 0xA9,
-+	MAX77802_REG_LDO27CTRL2		= 0xAA,
-+	MAX77802_REG_LDO28CTRL2		= 0xAB,
-+	MAX77802_REG_LDO29CTRL2		= 0xAC,
-+	MAX77802_REG_LDO30CTRL2		= 0xAD,
-+	/* Reserved: 0xAE */
-+	MAX77802_REG_LDO32CTRL2		= 0xAF,
-+	MAX77802_REG_LDO33CTRL2		= 0xB0,
-+	MAX77802_REG_LDO34CTRL2		= 0xB1,
-+	MAX77802_REG_LDO35CTRL2		= 0xB2,
-+	/* Reserved: 0xB3 */
-+
-+	MAX77802_REG_BBAT_CHG		= 0xB4,
-+	MAX77802_REG_32KHZ		= 0xB5,
-+
-+	MAX77802_REG_PMIC_END		= 0xB6,
++static struct platform_driver max77802_pmic_driver = {
++	.driver = {
++		.name = "max77802-pmic",
++		.owner = THIS_MODULE,
++	},
++	.probe = max77802_pmic_probe,
++	.id_table = max77802_pmic_id,
 +};
 +
-+enum max77802_rtc_reg {
-+	MAX77802_RTC_INT		= 0xC0,
-+	MAX77802_RTC_INTM		= 0xC1,
-+	MAX77802_RTC_CONTROLM		= 0xC2,
-+	MAX77802_RTC_CONTROL		= 0xC3,
-+	MAX77802_RTC_UPDATE0		= 0xC4,
-+	MAX77802_RTC_UPDATE1		= 0xC5,
-+	MAX77802_WTSR_SMPL_CNTL		= 0xC6,
-+	MAX77802_RTC_SEC		= 0xC7,
-+	MAX77802_RTC_MIN		= 0xC8,
-+	MAX77802_RTC_HOUR		= 0xC9,
-+	MAX77802_RTC_WEEKDAY		= 0xCA,
-+	MAX77802_RTC_MONTH		= 0xCB,
-+	MAX77802_RTC_YEAR		= 0xCC,
-+	MAX77802_RTC_DATE		= 0xCD,
-+	MAX77802_RTC_AE1		= 0xCE,
-+	MAX77802_ALARM1_SEC		= 0xCF,
-+	MAX77802_ALARM1_MIN		= 0xD0,
-+	MAX77802_ALARM1_HOUR		= 0xD1,
-+	MAX77802_ALARM1_WEEKDAY		= 0xD2,
-+	MAX77802_ALARM1_MONTH		= 0xD3,
-+	MAX77802_ALARM1_YEAR		= 0xD4,
-+	MAX77802_ALARM1_DATE		= 0xD5,
-+	MAX77802_RTC_AE2		= 0xD6,
-+	MAX77802_ALARM2_SEC		= 0xD7,
-+	MAX77802_ALARM2_MIN		= 0xD8,
-+	MAX77802_ALARM2_HOUR		= 0xD9,
-+	MAX77802_ALARM2_WEEKDAY		= 0xDA,
-+	MAX77802_ALARM2_MONTH		= 0xDB,
-+	MAX77802_ALARM2_YEAR		= 0xDC,
-+	MAX77802_ALARM2_DATE		= 0xDD,
++module_platform_driver(max77802_pmic_driver);
 +
-+	MAX77802_RTC_END		= 0xDF,
-+};
-+
- enum max77686_irq_source {
- 	PMIC_INT1 = 0,
- 	PMIC_INT2,
-@@ -250,6 +455,7 @@ struct max77686_dev {
- 
- enum max77686_types {
- 	TYPE_MAX77686,
-+	TYPE_MAX77802,
- };
- 
- extern int max77686_irq_init(struct max77686_dev *max77686);
-diff --git a/include/linux/mfd/max77686.h b/include/linux/mfd/max77686.h
-index 46a736b..ff021b8 100644
---- a/include/linux/mfd/max77686.h
-+++ b/include/linux/mfd/max77686.h
-@@ -1,5 +1,5 @@
- /*
-- * max77686.h - Driver for the Maxim 77686
-+ * max77686.h - Driver for the Maxim 77686/802
-  *
-  *  Copyright (C) 2012 Samsung Electrnoics
-  *  Chiwoong Byun <woong.byun@samsung.com>
-@@ -71,6 +71,54 @@ enum max77686_regulators {
- 	MAX77686_REG_MAX,
- };
- 
-+/* MAX77802 regulator IDs */
-+enum max77802_regulators {
-+	MAX77802_BUCK1 = 0,
-+	MAX77802_BUCK2,
-+	MAX77802_BUCK3,
-+	MAX77802_BUCK4,
-+	MAX77802_BUCK5,
-+	MAX77802_BUCK6,
-+	MAX77802_BUCK7,
-+	MAX77802_BUCK8,
-+	MAX77802_BUCK9,
-+	MAX77802_BUCK10,
-+	MAX77802_LDO1,
-+	MAX77802_LDO2,
-+	MAX77802_LDO3,
-+	MAX77802_LDO4,
-+	MAX77802_LDO5,
-+	MAX77802_LDO6,
-+	MAX77802_LDO7,
-+	MAX77802_LDO8,
-+	MAX77802_LDO9,
-+	MAX77802_LDO10,
-+	MAX77802_LDO11,
-+	MAX77802_LDO12,
-+	MAX77802_LDO13,
-+	MAX77802_LDO14,
-+	MAX77802_LDO15,
-+	MAX77802_LDO17,
-+	MAX77802_LDO18,
-+	MAX77802_LDO19,
-+	MAX77802_LDO20,
-+	MAX77802_LDO21,
-+	MAX77802_LDO23,
-+	MAX77802_LDO24,
-+	MAX77802_LDO25,
-+	MAX77802_LDO26,
-+	MAX77802_LDO27,
-+	MAX77802_LDO28,
-+	MAX77802_LDO29,
-+	MAX77802_LDO30,
-+	MAX77802_LDO32,
-+	MAX77802_LDO33,
-+	MAX77802_LDO34,
-+	MAX77802_LDO35,
-+
-+	MAX77802_REG_MAX,
-+};
-+
- struct max77686_regulator_data {
- 	int id;
- 	struct regulator_init_data *initdata;
-@@ -83,6 +131,13 @@ enum max77686_opmode {
- 	MAX77686_OPMODE_STANDBY,
- };
- 
-+enum max77802_opmode {
-+	MAX77802_OPMODE_OFF,
-+	MAX77802_OPMODE_STANDBY,
-+	MAX77802_OPMODE_LP,
-+	MAX77802_OPMODE_NORMAL,
-+};
-+
- struct max77686_opmode_data {
- 	int id;
- 	int mode;
-@@ -106,7 +161,8 @@ struct max77686_platform_data {
- 	struct gpio_desc *buck_gpio_dvs[3]; /* GPIO of [0]DVS1, [1]DVS2, [2]DVS3 */
- 	int buck_default_idx; /* Default value of DVS1, 2, 3 */
- 
--	struct gpio_desc *buck_gpio_selb[3]; /* Buck regulators 2, 3, 4 */
-+	/* GPIO-SELBx - MAX77686: 2, 3, 4; MAX77802: 1, 2, 3, 4, 6 */
-+	struct gpio_desc *buck_gpio_selb[5];
- };
- 
- extern int max77686_setup_gpios(struct device *dev);
++MODULE_DESCRIPTION("MAXIM 77802 Regulator Driver");
++MODULE_AUTHOR("Simon Glass <sjg@chromium.org>");
++MODULE_LICENSE("GPL");
 -- 
 2.0.0.rc2
 
