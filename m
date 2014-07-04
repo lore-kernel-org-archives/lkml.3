@@ -1,62 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372AbaGDS4b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 14:56:31 -0400
-Received: from imap.thunk.org ([74.207.234.97]:45662 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752975AbaGDS43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 14:56:29 -0400
-Date: Fri, 4 Jul 2014 14:56:26 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: kernel list <linux-kernel@vger.kernel.org>, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org
-Subject: Re: ext4: media error but where?
-Message-ID: <20140704185626.GB11103@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Pavel Machek <pavel@ucw.cz>,
-	kernel list <linux-kernel@vger.kernel.org>,
-	adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org
-References: <20140626202021.GA8512@xo-6d-61-c0.localdomain>
- <20140626203052.GA9449@xo-6d-61-c0.localdomain>
- <20140627024659.GF6826@thunk.org>
- <20140629202516.GA11430@amd.pavel.ucw.cz>
- <20140629210428.GD2162@thunk.org>
- <20140630064644.GA23079@amd.pavel.ucw.cz>
- <20140630134313.GA3753@thunk.org>
- <20140704102307.GA19252@amd.pavel.ucw.cz>
- <20140704121119.GB10514@thunk.org>
- <20140704172104.GA4877@xo-6d-61-c0.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140704172104.GA4877@xo-6d-61-c0.localdomain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1759546AbaGDS7y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 14:59:54 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:20657 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752536AbaGDS7x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 14:59:53 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvAMAAj5tlNbsGwr/2dsb2JhbABagw6scAUBAQEBAQEFAW4BmWeBCxd1hGAjgRo3iEYBtU6VIIVwiTIdhC0FmnaLTIhAg0U7
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org
+Subject: [PATCH 1/1] arch: x86: use PTR_ERR_OR_ZERO
+Date: Fri,  4 Jul 2014 20:59:48 +0200
+Message-Id: <1404500388-21626-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04, 2014 at 07:21:04PM +0200, Pavel Machek wrote:
-> 
-> Is it possible that my fsck is so old it does not clear this "filesystem
-> had error in past" flag? Because I strongly suspect I'll boot into
-> init=/bin/bash, run fsck, it will tell me "all clean", and the messages
-> will repeat in the middle of fsck run.
+replace IS_ERR/PTR_ERR
 
-Yes, that's what's going on.  E2fsprogs v1.41.12 does not have the
-code to clear those fields in the superblock; that code was added in
-v1.41.13.
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ arch/x86/kernel/cpuid.c          | 2 +-
+ arch/x86/kernel/msr.c            | 2 +-
+ arch/x86/kernel/pcspeaker.c      | 2 +-
+ arch/x86/kernel/sysfb.c          | 2 +-
+ arch/x86/kernel/sysfb_simplefb.c | 4 +---
+ 5 files changed, 5 insertions(+), 7 deletions(-)
 
-(There have also been a ****huge**** number of bug fixes since May
-2010, which is when 1.41.12 was released, so I'd strongly suggest that
-you upgrade to a newer version of e2fsprogs.  In particular DON'T try
-resizing an an ext4 file system, either on-line or off-line with a
-version of e2fsprogs that ancient; there is a very good chance you
-will badly corrupt the file system.)
+diff --git a/arch/x86/kernel/cpuid.c b/arch/x86/kernel/cpuid.c
+index 3225ae6c..83741a7 100644
+--- a/arch/x86/kernel/cpuid.c
++++ b/arch/x86/kernel/cpuid.c
+@@ -143,7 +143,7 @@ static int cpuid_device_create(int cpu)
+ 
+ 	dev = device_create(cpuid_class, NULL, MKDEV(CPUID_MAJOR, cpu), NULL,
+ 			    "cpu%d", cpu);
+-	return IS_ERR(dev) ? PTR_ERR(dev) : 0;
++	return PTR_ERR_OR_ZERO(dev);
+ }
+ 
+ static void cpuid_device_destroy(int cpu)
+diff --git a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
+index c9603ac..6e4f77f 100644
+--- a/arch/x86/kernel/msr.c
++++ b/arch/x86/kernel/msr.c
+@@ -206,7 +206,7 @@ static int msr_device_create(int cpu)
+ 
+ 	dev = device_create(msr_class, NULL, MKDEV(MSR_MAJOR, cpu), NULL,
+ 			    "msr%d", cpu);
+-	return IS_ERR(dev) ? PTR_ERR(dev) : 0;
++	return PTR_ERR_OR_ZERO(dev);
+ }
+ 
+ static void msr_device_destroy(int cpu)
+diff --git a/arch/x86/kernel/pcspeaker.c b/arch/x86/kernel/pcspeaker.c
+index a311ffc..b04ee2c 100644
+--- a/arch/x86/kernel/pcspeaker.c
++++ b/arch/x86/kernel/pcspeaker.c
+@@ -8,6 +8,6 @@ static __init int add_pcspkr(void)
+ 
+ 	pd = platform_device_register_simple("pcspkr", -1, NULL, 0);
+ 
+-	return IS_ERR(pd) ? PTR_ERR(pd) : 0;
++	return PTR_ERR_OR_ZERO(pd);
+ }
+ device_initcall(add_pcspkr);
+diff --git a/arch/x86/kernel/sysfb.c b/arch/x86/kernel/sysfb.c
+index 193ec2c..160386e 100644
+--- a/arch/x86/kernel/sysfb.c
++++ b/arch/x86/kernel/sysfb.c
+@@ -67,7 +67,7 @@ static __init int sysfb_init(void)
+ 
+ 	pd = platform_device_register_resndata(NULL, name, 0,
+ 					       NULL, 0, si, sizeof(*si));
+-	return IS_ERR(pd) ? PTR_ERR(pd) : 0;
++	return PTR_ERR_OR_ZERO(pd);
+ }
+ 
+ /* must execute after PCI subsystem for EFI quirks */
+diff --git a/arch/x86/kernel/sysfb_simplefb.c b/arch/x86/kernel/sysfb_simplefb.c
+index 86179d4..088f58b 100644
+--- a/arch/x86/kernel/sysfb_simplefb.c
++++ b/arch/x86/kernel/sysfb_simplefb.c
+@@ -88,8 +88,6 @@ __init int create_simplefb(const struct screen_info *si,
+ 
+ 	pd = platform_device_register_resndata(NULL, "simple-framebuffer", 0,
+ 					       &res, 1, mode, sizeof(*mode));
+-	if (IS_ERR(pd))
+-		return PTR_ERR(pd);
+ 
+-	return 0;
++	return PTR_ERR_OR_ZERO(pd);
+ }
+-- 
+1.9.1
 
-Cheers,
-
-					- Ted
