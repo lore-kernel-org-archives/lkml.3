@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751625AbaGDEqw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 00:46:52 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:57464 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750914AbaGDEqu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 00:46:50 -0400
-Message-ID: <53B631B2.6000105@hitachi.com>
-Date: Fri, 04 Jul 2014 13:46:42 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1752358AbaGDEvj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 00:51:39 -0400
+Received: from ozlabs.org ([103.22.144.67]:35410 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750976AbaGDEvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 00:51:37 -0400
+Date: Fri, 4 Jul 2014 14:51:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Felipe Balbi <balbi@ti.com>, Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Daniel Mack <zonque@gmail.com>
+Subject: linux-next: manual merge of the usb-gadget tree with the
+ usb.current tree
+Message-ID: <20140704145127.30008370@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: probe_event_disable()->synchronize_sched() (Was: tracing/uprobes:
- Revert "Support mix of ftrace and perf")
-References: <20140627170116.GA18298@redhat.com> <20140627170136.GA18319@redhat.com> <87k37z54lu.fsf@sejong.aot.lge.com> <20140630184828.GA24594@redhat.com> <20140701193147.GA32492@redhat.com> <53B4EE21.2040203@hitachi.com> <20140703162211.GB5610@redhat.com>
-In-Reply-To: <20140703162211.GB5610@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/5w9Um9aForBeZoI_HhigBRi"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/07/04 1:22), Oleg Nesterov wrote:
+--Sig_/5w9Um9aForBeZoI_HhigBRi
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
->> One possible scenario is here; someone disables an event and tries to remove
->> it (both will be done by different syscalls). If we don't synchronize
->> the first disabling, the event flag set disabled, but the event itself
->> is not disabled. Thus event handler is still possible to be running
->> somewhere when it is removed.
-> 
-> See above. "remove" can't succed until all ftrace_event_file's are inactive.
-> And probe_event_disable() does uprobe_unregister() in this case which (again)
-> serializes with the callbacks itself.
+Hi Felipe,
 
-Ah, I see. kprobes uses disable_kprobe() instead of unregister, and that
-is not serialized.
+Today's linux-next merge of the usb-gadget tree got a conflict in
+drivers/usb/musb/musb_cppi41.c between commit c58d80f523ff ("usb: musb:
+Ensure that cppi41 timer gets armed on premature DMA TX irq") from the
+usb.current tree and commit 50aea6fca771 ("usb: musb: cppi41: fire
+hrtimer according to programmed channel length") from the usb-gadget
+tree.
 
->> The other path of __trace_remove_event_call() is trace_module_remove_events()
->> which is not related to kprobes/uprobes (Even so, there is no obvious check of
->> that.)
-> 
-> Yes, uprobe can ignore modules ;)
-> 
->>> So why? Looks like, the only reason is instance_rmdir() which can do
->>> TRACE_REG_UNREGISTER and after that destroy this ftrace_event_file?
->>> But event_trace_del_tracer() also has synchronize_sched() right after
->>> __ftrace_set_clr_event_nolock() ?
->>
->> I think it doesn't need to call synchronize_sched() because
->> event_trace_del_tracer() ensures that all events are disabled
->> (handlers are not running anymore)
-> 
-> Not really, afaics... Well yes, it calls __ftrace_set_clr_event_nolock(),
-> but this can race with the callbacks; this doesn't necessary call
-> uprobe_unregister() because there can be other active ftrace_event_file's.
-> So we need to synchronize before we start to destroy the data.
-> 
-> So do you agree that we can remove that synchronize_sched() in trace_uprobe.c
-> and replace it with call_rcu?
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Yes for uprobes, kprobes still need it.　:)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thank you,
+diff --cc drivers/usb/musb/musb_cppi41.c
+index 5341bb223b7c,adfffe884891..000000000000
+--- a/drivers/usb/musb/musb_cppi41.c
++++ b/drivers/usb/musb/musb_cppi41.c
+@@@ -312,15 -271,13 +271,13 @@@ static void cppi41_dma_callback(void *p
+  				goto out;
+  			}
+  		}
+- 		if (is_isoc(hw_ep, 0)) {
+- 			schedule_work(&cppi41_channel->dma_completion);
+- 			goto out;
+- 		}
+  		list_add_tail(&cppi41_channel->tx_check,
+  				&controller->early_tx_list);
+ -		if (!hrtimer_active(&controller->early_tx)) {
+ +		if (!hrtimer_is_queued(&controller->early_tx)) {
++ 			unsigned long usecs =3D cppi41_channel->total_len / 10;
++=20
+  			hrtimer_start_range_ns(&controller->early_tx,
+- 				ktime_set(0, 140 * NSEC_PER_USEC),
++ 				ktime_set(0, usecs * NSEC_PER_USEC),
+  				40 * NSEC_PER_USEC,
+  				HRTIMER_MODE_REL);
+  		}
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+--Sig_/5w9Um9aForBeZoI_HhigBRi
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBCAAGBQJTtjLWAAoJEMDTa8Ir7ZwVQ2QP/jLvDZwzP+rsIuDjHaqgiKSB
+xTn9+G0cdmaUf78/PFDVmZ+U9rgaxTUfQhBkxRlcMG3bgSkMShfK5EG7BgFYFzYA
+9ixHIW8WGLMJZPu+j3mPFmGTSRNK4ITn5yny3MJRa9bqAJMCv+gXqeaf3uYZpYY7
+IXI2sXchYy4actuJO49aStNq8K+D31DdbTwsxaKn7BRlwfoZi7calw1FMknSLnhF
+L2YyhlJTW4iKwAdBPut6iWyoGA7Ny9fx6DYodjdDpRrqPjJTEHWkF3GI+OZn3bBp
+CwqX+EXtfRiTh8lN+sAlMyRna71/pTAaSLuOJHD2XHoaLHTlX8lWRprVXkC0w2Ey
+vg5PC5peyGHFdBP2vFyKz+YB628ffL8DP9xjWt6YOALDZWqy29e05cgRRJBONkQt
+EiSjKXyAsgvyd2MpQpH9UEyKf98F55huNZTHfJPkaLNtmyfDdrp1gBlelNl39UOh
+cApGgnBZM0ovkGA6thI5vIKj59mOD4JKn+gXvYFQN55XM3U3DVN1pLkG2ynOQzJt
+jJmqkVQdc+G/LT6YWt9QzbDKVfh1vlurye/+JTIxJIANbCp74fC1UE7ZBRqilLG+
+G/1FUh075fIRxQWPb5mL4FKC35CCxL+4DwFlghk+zQ5Xkw+X+gLLH1dho/ngQmtV
+ZjV689iqheMr1sDYxhhC
+=ENee
+-----END PGP SIGNATURE-----
+
+--Sig_/5w9Um9aForBeZoI_HhigBRi--
