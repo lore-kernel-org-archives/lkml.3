@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031767AbaGDXAm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 19:00:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57094 "EHLO
+	id S1031781AbaGDXA6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 19:00:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57089 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760601AbaGDWQe (ORCPT
+	with ESMTP id S1760559AbaGDWQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:16:34 -0400
+	Fri, 4 Jul 2014 18:16:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.15 48/66] powerpc: fix typo CONFIG_PPC_CPU
-Date: Fri,  4 Jul 2014 15:14:47 -0700
-Message-Id: <20140704221424.997183626@linuxfoundation.org>
+        Mateusz Guzik <mguzik@redhat.com>, linux-nfs@vger.kernel.org,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.15 39/66] NFS: populate ->net in mount data when remounting
+Date: Fri,  4 Jul 2014 15:14:38 -0700
+Message-Id: <20140704221424.589638402@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -29,32 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: Mateusz Guzik <mguzik@redhat.com>
 
-commit b69a1da94f3d1589d1942b5d1b384d8cfaac4500 upstream.
+commit a914722f333b3359d2f4f12919380a334176bb89 upstream.
 
-Commit cd64d1697cf0 ("powerpc: mtmsrd not defined") added a check for
-CONFIG_PPC_CPU were a check for CONFIG_PPC_FPU was clearly intended.
+Otherwise the kernel oopses when remounting with IPv6 server because
+net is dereferenced in dev_get_by_name.
 
-Fixes: cd64d1697cf0 ("powerpc: mtmsrd not defined")
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Use net ns of current thread so that dev_get_by_name does not operate on
+foreign ns. Changing the address is prohibited anyway so this should not
+affect anything.
+
+Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
+Cc: linux-nfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/lib/sstep.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/super.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/powerpc/lib/sstep.c
-+++ b/arch/powerpc/lib/sstep.c
-@@ -1470,7 +1470,7 @@ int __kprobes emulate_step(struct pt_reg
- 				regs->gpr[rd] = byterev_4(val);
- 			goto ldst_done;
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -2248,6 +2248,7 @@ nfs_remount(struct super_block *sb, int
+ 	data->nfs_server.addrlen = nfss->nfs_client->cl_addrlen;
+ 	data->version = nfsvers;
+ 	data->minorversion = nfss->nfs_client->cl_minorversion;
++	data->net = current->nsproxy->net_ns;
+ 	memcpy(&data->nfs_server.address, &nfss->nfs_client->cl_addr,
+ 		data->nfs_server.addrlen);
  
--#ifdef CONFIG_PPC_CPU
-+#ifdef CONFIG_PPC_FPU
- 		case 535:	/* lfsx */
- 		case 567:	/* lfsux */
- 			if (!(regs->msr & MSR_FP))
 
 
