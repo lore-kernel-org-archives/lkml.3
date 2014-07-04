@@ -1,146 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758714AbaGDRUG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 13:20:06 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:60389 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276AbaGDRUF (ORCPT
+	id S1759310AbaGDRWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 13:22:13 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46050 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335AbaGDRWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 13:20:05 -0400
-Date: Fri, 4 Jul 2014 22:49:57 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] staging: goldfish: Introduce the use of managed interfaces
-Message-ID: <20140704171957.GA6154@himangi-Dell>
+	Fri, 4 Jul 2014 13:22:12 -0400
+Date: Fri, 4 Jul 2014 19:21:04 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        kernel list <linux-kernel@vger.kernel.org>, adilger.kernel@dilger.ca,
+        linux-ext4@vger.kernel.org
+Subject: Re: ext4: media error but where?
+Message-ID: <20140704172104.GA4877@xo-6d-61-c0.localdomain>
+References: <20140626202021.GA8512@xo-6d-61-c0.localdomain>
+ <20140626203052.GA9449@xo-6d-61-c0.localdomain>
+ <20140627024659.GF6826@thunk.org>
+ <20140629202516.GA11430@amd.pavel.ucw.cz>
+ <20140629210428.GD2162@thunk.org>
+ <20140630064644.GA23079@amd.pavel.ucw.cz>
+ <20140630134313.GA3753@thunk.org>
+ <20140704102307.GA19252@amd.pavel.ucw.cz>
+ <20140704121119.GB10514@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140704121119.GB10514@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the use of managed interfaces like devm_kzalloc,
-devm_ioremap, dmam_alloc_coherent, devm_request_irq and does away with
-the calls to functions to free the allocated memory in the probe and
-remove functions. Also, the labels are removed in the probe function.
+Hi!
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/staging/goldfish/goldfish_audio.c | 53 ++++++++-----------------------
- 1 file changed, 13 insertions(+), 40 deletions(-)
+> > pavel@duo:~$ uname -a
+> > Linux duo 3.15.0-rc8+ #365 SMP Mon Jun 9 09:18:29 CEST 2014 i686
+> > GNU/Linux
+> > 
+> > EXT4-fs (sda3): error count: 11
+> > EXT4-fs (sda3): initial error at 1401714179: ext4_mb_generate_buddy:756
+> > EXT4-fs (sda3): last error at 1401714179: ext4_reserve_inode_write:4877
+> > 
+> > That sounds like media error to me?
+> 
+> If you search your system logs since the last fsck, you should find 11
+> instances of "EXT4-fs error" message, which means that there was some
+> file system inconsisntencies detected.  The first error was detected at:
+> 
+> % date -d @1401714179
+> Mon Jun  2 09:02:59 EDT 2014
 
-diff --git a/drivers/staging/goldfish/goldfish_audio.c b/drivers/staging/goldfish/goldfish_audio.c
-index a166424..9df4ad8 100644
---- a/drivers/staging/goldfish/goldfish_audio.c
-+++ b/drivers/staging/goldfish/goldfish_audio.c
-@@ -274,11 +274,9 @@ static int goldfish_audio_probe(struct platform_device *pdev)
- 	struct goldfish_audio *data;
- 	dma_addr_t buf_addr;
+Interesting. I always assumed 140... was block number.
+
+> ... which means that you haven't rebooted in a month, or your boot
+> scripts aren't automatically running fsck, or your clock is
+> incorrect.
+
+I suspect something is wrong with the reporting. I got this in kernel log _while
+running fsck_. fsck was clean (take a look in the original email). I got weird
+report with fsck -c, it told me filesystem modified but I don't think I got bad
+blocks there.
+
+I believe my scripts are running fsck automatically, and yes, I rebooted a lot
+in a last month. It _may_ be possible that last month this x60 had different hard drive,
+and I copied it bit-by-bit.
+
+> It does seem to happen more often after an unclean shutdown, and there
+> does seem to be a very high correlation with eMMC devices.  It's
+> possible there is a jbd2 bug that got introduced recently, where ext4
+> is modifying some field outside of a journal transaction.  But I
+> haven't been able to reproduce this yet in controlled circumstances.
+> 
+> What I need from people reporting problems: 
+> 
+> * What is the HDD/SSD/eMMC device involved
+
+SATA hdd, will get you exact data.
+
+> * What kernel version were you running
+
+For last month? Various, 3.10 to 3.16-rc, mostly 3.15+.
+
+> * What distribution are you running (more so I know what the init
+>   scripts might or might not have been doing vis-a-vis running fsck
+>   after a crash)
+
+Debian 6.
  
--	data = kzalloc(sizeof(*data), GFP_KERNEL);
--	if (data == NULL) {
--		ret = -ENOMEM;
--		goto err_data_alloc_failed;
--	}
-+	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-+	if (data == NULL)
-+		return -ENOMEM;
- 	spin_lock_init(&data->lock);
- 	init_waitqueue_head(&data->wait);
- 	platform_set_drvdata(pdev, data);
-@@ -286,38 +284,33 @@ static int goldfish_audio_probe(struct platform_device *pdev)
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (r == NULL) {
- 		dev_err(&pdev->dev, "platform_get_resource failed\n");
--		ret = -ENODEV;
--		goto err_no_io_base;
--	}
--	data->reg_base = ioremap(r->start, PAGE_SIZE);
--	if (data->reg_base == NULL) {
--		ret = -ENOMEM;
--		goto err_no_io_base;
-+		return -ENODEV;
- 	}
-+	data->reg_base = devm_ioremap(&pdev->dev, r->start, PAGE_SIZE);
-+	if (data->reg_base == NULL)
-+		return -ENOMEM;
- 
- 	data->irq = platform_get_irq(pdev, 0);
- 	if (data->irq < 0) {
- 		dev_err(&pdev->dev, "platform_get_irq failed\n");
--		ret = -ENODEV;
--		goto err_no_irq;
-+		return -ENODEV;
- 	}
--	data->buffer_virt = dma_alloc_coherent(&pdev->dev,
-+	data->buffer_virt = dmam_alloc_coherent(&pdev->dev,
- 				COMBINED_BUFFER_SIZE, &buf_addr, GFP_KERNEL);
- 	if (data->buffer_virt == 0) {
--		ret = -ENOMEM;
- 		dev_err(&pdev->dev, "allocate buffer failed\n");
--		goto err_alloc_write_buffer_failed;
-+		return -ENOMEM;
- 	}
- 	data->buffer_phys = buf_addr;
- 	data->write_buffer1 = data->buffer_virt;
- 	data->write_buffer2 = data->buffer_virt + WRITE_BUFFER_SIZE;
- 	data->read_buffer = data->buffer_virt + 2 * WRITE_BUFFER_SIZE;
- 
--	ret = request_irq(data->irq, goldfish_audio_interrupt,
-+	ret = devm_request_irq(&pdev->dev, data->irq, goldfish_audio_interrupt,
- 					IRQF_SHARED, pdev->name, data);
- 	if (ret) {
- 		dev_err(&pdev->dev, "request_irq failed\n");
--		goto err_request_irq_failed;
-+		return ret;
- 	}
- 
- 	ret = misc_register(&goldfish_audio_device);
-@@ -325,7 +318,7 @@ static int goldfish_audio_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev,
- 			"misc_register returned %d in goldfish_audio_init\n",
- 								ret);
--		goto err_misc_register_failed;
-+		return ret;
- 	}
- 
- 	AUDIO_WRITE64(data, AUDIO_SET_WRITE_BUFFER_1,
-@@ -344,31 +337,11 @@ static int goldfish_audio_probe(struct platform_device *pdev)
- 
- 	audio_data = data;
- 	return 0;
--
--err_misc_register_failed:
--	free_irq(data->irq, data);
--err_request_irq_failed:
--	dma_free_coherent(&pdev->dev, COMBINED_BUFFER_SIZE,
--					data->buffer_virt, data->buffer_phys);
--err_alloc_write_buffer_failed:
--err_no_irq:
--	iounmap(data->reg_base);
--err_no_io_base:
--	kfree(data);
--err_data_alloc_failed:
--	return ret;
- }
- 
- static int goldfish_audio_remove(struct platform_device *pdev)
- {
--	struct goldfish_audio *data = platform_get_drvdata(pdev);
--
- 	misc_deregister(&goldfish_audio_device);
--	free_irq(data->irq, data);
--	dma_free_coherent(&pdev->dev, COMBINED_BUFFER_SIZE,
--					data->buffer_virt, data->buffer_phys);
--	iounmap(data->reg_base);
--	kfree(data);
- 	audio_data = NULL;
- 	return 0;
- }
+> * Was there an unclean shutdown / power drop / hard reset involved?
+>   If so, did the HDD/SSD/eMMC lose power, or was the reset button hit
+>   on the machine?
+
+Crash in last month? Probably yes.
+
+> * What sort of workload / application / test program running before
+>   the crash, if any?
+
+Just usual desktop / kernel development.
+
+> and so they don't need to report anymore info.  I need as many data
+> points as possible at this point.
+
+You'll get them.
+
+Is it possible that my fsck is so old it does not clear this "filesystem
+had error in past" flag? Because I strongly suspect I'll boot into
+init=/bin/bash, run fsck, it will tell me "all clean", and the messages
+will repeat in the middle of fsck run.
+
+Best regards,
+								Pavel
+
 -- 
-1.9.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
