@@ -1,55 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030278AbaGDT55 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 15:57:57 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:38036 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756393AbaGDT54 (ORCPT
+	id S1760054AbaGDT6Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 15:58:24 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:46911 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759956AbaGDT6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 15:57:56 -0400
-Date: Fri, 4 Jul 2014 21:57:50 +0200
-From: Pawel Lebioda <pawel.lebioda89@gmail.com>
-To: Marc Dietrich <marvin24@gmx.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Julian Andres Klode <jak@jak-linux.org>, ac100@lists.launchpad.net,
-        linux-tegra@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: nvec: remove unneccessary 'else' after 'return'
- statement
-Message-ID: <20140704195746.GA4346@ThinkPad>
+	Fri, 4 Jul 2014 15:58:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1404314924-23564-12-git-send-email-lee.jones@linaro.org>
+References: <1404314924-23564-1-git-send-email-lee.jones@linaro.org>
+	<1404314924-23564-12-git-send-email-lee.jones@linaro.org>
+Date: Fri, 4 Jul 2014 21:58:23 +0200
+Message-ID: <CACRpkdb59qngNZApqOeVRGrsxMkJ6ACXYXuq9dde+PyFGqWi8w@mail.gmail.com>
+Subject: Re: [PATCH 11/12] mfd: ab3100-core: Correct code sytle problems
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jul 2, 2014 at 5:28 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-This patch fixes the following warning reported by checkpatch.pl:
+> Corrects the following checkpatch gripes:
 
-WARNING: else is not generally useful after a break or return
-#235: FILE: drivers/staging/nvec/nvec.c:235:
+Fix subject line ;-)
 
-Regards
-Pawel Lebioda
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 
-Signed-off-by: Pawel Lebioda <pawel.lebioda89@gmail.com>
- drivers/staging/nvec/nvec.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/staging/nvec/nvec.c b/drivers/staging/nvec/nvec.c
-index 90f1c4d..8a3dd47 100644
---- a/drivers/staging/nvec/nvec.c
-+++ b/drivers/staging/nvec/nvec.c
-@@ -232,8 +232,7 @@ static size_t nvec_msg_size(struct nvec_msg *msg)
- 		return 2;
- 	else if (event_length == NVEC_3BYTES)
- 		return 3;
--	else
--		return 0;
-+	return 0;
- }
- 
- /**
+Yours,
+Linus Walleij
