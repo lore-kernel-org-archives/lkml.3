@@ -1,91 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986AbaGDDYC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 23:24:02 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:49135 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110AbaGDDYA (ORCPT
+	id S1759978AbaGDDYX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 23:24:23 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:63345 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756073AbaGDDYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 23:24:00 -0400
-Message-ID: <1404444236.5756.36.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
- wakeups
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        riel@redhat.com, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Date: Fri, 04 Jul 2014 05:23:56 +0200
-In-Reply-To: <20140703162944.GG4603@linux.vnet.ibm.com>
-References: <20140627142038.GA22942@linux.vnet.ibm.com>
-	 <20140702123412.GD19379@twins.programming.kicks-ass.net>
-	 <20140702153915.GQ4603@linux.vnet.ibm.com>
-	 <20140702160412.GO19379@twins.programming.kicks-ass.net>
-	 <20140702170838.GS4603@linux.vnet.ibm.com>
-	 <1404358279.5137.63.camel@marge.simpson.net>
-	 <20140703052124.GB4603@linux.vnet.ibm.com>
-	 <1404366520.5137.90.camel@marge.simpson.net>
-	 <20140703162944.GG4603@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 3 Jul 2014 23:24:19 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, rdunlap@infradead.org,
+        linux-doc@vger.kernel.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] Documentation: Fix typo in DocBook files
+Date: Fri,  4 Jul 2014 12:24:05 +0900
+Message-Id: <1404444245-21906-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 2.0.0.390.gcb682f8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-03 at 09:29 -0700, Paul E. McKenney wrote: 
-> On Thu, Jul 03, 2014 at 07:48:40AM +0200, Mike Galbraith wrote:
-> > On Wed, 2014-07-02 at 22:21 -0700, Paul E. McKenney wrote: 
-> > > On Thu, Jul 03, 2014 at 05:31:19AM +0200, Mike Galbraith wrote:
-> > 
-> > > > NO_HZ_FULL is a property of a set of CPUs.  isolcpus is supposed to go
-> > > > away as being a redundant interface to manage a single property of a set
-> > > > of CPUs, but it's perfectly fine for NO_HZ_FULL to add an interface to
-> > > > manage a single property of a set of CPUs.  What am I missing? 
-> > > 
-> > > Well, for now, it can only be specified at build time or at boot time.
-> > > In theory, it is possible to change a CPU from being callback-offloaded
-> > > to not at runtime, but there would need to be an extremely good reason
-> > > for adding that level of complexity.  Lots of "fun" races in there...
-> > 
-> > Yeah, understood.
-> > 
-> > (still it's a NO_HZ_FULL wart though IMHO, would be prettier and more
-> > usable if it eventually became unified with cpuset and learned how to
-> > tap-dance properly;)
-> 
-> Agreed, it would in some sense be nice.  What specifically do you need
-> it for?
+This patch fixed spelling typo in various template files
+within Documentation/Docbook.
 
-I personally have zero use for the thing (git/vi aren't particularly
-perturbation sensitive;). I'm just doing occasional drive-by testing
-from a distro perspective, how well does it work, what does it cost etc.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ Documentation/DocBook/gadget.tmpl                 | 2 +-
+ Documentation/DocBook/genericirq.tmpl             | 4 ++--
+ Documentation/DocBook/kernel-locking.tmpl         | 2 +-
+ Documentation/DocBook/libata.tmpl                 | 6 +++---
+ Documentation/DocBook/media_api.tmpl              | 2 +-
+ Documentation/DocBook/regulator.tmpl              | 2 +-
+ Documentation/DocBook/uio-howto.tmpl              | 4 ++--
+ Documentation/DocBook/usb.tmpl                    | 2 +-
+ Documentation/DocBook/writing-an-alsa-driver.tmpl | 2 +-
+ 9 files changed, 13 insertions(+), 13 deletions(-)
 
->   Are you really running workloads that generate large numbers of
-> callbacks spread across most of the CPUs?  It was this sort of workload
-> that caused Rik's system to show scary CPU-time accumulation, due to
-> the high overhead of frequent one-to-many wakeups.
-> 
-> If your systems aren't running that kind of high-callback-rate workload,
-> just set CONFIG_RCU_NOCB_CPU_ALL=y and don't worry about it.
-> 
-> If your systems -are- running that kind of high-callback-rate workload,
-> but your system has fewer than 200 CPUs, ensure that you have enough
-> housekeeping CPUs to allow the grace-period kthread sufficient CPU time,
-> set CONFIG_RCU_NOCB_CPU_ALL=y and don't worry about it.
-> 
-> If your systems -are- running that kind of high-callback-rate workload,
-> and your system has more than 200 CPUs, apply the following patch,
-> set CONFIG_RCU_NOCB_CPU_ALL=y and once again don't worry about it.  ;-)
-
-Turn it on and don't worry about it is exactly what distros want the
-obscure feature with very few users to be.  Last time I did a drive-by,
-my boxen said I should continue to worry about it ;-)
-
--Mike
+diff --git a/Documentation/DocBook/gadget.tmpl b/Documentation/DocBook/gadget.tmpl
+index 4017f14..2c425d7 100644
+--- a/Documentation/DocBook/gadget.tmpl
++++ b/Documentation/DocBook/gadget.tmpl
+@@ -708,7 +708,7 @@ hardware level details could be very different.
+ 
+ <para>Systems need specialized hardware support to implement OTG,
+ notably including a special <emphasis>Mini-AB</emphasis> jack
+-and associated transciever to support <emphasis>Dual-Role</emphasis>
++and associated transceiver to support <emphasis>Dual-Role</emphasis>
+ operation:
+ they can act either as a host, using the standard
+ Linux-USB host side driver stack,
+diff --git a/Documentation/DocBook/genericirq.tmpl b/Documentation/DocBook/genericirq.tmpl
+index 46347f6..59fb5c0 100644
+--- a/Documentation/DocBook/genericirq.tmpl
++++ b/Documentation/DocBook/genericirq.tmpl
+@@ -182,7 +182,7 @@
+ 	<para>
+ 	Each interrupt is described by an interrupt descriptor structure
+ 	irq_desc. The interrupt is referenced by an 'unsigned int' numeric
+-	value which selects the corresponding interrupt decription structure
++	value which selects the corresponding interrupt description structure
+ 	in the descriptor structures array.
+ 	The descriptor structure contains status information and pointers
+ 	to the interrupt flow method and the interrupt chip structure
+@@ -470,7 +470,7 @@ if (desc->irq_data.chip->irq_eoi)
+      <para>
+        To avoid copies of identical implementations of IRQ chips the
+        core provides a configurable generic interrupt chip
+-       implementation. Developers should check carefuly whether the
++       implementation. Developers should check carefully whether the
+        generic chip fits their needs before implementing the same
+        functionality slightly differently themselves.
+      </para>
+diff --git a/Documentation/DocBook/kernel-locking.tmpl b/Documentation/DocBook/kernel-locking.tmpl
+index 19f2a5a..e584ee1 100644
+--- a/Documentation/DocBook/kernel-locking.tmpl
++++ b/Documentation/DocBook/kernel-locking.tmpl
+@@ -1760,7 +1760,7 @@ as it would be on UP.
+ </para>
+ 
+ <para>
+-There is a furthur optimization possible here: remember our original
++There is a further optimization possible here: remember our original
+ cache code, where there were no reference counts and the caller simply
+ held the lock whenever using the object?  This is still possible: if
+ you hold the lock, no one can delete the object, so you don't need to
+diff --git a/Documentation/DocBook/libata.tmpl b/Documentation/DocBook/libata.tmpl
+index deb71ba..d7fcdc5 100644
+--- a/Documentation/DocBook/libata.tmpl
++++ b/Documentation/DocBook/libata.tmpl
+@@ -677,7 +677,7 @@ and other resources, etc.
+ 
+ 	<listitem>
+ 	<para>
+-	ATA_QCFLAG_ACTIVE is clared from qc->flags.
++	ATA_QCFLAG_ACTIVE is cleared from qc->flags.
+ 	</para>
+ 	</listitem>
+ 
+@@ -708,7 +708,7 @@ and other resources, etc.
+ 
+ 	   <listitem>
+ 	   <para>
+-	   qc->waiting is claread &amp; completed (in that order).
++	   qc->waiting is cleared &amp; completed (in that order).
+ 	   </para>
+ 	   </listitem>
+ 
+@@ -1163,7 +1163,7 @@ and other resources, etc.
+ 
+ 	<para>
+ 	Once sense data is acquired, this type of errors can be
+-	handled similary to other SCSI errors.  Note that sense data
++	handled similarly to other SCSI errors.  Note that sense data
+ 	may indicate ATA bus error (e.g. Sense Key 04h HARDWARE ERROR
+ 	&amp;&amp; ASC/ASCQ 47h/00h SCSI PARITY ERROR).  In such
+ 	cases, the error should be considered as an ATA bus error and
+diff --git a/Documentation/DocBook/media_api.tmpl b/Documentation/DocBook/media_api.tmpl
+index 4decb46..03f9a1f 100644
+--- a/Documentation/DocBook/media_api.tmpl
++++ b/Documentation/DocBook/media_api.tmpl
+@@ -68,7 +68,7 @@
+ 		several digital tv standards. While it is called as DVB API,
+ 		in fact it covers several different video standards including
+ 		DVB-T, DVB-S, DVB-C and ATSC. The API is currently being updated
+-		to documment support also for DVB-S2, ISDB-T and ISDB-S.</para>
++		to document support also for DVB-S2, ISDB-T and ISDB-S.</para>
+ 	<para>The third part covers the Remote Controller API.</para>
+ 	<para>The fourth part covers the Media Controller API.</para>
+ 	<para>For additional information and for the latest development code,
+diff --git a/Documentation/DocBook/regulator.tmpl b/Documentation/DocBook/regulator.tmpl
+index 346e552..3b08a08 100644
+--- a/Documentation/DocBook/regulator.tmpl
++++ b/Documentation/DocBook/regulator.tmpl
+@@ -155,7 +155,7 @@
+        release regulators.  Functions are
+        provided to <link linkend='API-regulator-enable'>enable</link>
+        and <link linkend='API-regulator-disable'>disable</link> the
+-       reguator and to get and set the runtime parameters of the
++       regulator and to get and set the runtime parameters of the
+        regulator.
+      </para>
+      <para>
+diff --git a/Documentation/DocBook/uio-howto.tmpl b/Documentation/DocBook/uio-howto.tmpl
+index 9561815..bbe9c1f 100644
+--- a/Documentation/DocBook/uio-howto.tmpl
++++ b/Documentation/DocBook/uio-howto.tmpl
+@@ -766,10 +766,10 @@ framework to set up sysfs files for this region. Simply leave it alone.
+ 	<para>
+ 	The dynamic memory regions will be allocated when the UIO device file,
+ 	<varname>/dev/uioX</varname> is opened.
+-	Simiar to static memory resources, the memory region information for
++	Similar to static memory resources, the memory region information for
+ 	dynamic regions is then visible via sysfs at
+ 	<varname>/sys/class/uio/uioX/maps/mapY/*</varname>.
+-	The dynmaic memory regions will be freed when the UIO device file is
++	The dynamic memory regions will be freed when the UIO device file is
+ 	closed. When no processes are holding the device file open, the address
+ 	returned to userspace is ~0.
+ 	</para>
+diff --git a/Documentation/DocBook/usb.tmpl b/Documentation/DocBook/usb.tmpl
+index 8d57c18..85fc0e2 100644
+--- a/Documentation/DocBook/usb.tmpl
++++ b/Documentation/DocBook/usb.tmpl
+@@ -153,7 +153,7 @@
+ 
+ 	<listitem><para>The Linux USB API supports synchronous calls for
+ 	control and bulk messages.
+-	It also supports asynchnous calls for all kinds of data transfer,
++	It also supports asynchronous calls for all kinds of data transfer,
+ 	using request structures called "URBs" (USB Request Blocks).
+ 	</para></listitem>
+ 
+diff --git a/Documentation/DocBook/writing-an-alsa-driver.tmpl b/Documentation/DocBook/writing-an-alsa-driver.tmpl
+index d0056a4..6f639d9 100644
+--- a/Documentation/DocBook/writing-an-alsa-driver.tmpl
++++ b/Documentation/DocBook/writing-an-alsa-driver.tmpl
+@@ -5696,7 +5696,7 @@ struct _snd_pcm_runtime {
+ 	suspending the PCM operations via
+ 	<function>snd_pcm_suspend_all()</function> or
+ 	<function>snd_pcm_suspend()</function>.  It means that the PCM
+-	streams are already stoppped when the register snapshot is
++	streams are already stopped when the register snapshot is
+ 	taken.  But, remember that you don't have to restart the PCM
+ 	stream in the resume callback. It'll be restarted via 
+ 	trigger call with <constant>SNDRV_PCM_TRIGGER_RESUME</constant>
+-- 
+2.0.0.390.gcb682f8
 
