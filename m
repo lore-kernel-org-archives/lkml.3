@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030997AbaGDWUU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:20:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57326 "EHLO
+	id S1030976AbaGDWUR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:20:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57321 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030949AbaGDWUO (ORCPT
+	with ESMTP id S1030527AbaGDWUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:20:14 -0400
+	Fri, 4 Jul 2014 18:20:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>,
-        Arshad Hussain <arshad.hussain@calsoftinc.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 03/59] iscsi-target: Avoid rejecting incorrect ITT for Data-Out
-Date: Fri,  4 Jul 2014 15:18:52 -0700
-Message-Id: <20140704221539.702166229@linuxfoundation.org>
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Javi Merino <javi.merino@arm.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tushar Behera <tushar.b@samsung.com>
+Subject: [PATCH 3.14 01/59] ARM: dts: disable MDMA1 node for exynos5420
+Date: Fri,  4 Jul 2014 15:18:50 -0700
+Message-Id: <20140704221539.618280417@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -30,38 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Seungwon Jeon <tgih.jun@samsung.com>
 
-commit 97c99b47ac58bacb7c09e1f47d5d184434f6b06a upstream.
+commit e6015c1f8a9032c2aecb78d23edf49582563bd47 upstream.
 
-This patch changes iscsit_check_dataout_hdr() to dump the incoming
-Data-Out payload when the received ITT is not associated with a
-WRITE, instead of calling iscsit_reject_cmd() for the non WRITE
-ITT descriptor.
+This change places MDMA1 in disabled node for Exynos5420.
+If MDMA1 region is configured with secure mode, it makes
+the boot failure with the following on smdk5420 board.
+("Unhandled fault: imprecise external abort (0x1406) at 0x00000000")
+Thus, arndale-octa board don't need to do the same thing anymore.
 
-This addresses a bug where an initiator sending an Data-Out for
-an ITT associated with a READ would end up generating a reject
-for the READ, eventually resulting in list corruption.
-
-Reported-by: Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>
-Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+Tested-by: Javi Merino <javi.merino@arm.com>
+Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Tushar Behera <tushar.b@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/target/iscsi/iscsi_target.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -1290,7 +1290,7 @@ iscsit_check_dataout_hdr(struct iscsi_co
- 	if (cmd->data_direction != DMA_TO_DEVICE) {
- 		pr_err("Command ITT: 0x%08x received DataOUT for a"
- 			" NON-WRITE command.\n", cmd->init_task_tag);
--		return iscsit_reject_cmd(cmd, ISCSI_REASON_PROTOCOL_ERROR, buf);
-+		return iscsit_dump_data_payload(conn, payload_length, 1);
- 	}
- 	se_cmd = &cmd->se_cmd;
- 	iscsit_mod_dataout_timer(cmd);
+Tested on top of v3.14.10.
+Fixes issue reported at [1].
+[1]
+http://armcloud.us/kernel-ci/stable/v3.14.10/arm-exynos_defconfig/boot-exynos5420-arndale-octa.html
+
+ arch/arm/boot/dts/exynos5420.dtsi |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+--- a/arch/arm/boot/dts/exynos5420.dtsi
++++ b/arch/arm/boot/dts/exynos5420.dtsi
+@@ -323,6 +323,13 @@
+ 			#dma-cells = <1>;
+ 			#dma-channels = <8>;
+ 			#dma-requests = <1>;
++			/*
++			 * MDMA1 can support both secure and non-secure
++			 * AXI transactions. When this is enabled in the kernel
++			 * for boards that run in secure mode, we are getting
++			 * imprecise external aborts causing the kernel to oops.
++			 */
++			status = "disabled";
+ 		};
+ 	};
+ 
 
 
