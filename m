@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758101AbaGDLFz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 07:05:55 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:58709 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757877AbaGDLFx (ORCPT
+	id S1758195AbaGDLGI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 07:06:08 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:47426 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757877AbaGDLGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 07:05:53 -0400
-Message-ID: <53B68A8B.1020106@linaro.org>
-Date: Fri, 04 Jul 2014 20:05:47 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 4 Jul 2014 07:06:06 -0400
+Date: Fri, 4 Jul 2014 12:06:13 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        "pjt@google.com" <pjt@google.com>
+Subject: Re: [RFCv2 PATCH 00/23] sched: Energy cost model for energy-aware
+ scheduling
+Message-ID: <20140704110612.GA6120@e103034-lin>
+References: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
+ <20140703231950.GA4881@intel.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, linaro-kernel@lists.linaro.org
-CC: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
-        catalin.marinas@arm.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v10 1/3] arm64: Add __NR_* definitions for compat syscalls
-References: <1404458911-8214-1-git-send-email-takahiro.akashi@linaro.org> <1404458911-8214-2-git-send-email-takahiro.akashi@linaro.org> <5418828.mxvNk2rT0e@wuerfel>
-In-Reply-To: <5418828.mxvNk2rT0e@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140703231950.GA4881@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd,
+Hi Yuyang,
 
-On 07/04/2014 07:06 PM, Arnd Bergmann wrote:
-> On Friday 04 July 2014 16:28:29 AKASHI Takahiro wrote:
->> From: Catalin Marinas <catalin.marinas@arm.com>
->>
->> This patch adds __NR_* definitions to asm/unistd32.h, moves the
->> __NR_compat_* definitions to asm/unistd.h and removes all the explicit
->> unistd32.h includes apart from the one building the compat syscall
->> table. The aim is to have the compat __NR_* definitions available but
->> without colliding with the native syscall definitions.
->>
->> And adds more syscall definitions for 3.16.
->
-> Can you explain in more detail why you want to add those macros? I've
-> looked at all three patches in the series but can't find any code using
-> them.
+On Fri, Jul 04, 2014 at 12:19:50AM +0100, Yuyang Du wrote:
+> Hi Morten,
+> 
+> On Fri, Jul 04, 2014 at 12:25:47AM +0800, Morten Rasmussen wrote:
+> > * Note that these energy savings are _not_ representative of what can be
+> > achieved on a true SMP platform where all cpus are equally 
+> > energy-efficient. There should be benefit for SMP platforms as well, 
+> > however, it will be smaller.
+> > 
+> > The energy model led to consolidation of the short tasks on the A7
+> > cluster (more energy-efficient), while sysbench made use of all cpus as
+> > the A7s didn't have sufficient compute capacity to handle the five
+> > tasks.
+> 
+> Looks like this patchset is mainly for big.LITTLE?
 
-Right. "unistd32.h" is not used by this patch, but by lib/compat_audit.c.
-when I thought of adding audit support for arm64, there was duplicated code
-of auditing compat system calls across many architectures.
-lib/compat_audit.c fixes this issue but at the same time it also requires
-__NR_* macros for a couple of compat system calls which arm64 didn't have.
+No, not at all. The only big.LITTLE in there is the test platform but
+that has been configured to be as close as possible to an SMP platform.
+That is, no performance difference between cpus. I would have preferred
+a true SMP platform for testing, but this is the only dual-cluster
+platform that I have access to with proper mainline kernel support.
 
-In the first implementation, I generated an extra generated/asm/unistd_32.h
-from the original asm/unist32.h by using a sed script. But Catalin suggested
-(agreed?) to modify unistd32.h for this purpose.
+The patch set essentially puts tasks where it is most energy-efficient
+guided by the platform energy model. That should benefit any platform,
+SMP and big.LITTLE. That is at least the goal.
 
-See
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-January/228992.html
+On an SMP platform with two clusters/packages (whatever you call a group
+of cpus sharing the same power domain) you get task consolidation on a
+single cluster if the energy model says that it is beneficial. Very much
+like your previous proposals. It is also what I'm trying to show with
+the numbers I have included.
 
-Thanks,
--Takahiro AKASHI
+That said, we are of course keeping in mind what would be required to
+make this work for big.LITTLE. However, there is nothing big.LITTLE
+specific in the patch set. Just the possibility of having different
+energy models for different cpus in the system. We will have to add some
+tweaks eventually to get the best out of big.LITTLE later. Somewhat
+similar to what exists today for better SMT support and other
+architecture specialities.
 
-> I would expect that we don't need to define those macros at all for
-> compat mode, since they are meant primarily for user space (glibc)
-> compilation, which gets them from arch/arm/include/asm/unistd.h.
->
-> 	Arnd
->
+> And can the patchset actually replace Global Task Scheduling?
+
+Global Task Scheduling is (ARM) marketing speak for letting the
+scheduler know about all cpus in a big.LITTLE system. It is not an
+actual implementation. There is an out-of-tree implementation of GTS
+available which is very big.LITTLE specific.
+
+The energy model driven scheduling proposed here is not big.LITTLE
+specific, but aims at introducing generic energy-awareness in the
+scheduler. Once energy-awareness is in place, most of the support needed
+for big.LITTLE will be there too. It is generic energy-aware code that
+is capable of making informed decisions based on the platform model,
+big.LITTLE or SMP.
+
+The short answer is: Not in its current state, but if we get the
+energy-awareness right it should be able to.
+
+Morten
