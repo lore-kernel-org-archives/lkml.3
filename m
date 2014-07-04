@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031762AbaGDWys (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:54:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57199 "EHLO
+	id S1760746AbaGDWzY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:55:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57179 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030534AbaGDWRc (ORCPT
+	with ESMTP id S1030472AbaGDWRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:32 -0400
+	Fri, 4 Jul 2014 18:17:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.15 63/66] ALSA: usb-audio: Fix races at disconnection and PCM closing
-Date: Fri,  4 Jul 2014 15:15:02 -0700
-Message-Id: <20140704221425.696362515@linuxfoundation.org>
+        Jan Beulich <JBeulich@suse.com>,
+        "Don A. Bailey" <donb@securitymouse.com>
+Subject: [PATCH 3.15 59/66] lz4: add overrun checks to lz4_uncompress_unknownoutputsize()
+Date: Fri,  4 Jul 2014 15:14:58 -0700
+Message-Id: <20140704221425.516038832@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -28,124 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 92a586bdc06de6629dae1b357dac221253f55ff8 upstream.
+commit 4a3a99045177369700c60d074c0e525e8093b0fc upstream.
 
-When a USB-audio device is disconnected while PCM is still running, we
-still see some race: the disconnect callback calls
-snd_usb_endpoint_free() that calls release_urbs() and then kfree()
-while a PCM stream would be closed at the same time and calls
-stop_endpoints() that leads to wait_clear_urbs().  That is, the EP
-object might be deallocated while a PCM stream is syncing with
-wait_clear_urbs() with the same EP.
+Jan points out that I forgot to make the needed fixes to the
+lz4_uncompress_unknownoutputsize() function to mirror the changes done
+in lz4_decompress() with regards to potential pointer overflows.
 
-Basically calling multiple wait_clear_urbs() would work fine, also
-calling wait_clear_urbs() and release_urbs() would work, too, as
-wait_clear_urbs() just reads some fields in ep.  The problem is the
-succeeding kfree() in snd_pcm_endpoint_free().
+The only in-kernel user of this function is the zram code, which only
+takes data from a valid compressed buffer that it made itself, so it's
+not a big issue.  But due to external kernel modules using this
+function, it's better to be safe here.
 
-This patch moves out the EP deallocation into the later point, the
-destructor callback.  At this stage, all PCMs must have been already
-closed, so it's safe to free the objects.
-
-Reported-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Jan Beulich <JBeulich@suse.com>
+Cc: "Don A. Bailey" <donb@securitymouse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/card.c     |   13 ++++++++++---
- sound/usb/endpoint.c |   17 ++++++++++++++---
- sound/usb/endpoint.h |    1 +
- 3 files changed, 25 insertions(+), 6 deletions(-)
+ lib/lz4/lz4_decompress.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/sound/usb/card.c
-+++ b/sound/usb/card.c
-@@ -307,6 +307,11 @@ static int snd_usb_create_streams(struct
- 
- static int snd_usb_audio_free(struct snd_usb_audio *chip)
- {
-+	struct list_head *p, *n;
-+
-+	list_for_each_safe(p, n, &chip->ep_list)
-+		snd_usb_endpoint_free(p);
-+
- 	mutex_destroy(&chip->mutex);
- 	kfree(chip);
- 	return 0;
-@@ -585,7 +590,7 @@ static void snd_usb_audio_disconnect(str
- 				     struct snd_usb_audio *chip)
- {
- 	struct snd_card *card;
--	struct list_head *p, *n;
-+	struct list_head *p;
- 
- 	if (chip == (void *)-1L)
- 		return;
-@@ -598,14 +603,16 @@ static void snd_usb_audio_disconnect(str
- 	mutex_lock(&register_mutex);
- 	chip->num_interfaces--;
- 	if (chip->num_interfaces <= 0) {
-+		struct snd_usb_endpoint *ep;
-+
- 		snd_card_disconnect(card);
- 		/* release the pcm resources */
- 		list_for_each(p, &chip->pcm_list) {
- 			snd_usb_stream_disconnect(p);
+--- a/lib/lz4/lz4_decompress.c
++++ b/lib/lz4/lz4_decompress.c
+@@ -192,6 +192,8 @@ static int lz4_uncompress_unknownoutputs
+ 			int s = 255;
+ 			while ((ip < iend) && (s == 255)) {
+ 				s = *ip++;
++				if (unlikely(length > (size_t)(length + s)))
++					goto _output_error;
+ 				length += s;
+ 			}
  		}
- 		/* release the endpoint resources */
--		list_for_each_safe(p, n, &chip->ep_list) {
--			snd_usb_endpoint_free(p);
-+		list_for_each_entry(ep, &chip->ep_list, list) {
-+			snd_usb_endpoint_release(ep);
- 		}
- 		/* release the midi resources */
- 		list_for_each(p, &chip->midi_list) {
---- a/sound/usb/endpoint.c
-+++ b/sound/usb/endpoint.c
-@@ -987,19 +987,30 @@ void snd_usb_endpoint_deactivate(struct
+@@ -232,6 +234,8 @@ static int lz4_uncompress_unknownoutputs
+ 		if (length == ML_MASK) {
+ 			while (ip < iend) {
+ 				int s = *ip++;
++				if (unlikely(length > (size_t)(length + s)))
++					goto _output_error;
+ 				length += s;
+ 				if (s == 255)
+ 					continue;
+@@ -284,7 +288,7 @@ static int lz4_uncompress_unknownoutputs
+ 
+ 	/* write overflow error detected */
+ _output_error:
+-	return (int) (-(((char *) ip) - source));
++	return -1;
  }
  
- /**
-+ * snd_usb_endpoint_release: Tear down an snd_usb_endpoint
-+ *
-+ * @ep: the endpoint to release
-+ *
-+ * This function does not care for the endpoint's use count but will tear
-+ * down all the streaming URBs immediately.
-+ */
-+void snd_usb_endpoint_release(struct snd_usb_endpoint *ep)
-+{
-+	release_urbs(ep, 1);
-+}
-+
-+/**
-  * snd_usb_endpoint_free: Free the resources of an snd_usb_endpoint
-  *
-  * @ep: the list header of the endpoint to free
-  *
-- * This function does not care for the endpoint's use count but will tear
-- * down all the streaming URBs immediately and free all resources.
-+ * This free all resources of the given ep.
-  */
- void snd_usb_endpoint_free(struct list_head *head)
- {
- 	struct snd_usb_endpoint *ep;
- 
- 	ep = list_entry(head, struct snd_usb_endpoint, list);
--	release_urbs(ep, 1);
- 	kfree(ep);
- }
- 
---- a/sound/usb/endpoint.h
-+++ b/sound/usb/endpoint.h
-@@ -23,6 +23,7 @@ void snd_usb_endpoint_stop(struct snd_us
- void snd_usb_endpoint_sync_pending_stop(struct snd_usb_endpoint *ep);
- int  snd_usb_endpoint_activate(struct snd_usb_endpoint *ep);
- void snd_usb_endpoint_deactivate(struct snd_usb_endpoint *ep);
-+void snd_usb_endpoint_release(struct snd_usb_endpoint *ep);
- void snd_usb_endpoint_free(struct list_head *head);
- 
- int snd_usb_endpoint_implicit_feedback_sink(struct snd_usb_endpoint *ep);
+ int lz4_decompress(const unsigned char *src, size_t *src_len,
 
 
