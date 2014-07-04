@@ -1,46 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757032AbaGDKxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 06:53:13 -0400
-Received: from david.siemens.de ([192.35.17.14]:45181 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752885AbaGDKxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 06:53:11 -0400
-Message-ID: <53B68781.9080200@siemens.com>
-Date: Fri, 04 Jul 2014 12:52:49 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>, Bandan Das <bsd@redhat.com>
-CC: Gleb Natapov <gleb@kernel.org>, Hu Robert <robert.hu@intel.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since
- race
-References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com> <53B3CA6A.4050902@siemens.com> <jpgy4wb9g5t.fsf@redhat.com> <20140703065955.GA4236@kernel> <jpgk37u8iae.fsf@redhat.com> <20140704025250.GA2849@kernel> <53B63EF2.6000800@siemens.com> <53B674CD.2090906@siemens.com> <53B67602.4040604@redhat.com>
-In-Reply-To: <53B67602.4040604@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757592AbaGDKyK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 06:54:10 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:17067 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752990AbaGDKyH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 06:54:07 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7fac6d000006cfe-ad-53b687cc11e1
+Content-transfer-encoding: 8BIT
+Message-id: <1404471245.14069.1.camel@AMDC1943>
+Subject: Re: [PATCH v6 06/23] mfd: max77686: Make error checking consistent
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 04 Jul 2014 12:54:05 +0200
+In-reply-to: <1404467722-26687-7-git-send-email-javier.martinez@collabora.co.uk>
+References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1404467722-26687-7-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: Evolution 3.10.4-0ubuntu1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e/4Nd0z7duCDfa3KVgsuXiV3aJ5U7HF
+	1IdP2CzmHznHanF22UE2i6O/Cyx6F1xls7j/9SijxbcrHUwWmx5fY7W4vGsOm8WM8/uYLJ5O
+	uMhmcer6ZzaLvrWX2Cw2TN7NbjH3dyOrg6DH7IaLLB5/n19n8dhxdwmjx85Zd9k9Nq3qZPO4
+	c20Pm8fmJfUeV040sXr0bVnF6LH5dLXH9Hk/mTw+b5IL4InisklJzcksSy3St0vgyri6eRZ7
+	wXP+isV3X7M0MO7n6WLk5JAQMJE4umALE4QtJnHh3nq2LkYuDiGBpYwSnb+aWEESvAKCEj8m
+	32PpYuTgYBaQlzhyKRskzCygLjFp3iJmiPrPjBKXpi9mhKjXl1i0chsziC0s4C2x8fQDsAVs
+	AsYSm5cvYQOxRQTsJG6sfgjWzCxwi0Xi1/JNYMtYBFQlVl7ezAJicwoESMxYfgWsQUhgKqPE
+	s1+eEJcqS8zbf4xpAqPALCT3zUK4bxaS+xYwMq9iFE0tTS4oTkrPNdQrTswtLs1L10vOz93E
+	CInDLzsYFx+zOsQowMGoxMPbuGJDsBBrYllxZe4hRgkOZiUR3t/124KFeFMSK6tSi/Lji0pz
+	UosPMTJxcEo1MLJH7p3q7bnfJWf7ic1NnCU8k7lidUVkNjBtDGhqb90jVL/8o628X4pZtYL9
+	/hk126e0FfJH3l2x57Tw+ft/4jN8zCt/8sedFvj+SXDB5Fwt90Xu/imWR1MOf9eZePBFgLjd
+	R+P2yQyPNyl1FN+3WZ2W56pewfMpVFp8w+fvulbN+/s6P66boMRSnJFoqMVcVJwIAJLMQp+h	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-07-04 11:38, Paolo Bonzini wrote:
-> Il 04/07/2014 11:33, Jan Kiszka ha scritto:
->>
->> The compiler is not aware of the fact that push/pop exists in this
->> function and, thus, places the vmcs parameter on the stack without
->> reserving the space. So the pushfq will overwrite the vmcs pointer and
->> let the function fail.
+On pią, 2014-07-04 at 11:55 +0200, Javier Martinez Canillas wrote:
+> Error checking across the driver is mostly consistent besides
+> a few exceptions, so change these exceptions for consistency.
 > 
-> Is that just a missing "memory" clobber?  push/pop clobbers memory.
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> ---
+>  drivers/mfd/max77686.c | 10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
 
-Nope, we would needs some clobber like "stack". I wonder what is
-required to use push in inline assembly safely?
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-Jan
+Best regards,
+Krzysztof
 
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+
+> diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+> index ada4976..87fe52e 100644
+> --- a/drivers/mfd/max77686.c
+> +++ b/drivers/mfd/max77686.c
+> @@ -134,7 +134,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+>  
+>  	max77686 = devm_kzalloc(&i2c->dev,
+>  				sizeof(struct max77686_dev), GFP_KERNEL);
+> -	if (max77686 == NULL)
+> +	if (!max77686)
+>  		return -ENOMEM;
+>  
+>  	i2c_set_clientdata(i2c, max77686);
+> @@ -153,8 +153,8 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+>  		return ret;
+>  	}
+>  
+> -	if (regmap_read(max77686->regmap,
+> -			 MAX77686_REG_DEVICE_ID, &data) < 0) {
+> +	ret = regmap_read(max77686->regmap, MAX77686_REG_DEVICE_ID, &data);
+> +	if (ret < 0) {
+>  		dev_err(max77686->dev,
+>  			"device not found on this channel (this is not an error)\n");
+>  		return -ENODEV;
+> @@ -180,7 +180,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+>  				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
+>  				  IRQF_SHARED, 0, &max77686_irq_chip,
+>  				  &max77686->irq_data);
+> -	if (ret != 0) {
+> +	if (ret) {
+>  		dev_err(&i2c->dev, "failed to add PMIC irq chip: %d\n", ret);
+>  		goto err_unregister_i2c;
+>  	}
+> @@ -188,7 +188,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+>  				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
+>  				  IRQF_SHARED, 0, &max77686_rtc_irq_chip,
+>  				  &max77686->rtc_irq_data);
+> -	if (ret != 0) {
+> +	if (ret) {
+>  		dev_err(&i2c->dev, "failed to add RTC irq chip: %d\n", ret);
+>  		goto err_del_irqc;
+>  	}
+
