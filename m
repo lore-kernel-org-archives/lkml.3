@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031452AbaGDWot (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:44:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57417 "EHLO
+	id S1161032AbaGDWpI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:45:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57414 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031113AbaGDWUx (ORCPT
+	with ESMTP id S1031090AbaGDWUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:20:53 -0400
+	Fri, 4 Jul 2014 18:20:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.14 30/59] pNFS: Handle allocation errors correctly in filelayout_alloc_layout_hdr()
-Date: Fri,  4 Jul 2014 15:19:19 -0700
-Message-Id: <20140704221540.993112653@linuxfoundation.org>
+        Sebastian Herbszt <herbszt@gmx.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 01/46] target: Fix left-over se_lun->lun_sep pointer OOPs
+Date: Fri,  4 Jul 2014 15:19:05 -0700
+Message-Id: <20140704221602.341869733@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
-References: <20140704221539.544876024@linuxfoundation.org>
+In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
+References: <20140704221602.280733370@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,34 +25,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 6df200f5d5191bdde4d2e408215383890f956781 upstream.
+commit 83ff42fcce070801a3aa1cd6a3269d7426271a8d upstream.
 
-Return the NULL pointer when the allocation fails.
+This patch fixes a left-over se_lun->lun_sep pointer OOPs when one
+of the /sys/kernel/config/target/$FABRIC/$WWPN/$TPGT/lun/$LUN/alua*
+attributes is accessed after the $DEVICE symlink has been removed.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+To address this bug, go ahead and clear se_lun->lun_sep memory in
+core_dev_unexport(), so that the existing checks for show/store
+ALUA attributes in target_core_fabric_configfs.c work as expected.
+
+Reported-by: Sebastian Herbszt <herbszt@gmx.de>
+Tested-by: Sebastian Herbszt <herbszt@gmx.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4filelayout.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/target_core_device.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/nfs/nfs4filelayout.c
-+++ b/fs/nfs/nfs4filelayout.c
-@@ -1330,7 +1330,7 @@ filelayout_alloc_layout_hdr(struct inode
- 	struct nfs4_filelayout *flo;
+--- a/drivers/target/target_core_device.c
++++ b/drivers/target/target_core_device.c
+@@ -614,6 +614,7 @@ void core_dev_unexport(
+ 	dev->export_count--;
+ 	spin_unlock(&hba->device_lock);
  
- 	flo = kzalloc(sizeof(*flo), gfp_flags);
--	return &flo->generic_hdr;
-+	return flo != NULL ? &flo->generic_hdr : NULL;
++	lun->lun_sep = NULL;
+ 	lun->lun_se_dev = NULL;
  }
  
- static void
 
 
