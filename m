@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760557AbaGDWQW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:16:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57064 "EHLO
+	id S1760576AbaGDWQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:16:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57071 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760244AbaGDWQT (ORCPT
+	with ESMTP id S1760559AbaGDWQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:16:19 -0400
+	Fri, 4 Jul 2014 18:16:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Don Zickus <dzickus@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        Peter Wu <peter@lekensteyn.nl>, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.15 25/66] kernel/watchdog.c: remove preemption restrictions when restarting lockup detector
-Date: Fri,  4 Jul 2014 15:14:24 -0700
-Message-Id: <20140704221423.964472475@linuxfoundation.org>
+        Yann Droneaud <ydroneaud@opteya.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.15 27/66] IB/mlx5: add missing padding at end of struct mlx5_ib_create_srq
+Date: Fri,  4 Jul 2014 15:14:26 -0700
+Message-Id: <20140704221424.054108603@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -31,75 +29,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Don Zickus <dzickus@redhat.com>
+From: Yann Droneaud <ydroneaud@opteya.com>
 
-commit bde92cf455a03a91badb7046855592d8c008e929 upstream.
+commit 43bc889380c2ad9aa230eccc03a15cc52cf710d4 upstream.
 
-Peter Wu noticed the following splat on his machine when updating
-/proc/sys/kernel/watchdog_thresh:
+The i386 ABI disagrees with most other ABIs regarding alignment of
+data type larger than 4 bytes: on most ABIs a padding must be added at
+end of the structures, while it is not required on i386.
 
-  BUG: sleeping function called from invalid context at mm/slub.c:965
-  in_atomic(): 1, irqs_disabled(): 0, pid: 1, name: init
-  3 locks held by init/1:
-   #0:  (sb_writers#3){.+.+.+}, at: [<ffffffff8117b663>] vfs_write+0x143/0x180
-   #1:  (watchdog_proc_mutex){+.+.+.}, at: [<ffffffff810e02d3>] proc_dowatchdog+0x33/0x110
-   #2:  (cpu_hotplug.lock){.+.+.+}, at: [<ffffffff810589c2>] get_online_cpus+0x32/0x80
-  Preemption disabled at:[<ffffffff810e0384>] proc_dowatchdog+0xe4/0x110
+So for most ABIs struct mlx5_ib_create_srq gets implicitly padded to be
+aligned on a 8 bytes multiple, while for i386, such padding is not
+added.
 
-  CPU: 0 PID: 1 Comm: init Not tainted 3.16.0-rc1-testing #34
-  Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
-  Call Trace:
-    dump_stack+0x4e/0x7a
-    __might_sleep+0x11d/0x190
-    kmem_cache_alloc_trace+0x4e/0x1e0
-    perf_event_alloc+0x55/0x440
-    perf_event_create_kernel_counter+0x26/0xe0
-    watchdog_nmi_enable+0x75/0x140
-    update_timers_all_cpus+0x53/0xa0
-    proc_dowatchdog+0xe4/0x110
-    proc_sys_call_handler+0xb3/0xc0
-    proc_sys_write+0x14/0x20
-    vfs_write+0xad/0x180
-    SyS_write+0x49/0xb0
-    system_call_fastpath+0x16/0x1b
-  NMI watchdog: disabled (cpu0): hardware events not enabled
+Tool pahole could be used to find such implicit padding:
 
-What happened is after updating the watchdog_thresh, the lockup detector
-is restarted to utilize the new value.  Part of this process involved
-disabling preemption.  Once preemption was disabled, perf tried to
-allocate a new event (as part of the restart).  This caused the above
-BUG_ON as you can't sleep with preemption disabled.
+  $ pahole --anon_include \
+           --nested_anon_include \
+           --recursive \
+           --class_name mlx5_ib_create_srq \
+           drivers/infiniband/hw/mlx5/mlx5_ib.o
 
-The preemption restriction seemed agressive as we are not doing anything
-on that particular cpu, but with all the online cpus (which are
-protected by the get_online_cpus lock).  Remove the restriction and the
-BUG_ON goes away.
+Then, structure layout can be compared between i386 and x86_64:
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Reported-by: Peter Wu <peter@lekensteyn.nl>
-Tested-by: Peter Wu <peter@lekensteyn.nl>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+#  +++ obj-i386/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt    2014-03-28 11:43:07.386413682 +0100
+#  --- obj-x86_64/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt  2014-03-27 13:06:17.788472721 +0100
+#  @@ -69,7 +68,6 @@ struct mlx5_ib_create_srq {
+#          __u64                      db_addr;              /*     8     8 */
+#          __u32                      flags;                /*    16     4 */
+#
+#  -       /* size: 20, cachelines: 1, members: 3 */
+#  -       /* last cacheline: 20 bytes */
+#  +       /* size: 24, cachelines: 1, members: 3 */
+#  +       /* padding: 4 */
+#  +       /* last cacheline: 24 bytes */
+#   };
+
+ABI disagreement will make an x86_64 kernel try to read past
+the buffer provided by an i386 binary.
+
+When boundary check will be implemented, the x86_64 kernel will
+refuse to read past the i386 userspace provided buffer and the
+uverb will fail.
+
+Anyway, if the structure lay in memory on a page boundary and
+next page is not mapped, ib_copy_from_udata() will fail and the
+uverb will fail.
+
+This patch makes create_srq_user() takes care of the input
+data size to handle the case where no padding was provided.
+
+This way, x86_64 kernel will be able to handle struct mlx5_ib_create_srq
+as sent by unpatched and patched i386 libmlx5.
+
+Link: http://marc.info/?i=cover.1399309513.git.ydroneaud@opteya.com
+Fixes: e126ba97dba9e ("mlx5: Add driver for Mellanox Connect-IB adapter")
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/watchdog.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/infiniband/hw/mlx5/srq.c  |   14 +++++++++++++-
+ drivers/infiniband/hw/mlx5/user.h |    1 +
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -527,10 +527,8 @@ static void update_timers_all_cpus(void)
- 	int cpu;
+--- a/drivers/infiniband/hw/mlx5/srq.c
++++ b/drivers/infiniband/hw/mlx5/srq.c
+@@ -35,6 +35,7 @@
+ #include <linux/mlx5/srq.h>
+ #include <linux/slab.h>
+ #include <rdma/ib_umem.h>
++#include <rdma/ib_user_verbs.h>
  
- 	get_online_cpus();
--	preempt_disable();
- 	for_each_online_cpu(cpu)
- 		update_timers(cpu);
--	preempt_enable();
- 	put_online_cpus();
- }
+ #include "mlx5_ib.h"
+ #include "user.h"
+@@ -78,16 +79,27 @@ static int create_srq_user(struct ib_pd
+ {
+ 	struct mlx5_ib_dev *dev = to_mdev(pd->device);
+ 	struct mlx5_ib_create_srq ucmd;
++	size_t ucmdlen;
+ 	int err;
+ 	int npages;
+ 	int page_shift;
+ 	int ncont;
+ 	u32 offset;
  
+-	if (ib_copy_from_udata(&ucmd, udata, sizeof(ucmd))) {
++	ucmdlen =
++		(udata->inlen - sizeof(struct ib_uverbs_cmd_hdr) <
++		 sizeof(ucmd)) ? (sizeof(ucmd) -
++				  sizeof(ucmd.reserved)) : sizeof(ucmd);
++
++	if (ib_copy_from_udata(&ucmd, udata, ucmdlen)) {
+ 		mlx5_ib_dbg(dev, "failed copy udata\n");
+ 		return -EFAULT;
+ 	}
++
++	if (ucmdlen == sizeof(ucmd) &&
++	    ucmd.reserved != 0)
++		return -EINVAL;
++
+ 	srq->wq_sig = !!(ucmd.flags & MLX5_SRQ_FLAG_SIGNATURE);
+ 
+ 	srq->umem = ib_umem_get(pd->uobject->context, ucmd.buf_addr, buf_size,
+--- a/drivers/infiniband/hw/mlx5/user.h
++++ b/drivers/infiniband/hw/mlx5/user.h
+@@ -110,6 +110,7 @@ struct mlx5_ib_create_srq {
+ 	__u64	buf_addr;
+ 	__u64	db_addr;
+ 	__u32	flags;
++	__u32	reserved; /* explicit padding (optional on i386) */
+ };
+ 
+ struct mlx5_ib_create_srq_resp {
 
 
