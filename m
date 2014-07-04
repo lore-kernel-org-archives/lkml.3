@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406AbaGDGBk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 02:01:40 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:46353 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248AbaGDGBj (ORCPT
+	id S1755970AbaGDGDM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 02:03:12 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:64613 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753992AbaGDGDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 02:01:39 -0400
-Message-ID: <1404453694.5756.111.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
- wakeups
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        riel@redhat.com, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Date: Fri, 04 Jul 2014 08:01:34 +0200
-In-Reply-To: <20140704050541.GL4603@linux.vnet.ibm.com>
-References: <20140627142038.GA22942@linux.vnet.ibm.com>
-	 <20140702123412.GD19379@twins.programming.kicks-ass.net>
-	 <20140702153915.GQ4603@linux.vnet.ibm.com>
-	 <20140702160412.GO19379@twins.programming.kicks-ass.net>
-	 <20140702170838.GS4603@linux.vnet.ibm.com>
-	 <1404358279.5137.63.camel@marge.simpson.net>
-	 <20140703052124.GB4603@linux.vnet.ibm.com>
-	 <1404366520.5137.90.camel@marge.simpson.net>
-	 <20140703162944.GG4603@linux.vnet.ibm.com>
-	 <1404444236.5756.36.camel@marge.simpson.net>
-	 <20140704050541.GL4603@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 4 Jul 2014 02:03:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1407041125060.15901@nippy.intranet>
+References: <1404351693-5588-1-git-send-email-xerofoify@gmail.com>
+	<alpine.LNX.2.00.1407041125060.15901@nippy.intranet>
+Date: Fri, 4 Jul 2014 02:03:09 -0400
+Message-ID: <CAPDOMVhvuvWesMev-5dOFA78Sf67o0kUCXR2VkdhE-xeiYQ=6w@mail.gmail.com>
+Subject: Re: [PATCH] m68k: Remove FIXME comment in file sun3_pgalloc.h
+From: Nick Krause <xerofoify@gmail.com>
+To: Finn Thain <fthain@telegraphics.com.au>
+Cc: sammy@sammy.net, Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-03 at 22:05 -0700, Paul E. McKenney wrote: 
-> On Fri, Jul 04, 2014 at 05:23:56AM +0200, Mike Galbraith wrote:
+-/* FIXME - when we get this compiling */
+>  /* erm, now that it's compiling, what do we do with it? */
+What are these two lines for them another compile issue?
+Cheers Nick
 
-> > Turn it on and don't worry about it is exactly what distros want the
-> > obscure feature with very few users to be.  Last time I did a drive-by,
-> > my boxen said I should continue to worry about it ;-)
-> 
-> Yep, which is the reason for the patch on the last email.
-> 
-> Then again, exactly which feature and which reason for worry?
-
-NO_HZ_FULL.  I tried ALL a while back, box instantly called me an idiot.
-Maybe that has improved since, dunno.
-
-Last drive-by I didn't do much overhead measurement, stuck mostly
-functionality, and it still had rough edges that enterprise users may
-not fully appreciate.  Trying to let 60 of 64 cores do 100% compute
-showed some cores having a hard time entering tickless at all, and
-~200us spikes that I think are due to tick losing skew.. told Frederic
-I'd take a peek at that, but haven't had time yet.  There were other
-known things as well, like timers and workqueues for which there are
-patches floating around.  All in all, it was waving the men at work
-sign, pointing at the "Say N" by the config option, and suggesting that
-ignoring that would not be the cleverest of moves.
-
--Mike
-
+On Thu, Jul 3, 2014 at 9:28 PM, Finn Thain <fthain@telegraphics.com.au> wrote:
+>
+> On Wed, 2 Jul 2014, Nicholas Krause wrote:
+>
+>> Removes a FIXME comment in this file due to it not compiling as it now
+>> compiles.
+>
+> What got fixed?
+>
+> It doesn't say "FIXME - this doesn't compile".
+>
+>>
+>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> ---
+>>  arch/m68k/include/asm/sun3_pgalloc.h | 1 -
+>>  1 file changed, 1 deletion(-)
+>>
+>> diff --git a/arch/m68k/include/asm/sun3_pgalloc.h b/arch/m68k/include/asm/sun3_pgalloc.h
+>> index f868506..1798f25 100644
+>> --- a/arch/m68k/include/asm/sun3_pgalloc.h
+>> +++ b/arch/m68k/include/asm/sun3_pgalloc.h
+>> @@ -12,7 +12,6 @@
+>>
+>>  #include <asm/tlb.h>
+>>
+>> -/* FIXME - when we get this compiling */
+>>  /* erm, now that it's compiling, what do we do with it? */
+>>  #define _KERNPG_TABLE 0
+>>
+>>
+>
+> --
