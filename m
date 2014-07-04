@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031748AbaGDWx6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:53:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57210 "EHLO
+	id S1031750AbaGDWyc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:54:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57204 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030589AbaGDWRi (ORCPT
+	with ESMTP id S1030536AbaGDWRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:38 -0400
+	Fri, 4 Jul 2014 18:17:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mengdong Lin <mengdong.lin@intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.15 66/66] ALSA: hda - restore BCLK M/N values when resuming HSW/BDW display controller
-Date: Fri,  4 Jul 2014 15:15:05 -0700
-Message-Id: <20140704221425.830825631@linuxfoundation.org>
+        Pierre Ossman <pierre@ossman.eu>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.15 64/66] ALSA: hda - hdmi: call overridden init on resume
+Date: Fri,  4 Jul 2014 15:15:03 -0700
+Message-Id: <20140704221425.740359237@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -28,175 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mengdong Lin <mengdong.lin@intel.com>
+From: Pierre Ossman <pierre@ossman.eu>
 
-commit a07187c992be945ab561b370cbb49cfd72064c3c upstream.
+commit a283368382c50345dff61525f493ea307f21ec9b upstream.
 
-For Intel Haswell/Broadwell display HD-A controller, the 24MHz HD-A link BCLK
-is converted from Core Display Clock (CDCLK): BCLK = CDCLK * M / N
-And there are two registers EM4 and EM5 to program M, N value respectively.
-The EM4/EM5 values will be lost and when the display power well is disabled.
+We need to call the proper init function in case it has been
+overridden, as it might restore things that the generic routing
+doesn't know anything about. E.g. AMD cards have special verbs
+that need resetting.
 
-BIOS programs CDCLK selected by OEM and EM4/EM5, but BIOS has no idea about
-display power well on/off at runtime. So the M/N can be wrong if non-default
-CDCLK is used when the audio controller resumes, which results in an invalid
-BCLK and abnormal audio playback rate. So this patch saves and restores valid
-M/N values on controller suspend/resume.
-
-And 'struct hda_intel' is defined to contain standard HD-A 'struct azx' and
-Intel specific fields, as Takashi suggested.
-
-Signed-off-by: Mengdong Lin <mengdong.lin@intel.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=77901
+Fixes: 5a61358433b1 ('ALSA: hda - hdmi: Add ATI/AMD multi-channel audio support')
+Signed-off-by: Pierre Ossman <pierre@ossman.eu>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_intel.c |   65 +++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 58 insertions(+), 7 deletions(-)
+ sound/pci/hda/patch_hdmi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -282,6 +282,24 @@ static char *driver_short_names[] = {
- 	[AZX_DRIVER_GENERIC] = "HD-Audio Generic",
- };
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -2208,7 +2208,7 @@ static int generic_hdmi_resume(struct hd
+ 	struct hdmi_spec *spec = codec->spec;
+ 	int pin_idx;
  
-+
-+/* Intel HSW/BDW display HDA controller Extended Mode registers.
-+ * EM4 (M value) and EM5 (N Value) are used to convert CDClk (Core Display
-+ * Clock) to 24MHz BCLK: BCLK = CDCLK * M / N
-+ * The values will be lost when the display power well is disabled.
-+ */
-+#define ICH6_REG_EM4			0x100c
-+#define ICH6_REG_EM5			0x1010
-+
-+struct hda_intel {
-+	struct azx chip;
-+
-+	/* HSW/BDW display HDA controller to restore BCLK from CDCLK */
-+	unsigned int bclk_m;
-+	unsigned int bclk_n;
-+};
-+
-+
- #ifdef CONFIG_X86
- static void __mark_pages_wc(struct azx *chip, struct snd_dma_buffer *dmab, bool on)
- {
-@@ -574,6 +592,22 @@ static int param_set_xint(const char *va
- #define azx_del_card_list(chip) /* NOP */
- #endif /* CONFIG_PM */
+-	generic_hdmi_init(codec);
++	codec->patch_ops.init(codec);
+ 	snd_hda_codec_resume_amp(codec);
+ 	snd_hda_codec_resume_cache(codec);
  
-+static void haswell_save_bclk(struct azx *chip)
-+{
-+	struct hda_intel *hda = container_of(chip, struct hda_intel, chip);
-+
-+	hda->bclk_m = azx_readw(chip, EM4);
-+	hda->bclk_n = azx_readw(chip, EM5);
-+}
-+
-+static void haswell_restore_bclk(struct azx *chip)
-+{
-+	struct hda_intel *hda = container_of(chip, struct hda_intel, chip);
-+
-+	azx_writew(chip, EM4, hda->bclk_m);
-+	azx_writew(chip, EM5, hda->bclk_n);
-+}
-+
- #if defined(CONFIG_PM_SLEEP) || defined(SUPPORT_VGA_SWITCHEROO)
- /*
-  * power management
-@@ -600,6 +634,13 @@ static int azx_suspend(struct device *de
- 		free_irq(chip->irq, chip);
- 		chip->irq = -1;
- 	}
-+
-+	/* Save BCLK M/N values before they become invalid in D3.
-+	 * Will test if display power well can be released now.
-+	 */
-+	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL)
-+		haswell_save_bclk(chip);
-+
- 	if (chip->msi)
- 		pci_disable_msi(chip->pci);
- 	pci_disable_device(pci);
-@@ -619,8 +660,10 @@ static int azx_resume(struct device *dev
- 	if (chip->disabled)
- 		return 0;
- 
--	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL)
-+	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL) {
- 		hda_display_power(true);
-+		haswell_restore_bclk(chip);
-+	}
- 	pci_set_power_state(pci, PCI_D0);
- 	pci_restore_state(pci);
- 	if (pci_enable_device(pci) < 0) {
-@@ -664,8 +707,10 @@ static int azx_runtime_suspend(struct de
- 	azx_stop_chip(chip);
- 	azx_enter_link_reset(chip);
- 	azx_clear_irq_pending(chip);
--	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL)
-+	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL) {
-+		haswell_save_bclk(chip);
- 		hda_display_power(false);
-+	}
- 	return 0;
- }
- 
-@@ -683,8 +728,10 @@ static int azx_runtime_resume(struct dev
- 	if (!(chip->driver_caps & AZX_DCAPS_PM_RUNTIME))
- 		return 0;
- 
--	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL)
-+	if (chip->driver_caps & AZX_DCAPS_I915_POWERWELL) {
- 		hda_display_power(true);
-+		haswell_restore_bclk(chip);
-+	}
- 
- 	/* Read STATESTS before controller reset */
- 	status = azx_readw(chip, STATESTS);
-@@ -877,6 +924,8 @@ static int register_vga_switcheroo(struc
- static int azx_free(struct azx *chip)
- {
- 	struct pci_dev *pci = chip->pci;
-+	struct hda_intel *hda = container_of(chip, struct hda_intel, chip);
-+
- 	int i;
- 
- 	if ((chip->driver_caps & AZX_DCAPS_PM_RUNTIME)
-@@ -924,7 +973,7 @@ static int azx_free(struct azx *chip)
- 		hda_display_power(false);
- 		hda_i915_exit();
- 	}
--	kfree(chip);
-+	kfree(hda);
- 
- 	return 0;
- }
-@@ -1168,6 +1217,7 @@ static int azx_create(struct snd_card *c
- 	static struct snd_device_ops ops = {
- 		.dev_free = azx_dev_free,
- 	};
-+	struct hda_intel *hda;
- 	struct azx *chip;
- 	int err;
- 
-@@ -1177,13 +1227,14 @@ static int azx_create(struct snd_card *c
- 	if (err < 0)
- 		return err;
- 
--	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
--	if (!chip) {
--		dev_err(card->dev, "Cannot allocate chip\n");
-+	hda = kzalloc(sizeof(*hda), GFP_KERNEL);
-+	if (!hda) {
-+		dev_err(card->dev, "Cannot allocate hda\n");
- 		pci_disable_device(pci);
- 		return -ENOMEM;
- 	}
- 
-+	chip = &hda->chip;
- 	spin_lock_init(&chip->reg_lock);
- 	mutex_init(&chip->open_mutex);
- 	chip->card = card;
 
 
