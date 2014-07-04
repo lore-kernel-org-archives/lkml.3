@@ -1,149 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757271AbaGDPjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 11:39:17 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:36742 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622AbaGDPjP (ORCPT
+	id S1753944AbaGDQDy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 12:03:54 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:46794 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836AbaGDQDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 11:39:15 -0400
-Date: Fri, 4 Jul 2014 19:38:53 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "Tejun Heo" <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
-        "Pavel Emelyanov" <xemul@parallels.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH RFC 0/5] Virtual Memory Resource Controller for cgroups
-Message-ID: <20140704153853.GA369@esperanza>
-References: <cover.1404383187.git.vdavydov@parallels.com>
- <20140704121621.GE12466@dhcp22.suse.cz>
+	Fri, 4 Jul 2014 12:03:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140704121621.GE12466@dhcp22.suse.cz>
+In-Reply-To: <20140704110612.GA6120@e103034-lin>
+References: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
+	<20140703231950.GA4881@intel.com>
+	<20140704110612.GA6120@e103034-lin>
+Date: Fri, 4 Jul 2014 19:03:51 +0300
+Message-ID: <CAJL_dMtiAozRT5hGuQcAZ5xZwLwqdbpmVg80nMV=Shzs-Ys4dQ@mail.gmail.com>
+Subject: Re: [RFCv2 PATCH 00/23] sched: Energy cost model for energy-aware scheduling
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: Yuyang Du <yuyang.du@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        "pjt@google.com" <pjt@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
+This sounds like an an math problem ( for Donald Knuth :) )
+You need to think out of the box, present the problem right is just
+the fist step and an big one.
+Then you need to come with an formal algorithm to solve it, then proof it.
+Next step is to code that algorithm and verify that is working in real world.
 
-On Fri, Jul 04, 2014 at 02:16:21PM +0200, Michal Hocko wrote:
-> On Thu 03-07-14 16:48:16, Vladimir Davydov wrote:
-> > Hi,
-> > 
-> > Typically, when a process calls mmap, it isn't given all the memory pages it
-> > requested immediately. Instead, only its address space is grown, while the
-> > memory pages will be actually allocated on the first use. If the system fails
-> > to allocate a page, it will have no choice except invoking the OOM killer,
-> > which may kill this or any other process. Obviously, it isn't the best way of
-> > telling the user that the system is unable to handle his request. It would be
-> > much better to fail mmap with ENOMEM instead.
-> > 
-> > That's why Linux has the memory overcommit control feature, which accounts and
-> > limits VM size that may contribute to mem+swap, i.e. private writable mappings
-> > and shared memory areas. However, currently it's only available system-wide,
-> > and there's no way of avoiding OOM in cgroups.
-> >
-> > This patch set is an attempt to fill the gap. It implements the resource
-> > controller for cgroups that accounts and limits address space allocations that
-> > may contribute to mem+swap.
-> 
-> Well, I am not really sure how helpful is this. Could you be more
-> specific about real use cases? If the only problem is that memcg OOM can
-> trigger to easily then I do not think this is the right approach to
-> handle it.
+If you not present the problem right ( missed bigLittle,
+over/down-clocking ) you will not get the wright algorithm.
+For new algorithms very few people does it right for the first time.
 
-The problem is that an application inside a container is currently given
-no hints on how much memory it may actually consume. It can mmap a huge
-area and eventually find itself killed or swapped out after using
-several percent of it. This can be painful sometimes. Let me give an
-example.
-
-Suppose a user wants to run some computational workload, which may take
-several days. He doesn't exactly know how much memory it will consume,
-so he decides to start with buying a 1G container for it. He then starts
-the workload in the container and sees it's working fine for some time.
-So he decides he guessed the container size right and now only has to
-wait for a day or two. Suppose the workload actually wants 10G. Or it
-can consume up to 100G and has some weird logic to determine how much
-memory the system may give it, e.g. trying to mmap as much as possible.
-Suppose the server the container is running on has 1000G. The workload
-won't fail immediately then. It will be allowed to consume 1G, which may
-take quite long, but finally it will either fail with OOM or become
-really sluggish due to swap out. The user will probably be frustrated to
-see his workload failed when he comes back in a day or two, because it
-will cost him money and time. This wouldn't happen if there were the VM
-limit, which stopped the application immediately at start giving the
-user a hint that something is going wrong and he needs to either tune
-his application (e.g. setting -Xmsn for java) or buy a bigger container.
-
-You can argue that the container may have a kind of meminfo
-virtualization and any sane application must go and check it, but (1)
-not all applications do that (some may try mmap-until-failure
-heuristic), (2) there may be several unrelated processes inside CT, each
-checking that there are pretty of free mem according to meminfo, mmaping
-it and failing later, (3) it may be an application container, which
-doesn't have proc mounted.
-
-I guess that's why most distributions have overcommit limited by default
-(vm.overcommit_memory!=2).
-
-> Strict no-overcommit is basically unusable for many workloads.
-> Especially those which try to do their own memory usage optimization
-> in a much larger address space.
-
-Sure, 'no-overcommit' is definitely unusable, but we can set it to e.g.
-twice memcg limit. This will allow to overcommit memory to some extent,
-but fail for really large allocations that can never be served.
-
-> Once I get from internal things (which will happen soon hopefully) I
-> will post a series with a new sets of memcg limits. One of them is
-> high_limit which can be used as a trigger for memcg reclaim. Unlike
-> hard_limit there won't be any OOM if the reclaim fails at this stage. So
-> if the high_limit is configured properly the admin will have enough time
-> to make additional steps before OOM happens.
-
-High/low limits that start reclaim on internal/external pressure are
-definitely a very nice feature (may be even more useful that strict
-limits). However, they won't help us against overcommit inside a
-container. AFAIC,
-
- - low limit will allow the container to consume as much as he wants
-   until it triggers global memory pressure, then it will be shrunk back
-   to its limit aggressively;
-
- - high limit means allow to breach the limit, but trigger reclaim
-   asynchronously (a kind of kswapd) or synchronously when it happens.
-
-Right?
-
-Considering the example I've given above, both of these won't help if
-the system has other active CTs: the container will be forcefully kept
-around its high/low limit and, since it's definitely not enough for it,
-it will be finally killed crossing out the computations it's spent so
-much time on. High limit won't be good for the container even if there's
-no other load on the node - it will be constantly swapping out anon
-memory and evicting file caches. The application won't die quickly then,
-but it will get a heavy slowdown, which is no better than killing I
-guess.
-
-Also, I guess it'd be beneficial to have
-
- - mlocked pages accounting per cgroup, because they affect memory
-   reclaim, and how low/high limits work, so it'd be nice to have them
-   limited to a sane value;
-
- - shmem areas accounting per cgroup, because the total amount of shmem
-   on the system is limited, and it'll be no good if malicious
-   containers eat it all.
-
-IMO It wouldn't be a good idea to overwhelm memcg with those limits, the
-VM controller suits much better.
-
-Thanks.
+On Fri, Jul 4, 2014 at 2:06 PM, Morten Rasmussen
+<morten.rasmussen@arm.com> wrote:
+> Hi Yuyang,
+>
+> On Fri, Jul 04, 2014 at 12:19:50AM +0100, Yuyang Du wrote:
+>> Hi Morten,
+>>
+>> On Fri, Jul 04, 2014 at 12:25:47AM +0800, Morten Rasmussen wrote:
+>> > * Note that these energy savings are _not_ representative of what can be
+>> > achieved on a true SMP platform where all cpus are equally
+>> > energy-efficient. There should be benefit for SMP platforms as well,
+>> > however, it will be smaller.
+>> >
+>> > The energy model led to consolidation of the short tasks on the A7
+>> > cluster (more energy-efficient), while sysbench made use of all cpus as
+>> > the A7s didn't have sufficient compute capacity to handle the five
+>> > tasks.
+>>
+>> Looks like this patchset is mainly for big.LITTLE?
+>
+> No, not at all. The only big.LITTLE in there is the test platform but
+> that has been configured to be as close as possible to an SMP platform.
+> That is, no performance difference between cpus. I would have preferred
+> a true SMP platform for testing, but this is the only dual-cluster
+> platform that I have access to with proper mainline kernel support.
+>
+> The patch set essentially puts tasks where it is most energy-efficient
+> guided by the platform energy model. That should benefit any platform,
+> SMP and big.LITTLE. That is at least the goal.
+>
+> On an SMP platform with two clusters/packages (whatever you call a group
+> of cpus sharing the same power domain) you get task consolidation on a
+> single cluster if the energy model says that it is beneficial. Very much
+> like your previous proposals. It is also what I'm trying to show with
+> the numbers I have included.
+>
+> That said, we are of course keeping in mind what would be required to
+> make this work for big.LITTLE. However, there is nothing big.LITTLE
+> specific in the patch set. Just the possibility of having different
+> energy models for different cpus in the system. We will have to add some
+> tweaks eventually to get the best out of big.LITTLE later. Somewhat
+> similar to what exists today for better SMT support and other
+> architecture specialities.
+>
+>> And can the patchset actually replace Global Task Scheduling?
+>
+> Global Task Scheduling is (ARM) marketing speak for letting the
+> scheduler know about all cpus in a big.LITTLE system. It is not an
+> actual implementation. There is an out-of-tree implementation of GTS
+> available which is very big.LITTLE specific.
+>
+> The energy model driven scheduling proposed here is not big.LITTLE
+> specific, but aims at introducing generic energy-awareness in the
+> scheduler. Once energy-awareness is in place, most of the support needed
+> for big.LITTLE will be there too. It is generic energy-aware code that
+> is capable of making informed decisions based on the platform model,
+> big.LITTLE or SMP.
+>
+> The short answer is: Not in its current state, but if we get the
+> energy-awareness right it should be able to.
+>
+> Morten
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
