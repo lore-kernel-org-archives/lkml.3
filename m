@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031564AbaGDW17 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:27:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57711 "EHLO
+	id S1760776AbaGDWWp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:22:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57693 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760781AbaGDWWs (ORCPT
+	with ESMTP id S1760759AbaGDWWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:22:48 -0400
+	Fri, 4 Jul 2014 18:22:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.10 23/46] pNFS: Handle allocation errors correctly in filelayout_alloc_layout_hdr()
-Date: Fri,  4 Jul 2014 15:19:27 -0700
-Message-Id: <20140704221603.329521956@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.10 33/46] powerpc: Add AT_HWCAP2 to indicate V.CRYPTO category support
+Date: Fri,  4 Jul 2014 15:19:37 -0700
+Message-Id: <20140704221603.791748730@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
 References: <20140704221602.280733370@linuxfoundation.org>
@@ -29,30 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 6df200f5d5191bdde4d2e408215383890f956781 upstream.
+commit dd58a092c4202f2bd490adab7285b3ff77f8e467 upstream.
 
-Return the NULL pointer when the allocation fails.
+The Vector Crypto category instructions are supported by current POWER8
+chips, advertise them to userspace using a specific bit to properly
+differentiate with chips of the same architecture level that might not
+have them.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4filelayout.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/include/uapi/asm/cputable.h |    1 +
+ arch/powerpc/kernel/cputable.c           |    3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4filelayout.c
-+++ b/fs/nfs/nfs4filelayout.c
-@@ -1300,7 +1300,7 @@ filelayout_alloc_layout_hdr(struct inode
- 	struct nfs4_filelayout *flo;
+--- a/arch/powerpc/include/uapi/asm/cputable.h
++++ b/arch/powerpc/include/uapi/asm/cputable.h
+@@ -41,5 +41,6 @@
+ #define PPC_FEATURE2_EBB		0x10000000
+ #define PPC_FEATURE2_ISEL		0x08000000
+ #define PPC_FEATURE2_TAR		0x04000000
++#define PPC_FEATURE2_VEC_CRYPTO		0x02000000
  
- 	flo = kzalloc(sizeof(*flo), gfp_flags);
--	return &flo->generic_hdr;
-+	return flo != NULL ? &flo->generic_hdr : NULL;
- }
- 
- static void
+ #endif /* _UAPI__ASM_POWERPC_CPUTABLE_H */
+--- a/arch/powerpc/kernel/cputable.c
++++ b/arch/powerpc/kernel/cputable.c
+@@ -105,7 +105,8 @@ extern void __restore_cpu_e6500(void);
+ 				 PPC_FEATURE_PSERIES_PERFMON_COMPAT)
+ #define COMMON_USER2_POWER8	(PPC_FEATURE2_ARCH_2_07 | \
+ 				 PPC_FEATURE2_HTM_COMP | PPC_FEATURE2_DSCR | \
+-				 PPC_FEATURE2_ISEL | PPC_FEATURE2_TAR)
++				 PPC_FEATURE2_ISEL | PPC_FEATURE2_TAR | \
++				 PPC_FEATURE2_VEC_CRYPTO)
+ #define COMMON_USER_PA6T	(COMMON_USER_PPC64 | PPC_FEATURE_PA6T |\
+ 				 PPC_FEATURE_TRUE_LE | \
+ 				 PPC_FEATURE_HAS_ALTIVEC_COMP)
 
 
