@@ -1,354 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087AbaGDPI7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 11:08:59 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38598 "EHLO comal.ext.ti.com"
+	id S1758567AbaGDPLK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 11:11:10 -0400
+Received: from ozlabs.org ([103.22.144.67]:47066 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753063AbaGDPIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 11:08:48 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <kishon@ti.com>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>, <lee.jones@linaro.org>,
-        <sergei.shtylyov@cogentembedded.com>,
-        <antoine.tenart@free-electrons.com>
-CC: <kgene.kim@samsung.com>, <maxime.ripard@free-electrons.com>
-Subject: [RFC PATCH 2/2] phy: core: the node pointer of PHY need not be the same as that of PHY provider
-Date: Fri, 4 Jul 2014 20:37:54 +0530
-Message-ID: <1404486474-28312-3-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404486474-28312-1-git-send-email-kishon@ti.com>
-References: <1404486474-28312-1-git-send-email-kishon@ti.com>
+	id S1751804AbaGDPLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 11:11:08 -0400
+Date: Sat, 5 Jul 2014 01:10:58 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Sachin Kamat <spk.linux@gmail.com>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: Re: linux-next: Tree for Jul 4
+Message-ID: <20140705011058.198ae810@canb.auug.org.au>
+In-Reply-To: <CAK5sBcGq54sOSzJKXrEbhAUTZZh=+9NuVh294Qxn0dQvbh-G8w@mail.gmail.com>
+References: <20140704164251.7dc67e07@canb.auug.org.au>
+	<CAK5sBcGq54sOSzJKXrEbhAUTZZh=+9NuVh294Qxn0dQvbh-G8w@mail.gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/k/EspPWTzP/8YpgndVhqCKN"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case of multi-phy PHY providers, each PHY should be modeled as a sub
-node of the PHY provider. Then each PHY will have a different node pointer
-(node pointer of sub node) than that of PHY provider. Added this provision
-in the PHY core.
-Also fixed all drivers to use the updated API.
+--Sig_/k/EspPWTzP/8YpgndVhqCKN
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- Documentation/phy.txt               |   10 ++++++----
- drivers/phy/phy-bcm-kona-usb2.c     |    2 +-
- drivers/phy/phy-core.c              |   25 ++++++++++++++++++-------
- drivers/phy/phy-exynos-dp-video.c   |    2 +-
- drivers/phy/phy-exynos-mipi-video.c |    2 +-
- drivers/phy/phy-exynos5-usbdrd.c    |    3 ++-
- drivers/phy/phy-exynos5250-sata.c   |    2 +-
- drivers/phy/phy-mvebu-sata.c        |    2 +-
- drivers/phy/phy-omap-usb2.c         |    2 +-
- drivers/phy/phy-samsung-usb2.c      |    3 ++-
- drivers/phy/phy-sun4i-usb.c         |    2 +-
- drivers/phy/phy-ti-pipe3.c          |    2 +-
- drivers/phy/phy-twl4030-usb.c       |    2 +-
- drivers/phy/phy-xgene.c             |    2 +-
- include/linux/phy/phy.h             |   15 ++++++++++-----
- 15 files changed, 48 insertions(+), 28 deletions(-)
+Hi Sachin,
 
-diff --git a/Documentation/phy.txt b/Documentation/phy.txt
-index ebff6ee..c6594af 100644
---- a/Documentation/phy.txt
-+++ b/Documentation/phy.txt
-@@ -53,10 +53,12 @@ unregister the PHY.
- The PHY driver should create the PHY in order for other peripheral controllers
- to make use of it. The PHY framework provides 2 APIs to create the PHY.
- 
--struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
--        struct phy_init_data *init_data);
--struct phy *devm_phy_create(struct device *dev, const struct phy_ops *ops,
--	struct phy_init_data *init_data);
-+struct phy *phy_create(struct device *dev, struct device_node *node,
-+		       const struct phy_ops *ops,
-+		       struct phy_init_data *init_data);
-+struct phy *devm_phy_create(struct device *dev, struct device_node *node,
-+			    const struct phy_ops *ops,
-+			    struct phy_init_data *init_data);
- 
- The PHY drivers can use one of the above 2 APIs to create the PHY by passing
- the device pointer, phy ops and init_data.
-diff --git a/drivers/phy/phy-bcm-kona-usb2.c b/drivers/phy/phy-bcm-kona-usb2.c
-index e94f5a6..894fe74 100644
---- a/drivers/phy/phy-bcm-kona-usb2.c
-+++ b/drivers/phy/phy-bcm-kona-usb2.c
-@@ -117,7 +117,7 @@ static int bcm_kona_usb2_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, phy);
- 
--	gphy = devm_phy_create(dev, &ops, NULL);
-+	gphy = devm_phy_create(dev, NULL, &ops, NULL);
- 	if (IS_ERR(gphy))
- 		return PTR_ERR(gphy);
- 
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index a4a1f783..9ad6691 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -406,13 +406,20 @@ struct phy *of_phy_simple_xlate(struct device *dev, struct of_phandle_args
- 	struct phy *phy;
- 	struct class_dev_iter iter;
- 	struct device_node *node = dev->of_node;
-+	struct device_node *child;
- 
- 	class_dev_iter_init(&iter, phy_class, NULL, NULL);
- 	while ((dev = class_dev_iter_next(&iter))) {
- 		phy = to_phy(dev);
--		if (node != phy->dev.of_node)
-+		if (node != phy->dev.of_node) {
-+			for_each_child_of_node(node, child) {
-+				if (child == phy->dev.of_node)
-+					goto phy_found;
-+			}
- 			continue;
-+		}
- 
-+phy_found:
- 		class_dev_iter_exit(&iter);
- 		return phy;
- 	}
-@@ -570,13 +577,15 @@ EXPORT_SYMBOL_GPL(devm_of_phy_get);
- /**
-  * phy_create() - create a new phy
-  * @dev: device that is creating the new phy
-+ * @node: device node of the phy
-  * @ops: function pointers for performing phy operations
-  * @init_data: contains the list of PHY consumers or NULL
-  *
-  * Called to create a phy using phy framework.
-  */
--struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
--	struct phy_init_data *init_data)
-+struct phy *phy_create(struct device *dev, struct device_node *node,
-+		       const struct phy_ops *ops,
-+		       struct phy_init_data *init_data)
- {
- 	int ret;
- 	int id;
-@@ -601,7 +610,7 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
- 
- 	phy->dev.class = phy_class;
- 	phy->dev.parent = dev;
--	phy->dev.of_node = dev->of_node;
-+	phy->dev.of_node = node?node:dev->of_node;
- 	phy->id = id;
- 	phy->ops = ops;
- 	phy->init_data = init_data;
-@@ -633,6 +642,7 @@ EXPORT_SYMBOL_GPL(phy_create);
- /**
-  * devm_phy_create() - create a new phy
-  * @dev: device that is creating the new phy
-+ * @node: device node of the phy
-  * @ops: function pointers for performing phy operations
-  * @init_data: contains the list of PHY consumers or NULL
-  *
-@@ -641,8 +651,9 @@ EXPORT_SYMBOL_GPL(phy_create);
-  * On driver detach, release function is invoked on the devres data,
-  * then, devres data is freed.
-  */
--struct phy *devm_phy_create(struct device *dev, const struct phy_ops *ops,
--	struct phy_init_data *init_data)
-+struct phy *devm_phy_create(struct device *dev, struct device_node *node,
-+			    const struct phy_ops *ops,
-+			    struct phy_init_data *init_data)
- {
- 	struct phy **ptr, *phy;
- 
-@@ -650,7 +661,7 @@ struct phy *devm_phy_create(struct device *dev, const struct phy_ops *ops,
- 	if (!ptr)
- 		return ERR_PTR(-ENOMEM);
- 
--	phy = phy_create(dev, ops, init_data);
-+	phy = phy_create(dev, node, ops, init_data);
- 	if (!IS_ERR(phy)) {
- 		*ptr = phy;
- 		devres_add(dev, ptr);
-diff --git a/drivers/phy/phy-exynos-dp-video.c b/drivers/phy/phy-exynos-dp-video.c
-index 0786fef..94fc0d1 100644
---- a/drivers/phy/phy-exynos-dp-video.c
-+++ b/drivers/phy/phy-exynos-dp-video.c
-@@ -76,7 +76,7 @@ static int exynos_dp_video_phy_probe(struct platform_device *pdev)
- 	if (IS_ERR(state->regs))
- 		return PTR_ERR(state->regs);
- 
--	phy = devm_phy_create(dev, &exynos_dp_video_phy_ops, NULL);
-+	phy = devm_phy_create(dev, NULL, &exynos_dp_video_phy_ops, NULL);
- 	if (IS_ERR(phy)) {
- 		dev_err(dev, "failed to create Display Port PHY\n");
- 		return PTR_ERR(phy);
-diff --git a/drivers/phy/phy-exynos-mipi-video.c b/drivers/phy/phy-exynos-mipi-video.c
-index ff02668..e29a100 100644
---- a/drivers/phy/phy-exynos-mipi-video.c
-+++ b/drivers/phy/phy-exynos-mipi-video.c
-@@ -135,7 +135,7 @@ static int exynos_mipi_video_phy_probe(struct platform_device *pdev)
- 	spin_lock_init(&state->slock);
- 
- 	for (i = 0; i < EXYNOS_MIPI_PHYS_NUM; i++) {
--		struct phy *phy = devm_phy_create(dev,
-+		struct phy *phy = devm_phy_create(dev, NULL,
- 					&exynos_mipi_video_phy_ops, NULL);
- 		if (IS_ERR(phy)) {
- 			dev_err(dev, "failed to create PHY %d\n", i);
-diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-exynos5-usbdrd.c
-index 76d862b..950532f 100644
---- a/drivers/phy/phy-exynos5-usbdrd.c
-+++ b/drivers/phy/phy-exynos5-usbdrd.c
-@@ -635,7 +635,8 @@ static int exynos5_usbdrd_phy_probe(struct platform_device *pdev)
- 	dev_vdbg(dev, "Creating usbdrd_phy phy\n");
- 
- 	for (i = 0; i < EXYNOS5_DRDPHYS_NUM; i++) {
--		struct phy *phy = devm_phy_create(dev, &exynos5_usbdrd_phy_ops,
-+		struct phy *phy = devm_phy_create(dev, NULL,
-+						  &exynos5_usbdrd_phy_ops,
- 						  NULL);
- 		if (IS_ERR(phy)) {
- 			dev_err(dev, "Failed to create usbdrd_phy phy\n");
-diff --git a/drivers/phy/phy-exynos5250-sata.c b/drivers/phy/phy-exynos5250-sata.c
-index 0568945..19a679a 100644
---- a/drivers/phy/phy-exynos5250-sata.c
-+++ b/drivers/phy/phy-exynos5250-sata.c
-@@ -210,7 +210,7 @@ static int exynos_sata_phy_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
--	sata_phy->phy = devm_phy_create(dev, &exynos_sata_phy_ops, NULL);
-+	sata_phy->phy = devm_phy_create(dev, NULL, &exynos_sata_phy_ops, NULL);
- 	if (IS_ERR(sata_phy->phy)) {
- 		clk_disable_unprepare(sata_phy->phyclk);
- 		dev_err(dev, "failed to create PHY\n");
-diff --git a/drivers/phy/phy-mvebu-sata.c b/drivers/phy/phy-mvebu-sata.c
-index d70ecd6..cc3c0e1 100644
---- a/drivers/phy/phy-mvebu-sata.c
-+++ b/drivers/phy/phy-mvebu-sata.c
-@@ -99,7 +99,7 @@ static int phy_mvebu_sata_probe(struct platform_device *pdev)
- 	if (IS_ERR(priv->clk))
- 		return PTR_ERR(priv->clk);
- 
--	phy = devm_phy_create(&pdev->dev, &phy_mvebu_sata_ops, NULL);
-+	phy = devm_phy_create(&pdev->dev, NULL, &phy_mvebu_sata_ops, NULL);
- 	if (IS_ERR(phy))
- 		return PTR_ERR(phy);
- 
-diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-index 7007c11..fb17533 100644
---- a/drivers/phy/phy-omap-usb2.c
-+++ b/drivers/phy/phy-omap-usb2.c
-@@ -264,7 +264,7 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, phy);
- 	pm_runtime_enable(phy->dev);
- 
--	generic_phy = devm_phy_create(phy->dev, &ops, NULL);
-+	generic_phy = devm_phy_create(phy->dev, NULL, &ops, NULL);
- 	if (IS_ERR(generic_phy))
- 		return PTR_ERR(generic_phy);
- 
-diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-samsung-usb2.c
-index 8a8c6bc..8c75add 100644
---- a/drivers/phy/phy-samsung-usb2.c
-+++ b/drivers/phy/phy-samsung-usb2.c
-@@ -189,7 +189,8 @@ static int samsung_usb2_phy_probe(struct platform_device *pdev)
- 		struct samsung_usb2_phy_instance *p = &drv->instances[i];
- 
- 		dev_dbg(dev, "Creating phy \"%s\"\n", label);
--		p->phy = devm_phy_create(dev, &samsung_usb2_phy_ops, NULL);
-+		p->phy = devm_phy_create(dev, NULL, &samsung_usb2_phy_ops,
-+					 NULL);
- 		if (IS_ERR(p->phy)) {
- 			dev_err(drv->dev, "Failed to create usb2_phy \"%s\"\n",
- 				label);
-diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
-index 115d8d5..60e11ff 100644
---- a/drivers/phy/phy-sun4i-usb.c
-+++ b/drivers/phy/phy-sun4i-usb.c
-@@ -294,7 +294,7 @@ static int sun4i_usb_phy_probe(struct platform_device *pdev)
- 				return PTR_ERR(phy->pmu);
- 		}
- 
--		phy->phy = devm_phy_create(dev, &sun4i_usb_phy_ops, NULL);
-+		phy->phy = devm_phy_create(dev, NULL, &sun4i_usb_phy_ops, NULL);
- 		if (IS_ERR(phy->phy)) {
- 			dev_err(dev, "failed to create PHY %d\n", i);
- 			return PTR_ERR(phy->phy);
-diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
-index 93bcd67..b964aa9 100644
---- a/drivers/phy/phy-ti-pipe3.c
-+++ b/drivers/phy/phy-ti-pipe3.c
-@@ -400,7 +400,7 @@ static int ti_pipe3_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, phy);
- 	pm_runtime_enable(phy->dev);
- 
--	generic_phy = devm_phy_create(phy->dev, &ops, NULL);
-+	generic_phy = devm_phy_create(phy->dev, NULL, &ops, NULL);
- 	if (IS_ERR(generic_phy))
- 		return PTR_ERR(generic_phy);
- 
-diff --git a/drivers/phy/phy-twl4030-usb.c b/drivers/phy/phy-twl4030-usb.c
-index 2e0e9b3..e1a6623 100644
---- a/drivers/phy/phy-twl4030-usb.c
-+++ b/drivers/phy/phy-twl4030-usb.c
-@@ -695,7 +695,7 @@ static int twl4030_usb_probe(struct platform_device *pdev)
- 	otg->set_host		= twl4030_set_host;
- 	otg->set_peripheral	= twl4030_set_peripheral;
- 
--	phy = devm_phy_create(twl->dev, &ops, init_data);
-+	phy = devm_phy_create(twl->dev, NULL, &ops, init_data);
- 	if (IS_ERR(phy)) {
- 		dev_dbg(&pdev->dev, "Failed to create PHY\n");
- 		return PTR_ERR(phy);
-diff --git a/drivers/phy/phy-xgene.c b/drivers/phy/phy-xgene.c
-index 4aa1ccd..db809b9 100644
---- a/drivers/phy/phy-xgene.c
-+++ b/drivers/phy/phy-xgene.c
-@@ -1707,7 +1707,7 @@ static int xgene_phy_probe(struct platform_device *pdev)
- 	ctx->dev = &pdev->dev;
- 	platform_set_drvdata(pdev, ctx);
- 
--	ctx->phy = devm_phy_create(ctx->dev, &xgene_phy_ops, NULL);
-+	ctx->phy = devm_phy_create(ctx->dev, NULL, &xgene_phy_ops, NULL);
- 	if (IS_ERR(ctx->phy)) {
- 		dev_dbg(&pdev->dev, "Failed to create PHY\n");
- 		rc = PTR_ERR(ctx->phy);
-diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-index 2760744..cfb878f 100644
---- a/include/linux/phy/phy.h
-+++ b/include/linux/phy/phy.h
-@@ -156,9 +156,10 @@ void devm_phy_put(struct device *dev, struct phy *phy);
- struct phy *of_phy_get(struct device_node *np, const char *con_id);
- struct phy *of_phy_simple_xlate(struct device *dev,
- 	struct of_phandle_args *args);
--struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
--	struct phy_init_data *init_data);
--struct phy *devm_phy_create(struct device *dev,
-+struct phy *phy_create(struct device *dev, struct device_node *node,
-+		       const struct phy_ops *ops,
-+		       struct phy_init_data *init_data);
-+struct phy *devm_phy_create(struct device *dev, struct device_node *node,
- 	const struct phy_ops *ops, struct phy_init_data *init_data);
- void phy_destroy(struct phy *phy);
- void devm_phy_destroy(struct device *dev, struct phy *phy);
-@@ -297,13 +298,17 @@ static inline struct phy *of_phy_simple_xlate(struct device *dev,
- }
- 
- static inline struct phy *phy_create(struct device *dev,
--	const struct phy_ops *ops, struct phy_init_data *init_data)
-+				     struct device_node *node,
-+				     const struct phy_ops *ops,
-+				     struct phy_init_data *init_data)
- {
- 	return ERR_PTR(-ENOSYS);
- }
- 
- static inline struct phy *devm_phy_create(struct device *dev,
--	const struct phy_ops *ops, struct phy_init_data *init_data)
-+					  struct device_node *node,
-+					  const struct phy_ops *ops,
-+					  struct phy_init_data *init_data)
- {
- 	return ERR_PTR(-ENOSYS);
- }
--- 
-1.7.9.5
+On Fri, 4 Jul 2014 14:12:11 +0530 Sachin Kamat <spk.linux@gmail.com> wrote:
+>
+> Was bisecting a kernel crash on Arndale octa board (Exynos5420). It
+> points to a merge
+> commit:
+> 40556a4c485d12d324f1ea196cc30f590e564237 is the first bad commit
+> ("Merge remote-tracking branch 'nfsd/nfsd-next'").
+>=20
+> How do I proceed with this?
 
+I guess we get the owner of the tree (possibly) in question involved
+(cc'd).
+
+> Bisect log as follows:
+>=20
+> git bisect start
+> # good: [4c834452aad01531db949414f94f817a86348d59] Linux 3.16-rc3
+> git bisect good 4c834452aad01531db949414f94f817a86348d59
+> # bad: [bb62c798798659624c53e3727bbc18cf47eb7ae8] Add linux-next
+> specific files for 20140704
+> git bisect bad bb62c798798659624c53e3727bbc18cf47eb7ae8
+> # bad: [de5ea10b7647b299d27a40511772f024629b466d] Merge
+> remote-tracking branch 'md/for-next'
+> git bisect bad de5ea10b7647b299d27a40511772f024629b466d
+> # bad: [3ca365b4451d1bab28adc72a985d9bbdf535df0e] Merge
+> remote-tracking branch 'dmaengine/next'
+> git bisect bad 3ca365b4451d1bab28adc72a985d9bbdf535df0e
+> # good: [d72d4e47cb1e8ac1259a5f5935320ae1e7022066] Merge
+> remote-tracking branch 'renesas/next'
+> git bisect good d72d4e47cb1e8ac1259a5f5935320ae1e7022066
+> # good: [fdb82f0a3d19eaa0661d799b980d0a9b689fcf75] Merge
+> remote-tracking branch 'nfs/linux-next'
+> git bisect good fdb82f0a3d19eaa0661d799b980d0a9b689fcf75
+> # bad: [fc48eed8cd350e4be1227ff3c990d48906afd00a] Merge
+> remote-tracking branch 'hwmon-staging/hwmon-next'
+> git bisect bad fc48eed8cd350e4be1227ff3c990d48906afd00a
+> # bad: [7d3f94ee2f2808b13dd3a96f6e6ca754a954d4b9] Merge
+> remote-tracking branch 'ubifs/linux-next'
+> git bisect bad 7d3f94ee2f2808b13dd3a96f6e6ca754a954d4b9
+> # good: [8cdb8b21b1d00856b885734c514821627c8078bc] NFSD: Avoid warning
+> message when compile at i686 arch
+> git bisect good 8cdb8b21b1d00856b885734c514821627c8078bc
+> # good: [da575690c01993471e38faf3eee1991ee69d7b20] nfsd: clean up
+> nfsd4_close_open_stateid
+> git bisect good da575690c01993471e38faf3eee1991ee69d7b20
+> # good: [95217c1e686bdd7c27b8483bbdda1c09d6fa9a92] nfsd: Don't get a
+> session reference without a client reference
+> git bisect good 95217c1e686bdd7c27b8483bbdda1c09d6fa9a92
+> # good: [bdd79ee31bf842051365c798effaffe0e647b501] nfsd: Allow struct
+> nfsd4_compound_state to cache the nfs4_client
+> git bisect good bdd79ee31bf842051365c798effaffe0e647b501
+> # good: [e9110361a9a4e258b072b14bd44eb78cf11453cb] UBI: fix the
+> volumes tree sorting criteria
+> git bisect good e9110361a9a4e258b072b14bd44eb78cf11453cb
+> # bad: [40556a4c485d12d324f1ea196cc30f590e564237] Merge
+> remote-tracking branch 'nfsd/nfsd-next'
+> git bisect bad 40556a4c485d12d324f1ea196cc30f590e564237
+>=20
+> Regards,
+> Sachin.
+
+Can you please double check that commit bdd79ee31bf8 is good and commit
+40556a4c485d is bad.  Also check that commit fdb82f0a3d19 is good.
+
+In that case we have the unlikely event that the (automated) git merge
+is not correct or patches on each side of the merge semantically
+interact badly.
+
+I guess the next thing to try is just Linus' tree (commit 5170a3b24a91)
+merged with the nfsd tree (commit 2fc193cf924e).
+
+You should also post your information about the crash you are
+diagnosing as others may have seen it as well - or know what may cause
+it.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/k/EspPWTzP/8YpgndVhqCKN
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTtsQIAAoJEMDTa8Ir7ZwVT8YQAJHzYeZf6IF73wGmY34jtcBg
+NV9sjuZkz5lsbxn16Jf/QKP+55REwBV49S1rZ3xgd61Xkvp1IDnIEGStV/cvCHDp
+B3Y0fMRcJdkr+rnEncyhQMCVET1CclYc27I9/hdVhP2WYCxITF5C+NgRmUC0kI3I
+NLjZktEOV2BXqRidStejPgyVWUfaYKnKjWKiprjmJGixPmHQLepU+38ni3zJnqjD
+Gr7eD9jQbojPhz5rx0dK69uPF3pRV8W48y9qokq+L96T4rRA1RX0dEoTRhHnN8Ya
+Z9uuPjOjIqXNeL3716s9Wm2sMmjfuAR3pXU+D+kIMcAhKCLEat7JCfchCVdtUE7B
+nE4xVo3aGV/StIJSAsDGg6AO4Bv6G+QYTogXCkagu6JSfyCusYFcDyu37nykMKOo
+8uLU9fqXeC2dcB4WHT/Jl8KkOhCJvwQfKLBO24+u3G3U63Hh0tmcFpsrUo+CUwhd
+xjN5htGMMHL+45wrt96x5tXS7U3yNh91uhJkVnjPlYOiXq0u8XOIr8ETOKXAmYPq
+rY7S+bASeZWOtQwNrKOeEvFO0lo5Me5IpLxlQ3bPN2RfmzjM9RWUzYj4uv1bVBIQ
+98O634e2GkZqjWXHylmGRWSkUaHbBSWoE9UqWvYdGe03qhv4Z36ZWOAoDNuhfaoN
+tUay6k8nubBoBQ5peEe8
+=B9sz
+-----END PGP SIGNATURE-----
+
+--Sig_/k/EspPWTzP/8YpgndVhqCKN--
