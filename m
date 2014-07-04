@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030783AbaGDWR7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:17:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57279 "EHLO
+	id S1030890AbaGDWTP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:19:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57288 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030760AbaGDWR5 (ORCPT
+	with ESMTP id S1030776AbaGDWR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:57 -0400
+	Fri, 4 Jul 2014 18:17:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.4 14/19] nfsd: getattr for FATTR4_WORD0_FILES_AVAIL needs the statfs buffer
-Date: Fri,  4 Jul 2014 15:15:24 -0700
-Message-Id: <20140704221437.081382647@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.4 16/19] powerpc: fix typo CONFIG_PMAC
+Date: Fri,  4 Jul 2014 15:15:26 -0700
+Message-Id: <20140704221437.180861977@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221436.423715636@linuxfoundation.org>
 References: <20140704221436.423715636@linuxfoundation.org>
@@ -28,33 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@lst.de>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit 12337901d654415d9f764b5f5ba50052e9700f37 upstream.
+commit 6e0fdf9af216887e0032c19d276889aad41cad00 upstream.
 
-Note nobody's ever noticed because the typical client probably never
-requests FILES_AVAIL without also requesting something else on the list.
+Commit b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling
+perf_event_do_pending") added a check for CONFIG_PMAC were a check for
+CONFIG_PPC_PMAC was clearly intended.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Fixes: b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling perf_event_do_pending")
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4xdr.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/time.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -2032,8 +2032,8 @@ nfsd4_encode_fattr(struct svc_fh *fhp, s
- 	err = vfs_getattr(exp->ex_path.mnt, dentry, &stat);
- 	if (err)
- 		goto out_nfserr;
--	if ((bmval0 & (FATTR4_WORD0_FILES_FREE | FATTR4_WORD0_FILES_TOTAL |
--			FATTR4_WORD0_MAXNAME)) ||
-+	if ((bmval0 & (FATTR4_WORD0_FILES_AVAIL | FATTR4_WORD0_FILES_FREE |
-+			FATTR4_WORD0_FILES_TOTAL | FATTR4_WORD0_MAXNAME)) ||
- 	    (bmval1 & (FATTR4_WORD1_SPACE_AVAIL | FATTR4_WORD1_SPACE_FREE |
- 		       FATTR4_WORD1_SPACE_TOTAL))) {
- 		err = vfs_statfs(&path, &statfs);
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -496,7 +496,7 @@ void timer_interrupt(struct pt_regs * re
+ 
+ 	__get_cpu_var(irq_stat).timer_irqs++;
+ 
+-#if defined(CONFIG_PPC32) && defined(CONFIG_PMAC)
++#if defined(CONFIG_PPC32) && defined(CONFIG_PPC_PMAC)
+ 	if (atomic_read(&ppc_n_lost_interrupts) != 0)
+ 		do_IRQ(regs);
+ #endif
 
 
