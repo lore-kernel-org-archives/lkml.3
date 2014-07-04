@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760764AbaGDXIP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 19:08:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56941 "EHLO
+	id S1760691AbaGDXIN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 19:08:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56944 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760356AbaGDWPu (ORCPT
+	with ESMTP id S1760366AbaGDWPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:15:50 -0400
+	Fri, 4 Jul 2014 18:15:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.15 04/66] iscsi-target: fix iscsit_del_np deadlock on unload
-Date: Fri,  4 Jul 2014 15:14:03 -0700
-Message-Id: <20140704221423.017141921@linuxfoundation.org>
+        Peter Hutterer <peter.hutterer@who-t.net>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.15 05/66] Input: synaptics - fix resolution for manually provided min/max
+Date: Fri,  4 Jul 2014 15:14:04 -0700
+Message-Id: <20140704221423.059319019@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -29,85 +30,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit 81a9c5e72bdf7109a65102ca61d8cbd722cf4021 upstream.
+commit d49cb7aeebb974713f9f7ab2991352d3050b095b upstream.
 
-On uniprocessor preemptible kernel, target core deadlocks on unload. The
-following events happen:
-* iscsit_del_np is called
-* it calls send_sig(SIGINT, np->np_thread, 1);
-* the scheduler switches to the np_thread
-* the np_thread is woken up, it sees that kthread_should_stop() returns
-  false, so it doesn't terminate
-* the np_thread clears signals with flush_signals(current); and goes back
-  to sleep in iscsit_accept_np
-* the scheduler switches back to iscsit_del_np
-* iscsit_del_np calls kthread_stop(np->np_thread);
-* the np_thread is waiting in iscsit_accept_np and it doesn't respond to
-  kthread_stop
+commit 421e08c41fda fixed the reported min/max for the X and Y axis,
+but unfortunately, it broke the resolution of those same axis.
 
-The deadlock could be resolved if the administrator sends SIGINT signal to
-the np_thread with killall -INT iscsi_np
+On the t540p, the resolution is the same regarding X and Y. It is not
+a problem for xf86-input-synaptics because this driver is only interested
+in the ratio between X and Y.
+Unfortunately, xf86-input-cmt uses directly the resolution, and having a
+null resolution leads to some divide by 0 errors, which are translated by
+-infinity in the resulting coordinates.
 
-The reproducible deadlock was introduced in commit
-db6077fd0b7dd41dc6ff18329cec979379071f87, but the thread-stopping code was
-racy even before.
-
-This patch fixes the problem. Using kthread_should_stop to stop the
-np_thread is unreliable, so we test np_thread_state instead. If
-np_thread_state equals ISCSI_NP_THREAD_SHUTDOWN, the thread exits.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Peter Hutterer <peter.hutterer@who-t.net>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_login.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ drivers/input/mouse/synaptics.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
---- a/drivers/target/iscsi/iscsi_target_login.c
-+++ b/drivers/target/iscsi/iscsi_target_login.c
-@@ -1216,7 +1216,7 @@ old_sess_out:
- static int __iscsi_target_login_thread(struct iscsi_np *np)
- {
- 	u8 *buffer, zero_tsih = 0;
--	int ret = 0, rc, stop;
-+	int ret = 0, rc;
- 	struct iscsi_conn *conn = NULL;
- 	struct iscsi_login *login;
- 	struct iscsi_portal_group *tpg = NULL;
-@@ -1230,6 +1230,9 @@ static int __iscsi_target_login_thread(s
- 	if (np->np_thread_state == ISCSI_NP_THREAD_RESET) {
- 		np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
- 		complete(&np->np_restart_comp);
-+	} else if (np->np_thread_state == ISCSI_NP_THREAD_SHUTDOWN) {
-+		spin_unlock_bh(&np->np_thread_lock);
-+		goto exit;
- 	} else {
- 		np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
- 	}
-@@ -1422,10 +1425,8 @@ old_sess_out:
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -347,15 +347,6 @@ static int synaptics_resolution(struct p
+ 	unsigned char resp[3];
+ 	int i;
+ 
+-	for (i = 0; min_max_pnpid_table[i].pnp_ids; i++)
+-		if (matches_pnp_id(psmouse, min_max_pnpid_table[i].pnp_ids)) {
+-			priv->x_min = min_max_pnpid_table[i].x_min;
+-			priv->x_max = min_max_pnpid_table[i].x_max;
+-			priv->y_min = min_max_pnpid_table[i].y_min;
+-			priv->y_max = min_max_pnpid_table[i].y_max;
+-			return 0;
+-		}
+-
+ 	if (SYN_ID_MAJOR(priv->identity) < 4)
+ 		return 0;
+ 
+@@ -366,6 +357,16 @@ static int synaptics_resolution(struct p
+ 		}
  	}
  
- out:
--	stop = kthread_should_stop();
--	/* Wait for another socket.. */
--	if (!stop)
--		return 1;
-+	return 1;
++	for (i = 0; min_max_pnpid_table[i].pnp_ids; i++) {
++		if (matches_pnp_id(psmouse, min_max_pnpid_table[i].pnp_ids)) {
++			priv->x_min = min_max_pnpid_table[i].x_min;
++			priv->x_max = min_max_pnpid_table[i].x_max;
++			priv->y_min = min_max_pnpid_table[i].y_min;
++			priv->y_max = min_max_pnpid_table[i].y_max;
++			return 0;
++		}
++	}
 +
- exit:
- 	iscsi_stop_login_thread_timer(np);
- 	spin_lock_bh(&np->np_thread_lock);
-@@ -1442,7 +1443,7 @@ int iscsi_target_login_thread(void *arg)
- 
- 	allow_signal(SIGINT);
- 
--	while (!kthread_should_stop()) {
-+	while (1) {
- 		ret = __iscsi_target_login_thread(np);
- 		/*
- 		 * We break and exit here unless another sock_accept() call
+ 	if (SYN_EXT_CAP_REQUESTS(priv->capabilities) >= 5 &&
+ 	    SYN_CAP_MAX_DIMENSIONS(priv->ext_cap_0c)) {
+ 		if (synaptics_send_cmd(psmouse, SYN_QUE_EXT_MAX_COORDS, resp)) {
 
 
