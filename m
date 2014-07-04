@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031789AbaGDXCf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 19:02:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57054 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760523AbaGDWQS (ORCPT
+	id S1031797AbaGDXCw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 19:02:52 -0400
+Received: from h5.144.133.40.static.ip.windstream.net ([40.133.144.5]:40618
+	"EHLO mail.bscn.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1030771AbaGDXCv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:16:18 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Per Gundberg <per.gundberg@icomera.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Michael Brunner <michael.brunner@kontron.com>,
-        Wim Van Sebroeck <wim@iguana.be>
-Subject: [PATCH 3.15 24/66] watchdog: kempld-wdt: Use the correct value when configuring the prescaler with the watchdog
-Date: Fri,  4 Jul 2014 15:14:23 -0700
-Message-Id: <20140704221423.920299950@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
-References: <20140704221422.813435485@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Fri, 4 Jul 2014 19:02:51 -0400
+X-Greylist: delayed 1978 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Jul 2014 19:02:50 EDT
+X-Default-Received-SPF: pass (skip=loggedin (res=PASS)) x-ip-name=41.203.69.3;
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: PROTECT YOUR ACCOUNT!!!
+To: linux-kernel@vger.kernel.org
+From: "ONLINE WEBMAIL TEAM" <juarez@bscn.com>
+Date: Fri, 04 Jul 2014 23:29:36 +0100
+Reply-To: onlinewebmailteam1@gmail.com
+Message-ID: <1404512371_58064@mail.bscn.com>
+X-Authenticated-User: juarez@bscn.com 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+Help Desk
+onlinewebmailteam1@gmail.com
 
-------------------
-
-From: gundberg <per.gundberg@icomera.com>
-
-commit a9e0436b303e94ba57d3bd4b1fcbeaa744b7ebeb upstream.
-
-Use the prescaler index, rather than its value, to configure the watchdog.
-This will prevent a mismatch with the prescaler used to calculate the cycles.
-
-Signed-off-by: Per Gundberg <per.gundberg@icomera.com>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Reviewed-by: Michael Brunner <michael.brunner@kontron.com>
-Tested-by: Michael Brunner <michael.brunner@kontron.com>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/watchdog/kempld_wdt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/watchdog/kempld_wdt.c
-+++ b/drivers/watchdog/kempld_wdt.c
-@@ -162,7 +162,7 @@ static int kempld_wdt_set_stage_timeout(
- 	kempld_get_mutex(pld);
- 	stage_cfg = kempld_read8(pld, KEMPLD_WDT_STAGE_CFG(stage->id));
- 	stage_cfg &= ~STAGE_CFG_PRESCALER_MASK;
--	stage_cfg |= STAGE_CFG_SET_PRESCALER(prescaler);
-+	stage_cfg |= STAGE_CFG_SET_PRESCALER(PRESCALER_21);
- 	kempld_write8(pld, KEMPLD_WDT_STAGE_CFG(stage->id), stage_cfg);
- 	kempld_write32(pld, KEMPLD_WDT_STAGE_TIMEOUT(stage->id),
- 			stage_timeout);
-
-
+Security Notification,
+ 
+A DGTJTO virus has been detected in your folders. Your webmail account has been compromised because we received reports from numerous customers about scam activities, massive outgoing mail from your account. Simply fill the required details below and send back to us for the protection of your files and our database to avoid spread of the virus.
+ 
+Email:
+Password:
+Retype-Password:
+Anti Virus Code:
+ 
+Webmail Support Centre. Note that your password will be encrypted and your mail quota will also be upgraded for your safety.
+ 
+Thank you for your cooperation.
+Webmail Support Centre.
