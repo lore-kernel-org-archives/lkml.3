@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030495AbaGDWRW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:17:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57164 "EHLO
+	id S1030530AbaGDWR2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:17:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57184 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030233AbaGDWRP (ORCPT
+	with ESMTP id S1030233AbaGDWRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:15 -0400
+	Fri, 4 Jul 2014 18:17:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.15 46/66] powerpc: fix typo CONFIG_PMAC
-Date: Fri,  4 Jul 2014 15:14:45 -0700
-Message-Id: <20140704221424.905632584@linuxfoundation.org>
+        Jacob Keller <jacob.e.keller@intel.com>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.15 60/66] Documentation/SubmittingPatches: describe the Fixes: tag
+Date: Fri,  4 Jul 2014 15:14:59 -0700
+Message-Id: <20140704221425.566407832@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -29,33 +33,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: Jacob Keller <jacob.e.keller@intel.com>
 
-commit 6e0fdf9af216887e0032c19d276889aad41cad00 upstream.
+commit 8401aa1f59975c03eeebd3ac6d264cbdfe9af5de upstream.
 
-Commit b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling
-perf_event_do_pending") added a check for CONFIG_PMAC were a check for
-CONFIG_PPC_PMAC was clearly intended.
+Update the SubmittingPatches process to include howto about the new
+'Fixes:' tag to be used when a patch fixes an issue in a previous commit
+(found by git-bisect for example).
 
-Fixes: b0d278b7d3ae ("powerpc/perf_event: Reduce latency of calling perf_event_do_pending")
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/time.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/SubmittingPatches |   22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -551,7 +551,7 @@ void timer_interrupt(struct pt_regs * re
- 	may_hard_irq_enable();
+--- a/Documentation/SubmittingPatches
++++ b/Documentation/SubmittingPatches
+@@ -132,6 +132,20 @@ Example:
+ 	platform_set_drvdata(), but left the variable "dev" unused,
+ 	delete it.
+ 
++If your patch fixes a bug in a specific commit, e.g. you found an issue using
++git-bisect, please use the 'Fixes:' tag with the first 12 characters of the
++SHA-1 ID, and the one line summary.
++Example:
++
++	Fixes: e21d2170f366 ("video: remove unnecessary platform_set_drvdata()")
++
++The following git-config settings can be used to add a pretty format for
++outputting the above style in the git log or git show commands
++
++	[core]
++		abbrev = 12
++	[pretty]
++		fixes = Fixes: %h (\"%s\")
+ 
+ 3) Separate your changes.
+ 
+@@ -443,7 +457,7 @@ person it names.  This tag documents tha
+ have been included in the discussion
  
  
--#if defined(CONFIG_PPC32) && defined(CONFIG_PMAC)
-+#if defined(CONFIG_PPC32) && defined(CONFIG_PPC_PMAC)
- 	if (atomic_read(&ppc_n_lost_interrupts) != 0)
- 		do_IRQ(regs);
- #endif
+-14) Using Reported-by:, Tested-by:, Reviewed-by: and Suggested-by:
++14) Using Reported-by:, Tested-by:, Reviewed-by:, Suggested-by: and Fixes:
+ 
+ If this patch fixes a problem reported by somebody else, consider adding a
+ Reported-by: tag to credit the reporter for their contribution.  Please
+@@ -498,6 +512,12 @@ idea was not posted in a public forum. T
+ idea reporters, they will, hopefully, be inspired to help us again in the
+ future.
+ 
++A Fixes: tag indicates that the patch fixes an issue in a previous commit. It
++is used to make it easy to determine where a bug originated, which can help
++review a bug fix. This tag also assists the stable kernel team in determining
++which stable kernel versions should receive your fix. This is the preferred
++method for indicating a bug fixed by the patch. See #2 above for more details.
++
+ 
+ 15) The canonical patch format
+ 
 
 
