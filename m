@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030659AbaGDWRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:17:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57222 "EHLO
+	id S1031738AbaGDWxL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:53:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57232 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030625AbaGDWRm (ORCPT
+	with ESMTP id S1030635AbaGDWRo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:42 -0400
+	Fri, 4 Jul 2014 18:17:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Bart Van Assche <bvanassche@acm.org>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.4 10/19] IB/srp: Fix a sporadic crash triggered by cable pulling
-Date: Fri,  4 Jul 2014 15:15:20 -0700
-Message-Id: <20140704221436.903195620@linuxfoundation.org>
+        Thomas Jarosch <thomas.jarosch@intra2net.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.4 02/19] PCI: Add new ID for Intel GPU "spurious interrupt" quirk
+Date: Fri,  4 Jul 2014 15:15:12 -0700
+Message-Id: <20140704221436.556037147@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221436.423715636@linuxfoundation.org>
 References: <20140704221436.423715636@linuxfoundation.org>
@@ -30,42 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
 
-commit 024ca90151f5e4296d30f72c13ff9a075e23c9ec upstream.
+commit 7c82126a94e69bbbac586f0249e7ef11e681246c upstream.
 
-Avoid that the loops that iterate over the request ring can encounter
-a pointer to a SCSI command in req->scmnd that is no longer associated
-with that request. If the function srp_unmap_data() is invoked twice
-for a SCSI command that is not in flight then that would cause
-ib_fmr_pool_unmap() to be invoked with an invalid pointer as argument,
-resulting in a kernel oops.
+After a CPU upgrade while keeping the same mainboard, we faced "spurious
+interrupt" problems again.
 
-Reported-by: Sagi Grimberg <sagig@mellanox.com>
-Reference: http://thread.gmane.org/gmane.linux.drivers.rdma/19068/focus=19069
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+It turned out that the new CPU also featured a new GPU with a different PCI
+ID.
+
+Add this PCI ID to the quirk table.  Probably all other Intel GPU PCI IDs
+are affected, too, but I don't want to add them without a test system.
+
+See f67fd55fa96f ("PCI: Add quirk for still enabled interrupts on Intel
+Sandy Bridge GPUs") for some history.
+
+[bhelgaas: add f67fd55fa96f reference, stable tag]
+Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srp/ib_srp.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/pci/quirks.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -1371,6 +1371,12 @@ err_unmap:
- err_iu:
- 	srp_put_tx_iu(target, iu, SRP_IU_CMD);
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2921,6 +2921,7 @@ static void __devinit disable_igfx_irq(s
+ }
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0152, disable_igfx_irq);
  
-+	/*
-+	 * Avoid that the loops that iterate over the request ring can
-+	 * encounter a dangling SCSI command pointer.
-+	 */
-+	req->scmnd = NULL;
-+
- 	spin_lock_irqsave(&target->lock, flags);
- 	list_add(&req->list, &target->free_reqs);
- 
+ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+ 			  struct pci_fixup *end)
 
 
