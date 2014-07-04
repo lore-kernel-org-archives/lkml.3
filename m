@@ -1,55 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154AbaGDKNN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 06:13:13 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59194 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757873AbaGDKNJ (ORCPT
+	id S964786AbaGDKNV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 06:13:21 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:32886 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932194AbaGDKNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 06:13:09 -0400
-Date: Fri, 4 Jul 2014 03:12:30 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Miller <davem@davemloft.net>,
-        Andres Freund <andres@2ndquadrant.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH v2 2/4] mm: introduce fincore()
-Message-ID: <20140704101230.GA24688@infradead.org>
-References: <1404424335-30128-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1404424335-30128-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+	Fri, 4 Jul 2014 06:13:15 -0400
+Date: Fri, 4 Jul 2014 13:13:10 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: mtosatti@redhat.com, kvm@vger.kernel.org, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, guz.fnst@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] kvm, mem-hotplug: Update apic access page when it is
+ migrated.
+Message-ID: <20140704101310.GE4399@minantech.com>
+References: <1404291637-15048-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1404291637-15048-5-git-send-email-tangchen@cn.fujitsu.com>
+ <20140703135507.GM18167@minantech.com>
+ <53B60EF1.6030307@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404424335-30128-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <53B60EF1.6030307@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 05:52:13PM -0400, Naoya Horiguchi wrote:
-> This patch provides a new system call fincore(2), which provides mincore()-
-> like information, i.e. page residency of a given file. But unlike mincore(),
-> fincore() has a mode flag which allows us to extract detailed information
-> about page cache like pfn and page flag. This kind of information is very
-> helpful, for example when applications want to know the file cache status
-> to control the IO on their own way.
+On Fri, Jul 04, 2014 at 10:18:25AM +0800, Tang Chen wrote:
+> Hi Gleb,
+> 
+> Thanks for the advices. Please see below.
+> 
+> On 07/03/2014 09:55 PM, Gleb Natapov wrote:
+> ......
+> >>@@ -575,6 +575,7 @@ struct kvm_arch {
+> >>
+> >>  	unsigned int tss_addr;
+> >>  	struct page *apic_access_page;
+> >>+	bool apic_access_page_migrated;
+> >Better have two requests KVM_REQ_APIC_PAGE_MAP, KVM_REQ_APIC_PAGE_UNMAP IMO.
+> >
+> 
+> vcpu->requests is an unsigned long, and we can only has 64 requests. Isn't
+> adding two requests for apic page and another similar two for ept page too
+> many ?  Not sure.
+> 
+Lets not worry about that for now. May be it is enough to have only one
+KVM_REQ_APIC_PAGE_RELOAD request set apic_access_page to a new value
+before sending the request and reload whatever is in apic_access_page
+during KVM_REQ_APIC_PAGE_RELOAD processing. Or we can even reload
+apic_access_page as part of mmu reload and reuse KVM_REQ_MMU_RELOAD.
 
-It's still a nasty multiplexer for multiple different reporting formats
-in a single system call.  How about your really just do a fincore that
-mirrors mincore instead of piggybacking exports of various internal
-flags (tags and page flags onto it.
+> >>
+> >>  	gpa_t wall_clock;
+> >>
+> >>@@ -739,6 +740,7 @@ struct kvm_x86_ops {
+> >>  	void (*hwapic_isr_update)(struct kvm *kvm, int isr);
+> >>  	void (*load_eoi_exitmap)(struct kvm_vcpu *vcpu, u64 *eoi_exit_bitmap);
+> >>  	void (*set_virtual_x2apic_mode)(struct kvm_vcpu *vcpu, bool set);
+> >>+	void (*set_apic_access_page_addr)(struct kvm *kvm, hpa_t hpa);
+> >>  	void (*deliver_posted_interrupt)(struct kvm_vcpu *vcpu, int vector);
+> >>  	void (*sync_pir_to_irr)(struct kvm_vcpu *vcpu);
+> >>  	int (*set_tss_addr)(struct kvm *kvm, unsigned int addr);
+> >>diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> >>index c0d72f6..a655444 100644
+> >>--- a/arch/x86/kvm/mmu.c
+> >>+++ b/arch/x86/kvm/mmu.c
+> >>@@ -3436,6 +3436,21 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
+> >>  		kvm_make_request(KVM_REQ_MIGRATE_EPT, vcpu);
+> >>  	}
+> >>
+> >>+	if (gpa == VMX_APIC_ACCESS_PAGE_ADDR&&
+> >>+	    vcpu->kvm->arch.apic_access_page_migrated) {
+> >Why check arch.apic_access_page_migrated here? Isn't it enough that the fault is on apic
+> >address.
+> >
+> 
+> True. It's enough. Followed.
+> 
+> >>+		int i;
+> >>+
+> >>+		vcpu->kvm->arch.apic_access_page_migrated = false;
+> >>+
+> >>+		/*
+> >>+		 * We need update APIC_ACCESS_ADDR pointer in each VMCS of
+> >>+		 * all the online vcpus.
+> >>+		 */
+> >>+		for (i = 0; i<  atomic_read(&vcpu->kvm->online_vcpus); i++)
+> >>+			kvm_make_request(KVM_REQ_MIGRATE_APIC,
+> >>+					 vcpu->kvm->vcpus[i]);
+> >make_all_cpus_request(). You need to kick all vcpus from a guest mode.
+> >
+> 
+> OK, followed. But would you please explain more about this. :)
+> Why need to kick all vcpus from guest mode when making request to all vcpus
+> ?
+Because if you do not force other vcpus from a guest mode they will not reload
+apic_access_page value till next vmexit, but since EPT page table now has a mapping
+for 0xfee00000 access to this address will not cause EPT violation and will not cause
+apic exit either.
 
+> 
+> >>+	}
+> >>+
+> >>  	spin_unlock(&vcpu->kvm->mmu_lock);
+> >>
+> >>  	return r;
+> >>diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> >>index c336cb3..abc152f 100644
+> >>--- a/arch/x86/kvm/vmx.c
+> >>+++ b/arch/x86/kvm/vmx.c
+> >>@@ -3988,7 +3988,7 @@ static int alloc_apic_access_page(struct kvm *kvm)
+> >>  	if (r)
+> >>  		goto out;
+> >>
+> >>-	page = gfn_to_page(kvm, VMX_APIC_ACCESS_PAGE_ADDR>>  PAGE_SHIFT);
+> >>+	page = gfn_to_page_no_pin(kvm, VMX_APIC_ACCESS_PAGE_ADDR>>  PAGE_SHIFT);
+> >>  	if (is_error_page(page)) {
+> >>  		r = -EFAULT;
+> >>  		goto out;
+> >>@@ -7075,6 +7075,12 @@ static void vmx_set_virtual_x2apic_mode(struct kvm_vcpu *vcpu, bool set)
+> >>  	vmx_set_msr_bitmap(vcpu);
+> >>  }
+> >>
+> >>+static void vmx_set_apic_access_page_addr(struct kvm *kvm, hpa_t hpa)
+> >>+{
+> >>+	if (vm_need_virtualize_apic_accesses(kvm))
+> >This shouldn't even been called if apic access page is not supported. Nor
+> >mmu_notifier path neither tdp_page_fault path should ever see 0xfee00000
+> >address. BUG() is more appropriate here.
+> >
+> 
+> I don't quite understand. Why calling this function here will leed to bug ?
+> (Sorry, I'm not quite understand the internal of KVM. Please help.)
+I didn't say that calling this function here will lead to a bug. I am saying that
+if vm_need_virtualize_apic_accesses() is false this function should not be called
+at all, so this check is redundant.
+
+> 
+> >
+> >>+		vmcs_write64(APIC_ACCESS_ADDR, hpa);
+> >>+}
+> >>+
+> >>  static void vmx_hwapic_isr_update(struct kvm *kvm, int isr)
+> >>  {
+> >>  	u16 status;
+> >>@@ -8846,6 +8852,7 @@ static struct kvm_x86_ops vmx_x86_ops = {
+> >>  	.enable_irq_window = enable_irq_window,
+> >>  	.update_cr8_intercept = update_cr8_intercept,
+> >>  	.set_virtual_x2apic_mode = vmx_set_virtual_x2apic_mode,
+> >>+	.set_apic_access_page_addr = vmx_set_apic_access_page_addr,
+> >svm needs that too.
+> >
+> 
+> OK, will add one for svm.
+> 
+> >>  	.vm_has_apicv = vmx_vm_has_apicv,
+> >>  	.load_eoi_exitmap = vmx_load_eoi_exitmap,
+> >>  	.hwapic_irr_update = vmx_hwapic_irr_update,
+> >>diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> >>index a26524f..14e7174 100644
+> >>--- a/arch/x86/kvm/x86.c
+> >>+++ b/arch/x86/kvm/x86.c
+> >>@@ -5943,6 +5943,24 @@ static void vcpu_migrated_page_update_ept(struct kvm_vcpu *vcpu)
+> >>  	}
+> >>  }
+> >>
+> >>+static void vcpu_migrated_page_update_apic(struct kvm_vcpu *vcpu)
+> >>+{
+> >>+	struct kvm *kvm = vcpu->kvm;
+> >>+
+> >>+	if (kvm->arch.apic_access_page_migrated) {
+> >>+		if (kvm->arch.apic_access_page)
+> >>+			kvm->arch.apic_access_page = pfn_to_page(0);
+> >All vcpus will access apic_access_page without locking here. May be
+> >set kvm->arch.apic_access_page to zero in mmu_notifier and here call
+> >  kvm_x86_ops->set_apic_access_page_addr(kvm, kvm->arch.apic_access_page);
+> >
+> 
+> I'm a little confused. apic access page's phys_addr is stored in vmcs, and
+> I think it will be used by vcpu directly to access the physical page.
+> Setting kvm->arch.apic_access_page to zero will not stop it, right ?
+> 
+Right, kvm->arch.apic_access_page is just a shadow value for whatever is written
+in vmcs. After setting it all vcpus need to update their vmcs values.
+
+> I'm wondering what happens when apic page is migrated, but the vmcs is still
+> holding its old phys_addr before the vcpu request is handled.
+> 
+apic page should not be migrated untill all vpus are forced out of a guest mode and
+instructed to reload new value on a next guest entry. That's what we are trying to
+achieve here.
+
+--
+			Gleb.
