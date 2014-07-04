@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031617AbaGDXGT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 19:06:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57005 "EHLO
+	id S1031855AbaGDXGj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 19:06:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56999 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760437AbaGDWQE (ORCPT
+	with ESMTP id S1760429AbaGDWQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:16:04 -0400
+	Fri, 4 Jul 2014 18:16:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Bart Van Assche <bvanassche@acm.org>,
+        Yann Droneaud <ydroneaud@opteya.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Steve Wise <swise@opengridcomputing.com>,
         Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.15 30/66] IB/srp: Fix a sporadic crash triggered by cable pulling
-Date: Fri,  4 Jul 2014 15:14:29 -0700
-Message-Id: <20140704221424.194109202@linuxfoundation.org>
+Subject: [PATCH 3.15 21/66] RDMA/cxgb4: add missing padding at end of struct c4iw_alloc_ucontext_resp
+Date: Fri,  4 Jul 2014 15:14:20 -0700
+Message-Id: <20140704221423.785905453@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -30,42 +31,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Yann Droneaud <ydroneaud@opteya.com>
 
-commit 024ca90151f5e4296d30f72c13ff9a075e23c9ec upstream.
+commit b7dfa8895f64ffa371d0ed09c1d1ba8c6e19b956 upstream.
 
-Avoid that the loops that iterate over the request ring can encounter
-a pointer to a SCSI command in req->scmnd that is no longer associated
-with that request. If the function srp_unmap_data() is invoked twice
-for a SCSI command that is not in flight then that would cause
-ib_fmr_pool_unmap() to be invoked with an invalid pointer as argument,
-resulting in a kernel oops.
+The i386 ABI disagrees with most other ABIs regarding alignment of
+data types larger than 4 bytes: on most ABIs a padding must be added
+at end of the structures, while it is not required on i386.
 
-Reported-by: Sagi Grimberg <sagig@mellanox.com>
-Reference: http://thread.gmane.org/gmane.linux.drivers.rdma/19068/focus=19069
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+So for most ABI struct c4iw_alloc_ucontext_resp gets implicitly padded
+to be aligned on a 8 bytes multiple, while for i386, such padding is
+not added.
+
+The tool pahole can be used to find such implicit padding:
+
+  $ pahole --anon_include \
+           --nested_anon_include \
+           --recursive \
+           --class_name c4iw_alloc_ucontext_resp \
+           drivers/infiniband/hw/cxgb4/iw_cxgb4.o
+
+Then, structure layout can be compared between i386 and x86_64:
+
+#  +++ obj-i386/drivers/infiniband/hw/cxgb4/iw_cxgb4.o.pahole.txt   2014-03-28 11:43:05.547432195 +0100
+#  --- obj-x86_64/drivers/infiniband/hw/cxgb4/iw_cxgb4.o.pahole.txt 2014-03-28 10:55:10.990133017 +0100
+#  @@ -2,9 +2,8 @@ struct c4iw_alloc_ucontext_resp {
+#          __u64                      status_page_key;      /*     0     8 */
+#          __u32                      status_page_size;     /*     8     4 */
+#
+#  -       /* size: 12, cachelines: 1, members: 2 */
+#  -       /* last cacheline: 12 bytes */
+#  +       /* size: 16, cachelines: 1, members: 2 */
+#  +       /* padding: 4 */
+#  +       /* last cacheline: 16 bytes */
+#   };
+
+This ABI disagreement will make an x86_64 kernel try to write past the
+buffer provided by an i386 binary.
+
+When boundary check will be implemented, the x86_64 kernel will refuse
+to write past the i386 userspace provided buffer and the uverbs will
+fail.
+
+If the structure is on a page boundary and the next page is not
+mapped, ib_copy_to_udata() will fail and the uverb will fail.
+
+Additionally, as reported by Dan Carpenter, without the implicit
+padding being properly cleared, an information leak would take place
+in most architectures.
+
+This patch adds an explicit padding to struct c4iw_alloc_ucontext_resp,
+and, like 92b0ca7cb149 ("IB/mlx5: Fix stack info leak in
+mlx5_ib_alloc_ucontext()"), makes function c4iw_alloc_ucontext()
+not writting this padding field to userspace. This way, x86_64 kernel
+will be able to write struct c4iw_alloc_ucontext_resp as expected by
+unpatched and patched i386 libcxgb4.
+
+Link: http://marc.info/?i=cover.1399309513.git.ydroneaud@opteya.com
+Link: http://marc.info/?i=1395848977.3297.15.camel@localhost.localdomain
+Link: http://marc.info/?i=20140328082428.GH25192@mwanda
+Cc: <stable@vger.kernel.org>
+Fixes: 05eb23893c2c ("cxgb4/iw_cxgb4: Doorbell Drop Avoidance Bug Fixes")
+Reported-by: Yann Droneaud <ydroneaud@opteya.com>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Acked-by: Steve Wise <swise@opengridcomputing.com>
 Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srp/ib_srp.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/infiniband/hw/cxgb4/provider.c |    5 +++--
+ drivers/infiniband/hw/cxgb4/user.h     |    1 +
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -1594,6 +1594,12 @@ err_unmap:
- err_iu:
- 	srp_put_tx_iu(target, iu, SRP_IU_CMD);
+--- a/drivers/infiniband/hw/cxgb4/provider.c
++++ b/drivers/infiniband/hw/cxgb4/provider.c
+@@ -122,7 +122,7 @@ static struct ib_ucontext *c4iw_alloc_uc
+ 	INIT_LIST_HEAD(&context->mmaps);
+ 	spin_lock_init(&context->mmap_lock);
  
-+	/*
-+	 * Avoid that the loops that iterate over the request ring can
-+	 * encounter a dangling SCSI command pointer.
-+	 */
-+	req->scmnd = NULL;
-+
- 	spin_lock_irqsave(&target->lock, flags);
- 	list_add(&req->list, &target->free_reqs);
+-	if (udata->outlen < sizeof(uresp)) {
++	if (udata->outlen < sizeof(uresp) - sizeof(uresp.reserved)) {
+ 		if (!warned++)
+ 			pr_err(MOD "Warning - downlevel libcxgb4 (non-fatal), device status page disabled.");
+ 		rhp->rdev.flags |= T4_STATUS_PAGE_DISABLED;
+@@ -140,7 +140,8 @@ static struct ib_ucontext *c4iw_alloc_uc
+ 		context->key += PAGE_SIZE;
+ 		spin_unlock(&context->mmap_lock);
  
+-		ret = ib_copy_to_udata(udata, &uresp, sizeof(uresp));
++		ret = ib_copy_to_udata(udata, &uresp,
++				       sizeof(uresp) - sizeof(uresp.reserved));
+ 		if (ret)
+ 			goto err_mm;
+ 
+--- a/drivers/infiniband/hw/cxgb4/user.h
++++ b/drivers/infiniband/hw/cxgb4/user.h
+@@ -75,5 +75,6 @@ struct c4iw_create_qp_resp {
+ struct c4iw_alloc_ucontext_resp {
+ 	__u64 status_page_key;
+ 	__u32 status_page_size;
++	__u32 reserved; /* explicit padding (optional for i386) */
+ };
+ #endif
 
 
