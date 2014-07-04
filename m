@@ -1,101 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754441AbaGDIio (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:38:44 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51270 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753937AbaGDIik (ORCPT
+	id S1755351AbaGDIjO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:39:14 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:41503 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163AbaGDIjL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:38:40 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH] of: Add of_graph_get_port_by_id
-Date: Fri,  4 Jul 2014 10:38:36 +0200
-Message-Id: <1404463116-13417-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 2.0.0
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 4 Jul 2014 04:39:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAF6AEGsAtqCjrvrgcXmOY0nie89ppFHBcRPtt36ESHWBNqobTg@mail.gmail.com>
+References: <1403081488-13114-1-git-send-email-benjamin.gaignard@linaro.org>
+	<CAF6AEGsLbmos9nz-AYv2v0g33BYdAgKYTe8_ihDWEF3GK_=gjQ@mail.gmail.com>
+	<20140703215200.GG32514@n2100.arm.linux.org.uk>
+	<CAF6AEGsAtqCjrvrgcXmOY0nie89ppFHBcRPtt36ESHWBNqobTg@mail.gmail.com>
+Date: Fri, 4 Jul 2014 10:39:10 +0200
+Message-ID: <CA+M3ks4BU3MTaeCeMPbu8LqW=H27ZAdF-qZLUiG3UXJzbA89Fw@mail.gmail.com>
+Subject: Re: [PATCH v5 00/11] Add DRM for stih4xx platforms
+From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
+To: Rob Clark <robdclark@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a function to get a port device tree node by port id.
+Rob, Russel,
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- drivers/of/base.c        | 30 ++++++++++++++++++++++++++++++
- include/linux/of_graph.h |  7 +++++++
- 2 files changed, 37 insertions(+)
+What I can do is to rebase my driver on driver-core-next branch from
+Greg tree (git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git).
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 9480e10..b4ae58b 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -2257,6 +2257,36 @@ int of_graph_parse_endpoint(const struct device_node *node,
- EXPORT_SYMBOL(of_graph_parse_endpoint);
- 
- /**
-+ * of_graph_get_port_by_id() - get the port matching a given id
-+ * @parent: pointer to the parent device node
-+ * @id: id of the port
-+ *
-+ * Return: A 'port' node pointer with refcount incremented.The caller
-+ * has to use of_node_put() on it when done.
-+ */
-+struct device_node *of_graph_get_port_by_id(struct device_node *node, int id)
-+{
-+	struct device_node *port = NULL;
-+	int port_id;
-+
-+	while (true) {
-+		port = of_get_next_child(node, port);
-+		if (!port)
-+			return NULL;
-+		if (of_node_cmp(port->name, "port") != 0)
-+			continue;
-+		if (of_property_read_u32(port, "reg", &port_id)) {
-+			if (!id)
-+				return port;
-+		} else {
-+			if (id == port_id)
-+				return port;
-+		}
-+	}
-+}
-+EXPORT_SYMBOL(of_graph_get_port_by_id);
-+
-+/**
-  * of_graph_get_next_endpoint() - get next endpoint node
-  * @parent: pointer to the parent device node
-  * @prev: previous endpoint node, or NULL to get first
-diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
-index c5ef5fa..8bfd7d6 100644
---- a/include/linux/of_graph.h
-+++ b/include/linux/of_graph.h
-@@ -33,6 +33,7 @@ struct of_endpoint {
- #ifdef CONFIG_OF
- int of_graph_parse_endpoint(const struct device_node *node,
- 				struct of_endpoint *endpoint);
-+struct device_node *of_graph_get_port_by_id(struct device_node *node, int id);
- struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
- 					struct device_node *previous);
- struct device_node *of_graph_get_remote_port_parent(
-@@ -46,6 +47,12 @@ static inline int of_graph_parse_endpoint(const struct device_node *node,
- 	return -ENOSYS;
- }
- 
-+static inline struct device_node *of_graph_get_port_by_id(struct device_node *node,
-+					int id)
-+{
-+	return NULL;
-+}
-+
- static inline struct device_node *of_graph_get_next_endpoint(
- 					const struct device_node *parent,
- 					struct device_node *previous)
+Does that could help ?
+
+Regards,
+Benjamin
+
+
+2014-07-03 23:59 GMT+02:00 Rob Clark <robdclark@gmail.com>:
+> On Thu, Jul 3, 2014 at 5:52 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+>> On Thu, Jul 03, 2014 at 05:31:21PM -0400, Rob Clark wrote:
+>>> >From a brief look, it looks like my comments have been addressed, so I
+>>> think this is starting to shape up..
+>>>
+>>> Laurent/Thierry/Russell, I don't suppose any of you are likely to have
+>>> time before 3.17 merge window to give sti one last once-over to see
+>>> what I missed ;-)
+>>
+>> As this appears to be using the component helpers, it would be good for
+>> the author to be pre-warned about the change to the API.  I'm going to
+>> be doing this as a two step thing.
+>>
+>> The first stage of it has just been taken by Greg this evening.  This
+>> retires old behaviour that was needed for the initial versions of imx-drm,
+>> and fixes a bug.  More importantly, it introduces a new interface where
+>> you build the list of expected components before calling
+>> component_master_add(), passing it into that function.
+>>
+>> It is slightly less flexible from the driver writer's view point, but
+>> allows us to do more in the component helper, and support some features
+>> that others would like to see (such as being able to add additional
+>> optional components after the initial bind (that's not much interest
+>> to DRM though.)
+>>
+>> This should make the v3.17 merge window.  I'm hoping that by forewarning
+>> about the change, that people can be aware of it and have patches
+>> prepared for v3.18 (or maybe even v3.17) to convert over to it, so we
+>> can get rid of the older interface before we get too many users of it.
+>>
+>> I've just peeked at the binding document in the first patch.  I notice
+>> that it isn't making use of the of_graph stuff, which is a bit of a
+>> shame because I've sent a RFC patch adding drivers/gpu/drm/drm_of.c
+>> to provide a helper which encoders can use to get the CRTC mask from
+>> an of_graph representation.
+>
+> which reminds me, I need to have a look at the drm_of stuff..
+>
+>> I'm using this not only for imx-drm, but also for tda998x - and that's
+>> where the problems are likely to start if we end up with different
+>> DRM implementations doing different solutions to the connectivity
+>> problem.
+>
+> If it simplifies merge-order stuff, I'd be ok with a follow-up patch
+> that converts over (assuming it shouldn't have an impact on the DT
+> bindings, which I'm only assuming it should not..)
+>
+> Probably it would be a good idea if Benjamin at least had a patch
+> ready to go to convert over which could be merged right after your
+> stuff hits drm-next.
+>
+> BR,
+> -R
+>
+>> --
+>> FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+>> improving, and getting towards what was expected from it.
+
+
+
 -- 
-2.0.0
+Benjamin Gaignard
 
+Graphic Working Group
+
+Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro: Facebook | Twitter | Blog
