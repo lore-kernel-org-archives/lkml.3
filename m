@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759207AbaGDSFk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 14:05:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26827 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752387AbaGDSFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 14:05:39 -0400
-Date: Fri, 4 Jul 2014 20:04:08 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: kill ptregscall_common
-Message-ID: <20140704180408.GA15032@redhat.com>
-References: <100531b7498c9148eaf7163ead7adef263d9981c.1404340903.git.luto@amacapital.net> <CALCETrVkg7_GzR0QqyW-hNS8iJGr3i_R6AbrjwjwwUboWCiNOw@mail.gmail.com> <CALCETrVRJZeLam5jbNrgptETbXbsnPXMBgLwcO_uAMK6CSF65g@mail.gmail.com> <CA+55aFzMSswoVaHhM41rATubj+rqBsa4jyQaBVPNHO_-BpyHJg@mail.gmail.com> <CALCETrUDCDfm8+xEFiPDwJbSu25yo2xNKYYfCiU9RO5C_X=bDg@mail.gmail.com> <CA+55aFwehdBTK=dXFQkXK2ZB6GYXxEcnY7Eg8jwSV5E6yaJNTQ@mail.gmail.com> <20140703184215.GA21542@redhat.com> <20140704161316.GA6241@redhat.com>
+	id S1759487AbaGDSGz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 14:06:55 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47728 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756656AbaGDSGy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 14:06:54 -0400
+Date: Fri, 4 Jul 2014 20:06:51 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        kernel list <linux-kernel@vger.kernel.org>, adilger.kernel@dilger.ca,
+        linux-ext4@vger.kernel.org
+Subject: Re: ext4: media error but where?
+Message-ID: <20140704180651.GA22322@amd.pavel.ucw.cz>
+References: <20140626202021.GA8512@xo-6d-61-c0.localdomain>
+ <20140626203052.GA9449@xo-6d-61-c0.localdomain>
+ <20140627024659.GF6826@thunk.org>
+ <20140629202516.GA11430@amd.pavel.ucw.cz>
+ <20140629210428.GD2162@thunk.org>
+ <20140630064644.GA23079@amd.pavel.ucw.cz>
+ <20140630134313.GA3753@thunk.org>
+ <20140704102307.GA19252@amd.pavel.ucw.cz>
+ <20140704121119.GB10514@thunk.org>
+ <20140704172104.GA4877@xo-6d-61-c0.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140704161316.GA6241@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140704172104.GA4877@xo-6d-61-c0.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It has no users since commit b3af11afe06a "x86: get rid of pt_regs
-argument of iopl(2)".
+Hi!
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/entry_64.S |   13 -------------
- 1 files changed, 0 insertions(+), 13 deletions(-)
+> > What I need from people reporting problems: 
+> > 
+> > * What is the HDD/SSD/eMMC device involved
+> 
+> SATA hdd, will get you exact data.
 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index b25ca96..fa64128 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -640,19 +640,6 @@ END(\label)
- 	FORK_LIKE  vfork
- 	FIXED_FRAME stub_iopl, sys_iopl
- 
--ENTRY(ptregscall_common)
--	DEFAULT_FRAME 1 8	/* offset 8: return address */
--	RESTORE_TOP_OF_STACK %r11, 8
--	movq_cfi_restore R15+8, r15
--	movq_cfi_restore R14+8, r14
--	movq_cfi_restore R13+8, r13
--	movq_cfi_restore R12+8, r12
--	movq_cfi_restore RBP+8, rbp
--	movq_cfi_restore RBX+8, rbx
--	ret $REST_SKIP		/* pop extended registers */
--	CFI_ENDPROC
--END(ptregscall_common)
--
- ENTRY(stub_execve)
- 	CFI_STARTPROC
- 	addq $8, %rsp
+Hitachi HTS545050A7E380, got it from ps/3 at april 25, 2014, never had
+problems according to smart.
+
+> > * What kernel version were you running
+> 
+> For last month? Various, 3.10 to 3.16-rc, mostly 3.15+.
+> 
+> > * What distribution are you running (more so I know what the init
+> >   scripts might or might not have been doing vis-a-vis running fsck
+> >   after a crash)
+> 
+> Debian 6.
+
+6.0.9
+
+> Is it possible that my fsck is so old it does not clear this "filesystem
+> had error in past" flag? Because I strongly suspect I'll boot into
+> init=/bin/bash, run fsck, it will tell me "all clean", and the messages
+> will repeat in the middle of fsck run.
+
+And indeed:
+
+..init=/bin/bash
+# fsck /dev/sda3
+e2fsck 1.41.12
+rootfs: clean
+# date +%s
+1404496...
+#
+EXT4-fs (sda3): error count: 11
+EXT4-fs (sda3): initial error at 1401741...
+...
+
+(hand copied)
+
+Thanks,
+									Pavel
+
 -- 
-1.5.5.1
-
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
