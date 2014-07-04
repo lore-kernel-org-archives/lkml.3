@@ -1,54 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756887AbaGDPf0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 11:35:26 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:30866 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752129AbaGDPfZ (ORCPT
+	id S1757271AbaGDPjR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 11:39:17 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:36742 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752622AbaGDPjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 11:35:25 -0400
-Message-ID: <53B6C9BA.1020106@fb.com>
-Date: Fri, 4 Jul 2014 09:35:22 -0600
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 4 Jul 2014 11:39:15 -0400
+Date: Fri, 4 Jul 2014 19:38:53 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "Tejun Heo" <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        "Pavel Emelyanov" <xemul@parallels.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH RFC 0/5] Virtual Memory Resource Controller for cgroups
+Message-ID: <20140704153853.GA369@esperanza>
+References: <cover.1404383187.git.vdavydov@parallels.com>
+ <20140704121621.GE12466@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Shaohua Li <shli@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [patch]blk-mq: suppress a warning
-References: <20140704112623.GA17435@kernel.org>
-In-Reply-To: <20140704112623.GA17435@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-04_05:2014-07-04,2014-07-04,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=7.61524268089175e-08 kscore.compositescore=0
- circleOfTrustscore=502.112 compositescore=0.9989857498195
- urlsuspect_oldscore=0.9989857498195 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.9989857498195 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1407040177
-X-FB-Internal: deliver
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140704121621.GE12466@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2014 05:26 AM, Shaohua Li wrote:
+Hi Michal,
+
+On Fri, Jul 04, 2014 at 02:16:21PM +0200, Michal Hocko wrote:
+> On Thu 03-07-14 16:48:16, Vladimir Davydov wrote:
+> > Hi,
+> > 
+> > Typically, when a process calls mmap, it isn't given all the memory pages it
+> > requested immediately. Instead, only its address space is grown, while the
+> > memory pages will be actually allocated on the first use. If the system fails
+> > to allocate a page, it will have no choice except invoking the OOM killer,
+> > which may kill this or any other process. Obviously, it isn't the best way of
+> > telling the user that the system is unable to handle his request. It would be
+> > much better to fail mmap with ENOMEM instead.
+> > 
+> > That's why Linux has the memory overcommit control feature, which accounts and
+> > limits VM size that may contribute to mem+swap, i.e. private writable mappings
+> > and shared memory areas. However, currently it's only available system-wide,
+> > and there's no way of avoiding OOM in cgroups.
+> >
+> > This patch set is an attempt to fill the gap. It implements the resource
+> > controller for cgroups that accounts and limits address space allocations that
+> > may contribute to mem+swap.
 > 
-> The warning is hit when cpu hotplug is running. After scheduler puts a cpu
-> online and before blk-mq mapping reinit, a task can queue a request and run the
-> queue. At that time the cpu isn't in hctx->cpumask, but the cpu is mapped into
-> hctx 0. When the race happens, hctx->cpumask doesn't set the cpu and
-> ctx->index_hw/hctx->nr_ctx isn't correct, but it doesn't cause any problem. So
-> just suppress the warning here.
+> Well, I am not really sure how helpful is this. Could you be more
+> specific about real use cases? If the only problem is that memcg OOM can
+> trigger to easily then I do not think this is the right approach to
+> handle it.
 
-Thanks Shaohua, I think that is an improvement. Not super fond of having
-to do an extra map, but it's saner than the CPU test in that it uses the
-same mechanism to verify it's correct. And we can probably kill this
-WARN_ON() in a revision or two.
+The problem is that an application inside a container is currently given
+no hints on how much memory it may actually consume. It can mmap a huge
+area and eventually find itself killed or swapped out after using
+several percent of it. This can be painful sometimes. Let me give an
+example.
 
+Suppose a user wants to run some computational workload, which may take
+several days. He doesn't exactly know how much memory it will consume,
+so he decides to start with buying a 1G container for it. He then starts
+the workload in the container and sees it's working fine for some time.
+So he decides he guessed the container size right and now only has to
+wait for a day or two. Suppose the workload actually wants 10G. Or it
+can consume up to 100G and has some weird logic to determine how much
+memory the system may give it, e.g. trying to mmap as much as possible.
+Suppose the server the container is running on has 1000G. The workload
+won't fail immediately then. It will be allowed to consume 1G, which may
+take quite long, but finally it will either fail with OOM or become
+really sluggish due to swap out. The user will probably be frustrated to
+see his workload failed when he comes back in a day or two, because it
+will cost him money and time. This wouldn't happen if there were the VM
+limit, which stopped the application immediately at start giving the
+user a hint that something is going wrong and he needs to either tune
+his application (e.g. setting -Xmsn for java) or buy a bigger container.
 
+You can argue that the container may have a kind of meminfo
+virtualization and any sane application must go and check it, but (1)
+not all applications do that (some may try mmap-until-failure
+heuristic), (2) there may be several unrelated processes inside CT, each
+checking that there are pretty of free mem according to meminfo, mmaping
+it and failing later, (3) it may be an application container, which
+doesn't have proc mounted.
+
+I guess that's why most distributions have overcommit limited by default
+(vm.overcommit_memory!=2).
+
+> Strict no-overcommit is basically unusable for many workloads.
+> Especially those which try to do their own memory usage optimization
+> in a much larger address space.
+
+Sure, 'no-overcommit' is definitely unusable, but we can set it to e.g.
+twice memcg limit. This will allow to overcommit memory to some extent,
+but fail for really large allocations that can never be served.
+
+> Once I get from internal things (which will happen soon hopefully) I
+> will post a series with a new sets of memcg limits. One of them is
+> high_limit which can be used as a trigger for memcg reclaim. Unlike
+> hard_limit there won't be any OOM if the reclaim fails at this stage. So
+> if the high_limit is configured properly the admin will have enough time
+> to make additional steps before OOM happens.
+
+High/low limits that start reclaim on internal/external pressure are
+definitely a very nice feature (may be even more useful that strict
+limits). However, they won't help us against overcommit inside a
+container. AFAIC,
+
+ - low limit will allow the container to consume as much as he wants
+   until it triggers global memory pressure, then it will be shrunk back
+   to its limit aggressively;
+
+ - high limit means allow to breach the limit, but trigger reclaim
+   asynchronously (a kind of kswapd) or synchronously when it happens.
+
+Right?
+
+Considering the example I've given above, both of these won't help if
+the system has other active CTs: the container will be forcefully kept
+around its high/low limit and, since it's definitely not enough for it,
+it will be finally killed crossing out the computations it's spent so
+much time on. High limit won't be good for the container even if there's
+no other load on the node - it will be constantly swapping out anon
+memory and evicting file caches. The application won't die quickly then,
+but it will get a heavy slowdown, which is no better than killing I
+guess.
+
+Also, I guess it'd be beneficial to have
+
+ - mlocked pages accounting per cgroup, because they affect memory
+   reclaim, and how low/high limits work, so it'd be nice to have them
+   limited to a sane value;
+
+ - shmem areas accounting per cgroup, because the total amount of shmem
+   on the system is limited, and it'll be no good if malicious
+   containers eat it all.
+
+IMO It wouldn't be a good idea to overwhelm memcg with those limits, the
+VM controller suits much better.
+
+Thanks.
