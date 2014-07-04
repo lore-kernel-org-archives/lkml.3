@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760236AbaGDWkv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:40:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57484 "EHLO
+	id S1760731AbaGDWlf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:41:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57471 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031220AbaGDWVO (ORCPT
+	with ESMTP id S1031206AbaGDWVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:21:14 -0400
+	Fri, 4 Jul 2014 18:21:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Bart Van Assche <bvanassche@acm.org>,
+        Yann Droneaud <ydroneaud@opteya.com>,
         Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.14 26/59] IB/srp: Fix a sporadic crash triggered by cable pulling
-Date: Fri,  4 Jul 2014 15:19:15 -0700
-Message-Id: <20140704221540.790761052@linuxfoundation.org>
+Subject: [PATCH 3.14 23/59] IB/mlx5: add missing padding at end of struct mlx5_ib_create_srq
+Date: Fri,  4 Jul 2014 15:19:12 -0700
+Message-Id: <20140704221540.653367967@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -30,42 +29,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Yann Droneaud <ydroneaud@opteya.com>
 
-commit 024ca90151f5e4296d30f72c13ff9a075e23c9ec upstream.
+commit 43bc889380c2ad9aa230eccc03a15cc52cf710d4 upstream.
 
-Avoid that the loops that iterate over the request ring can encounter
-a pointer to a SCSI command in req->scmnd that is no longer associated
-with that request. If the function srp_unmap_data() is invoked twice
-for a SCSI command that is not in flight then that would cause
-ib_fmr_pool_unmap() to be invoked with an invalid pointer as argument,
-resulting in a kernel oops.
+The i386 ABI disagrees with most other ABIs regarding alignment of
+data type larger than 4 bytes: on most ABIs a padding must be added at
+end of the structures, while it is not required on i386.
 
-Reported-by: Sagi Grimberg <sagig@mellanox.com>
-Reference: http://thread.gmane.org/gmane.linux.drivers.rdma/19068/focus=19069
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+So for most ABIs struct mlx5_ib_create_srq gets implicitly padded to be
+aligned on a 8 bytes multiple, while for i386, such padding is not
+added.
+
+Tool pahole could be used to find such implicit padding:
+
+  $ pahole --anon_include \
+           --nested_anon_include \
+           --recursive \
+           --class_name mlx5_ib_create_srq \
+           drivers/infiniband/hw/mlx5/mlx5_ib.o
+
+Then, structure layout can be compared between i386 and x86_64:
+
+#  +++ obj-i386/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt    2014-03-28 11:43:07.386413682 +0100
+#  --- obj-x86_64/drivers/infiniband/hw/mlx5/mlx5_ib.o.pahole.txt  2014-03-27 13:06:17.788472721 +0100
+#  @@ -69,7 +68,6 @@ struct mlx5_ib_create_srq {
+#          __u64                      db_addr;              /*     8     8 */
+#          __u32                      flags;                /*    16     4 */
+#
+#  -       /* size: 20, cachelines: 1, members: 3 */
+#  -       /* last cacheline: 20 bytes */
+#  +       /* size: 24, cachelines: 1, members: 3 */
+#  +       /* padding: 4 */
+#  +       /* last cacheline: 24 bytes */
+#   };
+
+ABI disagreement will make an x86_64 kernel try to read past
+the buffer provided by an i386 binary.
+
+When boundary check will be implemented, the x86_64 kernel will
+refuse to read past the i386 userspace provided buffer and the
+uverb will fail.
+
+Anyway, if the structure lay in memory on a page boundary and
+next page is not mapped, ib_copy_from_udata() will fail and the
+uverb will fail.
+
+This patch makes create_srq_user() takes care of the input
+data size to handle the case where no padding was provided.
+
+This way, x86_64 kernel will be able to handle struct mlx5_ib_create_srq
+as sent by unpatched and patched i386 libmlx5.
+
+Link: http://marc.info/?i=cover.1399309513.git.ydroneaud@opteya.com
+Fixes: e126ba97dba9e ("mlx5: Add driver for Mellanox Connect-IB adapter")
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srp/ib_srp.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/infiniband/hw/mlx5/srq.c  |   14 +++++++++++++-
+ drivers/infiniband/hw/mlx5/user.h |    1 +
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -1576,6 +1576,12 @@ err_unmap:
- err_iu:
- 	srp_put_tx_iu(target, iu, SRP_IU_CMD);
+--- a/drivers/infiniband/hw/mlx5/srq.c
++++ b/drivers/infiniband/hw/mlx5/srq.c
+@@ -35,6 +35,7 @@
+ #include <linux/mlx5/srq.h>
+ #include <linux/slab.h>
+ #include <rdma/ib_umem.h>
++#include <rdma/ib_user_verbs.h>
  
-+	/*
-+	 * Avoid that the loops that iterate over the request ring can
-+	 * encounter a dangling SCSI command pointer.
-+	 */
-+	req->scmnd = NULL;
+ #include "mlx5_ib.h"
+ #include "user.h"
+@@ -78,16 +79,27 @@ static int create_srq_user(struct ib_pd
+ {
+ 	struct mlx5_ib_dev *dev = to_mdev(pd->device);
+ 	struct mlx5_ib_create_srq ucmd;
++	size_t ucmdlen;
+ 	int err;
+ 	int npages;
+ 	int page_shift;
+ 	int ncont;
+ 	u32 offset;
+ 
+-	if (ib_copy_from_udata(&ucmd, udata, sizeof(ucmd))) {
++	ucmdlen =
++		(udata->inlen - sizeof(struct ib_uverbs_cmd_hdr) <
++		 sizeof(ucmd)) ? (sizeof(ucmd) -
++				  sizeof(ucmd.reserved)) : sizeof(ucmd);
 +
- 	spin_lock_irqsave(&target->lock, flags);
- 	list_add(&req->list, &target->free_reqs);
++	if (ib_copy_from_udata(&ucmd, udata, ucmdlen)) {
+ 		mlx5_ib_dbg(dev, "failed copy udata\n");
+ 		return -EFAULT;
+ 	}
++
++	if (ucmdlen == sizeof(ucmd) &&
++	    ucmd.reserved != 0)
++		return -EINVAL;
++
+ 	srq->wq_sig = !!(ucmd.flags & MLX5_SRQ_FLAG_SIGNATURE);
  
+ 	srq->umem = ib_umem_get(pd->uobject->context, ucmd.buf_addr, buf_size,
+--- a/drivers/infiniband/hw/mlx5/user.h
++++ b/drivers/infiniband/hw/mlx5/user.h
+@@ -110,6 +110,7 @@ struct mlx5_ib_create_srq {
+ 	__u64	buf_addr;
+ 	__u64	db_addr;
+ 	__u32	flags;
++	__u32	reserved; /* explicit padding (optional on i386) */
+ };
+ 
+ struct mlx5_ib_create_srq_resp {
 
 
