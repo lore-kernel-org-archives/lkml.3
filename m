@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760854AbaGDWcZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:32:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57629 "EHLO
+	id S1031615AbaGDWcs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:32:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57621 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760155AbaGDWWQ (ORCPT
+	with ESMTP id S1031450AbaGDWWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:22:16 -0400
+	Fri, 4 Jul 2014 18:22:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Scott Mayhew <smayhew@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.14 36/59] nfs: Fix cache_validity check in nfs_write_pageuptodate()
-Date: Fri,  4 Jul 2014 15:19:25 -0700
-Message-Id: <20140704221541.274934865@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.14 40/59] powerpc: 64bit sendfile is capped at 2GB
+Date: Fri,  4 Jul 2014 15:19:29 -0700
+Message-Id: <20140704221541.447833825@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -29,58 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Scott Mayhew <smayhew@redhat.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 18dd78c427513fb0f89365138be66e6ee8700d1b upstream.
+commit 5d73320a96fcce80286f1447864c481b5f0b96fa upstream.
 
-NFS_INO_INVALID_DATA cannot be ignored, even if we have a delegation.
+commit 8f9c0119d7ba (compat: fs: Generic compat_sys_sendfile
+implementation) changed the PowerPC 64bit sendfile call from
+sys_sendile64 to sys_sendfile.
 
-We're still having some problems with data corruption when multiple
-clients are appending to a file and those clients are being granted
-write delegations on open.
+Unfortunately this broke sendfile of lengths greater than 2G because
+sys_sendfile caps at MAX_NON_LFS. Restore what we had previously which
+fixes the bug.
 
-To reproduce:
-
-Client A:
-vi /mnt/`hostname -s`
-while :; do echo "XXXXXXXXXXXXXXX" >>/mnt/file; sleep $(( $RANDOM % 5 )); done
-
-Client B:
-vi /mnt/`hostname -s`
-while :; do echo "YYYYYYYYYYYYYYY" >>/mnt/file; sleep $(( $RANDOM % 5 )); done
-
-What's happening is that in nfs_update_inode() we're recognizing that
-the file size has changed and we're setting NFS_INO_INVALID_DATA
-accordingly, but then we ignore the cache_validity flags in
-nfs_write_pageuptodate() because we have a delegation.  As a result,
-in nfs_updatepage() we're extending the write to cover the full page
-even though we've not read in the data to begin with.
-
-Signed-off-by: Scott Mayhew <smayhew@redhat.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/write.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/powerpc/include/asm/systbl.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -913,12 +913,14 @@ static bool nfs_write_pageuptodate(struc
- 
- 	if (nfs_have_delegated_attributes(inode))
- 		goto out;
--	if (nfsi->cache_validity & (NFS_INO_INVALID_DATA|NFS_INO_REVAL_PAGECACHE))
-+	if (nfsi->cache_validity & NFS_INO_REVAL_PAGECACHE)
- 		return false;
- 	smp_rmb();
- 	if (test_bit(NFS_INO_INVALIDATING, &nfsi->flags))
- 		return false;
- out:
-+	if (nfsi->cache_validity & NFS_INO_INVALID_DATA)
-+		return false;
- 	return PageUptodate(page) != 0;
- }
- 
+--- a/arch/powerpc/include/asm/systbl.h
++++ b/arch/powerpc/include/asm/systbl.h
+@@ -190,7 +190,7 @@ SYSCALL_SPU(getcwd)
+ SYSCALL_SPU(capget)
+ SYSCALL_SPU(capset)
+ COMPAT_SYS(sigaltstack)
+-COMPAT_SYS_SPU(sendfile)
++SYSX_SPU(sys_sendfile64,compat_sys_sendfile,sys_sendfile)
+ SYSCALL(ni_syscall)
+ SYSCALL(ni_syscall)
+ PPC_SYS(vfork)
 
 
