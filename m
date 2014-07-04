@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640AbaGDEmI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 00:42:08 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:36500 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011AbaGDEmG (ORCPT
+	id S1751625AbaGDEqw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 00:46:52 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:57464 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914AbaGDEqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 00:42:06 -0400
-Message-ID: <1404448922.5756.67.camel@marge.simpson.net>
-Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Austin Schuh <austin@peloton-tech.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        rt-users <linux-rt-users@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Date: Fri, 04 Jul 2014 06:42:02 +0200
-In-Reply-To: <CANGgnMYq+QHaic1pRugDbudDAd8985KxSoUKRTbfnhwrZ5zSBQ@mail.gmail.com>
-References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com>
-	 <CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com>
-	 <CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com>
-	 <CANGgnMYVoP-Z0Bv-VDEkJnvfa7Fi4-zY2F4A0PhMewGvwo3VVw@mail.gmail.com>
-	 <alpine.DEB.2.10.1406270027300.5170@nanos>
-	 <CANGgnMa+qtgJ3wwg_h5Rynw5vEvZpQZ6PvaUfXNQ8+Y3Yu5U0g@mail.gmail.com>
-	 <alpine.DEB.2.10.1406271249510.5170@nanos>
-	 <CANGgnMZ8qemTgzoiq96=YvTnz-h945b8zSw1VtmDMSrbY3kcUg@mail.gmail.com>
-	 <CANGgnMZBXbBnr1J+HDtDTo3TD-KgjerLA7BH9x6tmsdDfrNWbA@mail.gmail.com>
-	 <CANGgnMYq+QHaic1pRugDbudDAd8985KxSoUKRTbfnhwrZ5zSBQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 4 Jul 2014 00:46:50 -0400
+Message-ID: <53B631B2.6000105@hitachi.com>
+Date: Fri, 04 Jul 2014 13:46:42 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: probe_event_disable()->synchronize_sched() (Was: tracing/uprobes:
+ Revert "Support mix of ftrace and perf")
+References: <20140627170116.GA18298@redhat.com> <20140627170136.GA18319@redhat.com> <87k37z54lu.fsf@sejong.aot.lge.com> <20140630184828.GA24594@redhat.com> <20140701193147.GA32492@redhat.com> <53B4EE21.2040203@hitachi.com> <20140703162211.GB5610@redhat.com>
+In-Reply-To: <20140703162211.GB5610@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-07-03 at 16:08 -0700, Austin Schuh wrote: 
-> On Tue, Jul 1, 2014 at 12:32 PM, Austin Schuh <austin@peloton-tech.com> wrote:
-> > On Mon, Jun 30, 2014 at 8:01 PM, Austin Schuh <austin@peloton-tech.com> wrote:
-> >> On Fri, Jun 27, 2014 at 7:24 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >>> Completely untested patch below.
+(2014/07/04 1:22), Oleg Nesterov wrote:
+
+>> One possible scenario is here; someone disables an event and tries to remove
+>> it (both will be done by different syscalls). If we don't synchronize
+>> the first disabling, the event flag set disabled, but the event itself
+>> is not disabled. Thus event handler is still possible to be running
+>> somewhere when it is removed.
 > 
-> I've tested it and looked it over now, and feel pretty confident in
-> the patch.  Thanks Thomas!
+> See above. "remove" can't succed until all ftrace_event_file's are inactive.
+> And probe_event_disable() does uprobe_unregister() in this case which (again)
+> serializes with the callbacks itself.
 
-FWIW, I flogged my boxen hard with the virgin tglx patch applied again
-after merging 3.14-rt5 with 3.14.10.  It remained thoroughly boring.
+Ah, I see. kprobes uses disable_kprobe() instead of unregister, and that
+is not serialized.
 
--Mike
+>> The other path of __trace_remove_event_call() is trace_module_remove_events()
+>> which is not related to kprobes/uprobes (Even so, there is no obvious check of
+>> that.)
+> 
+> Yes, uprobe can ignore modules ;)
+> 
+>>> So why? Looks like, the only reason is instance_rmdir() which can do
+>>> TRACE_REG_UNREGISTER and after that destroy this ftrace_event_file?
+>>> But event_trace_del_tracer() also has synchronize_sched() right after
+>>> __ftrace_set_clr_event_nolock() ?
+>>
+>> I think it doesn't need to call synchronize_sched() because
+>> event_trace_del_tracer() ensures that all events are disabled
+>> (handlers are not running anymore)
+> 
+> Not really, afaics... Well yes, it calls __ftrace_set_clr_event_nolock(),
+> but this can race with the callbacks; this doesn't necessary call
+> uprobe_unregister() because there can be other active ftrace_event_file's.
+> So we need to synchronize before we start to destroy the data.
+> 
+> So do you agree that we can remove that synchronize_sched() in trace_uprobe.c
+> and replace it with call_rcu?
+
+Yes for uprobes, kprobes still need it.　:)
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
