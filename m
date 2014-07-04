@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656AbaGDSmL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 14:42:11 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:7269 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752670AbaGDSmK (ORCPT
+	id S1759425AbaGDSrd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 14:47:33 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:43129 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750992AbaGDSrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 14:42:10 -0400
+	Fri, 4 Jul 2014 14:47:32 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvAMAAn1tlNbsGwr/2dsb2JhbABagw6scAUBAQEBAQEFAW4BmWeBCxd1hDEvI4EaN4hGAbVPlQsXhXCJMh2ELQEEmnaUDINFOw
+X-IronPort-Anti-Spam-Result: AvAMADz2tlNbsGwr/2dsb2JhbABagw6scAUBAQEBAQEFAW4BmWeBCxd1hGAjgRo3iEYBtU6VCxeFcIkyHYQtBZAJim2LTIhAg0U7
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Hannes Reinecke <hare@suse.de>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH 1/1] aic79xx: replace kmalloc/memset 0 by kzalloc
-Date: Fri,  4 Jul 2014 20:42:04 +0200
-Message-Id: <1404499324-14284-1-git-send-email-fabf@skynet.be>
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-sh@vger.kernel.org
+Subject: [PATCH 1/1] arch/sh/kernel/time.c: use PTR_ERR_OR_ZERO
+Date: Fri,  4 Jul 2014 20:47:28 +0200
+Message-Id: <1404499648-14414-1-git-send-email-fabf@skynet.be>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
+replace IS_ERR/PTR_ERR
+
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/scsi/aic7xxx/aic79xx_core.c | 3 +--
- drivers/scsi/aic7xxx/aic79xx_osm.c  | 3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/scsi/aic7xxx/aic79xx_core.c b/drivers/scsi/aic7xxx/aic79xx_core.c
-index 0bcacf7..9ce383c 100644
---- a/drivers/scsi/aic7xxx/aic79xx_core.c
-+++ b/drivers/scsi/aic7xxx/aic79xx_core.c
-@@ -10437,14 +10437,13 @@ ahd_handle_en_lun(struct ahd_softc *ahd, struct cam_sim *sim, union ccb *ccb)
- 				return;
- 			}
- 		}
--		lstate = kmalloc(sizeof(*lstate), GFP_ATOMIC);
-+		lstate = kzalloc(sizeof(*lstate), GFP_ATOMIC);
- 		if (lstate == NULL) {
- 			xpt_print_path(ccb->ccb_h.path);
- 			printk("Couldn't allocate lstate\n");
- 			ccb->ccb_h.status = CAM_RESRC_UNAVAIL;
- 			return;
- 		}
--		memset(lstate, 0, sizeof(*lstate));
- 		status = xpt_create_path(&lstate->path, /*periph*/NULL,
- 					 xpt_path_path_id(ccb->ccb_h.path),
- 					 xpt_path_target_id(ccb->ccb_h.path),
-diff --git a/drivers/scsi/aic7xxx/aic79xx_osm.c b/drivers/scsi/aic7xxx/aic79xx_osm.c
-index 69d5c43..76b5fec 100644
---- a/drivers/scsi/aic7xxx/aic79xx_osm.c
-+++ b/drivers/scsi/aic7xxx/aic79xx_osm.c
-@@ -1325,10 +1325,9 @@ int
- ahd_platform_alloc(struct ahd_softc *ahd, void *platform_arg)
- {
- 	ahd->platform_data =
--	    kmalloc(sizeof(struct ahd_platform_data), GFP_ATOMIC);
-+	    kzalloc(sizeof(struct ahd_platform_data), GFP_ATOMIC);
- 	if (ahd->platform_data == NULL)
- 		return (ENOMEM);
--	memset(ahd->platform_data, 0, sizeof(struct ahd_platform_data));
- 	ahd->platform_data->irq = AHD_LINUX_NOIRQ;
- 	ahd_lockinit(ahd);
- 	ahd->seltime = (aic79xx_seltime & 0x3) << 4;
+This is untested.
+
+ arch/sh/kernel/time.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/arch/sh/kernel/time.c b/arch/sh/kernel/time.c
+index 552c8fc..d6d0a98 100644
+--- a/arch/sh/kernel/time.c
++++ b/arch/sh/kernel/time.c
+@@ -80,10 +80,8 @@ static int __init rtc_generic_init(void)
+ 		return -ENODEV;
+ 
+ 	pdev = platform_device_register_simple("rtc-generic", -1, NULL, 0);
+-	if (IS_ERR(pdev))
+-		return PTR_ERR(pdev);
+ 
+-	return 0;
++	return PTR_ERR_OR_ZERO(pdev);
+ }
+ module_init(rtc_generic_init);
+ 
 -- 
 1.9.1
 
