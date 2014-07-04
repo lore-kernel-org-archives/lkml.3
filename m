@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030756AbaGDWXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:23:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57787 "EHLO
+	id S1030830AbaGDWYA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:24:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57777 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760893AbaGDWXQ (ORCPT
+	with ESMTP id S1760877AbaGDWXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:23:16 -0400
+	Fri, 4 Jul 2014 18:23:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Christensen <pch@ordbogen.com>, Julian Anastasov <ja@ssi.bg>,
-        Simon Horman <horms@verge.net.au>
-Subject: [PATCH 3.10 37/46] ipvs: Fix panic due to non-linear skb
-Date: Fri,  4 Jul 2014 15:19:41 -0700
-Message-Id: <20140704221603.978341201@linuxfoundation.org>
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.10 45/46] tracing: Fix syscall_*regfunc() vs copy_process() race
+Date: Fri,  4 Jul 2014 15:19:49 -0700
+Message-Id: <20140704221604.342503985@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
 References: <20140704221602.280733370@linuxfoundation.org>
@@ -29,74 +30,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Christensen <pch@ordbogen.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit f44a5f45f544561302e855e7bd104e5f506ec01b upstream.
+commit 4af4206be2bd1933cae20c2b6fb2058dbc887f7c upstream.
 
-Receiving a ICMP response to an IPIP packet in a non-linear skb could
-cause a kernel panic in __skb_pull.
+syscall_regfunc() and syscall_unregfunc() should set/clear
+TIF_SYSCALL_TRACEPOINT system-wide, but do_each_thread() can race
+with copy_process() and miss the new child which was not added to
+the process/thread lists yet.
 
-The problem was introduced in
-commit f2edb9f7706dcb2c0d9a362b2ba849efe3a97f5e ("ipvs: implement
-passive PMTUD for IPIP packets").
+Change copy_process() to update the child's TIF_SYSCALL_TRACEPOINT
+under tasklist.
 
-Signed-off-by: Peter Christensen <pch@ordbogen.com>
-Acked-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
+Link: http://lkml.kernel.org/p/20140413185854.GB20668@redhat.com
+
+Fixes: a871bd33a6c0 "tracing: Add syscall tracepoints"
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/ipvs/ip_vs_core.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ include/trace/syscall.h |   15 +++++++++++++++
+ kernel/fork.c           |    2 ++
+ 2 files changed, 17 insertions(+)
 
---- a/net/netfilter/ipvs/ip_vs_core.c
-+++ b/net/netfilter/ipvs/ip_vs_core.c
-@@ -1384,15 +1384,19 @@ ip_vs_in_icmp(struct sk_buff *skb, int *
+--- a/include/trace/syscall.h
++++ b/include/trace/syscall.h
+@@ -4,6 +4,7 @@
+ #include <linux/tracepoint.h>
+ #include <linux/unistd.h>
+ #include <linux/ftrace_event.h>
++#include <linux/thread_info.h>
  
- 	if (ipip) {
- 		__be32 info = ic->un.gateway;
-+		__u8 type = ic->type;
-+		__u8 code = ic->code;
+ #include <asm/ptrace.h>
  
- 		/* Update the MTU */
- 		if (ic->type == ICMP_DEST_UNREACH &&
- 		    ic->code == ICMP_FRAG_NEEDED) {
- 			struct ip_vs_dest *dest = cp->dest;
- 			u32 mtu = ntohs(ic->un.frag.mtu);
-+			__be16 frag_off = cih->frag_off;
+@@ -31,4 +32,18 @@ struct syscall_metadata {
+ 	struct ftrace_event_call *exit_event;
+ };
  
- 			/* Strip outer IP and ICMP, go to IPIP header */
--			__skb_pull(skb, ihl + sizeof(_icmph));
-+			if (pskb_pull(skb, ihl + sizeof(_icmph)) == NULL)
-+				goto ignore_ipip;
- 			offset2 -= ihl + sizeof(_icmph);
- 			skb_reset_network_header(skb);
- 			IP_VS_DBG(12, "ICMP for IPIP %pI4->%pI4: mtu=%u\n",
-@@ -1400,7 +1404,7 @@ ip_vs_in_icmp(struct sk_buff *skb, int *
- 			ipv4_update_pmtu(skb, dev_net(skb->dev),
- 					 mtu, 0, 0, 0, 0);
- 			/* Client uses PMTUD? */
--			if (!(cih->frag_off & htons(IP_DF)))
-+			if (!(frag_off & htons(IP_DF)))
- 				goto ignore_ipip;
- 			/* Prefer the resulting PMTU */
- 			if (dest) {
-@@ -1419,12 +1423,13 @@ ip_vs_in_icmp(struct sk_buff *skb, int *
- 		/* Strip outer IP, ICMP and IPIP, go to IP header of
- 		 * original request.
- 		 */
--		__skb_pull(skb, offset2);
-+		if (pskb_pull(skb, offset2) == NULL)
-+			goto ignore_ipip;
- 		skb_reset_network_header(skb);
- 		IP_VS_DBG(12, "Sending ICMP for %pI4->%pI4: t=%u, c=%u, i=%u\n",
- 			&ip_hdr(skb)->saddr, &ip_hdr(skb)->daddr,
--			ic->type, ic->code, ntohl(info));
--		icmp_send(skb, ic->type, ic->code, info);
-+			type, code, ntohl(info));
-+		icmp_send(skb, type, code, info);
- 		/* ICMP can be shorter but anyways, account it */
- 		ip_vs_out_stats(cp, skb);
++#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_HAVE_SYSCALL_TRACEPOINTS)
++static inline void syscall_tracepoint_update(struct task_struct *p)
++{
++	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
++		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
++	else
++		clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
++}
++#else
++static inline void syscall_tracepoint_update(struct task_struct *p)
++{
++}
++#endif
++
+ #endif /* _TRACE_SYSCALL_H */
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1479,7 +1479,9 @@ static struct task_struct *copy_process(
  
+ 	total_forks++;
+ 	spin_unlock(&current->sighand->siglock);
++	syscall_tracepoint_update(p);
+ 	write_unlock_irq(&tasklist_lock);
++
+ 	proc_fork_connector(p);
+ 	cgroup_post_fork(p);
+ 	if (clone_flags & CLONE_THREAD)
 
 
