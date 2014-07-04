@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917AbaGDHj5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 03:39:57 -0400
-Received: from mout.gmx.net ([212.227.15.19]:50680 "EHLO mout.gmx.net"
+	id S1752581AbaGDHmU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 03:42:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35505 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750988AbaGDHjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 03:39:55 -0400
-From: Marc Dietrich <marvin24@gmx.de>
-To: Pawel Lebioda <pawel.lebioda89@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Julian Andres Klode <jak@jak-linux.org>, ac100@lists.launchpad.net,
-        linux-tegra@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: nvec: insert blank lines after declarations
-Date: Fri, 04 Jul 2014 09:39:46 +0200
-Message-ID: <2268306.t0PVlUp3mj@fb07-iapwap2>
-User-Agent: KMail/4.13.2 (Linux/3.16.0-rc3-12.gfc9498b-desktop+; KDE/4.13.2; x86_64; ; )
-In-Reply-To: <20140703191554.GA12029@ThinkPad>
-References: <20140703191554.GA12029@ThinkPad>
+	id S1750932AbaGDHmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 03:42:19 -0400
+Message-ID: <53B65AC8.1010901@redhat.com>
+Date: Fri, 04 Jul 2014 09:42:00 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1664320.lmTQ5RBMUP"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-X-Provags-ID: V03:K0:uNote+ql+fMCdWcK9O1koXW7Mc7oanT0v4pnXqfKMwkfYv1k8ha
- 9qz8Y5gsuyXryo8N21spoDvmH7yyxEwJyx6ga/KJ8JocP5kpFirQ/26R5WPV25AehDkHDGb
- iXzREzTWbc1jrmBEH2+lrATVwKFFqv1CL8Ch2skxJz7eUemjmgdQstsDwj6cYFAsjKPGucy
- 6y4q55apCaF0bwqD2TBvg==
+To: Jan Kiszka <jan.kiszka@siemens.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>, Bandan Das <bsd@redhat.com>
+CC: Gleb Natapov <gleb@kernel.org>, Hu Robert <robert.hu@intel.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since
+ race
+References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com> <53B3CA6A.4050902@siemens.com> <jpgy4wb9g5t.fsf@redhat.com> <20140703065955.GA4236@kernel> <jpgk37u8iae.fsf@redhat.com> <20140704025250.GA2849@kernel> <53B63EF2.6000800@siemens.com>
+In-Reply-To: <53B63EF2.6000800@siemens.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 04/07/2014 07:43, Jan Kiszka ha scritto:
+> Which version (hash) of kvm-unit-tests are you using? All tests up to
+> 307621765a are running fine here, but since a0e30e712d not much is
+> completing successfully anymore:
 
---nextPart1664320.lmTQ5RBMUP
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Which test failed to init and triggered the change in the patch?
 
-Am Donnerstag, 3. Juli 2014, 21:15:57 schrieb Pawel Lebioda:
-> Hi,
-> 
-> This patch fixes coding style warnings reported by checkpatch.pl:
-> "Missing a blank line after declarations".
+The patch was needed here to fix failures when KVM is loaded with ept=0.
 
-thanks. Looking at the checkpatch output, its requirement of at
-least 4 lines of help text looks like a bit overkill though.
- 
-> Signed-off-by: Pawel Lebioda <pawel.lebioda89@gmail.com>
->  drivers/staging/nvec/nvec_paz00.c | 1 +
->  drivers/staging/nvec/nvec_power.c | 1 +
->  drivers/staging/nvec/nvec_ps2.c   | 2 ++
->  3 files changed, 4 insertions(+)
+BTW, "FAIL: intercepted interrupt + hlt" is always failing here too 
+(Xeon E5 Sandy Bridge).
 
-Acked-by: Marc Dietrich <marvin24@gmx.de>
+Paolo
 
---nextPart1664320.lmTQ5RBMUP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQEcBAABAgAGBQJTtlpCAAoJEKyeR39HFBton7cIAIsdSvQrO2B+GzmYqBcP/CZI
-vd7/MyQUG03NuAf5Zjby6UiSZX8xbVge5lXVMIthKlChLG2azcYB/7QmtmM4Mdux
-PivNonXDVJA6do1VaDji3Q2UXn6A8IM01DLEopyQrk+XnmkV8v4S3X/K3VYm3rBP
-RViyo2HFR1fax+H3odOLNBExirjMauZWYWzYPZKb3LxBIzTggeyn9ND8aDNFyZCC
-Rqd4ghKQvwJL0RFxRmChugg6A0i+PAAmhn/rmjcFaAwnK/hFyUa+JdOy0Saet4iq
-jtmYUdvZkjzQiwOCFeltprB959ROBdW1DKjOgJnyCDHa5DYmNEx75y04hg8lKgU=
-=TFKr
------END PGP SIGNATURE-----
-
---nextPart1664320.lmTQ5RBMUP--
+> enabling apic
+> paging enabled
+> cr0 = 80010011
+> cr3 = 7fff000
+> cr4 = 20
+> PASS: test vmxon with FEATURE_CONTROL cleared
+> PASS: test vmxon without FEATURE_CONTROL lock
+> PASS: test enable VMX in FEATURE_CONTROL
+> PASS: test FEATURE_CONTROL lock bit
+> PASS: test vmxon
+> FAIL: test vmptrld
+> PASS: test vmclear
+> init_vmcs : make_vmcs_current error
+> FAIL: test vmptrst
+> init_vmcs : make_vmcs_current error
+> vmx_run : vmlaunch failed.
+> FAIL: test vmlaunch
+> FAIL: test vmlaunch
+>
+> SUMMARY: 10 tests, 4 unexpected failures
+>
 
