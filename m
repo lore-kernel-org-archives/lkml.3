@@ -1,131 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755645AbaGDNnH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 09:43:07 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:56419 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989AbaGDNnG (ORCPT
+	id S1758255AbaGDNny (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 09:43:54 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:26055 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756160AbaGDNnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 09:43:06 -0400
-Date: Fri, 4 Jul 2014 15:42:57 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Will Deacon <will.deacon@arm.com>,
+	Fri, 4 Jul 2014 09:43:53 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-e1-53b6af967d66
+Message-id: <53B6AE57.70307@samsung.com>
+Date: Fri, 04 Jul 2014 17:38:31 +0400
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
-        David Riley <davidriley@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Ritesh Harjain <ritesh.harjani@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv4 4/5] arm: use genalloc for the atomic pool
-Message-ID: <20140704134254.GA4142@ulmo>
-References: <1404324218-4743-1-git-send-email-lauraa@codeaurora.org>
- <1404324218-4743-5-git-send-email-lauraa@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
-Content-Disposition: inline
-In-Reply-To: <1404324218-4743-5-git-send-email-lauraa@codeaurora.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: get rid of hardcoded assumptions about kernel stack
+ size
+References: <1403099422-850-1-git-send-email-a.ryabinin@samsung.com>
+ <201407032224.28386.arnd@arndb.de> <53B6541B.6000702@samsung.com>
+ <4429781.iuSvvPCxYj@wuerfel>
+In-reply-to: <4429781.iuSvvPCxYj@wuerfel>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t/xq7rT1m8LNtj/UM3i76Rj7Bbvl/Uw
+	Wmx6fI3V4vKuOWwWty/zWkw/9pfN4uXHEywO7B5r5q1h9Ghp7mHz+P1rEqPHnWt72Dw2L6n3
+	+LxJLoAtissmJTUnsyy1SN8ugSvj0uNvjAX93BX7O5sZGxifcXQxcnJICJhIbFh9gRnCFpO4
+	cG89G4gtJLCUUeLOOaYuRi4gu5lJ4u2672AJXgENidWNbUAJDg4WAVWJNS1hIGE2AT2Jf7O2
+	g5WICkRIHOh7xgpRLijxY/I9FhBbREBRYuqLZ8wgM5kFHjFKtK38ApYQFgiReHJ7BQvEsuWM
+	Eo39U8G6OQU0JT4eWQh2HbOAjsT+1mlsELa8xOY1b5knMArMQrJkFpKyWUjKFjAyr2IUTS1N
+	LihOSs810itOzC0uzUvXS87P3cQICfavOxiXHrM6xCjAwajEw9vQsi1YiDWxrLgy9xCjBAez
+	kgjvn1VAId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYwztghqmGSHPFBL2LD9TN+EKVuzLxSlnpHV
+	fdXtdVphacqc096shQmB9/8s1q09/PL4gfcmt3Mf8ayWXJUoOOOi8ZGjs+qdEx/mP3nU5FuY
+	+XLlTGnuWrVb80SW+bj9ZF6ts/RPbssWbf1qI3bV1wEzJbk0++JWXLjx+LhBxcXvG8Sl3Zts
+	O3mUWIozEg21mIuKEwGv7K0dVAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/04/14 14:27, Arnd Bergmann wrote:
+> On Friday 04 July 2014 11:13:31 Andrey Ryabinin wrote:
+>>>
+>>> but I wonder if there is a way to avoid the extra include here, as it might also
+>>> cause a general slowdown because of asm/memory.h getting pulled into more .c
+>>> files. Would it be reasonable to hardcode PAGE_SIZE here?
+>>>
+>>
+>> IMO it's a bug of iop13xx platform, that it includes "higlevel" linux/reboot.h
+>> from a very "lowlevel" header mach/iop13xx.h. I think it should be fixed with a patch above.
+>> Slowing down of kernel build for a few more seconds is not good enough reason for me to
+>> hardcode PAGE_SIZE here.
+> 
+> I don't think we can pinpoint a specific header that is "wrong" here, the
 
---ew6BAiZeqk4r7MaW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+That's just my opinion. Anyway, if this header needed only for declaring single enum
+it worth to replace include with enum declaration.
 
-On Wed, Jul 02, 2014 at 11:03:37AM -0700, Laura Abbott wrote:
-[...]
-> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-[...]
-> index f5190ac..02a1939 100644
-> --- a/arch/arm/mm/dma-mapping.c
-> +++ b/arch/arm/mm/dma-mapping.c
-> @@ -26,6 +26,7 @@
->  #include <linux/io.h>
->  #include <linux/vmalloc.h>
->  #include <linux/sizes.h>
-> +#include <linux/genalloc.h>
+> fundamental problem is that our header files are a bit messy when it comes
+> to recursive inclusion and we'd be better off if we generally were a little
+> more careful about including headers from other headers.
+> 
 
-Includes should be sorted alphabetically. I realize that's not the case
-for this particular file, but the downside of that is that your patch no
-longer applies cleanly on top of linux-next because some other patch did
-add linux/cma.h at the same location.
+That's why we need to remove reboot.h from iop13xx.h.
+Are you going to send a proper formatted patch for that?
 
->  static int __init early_coherent_pool(char *p)
->  {
-> -	atomic_pool.size =3D memparse(p, &p);
-> +	atomic_pool_size =3D memparse(p, &p);
->  	return 0;
->  }
->  early_param("coherent_pool", early_coherent_pool);
-> =20
-> +
+Speaking of asm/page.h, a lot of other architectures
+also have it included in thread_info.h, so I would leave it there.
 
-There's a gratuituous blank line her.
 
-I also need the below hunk on top of you patch to make this compile on
-ARM.
+> It's also very hard to retroactively clean this up on a large scale.
+> 
+> 	Arnd
+> 
 
-Thierry
-
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index b323032f0850..460aaf965a87 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -1250,11 +1250,13 @@ static int __iommu_remove_mapping(struct device *de=
-v, dma_addr_t iova, size_t si
-=20
- static struct page **__atomic_get_pages(void *addr)
- {
--	struct dma_pool *pool =3D &atomic_pool;
--	struct page **pages =3D pool->pages;
--	int offs =3D (addr - pool->vaddr) >> PAGE_SHIFT;
-+	struct page *page;
-+	phys_addr_t phys;
-+
-+	phys =3D gen_pool_virt_to_phys(atomic_pool, (unsigned long)addr);
-+	page =3D phys_to_page(phys);
-=20
--	return pages + offs;
-+	return (struct page **)page;
- }
-=20
- static struct page **__iommu_get_pages(void *cpu_addr, struct dma_attrs *a=
-ttrs)
-diff --git a/arch/arm64/mm/dma-mapping.c b/arch/arm64/mm/dma-mapping.c
-index a2487f12b2fc..764f53565958 100644
---- a/arch/arm64/mm/dma-mapping.c
-+++ b/arch/arm64/mm/dma-mapping.c
-@@ -441,7 +441,6 @@ remove_mapping:
- 	dma_common_free_remap(addr, atomic_pool_size, VM_USERMAP);
- destroy_genpool:
- 	gen_pool_destroy(atomic_pool);
--	atomic_pool =3D=3D NULL;
- free_page:
- 	if (!dma_release_from_contiguous(NULL, page, nr_pages))
- 		__free_pages(page, get_order(atomic_pool_size));
-
---ew6BAiZeqk4r7MaW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJTtq9eAAoJEN0jrNd/PrOhpXMQAL0++4Vz+tGUrju08/GKR5AN
-vqM3c6pBzLxlwwBEfaSdzTy+xyy6exaYMp3vo67stXvIwLzaGvnn8GYKyAurpXtK
-ssiL2nW5EkV0GiYWZJcXbrKmOdZcBMEuhimKjdwKBSA8jnCNEWdLxEmldemjvJGj
-S9NM1i3MVTFlEoVd+EcYy5aURy51rrlNG4Kb4IY4Qcpjykax24gjFNMt37NihSE0
-a75MQgyjMFveYpn8XPtQoPmjzu3NycRp9UbfD+/Z3+Y3zVuN+hsmkU75inTYA/44
-+R01xMBxygFL6xTJtfqgW5obH3TkAyIWOkgBFuNM5o38F+7o0/nxp++Pd+2UGaYe
-GIPjZnibpei/PT+q7Z21J7BG4hf5Z/RpNzWWzAFq29B4Yw9wVPVKeBMIET9q+8s0
-6HZV9wESozFawqLTH/qUnJG7iPGQzInwjKQjFmqT2xn/BHyg+wyZdqoGSTFAEm0B
-EqTM3iuGQKqdlTBoOwwLvdeZZpUB1mrULndi+Dq0tILiS3HS8VFaOzd745lb+6Nu
-BcQzxi4s7YwlhhMe5NXjwH/OB+rOM9aQk0GCwRv9iLBFV3xfTAZbri9UiqxfmjCc
-bfc5Cic2g739npdrQ2uuvfi42XVSTBK0mPLfs/6NTPCIUdcyK30uNOTmigs17tt+
-ABfo1C2Wknj2COhzhGAu
-=bc4p
------END PGP SIGNATURE-----
-
---ew6BAiZeqk4r7MaW--
