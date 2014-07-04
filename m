@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758939AbaGDKCj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 06:02:39 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45585 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964833AbaGDJz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 05:55:58 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <tony@atomide.com>, <kishon@ti.com>, <balbi@ti.com>
-CC: <nsekhar@ti.com>, <nm@ti.com>, <george.cherian@ti.com>,
-        <sergei.shtylyov@cogentembedded.com>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v2 0/6] omap: phy: dra7-evm PHY fixes for 3.16
-Date: Fri, 4 Jul 2014 12:55:42 +0300
-Message-ID: <1404467748-12154-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932337AbaGDJzx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 05:55:53 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:38026 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999AbaGDJzt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 05:55:49 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Mark Brown <broonie@kernel.org>, Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v6 06/23] mfd: max77686: Make error checking consistent
+Date: Fri,  4 Jul 2014 11:55:05 +0200
+Message-Id: <1404467722-26687-7-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.0.0.rc2
+In-Reply-To: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1404467722-26687-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Error checking across the driver is mostly consistent besides
+a few exceptions, so change these exceptions for consistency.
 
-On DRA7-evm, the VDDA_1V8_PHY supply must be always-on for proper functioning
-of the PHYs on the SoC.
-
-The 3.3V USB supply (ldousb_reg) can be turned OFF when the High Speed USB PHYs
-are not in use. We add regulator support in the PHY framework core to manage
-the PHY's regulator during PHY power on/off.
-
-Finally we add the 3.3V regulator information to the USB2 PHYs.
-
-This series should get the USB and SATA working again on 3.16 on DRA7-evm.
-
-cheers,
--roger
-
-Changelog:
-
-v2:
-- removed if (!NULL) check around regulator_put()
-- added more technical information in commit message about 1V8_PHY power line
-- added pm_runtime_disable in omap_usb2_remove()
-
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
-Roger Quadros (6):
-  ARM: dts: dra7-evm: Make VDDA_1V8_PHY supply always on
-  phy: core: Fix error path in phy_create()
-  phy: core: Support regulator supply for PHY power
-  phy: core: Add phy-supply to DT binding documentation
-  phy: omap-usb2: Balance pm_runtime_enable() on probe failure and
-    remove
-  ARM: dts: dra7-evm: Add regulator information to USB2 PHYs
+ drivers/mfd/max77686.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
- .../devicetree/bindings/phy/phy-bindings.txt       |  4 +++
- arch/arm/boot/dts/dra7-evm.dts                     |  9 ++++++
- drivers/phy/phy-core.c                             | 33 ++++++++++++++++++++--
- drivers/phy/phy-omap-usb2.c                        |  7 +++--
- include/linux/phy/phy.h                            |  2 ++
- 5 files changed, 50 insertions(+), 5 deletions(-)
-
+diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+index ada4976..87fe52e 100644
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -134,7 +134,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 
+ 	max77686 = devm_kzalloc(&i2c->dev,
+ 				sizeof(struct max77686_dev), GFP_KERNEL);
+-	if (max77686 == NULL)
++	if (!max77686)
+ 		return -ENOMEM;
+ 
+ 	i2c_set_clientdata(i2c, max77686);
+@@ -153,8 +153,8 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 		return ret;
+ 	}
+ 
+-	if (regmap_read(max77686->regmap,
+-			 MAX77686_REG_DEVICE_ID, &data) < 0) {
++	ret = regmap_read(max77686->regmap, MAX77686_REG_DEVICE_ID, &data);
++	if (ret < 0) {
+ 		dev_err(max77686->dev,
+ 			"device not found on this channel (this is not an error)\n");
+ 		return -ENODEV;
+@@ -180,7 +180,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
+ 				  IRQF_SHARED, 0, &max77686_irq_chip,
+ 				  &max77686->irq_data);
+-	if (ret != 0) {
++	if (ret) {
+ 		dev_err(&i2c->dev, "failed to add PMIC irq chip: %d\n", ret);
+ 		goto err_unregister_i2c;
+ 	}
+@@ -188,7 +188,7 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
+ 				  IRQF_SHARED, 0, &max77686_rtc_irq_chip,
+ 				  &max77686->rtc_irq_data);
+-	if (ret != 0) {
++	if (ret) {
+ 		dev_err(&i2c->dev, "failed to add RTC irq chip: %d\n", ret);
+ 		goto err_del_irqc;
+ 	}
 -- 
-1.8.3.2
+2.0.0.rc2
 
