@@ -1,1388 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760181AbaGDRyG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 13:54:06 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:33588 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755239AbaGDRs6 (ORCPT
+	id S1030254AbaGDRyT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 13:54:19 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:14690 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759207AbaGDRyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 13:48:58 -0400
-X-AuditID: cbfec7f5-b7f626d000004b39-c2-53b6e906a789
+	Fri, 4 Jul 2014 13:54:14 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-a2-53b6ea4294e5
+Message-id: <53B6EA24.6030805@samsung.com>
+Date: Fri, 04 Jul 2014 19:53:40 +0200
 From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
 To: linux-samsung-soc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Kukjin Kim <kgene.kim@samsung.com>, Arnd Bergmann <arnd@arndb.de>,
         Olof Johansson <olof@lixom.net>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Mark Brown <broonie@kernel.org>,
-        =?UTF-8?q?Heiko=20St=C3=BCbner?= <heiko@sntech.de>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
         Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [PATCH 01/19] clk: samsung: Add clock driver for S5PV210 and
- compatible SoCs
-Date: Fri, 04 Jul 2014 19:48:01 +0200
-Message-id: <1404496099-26708-2-git-send-email-t.figa@samsung.com>
-X-Mailer: git-send-email 1.9.3
-In-reply-to: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
+Subject: Re: [PATCH 00/19] ARM: SAMSUNG: S5PV210 platform clean-up
 References: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMLMWRmVeSWpSXmKPExsVy+t/xy7psL7cFG1z+rGnxd9IxdoupD5+w
+In-reply-to: <1404496099-26708-1-git-send-email-t.figa@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsVy+t/xa7pOr7YFG5z/yWvxd9IxdoupD5+w
 	Wfx/9JrVonfBVTaLTY+vsVpc3jWHzWLG+X1MFmuP3GW3OHX9M5vFql1/GB24PH7/msTosXPW
-	XXaPTas62Tw2L6n3uHKiidWjb8sqRo/t1+Yxe3zeJBfAEcVlk5Kak1mWWqRvl8CV8WfHQraC
-	trtMFZM+9bA1MDYtY+pi5OSQEDCRuPJgDiOELSZx4d56ti5GLg4hgaWMEgc+gTicQE4fk8Tf
-	ZbwgNpuAmsTnhkdgcREBVYnPbQvYuxg5OJgFbjNJtAqDhIUFwiUaG5+xgtgsQCVLZ+1jB7F5
-	BZwk9nx8yQqxS06id9sbZhCbU8BZYuK6C0wQq5wk/vyfzzKBkXcBI8MqRtHU0uSC4qT0XCO9
-	4sTc4tK8dL3k/NxNjJCA/LqDcekxq0OMAhyMSjy8DS3bgoVYE8uKK3MPMUpwMCuJ8P5ZBRTi
-	TUmsrEotyo8vKs1JLT7EyMTBKdXA6NkZMPuUhNtqnkp5zsKt4o27WDfNf/lWZn9i/L+z7/+F
-	fFicb9BleKsqYXvFhAlM0a6yy73Vvq9K+vTTOotPdtJ5TRvPhmuNF0TYLsjvmqryOfmsh0Dz
-	7ilv5DfmiHM2scseNCzT0VSedz9nW+dew2vNlrsMb1jeetG/RPZB6p5jG3VkeQP4lFiKMxIN
-	tZiLihMBUTboPSYCAAA=
+	XXaPTas62Tw2L6n3uHKiidWjb8sqRo/t1+Yxe3zeJBfAEcVlk5Kak1mWWqRvl8CVcfHHGsaC
+	tuqK9bv+sDUw3orqYuTkkBAwkVjYcIIVwhaTuHBvPVsXIxeHkMBSRokJv79BOZ8ZJS5/nMAG
+	UsUroCWx88IRoA4ODhYBVYlNE/JAwmwCahKfGx6BlfADlaxpus4CUiIqECHx+IIQRKegxI/J
+	91hAbBGgzs9tC9hBxjML3GaS+P35FzNIQljASWLlk/lMILYQkP3n/3ywBk4BZ4mJ6y6AxZkF
+	dCT2t05jg7DlJTavecs8gVFwFpIds5CUzUJStoCReRWjaGppckFxUnquoV5xYm5xaV66XnJ+
+	7iZGSNx82cG4+JjVIUYBDkYlHt7GFRuChVgTy4orcw8xSnAwK4nw/lm1LViINyWxsiq1KD++
+	qDQntfgQIxMHp1QDY6mp9oP5v01zuD7H1zAJlGoss2W7/WrvCieHt0a+5aemLtltuofjAM8k
+	hi8ilRsF8r58kefWL2GIc7psV2mdcjKmytPnmdTtztWGgq/mXlm+5Bjn3dbARYuluTVFF682
+	9/+nESVUl93pdtA8a3rB3OWtIjflcn5++fFz27wNdoHuJ4pcc/hWKLEUZyQaajEXFScCAE6H
+	OGl5AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Aha, I forgot to add that the series is based on Kukjin's for-next
+branch with "pwm: samsung: remove s5pc100 related pwm codes" patch
+reverted and you can find a ready branch here:
 
-This patch adds new, Common Clock Framework-based clock driver for Samsung
-S5PV210 and compatible SoCs. The driver is just added, without enabling it yet.
+https://github.com/tom3q/linux.git v3.17-s5pv210-dt
 
-Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-[t.figa: Added support for other SoC variants and clock output. Fixed
-remaining minor issues.]
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: devicetree@vger.kernel.org
----
- .../bindings/clock/samsung,s5pv210-clock.txt       |  78 ++
- drivers/clk/samsung/Makefile                       |   1 +
- drivers/clk/samsung/clk-s5pv210.c                  | 976 +++++++++++++++++++++
- include/dt-bindings/clock/s5pv210.h                | 239 +++++
- 4 files changed, 1294 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/samsung,s5pv210-clock.txt
- create mode 100644 drivers/clk/samsung/clk-s5pv210.c
- create mode 100644 include/dt-bindings/clock/s5pv210.h
+Sorry for the noise.
 
-diff --git a/Documentation/devicetree/bindings/clock/samsung,s5pv210-clock.txt b/Documentation/devicetree/bindings/clock/samsung,s5pv210-clock.txt
-new file mode 100644
-index 0000000..effd940
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/samsung,s5pv210-clock.txt
-@@ -0,0 +1,78 @@
-+* Samsung S5P6442/S5PC110/S5PV210 Clock Controller
-+
-+Samsung S5P6442, S5PC110 and S5PV210 SoCs contain integrated clock
-+controller, which generates and supplies clock to various controllers
-+within the SoC.
-+
-+Required Properties:
-+
-+- compatible: should be one of following:
-+	- "samsung,s5pv210-clock" : for clock controller of Samsung
-+	  S5PC110/S5PV210 SoCs,
-+	- "samsung,s5p6442-clock" : for clock controller of Samsung
-+	  S5P6442 SoC.
-+
-+- reg: physical base address of the controller and length of memory mapped
-+  region.
-+
-+- #clock-cells: should be 1.
-+
-+All available clocks are defined as preprocessor macros in
-+dt-bindings/clock/s5pv210.h header and can be used in device tree sources.
-+
-+External clocks:
-+
-+There are several clocks that are generated outside the SoC. It is expected
-+that they are defined using standard clock bindings with following
-+clock-output-names:
-+ - "xxti": external crystal oscillator connected to XXTI and XXTO pins of
-+the SoC,
-+ - "xusbxti": external crystal oscillator connected to XUSBXTI and XUSBXTO
-+pins of the SoC,
-+
-+A subset of above clocks available on given board shall be specified in
-+board device tree, including the system base clock, as selected by XOM[0]
-+pin of the SoC. Refer to generic fixed rate clock bindings
-+documentation[1] for more information how to specify these clocks.
-+
-+[1] Documentation/devicetree/bindings/clock/fixed-clock.txt
-+
-+Example: Clock controller node:
-+
-+	clock: clock-controller@7e00f000 {
-+		compatible = "samsung,s5pv210-clock";
-+		reg = <0x7e00f000 0x1000>;
-+		#clock-cells = <1>;
-+	};
-+
-+Example: Required external clocks:
-+
-+	xxti: clock-xxti {
-+		compatible = "fixed-clock";
-+		clock-output-names = "xxti";
-+		clock-frequency = <24000000>;
-+		#clock-cells = <0>;
-+	};
-+
-+	xusbxti: clock-xusbxti {
-+		compatible = "fixed-clock";
-+		clock-output-names = "xusbxti";
-+		clock-frequency = <24000000>;
-+		#clock-cells = <0>;
-+	};
-+
-+Example: UART controller node that consumes the clock generated by the clock
-+  controller (refer to the standard clock bindings for information about
-+  "clocks" and "clock-names" properties):
-+
-+	uart0: serial@e2900000 {
-+		compatible = "samsung,s5pv210-uart";
-+		reg = <0xe2900000 0x400>;
-+		interrupt-parent = <&vic1>;
-+		interrupts = <10>;
-+		clock-names = "uart", "clk_uart_baud0",
-+				"clk_uart_baud1";
-+		clocks = <&clocks UART0>, <&clocks UART0>,
-+				<&clocks SCLK_UART0>;
-+		status = "disabled";
-+	};
-diff --git a/drivers/clk/samsung/Makefile b/drivers/clk/samsung/Makefile
-index 69e8177..49d6ce1 100644
---- a/drivers/clk/samsung/Makefile
-+++ b/drivers/clk/samsung/Makefile
-@@ -16,3 +16,4 @@ obj-$(CONFIG_S3C2410_COMMON_DCLK)+= clk-s3c2410-dclk.o
- obj-$(CONFIG_S3C2412_COMMON_CLK)+= clk-s3c2412.o
- obj-$(CONFIG_S3C2443_COMMON_CLK)+= clk-s3c2443.o
- obj-$(CONFIG_ARCH_S3C64XX)	+= clk-s3c64xx.o
-+obj-$(CONFIG_ARCH_S5PV210)	+= clk-s5pv210.o
-diff --git a/drivers/clk/samsung/clk-s5pv210.c b/drivers/clk/samsung/clk-s5pv210.c
-new file mode 100644
-index 0000000..509779a
---- /dev/null
-+++ b/drivers/clk/samsung/clk-s5pv210.c
-@@ -0,0 +1,976 @@
-+/*
-+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
-+ * Author: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-+ *
-+ * Based on clock drivers for S3C64xx and Exynos4 SoCs.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Common Clock Framework support for all S5PC110/S5PV210 SoCs.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk-provider.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/syscore_ops.h>
-+
-+#include "clk.h"
-+#include "clk-pll.h"
-+
-+#include <dt-bindings/clock/s5pv210.h>
-+
-+/* S5PC110/S5PV210 clock controller register offsets */
-+#define APLL_LOCK		0x0000
-+#define MPLL_LOCK		0x0008
-+#define EPLL_LOCK		0x0010
-+#define VPLL_LOCK		0x0020
-+#define APLL_CON0		0x0100
-+#define APLL_CON1		0x0104
-+#define MPLL_CON		0x0108
-+#define EPLL_CON0		0x0110
-+#define EPLL_CON1		0x0114
-+#define VPLL_CON		0x0120
-+#define CLK_SRC0		0x0200
-+#define CLK_SRC1		0x0204
-+#define CLK_SRC2		0x0208
-+#define CLK_SRC3		0x020c
-+#define CLK_SRC4		0x0210
-+#define CLK_SRC5		0x0214
-+#define CLK_SRC6		0x0218
-+#define CLK_SRC_MASK0		0x0280
-+#define CLK_SRC_MASK1		0x0284
-+#define CLK_DIV0		0x0300
-+#define CLK_DIV1		0x0304
-+#define CLK_DIV2		0x0308
-+#define CLK_DIV3		0x030c
-+#define CLK_DIV4		0x0310
-+#define CLK_DIV5		0x0314
-+#define CLK_DIV6		0x0318
-+#define CLK_DIV7		0x031c
-+#define CLK_GATE_MAIN0		0x0400
-+#define CLK_GATE_MAIN1		0x0404
-+#define CLK_GATE_MAIN2		0x0408
-+#define CLK_GATE_PERI0		0x0420
-+#define CLK_GATE_PERI1		0x0424
-+#define CLK_GATE_SCLK0		0x0440
-+#define CLK_GATE_SCLK1		0x0444
-+#define CLK_GATE_IP0		0x0460
-+#define CLK_GATE_IP1		0x0464
-+#define CLK_GATE_IP2		0x0468
-+#define CLK_GATE_IP3		0x046c
-+#define CLK_GATE_IP4		0x0470
-+#define CLK_GATE_BLOCK		0x0480
-+#define CLK_GATE_IP5		0x0484
-+#define CLK_OUT			0x0500
-+#define MISC			0xe000
-+#define OM_STAT			0xe100
-+
-+/* IDs of PLLs available on S5PV210/S5P6442 SoCs */
-+enum {
-+	apll,
-+	mpll,
-+	epll,
-+	vpll,
-+};
-+
-+/* IDs of external clocks (used for legacy boards) */
-+enum {
-+	xxti,
-+	xusbxti,
-+};
-+
-+static void __iomem *reg_base;
-+
-+#ifdef CONFIG_PM_SLEEP
-+static struct samsung_clk_reg_dump *s5pv210_clk_dump;
-+
-+/* List of registers that need to be preserved across suspend/resume. */
-+static unsigned long s5pv210_clk_regs[] __initdata = {
-+	CLK_SRC0,
-+	CLK_SRC1,
-+	CLK_SRC2,
-+	CLK_SRC3,
-+	CLK_SRC4,
-+	CLK_SRC5,
-+	CLK_SRC6,
-+	CLK_SRC_MASK0,
-+	CLK_SRC_MASK1,
-+	CLK_DIV0,
-+	CLK_DIV1,
-+	CLK_DIV2,
-+	CLK_DIV3,
-+	CLK_DIV4,
-+	CLK_DIV5,
-+	CLK_DIV6,
-+	CLK_DIV7,
-+	CLK_GATE_MAIN0,
-+	CLK_GATE_MAIN1,
-+	CLK_GATE_MAIN2,
-+	CLK_GATE_PERI0,
-+	CLK_GATE_PERI1,
-+	CLK_GATE_SCLK0,
-+	CLK_GATE_SCLK1,
-+	CLK_GATE_IP0,
-+	CLK_GATE_IP1,
-+	CLK_GATE_IP2,
-+	CLK_GATE_IP3,
-+	CLK_GATE_IP4,
-+	CLK_GATE_IP5,
-+	CLK_GATE_BLOCK,
-+	APLL_LOCK,
-+	MPLL_LOCK,
-+	EPLL_LOCK,
-+	VPLL_LOCK,
-+	APLL_CON0,
-+	APLL_CON1,
-+	MPLL_CON,
-+	EPLL_CON0,
-+	EPLL_CON1,
-+	VPLL_CON,
-+	CLK_OUT,
-+};
-+
-+static int s5pv210_clk_suspend(void)
-+{
-+	samsung_clk_save(reg_base, s5pv210_clk_dump,
-+				ARRAY_SIZE(s5pv210_clk_regs));
-+	return 0;
-+}
-+
-+static void s5pv210_clk_resume(void)
-+{
-+	samsung_clk_restore(reg_base, s5pv210_clk_dump,
-+				ARRAY_SIZE(s5pv210_clk_regs));
-+}
-+
-+static struct syscore_ops s5pv210_clk_syscore_ops = {
-+	.suspend = s5pv210_clk_suspend,
-+	.resume = s5pv210_clk_resume,
-+};
-+
-+static void s5pv210_clk_sleep_init(void)
-+{
-+	s5pv210_clk_dump =
-+		samsung_clk_alloc_reg_dump(s5pv210_clk_regs,
-+					   ARRAY_SIZE(s5pv210_clk_regs));
-+	if (!s5pv210_clk_dump) {
-+		pr_warn("%s: Failed to allocate sleep save data\n", __func__);
-+		return;
-+	}
-+
-+	register_syscore_ops(&s5pv210_clk_syscore_ops);
-+}
-+#else
-+static inline void s5pv210_clk_sleep_init(void) { }
-+#endif
-+
-+/* Mux parent lists. */
-+static const char *fin_pll_p[] __initconst = {
-+	"xxti",
-+	"xusbxti"
-+};
-+
-+static const char *mout_apll_p[] __initconst = {
-+	"fin_pll",
-+	"fout_apll"
-+};
-+
-+static const char *mout_mpll_p[] __initconst = {
-+	"fin_pll",
-+	"fout_mpll"
-+};
-+
-+static const char *mout_epll_p[] __initconst = {
-+	"fin_pll",
-+	"fout_epll"
-+};
-+
-+static const char *mout_vpllsrc_p[] __initconst = {
-+	"fin_pll",
-+	"sclk_hdmi27m"
-+};
-+
-+static const char *mout_vpll_p[] __initconst = {
-+	"mout_vpllsrc",
-+	"fout_vpll"
-+};
-+
-+static const char *mout_group1_p[] __initconst = {
-+	"dout_a2m",
-+	"mout_mpll",
-+	"mout_epll",
-+	"mout_vpll"
-+};
-+
-+static const char *mout_group2_p[] __initconst = {
-+	"xxti",
-+	"xusbxti",
-+	"sclk_hdmi27m",
-+	"sclk_usbphy0",
-+	"sclk_usbphy1",
-+	"sclk_hdmiphy",
-+	"mout_mpll",
-+	"mout_epll",
-+	"mout_vpll",
-+};
-+
-+static const char *mout_audio0_p[] __initconst = {
-+	"xxti",
-+	"pcmcdclk0",
-+	"sclk_hdmi27m",
-+	"sclk_usbphy0",
-+	"sclk_usbphy1",
-+	"sclk_hdmiphy",
-+	"mout_mpll",
-+	"mout_epll",
-+	"mout_vpll",
-+};
-+
-+static const char *mout_audio1_p[] __initconst = {
-+	"i2scdclk1",
-+	"pcmcdclk1",
-+	"sclk_hdmi27m",
-+	"sclk_usbphy0",
-+	"sclk_usbphy1",
-+	"sclk_hdmiphy",
-+	"mout_mpll",
-+	"mout_epll",
-+	"mout_vpll",
-+};
-+
-+static const char *mout_audio2_p[] __initconst = {
-+	"i2scdclk2",
-+	"pcmcdclk2",
-+	"sclk_hdmi27m",
-+	"sclk_usbphy0",
-+	"sclk_usbphy1",
-+	"sclk_hdmiphy",
-+	"mout_mpll",
-+	"mout_epll",
-+	"mout_vpll",
-+};
-+
-+static const char *mout_spdif_p[] __initconst = {
-+	"dout_audio0",
-+	"dout_audio1",
-+	"dout_audio3",
-+};
-+
-+static const char *mout_group3_p[] __initconst = {
-+	"mout_apll",
-+	"mout_mpll"
-+};
-+
-+static const char *mout_group4_p[] __initconst = {
-+	"mout_mpll",
-+	"dout_a2m"
-+};
-+
-+static const char *mout_flash_p[] __initconst = {
-+	"dout_hclkd",
-+	"dout_hclkp"
-+};
-+
-+static const char *mout_dac_p[] __initconst = {
-+	"mout_vpll",
-+	"sclk_hdmiphy"
-+};
-+
-+static const char *mout_hdmi_p[] __initconst = {
-+	"sclk_hdmiphy",
-+	"dout_tblk"
-+};
-+
-+static const char *mout_mixer_p[] __initconst = {
-+	"mout_dac",
-+	"mout_hdmi"
-+};
-+
-+static const char *mout_vpll_6442_p[] __initconst = {
-+	"fin_pll",
-+	"fout_vpll"
-+};
-+
-+static const char *mout_mixer_6442_p[] __initconst = {
-+	"mout_vpll",
-+	"dout_mixer"
-+};
-+
-+static const char *mout_d0sync_6442_p[] __initconst = {
-+	"mout_dsys",
-+	"div_apll"
-+};
-+
-+static const char *mout_d1sync_6442_p[] __initconst = {
-+	"mout_psys",
-+	"div_apll"
-+};
-+
-+static const char *mout_group2_6442_p[] __initconst = {
-+	"fin_pll",
-+	"none",
-+	"none",
-+	"sclk_usbphy0",
-+	"none",
-+	"none",
-+	"mout_mpll",
-+	"mout_epll",
-+	"mout_vpll",
-+};
-+
-+static const char *mout_audio0_6442_p[] __initconst = {
-+	"fin_pll",
-+	"pcmcdclk0",
-+	"none",
-+	"sclk_usbphy0",
-+	"none",
-+	"none",
-+	"mout_mpll",
-+	"mout_epll",
-+	"mout_vpll",
-+};
-+
-+static const char *mout_audio1_6442_p[] __initconst = {
-+	"i2scdclk1",
-+	"pcmcdclk1",
-+	"none",
-+	"sclk_usbphy0",
-+	"none",
-+	"none",
-+	"mout_mpll",
-+	"mout_epll",
-+	"mout_vpll",
-+	"fin_pll",
-+};
-+
-+static const char *mout_clksel_p[] __initconst = {
-+	"fout_apll_clkout",
-+	"fout_mpll_clkout",
-+	"fout_epll",
-+	"fout_vpll",
-+	"sclk_usbphy0",
-+	"sclk_usbphy1",
-+	"sclk_hdmiphy",
-+	"rtc",
-+	"rtc_tick",
-+	"dout_hclkm",
-+	"dout_pclkm",
-+	"dout_hclkd",
-+	"dout_pclkd",
-+	"dout_hclkp",
-+	"dout_pclkp",
-+	"dout_apll_clkout",
-+	"dout_hpm",
-+	"xxti",
-+	"xusbxti",
-+	"div_dclk"
-+};
-+
-+static const char *mout_clksel_6442_p[] __initconst = {
-+	"fout_apll_clkout",
-+	"fout_mpll_clkout",
-+	"fout_epll",
-+	"fout_vpll",
-+	"sclk_usbphy0",
-+	"none",
-+	"none",
-+	"rtc",
-+	"rtc_tick",
-+	"none",
-+	"none",
-+	"dout_hclkd",
-+	"dout_pclkd",
-+	"dout_hclkp",
-+	"dout_pclkp",
-+	"dout_apll_clkout",
-+	"none",
-+	"fin_pll",
-+	"none",
-+	"div_dclk"
-+};
-+
-+static const char *mout_clkout_p[] __initconst = {
-+	"dout_clkout",
-+	"none",
-+	"xxti",
-+	"xusbxti"
-+};
-+
-+/* Common fixed factor clocks. */
-+static struct samsung_fixed_factor_clock ffactor_clks[] __initdata = {
-+	FFACTOR(FOUT_APLL_CLKOUT, "fout_apll_clkout", "fout_apll", 1, 4, 0),
-+	FFACTOR(FOUT_MPLL_CLKOUT, "fout_mpll_clkout", "fout_mpll", 1, 2, 0),
-+	FFACTOR(DOUT_APLL_CLKOUT, "dout_apll_clkout", "dout_apll", 1, 4, 0),
-+};
-+
-+/* PLL input mux (fin_pll), which needs to be registered before PLLs. */
-+static struct samsung_mux_clock early_mux_clks[] __initdata = {
-+	MUX_F(FIN_PLL, "fin_pll", fin_pll_p, OM_STAT, 0, 1,
-+					CLK_MUX_READ_ONLY, 0),
-+};
-+
-+/* Common clock muxes. */
-+static struct samsung_mux_clock mux_clks[] __initdata = {
-+	MUX(MOUT_FLASH, "mout_flash", mout_flash_p, CLK_SRC0, 28, 1),
-+	MUX(MOUT_PSYS, "mout_psys", mout_group4_p, CLK_SRC0, 24, 1),
-+	MUX(MOUT_DSYS, "mout_dsys", mout_group4_p, CLK_SRC0, 20, 1),
-+	MUX(MOUT_MSYS, "mout_msys", mout_group3_p, CLK_SRC0, 16, 1),
-+	MUX(MOUT_EPLL, "mout_epll", mout_epll_p, CLK_SRC0, 8, 1),
-+	MUX(MOUT_MPLL, "mout_mpll", mout_mpll_p, CLK_SRC0, 4, 1),
-+	MUX(MOUT_APLL, "mout_apll", mout_apll_p, CLK_SRC0, 0, 1),
-+
-+	MUX(MOUT_CLKOUT, "mout_clkout", mout_clkout_p, MISC, 8, 2),
-+};
-+
-+/* S5PV210-specific clock muxes. */
-+static struct samsung_mux_clock s5pv210_mux_clks[] __initdata = {
-+	MUX(MOUT_VPLL, "mout_vpll", mout_vpll_p, CLK_SRC0, 12, 1),
-+
-+	MUX(MOUT_VPLLSRC, "mout_vpllsrc", mout_vpllsrc_p, CLK_SRC1, 28, 1),
-+	MUX(MOUT_CSIS, "mout_csis", mout_group2_p, CLK_SRC1, 24, 4),
-+	MUX(MOUT_FIMD, "mout_fimd", mout_group2_p, CLK_SRC1, 20, 4),
-+	MUX(MOUT_CAM1, "mout_cam1", mout_group2_p, CLK_SRC1, 16, 4),
-+	MUX(MOUT_CAM0, "mout_cam0", mout_group2_p, CLK_SRC1, 12, 4),
-+	MUX(MOUT_DAC, "mout_dac", mout_dac_p, CLK_SRC1, 8, 1),
-+	MUX(MOUT_MIXER, "mout_mixer", mout_mixer_p, CLK_SRC1, 4, 1),
-+	MUX(MOUT_HDMI, "mout_hdmi", mout_hdmi_p, CLK_SRC1, 0, 1),
-+
-+	MUX(MOUT_G2D, "mout_g2d", mout_group1_p, CLK_SRC2, 8, 2),
-+	MUX(MOUT_MFC, "mout_mfc", mout_group1_p, CLK_SRC2, 4, 2),
-+	MUX(MOUT_G3D, "mout_g3d", mout_group1_p, CLK_SRC2, 0, 2),
-+
-+	MUX(MOUT_FIMC2, "mout_fimc2", mout_group2_p, CLK_SRC3, 20, 4),
-+	MUX(MOUT_FIMC1, "mout_fimc1", mout_group2_p, CLK_SRC3, 16, 4),
-+	MUX(MOUT_FIMC0, "mout_fimc0", mout_group2_p, CLK_SRC3, 12, 4),
-+
-+	MUX(MOUT_UART3, "mout_uart3", mout_group2_p, CLK_SRC4, 28, 4),
-+	MUX(MOUT_UART2, "mout_uart2", mout_group2_p, CLK_SRC4, 24, 4),
-+	MUX(MOUT_UART1, "mout_uart1", mout_group2_p, CLK_SRC4, 20, 4),
-+	MUX(MOUT_UART0, "mout_uart0", mout_group2_p, CLK_SRC4, 16, 4),
-+	MUX(MOUT_MMC3, "mout_mmc3", mout_group2_p, CLK_SRC4, 12, 4),
-+	MUX(MOUT_MMC2, "mout_mmc2", mout_group2_p, CLK_SRC4, 8, 4),
-+	MUX(MOUT_MMC1, "mout_mmc1", mout_group2_p, CLK_SRC4, 4, 4),
-+	MUX(MOUT_MMC0, "mout_mmc0", mout_group2_p, CLK_SRC4, 0, 4),
-+
-+	MUX(MOUT_PWM, "mout_pwm", mout_group2_p, CLK_SRC5, 12, 4),
-+	MUX(MOUT_SPI1, "mout_spi1", mout_group2_p, CLK_SRC5, 4, 4),
-+	MUX(MOUT_SPI0, "mout_spi0", mout_group2_p, CLK_SRC5, 0, 4),
-+
-+	MUX(MOUT_DMC0, "mout_dmc0", mout_group1_p, CLK_SRC6, 24, 2),
-+	MUX(MOUT_PWI, "mout_pwi", mout_group2_p, CLK_SRC6, 20, 4),
-+	MUX(MOUT_HPM, "mout_hpm", mout_group3_p, CLK_SRC6, 16, 1),
-+	MUX(MOUT_SPDIF, "mout_spdif", mout_spdif_p, CLK_SRC6, 12, 2),
-+	MUX(MOUT_AUDIO2, "mout_audio2", mout_audio2_p, CLK_SRC6, 8, 4),
-+	MUX(MOUT_AUDIO1, "mout_audio1", mout_audio1_p, CLK_SRC6, 4, 4),
-+	MUX(MOUT_AUDIO0, "mout_audio0", mout_audio0_p, CLK_SRC6, 0, 4),
-+
-+	MUX(MOUT_CLKSEL, "mout_clksel", mout_clksel_p, CLK_OUT, 12, 5),
-+};
-+
-+/* S5P6442-specific clock muxes. */
-+static struct samsung_mux_clock s5p6442_mux_clks[] __initdata = {
-+	MUX(MOUT_VPLL, "mout_vpll", mout_vpll_6442_p, CLK_SRC0, 12, 1),
-+
-+	MUX(MOUT_FIMD, "mout_fimd", mout_group2_6442_p, CLK_SRC1, 20, 4),
-+	MUX(MOUT_CAM1, "mout_cam1", mout_group2_6442_p, CLK_SRC1, 16, 4),
-+	MUX(MOUT_CAM0, "mout_cam0", mout_group2_6442_p, CLK_SRC1, 12, 4),
-+	MUX(MOUT_MIXER, "mout_mixer", mout_mixer_6442_p, CLK_SRC1, 4, 1),
-+
-+	MUX(MOUT_D0SYNC, "mout_d0sync", mout_d0sync_6442_p, CLK_SRC2, 28, 1),
-+	MUX(MOUT_D1SYNC, "mout_d1sync", mout_d1sync_6442_p, CLK_SRC2, 24, 1),
-+
-+	MUX(MOUT_FIMC2, "mout_fimc2", mout_group2_6442_p, CLK_SRC3, 20, 4),
-+	MUX(MOUT_FIMC1, "mout_fimc1", mout_group2_6442_p, CLK_SRC3, 16, 4),
-+	MUX(MOUT_FIMC0, "mout_fimc0", mout_group2_6442_p, CLK_SRC3, 12, 4),
-+
-+	MUX(MOUT_UART2, "mout_uart2", mout_group2_6442_p, CLK_SRC4, 24, 4),
-+	MUX(MOUT_UART1, "mout_uart1", mout_group2_6442_p, CLK_SRC4, 20, 4),
-+	MUX(MOUT_UART0, "mout_uart0", mout_group2_6442_p, CLK_SRC4, 16, 4),
-+	MUX(MOUT_MMC2, "mout_mmc2", mout_group2_6442_p, CLK_SRC4, 8, 4),
-+	MUX(MOUT_MMC1, "mout_mmc1", mout_group2_6442_p, CLK_SRC4, 4, 4),
-+	MUX(MOUT_MMC0, "mout_mmc0", mout_group2_6442_p, CLK_SRC4, 0, 4),
-+
-+	MUX(MOUT_PWM, "mout_pwm", mout_group2_6442_p, CLK_SRC5, 12, 4),
-+	MUX(MOUT_SPI0, "mout_spi0", mout_group2_6442_p, CLK_SRC5, 0, 4),
-+
-+	MUX(MOUT_AUDIO1, "mout_audio1", mout_audio1_6442_p, CLK_SRC6, 4, 4),
-+	MUX(MOUT_AUDIO0, "mout_audio0", mout_audio0_6442_p, CLK_SRC6, 0, 4),
-+
-+	MUX(MOUT_CLKSEL, "mout_clksel", mout_clksel_6442_p, CLK_OUT, 12, 5),
-+};
-+
-+/*
-+ * Common fixed rate clocks generated outside the SoC.
-+ * NOTE: Needed only to support legacy board files.
-+ */
-+static struct samsung_fixed_rate_clock ext_clks[] __initdata = {
-+	[xxti] = FRATE(0, "xxti", NULL, CLK_IS_ROOT, 0),
-+	[xusbxti] = FRATE(0, "xusbxti", NULL, CLK_IS_ROOT, 0),
-+};
-+
-+/* S5PV210-specific fixed rate clocks generated inside the SoC. */
-+static struct samsung_fixed_rate_clock s5pv210_frate_clks[] __initdata = {
-+	FRATE(SCLK_HDMI27M, "sclk_hdmi27m", NULL, CLK_IS_ROOT, 27000000),
-+	FRATE(SCLK_HDMIPHY, "sclk_hdmiphy", NULL, CLK_IS_ROOT, 27000000),
-+	FRATE(SCLK_USBPHY0, "sclk_usbphy0", NULL, CLK_IS_ROOT, 48000000),
-+	FRATE(SCLK_USBPHY1, "sclk_usbphy1", NULL, CLK_IS_ROOT, 48000000),
-+};
-+
-+/* S5P6442-specific fixed rate clocks generated inside the SoC. */
-+static struct samsung_fixed_rate_clock s5p6442_frate_clks[] __initdata = {
-+	FRATE(SCLK_USBPHY0, "sclk_usbphy0", NULL, CLK_IS_ROOT, 30000000),
-+};
-+
-+/* Common clock dividers. */
-+static struct samsung_div_clock div_clks[] __initdata = {
-+	DIV(DOUT_PCLKP, "dout_pclkp", "dout_hclkp", CLK_DIV0, 28, 3),
-+	DIV(DOUT_PCLKD, "dout_pclkd", "dout_hclkd", CLK_DIV0, 20, 3),
-+	DIV(DOUT_A2M, "dout_a2m", "mout_apll", CLK_DIV0, 4, 3),
-+	DIV(DOUT_APLL, "dout_apll", "mout_msys", CLK_DIV0, 0, 3),
-+
-+	DIV(DOUT_FIMD, "dout_fimd", "mout_fimd", CLK_DIV1, 20, 4),
-+	DIV(DOUT_CAM1, "dout_cam1", "mout_cam1", CLK_DIV1, 16, 4),
-+	DIV(DOUT_CAM0, "dout_cam0", "mout_cam0", CLK_DIV1, 12, 4),
-+
-+	DIV(DOUT_FIMC2, "dout_fimc2", "mout_fimc2", CLK_DIV3, 20, 4),
-+	DIV(DOUT_FIMC1, "dout_fimc1", "mout_fimc1", CLK_DIV3, 16, 4),
-+	DIV(DOUT_FIMC0, "dout_fimc0", "mout_fimc0", CLK_DIV3, 12, 4),
-+
-+	DIV(DOUT_UART2, "dout_uart2", "mout_uart2", CLK_DIV4, 24, 4),
-+	DIV(DOUT_UART1, "dout_uart1", "mout_uart1", CLK_DIV4, 20, 4),
-+	DIV(DOUT_UART0, "dout_uart0", "mout_uart0", CLK_DIV4, 16, 4),
-+	DIV(DOUT_MMC2, "dout_mmc2", "mout_mmc2", CLK_DIV4, 8, 4),
-+	DIV(DOUT_MMC1, "dout_mmc1", "mout_mmc1", CLK_DIV4, 4, 4),
-+	DIV(DOUT_MMC0, "dout_mmc0", "mout_mmc0", CLK_DIV4, 0, 4),
-+
-+	DIV(DOUT_PWM, "dout_pwm", "mout_pwm", CLK_DIV5, 12, 4),
-+	DIV(DOUT_SPI0, "dout_spi0", "mout_spi0", CLK_DIV5, 0, 4),
-+
-+	DIV(DOUT_FLASH, "dout_flash", "mout_flash", CLK_DIV6, 12, 3),
-+	DIV(DOUT_AUDIO1, "dout_audio1", "mout_audio1", CLK_DIV6, 4, 4),
-+	DIV(DOUT_AUDIO0, "dout_audio0", "mout_audio0", CLK_DIV6, 0, 4),
-+
-+	DIV(DOUT_CLKOUT, "dout_clkout", "mout_clksel", CLK_OUT, 20, 4),
-+};
-+
-+/* S5PV210-specific clock dividers. */
-+static struct samsung_div_clock s5pv210_div_clks[] __initdata = {
-+	DIV(DOUT_HCLKP, "dout_hclkp", "mout_psys", CLK_DIV0, 24, 4),
-+	DIV(DOUT_HCLKD, "dout_hclkd", "mout_dsys", CLK_DIV0, 16, 4),
-+	DIV(DOUT_PCLKM, "dout_pclkm", "dout_hclkm", CLK_DIV0, 12, 3),
-+	DIV(DOUT_HCLKM, "dout_hclkm", "dout_apll", CLK_DIV0, 8, 3),
-+
-+	DIV(DOUT_CSIS, "dout_csis", "mout_csis", CLK_DIV1, 28, 4),
-+	DIV(DOUT_TBLK, "dout_tblk", "mout_vpll", CLK_DIV1, 0, 4),
-+
-+	DIV(DOUT_G2D, "dout_g2d", "mout_g2d", CLK_DIV2, 8, 4),
-+	DIV(DOUT_MFC, "dout_mfc", "mout_mfc", CLK_DIV2, 4, 4),
-+	DIV(DOUT_G3D, "dout_g3d", "mout_g3d", CLK_DIV2, 0, 4),
-+
-+	DIV(DOUT_UART3, "dout_uart3", "mout_uart3", CLK_DIV4, 28, 4),
-+	DIV(DOUT_MMC3, "dout_mmc3", "mout_mmc3", CLK_DIV4, 12, 4),
-+
-+	DIV(DOUT_SPI1, "dout_spi1", "mout_spi1", CLK_DIV5, 4, 4),
-+
-+	DIV(DOUT_DMC0, "dout_dmc0", "mout_dmc0", CLK_DIV6, 28, 4),
-+	DIV(DOUT_PWI, "dout_pwi", "mout_pwi", CLK_DIV6, 24, 4),
-+	DIV(DOUT_HPM, "dout_hpm", "dout_copy", CLK_DIV6, 20, 3),
-+	DIV(DOUT_COPY, "dout_copy", "mout_hpm", CLK_DIV6, 16, 3),
-+	DIV(DOUT_AUDIO2, "dout_audio2", "mout_audio2", CLK_DIV6, 8, 4),
-+
-+	DIV(DOUT_DPM, "dout_dpm", "dout_pclkp", CLK_DIV7, 8, 7),
-+	DIV(DOUT_DVSEM, "dout_dvsem", "dout_pclkp", CLK_DIV7, 0, 7),
-+};
-+
-+/* S5P6442-specific clock dividers. */
-+static struct samsung_div_clock s5p6442_div_clks[] __initdata = {
-+	DIV(DOUT_HCLKP, "dout_hclkp", "mout_d1sync", CLK_DIV0, 24, 4),
-+	DIV(DOUT_HCLKD, "dout_hclkd", "mout_d0sync", CLK_DIV0, 16, 4),
-+
-+	DIV(DOUT_MIXER, "dout_mixer", "mout_vpll", CLK_DIV1, 0, 4),
-+};
-+
-+/* Common clock gates. */
-+static struct samsung_gate_clock gate_clks[] __initdata = {
-+	GATE(CLK_ROTATOR, "rotator", "dout_hclkd", CLK_GATE_IP0, 29, 0, 0),
-+	GATE(CLK_FIMC2, "fimc2", "dout_hclkd", CLK_GATE_IP0, 26, 0, 0),
-+	GATE(CLK_FIMC1, "fimc1", "dout_hclkd", CLK_GATE_IP0, 25, 0, 0),
-+	GATE(CLK_FIMC0, "fimc0", "dout_hclkd", CLK_GATE_IP0, 24, 0, 0),
-+	GATE(CLK_PDMA0, "pdma0", "dout_hclkp", CLK_GATE_IP0, 3, 0, 0),
-+	GATE(CLK_MDMA, "mdma", "dout_hclkd", CLK_GATE_IP0, 2, 0, 0),
-+
-+	GATE(CLK_SROMC, "sromc", "dout_hclkp", CLK_GATE_IP1, 26, 0, 0),
-+	GATE(CLK_NANDXL, "nandxl", "dout_hclkp", CLK_GATE_IP1, 24, 0, 0),
-+	GATE(CLK_USB_OTG, "usb_otg", "dout_hclkp", CLK_GATE_IP1, 16, 0, 0),
-+	GATE(CLK_TVENC, "tvenc", "dout_hclkd", CLK_GATE_IP1, 10, 0, 0),
-+	GATE(CLK_MIXER, "mixer", "dout_hclkd", CLK_GATE_IP1, 9, 0, 0),
-+	GATE(CLK_VP, "vp", "dout_hclkd", CLK_GATE_IP1, 8, 0, 0),
-+	GATE(CLK_FIMD, "fimd", "dout_hclkd", CLK_GATE_IP1, 0, 0, 0),
-+
-+	GATE(CLK_HSMMC2, "hsmmc2", "dout_hclkp", CLK_GATE_IP2, 18, 0, 0),
-+	GATE(CLK_HSMMC1, "hsmmc1", "dout_hclkp", CLK_GATE_IP2, 17, 0, 0),
-+	GATE(CLK_HSMMC0, "hsmmc0", "dout_hclkp", CLK_GATE_IP2, 16, 0, 0),
-+	GATE(CLK_MODEMIF, "modemif", "dout_hclkp", CLK_GATE_IP2, 9, 0, 0),
-+	GATE(CLK_SECSS, "secss", "dout_hclkp", CLK_GATE_IP2, 0, 0, 0),
-+
-+	GATE(CLK_PCM1, "pcm1", "dout_pclkp", CLK_GATE_IP3, 29, 0, 0),
-+	GATE(CLK_PCM0, "pcm0", "dout_pclkp", CLK_GATE_IP3, 28, 0, 0),
-+	GATE(CLK_TSADC, "tsadc", "dout_pclkp", CLK_GATE_IP3, 24, 0, 0),
-+	GATE(CLK_PWM, "pwm", "dout_pclkp", CLK_GATE_IP3, 23, 0, 0),
-+	GATE(CLK_WDT, "watchdog", "dout_pclkp", CLK_GATE_IP3, 22, 0, 0),
-+	GATE(CLK_KEYIF, "keyif", "dout_pclkp", CLK_GATE_IP3, 21, 0, 0),
-+	GATE(CLK_UART2, "uart2", "dout_pclkp", CLK_GATE_IP3, 19, 0, 0),
-+	GATE(CLK_UART1, "uart1", "dout_pclkp", CLK_GATE_IP3, 18, 0, 0),
-+	GATE(CLK_UART0, "uart0", "dout_pclkp", CLK_GATE_IP3, 17, 0, 0),
-+	GATE(CLK_SYSTIMER, "systimer", "dout_pclkp", CLK_GATE_IP3, 16, 0, 0),
-+	GATE(CLK_RTC, "rtc", "dout_pclkp", CLK_GATE_IP3, 15, 0, 0),
-+	GATE(CLK_SPI0, "spi0", "dout_pclkp", CLK_GATE_IP3, 12, 0, 0),
-+	GATE(CLK_I2C2, "i2c2", "dout_pclkp", CLK_GATE_IP3, 9, 0, 0),
-+	GATE(CLK_I2C0, "i2c0", "dout_pclkp", CLK_GATE_IP3, 7, 0, 0),
-+	GATE(CLK_I2S1, "i2s1", "dout_pclkp", CLK_GATE_IP3, 5, 0, 0),
-+	GATE(CLK_I2S0, "i2s0", "dout_pclkp", CLK_GATE_IP3, 4, 0, 0),
-+
-+	GATE(CLK_SECKEY, "seckey", "dout_pclkp", CLK_GATE_IP4, 3, 0, 0),
-+	GATE(CLK_CHIPID, "chipid", "dout_pclkp", CLK_GATE_IP4, 0, 0, 0),
-+
-+	GATE(SCLK_AUDIO1, "sclk_audio1", "dout_audio1", CLK_SRC_MASK0, 25,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_AUDIO0, "sclk_audio0", "dout_audio0", CLK_SRC_MASK0, 24,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_PWM, "sclk_pwm", "dout_pwm", CLK_SRC_MASK0, 19,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_SPI0, "sclk_spi0", "dout_spi0", CLK_SRC_MASK0, 16,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_UART2, "sclk_uart2", "dout_uart2", CLK_SRC_MASK0, 14,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_UART1, "sclk_uart1", "dout_uart1", CLK_SRC_MASK0, 13,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_UART0, "sclk_uart0", "dout_uart0", CLK_SRC_MASK0, 12,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_MMC2, "sclk_mmc2", "dout_mmc2", CLK_SRC_MASK0, 10,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_MMC1, "sclk_mmc1", "dout_mmc1", CLK_SRC_MASK0, 9,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_MMC0, "sclk_mmc0", "dout_mmc0", CLK_SRC_MASK0, 8,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_FIMD, "sclk_fimd", "dout_fimd", CLK_SRC_MASK0, 5,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_CAM1, "sclk_cam1", "dout_cam1", CLK_SRC_MASK0, 4,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_CAM0, "sclk_cam0", "dout_cam0", CLK_SRC_MASK0, 3,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_MIXER, "sclk_mixer", "mout_mixer", CLK_SRC_MASK0, 1,
-+			CLK_SET_RATE_PARENT, 0),
-+
-+	GATE(SCLK_FIMC2, "sclk_fimc2", "dout_fimc2", CLK_SRC_MASK1, 4,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_FIMC1, "sclk_fimc1", "dout_fimc1", CLK_SRC_MASK1, 3,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_FIMC0, "sclk_fimc0", "dout_fimc0", CLK_SRC_MASK1, 2,
-+			CLK_SET_RATE_PARENT, 0),
-+};
-+
-+/* S5PV210-specific clock gates. */
-+static struct samsung_gate_clock s5pv210_gate_clks[] __initdata = {
-+	GATE(CLK_CSIS, "clk_csis", "dout_hclkd", CLK_GATE_IP0, 31, 0, 0),
-+	GATE(CLK_MFC, "mfc", "dout_hclkm", CLK_GATE_IP0, 16, 0, 0),
-+	GATE(CLK_G2D, "g2d", "dout_hclkd", CLK_GATE_IP0, 12, 0, 0),
-+	GATE(CLK_G3D, "g3d", "dout_hclkm", CLK_GATE_IP0, 8, 0, 0),
-+	GATE(CLK_IMEM, "imem", "dout_hclkm", CLK_GATE_IP0, 5, 0, 0),
-+	GATE(CLK_PDMA1, "pdma1", "dout_hclkp", CLK_GATE_IP0, 4, 0, 0),
-+
-+	GATE(CLK_NFCON, "nfcon", "dout_hclkp", CLK_GATE_IP1, 28, 0, 0),
-+	GATE(CLK_CFCON, "cfcon", "dout_hclkp", CLK_GATE_IP1, 25, 0, 0),
-+	GATE(CLK_USB_HOST, "usb_host", "dout_hclkp", CLK_GATE_IP1, 17, 0, 0),
-+	GATE(CLK_HDMI, "hdmi", "dout_hclkd", CLK_GATE_IP1, 11, 0, 0),
-+	GATE(CLK_DSIM, "dsim", "dout_pclkd", CLK_GATE_IP1, 2, 0, 0),
-+
-+	GATE(CLK_TZIC3, "tzic3", "dout_hclkm", CLK_GATE_IP2, 31, 0, 0),
-+	GATE(CLK_TZIC2, "tzic2", "dout_hclkm", CLK_GATE_IP2, 30, 0, 0),
-+	GATE(CLK_TZIC1, "tzic1", "dout_hclkm", CLK_GATE_IP2, 29, 0, 0),
-+	GATE(CLK_TZIC0, "tzic0", "dout_hclkm", CLK_GATE_IP2, 28, 0, 0),
-+	GATE(CLK_TSI, "tsi", "dout_hclkd", CLK_GATE_IP2, 20, 0, 0),
-+	GATE(CLK_HSMMC3, "hsmmc3", "dout_hclkp", CLK_GATE_IP2, 19, 0, 0),
-+	GATE(CLK_JTAG, "jtag", "dout_hclkp", CLK_GATE_IP2, 11, 0, 0),
-+	GATE(CLK_CORESIGHT, "coresight", "dout_pclkp", CLK_GATE_IP2, 8, 0, 0),
-+	GATE(CLK_SDM, "sdm", "dout_pclkm", CLK_GATE_IP2, 1, 0, 0),
-+
-+	GATE(CLK_PCM2, "pcm2", "dout_pclkp", CLK_GATE_IP3, 30, 0, 0),
-+	GATE(CLK_UART3, "uart3", "dout_pclkp", CLK_GATE_IP3, 20, 0, 0),
-+	GATE(CLK_SPI1, "spi1", "dout_pclkp", CLK_GATE_IP3, 13, 0, 0),
-+	GATE(CLK_I2C_HDMI_PHY, "i2c_hdmi_phy", "dout_pclkd",
-+			CLK_GATE_IP3, 11, 0, 0),
-+	GATE(CLK_I2C1, "i2c1", "dout_pclkd", CLK_GATE_IP3, 10, 0, 0),
-+	GATE(CLK_I2S2, "i2s2", "dout_pclkp", CLK_GATE_IP3, 6, 0, 0),
-+	GATE(CLK_AC97, "ac97", "dout_pclkp", CLK_GATE_IP3, 1, 0, 0),
-+	GATE(CLK_SPDIF, "spdif", "dout_pclkp", CLK_GATE_IP3, 0, 0, 0),
-+
-+	GATE(CLK_TZPC3, "tzpc.3", "dout_pclkd", CLK_GATE_IP4, 8, 0, 0),
-+	GATE(CLK_TZPC2, "tzpc.2", "dout_pclkd", CLK_GATE_IP4, 7, 0, 0),
-+	GATE(CLK_TZPC1, "tzpc.1", "dout_pclkp", CLK_GATE_IP4, 6, 0, 0),
-+	GATE(CLK_TZPC0, "tzpc.0", "dout_pclkm", CLK_GATE_IP4, 5, 0, 0),
-+	GATE(CLK_IEM_APC, "iem_apc", "dout_pclkp", CLK_GATE_IP4, 2, 0, 0),
-+	GATE(CLK_IEM_IEC, "iem_iec", "dout_pclkp", CLK_GATE_IP4, 1, 0, 0),
-+
-+	GATE(CLK_JPEG, "jpeg", "dout_hclkd", CLK_GATE_IP5, 29, 0, 0),
-+
-+	GATE(SCLK_SPDIF, "sclk_spdif", "mout_spdif", CLK_SRC_MASK0, 27,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_AUDIO2, "sclk_audio2", "dout_audio2", CLK_SRC_MASK0, 26,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_SPI1, "sclk_spi1", "dout_spi1", CLK_SRC_MASK0, 17,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_UART3, "sclk_uart3", "dout_uart3", CLK_SRC_MASK0, 15,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_MMC3, "sclk_mmc3", "dout_mmc3", CLK_SRC_MASK0, 11,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_CSIS, "sclk_csis", "dout_csis", CLK_SRC_MASK0, 6,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_DAC, "sclk_dac", "mout_dac", CLK_SRC_MASK0, 2,
-+			CLK_SET_RATE_PARENT, 0),
-+	GATE(SCLK_HDMI, "sclk_hdmi", "mout_hdmi", CLK_SRC_MASK0, 0,
-+			CLK_SET_RATE_PARENT, 0),
-+};
-+
-+/* S5P6442-specific clock gates. */
-+static struct samsung_gate_clock s5p6442_gate_clks[] __initdata = {
-+	GATE(CLK_JPEG, "jpeg", "dout_hclkd", CLK_GATE_IP0, 28, 0, 0),
-+	GATE(CLK_MFC, "mfc", "dout_hclkd", CLK_GATE_IP0, 16, 0, 0),
-+	GATE(CLK_G2D, "g2d", "dout_hclkd", CLK_GATE_IP0, 12, 0, 0),
-+	GATE(CLK_G3D, "g3d", "dout_hclkd", CLK_GATE_IP0, 8, 0, 0),
-+	GATE(CLK_IMEM, "imem", "dout_hclkd", CLK_GATE_IP0, 5, 0, 0),
-+
-+	GATE(CLK_ETB, "etb", "dout_hclkd", CLK_GATE_IP1, 31, 0, 0),
-+	GATE(CLK_ETM, "etm", "dout_hclkd", CLK_GATE_IP1, 30, 0, 0),
-+
-+	GATE(CLK_I2C1, "i2c1", "dout_pclkp", CLK_GATE_IP3, 8, 0, 0),
-+
-+	GATE(SCLK_DAC, "sclk_dac", "mout_vpll", CLK_SRC_MASK0, 2,
-+			CLK_SET_RATE_PARENT, 0),
-+};
-+
-+/*
-+ * Clock aliases for legacy clkdev look-up.
-+ * NOTE: Needed only to support legacy board files.
-+ */
-+static struct samsung_clock_alias s5pv210_aliases[] = {
-+	ALIAS(CLK_FIMC0, "s5pv210-fimc.0", "fimc"),
-+	ALIAS(CLK_FIMC1, "s5pv210-fimc.1", "fimc"),
-+	ALIAS(CLK_FIMC2, "s5pv210-fimc.2", "fimc"),
-+	ALIAS(SCLK_FIMC0, "s5pv210-fimc.0", "sclk_fimc"),
-+	ALIAS(SCLK_FIMC1, "s5pv210-fimc.1", "sclk_fimc"),
-+	ALIAS(SCLK_FIMC2, "s5pv210-fimc.2", "sclk_fimc"),
-+	ALIAS(DOUT_APLL, NULL, "armclk"),
-+	ALIAS(DOUT_HCLKM, NULL, "hclk_msys"),
-+	ALIAS(MOUT_DMC0, NULL, "sclk_dmc0"),
-+	ALIAS(CLK_UART0, "s5pv210-uart.0", "uart"),
-+	ALIAS(CLK_UART1, "s5pv210-uart.1", "uart"),
-+	ALIAS(CLK_UART2, "s5pv210-uart.2", "uart"),
-+	ALIAS(CLK_UART3, "s5pv210-uart.3", "uart"),
-+	ALIAS(CLK_UART0, "s5pv210-uart.0", "clk_uart_baud0"),
-+	ALIAS(CLK_UART1, "s5pv210-uart.1", "clk_uart_baud0"),
-+	ALIAS(CLK_UART2, "s5pv210-uart.2", "clk_uart_baud0"),
-+	ALIAS(CLK_UART3, "s5pv210-uart.3", "clk_uart_baud0"),
-+	ALIAS(SCLK_UART0, "s5pv210-uart.0", "clk_uart_baud1"),
-+	ALIAS(SCLK_UART1, "s5pv210-uart.1", "clk_uart_baud1"),
-+	ALIAS(SCLK_UART2, "s5pv210-uart.2", "clk_uart_baud1"),
-+	ALIAS(SCLK_UART3, "s5pv210-uart.3", "clk_uart_baud1"),
-+	ALIAS(CLK_HSMMC0, "s3c-sdhci.0", "hsmmc"),
-+	ALIAS(CLK_HSMMC1, "s3c-sdhci.1", "hsmmc"),
-+	ALIAS(CLK_HSMMC2, "s3c-sdhci.2", "hsmmc"),
-+	ALIAS(CLK_HSMMC3, "s3c-sdhci.3", "hsmmc"),
-+	ALIAS(CLK_HSMMC0, "s3c-sdhci.0", "mmc_busclk.0"),
-+	ALIAS(CLK_HSMMC1, "s3c-sdhci.1", "mmc_busclk.0"),
-+	ALIAS(CLK_HSMMC2, "s3c-sdhci.2", "mmc_busclk.0"),
-+	ALIAS(CLK_HSMMC3, "s3c-sdhci.3", "mmc_busclk.0"),
-+	ALIAS(SCLK_MMC0, "s3c-sdhci.0", "mmc_busclk.2"),
-+	ALIAS(SCLK_MMC1, "s3c-sdhci.1", "mmc_busclk.2"),
-+	ALIAS(SCLK_MMC2, "s3c-sdhci.2", "mmc_busclk.2"),
-+	ALIAS(SCLK_MMC3, "s3c-sdhci.3", "mmc_busclk.2"),
-+	ALIAS(CLK_SPI0, "s5pv210-spi.0", "spi_busclk0"),
-+	ALIAS(CLK_SPI1, "s5pv210-spi.1", "spi_busclk0"),
-+	ALIAS(SCLK_SPI0, "s5pv210-spi.0", "spi_busclk1"),
-+	ALIAS(SCLK_SPI1, "s5pv210-spi.1", "spi_busclk1"),
-+	ALIAS(CLK_PDMA0, "dma-pl330.0", "apb_pclk"),
-+	ALIAS(CLK_PDMA1, "dma-pl330.1", "apb_pclk"),
-+	ALIAS(CLK_PWM, NULL, "timers"),
-+	ALIAS(CLK_NANDXL, "s5pc110-onenand", "gate"),
-+	ALIAS(CLK_JPEG, NULL, "jpeg"),
-+	ALIAS(CLK_MFC, "s5p-mfc", "mfc"),
-+	ALIAS(CLK_TVENC, "s5p-sdo", "dac"),
-+	ALIAS(CLK_MIXER, "s5p-mixer", "mixer"),
-+	ALIAS(CLK_VP, "s5p-mixer", "vp"),
-+	ALIAS(CLK_HDMI, "s5p-hdmi", "hdmi"),
-+	ALIAS(SCLK_HDMI, "s5p-hdmi", "hdmiphy"),
-+	ALIAS(SCLK_DAC, NULL, "sclk_dac"),
-+	ALIAS(CLK_USB_OTG, NULL, "usbotg"),
-+	ALIAS(CLK_USB_OTG, NULL, "otg"),
-+	ALIAS(CLK_USB_HOST, NULL, "usb-host"),
-+	ALIAS(CLK_USB_HOST, NULL, "usbhost"),
-+	ALIAS(CLK_FIMD, "s5pv210-fb", "lcd"),
-+	ALIAS(CLK_CFCON, "s5pv210-pata.0", "cfcon"),
-+	ALIAS(CLK_WDT, NULL, "watchdog"),
-+	ALIAS(CLK_RTC, NULL, "rtc"),
-+	ALIAS(CLK_I2C0, "s3c2440-i2c.0", "i2c"),
-+	ALIAS(CLK_I2C1, "s3c2440-i2c.1", "i2c"),
-+	ALIAS(CLK_I2C2, "s3c2440-i2c.2", "i2c"),
-+	ALIAS(CLK_I2C_HDMI_PHY, "s3c2440-hdmiphy-i2c", "i2c"),
-+	ALIAS(CLK_TSADC, NULL, "adc"),
-+	ALIAS(CLK_KEYIF, "s5pv210-keypad", "keypad"),
-+	ALIAS(CLK_I2S0, "samsung-i2s.0", "iis"),
-+	ALIAS(CLK_I2S1, "samsung-i2s.1", "iis"),
-+	ALIAS(CLK_I2S2, "samsung-i2s.2", "iis"),
-+	ALIAS(CLK_SPDIF, NULL, "spdif"),
-+	ALIAS(SCLK_AUDIO0, "soc-audio.0", "sclk_audio"),
-+	ALIAS(SCLK_AUDIO1, "soc-audio.1", "sclk_audio"),
-+	ALIAS(SCLK_AUDIO2, "soc-audio.2", "sclk_audio"),
-+	ALIAS(CLK_MFC, "s5p-mfc", "sclk_mfc"),
-+	ALIAS(SCLK_CAM0, "sclk_cam0", "sclk_cam0"),
-+	ALIAS(SCLK_CAM1, "sclk_cam1", "sclk_cam1"),
-+	ALIAS(CLK_G2D, "s5p-g2d", "fimg2d"),
-+	ALIAS(DOUT_G2D, "s5p-g2d", "sclk_fimg2d"),
-+	ALIAS(CLK_CSIS, "s5p-mipi-csis", "csis"),
-+	ALIAS(SCLK_CSIS, "s5p-mipi-csis", "sclk_csis"),
-+	ALIAS(SCLK_PWM, "samsung-pwm", "pwm-tclk0"),
-+	ALIAS(SCLK_PWM, "samsung-pwm", "pwm-tclk1"),
-+	ALIAS(SCLK_FIMD, NULL, "sclk_fimd"),
-+	ALIAS(MOUT_CAM0, NULL, "mout_cam0"),
-+	ALIAS(MOUT_CAM1, NULL, "mout_cam1"),
-+	ALIAS(MOUT_CSIS, NULL, "mout_csis"),
-+	ALIAS(MOUT_VPLL, NULL, "sclk_vpll"),
-+	ALIAS(SCLK_MIXER, NULL, "sclk_mixer"),
-+	ALIAS(SCLK_HDMI, NULL, "sclk_hdmi"),
-+};
-+
-+static void __init s5pv210_clk_register_fixed_ext(
-+					struct samsung_clk_provider *ctx,
-+					unsigned long xxti_f,
-+					unsigned long xusbxti_f)
-+{
-+	ext_clks[xxti].fixed_rate = xxti_f;
-+	ext_clks[xusbxti].fixed_rate = xusbxti_f;
-+	samsung_clk_register_fixed_rate(ctx, ext_clks, ARRAY_SIZE(ext_clks));
-+}
-+
-+/* S5PV210-specific PLLs. */
-+static struct samsung_pll_clock s5pv210_pll_clks[] __initdata = {
-+	[apll] = PLL(pll_4508, FOUT_APLL, "fout_apll", "fin_pll",
-+						APLL_LOCK, APLL_CON0, NULL),
-+	[mpll] = PLL(pll_4502, FOUT_MPLL, "fout_mpll", "fin_pll",
-+						MPLL_LOCK, MPLL_CON, NULL),
-+	[epll] = PLL(pll_4600, FOUT_EPLL, "fout_epll", "fin_pll",
-+						EPLL_LOCK, EPLL_CON0, NULL),
-+	[vpll] = PLL(pll_4502, FOUT_VPLL, "fout_vpll", "mout_vpllsrc",
-+						VPLL_LOCK, VPLL_CON, NULL),
-+};
-+
-+/* S5P6442-specific PLLs. */
-+static struct samsung_pll_clock s5p6442_pll_clks[] __initdata = {
-+	[apll] = PLL(pll_4502, FOUT_APLL, "fout_apll", "fin_pll",
-+						APLL_LOCK, APLL_CON0, NULL),
-+	[mpll] = PLL(pll_4502, FOUT_MPLL, "fout_mpll", "fin_pll",
-+						MPLL_LOCK, MPLL_CON, NULL),
-+	[epll] = PLL(pll_4500, FOUT_EPLL, "fout_epll", "fin_pll",
-+						EPLL_LOCK, EPLL_CON0, NULL),
-+	[vpll] = PLL(pll_4500, FOUT_VPLL, "fout_vpll", "fin_pll",
-+						VPLL_LOCK, VPLL_CON, NULL),
-+};
-+
-+static void __init __s5pv210_clk_init(struct device_node *np,
-+				      unsigned long xxti_f,
-+				      unsigned long xusbxti_f,
-+				      bool is_s5p6442)
-+{
-+	struct samsung_clk_provider *ctx;
-+
-+	ctx = samsung_clk_init(np, reg_base, NR_CLKS);
-+	if (!ctx)
-+		panic("%s: unable to allocate context.\n", __func__);
-+
-+	/* Register external clocks (needed by board files). */
-+	if (!np)
-+		s5pv210_clk_register_fixed_ext(ctx, xxti_f, xusbxti_f);
-+
-+	samsung_clk_register_mux(ctx, early_mux_clks,
-+					ARRAY_SIZE(early_mux_clks));
-+
-+	if (is_s5p6442) {
-+		samsung_clk_register_fixed_rate(ctx, s5p6442_frate_clks,
-+			ARRAY_SIZE(s5p6442_frate_clks));
-+		samsung_clk_register_pll(ctx, s5p6442_pll_clks,
-+			ARRAY_SIZE(s5p6442_pll_clks), reg_base);
-+		samsung_clk_register_mux(ctx, s5p6442_mux_clks,
-+				ARRAY_SIZE(s5p6442_mux_clks));
-+		samsung_clk_register_div(ctx, s5p6442_div_clks,
-+				ARRAY_SIZE(s5p6442_div_clks));
-+		samsung_clk_register_gate(ctx, s5p6442_gate_clks,
-+				ARRAY_SIZE(s5p6442_gate_clks));
-+	} else {
-+		samsung_clk_register_fixed_rate(ctx, s5pv210_frate_clks,
-+			ARRAY_SIZE(s5pv210_frate_clks));
-+		samsung_clk_register_pll(ctx, s5pv210_pll_clks,
-+			ARRAY_SIZE(s5pv210_pll_clks), reg_base);
-+		samsung_clk_register_mux(ctx, s5pv210_mux_clks,
-+				ARRAY_SIZE(s5pv210_mux_clks));
-+		samsung_clk_register_div(ctx, s5pv210_div_clks,
-+				ARRAY_SIZE(s5pv210_div_clks));
-+		samsung_clk_register_gate(ctx, s5pv210_gate_clks,
-+				ARRAY_SIZE(s5pv210_gate_clks));
-+	}
-+
-+	samsung_clk_register_mux(ctx, mux_clks, ARRAY_SIZE(mux_clks));
-+	samsung_clk_register_div(ctx, div_clks, ARRAY_SIZE(div_clks));
-+	samsung_clk_register_gate(ctx, gate_clks, ARRAY_SIZE(gate_clks));
-+
-+	samsung_clk_register_fixed_factor(ctx, ffactor_clks,
-+						ARRAY_SIZE(ffactor_clks));
-+
-+	samsung_clk_register_alias(ctx, s5pv210_aliases,
-+						ARRAY_SIZE(s5pv210_aliases));
-+
-+	s5pv210_clk_sleep_init();
-+
-+	pr_info("%s clocks: mout_apll = %ld, mout_mpll = %ld\n"
-+		"\tmout_epll = %ld, mout_vpll = %ld\n",
-+		is_s5p6442 ? "S5P6442" : "S5PV210",
-+		_get_rate("mout_apll"), _get_rate("mout_mpll"),
-+		_get_rate("mout_epll"), _get_rate("mout_vpll"));
-+}
-+
-+/**
-+ * s5pv210_clk_init
-+ * @xxti_f: Rate of XXTI input clock.
-+ * @xusbxti_f: Rate of XUSBXTI input clock.
-+ * @base:
-+ */
-+void __init s5pv210_clk_init(unsigned long xxti_f, unsigned long xusbxti_f,
-+			     void __iomem *base)
-+{
-+	reg_base = base;
-+
-+	__s5pv210_clk_init(NULL, xxti_f, xusbxti_f, false);
-+}
-+
-+static void __init s5pv210_clk_dt_init(struct device_node *np)
-+{
-+	reg_base = of_iomap(np, 0);
-+	if (!reg_base)
-+		panic("%s: failed to map registers\n", __func__);
-+
-+	__s5pv210_clk_init(np, 0, 0, false);
-+}
-+CLK_OF_DECLARE(s5pv210_clk, "samsung,s5pv210-clock", s5pv210_clk_dt_init);
-+
-+static void __init s5p6442_clk_dt_init(struct device_node *np)
-+{
-+	reg_base = of_iomap(np, 0);
-+	if (!reg_base)
-+		panic("%s: failed to map registers\n", __func__);
-+
-+	__s5pv210_clk_init(np, 0, 0, true);
-+}
-+CLK_OF_DECLARE(s5p6442_clk, "samsung,s5p6442-clock", s5p6442_clk_dt_init);
-diff --git a/include/dt-bindings/clock/s5pv210.h b/include/dt-bindings/clock/s5pv210.h
-new file mode 100644
-index 0000000..e88986b
---- /dev/null
-+++ b/include/dt-bindings/clock/s5pv210.h
-@@ -0,0 +1,239 @@
-+/*
-+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
-+ * Author: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Device Tree binding constants for Samsung S5PV210 clock controller.
-+ */
-+
-+#ifndef _DT_BINDINGS_CLOCK_S5PV210_H
-+#define _DT_BINDINGS_CLOCK_S5PV210_H
-+
-+/* Core clocks. */
-+#define FIN_PLL			1
-+#define FOUT_APLL		2
-+#define FOUT_MPLL		3
-+#define FOUT_EPLL		4
-+#define FOUT_VPLL		5
-+
-+/* Muxes. */
-+#define MOUT_FLASH		6
-+#define MOUT_PSYS		7
-+#define MOUT_DSYS		8
-+#define MOUT_MSYS		9
-+#define MOUT_VPLL		10
-+#define MOUT_EPLL		11
-+#define MOUT_MPLL		12
-+#define MOUT_APLL		13
-+#define MOUT_VPLLSRC		14
-+#define MOUT_CSIS		15
-+#define MOUT_FIMD		16
-+#define MOUT_CAM1		17
-+#define MOUT_CAM0		18
-+#define MOUT_DAC		19
-+#define MOUT_MIXER		20
-+#define MOUT_HDMI		21
-+#define MOUT_G2D		22
-+#define MOUT_MFC		23
-+#define MOUT_G3D		24
-+#define MOUT_FIMC2		25
-+#define MOUT_FIMC1		26
-+#define MOUT_FIMC0		27
-+#define MOUT_UART3		28
-+#define MOUT_UART2		29
-+#define MOUT_UART1		30
-+#define MOUT_UART0		31
-+#define MOUT_MMC3		32
-+#define MOUT_MMC2		33
-+#define MOUT_MMC1		34
-+#define MOUT_MMC0		35
-+#define MOUT_PWM		36
-+#define MOUT_SPI0		37
-+#define MOUT_SPI1		38
-+#define MOUT_DMC0		39
-+#define MOUT_PWI		40
-+#define MOUT_HPM		41
-+#define MOUT_SPDIF		42
-+#define MOUT_AUDIO2		43
-+#define MOUT_AUDIO1		44
-+#define MOUT_AUDIO0		45
-+
-+/* Dividers. */
-+#define DOUT_PCLKP		46
-+#define DOUT_HCLKP		47
-+#define DOUT_PCLKD		48
-+#define DOUT_HCLKD		49
-+#define DOUT_PCLKM		50
-+#define DOUT_HCLKM		51
-+#define DOUT_A2M		52
-+#define DOUT_APLL		53
-+#define DOUT_CSIS		54
-+#define DOUT_FIMD		55
-+#define DOUT_CAM1		56
-+#define DOUT_CAM0		57
-+#define DOUT_TBLK		58
-+#define DOUT_G2D		59
-+#define DOUT_MFC		60
-+#define DOUT_G3D		61
-+#define DOUT_FIMC2		62
-+#define DOUT_FIMC1		63
-+#define DOUT_FIMC0		64
-+#define DOUT_UART3		65
-+#define DOUT_UART2		66
-+#define DOUT_UART1		67
-+#define DOUT_UART0		68
-+#define DOUT_MMC3		69
-+#define DOUT_MMC2		70
-+#define DOUT_MMC1		71
-+#define DOUT_MMC0		72
-+#define DOUT_PWM		73
-+#define DOUT_SPI1		74
-+#define DOUT_SPI0		75
-+#define DOUT_DMC0		76
-+#define DOUT_PWI		77
-+#define DOUT_HPM		78
-+#define DOUT_COPY		79
-+#define DOUT_FLASH		80
-+#define DOUT_AUDIO2		81
-+#define DOUT_AUDIO1		82
-+#define DOUT_AUDIO0		83
-+#define DOUT_DPM		84
-+#define DOUT_DVSEM		85
-+
-+/* Gates */
-+#define SCLK_FIMC		86
-+#define CLK_CSIS		87
-+#define CLK_ROTATOR		88
-+#define CLK_FIMC2		89
-+#define CLK_FIMC1		90
-+#define CLK_FIMC0		91
-+#define CLK_MFC			92
-+#define CLK_G2D			93
-+#define CLK_G3D			94
-+#define CLK_IMEM		95
-+#define CLK_PDMA1		96
-+#define CLK_PDMA0		97
-+#define CLK_MDMA		98
-+#define CLK_DMC1		99
-+#define CLK_DMC0		100
-+#define CLK_NFCON		101
-+#define CLK_SROMC		102
-+#define CLK_CFCON		103
-+#define CLK_NANDXL		104
-+#define CLK_USB_HOST		105
-+#define CLK_USB_OTG		106
-+#define CLK_HDMI		107
-+#define CLK_TVENC		108
-+#define CLK_MIXER		109
-+#define CLK_VP			110
-+#define CLK_DSIM		111
-+#define CLK_FIMD		112
-+#define CLK_TZIC3		113
-+#define CLK_TZIC2		114
-+#define CLK_TZIC1		115
-+#define CLK_TZIC0		116
-+#define CLK_VIC3		117
-+#define CLK_VIC2		118
-+#define CLK_VIC1		119
-+#define CLK_VIC0		120
-+#define CLK_TSI			121
-+#define CLK_HSMMC3		122
-+#define CLK_HSMMC2		123
-+#define CLK_HSMMC1		124
-+#define CLK_HSMMC0		125
-+#define CLK_JTAG		126
-+#define CLK_MODEMIF		127
-+#define CLK_CORESIGHT		128
-+#define CLK_SDM			129
-+#define CLK_SECSS		130
-+#define CLK_PCM2		131
-+#define CLK_PCM1		132
-+#define CLK_PCM0		133
-+#define CLK_SYSCON		134
-+#define CLK_GPIO		135
-+#define CLK_TSADC		136
-+#define CLK_PWM			137
-+#define CLK_WDT			138
-+#define CLK_KEYIF		139
-+#define CLK_UART3		140
-+#define CLK_UART2		141
-+#define CLK_UART1		142
-+#define CLK_UART0		143
-+#define CLK_SYSTIMER		144
-+#define CLK_RTC			145
-+#define CLK_SPI1		146
-+#define CLK_SPI0		147
-+#define CLK_I2C_HDMI_PHY	148
-+#define CLK_I2C1		149
-+#define CLK_I2C2		150
-+#define CLK_I2C0		151
-+#define CLK_I2S1		152
-+#define CLK_I2S2		153
-+#define CLK_I2S0		154
-+#define CLK_AC97		155
-+#define CLK_SPDIF		156
-+#define CLK_TZPC3		157
-+#define CLK_TZPC2		158
-+#define CLK_TZPC1		159
-+#define CLK_TZPC0		160
-+#define CLK_SECKEY		161
-+#define CLK_IEM_APC		162
-+#define CLK_IEM_IEC		163
-+#define CLK_CHIPID		164
-+#define CLK_JPEG		163
-+
-+/* Special clocks*/
-+#define SCLK_PWI		164
-+#define SCLK_SPDIF		165
-+#define SCLK_AUDIO2		166
-+#define SCLK_AUDIO1		167
-+#define SCLK_AUDIO0		168
-+#define SCLK_PWM		169
-+#define SCLK_SPI1		170
-+#define SCLK_SPI0		171
-+#define SCLK_UART3		172
-+#define SCLK_UART2		173
-+#define SCLK_UART1		174
-+#define SCLK_UART0		175
-+#define SCLK_MMC3		176
-+#define SCLK_MMC2		177
-+#define SCLK_MMC1		178
-+#define SCLK_MMC0		179
-+#define SCLK_FINVPLL		180
-+#define SCLK_CSIS		181
-+#define SCLK_FIMD		182
-+#define SCLK_CAM1		183
-+#define SCLK_CAM0		184
-+#define SCLK_DAC		185
-+#define SCLK_MIXER		186
-+#define SCLK_HDMI		187
-+#define SCLK_FIMC2		188
-+#define SCLK_FIMC1		189
-+#define SCLK_FIMC0		190
-+#define SCLK_HDMI27M		191
-+#define SCLK_HDMIPHY		192
-+#define SCLK_USBPHY0		193
-+#define SCLK_USBPHY1		194
-+
-+/* S5P6442-specific clocks */
-+#define MOUT_D0SYNC		195
-+#define MOUT_D1SYNC		196
-+#define DOUT_MIXER		197
-+#define CLK_ETB			198
-+#define CLK_ETM			199
-+
-+/* CLKOUT */
-+#define FOUT_APLL_CLKOUT	200
-+#define FOUT_MPLL_CLKOUT	201
-+#define DOUT_APLL_CLKOUT	202
-+#define MOUT_CLKSEL		203
-+#define DOUT_CLKOUT		204
-+#define MOUT_CLKOUT		205
-+
-+/* Total number of clocks. */
-+#define NR_CLKS			206
-+
-+#endif /* _DT_BINDINGS_CLOCK_S5PV210_H */
--- 
-1.9.3
+Best regards,
+Tomasz
 
+On 04.07.2014 19:48, Tomasz Figa wrote:
+> This huge series is a (hopefully final) attempt to convert Samsung S5PV210
+> into a DT-only and multiplatform-aware platform. It consists of several
+> steps to gradually replace legacy code with one meeting current standards
+> and then finally remove unused remnants.
+> 
+> Patches 1-6 migrate the platform to fully use the Common Clock Framework
+> and get rid of legacy private clock code, of which s5pv210 was the last
+> user. Then patch 7 adds generic PHY driver for USB PHY on S5PV210 to allow
+> USB to be supported when using DT. Further three patches (8-10) add DT
+> support for mach-s5pv210 and necessary DT sources for currently supported
+> boards. Patch 11 removes board files and code directly related to them,
+> effectively making s5pv210 a DT-only platform. In next step, patches 12-15
+> prepare remaining code for multiplatform enablement, which is finally done
+> in patch 16. Patches 17-19 are a final clean-up, which remove a lot of
+> unused code left after making the last S5P platform DT-only.
+> 
+> Build tested patch by patch on following configs:
+>  - s3c2410_defconfig (with DT support enabled),
+>  - s3c6400_defconfig (with DT support enabled),
+>  - s5pv210_defconfig (with DT support enabled after patches adding it),
+>  - exynos_defconfig,
+>  - exynos_defconfig with S5PV210 enabled in multiplatform configuration.
+> 
+> Boot tested on s5pv210-goni board.
+> 
+> Note that support for smdkc110, smdkv210 and torbreck boards is provided
+> by moving data from existing board files to new device tree sources. No
+> testing was performed due to mentioned board not being available anymore.
+> However I believe we agreed on this approach, because apparently there
+> are no active users of them. See the RFC from August 2013 asking for
+> removal of the whole platform [1].
+> 
+> [1] http://www.mail-archive.com/linux-samsung-soc%40vger.kernel.org/msg21882.html
+> 
+> Mateusz Krawczuk (6):
+>   clk: samsung: Add clock driver for S5PV210 and compatible SoCs
+>   ARM: s5pv210: Migrate clock handling to Common Clock Framework
+>   phy: Add support for S5PV210 to the Exynos USB 2.0 PHY driver
+>   ARM: s5pv210: Add board file for boot using Device Tree
+>   ARM: Samsung: DT: Add Device tree for s5pv210
+>   ARM: Samsung: DT: Add Device tree for S5PC110/S5PV210 Boards
+> 
+> Tomasz Figa (13):
+>   cpufreq: s3c24xx: Remove some dead code
+>   serial: samsung: Remove support for legacy clock code
+>   ARM: SAMSUNG: Remove legacy clock code
+>   clk: samsung: Add S5PV210 Audio Subsystem clock driver
+>   ARM: S5PV210: Remove support for board files
+>   ARM: S5PV210: Untie PM support from legacy code
+>   ARM: s5pv210: move debug-macro.S into the common space
+>   ARM: s5pv210: Register cpufreq platform device
+>   cpufreq: s5pv210: Make the driver multiplatform aware
+>   ARM: s5pv210: Enable multi-platform build support
+>   gpio: samsung: Remove legacy support of S5PV210
+>   ARM: SAMSUNG: Remove remaining legacy code
+>   clk: samsung: s5pv210: Remove legacy board support
+> 
+>  .../bindings/clock/clk-s5pv210-audss.txt           |   53 +
+>  .../bindings/clock/samsung,s5pv210-clock.txt       |   78 ++
+>  .../devicetree/bindings/phy/samsung-phy.txt        |    1 +
+>  arch/arm/Kconfig                                   |   22 +-
+>  arch/arm/Kconfig.debug                             |   12 +-
+>  arch/arm/Makefile                                  |    4 +-
+>  arch/arm/boot/dts/Makefile                         |    5 +
+>  arch/arm/boot/dts/s5pv210-aquila.dts               |  392 ++++++
+>  arch/arm/boot/dts/s5pv210-goni.dts                 |  449 +++++++
+>  arch/arm/boot/dts/s5pv210-pinctrl.dtsi             |  839 ++++++++++++
+>  arch/arm/boot/dts/s5pv210-smdkc110.dts             |   78 ++
+>  arch/arm/boot/dts/s5pv210-smdkv210.dts             |  238 ++++
+>  arch/arm/boot/dts/s5pv210-torbreck.dts             |   92 ++
+>  arch/arm/boot/dts/s5pv210.dtsi                     |  633 +++++++++
+>  arch/arm/include/debug/s5pv210.S                   |   34 +
+>  arch/arm/mach-exynos/pm.c                          |    1 -
+>  arch/arm/mach-s3c24xx/common.c                     |    2 -
+>  arch/arm/mach-s3c24xx/iotiming-s3c2412.c           |    1 -
+>  arch/arm/mach-s3c24xx/mach-h1940.c                 |    5 +-
+>  arch/arm/mach-s3c24xx/mach-jive.c                  |    1 -
+>  arch/arm/mach-s3c24xx/mach-smdk2413.c              |    1 -
+>  arch/arm/mach-s3c24xx/mach-smdk2416.c              |    1 -
+>  arch/arm/mach-s3c24xx/mach-smdk2443.c              |    1 -
+>  arch/arm/mach-s3c24xx/mach-vstms.c                 |    1 -
+>  arch/arm/mach-s3c24xx/s3c2410.c                    |    6 -
+>  arch/arm/mach-s3c24xx/s3c2412.c                    |    6 -
+>  arch/arm/mach-s3c24xx/s3c2442.c                    |    1 -
+>  arch/arm/mach-s3c24xx/s3c244x.c                    |    6 -
+>  arch/arm/mach-s3c64xx/mach-anw6410.c               |    1 -
+>  arch/arm/mach-s3c64xx/mach-crag6410.c              |    1 -
+>  arch/arm/mach-s3c64xx/mach-hmt.c                   |    1 -
+>  arch/arm/mach-s3c64xx/mach-ncp.c                   |    1 -
+>  arch/arm/mach-s3c64xx/mach-smartq.c                |    1 -
+>  arch/arm/mach-s3c64xx/mach-smdk6400.c              |    1 -
+>  arch/arm/mach-s3c64xx/mach-smdk6410.c              |    1 -
+>  arch/arm/mach-s3c64xx/s3c6400.c                    |    1 -
+>  arch/arm/mach-s3c64xx/s3c6410.c                    |    1 -
+>  arch/arm/mach-s5pv210/Kconfig                      |  197 +--
+>  arch/arm/mach-s5pv210/Makefile                     |   29 +-
+>  arch/arm/mach-s5pv210/Makefile.boot                |    2 -
+>  arch/arm/mach-s5pv210/clock.c                      | 1365 --------------------
+>  arch/arm/mach-s5pv210/common.c                     |  279 ----
+>  arch/arm/mach-s5pv210/common.h                     |   21 +-
+>  arch/arm/mach-s5pv210/dev-audio.c                  |  246 ----
+>  arch/arm/mach-s5pv210/dma.c                        |  130 --
+>  arch/arm/mach-s5pv210/include/mach/debug-macro.S   |   41 -
+>  arch/arm/mach-s5pv210/include/mach/dma.h           |   26 -
+>  arch/arm/mach-s5pv210/include/mach/gpio.h          |  140 --
+>  arch/arm/mach-s5pv210/include/mach/hardware.h      |   18 -
+>  arch/arm/mach-s5pv210/include/mach/irqs.h          |  137 --
+>  arch/arm/mach-s5pv210/include/mach/map.h           |  158 ---
+>  arch/arm/mach-s5pv210/include/mach/memory.h        |   27 -
+>  arch/arm/mach-s5pv210/include/mach/pm-core.h       |   46 -
+>  arch/arm/mach-s5pv210/include/mach/regs-clock.h    |    2 +-
+>  arch/arm/mach-s5pv210/include/mach/regs-gpio.h     |   41 -
+>  arch/arm/mach-s5pv210/include/mach/regs-irq.h      |   18 -
+>  arch/arm/mach-s5pv210/mach-aquila.c                |  687 ----------
+>  arch/arm/mach-s5pv210/mach-goni.c                  |  916 -------------
+>  arch/arm/mach-s5pv210/mach-smdkc110.c              |  159 ---
+>  arch/arm/mach-s5pv210/mach-smdkv210.c              |  337 -----
+>  arch/arm/mach-s5pv210/mach-torbreck.c              |  135 --
+>  arch/arm/mach-s5pv210/pm.c                         |  147 ++-
+>  arch/arm/mach-s5pv210/s5pv210.c                    |   77 ++
+>  arch/arm/mach-s5pv210/setup-fb-24bpp.c             |   49 -
+>  arch/arm/mach-s5pv210/setup-fimc.c                 |   43 -
+>  arch/arm/mach-s5pv210/setup-i2c0.c                 |   28 -
+>  arch/arm/mach-s5pv210/setup-i2c1.c                 |   28 -
+>  arch/arm/mach-s5pv210/setup-i2c2.c                 |   28 -
+>  arch/arm/mach-s5pv210/setup-ide.c                  |   39 -
+>  arch/arm/mach-s5pv210/setup-keypad.c               |   24 -
+>  arch/arm/mach-s5pv210/setup-sdhci-gpio.c           |  103 --
+>  arch/arm/mach-s5pv210/setup-spi.c                  |   34 -
+>  arch/arm/mach-s5pv210/setup-usb-phy.c              |   95 --
+>  arch/arm/mach-s5pv210/sleep.S                      |   36 +
+>  arch/arm/plat-samsung/Kconfig                      |  143 +-
+>  arch/arm/plat-samsung/Makefile                     |   15 -
+>  arch/arm/plat-samsung/clock-clksrc.c               |  212 ---
+>  arch/arm/plat-samsung/clock.c                      |  539 --------
+>  arch/arm/plat-samsung/cpu.c                        |    3 +-
+>  arch/arm/plat-samsung/devs.c                       |  330 -----
+>  arch/arm/plat-samsung/include/plat/camport.h       |   28 -
+>  arch/arm/plat-samsung/include/plat/clock-clksrc.h  |   83 --
+>  arch/arm/plat-samsung/include/plat/clock.h         |  152 ---
+>  arch/arm/plat-samsung/include/plat/cpu-freq-core.h |    3 -
+>  arch/arm/plat-samsung/include/plat/cpu.h           |   13 -
+>  arch/arm/plat-samsung/include/plat/devs.h          |   42 -
+>  arch/arm/plat-samsung/include/plat/fb-core.h       |   15 -
+>  arch/arm/plat-samsung/include/plat/fb.h            |   22 -
+>  arch/arm/plat-samsung/include/plat/fimc-core.h     |   51 -
+>  arch/arm/plat-samsung/include/plat/gpio-cfg.h      |   64 -
+>  arch/arm/plat-samsung/include/plat/hdmi.h          |   16 -
+>  arch/arm/plat-samsung/include/plat/irqs.h          |   72 --
+>  arch/arm/plat-samsung/include/plat/mfc.h           |   35 -
+>  arch/arm/plat-samsung/include/plat/pll.h           |  323 -----
+>  arch/arm/plat-samsung/include/plat/s5p-clock.h     |   65 -
+>  arch/arm/plat-samsung/include/plat/sdhci.h         |   47 -
+>  arch/arm/plat-samsung/include/plat/tv-core.h       |   44 -
+>  arch/arm/plat-samsung/init.c                       |    1 -
+>  arch/arm/plat-samsung/pm-gpio.c                    |    4 +-
+>  arch/arm/plat-samsung/s5p-clock.c                  |  294 -----
+>  arch/arm/plat-samsung/s5p-dev-mfc.c                |   81 +-
+>  arch/arm/plat-samsung/s5p-dev-uart.c               |   88 --
+>  arch/arm/plat-samsung/s5p-irq-eint.c               |  221 ----
+>  arch/arm/plat-samsung/s5p-irq-gpioint.c            |  218 ----
+>  arch/arm/plat-samsung/s5p-irq-pm.c                 |   92 --
+>  arch/arm/plat-samsung/s5p-irq.c                    |   31 -
+>  arch/arm/plat-samsung/s5p-pm.c                     |   40 -
+>  arch/arm/plat-samsung/s5p-sleep.S                  |   45 -
+>  drivers/clk/samsung/Makefile                       |    1 +
+>  drivers/clk/samsung/clk-s5pv210-audss.c            |  241 ++++
+>  drivers/clk/samsung/clk-s5pv210.c                  |  856 ++++++++++++
+>  drivers/cpufreq/s3c2410-cpufreq.c                  |    2 -
+>  drivers/cpufreq/s3c2412-cpufreq.c                  |    3 -
+>  drivers/cpufreq/s3c2440-cpufreq.c                  |    3 -
+>  drivers/cpufreq/s3c24xx-cpufreq.c                  |    1 -
+>  drivers/cpufreq/s5pv210-cpufreq.c                  |  131 +-
+>  drivers/gpio/gpio-samsung.c                        |  240 ----
+>  drivers/phy/Kconfig                                |   10 +
+>  drivers/phy/Makefile                               |    1 +
+>  drivers/phy/phy-s5pv210-usb2.c                     |  187 +++
+>  drivers/phy/phy-samsung-usb2.c                     |    6 +
+>  drivers/phy/phy-samsung-usb2.h                     |    1 +
+>  drivers/tty/serial/samsung.c                       |    4 -
+>  include/dt-bindings/clock/s5pv210-audss.h          |   34 +
+>  include/dt-bindings/clock/s5pv210.h                |  239 ++++
+>  125 files changed, 4843 insertions(+), 9409 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/clock/clk-s5pv210-audss.txt
+>  create mode 100644 Documentation/devicetree/bindings/clock/samsung,s5pv210-clock.txt
+>  create mode 100644 arch/arm/boot/dts/s5pv210-aquila.dts
+>  create mode 100644 arch/arm/boot/dts/s5pv210-goni.dts
+>  create mode 100644 arch/arm/boot/dts/s5pv210-pinctrl.dtsi
+>  create mode 100644 arch/arm/boot/dts/s5pv210-smdkc110.dts
+>  create mode 100644 arch/arm/boot/dts/s5pv210-smdkv210.dts
+>  create mode 100644 arch/arm/boot/dts/s5pv210-torbreck.dts
+>  create mode 100644 arch/arm/boot/dts/s5pv210.dtsi
+>  create mode 100644 arch/arm/include/debug/s5pv210.S
+>  delete mode 100644 arch/arm/mach-s5pv210/Makefile.boot
+>  delete mode 100644 arch/arm/mach-s5pv210/clock.c
+>  delete mode 100644 arch/arm/mach-s5pv210/common.c
+>  delete mode 100644 arch/arm/mach-s5pv210/dev-audio.c
+>  delete mode 100644 arch/arm/mach-s5pv210/dma.c
+>  delete mode 100644 arch/arm/mach-s5pv210/include/mach/debug-macro.S
+>  delete mode 100644 arch/arm/mach-s5pv210/include/mach/dma.h
+>  delete mode 100644 arch/arm/mach-s5pv210/include/mach/gpio.h
+>  delete mode 100644 arch/arm/mach-s5pv210/include/mach/hardware.h
+>  delete mode 100644 arch/arm/mach-s5pv210/include/mach/irqs.h
+>  delete mode 100644 arch/arm/mach-s5pv210/include/mach/map.h
+>  delete mode 100644 arch/arm/mach-s5pv210/include/mach/memory.h
+>  delete mode 100644 arch/arm/mach-s5pv210/include/mach/pm-core.h
+>  delete mode 100644 arch/arm/mach-s5pv210/include/mach/regs-gpio.h
+>  delete mode 100644 arch/arm/mach-s5pv210/include/mach/regs-irq.h
+>  delete mode 100644 arch/arm/mach-s5pv210/mach-aquila.c
+>  delete mode 100644 arch/arm/mach-s5pv210/mach-goni.c
+>  delete mode 100644 arch/arm/mach-s5pv210/mach-smdkc110.c
+>  delete mode 100644 arch/arm/mach-s5pv210/mach-smdkv210.c
+>  delete mode 100644 arch/arm/mach-s5pv210/mach-torbreck.c
+>  create mode 100644 arch/arm/mach-s5pv210/s5pv210.c
+>  delete mode 100644 arch/arm/mach-s5pv210/setup-fb-24bpp.c
+>  delete mode 100644 arch/arm/mach-s5pv210/setup-fimc.c
+>  delete mode 100644 arch/arm/mach-s5pv210/setup-i2c0.c
+>  delete mode 100644 arch/arm/mach-s5pv210/setup-i2c1.c
+>  delete mode 100644 arch/arm/mach-s5pv210/setup-i2c2.c
+>  delete mode 100644 arch/arm/mach-s5pv210/setup-ide.c
+>  delete mode 100644 arch/arm/mach-s5pv210/setup-keypad.c
+>  delete mode 100644 arch/arm/mach-s5pv210/setup-sdhci-gpio.c
+>  delete mode 100644 arch/arm/mach-s5pv210/setup-spi.c
+>  delete mode 100644 arch/arm/mach-s5pv210/setup-usb-phy.c
+>  create mode 100644 arch/arm/mach-s5pv210/sleep.S
+>  delete mode 100644 arch/arm/plat-samsung/clock-clksrc.c
+>  delete mode 100644 arch/arm/plat-samsung/clock.c
+>  delete mode 100644 arch/arm/plat-samsung/include/plat/camport.h
+>  delete mode 100644 arch/arm/plat-samsung/include/plat/clock-clksrc.h
+>  delete mode 100644 arch/arm/plat-samsung/include/plat/clock.h
+>  delete mode 100644 arch/arm/plat-samsung/include/plat/fimc-core.h
+>  delete mode 100644 arch/arm/plat-samsung/include/plat/hdmi.h
+>  delete mode 100644 arch/arm/plat-samsung/include/plat/irqs.h
+>  delete mode 100644 arch/arm/plat-samsung/include/plat/mfc.h
+>  delete mode 100644 arch/arm/plat-samsung/include/plat/pll.h
+>  delete mode 100644 arch/arm/plat-samsung/include/plat/s5p-clock.h
+>  delete mode 100644 arch/arm/plat-samsung/include/plat/tv-core.h
+>  delete mode 100644 arch/arm/plat-samsung/s5p-clock.c
+>  delete mode 100644 arch/arm/plat-samsung/s5p-dev-uart.c
+>  delete mode 100644 arch/arm/plat-samsung/s5p-irq-eint.c
+>  delete mode 100644 arch/arm/plat-samsung/s5p-irq-gpioint.c
+>  delete mode 100644 arch/arm/plat-samsung/s5p-irq-pm.c
+>  delete mode 100644 arch/arm/plat-samsung/s5p-irq.c
+>  delete mode 100644 arch/arm/plat-samsung/s5p-pm.c
+>  delete mode 100644 arch/arm/plat-samsung/s5p-sleep.S
+>  create mode 100644 drivers/clk/samsung/clk-s5pv210-audss.c
+>  create mode 100644 drivers/clk/samsung/clk-s5pv210.c
+>  create mode 100644 drivers/phy/phy-s5pv210-usb2.c
+>  create mode 100644 include/dt-bindings/clock/s5pv210-audss.h
+>  create mode 100644 include/dt-bindings/clock/s5pv210.h
+> 
