@@ -1,122 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758978AbaGDQsv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 12:48:51 -0400
-Received: from mout.gmx.net ([212.227.15.18]:58580 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751804AbaGDQsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 12:48:50 -0400
-Message-ID: <53B6DAE1.1040709@gmx.de>
-Date: Fri, 04 Jul 2014 18:48:33 +0200
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1759077AbaGDQvJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 12:51:09 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35695 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098AbaGDQvG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 12:51:06 -0400
+Message-ID: <53B6DB74.2050401@linutronix.de>
+Date: Fri, 04 Jul 2014 18:51:00 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-To: Helge Deller <deller@gmx.de>
-CC: Eric Paris <eparis@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-parisc@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [PATCH] fix fanotify_mark() breakage on big endian 32bit kernel
-References: <20140704151235.GA22454@ls3530.dhcp.wdf.sap.corp>
-In-Reply-To: <20140704151235.GA22454@ls3530.dhcp.wdf.sap.corp>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:5HvqE7k23MCQefbTmU/h8pL8oKaKPuMdzQHRJmxnM0MC7j+KCpY
- jRc6ry/PLDUwOywiwNkzmhxtaobr3q7i9KxGLY3omAIpOZF1Eq0NBy/x23Kx1VcW4ctbPks
- 5lsXZfa1+YKTF84NU0GK6fSohngsnuIOlPQsO7Pqb05LJEXQ59PCdXEAJrVm63vkPh+mp6U
- MfRyaB5mAaDm8Q8E1+ZVA==
+To: Tony Lindgren <tony@atomide.com>, Robert Nelson <robertcnelson@gmail.com>
+CC: Aaro Koskinen <aaro.koskinen@iki.fi>, Felipe Balbi <balbi@ti.com>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH] tty: serial: Add 8250-core based omap driver
+References: <1404316809-20637-1-git-send-email-bigeasy@linutronix.de> <20140702160932.GF5541@saruman.home> <20140702190944.GA567@drone.musicnaut.iki.fi> <CAOCHtYgxMeA+Arfe40XeFDEKuCJ8qo1RqNR0hYBGr_Wp6sRfdA@mail.gmail.com> <20140703073411.GX28884@atomide.com>
+In-Reply-To: <20140703073411.GX28884@atomide.com>
+X-Enigmail-Version: 1.6+git0.20140323
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04.07.2014 17:12, Helge Deller wrote:
-> This patch affects big endian architectures only.
->
-> On those with 32bit userspace and 64bit kernel (CONFIG_COMPAT=y) the
-> 64bit mask parameter is correctly constructed out of two 32bit values in
-> the compat_fanotify_mark() function and then passed as 64bit parameter
-> to the fanotify_mark() syscall.
->
-> But for the CONFIG_COMPAT=n case (32bit kernel & userspace),
-> compat_fanotify_mark() isn't used and the fanotify_mark syscall implementation
+On 07/03/2014 09:34 AM, Tony Lindgren wrote:
+> Heh. Just to summarize the reason ttyO needs to be a separate name
+> and device entry from ttyS is because we also have external 8250
+> devices on GPMC and hotplug busses.
 
-I was not able to find a symbol compat_fanotify_mark. Could you, please, 
-indicate were this coding is.
+So the GPMC devices will first get a higher minor/device number. The
+internal serial ports should show up first. I don't see the problem
+(yet).
 
-> is used directly. In that case the upper and lower 32 bits of the 64bit mask
-> parameter is still swapped on big endian machines and thus leads to
-> fanotify_mark failing with -EINVAL.
->
-> Here is a strace of the same 32bit executable (fanotify01 testcase from LTP):
+If you need a separate major number (and name) like we do have it now
+(between ttySx and ttyOx) then one of requirements would be to tell
+Kconfig that one driver can be active at a time.
 
-https://github.com/linux-test-project/ltp
-testcases/kernel/syscalls/fanotify/fanotify01.c
-I guess.
+For me the ttyS vs ttyO thing is purely cosmetic. I personally don't
+like that it is different on different platforms like ttymxc, ttySC,
+ttyTHS, …
 
->
-> On a 64bit kernel it suceeds:
-> syscall_322(0, 0, 0x3, 0x3, 0x266c8, 0x1) = 0x3
-> syscall_323(0x3, 0x1, 0, 0x3b, 0xffffff9c, 0x266c8) = 0
->
-> On a 32bit kernel it fails:
-> syscall_322(0, 0, 0x3, 0x3, 0x266c8, 0x1) = 0x3
-> syscall_323(0x3, 0x1, 0, 0x3b, 0xffffff9c, 0x266c8) = -1 (errno 22)
+I understand that it is easier to have a specific name for it so one
+does not need to find out which node is which (but then there is udev
+which could create unique device names based on attributes). And then
+you need enter this thingy to securetty & inittab.
 
-The syscall numbers are architecture specific.
-Which architecture did you test on?
+That said I am easy on it. Whatever the majority here decides to be a
+sane solution I will try to make it happen.
 
->
-> Below is the easiest fix for this problem by simply swapping the upper and
-> lower 32bit of the 64 bit mask parameter when building a pure 32bit kernel.
+> 
+> Regards,
+> 
+> Tony
+> 
 
-The problem you report is architecture specific.
-Is fanotify_user.c really the right place for the correction?
-Or should the fix be in the "arch" directory?
-
-Best regards
-
-Heinrich Schuchardt
-
->
-> But on the other side, using __u64 in a syscall API is IMHO wrong.  This may
-> easily break 32bit kernel builds, esp. on big endian machines.
->
-> The clean solution would probably be to use SYSCALL_DEFINE5() when
-> building a 64bit-kernel, and SYSCALL_DEFINE6() for fanotify_mark() when
-> building a pure 32bit kernel, something like this:
->
-> #ifdef CONFIG_64BIT
-> SYSCALL_DEFINE5(fanotify_mark, int, fanotify_fd, unsigned int, flags,
->                                __u64, mask, int, dfd,
->                                const char  __user *, pathname)
-> #else
-> SYSCALL_DEFINE6(fanotify_mark, int, fanotify_fd, unsigned int, flags,
->                                  __u32, mask0, __u32, mask1, int, dfd,
->                                  const char  __user *, pathname)
-> #endif
->
->
-> Signed-off-by: Helge Deller <deller@gmx.de>
-> To: Eric Paris <eparis@redhat.com>
-> Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
->
->
-> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-> index 3fdc8a3..374261c 100644
-> --- a/fs/notify/fanotify/fanotify_user.c
-> +++ b/fs/notify/fanotify/fanotify_user.c
-> @@ -787,6 +787,10 @@ SYSCALL_DEFINE5(fanotify_mark, int, fanotify_fd, unsigned int, flags,
->   	struct path path;
->   	int ret;
->
-> +#if defined(__BIG_ENDIAN) && !defined(CONFIG_64BIT)
-> +	mask = (mask << 32) | (mask >> 32);
-> +#endif
-> +
->   	pr_debug("%s: fanotify_fd=%d flags=%x dfd=%d pathname=%p mask=%llx\n",
->   		 __func__, fanotify_fd, flags, dfd, pathname, mask);
->
->
-
+Sebastian
