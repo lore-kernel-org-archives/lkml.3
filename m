@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760440AbaGDWQE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:16:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56964 "EHLO
+	id S1031617AbaGDXGT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 19:06:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57005 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760343AbaGDWPx (ORCPT
+	with ESMTP id S1760437AbaGDWQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:15:53 -0400
+	Fri, 4 Jul 2014 18:16:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.15 06/66] Input: elantech - deal with clickpads reporting right button events
-Date: Fri,  4 Jul 2014 15:14:05 -0700
-Message-Id: <20140704221423.113269893@linuxfoundation.org>
+        Sagi Grimberg <sagig@mellanox.com>,
+        Bart Van Assche <bvanassche@acm.org>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.15 30/66] IB/srp: Fix a sporadic crash triggered by cable pulling
+Date: Fri,  4 Jul 2014 15:14:29 -0700
+Message-Id: <20140704221424.194109202@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -29,79 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit cd9e83e2754465856097f31c7ab933ce74c473f8 upstream.
+commit 024ca90151f5e4296d30f72c13ff9a075e23c9ec upstream.
 
-At least the Dell Vostro 5470 elantech *clickpad* reports right button
-clicks when clicked in the right bottom area:
+Avoid that the loops that iterate over the request ring can encounter
+a pointer to a SCSI command in req->scmnd that is no longer associated
+with that request. If the function srp_unmap_data() is invoked twice
+for a SCSI command that is not in flight then that would cause
+ib_fmr_pool_unmap() to be invoked with an invalid pointer as argument,
+resulting in a kernel oops.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1103528
-
-This is different from how (elantech) clickpads normally operate, normally
-no matter where the user clicks on the pad the pad always reports a left
-button event, since there is only 1 hardware button beneath the path.
-
-It looks like Dell has put 2 buttons under the pad, one under each bottom
-corner, causing this.
-
-Since this however still clearly is a real clickpad hardware-wise, we still
-want to report it as such to userspace, so that things like finger movement
-in the bottom area can be properly ignored as it should be on clickpads.
-
-So deal with this weirdness by simply mapping a right click to a left click
-on elantech clickpads. As an added advantage this is something which we can
-simply do on all elantech clickpads, so no need to add special quirks for
-this weird model.
-
-Reported-and-tested-by: Elder Marco <eldermarco@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Reported-by: Sagi Grimberg <sagig@mellanox.com>
+Reference: http://thread.gmane.org/gmane.linux.drivers.rdma/19068/focus=19069
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/elantech.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+ drivers/infiniband/ulp/srp/ib_srp.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -473,8 +473,15 @@ static void elantech_report_absolute_v3(
- 	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
- 	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
- 	input_report_key(dev, BTN_TOOL_TRIPLETAP, fingers == 3);
--	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
--	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+
-+	/* For clickpads map both buttons to BTN_LEFT */
-+	if (etd->fw_version & 0x001000) {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
-+	} else {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-+		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	}
-+
- 	input_report_abs(dev, ABS_PRESSURE, pres);
- 	input_report_abs(dev, ABS_TOOL_WIDTH, width);
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -1594,6 +1594,12 @@ err_unmap:
+ err_iu:
+ 	srp_put_tx_iu(target, iu, SRP_IU_CMD);
  
-@@ -484,10 +491,17 @@ static void elantech_report_absolute_v3(
- static void elantech_input_sync_v4(struct psmouse *psmouse)
- {
- 	struct input_dev *dev = psmouse->dev;
-+	struct elantech_data *etd = psmouse->private;
- 	unsigned char *packet = psmouse->packet;
- 
--	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
--	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	/* For clickpads map both buttons to BTN_LEFT */
-+	if (etd->fw_version & 0x001000) {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
-+	} else {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-+		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	}
++	/*
++	 * Avoid that the loops that iterate over the request ring can
++	 * encounter a dangling SCSI command pointer.
++	 */
++	req->scmnd = NULL;
 +
- 	input_mt_report_pointer_emulation(dev, true);
- 	input_sync(dev);
- }
+ 	spin_lock_irqsave(&target->lock, flags);
+ 	list_add(&req->list, &target->free_reqs);
+ 
 
 
