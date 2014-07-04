@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030759AbaGDWR5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:17:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57258 "EHLO
+	id S1030807AbaGDWSD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:18:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57292 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030716AbaGDWRx (ORCPT
+	with ESMTP id S1030784AbaGDWSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:53 -0400
+	Fri, 4 Jul 2014 18:18:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Estrin <alex.estrin@intel.com>,
-        Dennis Dalessandro <dennis.dalessandro@intel.com>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.4 08/19] IB/qib: Fix port in pkey change event
-Date: Fri,  4 Jul 2014 15:15:18 -0700
-Message-Id: <20140704221436.821551093@linuxfoundation.org>
+        Paul Bolle <pebolle@tiscali.nl>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.4 17/19] powerpc: fix typo CONFIG_PPC_CPU
+Date: Fri,  4 Jul 2014 15:15:27 -0700
+Message-Id: <20140704221437.228292065@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221436.423715636@linuxfoundation.org>
 References: <20140704221436.423715636@linuxfoundation.org>
@@ -31,36 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit 911eccd284d13d78c92ec4f1f1092c03457d732a upstream.
+commit b69a1da94f3d1589d1942b5d1b384d8cfaac4500 upstream.
 
-The code used a literal 1 in dispatching an IB_EVENT_PKEY_CHANGE.
+Commit cd64d1697cf0 ("powerpc: mtmsrd not defined") added a check for
+CONFIG_PPC_CPU were a check for CONFIG_PPC_FPU was clearly intended.
 
-As of the dual port qib QDR card, this is not necessarily correct.
-
-Change to use the port as specified in the call.
-
-Reported-by: Alex Estrin <alex.estrin@intel.com>
-Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Fixes: cd64d1697cf0 ("powerpc: mtmsrd not defined")
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/qib/qib_mad.c |    2 +-
+ arch/powerpc/lib/sstep.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/infiniband/hw/qib/qib_mad.c
-+++ b/drivers/infiniband/hw/qib/qib_mad.c
-@@ -1005,7 +1005,7 @@ static int set_pkeys(struct qib_devdata
+--- a/arch/powerpc/lib/sstep.c
++++ b/arch/powerpc/lib/sstep.c
+@@ -1395,7 +1395,7 @@ int __kprobes emulate_step(struct pt_reg
+ 				regs->gpr[rd] = byterev_4(val);
+ 			goto ldst_done;
  
- 		event.event = IB_EVENT_PKEY_CHANGE;
- 		event.device = &dd->verbs_dev.ibdev;
--		event.element.port_num = 1;
-+		event.element.port_num = port;
- 		ib_dispatch_event(&event);
- 	}
- 	return 0;
+-#ifdef CONFIG_PPC_CPU
++#ifdef CONFIG_PPC_FPU
+ 		case 535:	/* lfsx */
+ 		case 567:	/* lfsux */
+ 			if (!(regs->msr & MSR_FP))
 
 
