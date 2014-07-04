@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760301AbaGDWPk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:15:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56857 "EHLO
+	id S1760341AbaGDWPr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:15:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56912 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760275AbaGDWPd (ORCPT
+	with ESMTP id S1760275AbaGDWPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:15:33 -0400
+	Fri, 4 Jul 2014 18:15:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Smith <alex.smith@imgtec.com>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.15 13/66] recordmcount/MIPS: Fix possible incorrect mcount_loc table entries in modules
-Date: Fri,  4 Jul 2014 15:14:12 -0700
-Message-Id: <20140704221423.426038166@linuxfoundation.org>
+        hujianyang <hujianyang@huawei.com>,
+        Laurence Withers <lwithers@guralp.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [PATCH 3.15 17/66] UBIFS: fix an mmap and fsync race condition
+Date: Fri,  4 Jul 2014 15:14:16 -0700
+Message-Id: <20140704221423.615890751@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -29,62 +30,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Smith <alex.smith@imgtec.com>
+From: hujianyang <hujianyang@huawei.com>
 
-commit 91ad11d7cc6f4472ebf177a6252fbf0fd100d798 upstream.
+commit 691a7c6f28ac90cccd0dbcf81348ea90b211bdd0 upstream.
 
-On MIPS calls to _mcount in modules generate 2 instructions to load
-the _mcount address (and therefore 2 relocations). The mcount_loc
-table should only reference the first of these, so the second is
-filtered out by checking the relocation offset and ignoring ones that
-immediately follow the previous one seen.
+There is a race condition in UBIFS:
 
-However if a module has an _mcount call at offset 0, the second
-relocation would not be filtered out due to old_r_offset == 0
-being taken to mean that the current relocation is the first one
-seen, and both would end up in the mcount_loc table.
+Thread A (mmap)                        Thread B (fsync)
 
-This results in ftrace_make_nop() patching both (adjacent)
-instructions to branches over the _mcount call sequence like so:
+->__do_fault                           ->write_cache_pages
+   -> ubifs_vm_page_mkwrite
+       -> budget_space
+       -> lock_page
+       -> release/convert_page_budget
+       -> SetPagePrivate
+       -> TestSetPageDirty
+       -> unlock_page
+                                       -> lock_page
+                                           -> TestClearPageDirty
+                                           -> ubifs_writepage
+                                               -> do_writepage
+                                                   -> release_budget
+                                                   -> ClearPagePrivate
+                                                   -> unlock_page
+   -> !(ret & VM_FAULT_LOCKED)
+   -> lock_page
+   -> set_page_dirty
+       -> ubifs_set_page_dirty
+           -> TestSetPageDirty (set page dirty without budgeting)
+   -> unlock_page
 
-  0xffffffffc08a8000:  04 00 00 10     b       0xffffffffc08a8014
-  0xffffffffc08a8004:  04 00 00 10     b       0xffffffffc08a8018
-  0xffffffffc08a8008:  2d 08 e0 03     move    at,ra
-  ...
+This leads to situation where we have a diry page but no budget allocated for
+this page, so further write-back may fail with -ENOSPC.
 
-The second branch is in the delay slot of the first, which is
-defined to be unpredictable - on the platform on which this bug was
-encountered, it triggers a reserved instruction exception.
+In this fix we return from page_mkwrite without performing unlock_page. We
+return VM_FAULT_LOCKED instead. After doing this, the race above will not
+happen.
 
-Fix by initializing old_r_offset to ~0 and using that instead of 0
-to determine whether the current relocation is the first seen.
-
-Signed-off-by: Alex Smith <alex.smith@imgtec.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/7098/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: hujianyang <hujianyang@huawei.com>
+Tested-by: Laurence Withers <lwithers@guralp.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/recordmcount.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ubifs/file.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/scripts/recordmcount.h
-+++ b/scripts/recordmcount.h
-@@ -163,11 +163,11 @@ static int mcount_adjust = 0;
+--- a/fs/ubifs/file.c
++++ b/fs/ubifs/file.c
+@@ -1525,8 +1525,7 @@ static int ubifs_vm_page_mkwrite(struct
+ 	}
  
- static int MIPS_is_fake_mcount(Elf_Rel const *rp)
- {
--	static Elf_Addr old_r_offset;
-+	static Elf_Addr old_r_offset = ~(Elf_Addr)0;
- 	Elf_Addr current_r_offset = _w(rp->r_offset);
- 	int is_fake;
+ 	wait_for_stable_page(page);
+-	unlock_page(page);
+-	return 0;
++	return VM_FAULT_LOCKED;
  
--	is_fake = old_r_offset &&
-+	is_fake = (old_r_offset != ~(Elf_Addr)0) &&
- 		(current_r_offset - old_r_offset == MIPS_FAKEMCOUNT_OFFSET);
- 	old_r_offset = current_r_offset;
- 
+ out_unlock:
+ 	unlock_page(page);
 
 
