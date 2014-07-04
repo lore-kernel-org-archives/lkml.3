@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031448AbaGDWWG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:22:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57605 "EHLO
+	id S1031621AbaGDWdP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:33:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57614 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030398AbaGDWWC (ORCPT
+	with ESMTP id S1031438AbaGDWWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:22:02 -0400
+	Fri, 4 Jul 2014 18:22:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.14 38/59] powerpc/mm: Check paca psize is up to date for huge mappings
-Date: Fri,  4 Jul 2014 15:19:27 -0700
-Message-Id: <20140704221541.364935303@linuxfoundation.org>
+Subject: [PATCH 3.14 39/59] powerpc/serial: Use saner flags when creating legacy ports
+Date: Fri,  4 Jul 2014 15:19:28 -0700
+Message-Id: <20140704221541.407482389@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -30,129 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Ellerman <mpe@ellerman.id.au>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 09567e7fd44291bfc08accfdd67ad8f467842332 upstream.
+commit c4cad90f9e9dcb85afc5e75a02ae3522ed077296 upstream.
 
-We have a bug in our hugepage handling which exhibits as an infinite
-loop of hash faults. If the fault is being taken in the kernel it will
-typically trigger the softlockup detector, or the RCU stall detector.
+We had a mix & match of flags used when creating legacy ports
+depending on where we found them in the device-tree. Among others
+we were missing UPF_SKIP_TEST for some kind of ISA ports which is
+a problem as quite a few UARTs out there don't support the loopback
+test (such as a lot of BMCs).
 
-The bug is as follows:
+Let's pick the set of flags used by the SoC code and generalize it
+which means autoconf, no loopback test, irq maybe shared and fixed
+port.
 
- 1. mmap(0xa0000000, ..., MAP_FIXED | MAP_HUGE_TLB | MAP_ANONYMOUS ..)
- 2. Slice code converts the slice psize to 16M.
- 3. The code on lines 539-540 of slice.c in slice_get_unmapped_area()
-    synchronises the mm->context with the paca->context. So the paca slice
-    mask is updated to include the 16M slice.
- 3. Either:
-    * mmap() fails because there are no huge pages available.
-    * mmap() succeeds and the mapping is then munmapped.
-    In both cases the slice psize remains at 16M in both the paca & mm.
- 4. mmap(0xa0000000, ..., MAP_FIXED | MAP_ANONYMOUS ..)
- 5. The slice psize is converted back to 64K. Because of the check on line 539
-    of slice.c we DO NOT update the paca->context. The paca slice mask is now
-    out of sync with the mm slice mask.
- 6. User/kernel accesses 0xa0000000.
- 7. The SLB miss handler slb_allocate_realmode() **uses the paca slice mask**
-    to create an SLB entry and inserts it in the SLB.
-18. With the 16M SLB entry in place the hardware does a hash lookup, no entry
-    is found so a data access exception is generated.
-19. The data access handler calls do_page_fault() -> handle_mm_fault().
-10. __handle_mm_fault() creates a THP mapping with do_huge_pmd_anonymous_page().
-11. The hardware retries the access, there is still nothing in the hash table
-    so once again a data access exception is generated.
-12. hash_page() calls into __hash_page_thp() and inserts a mapping in the
-    hash. Although the THP mapping maps 16M the hashing is done using 64K
-    as the segment page size.
-13. hash_page() returns immediately after calling __hash_page_thp(), skipping
-    over the code at line 1125. Resulting in the mismatch between the
-    paca->context and mm->context not being detected.
-14. The hardware retries the access, the hash it generates using the 16M
-    SLB entry does NOT match the hash we inserted.
-15. We take another data access and go into __hash_page_thp().
-16. We see a valid entry in the hpte_slot_array and so we call updatepp()
-    which succeeds.
-17. Goto 14.
+Sending to stable as the lack of UPF_SKIP_TEST is breaking
+serial on some machines so I want this back into distros
 
-We could fix this in two ways. The first would be to remove or modify
-the check on line 539 of slice.c.
-
-The second option is to cause the check of paca psize in hash_page() on
-line 1125 to also be done for THP pages.
-
-We prefer the latter, because the check & update of the paca psize is
-not done until we know it's necessary. It's also done only on the
-current cpu, so we don't need to IPI all other cpus.
-
-Without further rearranging the code, the simplest fix is to pull out
-the code that checks paca psize and call it in two places. Firstly for
-THP/hugetlb, and secondly for other mappings as before.
-
-Thanks to Dave Jones for trinity, which originally found this bug.
-
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/mm/hash_utils_64.c |   31 ++++++++++++++++++++-----------
- 1 file changed, 20 insertions(+), 11 deletions(-)
+ arch/powerpc/kernel/legacy_serial.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/arch/powerpc/mm/hash_utils_64.c
-+++ b/arch/powerpc/mm/hash_utils_64.c
-@@ -960,6 +960,22 @@ void hash_failure_debug(unsigned long ea
- 		trap, vsid, ssize, psize, lpsize, pte);
+--- a/arch/powerpc/kernel/legacy_serial.c
++++ b/arch/powerpc/kernel/legacy_serial.c
+@@ -48,6 +48,9 @@ static struct of_device_id legacy_serial
+ static unsigned int legacy_serial_count;
+ static int legacy_serial_console = -1;
+ 
++static const upf_t legacy_port_flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST |
++	UPF_SHARE_IRQ | UPF_FIXED_PORT;
++
+ static unsigned int tsi_serial_in(struct uart_port *p, int offset)
+ {
+ 	unsigned int tmp;
+@@ -153,8 +156,6 @@ static int __init add_legacy_soc_port(st
+ {
+ 	u64 addr;
+ 	const __be32 *addrp;
+-	upf_t flags = UPF_BOOT_AUTOCONF | UPF_SKIP_TEST | UPF_SHARE_IRQ
+-		| UPF_FIXED_PORT;
+ 	struct device_node *tsi = of_get_parent(np);
+ 
+ 	/* We only support ports that have a clock frequency properly
+@@ -185,9 +186,11 @@ static int __init add_legacy_soc_port(st
+ 	 * IO port value. It will be fixed up later along with the irq
+ 	 */
+ 	if (tsi && !strcmp(tsi->type, "tsi-bridge"))
+-		return add_legacy_port(np, -1, UPIO_TSI, addr, addr, NO_IRQ, flags, 0);
++		return add_legacy_port(np, -1, UPIO_TSI, addr, addr,
++				       NO_IRQ, legacy_port_flags, 0);
+ 	else
+-		return add_legacy_port(np, -1, UPIO_MEM, addr, addr, NO_IRQ, flags, 0);
++		return add_legacy_port(np, -1, UPIO_MEM, addr, addr,
++				       NO_IRQ, legacy_port_flags, 0);
  }
  
-+static void check_paca_psize(unsigned long ea, struct mm_struct *mm,
-+			     int psize, bool user_region)
-+{
-+	if (user_region) {
-+		if (psize != get_paca_psize(ea)) {
-+			get_paca()->context = mm->context;
-+			slb_flush_and_rebolt();
-+		}
-+	} else if (get_paca()->vmalloc_sllp !=
-+		   mmu_psize_defs[mmu_vmalloc_psize].sllp) {
-+		get_paca()->vmalloc_sllp =
-+			mmu_psize_defs[mmu_vmalloc_psize].sllp;
-+		slb_vmalloc_update();
-+	}
-+}
-+
- /* Result code is:
-  *  0 - handled
-  *  1 - normal page fault
-@@ -1081,6 +1097,8 @@ int hash_page(unsigned long ea, unsigned
- 			WARN_ON(1);
- 		}
- #endif
-+		check_paca_psize(ea, mm, psize, user_region);
-+
- 		goto bail;
- 	}
+ static int __init add_legacy_isa_port(struct device_node *np,
+@@ -233,7 +236,7 @@ static int __init add_legacy_isa_port(st
  
-@@ -1121,17 +1139,8 @@ int hash_page(unsigned long ea, unsigned
- #endif
- 		}
- 	}
--	if (user_region) {
--		if (psize != get_paca_psize(ea)) {
--			get_paca()->context = mm->context;
--			slb_flush_and_rebolt();
--		}
--	} else if (get_paca()->vmalloc_sllp !=
--		   mmu_psize_defs[mmu_vmalloc_psize].sllp) {
--		get_paca()->vmalloc_sllp =
--			mmu_psize_defs[mmu_vmalloc_psize].sllp;
--		slb_vmalloc_update();
--	}
-+
-+	check_paca_psize(ea, mm, psize, user_region);
- #endif /* CONFIG_PPC_64K_PAGES */
+ 	/* Add port, irq will be dealt with later */
+ 	return add_legacy_port(np, index, UPIO_PORT, be32_to_cpu(reg[1]),
+-			       taddr, NO_IRQ, UPF_BOOT_AUTOCONF, 0);
++			       taddr, NO_IRQ, legacy_port_flags, 0);
  
- #ifdef CONFIG_PPC_HAS_HASH_64K
+ }
+ 
+@@ -306,7 +309,7 @@ static int __init add_legacy_pci_port(st
+ 	 * IO port value. It will be fixed up later along with the irq
+ 	 */
+ 	return add_legacy_port(np, index, iotype, base, addr, NO_IRQ,
+-			       UPF_BOOT_AUTOCONF, np != pci_dev);
++			       legacy_port_flags, np != pci_dev);
+ }
+ #endif
+ 
 
 
