@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102AbaGDIC2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:02:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62443 "EHLO mga09.intel.com"
+	id S1753936AbaGDIE3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:04:29 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62867 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753979AbaGDICR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:02:17 -0400
+	id S1751163AbaGDIE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 04:04:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,599,1400050800"; 
-   d="scan'208";a="538721013"
-Date: Fri, 4 Jul 2014 07:50:45 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "Dietmar.Eggemann@arm.com" <Dietmar.Eggemann@arm.com>,
-        "pjt@google.com" <pjt@google.com>
-Subject: Re: [RFCv2 PATCH 08/23] sched: Aggregate unweighted load contributed
- by task entities on parenting cfs_rq
-Message-ID: <20140703235045.GB4881@intel.com>
-References: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
- <1404404770-323-9-git-send-email-morten.rasmussen@arm.com>
+   d="scan'208";a="538725280"
+Date: Fri, 4 Jul 2014 15:59:00 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>, Bandan Das <bsd@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>, Hu Robert <robert.hu@intel.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1
+ since race
+Message-ID: <20140704075900.GA7447@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <53B3CA6A.4050902@siemens.com>
+ <jpgy4wb9g5t.fsf@redhat.com>
+ <20140703065955.GA4236@kernel>
+ <jpgk37u8iae.fsf@redhat.com>
+ <20140704025250.GA2849@kernel>
+ <53B63EF2.6000800@siemens.com>
+ <20140704060831.GA3453@kernel>
+ <53B6559A.6020406@siemens.com>
+ <20140704073923.GA7188@kernel>
+ <53B65BDE.9090902@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404404770-323-9-git-send-email-morten.rasmussen@arm.com>
+In-Reply-To: <53B65BDE.9090902@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04, 2014 at 12:25:55AM +0800, Morten Rasmussen wrote:
-> From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-> 
-> Energy aware scheduling relies on cpu utilization and to be able to
-> maintain it, we need a per run queue signal of the sum of the
-> unweighted, i.e. not scaled with task priority, load contribution of
-> runnable task entries.
-> 
-> The unweighted runnable load on a run queue is maintained alongside the
-> existing (weighted) runnable load.
-> 
-> This patch is the unweighted counterpart of "sched: Aggregate load
-> contributed by task entities on parenting cfs_rq" (commit id
-> 2dac754e10a5).
-> 
-Hi Dietmar and Morten,
+On Fri, Jul 04, 2014 at 09:46:38AM +0200, Paolo Bonzini wrote:
+>Il 04/07/2014 09:39, Wanpeng Li ha scritto:
+>>PASS: test vmxon with FEATURE_CONTROL cleared
+>>PASS: test vmxon without FEATURE_CONTROL lock
+>>PASS: test enable VMX in FEATURE_CONTROL
+>>PASS: test FEATURE_CONTROL lock bit
+>>PASS: test vmxon
+>>PASS: test vmptrld
+>>PASS: test vmclear
+>>PASS: test vmptrst
+>>PASS: test vmxoff
+>
+>You are not running the latest versions of the tests.
+>
 
-You may or may not have noticed my patch the other day:
+The last commit in my tree is 
 
-sched: Rewrite per entity runnable load average tracking
+commit daeec9795d3e6d4e9636588b6cb5fcd6e00d6d46
+Author: Bandan Das <bsd@redhat.com>
+Date:   Mon Jun 9 17:04:54 2014 -0400
 
-With this new load average tracking, unweighted load average will be very much
-simplifed to do.
+    VMX: Updated test_vmclear and test_vmptrld
 
-Thanks,
-Yuyang
+
+>Paolo
+>--
+>To unsubscribe from this list: send the line "unsubscribe kvm" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
