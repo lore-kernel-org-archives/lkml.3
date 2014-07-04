@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031661AbaGDWsu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:48:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57348 "EHLO
+	id S1030997AbaGDWUU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:20:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57326 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031003AbaGDWUW (ORCPT
+	with ESMTP id S1030949AbaGDWUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:20:22 -0400
+	Fri, 4 Jul 2014 18:20:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        hujianyang <hujianyang@huawei.com>,
-        Laurence Withers <lwithers@guralp.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [PATCH 3.14 16/59] UBIFS: fix an mmap and fsync race condition
-Date: Fri,  4 Jul 2014 15:19:05 -0700
-Message-Id: <20140704221540.296140219@linuxfoundation.org>
+        Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>,
+        Arshad Hussain <arshad.hussain@calsoftinc.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 03/59] iscsi-target: Avoid rejecting incorrect ITT for Data-Out
+Date: Fri,  4 Jul 2014 15:18:52 -0700
+Message-Id: <20140704221539.702166229@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -30,63 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: hujianyang <hujianyang@huawei.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 691a7c6f28ac90cccd0dbcf81348ea90b211bdd0 upstream.
+commit 97c99b47ac58bacb7c09e1f47d5d184434f6b06a upstream.
 
-There is a race condition in UBIFS:
+This patch changes iscsit_check_dataout_hdr() to dump the incoming
+Data-Out payload when the received ITT is not associated with a
+WRITE, instead of calling iscsit_reject_cmd() for the non WRITE
+ITT descriptor.
 
-Thread A (mmap)                        Thread B (fsync)
+This addresses a bug where an initiator sending an Data-Out for
+an ITT associated with a READ would end up generating a reject
+for the READ, eventually resulting in list corruption.
 
-->__do_fault                           ->write_cache_pages
-   -> ubifs_vm_page_mkwrite
-       -> budget_space
-       -> lock_page
-       -> release/convert_page_budget
-       -> SetPagePrivate
-       -> TestSetPageDirty
-       -> unlock_page
-                                       -> lock_page
-                                           -> TestClearPageDirty
-                                           -> ubifs_writepage
-                                               -> do_writepage
-                                                   -> release_budget
-                                                   -> ClearPagePrivate
-                                                   -> unlock_page
-   -> !(ret & VM_FAULT_LOCKED)
-   -> lock_page
-   -> set_page_dirty
-       -> ubifs_set_page_dirty
-           -> TestSetPageDirty (set page dirty without budgeting)
-   -> unlock_page
-
-This leads to situation where we have a diry page but no budget allocated for
-this page, so further write-back may fail with -ENOSPC.
-
-In this fix we return from page_mkwrite without performing unlock_page. We
-return VM_FAULT_LOCKED instead. After doing this, the race above will not
-happen.
-
-Signed-off-by: hujianyang <hujianyang@huawei.com>
-Tested-by: Laurence Withers <lwithers@guralp.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reported-by: Santosh Kulkarni <santosh.kulkarni@calsoftinc.com>
+Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ubifs/file.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/target/iscsi/iscsi_target.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ubifs/file.c
-+++ b/fs/ubifs/file.c
-@@ -1525,8 +1525,7 @@ static int ubifs_vm_page_mkwrite(struct
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -1290,7 +1290,7 @@ iscsit_check_dataout_hdr(struct iscsi_co
+ 	if (cmd->data_direction != DMA_TO_DEVICE) {
+ 		pr_err("Command ITT: 0x%08x received DataOUT for a"
+ 			" NON-WRITE command.\n", cmd->init_task_tag);
+-		return iscsit_reject_cmd(cmd, ISCSI_REASON_PROTOCOL_ERROR, buf);
++		return iscsit_dump_data_payload(conn, payload_length, 1);
  	}
- 
- 	wait_for_stable_page(page);
--	unlock_page(page);
--	return 0;
-+	return VM_FAULT_LOCKED;
- 
- out_unlock:
- 	unlock_page(page);
+ 	se_cmd = &cmd->se_cmd;
+ 	iscsit_mod_dataout_timer(cmd);
 
 
