@@ -1,106 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760633AbaGDWzW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:55:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57188 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030502AbaGDWR0 (ORCPT
+	id S1759881AbaGDW4E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:56:04 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:62978 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760205AbaGDWz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:26 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.15 61/66] tracing: Try again for saved cmdline if failed due to locking
-Date: Fri,  4 Jul 2014 15:15:00 -0700
-Message-Id: <20140704221425.609562525@linuxfoundation.org>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
-References: <20140704221422.813435485@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Fri, 4 Jul 2014 18:55:59 -0400
 MIME-Version: 1.0
+In-Reply-To: <CAAVeFu+ZWy1He1CxTh+GmHtwow0P=vX_9u0P67-p_ntpqDQGtg@mail.gmail.com>
+References: <CAAVeFuLMLfa-1RhcdSrKDUz7=eLqZurBSFSsN7N0x-0S+_btJA@mail.gmail.com>
+	<1401906155-10543-1-git-send-email-berthe.ab@gmail.com>
+	<1401906155-10543-3-git-send-email-berthe.ab@gmail.com>
+	<CAAVeFu+ZWy1He1CxTh+GmHtwow0P=vX_9u0P67-p_ntpqDQGtg@mail.gmail.com>
+Date: Sat, 5 Jul 2014 00:55:58 +0200
+Message-ID: <CACRpkdanHjyV_px8v-6VYhEk635N-vtakKrBu9cz_3TBKVV24w@mail.gmail.com>
+Subject: Re: [PATCH 2/2] gpio: gpiolib: set gpiochip_remove retval to void
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: abdoulaye berthe <berthe.ab@gmail.com>, Michael Buesch <m@bues.ch>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+On Sun, Jun 8, 2014 at 2:12 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Thu, Jun 5, 2014 at 3:22 AM, abdoulaye berthe <berthe.ab@gmail.com> wrote:
 
-------------------
+>> This avoids handling gpiochip remove error in device
+>> remove handler.
+>>
+(...)
+>> Signed-off-by: abdoulaye berthe <berthe.ab@gmail.com>
+>> -               list_del(&chip->list);
+>> +               if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags))
+>> +                       panic("gpio: removing gpiochip with gpios still requested\n");
+>
+> Really, really I don't think we should panic here.
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Nope dev_crit() is the right thing, with a big fat warning message.
 
-commit 379cfdac37923653c9d4242d10052378b7563005 upstream.
-
-In order to prevent the saved cmdline cache from being filled when
-tracing is not active, the comms are only recorded after a trace event
-is recorded.
-
-The problem is, a comm can fail to be recorded if the trace_cmdline_lock
-is held. That lock is taken via a trylock to allow it to happen from
-any context (including NMI). If the lock fails to be taken, the comm
-is skipped. No big deal, as we will try again later.
-
-But! Because of the code that was added to only record after an event,
-we may not try again later as the recording is made as a oneshot per
-event per CPU.
-
-Only disable the recording of the comm if the comm is actually recorded.
-
-Fixes: 7ffbd48d5cab "tracing: Cache comms only after an event occurred"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/trace/trace.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
-
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1461,12 +1461,12 @@ static void tracing_stop_tr(struct trace
- 
- void trace_stop_cmdline_recording(void);
- 
--static void trace_save_cmdline(struct task_struct *tsk)
-+static int trace_save_cmdline(struct task_struct *tsk)
- {
- 	unsigned pid, idx;
- 
- 	if (!tsk->pid || unlikely(tsk->pid > PID_MAX_DEFAULT))
--		return;
-+		return 0;
- 
- 	/*
- 	 * It's not the end of the world if we don't get
-@@ -1475,7 +1475,7 @@ static void trace_save_cmdline(struct ta
- 	 * so if we miss here, then better luck next time.
- 	 */
- 	if (!arch_spin_trylock(&trace_cmdline_lock))
--		return;
-+		return 0;
- 
- 	idx = map_pid_to_cmdline[tsk->pid];
- 	if (idx == NO_CMDLINE_MAP) {
-@@ -1500,6 +1500,8 @@ static void trace_save_cmdline(struct ta
- 	memcpy(&saved_cmdlines[idx], tsk->comm, TASK_COMM_LEN);
- 
- 	arch_spin_unlock(&trace_cmdline_lock);
-+
-+	return 1;
- }
- 
- void trace_find_cmdline(int pid, char comm[])
-@@ -1541,9 +1543,8 @@ void tracing_record_cmdline(struct task_
- 	if (!__this_cpu_read(trace_cmdline_save))
- 		return;
- 
--	__this_cpu_write(trace_cmdline_save, false);
--
--	trace_save_cmdline(tsk);
-+	if (trace_save_cmdline(tsk))
-+		__this_cpu_write(trace_cmdline_save, false);
- }
- 
- void
-
-
+Yours,
+Linus Walleij
