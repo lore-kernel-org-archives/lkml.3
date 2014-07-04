@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760851AbaGDWm2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:42:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57461 "EHLO
+	id S1760871AbaGDWmt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:42:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57457 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031184AbaGDWVI (ORCPT
+	with ESMTP id S1031182AbaGDWVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:21:08 -0400
+	Fri, 4 Jul 2014 18:21:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mateusz Guzik <mguzik@redhat.com>, linux-nfs@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.14 35/59] NFS: populate ->net in mount data when remounting
-Date: Fri,  4 Jul 2014 15:19:24 -0700
-Message-Id: <20140704221541.230625184@linuxfoundation.org>
+        Thomas Jarosch <thomas.jarosch@intra2net.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.10 06/46] PCI: Add new ID for Intel GPU "spurious interrupt" quirk
+Date: Fri,  4 Jul 2014 15:19:10 -0700
+Message-Id: <20140704221602.562787310@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
-References: <20140704221539.544876024@linuxfoundation.org>
+In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
+References: <20140704221602.280733370@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,40 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mateusz Guzik <mguzik@redhat.com>
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
 
-commit a914722f333b3359d2f4f12919380a334176bb89 upstream.
+commit 7c82126a94e69bbbac586f0249e7ef11e681246c upstream.
 
-Otherwise the kernel oopses when remounting with IPv6 server because
-net is dereferenced in dev_get_by_name.
+After a CPU upgrade while keeping the same mainboard, we faced "spurious
+interrupt" problems again.
 
-Use net ns of current thread so that dev_get_by_name does not operate on
-foreign ns. Changing the address is prohibited anyway so this should not
-affect anything.
+It turned out that the new CPU also featured a new GPU with a different PCI
+ID.
 
-Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
-Cc: linux-nfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Add this PCI ID to the quirk table.  Probably all other Intel GPU PCI IDs
+are affected, too, but I don't want to add them without a test system.
+
+See f67fd55fa96f ("PCI: Add quirk for still enabled interrupts on Intel
+Sandy Bridge GPUs") for some history.
+
+[bhelgaas: add f67fd55fa96f reference, stable tag]
+Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/super.c |    1 +
+ drivers/pci/quirks.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -2246,6 +2246,7 @@ nfs_remount(struct super_block *sb, int
- 	data->nfs_server.addrlen = nfss->nfs_client->cl_addrlen;
- 	data->version = nfsvers;
- 	data->minorversion = nfss->nfs_client->cl_minorversion;
-+	data->net = current->nsproxy->net_ns;
- 	memcpy(&data->nfs_server.address, &nfss->nfs_client->cl_addr,
- 		data->nfs_server.addrlen);
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2930,6 +2930,7 @@ static void disable_igfx_irq(struct pci_
+ }
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0152, disable_igfx_irq);
  
+ /*
+  * Some devices may pass our check in pci_intx_mask_supported if
 
 
