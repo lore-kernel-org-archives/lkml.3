@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432AbaGDIJV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:09:21 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:51493 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755779AbaGDIHr (ORCPT
+	id S1753434AbaGDIMA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:12:00 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:45708 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987AbaGDILz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:07:47 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 03/10] mm/page_alloc: handle page on pcp correctly if it's pageblock is isolated
-Date: Fri,  4 Jul 2014 16:57:48 +0900
-Message-Id: <1404460675-24456-4-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com>
+	Fri, 4 Jul 2014 04:11:55 -0400
+Date: Fri, 4 Jul 2014 12:11:51 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andrew Vagin <avagin@parallels.com>
+Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [RFC 2/2] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP operation
+Message-ID: <20140704081151.GM12440@moon>
+References: <20140703143318.568554771@openvz.org>
+ <20140703151102.842945837@openvz.org>
+ <20140704075256.GA5105@paralelels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140704075256.GA5105@paralelels.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If pageblock of page on pcp are isolated now, we should free it to isolate
-buddy list to prevent future allocation on it. But current code doesn't
-do this.
+On Fri, Jul 04, 2014 at 11:52:56AM +0400, Andrew Vagin wrote:
+> > +
+> > +struct prctl_mm_map {
+> > +	unsigned long	start_code;
+> 
+> "unsigned long" has different sizes on x86_64 and x86, so a compat
+> is required for x32 processes on x64 kernel.
 
-Moreover, there is a freepage counting problem on current code. Although
-pageblock of page on pcp are isolated now, it could go normal buddy list,
-because get_onpcp_migratetype() will return non-isolate migratetype.
-In this case, we should do either adding freepage count or changing
-migratetype to MIGRATE_ISOLATE, but, current code do neither.
+Yes, good point. I think we can use u64/32 types instead to make
+a code shared. I'll update once I collect all comments about
+aproach.
 
-This patch fixes these two problems by handling pageblock migratetype
-before calling __free_one_page(). And, if we find the page on isolated
-pageblock, change migratetype to MIGRATE_ISOLATE to prevent future
-allocation of this page and freepage counting problem.
+> > +
+> > +	/*
+> > +	 * Stack, brk, command line arguments and environment must exist.
+> > +	 */
+> > +	stack_vma = find_vma(mm, prctl_map->start_stack);
+> 
+> Why do we not use __prctl_check_vma here?
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
----
- mm/page_alloc.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+Well __prctl_check_vma does return error or zero while I need this
+vma reference for stack rlim check which is done below in code.
+> 
+> > +	if (!stack_vma) {
+> > +		error = -EINVAL;
+> > +		goto out;
+> > +	}
+> > +#define __prctl_check_vma(mm, addr) find_vma(mm, addr) ? 0 : -EINVAL
+> > +	error |= __prctl_check_vma(mm, prctl_map->start_brk);
+> > +	error |= __prctl_check_vma(mm, prctl_map->brk);
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index aeb51d1..99c05f7 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -719,15 +719,17 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- 			page = list_entry(list->prev, struct page, lru);
- 			/* must delete as __free_one_page list manipulates */
- 			list_del(&page->lru);
--			mt = get_freepage_migratetype(page);
-+
-+			if (unlikely(is_migrate_isolate_page(page))) {
-+				mt = MIGRATE_ISOLATE;
-+			} else {
-+				mt = get_freepage_migratetype(page);
-+				__mod_zone_freepage_state(zone, 1, mt);
-+			}
-+
- 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
- 			__free_one_page(page, page_to_pfn(page), zone, 0, mt);
- 			trace_mm_page_pcpu_drain(page, 0, mt);
--			if (likely(!is_migrate_isolate_page(page))) {
--				__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
--				if (is_migrate_cma(mt))
--					__mod_zone_page_state(zone, NR_FREE_CMA_PAGES, 1);
--			}
- 		} while (--to_free && --batch_free && !list_empty(list));
- 	}
- 	spin_unlock(&zone->lock);
--- 
-1.7.9.5
-
+	Cyrill
