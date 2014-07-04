@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868AbaGDJoq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 05:44:46 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:37621 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989AbaGDJoo convert rfc822-to-8bit (ORCPT
+	id S1754248AbaGDJt4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 05:49:56 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:56757 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751198AbaGDJtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 05:44:44 -0400
-Date: Fri, 4 Jul 2014 10:44:40 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Prabhakar Kushwaha <prabhakar@freescale.com>
-Cc: Tanmay Inamdar <tinamdar@apm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "galak@codeaurora.org" <galak@codeaurora.org>
-Subject: Re: [PATCH] arm64: PCI(e) arch support
-Message-ID: <20140704094440.GC6501@e106497-lin.cambridge.arm.com>
-References: <1404422876-1160-1-git-send-email-tinamdar@apm.com>
- <53B5F81B.8010801@freescale.com>
+	Fri, 4 Jul 2014 05:49:55 -0400
+Date: Fri, 4 Jul 2014 12:49:50 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: mtosatti@redhat.com, kvm@vger.kernel.org, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, guz.fnst@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] kvm, memory-hotplug: Update ept identity pagetable
+ when it is migrated.
+Message-ID: <20140704094949.GD4399@minantech.com>
+References: <1404291637-15048-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1404291637-15048-4-git-send-email-tangchen@cn.fujitsu.com>
+ <20140702163420.GC4399@minantech.com>
+ <53B61316.2050208@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <53B5F81B.8010801@freescale.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 04 Jul 2014 09:44:41.0341 (UTC) FILETIME=[941092D0:01CF976C]
-X-MC-Unique: 114070410444112901
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <53B61316.2050208@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04, 2014 at 01:40:59AM +0100, Prabhakar Kushwaha wrote:
-> Hi Tanmay, Liviu,
-> On 7/4/2014 2:57 AM, Tanmay Inamdar wrote:
-> > Reposting on request of several people since previously posted one was
-> > corrupted.
-> >
-> > This patch adds the arch support for PCI(e) for arm64. The files
-> > added or modified in this patch are based on PCI(e) support in
-> > 32bit arm.
-> >
-> > Please note that this patch is just for the reference. Liviu Dudau from ARM
-> > has posted his v8 series of patch to support PCIe in arm64.
-> >
-> > The patch will apply against 3.13 Linux Kernel
-> >
-> > Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
-> >
+On Fri, Jul 04, 2014 at 10:36:06AM +0800, Tang Chen wrote:
+> Hi Gleb,
 > 
-> do we foresee similar type of changes in u-boot  to support PCI(e) for 
-> ARM64.
-
-I'm afraid I'm not familiar with u-boot's support for PCI(e), so I cannot
-answer that. As a general matter, ARM has decided to officially support
-UEFI as a bootloader for ARMv8 and that already has support for PCI(e),
-one only needs a driver for the specific host bridge.
-
-Best regards,
-Liviu
-
+> On 07/03/2014 12:34 AM, Gleb Natapov wrote:
+> >On Wed, Jul 02, 2014 at 05:00:36PM +0800, Tang Chen wrote:
+> >>ept identity pagetable is pinned in memory, and as a result it cannot be
+> >>migrated/hot-removed.
+> >>
+> >>But actually it doesn't need to be pinned in memory.
+> >>
+> >>This patch introduces a new vcpu request: KVM_REQ_MIGRATE_EPT to reset ept
+> >>indetity pagetable related variable. This request will be made when
+> >>kvm_mmu_notifier_invalidate_page() is called when the page is unmapped
+> >>from the qemu user space to reset kvm->arch.ept_identity_pagetable to NULL.
+> >>And will also be made when ept violation happens to reset
+> >>kvm->arch.ept_identity_pagetable to the new page.
+> >
+> >kvm->arch.ept_identity_pagetable is never used as a page address, just
+> >boolean null/!null to see if identity pagetable is initialized. I do
+> >not see why would we want to track its address at all. Changing it to bool
+> >and assigning true during initialization should be enough.
 > 
-> Regards,
-> Prabhakar
+> We already have kvm->arch.ept_identity_pagetable_done to indicate if the ept
+> identity table is initialized. If we make kvm->arch.ept_identity_pagetable
+> to
+> bool, do you mean we have:
 > 
+> kvm->arch.ept_identity_pagetable: indicate if ept page is allocated,
+> kvm->arch.ept_identity_pagetable_done: indicate if ept page is initialized ?
 > 
-> 
+ept_identity_pagetable also means that a memory slot for identity page is initialized.
 
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+> I don't think we need this. Shall we remove kvm->arch.ept_identity_pagetable
+> ?
+> 
+May be those two can be consolidated somehow, but lets leave it to a separate patch
+to make this one simpler.
 
+--
+			Gleb.
