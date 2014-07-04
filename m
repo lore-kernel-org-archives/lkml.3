@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756335AbaGDImf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:42:35 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:11733 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232AbaGDImc (ORCPT
+	id S1752466AbaGDIul (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:50:41 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:58439 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163AbaGDIuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:42:32 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 04 Jul 2014 01:35:50 -0700
-Message-ID: <53B66915.4040309@nvidia.com>
-Date: Fri, 4 Jul 2014 16:43:01 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 4 Jul 2014 04:50:39 -0400
+Message-ID: <53B66A9F.6040404@hisilicon.com>
+Date: Fri, 4 Jul 2014 16:49:35 +0800
+From: xuwei <xuwei5@hisilicon.com>
+Organization: hisilicon
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Mikko Perttunen <mperttunen@nvidia.com>,
-        "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "edubezval@gmail.com" <edubezval@gmail.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Matthew Longnecker <MLongnecker@nvidia.com>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 6/6] thermal: Add Tegra SOCTHERM thermal management driver
-References: <1403856699-2140-1-git-send-email-mperttunen@nvidia.com> <1403856699-2140-7-git-send-email-mperttunen@nvidia.com>
-In-Reply-To: <1403856699-2140-7-git-send-email-mperttunen@nvidia.com>
+To: Li Zefan <lizefan@huawei.com>, Haojian Zhuang <haojian.zhuang@linaro.org>
+CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        "Olof Johansson" <olof@lixom.net>, Kevin Hilman <khilman@kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] MAINTAINERS:ARM:hisi: add Hisilicon SoC family
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.75.104]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020202.53B66AAA.0010,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2011-05-27 18:58:46
+X-Mirapoint-Loop-Id: 424472b81105c2b6fb549f6f0359ca85
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2014 04:11 PM, Mikko Perttunen wrote:
-> This adds support for the Tegra SOCTHERM thermal sensing and management
-> system found in the Tegra124 system-on-chip. This initial driver supports
-> the four thermal zones with hardware-tracked trip points.
+Introduce a new mach-hisi that will support Hisilicon SoCs based on ARMv7
+and I am taking maintainership for it.
 
-> diff --git a/drivers/thermal/tegra_soctherm.c b/drivers/thermal/tegra_soctherm.c
+Signed-off-by: Wei Xu <xuwei5@hisilicon.com>
+---
+ MAINTAINERS | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-> +static int calculate_shared_calibration(struct tsensor_shared_calibration *r)
-> +{
-> +       u32 val;
-> +       u32 shifted_cp, shifted_ft;
-> +       int err;
-> +
-> +       err = tegra_fuse_readl(FUSE_TSENSOR8_CALIB, &val);
-> +       if (err)
-> +               return err;
-> +       r->base_cp = val & 0x3ff;
-> +       r->base_ft = (val & (0x7ff << 10)) >> 10;
-> +
-> +       err = tegra_fuse_readl(FUSE_SPARE_REALIGNMENT_REG_0, &val);
-> +       if (err)
-> +               return err;
-> +       /* Sign extend from 6 bits to 32 bits */
-> +       shifted_cp = (s32)((val & 0x1f) | ((val & 0x20) ? 0xffffffe0 : 0x0));
-> +       val = ((val & (0x1f << 21)) >> 21);
-> +       /* Sign extend from 5 bits to 32 bits */
-> +       shifted_ft = (s32)((val & 0xf) | ((val & 0x10) ? 0xfffffff0 : 0x0));
-> +
-> +       r->actual_temp_cp = 2 * 25 + shifted_cp;
-Do we need to define the "25" as constant, just like below line.
-
-> +       r->actual_temp_ft = 2 * NOMINAL_CALIB_FT_T124 + shifted_ft;
-> +
-> +       return 0;
-> +}
-
-> +
-> +static irqreturn_t soctherm_isr(int irq, void *dev_id)
-> +{
-> +       struct tegra_thermctl_zone *zone = dev_id;
-> +       u32 val;
-> +       u32 intr_mask = 0x03 << t124_thermctl_shifts[zone->sensor];
-> +
-> +       val = readl(zone->tegra->regs + THERMCTL_INTR_STATUS);
-> +
-> +       if ((val & intr_mask) == 0)
-> +               return IRQ_NONE;
-> +
-> +       writel(val & intr_mask, zone->tegra->regs + THERMCTL_INTR_STATUS);
-I think we need to disable the interrupt here, and enable it again after
-updating the high/low limited values. If not, there will trigger mass of
-interrupts.
-
-> +
-> +static struct platform_driver tegra_soctherm_driver = {
-> +       .probe = tegra_soctherm_probe,
-> +       .remove = tegra_soctherm_remove,
-> +       .driver = {
-> +               .name = "tegra_soctherm",
-> +               .owner = THIS_MODULE,
-> +               .of_match_table = tegra_soctherm_of_match,
-> +       },
-> +};
-Will you consider to add suspend/resume support?
-
-Thanks.
-Wei.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 134483f..a4f700a 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -972,6 +972,14 @@ F:	arch/arm/mach-pxa/hx4700.c
+ F:	arch/arm/mach-pxa/include/mach/hx4700.h
+ F:	sound/soc/pxa/hx4700.c
+ 
++ARM/Hisilicon SoC support
++M:	Wei Xu <xuwei5@hisilicon.com>
++L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
++W:	www.hisilicon.com
++S:	Supported
++T:	git git://github.com/hisilicon/linux-hisi.git
++F:	arch/arm/mach-hisi/
++
+ ARM/HP JORNADA 7XX MACHINE SUPPORT
+ M:	Kristoffer Ericson <kristoffer.ericson@gmail.com>
+ W:	www.jlime.com
+-- 
+1.8.1.2
 
