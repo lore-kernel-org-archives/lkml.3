@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031323AbaGDWVh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:21:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57526 "EHLO
+	id S1760846AbaGDWiI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:38:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57541 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031266AbaGDWVc (ORCPT
+	with ESMTP id S1031311AbaGDWVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:21:32 -0400
+	Fri, 4 Jul 2014 18:21:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        hujianyang <hujianyang@huawei.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [PATCH 3.10 14/46] UBIFS: Remove incorrect assertion in shrink_tnc()
-Date: Fri,  4 Jul 2014 15:19:18 -0700
-Message-Id: <20140704221602.926142143@linuxfoundation.org>
+        Michael Neuling <mikey@neuling.org>, Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.14 44/59] powerpc: Dont setup CPUs with bad status
+Date: Fri,  4 Jul 2014 15:19:33 -0700
+Message-Id: <20140704221541.645351976@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
-References: <20140704221602.280733370@linuxfoundation.org>
+In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
+References: <20140704221539.544876024@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,108 +25,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: hujianyang <hujianyang@huawei.com>
+From: Michael Neuling <mikey@neuling.org>
 
-commit 72abc8f4b4e8574318189886de627a2bfe6cd0da upstream.
+commit 59a53afe70fd530040bdc69581f03d880157f15a upstream.
 
-I hit the same assert failed as Dolev Raviv reported in Kernel v3.10
-shows like this:
+OPAL will mark a CPU that is guarded as "bad" in the status property of the CPU
+node.
 
-[ 9641.164028] UBIFS assert failed in shrink_tnc at 131 (pid 13297)
-[ 9641.234078] CPU: 1 PID: 13297 Comm: mmap.test Tainted: G           O 3.10.40 #1
-[ 9641.234116] [<c0011a6c>] (unwind_backtrace+0x0/0x12c) from [<c000d0b0>] (show_stack+0x20/0x24)
-[ 9641.234137] [<c000d0b0>] (show_stack+0x20/0x24) from [<c0311134>] (dump_stack+0x20/0x28)
-[ 9641.234188] [<c0311134>] (dump_stack+0x20/0x28) from [<bf22425c>] (shrink_tnc_trees+0x25c/0x350 [ubifs])
-[ 9641.234265] [<bf22425c>] (shrink_tnc_trees+0x25c/0x350 [ubifs]) from [<bf2245ac>] (ubifs_shrinker+0x25c/0x310 [ubifs])
-[ 9641.234307] [<bf2245ac>] (ubifs_shrinker+0x25c/0x310 [ubifs]) from [<c00cdad8>] (shrink_slab+0x1d4/0x2f8)
-[ 9641.234327] [<c00cdad8>] (shrink_slab+0x1d4/0x2f8) from [<c00d03d0>] (do_try_to_free_pages+0x300/0x544)
-[ 9641.234344] [<c00d03d0>] (do_try_to_free_pages+0x300/0x544) from [<c00d0a44>] (try_to_free_pages+0x2d0/0x398)
-[ 9641.234363] [<c00d0a44>] (try_to_free_pages+0x2d0/0x398) from [<c00c6a60>] (__alloc_pages_nodemask+0x494/0x7e8)
-[ 9641.234382] [<c00c6a60>] (__alloc_pages_nodemask+0x494/0x7e8) from [<c00f62d8>] (new_slab+0x78/0x238)
-[ 9641.234400] [<c00f62d8>] (new_slab+0x78/0x238) from [<c031081c>] (__slab_alloc.constprop.42+0x1a4/0x50c)
-[ 9641.234419] [<c031081c>] (__slab_alloc.constprop.42+0x1a4/0x50c) from [<c00f80e8>] (kmem_cache_alloc_trace+0x54/0x188)
-[ 9641.234459] [<c00f80e8>] (kmem_cache_alloc_trace+0x54/0x188) from [<bf227908>] (do_readpage+0x168/0x468 [ubifs])
-[ 9641.234553] [<bf227908>] (do_readpage+0x168/0x468 [ubifs]) from [<bf2296a0>] (ubifs_readpage+0x424/0x464 [ubifs])
-[ 9641.234606] [<bf2296a0>] (ubifs_readpage+0x424/0x464 [ubifs]) from [<c00c17c0>] (filemap_fault+0x304/0x418)
-[ 9641.234638] [<c00c17c0>] (filemap_fault+0x304/0x418) from [<c00de694>] (__do_fault+0xd4/0x530)
-[ 9641.234665] [<c00de694>] (__do_fault+0xd4/0x530) from [<c00e10c0>] (handle_pte_fault+0x480/0xf54)
-[ 9641.234690] [<c00e10c0>] (handle_pte_fault+0x480/0xf54) from [<c00e2bf8>] (handle_mm_fault+0x140/0x184)
-[ 9641.234716] [<c00e2bf8>] (handle_mm_fault+0x140/0x184) from [<c0316688>] (do_page_fault+0x150/0x3ac)
-[ 9641.234737] [<c0316688>] (do_page_fault+0x150/0x3ac) from [<c000842c>] (do_DataAbort+0x3c/0xa0)
-[ 9641.234759] [<c000842c>] (do_DataAbort+0x3c/0xa0) from [<c0314e38>] (__dabt_usr+0x38/0x40)
+Unfortunatley Linux doesn't check this property and will put the bad CPU in the
+present map.  This has caused hangs on booting when we try to unsplit the core.
 
-After analyzing the code, I found a condition that may cause this failed
-in correct operations. Thus, I think this assertion is wrong and should be
-removed.
+This patch checks the CPU is avaliable via this status property before putting
+it in the present map.
 
-Suppose there are two clean znodes and one dirty znode in TNC. So the
-per-filesystem atomic_t @clean_zn_cnt is (2). If commit start, dirty_znode
-is set to COW_ZNODE in get_znodes_to_commit() in case of potentially ops
-on this znode. We clear COW bit and DIRTY bit in write_index() without
-@tnc_mutex locked. We don't increase @clean_zn_cnt in this place. As the
-comments in write_index() shows, if another process hold @tnc_mutex and
-dirty this znode after we clean it, @clean_zn_cnt would be decreased to (1).
-We will increase @clean_zn_cnt to (2) with @tnc_mutex locked in
-free_obsolete_znodes() to keep it right.
-
-If shrink_tnc() performs between decrease and increase, it will release
-other 2 clean znodes it holds and found @clean_zn_cnt is less than zero
-(1 - 2 = -1), then hit the assertion. Because free_obsolete_znodes() will
-soon correct @clean_zn_cnt and no harm to fs in this case, I think this
-assertion could be removed.
-
-2 clean zondes and 1 dirty znode, @clean_zn_cnt == 2
-
-Thread A (commit)         Thread B (write or others)       Thread C (shrinker)
-->write_index
-   ->clear_bit(DIRTY_NODE)
-   ->clear_bit(COW_ZNODE)
-
-            @clean_zn_cnt == 2
-                          ->mutex_locked(&tnc_mutex)
-                          ->dirty_cow_znode
-                              ->!ubifs_zn_cow(znode)
-                              ->!test_and_set_bit(DIRTY_NODE)
-                              ->atomic_dec(&clean_zn_cnt)
-                          ->mutex_unlocked(&tnc_mutex)
-
-            @clean_zn_cnt == 1
-                                                           ->mutex_locked(&tnc_mutex)
-                                                           ->shrink_tnc
-                                                             ->destroy_tnc_subtree
-                                                             ->atomic_sub(&clean_zn_cnt, 2)
-                                                             ->ubifs_assert  <- hit
-                                                           ->mutex_unlocked(&tnc_mutex)
-
-            @clean_zn_cnt == -1
-->mutex_lock(&tnc_mutex)
-->free_obsolete_znodes
-   ->atomic_inc(&clean_zn_cnt)
-->mutux_unlock(&tnc_mutex)
-
-            @clean_zn_cnt == 0 (correct after shrink)
-
-Signed-off-by: hujianyang <hujianyang@huawei.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Tested-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ubifs/shrinker.c |    1 -
- 1 file changed, 1 deletion(-)
+ arch/powerpc/kernel/setup-common.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ubifs/shrinker.c
-+++ b/fs/ubifs/shrinker.c
-@@ -128,7 +128,6 @@ static int shrink_tnc(struct ubifs_info
- 			freed = ubifs_destroy_tnc_subtree(znode);
- 			atomic_long_sub(freed, &ubifs_clean_zn_cnt);
- 			atomic_long_sub(freed, &c->clean_zn_cnt);
--			ubifs_assert(atomic_long_read(&c->clean_zn_cnt) >= 0);
- 			total_freed += freed;
- 			znode = zprev;
- 		}
+--- a/arch/powerpc/kernel/setup-common.c
++++ b/arch/powerpc/kernel/setup-common.c
+@@ -458,7 +458,7 @@ void __init smp_setup_cpu_maps(void)
+ 		for (j = 0; j < nthreads && cpu < nr_cpu_ids; j++) {
+ 			DBG("    thread %d -> cpu %d (hard id %d)\n",
+ 			    j, cpu, be32_to_cpu(intserv[j]));
+-			set_cpu_present(cpu, true);
++			set_cpu_present(cpu, of_device_is_available(dn));
+ 			set_hard_smp_processor_id(cpu, be32_to_cpu(intserv[j]));
+ 			set_cpu_possible(cpu, true);
+ 			cpu++;
 
 
