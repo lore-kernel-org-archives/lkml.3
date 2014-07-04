@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030799AbaGDWni (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:43:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57437 "EHLO
+	id S1031143AbaGDWU5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:20:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57426 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031149AbaGDWU7 (ORCPT
+	with ESMTP id S1031127AbaGDWUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:20:59 -0400
+	Fri, 4 Jul 2014 18:20:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.10 04/46] Input: elantech - deal with clickpads reporting right button events
-Date: Fri,  4 Jul 2014 15:19:08 -0700
-Message-Id: <20140704221602.476322398@linuxfoundation.org>
+        Jeff Layton <jeff.layton@primarydata.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.14 31/59] nfsd4: fix FREE_STATEID lockowner leak
+Date: Fri,  4 Jul 2014 15:19:20 -0700
+Message-Id: <20140704221541.045760725@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <20140704221602.280733370@linuxfoundation.org>
-References: <20140704221602.280733370@linuxfoundation.org>
+In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
+References: <20140704221539.544876024@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,83 +25,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit cd9e83e2754465856097f31c7ab933ce74c473f8 upstream.
+commit 48385408b45523d9a432c66292d47ef43efcbb94 upstream.
 
-At least the Dell Vostro 5470 elantech *clickpad* reports right button
-clicks when clicked in the right bottom area:
+27b11428b7de ("nfsd4: remove lockowner when removing lock stateid")
+introduced a memory leak.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1103528
-
-This is different from how (elantech) clickpads normally operate, normally
-no matter where the user clicks on the pad the pad always reports a left
-button event, since there is only 1 hardware button beneath the path.
-
-It looks like Dell has put 2 buttons under the pad, one under each bottom
-corner, causing this.
-
-Since this however still clearly is a real clickpad hardware-wise, we still
-want to report it as such to userspace, so that things like finger movement
-in the bottom area can be properly ignored as it should be on clickpads.
-
-So deal with this weirdness by simply mapping a right click to a left click
-on elantech clickpads. As an added advantage this is something which we can
-simply do on all elantech clickpads, so no need to add special quirks for
-this weird model.
-
-Reported-and-tested-by: Elder Marco <eldermarco@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Reported-by: Jeff Layton <jeff.layton@primarydata.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/elantech.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+ fs/nfsd/nfs4state.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -473,8 +473,15 @@ static void elantech_report_absolute_v3(
- 	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
- 	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
- 	input_report_key(dev, BTN_TOOL_TRIPLETAP, fingers == 3);
--	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
--	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+
-+	/* For clickpads map both buttons to BTN_LEFT */
-+	if (etd->fw_version & 0x001000) {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
-+	} else {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-+		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	}
-+
- 	input_report_abs(dev, ABS_PRESSURE, pres);
- 	input_report_abs(dev, ABS_TOOL_WIDTH, width);
- 
-@@ -484,10 +491,17 @@ static void elantech_report_absolute_v3(
- static void elantech_input_sync_v4(struct psmouse *psmouse)
- {
- 	struct input_dev *dev = psmouse->dev;
-+	struct elantech_data *etd = psmouse->private;
- 	unsigned char *packet = psmouse->packet;
- 
--	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
--	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	/* For clickpads map both buttons to BTN_LEFT */
-+	if (etd->fw_version & 0x001000) {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
-+	} else {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-+		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	}
-+
- 	input_mt_report_pointer_emulation(dev, true);
- 	input_sync(dev);
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -3723,7 +3723,7 @@ nfsd4_free_lock_stateid(struct nfs4_ol_s
+ 	 * correspondance, and we have to delete the lockowner when we
+ 	 * delete the lock stateid:
+ 	 */
+-	unhash_lockowner(lo);
++	release_lockowner(lo);
+ 	return nfs_ok;
  }
+ 
 
 
