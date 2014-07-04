@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760012AbaGDTsQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 15:48:16 -0400
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:59209 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757174AbaGDTsP (ORCPT
+	id S1760050AbaGDTtI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 15:49:08 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:60786 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759559AbaGDTtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 15:48:15 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvAMAEoEt1NbsGwr/2dsb2JhbABagw6scAUBAQEBAQEFAW4BmWeBCxd1hGAjgRo3iEYBtU2VIoVwiE5kHYQtBZAJim2UDINFO4Ex
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/1] kernfs: kernel-doc warning fix
-Date: Fri,  4 Jul 2014 21:47:53 +0200
-Message-Id: <1404503273-32469-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	Fri, 4 Jul 2014 15:49:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140704180408.GA15032@redhat.com>
+References: <100531b7498c9148eaf7163ead7adef263d9981c.1404340903.git.luto@amacapital.net>
+ <CALCETrVkg7_GzR0QqyW-hNS8iJGr3i_R6AbrjwjwwUboWCiNOw@mail.gmail.com>
+ <CALCETrVRJZeLam5jbNrgptETbXbsnPXMBgLwcO_uAMK6CSF65g@mail.gmail.com>
+ <CA+55aFzMSswoVaHhM41rATubj+rqBsa4jyQaBVPNHO_-BpyHJg@mail.gmail.com>
+ <CALCETrUDCDfm8+xEFiPDwJbSu25yo2xNKYYfCiU9RO5C_X=bDg@mail.gmail.com>
+ <CA+55aFwehdBTK=dXFQkXK2ZB6GYXxEcnY7Eg8jwSV5E6yaJNTQ@mail.gmail.com>
+ <20140703184215.GA21542@redhat.com> <20140704161316.GA6241@redhat.com> <20140704180408.GA15032@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 4 Jul 2014 12:48:44 -0700
+Message-ID: <CALCETrXbmKviiOBmfqa=+oTng6keZ2bZ35NPDd3XWWmJLWVsHA@mail.gmail.com>
+Subject: Re: [PATCH] x86: kill ptregscall_common
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-s/static_name/name_is_static
+On Fri, Jul 4, 2014 at 11:04 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> It has no users since commit b3af11afe06a "x86: get rid of pt_regs
+> argument of iopl(2)".
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/kernfs/file.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Looks good to me.
 
-diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
-index d895b4b..4429d6d 100644
---- a/fs/kernfs/file.c
-+++ b/fs/kernfs/file.c
-@@ -896,7 +896,7 @@ const struct file_operations kernfs_file_fops = {
-  * @ops: kernfs operations for the file
-  * @priv: private data for the file
-  * @ns: optional namespace tag of the file
-- * @static_name: don't copy file name
-+ * @name_is_static: don't copy file name
-  * @key: lockdep key for the file's active_ref, %NULL to disable lockdep
-  *
-  * Returns the created node on success, ERR_PTR() value on error.
+--Andy
+
+>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  arch/x86/kernel/entry_64.S |   13 -------------
+>  1 files changed, 0 insertions(+), 13 deletions(-)
+>
+> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> index b25ca96..fa64128 100644
+> --- a/arch/x86/kernel/entry_64.S
+> +++ b/arch/x86/kernel/entry_64.S
+> @@ -640,19 +640,6 @@ END(\label)
+>         FORK_LIKE  vfork
+>         FIXED_FRAME stub_iopl, sys_iopl
+>
+> -ENTRY(ptregscall_common)
+> -       DEFAULT_FRAME 1 8       /* offset 8: return address */
+> -       RESTORE_TOP_OF_STACK %r11, 8
+> -       movq_cfi_restore R15+8, r15
+> -       movq_cfi_restore R14+8, r14
+> -       movq_cfi_restore R13+8, r13
+> -       movq_cfi_restore R12+8, r12
+> -       movq_cfi_restore RBP+8, rbp
+> -       movq_cfi_restore RBX+8, rbx
+> -       ret $REST_SKIP          /* pop extended registers */
+> -       CFI_ENDPROC
+> -END(ptregscall_common)
+> -
+>  ENTRY(stub_execve)
+>         CFI_STARTPROC
+>         addq $8, %rsp
+> --
+> 1.5.5.1
+>
+>
+
+
+
 -- 
-1.9.1
-
+Andy Lutomirski
+AMA Capital Management, LLC
