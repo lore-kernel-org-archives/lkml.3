@@ -1,121 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584AbaGDIHY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:07:24 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35044 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753788AbaGDIHJ (ORCPT
+	id S1756192AbaGDIHw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:07:52 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:51437 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755646AbaGDIHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:07:09 -0400
-Date: Fri, 4 Jul 2014 09:07:02 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
+	Fri, 4 Jul 2014 04:07:41 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [RESEND PATCH 5/5] devicetree: mfd: max14577: Add device tree
- bindings document
-Message-ID: <20140704080702.GA31812@leverpostej>
-References: <1404198121-22989-1-git-send-email-k.kozlowski@samsung.com>
- <1404198121-22989-6-git-send-email-k.kozlowski@samsung.com>
- <20140703113236.GA28504@leverpostej>
- <1404387874.21377.8.camel@AMDC1943>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404387874.21377.8.camel@AMDC1943>
-Thread-Topic: [RESEND PATCH 5/5] devicetree: mfd: max14577: Add device tree
- bindings document
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH 01/10] mm/page_alloc: remove unlikely macro on free_one_page()
+Date: Fri,  4 Jul 2014 16:57:46 +0900
+Message-Id: <1404460675-24456-2-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 12:44:34PM +0100, Krzysztof Kozlowski wrote:
-> On czw, 2014-07-03 at 12:32 +0100, Mark Rutland wrote:
-> > Hi,
-> > 
-> > On Tue, Jul 01, 2014 at 08:02:00AM +0100, Krzysztof Kozlowski wrote:
-> > > Add document describing device tree bindings for MAX14577 MFD
-> > > drivers: MFD core, extcon, regulator and charger.
-> > > 
-> > > Both MAX14577 and MAX77836 chipsets are documented.
-> > > 
-> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > > Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> > > Cc: Tomasz Figa <t.figa@samsung.com>
-> > > Cc: devicetree@vger.kernel.org
-> > > Cc: Rob Herring <robh+dt@kernel.org>
-> > > Cc: Pawel Moll <pawel.moll@arm.com>
-> > > Cc: Mark Rutland <mark.rutland@arm.com>
-> > > Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> > > Cc: Kumar Gala <galak@codeaurora.org>
-> > > Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> > > ---
-> > >  Documentation/devicetree/bindings/mfd/max14577.txt | 152 +++++++++++++++++++++
-> > >  1 file changed, 152 insertions(+)
-> > >  create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
-> > > 
-> > > diff --git a/Documentation/devicetree/bindings/mfd/max14577.txt b/Documentation/devicetree/bindings/mfd/max14577.txt
-> > > new file mode 100644
-> > > index 000000000000..b235250a7b41
-> > > --- /dev/null
-> > > +++ b/Documentation/devicetree/bindings/mfd/max14577.txt
-> > > @@ -0,0 +1,152 @@
-> > > +Maxim MAX14577/77836 Multi-Function Device
-> > > +
-> > > +MAX14577 is a Multi-Function Device with Micro-USB Interface Circuit, Li+
-> > > +Battery Charger and SFOUT LDO output for powering USB devices. It is
-> > > +interfaced to host controller using I2C.
-> > > +
-> > > +MAX77836 additionally contains PMIC (with two LDO regulators) and Fuel Gauge.
-> > > +
-> > > +
-> > > +Required properties:
-> > > +- compatible : Must be "maxim,max14577" or "maxim,max77836".
-> > > +- reg : I2C slave address for the max14577 chip (0x25 for max14577/max77836)
-> > > +- interrupts : IRQ line for the chip.
-> > > +- interrupt-parent :  The parent interrupt controller.
-> > > +
-> > > +
-> > > +Required nodes:
-> > > + - charger :
-> > > +	Node for configuring the charger driver.
-> > > +	Required properties:
-> > > +		- compatible : "maxim,max14577-charger"
-> > > +			or "maxim,max77836-charger"
-> > > +		- maxim,fast-charge-timer : Timer in hours to trigger the
-> > > +			INT3/MBCCHGERR interrupt; Valid values:
-> > > +			- 5, 6 or 7 (hours),
-> > > +			- 0 to disable.
-> > 
-> > I'm not sure I follow what this is any why it should be in the DT.
-> > 
-> > Could you explain what this is used for?
-> 
-> Hi,
-> 
-> These are settings for max14577 battery charger. Actually this
-> particular setting does not look like board-specific but other (like
-> battery voltage) do.
-> 
-> The timer above is used by device to stop charging and to trigger
-> interrupt.
+Isolation is really rare case so !is_migrate_isolate() is
+likely case. Remove unlikely macro.
 
-Ok. What I don't get is why this should be in the DT, it sounds like a
-configuration option that would better be set at run time.
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ mm/page_alloc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
-Mark.
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 8dac0f0..0d4cf7a 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -735,7 +735,7 @@ static void free_one_page(struct zone *zone,
+ 	zone->pages_scanned = 0;
+ 
+ 	__free_one_page(page, pfn, zone, order, migratetype);
+-	if (unlikely(!is_migrate_isolate(migratetype)))
++	if (!is_migrate_isolate(migratetype))
+ 		__mod_zone_freepage_state(zone, 1 << order, migratetype);
+ 	spin_unlock(&zone->lock);
+ }
+-- 
+1.7.9.5
+
