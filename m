@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759393AbaGDRj2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 13:39:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55731 "EHLO
+	id S1759433AbaGDRlJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 13:41:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55736 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559AbaGDRj1 (ORCPT
+	with ESMTP id S1754559AbaGDRlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 13:39:27 -0400
-Date: Fri, 4 Jul 2014 10:39:10 -0700
+	Fri, 4 Jul 2014 13:41:08 -0400
+Date: Fri, 4 Jul 2014 10:40:51 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org,
-        Kleber Sacilotto de Souza <klebers@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/4] GenWQE: patches to improve RAS features (v2)
-Message-ID: <20140704173910.GD25992@kroah.com>
-References: <1403713327-27976-1-git-send-email-klebers@linux.vnet.ibm.com>
- <1403772933.25754.1.camel@oc7383187364.ibm.com>
- <1404459427.11076.2.camel@oc7383187364.ibm.com>
+To: pramod gurav <pramod.gurav.etc@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Driver core fixes for 3.16-rc4
+Message-ID: <20140704174051.GE25992@kroah.com>
+References: <20140704010045.GA21040@kroah.com>
+ <CAMf-jSnFqUcyCNOa-UecW3SwmVr45Nvo2Qj3DKDu2-CnPgv2pw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404459427.11076.2.camel@oc7383187364.ibm.com>
+In-Reply-To: <CAMf-jSnFqUcyCNOa-UecW3SwmVr45Nvo2Qj3DKDu2-CnPgv2pw@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04, 2014 at 09:37:07AM +0200, Frank Haverkamp wrote:
+On Fri, Jul 04, 2014 at 11:52:16AM +0530, pramod gurav wrote:
+> On Fri, Jul 4, 2014 at 6:30 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > The following changes since commit 4c834452aad01531db949414f94f817a86348d59:
+> >
+> >   Linux 3.16-rc3 (2014-06-29 14:11:36 -0700)
+> >
+> > are available in the git repository at:
+> >
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.16-rc4
+> >
+> > for you to fetch changes up to 4a3a99045177369700c60d074c0e525e8093b0fc:
+> >
+> >   lz4: add overrun checks to lz4_uncompress_unknownoutputsize() (2014-07-03 16:12:04 -0700)
+> >
+> > ----------------------------------------------------------------
+> > Driver core fixes for 3.16-rc4
+> 
 > Hi Greg,
 > 
-> Am Donnerstag, den 26.06.2014, 10:55 +0200 schrieb Frank Haverkamp:
-> > Hi Kleber,
-> > 
-> > Am Mittwoch, den 25.06.2014, 13:22 -0300 schrieb Kleber Sacilotto de
-> > Souza:
-> > > Hi,
-> > > 
-> > > I'm sending a v2 of this patch series, removing the patch that bumps the
-> > > driver version number, and including a trivial one that removes an unnecessary
-> > > include.
-> > > 
-> > > Kleber Sacilotto de Souza (4):
-> > >   GenWQE: Add sysfs interface for bitstream reload
-> > >   GenWQE: Add support for EEH error recovery
-> > >   GenWQE: Improve hardware error recovery
-> > >   GenWQE: Remove unecessary include
-> > > 
-> > >  Documentation/ABI/testing/sysfs-driver-genwqe |    9 +
-> > >  drivers/misc/genwqe/Kconfig                   |    6 +
-> > >  drivers/misc/genwqe/card_base.c               |  215 +++++++++++++++++++++++--
-> > >  drivers/misc/genwqe/card_base.h               |    2 +
-> > >  drivers/misc/genwqe/card_ddcb.c               |   24 +++-
-> > >  drivers/misc/genwqe/card_debugfs.c            |    7 +
-> > >  drivers/misc/genwqe/card_dev.c                |    5 +
-> > >  drivers/misc/genwqe/card_sysfs.c              |   25 +++
-> > >  drivers/misc/genwqe/card_utils.c              |   10 ++
-> > >  include/uapi/linux/genwqe/genwqe_card.h       |    1 +
-> > >  10 files changed, 285 insertions(+), 19 deletions(-)
-> > > 
-> > 
-> > Thanks for resubmitting the patches.
-> > 
-> > Acked-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
-> > 
+> What should I do if I come across some coding guidelines issues,
+> compile warning in some core drivers like fs/, cpuidle etc?
 > 
-> ping. Do you already have an idea when you might find the time to review
-> Klebers patches?
+> For exa: A fix in CPUIdle
+> https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg668109.html
+> 
+> Shall I continue sending the corrections?  Will they be accepted at
+> this point of time? Because I saw no response as a lot of code was
+> being added to these drivers (read cpuidle).
 
-When I return from vacation on Monday I will start to work on my very
-large backlog of patches...
+It all depends on the maintainers of those drivers / files, please
+discuss it with them, I have no control over that.
 
-thanks,
+best of luck,
 
 greg k-h
