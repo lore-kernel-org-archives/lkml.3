@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662AbaGDC0p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jul 2014 22:26:45 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:52732 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012AbaGDC0m (ORCPT
+	id S1754999AbaGDCfP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jul 2014 22:35:15 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:37925 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751355AbaGDCfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jul 2014 22:26:42 -0400
-From: Michael Welling <mwelling@ieee.org>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org
-Cc: Michael Welling <mwelling@ieee.org>
-Subject: [PATCH] drivers: video: fbdev: atmel_lcdfb.c: Add ability to inverted backlight PWM.
-Date: Thu,  3 Jul 2014 21:26:36 -0500
-Message-Id: <1404440796-11090-1-git-send-email-mwelling@ieee.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 3 Jul 2014 22:35:13 -0400
+X-IronPort-AV: E=Sophos;i="5.00,829,1396972800"; 
+   d="scan'208";a="32824052"
+Message-ID: <53B61316.2050208@cn.fujitsu.com>
+Date: Fri, 4 Jul 2014 10:36:06 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@kernel.org>
+CC: <mtosatti@redhat.com>, <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/4] kvm, memory-hotplug: Update ept identity pagetable
+ when it is migrated.
+References: <1404291637-15048-1-git-send-email-tangchen@cn.fujitsu.com> <1404291637-15048-4-git-send-email-tangchen@cn.fujitsu.com> <20140702163420.GC4399@minantech.com>
+In-Reply-To: <20140702163420.GC4399@minantech.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code has a variable to change the polarity of the PWM backlight control but
-it was not being initialized. This patch adds a devicetree entry to set the
-variable if required.
+Hi Gleb,
 
-Signed-off-by: Michael Welling <mwelling@ieee.org>
----
- .../devicetree/bindings/video/atmel,lcdc.txt       |    1 +
- drivers/video/fbdev/atmel_lcdfb.c                  |    3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+On 07/03/2014 12:34 AM, Gleb Natapov wrote:
+> On Wed, Jul 02, 2014 at 05:00:36PM +0800, Tang Chen wrote:
+>> ept identity pagetable is pinned in memory, and as a result it cannot be
+>> migrated/hot-removed.
+>>
+>> But actually it doesn't need to be pinned in memory.
+>>
+>> This patch introduces a new vcpu request: KVM_REQ_MIGRATE_EPT to reset ept
+>> indetity pagetable related variable. This request will be made when
+>> kvm_mmu_notifier_invalidate_page() is called when the page is unmapped
+>> from the qemu user space to reset kvm->arch.ept_identity_pagetable to NULL.
+>> And will also be made when ept violation happens to reset
+>> kvm->arch.ept_identity_pagetable to the new page.
+>
+> kvm->arch.ept_identity_pagetable is never used as a page address, just
+> boolean null/!null to see if identity pagetable is initialized. I do
+> not see why would we want to track its address at all. Changing it to bool
+> and assigning true during initialization should be enough.
 
-diff --git a/Documentation/devicetree/bindings/video/atmel,lcdc.txt b/Documentation/devicetree/bindings/video/atmel,lcdc.txt
-index 1ec175e..b75af94 100644
---- a/Documentation/devicetree/bindings/video/atmel,lcdc.txt
-+++ b/Documentation/devicetree/bindings/video/atmel,lcdc.txt
-@@ -46,6 +46,7 @@ Required properties (as per of_videomode_helper):
- 
- Optional properties (as per of_videomode_helper):
-  - atmel,lcdcon-backlight: enable backlight
-+ - atmel,lcdcon-backlight-inverted: invert backlight PWM polarity
-  - atmel,lcd-wiring-mode: lcd wiring mode "RGB" or "BRG"
-  - atmel,power-control-gpio: gpio to power on or off the LCD (as many as needed)
- 
-diff --git a/drivers/video/fbdev/atmel_lcdfb.c b/drivers/video/fbdev/atmel_lcdfb.c
-index d36e830..92640d4 100644
---- a/drivers/video/fbdev/atmel_lcdfb.c
-+++ b/drivers/video/fbdev/atmel_lcdfb.c
-@@ -290,7 +290,7 @@ static void init_contrast(struct atmel_lcdfb_info *sinfo)
- 
- 	/* contrast pwm can be 'inverted' */
- 	if (pdata->lcdcon_pol_negative)
--			contrast_ctr &= ~(ATMEL_LCDC_POL_POSITIVE);
-+		contrast_ctr &= ~(ATMEL_LCDC_POL_POSITIVE);
- 
- 	/* have some default contrast/backlight settings */
- 	lcdc_writel(sinfo, ATMEL_LCDC_CONTRAST_CTR, contrast_ctr);
-@@ -1097,6 +1097,7 @@ static int atmel_lcdfb_of_init(struct atmel_lcdfb_info *sinfo)
- 	pdata->lcd_wiring_mode = ret;
- 
- 	pdata->lcdcon_is_backlight = of_property_read_bool(display_np, "atmel,lcdcon-backlight");
-+	pdata->lcdcon_pol_negative = of_property_read_bool(display_np, "atmel,lcdcon-backlight-inverted");
- 
- 	timings = of_get_display_timings(display_np);
- 	if (!timings) {
--- 
-1.7.9.5
+We already have kvm->arch.ept_identity_pagetable_done to indicate if the 
+ept
+identity table is initialized. If we make 
+kvm->arch.ept_identity_pagetable to
+bool, do you mean we have:
+
+kvm->arch.ept_identity_pagetable: indicate if ept page is allocated,
+kvm->arch.ept_identity_pagetable_done: indicate if ept page is initialized ?
+
+I don't think we need this. Shall we remove 
+kvm->arch.ept_identity_pagetable ?
+
+Thanks.
 
