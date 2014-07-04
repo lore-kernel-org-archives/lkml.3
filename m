@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130AbaGDLFj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 07:05:39 -0400
-Received: from 8bytes.org ([85.214.48.195]:42421 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756857AbaGDLFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 07:05:37 -0400
-Date: Fri, 4 Jul 2014 13:05:30 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <will.deacon@arm.com>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Dave Martin <Dave.Martin@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, Olav Haugan <ohaugan@codeaurora.org>,
-        Paul Walmsley <pwalmsley@nvidia.com>,
-        Rhyland Klein <rklein@nvidia.com>, Allen Martin <amartin@nvidia.com>,
-        devicetree@vger.kernel.org, iommu@lists.linux-foundation.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 01/10] iommu: Add IOMMU device registry
-Message-ID: <20140704110529.GF13434@8bytes.org>
-References: <1403815790-8548-1-git-send-email-thierry.reding@gmail.com>
- <1403815790-8548-2-git-send-email-thierry.reding@gmail.com>
+	id S1758101AbaGDLFz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 07:05:55 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:58709 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757877AbaGDLFx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 07:05:53 -0400
+Message-ID: <53B68A8B.1020106@linaro.org>
+Date: Fri, 04 Jul 2014 20:05:47 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403815790-8548-2-git-send-email-thierry.reding@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri Jul  4 13:05:36 2014
-X-DSPAM-Confidence: 0.9996
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 53b68a8020861082218028
+To: Arnd Bergmann <arnd@arndb.de>, linaro-kernel@lists.linaro.org
+CC: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
+        catalin.marinas@arm.com, will.deacon@arm.com,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v10 1/3] arm64: Add __NR_* definitions for compat syscalls
+References: <1404458911-8214-1-git-send-email-takahiro.akashi@linaro.org> <1404458911-8214-2-git-send-email-takahiro.akashi@linaro.org> <5418828.mxvNk2rT0e@wuerfel>
+In-Reply-To: <5418828.mxvNk2rT0e@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 26, 2014 at 10:49:41PM +0200, Thierry Reding wrote:
-> Add an IOMMU device registry for drivers to register with and implement
-> a method for users of the IOMMU API to attach to an IOMMU device. This
-> allows to support deferred probing and gives the IOMMU API a convenient
-> hook to perform early initialization of a device if necessary.
+Arnd,
 
-Can you elaborate on why exactly you need this? The IOMMU-API is
-designed to hide any details from the user about the available IOMMUs in
-the system and which IOMMU handles which device. This looks like it is
-going in a completly different direction from that.
+On 07/04/2014 07:06 PM, Arnd Bergmann wrote:
+> On Friday 04 July 2014 16:28:29 AKASHI Takahiro wrote:
+>> From: Catalin Marinas <catalin.marinas@arm.com>
+>>
+>> This patch adds __NR_* definitions to asm/unistd32.h, moves the
+>> __NR_compat_* definitions to asm/unistd.h and removes all the explicit
+>> unistd32.h includes apart from the one building the compat syscall
+>> table. The aim is to have the compat __NR_* definitions available but
+>> without colliding with the native syscall definitions.
+>>
+>> And adds more syscall definitions for 3.16.
+>
+> Can you explain in more detail why you want to add those macros? I've
+> looked at all three patches in the series but can't find any code using
+> them.
 
+Right. "unistd32.h" is not used by this patch, but by lib/compat_audit.c.
+when I thought of adding audit support for arm64, there was duplicated code
+of auditing compat system calls across many architectures.
+lib/compat_audit.c fixes this issue but at the same time it also requires
+__NR_* macros for a couple of compat system calls which arm64 didn't have.
 
-	Joerg
+In the first implementation, I generated an extra generated/asm/unistd_32.h
+from the original asm/unist32.h by using a sed script. But Catalin suggested
+(agreed?) to modify unistd32.h for this purpose.
 
+See
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-January/228992.html
 
+Thanks,
+-Takahiro AKASHI
+
+> I would expect that we don't need to define those macros at all for
+> compat mode, since they are meant primarily for user space (glibc)
+> compilation, which gets them from arch/arm/include/asm/unistd.h.
+>
+> 	Arnd
+>
