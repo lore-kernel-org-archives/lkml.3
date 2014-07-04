@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031557AbaGDWiv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:38:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57523 "EHLO
+	id S1031286AbaGDWV2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:21:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57506 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031145AbaGDWV3 (ORCPT
+	with ESMTP id S1031145AbaGDWVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:21:29 -0400
+	Fri, 4 Jul 2014 18:21:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.14 42/59] powerpc/perf: Ensure all EBB register state is cleared on fork()
-Date: Fri,  4 Jul 2014 15:19:31 -0700
-Message-Id: <20140704221541.550677908@linuxfoundation.org>
+        Per Gundberg <per.gundberg@icomera.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Michael Brunner <michael.brunner@kontron.com>,
+        Wim Van Sebroeck <wim@iguana.be>
+Subject: [PATCH 3.14 20/59] watchdog: kempld-wdt: Use the correct value when configuring the prescaler with the watchdog
+Date: Fri,  4 Jul 2014 15:19:09 -0700
+Message-Id: <20140704221540.507915386@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221539.544876024@linuxfoundation.org>
 References: <20140704221539.544876024@linuxfoundation.org>
@@ -29,37 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Ellerman <mpe@ellerman.id.au>
+From: gundberg <per.gundberg@icomera.com>
 
-commit 3df48c981d5a9610e02e9270b1bc4274fb536710 upstream.
+commit a9e0436b303e94ba57d3bd4b1fcbeaa744b7ebeb upstream.
 
-In commit 330a1eb "Core EBB support for 64-bit book3s" I messed up
-clear_task_ebb(). It clears some but not all of the task's Event Based
-Branch (EBB) registers when we duplicate a task struct.
+Use the prescaler index, rather than its value, to configure the watchdog.
+This will prevent a mismatch with the prescaler used to calculate the cycles.
 
-That allows a child task to observe the EBBHR & EBBRR of its parent,
-which it should not be able to do.
-
-Fix it by clearing EBBHR & EBBRR.
-
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Per Gundberg <per.gundberg@icomera.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Reviewed-by: Michael Brunner <michael.brunner@kontron.com>
+Tested-by: Michael Brunner <michael.brunner@kontron.com>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/switch_to.h |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/watchdog/kempld_wdt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/include/asm/switch_to.h
-+++ b/arch/powerpc/include/asm/switch_to.h
-@@ -84,6 +84,8 @@ static inline void clear_task_ebb(struct
- {
- #ifdef CONFIG_PPC_BOOK3S_64
-     /* EBB perf events are not inherited, so clear all EBB state. */
-+    t->thread.ebbrr = 0;
-+    t->thread.ebbhr = 0;
-     t->thread.bescr = 0;
-     t->thread.mmcr2 = 0;
-     t->thread.mmcr0 = 0;
+--- a/drivers/watchdog/kempld_wdt.c
++++ b/drivers/watchdog/kempld_wdt.c
+@@ -162,7 +162,7 @@ static int kempld_wdt_set_stage_timeout(
+ 	kempld_get_mutex(pld);
+ 	stage_cfg = kempld_read8(pld, KEMPLD_WDT_STAGE_CFG(stage->id));
+ 	stage_cfg &= ~STAGE_CFG_PRESCALER_MASK;
+-	stage_cfg |= STAGE_CFG_SET_PRESCALER(prescaler);
++	stage_cfg |= STAGE_CFG_SET_PRESCALER(PRESCALER_21);
+ 	kempld_write8(pld, KEMPLD_WDT_STAGE_CFG(stage->id), stage_cfg);
+ 	kempld_write32(pld, KEMPLD_WDT_STAGE_TIMEOUT(stage->id),
+ 			stage_timeout);
 
 
