@@ -1,97 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758758AbaGDPRG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 11:17:06 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:54737 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804AbaGDPRA (ORCPT
+	id S1758947AbaGDPRt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 11:17:49 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:51598 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754973AbaGDPRq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 11:17:00 -0400
-From: =?ISO-8859-1?Q?C=E9dric?= Villemain <cedric@2ndquadrant.com>
-To: Christoph Hellwig <hch@infradead.org>
-Reply-To: cedric@2ndquadrant.com
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Miller <davem@davemloft.net>,
-        Andres Freund <andres@2ndquadrant.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dave Hansen <dave.hansen@intel.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH v2 2/4] mm: introduce fincore()
-Date: Fri, 04 Jul 2014 17:15:59 +0200
-Message-ID: <5816450.BPnLjGgtl5@obelix>
-Organization: 2ndQuadrant France
-User-Agent: KMail/4.12.4 (Linux/3.10-2-rt-amd64; KDE/4.13.1; x86_64; ; )
-In-Reply-To: <20140704101230.GA24688@infradead.org>
-References: <1404424335-30128-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1404424335-30128-3-git-send-email-n-horiguchi@ah.jp.nec.com> <20140704101230.GA24688@infradead.org>
+	Fri, 4 Jul 2014 11:17:46 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart8084549.9xpDVVycgD"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-X-Provags-ID: V02:K0:NEBePmFMGarOcGPMjsyjIpIe6HomFTSA460V0bK5c0+
- XD9vdP82fFcEtqUVu/Led1Olg25MadCsnW0V0OCQpgtnktkNKl
- 8ys9OB53uQ/FaGh4x7rwI0yz81GBeeYPJsJOvFVQS6gS4ls5Bo
- XHyMsXLBEcgwycgGMUfjzroLUtXSCMJjHminjWt3sizkBKh5TA
- 8XaEYK3KjU28ORzv66sQj1kOs1+MhjVIguDnzcLD2tQbyc4cpm
- 362QemVLrfw0w0wAiYnVXpGuMT18uuKwZJjOVRy+ovZJ4DF1bi
- jrnLeWdEIM3ub6Wd+M4eth7G+tqrUfRsu9EHwIa4bkoIoPbp6L
- wuGOOjDEM3tZUqVoOXb4=
+In-Reply-To: <CAMEtUuzkVANM341xPTKH1bNVNuK6TQcyqsdZdkGWausLT5Qj6A@mail.gmail.com>
+References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
+ <1403913966-4927-4-git-send-email-ast@plumgrid.com> <CALCETrV3WLBmHewCZgfhCkjODWfq_byRg6sF7HpqZ6n9BVMBVQ@mail.gmail.com>
+ <CAMEtUuzWs+MbSOGGD-Rc01DHKASa4GxbHdtCrSCLit4cUM35mA@mail.gmail.com>
+ <CALCETrWy6=dzTycy-ckiMR92+nQeqAWp_Hw=hi__VSzVWZ43Ag@mail.gmail.com>
+ <CAMEtUuwRf--qyPu3rKB7-57KAu2NdsQdEpVRckqabmf61g+h-g@mail.gmail.com>
+ <CALCETrUoOTtQ1R1A8Ak35fxHxaFTPHWP6oZWnXDVLKa_ESziWw@mail.gmail.com>
+ <CAMEtUuzS=9Y_ZjigofvQ5d3=89RS=+d8-WGPk9VVSMc3qawWsw@mail.gmail.com>
+ <CALCETrWq+=Q3G2Smjd2RYES42UagpmD0EKxFM+jNufi6_qitWg@mail.gmail.com>
+ <CAMEtUuyKY=haqP11VgXHdfHBkqfB-KxuswygUd7hDPLkOFz9HQ@mail.gmail.com>
+ <CALCETrW3=idHOKF56d94suiA0NoiUGwr7pENm13q6=1XMbBPdw@mail.gmail.com>
+ <CAMEtUuyX-tybpMEW=f-00qgq9h3AcHovLNW0_bak3oT4Oj3FuA@mail.gmail.com>
+ <CALCETrWpA5M74pKJLFJ0t-2hi2TXMi_BV6DbJMmdDOJyOoHOyg@mail.gmail.com>
+ <CAMEtUuzHrzyUG1nie5cWzGZYTDTnqL7vPvAmPZdie_uSM_wqRA@mail.gmail.com>
+ <CALCETrW5WitpzcFmkGDwR6U=qOwCkOfQMy=XOtQTuHs-942Drw@mail.gmail.com> <CAMEtUuzkVANM341xPTKH1bNVNuK6TQcyqsdZdkGWausLT5Qj6A@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 4 Jul 2014 08:17:25 -0700
+Message-ID: <CALCETrWQnQS=jjuhQzxM9YMhGk-fJ1oNetdPuZ0v4yujBLZ+fA@mail.gmail.com>
+Subject: Re: [PATCH RFC net-next 03/14] bpf: introduce syscall(BPF, ...) and
+ BPF maps
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 2, 2014 at 7:29 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> On Wed, Jul 2, 2014 at 6:43 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Tue, Jul 1, 2014 at 10:33 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>> I want to avoid string names, since they will force new 'strtab', 'symtab'
+>>> sections in the programs/maps and will uglify the user interface quite a bit.
+>>
+>> To be fair, you really need to imitate ELF here.  A very simple
+>> relocation-like table should do the trick.
+>
+> simple.. right :) I do see the amount of struggle you have with
+> binutils and vdso.
+> I really don't want to add relocation unless this is last resort.
+> Especially since it can be solved without it.
+> I don't think I explained it enough in my last email… trying again:
+>
+>>> Back in september one loadable unit was: one eBPF program + set of maps,
+>>> but tracing requirements forced a change, since multiple programs need
+>>> to access the same map and maps may need to be pre-populated before
+>>> the programs start executing, so I've split maps and programs into mostly
+>>> independent entities, but programs still need to think of maps as local:
+>>> For example I want to do a skb leak check 'tracing filter':
+>>> - attach this program to kretprobe of __alloc_skb():
+>>>   u64 key = (u64) skb;
+>>>   u64 value = bpf_get_time();
+>>>   bpf_update_map_elem(1/*const_map_id*/, &key, &value);
+>>> - attach this program to consume_skb and kfree_skb tracepoints:
+>>>   u64 key = (u64) skb;
+>>>   bpf_delete_map_elem(1/*const_map_id*/, &key);
+>>> - and have user space do:
+>>>   prior to loading:
+>>>   bpf_create_map(1/*map_id*/, 8/*key_size*/, 8/*value*/, 1M /*max_entries*/)
+>>>   and then periodically iterate the map to see whether any skb stayed
+>>>   in the map for too long.
+>>>
+>>> Programs need to be written with hard coded map_ids otherwise usability
+>>> suffers, so I did global 32-bit id in this RFC
+>>>, but this indeed doesn't work
+>>
+>> Really?  That will mean that you have to edit the source of your
+>> filter program if the small integer map number you chose conflicts
+>> with another program.  That sounds unpleasant.
+>
+> unpleasant. exactly. that's why I'm proposing per-process local map-id,
+> so that programs don't need to be edited.
+>
+>>> for unprivileged chrome browser unless programs are previously loaded
+>>> by root and chrome only does attach to seccomp.
+>>>
+>>> So here is the non-root bpf syscall interface I'm thinking about:
+>>>
+>>> ufd = bpf_create_map(map_id, key_size, value_size, max_entries);
+>>>
+>>> it will create a global map in the system which will be accessible
+>>> in this process via 'ufd'. Internally this 'ufd' will be assigned global map_id
+>>> and process-local map_id that was passed as a 1st argument.
+>>> To do update/lookup the process will use bpf_map_xxx_elem(ufd,…)
+>>>
+>>
+>> Erk.  Unprivileged programs shouldn't be able to allocate global ids
+>> of their choosing, especially if privileged programs can also do it.
+>> Otherwise unprivileged programs can force a collision and possibly
+>> steal information.
+>
+> of course. that's not what said.
+>
+>>> Then to load eBPF program the process will do:
+>>> ufd = bpf_prog_load(prog_type, ebpf_insn_array, license)
+>>> and instructions will be referring to maps via local map_id that
+>>> was hard coded as part of the program.
+>>
+>> I think relocations would be must prettier than per-process map id tables.
+>
+> I think per process map_id are much cleaner.
+>
+> non-root API:
+>
+> ufd = bpf_create_map(local_map_id,… )
+> bpf_map_update/delete/lookup_elem(ufd,…)
+> ufd = bpf_prog_load(insns)
+> close(ufd)
+>
+> root only API:
+>
+> global_id = bpf_get_id(ufd) // returns either map or prog global id
+> bpf_map_delete(global_map_id)
+> bpf_prog_unload(global_prog_id)
+>
+> Details:
+>
+> ufd = bpf_create_map(local_map_id, ...);
+>
+> local_map_id - process local map_id
+> (this id is used to access maps from eBPF program loaded by this process)
+>
+> ufd - process local file descriptor
+> (used to update/lookup maps from this process)
+>
+> global_map_id = bpf_get_id(ufd)
+> this is root only call to get global_ids and pass them to global events
+> like tracing.
+>
+> global ids will only be seen by root. There is no way for root or non-root
+> to influence id ranges.
+>
+>>> Beyond the normal create_map, update/lookup/delete, load_prog
+>>> operations (that are accessible to both root and non-root), the root user
+>>> gains one more operations: bpf_get_global_id(ufd) that returns
+>>> global map_id or prog_id. This id can be attached to global events
+>>> like tracing. Non-root users lose ability to do delete_map and
+>>> unload_prog (they do close(ufd) instead), so this ops are for root
+>>> only and operate on global ids.
+>>> This is the cleanest way I could think of to combine non-root
+>>> security, per-process id and global id all in one API. Thoughts?
+>>
+>> I think I'm okay with this part, although an interface to get a map fd
+>> given some reference to the program (in sysfs) that uses it would also
+>> work and maybe be more straightforward.
+>
+> If you meant debugfs, then yes. I'm planning to add a way for root
+> to see all loaded programs and maps (similar to /proc as lsmod does),
+> and then do bpf_map_delete/bpf_prog_unload (similar to rmmod)
+>
+> setsockopt and seccomp will be non-root and programs will go
+> through additional dont_leak_pointers check in verifier.
+> tracing/dtrace will be for root only, since they would need to attach
+> to global events.
+>
+> I think it will be cleaner once I finish fd conversion as a patch.
 
---nextPart8084549.9xpDVVycgD
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset="iso-8859-1"
+OK
 
-Le vendredi 4 juillet 2014 03:12:30 Christoph Hellwig a =E9crit :
-> On Thu, Jul 03, 2014 at 05:52:13PM -0400, Naoya Horiguchi wrote:
-> > This patch provides a new system call fincore(2), which provides
-> > mincore()- like information, i.e. page residency of a given file.
-> > But unlike mincore(), fincore() has a mode flag which allows us to
-> > extract detailed information about page cache like pfn and page
-> > flag. This kind of information is very helpful, for example when
-> > applications want to know the file cache status to control the IO
-> > on their own way.
->=20
-> It's still a nasty multiplexer for multiple different reporting
-> formats in a single system call.  How about your really just do a
-> fincore that mirrors mincore instead of piggybacking exports of
-> various internal flags (tags and page flags onto it.
+FWIW, per-process local id maps sound almost equivalent to relocations
+-- the latter could be as simple as an extra nlattr giving a list of
+pairs of (per-eBPF-program id, fd).
 
-The fincore =E0 la mincore got some arguments against it too. It seems =
-this=20
-implementations try (I've not tested nor have a close look yet) to=20
-answer both concerns : have details and also possible to have=20
-aggregation function not too expansive.
+My current binutils mess is mainly just because I'm trying to do
+something weird with an old, old file format that needs to support
+lots of legacy tools.  You won't have that problem.
 
-=2D-=20
-C=E9dric Villemain +33 (0)6 20 30 22 52
-http://2ndQuadrant.fr/
-PostgreSQL: Support 24x7 - D=E9veloppement, Expertise et Formation
---nextPart8084549.9xpDVVycgD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAABAgAGBQJTtsUyAAoJENsgH0yzVBebWBoIAJhFEeV28nzkW/C4Wi3s8YXZ
-CgfL6Kpu1jvhMQC/5ni4RquqQoZtRtHU1/qBuW5e1njazdflWhTRxsf3zff3mOMD
-owZbKbi8s8UT9m/uEB9Yv9vXFmiWhpXL+yqcniQWW5WUNCIP/X3F/fMVzlaydrCb
-vUQlXvJ1p0sUrtualRry3sQpPk/OxT0Fa1n3HdiC4X9wfv0EX8OSXjekZqtUS0NC
-OUsXEfnaB/KmbiqRLGBgxoofynMby2089Cgi13+MHFvS32YzRA+x0/dbKUJmpN2I
-j0FCbJEc982/BIK2vpSPZk+/0ZZkWjYDx5RNHGuwYc1FimvN4UdgR4AHnp9DWo8=
-=AC/X
------END PGP SIGNATURE-----
-
---nextPart8084549.9xpDVVycgD--
-
+--Andy
