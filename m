@@ -1,85 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740AbaGDIiY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:38:24 -0400
-Received: from odin2.bull.net ([129.184.85.11]:54545 "EHLO odin2.bull.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751128AbaGDIiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:38:22 -0400
-Message-ID: <53B667F9.90306@bull.net>
-Date: Fri, 4 Jul 2014 10:38:17 +0200
-From: Sebastien Buisson <sebastien.buisson@bull.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: <viro@zeniv.linux.org.uk>, <linux-fsdevel@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] Allow increasing the buffer-head per-CPU LRU size
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.192.1.123]
+	id S1754441AbaGDIio (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:38:44 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51270 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753937AbaGDIik (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 04:38:40 -0400
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH] of: Add of_graph_get_port_by_id
+Date: Fri,  4 Jul 2014 10:38:36 +0200
+Message-Id: <1404463116-13417-1-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 2.0.0
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow increasing the buffer-head per-CPU LRU size to allow efficient
-filesystem operations that access many blocks for each transaction.
-For example, creating a file in a large ext4 directory with quota
-enabled will accesses multiple buffer heads and will overflow the LRU
-at the default 8-block LRU size:
+This patch adds a function to get a port device tree node by port id.
 
-* parent directory inode table block (ctime, nlinks for subdirs)
-* new inode bitmap
-* inode table block
-* 2 quota blocks
-* directory leaf block (not reused, but pollutes one cache entry)
-* 2 levels htree blocks (only one is reused, other pollutes cache)
-* 2 levels indirect/index blocks (only one is reused)
-
-The buffer-head per-CPU LRU size can be changed at config time, and its
-default value is raised to 16.
-
-Signed-off-by: Liang Zhen <liang.zhen@intel.com>
-Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 ---
-  fs/Kconfig  |    9 +++++++++
-  fs/buffer.c |    3 +--
-  2 files changed, 10 insertions(+), 2 deletions(-)
+ drivers/of/base.c        | 30 ++++++++++++++++++++++++++++++
+ include/linux/of_graph.h |  7 +++++++
+ 2 files changed, 37 insertions(+)
 
-diff --git a/fs/Kconfig b/fs/Kconfig
-index c229f82..afea808 100644
---- a/fs/Kconfig
-+++ b/fs/Kconfig
-@@ -268,4 +268,13 @@ endif # NETWORK_FILESYSTEMS
-  source "fs/nls/Kconfig"
-  source "fs/dlm/Kconfig"
-
-+config BH_LRU_SIZE
-+      int "buffer head per-CPU LRU size"
-+      range 8 64
-+      default "16"
-+      help
-+        This sets the per-CPU LRU size for buffer heads in memory.
-+        More complex filesystems may be modiyfing multiple blocks
-+        within a single transaction, so keeping the buffer heads in
-+        CPU-local cache speeds up modifations significantly.
-  endmenu
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 6024877..b83fa63 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1255,8 +1255,7 @@ static struct buffer_head *__bread_slow(struct 
-buffer_head *bh)
-   * The LRUs themselves only need locking against invalidate_bh_lrus. 
-We use
-   * a local interrupt disable for that.
-   */
--
--#define BH_LRU_SIZE	8
-+#define BH_LRU_SIZE	CONFIG_BH_LRU_SIZE
-
-  struct bh_lru {
-  	struct buffer_head *bhs[BH_LRU_SIZE];
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index 9480e10..b4ae58b 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -2257,6 +2257,36 @@ int of_graph_parse_endpoint(const struct device_node *node,
+ EXPORT_SYMBOL(of_graph_parse_endpoint);
+ 
+ /**
++ * of_graph_get_port_by_id() - get the port matching a given id
++ * @parent: pointer to the parent device node
++ * @id: id of the port
++ *
++ * Return: A 'port' node pointer with refcount incremented.The caller
++ * has to use of_node_put() on it when done.
++ */
++struct device_node *of_graph_get_port_by_id(struct device_node *node, int id)
++{
++	struct device_node *port = NULL;
++	int port_id;
++
++	while (true) {
++		port = of_get_next_child(node, port);
++		if (!port)
++			return NULL;
++		if (of_node_cmp(port->name, "port") != 0)
++			continue;
++		if (of_property_read_u32(port, "reg", &port_id)) {
++			if (!id)
++				return port;
++		} else {
++			if (id == port_id)
++				return port;
++		}
++	}
++}
++EXPORT_SYMBOL(of_graph_get_port_by_id);
++
++/**
+  * of_graph_get_next_endpoint() - get next endpoint node
+  * @parent: pointer to the parent device node
+  * @prev: previous endpoint node, or NULL to get first
+diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
+index c5ef5fa..8bfd7d6 100644
+--- a/include/linux/of_graph.h
++++ b/include/linux/of_graph.h
+@@ -33,6 +33,7 @@ struct of_endpoint {
+ #ifdef CONFIG_OF
+ int of_graph_parse_endpoint(const struct device_node *node,
+ 				struct of_endpoint *endpoint);
++struct device_node *of_graph_get_port_by_id(struct device_node *node, int id);
+ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
+ 					struct device_node *previous);
+ struct device_node *of_graph_get_remote_port_parent(
+@@ -46,6 +47,12 @@ static inline int of_graph_parse_endpoint(const struct device_node *node,
+ 	return -ENOSYS;
+ }
+ 
++static inline struct device_node *of_graph_get_port_by_id(struct device_node *node,
++					int id)
++{
++	return NULL;
++}
++
+ static inline struct device_node *of_graph_get_next_endpoint(
+ 					const struct device_node *parent,
+ 					struct device_node *previous)
 -- 
-1.7.1
+2.0.0
 
