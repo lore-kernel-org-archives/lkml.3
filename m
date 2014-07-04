@@ -1,94 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932413AbaGDHxK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 03:53:10 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:43455 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932082AbaGDHxD (ORCPT
+	id S964981AbaGDHxa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 03:53:30 -0400
+Received: from relay.parallels.com ([195.214.232.42]:51332 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932082AbaGDHxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 03:53:03 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 04/10] mm/page_alloc: carefully free the page on isolate pageblock
-Date: Fri,  4 Jul 2014 16:57:49 +0900
-Message-Id: <1404460675-24456-5-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com>
+	Fri, 4 Jul 2014 03:53:24 -0400
+Date: Fri, 4 Jul 2014 11:52:56 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: <linux-kernel@vger.kernel.org>, Kees Cook <keescook@chromium.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [RFC 2/2] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP operation
+Message-ID: <20140704075256.GA5105@paralelels.com>
+References: <20140703143318.568554771@openvz.org>
+ <20140703151102.842945837@openvz.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="koi8-r"
+Content-Disposition: inline
+In-Reply-To: <20140703151102.842945837@openvz.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [10.24.36.147]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We got migratetype without holding the lock so it could be
-racy. If some pages go on the isolate migratetype buddy list
-by this race, we can't allocate this page anymore until next
-isolation attempt on this pageblock. Below is possible
-scenario of this race.
+On Thu, Jul 03, 2014 at 06:33:20PM +0400, Cyrill Gorcunov wrote:
+> During development of c/r we've noticed that in case if we need to
+> support user namespaces we face a problem with capabilities in
+> prctl(PR_SET_MM, ...) call.
+> 
+> Current PR_SET_MM code forbids to modify fields if no CAP_SYS_RESOURCE
+> granted, but rather relies on one who use this interface is passing
+> more-less sane values (though the values must pass the basic validation
+> procedure).
+> 
+> It seems a better approach is to eliminate CAP_SYS_RESOURCE check but
+> provide all new values in one bundle, which would allow the kernel to make
+> more intensive test for sanity of values and same time allow us to
+> support checkpoint/restore of user namespaces.
+> 
+> Thus a new command (PR_SET_MM_MAP) introduced. It takes a pointer of
+> prctl_mm_map structure which carries all members to be updated.
+> 
+> Most intensive work is done in validate_prctl_map_locked helper,
+> because we need to make sure the values are valid. Thus we do
+> 
+>  - check the values are laying inside available user address space
+>  - stack, brk, command line arguments and evnironment variables
+>    must point to already existing VMA
+>  - values must be ordered (start < end)
+>  - if RLIMITs are defined don't allow to exceed it with new values
+> 
+> Since it uses prctl_set_mm_exe_file_locked helper, updating the
+> exe-file link is one-shot action for security reason.
+> 
+> I believe the old interface should be deprecated and ripped off
+> in a couple of kernel releases if noone against.
+> 
+> To test if new interface is implemented in the kernel one
+> can pass PR_SET_MM_MAP_SIZE opcode and the kernel returns
+> the size of currently supported struct prctl_mm_map.
 
-pageblock 1 is isolate migratetype.
+I like the idea of this patch. See a few comments inline
 
-CPU1					CPU2
-- get_pfnblock_migratetype(pageblock 1),
-so MIGRATE_ISOLATE is returned
-- call free_one_page() with MIGRATE_ISOLATE
-					- grab the zone lock
-					- unisolate pageblock 1
-					- release the zone lock
-- grab the zone lock
-- call __free_one_page() with MIGRATE_ISOLATE
-- free page go into isolate buddy list
-and we can't use it anymore
+> 
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Andrew Vagin <avagin@openvz.org>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Cc: Vasiliy Kulikov <segoon@openwall.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+> ---
+>  include/uapi/linux/prctl.h |   19 ++++
+>  kernel/sys.c               |  188 ++++++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 206 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6.git/include/uapi/linux/prctl.h
+> ===================================================================
+> --- linux-2.6.git.orig/include/uapi/linux/prctl.h
+> +++ linux-2.6.git/include/uapi/linux/prctl.h
+> @@ -119,6 +119,25 @@
+>  # define PR_SET_MM_ENV_END		11
+>  # define PR_SET_MM_AUXV			12
+>  # define PR_SET_MM_EXE_FILE		13
+> +# define PR_SET_MM_MAP			14
+> +# define PR_SET_MM_MAP_SIZE		15
+> +
+> +struct prctl_mm_map {
+> +	unsigned long	start_code;
 
-To prevent this possibility, re-check migratetype with holding the lock.
+"unsigned long" has different sizes on x86_64 and x86, so a compat
+is required for x32 processes on x64 kernel.
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
----
- mm/page_alloc.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+> +	unsigned long	end_code;
+> +	unsigned long	start_data;
+> +	unsigned long	end_data;
+> +	unsigned long	start_brk;
+> +	unsigned long	brk;
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 99c05f7..d8feedc 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -743,6 +743,17 @@ static void free_one_page(struct zone *zone,
- 	spin_lock(&zone->lock);
- 	zone->pages_scanned = 0;
- 
-+	if (unlikely(is_migrate_isolate(migratetype))) {
-+		/*
-+		 * We got migratetype without holding the lock so it could be
-+		 * racy. If some pages go on the isolate migratetype buddy list
-+		 * by this race, we can't allocate this page anymore until next
-+		 * isolation attempt on this pageblock. To prevent this
-+		 * possibility, re-check migratetype with holding the lock.
-+		 */
-+		migratetype = get_pfnblock_migratetype(page, pfn);
-+	}
-+
- 	__free_one_page(page, pfn, zone, order, migratetype);
- 	if (!is_migrate_isolate(migratetype))
- 		__mod_zone_freepage_state(zone, 1 << order, migratetype);
--- 
-1.7.9.5
+...
 
+> +
+> +	error |= __prctl_check_addr_space(prctl_map, start_code);
+> +	error |= __prctl_check_addr_space(prctl_map, end_code);
+> +	error |= __prctl_check_addr_space(prctl_map, start_data);
+> +	error |= __prctl_check_addr_space(prctl_map, end_data);
+> +	error |= __prctl_check_addr_space(prctl_map, start_stack);
+> +	error |= __prctl_check_addr_space(prctl_map, start_brk);
+> +	error |= __prctl_check_addr_space(prctl_map, brk);
+> +	error |= __prctl_check_addr_space(prctl_map, arg_start);
+> +	error |= __prctl_check_addr_space(prctl_map, arg_end);
+> +	error |= __prctl_check_addr_space(prctl_map, env_start);
+> +	error |= __prctl_check_addr_space(prctl_map, env_end);
+> +	if (error)
+> +		goto out;
+> +#undef __prctl_check_addr_space
+> +
+> +	/*
+> +	 * Stack, brk, command line arguments and environment must exist.
+> +	 */
+> +	stack_vma = find_vma(mm, prctl_map->start_stack);
+
+Why do we not use __prctl_check_vma here?
+
+> +	if (!stack_vma) {
+> +		error = -EINVAL;
+> +		goto out;
+> +	}
+> +#define __prctl_check_vma(mm, addr) find_vma(mm, addr) ? 0 : -EINVAL
+> +	error |= __prctl_check_vma(mm, prctl_map->start_brk);
+> +	error |= __prctl_check_vma(mm, prctl_map->brk);
+> +	error |= __prctl_check_vma(mm, prctl_map->arg_start);
+> +	error |= __prctl_check_vma(mm, prctl_map->arg_end);
+> +	error |= __prctl_check_vma(mm, prctl_map->env_start);
+> +	error |= __prctl_check_vma(mm, prctl_map->env_end);
+> +	if (error)
+> +		goto out;
+> +#undef __prctl_check_vma
+> 
