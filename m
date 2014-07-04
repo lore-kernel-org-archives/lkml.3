@@ -1,229 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967AbaGDOyB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 10:54:01 -0400
-Received: from static.88-198-71-155.clients.your-server.de ([88.198.71.155]:59561
-	"EHLO socrates.bennee.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104AbaGDOx7 (ORCPT
+	id S1756971AbaGDOza (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 10:55:30 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:38464 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754315AbaGDOz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 10:53:59 -0400
-From: =?UTF-8?q?Alex=20Benn=C3=A9e?= <alex.bennee@linaro.org>
-To: kvmarm@lists.cs.columbia.edu, linux-arm-kernel@lists.infradead.org
-Cc: kvm@vger.kernel.org,
-        =?UTF-8?q?Alex=20Benn=C3=A9e?= <alex.bennee@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] arm64: KVM: allow export and import of generic timer regs
-Date: Fri,  4 Jul 2014 15:54:14 +0100
-Message-Id: <1404485654-32674-1-git-send-email-alex.bennee@linaro.org>
-X-Mailer: git-send-email 2.0.1
+	Fri, 4 Jul 2014 10:55:28 -0400
+Message-ID: <53B6C051.2060704@oracle.com>
+Date: Fri, 04 Jul 2014 10:55:13 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 127.0.0.1
-X-SA-Exim-Mail-From: alex.bennee@linaro.org
-X-SA-Exim-Scanned: No (on socrates.bennee.com); SAEximRunCond expanded to false
+To: David Rientjes <rientjes@google.com>
+CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: fs: use after free in /proc/pid/mountinfo
+References: <53B3F331.7090204@oracle.com> <53B4CAB8.5070407@oracle.com> <alpine.DEB.2.02.1407031434470.10658@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1407031434470.10658@chino.kir.corp.google.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For correct guest suspend/resume behaviour we need to ensure we include
-the generic timer registers for 64 bit guests. As CONFIG_KVM_ARM_TIMER is
-always set for arm64 we don't need to worry about null implementations.
-However I have re-jigged the kvm_arm_timer_set/get_reg declarations to
-be in the common include/kvm/arm_arch_timer.h headers.
+On 07/03/2014 05:37 PM, David Rientjes wrote:
+> On Wed, 2 Jul 2014, Sasha Levin wrote:
+> 
+>>> Hi all,
+>>>
+>>> While fuzzing with trinity inside a KVM tools guest running the latest -next
+>>> kernel I've stumbled on the following spew:
+>>>
+>>> [ 3569.869749] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>>> [ 3569.869769] Dumping ftrace buffer:
+>>> [ 3569.869879]    (ftrace buffer empty)
+>>> [ 3569.869894] Modules linked in:
+>>> [ 3569.869900] CPU: 7 PID: 10239 Comm: trinity-c86 Tainted: G        W      3.16.0-rc3-next-20140701-sasha-00023-g4eb2544-dirty #759
+>>> [ 3569.869906] task: ffff88039e873000 ti: ffff880393f8c000 task.ti: ffff880393f8c000
+>>> [ 3569.869932] RIP: show_mountinfo (fs/proc_namespace.c:127)
+>>> [ 3569.869938] RSP: 0018:ffff880393f8fd08  EFLAGS: 00010282
+>>> [ 3569.869943] RAX: ffff880200c6d208 RBX: 6b6b6b6b6b6b6b03 RCX: 0000000000000074
+>>> [ 3569.869946] RDX: 0000000000000000 RSI: 6b6b6b6b6b6b6b03 RDI: ffff880200c6d208
+>>> [ 3569.869953] RBP: ffff880393f8fd58 R08: 0000000000000001 R09: ffff88039e873d38
+>>> [ 3569.869957] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880200c6d208
+>>> [ 3569.869962] R13: 6b6b6b6b6b6b6b6b R14: ffff880393f8ff50 R15: ffff880200c6d208
+>>> [ 3569.869966] FS:  00007f6f20db9700(0000) GS:ffff8801ece00000(0000) knlGS:0000000000000000
+>>> [ 3569.869969] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>>> [ 3569.869974] CR2: 00007f6f20bee000 CR3: 00000003a0775000 CR4: 00000000000006a0
+>>> [ 3569.869992] Stack:
+>>> [ 3569.870011]  ffff880393f8ff50 ffff880200c6d208 ffff880393f8fd48 ffffffff984e10ea
+>>> [ 3569.870025]  ffffffff9532c7fe ffff8802069a3b80 0000000000000065 6b6b6b6b6b6b6b6b
+>>> [ 3569.870036]  ffff880393f8ff50 ffff880200c6d208 ffff880393f8fd68 ffffffff9532c756
+>>> [ 3569.870038] Call Trace:
+>>> [ 3569.870051] ? down_read (kernel/locking/rwsem.c:45 (discriminator 2))
+>>> [ 3569.870059] ? m_start (kernel/module.c:3634)
+>>> [ 3569.870069] m_show (kernel/module.c:3649)
+>>> [ 3569.870076] seq_read (fs/seq_file.c:235)
+>>> [ 3569.870081] ? single_open_size (fs/seq_file.c:166)
+>>> [ 3569.870092] do_loop_readv_writev (fs/read_write.c:708)
+>>> [ 3569.870098] ? single_open_size (fs/seq_file.c:166)
+>>> [ 3569.870098] do_readv_writev (fs/read_write.c:840)
+>>> [ 3569.870098] ? get_parent_ip (kernel/sched/core.c:2550)
+>>> [ 3569.870098] ? mutex_lock_nested (./arch/x86/include/asm/preempt.h:98 kernel/locking/mutex.c:570 kernel/locking/mutex.c:587)
+>>> [ 3569.870098] ? __fdget_pos (fs/file.c:714)
+>>> [ 3569.870098] ? __fdget_pos (fs/file.c:714)
+>>> [ 3569.870098] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
+>>> [ 3569.870098] ? __fget_light (fs/file.c:685)
+>>> [ 3569.870098] vfs_readv (fs/read_write.c:866)
+>>> [ 3569.870098] SyS_readv (fs/read_write.c:892 fs/read_write.c:884)
+>>> [ 3569.870098] tracesys (arch/x86/kernel/entry_64.S:542)
+>>> [ 3569.870098] Code: 00 00 00 00 66 66 66 66 90 55 48 89 e5 48 83 ec 50 48 89 5d d8 48 89 f3 4c 89 65 e0 49 89 fc 4c 89 6d e8 4c 89 75 f0 4c 89 7d f8 <48> 8b 06 48 89 75 b0 4c 8b 76 08 8b 96 ec 00 00 00 48 89 45 b8
+>>> All code
+>>> ========
+>>>    0:	00 00                	add    %al,(%rax)
+>>>    2:	00 00                	add    %al,(%rax)
+>>>    4:	66 66 66 66 90       	data32 data32 data32 xchg %ax,%ax
+>>>    9:	55                   	push   %rbp
+>>>    a:	48 89 e5             	mov    %rsp,%rbp
+>>>    d:	48 83 ec 50          	sub    $0x50,%rsp
+>>>   11:	48 89 5d d8          	mov    %rbx,-0x28(%rbp)
+>>>   15:	48 89 f3             	mov    %rsi,%rbx
+>>>   18:	4c 89 65 e0          	mov    %r12,-0x20(%rbp)
+>>>   1c:	49 89 fc             	mov    %rdi,%r12
+>>>   1f:	4c 89 6d e8          	mov    %r13,-0x18(%rbp)
+>>>   23:	4c 89 75 f0          	mov    %r14,-0x10(%rbp)
+>>>   27:	4c 89 7d f8          	mov    %r15,-0x8(%rbp)
+>>>   2b:*	48 8b 06             	mov    (%rsi),%rax		<-- trapping instruction
+>>>   2e:	48 89 75 b0          	mov    %rsi,-0x50(%rbp)
+>>>   32:	4c 8b 76 08          	mov    0x8(%rsi),%r14
+>>>   36:	8b 96 ec 00 00 00    	mov    0xec(%rsi),%edx
+>>>   3c:	48 89 45 b8          	mov    %rax,-0x48(%rbp)
+> 
+> Does this now reproduce on Linus's tree?  If so, does reverting commit
+> 058504edd026 ("fs/seq_file: fallback to vmalloc allocation") prevent this 
+> issue?
+> 
+> This is a use-after-free since the poison value is 0x6b and I'm presuming 
+> that your /proc/self/mountinfo may be larger than PAGE_SIZE in your 
+> testing environment.
+> 
 
-Signed-off-by: Alex Bennée <alex.bennee@linaro.org>
----
- arch/arm/include/asm/kvm_host.h |  3 --
- arch/arm/kvm/guest.c            | 10 ------
- arch/arm64/kvm/guest.c          | 68 ++++++++++++++++++++++++++++++++++++++++-
- include/kvm/arm_arch_timer.h    | 14 +++++++++
- 4 files changed, 81 insertions(+), 14 deletions(-)
+Good call, reverting that patch made both issues go away.
 
-diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
-index 09af149..bce6d32 100644
---- a/arch/arm/include/asm/kvm_host.h
-+++ b/arch/arm/include/asm/kvm_host.h
-@@ -228,7 +228,4 @@ static inline int kvm_arch_dev_ioctl_check_extension(long ext)
- int kvm_perf_init(void);
- int kvm_perf_teardown(void);
- 
--u64 kvm_arm_timer_get_reg(struct kvm_vcpu *, u64 regid);
--int kvm_arm_timer_set_reg(struct kvm_vcpu *, u64 regid, u64 value);
--
- #endif /* __ARM_KVM_HOST_H__ */
-diff --git a/arch/arm/kvm/guest.c b/arch/arm/kvm/guest.c
-index b23a59c..986e625 100644
---- a/arch/arm/kvm/guest.c
-+++ b/arch/arm/kvm/guest.c
-@@ -124,16 +124,6 @@ static bool is_timer_reg(u64 index)
- 	return false;
- }
- 
--int kvm_arm_timer_set_reg(struct kvm_vcpu *vcpu, u64 regid, u64 value)
--{
--	return 0;
--}
--
--u64 kvm_arm_timer_get_reg(struct kvm_vcpu *vcpu, u64 regid)
--{
--	return 0;
--}
--
- #else
- 
- #define NUM_TIMER_REGS 3
-diff --git a/arch/arm64/kvm/guest.c b/arch/arm64/kvm/guest.c
-index 0874557..205f0d8 100644
---- a/arch/arm64/kvm/guest.c
-+++ b/arch/arm64/kvm/guest.c
-@@ -136,13 +136,67 @@ static unsigned long num_core_regs(void)
- }
- 
- /**
-+ * ARM64 versions of the TIMER registers, always available on arm64
-+ */
-+
-+#define NUM_TIMER_REGS 3
-+
-+static bool is_timer_reg(u64 index)
-+{
-+	switch (index) {
-+	case KVM_REG_ARM_TIMER_CTL:
-+	case KVM_REG_ARM_TIMER_CNT:
-+	case KVM_REG_ARM_TIMER_CVAL:
-+		return true;
-+	}
-+	return false;
-+}
-+
-+static int copy_timer_indices(struct kvm_vcpu *vcpu, u64 __user *uindices)
-+{
-+	if (put_user(KVM_REG_ARM_TIMER_CTL, uindices))
-+		return -EFAULT;
-+	uindices++;
-+	if (put_user(KVM_REG_ARM_TIMER_CNT, uindices))
-+		return -EFAULT;
-+	uindices++;
-+	if (put_user(KVM_REG_ARM_TIMER_CVAL, uindices))
-+		return -EFAULT;
-+
-+	return 0;
-+}
-+
-+static int set_timer_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg)
-+{
-+	void __user *uaddr = (void __user *)(long)reg->addr;
-+	u64 val;
-+	int ret;
-+
-+	ret = copy_from_user(&val, uaddr, KVM_REG_SIZE(reg->id));
-+	if (ret != 0)
-+		return ret;
-+
-+	return kvm_arm_timer_set_reg(vcpu, reg->id, val);
-+}
-+
-+static int get_timer_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg)
-+{
-+	void __user *uaddr = (void __user *)(long)reg->addr;
-+	u64 val;
-+
-+	val = kvm_arm_timer_get_reg(vcpu, reg->id);
-+	return copy_to_user(uaddr, &val, KVM_REG_SIZE(reg->id));
-+}
-+
-+/**
-  * kvm_arm_num_regs - how many registers do we present via KVM_GET_ONE_REG
-  *
-  * This is for all registers.
-  */
- unsigned long kvm_arm_num_regs(struct kvm_vcpu *vcpu)
- {
--	return num_core_regs() + kvm_arm_num_sys_reg_descs(vcpu);
-+	return num_core_regs() + kvm_arm_num_sys_reg_descs(vcpu)
-+                + NUM_TIMER_REGS;
- }
- 
- /**
-@@ -154,6 +208,7 @@ int kvm_arm_copy_reg_indices(struct kvm_vcpu *vcpu, u64 __user *uindices)
- {
- 	unsigned int i;
- 	const u64 core_reg = KVM_REG_ARM64 | KVM_REG_SIZE_U64 | KVM_REG_ARM_CORE;
-+	int ret;
- 
- 	for (i = 0; i < sizeof(struct kvm_regs) / sizeof(__u32); i++) {
- 		if (put_user(core_reg | i, uindices))
-@@ -161,6 +216,11 @@ int kvm_arm_copy_reg_indices(struct kvm_vcpu *vcpu, u64 __user *uindices)
- 		uindices++;
- 	}
- 
-+	ret = copy_timer_indices(vcpu, uindices);
-+	if (ret)
-+		return ret;
-+	uindices += NUM_TIMER_REGS;
-+
- 	return kvm_arm_copy_sys_reg_indices(vcpu, uindices);
- }
- 
-@@ -174,6 +234,9 @@ int kvm_arm_get_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg)
- 	if ((reg->id & KVM_REG_ARM_COPROC_MASK) == KVM_REG_ARM_CORE)
- 		return get_core_reg(vcpu, reg);
- 
-+	if (is_timer_reg(reg->id))
-+		return get_timer_reg(vcpu, reg);
-+
- 	return kvm_arm_sys_reg_get_reg(vcpu, reg);
- }
- 
-@@ -187,6 +250,9 @@ int kvm_arm_set_reg(struct kvm_vcpu *vcpu, const struct kvm_one_reg *reg)
- 	if ((reg->id & KVM_REG_ARM_COPROC_MASK) == KVM_REG_ARM_CORE)
- 		return set_core_reg(vcpu, reg);
- 
-+	if (is_timer_reg(reg->id))
-+		return set_timer_reg(vcpu, reg);
-+
- 	return kvm_arm_sys_reg_set_reg(vcpu, reg);
- }
- 
-diff --git a/include/kvm/arm_arch_timer.h b/include/kvm/arm_arch_timer.h
-index 6d9aedd..ad9db60 100644
---- a/include/kvm/arm_arch_timer.h
-+++ b/include/kvm/arm_arch_timer.h
-@@ -67,6 +67,10 @@ void kvm_timer_vcpu_init(struct kvm_vcpu *vcpu);
- void kvm_timer_flush_hwstate(struct kvm_vcpu *vcpu);
- void kvm_timer_sync_hwstate(struct kvm_vcpu *vcpu);
- void kvm_timer_vcpu_terminate(struct kvm_vcpu *vcpu);
-+
-+u64 kvm_arm_timer_get_reg(struct kvm_vcpu *, u64 regid);
-+int kvm_arm_timer_set_reg(struct kvm_vcpu *, u64 regid, u64 value);
-+
- #else
- static inline int kvm_timer_hyp_init(void)
- {
-@@ -84,6 +88,16 @@ static inline void kvm_timer_vcpu_init(struct kvm_vcpu *vcpu) {}
- static inline void kvm_timer_flush_hwstate(struct kvm_vcpu *vcpu) {}
- static inline void kvm_timer_sync_hwstate(struct kvm_vcpu *vcpu) {}
- static inline void kvm_timer_vcpu_terminate(struct kvm_vcpu *vcpu) {}
-+
-+static inline int kvm_arm_timer_set_reg(struct kvm_vcpu *vcpu, u64 regid, u64 value)
-+{
-+	return 0;
-+}
-+
-+static inline u64 kvm_arm_timer_get_reg(struct kvm_vcpu *vcpu, u64 regid)
-+{
-+	return 0;
-+}
- #endif
- 
- #endif
--- 
-2.0.1
 
+Thanks,
+Sasha
