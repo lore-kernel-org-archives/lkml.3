@@ -1,191 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758947AbaGDPRt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 11:17:49 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:51598 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754973AbaGDPRq convert rfc822-to-8bit (ORCPT
+	id S1754212AbaGDP3Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 11:29:25 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:58323 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600AbaGDP3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 11:17:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMEtUuzkVANM341xPTKH1bNVNuK6TQcyqsdZdkGWausLT5Qj6A@mail.gmail.com>
-References: <1403913966-4927-1-git-send-email-ast@plumgrid.com>
- <1403913966-4927-4-git-send-email-ast@plumgrid.com> <CALCETrV3WLBmHewCZgfhCkjODWfq_byRg6sF7HpqZ6n9BVMBVQ@mail.gmail.com>
- <CAMEtUuzWs+MbSOGGD-Rc01DHKASa4GxbHdtCrSCLit4cUM35mA@mail.gmail.com>
- <CALCETrWy6=dzTycy-ckiMR92+nQeqAWp_Hw=hi__VSzVWZ43Ag@mail.gmail.com>
- <CAMEtUuwRf--qyPu3rKB7-57KAu2NdsQdEpVRckqabmf61g+h-g@mail.gmail.com>
- <CALCETrUoOTtQ1R1A8Ak35fxHxaFTPHWP6oZWnXDVLKa_ESziWw@mail.gmail.com>
- <CAMEtUuzS=9Y_ZjigofvQ5d3=89RS=+d8-WGPk9VVSMc3qawWsw@mail.gmail.com>
- <CALCETrWq+=Q3G2Smjd2RYES42UagpmD0EKxFM+jNufi6_qitWg@mail.gmail.com>
- <CAMEtUuyKY=haqP11VgXHdfHBkqfB-KxuswygUd7hDPLkOFz9HQ@mail.gmail.com>
- <CALCETrW3=idHOKF56d94suiA0NoiUGwr7pENm13q6=1XMbBPdw@mail.gmail.com>
- <CAMEtUuyX-tybpMEW=f-00qgq9h3AcHovLNW0_bak3oT4Oj3FuA@mail.gmail.com>
- <CALCETrWpA5M74pKJLFJ0t-2hi2TXMi_BV6DbJMmdDOJyOoHOyg@mail.gmail.com>
- <CAMEtUuzHrzyUG1nie5cWzGZYTDTnqL7vPvAmPZdie_uSM_wqRA@mail.gmail.com>
- <CALCETrW5WitpzcFmkGDwR6U=qOwCkOfQMy=XOtQTuHs-942Drw@mail.gmail.com> <CAMEtUuzkVANM341xPTKH1bNVNuK6TQcyqsdZdkGWausLT5Qj6A@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 4 Jul 2014 08:17:25 -0700
-Message-ID: <CALCETrWQnQS=jjuhQzxM9YMhGk-fJ1oNetdPuZ0v4yujBLZ+fA@mail.gmail.com>
-Subject: Re: [PATCH RFC net-next 03/14] bpf: introduce syscall(BPF, ...) and
- BPF maps
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 4 Jul 2014 11:29:23 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
+        Will Deacon <will.deacon@arm.com>, Joerg Roedel <joro@8bytes.org>
+Cc: Cho KyongHo <pullip.cho@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Dave Martin <Dave.Martin@arm.com>, Marc Zyngier <marc.zyngier@arm.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Olav Haugan <ohaugan@codeaurora.org>,
+        Varun Sethi <varun.sethi@freescale.com>, devicetree@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4] devicetree: Add generic IOMMU device tree bindings
+Date: Fri,  4 Jul 2014 17:29:17 +0200
+Message-Id: <1404487757-18829-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 2, 2014 at 7:29 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Wed, Jul 2, 2014 at 6:43 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Tue, Jul 1, 2014 at 10:33 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->>> I want to avoid string names, since they will force new 'strtab', 'symtab'
->>> sections in the programs/maps and will uglify the user interface quite a bit.
->>
->> To be fair, you really need to imitate ELF here.  A very simple
->> relocation-like table should do the trick.
->
-> simple.. right :) I do see the amount of struggle you have with
-> binutils and vdso.
-> I really don't want to add relocation unless this is last resort.
-> Especially since it can be solved without it.
-> I don't think I explained it enough in my last email… trying again:
->
->>> Back in september one loadable unit was: one eBPF program + set of maps,
->>> but tracing requirements forced a change, since multiple programs need
->>> to access the same map and maps may need to be pre-populated before
->>> the programs start executing, so I've split maps and programs into mostly
->>> independent entities, but programs still need to think of maps as local:
->>> For example I want to do a skb leak check 'tracing filter':
->>> - attach this program to kretprobe of __alloc_skb():
->>>   u64 key = (u64) skb;
->>>   u64 value = bpf_get_time();
->>>   bpf_update_map_elem(1/*const_map_id*/, &key, &value);
->>> - attach this program to consume_skb and kfree_skb tracepoints:
->>>   u64 key = (u64) skb;
->>>   bpf_delete_map_elem(1/*const_map_id*/, &key);
->>> - and have user space do:
->>>   prior to loading:
->>>   bpf_create_map(1/*map_id*/, 8/*key_size*/, 8/*value*/, 1M /*max_entries*/)
->>>   and then periodically iterate the map to see whether any skb stayed
->>>   in the map for too long.
->>>
->>> Programs need to be written with hard coded map_ids otherwise usability
->>> suffers, so I did global 32-bit id in this RFC
->>>, but this indeed doesn't work
->>
->> Really?  That will mean that you have to edit the source of your
->> filter program if the small integer map number you chose conflicts
->> with another program.  That sounds unpleasant.
->
-> unpleasant. exactly. that's why I'm proposing per-process local map-id,
-> so that programs don't need to be edited.
->
->>> for unprivileged chrome browser unless programs are previously loaded
->>> by root and chrome only does attach to seccomp.
->>>
->>> So here is the non-root bpf syscall interface I'm thinking about:
->>>
->>> ufd = bpf_create_map(map_id, key_size, value_size, max_entries);
->>>
->>> it will create a global map in the system which will be accessible
->>> in this process via 'ufd'. Internally this 'ufd' will be assigned global map_id
->>> and process-local map_id that was passed as a 1st argument.
->>> To do update/lookup the process will use bpf_map_xxx_elem(ufd,…)
->>>
->>
->> Erk.  Unprivileged programs shouldn't be able to allocate global ids
->> of their choosing, especially if privileged programs can also do it.
->> Otherwise unprivileged programs can force a collision and possibly
->> steal information.
->
-> of course. that's not what said.
->
->>> Then to load eBPF program the process will do:
->>> ufd = bpf_prog_load(prog_type, ebpf_insn_array, license)
->>> and instructions will be referring to maps via local map_id that
->>> was hard coded as part of the program.
->>
->> I think relocations would be must prettier than per-process map id tables.
->
-> I think per process map_id are much cleaner.
->
-> non-root API:
->
-> ufd = bpf_create_map(local_map_id,… )
-> bpf_map_update/delete/lookup_elem(ufd,…)
-> ufd = bpf_prog_load(insns)
-> close(ufd)
->
-> root only API:
->
-> global_id = bpf_get_id(ufd) // returns either map or prog global id
-> bpf_map_delete(global_map_id)
-> bpf_prog_unload(global_prog_id)
->
-> Details:
->
-> ufd = bpf_create_map(local_map_id, ...);
->
-> local_map_id - process local map_id
-> (this id is used to access maps from eBPF program loaded by this process)
->
-> ufd - process local file descriptor
-> (used to update/lookup maps from this process)
->
-> global_map_id = bpf_get_id(ufd)
-> this is root only call to get global_ids and pass them to global events
-> like tracing.
->
-> global ids will only be seen by root. There is no way for root or non-root
-> to influence id ranges.
->
->>> Beyond the normal create_map, update/lookup/delete, load_prog
->>> operations (that are accessible to both root and non-root), the root user
->>> gains one more operations: bpf_get_global_id(ufd) that returns
->>> global map_id or prog_id. This id can be attached to global events
->>> like tracing. Non-root users lose ability to do delete_map and
->>> unload_prog (they do close(ufd) instead), so this ops are for root
->>> only and operate on global ids.
->>> This is the cleanest way I could think of to combine non-root
->>> security, per-process id and global id all in one API. Thoughts?
->>
->> I think I'm okay with this part, although an interface to get a map fd
->> given some reference to the program (in sysfs) that uses it would also
->> work and maybe be more straightforward.
->
-> If you meant debugfs, then yes. I'm planning to add a way for root
-> to see all loaded programs and maps (similar to /proc as lsmod does),
-> and then do bpf_map_delete/bpf_prog_unload (similar to rmmod)
->
-> setsockopt and seccomp will be non-root and programs will go
-> through additional dont_leak_pointers check in verifier.
-> tracing/dtrace will be for root only, since they would need to attach
-> to global events.
->
-> I think it will be cleaner once I finish fd conversion as a patch.
+From: Thierry Reding <treding@nvidia.com>
 
-OK
+This commit introduces a generic device tree binding for IOMMU devices.
+Only a very minimal subset is described here, but it is enough to cover
+the requirements of both the Exynos System MMU and Tegra SMMU as
+discussed here:
 
-FWIW, per-process local id maps sound almost equivalent to relocations
--- the latter could be as simple as an extra nlattr giving a list of
-pairs of (per-eBPF-program id, fd).
+    https://lkml.org/lkml/2014/4/27/346
 
-My current binutils mess is mainly just because I'm trying to do
-something weird with an old, old file format that needs to support
-lots of legacy tools.  You won't have that problem.
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+Changes in v4:
+- clarify that disabling an IOMMU DT node may not disable translation
+- be more explicit that examples are only examples
+- add multi-ID master example
 
---Andy
+Changes in v3:
+- use #iommu-cells instead of #address-cells/#size-cells
+- drop optional iommu-names property
+
+Changes in v2:
+- add notes about "dma-ranges" property (drop note from commit message)
+- document priorities of "iommus" property vs. "dma-ranges" property
+- drop #iommu-cells in favour of #address-cells and #size-cells
+- remove multiple-master device example
+
+ Documentation/devicetree/bindings/iommu/iommu.txt | 172 ++++++++++++++++++++++
+ 1 file changed, 172 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/iommu/iommu.txt
+
+diff --git a/Documentation/devicetree/bindings/iommu/iommu.txt b/Documentation/devicetree/bindings/iommu/iommu.txt
+new file mode 100644
+index 000000000000..464a81eaaf61
+--- /dev/null
++++ b/Documentation/devicetree/bindings/iommu/iommu.txt
+@@ -0,0 +1,172 @@
++This document describes the generic device tree binding for IOMMUs and their
++master(s).
++
++
++IOMMU device node:
++==================
++
++An IOMMU can provide the following services:
++
++* Remap address space to allow devices to access physical memory ranges that
++  they otherwise wouldn't be capable of accessing.
++
++  Example: 32-bit DMA to 64-bit physical addresses
++
++* Implement scatter-gather at page level granularity so that the device does
++  not have to.
++
++* Provide system protection against "rogue" DMA by forcing all accesses to go
++  through the IOMMU and faulting when encountering accesses to unmapped
++  address regions.
++
++* Provide address space isolation between multiple contexts.
++
++  Example: Virtualization
++
++Device nodes compatible with this binding represent hardware with some of the
++above capabilities.
++
++IOMMUs can be single-master or multiple-master. Single-master IOMMU devices
++typically have a fixed association to the master device, whereas multiple-
++master IOMMU devices can translate accesses from more than one master.
++
++The device tree node of the IOMMU device's parent bus must contain a valid
++"dma-ranges" property that describes how the physical address space of the
++IOMMU maps to memory. An empty "dma-ranges" property means that there is a
++1:1 mapping from IOMMU to memory.
++
++Required properties:
++--------------------
++- #iommu-cells: The number of cells in an IOMMU specifier needed to encode an
++  address.
++
++The meaning of the IOMMU specifier is defined by the device tree binding of
++the specific IOMMU. Below are a few examples of typical use-cases:
++
++- #iommu-cells = <0>: Single master IOMMU devices are not configurable and
++  therefore no additional information needs to be encoded in the specifier.
++  This may also apply to multiple master IOMMU devices that do not allow the
++  association of masters to be configured. Note that an IOMMU can by design
++  be multi-master yet only expose a single master in a given configuration.
++  In such cases the number of cells will usually be 1 as in the next case.
++- #iommu-cells = <1>: Multiple master IOMMU devices may need to be configured
++  in order to enable translation for a given master. In such cases the single
++  address cell corresponds to the master device's ID. In some cases more than
++  one cell can be required to represent a single master ID.
++- #iommu-cells = <4>: Some IOMMU devices allow the DMA window for masters to
++  be configured. The first cell of the address in this may contain the master
++  device's ID for example, while the second cell could contain the start of
++  the DMA window for the given device. The length of the DMA window is given
++  by the third and fourth cells.
++
++Note that these are merely examples and real-world use-cases may use different
++definitions to represent their individual needs. Always refer to the specific
++IOMMU binding for the exact meaning of the cells that make up the specifier.
++
++
++IOMMU master node:
++==================
++
++Devices that access memory through an IOMMU are called masters. A device can
++have multiple master interfaces (to one or more IOMMU devices).
++
++Required properties:
++--------------------
++- iommus: A list of phandle and IOMMU specifier pairs that describe the IOMMU
++  master interfaces of the device. One entry in the list describes one master
++  interface of the device.
++
++When an "iommus" property is specified in a device tree node, the IOMMU will
++be used for address translation. If a "dma-ranges" property exists in the
++device's parent node it will be ignored. An exception to this rule is if the
++referenced IOMMU is disabled, in which case the "dma-ranges" property of the
++parent shall take effect. Note that merely disabling a device tree node does
++not guarantee that the IOMMU is really disabled since the hardware may not
++have a means to turn off translation.
++
++
++Notes:
++======
++
++One possible extension to the above is to use an "iommus" property along with
++a "dma-ranges" property in a bus device node (such as PCI host bridges). This
++can be useful to describe how children on the bus relate to the IOMMU if they
++are not explicitly listed in the device tree (e.g. PCI devices). However, the
++requirements of that use-case haven't been fully determined yet. Implementing
++this is therefore not recommended without further discussion and extension of
++this binding.
++
++
++Examples:
++=========
++
++Single-master IOMMU:
++--------------------
++
++	iommu {
++		#iommu-cells = <0>;
++	};
++
++	master {
++		iommus = <&/iommu>;
++	};
++
++Multiple-master IOMMU with fixed associations:
++----------------------------------------------
++
++	/* multiple-master IOMMU */
++	iommu {
++		/*
++		 * Masters are statically associated with this IOMMU and
++		 * address translation is always enabled.
++		 */
++		#iommu-cells = <0>;
++	};
++
++	/* static association with IOMMU */
++	master@1 {
++		reg = <1>;
++		iommus = <&/iommu>;
++	};
++
++	/* static association with IOMMU */
++	master@2 {
++		reg = <2>;
++		iommus = <&/iommu>;
++	};
++
++Multiple-master IOMMU:
++----------------------
++
++	iommu {
++		/* the specifier represents the ID of the master */
++		#iommu-cells = <1>;
++	};
++
++	master@1 {
++		/* device has master ID 42 in the IOMMU */
++		iommus = <&/iommu 42>;
++	};
++
++	master@2 {
++		/* device has master IDs 23 and 24 in the IOMMU */
++		iommus = <&/iommu 23>, <&/iommu 24>;
++	};
++
++Multiple-master IOMMU with configurable DMA window:
++---------------------------------------------------
++
++	/ {
++		#address-cells = <1>;
++		#size-cells = <1>;
++
++		iommu {
++			/* master ID, address and length of DMA window */
++			#iommu-cells = <4>;
++		};
++
++		master {
++			/* master ID 42, 4 GiB DMA window starting at 0 */
++			iommus = <&/iommu  42  0  0x1 0x0>;
++		};
++	};
+-- 
+2.0.1
+
