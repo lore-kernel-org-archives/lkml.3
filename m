@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758722AbaGDPLN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 11:11:13 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:41752 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804AbaGDPLL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 11:11:11 -0400
-Date: Fri, 4 Jul 2014 16:11:28 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] checkpatch: Emit a warning on file add/move/delete
-Message-ID: <20140704151128.GC20758@bark>
-References: <1404434816.6384.5.camel@joe-AO725>
+	id S1758780AbaGDPMn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 11:12:43 -0400
+Received: from mout.gmx.net ([212.227.15.15]:49246 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751989AbaGDPMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 11:12:42 -0400
+Date: Fri, 4 Jul 2014 17:12:35 +0200
+From: Helge Deller <deller@gmx.de>
+To: Eric Paris <eparis@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Heinrich Schuchardt <xypron.glpk@gmx.de>
+Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: [PATCH] fix fanotify_mark() breakage on big endian 32bit kernel
+Message-ID: <20140704151235.GA22454@ls3530.dhcp.wdf.sap.corp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404434816.6384.5.camel@joe-AO725>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Provags-ID: V03:K0:m20eBqjmuoCLNrL/9XQ8e383jG6AjnQ2DltjC3+zCKqwIfF3CQ7
+ CrL1Hug5bOkibvm3/oEGFMCXf6qdGIBrg3mPDyhFUABCaq/NVMFX/GJnF1sFwf44ISoSb6C
+ rZlXR/LdsjBH+Qy42TzvdmhLtKYhX4NjQyCltRW1XxogAnMCF6LkOFrqCm5GW8bfkO3RXTY
+ aH91zdQgkc1H8ewOpj5wQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 05:46:56PM -0700, Joe Perches wrote:
-> Whenever files are added, moved, or deleted, the
-> MAINTAINERS file patterns can be out of sync or
-> outdated.
-> 
-> To try to keep MAINTAINERS more up-to-date, add a
-> one-time warning whenever a patch does any of those.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  scripts/checkpatch.pl | 13 ++++++++++++-
->  1 file changed, 12 insertions(+), 1 deletion(-)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 496f9ab..0cf8b98 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -1679,7 +1679,7 @@ sub process {
->  
->  	my $in_header_lines = $file ? 0 : 1;
->  	my $in_commit_log = 0;		#Scanning lines before patch
-> -
-> +	my $reported_maintainer_file = 0;
->  	my $non_utf8_charset = 0;
->  
->  	my $last_blank_line = 0;
-> @@ -2012,6 +2012,17 @@ sub process {
->  			      "Please use 12 to 16 chars for the git commit ID like: '${init_char}ommit $id (\"$desc\")'\n" . $herecurr);
->  		}
->  
-> +# Check for added, moved or deleted files
-> +		if (!$reported_maintainer_file && !$in_commit_log &&
-> +		    ($line =~ /^(?:new|deleted) file mode\s*\d+\s*$/ ||
-> +		     $line =~ /^rename (?:from|to) [\w\/\.\-]+\s*$/ ||
-> +		     ($line =~ /\{\s*([\w\/\.\-]*)\s*\=\>\s*([\w\/\.\-]*)\s*\}/ &&
-> +		      (defined($1) || defined($2))))) {
-> +			$reported_maintainer_file = 1;
-> +			WARN("FILE_PATH_CHANGES",
-> +			     "added, moved or deleted file(s), does MAINTAINERS need updating?\n" . $herecurr);
-> +		}
-> +
->  # Check for wrappage within a valid hunk of the file
->  		if ($realcnt != 0 && $line !~ m{^(?:\+|-| |\\ No newline|$)}) {
->  			ERROR("CORRUPTED_PATCH",
+This patch affects big endian architectures only.
 
-That seems like a sensible plan.  Sometime we might try and work out if
-any entries are affected or needed.
+On those with 32bit userspace and 64bit kernel (CONFIG_COMPAT=y) the
+64bit mask parameter is correctly constructed out of two 32bit values in
+the compat_fanotify_mark() function and then passed as 64bit parameter
+to the fanotify_mark() syscall.
 
-I think you are checking against the git ways of mentioning this only,
-don't know if there is any milage in checking the dates which also
-convey add/remove info via datea at the epoch.
+But for the CONFIG_COMPAT=n case (32bit kernel & userspace),
+compat_fanotify_mark() isn't used and the fanotify_mark syscall implementation
+is used directly. In that case the upper and lower 32 bits of the 64bit mask
+parameter is still swapped on big endian machines and thus leads to
+fanotify_mark failing with -EINVAL.
 
-Acked-by: Andy Whitcroft <apw@canonical.com>
+Here is a strace of the same 32bit executable (fanotify01 testcase from LTP):
 
--apw
+On a 64bit kernel it suceeds:
+syscall_322(0, 0, 0x3, 0x3, 0x266c8, 0x1) = 0x3
+syscall_323(0x3, 0x1, 0, 0x3b, 0xffffff9c, 0x266c8) = 0
+
+On a 32bit kernel it fails:
+syscall_322(0, 0, 0x3, 0x3, 0x266c8, 0x1) = 0x3
+syscall_323(0x3, 0x1, 0, 0x3b, 0xffffff9c, 0x266c8) = -1 (errno 22)
+
+Below is the easiest fix for this problem by simply swapping the upper and
+lower 32bit of the 64 bit mask parameter when building a pure 32bit kernel.
+
+But on the other side, using __u64 in a syscall API is IMHO wrong.  This may
+easily break 32bit kernel builds, esp. on big endian machines.
+
+The clean solution would probably be to use SYSCALL_DEFINE5() when
+building a 64bit-kernel, and SYSCALL_DEFINE6() for fanotify_mark() when
+building a pure 32bit kernel, something like this:
+
+#ifdef CONFIG_64BIT
+SYSCALL_DEFINE5(fanotify_mark, int, fanotify_fd, unsigned int, flags,
+                              __u64, mask, int, dfd,
+                              const char  __user *, pathname)
+#else
+SYSCALL_DEFINE6(fanotify_mark, int, fanotify_fd, unsigned int, flags,
+                                __u32, mask0, __u32, mask1, int, dfd,
+                                const char  __user *, pathname)
+#endif
+
+
+Signed-off-by: Helge Deller <deller@gmx.de>
+To: Eric Paris <eparis@redhat.com>
+Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+
+
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index 3fdc8a3..374261c 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -787,6 +787,10 @@ SYSCALL_DEFINE5(fanotify_mark, int, fanotify_fd, unsigned int, flags,
+ 	struct path path;
+ 	int ret;
+ 
++#if defined(__BIG_ENDIAN) && !defined(CONFIG_64BIT)
++	mask = (mask << 32) | (mask >> 32);
++#endif
++
+ 	pr_debug("%s: fanotify_fd=%d flags=%x dfd=%d pathname=%p mask=%llx\n",
+ 		 __func__, fanotify_fd, flags, dfd, pathname, mask);
+ 
