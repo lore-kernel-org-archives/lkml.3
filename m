@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760746AbaGDWzY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 18:55:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57179 "EHLO
+	id S1760633AbaGDWzW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 18:55:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57188 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030472AbaGDWRW (ORCPT
+	with ESMTP id S1030502AbaGDWR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 18:17:22 -0400
+	Fri, 4 Jul 2014 18:17:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Beulich <JBeulich@suse.com>,
-        "Don A. Bailey" <donb@securitymouse.com>
-Subject: [PATCH 3.15 59/66] lz4: add overrun checks to lz4_uncompress_unknownoutputsize()
-Date: Fri,  4 Jul 2014 15:14:58 -0700
-Message-Id: <20140704221425.516038832@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.15 61/66] tracing: Try again for saved cmdline if failed due to locking
+Date: Fri,  4 Jul 2014 15:15:00 -0700
+Message-Id: <20140704221425.609562525@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
 References: <20140704221422.813435485@linuxfoundation.org>
@@ -29,55 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 4a3a99045177369700c60d074c0e525e8093b0fc upstream.
+commit 379cfdac37923653c9d4242d10052378b7563005 upstream.
 
-Jan points out that I forgot to make the needed fixes to the
-lz4_uncompress_unknownoutputsize() function to mirror the changes done
-in lz4_decompress() with regards to potential pointer overflows.
+In order to prevent the saved cmdline cache from being filled when
+tracing is not active, the comms are only recorded after a trace event
+is recorded.
 
-The only in-kernel user of this function is the zram code, which only
-takes data from a valid compressed buffer that it made itself, so it's
-not a big issue.  But due to external kernel modules using this
-function, it's better to be safe here.
+The problem is, a comm can fail to be recorded if the trace_cmdline_lock
+is held. That lock is taken via a trylock to allow it to happen from
+any context (including NMI). If the lock fails to be taken, the comm
+is skipped. No big deal, as we will try again later.
 
-Reported-by: Jan Beulich <JBeulich@suse.com>
-Cc: "Don A. Bailey" <donb@securitymouse.com>
+But! Because of the code that was added to only record after an event,
+we may not try again later as the recording is made as a oneshot per
+event per CPU.
+
+Only disable the recording of the comm if the comm is actually recorded.
+
+Fixes: 7ffbd48d5cab "tracing: Cache comms only after an event occurred"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/lz4/lz4_decompress.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ kernel/trace/trace.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/lib/lz4/lz4_decompress.c
-+++ b/lib/lz4/lz4_decompress.c
-@@ -192,6 +192,8 @@ static int lz4_uncompress_unknownoutputs
- 			int s = 255;
- 			while ((ip < iend) && (s == 255)) {
- 				s = *ip++;
-+				if (unlikely(length > (size_t)(length + s)))
-+					goto _output_error;
- 				length += s;
- 			}
- 		}
-@@ -232,6 +234,8 @@ static int lz4_uncompress_unknownoutputs
- 		if (length == ML_MASK) {
- 			while (ip < iend) {
- 				int s = *ip++;
-+				if (unlikely(length > (size_t)(length + s)))
-+					goto _output_error;
- 				length += s;
- 				if (s == 255)
- 					continue;
-@@ -284,7 +288,7 @@ static int lz4_uncompress_unknownoutputs
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1461,12 +1461,12 @@ static void tracing_stop_tr(struct trace
  
- 	/* write overflow error detected */
- _output_error:
--	return (int) (-(((char *) ip) - source));
-+	return -1;
+ void trace_stop_cmdline_recording(void);
+ 
+-static void trace_save_cmdline(struct task_struct *tsk)
++static int trace_save_cmdline(struct task_struct *tsk)
+ {
+ 	unsigned pid, idx;
+ 
+ 	if (!tsk->pid || unlikely(tsk->pid > PID_MAX_DEFAULT))
+-		return;
++		return 0;
+ 
+ 	/*
+ 	 * It's not the end of the world if we don't get
+@@ -1475,7 +1475,7 @@ static void trace_save_cmdline(struct ta
+ 	 * so if we miss here, then better luck next time.
+ 	 */
+ 	if (!arch_spin_trylock(&trace_cmdline_lock))
+-		return;
++		return 0;
+ 
+ 	idx = map_pid_to_cmdline[tsk->pid];
+ 	if (idx == NO_CMDLINE_MAP) {
+@@ -1500,6 +1500,8 @@ static void trace_save_cmdline(struct ta
+ 	memcpy(&saved_cmdlines[idx], tsk->comm, TASK_COMM_LEN);
+ 
+ 	arch_spin_unlock(&trace_cmdline_lock);
++
++	return 1;
  }
  
- int lz4_decompress(const unsigned char *src, size_t *src_len,
+ void trace_find_cmdline(int pid, char comm[])
+@@ -1541,9 +1543,8 @@ void tracing_record_cmdline(struct task_
+ 	if (!__this_cpu_read(trace_cmdline_save))
+ 		return;
+ 
+-	__this_cpu_write(trace_cmdline_save, false);
+-
+-	trace_save_cmdline(tsk);
++	if (trace_save_cmdline(tsk))
++		__this_cpu_write(trace_cmdline_save, false);
+ }
+ 
+ void
 
 
