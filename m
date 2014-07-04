@@ -1,112 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756175AbaGDImQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 04:42:16 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:51252 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232AbaGDImN (ORCPT
+	id S1756335AbaGDImf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 04:42:35 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:11733 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232AbaGDImc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 04:42:13 -0400
+	Fri, 4 Jul 2014 04:42:32 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 04 Jul 2014 01:35:50 -0700
+Message-ID: <53B66915.4040309@nvidia.com>
+Date: Fri, 4 Jul 2014 16:43:01 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <20140704164251.7dc67e07@canb.auug.org.au>
-References: <20140704164251.7dc67e07@canb.auug.org.au>
-Date: Fri, 4 Jul 2014 14:12:11 +0530
-Message-ID: <CAK5sBcGq54sOSzJKXrEbhAUTZZh=+9NuVh294Qxn0dQvbh-G8w@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jul 4
-From: Sachin Kamat <spk.linux@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Mikko Perttunen <mperttunen@nvidia.com>,
+        "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        "edubezval@gmail.com" <edubezval@gmail.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Matthew Longnecker <MLongnecker@nvidia.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 6/6] thermal: Add Tegra SOCTHERM thermal management driver
+References: <1403856699-2140-1-git-send-email-mperttunen@nvidia.com> <1403856699-2140-7-git-send-email-mperttunen@nvidia.com>
+In-Reply-To: <1403856699-2140-7-git-send-email-mperttunen@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On 06/27/2014 04:11 PM, Mikko Perttunen wrote:
+> This adds support for the Tegra SOCTHERM thermal sensing and management
+> system found in the Tegra124 system-on-chip. This initial driver supports
+> the four thermal zones with hardware-tracked trip points.
 
-Was bisecting a kernel crash on Arndale octa board (Exynos5420). It
-points to a merge
-commit:
-40556a4c485d12d324f1ea196cc30f590e564237 is the first bad commit
-("Merge remote-tracking branch 'nfsd/nfsd-next'").
+> diff --git a/drivers/thermal/tegra_soctherm.c b/drivers/thermal/tegra_soctherm.c
 
-How do I proceed with this?
+> +static int calculate_shared_calibration(struct tsensor_shared_calibration *r)
+> +{
+> +       u32 val;
+> +       u32 shifted_cp, shifted_ft;
+> +       int err;
+> +
+> +       err = tegra_fuse_readl(FUSE_TSENSOR8_CALIB, &val);
+> +       if (err)
+> +               return err;
+> +       r->base_cp = val & 0x3ff;
+> +       r->base_ft = (val & (0x7ff << 10)) >> 10;
+> +
+> +       err = tegra_fuse_readl(FUSE_SPARE_REALIGNMENT_REG_0, &val);
+> +       if (err)
+> +               return err;
+> +       /* Sign extend from 6 bits to 32 bits */
+> +       shifted_cp = (s32)((val & 0x1f) | ((val & 0x20) ? 0xffffffe0 : 0x0));
+> +       val = ((val & (0x1f << 21)) >> 21);
+> +       /* Sign extend from 5 bits to 32 bits */
+> +       shifted_ft = (s32)((val & 0xf) | ((val & 0x10) ? 0xfffffff0 : 0x0));
+> +
+> +       r->actual_temp_cp = 2 * 25 + shifted_cp;
+Do we need to define the "25" as constant, just like below line.
 
-Bisect log as follows:
+> +       r->actual_temp_ft = 2 * NOMINAL_CALIB_FT_T124 + shifted_ft;
+> +
+> +       return 0;
+> +}
 
-git bisect start
-# good: [4c834452aad01531db949414f94f817a86348d59] Linux 3.16-rc3
-git bisect good 4c834452aad01531db949414f94f817a86348d59
-# bad: [bb62c798798659624c53e3727bbc18cf47eb7ae8] Add linux-next
-specific files for 20140704
-git bisect bad bb62c798798659624c53e3727bbc18cf47eb7ae8
-# bad: [de5ea10b7647b299d27a40511772f024629b466d] Merge
-remote-tracking branch 'md/for-next'
-git bisect bad de5ea10b7647b299d27a40511772f024629b466d
-# bad: [3ca365b4451d1bab28adc72a985d9bbdf535df0e] Merge
-remote-tracking branch 'dmaengine/next'
-git bisect bad 3ca365b4451d1bab28adc72a985d9bbdf535df0e
-# good: [d72d4e47cb1e8ac1259a5f5935320ae1e7022066] Merge
-remote-tracking branch 'renesas/next'
-git bisect good d72d4e47cb1e8ac1259a5f5935320ae1e7022066
-# good: [fdb82f0a3d19eaa0661d799b980d0a9b689fcf75] Merge
-remote-tracking branch 'nfs/linux-next'
-git bisect good fdb82f0a3d19eaa0661d799b980d0a9b689fcf75
-# bad: [fc48eed8cd350e4be1227ff3c990d48906afd00a] Merge
-remote-tracking branch 'hwmon-staging/hwmon-next'
-git bisect bad fc48eed8cd350e4be1227ff3c990d48906afd00a
-# bad: [7d3f94ee2f2808b13dd3a96f6e6ca754a954d4b9] Merge
-remote-tracking branch 'ubifs/linux-next'
-git bisect bad 7d3f94ee2f2808b13dd3a96f6e6ca754a954d4b9
-# good: [8cdb8b21b1d00856b885734c514821627c8078bc] NFSD: Avoid warning
-message when compile at i686 arch
-git bisect good 8cdb8b21b1d00856b885734c514821627c8078bc
-# good: [da575690c01993471e38faf3eee1991ee69d7b20] nfsd: clean up
-nfsd4_close_open_stateid
-git bisect good da575690c01993471e38faf3eee1991ee69d7b20
-# good: [95217c1e686bdd7c27b8483bbdda1c09d6fa9a92] nfsd: Don't get a
-session reference without a client reference
-git bisect good 95217c1e686bdd7c27b8483bbdda1c09d6fa9a92
-# good: [bdd79ee31bf842051365c798effaffe0e647b501] nfsd: Allow struct
-nfsd4_compound_state to cache the nfs4_client
-git bisect good bdd79ee31bf842051365c798effaffe0e647b501
-# good: [e9110361a9a4e258b072b14bd44eb78cf11453cb] UBI: fix the
-volumes tree sorting criteria
-git bisect good e9110361a9a4e258b072b14bd44eb78cf11453cb
-# bad: [40556a4c485d12d324f1ea196cc30f590e564237] Merge
-remote-tracking branch 'nfsd/nfsd-next'
-git bisect bad 40556a4c485d12d324f1ea196cc30f590e564237
+> +
+> +static irqreturn_t soctherm_isr(int irq, void *dev_id)
+> +{
+> +       struct tegra_thermctl_zone *zone = dev_id;
+> +       u32 val;
+> +       u32 intr_mask = 0x03 << t124_thermctl_shifts[zone->sensor];
+> +
+> +       val = readl(zone->tegra->regs + THERMCTL_INTR_STATUS);
+> +
+> +       if ((val & intr_mask) == 0)
+> +               return IRQ_NONE;
+> +
+> +       writel(val & intr_mask, zone->tegra->regs + THERMCTL_INTR_STATUS);
+I think we need to disable the interrupt here, and enable it again after
+updating the high/low limited values. If not, there will trigger mass of
+interrupts.
 
-Regards,
-Sachin.
+> +
+> +static struct platform_driver tegra_soctherm_driver = {
+> +       .probe = tegra_soctherm_probe,
+> +       .remove = tegra_soctherm_remove,
+> +       .driver = {
+> +               .name = "tegra_soctherm",
+> +               .owner = THIS_MODULE,
+> +               .of_match_table = tegra_soctherm_of_match,
+> +       },
+> +};
+Will you consider to add suspend/resume support?
 
-On Fri, Jul 4, 2014 at 12:12 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> Changes since 20140703:
->
-> My fixes tree contains:
->         powerpc: Disable RELOCATABLE for COMPILE_TEST with PPC64
->
-> The net tree gained a build failure for which I reverted a commit.
->
-> The usb-gadget tree gained a conflict against the usb.current tree.
->
-> The staging tree still had its build failure for which I disabled a driver.
->
-> The akpm-current tree still had its build failure for which I applied a
-> patch.
->
-> Non-merge commits (relative to Linus' tree): 3478
->  3383 files changed, 134181 insertions(+), 185822 deletions(-)
->
-> ----------------------------------------------------------------------------
->
-> I have created today's linux-next tree at
-> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-> (patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
-> are tracking the linux-next tree using git, you should not use "git pull"
-> to do so as that will try to merge the new linux-next release with the
-> old one.  You should use "git fetch" and checkout or reset to the new
-> master.
->
+Thanks.
+Wei.
+
