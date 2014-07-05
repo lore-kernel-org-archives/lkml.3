@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932667AbaGET0n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 15:26:43 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55486 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756136AbaGET0m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 15:26:42 -0400
-Date: Sat, 5 Jul 2014 20:26:34 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: pawandeep oza <oza.contri.linux.kernel@gmail.com>
-Cc: akpm@linux-foundation.org, holt@sgi.com, mingo@kernel.org,
-        sboyd@codeaurora.org, k.khlebnikov@samsung.com,
-        u.kleine-koenig@pengutronix.de,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.or, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] machine_power_off: not only local_irq_disable but also
-	do disable preemption
-Message-ID: <20140705192634.GT21766@n2100.arm.linux.org.uk>
-References: <CAA-nRyoO_NmrD8aRa3OyVXz4b133Fxi0=biGXTzSPDuSuNJJxQ@mail.gmail.com> <20140705181015.GQ21766@n2100.arm.linux.org.uk> <CAA-nRyp5pPC2qZs7RhAXJdXaK_k4fKNZuq=yRTSTPLQsgPxqxQ@mail.gmail.com> <20140705190105.GR21766@n2100.arm.linux.org.uk> <CAA-nRyo2Ts3o_B1jMS8vvLJanf13u=u2WyoqnL8bCF5svOOCew@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAA-nRyo2Ts3o_B1jMS8vvLJanf13u=u2WyoqnL8bCF5svOOCew@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S965159AbaGET3s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 15:29:48 -0400
+Received: from seketeli.net ([94.23.218.202]:48728 "EHLO ms.seketeli.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756156AbaGET3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jul 2014 15:29:46 -0400
+From: Apelete Seketeli <apelete@seketeli.net>
+To: Ralf Baechle <ralf@linux-mips.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        John Crispin <blogic@openwrt.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-mips@linux-mips.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v2] Rename NOP transceiver in JZ4740 platform data
+Date: Sat,  5 Jul 2014 21:30:14 +0200
+Message-Id: <1404588615-14722-1-git-send-email-apelete@seketeli.net>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 06, 2014 at 12:34:14AM +0530, pawandeep oza wrote:
-> no this is not a generic code bug, because only in this scenerio, problem
-> might happen.
-> because other core is plugged out and now there is no chance that it can
-> release the spin_lock it would have held previously.
-> 
-> so this core must run with preemption and interrupt disabled.
-> 
-> this is only applicable  for shutdown, not for any other scenerio.
+Hello,
 
-No.  See my reply I just sent.  Preempting when local interrupts
-disabled is a bug.
+The name of the NOP transceiver driver was changed during v3.16
+release cycle from usb_phy_gen_xceiv to usb_phy_generic.
+
+The patch that comes as a follow up of this message renames
+accordingly the NOP transceiver driver in JZ4740 platform data to fix
+a subsequent kernel panic.
+
+Changes since v1: 
+  - specify commit 4525bee summary line in parens and give more
+    details about the bug that was fixed in the commit message.
+
+Please consider for merge in 3.16 if possible since it fixes an issue
+that makes the Ben Nanonote unable to boot.
+
+Changes were rebased on top of the linux-mips master branch, built and
+tested successfully.
+
+The following changes since commit bc0b9d9:
+
+  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux
+
+are available in the git repository at:
+
+  git://git.seketeli.net/~apelete/linux-mips.git rename-jz4740-xceiv
+
+Apelete Seketeli (1):
+  mips: jz4740: rename usb_nop_xceiv to usb_phy_generic
+
+ arch/mips/jz4740/platform.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+1.7.10.4
+
