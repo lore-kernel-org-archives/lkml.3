@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701AbaGEKmE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 06:42:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57833 "EHLO
+	id S1760654AbaGEKmL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 06:42:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57840 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754909AbaGEKmB (ORCPT
+	with ESMTP id S1754890AbaGEKmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 06:42:01 -0400
-Date: Sat, 5 Jul 2014 03:41:40 -0700
-From: tip-bot for Stanislav Fomichev <tipbot@zytor.com>
-Message-ID: <tip-e281a9606d7073c517f2571e83faaff029ddc1cf@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, jolsa@redhat.com, stfomichev@yandex-team.ru,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, stfomichev@yandex-team.ru, dsahern@gmail.com,
-        tglx@linutronix.de
-In-Reply-To: <1403799268-1367-6-git-send-email-stfomichev@yandex-team.ru>
-References: <1403799268-1367-6-git-send-email-stfomichev@yandex-team.ru>
+	Sat, 5 Jul 2014 06:42:07 -0400
+Date: Sat, 5 Jul 2014 03:41:52 -0700
+From: tip-bot for Rickard Strandqvist <tipbot@zytor.com>
+Message-ID: <tip-21da83fb6c3ff67e969b8770bbb33138c9ede88e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, rickard_strandqvist@spectrumdigital.se,
+        hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org, tglx@linutronix.de,
+        namhyung@kernel.org
+Reply-To: mingo@kernel.org, hpa@zytor.com,
+        rickard_strandqvist@spectrumdigital.se, linux-kernel@vger.kernel.org,
+        jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
+In-Reply-To: <1403608150-13037-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1403608150-13037-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf trace:
-  Add possibility to switch off syscall events
-Git-Commit-ID: e281a9606d7073c517f2571e83faaff029ddc1cf
+Subject: [tip:perf/core] tools lib traceevent:
+  Fix a risk for doing free on uninitialized pointer
+Git-Commit-ID: 21da83fb6c3ff67e969b8770bbb33138c9ede88e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,211 +34,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e281a9606d7073c517f2571e83faaff029ddc1cf
-Gitweb:     http://git.kernel.org/tip/e281a9606d7073c517f2571e83faaff029ddc1cf
-Author:     Stanislav Fomichev <stfomichev@yandex-team.ru>
-AuthorDate: Thu, 26 Jun 2014 20:14:28 +0400
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 26 Jun 2014 17:48:07 -0300
+Commit-ID:  21da83fb6c3ff67e969b8770bbb33138c9ede88e
+Gitweb:     http://git.kernel.org/tip/21da83fb6c3ff67e969b8770bbb33138c9ede88e
+Author:     Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+AuthorDate: Tue, 24 Jun 2014 13:09:10 +0200
+Committer:  Jiri Olsa <jolsa@kernel.org>
+CommitDate: Fri, 27 Jun 2014 11:14:47 +0200
 
-perf trace: Add possibility to switch off syscall events
+tools lib traceevent: Fix a risk for doing free on uninitialized pointer
 
-Currently, we may either trace syscalls or syscalls+pagefaults.
+Fix a risk of doing free on an uninitialized pointer.
 
-We'd like to be able to trace *only* pagefaults and this commit
-implements this feature.
+This was found using a static code analysis program called cppcheck.
 
-Example:
-
-  [root@zoo /]# echo 1 > /proc/sys/vm/drop_caches ; trace --no-syscalls -F -p `pidof xchat`
-       0.000 ( 0.000 ms): xchat/4574 majfault [g_unichar_get_script+0x11] => /usr/lib64/libglib-2.0.so.0.3800.2@0xc403b (x.)
-       0.202 ( 0.000 ms): xchat/4574 majfault [_cairo_hash_table_lookup+0x53] => 0x2280ff0 (?.)
-      20.854 ( 0.000 ms): xchat/4574 majfault [gdk_cairo_set_source_pixbuf+0x110] => /usr/bin/xchat@0x6da1f (x.)
-    1022.000 ( 0.000 ms): xchat/4574 majfault [__memcpy_sse2_unaligned+0x29] => 0x7ff5a8ca0400 (?.)
-  ^C[root@zoo /]#
-
-Below we can see malloc calls, 'trace' reading symbol tables in libraries to
-resolve symbols, etc.
-
-  [root@zoo /]# echo 1 > /proc/sys/vm/drop_caches ; trace --no-syscalls -F all --cpu 1 sleep 10
-       0.000 ( 0.000 ms): chrome/26589 minfault [0x1b53129] => /tmp/perf-26589.map@0x33cbcbf7f000 (x.)
-      96.477 ( 0.000 ms): libvirtd/947 minfault [copy_user_enhanced_fast_string+0x5] => 0x7f7685bba000 (?k)
-     113.164 ( 0.000 ms): Xorg/1063 minfault [0x786da] => 0x7fce52882a3c (?.)
-    7162.801 ( 0.000 ms): chrome/3747 minfault [0x8e1a89] => 0xfcaefed0008 (?.)
-<SNIP>
-    7773.138 ( 0.000 ms): chrome/3886 minfault [0x8e1a89] => 0xfcb0ce28008 (?.)
-    7992.022 ( 0.000 ms): chrome/26574 minfault [0x1b5a708] => 0x3de7b5fc5000 (?.)
-    8108.949 ( 0.000 ms): qemu-system-x8/4537 majfault [_int_malloc+0xee] => 0x7faffc466d60 (?.)
-    8108.975 ( 0.000 ms): qemu-system-x8/4537 minfault [_int_malloc+0x102] => 0x7faffc466d60 (?.)
-<SNIP>
-    8148.174 ( 0.000 ms): qemu-system-x8/4537 minfault [_int_malloc+0x102] => 0x7faffc4eb500 (?.)
-    8270.855 ( 0.000 ms): chrome/26245 minfault [do_bo_emit_reloc+0xdb] => 0x45d092bc004 (?.)
-    8270.869 ( 0.000 ms): chrome/26245 minfault [do_bo_emit_reloc+0x108] => 0x45d09150000 (?.)
-no symbols found in /usr/lib64/libspice-server.so.1.9.0, maybe install a debug package?
-    8273.831 ( 0.000 ms): trace/20198 majfault [__memcmp_sse4_1+0xbc6] => /usr/lib64/libspice-server.so.1.9.0@0xdf000 (d.)
-<SNIP>
-    8275.121 ( 0.000 ms): trace/20198 minfault [dso__load+0x38] => 0x14fe756 (?.)
-no symbols found in /usr/lib64/libelf-0.158.so, maybe install a debug package?
-    8275.142 ( 0.000 ms): trace/20198 minfault [__memcmp_sse4_1+0xbc6] => /usr/lib64/libelf-0.158.so@0x0 (d.)
-<SNIP>
-  [root@zoo /]#
-
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1403799268-1367-6-git-send-email-stfomichev@yandex-team.ru
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Link: http://lkml.kernel.org/r/1403608150-13037-1-git-send-email-rickard_strandqvist@spectrumdigital.se
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/Documentation/perf-trace.txt |  7 ++++
- tools/perf/builtin-trace.c              | 58 ++++++++++++++++++---------------
- 2 files changed, 39 insertions(+), 26 deletions(-)
+ tools/lib/traceevent/event-parse.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
-index 72397d9..02aac83 100644
---- a/tools/perf/Documentation/perf-trace.txt
-+++ b/tools/perf/Documentation/perf-trace.txt
-@@ -112,6 +112,9 @@ the thread executes on the designated CPUs. Default is to monitor all CPUs.
- 	Trace pagefaults. Optionally, you can specify whether you want minor,
- 	major or all pagefaults. Default value is maj.
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 93825a1..cf3a44b 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -2395,7 +2395,7 @@ process_flags(struct event_format *event, struct print_arg *arg, char **tok)
+ {
+ 	struct print_arg *field;
+ 	enum event_type type;
+-	char *token;
++	char *token = NULL;
  
-+--syscalls::
-+	Trace system calls. This options is enabled by default.
-+
- PAGEFAULTS
- ----------
+ 	memset(arg, 0, sizeof(*arg));
+ 	arg->type = PRINT_FLAGS;
+@@ -2448,7 +2448,7 @@ process_symbols(struct event_format *event, struct print_arg *arg, char **tok)
+ {
+ 	struct print_arg *field;
+ 	enum event_type type;
+-	char *token;
++	char *token = NULL;
  
-@@ -137,6 +140,10 @@ for both IP and fault address in the form of dso@symbol+offset.
- EXAMPLES
- --------
+ 	memset(arg, 0, sizeof(*arg));
+ 	arg->type = PRINT_SYMBOL;
+@@ -2487,7 +2487,7 @@ process_hex(struct event_format *event, struct print_arg *arg, char **tok)
+ {
+ 	struct print_arg *field;
+ 	enum event_type type;
+-	char *token;
++	char *token = NULL;
  
-+Trace only major pagefaults:
-+
-+ $ perf trace --no-syscalls -F
-+
- Trace syscalls, major and minor pagefaults:
- 
-  $ perf trace -F all
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 0b58e24..dc7a694 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1215,6 +1215,7 @@ struct trace {
- 	bool			summary_only;
- 	bool			show_comm;
- 	bool			show_tool_stats;
-+	bool			trace_syscalls;
- 	int			trace_pgfaults;
- };
- 
-@@ -1927,17 +1928,19 @@ static int trace__record(struct trace *trace, int argc, const char **argv)
- 	for (i = 0; i < ARRAY_SIZE(record_args); i++)
- 		rec_argv[j++] = record_args[i];
- 
--	for (i = 0; i < sc_args_nr; i++)
--		rec_argv[j++] = sc_args[i];
--
--	/* event string may be different for older kernels - e.g., RHEL6 */
--	if (is_valid_tracepoint("raw_syscalls:sys_enter"))
--		rec_argv[j++] = "raw_syscalls:sys_enter,raw_syscalls:sys_exit";
--	else if (is_valid_tracepoint("syscalls:sys_enter"))
--		rec_argv[j++] = "syscalls:sys_enter,syscalls:sys_exit";
--	else {
--		pr_err("Neither raw_syscalls nor syscalls events exist.\n");
--		return -1;
-+	if (trace->trace_syscalls) {
-+		for (i = 0; i < sc_args_nr; i++)
-+			rec_argv[j++] = sc_args[i];
-+
-+		/* event string may be different for older kernels - e.g., RHEL6 */
-+		if (is_valid_tracepoint("raw_syscalls:sys_enter"))
-+			rec_argv[j++] = "raw_syscalls:sys_enter,raw_syscalls:sys_exit";
-+		else if (is_valid_tracepoint("syscalls:sys_enter"))
-+			rec_argv[j++] = "syscalls:sys_enter,syscalls:sys_exit";
-+		else {
-+			pr_err("Neither raw_syscalls nor syscalls events exist.\n");
-+			return -1;
-+		}
- 	}
- 
- 	if (trace->trace_pgfaults & TRACE_PFMAJ)
-@@ -2010,10 +2013,13 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
- 		goto out;
- 	}
- 
--	if (perf_evlist__add_syscall_newtp(evlist, trace__sys_enter, trace__sys_exit))
-+	if (trace->trace_syscalls &&
-+	    perf_evlist__add_syscall_newtp(evlist, trace__sys_enter,
-+					   trace__sys_exit))
- 		goto out_error_tp;
- 
--	perf_evlist__add_vfs_getname(evlist);
-+	if (trace->trace_syscalls)
-+		perf_evlist__add_vfs_getname(evlist);
- 
- 	if ((trace->trace_pgfaults & TRACE_PFMAJ) &&
- 	    perf_evlist__add_pgfault(evlist, PERF_COUNT_SW_PAGE_FAULTS_MAJ))
-@@ -2215,13 +2221,10 @@ static int trace__replay(struct trace *trace)
- 	if (evsel == NULL)
- 		evsel = perf_evlist__find_tracepoint_by_name(session->evlist,
- 							     "syscalls:sys_enter");
--	if (evsel == NULL) {
--		pr_err("Data file does not have raw_syscalls:sys_enter event\n");
--		goto out;
--	}
- 
--	if (perf_evsel__init_syscall_tp(evsel, trace__sys_enter) < 0 ||
--	    perf_evsel__init_sc_tp_ptr_field(evsel, args)) {
-+	if (evsel &&
-+	    (perf_evsel__init_syscall_tp(evsel, trace__sys_enter) < 0 ||
-+	    perf_evsel__init_sc_tp_ptr_field(evsel, args))) {
- 		pr_err("Error during initialize raw_syscalls:sys_enter event\n");
- 		goto out;
- 	}
-@@ -2231,13 +2234,9 @@ static int trace__replay(struct trace *trace)
- 	if (evsel == NULL)
- 		evsel = perf_evlist__find_tracepoint_by_name(session->evlist,
- 							     "syscalls:sys_exit");
--	if (evsel == NULL) {
--		pr_err("Data file does not have raw_syscalls:sys_exit event\n");
--		goto out;
--	}
--
--	if (perf_evsel__init_syscall_tp(evsel, trace__sys_exit) < 0 ||
--	    perf_evsel__init_sc_tp_uint_field(evsel, ret)) {
-+	if (evsel &&
-+	    (perf_evsel__init_syscall_tp(evsel, trace__sys_exit) < 0 ||
-+	    perf_evsel__init_sc_tp_uint_field(evsel, ret))) {
- 		pr_err("Error during initialize raw_syscalls:sys_exit event\n");
- 		goto out;
- 	}
-@@ -2440,6 +2439,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 		},
- 		.output = stdout,
- 		.show_comm = true,
-+		.trace_syscalls = true,
- 	};
- 	const char *output_name = NULL;
- 	const char *ev_qualifier_str = NULL;
-@@ -2479,6 +2479,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "Show all syscalls and summary with statistics"),
- 	OPT_CALLBACK_DEFAULT('F', "pf", &trace.trace_pgfaults, "all|maj|min",
- 		     "Trace pagefaults", parse_pagefaults, "maj"),
-+	OPT_BOOLEAN(0, "syscalls", &trace.trace_syscalls, "Trace syscalls"),
- 	OPT_END()
- 	};
- 	int err;
-@@ -2499,6 +2500,11 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (trace.summary_only)
- 		trace.summary = trace.summary_only;
- 
-+	if (!trace.trace_syscalls && !trace.trace_pgfaults) {
-+		pr_err("Please specify something to trace.\n");
-+		return -1;
-+	}
-+
- 	if (output_name != NULL) {
- 		err = trace__open_output(&trace, output_name);
- 		if (err < 0) {
+ 	memset(arg, 0, sizeof(*arg));
+ 	arg->type = PRINT_HEX;
