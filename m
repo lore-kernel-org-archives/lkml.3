@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965230AbaGES1C (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 14:27:02 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:38771 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965069AbaGES07 (ORCPT
+	id S1755973AbaGES34 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 14:29:56 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:60443 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755174AbaGES3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 14:26:59 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        John Crispin <blogic@openwrt.org>, Jonas Gorski <jogo@openwrt.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH v2] MIPS: Fix incorrect NULL check in local_flush_tlb_page()
-Date: Sat,  5 Jul 2014 20:26:52 +0200
-Message-Id: <1404584812-12377-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 5 Jul 2014 14:29:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Robert Jarzmik <robert.jarzmik@free.fr>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>, devicetree@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] arm: pxa: add non device-tree timer link to clocksource
+Date: Sat, 05 Jul 2014 20:29:40 +0200
+Message-ID: <5284586.j08GjTMeo6@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1404558781-9537-4-git-send-email-robert.jarzmik@free.fr>
+References: <1404558781-9537-1-git-send-email-robert.jarzmik@free.fr> <1404558781-9537-4-git-send-email-robert.jarzmik@free.fr>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:uA1nmEX78BnvJxBDQ65yZVaGOse9tQKc2RhhYf9KEwX
+ 2ohJyqTyLfXrnz6KpWUjg9Lyd7XoBeyVhIHSv6fYl05HACbgDV
+ gPtGhiBe309cbXa2XBVlOJ5XrUPf+w2cOJi3FIsYZdg0yNaZyf
+ EPt7Lhl7rCmpU7OHrI8Zkh8OBHlclWGR0t8+rs3kEewDbFXfeb
+ FB9vD+4x/Mlcrsl79+BbBCsPFj1/OIWcOjBAt1V6RwXHmmA/1G
+ BaqFkiFZO/X4HZjVUyNJtvR9n5h6WFeJcV+X+iG3m/7k5OMg+e
+ 5eMVBGaRwy1hcnrzEeGT5gau6O2GXhCmudO4uSXn1sXOEq3hFE
+ 5GQZAXpNNBkouGl5sd8E=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We check that the struct vm_area_struct pointer vma is NULL and then
-dereference it a few lines below. The intent must have been to make sure
-that vma is not NULL and then to check the value from cpu_context() for
-the condition to be true.
+On Saturday 05 July 2014 13:13:01 Robert Jarzmik wrote:
+>  EXPORT_SYMBOL(get_clock_tick_rate);
+>  
+>  /*
+> + * For non device-tree builds, keep legacy timer init
+> + */
+> +extern void pxa_timer_nodt_init(int irq, void __iomem *base,
+> +                          unsigned long clock_tick_rate);
+> +void pxa_timer_init(void)
+> +{
+> +       pxa_timer_nodt_init(IRQ_OST0, io_p2v(0x40a00000),
+> +                           get_clock_tick_rate());
+> +}
+> +
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
+I think it would be better to move the extern declaration into 
+a new header file, e.g. include/clocksource/pxa.h.
 
-v2: Updated the commit message with a better explanation.
-
- arch/mips/mm/tlb-r3k.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/mips/mm/tlb-r3k.c b/arch/mips/mm/tlb-r3k.c
-index d657493..6546758 100644
---- a/arch/mips/mm/tlb-r3k.c
-+++ b/arch/mips/mm/tlb-r3k.c
-@@ -158,7 +158,7 @@ void local_flush_tlb_page(struct vm_area_struct *vma, unsigned long page)
- {
- 	int cpu = smp_processor_id();
- 
--	if (!vma || cpu_context(cpu, vma->vm_mm) != 0) {
-+	if (vma && cpu_context(cpu, vma->vm_mm) != 0) {
- 		unsigned long flags;
- 		int oldpid, newpid, idx;
- 
--- 
-1.7.10.4
-
+	Arnd
