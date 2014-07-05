@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932479AbaGEKms (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 06:42:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57875 "EHLO
+	id S932531AbaGEKm4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 06:42:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57878 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932165AbaGEKmq (ORCPT
+	with ESMTP id S932165AbaGEKmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 06:42:46 -0400
-Date: Sat, 5 Jul 2014 03:42:27 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-5rfzbalwjphmdzzil74eazyl@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
-        acme@kernel.org, namhyung@kernel.org, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
-        acme@kernel.org, namhyung@kernel.org, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+	Sat, 5 Jul 2014 06:42:50 -0400
+Date: Sat, 5 Jul 2014 03:42:40 -0700
+From: tip-bot for Sebastian Andrzej Siewior <tipbot@zytor.com>
+Message-ID: <tip-33058b948e545a911e388e69b8be7274da158fb6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jolsa@kernel.org, bigeasy@linutronix.de, tglx@linutronix.de,
+        namhyung@kernel.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jolsa@kernel.org, tglx@linutronix.de, bigeasy@linutronix.de,
+        namhyung@kernel.org
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Fix wrong condition for allocation failure
-Git-Commit-ID: d180ac14a95d738c2d2622db82c2212a8f998200
+Subject: [tip:perf/core] perf script:
+  Move the number processing into its own function
+Git-Commit-ID: 33058b948e545a911e388e69b8be7274da158fb6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,41 +32,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d180ac14a95d738c2d2622db82c2212a8f998200
-Gitweb:     http://git.kernel.org/tip/d180ac14a95d738c2d2622db82c2212a8f998200
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Fri, 20 Jun 2014 10:56:34 +0200
+Commit-ID:  33058b948e545a911e388e69b8be7274da158fb6
+Gitweb:     http://git.kernel.org/tip/33058b948e545a911e388e69b8be7274da158fb6
+Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+AuthorDate: Tue, 27 May 2014 18:14:33 +0200
 Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Fri, 27 Jun 2014 11:14:54 +0200
+CommitDate: Fri, 27 Jun 2014 11:14:57 +0200
 
-perf tools: Fix wrong condition for allocation failure
+perf script: Move the number processing into its own function
 
-Check real allocated pointer for NULL.
+I was going to change something here and the result was so much on the
+right side of the screen that I decided to move that piece into its own
+function.
+This patch should make no function change except the moving the code
+into its own function.
 
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-5rfzbalwjphmdzzil74eazyl@git.kernel.org
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/n/1401207274-8170-1-git-send-email-bigeasy@linutronix.de
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/builtin-stat.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ .../util/scripting-engines/trace-event-python.c    | 38 +++++++++++++---------
+ 1 file changed, 23 insertions(+), 15 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 65a151e..3e80aa1 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -184,7 +184,7 @@ static void perf_evsel__reset_stat_priv(struct perf_evsel *evsel)
- static int perf_evsel__alloc_stat_priv(struct perf_evsel *evsel)
- {
- 	evsel->priv = zalloc(sizeof(struct perf_stat));
--	if (evsel == NULL)
-+	if (evsel->priv == NULL)
- 		return -ENOMEM;
- 	perf_evsel__reset_stat_priv(evsel);
- 	return 0;
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 1c41932..99c2536 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -231,6 +231,28 @@ static inline struct event_format *find_cache_event(struct perf_evsel *evsel)
+ 	return event;
+ }
+ 
++static PyObject *get_field_numeric_entry(struct event_format *event,
++		struct format_field *field, void *data)
++{
++	PyObject *obj;
++	unsigned long long val;
++
++	val = read_size(event, data + field->offset, field->size);
++	if (field->flags & FIELD_IS_SIGNED) {
++		if ((long long)val >= LONG_MIN &&
++				(long long)val <= LONG_MAX)
++			obj = PyInt_FromLong(val);
++		else
++			obj = PyLong_FromLongLong(val);
++	} else {
++		if (val <= LONG_MAX)
++			obj = PyInt_FromLong(val);
++		else
++			obj = PyLong_FromUnsignedLongLong(val);
++	}
++	return obj;
++}
++
+ static void python_process_tracepoint(struct perf_sample *sample,
+ 				      struct perf_evsel *evsel,
+ 				      struct thread *thread,
+@@ -239,7 +261,6 @@ static void python_process_tracepoint(struct perf_sample *sample,
+ 	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
+ 	static char handler_name[256];
+ 	struct format_field *field;
+-	unsigned long long val;
+ 	unsigned long s, ns;
+ 	struct event_format *event;
+ 	unsigned n = 0;
+@@ -303,20 +324,7 @@ static void python_process_tracepoint(struct perf_sample *sample,
+ 				offset = field->offset;
+ 			obj = PyString_FromString((char *)data + offset);
+ 		} else { /* FIELD_IS_NUMERIC */
+-			val = read_size(event, data + field->offset,
+-					field->size);
+-			if (field->flags & FIELD_IS_SIGNED) {
+-				if ((long long)val >= LONG_MIN &&
+-				    (long long)val <= LONG_MAX)
+-					obj = PyInt_FromLong(val);
+-				else
+-					obj = PyLong_FromLongLong(val);
+-			} else {
+-				if (val <= LONG_MAX)
+-					obj = PyInt_FromLong(val);
+-				else
+-					obj = PyLong_FromUnsignedLongLong(val);
+-			}
++			obj = get_field_numeric_entry(event, field, data);
+ 		}
+ 		if (handler)
+ 			PyTuple_SetItem(t, n++, obj);
