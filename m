@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760550AbaGEFfd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 01:35:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15932 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760455AbaGEFfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 01:35:32 -0400
-From: Amit Shah <amit.shah@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
-        keescook@chromium.org, jason@lakedaemon.net,
-        Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH v2 0/2] hwrng, virtio-rng: init-time fixes
-Date: Sat,  5 Jul 2014 11:04:51 +0530
-Message-Id: <cover.1404538109.git.amit.shah@redhat.com>
+	id S1760662AbaGEFhZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 01:37:25 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:39715 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751914AbaGEFhX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jul 2014 01:37:23 -0400
+Date: Sat, 5 Jul 2014 05:37:22 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Nicholas Krause <xerofoify@gmail.com>
+cc: tony@atomide.com, linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mach-omap2: Change if statement in
+ omap2_dflt_clk_enable
+In-Reply-To: <1404507843-3648-1-git-send-email-xerofoify@gmail.com>
+Message-ID: <alpine.DEB.2.02.1407050536060.27423@utopia.booyaka.com>
+References: <1404507843-3648-1-git-send-email-xerofoify@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2:
- - this now separates both the patches; the virtio-rng fix is self-contained
- - re-work hwrng core to fetch randomness at device init time if
-   ->init() is registered by the device, instead of not calling it at all.
- - virtio-rng: introduce a probe_done bool to ensure we don't ask host
-   for data before successful probe
+On Fri, 4 Jul 2014, Nicholas Krause wrote:
 
-Hi,
+> This patch changes this function to check for if v is returning value from the
+> called function. If not it does the else. Furthermore fixes the FIXME message above
+> if statement for holding INVERT_ENABLE bit when not needing to be checked for
+> in if statement by just checking for if v is not Null.
+> 
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
 
-When booting a recent kernel under KVM with the virtio-rng device
-enabled, the boot process was stalling.  Bisect pointed to a commit
-made during the 3.15 window to fetch randomness from newly-registered
-devices in the hwrng core.  The details are in the patches.
+This patch doesn't make any sense.  Neither does the commit message.  
+Please explain exactly what this patch is intended to do in terms of the 
+clock framework or the hardware.
 
-Turns out there were two bugs: the initial randomness was being
-fetched w/o the device being initialized in cases where the init
-callback was registered and the device wasn't the first device being
-added to the hwrng core.  The second bug is virtio can't communicate
-with the host without the device probe is successfully completed.
 
-Please review and apply if appropriate,
+- Paul
 
-Amit Shah (2):
-  hwrng: fetch randomness only after device init
-  virtio: rng: ensure reads happen after successful probe
+> ---
+>  arch/arm/mach-omap2/clock.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-omap2/clock.c b/arch/arm/mach-omap2/clock.c
+> index 591581a..626363d 100644
+> --- a/arch/arm/mach-omap2/clock.c
+> +++ b/arch/arm/mach-omap2/clock.c
+> @@ -379,7 +379,7 @@ void omap2_dflt_clk_disable(struct clk_hw *hw)
+>  	}
+>  
+>  	v = omap2_clk_readl(clk, clk->enable_reg);
+> -	if (clk->flags & INVERT_ENABLE)
+> +	if (v)
+>  		v |= (1 << clk->enable_bit);
+>  	else
+>  		v &= ~(1 << clk->enable_bit);
+> -- 
+> 1.9.1
+> 
 
- drivers/char/hw_random/core.c       | 37 +++++++++++++++++++++++++++++++------
- drivers/char/hw_random/virtio-rng.c | 10 ++++++++++
- 2 files changed, 41 insertions(+), 6 deletions(-)
 
--- 
-1.9.3
-
+- Paul
