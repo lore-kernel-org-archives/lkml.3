@@ -1,142 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932721AbaGEUpU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 16:45:20 -0400
-Received: from smtprelay0156.hostedemail.com ([216.40.44.156]:56585 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756156AbaGEUpS (ORCPT
+	id S932745AbaGEUrP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 16:47:15 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:63879 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756156AbaGEUrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 16:45:18 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:334:355:379:541:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1605:1711:1730:1747:1777:1792:2198:2199:2393:2551:2553:2559:2562:2691:2828:3138:3139:3140:3141:3142:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:4419:4470:4605:5007:6119:7652:7903:8527:10004:10400:10848:10946:11026:11232:11658:11914:12050:12296:12517:12519:12555:12740:13019:13095:13138:13161:13229:13231:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: run34_10e8b28fd355f
-X-Filterd-Recvd-Size: 4959
-Message-ID: <1404593114.6384.72.camel@joe-AO725>
-Subject: [PATCH] vsprintf: Remove SPECIAL from pointer types
-From: Joe Perches <joe@perches.com>
-To: "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 05 Jul 2014 13:45:14 -0700
-In-Reply-To: <alpine.LFD.2.11.1407052103130.15455@eddie.linux-mips.org>
-References: <alpine.LFD.2.11.1406290246120.15455@eddie.linux-mips.org>
-	 <20140702.182807.1245632778216212860.davem@davemloft.net>
-	 <alpine.LFD.2.11.1407030244230.15455@eddie.linux-mips.org>
-	 <alpine.LFD.2.11.1407030331550.15455@eddie.linux-mips.org>
-	 <1404356734.14741.18.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407030423300.15455@eddie.linux-mips.org>
-	 <1404364565.14741.26.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407030637030.15455@eddie.linux-mips.org>
-	 <1404368746.14741.36.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407051529040.15455@eddie.linux-mips.org>
-	 <1404576420.6384.41.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407051833400.15455@eddie.linux-mips.org>
-	 <1404583739.6384.51.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407051917480.15455@eddie.linux-mips.org>
-	 <1404585099.6384.53.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407052103130.15455@eddie.linux-mips.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 5 Jul 2014 16:47:14 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Rob Herring <robherring2@gmail.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Sinan Kaya <okaya@codeaurora.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>, Will Deacon <Will.Deacon@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Kukjin Kim <kgene.kim@samsung.com>, Tanmay Inamdar <tinamdar@apm.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH v8 4/9] pci: OF: Fix the conversion of IO ranges into IO resources.
+Date: Sat, 05 Jul 2014 22:46:09 +0200
+Message-ID: <6122131.ozzYjjjRQi@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAL_JsqJNfB_jynFQK0Ov6A3wqk6LF3abUFEUjhmzipak26sU5w@mail.gmail.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com> <1404240214-9804-5-git-send-email-Liviu.Dudau@arm.com> <CAL_JsqJNfB_jynFQK0Ov6A3wqk6LF3abUFEUjhmzipak26sU5w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:2Sr1JqkR+QOvS6uqBTJ91rGDpu/XmNjREZ4SKqJ0A79
+ fc2qkDZxrzz03MOHE4YHKqzt7lFQGl4OAnmy+ob71wHPxP0jmo
+ oVmBn9DxukEonwP+yW90/vLAfJpjaVHsqewpbJCtfxi4cy1dPA
+ 2BKG7dhXniNTZpXqIfPJ3T6npIMp5Pn4ASHcTYAXalS+AtNbe8
+ xBdnNyfEGSXb94yuEYexsdmf4jKIGGH0uo1qTTrkvqie/rK6Bw
+ tamNtkva0w+6DkO5anN9c1evIIhrJuass/XH+NRsm3gMYHsHWF
+ RUAHl7fggK+yE8Lg5tl4tOmLNJpgl5rMvDENY+hwIY8241q2mv
+ g2PtPfmoh6lAaUjK+ZVQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because gcc issues a complaint about any pointer format with %#p,
-remove the use of SPECIAL to prefix 0x to various pointer types.
-
-There are no uses in the kernel tree of %#p.
-
-This removes the capability added by commit 725fe002d315
-("vsprintf: correctly handle width when '#' flag used in %#p format").
-
-There are some incidental message logging output changes of %pa
-uses with this change.  None are in seq output so there are no
-api changes.
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
-
-Fine by me, here...
-
-On Sat, 2014-07-05 at 21:25 +0100, Maciej W. Rozycki wrote:
-> On Sat, 5 Jul 2014, Joe Perches wrote:
+On Saturday 05 July 2014 14:25:52 Rob Herring wrote:
+> On Tue, Jul 1, 2014 at 1:43 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> > The ranges property for a host bridge controller in DT describes
+> > the mapping between the PCI bus address and the CPU physical address.
+> > The resources framework however expects that the IO resources start
+> > at a pseudo "port" address 0 (zero) and have a maximum size of IO_SPACE_LIMIT.
+> > The conversion from pci ranges to resources failed to take that into account.
 > 
-> > > > I don't think %#p is valid so it
-> > > > shouldn't have been set by #.
-> > > 
-> > >  Huh?  As recently as last Wednesday you pointed me at the specific commit 
-> > > from Grant that made it valid (GCC format complaints aside).
-> > 
-> > Those gcc complaints are precisely the thing
-> > that makes it invalid.
+> I don't think this change is right. There are 2 resources: the PCI bus
+> addresses and cpu addresses. This function deals with the cpu
+> addresses. Returning pci addresses for i/o and cpu addresses for
+> memory is going to be error prone. We probably need both cpu and pci
+> resources exposed to host controllers.
 > 
->  So enforce that in code then, clear the SPECIAL flag where appropriate 
-> and do not try to handle it in one place while leaving other ones to 
-> behave randomly (i.e. a supposedly fixed field width varies depending on 
-> the two uppermost digits).  Please note that it's only your proposed 
-> change that introduces that randomness, right now code does what's 
-> supposed and documented to, except a bit inconsistently.
-> 
-> > I believe you're tilting at windmills.
-> > 
-> > Hey, it works sometimes.  Knock yourself out.
-> 
->  I pointed out an inconsistency with the intent to propose a fix once a 
-> consensus have been reached, one way or another.  And I think shifting the 
-> inconsistency to a different place, which is what your proposal does, 
-> isn't really a complete solution, although I do recognise the improvement.
+> Making the new function only deal with i/o bus resources and naming it
+> of_pci_range_to_io_resource would be better.
 
- lib/vsprintf.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+I think you are correct that this change by itself is will break existing
+drivers that rely on the current behavior of of_pci_range_to_resource,
+but there is also something wrong with the existing implementation:
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 6fe2c84..1cad65b 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -632,7 +632,7 @@ char *symbol_string(char *buf, char *end, void *ptr,
- 	return string(buf, end, sym, spec);
- #else
- 	spec.field_width = 2 * sizeof(void *);
--	spec.flags |= SPECIAL | SMALL | ZEROPAD;
-+	spec.flags |= SMALL | ZEROPAD;
- 	spec.base = 16;
- 
- 	return number(buf, end, value, spec);
-@@ -1165,18 +1165,18 @@ char *address_val(char *buf, char *end, const void *addr,
- {
- 	unsigned long long num;
- 
--	spec.flags |= SPECIAL | SMALL | ZEROPAD;
-+	spec.flags |= SMALL | ZEROPAD;
- 	spec.base = 16;
- 
- 	switch (fmt[1]) {
- 	case 'd':
- 		num = *(const dma_addr_t *)addr;
--		spec.field_width = sizeof(dma_addr_t) * 2 + 2;
-+		spec.field_width = sizeof(dma_addr_t) * 2;
- 		break;
- 	case 'p':
- 	default:
- 		num = *(const phys_addr_t *)addr;
--		spec.field_width = sizeof(phys_addr_t) * 2 + 2;
-+		spec.field_width = sizeof(phys_addr_t) * 2;
- 		break;
- 	}
- 
-@@ -1259,7 +1259,7 @@ static noinline_for_stack
- char *pointer(const char *fmt, char *buf, char *end, void *ptr,
- 	      struct printf_spec spec)
- {
--	int default_width = 2 * sizeof(void *) + (spec.flags & SPECIAL ? 2 : 0);
-+	int default_width = 2 * sizeof(void *);
- 
- 	if (!ptr && *fmt != 'K') {
- 		/*
+of_pci_range_to_resource() at the moment returns a the address in
+cpu address space (i.e. IORESOURCE_MEM) but sets the res->flags
+value to IORESOURCE_IO, which means it doesn't fit into the resource
+tree. Liviu's version gets that part right, and it would be nice
+to fix that eventually, however we do it here.
 
-
-
+	Arnd
