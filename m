@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760396AbaGEAsu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 20:48:50 -0400
-Received: from fieldses.org ([174.143.236.118]:43077 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760351AbaGEAst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 20:48:49 -0400
-Date: Fri, 4 Jul 2014 20:48:47 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Sachin Kamat <spk.linux@gmail.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Jul 4
-Message-ID: <20140705004846.GA11659@fieldses.org>
-References: <20140704164251.7dc67e07@canb.auug.org.au>
- <CAK5sBcGq54sOSzJKXrEbhAUTZZh=+9NuVh294Qxn0dQvbh-G8w@mail.gmail.com>
- <20140705011058.198ae810@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140705011058.198ae810@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760384AbaGEBcI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 21:32:08 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:46475 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753783AbaGEBcG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 21:32:06 -0400
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Subject: [PATCH] [media] davinci-vpfe: Fix retcode check
+Date: Sat,  5 Jul 2014 04:31:49 +0300
+Message-Id: <1404523909-2058-1-git-send-email-andrey.krieger.utkin@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 05, 2014 at 01:10:58AM +1000, Stephen Rothwell wrote:
-> Hi Sachin,
-> 
-> On Fri, 4 Jul 2014 14:12:11 +0530 Sachin Kamat <spk.linux@gmail.com> wrote:
-> >
-> > Was bisecting a kernel crash on Arndale octa board (Exynos5420). It
-> > points to a merge
-> > commit:
-> > 40556a4c485d12d324f1ea196cc30f590e564237 is the first bad commit
-> > ("Merge remote-tracking branch 'nfsd/nfsd-next'").
-> > 
-> > How do I proceed with this?
-> 
-> I guess we get the owner of the tree (possibly) in question involved
-> (cc'd).
+See https://bugzilla.kernel.org/show_bug.cgi?id=69071
+---8<---
+Use signed type to check correctly for negative error code
 
-Looking at the total diffstat for that branch, it's almost all contained
-in fs/nfsd with a little in include/linux/sunrpc/ and net/sunrpc.  So
-it's extremely unlikely that it would be causing a problem unless you're
-actually testing nfsd.
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+---
+ drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> You should also post your information about the crash you are
-> diagnosing as others may have seen it as well - or know what may cause
-> it.
+diff --git a/drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.c b/drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.c
+index b2daf5e..e326032 100644
+--- a/drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.c
++++ b/drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.c
+@@ -254,7 +254,7 @@ int config_ipipe_hw(struct vpfe_ipipe_device *ipipe)
+ 	void __iomem *ipipe_base = ipipe->base_addr;
+ 	struct v4l2_mbus_framefmt *outformat;
+ 	u32 color_pat;
+-	u32 ipipe_mode;
++	int ipipe_mode;
+ 	u32 data_path;
+ 
+ 	/* enable clock to IPIPE */
+-- 
+1.8.3.2
 
-Yes, please.
-
---b.
