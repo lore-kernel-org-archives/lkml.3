@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760585AbaGEFfe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 01:35:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38777 "EHLO mx1.redhat.com"
+	id S1760620AbaGEFfg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 01:35:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51772 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760453AbaGEFfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 01:35:32 -0400
+	id S1760565AbaGEFfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jul 2014 01:35:34 -0400
 From: Amit Shah <amit.shah@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
         Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
         keescook@chromium.org, jason@lakedaemon.net,
         Amit Shah <amit.shah@redhat.com>, <stable@vger.kernel.org>
-Subject: [PATCH v2 1/2] hwrng: fetch randomness only after device init
-Date: Sat,  5 Jul 2014 11:04:52 +0530
-Message-Id: <515a12ecc5fca5452bf0bfda4d54546d8fb5829c.1404538109.git.amit.shah@redhat.com>
+Subject: [PATCH v2 2/2] virtio: rng: ensure reads happen after successful probe
+Date: Sat,  5 Jul 2014 11:04:53 +0530
+Message-Id: <f64852e0dd8a439193db4c7da1d3022d029cc85d.1404538109.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1404538109.git.amit.shah@redhat.com>
 References: <cover.1404538109.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1404538109.git.amit.shah@redhat.com>
@@ -23,14 +23,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
-added a call to rng_get_data() from the hwrng_register() function.
-However, some rng devices need initialization before data can be read
-from them.
-
-This commit makes the call to rng_get_data() depend on no init fn
-pointer being registered by the device.  If an init function is
-registered, this call is made after device init.
+The hwrng core asks for random data in the hwrng_register() call itself
+from commit d9e7972619.  This doesn't play well with virtio -- the
+DRIVER_OK bit is only set by virtio core on a successful probe, and
+we're not yet out of our probe routine when this call is made.  This
+causes the host to not acknowledge any requests we put in the virtqueue,
+and the insmod or kernel boot process just waits for data to arrive from
+the host, which never happens.
 
 CC: Kees Cook <keescook@chromium.org>
 CC: Jason Cooper <jason@lakedaemon.net>
@@ -38,74 +37,62 @@ CC: Herbert Xu <herbert@gondor.apana.org.au>
 CC: <stable@vger.kernel.org> # For v3.15+
 Signed-off-by: Amit Shah <amit.shah@redhat.com>
 ---
- drivers/char/hw_random/core.c | 31 +++++++++++++++++++++++++------
- 1 file changed, 25 insertions(+), 6 deletions(-)
+ drivers/char/hw_random/core.c       |  6 ++++++
+ drivers/char/hw_random/virtio-rng.c | 10 ++++++++++
+ 2 files changed, 16 insertions(+)
 
 diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-index 334601c..df95e2f 100644
+index df95e2f..50f5b76 100644
 --- a/drivers/char/hw_random/core.c
 +++ b/drivers/char/hw_random/core.c
-@@ -55,16 +55,37 @@ static DEFINE_MUTEX(rng_mutex);
- static int data_avail;
- static u8 *rng_buffer;
+@@ -68,6 +68,12 @@ static void add_early_randomness(struct hwrng *rng)
+ 	unsigned char bytes[16];
+ 	int bytes_read;
  
-+static inline int rng_get_data(struct hwrng *rng, u8 *buffer, size_t size,
-+			       int wait);
++	/*
++	 * Currently only virtio-rng cannot return data during device
++	 * probe, and that's handled in virtio-rng.c itself.  If there
++	 * are more such devices, this call to rng_get_data can be
++	 * made conditional here instead of doing it per-device.
++	 */
+ 	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
+ 	if (bytes_read > 0)
+ 		add_device_randomness(bytes, bytes_read);
+diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
+index f3e7150..157f27c 100644
+--- a/drivers/char/hw_random/virtio-rng.c
++++ b/drivers/char/hw_random/virtio-rng.c
+@@ -38,6 +38,8 @@ struct virtrng_info {
+ 	int index;
+ };
+ 
++bool probe_done;
 +
- static size_t rng_buffer_size(void)
+ static void random_recv_done(struct virtqueue *vq)
  {
- 	return SMP_CACHE_BYTES < 32 ? 32 : SMP_CACHE_BYTES;
+ 	struct virtrng_info *vi = vq->vdev->priv;
+@@ -67,6 +69,13 @@ static int virtio_read(struct hwrng *rng, void *buf, size_t size, bool wait)
+ 	int ret;
+ 	struct virtrng_info *vi = (struct virtrng_info *)rng->priv;
+ 
++	/*
++	 * Don't ask host for data till we're setup.  This call can
++	 * happen during hwrng_register(), after commit d9e7972619.
++	 */
++	if (unlikely(!probe_done))
++		return 0;
++
+ 	if (!vi->busy) {
+ 		vi->busy = true;
+ 		init_completion(&vi->have_data);
+@@ -137,6 +146,7 @@ static int probe_common(struct virtio_device *vdev)
+ 		return err;
+ 	}
+ 
++	probe_done = true;
+ 	return 0;
  }
  
-+static void add_early_randomness(struct hwrng *rng)
-+{
-+	unsigned char bytes[16];
-+	int bytes_read;
-+
-+	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
-+	if (bytes_read > 0)
-+		add_device_randomness(bytes, bytes_read);
-+}
-+
- static inline int hwrng_init(struct hwrng *rng)
- {
-+	int ret;
-+
- 	if (!rng->init)
- 		return 0;
--	return rng->init(rng);
-+
-+	ret =  rng->init(rng);
-+	if (ret)
-+		return ret;
-+
-+	add_early_randomness(rng);
-+	return ret;
- }
- 
- static inline void hwrng_cleanup(struct hwrng *rng)
-@@ -304,8 +325,6 @@ int hwrng_register(struct hwrng *rng)
- {
- 	int err = -EINVAL;
- 	struct hwrng *old_rng, *tmp;
--	unsigned char bytes[16];
--	int bytes_read;
- 
- 	if (rng->name == NULL ||
- 	    (rng->data_read == NULL && rng->read == NULL))
-@@ -347,9 +366,9 @@ int hwrng_register(struct hwrng *rng)
- 	INIT_LIST_HEAD(&rng->list);
- 	list_add_tail(&rng->list, &rng_list);
- 
--	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
--	if (bytes_read > 0)
--		add_device_randomness(bytes, bytes_read);
-+	if (!rng->init)
-+		add_early_randomness(rng);
-+
- out_unlock:
- 	mutex_unlock(&rng_mutex);
- out:
 -- 
 1.9.3
 
