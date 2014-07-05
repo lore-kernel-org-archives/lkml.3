@@ -1,72 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225AbaGETFG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 15:05:06 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:56994 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755414AbaGETFE (ORCPT
+	id S1756255AbaGETGB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 15:06:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35991 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895AbaGETF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 15:05:04 -0400
+	Sat, 5 Jul 2014 15:05:59 -0400
+Date: Sat, 5 Jul 2014 12:10:19 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.14 59/59] ALSA: hda - Adjust speaker HPF and add LED
+ support for HP Spectre 13
+Message-ID: <20140705191019.GA30203@kroah.com>
+References: <20140704221539.544876024@linuxfoundation.org>
+ <20140704221542.327223709@linuxfoundation.org>
+ <s5hr420rmh7.wl%tiwai@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20140702111748.GJ18731@arm.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
- <1404240214-9804-8-git-send-email-Liviu.Dudau@arm.com> <20140702111748.GJ18731@arm.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Sat, 5 Jul 2014 14:04:41 -0500
-Message-ID: <CAL_JsqKWm54MjXC60EWVcxOurza=f2V9fwe2vVROa_Mv-6QnHw@mail.gmail.com>
-Subject: Re: [PATCH v8 7/9] pci: of: Parse and map the IRQ when adding the PCI device.
-To: Will Deacon <will.deacon@arm.com>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Sinan Kaya <okaya@codeaurora.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>, LKML <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Tanmay Inamdar <tinamdar@apm.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hr420rmh7.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 2, 2014 at 6:17 AM, Will Deacon <will.deacon@arm.com> wrote:
-> On Tue, Jul 01, 2014 at 07:43:32PM +0100, Liviu Dudau wrote:
->> Enhance the default implementation of pcibios_add_device() to
->> parse and map the IRQ of the device if a DT binding is available.
->>
->> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
->> ---
->>  drivers/pci/pci.c | 4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
->> index 63a54a3..8e65dc3 100644
->> --- a/drivers/pci/pci.c
->> +++ b/drivers/pci/pci.c
->> @@ -17,6 +17,7 @@
->>  #include <linux/spinlock.h>
->>  #include <linux/string.h>
->>  #include <linux/log2.h>
->> +#include <linux/of_pci.h>
->>  #include <linux/pci-aspm.h>
->>  #include <linux/pm_wakeup.h>
->>  #include <linux/interrupt.h>
->> @@ -1453,6 +1454,9 @@ EXPORT_SYMBOL(pcim_pin_device);
->>   */
->>  int __weak pcibios_add_device(struct pci_dev *dev)
->>  {
->> +#ifdef CONFIG_OF
->> +     dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
->> +#endif
->
-> You could avoid the #ifdef by only assigning dev->irq if
-> of_irq_parse_and_map_pci returned something > 0.
+On Sat, Jul 05, 2014 at 02:58:28PM +0200, Takashi Iwai wrote:
+> At Fri,  4 Jul 2014 15:19:48 -0700,
+> Greg Kroah-Hartman wrote:
+> > 
+> > 3.14-stable review patch.  If anyone has any objections, please let me know.
+> 
+> This turned to be not applicable to 3.14 and earlier, as mentioned in
+> another thread.  Please drop.
 
-Perhaps it could just be unconditional always. Presumably, dev->irq is
-not already set to something valid and setting it to <= 0 should not
-have any consequences.
+Now dropped from 3.10 and 3.14, thanks.
 
-Rob
+greg k-h
