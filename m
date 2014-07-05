@@ -1,107 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932153AbaGELMA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 07:12:00 -0400
-Received: from regular1.263xmail.com ([211.150.99.134]:44331 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126AbaGELL6 (ORCPT
+	id S932234AbaGELOD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 07:14:03 -0400
+Received: from smtp04.smtpout.orange.fr ([80.12.242.126]:44432 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755050AbaGELOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 07:11:58 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: xjq@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: xjq@rock-chips.com
-X-UNIQUE-TAG: <ed574e6dda191ee8659ed6e27736c605>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: jianqun <xjq@rock-chips.com>
-To: heiko@sntech.de, lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz,
-        tiwai@suse.de, grant.likely@linaro.org, robh+dt@kernel.org
-Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org, zhangqing@rock-chips.com,
-        hj@rock-chips.com, kever.yang@rock-chips.com, huangtao@rock-chips.com,
-        zyw@rock-chips.com, yzq@rock-chips.com, zhenfu.fang@rock-chips.com,
-        cf@rock-chips.com, kfx@rock-chips.com, Jianqun Xu <xjq@rock-chips.com>
-Subject: [PATCH v3 1/2] ASoC: dt-bindings: add rockchip i2s bindings
-Date: Sat,  5 Jul 2014 19:10:38 +0800
-Message-Id: <1404558638-1739-1-git-send-email-xjq@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404458796-6818-1-git-send-email-xjq@rock-chips.com>
-References: <1404458796-6818-1-git-send-email-xjq@rock-chips.com>
+	Sat, 5 Jul 2014 07:14:00 -0400
+X-ME-Helo: localhost.localdomain
+X-ME-Date: Sat, 05 Jul 2014 13:13:58 +0200
+X-ME-IP: 86.199.194.180
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Robert Jarzmik <robert.jarzmik@free.fr>
+Subject: [PATCH v2 1/4] clocksource: move PXA timer to clocksource framework
+Date: Sat,  5 Jul 2014 13:12:58 +0200
+Message-Id: <1404558781-9537-1-git-send-email-robert.jarzmik@free.fr>
+X-Mailer: git-send-email 2.0.0.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jianqun Xu <xjq@rock-chips.com>
+Move time.c from arch/arm/mach-pxa/time.c to
+drivers/clocksource/pxa_timer.c.
 
-Add devicetree bindings for i2s controller found on
-rk3066, rk3188 and rk3288 processors from rockchip.
-
-Signed-off-by: Jianqun Xu <xjq@rock-chips.com>
+Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
 ---
-changes since v2:
-- change the description of dma-names, adviced by Mark
-- change the description of interrupts, adviced by Mark
-- list clock-names to be easy to read, adviced by Mark
-- modify compatible for rk3288 example, adviced by Mark and Heiko
+ arch/arm/mach-pxa/Makefile                                  | 2 +-
+ drivers/clocksource/Makefile                                | 1 +
+ arch/arm/mach-pxa/time.c => drivers/clocksource/pxa_timer.c | 0
+ 3 files changed, 2 insertions(+), 1 deletion(-)
+ rename arch/arm/mach-pxa/time.c => drivers/clocksource/pxa_timer.c (100%)
 
-changes since v1:
-- modify the description of clock-names property, adviced by Mark Rutland.
-- modify the example to fit for rk3288.
-
- .../devicetree/bindings/sound/rockchip-i2s.txt     |   37 ++++++++++++++++++++
- 1 file changed, 37 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/sound/rockchip-i2s.txt
-
-diff --git a/Documentation/devicetree/bindings/sound/rockchip-i2s.txt b/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
-new file mode 100644
-index 0000000..6c55fcf
---- /dev/null
-+++ b/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
-@@ -0,0 +1,37 @@
-+* Rockchip I2S controller
-+
-+The I2S bus (Inter-IC sound bus) is a serial link for digital
-+audio data transfer between devices in the system.
-+
-+Required properties:
-+
-+- compatible: should be one of the followings
-+   - "rockchip,rk3066-i2s": for rk3066
-+   - "rockchip,rk3188-i2s", "rockchip,rk3066-i2s": for rk3188
-+   - "rockchip,rk3288-i2s", "rockchip,rk3066-i2s": for rk3288
-+- reg: physical base address of the controller and length of memory mapped
-+  region.
-+- interrupts: should contain the I2S interrupt.
-+- #address-cells: should be 1.
-+- #size-cells: should be 0.
-+- dmas: DMA specifiers for tx and rx dma. See the DMA client binding,
-+	Documentation/devicetree/bindings/dma/dma.txt
-+- dma-names: should include "tx" and "rx".
-+- clocks: a list of phandle + clock-specifer pairs, one for each entry in clock-names.
-+- clock-names: should contain followings:
-+   - "i2s_hclk": clock for I2S BUS
-+   - "i2s_clk" : clock for I2S controller
-+
-+Example for rk3288 I2S controller:
-+
-+i2s@ff890000 {
-+	compatible = "rockchip,rk3288-i2s", "rockchip,rk3066-i2s";
-+	reg = <0xff890000 0x10000>;
-+	interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>;
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+	dmas = <&pdma1 0>, <&pdma1 1>;
-+	dma-names = "rx", "tx";
-+	clock-names = "i2s_hclk", "i2s_clk";
-+	clocks = <&cru HCLK_I2S0>, <&cru SCLK_I2S0>;
-+};
+diff --git a/arch/arm/mach-pxa/Makefile b/arch/arm/mach-pxa/Makefile
+index 648867a..2fe1824 100644
+--- a/arch/arm/mach-pxa/Makefile
++++ b/arch/arm/mach-pxa/Makefile
+@@ -4,7 +4,7 @@
+ 
+ # Common support (must be linked before board specific support)
+ obj-y				+= clock.o devices.o generic.o irq.o \
+-				   time.o reset.o
++				   reset.o
+ obj-$(CONFIG_PM)		+= pm.o sleep.o standby.o
+ 
+ # Generic drivers that other drivers may depend upon
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 800b130..fc61ef8 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -19,6 +19,7 @@ obj-$(CONFIG_ARCH_BCM2835)	+= bcm2835_timer.o
+ obj-$(CONFIG_ARCH_MARCO)	+= timer-marco.o
+ obj-$(CONFIG_ARCH_MOXART)	+= moxart_timer.o
+ obj-$(CONFIG_ARCH_MXS)		+= mxs_timer.o
++obj-$(CONFIG_ARCH_PXA)		+= pxa_timer.o
+ obj-$(CONFIG_ARCH_PRIMA2)	+= timer-prima2.o
+ obj-$(CONFIG_ARCH_U300)		+= timer-u300.o
+ obj-$(CONFIG_SUN4I_TIMER)	+= sun4i_timer.o
+diff --git a/arch/arm/mach-pxa/time.c b/drivers/clocksource/pxa_timer.c
+similarity index 100%
+rename from arch/arm/mach-pxa/time.c
+rename to drivers/clocksource/pxa_timer.c
 -- 
-1.7.9.5
-
+2.0.0.rc2
 
