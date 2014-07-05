@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221AbaGERu2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 13:50:28 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:52201 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753045AbaGERu0 (ORCPT
+	id S1755625AbaGERwV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 13:52:21 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:55478 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754309AbaGERwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 13:50:26 -0400
-Date: Sat, 5 Jul 2014 19:48:55 +0200
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Wenyou Yang <wenyou.yang@atmel.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Heiko Stuebner <heiko@sntech.de>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/4] regulator: act8865: prepare support for other
- act88xx devices
-Message-ID: <20140705174852.GA11822@gmail.com>
-References: <1404566456-9121-1-git-send-email-b.galvani@gmail.com>
- <1404566456-9121-3-git-send-email-b.galvani@gmail.com>
- <CAFRkauDR5A=oE0BPHfsyfw6giPsDX4CpYcgDnYQfeGO2nCWbuw@mail.gmail.com>
+	Sat, 5 Jul 2014 13:52:19 -0400
+Date: Sat, 5 Jul 2014 11:52:16 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, Ryan Desfosses <ryan@desfo.org>,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 1/1] drivers/pci/hotplug/cpqphp_sysfs.c: remove
+ unnecessary null test before debugfs_remove
+Message-ID: <20140705175216.GE26618@google.com>
+References: <1403948683-10410-1-git-send-email-fabf@skynet.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFRkauDR5A=oE0BPHfsyfw6giPsDX4CpYcgDnYQfeGO2nCWbuw@mail.gmail.com>
+In-Reply-To: <1403948683-10410-1-git-send-email-fabf@skynet.be>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 05, 2014 at 11:41:26PM +0800, Axel Lin wrote:
-> 2014-07-05 21:20 GMT+08:00 Beniamino Galvani <b.galvani@gmail.com>:
-> > This patch prepares support for other devices in the act88xx family of
-> > PMUs manufactured by Active-Semi.
-> >
-> > http://www.active-semi.com/products/power-management-units/act88xx/
-> >
-> > Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
-> > Tested-by: Wenyou Yang <wenyou.yang@atmel.com>
+On Sat, Jun 28, 2014 at 11:44:43AM +0200, Fabian Frederick wrote:
+> Fix checkpatch warning:
+> "WARNING: debugfs_remove(NULL) is safe this check is probably not required"
 > 
-> For this serial, Reviewed-by: Axel Lin <axel.lin@ingics.com>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Ryan Desfosses <ryan@desfo.org>
+> Cc: linux-pci@vger.kernel.org
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 
-Thanks!
+Applied to pci/hotplug for v3.17, thanks!
 
-Beniamino
+> ---
+>  drivers/pci/hotplug/cpqphp_sysfs.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/pci/hotplug/cpqphp_sysfs.c b/drivers/pci/hotplug/cpqphp_sysfs.c
+> index 4a392c4..d81648f 100644
+> --- a/drivers/pci/hotplug/cpqphp_sysfs.c
+> +++ b/drivers/pci/hotplug/cpqphp_sysfs.c
+> @@ -216,8 +216,7 @@ void cpqhp_create_debugfs_files(struct controller *ctrl)
+>  
+>  void cpqhp_remove_debugfs_files(struct controller *ctrl)
+>  {
+> -	if (ctrl->dentry)
+> -		debugfs_remove(ctrl->dentry);
+> +	debugfs_remove(ctrl->dentry);
+>  	ctrl->dentry = NULL;
+>  }
+>  
+> -- 
+> 1.8.4.5
+> 
