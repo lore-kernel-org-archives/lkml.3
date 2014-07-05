@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760243AbaGDX7O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 19:59:14 -0400
-Received: from mail.eperm.de ([89.247.134.16]:47161 "EHLO mail.eperm.de"
+	id S1760298AbaGEABL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 20:01:11 -0400
+Received: from mail.eperm.de ([89.247.134.16]:40926 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753715AbaGDX7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 19:59:13 -0400
+	id S1753595AbaGEABK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 20:01:10 -0400
 X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
-To: Joe Perches <joe@perches.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
         kbuild test robot <fengguang.wu@intel.com>, kbuild@01.org,
-        linux-crypto@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] DRBG: Fix format string for debugging statements
-Date: Sat, 05 Jul 2014 01:57:50 +0200
-Message-ID: <3856718.HehN4Xqlpl@myon.chronox.de>
+        linux-kernel@vger.kernel.org,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: [PATCH] Potential NULL pointer deference in drbg_ctr_df
+Date: Sat, 05 Jul 2014 02:00:15 +0200
+Message-ID: <3313472.TGNVD1jVhQ@myon.chronox.de>
 User-Agent: KMail/4.12.5 (Linux/3.14.9-200.fc20.x86_64; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1404493040.6384.21.camel@joe-AO725>
-References: <4927386.WYHrRe3NJm@myon.chronox.de> <20140704112116.GC25934@mwanda> <1404493040.6384.21.camel@joe-AO725>
+In-Reply-To: <20140704105003.GA25934@mwanda>
+References: <20140620202418.GZ5015@mwanda> <20140625090646.GB8727@gondor.apana.org.au> <20140704105003.GA25934@mwanda>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -28,83 +26,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 4. Juli 2014, 09:57:20 schrieb Joe Perches:
+Am Freitag, 4. Juli 2014, 13:50:03 schrieb Dan Carpenter:
 
-Hi Joe,
+Hi Dan,
 
-> On Fri, 2014-07-04 at 14:21 +0300, Dan Carpenter wrote:
-> > On Sat, Jun 28, 2014 at 08:53:19PM -0700, Joe Perches wrote:
-> > > On Sun, 2014-06-29 at 05:46 +0200, Stephan Mueller wrote:
-> > > > Am Sonntag, 29. Juni 2014, 12:24:02 schrieb Stephen Rothwell:
-> > > > 
-> > > > Hi Stephen,
-> > > > 
-> > > > > Hi Stephan,
-> > > > > 
-> > > > > On Sat, 28 Jun 2014 22:01:46 +0200 Stephan Mueller
-> > > > > <smueller@chronox.de>
-> > > > 
-> > > > wrote:
-> > > > > > @@ -1987,8 +1987,9 @@ static int __init drbg_init(void)
-> > > > > > 
-> > > > > >  	if (ARRAY_SIZE(drbg_cores) * 2 > ARRAY_SIZE(drbg_algs)) {
-> > > > > >  	
-> > > > > >  		pr_info("DRBG: Cannot register all DRBG types"
-> > > > > > 
-> > > > > > -			"(slots needed: %lu, slots available: %lu)\n",
-> > > > > > -			ARRAY_SIZE(drbg_cores) * 2, 
-ARRAY_SIZE(drbg_algs));
-> > > > > > +			"(slots needed: %u, slots available: %u)\n",
-> > > > > > +			(unsigned int)ARRAY_SIZE(drbg_cores) * 2,
-> > > > > > +			(unsigned int)ARRAY_SIZE(drbg_algs));
-> > > > > 
-> > > > > Doesn't ARRAY_SIZE() always return a size_t?  In which case surely
-> > > > > we
-> > > > > need no casts, but need to us %zu in the format string.
-> > > > 
-> > > > Unfortunately not at all. On my x86_64, I get the compiler warning
-> > > > that
-> > > > ARRAY_SIZE is a long unsigned int without the cast.
+> On Wed, Jun 25, 2014 at 05:06:46PM +0800, Herbert Xu wrote:
+> > On Sat, Jun 21, 2014 at 02:26:29PM +0200, Stephan Mueller wrote:
+> > > The handling of additional input data / personalization string data may
+> > > be subject to a NULL pointer deference for the CTR DRBG. The
+> > > caller-provided data may be NULL which must be caught by the DRBG.
+> > > 
+> > > Reported-by: kbuild test robot <fengguang.wu@intel.com>
 > 
-> It doesn't seem to for 4.8.
-> Is there some specific gcc version where this occurs?
+> Oh, huh.  This bug was actually reported by me but I forgot to change
+> the from header and apparently my smtp server allows me to send emails
+> as if I work for Intel.  :P
+> 
+> Fengguang is much nicer than I am.  :P
 
-$ LANG=en_US gcc -v
-Using built-in specs.
-COLLECT_GCC=/usr/bin/gcc
-COLLECT_LTO_WRAPPER=/usr/libexec/gcc/x86_64-redhat-linux/4.8.3/lto-wrapper
-Target: x86_64-redhat-linux
-Configured with: ../configure --prefix=/usr --mandir=/usr/share/man --
-infodir=/usr/share/info --with-bugurl=http://bugzilla.redhat.com/bugzilla --
-enable-bootstrap --enable-shared --enable-threads=posix --enable-
-checking=release --with-system-zlib --enable-__cxa_atexit --disable-libunwind-
-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-linker-
-hash-style=gnu --enable-languages=c,c++,objc,obj-c++,java,fortran,ada,go,lto 
---enable-plugin --enable-initfini-array --enable-java-awt=gtk --disable-dssi 
---with-java-home=/usr/lib/jvm/java-1.5.0-gcj-1.5.0.0/jre --enable-libgcj-
-multifile --enable-java-maintainer-mode --with-ecj-
-jar=/usr/share/java/eclipse-ecj.jar --disable-libjava-multilib --with-
-isl=/builddir/build/BUILD/gcc-4.8.3-20140624/obj-x86_64-redhat-linux/isl-
-install --with-cloog=/builddir/build/BUILD/gcc-4.8.3-20140624/obj-x86_64-
-redhat-linux/cloog-install --with-tune=generic --with-arch_32=i686 --
-build=x86_64-redhat-linux
-Thread model: posix
-gcc version 4.8.3 20140624 (Red Hat 4.8.3-1) (GCC)
+Too late, your colleague's name is now in the patches ;-)
+> 
+> > > Signed-off-by: Stephan Mueller <smueller@chronox.de>
+> > > ---
+> > > 
+> > >  crypto/drbg.c | 23 +++++++++++++----------
+> > >  1 file changed, 13 insertions(+), 10 deletions(-)
+> > > 
+> > > diff --git a/crypto/drbg.c b/crypto/drbg.c
+> > > index faaa2ce..8e7c302 100644
+> > > --- a/crypto/drbg.c
+> > > +++ b/crypto/drbg.c
+> > > @@ -513,17 +513,20 @@ static int drbg_ctr_df(struct drbg_state *drbg,
+> > > 
+> > >  	drbg_string_fill(&S2, L_N, sizeof(L_N));
+> > >  	drbg_string_fill(&S4, pad, padlen);
+> > >  	S1.next = &S2;
+> > > 
+> > > -	S2.next = addtl;
+> > > 
+> > > -	/*
+> > > -	 * splice in addtl between S2 and S4 -- we place S4 at the end of the
+> > > -	 * input data chain
+> > > -	 */
+> > > -	tempstr = addtl;
+> > > -	for (; NULL != tempstr; tempstr = tempstr->next)
+> > > -		if (NULL == tempstr->next)
+> > > -			break;
+> > > -	tempstr->next = &S4;
+> > > +	if (NULL == addtl) {
+> > > +		S2.next = &S4;
+> > > +	} else {
+> > > +		/*
+> > > +		 * splice in addtl between S2 and S4 -- we place S4 at the end
+> > > +		 * of the input data chain
+> > > +		 */
+> > > +		S2.next = addtl;
+> > > +		tempstr = addtl;
+> > > +		while (tempstr->next)
+> > > +			tempstr = tempstr->next;
+> > > +		tempstr->next = &S4;
+> > 
+> > You've still got exactly the same NULL dereference.
+> 
+> I was offline for a bit so I'm coming into this late.  It's weird that
+> Stephan isn't defending his patch but it looks ok to me...
 
-Note, I get a warning when compiling 64 bit with %u and without the unsigned 
-int cast. Initially I had %lu without the cast which worked on my x86_64, but 
-it was reported that this usage caused a warning on 32 bit. So, there is a 
-different type of ARRAY_SIZE.
+It has been clarified in a later email that there was no NULL pointer after 
+all. I erroneously sent this message and initially missed the check that 
+guards against the NULL pointer.
+> 
+> regards,
+> dan carpenter
 
-> I get the same output types and error warnings compiling this
-> either -m32 or -m64
-
-I do not get a warning for the ARRAY_SIZE thing with your code with either -
-m32 or -m64 (I get other warnings though, which should not be of interest 
-here).
-
-And I also get the same output. Yet I am not sure how that code can be 
-compared to the code in the kernel.
 
 -- 
 Ciao
