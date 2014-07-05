@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965246AbaGEKoi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 06:44:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57958 "EHLO
+	id S965278AbaGEKou (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 06:44:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57966 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965179AbaGEKoe (ORCPT
+	with ESMTP id S965179AbaGEKos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 06:44:34 -0400
-Date: Sat, 5 Jul 2014 03:43:44 -0700
-From: tip-bot for Mike Galbraith <tipbot@zytor.com>
-Message-ID: <tip-4036ac1567834222fc763ab18e3e17df93b4eaaf@git.kernel.org>
+	Sat, 5 Jul 2014 06:44:48 -0400
+Date: Sat, 5 Jul 2014 03:43:58 -0700
+From: tip-bot for Viresh Kumar <tipbot@zytor.com>
+Message-ID: <tip-89abb5ad10ae8ac3405e635ac80815f781c8b8e9@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tglx@linutronix.de, umgwanakikbuti@gmail.com
+        peterz@infradead.org, viresh.kumar@linaro.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tglx@linutronix.de, umgwanakikbuti@gmail.com
-In-Reply-To: <1403588980.29711.11.camel@marge.simpson.net>
-References: <1403588980.29711.11.camel@marge.simpson.net>
+        peterz@infradead.org, viresh.kumar@linaro.org, tglx@linutronix.de
+In-Reply-To: <0dfbe2976aa108c53e08d3477ea90f6360c1f54c.1403584026.git.viresh.kumar@linaro.org>
+References: <0dfbe2976aa108c53e08d3477ea90f6360c1f54c.1403584026.git.viresh.kumar@linaro.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix clock_gettime(CLOCK_[PROCESS/THREAD]
- _CPUTIME_ID) monotonicity
-Git-Commit-ID: 4036ac1567834222fc763ab18e3e17df93b4eaaf
+Subject: [tip:sched/core] sched/idle: Drop !! while calculating 'broadcast
+ '
+Git-Commit-ID: 89abb5ad10ae8ac3405e635ac80815f781c8b8e9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,68 +32,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4036ac1567834222fc763ab18e3e17df93b4eaaf
-Gitweb:     http://git.kernel.org/tip/4036ac1567834222fc763ab18e3e17df93b4eaaf
-Author:     Mike Galbraith <umgwanakikbuti@gmail.com>
-AuthorDate: Tue, 24 Jun 2014 07:49:40 +0200
+Commit-ID:  89abb5ad10ae8ac3405e635ac80815f781c8b8e9
+Gitweb:     http://git.kernel.org/tip/89abb5ad10ae8ac3405e635ac80815f781c8b8e9
+Author:     Viresh Kumar <viresh.kumar@linaro.org>
+AuthorDate: Tue, 24 Jun 2014 10:01:01 +0530
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 5 Jul 2014 11:17:30 +0200
+CommitDate: Sat, 5 Jul 2014 11:17:31 +0200
 
-sched: Fix clock_gettime(CLOCK_[PROCESS/THREAD]_CPUTIME_ID) monotonicity
+sched/idle: Drop !! while calculating 'broadcast'
 
-If a task has been dequeued, it has been accounted.  Do not project
-cycles that may or may not ever be accounted to a dequeued task, as
-that may make clock_gettime() both inaccurate and non-monotonic.
+We don't need 'broadcast' to be set to 'zero or one', but to 'zero or non-zero'
+and so the extra operation to convert it to 'zero or one' can be skipped.
 
-Protect update_rq_clock() from slight TSC skew while at it.
+Also change type of 'broadcast' to unsigned int, i.e. type of
+drv->states[*].flags.
 
-Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: kosaki.motohiro@jp.fujitsu.com
-Cc: pjt@google.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1403588980.29711.11.camel@marge.simpson.net
+Link: http://lkml.kernel.org/r/0dfbe2976aa108c53e08d3477ea90f6360c1f54c.1403584026.git.viresh.kumar@linaro.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ kernel/sched/idle.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 866d840..e50234b 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -139,6 +139,8 @@ void update_rq_clock(struct rq *rq)
- 		return;
+diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+index cf009fb..9f1608f 100644
+--- a/kernel/sched/idle.c
++++ b/kernel/sched/idle.c
+@@ -79,7 +79,7 @@ static void cpuidle_idle_call(void)
+ 	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+ 	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+ 	int next_state, entered_state;
+-	bool broadcast;
++	unsigned int broadcast;
  
- 	delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
-+	if (delta < 0)
-+		return;
- 	rq->clock += delta;
- 	update_rq_clock_task(rq, delta);
- }
-@@ -2431,7 +2433,12 @@ static u64 do_task_delta_exec(struct task_struct *p, struct rq *rq)
- {
- 	u64 ns = 0;
+ 	/*
+ 	 * Check if the idle task must be rescheduled. If it is the
+@@ -135,7 +135,7 @@ use_default:
+ 		goto exit_idle;
+ 	}
  
--	if (task_current(rq, p)) {
-+	/*
-+	 * Must be ->curr _and_ ->on_rq.  If dequeued, we would
-+	 * project cycles that may never be accounted to this
-+	 * thread, breaking clock_gettime().
-+	 */
-+	if (task_current(rq, p) && p->on_rq) {
- 		update_rq_clock(rq);
- 		ns = rq_clock_task(rq) - p->se.exec_start;
- 		if ((s64)ns < 0)
-@@ -2474,8 +2481,10 @@ unsigned long long task_sched_runtime(struct task_struct *p)
- 	 * If we race with it leaving cpu, we'll take a lock. So we're correct.
- 	 * If we race with it entering cpu, unaccounted time is 0. This is
- 	 * indistinguishable from the read occurring a few cycles earlier.
-+	 * If we see ->on_cpu without ->on_rq, the task is leaving, and has
-+	 * been accounted, so we're correct here as well.
- 	 */
--	if (!p->on_cpu)
-+	if (!p->on_cpu || !p->on_rq)
- 		return p->se.sum_exec_runtime;
- #endif
+-	broadcast = !!(drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP);
++	broadcast = drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP;
  
+ 	/*
+ 	 * Tell the time framework to switch to a broadcast timer
