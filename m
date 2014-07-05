@@ -1,63 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760478AbaGEDoo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 23:44:44 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:53045 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760395AbaGEDon (ORCPT
+	id S1760512AbaGEDtf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 23:49:35 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:53736 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053AbaGEDte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 23:44:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPDOMVj+KVO7D977gDKz-ZzJuq2wKawjT0E7TphybyYX0QF1rg@mail.gmail.com>
-References: <CAPDOMVgP5WBDqQTLFi=PNY1ykBR1c0QnQdPYYAmN8cDYnknFbQ@mail.gmail.com>
-	<1404530647.5148.21.camel@marge.simpson.net>
-	<CAPDOMVj+KVO7D977gDKz-ZzJuq2wKawjT0E7TphybyYX0QF1rg@mail.gmail.com>
-Date: Sat, 5 Jul 2014 05:44:42 +0200
-Message-ID: <CAFLxGvxP0PzuvSrPY3rUW7hdKXK2aGK1W0wn_RWubX28YFv5nQ@mail.gmail.com>
-Subject: Re: Scalability Question
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 4 Jul 2014 23:49:34 -0400
+Message-ID: <1404532172.2572.30.camel@j-VirtualBox>
+Subject: Re: [regression, 3.16-rc] rwsem: optimistic spinning causing
+ performance degradation
+From: Jason Low <jason.low2@hp.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 04 Jul 2014 20:49:32 -0700
+In-Reply-To: <1404463234.2457.4.camel@buesod1.americas.hpqcorp.net>
+References: <1404413420.8764.42.camel@j-VirtualBox>
+	 <20140704010147.GY4453@dastard> <1404438366.8764.121.camel@j-VirtualBox>
+	 <1404438890.8764.125.camel@j-VirtualBox>
+	 <20140704075247.GZ19379@twins.programming.kicks-ass.net>
+	 <1404463234.2457.4.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 5, 2014 at 5:33 AM, Nick Krause <xerofoify@gmail.com> wrote:
-> The most powerful super computer runs Ubuntu with over 3.2 million cores.
+On Fri, 2014-07-04 at 01:40 -0700, Davidlohr Bueso wrote:
+> On Fri, 2014-07-04 at 09:52 +0200, Peter Zijlstra wrote:
+> > Davidlohr, you'll be running this through your AIM and other benchmarks,
+> > I suppose?
+> 
+> I ran it through aim7, and as I suspected we take a performance hit with
+> 'custom' ~-14% throughput for > 300 users (which is still overall quite
+> higher than rwsems without opt spinning, at around ~+45%), and we
+> actually improve a bit (~+15%) in 'disk' with >1000 users -- which
+> afaict resembles Dave's workload a bit. So all in all I'm quite happy
+> with this patch.
 
-These kind of computers don't run a single kernel.
-See grid computing.
+Here is the patch with the updates to the changelog.
 
-> There fore I can state that Linux is very good at scaling as I have seem
-> the other side with embedded systems.
-> Cheers Nick
->
-> On Fri, Jul 4, 2014 at 11:24 PM, Mike Galbraith
-> <umgwanakikbuti@gmail.com> wrote:
->> On Fri, 2014-07-04 at 16:40 -0400, Nick Krause wrote:
->>> I am curious after reading some outdated kernel papers, how scalable
->>> is the kernel of
->>> late? I am curious mostly in memory and cpu subsystems as file systems
->>> will change
->>> based on user's choice.
->>
->> You can currently configure for up to 8192 CPUs.  I've not seen any
->> benchmark data whatsoever for huge boxen, have no idea where which
->> subsystem crumbles.  SGI asked for the increase to 8192, so presumably
->> do manage to squeeze acceptable performance out of size XXXXL boxen.
->>
->> -Mike
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+---
+Subject: [PATCH] rwsem: Allow conservative optimistic spinning when readers have lock
 
+Commit 4fc828e24cd9 ("locking/rwsem: Support optimistic spinning")
+introduced a major performance regression for workloads such as
+xfs_repair which mix read and write locking of the mmap_sem across
+many threads. The result was xfs_repair ran 5x slower on 3.16-rc2
+than on 3.15 and using 20x more system CPU time.
 
+Perf profiles indicate in some workloads that significant time can
+be spent spinning on !owner. This is because we don't set the lock
+owner when readers(s) obtain the rwsem.
 
+In this patch, we'll modify rwsem_can_spin_on_owner() such that we'll
+return false if there is no lock owner. The rationale is that if we
+just entered the slowpath, yet there is no lock owner, then there is
+a possibility that a reader has the lock. To be conservative, we'll
+avoid spinning in these situations.
+
+This patch reduced the total run time of the xfs_repair workload from
+about 4 minutes 24 seconds down to approximately 1 minute 26 seconds,
+back to close to the same performance as on 3.15.
+
+Retesting of AIM7, which were some of the workloads used to test the
+original optimistic spinning code, confirmed that we still get big
+performance gains with optimistic spinning, even with this additional
+regression fix. Davidlohr found that while the 'custom' workload took
+a performance hit of ~-14% to throughput for >300 users with this
+additional patch, the overall gain with optimistic spinning is
+still ~+45%. The 'disk' workload even improved by ~+15% at >1000 users.
+
+Tested-by: Dave Chinner <dchinner@redhat.com>
+Acked-by: Davidlohr Bueso <davidlohr@hp.com>
+Signed-off-by: Jason Low <jason.low2@hp.com>
+---
+ kernel/locking/rwsem-xadd.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
+index dacc321..c40c7d2 100644
+--- a/kernel/locking/rwsem-xadd.c
++++ b/kernel/locking/rwsem-xadd.c
+@@ -285,10 +285,10 @@ static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
+ static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
+ {
+ 	struct task_struct *owner;
+-	bool on_cpu = true;
++	bool on_cpu = false;
+ 
+ 	if (need_resched())
+-		return 0;
++		return false;
+ 
+ 	rcu_read_lock();
+ 	owner = ACCESS_ONCE(sem->owner);
+@@ -297,9 +297,9 @@ static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
+ 	rcu_read_unlock();
+ 
+ 	/*
+-	 * If sem->owner is not set, the rwsem owner may have
+-	 * just acquired it and not set the owner yet or the rwsem
+-	 * has been released.
++	 * If sem->owner is not set, yet we have just recently entered the
++	 * slowpath, then there is a possibility reader(s) may have the lock.
++	 * To be safe, avoid spinning in these situations.
+ 	 */
+ 	return on_cpu;
+ }
 -- 
-Thanks,
-//richard
+1.7.9.5
+
+
+
