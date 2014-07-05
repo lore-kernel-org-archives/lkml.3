@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651AbaGEEOs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 00:14:48 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:49672 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934AbaGEEOq (ORCPT
+	id S1753897AbaGEE2u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 00:28:50 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:60125 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430AbaGEE2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 00:14:46 -0400
-From: Nicholas Krause <xerofoify@gmail.com>
-To: jejb@parisc-linux.org
-Cc: deller@gmx.de, joe@perches.com, dave.anglin@bell.net, jkosina@suse.cz,
-        tiwai@suse.de, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] parisc: Remove FIXME line in signal.c
-Date: Sat,  5 Jul 2014 00:14:42 -0400
-Message-Id: <1404533682-6747-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 5 Jul 2014 00:28:48 -0400
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        acme@ghostprotocols.net
+Cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Subject: [PATCH] appletalk: Set skb with destructor
+Date: Sat,  5 Jul 2014 07:28:14 +0300
+Message-Id: <1404534494-6253-1-git-send-email-andrey.krieger.utkin@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This frame removes a fix me line in signal.c that is no longer
-needed as function call is correct.
+See https://bugzilla.kernel.org/show_bug.cgi?id=79441
+---8<---
+Made changes similar to 0ae89beb283a0db5980d1d4781c7d7be2f2810d6
 
-Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+Reported-by: Ed Martin <edman007@edman007.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 ---
- arch/parisc/kernel/signal.c | 1 -
- 1 file changed, 1 deletion(-)
+ net/appletalk/ddp.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/arch/parisc/kernel/signal.c b/arch/parisc/kernel/signal.c
-index 1cba8f2..1d550b5 100644
---- a/arch/parisc/kernel/signal.c
-+++ b/arch/parisc/kernel/signal.c
-@@ -240,7 +240,6 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
- #endif
- 	
- 	usp = (regs->gr[30] & ~(0x01UL));
--	/*FIXME: frame_size parameter is unused, remove it. */
- 	frame = get_sigframe(ka, usp, sizeof(*frame));
+diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
+index 01a1082..3d8ab34 100644
+--- a/net/appletalk/ddp.c
++++ b/net/appletalk/ddp.c
+@@ -1399,6 +1399,11 @@ drop:
+ 	return NET_RX_DROP;
+ }
  
- 	DBG(1,"SETUP_RT_FRAME: START\n");
++static inline void atalk_skb_destructor(struct sk_buff *skb)
++{
++	sock_put(skb->sk);
++}
++
+ /**
+  *	atalk_rcv - Receive a packet (in skb) from device dev
+  *	@skb - packet received
+@@ -1489,6 +1494,8 @@ static int atalk_rcv(struct sk_buff *skb, struct net_device *dev,
+ 		goto drop;
+ 
+ 	/* Queue packet (standard) */
++	sock_hold(sock);
++	skb->destructor = atalk_skb_destructor;
+ 	skb->sk = sock;
+ 
+ 	if (sock_queue_rcv_skb(sock, skb) < 0)
+@@ -1644,6 +1651,8 @@ static int atalk_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
+ 	if (!skb)
+ 		goto out;
+ 
++	sock_hold(sk);
++	skb->destructor = atalk_skb_destructor;
+ 	skb->sk = sk;
+ 	skb_reserve(skb, ddp_dl->header_length);
+ 	skb_reserve(skb, dev->hard_header_len);
 -- 
-1.9.1
+1.8.3.2
 
