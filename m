@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932745AbaGEUrP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 16:47:15 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:63879 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756156AbaGEUrO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 16:47:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Rob Herring <robherring2@gmail.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Sinan Kaya <okaya@codeaurora.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>, Will Deacon <Will.Deacon@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Kukjin Kim <kgene.kim@samsung.com>, Tanmay Inamdar <tinamdar@apm.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH v8 4/9] pci: OF: Fix the conversion of IO ranges into IO resources.
-Date: Sat, 05 Jul 2014 22:46:09 +0200
-Message-ID: <6122131.ozzYjjjRQi@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAL_JsqJNfB_jynFQK0Ov6A3wqk6LF3abUFEUjhmzipak26sU5w@mail.gmail.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com> <1404240214-9804-5-git-send-email-Liviu.Dudau@arm.com> <CAL_JsqJNfB_jynFQK0Ov6A3wqk6LF3abUFEUjhmzipak26sU5w@mail.gmail.com>
+	id S932764AbaGEUtX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 16:49:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42958 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756156AbaGEUtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jul 2014 16:49:22 -0400
+Date: Sat, 5 Jul 2014 22:49:18 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Tejun Heo <tj@kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+cc: Jiri Slaby <jslaby@suse.cz>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org, mingo@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>, andi@firstfloor.org,
+        paulmck@linux.vnet.ibm.com, Pavel Machek <pavel@ucw.cz>,
+        jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
+        Michael Matz <matz@suse.de>
+Subject: Re: kGraft to -next [was: 00/21 kGraft]
+In-Reply-To: <20140705203606.GC3069@mtj.dyndns.org>
+Message-ID: <alpine.LNX.2.00.1407052240020.1655@pobox.suse.cz>
+References: <1403694329-3064-1-git-send-email-jslaby@suse.cz> <53B3F556.7050002@suse.cz> <20140702123002.GA20071@mtj.dyndns.org> <20140702134721.00163886@alan.etchedpixels.co.uk> <alpine.LNX.2.00.1407021459330.1655@pobox.suse.cz> <20140702133053.GB20071@mtj.dyndns.org>
+ <alpine.LNX.2.00.1407052148410.1655@pobox.suse.cz> <20140705203606.GC3069@mtj.dyndns.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:2Sr1JqkR+QOvS6uqBTJ91rGDpu/XmNjREZ4SKqJ0A79
- fc2qkDZxrzz03MOHE4YHKqzt7lFQGl4OAnmy+ob71wHPxP0jmo
- oVmBn9DxukEonwP+yW90/vLAfJpjaVHsqewpbJCtfxi4cy1dPA
- 2BKG7dhXniNTZpXqIfPJ3T6npIMp5Pn4ASHcTYAXalS+AtNbe8
- xBdnNyfEGSXb94yuEYexsdmf4jKIGGH0uo1qTTrkvqie/rK6Bw
- tamNtkva0w+6DkO5anN9c1evIIhrJuass/XH+NRsm3gMYHsHWF
- RUAHl7fggK+yE8Lg5tl4tOmLNJpgl5rMvDENY+hwIY8241q2mv
- g2PtPfmoh6lAaUjK+ZVQ=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 05 July 2014 14:25:52 Rob Herring wrote:
-> On Tue, Jul 1, 2014 at 1:43 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > The ranges property for a host bridge controller in DT describes
-> > the mapping between the PCI bus address and the CPU physical address.
-> > The resources framework however expects that the IO resources start
-> > at a pseudo "port" address 0 (zero) and have a maximum size of IO_SPACE_LIMIT.
-> > The conversion from pci ranges to resources failed to take that into account.
+On Sat, 5 Jul 2014, Tejun Heo wrote:
+
+> > What we need is to have a defined point in execution where we can draw a 
+> > line between "old" and "new" universes. For processess that are crossing 
+> > the userspace/kernelspace boundary, the obvious choice, that covers most 
+> > of the use-cases, has been made. There are still scenarios where this 
+> > aproach can't be just-blindly-applied(TM) for various reasons (changing 
+> > lock order might cause deadlocks, there are cases where state is lingering 
 > 
-> I don't think this change is right. There are 2 resources: the PCI bus
-> addresses and cpu addresses. This function deals with the cpu
-> addresses. Returning pci addresses for i/o and cpu addresses for
-> memory is going to be error prone. We probably need both cpu and pci
-> resources exposed to host controllers.
+> Sure, if something breaks work due to semantic differences, there
+> isn't anything we can do.
+[ ... ]
+> > The same holds for the kernel threads -- until all (or most of) the 
+> > kthreads are converted to workqueues, the obivous choice, that should 
+> > cover most of the use-cases, has been made.
 > 
-> Making the new function only deal with i/o bus resources and naming it
-> of_pci_range_to_io_resource would be better.
+> But, this is different.  
 
-I think you are correct that this change by itself is will break existing
-drivers that rely on the current behavior of of_pci_range_to_resource,
-but there is also something wrong with the existing implementation:
+Quite frankly, I have to say that I don't personally see *that* big 
+difference. In both cases we are making assumptions about semantics, and 
+are trying to get "as close as possible" to the point in time where the 
+set of assumptions can be made as minimal as possible.
 
-of_pci_range_to_resource() at the moment returns a the address in
-cpu address space (i.e. IORESOURCE_MEM) but sets the res->flags
-value to IORESOURCE_IO, which means it doesn't fit into the resource
-tree. Liviu's version gets that part right, and it would be nice
-to fix that eventually, however we do it here.
+With userspace thread, this is kernel/userspace boundary. With kthread, 
+this is starting of new iteration of the main loop / try_to_freeze().
 
-	Arnd
+We were not able to come up with anything better. Alan, you were 
+stating "I don't see why it can't use the kernel freeze functionality?". 
+What exactly was your suggestion, if not this, please?
+
+> This is the mechanism itself being flaky and buggy.  This can make 
+> things fail not because the patch itself is semantically wrong but 
+> because the mechanism stopped the kernel at the wrong place.  
+
+Well, to be precise, we are not "stopping" the kernel at all.
+
+> If kthread can't be safely supported now, that's fine but then make it 
+> clear that functions which may be executed by kthreads aren't supported.
+
+So one of the aproaches implied by this would be first merging a light 
+version of kGraft which doesn't support kthreads, and working towards a 
+solution for kthreads as well (which might be tangential to kGraft; if 
+most of the kthreads get converted to workqueues, it's a win-win 
+situation anyway); would such kGraft-light get your Ack then? :)
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
