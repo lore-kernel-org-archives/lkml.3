@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011AbaGES5n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 14:57:43 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:52975 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755418AbaGES5k (ORCPT
+	id S1756091AbaGETBT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 15:01:19 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55454 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752824AbaGETBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 14:57:40 -0400
-Date: Sat, 5 Jul 2014 12:57:36 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Vidya Sagar <vidyas@nvidia.com>
-Cc: rjw@sisk.pl, nagananda.chumbalkar@hp.com, thierry.reding@gmail.com,
-        swarren@nvidia.com, kthota@nvidia.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: Re: [PATCH v1] PCI: enable ASPM configuration in PCIE POWERSAVE mode
-Message-ID: <20140705185736.GD28871@google.com>
-References: <1404198978-26593-1-git-send-email-vidyas@nvidia.com>
+	Sat, 5 Jul 2014 15:01:18 -0400
+Date: Sat, 5 Jul 2014 20:01:05 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: pawandeep oza <oza.contri.linux.kernel@gmail.com>
+Cc: akpm@linux-foundation.org, holt@sgi.com, mingo@kernel.org,
+        sboyd@codeaurora.org, k.khlebnikov@samsung.com,
+        u.kleine-koenig@pengutronix.de,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.or, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] machine_power_off: not only local_irq_disable but also
+	do disable preemption
+Message-ID: <20140705190105.GR21766@n2100.arm.linux.org.uk>
+References: <CAA-nRyoO_NmrD8aRa3OyVXz4b133Fxi0=biGXTzSPDuSuNJJxQ@mail.gmail.com> <20140705181015.GQ21766@n2100.arm.linux.org.uk> <CAA-nRyp5pPC2qZs7RhAXJdXaK_k4fKNZuq=yRTSTPLQsgPxqxQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404198978-26593-1-git-send-email-vidyas@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAA-nRyp5pPC2qZs7RhAXJdXaK_k4fKNZuq=yRTSTPLQsgPxqxQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Matthew]
-
-On Tue, Jul 01, 2014 at 12:46:18PM +0530, Vidya Sagar wrote:
-> commit 1a680b7c moved pcie_aspm_powersave_config_link() out of
-> pci_raw_set_power_state() to pci_set_power_state() which would enable
-> ASPM. But, with commit db288c9c, which re-introduced the following check
-> ./drivers/pci/pci.c: pci_set_power_state()
-> +   /* Check if we're already there */
-> +   if (dev->current_state == state)
-> +       return 0;
-> in pci_set_power_state(), call to pcie_aspm_powersave_config_link() is never
-> made leaving ASPM broken.
-> Fix it by not returning from when the above condition is true, rather, jump to
-> ASPM configuration code and exit from there eventually.
-
-Rafael, Matthew, any comments?  We have vacillated on this before and
-the web is already pretty tangled.
-
-Vidya, can you give more details about the bug fixed by this change?
-What's the scenario?  Are we resuming and the device is powered up but
-ASPM isn't enabled?  Maybe you could collect more details in a
-http://bugzilla.kernel.org report?
-
-> Signed-off-by: Vidya Sagar <vidyas@nvidia.com>
-> ---
->  drivers/pci/pci.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
+On Sun, Jul 06, 2014 at 12:20:03AM +0530, pawandeep oza wrote:
+> Hi,
 > 
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index 1c8592b..ded24c4 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -804,7 +804,7 @@ EXPORT_SYMBOL_GPL(__pci_complete_power_transition);
->   */
->  int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->  {
-> -	int error;
-> +	int error = 0;
->  
->  	/* bound the state we're entering */
->  	if (state > PCI_D3cold)
-> @@ -821,7 +821,7 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->  
->  	/* Check if we're already there */
->  	if (dev->current_state == state)
-> -		return 0;
-> +		goto config_aspm;
->  
->  	__pci_start_power_transition(dev, state);
->  
-> @@ -839,6 +839,8 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
->  
->  	if (!__pci_complete_power_transition(dev, state))
->  		error = 0;
-> +
-> +config_aspm:
->  	/*
->  	 * When aspm_policy is "powersave" this call ensures
->  	 * that ASPM is configured.
-> -- 
-> 1.8.1.5
+> I am referring to this version of spin lock apis.
 > 
+> static inline void __raw_spin_lock(raw_spinlock_t *lock)
+> {
+> preempt_disable();
+> spin_acquire(&lock->dep_map, 0, 0, _RET_IP_);
+> LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
+> }
+> 
+> 
+> static inline void __raw_spin_unlock(raw_spinlock_t *lock)
+> {
+> spin_release(&lock->dep_map, 1, _RET_IP_);
+> do_raw_spin_unlock(lock);
+> preempt_enable();
+> }
+> 
+> poweroff path runs with irqs disabled, but what is some one (valid
+> scenerio) try to have spin_lock and spin_unlock for its own reasons.
+> 
+> spin_unlock doesn preempt_enable at the end...
+> which in turn does following.
+> 
+> #define preempt_enable() \
+> do { \
+> preempt_enable_no_resched(); \
+> barrier(); \
+> preempt_check_resched(); \
+> } while (0)
+> 
+> 
+> preempt_check_resched would check TIF_NEED_RESCHED
+> #define preempt_check_resched() \
+> do { \
+> if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
+> preempt_schedule(); \
+> } while (0)
+> 
+> there is a chance that just beofre we disabled irqs, somebody would have
+> marked the flag to current, and
+> later on, it might happen that, current gets replaced by the process which
+> tries to hold a spin_lock which has already been previosuly held by CPU1
+> when
+> was being plugged out by smp_send_stop.
+
+This seems to be a generic code bug - if interrupts are disabled (they
+are) then we should not schedule at all.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
