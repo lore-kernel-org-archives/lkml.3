@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973AbaGES34 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 14:29:56 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:60443 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755174AbaGES3y (ORCPT
+	id S964817AbaGESbp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 14:31:45 -0400
+Received: from smtprelay0217.hostedemail.com ([216.40.44.217]:35265 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754940AbaGESbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 14:29:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Robert Jarzmik <robert.jarzmik@free.fr>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>, devicetree@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] arm: pxa: add non device-tree timer link to clocksource
-Date: Sat, 05 Jul 2014 20:29:40 +0200
-Message-ID: <5284586.j08GjTMeo6@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1404558781-9537-4-git-send-email-robert.jarzmik@free.fr>
-References: <1404558781-9537-1-git-send-email-robert.jarzmik@free.fr> <1404558781-9537-4-git-send-email-robert.jarzmik@free.fr>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:uA1nmEX78BnvJxBDQ65yZVaGOse9tQKc2RhhYf9KEwX
- 2ohJyqTyLfXrnz6KpWUjg9Lyd7XoBeyVhIHSv6fYl05HACbgDV
- gPtGhiBe309cbXa2XBVlOJ5XrUPf+w2cOJi3FIsYZdg0yNaZyf
- EPt7Lhl7rCmpU7OHrI8Zkh8OBHlclWGR0t8+rs3kEewDbFXfeb
- FB9vD+4x/Mlcrsl79+BbBCsPFj1/OIWcOjBAt1V6RwXHmmA/1G
- BaqFkiFZO/X4HZjVUyNJtvR9n5h6WFeJcV+X+iG3m/7k5OMg+e
- 5eMVBGaRwy1hcnrzEeGT5gau6O2GXhCmudO4uSXn1sXOEq3hFE
- 5GQZAXpNNBkouGl5sd8E=
+	Sat, 5 Jul 2014 14:31:44 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2198:2199:2393:2551:2553:2559:2562:2691:2828:3138:3139:3140:3141:3142:3350:3622:3865:3871:3872:3873:3874:4321:5007:6119:7652:7903:8527:10004:10400:10848:11232:11658:11914:12050:12517:12519:12740:13019:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: car24_ea482ff2162f
+X-Filterd-Recvd-Size: 2082
+Message-ID: <1404585099.6384.53.camel@joe-AO725>
+Subject: Re: [PATCH v2] declance: Fix 64-bit compilation warnings
+From: Joe Perches <joe@perches.com>
+To: "Maciej W. Rozycki" <macro@linux-mips.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 05 Jul 2014 11:31:39 -0700
+In-Reply-To: <alpine.LFD.2.11.1407051917480.15455@eddie.linux-mips.org>
+References: <alpine.LFD.2.11.1406290246120.15455@eddie.linux-mips.org>
+	 <20140702.182807.1245632778216212860.davem@davemloft.net>
+	 <alpine.LFD.2.11.1407030244230.15455@eddie.linux-mips.org>
+	 <alpine.LFD.2.11.1407030331550.15455@eddie.linux-mips.org>
+	 <1404356734.14741.18.camel@joe-AO725>
+	 <alpine.LFD.2.11.1407030423300.15455@eddie.linux-mips.org>
+	 <1404364565.14741.26.camel@joe-AO725>
+	 <alpine.LFD.2.11.1407030637030.15455@eddie.linux-mips.org>
+	 <1404368746.14741.36.camel@joe-AO725>
+	 <alpine.LFD.2.11.1407051529040.15455@eddie.linux-mips.org>
+	 <1404576420.6384.41.camel@joe-AO725>
+	 <alpine.LFD.2.11.1407051833400.15455@eddie.linux-mips.org>
+	 <1404583739.6384.51.camel@joe-AO725>
+	 <alpine.LFD.2.11.1407051917480.15455@eddie.linux-mips.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 05 July 2014 13:13:01 Robert Jarzmik wrote:
->  EXPORT_SYMBOL(get_clock_tick_rate);
->  
->  /*
-> + * For non device-tree builds, keep legacy timer init
-> + */
-> +extern void pxa_timer_nodt_init(int irq, void __iomem *base,
-> +                          unsigned long clock_tick_rate);
-> +void pxa_timer_init(void)
-> +{
-> +       pxa_timer_nodt_init(IRQ_OST0, io_p2v(0x40a00000),
-> +                           get_clock_tick_rate());
-> +}
-> +
+On Sat, 2014-07-05 at 19:20 +0100, Maciej W. Rozycki wrote:
+> On Sat, 5 Jul 2014, Joe Perches wrote:
+> > I don't think %#p is valid so it
+> > shouldn't have been set by #.
+> 
+>  Huh?  As recently as last Wednesday you pointed me at the specific commit 
+> from Grant that made it valid (GCC format complaints aside).
 
-I think it would be better to move the extern declaration into 
-a new header file, e.g. include/clocksource/pxa.h.
+Those gcc complaints are precisely the thing
+that makes it invalid.
 
-	Arnd
+I believe you're tilting at windmills.
+
+Hey, it works sometimes.  Knock yourself out.
+
+
+
