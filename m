@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613AbaGETHA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 15:07:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36002 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756147AbaGETG7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 15:06:59 -0400
-Date: Sat, 5 Jul 2014 12:11:19 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 00/46] 3.10.47-stable review
-Message-ID: <20140705191119.GC30203@kroah.com>
-References: <20140704221602.280733370@linuxfoundation.org>
- <53B7908C.2050800@roeck-us.net>
+	id S932645AbaGETLK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 15:11:10 -0400
+Received: from arrakis.dune.hu ([78.24.191.176]:53537 "EHLO arrakis.dune.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932084AbaGETLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jul 2014 15:11:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B7908C.2050800@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1404584812-12377-1-git-send-email-emilgoode@gmail.com>
+References: <1404584812-12377-1-git-send-email-emilgoode@gmail.com>
+From: Jonas Gorski <jogo@openwrt.org>
+Date: Sat, 5 Jul 2014 21:10:44 +0200
+Message-ID: <CAOiHx=nU7GvGnwrH0TqTkO9-mhX2RJU5gPzRRwb1OfHPcHmrqA@mail.gmail.com>
+Subject: Re: [PATCH v2] MIPS: Fix incorrect NULL check in local_flush_tlb_page()
+To: Emil Goode <emilgoode@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        John Crispin <blogic@openwrt.org>,
+        MIPS Mailing List <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04, 2014 at 10:43:40PM -0700, Guenter Roeck wrote:
-> On 07/04/2014 03:19 PM, Greg Kroah-Hartman wrote:
-> >This is the start of the stable review cycle for the 3.10.47 release.
-> >There are 46 patches in this series, all will be posted as a response
-> >to this one.  If anyone has any issues with these being applied, please
-> >let me know.
-> >
-> >Responses should be made by Sun Jul  6 22:15:52 UTC 2014.
-> >Anything received after that time might be too late.
-> >
-> 
-> Build results:
-> 	total: 144 pass: 125 skipped: 6 fail: 13
-> Failed builds:
-> 	alpha:allmodconfig
-> 	i386:defconfig
-> 	i386:allyesconfig
-> 	i386:allmodconfig
-> 	powerpc:allmodconfig (binutils 2.23)
-> 	powerpc:allmodconfig (binutils 2.24)
-> 	score:defconfig
-> 	sparc64:allmodconfig
-> 	unicore32:defconfig
-> 	x86_64:defconfig
-> 	x86_64:allyesconfig
-> 	x86_64:allmodconfig
-> 	xtensa:allmodconfig
-> 
-> Qemu test for x86 failed with a build error.
-> 
-> This is not as expected. New build error is always the same as far as I can see:
-> 
-> sound/pci/hda/patch_sigmatel.c: In function 'stac92hd95_fixup_hp_led':
-> sound/pci/hda/patch_sigmatel.c:3578:3: error: implicit declaration of function 'codec_dbg' [-Werror=implicit-function-declaration]
+On Sat, Jul 5, 2014 at 8:26 PM, Emil Goode <emilgoode@gmail.com> wrote:
+> We check that the struct vm_area_struct pointer vma is NULL and then
+> dereference it a few lines below. The intent must have been to make sure
+> that vma is not NULL and then to check the value from cpu_context() for
+> the condition to be true.
+>
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> ---
+>
+> v2: Updated the commit message with a better explanation.
+>
+>  arch/mips/mm/tlb-r3k.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/mips/mm/tlb-r3k.c b/arch/mips/mm/tlb-r3k.c
+> index d657493..6546758 100644
+> --- a/arch/mips/mm/tlb-r3k.c
+> +++ b/arch/mips/mm/tlb-r3k.c
+> @@ -158,7 +158,7 @@ void local_flush_tlb_page(struct vm_area_struct *vma, unsigned long page)
+>  {
+>         int cpu = smp_processor_id();
+>
+> -       if (!vma || cpu_context(cpu, vma->vm_mm) != 0) {
+> +       if (vma && cpu_context(cpu, vma->vm_mm) != 0) {
 
-Should now be fixed, thanks.
+Sorry for replying "too late", but grepping through the kernel code I
+fail to find any caller that does not dereference vma before calling
+(local)flush_tlb_page(). Also both tlb-4k and tlb-8k assume vma cannot
+be NULL, so I would say it is safe to assume vma is never NULL, and
+the NULL check can be removed completely.
 
-greg k-h
+Also it looks like this "bug" was there since at least 2.6.12, and
+never seem to have bitten anyone.
+
+
+Jonas
