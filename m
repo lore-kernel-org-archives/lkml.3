@@ -1,37 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760831AbaGEKrk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 06:47:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58146 "EHLO
+	id S1760889AbaGEKrt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 06:47:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58157 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755590AbaGEKri (ORCPT
+	with ESMTP id S1755590AbaGEKrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 06:47:38 -0400
-Date: Sat, 5 Jul 2014 03:46:25 -0700
-From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
-Message-ID: <tip-b728ca06029d085a1585c1926610f26de93b9146@git.kernel.org>
-Cc: ktkhai@parallels.com, mingo@kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, fabf@skynet.be, todd.e.brandt@linux.intel.com,
-        akpm@linux-foundation.org, wangyun@linux.vnet.ibm.com,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        bsegall@google.com, pjt@google.com, srivatsa.bhat@linux.vnet.ibm.com,
-        rafael.j.wysocki@intel.com, toshi.kani@hp.com, khorenko@parallels.com,
-        umgwanakikbuti@gmail.com, ego@linux.vnet.ibm.com,
-        srikar@linux.vnet.ibm.com, paul.gortmaker@windriver.com
-Reply-To: mingo@kernel.org, ktkhai@parallels.com,
-        torvalds@linux-foundation.org, peterz@infradead.org, fabf@skynet.be,
-        todd.e.brandt@linux.intel.com, akpm@linux-foundation.org,
-        wangyun@linux.vnet.ibm.com, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, bsegall@google.com,
-        pjt@google.com, srivatsa.bhat@linux.vnet.ibm.com,
-        rafael.j.wysocki@intel.com, umgwanakikbuti@gmail.com,
-        khorenko@parallels.com, toshi.kani@hp.com, ego@linux.vnet.ibm.com,
-        srikar@linux.vnet.ibm.com, paul.gortmaker@windriver.com
-In-Reply-To: <1403684395.3462.44.camel@tkhai>
-References: <1403684395.3462.44.camel@tkhai>
+	Sat, 5 Jul 2014 06:47:46 -0400
+Date: Sat, 5 Jul 2014 03:46:37 -0700
+From: tip-bot for Vince Weaver <tipbot@zytor.com>
+Message-ID: <tip-cc56d673a9902aecd1c03bea6479eaff6de6967a@git.kernel.org>
+Cc: paulus@samba.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, cody@linux.vnet.ibm.com, peterz@infradead.org,
+        mpe@ellerman.id.au, vincent.weaver@maine.edu, benh@kernel.crashing.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        paulus@samba.org, cody@linux.vnet.ibm.com, peterz@infradead.org,
+        mpe@ellerman.id.au, benh@kernel.crashing.org, vincent.weaver@maine.edu,
+        tglx@linutronix.de
+In-Reply-To: <alpine.DEB.2.10.1406191435440.27913@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.10.1406191435440.27913@vincent-weaver-1.umelst.maine.edu>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Rework check_for_tasks()
-Git-Commit-ID: b728ca06029d085a1585c1926610f26de93b9146
+Subject: [tip:perf/core] powerpc, perf:
+  Use common PMU interrupt disabled code
+Git-Commit-ID: cc56d673a9902aecd1c03bea6479eaff6de6967a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -44,93 +36,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b728ca06029d085a1585c1926610f26de93b9146
-Gitweb:     http://git.kernel.org/tip/b728ca06029d085a1585c1926610f26de93b9146
-Author:     Kirill Tkhai <ktkhai@parallels.com>
-AuthorDate: Wed, 25 Jun 2014 12:19:55 +0400
+Commit-ID:  cc56d673a9902aecd1c03bea6479eaff6de6967a
+Gitweb:     http://git.kernel.org/tip/cc56d673a9902aecd1c03bea6479eaff6de6967a
+Author:     Vince Weaver <vincent.weaver@maine.edu>
+AuthorDate: Thu, 19 Jun 2014 14:40:09 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 5 Jul 2014 11:17:45 +0200
+CommitDate: Sat, 5 Jul 2014 11:21:51 +0200
 
-sched: Rework check_for_tasks()
+powerpc, perf: Use common PMU interrupt disabled code
 
-1) Iterate thru all of threads in the system.
-   Check for all threads, not only for group leaders.
+Transition to using the new generic PERF_PMU_CAP_NO_INTERRUPT method for
+failing a sampling event when no PMU interrupt is available.
 
-2) Check for p->on_rq instead of p->state and cputime.
-   Preempted task in !TASK_RUNNING state  OR just
-   created task may be queued, that we want to be
-   reported too.
-
-3) Use read_lock() instead of write_lock().
-   This function does not change any structures, and
-   read_lock() is enough.
-
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ben Segall <bsegall@google.com>
-Cc: Fabian Frederick <fabf@skynet.be>
-Cc: Gautham R. Shenoy <ego@linux.vnet.ibm.com>
-Cc: Konstantin Khorenko <khorenko@parallels.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Michael wang <wangyun@linux.vnet.ibm.com>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Paul Turner <pjt@google.com>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Todd E Brandt <todd.e.brandt@linux.intel.com>
-Cc: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1403684395.3462.44.camel@tkhai
+Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1406191435440.27913@vincent-weaver-1.umelst.maine.edu
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: linux-kernel@vger.kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/cpu.c | 33 ++++++++++++++++++++-------------
- 1 file changed, 20 insertions(+), 13 deletions(-)
+ arch/powerpc/perf/hv-24x7.c | 6 ++++--
+ arch/powerpc/perf/hv-gpci.c | 6 ++++--
+ 2 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index a343bde..81e2a38 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -274,21 +274,28 @@ void clear_tasks_mm_cpumask(int cpu)
- 	rcu_read_unlock();
- }
+diff --git a/arch/powerpc/perf/hv-24x7.c b/arch/powerpc/perf/hv-24x7.c
+index e0766b8..66d0f17 100644
+--- a/arch/powerpc/perf/hv-24x7.c
++++ b/arch/powerpc/perf/hv-24x7.c
+@@ -387,8 +387,7 @@ static int h_24x7_event_init(struct perf_event *event)
+ 	    event->attr.exclude_hv     ||
+ 	    event->attr.exclude_idle   ||
+ 	    event->attr.exclude_host   ||
+-	    event->attr.exclude_guest  ||
+-	    is_sampling_event(event)) /* no sampling */
++	    event->attr.exclude_guest)
+ 		return -EINVAL;
  
--static inline void check_for_tasks(int cpu)
-+static inline void check_for_tasks(int dead_cpu)
- {
--	struct task_struct *p;
--	cputime_t utime, stime;
-+	struct task_struct *g, *p;
+ 	/* no branch sampling */
+@@ -513,6 +512,9 @@ static int hv_24x7_init(void)
+ 	if (!hv_page_cache)
+ 		return -ENOMEM;
  
--	write_lock_irq(&tasklist_lock);
--	for_each_process(p) {
--		task_cputime(p, &utime, &stime);
--		if (task_cpu(p) == cpu && p->state == TASK_RUNNING &&
--		    (utime || stime))
--			pr_warn("Task %s (pid = %d) is on cpu %d (state = %ld, flags = %x)\n",
--				p->comm, task_pid_nr(p), cpu,
--				p->state, p->flags);
--	}
--	write_unlock_irq(&tasklist_lock);
-+	read_lock_irq(&tasklist_lock);
-+	do_each_thread(g, p) {
-+		if (!p->on_rq)
-+			continue;
-+		/*
-+		 * We do the check with unlocked task_rq(p)->lock.
-+		 * Order the reading to do not warn about a task,
-+		 * which was running on this cpu in the past, and
-+		 * it's just been woken on another cpu.
-+		 */
-+		rmb();
-+		if (task_cpu(p) != dead_cpu)
-+			continue;
++	/* sampling not supported */
++	h_24x7_pmu.capabilities |= PERF_PMU_CAP_NO_INTERRUPT;
 +
-+		pr_warn("Task %s (pid=%d) is on cpu %d (state=%ld, flags=%x)\n",
-+			p->comm, task_pid_nr(p), dead_cpu, p->state, p->flags);
-+	} while_each_thread(g, p);
-+	read_unlock_irq(&tasklist_lock);
- }
+ 	r = perf_pmu_register(&h_24x7_pmu, h_24x7_pmu.name, -1);
+ 	if (r)
+ 		return r;
+diff --git a/arch/powerpc/perf/hv-gpci.c b/arch/powerpc/perf/hv-gpci.c
+index c9d399a..15fc76c 100644
+--- a/arch/powerpc/perf/hv-gpci.c
++++ b/arch/powerpc/perf/hv-gpci.c
+@@ -210,8 +210,7 @@ static int h_gpci_event_init(struct perf_event *event)
+ 	    event->attr.exclude_hv     ||
+ 	    event->attr.exclude_idle   ||
+ 	    event->attr.exclude_host   ||
+-	    event->attr.exclude_guest  ||
+-	    is_sampling_event(event)) /* no sampling */
++	    event->attr.exclude_guest)
+ 		return -EINVAL;
  
- struct take_cpu_down_param {
+ 	/* no branch sampling */
+@@ -284,6 +283,9 @@ static int hv_gpci_init(void)
+ 		return -ENODEV;
+ 	}
+ 
++	/* sampling not supported */
++	h_gpci_pmu.capabilities |= PERF_PMU_CAP_NO_INTERRUPT;
++
+ 	r = perf_pmu_register(&h_gpci_pmu, h_gpci_pmu.name, -1);
+ 	if (r)
+ 		return r;
