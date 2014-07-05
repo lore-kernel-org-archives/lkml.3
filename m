@@ -1,401 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760604AbaGEGZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 02:25:59 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:49632 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754178AbaGEGZq (ORCPT
+	id S1760635AbaGEGan (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 02:30:43 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:25575 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164AbaGEGal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 02:25:46 -0400
-From: Peter Griffin <peter.griffin@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        maxime.coquelin@st.com, patrice.chotard@st.com,
-        srinivas.kandagatla@gmail.com, devicetree@vger.kernel.org,
-        balbi@ti.com, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org
-Cc: peter.griffin@linaro.org, lee.jones@linaro.org, peppe.cavallaro@st.com
-Subject: [PATCH v2 1/3] usb: dwc3: add ST dwc3 glue layer to manage dwc3 HC
-Date: Sat,  5 Jul 2014 07:25:28 +0100
-Message-Id: <1404541530-27856-2-git-send-email-peter.griffin@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1404541530-27856-1-git-send-email-peter.griffin@linaro.org>
-References: <1404541530-27856-1-git-send-email-peter.griffin@linaro.org>
+	Sat, 5 Jul 2014 02:30:41 -0400
+X-AuditID: cbfee68e-b7fb96d000004bfc-28-53b79b8e5eff
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: "'Tomasz Figa'" <t.figa@samsung.com>, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, vikas.sajjan@samsung.com,
+        joshi@samsung.com, naushad@samsung.com, thomas.ab@samsung.com,
+        chow.kim@samsung.com
+References: <1403705032-14835-1-git-send-email-pankaj.dubey@samsung.com>
+ <1403705032-14835-2-git-send-email-pankaj.dubey@samsung.com>
+ <53B18C46.9010405@samsung.com>
+In-reply-to: <53B18C46.9010405@samsung.com>
+Subject: RE: [PATCH v5 1/5] ARM: EXYNOS: Add support for mapping PMU base
+ address via DT
+Date: Sat, 05 Jul 2014 12:01:19 +0530
+Message-id: <001b01cf981a$bd5dda90$38198fb0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQK9JhWRh3pvFez7a+k3zuvbSuvV7QEiXn8uAdPPTFGZnjYv8A==
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsWyRsSkSrdv9vZgg32LNSyWTbrLZvF91xd2
+	i94FV9ksNj2+xmpxedccNosZ5/cxWdy+zGvx6eh/Vov1M16zWHQsY7S4+Ww7kwO3R0tzD5vH
+	5iX1Hn1bVjF6fN4kF8ASxWWTkpqTWZZapG+XwJWx+1Ybc8ETwYoZh/rYGhjP8XYxcnJICJhI
+	/H34iAXCFpO4cG89G4gtJLCUUWL+8xSYmn03DjB2MXIBxaczSjTs3cEE4fxllPjzuhWsg01A
+	V+LJ+7nMIAkRgX5GidmN59hAHGaBJYwSe2acgupfwShx8HIDI0gLp4C2xIR5m8FsYYEoib1L
+	W1m7GDk4WARUJT49kwcxeQUsJRYfzgWp4BUQlPgx+R7YqcwCWhLrdx5ngrDlJTavecsMcaqC
+	xI6zr8Emigg4SUy784wdokZcYtKDh+wgJ0gItHJIPN7QC3Y1i4CAxLfJh1hAdkkIyEpsOgA1
+	R1Li4IobLBMYJWYhWT0LyepZSFbPQrJiASPLKkbR1ILkguKk9CIjveLE3OLSvHS95PzcTYzA
+	yD7971nfDsabB6wPMSYDrZ/ILCWanA9MDHkl8YbGZkYWpiamxkbmlmakCSuJ8y56mBQkJJCe
+	WJKanZpakFoUX1Sak1p8iJGJg1OqgXGB3OVo2ev7tvZXaHg+WM/5La4uMDaxxv7iKYlPAkZ2
+	Vd+PGc7J25Z/9+fdalbOWg2PkC/eGw71enw9t+dMU01+kOSVowrOSWnXF+mmP98Sb75+htW+
+	OMbKQ0vcDR02T9tS2nDhR42Pz8nbmSwnd8ytNpV/sC7NTGrib7kot0bXmv83Nz1V6lViKc5I
+	NNRiLipOBAB898hAAgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPKsWRmVeSWpSXmKPExsVy+t9jQd2+2duDDSZPlLdYNukum8X3XV/Y
+	LXoXXGWz2PT4GqvF5V1z2CxmnN/HZHH7Mq/Fp6P/WS3Wz3jNYtGxjNHi5rPtTA7cHi3NPWwe
+	m5fUe/RtWcXo8XmTXABLVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5i
+	bqqtkotPgK5bZg7QTUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwhrGjN23
+	2pgLnghWzDjUx9bAeI63i5GTQ0LARGLfjQOMELaYxIV769m6GLk4hASmM0o07N3BBOH8ZZT4
+	87qVDaSKTUBX4sn7ucwgCRGBfkaJ2Y3nwFqYBZYwSuyZcYoRomUFo8TByw1ggzkFtCUmzNsM
+	ZgsLREnsXdrK2sXIwcEioCrx6Zk8iMkrYCmx+HAuSAWvgKDEj8n3WEBsZgEtifU7jzNB2PIS
+	m9e8ZYY4VUFix9nXYBNFBJwkpt15xg5RIy4x6cFD9gmMQrOQjJqFZNQsJKNmIWlZwMiyilE0
+	tSC5oDgpPddIrzgxt7g0L10vOT93EyM4cTyT3sG4qsHiEKMAB6MSD6/CsW3BQqyJZcWVuYcY
+	JTiYlUR4K0K2BwvxpiRWVqUW5ccXleakFh9iNAX6cyKzlGhyPjCp5ZXEGxqbmJsam1qaWJiY
+	WSqJ8x5stQ4UEkhPLEnNTk0tSC2C6WPi4JRqYIyXe2Pe8Mhkv/vZ5e+9SyZ1tXDn3LvxpkZQ
+	wysg7cn3cpHEbRWrl6VP3Xmr4Ob/7p+arYZZRzq25bAsX/L/zFQl1WOXnobr3/zleo31ctb+
+	gPeL/3V8fnz6+rRLvBVGf9JYl7wsmHnv9kmnyd5LuwOva2avPn5lVyKLptjNi0kSAuXC1hYb
+	NZuVWIozEg21mIuKEwFw0fAQMgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the ST glue logic to manage the DWC3 HC
-on STiH407 SoC family. It manages the powerdown signal,
-and configures the internal glue logic and syscfg registers.
+Hi Tomasz,
 
-Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
----
- drivers/usb/dwc3/Kconfig   |   9 ++
- drivers/usb/dwc3/Makefile  |   1 +
- drivers/usb/dwc3/dwc3-st.c | 325 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 335 insertions(+)
- create mode 100644 drivers/usb/dwc3/dwc3-st.c
+On Monday, June 30, 2014 Tomasz Figa wrote:
+> 
+> Hi Pankaj,
+> 
+> In general the patch seems quite nice, but please see few comments inline.
+> 
+> On 25.06.2014 16:03, Pankaj Dubey wrote:
+> > Add support for mapping Samsung Power Management Unit (PMU) base
+> > address from device tree.
+> >
+> > Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> > ---
+> >  arch/arm/mach-exynos/common.h |    1 +
+> >  arch/arm/mach-exynos/exynos.c |   45
+> +++++++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 46 insertions(+)
+> 
+> [snip]
+> 
+> > +static void exynos_map_pmu(void)
+> > +{
+> > +	struct device_node *np = NULL;
+> 
+> nit: Unnecessary variable initialization.
+>
 
-diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
-index 8eb996e..6c85c43 100644
---- a/drivers/usb/dwc3/Kconfig
-+++ b/drivers/usb/dwc3/Kconfig
-@@ -79,6 +79,15 @@ config USB_DWC3_KEYSTONE
- 	  Support of USB2/3 functionality in TI Keystone2 platforms.
- 	  Say 'Y' or 'M' here if you have one such device
+OK, will correct it.
  
-+config USB_DWC3_ST
-+	tristate "STMicroelectronics Platforms"
-+	depends on ARCH_STI && OF
-+	default USB_DWC3_HOST
-+	help
-+	  STMicroelectronics SoCs with one DesignWare Core USB3 IP
-+	  inside (i.e. STiH407).
-+	  Say 'Y' or 'M' if you have one such device.
-+
- comment "Debugging features"
- 
- config USB_DWC3_DEBUG
-diff --git a/drivers/usb/dwc3/Makefile b/drivers/usb/dwc3/Makefile
-index 10ac3e7..11c9f54 100644
---- a/drivers/usb/dwc3/Makefile
-+++ b/drivers/usb/dwc3/Makefile
-@@ -33,3 +33,4 @@ obj-$(CONFIG_USB_DWC3_OMAP)		+= dwc3-omap.o
- obj-$(CONFIG_USB_DWC3_EXYNOS)		+= dwc3-exynos.o
- obj-$(CONFIG_USB_DWC3_PCI)		+= dwc3-pci.o
- obj-$(CONFIG_USB_DWC3_KEYSTONE)		+= dwc3-keystone.o
-+obj-$(CONFIG_USB_DWC3_ST)		+= dwc3-st.o
-diff --git a/drivers/usb/dwc3/dwc3-st.c b/drivers/usb/dwc3/dwc3-st.c
-new file mode 100644
-index 0000000..2cae9d3
---- /dev/null
-+++ b/drivers/usb/dwc3/dwc3-st.c
-@@ -0,0 +1,325 @@
-+/**
-+ * dwc3-st.c Support for dwc3 platform devices on ST Microelectronics platforms
-+ *
-+ * This is a small platform driver for the dwc3 to provide the glue logic
-+ * to configure the controller. Tested on STi platforms.
-+ *
-+ * Copyright (C) 2014 Stmicroelectronics
-+ *
-+ * Author: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-+ * Contributors: Aymen Bouattay <aymen.bouattay@st.com>
-+ *               Peter Griffin <peter.griffin@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * Inspired by dwc3-omap.c and dwc3-exynos.c.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/interrupt.h>
-+#include <linux/platform_device.h>
-+#include <linux/ioport.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/delay.h>
-+#include <linux/regmap.h>
-+#include <linux/reset.h>
-+
-+#include "core.h"
-+#include "io.h"
-+
-+/* Reg glue registers */
-+#define USB2_CLKRST_CTRL 0x00
-+#define aux_clk_en(n) ((n)<<0)
-+#define sw_pipew_reset_n(n) ((n)<<4)
-+#define ext_cfg_reset_n(n) ((n)<<8)
-+#define xhci_revision(n) ((n)<<12)
-+
-+#define USB2_VBUS_MNGMNT_SEL1 0x2C
-+/*
-+ * 2'b00 : Override value from Reg 0x30 is selected
-+ * 2'b01 : utmiotg_vbusvalid from usb3_top top is selected
-+ * 2'b10 : pipew_powerpresent from PIPEW instance is selected
-+ * 2'b11 : value is 1'b0
-+ */
-+#define SEL_OVERRIDE_VBUSVALID(n) ((n)<<0)
-+#define SEL_OVERRIDE_POWERPRESENT(n) ((n)<<4)
-+#define SEL_OVERRIDE_BVALID(n) ((n)<<8)
-+
-+#define USB2_VBUS_MNGMNT_VAL1 0x30
-+#define OVERRIDE_VBUSVALID_VAL (1 << 0)
-+#define OVERRIDE_POWERPRESENT_VAL (1 << 4)
-+#define OVERRIDE_BVALID_VAL (1 << 8)
-+
-+/* Static DRD configuration */
-+#define USB_HOST_DEFAULT_MASK	0xffe
-+#define USB_SET_PORT_DEVICE	0x1
-+
-+struct st_dwc3 {
-+	struct platform_device *dwc3;	/* platform device pointer */
-+	struct device *dev;	/* device pointer */
-+	void __iomem *glue_base;	/* ioaddr for programming the glue */
-+	struct regmap *regmap;	/* regmap for getting syscfg */
-+	int syscfg_reg_off;	/* usb syscfg control offset */
-+	bool drd_device_conf;	/* DRD static host/device conf */
-+	struct reset_control *rstc_pwrdn;/* Rst control for powerdown*/
-+};
-+
-+static inline u32 st_dwc3_readl(void __iomem *base, u32 offset)
-+{
-+	return readl_relaxed(base + offset);
-+}
-+
-+static inline void st_dwc3_writel(void __iomem *base, u32 offset, u32 value)
-+{
-+	writel_relaxed(value, base + offset);
-+}
-+
-+/**
-+ * st_dwc3_drd_init: program the port
-+ * @dwc3_data: driver private structure
-+ * Description: this function is to program the port as either host or device
-+ * according to the static configuration passed from devicetree.
-+ * OTG and dual role are not yet supported!
-+ */
-+static int st_dwc3_drd_init(struct st_dwc3 *dwc3_data)
-+{
-+	u32 val;
-+
-+	regmap_read(dwc3_data->regmap, dwc3_data->syscfg_reg_off, &val);
-+
-+	if (dwc3_data->drd_device_conf)
-+		val |= USB_SET_PORT_DEVICE;
-+	else
-+		val &= USB_HOST_DEFAULT_MASK;
-+
-+	return regmap_write(dwc3_data->regmap, dwc3_data->syscfg_reg_off, val);
-+}
-+
-+/**
-+ * st_dwc3_init: init the controller via glue logic
-+ * @dwc3_data: driver private structure
-+ */
-+static void st_dwc3_init(struct st_dwc3 *dwc3_data)
-+{
-+	u32 reg = st_dwc3_readl(dwc3_data->glue_base, USB2_CLKRST_CTRL);
-+
-+	reg |= aux_clk_en(1) | ext_cfg_reset_n(1) | xhci_revision(1);
-+	reg &= ~sw_pipew_reset_n(1);
-+	st_dwc3_writel(dwc3_data->glue_base, USB2_CLKRST_CTRL, reg);
-+
-+	reg = st_dwc3_readl(dwc3_data->glue_base, USB2_VBUS_MNGMNT_SEL1);
-+	reg |= SEL_OVERRIDE_VBUSVALID(1) | SEL_OVERRIDE_POWERPRESENT(1) |
-+	    SEL_OVERRIDE_BVALID(1);
-+	st_dwc3_writel(dwc3_data->glue_base, USB2_VBUS_MNGMNT_SEL1, reg);
-+	udelay(100);
-+
-+	reg = st_dwc3_readl(dwc3_data->glue_base, USB2_CLKRST_CTRL);
-+	reg |= sw_pipew_reset_n(1);
-+	st_dwc3_writel(dwc3_data->glue_base, USB2_CLKRST_CTRL, reg);
-+}
-+
-+static void st_dwc3_dt_get_pdata(struct platform_device *pdev,
-+				 struct st_dwc3 *dwc3_data)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+
-+	dwc3_data->drd_device_conf =
-+	    of_property_read_bool(np, "st,dwc3-drd-device");
-+}
-+
-+/**
-+ * st_dwc3_probe: main probe function
-+ * @pdev: platform_device
-+ * Description: this is the probe function that gets all the resources to manage
-+ * the glue-logic, setup the controller and take out of powerdown.
-+ */
-+static int st_dwc3_probe(struct platform_device *pdev)
-+{
-+	struct platform_device *dwc3;
-+	struct st_dwc3 *dwc3_data;
-+	struct resource *res;
-+	struct device *dev = &pdev->dev;
-+	struct device_node *node = dev->of_node;
-+	struct regmap *regmap;
-+	int ret = 0;
-+
-+	if (!node) {
-+		dev_err(dev, "device node not found\n");
-+		return -EINVAL;
-+	}
-+
-+	dwc3_data = devm_kzalloc(dev, sizeof(*dwc3_data), GFP_KERNEL);
-+	if (!dwc3_data)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "reg-glue");
-+	if (!res)
-+		return -ENXIO;
-+
-+	dwc3_data->glue_base = devm_request_and_ioremap(dev, res);
-+	if (!dwc3_data->glue_base)
-+		return -EADDRNOTAVAIL;
-+
-+	regmap = syscon_regmap_lookup_by_phandle(node, "st,syscfg");
-+	if (IS_ERR(regmap))
-+		return PTR_ERR(regmap);
-+
-+	dwc3 = platform_device_alloc("st-dwc3", PLATFORM_DEVID_AUTO);
-+	if (!dwc3) {
-+		dev_err(&pdev->dev, "couldn't allocate dwc3 device\n");
-+		return -ENOMEM;
-+	}
-+
-+	dma_set_coherent_mask(&dwc3->dev, dev->coherent_dma_mask);
-+
-+	dwc3->dev.parent = &pdev->dev;
-+	dwc3->dev.dma_mask = pdev->dev.dma_mask;
-+	dwc3->dev.dma_parms = pdev->dev.dma_parms;
-+
-+	dwc3_data->dwc3 = dwc3;
-+	dwc3_data->dev = &pdev->dev;
-+	dwc3_data->regmap = regmap;
-+
-+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "syscfg-reg");
-+	if (!res) {
-+		ret = -ENXIO;
-+		goto undo_platform_dev_alloc;
-+	}
-+
-+	dwc3_data->syscfg_reg_off = res->start;
-+
-+	dev_info(&pdev->dev, "glue-logic addr 0x%p, syscfg-reg offset 0x%x\n",
-+		 dwc3_data->glue_base, dwc3_data->syscfg_reg_off);
-+
-+	dwc3_data->rstc_pwrdn = devm_reset_control_get(dwc3_data->dev, NULL);
-+	if (IS_ERR(dwc3_data->rstc_pwrdn)) {
-+		dev_err(&pdev->dev, "could not get reset controller\n");
-+		ret = PTR_ERR(dwc3_data->rstc_pwrdn);
-+		goto undo_platform_dev_alloc;
-+	}
-+
-+	/* Manage PowerDown */
-+	reset_control_deassert(dwc3_data->rstc_pwrdn);
-+
-+	st_dwc3_dt_get_pdata(pdev, dwc3_data);
-+
-+	/* Allocate and initialize the core */
-+	ret = of_platform_populate(node, NULL, NULL, dev);
-+	if (ret) {
-+		dev_err(dev, "failed to add dwc3 core\n");
-+		goto undo_powerdown;
-+	}
-+
-+	/*
-+	 * Configure the USB port as device or host according to the static
-+	 * configuration passed from the platform.
-+	 * DRD is the only mode currently supported so this will be enhanced
-+	 * later as soon as OTG will be available.
-+	 */
-+	ret = st_dwc3_drd_init(dwc3_data);
-+	if (ret) {
-+		dev_err(dev, "st_dwc3_drd_init failed\n");
-+		goto undo_powerdown;
-+	}
-+
-+	dev_info(&pdev->dev, "configured as %s DRD\n",
-+		 dwc3_data->drd_device_conf ? "device" : "host");
-+
-+	/* ST glue logic init */
-+	st_dwc3_init(dwc3_data);
-+
-+	ret = platform_device_add_resources(dwc3_data->dwc3, pdev->resource,
-+					    pdev->num_resources);
-+	if (ret) {
-+		dev_err(&pdev->dev, "couldn't add resources to dwc3 device\n");
-+		goto undo_powerdown;
-+	}
-+
-+	ret = platform_device_add(dwc3_data->dwc3);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to register dwc3 device\n");
-+		goto undo_powerdown;
-+	}
-+
-+	platform_set_drvdata(pdev, dwc3_data);
-+
-+	return 0;
-+
-+undo_powerdown:
-+	reset_control_assert(dwc3_data->rstc_pwrdn);
-+undo_platform_dev_alloc:
-+	platform_device_put(pdev);
-+
-+	return ret;
-+
-+}
-+
-+static int st_dwc3_remove(struct platform_device *pdev)
-+{
-+	struct st_dwc3 *dwc3_data = platform_get_drvdata(pdev);
-+
-+	platform_device_unregister(dwc3_data->dwc3);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int st_dwc3_suspend(struct device *dev)
-+{
-+	struct st_dwc3 *dwc3_data = dev_get_drvdata(dev);
-+
-+	reset_control_assert(dwc3_data->rstc_pwrdn);
-+
-+	pinctrl_pm_select_sleep_state(dev);
-+
-+	return 0;
-+}
-+
-+static int st_dwc3_resume(struct device *dev)
-+{
-+	struct st_dwc3 *dwc3_data = dev_get_drvdata(dev);
-+
-+	pinctrl_pm_select_default_state(dev);
-+
-+	reset_control_deassert(dwc3_data->rstc_pwrdn);
-+
-+	return 0;
-+}
-+
-+#endif /* CONFIG_PM_SLEEP */
-+
-+static const struct dev_pm_ops st_dwc3_dev_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(st_dwc3_suspend, st_dwc3_resume)
-+};
-+
-+static struct of_device_id st_dwc3_match[] = {
-+	{ .compatible = "st,stih407-dwc3" },
-+	{ /* sentinel */ },
-+};
-+
-+MODULE_DEVICE_TABLE(of, st_dwc3_match);
-+
-+static struct platform_driver st_dwc3_driver = {
-+	.probe = st_dwc3_probe,
-+	.remove = st_dwc3_remove,
-+	.driver = {
-+		.name = "usb-st-dwc3",
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(st_dwc3_match),
-+		.pm = &st_dwc3_dev_pm_ops,
-+	},
-+};
-+
-+module_platform_driver(st_dwc3_driver);
-+
-+MODULE_AUTHOR("Giuseppe Cavallaro <peppe.cavallaro@st.com>");
-+MODULE_DESCRIPTION("DesignWare USB3 STi Glue Layer");
-+MODULE_LICENSE("GPL v2");
--- 
-1.9.1
+> > +
+> > +	np = of_find_matching_node(NULL, exynos_dt_pmu_match);
+> > +
+> 
+> nit: Unnecessary blank line.
+> 
+
+OK, will remove this.
+
+> > +	if (!np) {
+> > +		pr_err("Failed to find PMU node\n");
+> > +		return;
+> 
+> Returning here probably doesn't make too much sense, especially when you
+just panic
+> if the mapping fails and you remove the static mapping in patch 2/5, so
+backwards
+> compatibility isn't provided anyway.
+> 
+> So something like this might be a better idea:
+> 
+> 	np = of_find_matching_node(NULL, exynos_dt_pmu_match);
+> 	if (np)
+> 		pmu_base_addr = of_iomap(np, 0);
+> 
+> 	if (!pmu_base_addr)
+> 		panic("failed to find exynos pmu register\n");
+> 
+
+Yes, this will be better. I will modify this part.
+
+> > +	}
+> > +
+> > +	pmu_base_addr = of_iomap(np, 0);
+> > +
+> > +	if (!pmu_base_addr)
+> > +		panic("failed to find exynos pmu register\n"); }
+> > +
+> > +static void __init exynos_init_time(void) {
+> > +	/* Nothing to do timer specific.
+> > +	 * Since platsmp.c needs pmu base address by the time
+> > +	 * DT is not unflatten so we can't use DT APIs before
+> > +	 * init_time
+> > +	 */
+> > +	exynos_map_pmu();
+> 
+> Would moving this to .init_irq() callback work too? There are more things
+happening
+> in .init_time() so it seems more fragile and some platforms (e.g.
+mach-tegra) do such
+> platform-specific initialization in
+> .init_irq() instead.
+> 
+
+I need to check this, if it works I will update as suggested.
+
+> Best regards,
+> Tomasz
+
+Thanks,
+Pankaj Dubey
 
