@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897AbaGESKf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 14:10:35 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55420 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755396AbaGESKe (ORCPT
+	id S1755799AbaGESUw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 14:20:52 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:60270 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753538AbaGESUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 14:10:34 -0400
-Date: Sat, 5 Jul 2014 19:10:15 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: pawandeep oza <oza.contri.linux.kernel@gmail.com>
-Cc: akpm@linux-foundation.org, holt@sgi.com, mingo@kernel.org,
-        sboyd@codeaurora.org, k.khlebnikov@samsung.com,
-        u.kleine-koenig@pengutronix.de, nicolas.pitre@linaro.org,
-        linux-arm-kernel@lists.infradead.or, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] machine_power_off: not only local_irq_disable but also
-	do disable preemption
-Message-ID: <20140705181015.GQ21766@n2100.arm.linux.org.uk>
-References: <CAA-nRyoO_NmrD8aRa3OyVXz4b133Fxi0=biGXTzSPDuSuNJJxQ@mail.gmail.com>
+	Sat, 5 Jul 2014 14:20:50 -0400
+Date: Sat, 5 Jul 2014 19:20:48 +0100 (BST)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Joe Perches <joe@perches.com>
+cc: Grant Likely <grant.likely@secretlab.ca>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] declance: Fix 64-bit compilation warnings
+In-Reply-To: <1404583739.6384.51.camel@joe-AO725>
+Message-ID: <alpine.LFD.2.11.1407051917480.15455@eddie.linux-mips.org>
+References: <alpine.LFD.2.11.1406290246120.15455@eddie.linux-mips.org>         <20140702.182807.1245632778216212860.davem@davemloft.net>         <alpine.LFD.2.11.1407030244230.15455@eddie.linux-mips.org>         <alpine.LFD.2.11.1407030331550.15455@eddie.linux-mips.org>
+         <1404356734.14741.18.camel@joe-AO725>         <alpine.LFD.2.11.1407030423300.15455@eddie.linux-mips.org>         <1404364565.14741.26.camel@joe-AO725>         <alpine.LFD.2.11.1407030637030.15455@eddie.linux-mips.org>         <1404368746.14741.36.camel@joe-AO725>
+         <alpine.LFD.2.11.1407051529040.15455@eddie.linux-mips.org>         <1404576420.6384.41.camel@joe-AO725>         <alpine.LFD.2.11.1407051833400.15455@eddie.linux-mips.org> <1404583739.6384.51.camel@joe-AO725>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAA-nRyoO_NmrD8aRa3OyVXz4b133Fxi0=biGXTzSPDuSuNJJxQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 05, 2014 at 10:44:41PM +0530, pawandeep oza wrote:
->  process calls sys_reboot and that process then stops other CPUs while those
->  CPUs are within a spin_lock() region we can potentially encounter a
-> deadlock
->  scenario like below.
+On Sat, 5 Jul 2014, Joe Perches wrote:
+
+> > > I think it's a mistake and I agree.
+> > > 
+> > > I submitted a patch to remove the prefix from %pad.
+> > > 
+> > > https://lkml.org/lkml/2014/3/21/333
+> > 
+> >  Great!  Your proposal looks good to me in principle, however you need to 
+> > factor in SPECIAL having been set by `#' somehow as `number' will respect 
+> > it.  I suggest using the same field width calculation that `pointer' uses 
+> > for `default_width' (sans the type used with `sizeof' of course, that is).
 > 
->     CPU 0                   CPU 1
->     -----                   -----
->                             spin_lock(my_lock)
->     smp_send_stop()
->      <send IPI>             handle_IPI()
->                              disable_preemption/irqs
->                               while(1);
->      <PREEMPT>
->     spin_lock(my_lock) <--- Waits forever
+> I don't think %#p is valid so it
+> shouldn't have been set by #.
 
-Please explain how that <PREEMPT> occurs with IRQs already disabled.
+ Huh?  As recently as last Wednesday you pointed me at the specific commit 
+from Grant that made it valid (GCC format complaints aside).
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+  Maciej
