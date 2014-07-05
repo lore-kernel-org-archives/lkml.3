@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918AbaGEMYu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 08:24:50 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:36160 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755459AbaGEMYs (ORCPT
+	id S932546AbaGEMZs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 08:25:48 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:37963 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120AbaGEMZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 08:24:48 -0400
+	Sat, 5 Jul 2014 08:25:47 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
@@ -17,9 +17,9 @@ Cc: Rickard Strandqvist <rickard.strandqvist@sonymobile.com>,
         Rob Clark <robdclark@gmail.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: kyro: STG4000InitDevice.c:  Cleaning up variable that is never used
-Date: Sat,  5 Jul 2014 14:26:04 +0200
-Message-Id: <1404563164-19855-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] video: fbdev: kyro: STG4000OverlayDevice.c:  Cleaning up variable that is never used
+Date: Sat,  5 Jul 2014 14:27:02 +0200
+Message-Id: <1404563222-19941-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,55 +34,30 @@ This was found using a static code analysis program called cppcheck
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/video/fbdev/kyro/STG4000InitDevice.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ drivers/video/fbdev/kyro/STG4000OverlayDevice.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/video/fbdev/kyro/STG4000InitDevice.c b/drivers/video/fbdev/kyro/STG4000InitDevice.c
-index 1d3f2080..21875d3 100644
---- a/drivers/video/fbdev/kyro/STG4000InitDevice.c
-+++ b/drivers/video/fbdev/kyro/STG4000InitDevice.c
-@@ -120,7 +120,7 @@ u32 ProgramClock(u32 refClock,
- {
- 	u32 R = 0, F = 0, OD = 0, ODIndex = 0;
- 	u32 ulBestR = 0, ulBestF = 0, ulBestOD = 0;
--	u32 ulBestVCO = 0, ulBestClk = 0, ulBestScore = 0;
-+	u32 ulBestClk = 0, ulBestScore = 0;
- 	u32 ulScore, ulPhaseScore, ulVcoScore;
- 	u32 ulTmp = 0, ulVCO;
- 	u32 ulScaleClockReq, ulMinClock, ulMaxClock;
-@@ -189,7 +189,6 @@ u32 ProgramClock(u32 refClock,
- 						ulScore = ulPhaseScore + ulVcoScore;
+diff --git a/drivers/video/fbdev/kyro/STG4000OverlayDevice.c b/drivers/video/fbdev/kyro/STG4000OverlayDevice.c
+index 0aeeaa1..9fde0e3 100644
+--- a/drivers/video/fbdev/kyro/STG4000OverlayDevice.c
++++ b/drivers/video/fbdev/kyro/STG4000OverlayDevice.c
+@@ -331,7 +331,7 @@ int SetOverlayViewPort(volatile STG4000REG __iomem *pSTGReg,
+ 	u32 ulScale;
+ 	u32 ulLeft, ulRight;
+ 	u32 ulSrcLeft, ulSrcRight;
+-	u32 ulScaleLeft, ulScaleRight;
++	u32 ulScaleLeft;
+ 	u32 ulhDecim;
+ 	u32 ulsVal;
+ 	u32 ulVertDecFactor;
+@@ -470,7 +470,6 @@ int SetOverlayViewPort(volatile STG4000REG __iomem *pSTGReg,
+ 		 * round down the pixel pos to the nearest 8 pixels.
+ 		 */
+ 		ulScaleLeft = ulSrcLeft;
+-		ulScaleRight = ulSrcRight;
  
- 						if (!ulBestScore) {
--							ulBestVCO = ulVCO;
- 							ulBestOD = OD;
- 							ulBestF = F;
- 							ulBestR = R;
-@@ -206,7 +205,6 @@ u32 ProgramClock(u32 refClock,
-                           but we shall keep this code in case new restrictions come into play
-                           --------------------------------------------------------------------------*/
- 						if ((ulScore >= ulBestScore) && (OD > 0)) {
--							ulBestVCO = ulVCO;
- 							ulBestOD = OD;
- 							ulBestF = F;
- 							ulBestR = R;
-@@ -244,7 +242,6 @@ int SetCoreClockPLL(volatile STG4000REG __iomem *pSTGReg, struct pci_dev *pDev)
- {
- 	u32 F, R, P;
- 	u16 core_pll = 0, sub;
--	u32 ulCoreClock;
- 	u32 tmp;
- 	u32 ulChipSpeed;
- 
-@@ -282,7 +279,7 @@ int SetCoreClockPLL(volatile STG4000REG __iomem *pSTGReg, struct pci_dev *pDev)
- 	if (ulChipSpeed == 0)
- 		return -EINVAL;
- 
--	ulCoreClock = ProgramClock(REF_FREQ, CORE_PLL_FREQ, &F, &R, &P);
-+	ProgramClock(REF_FREQ, CORE_PLL_FREQ, &F, &R, &P);
- 
- 	core_pll |= ((P) | ((F - 2) << 2) | ((R - 2) << 11));
- 
+ 		/* shift fxscale until it is in the range of the scaler */
+ 		ulhDecim = 0;
 -- 
 1.7.10.4
 
