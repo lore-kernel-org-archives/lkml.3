@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760889AbaGEKrt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 06:47:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58157 "EHLO
+	id S1760915AbaGEKsE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 06:48:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58159 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755590AbaGEKrq (ORCPT
+	with ESMTP id S1760844AbaGEKrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 06:47:46 -0400
-Date: Sat, 5 Jul 2014 03:46:37 -0700
-From: tip-bot for Vince Weaver <tipbot@zytor.com>
-Message-ID: <tip-cc56d673a9902aecd1c03bea6479eaff6de6967a@git.kernel.org>
-Cc: paulus@samba.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, cody@linux.vnet.ibm.com, peterz@infradead.org,
-        mpe@ellerman.id.au, vincent.weaver@maine.edu, benh@kernel.crashing.org,
-        tglx@linutronix.de
+	Sat, 5 Jul 2014 06:47:48 -0400
+Date: Sat, 5 Jul 2014 03:46:55 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-985c8dcbe15ddd8a1b98dc6b9c6403cb5d7012ab@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jolsa@kernel.org, peterz@infradead.org, acme@kernel.org,
+        namhyung@kernel.org, jolsa@redhat.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        paulus@samba.org, cody@linux.vnet.ibm.com, peterz@infradead.org,
-        mpe@ellerman.id.au, benh@kernel.crashing.org, vincent.weaver@maine.edu,
-        tglx@linutronix.de
-In-Reply-To: <alpine.DEB.2.10.1406191435440.27913@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1406191435440.27913@vincent-weaver-1.umelst.maine.edu>
+        jolsa@kernel.org, peterz@infradead.org, acme@kernel.org,
+        namhyung@kernel.org, jolsa@redhat.com, tglx@linutronix.de
+In-Reply-To: <1403598026-2310-1-git-send-email-jolsa@kernel.org>
+References: <1403598026-2310-1-git-send-email-jolsa@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] powerpc, perf:
-  Use common PMU interrupt disabled code
-Git-Commit-ID: cc56d673a9902aecd1c03bea6479eaff6de6967a
+Subject: [tip:perf/core] perf: Make perf_event_init_context()
+  function static
+Git-Commit-ID: 985c8dcbe15ddd8a1b98dc6b9c6403cb5d7012ab
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,78 +34,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cc56d673a9902aecd1c03bea6479eaff6de6967a
-Gitweb:     http://git.kernel.org/tip/cc56d673a9902aecd1c03bea6479eaff6de6967a
-Author:     Vince Weaver <vincent.weaver@maine.edu>
-AuthorDate: Thu, 19 Jun 2014 14:40:09 -0400
+Commit-ID:  985c8dcbe15ddd8a1b98dc6b9c6403cb5d7012ab
+Gitweb:     http://git.kernel.org/tip/985c8dcbe15ddd8a1b98dc6b9c6403cb5d7012ab
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Tue, 24 Jun 2014 10:20:24 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 5 Jul 2014 11:21:51 +0200
+CommitDate: Sat, 5 Jul 2014 11:21:52 +0200
 
-powerpc, perf: Use common PMU interrupt disabled code
+perf: Make perf_event_init_context() function static
 
-Transition to using the new generic PERF_PMU_CAP_NO_INTERRUPT method for
-failing a sampling event when no PMU interrupt is available.
+Leftover from '8dc85d5 perf: Multiple task contexts'.
 
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1406191435440.27913@vincent-weaver-1.umelst.maine.edu
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Michael Ellerman <mpe@ellerman.id.au>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: linux-kernel@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1403598026-2310-1-git-send-email-jolsa@kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/powerpc/perf/hv-24x7.c | 6 ++++--
- arch/powerpc/perf/hv-gpci.c | 6 ++++--
- 2 files changed, 8 insertions(+), 4 deletions(-)
+ kernel/events/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/perf/hv-24x7.c b/arch/powerpc/perf/hv-24x7.c
-index e0766b8..66d0f17 100644
---- a/arch/powerpc/perf/hv-24x7.c
-+++ b/arch/powerpc/perf/hv-24x7.c
-@@ -387,8 +387,7 @@ static int h_24x7_event_init(struct perf_event *event)
- 	    event->attr.exclude_hv     ||
- 	    event->attr.exclude_idle   ||
- 	    event->attr.exclude_host   ||
--	    event->attr.exclude_guest  ||
--	    is_sampling_event(event)) /* no sampling */
-+	    event->attr.exclude_guest)
- 		return -EINVAL;
- 
- 	/* no branch sampling */
-@@ -513,6 +512,9 @@ static int hv_24x7_init(void)
- 	if (!hv_page_cache)
- 		return -ENOMEM;
- 
-+	/* sampling not supported */
-+	h_24x7_pmu.capabilities |= PERF_PMU_CAP_NO_INTERRUPT;
-+
- 	r = perf_pmu_register(&h_24x7_pmu, h_24x7_pmu.name, -1);
- 	if (r)
- 		return r;
-diff --git a/arch/powerpc/perf/hv-gpci.c b/arch/powerpc/perf/hv-gpci.c
-index c9d399a..15fc76c 100644
---- a/arch/powerpc/perf/hv-gpci.c
-+++ b/arch/powerpc/perf/hv-gpci.c
-@@ -210,8 +210,7 @@ static int h_gpci_event_init(struct perf_event *event)
- 	    event->attr.exclude_hv     ||
- 	    event->attr.exclude_idle   ||
- 	    event->attr.exclude_host   ||
--	    event->attr.exclude_guest  ||
--	    is_sampling_event(event)) /* no sampling */
-+	    event->attr.exclude_guest)
- 		return -EINVAL;
- 
- 	/* no branch sampling */
-@@ -284,6 +283,9 @@ static int hv_gpci_init(void)
- 		return -ENODEV;
- 	}
- 
-+	/* sampling not supported */
-+	h_gpci_pmu.capabilities |= PERF_PMU_CAP_NO_INTERRUPT;
-+
- 	r = perf_pmu_register(&h_gpci_pmu, h_gpci_pmu.name, -1);
- 	if (r)
- 		return r;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index a33d9a2b..67e3b9c 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7776,7 +7776,7 @@ inherit_task_group(struct perf_event *event, struct task_struct *parent,
+ /*
+  * Initialize the perf_event context in task_struct
+  */
+-int perf_event_init_context(struct task_struct *child, int ctxn)
++static int perf_event_init_context(struct task_struct *child, int ctxn)
+ {
+ 	struct perf_event_context *child_ctx, *parent_ctx;
+ 	struct perf_event_context *cloned_ctx;
