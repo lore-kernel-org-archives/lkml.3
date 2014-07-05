@@ -1,41 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932690AbaGETxo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 15:53:44 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:44339 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932653AbaGETxn (ORCPT
+	id S1756319AbaGEUCH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 16:02:07 -0400
+Received: from smtprelay0120.hostedemail.com ([216.40.44.120]:42267 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751984AbaGEUCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 15:53:43 -0400
-Date: Sat, 5 Jul 2014 15:53:38 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] kernfs: kernel-doc warning fix
-Message-ID: <20140705195338.GA3069@mtj.dyndns.org>
-References: <1404503273-32469-1-git-send-email-fabf@skynet.be>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404503273-32469-1-git-send-email-fabf@skynet.be>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 5 Jul 2014 16:02:06 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:2915:3138:3139:3140:3141:3142:3353:3865:3867:3868:4321:5007:7652:10004:10400:10848:11026:11658:11914:12114:12296:12517:12519:12555:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: power05_4c2a6361c6a4d
+X-Filterd-Recvd-Size: 2346
+Message-ID: <1404590522.6384.62.camel@joe-AO725>
+Subject: [PATCH] ALSA: hda - Fix and neaten print_nid_path/debug_badness
+From: Joe Perches <joe@perches.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org, LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 05 Jul 2014 13:02:02 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04, 2014 at 09:47:53PM +0200, Fabian Frederick wrote:
-> s/static_name/name_is_static
-> 
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+print_nid_path has a possible buffer overflow if
+struct nid_path.path values are > 256.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Avoid this and neaten the output to remove the leading ':'
 
-Thanks.
+Neaten debug_badness to always verify arguments.
 
--- 
-tejun
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ sound/pci/hda/hda_generic.c | 20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/sound/pci/hda/hda_generic.c b/sound/pci/hda/hda_generic.c
+index 589e47c..b293583 100644
+--- a/sound/pci/hda/hda_generic.c
++++ b/sound/pci/hda/hda_generic.c
+@@ -350,16 +350,16 @@ static void print_nid_path(struct hda_codec *codec,
+ 			   const char *pfx, struct nid_path *path)
+ {
+ 	char buf[40];
++	char *pos = buf;
+ 	int i;
+ 
++	*pos = 0;
++	for (i = 0; i < path->depth; i++)
++		pos += scnprintf(pos, sizeof(buf) - (pos - buf), "%s%02x",
++				 pos != buf ? ":" : "",
++				 path->path[i]);
+ 
+-	buf[0] = 0;
+-	for (i = 0; i < path->depth; i++) {
+-		char tmp[4];
+-		sprintf(tmp, ":%02x", path->path[i]);
+-		strlcat(buf, tmp, sizeof(buf));
+-	}
+-	codec_dbg(codec, "%s path: depth=%d %s\n", pfx, path->depth, buf);
++	codec_dbg(codec, "%s path: depth=%d '%s'\n", pfx, path->depth, buf);
+ }
+ 
+ /* called recursively */
+@@ -1700,9 +1700,11 @@ static int fill_and_eval_dacs(struct hda_codec *codec,
+ #define DEBUG_BADNESS
+ 
+ #ifdef DEBUG_BADNESS
+-#define debug_badness(fmt, args...)	codec_dbg(codec, fmt, ##args)
++#define debug_badness(fmt, ...)						\
++	codec_dbg(codec, fmt, ##__VA_ARGS__)
+ #else
+-#define debug_badness(...)
++#define debug_badness(fmt, ...)						\
++	do { if (0) codec_dbg(codec, fmt, ##__VA_ARGS__); } while (0)
+ #endif
+ 
+ #ifdef DEBUG_BADNESS
+
+
