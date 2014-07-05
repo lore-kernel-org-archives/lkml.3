@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760727AbaGEMrN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 08:47:13 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:47152 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815AbaGEMrM (ORCPT
+	id S1760756AbaGEMsM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 08:48:12 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:61035 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752961AbaGEMsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 08:47:12 -0400
+	Sat, 5 Jul 2014 08:48:10 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
 Cc: Rickard Strandqvist <rickard.strandqvist@sonymobile.com>,
         Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
         Jingoo Han <jg1.han@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "Chen, Gong" <gong.chen@linux.intel.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-fbdev@vger.kernel.org,
+        Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: sis: init.c:  Cleaning up variable that is never used
-Date: Sat,  5 Jul 2014 14:48:27 +0200
-Message-Id: <1404564507-21718-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] video: fbdev: sis: init301.c:  Cleaning up variable that is never used
+Date: Sat,  5 Jul 2014 14:49:25 +0200
+Message-Id: <1404564566-21814-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -36,82 +34,41 @@ This was found using a static code analysis program called cppcheck
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/video/fbdev/sis/init.c |   21 +++++----------------
- 1 file changed, 5 insertions(+), 16 deletions(-)
+ drivers/video/fbdev/sis/init301.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/video/fbdev/sis/init.c b/drivers/video/fbdev/sis/init.c
-index bd40f5e..3ba446c 100644
---- a/drivers/video/fbdev/sis/init.c
-+++ b/drivers/video/fbdev/sis/init.c
-@@ -2649,7 +2649,7 @@ static void
- SiS_SetCRT1ModeRegs(struct SiS_Private *SiS_Pr, unsigned short ModeNo,
- 		unsigned short ModeIdIndex, unsigned short RRTI)
+diff --git a/drivers/video/fbdev/sis/init301.c b/drivers/video/fbdev/sis/init301.c
+index a89e3ca..066fd27 100644
+--- a/drivers/video/fbdev/sis/init301.c
++++ b/drivers/video/fbdev/sis/init301.c
+@@ -926,7 +926,7 @@ SiS_SetChrontelGPIO(struct SiS_Private *SiS_Pr, unsigned short myvbinfo)
+    temp &= 0xFEFF;
+    if(!(myvbinfo & SetCRT2ToTV)) temp |= 0x0100;
+    SiS_SetRegShort((acpibase + 0x3a), temp);
+-   temp = SiS_GetRegShort((acpibase + 0x3a));
++   SiS_GetRegShort((acpibase + 0x3a));
+ }
+ #endif
+ 
+@@ -2151,17 +2151,15 @@ SiS_GetVCLK2Ptr(struct SiS_Private *SiS_Pr, unsigned short ModeNo, unsigned shor
+ 		unsigned short RefreshRateTableIndex)
  {
--   unsigned short data, infoflag = 0, modeflag, resindex;
-+   unsigned short data, infoflag = 0, modeflag;
- #ifdef CONFIG_FB_SIS_315
-    unsigned char  *ROMAddr  = SiS_Pr->VirtualRomBase;
-    unsigned short data2, data3;
-@@ -2660,7 +2660,7 @@ SiS_SetCRT1ModeRegs(struct SiS_Private *SiS_Pr, unsigned short ModeNo,
-    if(SiS_Pr->UseCustomMode) {
-       infoflag = SiS_Pr->CInfoFlag;
-    } else {
--      resindex = SiS_GetResInfo(SiS_Pr, ModeNo, ModeIdIndex);
-+      SiS_GetResInfo(SiS_Pr, ModeNo, ModeIdIndex);
-       if(ModeNo > 0x13) {
- 	 infoflag = SiS_Pr->SiS_RefIndex[RRTI].Ext_InfoFlag;
-       }
-@@ -3539,16 +3539,15 @@ SiS_Generic_ConvertCRData(struct SiS_Private *SiS_Pr, unsigned char *crdata,
- 			struct fb_var_screeninfo *var, bool writeres
- )
- {
--   unsigned short HRE, HBE, HRS, HBS, HDE, HT;
--   unsigned short VRE, VBE, VRS, VBS, VDE, VT;
-+   unsigned short HRE, HBE, HRS, HDE, HT;
-+   unsigned short VRE, VBE, VRS, VDE, VT;
-    unsigned char  sr_data, cr_data, cr_data2;
--   int            A, B, C, D, E, F, temp;
-+   int            B, C, D, E, F, temp;
+   unsigned short CRT2Index, VCLKIndex = 0, VCLKIndexGEN = 0, VCLKIndexGENCRT = 0;
+-  unsigned short modeflag, resinfo, tempbx;
++  unsigned short resinfo, tempbx;
+   const unsigned char *CHTVVCLKPtr = NULL;
  
-    sr_data = crdata[14];
- 
-    /* Horizontal total */
-    HT =  crdata[0] | ((unsigned short)(sr_data & 0x03) << 8);
--   A = HT + 5;
- 
-    /* Horizontal display enable end */
-    HDE = crdata[1] | ((unsigned short)(sr_data & 0x0C) << 6);
-@@ -3558,9 +3557,6 @@ SiS_Generic_ConvertCRData(struct SiS_Private *SiS_Pr, unsigned char *crdata,
-    HRS = crdata[4] | ((unsigned short)(sr_data & 0xC0) << 2);
-    F = HRS - E - 3;
- 
--   /* Horizontal blank start */
--   HBS = crdata[2] | ((unsigned short)(sr_data & 0x30) << 4);
--
-    sr_data = crdata[15];
-    cr_data = crdata[5];
- 
-@@ -3594,7 +3590,6 @@ SiS_Generic_ConvertCRData(struct SiS_Private *SiS_Pr, unsigned char *crdata,
- 	 ((unsigned short)(cr_data & 0x01) << 8) |
- 	 ((unsigned short)(cr_data & 0x20) << 4) |
- 	 ((unsigned short)(sr_data & 0x01) << 10);
--   A = VT + 2;
- 
-    /* Vertical display enable end */
-    VDE = crdata[10] |
-@@ -3612,12 +3607,6 @@ SiS_Generic_ConvertCRData(struct SiS_Private *SiS_Pr, unsigned char *crdata,
- 
-    cr_data2 = (crdata[16] & 0x01) << 5;
- 
--   /* Vertical blank start */
--   VBS = crdata[11] |
--	 ((unsigned short)(cr_data  & 0x08) << 5) |
--	 ((unsigned short)(cr_data2 & 0x20) << 4) |
--	 ((unsigned short)(sr_data  & 0x04) << 8);
--
-    /* Vertical blank end */
-    VBE = crdata[12] | ((unsigned short)(sr_data & 0x10) << 4);
-    temp = VBE - ((E - 1) & 511);
+   if(ModeNo <= 0x13) {
+-     modeflag = SiS_Pr->SiS_SModeIDTable[ModeIdIndex].St_ModeFlag;
+      resinfo = SiS_Pr->SiS_SModeIDTable[ModeIdIndex].St_ResInfo;
+      CRT2Index = SiS_Pr->SiS_SModeIDTable[ModeIdIndex].St_CRT2CRTC;
+      VCLKIndexGEN = (SiS_GetRegByte((SiS_Pr->SiS_P3ca+0x02)) >> 2) & 0x03;
+      VCLKIndexGENCRT = VCLKIndexGEN;
+   } else {
+-     modeflag = SiS_Pr->SiS_EModeIDTable[ModeIdIndex].Ext_ModeFlag;
+      resinfo = SiS_Pr->SiS_EModeIDTable[ModeIdIndex].Ext_RESINFO;
+      CRT2Index = SiS_Pr->SiS_RefIndex[RefreshRateTableIndex].Ext_CRT2CRTC;
+      VCLKIndexGEN = SiS_Pr->SiS_RefIndex[RefreshRateTableIndex].Ext_CRTVCLK;
 -- 
 1.7.10.4
 
