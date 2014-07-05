@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932577AbaGEMch (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 08:32:37 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:52929 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307AbaGEMce (ORCPT
+	id S1755706AbaGEMde (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 08:33:34 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:57612 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169AbaGEMdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 08:32:34 -0400
+	Sat, 5 Jul 2014 08:33:32 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
 Cc: Rickard Strandqvist <rickard.strandqvist@sonymobile.com>,
         Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
         Jingoo Han <jg1.han@samsung.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Julia Lawall <Julia.Lawall@lip6.fr>, Marek Vasut <marex@denx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: [PATCH] video: fbdev: mxsfb.c:  Cleaning up variable that is never used
-Date: Sat,  5 Jul 2014 14:33:50 +0200
-Message-Id: <1404563630-20521-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Joe Perches <joe@perches.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] video: fbdev: neofb.c:  Cleaning up variable that is never used
+Date: Sat,  5 Jul 2014 14:34:48 +0200
+Message-Id: <1404563688-20603-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -38,29 +34,50 @@ This was found using a static code analysis program called cppcheck
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/video/fbdev/mxsfb.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/video/fbdev/neofb.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/drivers/video/fbdev/mxsfb.c b/drivers/video/fbdev/mxsfb.c
-index accf48a2..d0a55c6 100644
---- a/drivers/video/fbdev/mxsfb.c
-+++ b/drivers/video/fbdev/mxsfb.c
-@@ -594,7 +594,6 @@ static int mxsfb_restore_mode(struct mxsfb_info *host,
- 			struct fb_videomode *vmode)
- {
- 	struct fb_info *fb_info = &host->fb_info;
--	unsigned line_count;
- 	unsigned period;
- 	unsigned long pa, fbsize;
- 	int bits_per_pixel, ofs;
-@@ -672,7 +671,6 @@ static int mxsfb_restore_mode(struct mxsfb_info *host,
- 		writel(fb_info->fix.smem_start, host->base + host->devdata->next_buf);
+diff --git a/drivers/video/fbdev/neofb.c b/drivers/video/fbdev/neofb.c
+index 44f99a6..b1779ae 100644
+--- a/drivers/video/fbdev/neofb.c
++++ b/drivers/video/fbdev/neofb.c
+@@ -701,8 +701,6 @@ neofb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
+ 	if (memlen > vramlen) {
+ 		var->yres_virtual =  vramlen * 8 / (var->xres_virtual *
+ 				   	var->bits_per_pixel);
+-		memlen = var->xres_virtual * var->bits_per_pixel *
+-				var->yres_virtual / 8;
  	}
  
--	line_count = fb_info->fix.smem_len / fb_info->fix.line_length;
- 	fb_info->fix.ypanstep = 1;
+ 	/* we must round yres/xres down, we already rounded y/xres_virtual up
+@@ -1855,7 +1853,6 @@ static int neo_init_hw(struct fb_info *info)
+ 	struct neofb_par *par = info->par;
+ 	int videoRam = 896;
+ 	int maxClock = 65000;
+-	int CursorMem = 1024;
+ 	int CursorOff = 0x100;
  
- 	clk_prepare_enable(host->clk);
+ 	DBG("neo_init_hw");
+@@ -1907,19 +1904,16 @@ static int neo_init_hw(struct fb_info *info)
+ 	case FB_ACCEL_NEOMAGIC_NM2070:
+ 	case FB_ACCEL_NEOMAGIC_NM2090:
+ 	case FB_ACCEL_NEOMAGIC_NM2093:
+-		CursorMem = 2048;
+ 		CursorOff = 0x100;
+ 		break;
+ 	case FB_ACCEL_NEOMAGIC_NM2097:
+ 	case FB_ACCEL_NEOMAGIC_NM2160:
+-		CursorMem = 1024;
+ 		CursorOff = 0x100;
+ 		break;
+ 	case FB_ACCEL_NEOMAGIC_NM2200:
+ 	case FB_ACCEL_NEOMAGIC_NM2230:
+ 	case FB_ACCEL_NEOMAGIC_NM2360:
+ 	case FB_ACCEL_NEOMAGIC_NM2380:
+-		CursorMem = 1024;
+ 		CursorOff = 0x1000;
+ 
+ 		par->neo2200 = (Neo2200 __iomem *) par->mmio_vbase;
 -- 
 1.7.10.4
 
