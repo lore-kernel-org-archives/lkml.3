@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965179AbaGES0o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 14:26:44 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:55406 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755049AbaGES0m (ORCPT
+	id S965230AbaGES1C (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 14:27:02 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:38771 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965069AbaGES07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 14:26:42 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53B84361.5050400@roeck-us.net>
-Date: Sat, 05 Jul 2014 11:26:41 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.4 00/19] 3.4.97-stable review
-References: <20140704221436.423715636@linuxfoundation.org> <53B78F75.6080206@roeck-us.net> <20140705174646.GA17206@kroah.com> <20140705174847.GA3325@kroah.com>
-In-Reply-To: <20140705174847.GA3325@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 5 Jul 2014 14:26:59 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        John Crispin <blogic@openwrt.org>, Jonas Gorski <jogo@openwrt.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH v2] MIPS: Fix incorrect NULL check in local_flush_tlb_page()
+Date: Sat,  5 Jul 2014 20:26:52 +0200
+Message-Id: <1404584812-12377-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2014 10:48 AM, Greg Kroah-Hartman wrote:
-> On Sat, Jul 05, 2014 at 10:46:46AM -0700, Greg Kroah-Hartman wrote:
->> On Fri, Jul 04, 2014 at 10:39:01PM -0700, Guenter Roeck wrote:
->>> On 07/04/2014 03:15 PM, Greg Kroah-Hartman wrote:
->>>> This is the start of the stable review cycle for the 3.4.97 release.
->>>> There are 19 patches in this series, all will be posted as a response
->>>> to this one.  If anyone has any issues with these being applied, please
->>>> let me know.
->>>>
->>>> Responses should be made by Sun Jul  6 22:14:29 UTC 2014.
->>>> Anything received after that time might be too late.
->>>>
->>>
->>> Build results:
->>> 	total: 137 pass: 111 skipped: 20 fail: 6
->>
->> 111 skipped?  Did you add a bunch more targets?  Why skip them?
->
-> Doh, that is 20 skipped, nevermind...
->
-> But, in looking at your site, it seems that there are always at least 7
-> that are "skipped", for all kernel versions.  Why?
->
+We check that the struct vm_area_struct pointer vma is NULL and then
+dereference it a few lines below. The intent must have been to make sure
+that vma is not NULL and then to check the value from cpu_context() for
+the condition to be true.
 
-lowest 'skipped' value is actually 4, for 3.14.
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
 
-'skipped' means that a configuration does not apply for this kernel version.
-As I am adding more recent configurations, the number of 'skipped' builds
-gets larger for older kernels. Similar, as configurations are dropped
-from newer kernels, the number gets larger for newer kernels as well.
+v2: Updated the commit message with a better explanation.
 
-I'll see if I can change the output and not display the 'skipped' value
-in the final summary; it doesn't really provide value and just creates
-confusion.
+ arch/mips/mm/tlb-r3k.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Guenter
+diff --git a/arch/mips/mm/tlb-r3k.c b/arch/mips/mm/tlb-r3k.c
+index d657493..6546758 100644
+--- a/arch/mips/mm/tlb-r3k.c
++++ b/arch/mips/mm/tlb-r3k.c
+@@ -158,7 +158,7 @@ void local_flush_tlb_page(struct vm_area_struct *vma, unsigned long page)
+ {
+ 	int cpu = smp_processor_id();
+ 
+-	if (!vma || cpu_context(cpu, vma->vm_mm) != 0) {
++	if (vma && cpu_context(cpu, vma->vm_mm) != 0) {
+ 		unsigned long flags;
+ 		int oldpid, newpid, idx;
+ 
+-- 
+1.7.10.4
 
