@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869AbaGEMqP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 08:46:15 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:40414 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752769AbaGEMqN (ORCPT
+	id S1760727AbaGEMrN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 08:47:13 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:47152 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753815AbaGEMrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 08:46:13 -0400
+	Sat, 5 Jul 2014 08:47:12 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
 Cc: Rickard Strandqvist <rickard.strandqvist@sonymobile.com>,
         Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
         Jingoo Han <jg1.han@samsung.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-fbdev@vger.kernel.org,
+        "Chen, Gong" <gong.chen@linux.intel.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: savage: savagefb_driver.c:  Cleaning up variable that is never used
-Date: Sat,  5 Jul 2014 14:47:29 +0200
-Message-Id: <1404564449-21633-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] video: fbdev: sis: init.c:  Cleaning up variable that is never used
+Date: Sat,  5 Jul 2014 14:48:27 +0200
+Message-Id: <1404564507-21718-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,22 +36,82 @@ This was found using a static code analysis program called cppcheck
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/video/fbdev/savage/savagefb_driver.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/video/fbdev/sis/init.c |   21 +++++----------------
+ 1 file changed, 5 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/video/fbdev/savage/savagefb_driver.c b/drivers/video/fbdev/savage/savagefb_driver.c
-index 4dbf45f..5c7620e 100644
---- a/drivers/video/fbdev/savage/savagefb_driver.c
-+++ b/drivers/video/fbdev/savage/savagefb_driver.c
-@@ -951,8 +951,6 @@ static int savagefb_check_var(struct fb_var_screeninfo   *var,
- 	if (memlen > vramlen) {
- 		var->yres_virtual = vramlen * 8 /
- 			(var->xres_virtual * var->bits_per_pixel);
--		memlen = var->xres_virtual * var->bits_per_pixel *
--			var->yres_virtual / 8;
- 	}
+diff --git a/drivers/video/fbdev/sis/init.c b/drivers/video/fbdev/sis/init.c
+index bd40f5e..3ba446c 100644
+--- a/drivers/video/fbdev/sis/init.c
++++ b/drivers/video/fbdev/sis/init.c
+@@ -2649,7 +2649,7 @@ static void
+ SiS_SetCRT1ModeRegs(struct SiS_Private *SiS_Pr, unsigned short ModeNo,
+ 		unsigned short ModeIdIndex, unsigned short RRTI)
+ {
+-   unsigned short data, infoflag = 0, modeflag, resindex;
++   unsigned short data, infoflag = 0, modeflag;
+ #ifdef CONFIG_FB_SIS_315
+    unsigned char  *ROMAddr  = SiS_Pr->VirtualRomBase;
+    unsigned short data2, data3;
+@@ -2660,7 +2660,7 @@ SiS_SetCRT1ModeRegs(struct SiS_Private *SiS_Pr, unsigned short ModeNo,
+    if(SiS_Pr->UseCustomMode) {
+       infoflag = SiS_Pr->CInfoFlag;
+    } else {
+-      resindex = SiS_GetResInfo(SiS_Pr, ModeNo, ModeIdIndex);
++      SiS_GetResInfo(SiS_Pr, ModeNo, ModeIdIndex);
+       if(ModeNo > 0x13) {
+ 	 infoflag = SiS_Pr->SiS_RefIndex[RRTI].Ext_InfoFlag;
+       }
+@@ -3539,16 +3539,15 @@ SiS_Generic_ConvertCRData(struct SiS_Private *SiS_Pr, unsigned char *crdata,
+ 			struct fb_var_screeninfo *var, bool writeres
+ )
+ {
+-   unsigned short HRE, HBE, HRS, HBS, HDE, HT;
+-   unsigned short VRE, VBE, VRS, VBS, VDE, VT;
++   unsigned short HRE, HBE, HRS, HDE, HT;
++   unsigned short VRE, VBE, VRS, VDE, VT;
+    unsigned char  sr_data, cr_data, cr_data2;
+-   int            A, B, C, D, E, F, temp;
++   int            B, C, D, E, F, temp;
  
- 	/* we must round yres/xres down, we already rounded y/xres_virtual up
+    sr_data = crdata[14];
+ 
+    /* Horizontal total */
+    HT =  crdata[0] | ((unsigned short)(sr_data & 0x03) << 8);
+-   A = HT + 5;
+ 
+    /* Horizontal display enable end */
+    HDE = crdata[1] | ((unsigned short)(sr_data & 0x0C) << 6);
+@@ -3558,9 +3557,6 @@ SiS_Generic_ConvertCRData(struct SiS_Private *SiS_Pr, unsigned char *crdata,
+    HRS = crdata[4] | ((unsigned short)(sr_data & 0xC0) << 2);
+    F = HRS - E - 3;
+ 
+-   /* Horizontal blank start */
+-   HBS = crdata[2] | ((unsigned short)(sr_data & 0x30) << 4);
+-
+    sr_data = crdata[15];
+    cr_data = crdata[5];
+ 
+@@ -3594,7 +3590,6 @@ SiS_Generic_ConvertCRData(struct SiS_Private *SiS_Pr, unsigned char *crdata,
+ 	 ((unsigned short)(cr_data & 0x01) << 8) |
+ 	 ((unsigned short)(cr_data & 0x20) << 4) |
+ 	 ((unsigned short)(sr_data & 0x01) << 10);
+-   A = VT + 2;
+ 
+    /* Vertical display enable end */
+    VDE = crdata[10] |
+@@ -3612,12 +3607,6 @@ SiS_Generic_ConvertCRData(struct SiS_Private *SiS_Pr, unsigned char *crdata,
+ 
+    cr_data2 = (crdata[16] & 0x01) << 5;
+ 
+-   /* Vertical blank start */
+-   VBS = crdata[11] |
+-	 ((unsigned short)(cr_data  & 0x08) << 5) |
+-	 ((unsigned short)(cr_data2 & 0x20) << 4) |
+-	 ((unsigned short)(sr_data  & 0x04) << 8);
+-
+    /* Vertical blank end */
+    VBE = crdata[12] | ((unsigned short)(sr_data & 0x10) << 4);
+    temp = VBE - ((E - 1) & 511);
 -- 
 1.7.10.4
 
