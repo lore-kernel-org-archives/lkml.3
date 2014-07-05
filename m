@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376AbaGEVXB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 17:23:01 -0400
-Received: from smtprelay0136.hostedemail.com ([216.40.44.136]:40670 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751802AbaGEVXA (ORCPT
+	id S1756500AbaGEV0e (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 17:26:34 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:35044 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754298AbaGEV0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 17:23:00 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3874:4321:5007:6117:6119:7652:7903:10004:10400:10848:11232:11658:11914:12517:12519:12679:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: veil46_371b3630dfe42
-X-Filterd-Recvd-Size: 1490
-Message-ID: <1404595377.6384.77.camel@joe-AO725>
-Subject: Re: [PATCH] checkpatch: Emit a warning on file add/move/delete
-From: Joe Perches <joe@perches.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 05 Jul 2014 14:22:57 -0700
-In-Reply-To: <20140704151128.GC20758@bark>
-References: <1404434816.6384.5.camel@joe-AO725>
-	 <20140704151128.GC20758@bark>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 5 Jul 2014 17:26:32 -0400
+Date: Sat, 5 Jul 2014 15:26:29 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joerg Roedel <jroedel@suse.de>
+Subject: Re: [PATCH] PCI: Add bridge DMA alias quirk for Intel 82801
+Message-ID: <20140705212629.GF28871@google.com>
+References: <20140623223530.13445.94886.stgit@gimli.home>
+ <20140705163143.GB6247@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140705163143.GB6247@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-04 at 16:11 +0100, Andy Whitcroft wrote:
-> On Thu, Jul 03, 2014 at 05:46:56PM -0700, Joe Perches wrote:
-> > Whenever files are added, moved, or deleted, the
-> > MAINTAINERS file patterns can be out of sync or
-> > outdated.
+[+cc Joerg]
+
+On Sat, Jul 05, 2014 at 10:31:43AM -0600, Bjorn Helgaas wrote:
+> On Mon, Jun 23, 2014 at 04:36:25PM -0600, Alex Williamson wrote:
+> > This bridge sometimes shows up as a root complex device and sometimes
+> > as a discrete PCIe-to-PCI bridge.  Testing indicates that in the
+> > latter case, we need to enable the PCIe bridge DMA alias quirk.
 > > 
-> > To try to keep MAINTAINERS more up-to-date, add a
-> > one-time warning whenever a patch does any of those.
-[]
-> That seems like a sensible plan.  Sometime we might try and work out if
-> any entries are affected or needed.
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > Reported-by: Milos Kaurin <milos.kaurin@gmail.com>
+> > Tested-by: Milos Kaurin <milos.kaurin@gmail.com>
+> 
+> Applied to for-linus for v3.16, thanks!
 
-Hey again Andy.
+Actually, this quirk doesn't make any difference until the iommu changes
+are in, so there's no reason to have this in v3.16, is there?  
 
-Just fyi: I think this is not possible.
+I saw that Joerg applied those iommu changes to his core branch, which I
+assume will be merged for v3.17.  So I'll move this to a pci/iommu branch,
+to be merged during the v3.17 merge window.
 
-A patch series will often add or delete a file
-independently from an earlier or later patch that
-modifies MAINTAINERS.
-
-
+> > ---
+> > 
+> >  drivers/pci/quirks.c |    2 ++
+> >  1 file changed, 2 insertions(+)
+> > 
+> > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> > index 78a7df6..460c354 100644
+> > --- a/drivers/pci/quirks.c
+> > +++ b/drivers/pci/quirks.c
+> > @@ -3405,6 +3405,8 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ASMEDIA, 0x1080,
+> >  DECLARE_PCI_FIXUP_HEADER(0x10e3, 0x8113, quirk_use_pcie_bridge_dma_alias);
+> >  /* ITE 8892, https://bugzilla.kernel.org/show_bug.cgi?id=73551 */
+> >  DECLARE_PCI_FIXUP_HEADER(0x1283, 0x8892, quirk_use_pcie_bridge_dma_alias);
+> > +/* Intel 82801, https://bugzilla.kernel.org/show_bug.cgi?id=44881#c49 */
+> > +DECLARE_PCI_FIXUP_HEADER(0x8086, 0x244e, quirk_use_pcie_bridge_dma_alias);
+> >  
+> >  /*
+> >   * AMD has indicated that the devices below do not support peer-to-peer
+> > 
