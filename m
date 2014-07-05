@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760681AbaGEFsG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 01:48:06 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:51545 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755414AbaGEFsE (ORCPT
+	id S1760503AbaGEF45 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 01:56:57 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:45542 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753949AbaGEF4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 01:48:04 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53B79192.8020104@roeck-us.net>
-Date: Fri, 04 Jul 2014 22:48:02 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sat, 5 Jul 2014 01:56:55 -0400
+Date: Sat, 5 Jul 2014 06:56:50 +0100
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Daniele Forsi <dforsi@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        srinivas.kandagatla@gmail.com, devicetree@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, USB list <linux-usb@vger.kernel.org>,
+        linux-omap@vger.kernel.org, lee.jones@linaro.org,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Subject: Re: [PATCH 1/3] usb: dwc3: add ST dwc3 glue layer to manage dwc3 HC
+Message-ID: <20140705055650.GA8146@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1404472432-24764-1-git-send-email-peter.griffin@linaro.org>
+ <1404472432-24764-2-git-send-email-peter.griffin@linaro.org>
+ <CAN_we7O2AMpace_oxBoxBO_jT82MnL9B-mzchozncMzp4_kZ=w@mail.gmail.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.15 00/66] 3.15.4-stable review
-References: <20140704221422.813435485@linuxfoundation.org>
-In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN_we7O2AMpace_oxBoxBO_jT82MnL9B-mzchozncMzp4_kZ=w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2014 03:13 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.15.4 release.
-> There are 66 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sun Jul  6 22:13:57 UTC 2014.
-> Anything received after that time might be too late.
->
+Hi Daniele,
 
-Build results:
-	total: 144 pass: 136 skipped: 5 fail: 3
-Failed builds:
-	powerpc:allmodconfig (binutils 2.23)
-	powerpc:allmodconfig (binutils 2.24)
-	unicore32:defconfig
+Thankyou for reviewing.
 
-Qemu tests all passed.
+> > +config USB_DWC3_ST
+> > +       tristate "STMicroelectronics Platforms"
+> > +       depends on ARCH_STI && OF
+> > +       default USB_DWC3_HOST
+> > +       help
+> > +         STMicroelectronics SoCs chip with one DesignWare Core USB3 IP
+> > +         inside (i.e. STiH407).
+> > +
+> >           Say 'Y' or 'M' here if you have one such device
+> >
+> >  comment "Debugging features"
+> 
+> you are actually removing the line "Say 'Y' or 'M' here if you have
+> one such device" from the previous item
 
-Results are as expected.
+Whoops, good spot. I've fixed in V2, and added the same sentence for this
+new entry as well.
 
-Details are available at http://server.roeck-us.net:8010/builders.
+I've also replaced "STMicroelectronics SoCs chip with one DesignWare Core"
+with "STMicroelectronics SoCs with one DesignWare Core".
 
-On a side note, would be great if you can update the master branch
-of -stable at some point. It is still at -rc2.
+regards,
 
-Thanks,
-Guenter
+Peter.
 
