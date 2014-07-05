@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760935AbaGEKsI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 06:48:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58173 "EHLO
+	id S1760956AbaGEKs2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 06:48:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58190 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760844AbaGEKsF (ORCPT
+	with ESMTP id S1755638AbaGEKsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 06:48:05 -0400
-Date: Sat, 5 Jul 2014 03:47:08 -0700
-From: tip-bot for Rasmus Villemoes <tipbot@zytor.com>
-Message-ID: <tip-2172c1f5aa58310784f358ca20fdddfcdc2a0d7b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux@rasmusvillemoes.dk, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, acme@kernel.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux@rasmusvillemoes.dk,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
-        acme@kernel.org
-In-Reply-To: <1403183731-15402-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1403183731-15402-1-git-send-email-linux@rasmusvillemoes.dk>
+	Sat, 5 Jul 2014 06:48:24 -0400
+Date: Sat, 5 Jul 2014 03:47:23 -0700
+From: tip-bot for Jason Low <tipbot@zytor.com>
+Message-ID: <tip-0c3c0f0d6e56422cef60a33726d062e9923005c3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, jason.low2@hp.com,
+        tglx@linutronix.de, davidlohr@hp.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, jason.low2@hp.com,
+        tglx@linutronix.de, davidlohr@hp.com
+In-Reply-To: <1402511843-4721-2-git-send-email-jason.low2@hp.com>
+References: <1402511843-4721-2-git-send-email-jason.low2@hp.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86:
-  Micro-optimize nhmex_rbox_get_constraint()
-Git-Commit-ID: 2172c1f5aa58310784f358ca20fdddfcdc2a0d7b
+Subject: [tip:locking/core] locking/mutexes:
+  Correct documentation on mutex optimistic spinning
+Git-Commit-ID: 0c3c0f0d6e56422cef60a33726d062e9923005c3
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,40 +34,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2172c1f5aa58310784f358ca20fdddfcdc2a0d7b
-Gitweb:     http://git.kernel.org/tip/2172c1f5aa58310784f358ca20fdddfcdc2a0d7b
-Author:     Rasmus Villemoes <linux@rasmusvillemoes.dk>
-AuthorDate: Thu, 19 Jun 2014 15:15:31 +0200
+Commit-ID:  0c3c0f0d6e56422cef60a33726d062e9923005c3
+Gitweb:     http://git.kernel.org/tip/0c3c0f0d6e56422cef60a33726d062e9923005c3
+Author:     Jason Low <jason.low2@hp.com>
+AuthorDate: Wed, 11 Jun 2014 11:37:20 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 5 Jul 2014 11:21:52 +0200
+CommitDate: Sat, 5 Jul 2014 11:25:41 +0200
 
-perf/x86: Micro-optimize nhmex_rbox_get_constraint()
+locking/mutexes: Correct documentation on mutex optimistic spinning
 
-Flipping the LSB doesn't require four lines of code. This shaves a few
-bytes of the generated code, including a branch.
+The mutex optimistic spinning documentation states that we spin for
+acquisition when we find that there are no pending waiters. However,
+in actuality, whether or not there are waiters for the mutex doesn't
+determine if we will spin for it.
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+This patch removes that statement and also adds a comment which
+mentions that we spin for the mutex while we don't need to reschedule.
+
+Signed-off-by: Jason Low <jason.low2@hp.com>
+Acked-by: Davidlohr Bueso <davidlohr@hp.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1403183731-15402-1-git-send-email-linux@rasmusvillemoes.dk
+Cc: akpm@linux-foundation.org
+Cc: tim.c.chen@linux.intel.com
+Cc: paulmck@linux.vnet.ibm.com
+Cc: rostedt@goodmis.org
+Cc: Waiman.Long@hp.com
+Cc: scott.norton@hp.com
+Cc: aswin@hp.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1402511843-4721-2-git-send-email-jason.low2@hp.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ kernel/locking/mutex.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 65bbbea..e009f3c 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2946,10 +2946,7 @@ again:
- 		 * extra registers. If we failed to take an extra
- 		 * register, try the alternative.
- 		 */
--		if (idx % 2)
--			idx--;
--		else
--			idx++;
-+		idx ^= 1;
- 		if (idx != reg1->idx % 6) {
- 			if (idx == 2)
- 				config1 >>= 8;
+diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
+index bc73d33..dd26bf6de 100644
+--- a/kernel/locking/mutex.c
++++ b/kernel/locking/mutex.c
+@@ -388,12 +388,10 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 	/*
+ 	 * Optimistic spinning.
+ 	 *
+-	 * We try to spin for acquisition when we find that there are no
+-	 * pending waiters and the lock owner is currently running on a
+-	 * (different) CPU.
+-	 *
+-	 * The rationale is that if the lock owner is running, it is likely to
+-	 * release the lock soon.
++	 * We try to spin for acquisition when we find that the lock owner
++	 * is currently running on a (different) CPU and while we don't
++	 * need to reschedule. The rationale is that if the lock owner is
++	 * running, it is likely to release the lock soon.
+ 	 *
+ 	 * Since this needs the lock owner, and this mutex implementation
+ 	 * doesn't track the owner atomically in the lock field, we need to
