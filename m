@@ -1,117 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021AbaGEWn1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 18:43:27 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:33148 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266AbaGEWnZ (ORCPT
+	id S1755686AbaGEWuu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 18:50:50 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:34066 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887AbaGEWus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 18:43:25 -0400
-Date: Sat, 5 Jul 2014 18:43:21 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, Shirish Pargaonkar <spargaonkar@suse.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Jet Chen <jet.chen@intel.com>
-Subject: [PATCH block/for-linus] blkcg: don't call into policy draining if
- root_blkg is already gone
-Message-ID: <20140705224321.GA9701@mtj.dyndns.org>
+	Sat, 5 Jul 2014 18:50:48 -0400
+Date: Sun, 6 Jul 2014 00:50:34 +0200
+From: Emil Goode <emilgoode@gmail.com>
+To: Jonas Gorski <jogo@openwrt.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        John Crispin <blogic@openwrt.org>,
+        MIPS Mailing List <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v2] MIPS: Fix incorrect NULL check in
+ local_flush_tlb_page()
+Message-ID: <20140705225034.GA12090@lianli>
+References: <1404584812-12377-1-git-send-email-emilgoode@gmail.com>
+ <CAOiHx=nU7GvGnwrH0TqTkO9-mhX2RJU5gPzRRwb1OfHPcHmrqA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAOiHx=nU7GvGnwrH0TqTkO9-mhX2RJU5gPzRRwb1OfHPcHmrqA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While a queue is being destroyed, all the blkgs are destroyed and its
-->root_blkg pointer is set to NULL.  If someone else starts to drain
-while the queue is in this state, the following oops happens.
+Hello,
 
-  NULL pointer dereference at 0000000000000028
-  IP: [<ffffffff8144e944>] blk_throtl_drain+0x84/0x230
-  PGD e4a1067 PUD b773067 PMD 0
-  Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-  Modules linked in: cfq_iosched(-) [last unloaded: cfq_iosched]
-  CPU: 1 PID: 537 Comm: bash Not tainted 3.16.0-rc3-work+ #2
-  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-  task: ffff88000e222250 ti: ffff88000efd4000 task.ti: ffff88000efd4000
-  RIP: 0010:[<ffffffff8144e944>]  [<ffffffff8144e944>] blk_throtl_drain+0x84/0x230
-  RSP: 0018:ffff88000efd7bf0  EFLAGS: 00010046
-  RAX: 0000000000000000 RBX: ffff880015091450 RCX: 0000000000000001
-  RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
-  RBP: ffff88000efd7c10 R08: 0000000000000000 R09: 0000000000000001
-  R10: ffff88000e222250 R11: 0000000000000000 R12: ffff880015091450
-  R13: ffff880015092e00 R14: ffff880015091d70 R15: ffff88001508fc28
-  FS:  00007f1332650740(0000) GS:ffff88001fa80000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 0000000000000028 CR3: 0000000009446000 CR4: 00000000000006e0
-  Stack:
-   ffffffff8144e8f6 ffff880015091450 0000000000000000 ffff880015091d80
-   ffff88000efd7c28 ffffffff8144ae2f ffff880015091450 ffff88000efd7c58
-   ffffffff81427641 ffff880015091450 ffffffff82401f00 ffff880015091450
-  Call Trace:
-   [<ffffffff8144ae2f>] blkcg_drain_queue+0x1f/0x60
-   [<ffffffff81427641>] __blk_drain_queue+0x71/0x180
-   [<ffffffff81429b3e>] blk_queue_bypass_start+0x6e/0xb0
-   [<ffffffff814498b8>] blkcg_deactivate_policy+0x38/0x120
-   [<ffffffff8144ec44>] blk_throtl_exit+0x34/0x50
-   [<ffffffff8144aea5>] blkcg_exit_queue+0x35/0x40
-   [<ffffffff8142d476>] blk_release_queue+0x26/0xd0
-   [<ffffffff81454968>] kobject_cleanup+0x38/0x70
-   [<ffffffff81454848>] kobject_put+0x28/0x60
-   [<ffffffff81427505>] blk_put_queue+0x15/0x20
-   [<ffffffff817d07bb>] scsi_device_dev_release_usercontext+0x16b/0x1c0
-   [<ffffffff810bc339>] execute_in_process_context+0x89/0xa0
-   [<ffffffff817d064c>] scsi_device_dev_release+0x1c/0x20
-   [<ffffffff817930e2>] device_release+0x32/0xa0
-   [<ffffffff81454968>] kobject_cleanup+0x38/0x70
-   [<ffffffff81454848>] kobject_put+0x28/0x60
-   [<ffffffff817934d7>] put_device+0x17/0x20
-   [<ffffffff817d11b9>] __scsi_remove_device+0xa9/0xe0
-   [<ffffffff817d121b>] scsi_remove_device+0x2b/0x40
-   [<ffffffff817d1257>] sdev_store_delete+0x27/0x30
-   [<ffffffff81792ca8>] dev_attr_store+0x18/0x30
-   [<ffffffff8126f75e>] sysfs_kf_write+0x3e/0x50
-   [<ffffffff8126ea87>] kernfs_fop_write+0xe7/0x170
-   [<ffffffff811f5e9f>] vfs_write+0xaf/0x1d0
-   [<ffffffff811f69bd>] SyS_write+0x4d/0xc0
-   [<ffffffff81d24692>] system_call_fastpath+0x16/0x1b
+On Sat, Jul 05, 2014 at 09:10:44PM +0200, Jonas Gorski wrote:
+> On Sat, Jul 5, 2014 at 8:26 PM, Emil Goode <emilgoode@gmail.com> wrote:
+> > We check that the struct vm_area_struct pointer vma is NULL and then
+> > dereference it a few lines below. The intent must have been to make sure
+> > that vma is not NULL and then to check the value from cpu_context() for
+> > the condition to be true.
+> >
+> > Signed-off-by: Emil Goode <emilgoode@gmail.com>
+> > ---
+> >
+> > v2: Updated the commit message with a better explanation.
+> >
+> >  arch/mips/mm/tlb-r3k.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/arch/mips/mm/tlb-r3k.c b/arch/mips/mm/tlb-r3k.c
+> > index d657493..6546758 100644
+> > --- a/arch/mips/mm/tlb-r3k.c
+> > +++ b/arch/mips/mm/tlb-r3k.c
+> > @@ -158,7 +158,7 @@ void local_flush_tlb_page(struct vm_area_struct *vma, unsigned long page)
+> >  {
+> >         int cpu = smp_processor_id();
+> >
+> > -       if (!vma || cpu_context(cpu, vma->vm_mm) != 0) {
+> > +       if (vma && cpu_context(cpu, vma->vm_mm) != 0) {
+> 
+> Sorry for replying "too late", but grepping through the kernel code I
+> fail to find any caller that does not dereference vma before calling
+> (local)flush_tlb_page(). Also both tlb-4k and tlb-8k assume vma cannot
+> be NULL, so I would say it is safe to assume vma is never NULL, and
+> the NULL check can be removed completely.
+> 
+> Also it looks like this "bug" was there since at least 2.6.12, and
+> never seem to have bitten anyone.
 
-776687bce42b ("block, blk-mq: draining can't be skipped even if
-bypass_depth was non-zero") made it easier to trigger this bug by
-making blk_queue_bypass_start() drain even when it loses the first
-bypass test to blk_cleanup_queue(); however, the bug has always been
-there even before the commit as blk_queue_bypass_start() could race
-against queue destruction, win the initial bypass test but perform the
-actual draining after blk_cleanup_queue() already destroyed all blkgs.
+Yes, the bug pre-dates GIT history and I agree that it is most unlikely
+that it ever caused a problem. I will send a new patch that removes the
+NULL check of vma.
 
-Fix it by skippping calling into policy draining if all the blkgs are
-already gone.
+Best regards,
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Shirish Pargaonkar <spargaonkar@suse.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Reported-by: Jet Chen <jet.chen@intel.com>
-Cc: stable@vger.kernel.org
----
- block/blk-cgroup.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index b9f4cc4..28d227c 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -872,6 +872,13 @@ void blkcg_drain_queue(struct request_queue *q)
- {
- 	lockdep_assert_held(q->queue_lock);
- 
-+	/*
-+	 * @q could be exiting and already have destroyed all blkgs as
-+	 * indicated by NULL root_blkg.  If so, don't confuse policies.
-+	 */
-+	if (!q->root_blkg)
-+		return;
-+
- 	blk_throtl_drain(q);
- }
- 
+Emil Goode
