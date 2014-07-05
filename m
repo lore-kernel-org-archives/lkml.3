@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760626AbaGEFq6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 01:46:58 -0400
-Received: from seketeli.net ([94.23.218.202]:45920 "EHLO ms.seketeli.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760573AbaGEFq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 01:46:57 -0400
-From: Apelete Seketeli <apelete@seketeli.net>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Cc: Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH] Register NOP tranciever driver in JZ4740 musb glue layer
-Date: Sat,  5 Jul 2014 07:47:24 +0200
-Message-Id: <1404539245-9211-1-git-send-email-apelete@seketeli.net>
-X-Mailer: git-send-email 1.7.10.4
+	id S1760681AbaGEFsG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 01:48:06 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:51545 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755414AbaGEFsE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jul 2014 01:48:04 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53B79192.8020104@roeck-us.net>
+Date: Fri, 04 Jul 2014 22:48:02 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.15 00/66] 3.15.4-stable review
+References: <20140704221422.813435485@linuxfoundation.org>
+In-Reply-To: <20140704221422.813435485@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 07/04/2014 03:13 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.15.4 release.
+> There are 66 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sun Jul  6 22:13:57 UTC 2014.
+> Anything received after that time might be too late.
+>
 
-The name of the NOP transceiver driver was changed during v3.16
-release cycle from usb_phy_gen_xceiv to usb_phy_generic.
+Build results:
+	total: 144 pass: 136 skipped: 5 fail: 3
+Failed builds:
+	powerpc:allmodconfig (binutils 2.23)
+	powerpc:allmodconfig (binutils 2.24)
+	unicore32:defconfig
 
-The patch that comes as a follow up of this message registers the NOP
-transceiver driver before calling usb_get_phy() to avoid issues
-related to accessing its data structure while it was not registered.
+Qemu tests all passed.
 
-For notice, I updated corresponding platform data to rename NOP
-transceiver used for JZ4740 in a patch sent today to linux-mips.
+Results are as expected.
 
-Changes were rebased on top of the linux-usb master branch, built and
-tested successfully.
+Details are available at http://server.roeck-us.net:8010/builders.
 
-The following changes since commit 80235c4:
+On a side note, would be great if you can update the master branch
+of -stable at some point. It is still at -rc2.
 
-  Merge tag 'v3.16-rc2'
-
-are available in the git repository at:
-
-  git://git.seketeli.net/~apelete/linux-usb.git register-jz4740-phy
-
-Apelete Seketeli (1):
-  usb: musb: register nop transceiver driver for jz4740
-
- drivers/usb/musb/jz4740.c |    3 +++
- 1 file changed, 3 insertions(+)
-
--- 
-1.7.10.4
+Thanks,
+Guenter
 
