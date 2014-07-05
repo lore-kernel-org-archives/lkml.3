@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838AbaGEJ3P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 05:29:15 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:45615 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231AbaGEJ3N (ORCPT
+	id S1754989AbaGEJaO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 05:30:14 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:38439 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231AbaGEJaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 05:29:13 -0400
-Date: Sat, 5 Jul 2014 11:29:08 +0200
+	Sat, 5 Jul 2014 05:30:12 -0400
+Date: Sat, 5 Jul 2014 11:30:07 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Daniel Bristot de Oliveira <bristot@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Maynard Johnson <maynard@us.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stanislav Fomichev <stfomichev@yandex-team.ru>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/5] perf/core improvements and a fix
-Message-ID: <20140705092908.GA32285@gmail.com>
-References: <1403816507-12943-1-git-send-email-acme@kernel.org>
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: Re: [GIT PULL 0/5] perf/core improvements and fixes
+Message-ID: <20140705093007.GB32285@gmail.com>
+References: <1403871661-18474-1-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1403816507-12943-1-git-send-email-acme@kernel.org>
+In-Reply-To: <1403871661-18474-1-git-send-email-jolsa@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+* Jiri Olsa <jolsa@kernel.org> wrote:
 
-> Hi Ingo,
+> hi Ingo,
+> please consider pulling
 > 
-> 	Please consider pulling,
-> 
-> - Arnaldo
+> thanks,
+> jirka
 > 
 > The following changes since commit 1c92f88542faa3ae4f970c548b4fe8275a45201b:
 > 
@@ -46,51 +49,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > are available in the git repository at:
 > 
 > 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
 > 
-> for you to fetch changes up to e281a9606d7073c517f2571e83faaff029ddc1cf:
+> for you to fetch changes up to 8ac631cd502d6b31fd29f6d019305305b479fa3e:
 > 
->   perf trace: Add possibility to switch off syscall events (2014-06-26 17:48:07 -0300)
+>   perf script: Handle the num array type in python properly (2014-06-27 11:15:02 +0200)
 > 
 > ----------------------------------------------------------------
 > perf/core improvements and fixes:
 > 
-> New features:
+> . Handle the num array type in python properly (Sebastian Andrzej Siewior)
 > 
-> . Add support for pagefault tracing in 'trace', please see multiple examples
->   in the changeset messages (Stanislav Fomichev).
+> . Fix wrong condition for allocation failure (Jiri Olsa)
 > 
-> User visible:
+> . Adjust callchain based on DWARF debug info on powerpc (Sukadev Bhattiprolu)
 > 
-> . Fallback to syscalls:* when raw_syscalls:* is not available in the perl and
->   python perf scripts. (Daniel Bristot de Oliveira)
+> . Fix a risk for doing free on uninitialized pointer in traceevent lib (Rickard Strandqvist)
 > 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 > 
 > ----------------------------------------------------------------
-> Daniel Bristot de Oliveira (1):
->       perf scripts: Fallback to syscalls:* when raw_syscalls:* is not available
+> Jiri Olsa (1):
+>       perf tools: Fix wrong condition for allocation failure
 > 
-> Stanislav Fomichev (4):
->       perf trace: Add perf_event parameter to tracepoint_handler
->       perf trace: Add support for pagefault tracing
->       perf trace: Add pagefaults record and replay support
->       perf trace: Add possibility to switch off syscall events
+> Rickard Strandqvist (1):
+>       tools lib traceevent: Fix a risk for doing free on uninitialized pointer
 > 
->  tools/perf/Documentation/perf-trace.txt            |  46 ++++
->  tools/perf/builtin-trace.c                         | 237 +++++++++++++++++----
->  tools/perf/scripts/perl/bin/failed-syscalls-record |   3 +-
->  tools/perf/scripts/perl/failed-syscalls.pl         |   5 +
->  .../python/bin/failed-syscalls-by-pid-record       |   3 +-
->  tools/perf/scripts/python/bin/sctop-record         |   3 +-
->  .../python/bin/syscall-counts-by-pid-record        |   3 +-
->  .../perf/scripts/python/bin/syscall-counts-record  |   3 +-
->  .../perf/scripts/python/failed-syscalls-by-pid.py  |   5 +
->  tools/perf/scripts/python/sctop.py                 |   5 +
->  tools/perf/scripts/python/syscall-counts-by-pid.py |   5 +
->  tools/perf/scripts/python/syscall-counts.py        |   5 +
->  12 files changed, 280 insertions(+), 43 deletions(-)
+> Sebastian Andrzej Siewior (2):
+>       perf script: Move the number processing into its own function
+>       perf script: Handle the num array type in python properly
+> 
+> Sukadev Bhattiprolu (1):
+>       perf tools powerpc: Adjust callchain based on DWARF debug info
+> 
+>  tools/lib/traceevent/event-parse.c                 |   6 +-
+>  tools/perf/arch/powerpc/Makefile                   |   1 +
+>  tools/perf/arch/powerpc/util/skip-callchain-idx.c  | 266 +++++++++++++++++++++
+>  tools/perf/builtin-stat.c                          |   2 +-
+>  tools/perf/config/Makefile                         |   4 +
+>  tools/perf/util/callchain.h                        |  13 +
+>  tools/perf/util/machine.c                          |  18 +-
+>  .../util/scripting-engines/trace-event-python.c    |  57 +++--
+>  8 files changed, 346 insertions(+), 21 deletions(-)
+>  create mode 100644 tools/perf/arch/powerpc/util/skip-callchain-idx.c
 
-Pulled, thanks a lot Arnaldo!
+Pulled, thanks a lot Jiri!
 
 	Ingo
