@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622AbaGEOeE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 10:34:04 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:41066 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754186AbaGEOeD (ORCPT
+	id S1755941AbaGEOgL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 10:36:11 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:39992 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309AbaGEOgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 10:34:03 -0400
-Date: Sat, 5 Jul 2014 20:03:56 +0530
+	Sat, 5 Jul 2014 10:36:09 -0400
+Date: Sat, 5 Jul 2014 20:06:03 +0530
 From: Himangi Saraogi <himangi774@gmail.com>
-To: Kumar Gala <galak@kernel.crashing.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+To: Thomas Renninger <trenn@suse.de>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
         linux-kernel@vger.kernel.org
 Cc: julia.lawall@lip6.fr
-Subject: [PATCH] powerpc/fsl-pci: Correct use of ! and &
-Message-ID: <20140705143356.GA3321@himangi-Dell>
+Subject: [PATCH] cpupower: mperf monitor: Correct use of ! and &
+Message-ID: <20140705143603.GA3351@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -44,25 +43,22 @@ Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 ---
 This is not tested and clearly changes the semantics, so it is only
 something to consider.
+ tools/power/cpupower/utils/idle_monitor/mperf_monitor.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- arch/powerpc/sysdev/fsl_pci.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
-index 4bd091a..c507767 100644
---- a/arch/powerpc/sysdev/fsl_pci.c
-+++ b/arch/powerpc/sysdev/fsl_pci.c
-@@ -853,8 +853,8 @@ u64 fsl_pci_immrbar_base(struct pci_controller *hose)
- 		in = pcie->cfg_type0 + PEX_RC_INWIN_BASE;
- 		for (i = 0; i < 4; i++) {
- 			/* not enabled, skip */
--			if (!in_le32(&in[i].ar) & PEX_RCIWARn_EN)
--				 continue;
-+			if (!(in_le32(&in[i].ar) & PEX_RCIWARn_EN))
-+				continue;
+diff --git a/tools/power/cpupower/utils/idle_monitor/mperf_monitor.c b/tools/power/cpupower/utils/idle_monitor/mperf_monitor.c
+index 5650ab5..90a8c4f 100644
+--- a/tools/power/cpupower/utils/idle_monitor/mperf_monitor.c
++++ b/tools/power/cpupower/utils/idle_monitor/mperf_monitor.c
+@@ -237,7 +237,7 @@ static int init_maxfreq_mode(void)
+ 	unsigned long long hwcr;
+ 	unsigned long min;
  
- 			if (get_immrbase() == in_le32(&in[i].tar))
- 				return (u64)in_le32(&in[i].barh) << 32 |
+-	if (!cpupower_cpu_info.caps & CPUPOWER_CAP_INV_TSC)
++	if (!(cpupower_cpu_info.caps & CPUPOWER_CAP_INV_TSC))
+ 		goto use_sysfs;
+ 
+ 	if (cpupower_cpu_info.vendor == X86_VENDOR_AMD) {
 -- 
 1.9.1
 
