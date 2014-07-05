@@ -1,111 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390AbaGEO4T (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 10:56:19 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:46826 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753495AbaGEO4P (ORCPT
+	id S1756116AbaGEO42 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 10:56:28 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:59949 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495AbaGEO4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 10:56:15 -0400
+	Sat, 5 Jul 2014 10:56:25 -0400
+Date: Sat, 5 Jul 2014 15:56:23 +0100 (BST)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Joe Perches <joe@perches.com>, Grant Likely <grant.likely@secretlab.ca>
+cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] declance: Fix 64-bit compilation warnings
+In-Reply-To: <1404368746.14741.36.camel@joe-AO725>
+Message-ID: <alpine.LFD.2.11.1407051529040.15455@eddie.linux-mips.org>
+References: <alpine.LFD.2.11.1406290246120.15455@eddie.linux-mips.org>         <20140702.182807.1245632778216212860.davem@davemloft.net>         <alpine.LFD.2.11.1407030244230.15455@eddie.linux-mips.org>         <alpine.LFD.2.11.1407030331550.15455@eddie.linux-mips.org>
+         <1404356734.14741.18.camel@joe-AO725>         <alpine.LFD.2.11.1407030423300.15455@eddie.linux-mips.org>         <1404364565.14741.26.camel@joe-AO725>         <alpine.LFD.2.11.1407030637030.15455@eddie.linux-mips.org>
+ <1404368746.14741.36.camel@joe-AO725>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20140705011058.198ae810@canb.auug.org.au>
-References: <20140704164251.7dc67e07@canb.auug.org.au>
-	<CAK5sBcGq54sOSzJKXrEbhAUTZZh=+9NuVh294Qxn0dQvbh-G8w@mail.gmail.com>
-	<20140705011058.198ae810@canb.auug.org.au>
-Date: Sat, 5 Jul 2014 20:26:13 +0530
-Message-ID: <CAK5sBcEScyFWv8J7CBZfHzm8bNKeY7bbQSPC7pPhMJRcBsc_Fg@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jul 4
-From: Sachin Kamat <spk.linux@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 4, 2014 at 8:40 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Sachin,
->
-> On Fri, 4 Jul 2014 14:12:11 +0530 Sachin Kamat <spk.linux@gmail.com> wrote:
->>
->> Was bisecting a kernel crash on Arndale octa board (Exynos5420). It
->> points to a merge
->> commit:
->> 40556a4c485d12d324f1ea196cc30f590e564237 is the first bad commit
->> ("Merge remote-tracking branch 'nfsd/nfsd-next'").
->>
->> How do I proceed with this?
->
-> I guess we get the owner of the tree (possibly) in question involved
-> (cc'd).
->
->> Bisect log as follows:
->>
->> git bisect start
->> # good: [4c834452aad01531db949414f94f817a86348d59] Linux 3.16-rc3
->> git bisect good 4c834452aad01531db949414f94f817a86348d59
->> # bad: [bb62c798798659624c53e3727bbc18cf47eb7ae8] Add linux-next
->> specific files for 20140704
->> git bisect bad bb62c798798659624c53e3727bbc18cf47eb7ae8
->> # bad: [de5ea10b7647b299d27a40511772f024629b466d] Merge
->> remote-tracking branch 'md/for-next'
->> git bisect bad de5ea10b7647b299d27a40511772f024629b466d
->> # bad: [3ca365b4451d1bab28adc72a985d9bbdf535df0e] Merge
->> remote-tracking branch 'dmaengine/next'
->> git bisect bad 3ca365b4451d1bab28adc72a985d9bbdf535df0e
->> # good: [d72d4e47cb1e8ac1259a5f5935320ae1e7022066] Merge
->> remote-tracking branch 'renesas/next'
->> git bisect good d72d4e47cb1e8ac1259a5f5935320ae1e7022066
->> # good: [fdb82f0a3d19eaa0661d799b980d0a9b689fcf75] Merge
->> remote-tracking branch 'nfs/linux-next'
->> git bisect good fdb82f0a3d19eaa0661d799b980d0a9b689fcf75
->> # bad: [fc48eed8cd350e4be1227ff3c990d48906afd00a] Merge
->> remote-tracking branch 'hwmon-staging/hwmon-next'
->> git bisect bad fc48eed8cd350e4be1227ff3c990d48906afd00a
->> # bad: [7d3f94ee2f2808b13dd3a96f6e6ca754a954d4b9] Merge
->> remote-tracking branch 'ubifs/linux-next'
->> git bisect bad 7d3f94ee2f2808b13dd3a96f6e6ca754a954d4b9
->> # good: [8cdb8b21b1d00856b885734c514821627c8078bc] NFSD: Avoid warning
->> message when compile at i686 arch
->> git bisect good 8cdb8b21b1d00856b885734c514821627c8078bc
->> # good: [da575690c01993471e38faf3eee1991ee69d7b20] nfsd: clean up
->> nfsd4_close_open_stateid
->> git bisect good da575690c01993471e38faf3eee1991ee69d7b20
->> # good: [95217c1e686bdd7c27b8483bbdda1c09d6fa9a92] nfsd: Don't get a
->> session reference without a client reference
->> git bisect good 95217c1e686bdd7c27b8483bbdda1c09d6fa9a92
->> # good: [bdd79ee31bf842051365c798effaffe0e647b501] nfsd: Allow struct
->> nfsd4_compound_state to cache the nfs4_client
->> git bisect good bdd79ee31bf842051365c798effaffe0e647b501
->> # good: [e9110361a9a4e258b072b14bd44eb78cf11453cb] UBI: fix the
->> volumes tree sorting criteria
->> git bisect good e9110361a9a4e258b072b14bd44eb78cf11453cb
->> # bad: [40556a4c485d12d324f1ea196cc30f590e564237] Merge
->> remote-tracking branch 'nfsd/nfsd-next'
->> git bisect bad 40556a4c485d12d324f1ea196cc30f590e564237
->>
->> Regards,
->> Sachin.
->
-> Can you please double check that commit bdd79ee31bf8 is good and commit
-> 40556a4c485d is bad.  Also check that commit fdb82f0a3d19 is good.
->
-> In that case we have the unlikely event that the (automated) git merge
-> is not correct or patches on each side of the merge semantically
-> interact badly.
->
-> I guess the next thing to try is just Linus' tree (commit 5170a3b24a91)
-> merged with the nfsd tree (commit 2fc193cf924e).
->
-> You should also post your information about the crash you are
-> diagnosing as others may have seen it as well - or know what may cause
-> it.
+On Wed, 2 Jul 2014, Joe Perches wrote:
 
-Thanks Stephen. I will give it a try on Monday.
+> > > > > The kernel vsprintf implementation doesn't prefix
+> > > > > pointers with 0x, so you can use 0x%p if you really
+> > > > > want that with a leading prefix, but you don't have
+> > > > > to use it.
+> > > > 
+> > > >  It does, when the `#' format modifier is used (go try yourself!).
+> > > 
+> > > I know it does, but it's incidental.
+> > 
+> >  Is it?  Someone took the effort to handle it:
+> > 
+> > 	int default_width = 2 * sizeof(void *) + (spec.flags & SPECIAL ? 2 : 0);
+> > 
+> > while they could do:
+> > 
+> > 	int default_width = 2 * sizeof(void *);
+> > 
+> > 	spec.flags &= ~SPECIAL;
+> 
+> Grant Likely did that a couple of years ago.
+> 
+> commit 725fe002d315c2501c110b7245d3eb4f4535f4d6
+> Author: Grant Likely <grant.likely@secretlab.ca>
+> Date:   Thu May 31 16:26:08 2012 -0700
+> 
+>     vsprintf: correctly handle width when '#' flag used in %#p format
+>     
+>     The '%p' output of the kernel's vsprintf() uses spec.field_width to
+>     determine how many digits to output based on 2 * sizeof(void*) so that all
+>     digits of a pointer are shown.  ie.  a pointer will be output as
+>     "001A2B3C" instead of "1A2B3C".  However, if the '#' flag is used in the
+>     format (%#p), then the code doesn't take into account the width of the
+>     '0x' prefix and will end up outputing "0x1A2B3C" instead of "0x001A2B3C".
+>     
+>     This patch reworks the "pointer()" format hook to include 2 characters for
+>     the '0x' prefix if the '#' flag is included.
+> 
+> Not sure it ever mattered myself.
+> 
+> >  Hmm, actually I wonder if GCC maintainers could be persuaded to accept a 
+> > `linux_printk' format checker, that would accurately match our semantics 
+> > and could handle some of our other extensions too.  There are precedents 
+> > already, `cmn_err' and `CFString' (for Solaris and Darwin), so it's not 
+> > like a no-no outright.  WDYT?
+> > 
+> 
+> Maybe via a gcc plugin.
+> 
+> https://gcc.gnu.org/wiki/plugins
+> 
+> If you're going to write one, it'd be nice to validate all
+> the %p<foo> extensions too.
 
+ Well, it would be easier for me to tweak GCC itself, I have never had 
+anything to do with plugins.
 
--- 
-Regards,
-Sachin.
+* Advantages of having it in GCC: everyone will have it, eventually.  
+  Disadvantages: they'll have to upgrade the compiler to a version that's 
+  recent enough (or backport the change).
+
+* Advantages of having it in a plugin: GCC versions from 4.5 up can be 
+  supported, many people won't have to upgrade the compiler.  
+  Disadvantages: most likely nobody will use it. ;)
+
+Anyway, I won't rush implementing it, sorry, there's too much other stuff 
+I want to do I consider important, though I can place it somewhere down my 
+to-do list.
+
+ One question though, does either of you or anybody else know why we're 
+inconsistent about this 0x prefixing of virtual addresses vs physical 
+addresses?  Specifically %p vs e.g. %pad.  I have fixed (patch just 
+posted) and made use of some debug code in the defxx driver and I get 
+output like this:
+
+Descriptor block virt = a8000000ce0ec000, phys = 0x00000000ce0ec000
+Command Request buffer virt = a8000000ce0ed380, phys = 0x00000000ce0ed380
+Command Response buffer virt = a8000000ce0ed580, phys = 0x00000000ce0ed580
+Receive buffer block virt = a8000000ce0ed780, phys = 0x00000000ce0ed780
+Consumer block virt = a8000000ce0ed780, phys = 0x00000000ce0ed780
+
+For %p the SPECIAL flag is set according to the presence or absence of the 
+`#' modifier.  For %pad and friends the flag is forced on.  I find it 
+messy.  Can we decide one way or the other?  I have no strong preference 
+towards either format, but I think it would be good to stay consistent, 
+also in the handling of the modifier.
+
+ Given that (as you've noticed) people want to see that 0x prefix anyway 
+perhaps we can add it to %p by default too (and then let it be switched 
+off with `#' across all the relevant %p formats)?  Any thoughts?
+
+ Adding LKML for some more feedback perhaps.
+
+  Maciej
