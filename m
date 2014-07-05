@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897AbaGEE2u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 00:28:50 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:60125 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430AbaGEE2s (ORCPT
+	id S1755131AbaGEEcO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 00:32:14 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:44318 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172AbaGEEcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 00:28:48 -0400
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        acme@ghostprotocols.net
-Cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Subject: [PATCH] appletalk: Set skb with destructor
-Date: Sat,  5 Jul 2014 07:28:14 +0300
-Message-Id: <1404534494-6253-1-git-send-email-andrey.krieger.utkin@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Sat, 5 Jul 2014 00:32:13 -0400
+From: Nicholas Krause <xerofoify@gmail.com>
+To: cmetcalf@tilera.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] tile: Add underscores to defintions
+Date: Sat,  5 Jul 2014 00:32:08 -0400
+Message-Id: <1404534728-7345-1-git-send-email-xerofoify@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-See https://bugzilla.kernel.org/show_bug.cgi?id=79441
----8<---
-Made changes similar to 0ae89beb283a0db5980d1d4781c7d7be2f2810d6
+In file drv_xgbe_impl.h I fixed the definitions for Size Small,
+Size Large, Size Jumbo to have underscores before and after to
+follow kernel coding style for internel defentions.
 
-Reported-by: Ed Martin <edman007@edman007.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
 ---
- net/appletalk/ddp.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/tile/include/hv/drv_xgbe_impl.h | 15 +++------------
+ 1 file changed, 3 insertions(+), 12 deletions(-)
 
-diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
-index 01a1082..3d8ab34 100644
---- a/net/appletalk/ddp.c
-+++ b/net/appletalk/ddp.c
-@@ -1399,6 +1399,11 @@ drop:
- 	return NET_RX_DROP;
- }
+diff --git a/arch/tile/include/hv/drv_xgbe_impl.h b/arch/tile/include/hv/drv_xgbe_impl.h
+index 3a73b2b..51959da 100644
+--- a/arch/tile/include/hv/drv_xgbe_impl.h
++++ b/arch/tile/include/hv/drv_xgbe_impl.h
+@@ -40,18 +40,9 @@
+ /** Total available words in the eDMA command FIFO. */
+ #define EDMA_WDS_TOTAL      128
  
-+static inline void atalk_skb_destructor(struct sk_buff *skb)
-+{
-+	sock_put(skb->sk);
-+}
-+
- /**
-  *	atalk_rcv - Receive a packet (in skb) from device dev
-  *	@skb - packet received
-@@ -1489,6 +1494,8 @@ static int atalk_rcv(struct sk_buff *skb, struct net_device *dev,
- 		goto drop;
+-
+-/*
+- * FIXME: These definitions are internal and should have underscores!
+- * NOTE: The actual numeric values here are intentional and allow us to
+- * optimize the concept "if small ... else if large ... else ...", by
+- * checking for the low bit being set, and then for non-zero.
+- * These are used as array indices, so they must have the values (0, 1, 2)
+- * in some order.
+- */
+-#define SIZE_SMALL (1)       /**< Small packet queue. */
+-#define SIZE_LARGE (2)       /**< Large packet queue. */
+-#define SIZE_JUMBO (0)       /**< Jumbo packet queue. */
++#define __SIZE_SMALL__ (1)       /**< Small packet queue. */
++#define __SIZE_LARGE__ (2)       /**< Large packet queue. */
++#define __SIZE_JUMBO__ (0)       /**< Jumbo packet queue. */
  
- 	/* Queue packet (standard) */
-+	sock_hold(sock);
-+	skb->destructor = atalk_skb_destructor;
- 	skb->sk = sock;
- 
- 	if (sock_queue_rcv_skb(sock, skb) < 0)
-@@ -1644,6 +1651,8 @@ static int atalk_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
- 	if (!skb)
- 		goto out;
- 
-+	sock_hold(sk);
-+	skb->destructor = atalk_skb_destructor;
- 	skb->sk = sk;
- 	skb_reserve(skb, ddp_dl->header_length);
- 	skb_reserve(skb, dev->hard_header_len);
+ /** The number of "SIZE_xxx" values. */
+ #define NETIO_NUM_SIZES 3
 -- 
-1.8.3.2
+1.9.1
 
