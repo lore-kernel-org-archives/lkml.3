@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760662AbaGEFhZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 01:37:25 -0400
-Received: from utopia.booyaka.com ([74.50.51.50]:39715 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914AbaGEFhX (ORCPT
+	id S1755993AbaGEFjF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 01:39:05 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:62589 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632AbaGEFjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 01:37:23 -0400
-Date: Sat, 5 Jul 2014 05:37:22 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Nicholas Krause <xerofoify@gmail.com>
-cc: tony@atomide.com, linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mach-omap2: Change if statement in
- omap2_dflt_clk_enable
-In-Reply-To: <1404507843-3648-1-git-send-email-xerofoify@gmail.com>
-Message-ID: <alpine.DEB.2.02.1407050536060.27423@utopia.booyaka.com>
-References: <1404507843-3648-1-git-send-email-xerofoify@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sat, 5 Jul 2014 01:39:04 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53B78F75.6080206@roeck-us.net>
+Date: Fri, 04 Jul 2014 22:39:01 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.4 00/19] 3.4.97-stable review
+References: <20140704221436.423715636@linuxfoundation.org>
+In-Reply-To: <20140704221436.423715636@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Jul 2014, Nicholas Krause wrote:
+On 07/04/2014 03:15 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.97 release.
+> There are 19 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sun Jul  6 22:14:29 UTC 2014.
+> Anything received after that time might be too late.
+>
 
-> This patch changes this function to check for if v is returning value from the
-> called function. If not it does the else. Furthermore fixes the FIXME message above
-> if statement for holding INVERT_ENABLE bit when not needing to be checked for
-> in if statement by just checking for if v is not Null.
-> 
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+Build results:
+	total: 137 pass: 111 skipped: 20 fail: 6
+Failed builds:
+	alpha:allmodconfig
+	arm:spear6xx_defconfig
+	score:defconfig
+	sparc64:allmodconfig
+	unicore32:defconfig
+	xtensa:allmodconfi
 
-This patch doesn't make any sense.  Neither does the commit message.  
-Please explain exactly what this patch is intended to do in terms of the 
-clock framework or the hardware.
+Qemu tests all passed.
 
+Results are as expected.
 
-- Paul
+Details are available at http://server.roeck-us.net:8010/builders.
 
-> ---
->  arch/arm/mach-omap2/clock.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-omap2/clock.c b/arch/arm/mach-omap2/clock.c
-> index 591581a..626363d 100644
-> --- a/arch/arm/mach-omap2/clock.c
-> +++ b/arch/arm/mach-omap2/clock.c
-> @@ -379,7 +379,7 @@ void omap2_dflt_clk_disable(struct clk_hw *hw)
->  	}
->  
->  	v = omap2_clk_readl(clk, clk->enable_reg);
-> -	if (clk->flags & INVERT_ENABLE)
-> +	if (v)
->  		v |= (1 << clk->enable_bit);
->  	else
->  		v &= ~(1 << clk->enable_bit);
-> -- 
-> 1.9.1
-> 
+Guenter
 
-
-- Paul
