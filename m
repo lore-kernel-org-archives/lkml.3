@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600AbaGEMmN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 08:42:13 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:51539 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751968AbaGEMmM (ORCPT
+	id S1755882AbaGEMnU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 08:43:20 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:51931 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052AbaGEMnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 08:42:12 -0400
+	Sat, 5 Jul 2014 08:43:18 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
 Cc: Rickard Strandqvist <rickard.strandqvist@sonymobile.com>,
         Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
         Jingoo Han <jg1.han@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Joe Perches <joe@perches.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: pvr2fb.c:  Cleaning up variable that is never used
-Date: Sat,  5 Jul 2014 14:43:27 +0200
-Message-Id: <1404564207-21282-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] video: fbdev: pxa168fb.c:  Cleaning up variable that is never used
+Date: Sat,  5 Jul 2014 14:44:34 +0200
+Message-Id: <1404564274-21364-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,29 +34,41 @@ This was found using a static code analysis program called cppcheck
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/video/fbdev/pvr2fb.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/video/fbdev/pxa168fb.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/video/fbdev/pvr2fb.c b/drivers/video/fbdev/pvr2fb.c
-index 167cfff..da06b16 100644
---- a/drivers/video/fbdev/pvr2fb.c
-+++ b/drivers/video/fbdev/pvr2fb.c
-@@ -1075,7 +1075,6 @@ static struct pvr2_board {
- static int __init pvr2fb_init(void)
+diff --git a/drivers/video/fbdev/pxa168fb.c b/drivers/video/fbdev/pxa168fb.c
+index c95b9e4..fd6c56b 100644
+--- a/drivers/video/fbdev/pxa168fb.c
++++ b/drivers/video/fbdev/pxa168fb.c
+@@ -405,9 +405,8 @@ static int pxa168fb_set_par(struct fb_info *info)
+ 	struct fb_var_screeninfo *var = &info->var;
+ 	struct fb_videomode mode;
+ 	u32 x;
+-	struct pxa168fb_mach_info *mi;
+ 
+-	mi = dev_get_platdata(fbi->dev);
++	dev_get_platdata(fbi->dev);
+ 
+ 	/*
+ 	 * Set additional mode info.
+@@ -787,7 +786,6 @@ static int pxa168fb_remove(struct platform_device *pdev)
  {
- 	int i, ret = -ENODEV;
--	int size;
+ 	struct pxa168fb_info *fbi = platform_get_drvdata(pdev);
+ 	struct fb_info *info;
+-	int irq;
+ 	unsigned int data;
  
- #ifndef MODULE
- 	char *option = NULL;
-@@ -1084,7 +1083,6 @@ static int __init pvr2fb_init(void)
- 		return -ENODEV;
- 	pvr2fb_setup(option);
- #endif
--	size = sizeof(struct fb_info) + sizeof(struct pvr2fb_par) + 16 * sizeof(u32);
+ 	if (!fbi)
+@@ -807,7 +805,7 @@ static int pxa168fb_remove(struct platform_device *pdev)
+ 	if (info->cmap.len)
+ 		fb_dealloc_cmap(&info->cmap);
  
- 	fb_info = framebuffer_alloc(sizeof(struct pvr2fb_par), NULL);
+-	irq = platform_get_irq(pdev, 0);
++	platform_get_irq(pdev, 0);
  
+ 	dma_free_writecombine(fbi->dev, PAGE_ALIGN(info->fix.smem_len),
+ 				info->screen_base, info->fix.smem_start);
 -- 
 1.7.10.4
 
