@@ -1,54 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119AbaGEFeb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 01:34:31 -0400
-Received: from seketeli.net ([94.23.218.202]:45870 "EHLO ms.seketeli.fr"
+	id S1760585AbaGEFfe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 01:35:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38777 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751623AbaGEFe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 01:34:29 -0400
-From: Apelete Seketeli <apelete@seketeli.net>
-To: Ralf Baechle <ralf@linux-mips.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        John Crispin <blogic@openwrt.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-mips@linux-mips.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] Rename NOP transceiver in JZ4740 platform data
-Date: Sat,  5 Jul 2014 07:34:56 +0200
-Message-Id: <1404538497-8381-1-git-send-email-apelete@seketeli.net>
-X-Mailer: git-send-email 1.7.10.4
+	id S1760453AbaGEFfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jul 2014 01:35:32 -0400
+From: Amit Shah <amit.shah@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, herbert@gondor.apana.org.au,
+        keescook@chromium.org, jason@lakedaemon.net,
+        Amit Shah <amit.shah@redhat.com>, <stable@vger.kernel.org>
+Subject: [PATCH v2 1/2] hwrng: fetch randomness only after device init
+Date: Sat,  5 Jul 2014 11:04:52 +0530
+Message-Id: <515a12ecc5fca5452bf0bfda4d54546d8fb5829c.1404538109.git.amit.shah@redhat.com>
+In-Reply-To: <cover.1404538109.git.amit.shah@redhat.com>
+References: <cover.1404538109.git.amit.shah@redhat.com>
+In-Reply-To: <cover.1404538109.git.amit.shah@redhat.com>
+References: <cover.1404538109.git.amit.shah@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
+added a call to rng_get_data() from the hwrng_register() function.
+However, some rng devices need initialization before data can be read
+from them.
 
-The name of the NOP transceiver driver was changed during v3.16
-release cycle from usb_phy_gen_xceiv to usb_phy_generic.
+This commit makes the call to rng_get_data() depend on no init fn
+pointer being registered by the device.  If an init function is
+registered, this call is made after device init.
 
-The patch that comes as a follow up of this message renames
-accordingly the NOP transceiver driver in JZ4740 platform data to fix
-a subsequent kernel panic.
+CC: Kees Cook <keescook@chromium.org>
+CC: Jason Cooper <jason@lakedaemon.net>
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: <stable@vger.kernel.org> # For v3.15+
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+---
+ drivers/char/hw_random/core.c | 31 +++++++++++++++++++++++++------
+ 1 file changed, 25 insertions(+), 6 deletions(-)
 
-Please consider for merge in 3.16 if possible since it fixes an issue
-that makes the Ben Nanonote unable to boot.
-
-Changes were rebased on top of the linux-mips master branch, built and
-tested successfully.
-
-The following changes since commit bc0b9d9:
-
-  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux
-
-are available in the git repository at:
-
-  git://git.seketeli.net/~apelete/linux-mips.git rename-jz4740-xceiv
-
-Apelete Seketeli (1):
-  mips: jz4740: rename usb_nop_xceiv to usb_phy_generic
-
- arch/mips/jz4740/platform.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
+diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+index 334601c..df95e2f 100644
+--- a/drivers/char/hw_random/core.c
++++ b/drivers/char/hw_random/core.c
+@@ -55,16 +55,37 @@ static DEFINE_MUTEX(rng_mutex);
+ static int data_avail;
+ static u8 *rng_buffer;
+ 
++static inline int rng_get_data(struct hwrng *rng, u8 *buffer, size_t size,
++			       int wait);
++
+ static size_t rng_buffer_size(void)
+ {
+ 	return SMP_CACHE_BYTES < 32 ? 32 : SMP_CACHE_BYTES;
+ }
+ 
++static void add_early_randomness(struct hwrng *rng)
++{
++	unsigned char bytes[16];
++	int bytes_read;
++
++	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
++	if (bytes_read > 0)
++		add_device_randomness(bytes, bytes_read);
++}
++
+ static inline int hwrng_init(struct hwrng *rng)
+ {
++	int ret;
++
+ 	if (!rng->init)
+ 		return 0;
+-	return rng->init(rng);
++
++	ret =  rng->init(rng);
++	if (ret)
++		return ret;
++
++	add_early_randomness(rng);
++	return ret;
+ }
+ 
+ static inline void hwrng_cleanup(struct hwrng *rng)
+@@ -304,8 +325,6 @@ int hwrng_register(struct hwrng *rng)
+ {
+ 	int err = -EINVAL;
+ 	struct hwrng *old_rng, *tmp;
+-	unsigned char bytes[16];
+-	int bytes_read;
+ 
+ 	if (rng->name == NULL ||
+ 	    (rng->data_read == NULL && rng->read == NULL))
+@@ -347,9 +366,9 @@ int hwrng_register(struct hwrng *rng)
+ 	INIT_LIST_HEAD(&rng->list);
+ 	list_add_tail(&rng->list, &rng_list);
+ 
+-	bytes_read = rng_get_data(rng, bytes, sizeof(bytes), 1);
+-	if (bytes_read > 0)
+-		add_device_randomness(bytes, bytes_read);
++	if (!rng->init)
++		add_early_randomness(rng);
++
+ out_unlock:
+ 	mutex_unlock(&rng_mutex);
+ out:
 -- 
-1.7.10.4
+1.9.3
 
