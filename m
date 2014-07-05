@@ -1,60 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760823AbaGEMwG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 08:52:06 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:64802 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751968AbaGEMwC (ORCPT
+	id S1753915AbaGEM4w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 08:56:52 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:54281 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281AbaGEM4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 08:52:02 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Rickard Strandqvist <rickard.strandqvist@sonymobile.com>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: via: lcd.c:  Cleaning up variable that is never used
-Date: Sat,  5 Jul 2014 14:53:18 +0200
-Message-Id: <1404564798-22148-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 5 Jul 2014 08:56:51 -0400
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: [PATCH] zlib: dead code cleanup
+Date: Sat,  5 Jul 2014 21:56:16 +0900
+Message-Id: <1404564977-1636-1-git-send-email-sergey.senozhatsky@gmail.com>
+X-Mailer: git-send-email 2.0.1.612.gea98109
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rickard Strandqvist <rickard.strandqvist@sonymobile.com>
+Hello,
 
-Variable ar assigned a value that is never used.
-I have also removed all the code that thereby serves no purpose.
+This patch removes some unused code in zlib inflate/deflate.
+Functions in question have been dead since 2006.
 
-This was found using a static code analysis program called cppcheck
+Sergey Senozhatsky (1):
+  zlib: cleanup some dead code
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/video/fbdev/via/lcd.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/zlib.h       | 118 -------------------------------------
+ lib/zlib_deflate/deflate.c | 143 ---------------------------------------------
+ lib/zlib_inflate/inflate.c | 132 -----------------------------------------
+ 3 files changed, 393 deletions(-)
 
-diff --git a/drivers/video/fbdev/via/lcd.c b/drivers/video/fbdev/via/lcd.c
-index 5d21ff4..c15ed30 100644
---- a/drivers/video/fbdev/via/lcd.c
-+++ b/drivers/video/fbdev/via/lcd.c
-@@ -551,11 +551,11 @@ void viafb_lcd_set_mode(const struct fb_var_screeninfo *var, u16 cxres,
- 	u32 clock;
- 	struct via_display_timing timing;
- 	struct fb_var_screeninfo panel_var;
--	const struct fb_videomode *mode_crt_table, *panel_crt_table;
-+	const struct fb_videomode, *panel_crt_table;
- 
- 	DEBUG_MSG(KERN_INFO "viafb_lcd_set_mode!!\n");
- 	/* Get mode table */
--	mode_crt_table = viafb_get_best_mode(set_hres, set_vres, 60);
-+	viafb_get_best_mode(set_hres, set_vres, 60);
- 	/* Get panel table Pointer */
- 	panel_crt_table = viafb_get_best_mode(panel_hres, panel_vres, 60);
- 	viafb_fill_var_timing_info(&panel_var, panel_crt_table);
 -- 
-1.7.10.4
+2.0.1.612.gea98109
 
