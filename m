@@ -1,151 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932637AbaGEM77 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 08:59:59 -0400
-Received: from regular1.263xmail.com ([211.150.99.137]:52249 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824AbaGEM75 (ORCPT
+	id S1755034AbaGENEm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 09:04:42 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:36139 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281AbaGENEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 08:59:57 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: robh+dt@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <dc313727c9f67d3739d2c8652bfe9fca>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: addy ke <addy.ke@rock-chips.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
-        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
-        heiko@sntech.de, olof@lixom.net
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        hj@rock-chips.com, kever.yang@rock-chips.com, xjq@rock-chips.com,
-        huangtao@rock-chips.com, zyw@rock-chips.com, yzq@rock-chips.com,
-        zhenfu.fang@rock-chips.com, cf@rock-chips.com,
-        zhangqing@rock-chips.com, hl@rock-chips.com, lintao@rock-chips.com,
-        chenfen@rock-chips.com, zyf@rock-chips.com,
-        addy ke <addy.ke@rock-chips.com>
-Subject: [PATCH] mmc: dw_mmc: add support for RK3288.
-Date: Sat,  5 Jul 2014 20:59:34 +0800
-Message-Id: <1404565174-2923-1-git-send-email-addy.ke@rock-chips.com>
-X-Mailer: git-send-email 1.8.3.2
+	Sat, 5 Jul 2014 09:04:41 -0400
+Date: Sat, 5 Jul 2014 15:04:36 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: paulmck@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, oleg@redhat.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC tip/core/rcu] Parallelize and economize NOCB kthread
+ wakeups
+Message-ID: <20140705130434.GD19254@localhost.localdomain>
+References: <20140627142038.GA22942@linux.vnet.ibm.com>
+ <20140702123412.GD19379@twins.programming.kicks-ass.net>
+ <20140702153915.GQ4603@linux.vnet.ibm.com>
+ <20140702160412.GO19379@twins.programming.kicks-ass.net>
+ <20140702170838.GS4603@linux.vnet.ibm.com>
+ <1404358279.5137.63.camel@marge.simpson.net>
+ <20140703052124.GB4603@linux.vnet.ibm.com>
+ <1404366520.5137.90.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404366520.5137.90.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch focuses on clock setting for RK3288 mmc controller.
+On Thu, Jul 03, 2014 at 07:48:40AM +0200, Mike Galbraith wrote:
+> On Wed, 2014-07-02 at 22:21 -0700, Paul E. McKenney wrote: 
+> > On Thu, Jul 03, 2014 at 05:31:19AM +0200, Mike Galbraith wrote:
+> 
+> > > NO_HZ_FULL is a property of a set of CPUs.  isolcpus is supposed to go
+> > > away as being a redundant interface to manage a single property of a set
+> > > of CPUs, but it's perfectly fine for NO_HZ_FULL to add an interface to
+> > > manage a single property of a set of CPUs.  What am I missing? 
+> > 
+> > Well, for now, it can only be specified at build time or at boot time.
+> > In theory, it is possible to change a CPU from being callback-offloaded
+> > to not at runtime, but there would need to be an extremely good reason
+> > for adding that level of complexity.  Lots of "fun" races in there...
+> 
+> Yeah, understood.
+> 
+> (still it's a NO_HZ_FULL wart though IMHO, would be prettier and more
+> usable if it eventually became unified with cpuset and learned how to
+> tap-dance properly;)
 
-In RK3288 mmc controller, CLKDIV register can only be set 0 or 1,
-and if DDR 8bit mode, CLKDIV register must be set 1.
+Well, the exact same goes for NO_HZ_FULL, quoting Paul (just replacing RCU things
+with dynticks) it becomes:
 
-Signed-off-by: addy ke <addy.ke@rock-chips.com>
----
- .../devicetree/bindings/mmc/rockchip-dw-mshc.txt   |  4 +-
- drivers/mmc/host/dw_mmc-pltfm.c                    | 50 +++++++++++++++++++++-
- 2 files changed, 51 insertions(+), 3 deletions(-)
+ "it can only be specified at build time or at boot time.
+  In theory, it is possible to change a CPU from being idle-dynticks
+  to full-dynticks at runtime, but there would need to be an extremely good reason
+  for adding that level of complexity.  Lots of "fun" races in there..."
 
-diff --git a/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
-index c559f3f..e3f95cd 100644
---- a/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
-+++ b/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
-@@ -10,7 +10,9 @@ extensions to the Synopsys Designware Mobile Storage Host Controller.
- Required Properties:
- 
- * compatible: should be
--	- "rockchip,rk2928-dw-mshc": for Rockchip RK2928 and following
-+	- "rockchip,rk2928-dw-mshc": for Rockchip RK2928 and following,
-+							before RK3288
-+	- "rockchip,rk3288-dw-mshc": for Rockchip RK3288
- 
- Example:
- 
-diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
-index d4a47a9..15d796e 100644
---- a/drivers/mmc/host/dw_mmc-pltfm.c
-+++ b/drivers/mmc/host/dw_mmc-pltfm.c
-@@ -21,17 +21,61 @@
- #include <linux/mmc/mmc.h>
- #include <linux/mmc/dw_mmc.h>
- #include <linux/of.h>
-+#include <linux/clk.h>
- 
- #include "dw_mmc.h"
- #include "dw_mmc-pltfm.h"
- 
-+#define RK3288_CLKGEN_DIV	2
-+
- static void dw_mci_pltfm_prepare_command(struct dw_mci *host, u32 *cmdr)
- {
- 	*cmdr |= SDMMC_CMD_USE_HOLD_REG;
- }
- 
--static const struct dw_mci_drv_data rockchip_drv_data = {
-+static int dw_mci_rk3288_setup_clock(struct dw_mci *host)
-+{
-+	host->bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
-+
-+	return 0;
-+}
-+
-+static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
-+{
-+	int ret;
-+	unsigned int cclkin;
-+
-+	/*
-+	 * cclkin: source clock of mmc controller.
-+	 * bus_hz: card interface clock generated by CLKGEN.
-+	 * bus_hz = cclkin / RK3288_CLKGEN_DIV;
-+	 * ios->clock = (div == 0) ? bus_hz : (bus_hz / (2 * div))
-+	 *
-+	 * Note: div can only be 0 or 1
-+	 *       if DDR50 8bit mode, div must be set 1
-+	 */
-+	if ((ios->bus_width == MMC_BUS_WIDTH_8) &&
-+	    (ios->timing == MMC_TIMING_UHS_DDR50 ||
-+	     ios->timing == MMC_TIMING_MMC_DDR52))
-+		cclkin = 2 * ios->clock * RK3288_CLKGEN_DIV;
-+	else
-+		cclkin = ios->clock * RK3288_CLKGEN_DIV;
-+
-+	ret = clk_set_rate(host->ciu_clk, cclkin);
-+	if (ret)
-+		dev_warn(host->dev, "failed to set rate %uHz\n", ios->clock);
-+
-+	host->bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
-+}
-+
-+static const struct dw_mci_drv_data rk2928_drv_data = {
-+	.prepare_command	= dw_mci_pltfm_prepare_command,
-+};
-+
-+static const struct dw_mci_drv_data rk3288_drv_data = {
- 	.prepare_command	= dw_mci_pltfm_prepare_command,
-+	.set_ios	= dw_mci_rk3288_set_ios,
-+	.setup_clock	= dw_mci_rk3288_setup_clock,
- };
- 
- static const struct dw_mci_drv_data socfpga_drv_data = {
-@@ -95,7 +139,9 @@ EXPORT_SYMBOL_GPL(dw_mci_pltfm_pmops);
- static const struct of_device_id dw_mci_pltfm_match[] = {
- 	{ .compatible = "snps,dw-mshc", },
- 	{ .compatible = "rockchip,rk2928-dw-mshc",
--		.data = &rockchip_drv_data },
-+		.data = &rk2928_drv_data },
-+	{ .compatible = "rockchip,rk3288-dw-mshc",
-+		.data = &rk3288_drv_data },
- 	{ .compatible = "altr,socfpga-dw-mshc",
- 		.data = &socfpga_drv_data },
- 	{},
--- 
-1.8.3.2
+And I'm not even sure that somebody actually uses full dynticks today. I only know
+that some financial institutions are considering it, which is not cheering me up
+much...
 
-
+So we are very far from that day when we'll migrate to a runtime interface.
