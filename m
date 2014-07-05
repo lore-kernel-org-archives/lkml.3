@@ -1,48 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390AbaGEO4B (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 10:56:01 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:53439 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751559AbaGEO4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 10:56:00 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [USB spamming log] with 3.16-rc (git) my pl2303 is spaming my logs
-Date: Sat, 05 Jul 2014 10:55:57 -0400
-Message-ID: <4878627.a0D3mPHSVv@grover>
-Organization: me
-User-Agent: KMail/4.13.2 (Linux/3.16.0-1-git; KDE/4.13.2; x86_64; ; )
-In-Reply-To: <1404459477.27680.10.camel@x220>
-References: <1404459477.27680.10.camel@x220>
+	id S1755390AbaGEO4T (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 10:56:19 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:46826 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495AbaGEO4P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jul 2014 10:56:15 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20140705011058.198ae810@canb.auug.org.au>
+References: <20140704164251.7dc67e07@canb.auug.org.au>
+	<CAK5sBcGq54sOSzJKXrEbhAUTZZh=+9NuVh294Qxn0dQvbh-G8w@mail.gmail.com>
+	<20140705011058.198ae810@canb.auug.org.au>
+Date: Sat, 5 Jul 2014 20:26:13 +0530
+Message-ID: <CAK5sBcEScyFWv8J7CBZfHzm8bNKeY7bbQSPC7pPhMJRcBsc_Fg@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jul 4
+From: Sachin Kamat <spk.linux@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Fri, Jul 4, 2014 at 8:40 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Sachin,
+>
+> On Fri, 4 Jul 2014 14:12:11 +0530 Sachin Kamat <spk.linux@gmail.com> wrote:
+>>
+>> Was bisecting a kernel crash on Arndale octa board (Exynos5420). It
+>> points to a merge
+>> commit:
+>> 40556a4c485d12d324f1ea196cc30f590e564237 is the first bad commit
+>> ("Merge remote-tracking branch 'nfsd/nfsd-next'").
+>>
+>> How do I proceed with this?
+>
+> I guess we get the owner of the tree (possibly) in question involved
+> (cc'd).
+>
+>> Bisect log as follows:
+>>
+>> git bisect start
+>> # good: [4c834452aad01531db949414f94f817a86348d59] Linux 3.16-rc3
+>> git bisect good 4c834452aad01531db949414f94f817a86348d59
+>> # bad: [bb62c798798659624c53e3727bbc18cf47eb7ae8] Add linux-next
+>> specific files for 20140704
+>> git bisect bad bb62c798798659624c53e3727bbc18cf47eb7ae8
+>> # bad: [de5ea10b7647b299d27a40511772f024629b466d] Merge
+>> remote-tracking branch 'md/for-next'
+>> git bisect bad de5ea10b7647b299d27a40511772f024629b466d
+>> # bad: [3ca365b4451d1bab28adc72a985d9bbdf535df0e] Merge
+>> remote-tracking branch 'dmaengine/next'
+>> git bisect bad 3ca365b4451d1bab28adc72a985d9bbdf535df0e
+>> # good: [d72d4e47cb1e8ac1259a5f5935320ae1e7022066] Merge
+>> remote-tracking branch 'renesas/next'
+>> git bisect good d72d4e47cb1e8ac1259a5f5935320ae1e7022066
+>> # good: [fdb82f0a3d19eaa0661d799b980d0a9b689fcf75] Merge
+>> remote-tracking branch 'nfs/linux-next'
+>> git bisect good fdb82f0a3d19eaa0661d799b980d0a9b689fcf75
+>> # bad: [fc48eed8cd350e4be1227ff3c990d48906afd00a] Merge
+>> remote-tracking branch 'hwmon-staging/hwmon-next'
+>> git bisect bad fc48eed8cd350e4be1227ff3c990d48906afd00a
+>> # bad: [7d3f94ee2f2808b13dd3a96f6e6ca754a954d4b9] Merge
+>> remote-tracking branch 'ubifs/linux-next'
+>> git bisect bad 7d3f94ee2f2808b13dd3a96f6e6ca754a954d4b9
+>> # good: [8cdb8b21b1d00856b885734c514821627c8078bc] NFSD: Avoid warning
+>> message when compile at i686 arch
+>> git bisect good 8cdb8b21b1d00856b885734c514821627c8078bc
+>> # good: [da575690c01993471e38faf3eee1991ee69d7b20] nfsd: clean up
+>> nfsd4_close_open_stateid
+>> git bisect good da575690c01993471e38faf3eee1991ee69d7b20
+>> # good: [95217c1e686bdd7c27b8483bbdda1c09d6fa9a92] nfsd: Don't get a
+>> session reference without a client reference
+>> git bisect good 95217c1e686bdd7c27b8483bbdda1c09d6fa9a92
+>> # good: [bdd79ee31bf842051365c798effaffe0e647b501] nfsd: Allow struct
+>> nfsd4_compound_state to cache the nfs4_client
+>> git bisect good bdd79ee31bf842051365c798effaffe0e647b501
+>> # good: [e9110361a9a4e258b072b14bd44eb78cf11453cb] UBI: fix the
+>> volumes tree sorting criteria
+>> git bisect good e9110361a9a4e258b072b14bd44eb78cf11453cb
+>> # bad: [40556a4c485d12d324f1ea196cc30f590e564237] Merge
+>> remote-tracking branch 'nfsd/nfsd-next'
+>> git bisect bad 40556a4c485d12d324f1ea196cc30f590e564237
+>>
+>> Regards,
+>> Sachin.
+>
+> Can you please double check that commit bdd79ee31bf8 is good and commit
+> 40556a4c485d is bad.  Also check that commit fdb82f0a3d19 is good.
+>
+> In that case we have the unlikely event that the (automated) git merge
+> is not correct or patches on each side of the merge semantically
+> interact badly.
+>
+> I guess the next thing to try is just Linus' tree (commit 5170a3b24a91)
+> merged with the nfsd tree (commit 2fc193cf924e).
+>
+> You should also post your information about the crash you are
+> diagnosing as others may have seen it as well - or know what may cause
+> it.
 
-I have a raspberry PI sending its console to my box via a pl2303 
+Thanks Stephen. I will give it a try on Monday.
 
-[    5.184385] usbserial: USB Serial support registered for pl2303
-[    5.184398] pl2303 1-2.6:1.0: pl2303 converter detected
-[    5.185353] usb 1-2.6: pl2303 converter now attached to ttyUSB0
 
-and with the latest fixes from git on 3.16 its now started spamming my logs with: 
-
-[55507.155354] pl2303 ttyUSB0: usb_serial_generic_read_bulk_callback - nonzero urb status: -71
-[55510.736558] pl2303 ttyUSB0: usb_serial_generic_read_bulk_callback - nonzero urb status: -71
-[55517.238586] pl2303 ttyUSB0: usb_serial_generic_read_bulk_callback - nonzero urb status: -71
-[55521.099938] pl2303 ttyUSB0: usb_serial_generic_read_bulk_callback - nonzero urb status: -71
-[55521.778520] pl2303 ttyUSB0: usb_serial_generic_read_bulk_callback - nonzero urb status: -71
-[55523.229808] pl2303 ttyUSB0: usb_serial_generic_read_bulk_callback - nonzero urb status: -71
-[55523.229846] pl2303 ttyUSB0: usb_serial_generic_read_bulk_callback - nonzero urb status: -71
-[55525.074519] pl2303 ttyUSB0: usb_serial_generic_read_bulk_callback - nonzero urb status: -71
-[55527.270207] pl2303 ttyUSB0: usb_serial_generic_read_bulk_callback - nonzero urb status: -71
-
-Please fix.
-
-Thanks
-Ed Tomlinson
+-- 
+Regards,
+Sachin.
