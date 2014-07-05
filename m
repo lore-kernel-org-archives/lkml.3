@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760292AbaGEArd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 20:47:33 -0400
-Received: from plane.gmane.org ([80.91.229.3]:39500 "EHLO plane.gmane.org"
+	id S1760396AbaGEAsu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 20:48:50 -0400
+Received: from fieldses.org ([174.143.236.118]:43077 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753759AbaGEArc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 20:47:32 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Holger =?iso-8859-1?q?Hoffst=E4tte?= 
-	<holger.hoffstaette@googlemail.com>
-Subject: Re: [PATCH 3.14 00/59] 3.14.11-stable review
-Date: Sat, 5 Jul 2014 00:47:17 +0000 (UTC)
-Message-ID: <pan.2014.07.05.00.47.17@googlemail.com>
-References: <20140704221539.544876024@linuxfoundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: p5b0045d7.dip0.t-ipconnect.de
-User-Agent: Pan/0.139 (Sexual Chocolate; GIT bf56508
- git://git.gnome.org/pan2)
-Cc: stable@vger.kernel.org
+	id S1760351AbaGEAst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jul 2014 20:48:49 -0400
+Date: Fri, 4 Jul 2014 20:48:47 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Sachin Kamat <spk.linux@gmail.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for Jul 4
+Message-ID: <20140705004846.GA11659@fieldses.org>
+References: <20140704164251.7dc67e07@canb.auug.org.au>
+ <CAK5sBcGq54sOSzJKXrEbhAUTZZh=+9NuVh294Qxn0dQvbh-G8w@mail.gmail.com>
+ <20140705011058.198ae810@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140705011058.198ae810@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 04 Jul 2014 15:18:49 -0700, Greg Kroah-Hartman wrote:
+On Sat, Jul 05, 2014 at 01:10:58AM +1000, Stephen Rothwell wrote:
+> Hi Sachin,
+> 
+> On Fri, 4 Jul 2014 14:12:11 +0530 Sachin Kamat <spk.linux@gmail.com> wrote:
+> >
+> > Was bisecting a kernel crash on Arndale octa board (Exynos5420). It
+> > points to a merge
+> > commit:
+> > 40556a4c485d12d324f1ea196cc30f590e564237 is the first bad commit
+> > ("Merge remote-tracking branch 'nfsd/nfsd-next'").
+> > 
+> > How do I proceed with this?
+> 
+> I guess we get the owner of the tree (possibly) in question involved
+> (cc'd).
 
-> Takashi Iwai <tiwai@suse.de>
->     ALSA: hda - Adjust speaker HPF and add LED support for HP Spectre 13
+Looking at the total diffstat for that branch, it's almost all contained
+in fs/nfsd with a little in include/linux/sunrpc/ and net/sunrpc.  So
+it's extremely unlikely that it would be causing a problem unless you're
+actually testing nfsd.
 
-Building on Gentoo ~amd64 with gcc 4.9.0 this patch (#59) fails:
+> You should also post your information about the crash you are
+> diagnosing as others may have seen it as well - or know what may cause
+> it.
 
-  LD [M]  sound/pci/snd-intel8x0.o CC [M]  sound/pci/hda/patch_sigmatel.o
-sound/pci/hda/patch_sigmatel.c: In function 'stac92hd95_fixup_hp_led':
-sound/pci/hda/patch_sigmatel.c:4143:3: error: implicit declaration of
-function 'codec_dbg' [-Werror=implicit-function-declaration]
-   codec_dbg(codec, "mute LED gpio %d polarity %d\n",
-   ^
-cc1: some warnings being treated as errors
-scripts/Makefile.build:308: recipe for target 'sound/pci/hda/patch_sigmatel.o' failed
+Yes, please.
 
--h
-
+--b.
