@@ -1,87 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714AbaGEWNe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 18:13:34 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:58807 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751264AbaGEWNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 18:13:32 -0400
-Date: Sat, 5 Jul 2014 23:13:27 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1407052310460.24632@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755021AbaGEWn1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 18:43:27 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:33148 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266AbaGEWnZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jul 2014 18:43:25 -0400
+Date: Sat, 5 Jul 2014 18:43:21 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, Shirish Pargaonkar <spargaonkar@suse.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Jet Chen <jet.chen@intel.com>
+Subject: [PATCH block/for-linus] blkcg: don't call into policy draining if
+ root_blkg is already gone
+Message-ID: <20140705224321.GA9701@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1137296181-1404598407=:24632"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+While a queue is being destroyed, all the blkgs are destroyed and its
+->root_blkg pointer is set to NULL.  If someone else starts to drain
+while the queue is in this state, the following oops happens.
 
---29444707-1137296181-1404598407=:24632
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+  NULL pointer dereference at 0000000000000028
+  IP: [<ffffffff8144e944>] blk_throtl_drain+0x84/0x230
+  PGD e4a1067 PUD b773067 PMD 0
+  Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+  Modules linked in: cfq_iosched(-) [last unloaded: cfq_iosched]
+  CPU: 1 PID: 537 Comm: bash Not tainted 3.16.0-rc3-work+ #2
+  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+  task: ffff88000e222250 ti: ffff88000efd4000 task.ti: ffff88000efd4000
+  RIP: 0010:[<ffffffff8144e944>]  [<ffffffff8144e944>] blk_throtl_drain+0x84/0x230
+  RSP: 0018:ffff88000efd7bf0  EFLAGS: 00010046
+  RAX: 0000000000000000 RBX: ffff880015091450 RCX: 0000000000000001
+  RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+  RBP: ffff88000efd7c10 R08: 0000000000000000 R09: 0000000000000001
+  R10: ffff88000e222250 R11: 0000000000000000 R12: ffff880015091450
+  R13: ffff880015092e00 R14: ffff880015091d70 R15: ffff88001508fc28
+  FS:  00007f1332650740(0000) GS:ffff88001fa80000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 0000000000000028 CR3: 0000000009446000 CR4: 00000000000006e0
+  Stack:
+   ffffffff8144e8f6 ffff880015091450 0000000000000000 ffff880015091d80
+   ffff88000efd7c28 ffffffff8144ae2f ffff880015091450 ffff88000efd7c58
+   ffffffff81427641 ffff880015091450 ffffffff82401f00 ffff880015091450
+  Call Trace:
+   [<ffffffff8144ae2f>] blkcg_drain_queue+0x1f/0x60
+   [<ffffffff81427641>] __blk_drain_queue+0x71/0x180
+   [<ffffffff81429b3e>] blk_queue_bypass_start+0x6e/0xb0
+   [<ffffffff814498b8>] blkcg_deactivate_policy+0x38/0x120
+   [<ffffffff8144ec44>] blk_throtl_exit+0x34/0x50
+   [<ffffffff8144aea5>] blkcg_exit_queue+0x35/0x40
+   [<ffffffff8142d476>] blk_release_queue+0x26/0xd0
+   [<ffffffff81454968>] kobject_cleanup+0x38/0x70
+   [<ffffffff81454848>] kobject_put+0x28/0x60
+   [<ffffffff81427505>] blk_put_queue+0x15/0x20
+   [<ffffffff817d07bb>] scsi_device_dev_release_usercontext+0x16b/0x1c0
+   [<ffffffff810bc339>] execute_in_process_context+0x89/0xa0
+   [<ffffffff817d064c>] scsi_device_dev_release+0x1c/0x20
+   [<ffffffff817930e2>] device_release+0x32/0xa0
+   [<ffffffff81454968>] kobject_cleanup+0x38/0x70
+   [<ffffffff81454848>] kobject_put+0x28/0x60
+   [<ffffffff817934d7>] put_device+0x17/0x20
+   [<ffffffff817d11b9>] __scsi_remove_device+0xa9/0xe0
+   [<ffffffff817d121b>] scsi_remove_device+0x2b/0x40
+   [<ffffffff817d1257>] sdev_store_delete+0x27/0x30
+   [<ffffffff81792ca8>] dev_attr_store+0x18/0x30
+   [<ffffffff8126f75e>] sysfs_kf_write+0x3e/0x50
+   [<ffffffff8126ea87>] kernfs_fop_write+0xe7/0x170
+   [<ffffffff811f5e9f>] vfs_write+0xaf/0x1d0
+   [<ffffffff811f69bd>] SyS_write+0x4d/0xc0
+   [<ffffffff81d24692>] system_call_fastpath+0x16/0x1b
 
+776687bce42b ("block, blk-mq: draining can't be skipped even if
+bypass_depth was non-zero") made it easier to trigger this bug by
+making blk_queue_bypass_start() drain even when it loses the first
+bypass test to blk_cleanup_queue(); however, the bug has always been
+there even before the commit as blk_queue_bypass_start() could race
+against queue destruction, win the initial bypass test but perform the
+actual draining after blk_cleanup_queue() already destroyed all blkgs.
 
-Hi Linus,
+Fix it by skippping calling into policy draining if all the blkgs are
+already gone.
 
-i915, tda998x and vmwgfx fixes, the main one is i915 fix for missing VGA 
-connectors, along with some fixes for the tda998x from Russell fixing some 
-modesetting problems.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Shirish Pargaonkar <spargaonkar@suse.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Reported-by: Jet Chen <jet.chen@intel.com>
+Cc: stable@vger.kernel.org
+---
+ block/blk-cgroup.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-(still on holidays, but got a spare moment to find these).
-
-Dave.
-
-The following changes since commit e1a08b855f56d6528e7f85aae9ca8123f4c3ae04:
-
-  Merge tag 'arm64-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux (2014-07-05 10:12:52 -0700)
-
-are available in the git repository at:
-
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to dfd7aecfd6d227831d77719379d4c7137f444fee:
-
-  Merge tag 'drm-intel-fixes-2014-07-03' of git://anongit.freedesktop.org/drm-intel (2014-07-06 07:49:59 +1000)
-
-----------------------------------------------------------------
-
-Dave Airlie (3):
-      Merge branch 'tda998x-fixes' of git://ftp.arm.linux.org.uk/~rmk/linux-cubox
-      Merge branch 'vmwgfx-fixes-3.16' of git://people.freedesktop.org/~thomash/linux
-      Merge tag 'drm-intel-fixes-2014-07-03' of git://anongit.freedesktop.org/drm-intel
-
-Deepak S (1):
-      drm/i915: Drop early VLV WA to fix Voltage not getting dropped to Vmin
-
-Guido Martínez (1):
-      drm/i2c: tda998x: move drm_i2c_encoder_destroy call
-
-Jesse Barnes (1):
-      drm/i915: only apply crt_present check on VLV
-
-Russell King (2):
-      drm/i2c: tda998x: faster polling for edid
-      drm/i2c: tda998x: add some basic mode validation
-
-Thomas Hellstrom (1):
-      drm/vmwgfx: Fix incorrect write to read-only register v2:
-
-Ville Syrjälä (1):
-      drm/i915: Wait for vblank after enabling the primary plane on BDW
-
- drivers/gpu/drm/i2c/tda998x_drv.c    | 12 +++++++++---
- drivers/gpu/drm/i915/intel_display.c | 27 ++++++++++++++++++++++++++-
- drivers/gpu/drm/i915/intel_pm.c      |  8 ++++++++
- drivers/gpu/drm/i915/intel_sprite.c  |  8 ++++++++
- drivers/gpu/drm/vmwgfx/vmwgfx_fb.c   |  1 -
- 5 files changed, 51 insertions(+), 5 deletions(-)
---29444707-1137296181-1404598407=:24632--
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index b9f4cc4..28d227c 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -872,6 +872,13 @@ void blkcg_drain_queue(struct request_queue *q)
+ {
+ 	lockdep_assert_held(q->queue_lock);
+ 
++	/*
++	 * @q could be exiting and already have destroyed all blkgs as
++	 * indicated by NULL root_blkg.  If so, don't confuse policies.
++	 */
++	if (!q->root_blkg)
++		return;
++
+ 	blk_throtl_drain(q);
+ }
+ 
