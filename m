@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961AbaGEMbi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 08:31:38 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:35619 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753011AbaGEMbg (ORCPT
+	id S932577AbaGEMch (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 08:32:37 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:52929 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307AbaGEMce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 08:31:36 -0400
+	Sat, 5 Jul 2014 08:32:34 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
 Cc: Rickard Strandqvist <rickard.strandqvist@sonymobile.com>,
         Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Jingoo Han <jg1.han@samsung.com>, Denis Carikli <denis@eukrea.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: mx3fb.c:  Cleaning up variable that is never used
-Date: Sat,  5 Jul 2014 14:32:52 +0200
-Message-Id: <1404563572-20440-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Julia Lawall <Julia.Lawall@lip6.fr>, Marek Vasut <marex@denx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH] video: fbdev: mxsfb.c:  Cleaning up variable that is never used
+Date: Sat,  5 Jul 2014 14:33:50 +0200
+Message-Id: <1404563630-20521-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,30 +38,29 @@ This was found using a static code analysis program called cppcheck
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/video/fbdev/mx3fb.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/video/fbdev/mxsfb.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/video/fbdev/mx3fb.c b/drivers/video/fbdev/mx3fb.c
-index c645a0a..ac38cb1 100644
---- a/drivers/video/fbdev/mx3fb.c
-+++ b/drivers/video/fbdev/mx3fb.c
-@@ -449,7 +449,6 @@ static void sdc_enable_channel(struct mx3fb_info *mx3_fbi)
- static void sdc_disable_channel(struct mx3fb_info *mx3_fbi)
+diff --git a/drivers/video/fbdev/mxsfb.c b/drivers/video/fbdev/mxsfb.c
+index accf48a2..d0a55c6 100644
+--- a/drivers/video/fbdev/mxsfb.c
++++ b/drivers/video/fbdev/mxsfb.c
+@@ -594,7 +594,6 @@ static int mxsfb_restore_mode(struct mxsfb_info *host,
+ 			struct fb_videomode *vmode)
  {
- 	struct mx3fb_data *mx3fb = mx3_fbi->mx3fb;
--	uint32_t enabled;
- 	unsigned long flags;
+ 	struct fb_info *fb_info = &host->fb_info;
+-	unsigned line_count;
+ 	unsigned period;
+ 	unsigned long pa, fbsize;
+ 	int bits_per_pixel, ofs;
+@@ -672,7 +671,6 @@ static int mxsfb_restore_mode(struct mxsfb_info *host,
+ 		writel(fb_info->fix.smem_start, host->base + host->devdata->next_buf);
+ 	}
  
- 	if (mx3_fbi->txd == NULL)
-@@ -457,7 +456,7 @@ static void sdc_disable_channel(struct mx3fb_info *mx3_fbi)
+-	line_count = fb_info->fix.smem_len / fb_info->fix.line_length;
+ 	fb_info->fix.ypanstep = 1;
  
- 	spin_lock_irqsave(&mx3fb->lock, flags);
- 
--	enabled = sdc_fb_uninit(mx3_fbi);
-+	sdc_fb_uninit(mx3_fbi);
- 
- 	spin_unlock_irqrestore(&mx3fb->lock, flags);
- 
+ 	clk_prepare_enable(host->clk);
 -- 
 1.7.10.4
 
