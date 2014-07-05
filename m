@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674AbaGERcJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 13:32:09 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:48208 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753451AbaGERcF (ORCPT
+	id S1755066AbaGERjw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 13:39:52 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:60209 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776AbaGERjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 13:32:05 -0400
-Date: Sat, 5 Jul 2014 11:32:00 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-pci@vger.kernel.org, jg1.han@samsung.com, mohit.kumar@st.com,
-        linux-kernel@vger.kernel.org, grant.likely@linaro.org,
-        Pratyush Anand <pratyush.anand@gmail.com>
-Subject: Re: [PATCH 0/3] dra7: Add PCIe support
-Message-ID: <20140705173200.GA26618@google.com>
-References: <1403719007-9352-1-git-send-email-kishon@ti.com>
+	Sat, 5 Jul 2014 13:39:51 -0400
+Date: Sat, 5 Jul 2014 18:39:49 +0100 (BST)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Joe Perches <joe@perches.com>
+cc: Grant Likely <grant.likely@secretlab.ca>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] declance: Fix 64-bit compilation warnings
+In-Reply-To: <1404576420.6384.41.camel@joe-AO725>
+Message-ID: <alpine.LFD.2.11.1407051833400.15455@eddie.linux-mips.org>
+References: <alpine.LFD.2.11.1406290246120.15455@eddie.linux-mips.org>         <20140702.182807.1245632778216212860.davem@davemloft.net>         <alpine.LFD.2.11.1407030244230.15455@eddie.linux-mips.org>         <alpine.LFD.2.11.1407030331550.15455@eddie.linux-mips.org>
+         <1404356734.14741.18.camel@joe-AO725>         <alpine.LFD.2.11.1407030423300.15455@eddie.linux-mips.org>         <1404364565.14741.26.camel@joe-AO725>         <alpine.LFD.2.11.1407030637030.15455@eddie.linux-mips.org>         <1404368746.14741.36.camel@joe-AO725>
+         <alpine.LFD.2.11.1407051529040.15455@eddie.linux-mips.org> <1404576420.6384.41.camel@joe-AO725>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403719007-9352-1-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 11:26:44PM +0530, Kishon Vijay Abraham I wrote:
-> [1] is split into separate series in order for individual subsystem
-> Maintainers to pick up the patches. This series handles the PCIe
-> support for DRA7.
+On Sat, 5 Jul 2014, Joe Perches wrote:
+
+> >  One question though, does either of you or anybody else know why we're 
+> > inconsistent about this 0x prefixing of virtual addresses vs physical 
+> > addresses?  Specifically %p vs e.g. %pad.
 > 
-> Rebased to 3.16-rc2.
+> I think it's a mistake and I agree.
 > 
-> [1] -> https://lkml.org/lkml/2014/5/29/258
+> I submitted a patch to remove the prefix from %pad.
 > 
-> Kishon Vijay Abraham I (3):
->   PCI: designware: Configuration space should be specified in 'reg'
->   PCI: designware: use untranslated address while programming ATU
->   PCI: host: pcie-dra7xx: add support for pcie-dra7xx controller
+> https://lkml.org/lkml/2014/3/21/333
 
-Mohit, I see your ack for [1/3], but not for [2/3]; are you OK with that,
-too?
+ Great!  Your proposal looks good to me in principle, however you need to 
+factor in SPECIAL having been set by `#' somehow as `number' will respect 
+it.  I suggest using the same field width calculation that `pointer' uses 
+for `default_width' (sans the type used with `sizeof' of course, that is).
 
-Pratyush, you had some questions about [2/3]; are you happy with that one?
-
-[3/3] adds the devicetree binding; I'd like somebody to check that out.
-
-Also, there's no MAINTAINERS update for pci-dra7xx.c.  Kishon, can you
-include an update for that?
-
-Kishon, can you collect the acks and post a v2 series with those and the
-MAINTAINERS update?
-
-Bjorn
-
-> 
->  .../devicetree/bindings/pci/designware-pcie.txt    |    4 +
->  Documentation/devicetree/bindings/pci/ti-pci.txt   |   59 +++
->  drivers/pci/host/Kconfig                           |   10 +
->  drivers/pci/host/Makefile                          |    1 +
->  drivers/pci/host/pci-dra7xx.c                      |  458 ++++++++++++++++++++
->  drivers/pci/host/pcie-designware.c                 |   66 ++-
->  drivers/pci/host/pcie-designware.h                 |    4 +
->  7 files changed, 589 insertions(+), 13 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/pci/ti-pci.txt
->  create mode 100644 drivers/pci/host/pci-dra7xx.c
-> 
-> -- 
-> 1.7.9.5
-> 
+  Maciej
