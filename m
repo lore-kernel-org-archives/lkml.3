@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694AbaGEUNZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 16:13:25 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:33538 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932301AbaGEUNY (ORCPT
+	id S932701AbaGEUZz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 16:25:55 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:60523 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753409AbaGEUZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 16:13:24 -0400
-Date: Sat, 5 Jul 2014 23:12:49 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Rickard Strandqvist <rickard.strandqvist@sonymobile.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "Chen, Gong" <gong.chen@linux.intel.com>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] video: fbdev: sis: init.c: Cleaning up variable that is
- never used
-Message-ID: <20140705201249.GF25934@mwanda>
-References: <1404564507-21718-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <20140705192317.GD25934@mwanda>
- <CAMuHMdVNgCFZ1Nu77ds62COtqMPRYw4p_fifoZnAQKjq_D+kOQ@mail.gmail.com>
- <20140705200430.GE25934@mwanda>
+	Sat, 5 Jul 2014 16:25:54 -0400
+Date: Sat, 5 Jul 2014 21:25:52 +0100 (BST)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Joe Perches <joe@perches.com>
+cc: Grant Likely <grant.likely@secretlab.ca>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] declance: Fix 64-bit compilation warnings
+In-Reply-To: <1404585099.6384.53.camel@joe-AO725>
+Message-ID: <alpine.LFD.2.11.1407052103130.15455@eddie.linux-mips.org>
+References: <alpine.LFD.2.11.1406290246120.15455@eddie.linux-mips.org>         <20140702.182807.1245632778216212860.davem@davemloft.net>         <alpine.LFD.2.11.1407030244230.15455@eddie.linux-mips.org>         <alpine.LFD.2.11.1407030331550.15455@eddie.linux-mips.org>
+         <1404356734.14741.18.camel@joe-AO725>         <alpine.LFD.2.11.1407030423300.15455@eddie.linux-mips.org>         <1404364565.14741.26.camel@joe-AO725>         <alpine.LFD.2.11.1407030637030.15455@eddie.linux-mips.org>         <1404368746.14741.36.camel@joe-AO725>
+         <alpine.LFD.2.11.1407051529040.15455@eddie.linux-mips.org>         <1404576420.6384.41.camel@joe-AO725>         <alpine.LFD.2.11.1407051833400.15455@eddie.linux-mips.org>         <1404583739.6384.51.camel@joe-AO725>        
+ <alpine.LFD.2.11.1407051917480.15455@eddie.linux-mips.org> <1404585099.6384.53.camel@joe-AO725>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140705200430.GE25934@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Verifying the email address is not 100% fool proof so it's not a massive
-deal either way.  The only reason I mentioned it here was because this
-patch wasn't correct anyway and had to be redone regardless.
+On Sat, 5 Jul 2014, Joe Perches wrote:
 
-regards,
-dan carpenter
+> > > I don't think %#p is valid so it
+> > > shouldn't have been set by #.
+> > 
+> >  Huh?  As recently as last Wednesday you pointed me at the specific commit 
+> > from Grant that made it valid (GCC format complaints aside).
+> 
+> Those gcc complaints are precisely the thing
+> that makes it invalid.
 
+ So enforce that in code then, clear the SPECIAL flag where appropriate 
+and do not try to handle it in one place while leaving other ones to 
+behave randomly (i.e. a supposedly fixed field width varies depending on 
+the two uppermost digits).  Please note that it's only your proposed 
+change that introduces that randomness, right now code does what's 
+supposed and documented to, except a bit inconsistently.
+
+> I believe you're tilting at windmills.
+> 
+> Hey, it works sometimes.  Knock yourself out.
+
+ I pointed out an inconsistency with the intent to propose a fix once a 
+consensus have been reached, one way or another.  And I think shifting the 
+inconsistency to a different place, which is what your proposal does, 
+isn't really a complete solution, although I do recognise the improvement.
+
+  Maciej
