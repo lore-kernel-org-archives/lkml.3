@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200AbaGEExZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 00:53:25 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:40925 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896AbaGEExY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 00:53:24 -0400
-Date: Fri, 4 Jul 2014 21:53:45 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] MAINTAINERS: Add few more Keystone drivers
-Message-ID: <20140705045345.GE5201@quad.lixom.net>
-References: <1403467582-7933-1-git-send-email-santosh.shilimkar@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1403467582-7933-1-git-send-email-santosh.shilimkar@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754793AbaGEFBd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 01:01:33 -0400
+Received: from seketeli.net ([94.23.218.202]:45774 "EHLO ms.seketeli.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751248AbaGEFBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jul 2014 01:01:32 -0400
+X-Greylist: delayed 331 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Jul 2014 01:01:31 EDT
+From: Apelete Seketeli <apelete@seketeli.net>
+To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Alex Smith <alex.smith@imgtec.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] Use DMA for data transfers in JZ4740 MMC driver
+Date: Sat,  5 Jul 2014 06:56:28 +0200
+Message-Id: <1404536189-7829-1-git-send-email-apelete@seketeli.net>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 22, 2014 at 04:06:22PM -0400, Santosh Shilimkar wrote:
-> Update MAINTAINERS file for recently added reset controller, AEMIF
-> and clocksource driver for Keystone SOCs.
-> 
-> The EMIF memory controller driver is also added along with AEMIF.
-> 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Kevin Hilman <khilman@linaro.org>
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Hello,
 
-Applied.
+MMC driver for JZ4740 SoC is currently relying on PIO mode only for
+data transfers.
+
+The patch that comes as a follow-up of this message allows the use of
+DMA for data transfers.
+
+According to the following DMA vs PIO benchmarks there seems to be a
+slight improvement in transfer speed with the Ben NanoNote booting
+from SD card, while load average seems to be roughly on par:
+
+* With DMA:
+
+Test cases |             root@BenNanoNote:/# uptime              |   root@BenNanoNote:/# time zcat root/fedora-16.iso.gz > /dev/null && uptime
+-----------|----------------------------------------------------------------------------------------------------------------------------------
+Test run 1 | 00:20:55 up 1 min,  load average: 1.26, 0.42, 0.14  |  00:26:10 up 6 min,  load average: 2.89, 1.94, 0.89
+Test run 2 | 00:30:22 up 1 min,  load average: 1.16, 0.38, 0.13  |  00:35:34 up 6 min,  load average: 2.68, 1.86, 0.85
+Test run 3 | 00:39:56 up 1 min,  load average: 1.16, 0.38, 0.13  |  00:45:06 up 6 min,  load average: 2.57, 1.76, 0.81
+-----------|----------------------------------------------------------------------------------------------------------------------------------
+  Average  |             1 min,  load average: 1.19, 0.39, 0.13  |              6 min,  load average: 2.71, 1.85, 0.85
+
+* With PIO:
+
+Test cases |             root@BenNanoNote:/# uptime              |   root@BenNanoNote:/# time zcat root/fedora-16.iso.gz > /dev/null && uptime
+----------------------------------------------------------------------------------------------------------------------------------------------
+Test run 1 | 00:50:47 up 1 min,  load average: 1.42, 0.49, 0.17  |  00:56:52 up 7 min,  load average: 2.47, 2.00, 0.98
+Test run 2 | 01:00:19 up 1 min,  load average: 1.21, 0.39, 0.14  |  01:06:29 up 7 min,  load average: 2.45, 1.96, 0.96
+Test run 3 | 01:11:27 up 1 min,  load average: 1.15, 0.36, 0.12  |  01:17:33 up 7 min,  load average: 2.63, 2.01, 0.97
+-----------|----------------------------------------------------------------------------------------------------------------------------------
+  Average  |             1 min,  load average: 1.26, 0.41, 0.14  |              7 min,  load average: 2.52, 1.99, 0.97
 
 
--Olof
+DMA tranfers performance might be further improved with a latter patch
+by taking advantage of the asynchronous request capability of the MMC
+framework.
+
+Changes were rebased on top of linux master branch, built and tested
+successfully.
+
+The following changes since commit 4c83445:
+
+  Linux 3.16-rc3
+
+are available in the git repository at:
+
+  git://git.seketeli.net/~apelete/linux.git mmc-dma-jz4740
+
+-- 
+1.7.10.4
+
