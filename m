@@ -1,95 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185AbaGETCJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 15:02:09 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:36294 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753017AbaGETCH (ORCPT
+	id S1756225AbaGETFG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 15:05:06 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:56994 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755414AbaGETFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 15:02:07 -0400
-Date: Sat, 5 Jul 2014 13:02:03 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Vidya Sagar <vidyas@nvidia.com>
-Cc: nagananda.chumbalkar@hp.com, thierry.reding@gmail.com, swarren@nvidia.com,
-        kthota@nvidia.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [PATCH v1] PCI: enable ASPM configuration in PCIE POWERSAVE mode
-Message-ID: <20140705190203.GE28871@google.com>
-References: <1404198978-26593-1-git-send-email-vidyas@nvidia.com>
- <20140705185736.GD28871@google.com>
+	Sat, 5 Jul 2014 15:05:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140705185736.GD28871@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140702111748.GJ18731@arm.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+ <1404240214-9804-8-git-send-email-Liviu.Dudau@arm.com> <20140702111748.GJ18731@arm.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Sat, 5 Jul 2014 14:04:41 -0500
+Message-ID: <CAL_JsqKWm54MjXC60EWVcxOurza=f2V9fwe2vVROa_Mv-6QnHw@mail.gmail.com>
+Subject: Re: [PATCH v8 7/9] pci: of: Parse and map the IRQ when adding the PCI device.
+To: Will Deacon <will.deacon@arm.com>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Sinan Kaya <okaya@codeaurora.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>, LKML <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Tanmay Inamdar <tinamdar@apm.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Rafael]
+On Wed, Jul 2, 2014 at 6:17 AM, Will Deacon <will.deacon@arm.com> wrote:
+> On Tue, Jul 01, 2014 at 07:43:32PM +0100, Liviu Dudau wrote:
+>> Enhance the default implementation of pcibios_add_device() to
+>> parse and map the IRQ of the device if a DT binding is available.
+>>
+>> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+>> ---
+>>  drivers/pci/pci.c | 4 ++++
+>>  1 file changed, 4 insertions(+)
+>>
+>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+>> index 63a54a3..8e65dc3 100644
+>> --- a/drivers/pci/pci.c
+>> +++ b/drivers/pci/pci.c
+>> @@ -17,6 +17,7 @@
+>>  #include <linux/spinlock.h>
+>>  #include <linux/string.h>
+>>  #include <linux/log2.h>
+>> +#include <linux/of_pci.h>
+>>  #include <linux/pci-aspm.h>
+>>  #include <linux/pm_wakeup.h>
+>>  #include <linux/interrupt.h>
+>> @@ -1453,6 +1454,9 @@ EXPORT_SYMBOL(pcim_pin_device);
+>>   */
+>>  int __weak pcibios_add_device(struct pci_dev *dev)
+>>  {
+>> +#ifdef CONFIG_OF
+>> +     dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
+>> +#endif
+>
+> You could avoid the #ifdef by only assigning dev->irq if
+> of_irq_parse_and_map_pci returned something > 0.
 
-On Sat, Jul 05, 2014 at 12:57:36PM -0600, Bjorn Helgaas wrote:
-> [+cc Matthew]
-> 
-> On Tue, Jul 01, 2014 at 12:46:18PM +0530, Vidya Sagar wrote:
-> > commit 1a680b7c moved pcie_aspm_powersave_config_link() out of
-> > pci_raw_set_power_state() to pci_set_power_state() which would enable
-> > ASPM. But, with commit db288c9c, which re-introduced the following check
-> > ./drivers/pci/pci.c: pci_set_power_state()
-> > +   /* Check if we're already there */
-> > +   if (dev->current_state == state)
-> > +       return 0;
-> > in pci_set_power_state(), call to pcie_aspm_powersave_config_link() is never
-> > made leaving ASPM broken.
-> > Fix it by not returning from when the above condition is true, rather, jump to
-> > ASPM configuration code and exit from there eventually.
-> 
-> Rafael, Matthew, any comments?  We have vacillated on this before and
-> the web is already pretty tangled.
-> 
-> Vidya, can you give more details about the bug fixed by this change?
-> What's the scenario?  Are we resuming and the device is powered up but
-> ASPM isn't enabled?  Maybe you could collect more details in a
-> http://bugzilla.kernel.org report?
-> 
-> > Signed-off-by: Vidya Sagar <vidyas@nvidia.com>
-> > ---
-> >  drivers/pci/pci.c | 6 ++++--
-> >  1 file changed, 4 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> > index 1c8592b..ded24c4 100644
-> > --- a/drivers/pci/pci.c
-> > +++ b/drivers/pci/pci.c
-> > @@ -804,7 +804,7 @@ EXPORT_SYMBOL_GPL(__pci_complete_power_transition);
-> >   */
-> >  int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
-> >  {
-> > -	int error;
-> > +	int error = 0;
-> >  
-> >  	/* bound the state we're entering */
-> >  	if (state > PCI_D3cold)
-> > @@ -821,7 +821,7 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
-> >  
-> >  	/* Check if we're already there */
-> >  	if (dev->current_state == state)
-> > -		return 0;
-> > +		goto config_aspm;
-> >  
-> >  	__pci_start_power_transition(dev, state);
-> >  
-> > @@ -839,6 +839,8 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
-> >  
-> >  	if (!__pci_complete_power_transition(dev, state))
-> >  		error = 0;
-> > +
-> > +config_aspm:
-> >  	/*
-> >  	 * When aspm_policy is "powersave" this call ensures
-> >  	 * that ASPM is configured.
-> > -- 
-> > 1.8.1.5
-> > 
+Perhaps it could just be unconditional always. Presumably, dev->irq is
+not already set to something valid and setting it to <= 0 should not
+have any consequences.
+
+Rob
