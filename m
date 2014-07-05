@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842AbaGENVS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 09:21:18 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:53671 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564AbaGENVR (ORCPT
+	id S932204AbaGENWj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 09:22:39 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:33710 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913AbaGENWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 09:21:17 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Rickard Strandqvist <rickard.strandqvist@sonymobile.com>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Rob Clark <robdclark@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: omap: omapfb_main.c:  Cleaning up wrong type in format string
-Date: Sat,  5 Jul 2014 15:22:31 +0200
-Message-Id: <1404566552-23096-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	Sat, 5 Jul 2014 09:22:36 -0400
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+Cc: Wenyou Yang <wenyou.yang@atmel.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Heiko Stuebner <heiko@sntech.de>,
+        Axel Lin <axel.lin@ingics.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Beniamino Galvani <b.galvani@gmail.com>
+Subject: [PATCH v2 0/4] regulator: act8865: add support for act8846
+Date: Sat,  5 Jul 2014 15:20:52 +0200
+Message-Id: <1404566456-9121-1-git-send-email-b.galvani@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rickard Strandqvist <rickard.strandqvist@sonymobile.com>
+This patchset adds support for the Active-Semi act8846 PMU [1] to the
+existing driver for act8865.
 
-Wrong type in sscanf format string, requires 'int *' but the
-argument type is 'unsigned int *'
+A dts which enables the act8846 on Radxa Rock is available at [2].
 
-This was found using a static code analysis program called cppcheck
+Changes since v1:
+  - rebased on current regulator tree
+  - reworded message of patch "set correct number of regulators in pdata"
+  - added Wenyou Yang's Tested-by
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/video/fbdev/omap/omapfb_main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+[1] http://www.active-semi.com/products/power-management-units/act88xx/
+[2] https://github.com/bengal/linux/tree/act88xx-regulator
 
-diff --git a/drivers/video/fbdev/omap/omapfb_main.c b/drivers/video/fbdev/omap/omapfb_main.c
-index d8d028d..7df0764 100644
---- a/drivers/video/fbdev/omap/omapfb_main.c
-+++ b/drivers/video/fbdev/omap/omapfb_main.c
-@@ -1371,7 +1371,7 @@ static ssize_t omapfb_store_bklight_level(struct device *dev,
- 	if (fbdev->panel->set_bklight_level) {
- 		unsigned int level;
- 
--		if (sscanf(buf, "%10d", &level) == 1) {
-+		if (sscanf(buf, "%10u", &level) == 1) {
- 			r = fbdev->panel->set_bklight_level(fbdev->panel,
- 							    level);
- 		} else
+Beniamino Galvani (4):
+  regulator: act8865: set correct number of regulators in pdata
+  regulator: act8865: prepare support for other act88xx devices
+  regulator: act8865: add support for act8846
+  regulator: act8865: add act8846 to DT binding documentation
+
+ .../bindings/regulator/act8865-regulator.txt       |    7 +-
+ drivers/regulator/act8865-regulator.c              |  282 +++++++++++---------
+ include/linux/regulator/act8865.h                  |   23 +-
+ 3 files changed, 181 insertions(+), 131 deletions(-)
+
 -- 
 1.7.10.4
 
