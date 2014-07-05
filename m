@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373AbaGEDOa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jul 2014 23:14:30 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:49198 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753943AbaGEDO3 (ORCPT
+	id S1760428AbaGEDVF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jul 2014 23:21:05 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:53954 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996AbaGEDVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jul 2014 23:14:29 -0400
-Message-ID: <1404530065.2572.8.camel@j-VirtualBox>
-Subject: Re: [regression, 3.16-rc] rwsem: optimistic spinning causing
- performance degradation
-From: Jason Low <jason.low2@hp.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Dave Chinner <david@fromorbit.com>, Peter Zijlstra <peterz@infradead.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 04 Jul 2014 20:14:25 -0700
-In-Reply-To: <1404463996.2457.10.camel@buesod1.americas.hpqcorp.net>
-References: <1404413420.8764.42.camel@j-VirtualBox>
-	 <20140704010147.GY4453@dastard> <1404438366.8764.121.camel@j-VirtualBox>
-	 <1404438890.8764.125.camel@j-VirtualBox> <20140704061306.GK9508@dastard>
-	 <1404457579.8764.161.camel@j-VirtualBox>
-	 <1404463996.2457.10.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 4 Jul 2014 23:21:03 -0400
+From: Nicholas Krause <xerofoify@gmail.com>
+To: jejb@parisc-linux.org
+Cc: deller@gmx.de, tiwai@suse.de, jkosina@suse.cz, dave.anglin@bell.net,
+        joe@perches.com, linux-parisc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] parisc: Remove sizeof(frame) from call to get_sigframe
+Date: Fri,  4 Jul 2014 23:20:57 -0400
+Message-Id: <1404530457-4739-1-git-send-email-xerofoify@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-07-04 at 01:53 -0700, Davidlohr Bueso wrote:
-> On Fri, 2014-07-04 at 00:06 -0700, Jason Low 
-> > Subject: [PATCH] rwsem: In rwsem_can_spin_on_owner(), return false if no owner
-> 
-> Could we change the subject to something more descriptive, ie:
-> 
-> rwsem: Allow conservative optimistic spinning for reader/writer paths
+This removes the sizeof(frame) from the call to get_sigframe on line
+243 in order to fix the call to this function as the sizeof in not
+needed to call this function.
 
-Sure, a Subject like this would better explain what is the effect of the
-patch.
+Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+---
+ arch/parisc/kernel/signal.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/arch/parisc/kernel/signal.c b/arch/parisc/kernel/signal.c
+index 1cba8f2..3b7caac 100644
+--- a/arch/parisc/kernel/signal.c
++++ b/arch/parisc/kernel/signal.c
+@@ -240,8 +240,7 @@ setup_rt_frame(int sig, struct k_sigaction *ka, siginfo_t *info,
+ #endif
+ 	
+ 	usp = (regs->gr[30] & ~(0x01UL));
+-	/*FIXME: frame_size parameter is unused, remove it. */
+-	frame = get_sigframe(ka, usp, sizeof(*frame));
++	frame = get_sigframe(ka, usp)
+ 
+ 	DBG(1,"SETUP_RT_FRAME: START\n");
+ 	DBG(1,"setup_rt_frame: frame %p info %p\n", frame, info);
+-- 
+1.9.1
 
