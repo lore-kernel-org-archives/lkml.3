@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964856AbaGEKnG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 06:43:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57883 "EHLO
+	id S1755029AbaGEKlW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 06:41:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57799 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932165AbaGEKnC (ORCPT
+	with ESMTP id S1754044AbaGEKlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 06:43:02 -0400
-Date: Sat, 5 Jul 2014 03:42:51 -0700
-From: tip-bot for Sebastian Andrzej Siewior <tipbot@zytor.com>
-Message-ID: <tip-8ac631cd502d6b31fd29f6d019305305b479fa3e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jolsa@kernel.org, bigeasy@linutronix.de, tglx@linutronix.de,
-        namhyung@kernel.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jolsa@kernel.org, tglx@linutronix.de, bigeasy@linutronix.de,
-        namhyung@kernel.org
+	Sat, 5 Jul 2014 06:41:20 -0400
+Date: Sat, 5 Jul 2014 03:40:59 -0700
+From: tip-bot for Stanislav Fomichev <tipbot@zytor.com>
+Message-ID: <tip-0c82adcf141935b6312593a53f87342dbb12b704@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, jolsa@redhat.com, stfomichev@yandex-team.ru,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        jolsa@redhat.com, stfomichev@yandex-team.ru, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1403799268-1367-2-git-send-email-stfomichev@yandex-team.ru>
+References: <1403799268-1367-2-git-send-email-stfomichev@yandex-team.ru>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf script:
-  Handle the num array type in python properly
-Git-Commit-ID: 8ac631cd502d6b31fd29f6d019305305b479fa3e
+Subject: [tip:perf/core] perf trace:
+  Add perf_event parameter to tracepoint_handler
+Git-Commit-ID: 0c82adcf141935b6312593a53f87342dbb12b704
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,87 +36,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8ac631cd502d6b31fd29f6d019305305b479fa3e
-Gitweb:     http://git.kernel.org/tip/8ac631cd502d6b31fd29f6d019305305b479fa3e
-Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-AuthorDate: Tue, 27 May 2014 18:14:34 +0200
-Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Fri, 27 Jun 2014 11:15:02 +0200
+Commit-ID:  0c82adcf141935b6312593a53f87342dbb12b704
+Gitweb:     http://git.kernel.org/tip/0c82adcf141935b6312593a53f87342dbb12b704
+Author:     Stanislav Fomichev <stfomichev@yandex-team.ru>
+AuthorDate: Thu, 26 Jun 2014 20:14:24 +0400
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 26 Jun 2014 16:00:45 -0300
 
-perf script: Handle the num array type in python properly
+perf trace: Add perf_event parameter to tracepoint_handler
 
-The raw_syscalls:sys_enter tracer for instance passes has one argument
-named 'arg' which is an array of 6 integers. Right the python scripts
-gets only 0 passed as an argument. The reason is that
-pevent_read_number() can not handle data types of 48 and returns always
-0.
-This patch changes this by passing num array as list of nums which fit
-the description. As a result python will now see a list named arg which
-contains 6 (integer) items.
+It will be used by next pagefault tracing patches in the series.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/n/1401207274-8170-2-git-send-email-bigeasy@linutronix.de
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1403799268-1367-2-git-send-email-stfomichev@yandex-team.ru
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- .../util/scripting-engines/trace-event-python.c    | 43 ++++++++++++++++------
- 1 file changed, 31 insertions(+), 12 deletions(-)
+ tools/perf/builtin-trace.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 99c2536..e55b65a 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -234,22 +234,41 @@ static inline struct event_format *find_cache_event(struct perf_evsel *evsel)
- static PyObject *get_field_numeric_entry(struct event_format *event,
- 		struct format_field *field, void *data)
- {
--	PyObject *obj;
-+	bool is_array = field->flags & FIELD_IS_ARRAY;
-+	PyObject *obj, *list = NULL;
- 	unsigned long long val;
-+	unsigned int item_size, n_items, i;
- 
--	val = read_size(event, data + field->offset, field->size);
--	if (field->flags & FIELD_IS_SIGNED) {
--		if ((long long)val >= LONG_MIN &&
--				(long long)val <= LONG_MAX)
--			obj = PyInt_FromLong(val);
--		else
--			obj = PyLong_FromLongLong(val);
-+	if (is_array) {
-+		list = PyList_New(field->arraylen);
-+		item_size = field->size / field->arraylen;
-+		n_items = field->arraylen;
- 	} else {
--		if (val <= LONG_MAX)
--			obj = PyInt_FromLong(val);
--		else
--			obj = PyLong_FromUnsignedLongLong(val);
-+		item_size = field->size;
-+		n_items = 1;
-+	}
-+
-+	for (i = 0; i < n_items; i++) {
-+
-+		val = read_size(event, data + field->offset + i * item_size,
-+				item_size);
-+		if (field->flags & FIELD_IS_SIGNED) {
-+			if ((long long)val >= LONG_MIN &&
-+					(long long)val <= LONG_MAX)
-+				obj = PyInt_FromLong(val);
-+			else
-+				obj = PyLong_FromLongLong(val);
-+		} else {
-+			if (val <= LONG_MAX)
-+				obj = PyInt_FromLong(val);
-+			else
-+				obj = PyLong_FromUnsignedLongLong(val);
-+		}
-+		if (is_array)
-+			PyList_SET_ITEM(list, i, obj);
- 	}
-+	if (is_array)
-+		obj = list;
- 	return obj;
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 5549cee..4a9e26b 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -1538,6 +1538,7 @@ static size_t syscall__scnprintf_args(struct syscall *sc, char *bf, size_t size,
  }
+ 
+ typedef int (*tracepoint_handler)(struct trace *trace, struct perf_evsel *evsel,
++				  union perf_event *event,
+ 				  struct perf_sample *sample);
+ 
+ static struct syscall *trace__syscall_info(struct trace *trace,
+@@ -1610,6 +1611,7 @@ static void thread__update_stats(struct thread_trace *ttrace,
+ }
+ 
+ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
++			    union perf_event *event __maybe_unused,
+ 			    struct perf_sample *sample)
+ {
+ 	char *msg;
+@@ -1658,6 +1660,7 @@ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
+ }
+ 
+ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
++			   union perf_event *event __maybe_unused,
+ 			   struct perf_sample *sample)
+ {
+ 	int ret;
+@@ -1735,6 +1738,7 @@ out:
+ }
+ 
+ static int trace__vfs_getname(struct trace *trace, struct perf_evsel *evsel,
++			      union perf_event *event __maybe_unused,
+ 			      struct perf_sample *sample)
+ {
+ 	trace->last_vfs_getname = perf_evsel__rawptr(evsel, sample, "pathname");
+@@ -1742,6 +1746,7 @@ static int trace__vfs_getname(struct trace *trace, struct perf_evsel *evsel,
+ }
+ 
+ static int trace__sched_stat_runtime(struct trace *trace, struct perf_evsel *evsel,
++				     union perf_event *event __maybe_unused,
+ 				     struct perf_sample *sample)
+ {
+         u64 runtime = perf_evsel__intval(evsel, sample, "runtime");
+@@ -1781,7 +1786,7 @@ static bool skip_sample(struct trace *trace, struct perf_sample *sample)
+ }
+ 
+ static int trace__process_sample(struct perf_tool *tool,
+-				 union perf_event *event __maybe_unused,
++				 union perf_event *event,
+ 				 struct perf_sample *sample,
+ 				 struct perf_evsel *evsel,
+ 				 struct machine *machine __maybe_unused)
+@@ -1799,7 +1804,7 @@ static int trace__process_sample(struct perf_tool *tool,
+ 
+ 	if (handler) {
+ 		++trace->nr_events;
+-		handler(trace, evsel, sample);
++		handler(trace, evsel, event, sample);
+ 	}
+ 
+ 	return err;
+@@ -1990,7 +1995,7 @@ again:
+ 			}
+ 
+ 			handler = evsel->handler;
+-			handler(trace, evsel, &sample);
++			handler(trace, evsel, event, &sample);
+ next_event:
+ 			perf_evlist__mmap_consume(evlist, i);
  
