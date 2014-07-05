@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959AbaGELtW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 07:49:22 -0400
-Received: from mout.gmx.net ([212.227.15.15]:51701 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316AbaGELtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 07:49:21 -0400
-Date: Sat, 5 Jul 2014 13:49:03 +0200
-From: Marc Dietrich <marvin24@gmx.de>
-To: Julian Andres Klode <jak@jak-linux.org>
-Cc: Pawel Lebioda <pawel.lebioda89@gmail.com>, Marc Dietrich <marvin24@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ac100@lists.launchpad.net, linux-tegra@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: nvec: remove unneccessary 'else' after
- 'return'statement
-Message-Id: <20140705134903.89ec088a6b90e48be9c36f89@gmx.de>
-In-Reply-To: <20140704205941.GA7406@jak-x230>
-References: <20140704195746.GA4346@ThinkPad>
-	<20140704205941.GA7406@jak-x230>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; arm-unknown-linux-gnueabihf)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:ynenwDccR/26qxeY6+i0QhKVEOLnST8FIUvieFbXxOUjMBtdUYm
- sx9aKAddYy0iC/fZ3up0BCR5DdXRYG3HxDuVKVto2xSTh+7SmM8V6pDT5zkwd4shmWqLjId
- 0DM8OUe17gRjO278c/Gp61pF75gaHsXPOOHBw36VstZZNYY+V/76HHsRhFjqXb4zQC2z7cK
- AAWuQ1NaZoXI4icLn4seA==
+	id S1753403AbaGEMJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 08:09:56 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:34918 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307AbaGEMJz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jul 2014 08:09:55 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>
+Cc: Rickard Strandqvist <rickard.strandqvist@sonymobile.com>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Lee Jones <lee.jones@linaro.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] video: backlight: ili922x.c:  Cleaning up variable that is never used
+Date: Sat,  5 Jul 2014 14:11:10 +0200
+Message-Id: <1404562270-18387-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Jul 2014 22:59:41 +0200
-Julian Andres Klode <jak@jak-linux.org> wrote:
+From: Rickard Strandqvist <rickard.strandqvist@sonymobile.com>
 
-> On Fri, Jul 04, 2014 at 09:57:50PM +0200, Pawel Lebioda wrote:
-> > Hi,
-> >
-> > This patch fixes the following warning reported by checkpatch.pl:
-> > 
-> > WARNING: else is not generally useful after a break or return
-> > #235: FILE: drivers/staging/nvec/nvec.c:235:
-> > 
-> > Regards
-> > Pawel Lebioda
-> > 
-> > Signed-off-by: Pawel Lebioda <pawel.lebioda89@gmail.com>
-> >  drivers/staging/nvec/nvec.c | 3 +--
-> >  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> Hi Pawel,
-> 
-> Please format your patches correctly. There should be no
-> "Hi", no "Regards", etc. After the signed off should be a
-> dashed line.
-> 
-> Use git format-patch to format patches and you can send
-> them using git-send-email.
+Variable ar assigned a value that is never used.
+I have also removed all the code that thereby serves no purpose.
 
-yes, this way you reduce some apply-burdon from Greg. Ideally,
-you would combine all patches (one patch per checkpatch warning)
-in a common thread like this:
+This was found using a static code analysis program called cppcheck
 
-git-format-patch --cover-letter --thread -s <first commit of your
-patches>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/video/backlight/ili922x.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-This way you could add some comments (if any) to the cover letter
-and just keep the plain checkpatch message in the other patches. This
-has also the advantage that the maintainers only have to ack the "cover
-letter".
-
-Marc
+diff --git a/drivers/video/backlight/ili922x.c b/drivers/video/backlight/ili922x.c
+index ea67fe1..06936c8 100644
+--- a/drivers/video/backlight/ili922x.c
++++ b/drivers/video/backlight/ili922x.c
+@@ -251,7 +251,7 @@ static int ili922x_write(struct spi_device *spi, u8 reg, u16 value)
+ 	struct spi_transfer xfer_regindex, xfer_regvalue;
+ 	unsigned char tbuf[CMD_BUFSIZE];
+ 	unsigned char rbuf[CMD_BUFSIZE];
+-	int ret, len = 0;
++	int ret;
  
+ 	memset(&xfer_regindex, 0, sizeof(struct spi_transfer));
+ 	memset(&xfer_regvalue, 0, sizeof(struct spi_transfer));
+@@ -273,7 +273,6 @@ static int ili922x_write(struct spi_device *spi, u8 reg, u16 value)
+ 	ret = spi_sync(spi, &msg);
+ 
+ 	spi_message_init(&msg);
+-	len = 0;
+ 	tbuf[0] = set_tx_byte(START_BYTE(ili922x_id, START_RS_REG,
+ 					 START_RW_WRITE));
+ 	tbuf[1] = set_tx_byte((value & 0xFF00) >> 8);
 -- 
-Marc Dietrich <marvin24@gmx.de>
+1.7.10.4
+
