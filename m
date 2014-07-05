@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932701AbaGEUZz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 16:25:55 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:60523 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409AbaGEUZy (ORCPT
+	id S932719AbaGEU1A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 16:27:00 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41353 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754400AbaGEU07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 16:25:54 -0400
-Date: Sat, 5 Jul 2014 21:25:52 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Joe Perches <joe@perches.com>
-cc: Grant Likely <grant.likely@secretlab.ca>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] declance: Fix 64-bit compilation warnings
-In-Reply-To: <1404585099.6384.53.camel@joe-AO725>
-Message-ID: <alpine.LFD.2.11.1407052103130.15455@eddie.linux-mips.org>
-References: <alpine.LFD.2.11.1406290246120.15455@eddie.linux-mips.org>         <20140702.182807.1245632778216212860.davem@davemloft.net>         <alpine.LFD.2.11.1407030244230.15455@eddie.linux-mips.org>         <alpine.LFD.2.11.1407030331550.15455@eddie.linux-mips.org>
-         <1404356734.14741.18.camel@joe-AO725>         <alpine.LFD.2.11.1407030423300.15455@eddie.linux-mips.org>         <1404364565.14741.26.camel@joe-AO725>         <alpine.LFD.2.11.1407030637030.15455@eddie.linux-mips.org>         <1404368746.14741.36.camel@joe-AO725>
-         <alpine.LFD.2.11.1407051529040.15455@eddie.linux-mips.org>         <1404576420.6384.41.camel@joe-AO725>         <alpine.LFD.2.11.1407051833400.15455@eddie.linux-mips.org>         <1404583739.6384.51.camel@joe-AO725>        
- <alpine.LFD.2.11.1407051917480.15455@eddie.linux-mips.org> <1404585099.6384.53.camel@joe-AO725>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Sat, 5 Jul 2014 16:26:59 -0400
+Date: Sat, 5 Jul 2014 22:26:54 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Austin Schuh <austin@peloton-tech.com>
+cc: Richard Weinberger <richard.weinberger@gmail.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        rt-users <linux-rt-users@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: Filesystem lockup with CONFIG_PREEMPT_RT
+In-Reply-To: <CANGgnMbhYB4VY+4L7qrWvRomi6tRjK+7hs7qBXzsDLND_sjpFA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1407052226300.22031@nanos>
+References: <CANGgnMbHckBQdKGN_N5Q6qEKc9n1CenxvMpeXog1NbSdL8UrTw@mail.gmail.com> <CANGgnMYDXerOUDOO9-RHMJKadKACA2KBGskZwoP-1ZwAhDEfVA@mail.gmail.com> <CAFLxGvxfBt7OvW=a2Kz08GLHSEiiOZsN-vB19CXnQiwqFxqMsA@mail.gmail.com> <CANGgnMYVoP-Z0Bv-VDEkJnvfa7Fi4-zY2F4A0PhMewGvwo3VVw@mail.gmail.com>
+ <alpine.DEB.2.10.1406270027300.5170@nanos> <CANGgnMa+qtgJ3wwg_h5Rynw5vEvZpQZ6PvaUfXNQ8+Y3Yu5U0g@mail.gmail.com> <alpine.DEB.2.10.1406271249510.5170@nanos> <CANGgnMYcSoJa32CdGBxvj0c3NEnU=S=DD35YmZAtn8miCtK6kw@mail.gmail.com>
+ <CANGgnMbhYB4VY+4L7qrWvRomi6tRjK+7hs7qBXzsDLND_sjpFA@mail.gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Jul 2014, Joe Perches wrote:
+On Mon, 30 Jun 2014, Austin Schuh wrote:
+> I think I might have an answer for my own question, but I would
+> appreciate someone else to double check.  If list_empty erroneously
+> returns that there is work to do when there isn't work to do, we wake
+> up an extra worker which then goes back to sleep.  Not a big loss.  If
+> list_empty erroneously returns that there isn't work to do when there
+> is, this should only be because someone is modifying the work list.
+> When they finish, as far as I can tell, all callers then check to see
+> if a worker needs to be started up, and start one.
 
-> > > I don't think %#p is valid so it
-> > > shouldn't have been set by #.
-> > 
-> >  Huh?  As recently as last Wednesday you pointed me at the specific commit 
-> > from Grant that made it valid (GCC format complaints aside).
-> 
-> Those gcc complaints are precisely the thing
-> that makes it invalid.
-
- So enforce that in code then, clear the SPECIAL flag where appropriate 
-and do not try to handle it in one place while leaving other ones to 
-behave randomly (i.e. a supposedly fixed field width varies depending on 
-the two uppermost digits).  Please note that it's only your proposed 
-change that introduces that randomness, right now code does what's 
-supposed and documented to, except a bit inconsistently.
-
-> I believe you're tilting at windmills.
-> 
-> Hey, it works sometimes.  Knock yourself out.
-
- I pointed out an inconsistency with the intent to propose a fix once a 
-consensus have been reached, one way or another.  And I think shifting the 
-inconsistency to a different place, which is what your proposal does, 
-isn't really a complete solution, although I do recognise the improvement.
-
-  Maciej
+Precisely.
