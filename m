@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495AbaGEPb0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 11:31:26 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:44018 "EHLO
+	id S1753242AbaGEPl3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 11:41:29 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:64050 "EHLO
 	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676AbaGEPbY (ORCPT
+	with ESMTP id S1752167AbaGEPl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 11:31:24 -0400
+	Sat, 5 Jul 2014 11:41:27 -0400
 MIME-Version: 1.0
 X-Originating-IP: [218.164.146.19]
-In-Reply-To: <CAFRkauDmTeh0Uk9T5xtWuZ4C9LH9QZN0MdFf3Ay0_8_prkrW9g@mail.gmail.com>
+In-Reply-To: <1404566456-9121-3-git-send-email-b.galvani@gmail.com>
 References: <1404566456-9121-1-git-send-email-b.galvani@gmail.com>
-	<1404566456-9121-2-git-send-email-b.galvani@gmail.com>
-	<CAFRkauDmTeh0Uk9T5xtWuZ4C9LH9QZN0MdFf3Ay0_8_prkrW9g@mail.gmail.com>
-Date: Sat, 5 Jul 2014 23:31:23 +0800
-Message-ID: <CAFRkauBSgU-zUKqkpR52U3jcjd6wQc_g9rCKUfxOZwm5_BPQqg@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] regulator: act8865: set correct number of
- regulators in pdata
+	<1404566456-9121-3-git-send-email-b.galvani@gmail.com>
+Date: Sat, 5 Jul 2014 23:41:26 +0800
+Message-ID: <CAFRkauDR5A=oE0BPHfsyfw6giPsDX4CpYcgDnYQfeGO2nCWbuw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] regulator: act8865: prepare support for other
+ act88xx devices
 From: Axel Lin <axel.lin@ingics.com>
 To: Beniamino Galvani <b.galvani@gmail.com>
 Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
@@ -31,48 +30,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-05 23:08 GMT+08:00 Axel Lin <axel.lin@ingics.com>:
-> 2014-07-05 21:20 GMT+08:00 Beniamino Galvani <b.galvani@gmail.com>:
->> act8865_pdata_from_dt() populates the array pdata->regulators with all
->> the regulators and then assigns the field init_data only for the ones
->> actually found in the DT.
->>
->> The patch changes the value assigned to pdata->num_regulators to match
->> the size of the array.
->>
->> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
->> Tested-by: Wenyou Yang <wenyou.yang@atmel.com>
->> ---
->>  drivers/regulator/act8865-regulator.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/regulator/act8865-regulator.c b/drivers/regulator/act8865-regulator.c
->> index f07be36..52d1b6c 100644
->> --- a/drivers/regulator/act8865-regulator.c
->> +++ b/drivers/regulator/act8865-regulator.c
->> @@ -230,7 +230,7 @@ static int act8865_pdata_from_dt(struct device *dev,
->>         if (!pdata->regulators)
->>                 return -ENOMEM;
->>
->> -       pdata->num_regulators = matched;
->> +       pdata->num_regulators = ARRAY_SIZE(act8865_matches);
->>         regulator = pdata->regulators;
+2014-07-05 21:20 GMT+08:00 Beniamino Galvani <b.galvani@gmail.com>:
+> This patch prepares support for other devices in the act88xx family of
+> PMUs manufactured by Active-Semi.
 >
-> You can also include below change as well:
-> diff --git a/drivers/regulator/act8865-regulator.c
-> b/drivers/regulator/act8865-regulator.c
-> index f07be36..9fcedc5 100644
-> --- a/drivers/regulator/act8865-regulator.c
-> +++ b/drivers/regulator/act8865-regulator.c
-> @@ -226,7 +226,7 @@ static int act8865_pdata_from_dt(struct device *dev,
+> http://www.active-semi.com/products/power-management-units/act88xx/
 >
->   pdata->regulators = devm_kzalloc(dev,
->   sizeof(struct act8865_regulator_data) *
-> - ARRAY_SIZE(act8865_matches), GFP_KERNEL);
-> + matched, GFP_KERNEL);
->   if (!pdata->regulators)
->   return -ENOMEM;
-Ah.. I misread the code, please forget above comment.
-Reviewed-by: Axel Lin <axel.lin@ingics.com>
+> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+> Tested-by: Wenyou Yang <wenyou.yang@atmel.com>
 
+For this serial, Reviewed-by: Axel Lin <axel.lin@ingics.com>
+patch 3/4 was not CCed to me, but I have checked the code on LKML mail list.
+
+Regards,
 Axel
