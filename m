@@ -1,118 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142AbaGEOmS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 10:42:18 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:36353 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755462AbaGEOmP (ORCPT
+	id S932598AbaGEOnQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 10:43:16 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44597 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753005AbaGEOnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 10:42:15 -0400
-Message-ID: <53B80EAC.1060107@oracle.com>
-Date: Sat, 05 Jul 2014 10:41:48 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Sat, 5 Jul 2014 10:43:15 -0400
+Message-ID: <53B80EFC.6020504@infradead.org>
+Date: Sat, 05 Jul 2014 07:43:08 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>, Dave Jones <davej@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: derefing NULL vma->vm_mm when unmapping
-References: <53B16B05.20108@gmail.com> <20140630150728.c5f268a0092862f2a7d2b29c@linux-foundation.org> <alpine.LSU.2.11.1406301729500.5074@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.11.1406301729500.5074@eggly.anvils>
-X-Enigmail-Version: 1.6
+To: Nicholas Krause <xerofoify@gmail.com>, ralf@linux-mips.org
+CC: jchandra@broadcom.com, blogic@openwrt.org, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mips: Add #ifdef in file bridge.h
+References: <1404528619-3715-1-git-send-email-xerofoify@gmail.com>
+In-Reply-To: <1404528619-3715-1-git-send-email-xerofoify@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2014 08:55 PM, Hugh Dickins wrote:
-> On Mon, 30 Jun 2014, Andrew Morton wrote:
->> On Mon, 30 Jun 2014 09:49:57 -0400 Sasha Levin <levinsasha928@gmail.com> wrote:
->>
->> Dunno.  You're under KVM and tracing is enabled, yes?  I don't
->> immediately see how that would affect it.
+On 07/04/2014 07:50 PM, Nicholas Krause wrote:
+> This patch addes a #ifdef __ASSEMBLY__ in order to check if this part
+> of the file is configured to fix this #ifdef block in bridge.h for mips.
 > 
-> I am beginning to wonder whether some of Sasha's reports are
-> actually problems with KVM, which I cannot help with at all.
-> It does add another dimension of doubt.  Or with DEBUG_PAGEALLOC.
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> ---
+>  arch/mips/include/asm/netlogic/xlp-hal/bridge.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/mips/include/asm/netlogic/xlp-hal/bridge.h b/arch/mips/include/asm/netlogic/xlp-hal/bridge.h
+> index 3067f98..4f315c3 100644
+> --- a/arch/mips/include/asm/netlogic/xlp-hal/bridge.h
+> +++ b/arch/mips/include/asm/netlogic/xlp-hal/bridge.h
+> @@ -143,7 +143,7 @@
+>  #define BRIDGE_GIO_WEIGHT		0x2cb
+>  #define BRIDGE_FLASH_WEIGHT		0x2cc
+>  
+> -/* FIXME verify */
+> +#ifdef __ASSEMBLY__
+>  #define BRIDGE_9XX_FLASH_BAR(i)		(0x11 + (i))
+>  #define BRIDGE_9XX_FLASH_BAR_LIMIT(i)	(0x15 + (i))
+>  
+> 
 
-The good news are that Oracle are being pretty cool and giving me some
-more machines I could fuzz on, so soon I'll be doing fuzzing on physical
-hardware as well - that'll tell us about KVM specific issues.
+Hi,
 
-> I took a quick look, but had no more ideas on this crash than many
-> other of his recent ones.  Or is there something very (but very
-> rarely) wrong with the rmap walk and its trees these days?
+Where is the corresponding #endif ?
+The #endif at line 185 goes with the #ifndef __ASSEMBLY__ at line 176.
 
-It seems I'm hitting page table corruptions here and there, but not
-sure if it's related to the report above.
-
-[ 5753.537772] trinity-c43: Corrupted page table at address 7fc9a9fa2000
-[ 5753.538893] PGD 3c2508067 PUD 3bbd58067 PMD 2f3b6a067 PTE ffff8800000b0235
-[ 5753.540105] Bad pagetable: 0009 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 5753.540105] Dumping ftrace buffer:
-[ 5753.542307]    (ftrace buffer empty)
-[ 5753.542307] Modules linked in:
-[ 5753.542307] CPU: 14 PID: 19432 Comm: trinity-c43 Not tainted 3.16.0-rc3-next-20140703-sasha-00024-g2ad7668-dirty #763
-[ 5753.542307] task: ffff880161590000 ti: ffff880168c28000 task.ti: ffff880168c28000
-[ 5753.542307] RIP: copy_user_generic_unrolled (arch/x86/lib/copy_user_64.S:166)
-[ 5753.542307] RSP: 0018:ffff880168c2bf30  EFLAGS: 00010202
-[ 5753.542307] RAX: ffff880168c28000 RBX: 00007fc9a9fa2000 RCX: 0000000000000002
-[ 5753.542307] RDX: 0000000000000000 RSI: 00007fc9a9fa2000 RDI: ffff880168c2bf48
-[ 5753.542307] RBP: ffff880168c2bf78 R08: 00000000001a7d9e R09: 0000000000000000
-[ 5753.542307] R10: 0000000000000000 R11: 0000000000000001 R12: 00007fc9a9fa2008
-[ 5753.542307] R13: 00007fc9aa16e6a8 R14: 0000000000000000 R15: 00000000000000a4
-[ 5753.542307] FS:  00007fc9aa16e700(0000) GS:ffff88036ae00000(0000) knlGS:0000000000000000
-[ 5753.542307] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 5753.542307] CR2: 00007fc9a9fa2000 CR3: 000000015157a000 CR4: 00000000000006a0
-[ 5753.542307] Stack:
-[ 5753.542307]  ffffffff9216ffa1 00007fc9aa16e6a8 0000000000000000 00007fc9a9a1f000
-[ 5753.542307]  ffffffff954d6ef0 00000000000000a4 0000000000000000 00000000000000a4
-[ 5753.542307]  00007fc9a9a1f000 00007fc9a9a1f000 ffffffff954d6f53 0000000000000246
-[ 5753.542307] Call Trace:
-[ 5753.542307] ? SyS_settimeofday (kernel/time.c:196 kernel/time.c:189)
-[ 5753.542307] ? tracesys (arch/x86/kernel/entry_64.S:531)
-[ 5753.542307] tracesys (arch/x86/kernel/entry_64.S:542)
-[ 5753.542307] Code: 30 4c 8b 5e 38 4c 89 47 20 4c 89 4f 28 4c 89 57 30 4c 89 5f 38 48 8d 76 40 48 8d 7f 40 ff c9 75 b6 89 d1 83 e2 07 c1 e9 03 74 12 <4c> 8b 06 4c 89 07 48 8d 76 08 48 8d 7f 08 ff c9 75 ee 21 d2 74
-All code
-========
-   0:	30 4c 8b 5e          	xor    %cl,0x5e(%rbx,%rcx,4)
-   4:	38 4c 89 47          	cmp    %cl,0x47(%rcx,%rcx,4)
-   8:	20 4c 89 4f          	and    %cl,0x4f(%rcx,%rcx,4)
-   c:	28 4c 89 57          	sub    %cl,0x57(%rcx,%rcx,4)
-  10:	30 4c 89 5f          	xor    %cl,0x5f(%rcx,%rcx,4)
-  14:	38 48 8d             	cmp    %cl,-0x73(%rax)
-  17:	76 40                	jbe    0x59
-  19:	48 8d 7f 40          	lea    0x40(%rdi),%rdi
-  1d:	ff c9                	dec    %ecx
-  1f:	75 b6                	jne    0xffffffffffffffd7
-  21:	89 d1                	mov    %edx,%ecx
-  23:	83 e2 07             	and    $0x7,%edx
-  26:	c1 e9 03             	shr    $0x3,%ecx
-  29:	74 12                	je     0x3d
-  2b:*	4c 8b 06             	mov    (%rsi),%r8		<-- trapping instruction
-  2e:	4c 89 07             	mov    %r8,(%rdi)
-  31:	48 8d 76 08          	lea    0x8(%rsi),%rsi
-  35:	48 8d 7f 08          	lea    0x8(%rdi),%rdi
-  39:	ff c9                	dec    %ecx
-  3b:	75 ee                	jne    0x2b
-  3d:	21 d2                	and    %edx,%edx
-  3f:	74 00                	je     0x41
-
-Code starting with the faulting instruction
-===========================================
-   0:	4c 8b 06             	mov    (%rsi),%r8
-   3:	4c 89 07             	mov    %r8,(%rdi)
-   6:	48 8d 76 08          	lea    0x8(%rsi),%rsi
-   a:	48 8d 7f 08          	lea    0x8(%rdi),%rdi
-   e:	ff c9                	dec    %ecx
-  10:	75 ee                	jne    0x0
-  12:	21 d2                	and    %edx,%edx
-  14:	74 00                	je     0x16
-[ 5753.570683] RIP copy_user_generic_unrolled (arch/x86/lib/copy_user_64.S:166)
-[ 5753.570683]  RSP <ffff880168c2bf30>
+I think that this patch will cause a build error (or at least a warning).
+Did you test it?
 
 
-Thanks,
-Sasha
+-- 
+~Randy
