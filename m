@@ -1,60 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599AbaGFPYH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 11:24:07 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:36093 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889AbaGFPYF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 11:24:05 -0400
+	id S1751705AbaGFPZx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 11:25:53 -0400
+Received: from mout.web.de ([212.227.15.3]:54576 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751067AbaGFPZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jul 2014 11:25:51 -0400
+Message-ID: <53B96A2B.4040909@web.de>
+Date: Sun, 06 Jul 2014 17:24:27 +0200
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-In-Reply-To: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Sun, 6 Jul 2014 10:23:43 -0500
-Message-ID: <CAL_JsqK_CfagmiFOpOXVYGry22nGnCZL0ZXeJhYxb9zp=P2fsQ@mail.gmail.com>
-Subject: Re: [PATCH v8 0/9] Support for creating generic PCI host bridges from DT
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Gleb Natapov <gleb@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm <kvm@vger.kernel.org>
+Subject: Re: [PATCH] x86: Make x2APIC support depend on interrupt remapping
+ or guest support
+References: <53B7ADAA.9030101@web.de> <20140706151242.GN18167@minantech.com>
+In-Reply-To: <20140706151242.GN18167@minantech.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="bfuJHuw70tFtSQuRbJBQu9K9xb0IaHQov"
+X-Provags-ID: V03:K0:5s5IHL8/lZW6jQfVD4XM/Z21AUykGzoHissB09PuKOiJbmEKXrL
+ ghY/Jm4fhd9eDs1lnAIQDj+Wlgbz2T81CXOjBAb5QNmsR7IKSAjoPWdJqAeYjZE0lbkSlqj
+ urqqsH0iR6NUyBWnAY1w8c+5n2MBAdBpY428HwB9OHsDpqvxQMpCezI0TeQH5DhLHDN5tnk
+ P2kPdv9RII+o1eLj1P74Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 1, 2014 at 1:43 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> This is my resurected attempt at adding support for generic PCI host
-> bridge controllers that make use of device tree information to
-> configure themselves. I've tagged it as v8 although the patches
-> have now been reshuffled in order to ease adoption so referring to
-> the older versions might be a bit of a hoop jumping exercise.
->
-> Changes from v7:
->   - Reordered the patches so that fixes and non-controversial patches
->     from v7 can be accepted more easily. If agreed I can split the
->     series again into patches that can be upstreamed easily and ones
->     that still need discussion.
->   - Moved the of_create_host_bridge() function to drivers/of/of_pci.c
->     to better reflect its target use.
->   - Added the function to remap the bus I/O resources that used to be
->     provided in my arm64 patch series and (re)named it pci_remap_iospace()
->   - Removed error code checking from parsing and mapping of IRQ from DT
->     in recognition that some PCI devices will not have legacy IRQ mappings.
->
-> v7 thread here with all the historic information: https://lkml.org/lkml/2014/3/14/279
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--bfuJHuw70tFtSQuRbJBQu9K9xb0IaHQov
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Can you publish a branch for this series please.
+On 2014-07-06 17:12, Gleb Natapov wrote:
+> On Sat, Jul 05, 2014 at 09:47:54AM +0200, Jan Kiszka wrote:
+>> From: Jan Kiszka <jan.kiszka@siemens.com>
+>>
+>> We are able to use x2APIC mode in the absence of interrupt remapping o=
+n
+>> certain hypervisors. So it if fine to disable IRQ_REMAP without having=
 
-Rob
+>> to give up x2APIC support.
+> FWIW I did similar thing back when I added x2apic to KVM:
+> http://linux.derkeiler.com/Mailing-Lists/Kernel/2009-06/msg14579.html
+> But was advised against it.
+
+I don't get the point from that thread.
+
+However, this change is just formalizing a configuration that is already
+being used: there is no interrupt remapping available with KVM (yet),
+but we do run our guests in x2APIC mode most of the time. Interrupt
+remapping code in kernels tailored as KVM guest is dead code, right now.
+
+Jan
+
+>=20
+>>
+>> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+>> ---
+>>  arch/x86/Kconfig | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+>> index a8f749e..30a9987 100644
+>> --- a/arch/x86/Kconfig
+>> +++ b/arch/x86/Kconfig
+>> @@ -310,7 +310,7 @@ config SMP
+>> =20
+>>  config X86_X2APIC
+>>  	bool "Support x2apic"
+>> -	depends on X86_LOCAL_APIC && X86_64 && IRQ_REMAP
+>> +	depends on X86_LOCAL_APIC && X86_64 && (IRQ_REMAP || HYPERVISOR_GUES=
+T)
+>>  	---help---
+>>  	  This enables x2apic support on CPUs that have this feature.
+>> =20
+>>
+>>
+>=20
+>=20
+>=20
+> --
+> 			Gleb.
+>=20
+
+
+
+--bfuJHuw70tFtSQuRbJBQu9K9xb0IaHQov
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlO5ai0ACgkQitSsb3rl5xRvaACfSR8fN4+9TTpBNpSEjUcUAlwB
+ceEAnjykP+L1tJ3RWVNgYQ+OFd/6HiJX
+=WLTj
+-----END PGP SIGNATURE-----
+
+--bfuJHuw70tFtSQuRbJBQu9K9xb0IaHQov--
