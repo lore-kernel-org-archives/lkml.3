@@ -1,101 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237AbaGOOQn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Jul 2014 10:16:43 -0400
-Received: from mail.kernel.org ([198.145.19.201]:59923 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750960AbaGOOQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Jul 2014 10:16:39 -0400
-Date: Tue, 15 Jul 2014 11:16:35 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 15/41] perf script: Improve srcline display for BTS
-Message-ID: <20140715141635.GA3301@kernel.org>
-References: <1405332185-4050-1-git-send-email-adrian.hunter@intel.com>
- <1405332185-4050-16-git-send-email-adrian.hunter@intel.com>
+	id S1752535AbaGOOSI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Jul 2014 10:18:08 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:50089 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317AbaGOOSG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Jul 2014 10:18:06 -0400
+Message-ID: <53B95102.3030001@gmail.com>
+Date: Sun, 06 Jul 2014 21:37:06 +0800
+From: vv <zhengdi05@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1405332185-4050-16-git-send-email-adrian.hunter@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        m.chehab@samsung.com, zhengdi05@gmail.com
+Subject: [PATCH]staging: media: lirc_parallel.c: fix coding style
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jul 14, 2014 at 01:02:39PM +0300, Adrian Hunter escreveu:
-> Change the order of the output to put the srcline last.
-> e.g. old format:
-> 
->           4028fc main+0x2c (/bin/ls)
->   /build/buildd/coreutils-8.20/src/ls.c:1269 =>           40d8a0 set_program_name+0x0 (/bin/ls)
-> 
-> new format:
-> 
->           4028fc main+0x2c (/bin/ls) =>           40d8a0 set_program_name+0x0 (/bin/ls)
->   /build/buildd/coreutils-8.20/src/ls.c:1269
+>From 9d2c680fb573985588d33e31379d50ef3fb6e2fd Mon Sep 17 00:00:00 2001
+From: Zheng Di <zhengdi05@gmail.com>
+Date: Sun, 6 Jul 2014 20:41:53 +0800
+Subject: [PATCH] staging: media: lirc_parallel.c: fix coding style
 
-David,
+This patch fix checkpatch:
+WARNING: else is not generally useful after a break or return
+WARNING: line over 80 characters
 
-	Can I have your acked-by?
+Signed-off-by: Zheng Di <zhengdi05@gmail.com>
+---
+ drivers/staging/media/lirc/lirc_parallel.c |   32
+++++++++++++++--------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
-Adrian,
+diff --git a/drivers/staging/media/lirc/lirc_parallel.c
+b/drivers/staging/media/lirc/lirc_parallel.c
+index 1394f02..d7eb2a4 100644
+--- a/drivers/staging/media/lirc/lirc_parallel.c
++++ b/drivers/staging/media/lirc/lirc_parallel.c
+@@ -169,23 +169,23 @@ static unsigned int init_lirc_timer(void)
+            newtimer = (1000000*count)/timeelapsed;
+            pr_info("%u Hz timer detected\n", newtimer);
+            return newtimer;
+-       }  else {
+-           newtimer = (1000000*count)/timeelapsed;
+-           if (abs(newtimer - default_timer) > default_timer/10) {
+-               /* bad timer */
+-               pr_notice("bad timer: %u Hz\n", newtimer);
+-               pr_notice("using default timer: %u Hz\n",
+-                     default_timer);
+-               return default_timer;
+-           } else {
+-               pr_info("%u Hz timer detected\n", newtimer);
+-               return newtimer; /* use detected value */
+-           }
+        }
+-   } else {
+-       pr_notice("no timer detected\n");
+-       return 0;
++
++       newtimer = (1000000*count)/timeelapsed;
++       if (abs(newtimer - default_timer) > default_timer/10) {
++           /* bad timer */
++           pr_notice("bad timer: %u Hz\n", newtimer);
++           pr_notice("using default timer: %u Hz\n",
++                 default_timer);
++           return default_timer;
++       }
++
++       pr_info("%u Hz timer detected\n", newtimer);
++       return newtimer; /* use detected value */
+    }
++
++   pr_notice("no timer detected\n");
++   return 0;
+ }
 
-	Can you elaborate on why this is an improvement?
-
-- Arnaldo
- 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> ---
->  tools/perf/builtin-script.c | 20 +++++++++++++++-----
->  1 file changed, 15 insertions(+), 5 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-> index 9e9c91f..333b15e 100644
-> --- a/tools/perf/builtin-script.c
-> +++ b/tools/perf/builtin-script.c
-> @@ -427,15 +427,22 @@ static void print_sample_bts(union perf_event *event,
->  			     struct addr_location *al)
->  {
->  	struct perf_event_attr *attr = &evsel->attr;
-> +	bool print_srcline_last = false;
->  
->  	/* print branch_from information */
->  	if (PRINT_FIELD(IP)) {
-> -		if (!symbol_conf.use_callchain)
-> -			printf(" ");
-> -		else
-> +		unsigned int print_opts = output[attr->type].print_ip_opts;
-> +
-> +		if (symbol_conf.use_callchain && sample->callchain) {
->  			printf("\n");
-> -		perf_evsel__print_ip(evsel, sample, al,
-> -				     output[attr->type].print_ip_opts,
-> +		} else {
-> +			printf(" ");
-> +			if (print_opts & PRINT_IP_OPT_SRCLINE) {
-> +				print_srcline_last = true;
-> +				print_opts &= ~PRINT_IP_OPT_SRCLINE;
-> +			}
-> +		}
-> +		perf_evsel__print_ip(evsel, sample, al, print_opts,
->  				     PERF_MAX_STACK_DEPTH);
->  	}
->  
-> @@ -447,6 +454,9 @@ static void print_sample_bts(union perf_event *event,
->  	     !output[attr->type].user_set))
->  		print_sample_addr(event, sample, al->machine, thread, attr);
->  
-> +	if (print_srcline_last)
-> +		map__fprintf_srcline(al->map, al->addr, "\n  ", stdout);
-> +
->  	printf("\n");
->  }
->  
-> -- 
-> 1.8.3.2
+ static int lirc_claim(void)
+@@ -661,7 +661,7 @@ static int __init lirc_parallel_init(void)
+        goto exit_device_put;
+    }
+    ppdevice = parport_register_device(pport, LIRC_DRIVER_NAME,
+-                      pf, kf, lirc_lirc_irq_handler, 0, NULL);
++                  pf, kf, lirc_lirc_irq_handler, 0, NULL);
+    parport_put_port(pport);
+    if (ppdevice == NULL) {
+        pr_notice("parport_register_device() failed\n");
+-- 
+1.7.9.5
