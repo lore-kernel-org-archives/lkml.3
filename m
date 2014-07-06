@@ -1,95 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751459AbaGFM1o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 08:27:44 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:55335 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822AbaGFM1m (ORCPT
+	id S1751434AbaGFMfK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 08:35:10 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47685 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822AbaGFMfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 08:27:42 -0400
-Message-ID: <53B940B7.8050204@dev.mellanox.co.il>
-Date: Sun, 06 Jul 2014 15:27:35 +0300
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sun, 6 Jul 2014 08:35:08 -0400
+Date: Sun, 6 Jul 2014 14:35:06 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, tj@kernel.org, rostedt@goodmis.org,
+        mingo@redhat.com, akpm@linux-foundation.org, andi@firstfloor.org,
+        paulmck@linux.vnet.ibm.com, jirislaby@gmail.com,
+        Vojtech Pavlik <vojtech@suse.cz>, Michael Matz <matz@suse.de>,
+        Udo Seidel <udoseidel@gmx.de>
+Subject: Re: [PATCH -repost 05/21] kgr: update Kconfig documentation
+Message-ID: <20140706123506.GA18204@amd.pavel.ucw.cz>
+References: <1403694435-3180-1-git-send-email-jslaby@suse.cz>
+ <1403694435-3180-5-git-send-email-jslaby@suse.cz>
+ <20140625134212.4fb38e14@alan.etchedpixels.co.uk>
+ <53ABD8FB.9000700@suse.cz>
+ <alpine.LNX.2.00.1406261030210.15939@pobox.suse.cz>
+ <20140627191845.GA1408@xo-6d-61-c0.localdomain>
+ <53B6708E.5030106@suse.cz>
+ <20140704103505.GB19252@amd.pavel.ucw.cz>
+ <alpine.LNX.2.00.1407052146280.1655@pobox.suse.cz>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Christoph Hellwig <hch@infradead.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        SCSI Mailing List <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 3.15 099/139] libiscsi, iser: Adjust data_length to include
- protection information
-References: <20140628174605.352098823@linuxfoundation.org>	 <20140628174609.930049472@linuxfoundation.org>	 <1404339330.1862.69.camel@ul30vt.home> <53B48B37.4000608@cs.wisc.edu>	 <1404341555.16066.19.camel@dabdike> <20140703060548.GB17456@infradead.org>	 <1404395645.1949.2.camel@jarvis.lan> <20140703162748.GA24758@kroah.com>	 <20140703163310.GA21213@infradead.org> <1404410407.5091.9.camel@jarvis>
-In-Reply-To: <1404410407.5091.9.camel@jarvis>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1407052146280.1655@pobox.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/3/2014 9:00 PM, James Bottomley wrote:
-> On Thu, 2014-07-03 at 09:33 -0700, Christoph Hellwig wrote:
->> On Thu, Jul 03, 2014 at 09:27:48AM -0700, Greg Kroah-Hartman wrote:
->>> I copy everyone on the patch.  You were not on that patch as it doesn't
->>> look like it went through your tree at all.
->> It went through the target tree despite exclusive touching scsi
->> initiator side code.  I'm still not sure how this happened, but we
->> should take care to avoid this in the future.  In addition to this
->> regression due to a complete lack of testing it also caused various
->> merge issues.
-> OK, Nic cc'd
->
-> Please explain how this commit:
->
-> commit d77e65350f2d82dfa0557707d505711f5a43c8fd
-> Author: Sagi Grimberg <sagig@mellanox.com>
-> Date:   Wed Jun 11 12:09:58 2014 +0300
->
->      libiscsi, iser: Adjust data_length to include protection information
->      
->      In case protection information exists over the wire
->      iscsi header data length is required to include it.
->      Use protection information aware scsi helpers to set
->      the correct transfer length.
->      
->      In order to avoid breakage, remove iser transfer length
->      checks for each task as they are not always true and
->      somewhat redundant anyway.
->      
->      Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
->      Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
->      Acked-by: Mike Christie <michaelc@cs.wisc.edu>
->      Cc: stable@vger.kernel.org # 3.15+
->      Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
->
->   drivers/infiniband/ulp/iser/iser_initiator.c | 34 ++++++++--------------------
->   drivers/scsi/libiscsi.c                      | 18 +++++++--------
->
-> Came to go through the target tree even though it's initiator only and
-> how come it was tagged for stable?
+On Sat 2014-07-05 21:47:45, Jiri Kosina wrote:
+> On Fri, 4 Jul 2014, Pavel Machek wrote:
+> 
+> > > Hi, why do you believe so? But it is not so important, see below.
+> > 
+> > Because it is quite hard to prepare the patch, and there's not really
+> > enough documentation..? And given choice between "spend half an hour
+> > preparing patch" and "just reboot", people compiling their own kernels
+> > know what to do...
+> 
+> I fail to see how "having the skills to compile my own kernel" and "being 
+> responsible for a datacenter that can't afford immediate reboot of all 
+> nodes" are connected in any way.
 
-Hey James,
+Parse error, or too much irony.
 
-I think it's because of the cover-letter comment I gave in my initial 
-patchset:
-"Although these patches involve 3 subsystems with different maintainers 
-(scsi, iser, target) I would prefer seeing these patches included together."
-The set involved initiator-target wire protocol dependency.
+Anyway, I'd suggest the Kconfig test be something like "say N unless
+you know how to prepare patch for running kernel, and plan to do
+that".
 
-I removed this comment in v1, v2 due to Roland's comment:
-"Why? Because they break wire compatibility? I hate to say it but even 
-if they're merged at the same time,
-you can't guarantee that targets and initiators will be updated together."
+And, since you seem to be targeting sysadmins with this, it would be
+cool to have sysadmin-targeted documentation explaining what patches
+are safe to apply with kgraft and what are not.
 
-So I guess Nic just followed up on my request in order to avoid 
-wire-protocol breakage.
-I assume the stable tag was there for the same reason.
-
-Anyway, Sorry for all the fuss... I'll try to avoid such mistakes in the 
-future.
-
-Sagi.
+Best regards,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
