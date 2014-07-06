@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127AbaGFR5u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 13:57:50 -0400
-Received: from seketeli.net ([94.23.218.202]:53433 "EHLO ms.seketeli.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751786AbaGFR5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 13:57:36 -0400
-From: Apelete Seketeli <apelete@seketeli.net>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Cc: Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH v3] usb: musb: register nop transceiver driver for jz4740
-Date: Sun,  6 Jul 2014 19:58:03 +0200
-Message-Id: <1404669483-12372-2-git-send-email-apelete@seketeli.net>
+	id S1752164AbaGFR6X (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 13:58:23 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:35130 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853AbaGFR6W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jul 2014 13:58:22 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Archit Taneja <archit@ti.com>, Jingoo Han <jg1.han@samsung.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] video: fbdev: omap2: dss: sdi.c:  Cleaning up removal variable thet is never used
+Date: Sun,  6 Jul 2014 19:59:37 +0200
+Message-Id: <1404669577-15942-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1404669483-12372-1-git-send-email-apelete@seketeli.net>
-References: <1404669483-12372-1-git-send-email-apelete@seketeli.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following the name change of the NOP transceiver driver in commit
-4525bee (usb: phy: rename usb_nop_xceiv to usb_phy_generic), the
-transceiver driver was no longer operable under its old name.
+Removal of struct member variable thet is never used
 
-Register the transceiver driver before calling usb_get_phy() to make
-sure we are noticed by an error message if it is not available.
+This was found using a static code analysis program called cppcheck
 
-Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/usb/musb/jz4740.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/video/fbdev/omap2/dss/sdi.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/usb/musb/jz4740.c b/drivers/usb/musb/jz4740.c
-index 5f30537..d118729 100644
---- a/drivers/usb/musb/jz4740.c
-+++ b/drivers/usb/musb/jz4740.c
-@@ -19,6 +19,7 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/platform_device.h>
-+#include <linux/usb/usb_phy_generic.h>
+diff --git a/drivers/video/fbdev/omap2/dss/sdi.c b/drivers/video/fbdev/omap2/dss/sdi.c
+index 911dcc9..c6491ac 100644
+--- a/drivers/video/fbdev/omap2/dss/sdi.c
++++ b/drivers/video/fbdev/omap2/dss/sdi.c
+@@ -34,7 +34,6 @@
+ static struct {
+ 	struct platform_device *pdev;
  
- #include "musb_core.h"
+-	bool update_enabled;
+ 	struct regulator *vdds_sdi_reg;
  
-@@ -80,6 +81,7 @@ static struct musb_hdrc_platform_data jz4740_musb_platform_data = {
- 
- static int jz4740_musb_init(struct musb *musb)
- {
-+	usb_phy_generic_register();
- 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
- 	if (!musb->xceiv) {
- 		pr_err("HS UDC: no transceiver configured\n");
-@@ -182,6 +184,7 @@ static int jz4740_remove(struct platform_device *pdev)
- 	struct jz4740_glue	*glue = platform_get_drvdata(pdev);
- 
- 	platform_device_unregister(glue->musb);
-+	usb_phy_generic_unregister(pdev);
- 	clk_disable_unprepare(glue->clk);
- 
- 	return 0;
+ 	struct dss_lcd_mgr_config mgr_config;
 -- 
 1.7.10.4
 
