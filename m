@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348AbaGFSqY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 14:46:24 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:36202 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052AbaGFSqW (ORCPT
+	id S1752332AbaGFSr0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 14:47:26 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48096 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968AbaGFSrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 14:46:22 -0400
+	Sun, 6 Jul 2014 14:47:25 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
@@ -15,9 +15,9 @@ Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Rob Clark <robdclark@gmail.com>, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: nvidia: nv_setup.c:  Cleaning up variable that is never used
-Date: Sun,  6 Jul 2014 20:47:38 +0200
-Message-Id: <1404672458-19484-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] video: fbdev: omap: hwa742.c:  Cleaning up variable that is never used
+Date: Sun,  6 Jul 2014 20:48:40 +0200
+Message-Id: <1404672520-19569-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,35 +30,31 @@ This was found using a static code analysis program called cppcheck
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/video/fbdev/nvidia/nv_setup.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/video/fbdev/omap/hwa742.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/video/fbdev/nvidia/nv_setup.c b/drivers/video/fbdev/nvidia/nv_setup.c
-index 2f2e162..37cdde6 100644
---- a/drivers/video/fbdev/nvidia/nv_setup.c
-+++ b/drivers/video/fbdev/nvidia/nv_setup.c
-@@ -89,9 +89,7 @@ u8 NVReadSeq(struct nvidia_par *par, u8 index)
- }
- void NVWriteAttr(struct nvidia_par *par, u8 index, u8 value)
+diff --git a/drivers/video/fbdev/omap/hwa742.c b/drivers/video/fbdev/omap/hwa742.c
+index a4ee65b..65b2370 100644
+--- a/drivers/video/fbdev/omap/hwa742.c
++++ b/drivers/video/fbdev/omap/hwa742.c
+@@ -787,7 +787,7 @@ static void calc_hwa742_clk_rates(unsigned long ext_clk,
+ 
+ static int setup_tearsync(unsigned long pix_clk, int extif_div)
  {
--	volatile u8 tmp;
--
--	tmp = VGA_RD08(par->PCIO, par->IOBase + 0x0a);
-+	VGA_RD08(par->PCIO, par->IOBase + 0x0a);
- 	if (par->paletteEnabled)
- 		index &= ~0x20;
- 	else
-@@ -101,9 +99,7 @@ void NVWriteAttr(struct nvidia_par *par, u8 index, u8 value)
- }
- u8 NVReadAttr(struct nvidia_par *par, u8 index)
- {
--	volatile u8 tmp;
--
--	tmp = VGA_RD08(par->PCIO, par->IOBase + 0x0a);
-+	VGA_RD08(par->PCIO, par->IOBase + 0x0a);
- 	if (par->paletteEnabled)
- 		index &= ~0x20;
- 	else
+-	int hdisp, vdisp;
++	int hdisp;
+ 	int hndp, vndp;
+ 	int hsw, vsw;
+ 	int hs, vs;
+@@ -803,7 +803,7 @@ static int setup_tearsync(unsigned long pix_clk, int extif_div)
+ 	vsw = vsw & 0x3f;
+ 
+ 	hdisp = (hwa742_read_reg(HWA742_H_DISP_REG) & 0x7f) * 8;
+-	vdisp = hwa742_read_reg(HWA742_V_DISP_1_REG) +
++	hwa742_read_reg(HWA742_V_DISP_1_REG) +
+ 		((hwa742_read_reg(HWA742_V_DISP_2_REG) & 0x3) << 8);
+ 
+ 	hndp = hwa742_read_reg(HWA742_H_NDP_REG) & 0x7f;
 -- 
 1.7.10.4
 
