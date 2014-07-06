@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbaGFGdB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 02:33:01 -0400
-Received: from 174.37.253.146-static.reverse.softlayer.com ([174.37.253.146]:48481
+	id S1752871AbaGFGdV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 02:33:21 -0400
+Received: from 174.37.253.146-static.reverse.softlayer.com ([174.37.253.146]:48493
 	"EHLO primary.scalemp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653AbaGFGc7 (ORCPT
+	with ESMTP id S1752010AbaGFGdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 02:32:59 -0400
-Message-ID: <53B8ED93.1000806@scalemp.com>
-Date: Sun, 06 Jul 2014 09:32:51 +0300
+	Sun, 6 Jul 2014 02:33:17 -0400
+Message-ID: <53B8EDA6.5020704@scalemp.com>
+Date: Sun, 06 Jul 2014 09:33:10 +0300
 From: Oren Twaig <oren@scalemp.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
@@ -40,7 +40,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-Quick question: As I'm new at this (submitting patches), what is a reasonable time to wait before ping-ing a patch ?
+Quick question: As I'm new at this (submitting patches), what is a reasonable
+time to wait before ping-ing a patch ?
 
 Oren.
 
@@ -67,95 +68,96 @@ On 06/29/2014 01:01 PM, Oren Twaig wrote:
 > @@ -85,14 +85,6 @@ static inline bool apic_from_smp_config(void)
 >  #include <asm/paravirt.h>
 >  #endif
->  
+> 
 > -#ifdef CONFIG_X86_64
 > -extern int is_vsmp_box(void);
 > -#else
 > -static inline int is_vsmp_box(void)
 > -{
-> -	return 0;
+> -    return 0;
 > -}
 > -#endif
 >  extern int setup_profiling_timer(unsigned int);
->  
+> 
 >  static inline void native_apic_mem_write(u32 reg, u32 v)
 > diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
 > index ad28db7..2b85bb9 100644
 > --- a/arch/x86/kernel/apic/apic.c
 > +++ b/arch/x86/kernel/apic/apic.c
 > @@ -2451,51 +2451,6 @@ static void apic_pm_activate(void) { }
->  
+> 
 >  #ifdef CONFIG_X86_64
->  
+> 
 > -static int apic_cluster_num(void)
 > -{
-> -	int i, clusters, zeros;
-> -	unsigned id;
-> -	u16 *bios_cpu_apicid;
-> -	DECLARE_BITMAP(clustermap, NUM_APIC_CLUSTERS);
+> -    int i, clusters, zeros;
+> -    unsigned id;
+> -    u16 *bios_cpu_apicid;
+> -    DECLARE_BITMAP(clustermap, NUM_APIC_CLUSTERS);
 > -
-> -	bios_cpu_apicid = early_per_cpu_ptr(x86_bios_cpu_apicid);
-> -	bitmap_zero(clustermap, NUM_APIC_CLUSTERS);
+> -    bios_cpu_apicid = early_per_cpu_ptr(x86_bios_cpu_apicid);
+> -    bitmap_zero(clustermap, NUM_APIC_CLUSTERS);
 > -
-> -	for (i = 0; i < nr_cpu_ids; i++) {
-> -		/* are we being called early in kernel startup? */
-> -		if (bios_cpu_apicid) {
-> -			id = bios_cpu_apicid[i];
-> -		} else if (i < nr_cpu_ids) {
-> -			if (cpu_present(i))
-> -				id = per_cpu(x86_bios_cpu_apicid, i);
-> -			else
-> -				continue;
-> -		} else
-> -			break;
+> -    for (i = 0; i < nr_cpu_ids; i++) {
+> -        /* are we being called early in kernel startup? */
+> -        if (bios_cpu_apicid) {
+> -            id = bios_cpu_apicid[i];
+> -        } else if (i < nr_cpu_ids) {
+> -            if (cpu_present(i))
+> -                id = per_cpu(x86_bios_cpu_apicid, i);
+> -            else
+> -                continue;
+> -        } else
+> -            break;
 > -
-> -		if (id != BAD_APICID)
-> -			__set_bit(APIC_CLUSTERID(id), clustermap);
-> -	}
+> -        if (id != BAD_APICID)
+> -            __set_bit(APIC_CLUSTERID(id), clustermap);
+> -    }
 > -
-> -	/* Problem:  Partially populated chassis may not have CPUs in some of
-> -	 * the APIC clusters they have been allocated.  Only present CPUs have
-> -	 * x86_bios_cpu_apicid entries, thus causing zeroes in the bitmap.
-> -	 * Since clusters are allocated sequentially, count zeros only if
-> -	 * they are bounded by ones.
-> -	 */
-> -	clusters = 0;
-> -	zeros = 0;
-> -	for (i = 0; i < NUM_APIC_CLUSTERS; i++) {
-> -		if (test_bit(i, clustermap)) {
-> -			clusters += 1 + zeros;
-> -			zeros = 0;
-> -		} else
-> -			++zeros;
-> -	}
+> -    /* Problem:  Partially populated chassis may not have CPUs in some of
+> -     * the APIC clusters they have been allocated.  Only present CPUs have
+> -     * x86_bios_cpu_apicid entries, thus causing zeroes in the bitmap.
+> -     * Since clusters are allocated sequentially, count zeros only if
+> -     * they are bounded by ones.
+> -     */
+> -    clusters = 0;
+> -    zeros = 0;
+> -    for (i = 0; i < NUM_APIC_CLUSTERS; i++) {
+> -        if (test_bit(i, clustermap)) {
+> -            clusters += 1 + zeros;
+> -            zeros = 0;
+> -        } else
+> -            ++zeros;
+> -    }
 > -
-> -	return clusters;
+> -    return clusters;
 > -}
 > -
 >  static int multi_checked;
 >  static int multi;
->  
+> 
 > @@ -2540,20 +2495,7 @@ static void dmi_check_multi(void)
 >  int apic_is_clustered_box(void)
 >  {
->  	dmi_check_multi();
-> -	if (multi)
-> -		return 1;
+>      dmi_check_multi();
+> -    if (multi)
+> -        return 1;
 > -
-> -	if (!is_vsmp_box())
-> -		return 0;
+> -    if (!is_vsmp_box())
+> -        return 0;
 > -
-> -	/*
-> -	 * ScaleMP vSMPowered boxes have one cluster per board and TSCs are
-> -	 * not guaranteed to be synced between boards
-> -	 */
-> -	if (apic_cluster_num() > 1)
-> -		return 1;
+> -    /*
+> -     * ScaleMP vSMPowered boxes have one cluster per board and TSCs are
+> -     * not guaranteed to be synced between boards
+> -     */
+> -    if (apic_cluster_num() > 1)
+> -        return 1;
 > -
-> -	return 0;
-> +	return multi;
+> -    return 0;
+> +    return multi;
 >  }
 >  #endif
->  
+> 
 >
+
 
