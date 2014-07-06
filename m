@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaGFPTP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 11:19:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:18459 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750897AbaGFPTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 11:19:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,612,1400050800"; 
-   d="scan'208";a="569032535"
-Message-ID: <53B968EB.60401@linux.intel.com>
-Date: Sun, 06 Jul 2014 23:19:07 +0800
-From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751599AbaGFPYH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 11:24:07 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:36093 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889AbaGFPYF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jul 2014 11:24:05 -0400
 MIME-Version: 1.0
-To: Jaehoon Chung <jh80.chung@samsung.com>, chris@printf.net,
-        ulf.hansson@linaro.org, tgih.jun@samsung.com, aaron.lu@intel.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jackey.shen@amd.com, gregkh@linuxfoundation.org
-Subject: Re: One bug of SDHCI driver
-References: <53B249A4.2040404@linux.intel.com> <53B57B23.4020607@linux.intel.com> <53B61403.7040602@samsung.com>
-In-Reply-To: <53B61403.7040602@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Sun, 6 Jul 2014 10:23:43 -0500
+Message-ID: <CAL_JsqK_CfagmiFOpOXVYGry22nGnCZL0ZXeJhYxb9zp=P2fsQ@mail.gmail.com>
+Subject: Re: [PATCH v8 0/9] Support for creating generic PCI host bridges from DT
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Yes, "mmc->caps2 |= MMC_CAP2_SDIO_IRQ_NOTHREAD;" of "sdhci_add_host" function in host/sdhci.c file make oops.
-
-"sdio_card_irq_get" function in core/sdio_irq.c file:
-if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {  /* the condition is false */
-            atomic_set(&host->sdio_irq_thread_abort, 0);
-            host->sdio_irq_thread =                                               
-                kthread_run(sdio_irq_thread, host,
-                        "ksdioirqd/%s", mmc_hostname(host));
-
-
-This will make  "host->sdio_irq_thread" a NULL pointer in "mmc_sdio_resume" functon of core/sdio.c file.
-
-
-
-Thanks,
-Zhonghui
-
-
-
-On 2014/7/4 10:40, Jaehoon Chung wrote:
-> Hi,
+On Tue, Jul 1, 2014 at 1:43 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> This is my resurected attempt at adding support for generic PCI host
+> bridge controllers that make use of device tree information to
+> configure themselves. I've tagged it as v8 although the patches
+> have now been reshuffled in order to ease adoption so referring to
+> the older versions might be a bit of a hoop jumping exercise.
 >
-> just use the MMC_CAP2_SDIO_IRQ_NOTHREAD?
+> Changes from v7:
+>   - Reordered the patches so that fixes and non-controversial patches
+>     from v7 can be accepted more easily. If agreed I can split the
+>     series again into patches that can be upstreamed easily and ones
+>     that still need discussion.
+>   - Moved the of_create_host_bridge() function to drivers/of/of_pci.c
+>     to better reflect its target use.
+>   - Added the function to remap the bus I/O resources that used to be
+>     provided in my arm64 patch series and (re)named it pci_remap_iospace()
+>   - Removed error code checking from parsing and mapping of IRQ from DT
+>     in recognition that some PCI devices will not have legacy IRQ mappings.
 >
-> if (!err && host->sdio_irq && !(host->quirks & MMC_CAP2_SDIO_IRQ_NOTHREAD))
-> 	wake_up_process(host->sdio_irq_thread);
->
-> I didn't test this..but i believe that it will be fixed.
->
-> Best Regards,
-> Jaehoon Chung
->
-> On 07/04/2014 12:47 AM, Fu, Zhonghui wrote:
->> Hi, all
->>
->> The statement "mmc->caps2 |= MMC_CAP2_SDIO_IRQ_NOTHREAD;" is added in "sdhci_add_host" function in host/sdhci.c file. In some cases, this will make  "host->sdio_irq_thread" a NULL pointer in "mmc_sdio_resume" functon of core/sdio.c file and lead to resume failure. Could you please give me some advice how to fix this bug?
->>
->>
->>
->> Thanks,
->> Zhonghui
->>
->>
->>
->>
->>
->>
+> v7 thread here with all the historic information: https://lkml.org/lkml/2014/3/14/279
 
+Can you publish a branch for this series please.
+
+Rob
