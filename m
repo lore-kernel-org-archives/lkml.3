@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943AbaGFRef (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 13:34:35 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:39617 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492AbaGFRed (ORCPT
+	id S1751999AbaGFRfR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 13:35:17 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:52123 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751924AbaGFRfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 13:34:33 -0400
+	Sun, 6 Jul 2014 13:35:15 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
         Jingoo Han <jg1.han@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Rob Clark <robdclark@gmail.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: omap2: dss: display-sysfs.c:  Cleaning up wrong type in format string
-Date: Sun,  6 Jul 2014 19:35:48 +0200
-Message-Id: <1404668148-15112-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Joe Perches <joe@perches.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] video: fbdev: sis: sis_main.c:  Cleaning up wrong type in format string
+Date: Sun,  6 Jul 2014 19:36:30 +0200
+Message-Id: <1404668190-15199-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,31 +29,22 @@ This was found using a static code analysis program called cppcheck
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/video/fbdev/omap2/dss/display-sysfs.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/video/fbdev/sis/sis_main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/video/fbdev/omap2/dss/display-sysfs.c b/drivers/video/fbdev/omap2/dss/display-sysfs.c
-index 5a2095a..5928bc9 100644
---- a/drivers/video/fbdev/omap2/dss/display-sysfs.c
-+++ b/drivers/video/fbdev/omap2/dss/display-sysfs.c
-@@ -184,7 +184,7 @@ static ssize_t display_rotate_show(struct device *dev,
- 	if (!dssdev->driver->get_rotate)
- 		return -ENOENT;
- 	rotate = dssdev->driver->get_rotate(dssdev);
--	return snprintf(buf, PAGE_SIZE, "%u\n", rotate);
-+	return snprintf(buf, PAGE_SIZE, "%d\n", rotate);
- }
+diff --git a/drivers/video/fbdev/sis/sis_main.c b/drivers/video/fbdev/sis/sis_main.c
+index 22ad028..ab7e5e4 100644
+--- a/drivers/video/fbdev/sis/sis_main.c
++++ b/drivers/video/fbdev/sis/sis_main.c
+@@ -237,7 +237,7 @@ static void sisfb_get_vga_mode_from_kernel(void)
  
- static ssize_t display_rotate_store(struct device *dev,
-@@ -215,7 +215,7 @@ static ssize_t display_mirror_show(struct device *dev,
- 	if (!dssdev->driver->get_mirror)
- 		return -ENOENT;
- 	mirror = dssdev->driver->get_mirror(dssdev);
--	return snprintf(buf, PAGE_SIZE, "%u\n", mirror);
-+	return snprintf(buf, PAGE_SIZE, "%d\n", mirror);
- }
+ 		if(mydepth == 24) mydepth = 32;
  
- static ssize_t display_mirror_store(struct device *dev,
+-		sprintf(mymode, "%ux%ux%u", screen_info.lfb_width,
++		sprintf(mymode, "%ux%ux%d", screen_info.lfb_width,
+ 					screen_info.lfb_height,
+ 					mydepth);
+ 
 -- 
 1.7.10.4
 
