@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194AbaGFS2u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 14:28:50 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:48115 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751891AbaGFS2s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 14:28:48 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Kukjin Kim <kgene.kim@samsung.com>, Jingoo Han <jg1.han@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, linux-fbdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: exynos: s6e8ax0.c:  Cleaning up variable that is never used
-Date: Sun,  6 Jul 2014 20:30:03 +0200
-Message-Id: <1404671404-18025-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752247AbaGFS3n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 14:29:43 -0400
+Received: from imap.thunk.org ([74.207.234.97]:47722 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751886AbaGFS3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jul 2014 14:29:41 -0400
+Date: Sun, 6 Jul 2014 14:29:36 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: kernel list <linux-kernel@vger.kernel.org>, adilger.kernel@dilger.ca,
+        linux-ext4@vger.kernel.org
+Subject: Re: ext4: media error but where?
+Message-ID: <20140706182936.GB471@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Pavel Machek <pavel@ucw.cz>,
+	kernel list <linux-kernel@vger.kernel.org>,
+	adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org
+References: <20140629202516.GA11430@amd.pavel.ucw.cz>
+ <20140629210428.GD2162@thunk.org>
+ <20140630064644.GA23079@amd.pavel.ucw.cz>
+ <20140630134313.GA3753@thunk.org>
+ <20140704102307.GA19252@amd.pavel.ucw.cz>
+ <20140704121119.GB10514@thunk.org>
+ <20140704172104.GA4877@xo-6d-61-c0.localdomain>
+ <20140704185626.GB11103@thunk.org>
+ <20140706133247.GB18204@amd.pavel.ucw.cz>
+ <20140706134325.GA18955@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140706134325.GA18955@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Variable ar assigned a value that is never used.
-I have also removed all the code that thereby serves no purpose.
+On Sun, Jul 06, 2014 at 03:43:25PM +0200, Pavel Machek wrote:
+> Hi!
+> 
+> > Now I'm running fsck.new -cf. I don't think this filesystem has any
+> > bad blocks. Still, it says "rootfs: Updating bad block inode."
+> > ... "FILE SYSTEM WAS MODIFIED", "REBOOT LINUX".
+> 
+> And here's patch to fix this uglyness. Unfortunately, it makes it read
+> the inode... but perhaps it is good idea as we are able to print
+> before/after bad block counts...?
+> 
+> Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-This was found using a static code analysis program called cppcheck
+Thanks, I'll take a look at these patches.  Honestly, I've been half
+tempted to remove the e2fsck -c option entirely.  99.9% of the time,
+with modern disks, which has bad block remapping, it doesn't do any
+good, and often, it's harmful.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/video/fbdev/exynos/s6e8ax0.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+In general, e2fsck -c is not something I recommend people use.  If you
+want to use badblocks by itself to see if there are any blocks that
+are suffering read problems, that's fine, but if there is, in general
+the safest thing to do is to mount the disk read-only, back it up, and
+then either (a) reformat and see if you can restore onto it with
+backups w/o any further errors, or (b) just trash the disk, and get a
+new one, since in general the contents are way more valuable than the
+disk itself.  Certainly after trying (a), you get any further errors,
+(b) is defintely the way to go.
 
-diff --git a/drivers/video/fbdev/exynos/s6e8ax0.c b/drivers/video/fbdev/exynos/s6e8ax0.c
-index 29e70ed..9bd67e7 100644
---- a/drivers/video/fbdev/exynos/s6e8ax0.c
-+++ b/drivers/video/fbdev/exynos/s6e8ax0.c
-@@ -602,11 +602,10 @@ static void s6e8ax0_acl_ctrl_set(struct s6e8ax0 *lcd)
- 
- static void s6e8ax0_read_id(struct s6e8ax0 *lcd, u8 *mtp_id)
- {
--	unsigned int ret;
- 	unsigned int addr = 0xd1;	/* MTP ID */
- 	struct mipi_dsim_master_ops *ops = lcd_to_master_ops(lcd);
- 
--	ret = ops->cmd_read(lcd_to_master(lcd),
-+	ops->cmd_read(lcd_to_master(lcd),
- 			MIPI_DSI_GENERIC_READ_REQUEST_1_PARAM,
- 			addr, 3, mtp_id);
- }
--- 
-1.7.10.4
-
+					- Ted
