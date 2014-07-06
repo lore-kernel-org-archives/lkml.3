@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049AbaGFSVf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 14:21:35 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:48363 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751698AbaGFSVe (ORCPT
+	id S1752100AbaGFSWh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 14:22:37 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:54638 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696AbaGFSWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 14:21:34 -0400
+	Sun, 6 Jul 2014 14:22:36 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
@@ -14,11 +14,11 @@ Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         Jingoo Han <jg1.han@samsung.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>, Joe Perches <joe@perches.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, linux-fbdev@vger.kernel.org,
+        Michael Schmitz <schmitzmic@gmail.com>, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: amifb.c:  Cleaning up variable that is never used
-Date: Sun,  6 Jul 2014 20:22:48 +0200
-Message-Id: <1404670968-17420-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] video: fbdev: atafb.c:  Cleaning up variable that is never used
+Date: Sun,  6 Jul 2014 20:23:51 +0200
+Message-Id: <1404671031-17505-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,60 +31,49 @@ This was found using a static code analysis program called cppcheck
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/video/fbdev/amifb.c |   10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
+ drivers/video/fbdev/atafb.c |    8 --------
+ 1 file changed, 8 deletions(-)
 
-diff --git a/drivers/video/fbdev/amifb.c b/drivers/video/fbdev/amifb.c
-index 518f790..19ed1fa 100644
---- a/drivers/video/fbdev/amifb.c
-+++ b/drivers/video/fbdev/amifb.c
-@@ -1124,7 +1124,6 @@ static int ami_decode_var(struct fb_var_screeninfo *var, struct amifb_par *par,
+diff --git a/drivers/video/fbdev/atafb.c b/drivers/video/fbdev/atafb.c
+index 4953b65..1bedbf35 100644
+--- a/drivers/video/fbdev/atafb.c
++++ b/drivers/video/fbdev/atafb.c
+@@ -2546,7 +2546,6 @@ static void atafb_copyarea(struct fb_info *info, const struct fb_copyarea *area)
+ 	struct atafb_par *par = (struct atafb_par *)info->par;
+ 	int x2, y2;
+ 	u32 dx, dy, sx, sy, width, height;
+-	int rev_copy = 0;
+ 
+ #ifdef ATAFB_FALCON
+ 	if (info->var.bits_per_pixel == 16) {
+@@ -2580,7 +2579,6 @@ static void atafb_copyarea(struct fb_info *info, const struct fb_copyarea *area)
+ 	if (dy > sy || (dy == sy && dx > sx)) {
+ 		dy += height;
+ 		sy += height;
+-		rev_copy = 1;
+ 	}
+ 
+ 	if (info->var.bits_per_pixel == 1)
+@@ -2599,8 +2597,6 @@ static void atafb_imageblit(struct fb_info *info, const struct fb_image *image)
  {
- 	u_short clk_shift, line_shift;
- 	u_long maxfetchstop, fstrt, fsize, fconst, xres_n, yres_n;
--	u_int htotal, vtotal;
+ 	struct atafb_par *par = (struct atafb_par *)info->par;
+ 	int x2, y2;
+-	unsigned long *dst;
+-	int dst_idx;
+ 	const char *src;
+ 	u32 dx, dy, width, height, pitch;
  
- 	/*
- 	 * Find a matching Pixel Clock
-@@ -1270,8 +1269,6 @@ static int ami_decode_var(struct fb_var_screeninfo *var, struct amifb_par *par,
- 				DPRINTK("diwstrt_v too low for pal\n");
- 				return -EINVAL;
- 			}
--			htotal = PAL_HTOTAL>>clk_shift;
--			vtotal = PAL_VTOTAL>>1;
- 			if (!IS_OCS) {
- 				par->beamcon0 = BMC0_PAL;
- 				par->bplcon3 |= BPC3_BRDRBLNK;
-@@ -1300,8 +1297,6 @@ static int ami_decode_var(struct fb_var_screeninfo *var, struct amifb_par *par,
- 				DPRINTK("diwstrt_v too low for ntsc\n");
- 				return -EINVAL;
- 			}
--			htotal = NTSC_HTOTAL>>clk_shift;
--			vtotal = NTSC_VTOTAL>>1;
- 			if (!IS_OCS) {
- 				par->beamcon0 = 0;
- 				par->bplcon3 |= BPC3_BRDRBLNK;
-@@ -1360,8 +1355,6 @@ static int ami_decode_var(struct fb_var_screeninfo *var, struct amifb_par *par,
- 			par->beamcon0 |= BMC0_VSYTRUE;
- 		if (var->sync & FB_SYNC_COMP_HIGH_ACT)
- 			par->beamcon0 |= BMC0_CSYTRUE;
--		htotal = par->htotal>>clk_shift;
--		vtotal = par->vtotal>>1;
- 	} else {
- 		DPRINTK("only broadcast modes possible for ocs\n");
- 		return -EINVAL;
-@@ -1847,10 +1840,9 @@ static int ami_get_var_cursorinfo(struct fb_var_cursorinfo *var,
- 	register short delta;
- 	register u_char color;
- 	short height, width, bits, words;
--	int size, alloc;
-+	int size;
+@@ -2627,10 +2623,6 @@ static void atafb_imageblit(struct fb_info *info, const struct fb_image *image)
  
- 	size = par->crsr.height * par->crsr.width;
--	alloc = var->height * var->width;
- 	var->height = par->crsr.height;
- 	var->width = par->crsr.width;
- 	var->xspot = par->crsr.spot_x;
+ 	if (image->depth == 1) {
+ 		// used for font data
+-		dst = (unsigned long *)
+-			((unsigned long)info->screen_base & ~(BYTES_PER_LONG - 1));
+-		dst_idx = ((unsigned long)info->screen_base & (BYTES_PER_LONG - 1)) * 8;
+-		dst_idx += dy * par->next_line * 8 + dx;
+ 		src = image->data;
+ 		pitch = (image->width + 7) / 8;
+ 		while (height--) {
 -- 
 1.7.10.4
 
