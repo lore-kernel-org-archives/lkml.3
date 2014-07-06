@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751842AbaGFJiV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 05:38:21 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:33875 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513AbaGFJiT (ORCPT
+	id S1751113AbaGFKCl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 06:02:41 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:60469 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822AbaGFKCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 05:38:19 -0400
+	Sun, 6 Jul 2014 06:02:39 -0400
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@linaro.org>
-Date: Sun, 6 Jul 2014 10:37:58 +0100
-X-Google-Sender-Auth: AY9dnV-fvSTdlQoLScr-W3kKgsk
-Message-ID: <CACxGe6vFHADzsE7_69B+jjT3kwX_3kOdUBzjtSVEYETwR7HY3Q@mail.gmail.com>
-Subject: [GIT PULL] bug fix for devicetree memory parsing
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Rob Herring <rob.herring@linaro.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAMuHMdWUpqz0W_znrrm2Qp+QjKExQ5Gcv0OsuA4gJa1Wvjv06A@mail.gmail.com>
+References: <20140706080234.19520.96704.stgit@zurg>
+	<1404637557.24853.12.camel@x220>
+	<CAMuHMdWUpqz0W_znrrm2Qp+QjKExQ5Gcv0OsuA4gJa1Wvjv06A@mail.gmail.com>
+Date: Sun, 6 Jul 2014 14:02:39 +0400
+Message-ID: <CALYGNiP3EREk4yDqnduuDhOsJLHFwZK4D1QGLd+u5edEk2JFOA@mail.gmail.com>
+Subject: Re: [PATCH] kconfig: store default ARCH in .config
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Michal Marek <mmarek@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sun, Jul 6, 2014 at 1:08 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Sun, Jul 6, 2014 at 11:05 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+>> On Sun, 2014-07-06 at 12:02 +0400, Konstantin Khlebnikov wrote:
+>>> This patch makes cross-compilation configuration fully statefull.
+>>> Default ARCH is stored in .config as CONFIG_DEFAULT_ARCH.
+>>> After initial configuration specifying ARCH= is no longer required.
+>>>
+>>> To avoid recursion it is read directly from .config using scritps/config
+>>> because include/config/auto.conf is not yet included at this point.
+>>>
+>>> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+>>> ---
+>>
+>> It this needed because the Kconfig symbol ARCH is set only if ARCH is
+>> set in the environment?
+>>
+>> Could the same result be had by saving CONFIG_ARCH in .config (I suppose
+>> it actually already is) and then use its value on builds with
+>
+> No, currently it's not saved in .config, so I guess that's why this convoluted
+> approach is needed.
 
-Can you pull this bug fix into your tree please?
+Yep, kconfig neither reads nor writres symbols with option env=...
 
-Thanks,
-g.
+>
+>> that .config unless ARCH is specified in the environment again? Ie,
+>> change the "option env=[...]" semantics a bit, perhaps by special casing
+>> CONFIG_ARCH.
+>
+> Indeed.
 
-The following changes since commit a497c3ba1d97fc69c1e78e7b96435ba8c2cb42ee:
+If it's saved in config value might be out of sync with actual environment:
+ARCH != CONFIG_ARCH. So, behaviour becomes too complicated.
 
-  Linux 3.16-rc2 (2014-06-21 19:02:54 -1000)
-
-are available in the git repository at:
-
-  git://git.secretlab.ca/git/linux tags/dt-for-linus
-
-for you to fetch changes up to a67a6ed15513541579d38bcbd127e7be170710e5:
-
-  of: Check for phys_addr_t overflows in early_init_dt_add_memory_arch
-(2014-06-26 17:28:28 +0100)
-
-----------------------------------------------------------------
-Devicetree bugfixe for v3.16
-
-Important bug fix for parsing 64-bit addresses on 32-bit platforms.
-Without this patch the kernel will try to use memory ranges that cannot
-be reached.
-
-----------------------------------------------------------------
-Laura Abbott (1):
-      of: Check for phys_addr_t overflows in early_init_dt_add_memory_arch
-
- drivers/of/fdt.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+>
+> Gr{oetje,eeting}s,
+>
+>                         Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
