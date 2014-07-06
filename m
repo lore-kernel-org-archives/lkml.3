@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751298AbaGFPMu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 11:12:50 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:45394 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889AbaGFPMs (ORCPT
+	id S1751613AbaGFPOI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 11:14:08 -0400
+Received: from blu004-omc1s9.hotmail.com ([65.55.116.20]:57643 "EHLO
+	BLU004-OMC1S9.hotmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515AbaGFPOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 11:12:48 -0400
-Date: Sun, 6 Jul 2014 18:12:42 +0300
-From: Gleb Natapov <gleb@kernel.org>
-To: Jan Kiszka <jan.kiszka@web.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kvm <kvm@vger.kernel.org>
-Subject: Re: [PATCH] x86: Make x2APIC support depend on interrupt remapping
- or guest support
-Message-ID: <20140706151242.GN18167@minantech.com>
-References: <53B7ADAA.9030101@web.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53B7ADAA.9030101@web.de>
+	Sun, 6 Jul 2014 11:14:06 -0400
+X-Greylist: delayed 307 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Jul 2014 11:14:06 EDT
+X-TMN: [w4zxAIC/YikUdIUXguZYgQHS8r0GULkb]
+X-Originating-Email: [dave.anglin@bell.net]
+Message-ID: <BLU436-SMTP16549AF626A4BCCDD6D82097020@phx.gbl>
+From: John David Anglin <dave.anglin@bell.net>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+In-Reply-To: <20140706091530.GA3589@osiris>
+Subject: Re: [PATCH] fix fanotify_mark() breakage on big endian 32bit kernel
+References: <20140704151235.GA22454@ls3530.dhcp.wdf.sap.corp> <20140706091530.GA3589@osiris>
+Content-Type: text/plain; charset="US-ASCII"; format=flowed; delsp=yes
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0 (Apple Message framework v936)
+Date: Sun, 6 Jul 2014 11:08:41 -0400
+CC: Helge Deller <deller@gmx.de>, Eric Paris <eparis@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Heinrich Schuchardt <xypron.glpk@gmx.de>, linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+X-Mailer: Apple Mail (2.936)
+X-OriginalArrivalTime: 06 Jul 2014 15:08:57.0149 (UTC) FILETIME=[3574C6D0:01CF992C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 05, 2014 at 09:47:54AM +0200, Jan Kiszka wrote:
-> From: Jan Kiszka <jan.kiszka@siemens.com>
-> 
-> We are able to use x2APIC mode in the absence of interrupt remapping on
-> certain hypervisors. So it if fine to disable IRQ_REMAP without having
-> to give up x2APIC support.
-FWIW I did similar thing back when I added x2apic to KVM:
-http://linux.derkeiler.com/Mailing-Lists/Kernel/2009-06/msg14579.html
-But was advised against it.
+On 6-Jul-14, at 5:15 AM, Heiko Carstens wrote:
 
-> 
-> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
-> ---
->  arch/x86/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index a8f749e..30a9987 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -310,7 +310,7 @@ config SMP
->  
->  config X86_X2APIC
->  	bool "Support x2apic"
-> -	depends on X86_LOCAL_APIC && X86_64 && IRQ_REMAP
-> +	depends on X86_LOCAL_APIC && X86_64 && (IRQ_REMAP || HYPERVISOR_GUEST)
->  	---help---
->  	  This enables x2apic support on CPUs that have this feature.
->  
-> 
-> 
+>> But for the CONFIG_COMPAT=n case (32bit kernel & userspace),
+>> compat_fanotify_mark() isn't used and the fanotify_mark syscall  
+>> implementation
+>> is used directly. In that case the upper and lower 32 bits of the  
+>> 64bit mask
+>> parameter is still swapped on big endian machines and thus leads to
+>> fanotify_mark failing with -EINVAL.
+>
+> Why do you think upper and lower 32 bits are swapped on big endian  
+> machines?
+> At least an s390 the C ABI defines that 64 bit values are split into  
+> an
+> even odd register pair, where the most significant bits are in the  
+> even numbered
+> register.
 
 
+On hppa, there is no specific rule as to which registers are used to  
+hold 64-bit integer values
+on 32-bit machines except for the first two call arguments which are  
+passed in registers.
+For example, r25 and r26 contain the first argument and the most  
+significant bits are in r25
+and the least significant bits in r26..
 
+In GCC, we typically have an odd even register pair to hold 64-bit  
+values as register
+r0 is not usable.
+
+The rules are different for float values.
+
+Dave
 --
-			Gleb.
+John David Anglin	dave.anglin@bell.net
+
+
+
