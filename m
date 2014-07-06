@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940AbaGFRc4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 13:32:56 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:38847 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664AbaGFRcy (ORCPT
+	id S1751943AbaGFRef (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 13:34:35 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:39617 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492AbaGFRed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 13:32:54 -0400
+	Sun, 6 Jul 2014 13:34:33 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
         Jingoo Han <jg1.han@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-fbdev@vger.kernel.org,
+        Rob Clark <robdclark@gmail.com>, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: omap: omapfb_main.c:  Cleaning up wrong type in format string
-Date: Sun,  6 Jul 2014 19:34:09 +0200
-Message-Id: <1404668049-15016-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] video: fbdev: omap2: dss: display-sysfs.c:  Cleaning up wrong type in format string
+Date: Sun,  6 Jul 2014 19:35:48 +0200
+Message-Id: <1404668148-15112-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wrong type in sscanf format string, requires 'int *' but the
-argument type is 'unsigned int *'
+Wrong type in printf format string, requires 'unsigned int'
+but the argument type is 'int'
 
 This was found using a static code analysis program called cppcheck
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/video/fbdev/omap/omapfb_main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/video/fbdev/omap2/dss/display-sysfs.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/video/fbdev/omap/omapfb_main.c b/drivers/video/fbdev/omap/omapfb_main.c
-index d8d028d..7df0764 100644
---- a/drivers/video/fbdev/omap/omapfb_main.c
-+++ b/drivers/video/fbdev/omap/omapfb_main.c
-@@ -1371,7 +1371,7 @@ static ssize_t omapfb_store_bklight_level(struct device *dev,
- 	if (fbdev->panel->set_bklight_level) {
- 		unsigned int level;
+diff --git a/drivers/video/fbdev/omap2/dss/display-sysfs.c b/drivers/video/fbdev/omap2/dss/display-sysfs.c
+index 5a2095a..5928bc9 100644
+--- a/drivers/video/fbdev/omap2/dss/display-sysfs.c
++++ b/drivers/video/fbdev/omap2/dss/display-sysfs.c
+@@ -184,7 +184,7 @@ static ssize_t display_rotate_show(struct device *dev,
+ 	if (!dssdev->driver->get_rotate)
+ 		return -ENOENT;
+ 	rotate = dssdev->driver->get_rotate(dssdev);
+-	return snprintf(buf, PAGE_SIZE, "%u\n", rotate);
++	return snprintf(buf, PAGE_SIZE, "%d\n", rotate);
+ }
  
--		if (sscanf(buf, "%10d", &level) == 1) {
-+		if (sscanf(buf, "%10u", &level) == 1) {
- 			r = fbdev->panel->set_bklight_level(fbdev->panel,
- 							    level);
- 		} else
+ static ssize_t display_rotate_store(struct device *dev,
+@@ -215,7 +215,7 @@ static ssize_t display_mirror_show(struct device *dev,
+ 	if (!dssdev->driver->get_mirror)
+ 		return -ENOENT;
+ 	mirror = dssdev->driver->get_mirror(dssdev);
+-	return snprintf(buf, PAGE_SIZE, "%u\n", mirror);
++	return snprintf(buf, PAGE_SIZE, "%d\n", mirror);
+ }
+ 
+ static ssize_t display_mirror_store(struct device *dev,
 -- 
 1.7.10.4
 
