@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667AbaGFQNY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 12:13:24 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:37650 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751858AbaGFQNS (ORCPT
+	id S1752013AbaGFQNu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 12:13:50 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:37027 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984AbaGFQNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 12:13:18 -0400
-From: Fabio Falzoi <fabio.falzoi84@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        wei_wang@realsil.com.cn, micky_ching@realsil.com.cn,
-        Fabio Falzoi <fabio.falzoi84@gmail.com>
-Subject: [PATCH 4/4] Staging: rts5208: Fix a format specifier for dev_err
-Date: Sun,  6 Jul 2014 18:12:18 +0200
-Message-Id: <1404663138-21333-5-git-send-email-fabio.falzoi84@gmail.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404663138-21333-1-git-send-email-fabio.falzoi84@gmail.com>
-References: <1404663138-21333-1-git-send-email-fabio.falzoi84@gmail.com>
+	Sun, 6 Jul 2014 12:13:49 -0400
+Date: Sun, 6 Jul 2014 21:43:42 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] thunderbolt: Correct the size argument to devm_kzalloc
+Message-ID: <20140706161342.GA6267@himangi-Dell>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix an incorrect use of the %d format specifier in dev_err that caused a 
-warning.
+nhi->rx_rings does not have type as struct tb_ring *, as it is a
+double pointer so the elements of the array should have pointer type,
+not structure type.
 
-Signed-off-by: Fabio Falzoi <fabio.falzoi84@gmail.com>
+The Coccinelle semantic patch that makes this change is as follows:
+
+// <smpl>
+@disable sizeof_type_expr@
+type T;
+T **x;
+@@
+
+  x =
+  <+...sizeof(
+- T
++ *x
+  )...+>
+// </smpl>
+
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- drivers/staging/rts5208/rtsx.c | 4 ++--
+ drivers/thunderbolt/nhi.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/rts5208/rtsx.c b/drivers/staging/rts5208/rtsx.c
-index 4f5f7a3..9aae7ac 100644
---- a/drivers/staging/rts5208/rtsx.c
-+++ b/drivers/staging/rts5208/rtsx.c
-@@ -463,14 +463,14 @@ static int rtsx_control_thread(void *__dev)
- 		 * the maximum known LUN
- 		 */
- 		else if (chip->srb->device->id) {
--			dev_err(&dev->pci->dev, "Bad target number (%d:%d)\n",
-+			dev_err(&dev->pci->dev, "Bad target number (%d:%llu)\n",
- 				chip->srb->device->id,
- 				chip->srb->device->lun);
- 			chip->srb->result = DID_BAD_TARGET << 16;
- 		}
+diff --git a/drivers/thunderbolt/nhi.c b/drivers/thunderbolt/nhi.c
+index 2054fbf..ce72f31 100644
+--- a/drivers/thunderbolt/nhi.c
++++ b/drivers/thunderbolt/nhi.c
+@@ -570,10 +570,10 @@ static int nhi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	INIT_WORK(&nhi->interrupt_work, nhi_interrupt_work);
  
- 		else if (chip->srb->device->lun > chip->max_lun) {
--			dev_err(&dev->pci->dev, "Bad LUN (%d:%d)\n",
-+			dev_err(&dev->pci->dev, "Bad LUN (%d:%llu)\n",
- 				chip->srb->device->id,
- 				chip->srb->device->lun);
- 			chip->srb->result = DID_BAD_TARGET << 16;
+ 	nhi->tx_rings = devm_kzalloc(&pdev->dev,
+-				     nhi->hop_count * sizeof(struct tb_ring),
++				     nhi->hop_count * sizeof(*nhi->tx_rings),
+ 				     GFP_KERNEL);
+ 	nhi->rx_rings = devm_kzalloc(&pdev->dev,
+-				     nhi->hop_count * sizeof(struct tb_ring),
++				     nhi->hop_count * sizeof(*nhi->rx_rings),
+ 				     GFP_KERNEL);
+ 	if (!nhi->tx_rings || !nhi->rx_rings)
+ 		return -ENOMEM;
 -- 
-2.0.0
+1.9.1
 
