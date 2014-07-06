@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350AbaGFSoU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 14:44:20 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:34665 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987AbaGFSoT (ORCPT
+	id S1752402AbaGFSpW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 14:45:22 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:54268 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752110AbaGFSpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 14:44:19 -0400
+	Sun, 6 Jul 2014 14:45:21 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
         Jingoo Han <jg1.han@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Joe Perches <joe@perches.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: neofb.c:  Cleaning up variable that is never used
-Date: Sun,  6 Jul 2014 20:45:34 +0200
-Message-Id: <1404672334-19313-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Joe Perches <joe@perches.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] video: fbdev: nvidia: nv_hw.c:  Cleaning up variable that is never used
+Date: Sun,  6 Jul 2014 20:46:36 +0200
+Message-Id: <1404672396-19401-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,50 +29,38 @@ This was found using a static code analysis program called cppcheck
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/video/fbdev/neofb.c |    6 ------
- 1 file changed, 6 deletions(-)
+ drivers/video/fbdev/nvidia/nv_hw.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/video/fbdev/neofb.c b/drivers/video/fbdev/neofb.c
-index 44f99a6..b1779ae 100644
---- a/drivers/video/fbdev/neofb.c
-+++ b/drivers/video/fbdev/neofb.c
-@@ -701,8 +701,6 @@ neofb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
- 	if (memlen > vramlen) {
- 		var->yres_virtual =  vramlen * 8 / (var->xres_virtual *
- 				   	var->bits_per_pixel);
--		memlen = var->xres_virtual * var->bits_per_pixel *
--				var->yres_virtual / 8;
- 	}
- 
- 	/* we must round yres/xres down, we already rounded y/xres_virtual up
-@@ -1855,7 +1853,6 @@ static int neo_init_hw(struct fb_info *info)
- 	struct neofb_par *par = info->par;
- 	int videoRam = 896;
- 	int maxClock = 65000;
--	int CursorMem = 1024;
- 	int CursorOff = 0x100;
- 
- 	DBG("neo_init_hw");
-@@ -1907,19 +1904,16 @@ static int neo_init_hw(struct fb_info *info)
- 	case FB_ACCEL_NEOMAGIC_NM2070:
- 	case FB_ACCEL_NEOMAGIC_NM2090:
- 	case FB_ACCEL_NEOMAGIC_NM2093:
--		CursorMem = 2048;
- 		CursorOff = 0x100;
- 		break;
- 	case FB_ACCEL_NEOMAGIC_NM2097:
- 	case FB_ACCEL_NEOMAGIC_NM2160:
--		CursorMem = 1024;
- 		CursorOff = 0x100;
- 		break;
- 	case FB_ACCEL_NEOMAGIC_NM2200:
- 	case FB_ACCEL_NEOMAGIC_NM2230:
- 	case FB_ACCEL_NEOMAGIC_NM2360:
- 	case FB_ACCEL_NEOMAGIC_NM2380:
--		CursorMem = 1024;
- 		CursorOff = 0x1000;
- 
- 		par->neo2200 = (Neo2200 __iomem *) par->mmio_vbase;
+diff --git a/drivers/video/fbdev/nvidia/nv_hw.c b/drivers/video/fbdev/nvidia/nv_hw.c
+index 81c80ac..031a3ac 100644
+--- a/drivers/video/fbdev/nvidia/nv_hw.c
++++ b/drivers/video/fbdev/nvidia/nv_hw.c
+@@ -242,7 +242,7 @@ static void nvGetClocks(struct nvidia_par *par, unsigned int *MClk,
+ static void nv4CalcArbitration(nv4_fifo_info * fifo, nv4_sim_state * arb)
+ {
+ 	int data, pagemiss, cas, width, video_enable, bpp;
+-	int nvclks, mclks, pclks, vpagemiss, crtpagemiss, vbs;
++	int nvclks, mclks, vpagemiss, crtpagemiss, vbs;
+ 	int found, mclk_extra, mclk_loop, cbs, m1, p1;
+ 	int mclk_freq, pclk_freq, nvclk_freq, mp_enable;
+ 	int us_m, us_n, us_p, video_drain_rate, crtc_drain_rate;
+@@ -261,7 +261,6 @@ static void nv4CalcArbitration(nv4_fifo_info * fifo, nv4_sim_state * arb)
+ 	clwm = 0;
+ 	vlwm = 0;
+ 	cbs = 128;
+-	pclks = 2;
+ 	nvclks = 2;
+ 	nvclks += 2;
+ 	nvclks += 1;
+@@ -281,7 +280,6 @@ static void nv4CalcArbitration(nv4_fifo_info * fifo, nv4_sim_state * arb)
+ 	if (mp_enable)
+ 		mclks += 4;
+ 	nvclks += 0;
+-	pclks += 0;
+ 	found = 0;
+ 	vbs = 0;
+ 	while (found != 1) {
 -- 
 1.7.10.4
 
