@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484AbaGFMDY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 08:03:24 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:39337 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaGFMDW (ORCPT
+	id S1751459AbaGFM1o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 08:27:44 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:55335 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822AbaGFM1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 08:03:22 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Karsten Keil <isdn@linux-pingi.de>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] isdn: hisax: l3ni1.c:  Fix for possible null pointer dereference
-Date: Sun,  6 Jul 2014 14:04:37 +0200
-Message-Id: <1404648277-12419-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 6 Jul 2014 08:27:42 -0400
+Message-ID: <53B940B7.8050204@dev.mellanox.co.il>
+Date: Sun, 06 Jul 2014 15:27:35 +0300
+From: Sagi Grimberg <sagig@dev.mellanox.co.il>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Christoph Hellwig <hch@infradead.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        SCSI Mailing List <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 3.15 099/139] libiscsi, iser: Adjust data_length to include
+ protection information
+References: <20140628174605.352098823@linuxfoundation.org>	 <20140628174609.930049472@linuxfoundation.org>	 <1404339330.1862.69.camel@ul30vt.home> <53B48B37.4000608@cs.wisc.edu>	 <1404341555.16066.19.camel@dabdike> <20140703060548.GB17456@infradead.org>	 <1404395645.1949.2.camel@jarvis.lan> <20140703162748.GA24758@kroah.com>	 <20140703163310.GA21213@infradead.org> <1404410407.5091.9.camel@jarvis>
+In-Reply-To: <1404410407.5091.9.camel@jarvis>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is otherwise a risk of a possible null pointer dereference.
+On 7/3/2014 9:00 PM, James Bottomley wrote:
+> On Thu, 2014-07-03 at 09:33 -0700, Christoph Hellwig wrote:
+>> On Thu, Jul 03, 2014 at 09:27:48AM -0700, Greg Kroah-Hartman wrote:
+>>> I copy everyone on the patch.  You were not on that patch as it doesn't
+>>> look like it went through your tree at all.
+>> It went through the target tree despite exclusive touching scsi
+>> initiator side code.  I'm still not sure how this happened, but we
+>> should take care to avoid this in the future.  In addition to this
+>> regression due to a complete lack of testing it also caused various
+>> merge issues.
+> OK, Nic cc'd
+>
+> Please explain how this commit:
+>
+> commit d77e65350f2d82dfa0557707d505711f5a43c8fd
+> Author: Sagi Grimberg <sagig@mellanox.com>
+> Date:   Wed Jun 11 12:09:58 2014 +0300
+>
+>      libiscsi, iser: Adjust data_length to include protection information
+>      
+>      In case protection information exists over the wire
+>      iscsi header data length is required to include it.
+>      Use protection information aware scsi helpers to set
+>      the correct transfer length.
+>      
+>      In order to avoid breakage, remove iser transfer length
+>      checks for each task as they are not always true and
+>      somewhat redundant anyway.
+>      
+>      Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+>      Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
+>      Acked-by: Mike Christie <michaelc@cs.wisc.edu>
+>      Cc: stable@vger.kernel.org # 3.15+
+>      Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+>
+>   drivers/infiniband/ulp/iser/iser_initiator.c | 34 ++++++++--------------------
+>   drivers/scsi/libiscsi.c                      | 18 +++++++--------
+>
+> Came to go through the target tree even though it's initiator only and
+> how come it was tagged for stable?
 
-Was largely found by using a static code analysis program called cppcheck.
+Hey James,
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/isdn/hisax/l3ni1.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+I think it's because of the cover-letter comment I gave in my initial 
+patchset:
+"Although these patches involve 3 subsystems with different maintainers 
+(scsi, iser, target) I would prefer seeing these patches included together."
+The set involved initiator-target wire protocol dependency.
 
-diff --git a/drivers/isdn/hisax/l3ni1.c b/drivers/isdn/hisax/l3ni1.c
-index 0df6691..8dc791b 100644
---- a/drivers/isdn/hisax/l3ni1.c
-+++ b/drivers/isdn/hisax/l3ni1.c
-@@ -2059,13 +2059,17 @@ static int l3ni1_cmd_global(struct PStack *st, isdn_ctrl *ic)
- 			memcpy(p, ic->parm.ni1_io.data, ic->parm.ni1_io.datalen); /* copy data */
- 			l = (p - temp) + ic->parm.ni1_io.datalen; /* total length */
- 
--			if (ic->parm.ni1_io.timeout > 0)
--				if (!(pc = ni1_new_l3_process(st, -1)))
--				{ free_invoke_id(st, id);
-+			if (ic->parm.ni1_io.timeout > 0) {
-+				pc = ni1_new_l3_process(st, -1);
-+				if (!pc) {
-+					free_invoke_id(st, id);
- 					return (-2);
- 				}
--			pc->prot.ni1.ll_id = ic->parm.ni1_io.ll_id; /* remember id */
--			pc->prot.ni1.proc = ic->parm.ni1_io.proc; /* and procedure */
-+				/* remember id */
-+				pc->prot.ni1.ll_id = ic->parm.ni1_io.ll_id;
-+				/* and procedure */
-+				pc->prot.ni1.proc = ic->parm.ni1_io.proc;
-+			}
- 
- 			if (!(skb = l3_alloc_skb(l)))
- 			{ free_invoke_id(st, id);
--- 
-1.7.10.4
+I removed this comment in v1, v2 due to Roland's comment:
+"Why? Because they break wire compatibility? I hate to say it but even 
+if they're merged at the same time,
+you can't guarantee that targets and initiators will be updated together."
 
+So I guess Nic just followed up on my request in order to avoid 
+wire-protocol breakage.
+I assume the stable tag was there for the same reason.
+
+Anyway, Sorry for all the fuss... I'll try to avoid such mistakes in the 
+future.
+
+Sagi.
