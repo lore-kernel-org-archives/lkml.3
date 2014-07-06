@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaGFSeB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 14:34:01 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:39804 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162AbaGFSd7 (ORCPT
+	id S1752279AbaGFSfE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 14:35:04 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:47630 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011AbaGFSfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 14:33:59 -0400
+	Sun, 6 Jul 2014 14:35:01 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
@@ -15,9 +15,9 @@ Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Rob Clark <robdclark@gmail.com>, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: intelfb: intelfbhw.c:  Cleaning up variable that is never used
-Date: Sun,  6 Jul 2014 20:35:14 +0200
-Message-Id: <1404671714-18460-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] video: fbdev: kyro: STG4000InitDevice.c:  Cleaning up variable that is never used
+Date: Sun,  6 Jul 2014 20:36:16 +0200
+Message-Id: <1404671776-18549-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,39 +30,55 @@ This was found using a static code analysis program called cppcheck
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/video/fbdev/intelfb/intelfbhw.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ drivers/video/fbdev/kyro/STG4000InitDevice.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/video/fbdev/intelfb/intelfbhw.c b/drivers/video/fbdev/intelfb/intelfbhw.c
-index fbad61d..dea89ed 100644
---- a/drivers/video/fbdev/intelfb/intelfbhw.c
-+++ b/drivers/video/fbdev/intelfb/intelfbhw.c
-@@ -937,15 +937,11 @@ static int calc_pll_params(int index, int clock, u32 *retm1, u32 *retm2,
+diff --git a/drivers/video/fbdev/kyro/STG4000InitDevice.c b/drivers/video/fbdev/kyro/STG4000InitDevice.c
+index 1d3f2080..21875d3 100644
+--- a/drivers/video/fbdev/kyro/STG4000InitDevice.c
++++ b/drivers/video/fbdev/kyro/STG4000InitDevice.c
+@@ -120,7 +120,7 @@ u32 ProgramClock(u32 refClock,
  {
- 	u32 m1, m2, n, p1, p2, n1, testm;
- 	u32 f_vco, p, p_best = 0, m, f_out = 0;
--	u32 err_max, err_target, err_best = 10000000;
--	u32 n_best = 0, m_best = 0, f_best, f_err;
-+	u32 err_best = 10000000;
-+	u32 n_best = 0, m_best = 0, f_err;
- 	u32 p_min, p_max, p_inc, div_max;
- 	struct pll_min_max *pll = &plls[index];
+ 	u32 R = 0, F = 0, OD = 0, ODIndex = 0;
+ 	u32 ulBestR = 0, ulBestF = 0, ulBestOD = 0;
+-	u32 ulBestVCO = 0, ulBestClk = 0, ulBestScore = 0;
++	u32 ulBestClk = 0, ulBestScore = 0;
+ 	u32 ulScore, ulPhaseScore, ulVcoScore;
+ 	u32 ulTmp = 0, ulVCO;
+ 	u32 ulScaleClockReq, ulMinClock, ulMaxClock;
+@@ -189,7 +189,6 @@ u32 ProgramClock(u32 refClock,
+ 						ulScore = ulPhaseScore + ulVcoScore;
  
--	/* Accept 0.5% difference, but aim for 0.1% */
--	err_max = 5 * clock / 1000;
--	err_target = clock / 1000;
--
- 	DBG_MSG("Clock is %d\n", clock);
+ 						if (!ulBestScore) {
+-							ulBestVCO = ulVCO;
+ 							ulBestOD = OD;
+ 							ulBestF = F;
+ 							ulBestR = R;
+@@ -206,7 +205,6 @@ u32 ProgramClock(u32 refClock,
+                           but we shall keep this code in case new restrictions come into play
+                           --------------------------------------------------------------------------*/
+ 						if ((ulScore >= ulBestScore) && (OD > 0)) {
+-							ulBestVCO = ulVCO;
+ 							ulBestOD = OD;
+ 							ulBestF = F;
+ 							ulBestR = R;
+@@ -244,7 +242,6 @@ int SetCoreClockPLL(volatile STG4000REG __iomem *pSTGReg, struct pci_dev *pDev)
+ {
+ 	u32 F, R, P;
+ 	u16 core_pll = 0, sub;
+-	u32 ulCoreClock;
+ 	u32 tmp;
+ 	u32 ulChipSpeed;
  
- 	div_max = pll->max_vco / clock;
-@@ -992,7 +988,6 @@ static int calc_pll_params(int index, int clock, u32 *retm1, u32 *retm2,
- 					m_best = testm;
- 					n_best = n;
- 					p_best = p;
--					f_best = f_out;
- 					err_best = f_err;
- 				}
- 			}
+@@ -282,7 +279,7 @@ int SetCoreClockPLL(volatile STG4000REG __iomem *pSTGReg, struct pci_dev *pDev)
+ 	if (ulChipSpeed == 0)
+ 		return -EINVAL;
+ 
+-	ulCoreClock = ProgramClock(REF_FREQ, CORE_PLL_FREQ, &F, &R, &P);
++	ProgramClock(REF_FREQ, CORE_PLL_FREQ, &F, &R, &P);
+ 
+ 	core_pll |= ((P) | ((F - 2) << 2) | ((R - 2) << 11));
+ 
 -- 
 1.7.10.4
 
