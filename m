@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363AbaGFXng (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 19:43:36 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:61492 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587AbaGFXne (ORCPT
+	id S1752176AbaGFX6h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 19:58:37 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:54304 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751382AbaGFX6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 19:43:34 -0400
-Date: Sun, 6 Jul 2014 16:43:56 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Marcel Ziswiler <marcel@ziswiler.com>
-Cc: swarren@wwwdotorg.org, thierry.reding@gmail.com, arm@kernel.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, stefan@agner.ch
-Subject: Re: [PATCH v2 1/3] arm: multi_v7: enable igb, stmpe, lm95245, pwm
- leds
-Message-ID: <20140706234356.GB5539@quad.lixom.net>
-References: <1741a33cd88cd5525f3c50c0e0cacc0853a3512a.1402350905.git.marcel@ziswiler.com>
+	Sun, 6 Jul 2014 19:58:36 -0400
+X-Sasl-enc: UH+KM7FJRh4+6zuCmpQLbtXrZYe5k1BOqgo7RWQO3rvJ 1404691114
+Date: Sun, 6 Jul 2014 16:58:18 -0700
+From: Greg KH <greg@kroah.com>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
+Subject: Re: [PATCH] thunderbolt: Correct the size argument to devm_kzalloc
+Message-ID: <20140706235818.GA18457@kroah.com>
+References: <20140706161342.GA6267@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1741a33cd88cd5525f3c50c0e0cacc0853a3512a.1402350905.git.marcel@ziswiler.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140706161342.GA6267@himangi-Dell>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 10, 2014 at 12:49:50AM +0200, Marcel Ziswiler wrote:
-> The NVIDIA Tegra 3 based Apalis T30 module contains an Intel i210 resp.
-> i211 gigabit Ethernet controller, an STMPE811 ADC/touch controller, PWM
-> LEDs generically accessible from user space and an LM95245 temperature
-> sensor chip. The later three can also be found on the Colibri T30
-> module.
+On Sun, Jul 06, 2014 at 09:43:42PM +0530, Himangi Saraogi wrote:
+> nhi->rx_rings does not have type as struct tb_ring *, as it is a
+> double pointer so the elements of the array should have pointer type,
+> not structure type.
 > 
-> While at it move the NEON entry down to its proper place to have it all
-> nicely ordered again.
+> The Coccinelle semantic patch that makes this change is as follows:
 > 
-> Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
+> // <smpl>
+> @disable sizeof_type_expr@
+> type T;
+> T **x;
+> @@
+> 
+>   x =
+>   <+...sizeof(
+> - T
+> + *x
+>   )...+>
+> // </smpl>
+> 
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> ---
+>  drivers/thunderbolt/nhi.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 
-Applied for 3.17.
+Any reason you didn't cc: the developers in charge of this code so they
+see it and can pick it up?  Otherwise it's just going to float around on
+the mailing list, listless and sad.
 
-
--Olof
+greg k-h
