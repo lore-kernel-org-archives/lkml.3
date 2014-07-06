@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999AbaGFRfR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 13:35:17 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:52123 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751924AbaGFRfP (ORCPT
+	id S1751814AbaGFRmU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 13:42:20 -0400
+Received: from mail-wi0-f201.google.com ([209.85.212.201]:43963 "EHLO
+	mail-wi0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492AbaGFRmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 13:35:15 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Joe Perches <joe@perches.com>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: sis: sis_main.c:  Cleaning up wrong type in format string
-Date: Sun,  6 Jul 2014 19:36:30 +0200
-Message-Id: <1404668190-15199-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 6 Jul 2014 13:42:18 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Michael Lentine <mlentine@google.com>, Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] tools: perf: prefer clarity in setup_pager
+Date: Sun,  6 Jul 2014 19:42:11 +0200
+Message-Id: <1404668531-31550-1-git-send-email-mina86@mina86.com>
+X-Mailer: git-send-email 2.0.0.526.g5318336
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wrong type in printf format string, requires 'unsigned int'
-but the argument type is 'int'
+“!(pager || access(…))” is indeed pretty smart way to write
+“!pager && access(…) == 0” but other than being clever it gives
+no advantages and merely confuses the reader who needs to wonder
+what is actually going on.
 
-This was found using a static code analysis program called cppcheck
+As such, replace the checks with much cleaner ones.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Also, while at it, merge the lest “!pager” test with the next
+test that yields true after the “!pager” if's body is executed.
 ---
- drivers/video/fbdev/sis/sis_main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/pager.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/video/fbdev/sis/sis_main.c b/drivers/video/fbdev/sis/sis_main.c
-index 22ad028..ab7e5e4 100644
---- a/drivers/video/fbdev/sis/sis_main.c
-+++ b/drivers/video/fbdev/sis/sis_main.c
-@@ -237,7 +237,7 @@ static void sisfb_get_vga_mode_from_kernel(void)
+diff --git a/tools/perf/util/pager.c b/tools/perf/util/pager.c
+index 31ee02d..14da1b0 100644
+--- a/tools/perf/util/pager.c
++++ b/tools/perf/util/pager.c
+@@ -57,13 +57,11 @@ void setup_pager(void)
+ 	}
+ 	if (!pager)
+ 		pager = getenv("PAGER");
+-	if (!(pager || access("/usr/bin/pager", X_OK)))
++	if (!pager && access("/usr/bin/pager", X_OK) == 0)
+ 		pager = "/usr/bin/pager";
+-	if (!(pager || access("/usr/bin/less", X_OK)))
++	if (!pager && access("/usr/bin/less", X_OK) == 0)
+ 		pager = "/usr/bin/less";
+-	if (!pager)
+-		pager = "cat";
+-	if (!*pager || !strcmp(pager, "cat"))
++	if (!pager || !*pager || !strcmp(pager, "cat"))
+ 		return;
  
- 		if(mydepth == 24) mydepth = 32;
- 
--		sprintf(mymode, "%ux%ux%u", screen_info.lfb_width,
-+		sprintf(mymode, "%ux%ux%d", screen_info.lfb_width,
- 					screen_info.lfb_height,
- 					mydepth);
- 
+ 	spawned_pager = 1; /* means we are emitting to terminal */
 -- 
-1.7.10.4
+2.0.0.526.g5318336
 
