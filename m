@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751072AbaGFI0v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 04:26:51 -0400
-Received: from mout.gmx.net ([212.227.17.20]:62840 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880AbaGFI0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 04:26:48 -0400
-From: Marc Dietrich <marvin24@gmx.de>
-To: Pawel Lebioda <pawel.lebioda89@gmail.com>
-Cc: Julian Andres Klode <jak@jak-linux.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ac100@lists.launchpad.net, linux-tegra@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] staging: nvec: fix some coding style problems
-Date: Sun, 06 Jul 2014 10:26:41 +0200
-Message-ID: <280954076.FMFuBvGU15@fb07-iapwap2>
-User-Agent: KMail/4.13.2 (Linux/3.16.0-rc3-12.gfc9498b-desktop+; KDE/4.13.2; x86_64; ; )
-In-Reply-To: <cover.1404586529.git.pawel.lebioda89@gmail.com>
-References: <cover.1404586529.git.pawel.lebioda89@gmail.com>
+	id S1751176AbaGFIrG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 04:47:06 -0400
+Received: from smtp-out-128.synserver.de ([212.40.185.128]:1210 "EHLO
+	smtp-out-125.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751053AbaGFIrE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jul 2014 04:47:04 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 10131
+Message-ID: <53B90CF6.1000103@metafoo.de>
+Date: Sun, 06 Jul 2014 10:46:46 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart9849659.i5ZEGLnPSd"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-X-Provags-ID: V03:K0:QXS8iJF2trHSHH/FV4O9WCeddCt9cqPYQf4CQ8x3CYKvOiWsW2j
- b8kSK1JII+WnVA3958wHe4R5n5EWQO3hVyn9cwUOfzHbUchxmiYPxlpXz9zZMVlV/zdQ1Tr
- dxuXd5c+bZVanviFaoJeu4KLyPEZvw8dWf7QCi2p80fSTzCxsKiEUgTlMsqNuy6lb6UAynI
- uPxJ5TlG3ba4pxEi6b6vA==
+To: Apelete Seketeli <apelete@seketeli.net>,
+        Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-mips@linux-mips.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] mips: jz4740: rename usb_nop_xceiv to usb_phy_generic
+References: <1404588615-14722-1-git-send-email-apelete@seketeli.net> <1404588615-14722-2-git-send-email-apelete@seketeli.net>
+In-Reply-To: <1404588615-14722-2-git-send-email-apelete@seketeli.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/05/2014 09:30 PM, Apelete Seketeli wrote:
+> Rename usb_nop_xceiv to usb_phy_generic in platform data to match the
+> name change of the nop transceiver driver in commit 4525bee (usb: phy:
+> rename usb_nop_xceiv to usb_phy_generic).
+>
+> The name change induced a kernel panic due to an unhandled kernel
+> unaligned access while trying to dereference musb->xceiv->io_ops in
+> musb_init_controller().
+>
+> Signed-off-by: Apelete Seketeli <apelete@seketeli.net>
 
---nextPart9849659.i5ZEGLnPSd
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="ISO-8859-1"
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 
-Hi Pawel,
+Ralf, the commit that caused this regression is in v3.16-rc1, can you queue 
+this fix for v3.16-rcX?
 
-Am Samstag, 5. Juli 2014, 22:30:54 schrieb Pawel Lebioda:
-> The following patches fix some warnings reported by checkpatch.pl
-> 
-> Pawel Lebioda (2):
->   staging: nvec: remove unnecessary 'else' after 'return' statement
->   staging: nvec: remove unneccessary 'out of memory' message
-> 
->  drivers/staging/nvec/nvec.c | 8 +++-----
->  1 file changed, 3 insertions(+), 5 deletions(-)
-
-thanks for fixing, so for this series
-
-Acked-by: Marc Dietrich <marvin24@gmx.de>
-
---nextPart9849659.i5ZEGLnPSd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQEcBAABAgAGBQJTuQhBAAoJEKyeR39HFBto4KsH/2xv2G50rEedyYWKUUvWwi8P
-zpC0SUKt0OHQiihuWx3VaORFqZUWZoR/8mlOftu0/EUoH2YRc4AmNlBPkoMeM/pa
-Xg+nKltAyYAh8iA2aZdzOdt/++LemCHmq4oYwmR8tLbzf96vtCQvSarwGoQj0NBT
-HuFAS0M+PwgilJkXTUy2XtkzURiDZ2hula3xEKFgI/5nluJ3V5g4WeYmhwT4Pm7F
-6rUWrz9zgPWXYHS3lYbA74I4Ib1xh5k7hlsMb/XqWq8FSX1kld8GX+WC79lOe3yY
-FBLJnipU30AwvpBF4dCVPHQjB7d2q1CuErcJqa3AbRzjyz6cD35HC1IalkEG5jA=
-=EGnp
------END PGP SIGNATURE-----
-
---nextPart9849659.i5ZEGLnPSd--
-
+Thanks,
+- Lars
