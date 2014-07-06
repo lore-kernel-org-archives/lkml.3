@@ -1,163 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871AbaGFGdV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 02:33:21 -0400
-Received: from 174.37.253.146-static.reverse.softlayer.com ([174.37.253.146]:48493
-	"EHLO primary.scalemp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010AbaGFGdR (ORCPT
+	id S1752474AbaGFHIK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 03:08:10 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:52721 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599AbaGFHII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 02:33:17 -0400
-Message-ID: <53B8EDA6.5020704@scalemp.com>
-Date: Sun, 06 Jul 2014 09:33:10 +0300
-From: Oren Twaig <oren@scalemp.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Sun, 6 Jul 2014 03:08:08 -0400
+Date: Sun, 6 Jul 2014 12:38:00 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] ASoC: sgtl5000: Use devm_ functions
+Message-ID: <20140706070800.GA2927@himangi-Dell>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, David Rientjes <rientjes@google.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Andi Kleen <ak@linux.intel.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Richard Weinberger <richard@nod.at>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] x86, vsmp: Remove is_vsmp_box() from apic_is_clustered_box()
-References: <1404036068-11674-1-git-send-email-oren@scalemp.com>
-In-Reply-To: <1404036068-11674-1-git-send-email-oren@scalemp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - primary.scalemp.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalemp.com
-X-Get-Message-Sender-Via: primary.scalemp.com: authenticated_id: oren+scalemp.com/only user confirmed/virtual account not confirmed
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch introduces the use of managed interfaces like devm_kzalloc,
+devm_kstrdup and devm_regulator_register and does avay with the calls to
+the functions to free the allocated memory in ldo_regulator_register and
+ldo_regulator_remove. The ldo_regulator_remove function is completely
+removed as it is no longer required. ldo_regulator_register is called
+from a probe function and on failure its value is returned as the
+result.
 
-Quick question: As I'm new at this (submitting patches), what is a reasonable
-time to wait before ping-ing a patch ?
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+---
+To send to: Liam Girdwood <lgirdwood@gmail.com>,Mark Brown <broonie@kernel.org>,Jaroslav Kysela <perex@perex.cz>,Takashi Iwai <tiwai@suse.de>,alsa-devel@alsa-project.org,linux-kernel@vger.kernel.org
+ sound/soc/codecs/sgtl5000.c | 46 +++++++--------------------------------------
+ 1 file changed, 7 insertions(+), 39 deletions(-)
 
-Oren.
-
-On 06/29/2014 01:01 PM, Oren Twaig wrote:
-> When a vSMP Foundation box is detected, the function apic_cluster_num() counts
-> the number of APIC clusters found. If more than one found, a multi board
-> configuration is assumed, and TSC marked as unstable. This behavior is
-> incorrect as vSMP Foundation may use processors from single node only, attached
-> to memory of other nodes - and such node may have more than one APIC cluster
-> (typically any recent intel box has more than single APIC_CLUSTERID(x)).
->
-> To fix this, we simply remove the code which detects a vSMP Foundation box and
-> affects apic_is_clusted_box() return value. This can be done because later the
-> kernel checks by itself if the TSC is stable using the
-> check_tsc_sync_[source|target]() functions and marks TSC as unstable if needed.
->
-> Acked-by: Shai Fultheim <shai@scalemp.com>
-> Signed-off-by: Oren Twaig <oren@scalemp.com>
-> ---
-> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-> index 19b0eba..c100694 100644
-> --- a/arch/x86/include/asm/apic.h
-> +++ b/arch/x86/include/asm/apic.h
-> @@ -85,14 +85,6 @@ static inline bool apic_from_smp_config(void)
->  #include <asm/paravirt.h>
->  #endif
-> 
-> -#ifdef CONFIG_X86_64
-> -extern int is_vsmp_box(void);
-> -#else
-> -static inline int is_vsmp_box(void)
-> -{
-> -    return 0;
-> -}
-> -#endif
->  extern int setup_profiling_timer(unsigned int);
-> 
->  static inline void native_apic_mem_write(u32 reg, u32 v)
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> index ad28db7..2b85bb9 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -2451,51 +2451,6 @@ static void apic_pm_activate(void) { }
-> 
->  #ifdef CONFIG_X86_64
-> 
-> -static int apic_cluster_num(void)
-> -{
-> -    int i, clusters, zeros;
-> -    unsigned id;
-> -    u16 *bios_cpu_apicid;
-> -    DECLARE_BITMAP(clustermap, NUM_APIC_CLUSTERS);
-> -
-> -    bios_cpu_apicid = early_per_cpu_ptr(x86_bios_cpu_apicid);
-> -    bitmap_zero(clustermap, NUM_APIC_CLUSTERS);
-> -
-> -    for (i = 0; i < nr_cpu_ids; i++) {
-> -        /* are we being called early in kernel startup? */
-> -        if (bios_cpu_apicid) {
-> -            id = bios_cpu_apicid[i];
-> -        } else if (i < nr_cpu_ids) {
-> -            if (cpu_present(i))
-> -                id = per_cpu(x86_bios_cpu_apicid, i);
-> -            else
-> -                continue;
-> -        } else
-> -            break;
-> -
-> -        if (id != BAD_APICID)
-> -            __set_bit(APIC_CLUSTERID(id), clustermap);
-> -    }
-> -
-> -    /* Problem:  Partially populated chassis may not have CPUs in some of
-> -     * the APIC clusters they have been allocated.  Only present CPUs have
-> -     * x86_bios_cpu_apicid entries, thus causing zeroes in the bitmap.
-> -     * Since clusters are allocated sequentially, count zeros only if
-> -     * they are bounded by ones.
-> -     */
-> -    clusters = 0;
-> -    zeros = 0;
-> -    for (i = 0; i < NUM_APIC_CLUSTERS; i++) {
-> -        if (test_bit(i, clustermap)) {
-> -            clusters += 1 + zeros;
-> -            zeros = 0;
-> -        } else
-> -            ++zeros;
-> -    }
-> -
-> -    return clusters;
-> -}
-> -
->  static int multi_checked;
->  static int multi;
-> 
-> @@ -2540,20 +2495,7 @@ static void dmi_check_multi(void)
->  int apic_is_clustered_box(void)
->  {
->      dmi_check_multi();
-> -    if (multi)
-> -        return 1;
-> -
-> -    if (!is_vsmp_box())
-> -        return 0;
-> -
-> -    /*
-> -     * ScaleMP vSMPowered boxes have one cluster per board and TSCs are
-> -     * not guaranteed to be synced between boards
-> -     */
-> -    if (apic_cluster_num() > 1)
-> -        return 1;
-> -
-> -    return 0;
-> +    return multi;
->  }
->  #endif
-> 
->
-
+diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
+index 249fadb..0efd6d6 100644
+--- a/sound/soc/codecs/sgtl5000.c
++++ b/sound/soc/codecs/sgtl5000.c
+@@ -841,14 +841,15 @@ static int ldo_regulator_register(struct snd_soc_codec *codec,
+ 	struct sgtl5000_priv *sgtl5000 = snd_soc_codec_get_drvdata(codec);
+ 	struct regulator_config config = { };
+ 
+-	ldo = kzalloc(sizeof(struct ldo_regulator), GFP_KERNEL);
++	ldo = devm_kzalloc(codec->dev, sizeof(struct ldo_regulator),
++			   GFP_KERNEL);
+ 
+ 	if (!ldo)
+ 		return -ENOMEM;
+ 
+-	ldo->desc.name = kstrdup(dev_name(codec->dev), GFP_KERNEL);
++	ldo->desc.name = devm_kstrdup(codec->dev, dev_name(codec->dev),
++				      GFP_KERNEL);
+ 	if (!ldo->desc.name) {
+-		kfree(ldo);
+ 		dev_err(codec->dev, "failed to allocate decs name memory\n");
+ 		return -ENOMEM;
+ 	}
+@@ -865,35 +866,17 @@ static int ldo_regulator_register(struct snd_soc_codec *codec,
+ 	config.driver_data = ldo;
+ 	config.init_data = init_data;
+ 
+-	ldo->dev = regulator_register(&ldo->desc, &config);
++	ldo->dev = devm_regulator_register(codec->dev, &ldo->desc, &config);
+ 	if (IS_ERR(ldo->dev)) {
+ 		int ret = PTR_ERR(ldo->dev);
+ 
+ 		dev_err(codec->dev, "failed to register regulator\n");
+-		kfree(ldo->desc.name);
+-		kfree(ldo);
+-
+ 		return ret;
+ 	}
+ 	sgtl5000->ldo = ldo;
+ 
+ 	return 0;
+ }
+-
+-static int ldo_regulator_remove(struct snd_soc_codec *codec)
+-{
+-	struct sgtl5000_priv *sgtl5000 = snd_soc_codec_get_drvdata(codec);
+-	struct ldo_regulator *ldo = sgtl5000->ldo;
+-
+-	if (!ldo)
+-		return 0;
+-
+-	regulator_unregister(ldo->dev);
+-	kfree(ldo->desc.name);
+-	kfree(ldo);
+-
+-	return 0;
+-}
+ #else
+ static int ldo_regulator_register(struct snd_soc_codec *codec,
+ 				struct regulator_init_data *init_data,
+@@ -902,11 +885,6 @@ static int ldo_regulator_register(struct snd_soc_codec *codec,
+ 	dev_err(codec->dev, "this setup needs regulator support in the kernel\n");
+ 	return -EINVAL;
+ }
+-
+-static int ldo_regulator_remove(struct snd_soc_codec *codec)
+-{
+-	return 0;
+-}
+ #endif
+ 
+ /*
+@@ -1278,23 +1256,17 @@ static int sgtl5000_enable_regulators(struct snd_soc_codec *codec)
+ 	ret = devm_regulator_bulk_get(codec->dev, ARRAY_SIZE(sgtl5000->supplies),
+ 				 sgtl5000->supplies);
+ 	if (ret)
+-		goto err_ldo_remove;
++		return ret;
+ 
+ 	ret = regulator_bulk_enable(ARRAY_SIZE(sgtl5000->supplies),
+ 					sgtl5000->supplies);
+ 	if (ret)
+-		goto err_ldo_remove;
++		return ret;
+ 
+ 	/* wait for all power rails bring up */
+ 	udelay(10);
+ 
+ 	return 0;
+-
+-err_ldo_remove:
+-	if (!external_vddd)
+-		ldo_regulator_remove(codec);
+-	return ret;
+-
+ }
+ 
+ static int sgtl5000_probe(struct snd_soc_codec *codec)
+@@ -1359,8 +1331,6 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
+ err:
+ 	regulator_bulk_disable(ARRAY_SIZE(sgtl5000->supplies),
+ 						sgtl5000->supplies);
+-	ldo_regulator_remove(codec);
+-
+ 	return ret;
+ }
+ 
+@@ -1372,8 +1342,6 @@ static int sgtl5000_remove(struct snd_soc_codec *codec)
+ 
+ 	regulator_bulk_disable(ARRAY_SIZE(sgtl5000->supplies),
+ 						sgtl5000->supplies);
+-	ldo_regulator_remove(codec);
+-
+ 	return 0;
+ }
+ 
+-- 
+1.9.1
 
