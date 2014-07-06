@@ -1,108 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563AbaGFNn3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 09:43:29 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:48795 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859AbaGFNn1 (ORCPT
+	id S1751443AbaGFOcN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 10:32:13 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:58690 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903AbaGFOcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 09:43:27 -0400
-Date: Sun, 6 Jul 2014 15:43:25 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        kernel list <linux-kernel@vger.kernel.org>, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org
-Subject: Re: ext4: media error but where?
-Message-ID: <20140706134325.GA18955@amd.pavel.ucw.cz>
-References: <20140627024659.GF6826@thunk.org>
- <20140629202516.GA11430@amd.pavel.ucw.cz>
- <20140629210428.GD2162@thunk.org>
- <20140630064644.GA23079@amd.pavel.ucw.cz>
- <20140630134313.GA3753@thunk.org>
- <20140704102307.GA19252@amd.pavel.ucw.cz>
- <20140704121119.GB10514@thunk.org>
- <20140704172104.GA4877@xo-6d-61-c0.localdomain>
- <20140704185626.GB11103@thunk.org>
- <20140706133247.GB18204@amd.pavel.ucw.cz>
+	Sun, 6 Jul 2014 10:32:11 -0400
+Message-ID: <53B95DE5.5040101@redhat.com>
+Date: Sun, 06 Jul 2014 16:32:05 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140706133247.GB18204@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jan Kiszka <jan.kiszka@web.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86 <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: kvm <kvm@vger.kernel.org>
+Subject: Re: [PATCH] x86: Make x2APIC support depend on interrupt remapping
+ or guest support
+References: <53B7ADAA.9030101@web.de>
+In-Reply-To: <53B7ADAA.9030101@web.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Il 05/07/2014 09:47, Jan Kiszka ha scritto:
+> From: Jan Kiszka <jan.kiszka@siemens.com>
+>
+> We are able to use x2APIC mode in the absence of interrupt remapping on
+> certain hypervisors. So it if fine to disable IRQ_REMAP without having
+> to give up x2APIC support.
+>
+> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+> ---
+>  arch/x86/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index a8f749e..30a9987 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -310,7 +310,7 @@ config SMP
+>
+>  config X86_X2APIC
+>  	bool "Support x2apic"
+> -	depends on X86_LOCAL_APIC && X86_64 && IRQ_REMAP
+> +	depends on X86_LOCAL_APIC && X86_64 && (IRQ_REMAP || HYPERVISOR_GUEST)
+>  	---help---
+>  	  This enables x2apic support on CPUs that have this feature.
+>
+>
+>
 
-> Now I'm running fsck.new -cf. I don't think this filesystem has any
-> bad blocks. Still, it says "rootfs: Updating bad block inode."
-> ... "FILE SYSTEM WAS MODIFIED", "REBOOT LINUX".
+Makes sense.
 
-And here's patch to fix this uglyness. Unfortunately, it makes it read
-the inode... but perhaps it is good idea as we are able to print
-before/after bad block counts...?
-
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
-
-Thanks,
-								Pavel
-
-diff --git a/e2fsck/badblocks.c b/e2fsck/badblocks.c
-index 7f3641b..32e08bf 100644
---- a/e2fsck/badblocks.c
-+++ b/e2fsck/badblocks.c
-@@ -30,6 +30,7 @@ void read_bad_blocks_file(e2fsck_t ctx, const char *bad_blocks_file,
- 	ext2_filsys fs = ctx->fs;
- 	errcode_t	retval;
- 	badblocks_list	bb_list = 0;
-+	int		old_bb_count = -1;
- 	FILE		*f;
- 	char		buf[1024];
- 
-@@ -51,14 +52,16 @@ void read_bad_blocks_file(e2fsck_t ctx, const char *bad_blocks_file,
- 	 * If we're appending to the bad blocks inode, read in the
- 	 * current bad blocks.
- 	 */
--	if (!replace_bad_blocks) {
--		retval = ext2fs_read_bb_inode(fs, &bb_list);
--		if (retval) {
--			com_err("ext2fs_read_bb_inode", retval, "%s",
--				_("while reading the bad blocks inode"));
--			goto fatal;
--		}
-+	retval = ext2fs_read_bb_inode(fs, &bb_list);
-+	if (retval) {
-+		com_err("ext2fs_read_bb_inode", retval, "%s",
-+			_("while reading the bad blocks inode"));
-+		goto fatal;
- 	}
-+	old_bb_count = ext2fs_u32_list_count(bb_list);
-+	printf("%s: Currently %d bad blocks.\n", ctx->device_name, old_bb_count);
-+	if (replace_bad_blocks)
-+		bb_list = 0;
- 
- 	/*
- 	 * Now read in the bad blocks from the file; if
-@@ -95,10 +98,16 @@ void read_bad_blocks_file(e2fsck_t ctx, const char *bad_blocks_file,
- 		goto fatal;
- 	}
- 
-+	if ((ext2fs_u32_list_count(bb_list) == 0) &&
-+	    ((!replace_bad_blocks) || (!old_bb_count))) {
-+	  	printf("%s: No bad blocks found, no update neeeded.\n", ctx->device_name);
-+		return;
-+	}
-+
- 	/*
- 	 * Finally, update the bad blocks from the bad_block_map
- 	 */
--	printf("%s: Updating bad block inode.\n", ctx->device_name);
-+	printf("%s: Updating bad block inode (%d bad blocks).\n", ctx->device_name, ext2fs_u32_list_count(bb_list));
- 	retval = ext2fs_update_bb_inode(fs, bb_list);
- 	if (retval) {
- 		com_err("ext2fs_update_bb_inode", retval, "%s",
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
