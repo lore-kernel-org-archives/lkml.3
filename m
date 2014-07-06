@@ -1,66 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374AbaGFF6p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 01:58:45 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:46232 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305AbaGFF6o (ORCPT
+	id S1751976AbaGFGdB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 02:33:01 -0400
+Received: from 174.37.253.146-static.reverse.softlayer.com ([174.37.253.146]:48481
+	"EHLO primary.scalemp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653AbaGFGc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 01:58:44 -0400
+	Sun, 6 Jul 2014 02:32:59 -0400
+Message-ID: <53B8ED93.1000806@scalemp.com>
+Date: Sun, 06 Jul 2014 09:32:51 +0300
+From: Oren Twaig <oren@scalemp.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <53B80EFC.6020504@infradead.org>
-References: <1404528619-3715-1-git-send-email-xerofoify@gmail.com>
-	<53B80EFC.6020504@infradead.org>
-Date: Sun, 6 Jul 2014 01:58:43 -0400
-Message-ID: <CAPDOMVid83VWT4n93MjvxoWdcq2KPYren0o5ubGi+9HHY6a7EQ@mail.gmail.com>
-Subject: Re: [PATCH] mips: Add #ifdef in file bridge.h
-From: Nick Krause <xerofoify@gmail.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: ralf@linux-mips.org, jchandra@broadcom.com, blogic@openwrt.org,
-        linux-mips@linux-mips.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, David Rientjes <rientjes@google.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Andi Kleen <ak@linux.intel.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Richard Weinberger <richard@nod.at>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] x86, vsmp: Remove is_vsmp_box() from apic_is_clustered_box()
+References: <1404036068-11674-1-git-send-email-oren@scalemp.com>
+In-Reply-To: <1404036068-11674-1-git-send-email-oren@scalemp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - primary.scalemp.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
+X-Get-Message-Sender-Via: primary.scalemp.com: authenticated_id: oren+scalemp.com/only user confirmed/virtual account not confirmed
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No I didn't I finally learned how to cross compile the kernel it's not
-hard just have to find the docs for it :).
-Cheers Nick
+Hi,
 
-On Sat, Jul 5, 2014 at 10:43 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 07/04/2014 07:50 PM, Nicholas Krause wrote:
->> This patch addes a #ifdef __ASSEMBLY__ in order to check if this part
->> of the file is configured to fix this #ifdef block in bridge.h for mips.
->>
->> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->> ---
->>  arch/mips/include/asm/netlogic/xlp-hal/bridge.h | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/mips/include/asm/netlogic/xlp-hal/bridge.h b/arch/mips/include/asm/netlogic/xlp-hal/bridge.h
->> index 3067f98..4f315c3 100644
->> --- a/arch/mips/include/asm/netlogic/xlp-hal/bridge.h
->> +++ b/arch/mips/include/asm/netlogic/xlp-hal/bridge.h
->> @@ -143,7 +143,7 @@
->>  #define BRIDGE_GIO_WEIGHT            0x2cb
->>  #define BRIDGE_FLASH_WEIGHT          0x2cc
->>
->> -/* FIXME verify */
->> +#ifdef __ASSEMBLY__
->>  #define BRIDGE_9XX_FLASH_BAR(i)              (0x11 + (i))
->>  #define BRIDGE_9XX_FLASH_BAR_LIMIT(i)        (0x15 + (i))
->>
->>
+Quick question: As I'm new at this (submitting patches), what is a reasonable time to wait before ping-ing a patch ?
+
+Oren.
+
+On 06/29/2014 01:01 PM, Oren Twaig wrote:
+> When a vSMP Foundation box is detected, the function apic_cluster_num() counts
+> the number of APIC clusters found. If more than one found, a multi board
+> configuration is assumed, and TSC marked as unstable. This behavior is
+> incorrect as vSMP Foundation may use processors from single node only, attached
+> to memory of other nodes - and such node may have more than one APIC cluster
+> (typically any recent intel box has more than single APIC_CLUSTERID(x)).
 >
-> Hi,
+> To fix this, we simply remove the code which detects a vSMP Foundation box and
+> affects apic_is_clusted_box() return value. This can be done because later the
+> kernel checks by itself if the TSC is stable using the
+> check_tsc_sync_[source|target]() functions and marks TSC as unstable if needed.
 >
-> Where is the corresponding #endif ?
-> The #endif at line 185 goes with the #ifndef __ASSEMBLY__ at line 176.
+> Acked-by: Shai Fultheim <shai@scalemp.com>
+> Signed-off-by: Oren Twaig <oren@scalemp.com>
+> ---
+> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+> index 19b0eba..c100694 100644
+> --- a/arch/x86/include/asm/apic.h
+> +++ b/arch/x86/include/asm/apic.h
+> @@ -85,14 +85,6 @@ static inline bool apic_from_smp_config(void)
+>  #include <asm/paravirt.h>
+>  #endif
+>  
+> -#ifdef CONFIG_X86_64
+> -extern int is_vsmp_box(void);
+> -#else
+> -static inline int is_vsmp_box(void)
+> -{
+> -	return 0;
+> -}
+> -#endif
+>  extern int setup_profiling_timer(unsigned int);
+>  
+>  static inline void native_apic_mem_write(u32 reg, u32 v)
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index ad28db7..2b85bb9 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -2451,51 +2451,6 @@ static void apic_pm_activate(void) { }
+>  
+>  #ifdef CONFIG_X86_64
+>  
+> -static int apic_cluster_num(void)
+> -{
+> -	int i, clusters, zeros;
+> -	unsigned id;
+> -	u16 *bios_cpu_apicid;
+> -	DECLARE_BITMAP(clustermap, NUM_APIC_CLUSTERS);
+> -
+> -	bios_cpu_apicid = early_per_cpu_ptr(x86_bios_cpu_apicid);
+> -	bitmap_zero(clustermap, NUM_APIC_CLUSTERS);
+> -
+> -	for (i = 0; i < nr_cpu_ids; i++) {
+> -		/* are we being called early in kernel startup? */
+> -		if (bios_cpu_apicid) {
+> -			id = bios_cpu_apicid[i];
+> -		} else if (i < nr_cpu_ids) {
+> -			if (cpu_present(i))
+> -				id = per_cpu(x86_bios_cpu_apicid, i);
+> -			else
+> -				continue;
+> -		} else
+> -			break;
+> -
+> -		if (id != BAD_APICID)
+> -			__set_bit(APIC_CLUSTERID(id), clustermap);
+> -	}
+> -
+> -	/* Problem:  Partially populated chassis may not have CPUs in some of
+> -	 * the APIC clusters they have been allocated.  Only present CPUs have
+> -	 * x86_bios_cpu_apicid entries, thus causing zeroes in the bitmap.
+> -	 * Since clusters are allocated sequentially, count zeros only if
+> -	 * they are bounded by ones.
+> -	 */
+> -	clusters = 0;
+> -	zeros = 0;
+> -	for (i = 0; i < NUM_APIC_CLUSTERS; i++) {
+> -		if (test_bit(i, clustermap)) {
+> -			clusters += 1 + zeros;
+> -			zeros = 0;
+> -		} else
+> -			++zeros;
+> -	}
+> -
+> -	return clusters;
+> -}
+> -
+>  static int multi_checked;
+>  static int multi;
+>  
+> @@ -2540,20 +2495,7 @@ static void dmi_check_multi(void)
+>  int apic_is_clustered_box(void)
+>  {
+>  	dmi_check_multi();
+> -	if (multi)
+> -		return 1;
+> -
+> -	if (!is_vsmp_box())
+> -		return 0;
+> -
+> -	/*
+> -	 * ScaleMP vSMPowered boxes have one cluster per board and TSCs are
+> -	 * not guaranteed to be synced between boards
+> -	 */
+> -	if (apic_cluster_num() > 1)
+> -		return 1;
+> -
+> -	return 0;
+> +	return multi;
+>  }
+>  #endif
+>  
 >
-> I think that this patch will cause a build error (or at least a warning).
-> Did you test it?
->
->
-> --
-> ~Randy
+
