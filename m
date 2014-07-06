@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaGFRvw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 13:51:52 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:48056 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696AbaGFRvv (ORCPT
+	id S1752119AbaGFRw4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 13:52:56 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:57967 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729AbaGFRwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 13:51:51 -0400
-Date: Sun, 6 Jul 2014 23:21:41 +0530
+	Sun, 6 Jul 2014 13:52:54 -0400
+Date: Sun, 6 Jul 2014 23:22:44 +0530
 From: Himangi Saraogi <himangi774@gmail.com>
 To: Linus Walleij <linus.walleij@linaro.org>,
         Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org,
@@ -21,10 +21,10 @@ To: Linus Walleij <linus.walleij@linaro.org>,
         linux-arm-kernel@lists.infradead.org,
         Philipp Zabel <philipp.zabel@gmail.com>,
         Paul Parsons <lost.distance@yahoo.com>
-Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 4/5] ASoC: pxa: e800_wm9712: Introduce the use of
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH 5/5] ASoC: pxa/hx4700: Introduce the use of
  devm_gpio_request_array
-Message-ID: <e0d09d7f466535ce9cacc2fcd9986927dfd830c7.1404665589.git.himangi774@gmail.com>
+Message-ID: <4001147a17bf23a80be799234ebb5ef3ad985a5f.1404665589.git.himangi774@gmail.com>
 References: <cover.1404665589.git.himangi774@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -42,44 +42,43 @@ and remove functions.
 Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- sound/soc/pxa/e800_wm9712.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ sound/soc/pxa/hx4700.c | 12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
-diff --git a/sound/soc/pxa/e800_wm9712.c b/sound/soc/pxa/e800_wm9712.c
-index 24c2078..dbc3670 100644
---- a/sound/soc/pxa/e800_wm9712.c
-+++ b/sound/soc/pxa/e800_wm9712.c
-@@ -112,19 +112,17 @@ static int e800_probe(struct platform_device *pdev)
- 	struct snd_soc_card *card = &e800;
- 	int ret;
+diff --git a/sound/soc/pxa/hx4700.c b/sound/soc/pxa/hx4700.c
+index 05559a7..b624526 100644
+--- a/sound/soc/pxa/hx4700.c
++++ b/sound/soc/pxa/hx4700.c
+@@ -198,18 +198,13 @@ static int hx4700_audio_probe(struct platform_device *pdev)
+ 	if (!machine_is_h4700())
+ 		return -ENODEV;
  
--	ret = gpio_request_array(e800_audio_gpios,
--				 ARRAY_SIZE(e800_audio_gpios));
-+	ret = devm_gpio_request_array(&pdev->dev, e800_audio_gpios,
-+				      ARRAY_SIZE(e800_audio_gpios));
+-	ret = gpio_request_array(hx4700_audio_gpios,
+-				ARRAY_SIZE(hx4700_audio_gpios));
++	ret = devm_gpio_request_array(&pdev->dev, hx4700_audio_gpios,
++				      ARRAY_SIZE(hx4700_audio_gpios));
  	if (ret)
  		return ret;
  
- 	card->dev = &pdev->dev;
- 
- 	ret = snd_soc_register_card(card);
--	if (ret) {
-+	if (ret)
- 		dev_err(&pdev->dev, "snd_soc_register_card() failed: %d\n",
- 			ret);
--		gpio_free_array(e800_audio_gpios, ARRAY_SIZE(e800_audio_gpios));
--	}
- 	return ret;
+ 	snd_soc_card_hx4700.dev = &pdev->dev;
+-	ret = snd_soc_register_card(&snd_soc_card_hx4700);
+-	if (ret)
+-		gpio_free_array(hx4700_audio_gpios,
+-				ARRAY_SIZE(hx4700_audio_gpios));
+-
+-	return ret;
++	return snd_soc_register_card(&snd_soc_card_hx4700);
  }
  
-@@ -132,7 +130,6 @@ static int e800_remove(struct platform_device *pdev)
- {
- 	struct snd_soc_card *card = platform_get_drvdata(pdev);
+ static int hx4700_audio_remove(struct platform_device *pdev)
+@@ -219,7 +214,6 @@ static int hx4700_audio_remove(struct platform_device *pdev)
+ 	gpio_set_value(GPIO92_HX4700_HP_DRIVER, 0);
+ 	gpio_set_value(GPIO107_HX4700_SPK_nSD, 0);
  
--	gpio_free_array(e800_audio_gpios, ARRAY_SIZE(e800_audio_gpios));
- 	snd_soc_unregister_card(card);
+-	gpio_free_array(hx4700_audio_gpios, ARRAY_SIZE(hx4700_audio_gpios));
  	return 0;
  }
+ 
 -- 
 1.9.1
 
