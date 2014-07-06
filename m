@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaGFRqX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 13:46:23 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:57855 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492AbaGFRqV (ORCPT
+	id S1751997AbaGFRqe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 13:46:34 -0400
+Received: from smtprelay0192.hostedemail.com ([216.40.44.192]:52141 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751492AbaGFRqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 13:46:21 -0400
-Date: Sun, 6 Jul 2014 23:16:09 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
-        linux-doc@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, patches@opensource.wolfsonmicro.com,
-        alsa-devel@alsa-project.org, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Paul Parsons <lost.distance@yahoo.com>
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH 0/5] Introduce a managed function for gpio_request_array
-Message-ID: <cover.1404665589.git.himangi774@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 6 Jul 2014 13:46:32 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:857:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3866:3867:3870:3871:3872:3874:4321:5007:7652:8879:10004:10400:10848:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: front20_72e85d04c5c56
+X-Filterd-Recvd-Size: 1727
+Message-ID: <1404668788.27043.44.camel@joe-AO725>
+Subject: Re: [PATCH] video: fbdev: sis: sis_main.c:  Cleaning up wrong type
+ in format string
+From: Joe Perches <joe@perches.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 06 Jul 2014 10:46:28 -0700
+In-Reply-To: <1404668190-15199-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1404668190-15199-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset intoduces a new managed interface devm_gpio_request_array,
-adds it in the documentation and its declaration in the gpio.h include
-file. Some cases of gpio_request_array are changed to
-devm_gpio_request_array.
+On Sun, 2014-07-06 at 19:36 +0200, Rickard Strandqvist wrote:
+> Wrong type in printf format string, requires 'unsigned int'
+> but the argument type is 'int'
 
-Himangi Saraogi (5):
-  gpiolib: devres: Introduce the function devm_request_gpio_array
-  ASoC: wm1250-ev1: Use devm_gpio_request_array
-  ASoC: pxa: Use devm_gpio_request_array
-  ASoC: pxa: e800_wm9712: Introduce the use of devm_gpio_request_array
-  ASoC: pxa/hx4700: Introduce the use of devm_gpio_request_array
+Perhaps it'd be better to change the type of mydepth
+to __u16 as that's the type of lfb_depth
 
- Documentation/driver-model/devres.txt |  1 +
- drivers/gpio/devres.c                 | 21 +++++++++++++++++++++
- include/linux/gpio.h                  |  2 ++
- sound/soc/codecs/wm1250-ev1.c         | 24 +++++-------------------
- sound/soc/pxa/e740_wm9705.c           |  9 +++------
- sound/soc/pxa/e800_wm9712.c           |  9 +++------
- sound/soc/pxa/hx4700.c                | 12 +++---------
- 7 files changed, 38 insertions(+), 40 deletions(-)
+> diff --git a/drivers/video/fbdev/sis/sis_main.c b/drivers/video/fbdev/sis/sis_main.c
+[]
+> @@ -237,7 +237,7 @@ static void sisfb_get_vga_mode_from_kernel(void)
+>  
+>  		if(mydepth == 24) mydepth = 32;
+>  
+> -		sprintf(mymode, "%ux%ux%u", screen_info.lfb_width,
+> +		sprintf(mymode, "%ux%ux%d", screen_info.lfb_width,
+>  					screen_info.lfb_height,
+>  					mydepth);
+>  
 
--- 
-1.9.1
 
