@@ -1,68 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267AbaGFSjL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 14:39:11 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:40446 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751969AbaGFSjI (ORCPT
+	id S1752359AbaGFSj0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 14:39:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47074 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664AbaGFSjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 14:39:08 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Jingoo Han <jg1.han@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Anatolij Gustschin <agust@denx.de>,
-        Sachin Kamat <sachin.kamat@linaro.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH] video: fbdev: mb862xx: mb862xxfbdrv.c:  Cleaning up variable that is never used
-Date: Sun,  6 Jul 2014 20:40:24 +0200
-Message-Id: <1404672024-18891-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 6 Jul 2014 14:39:25 -0400
+Message-ID: <53B997D5.1060001@infradead.org>
+Date: Sun, 06 Jul 2014 11:39:17 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>
+CC: linux-kbuild@vger.kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [patch] iwlwifi: fix Kconfig option continuity
+References: <53B9833D.4000600@lwfinger.net>
+In-Reply-To: <53B9833D.4000600@lwfinger.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Variable ar assigned a value that is never used.
-I have also removed all the code that thereby serves no purpose.
+Hi,
 
-This was found using a static code analysis program called cppcheck
+Please use a newline every 70-72 characters.  Some email clients don't do automatic
+line wrapping -- they just make the user scroll to the right to see very long lines.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+
+On 07/06/2014 10:11 AM, Larry Finger wrote:
+> A problem with configuration of IWLWIFI has been bisected to commit 48e2934, where a new section was added to drivers/net/wireless/iwlwifi/Kconfig with the following code:
+> 
+> # don't call it _MODULE -- will confuse Kconfig/fixdep/...
+> config IWLWIFI_OPMODE_MODULAR
+>         bool
+>         default y if IWLDVM=m
+>         default y if IWLMVM=m
+> 
+> When the above section is present, 'make xconfig' fails to show a "Debugging options" menu' even though 'make menuconfig' displays correctly. despite the incorrect on-screen display, xconfig does not delete the affected info in .config after it was set by menuconfig, thus the bug only seems to affect the display in xconfig.
+> 
+> Is there anything wrong with that section in iwlwifi's Kconfig, or is it a bug in xconfig?
+
+in menuconfig or nconfig:
+Notice that 'Debugging options' is not indented under iwlwifi, but listed at the
+same indent level.  That is a huge clue.
+
+
+in xconfig:
+The 'Debugging options' menu is displayed, but it's not where you expect or want
+it to be found.  Look under 'Wireless LAN' and immediately under 'Atheros Wireless Cards'
+and it says 'Debugging options' (on the left panel).  Then the debugging options are
+displayed in the right hand panel.
+
+This is a common problem.  I have made Kconfig patches for it several times.
+Here is another one.  Works for me.
+
 ---
- drivers/video/fbdev/mb862xx/mb862xxfbdrv.c |    3 ---
- 1 file changed, 3 deletions(-)
+Fix iwlwifi options so that they all depend on IWLWIFI and are
+displayed under the iwlwifi driver instead of in other unexpected
+places.
 
-diff --git a/drivers/video/fbdev/mb862xx/mb862xxfbdrv.c b/drivers/video/fbdev/mb862xx/mb862xxfbdrv.c
-index 0cd4c33..24be945 100644
---- a/drivers/video/fbdev/mb862xx/mb862xxfbdrv.c
-+++ b/drivers/video/fbdev/mb862xx/mb862xxfbdrv.c
-@@ -273,7 +273,6 @@ static int mb862xxfb_set_par(struct fb_info *fbi)
- static int mb862xxfb_pan(struct fb_var_screeninfo *var,
- 			 struct fb_info *info)
- {
--	struct mb862xxfb_par *par = info->par;
- 	unsigned long reg;
- 
- 	reg = pack(var->yoffset, var->xoffset);
-@@ -286,7 +285,6 @@ static int mb862xxfb_pan(struct fb_var_screeninfo *var,
- 
- static int mb862xxfb_blank(int mode, struct fb_info *fbi)
- {
--	struct mb862xxfb_par  *par = fbi->par;
- 	unsigned long reg;
- 
- 	dev_dbg(fbi->dev, "blank mode=%d\n", mode);
-@@ -548,7 +546,6 @@ static ssize_t mb862xxfb_show_dispregs(struct device *dev,
- 				       struct device_attribute *attr, char *buf)
- {
- 	struct fb_info *fbi = dev_get_drvdata(dev);
--	struct mb862xxfb_par *par = fbi->par;
- 	char *ptr = buf;
- 	unsigned int reg;
- 
--- 
-1.7.10.4
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Reported-by: Larry Finger <Larry.Finger@lwfinger.net>
+---
+ drivers/net/wireless/iwlwifi/Kconfig |   17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
+Index: lnx-316-rc3/drivers/net/wireless/iwlwifi/Kconfig
+===================================================================
+--- lnx-316-rc3.orig/drivers/net/wireless/iwlwifi/Kconfig
++++ lnx-316-rc3/drivers/net/wireless/iwlwifi/Kconfig
+@@ -39,9 +39,10 @@ config IWLWIFI
+ 	  say M here and read <file:Documentation/kbuild/modules.txt>.  The
+ 	  module will be called iwlwifi.
+ 
++if IWLWIFI
++
+ config IWLWIFI_LEDS
+ 	bool
+-	depends on IWLWIFI
+ 	depends on LEDS_CLASS=y || LEDS_CLASS=IWLWIFI
+ 	select LEDS_TRIGGERS
+ 	select MAC80211_LEDS
+@@ -49,7 +50,6 @@ config IWLWIFI_LEDS
+ 
+ config IWLDVM
+ 	tristate "Intel Wireless WiFi DVM Firmware support"
+-	depends on IWLWIFI
+ 	default IWLWIFI
+ 	help
+ 	  This is the driver that supports the DVM firmware which is
+@@ -58,7 +58,6 @@ config IWLDVM
+ 
+ config IWLMVM
+ 	tristate "Intel Wireless WiFi MVM Firmware support"
+-	depends on IWLWIFI
+ 	help
+ 	  This is the driver that supports the MVM firmware which is
+ 	  currently only available for 7260 and 3160 devices.
+@@ -70,7 +69,7 @@ config IWLWIFI_OPMODE_MODULAR
+ 	default y if IWLMVM=m
+ 
+ comment "WARNING: iwlwifi is useless without IWLDVM or IWLMVM"
+-	depends on IWLWIFI && IWLDVM=n && IWLMVM=n
++	depends on IWLDVM=n && IWLMVM=n
+ 
+ config IWLWIFI_BCAST_FILTERING
+ 	bool "Enable broadcast filtering"
+@@ -86,11 +85,9 @@ config IWLWIFI_BCAST_FILTERING
+ 	  expect incoming broadcasts for their normal operations.
+ 
+ menu "Debugging Options"
+-	depends on IWLWIFI
+ 
+ config IWLWIFI_DEBUG
+ 	bool "Enable full debugging output in the iwlwifi driver"
+-	depends on IWLWIFI
+ 	---help---
+ 	  This option will enable debug tracing output for the iwlwifi drivers
+ 
+@@ -115,7 +112,7 @@ config IWLWIFI_DEBUG
+ 
+ config IWLWIFI_DEBUGFS
+         bool "iwlwifi debugfs support"
+-        depends on IWLWIFI && MAC80211_DEBUGFS
++        depends on MAC80211_DEBUGFS
+         ---help---
+ 	  Enable creation of debugfs files for the iwlwifi drivers. This
+ 	  is a low-impact option that allows getting insight into the
+@@ -123,13 +120,12 @@ config IWLWIFI_DEBUGFS
+ 
+ config IWLWIFI_DEBUG_EXPERIMENTAL_UCODE
+         bool "Experimental uCode support"
+-        depends on IWLWIFI && IWLWIFI_DEBUG
++        depends on IWLWIFI_DEBUG
+         ---help---
+ 	  Enable use of experimental ucode for testing and debugging.
+ 
+ config IWLWIFI_DEVICE_TRACING
+ 	bool "iwlwifi device access tracing"
+-	depends on IWLWIFI
+ 	depends on EVENT_TRACING
+ 	help
+ 	  Say Y here to trace all commands, including TX frames and IO
+@@ -144,4 +140,7 @@ config IWLWIFI_DEVICE_TRACING
+ 
+ 	  If unsure, say Y so we can help you better when problems
+ 	  occur.
++
+ endmenu
++
++endif
