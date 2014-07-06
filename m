@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbaGFS7F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 14:59:05 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:34082 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752173AbaGFS7D (ORCPT
+	id S1752559AbaGFTAH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 15:00:07 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:63869 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965AbaGFTAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 14:59:03 -0400
+	Sun, 6 Jul 2014 15:00:05 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Rob Clark <robdclark@gmail.com>, linux-fbdev@vger.kernel.org,
+        Wang YanQing <udknight@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
+        Evgeniy Polyakov <zbr@ioremap.net>, Joe Perches <joe@perches.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: tdfxfb.c:  Cleaning up variable that is never used
-Date: Sun,  6 Jul 2014 21:00:18 +0200
-Message-Id: <1404673218-20500-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] video: fbdev: uvesafb.c:  Cleaning up variable that is never used
+Date: Sun,  6 Jul 2014 21:01:20 +0200
+Message-Id: <1404673280-20585-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,24 +30,28 @@ This was found using a static code analysis program called cppcheck
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/video/fbdev/tdfxfb.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/video/fbdev/uvesafb.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/video/fbdev/tdfxfb.c b/drivers/video/fbdev/tdfxfb.c
-index f761fe3..4efb2de 100644
---- a/drivers/video/fbdev/tdfxfb.c
-+++ b/drivers/video/fbdev/tdfxfb.c
-@@ -224,9 +224,7 @@ static inline u8 crt_inb(struct tdfx_par *par, u32 idx)
- 
- static inline void att_outb(struct tdfx_par *par, u32 idx, u8 val)
+diff --git a/drivers/video/fbdev/uvesafb.c b/drivers/video/fbdev/uvesafb.c
+index 509d452..50086b9 100644
+--- a/drivers/video/fbdev/uvesafb.c
++++ b/drivers/video/fbdev/uvesafb.c
+@@ -555,12 +555,12 @@ static int uvesafb_vbe_getmodes(struct uvesafb_ktask *task,
+ static int uvesafb_vbe_getpmi(struct uvesafb_ktask *task,
+ 			      struct uvesafb_par *par)
  {
--	unsigned char tmp;
--
--	tmp = vga_inb(par, IS1_R);
-+	vga_inb(par, IS1_R);
- 	vga_outb(par, ATT_IW, idx);
- 	vga_outb(par, ATT_IW, val);
- }
+-	int i, err;
++	int i;
+ 
+ 	uvesafb_reset(task);
+ 	task->t.regs.eax = 0x4f0a;
+ 	task->t.regs.ebx = 0x0;
+-	err = uvesafb_exec(task);
++	uvesafb_exec(task);
+ 
+ 	if ((task->t.regs.eax & 0xffff) != 0x4f || task->t.regs.es < 0xc000) {
+ 		par->pmi_setpal = par->ypan = 0;
 -- 
 1.7.10.4
 
