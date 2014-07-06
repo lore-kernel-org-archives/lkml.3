@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871AbaGEXYJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jul 2014 19:24:09 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:59029 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727AbaGEXYH (ORCPT
+	id S932706AbaGFAXX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jul 2014 20:23:23 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:43374 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981AbaGFAXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jul 2014 19:24:07 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        John Crispin <blogic@openwrt.org>, Jonas Gorski <jogo@openwrt.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] MIPS: Remove incorrect NULL check in local_flush_tlb_page()
-Date: Sun,  6 Jul 2014 01:23:58 +0200
-Message-Id: <1404602638-16447-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 5 Jul 2014 20:23:22 -0400
+Date: Sun, 6 Jul 2014 00:23:20 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Roger Quadros <rogerq@ti.com>
+cc: tony@atomide.com, rnayak@ti.com, kishon@ti.com, george.cherian@ti.com,
+        balbi@ti.com, balajitk@ti.com, nsekhar@ti.com,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] ARM: DRA7: hwmod: Add OCP2SCP3 module
+In-Reply-To: <53B678C1.4000807@ti.com>
+Message-ID: <alpine.DEB.2.02.1407052355050.23762@utopia.booyaka.com>
+References: <1404385274-5093-1-git-send-email-rogerq@ti.com> <1404385274-5093-2-git-send-email-rogerq@ti.com> <alpine.DEB.2.02.1407031948110.1515@utopia.booyaka.com> <53B678C1.4000807@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We check that the struct vm_area_struct pointer vma is NULL and then
-dereference it a few lines below. The intent was to make sure vma is
-not NULL but this is not necessary since the bug pre-dates GIT history
-and seem to never have caused a problem. The tlb-4k and tlb-8k versions
-of local_flush_tlb_page() don't bother checking if vma is NULL, also
-vma is dereferenced before being passed to local_flush_tlb_page(),
-thus it is safe to remove this NULL check.
+Hi
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
- arch/mips/mm/tlb-r3k.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Fri, 4 Jul 2014, Roger Quadros wrote:
 
-diff --git a/arch/mips/mm/tlb-r3k.c b/arch/mips/mm/tlb-r3k.c
-index d657493..4094bbd 100644
---- a/arch/mips/mm/tlb-r3k.c
-+++ b/arch/mips/mm/tlb-r3k.c
-@@ -158,7 +158,7 @@ void local_flush_tlb_page(struct vm_area_struct *vma, unsigned long page)
- {
- 	int cpu = smp_processor_id();
- 
--	if (!vma || cpu_context(cpu, vma->vm_mm) != 0) {
-+	if (cpu_context(cpu, vma->vm_mm) != 0) {
- 		unsigned long flags;
- 		int oldpid, newpid, idx;
- 
--- 
-1.7.10.4
+> On 07/03/2014 10:48 PM, Paul Walmsley wrote:
+> > On Thu, 3 Jul 2014, Roger Quadros wrote:
+> > 
+> >> This module is needed for the SATA and PCIe PHYs.
+> >>
+> >> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> >> Reviewed-by: Rajendra Nayak <rnayak@ti.com>
+> >> Tested-by: Sekhar Nori <nsekhar@ti.com>>
+> > 
+> > This looks like adding support for a new device, so, after 
+> > discussing with Tony, queuing for v3.17.
+> 
+> We should treat it as missing device (bug) rather than new device 
+> (feature) as the corresponding device tree node is already present.
+> Without this patch we get the following message in kernel boot log
+> 
+> [    0.261680] platform 4a090000.ocp2scp: Cannot lookup hwmod 'ocp2scp3'
+> 
+> I would consider this patch as a fix rather than a new feature.
 
+Just to make sure I'm correctly applying the rules for sequencing -rc 
+patches vs. merge window patches, could you please confirm my 
+understanding of the situation:
+
+1. The OCP2SCP3 device (and the devices that rely on it) never worked on 
+DRA7xx in earlier kernels
+
+2. Even with this support added, neither SATA nor PCIe will work in 3.16 
+on DRA7xx (SATA for unknown reasons, PCIe because the patches are targeted 
+for 3.17).
+
+3. The warning doesn't prevent the machine from booting and does not 
+impair any previously working functionality
+
+4. There are other DRA7xx warning messages on boot in 3.16-rc: for 
+example, http://paste.ubuntu.com/7701601/ lists:
+
+[    0.009931] omap_hwmod: l3_main_2 using broken dt data from ocp
+
+...
+
+[    0.291802] platform 4e000000.dmm: Cannot lookup hwmod 'dmm'
+
+
+Are these four statements correct?
+
+If so, is there some other reason why we should rush this in for 3.16-rc?  
+Put differently: how can we justify adding this device in 3.16-rc rather 
+than 3.17 to Linus Torvalds?
+
+
+- Paul
