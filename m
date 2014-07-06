@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166AbaGFXia (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 19:38:30 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:48269 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303AbaGFXi2 (ORCPT
+	id S1752268AbaGFXit (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 19:38:49 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:61983 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175AbaGFXih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 19:38:28 -0400
+	Sun, 6 Jul 2014 19:38:37 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Wim Van Sebroeck <wim@iguana.be>,
@@ -22,52 +22,41 @@ Cc: Wim Van Sebroeck <wim@iguana.be>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         David Woodhouse <dwmw2@infradead.org>, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [RFC PATCH v2 0/7] kernel: Add support for restart notifier call chain
-Date: Sun,  6 Jul 2014 16:38:13 -0700
-Message-Id: <1404689900-27421-1-git-send-email-linux@roeck-us.net>
+Subject: [PATCH v2 2/7] arm64: Support restart through restart notifier call chain
+Date: Sun,  6 Jul 2014 16:38:15 -0700
+Message-Id: <1404689900-27421-3-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404689900-27421-1-git-send-email-linux@roeck-us.net>
+References: <1404689900-27421-1-git-send-email-linux@roeck-us.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Various drivers implement architecture and/or device specific means
-to restart (reset) the system. Various mechanisms have been implemented
-to support those schemes. The best known mechanism is arm_pm_restart,
-which is a function pointer to be set either from platform specific code
-or from drivers. Another mechanism is to use hardware watchdogs to issue
-a reset; this mechanism is used if there is no other method available
-to reset a board or system. Two examples are alim7101_wdt, which currently
-uses the reboot notifier to trigger a reset, and moxart_wdt, which registers
-the arm_pm_restart function.
+The kernel core now supports a notifier call chain to restart
+the system. Call it if arm_pm_restart is not set.
 
-The existing mechanisms have a number of drawbacks. Typically only one scheme
-to restart the system is supported (at least if arm_pm_restart is used).
-At least in theory there can be mutliple means to restart the system, some of
-which may be less desirable (for example one mechanism may only reset the CPU,
-while another may reset the entire system). Using arm_pm_restart can also be
-racy if the function pointer is set from a driver, as the driver may be in
-the process of being unloaded when arm_pm_restart is called.
-Using the reboot notifier is always racy, as it is unknown if and when
-other functions using the reboot notifier have completed execution
-by the time the watchdog fires.
-
-To solve the problem, introduce a system restart notifier. This notifier
-is expected to be called from the architecture specific machine_restart()
-function. Drivers providing system restart functionality (such as the watchdog
-drivers mentioned above) are expected to register with this notifier.
-
-Patch 1 of this series implements the notifier function. Patches 2 and 3
-implement calling the notifier chain from arm and arm64 restart code.
-
-Patch 4 modifies the restart-poweroff driver to no longer call arm_pm_restart
-directly but machine_restart. This is done to avoid calling arm_pm_restart
-from more than one place. The change makes the driver architecture independent,
-so it would be possible to drop the arm dependency from its Kconfig entry.
-
-Patch 5 and 6 convert existing restart handlers in the watchdog subsystem
-to use the restart notifier. Patch 7 unexports arm_pm_restart to ensure
-that no one gets the idea to implement a restart handler as module.
-
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
-v2: Add patch 4
-    Only call blocking notifier call chain if arm_pm_restart was not set.
+v2: Only call notifier call chain if arm_pm_restart is not set
+    Do not include linux/watchdog.h
+
+ arch/arm64/kernel/process.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
+index 43b7c34..585ebe2 100644
+--- a/arch/arm64/kernel/process.c
++++ b/arch/arm64/kernel/process.c
+@@ -174,6 +174,9 @@ void machine_restart(char *cmd)
+ 	/* Now call the architecture specific reboot code. */
+ 	if (arm_pm_restart)
+ 		arm_pm_restart(reboot_mode, cmd);
++	else
++		blocking_notifier_call_chain(&restart_notifier_list,
++					     reboot_mode, cmd);
+ 
+ 	/*
+ 	 * Whoops - the architecture was unable to reboot.
+-- 
+1.9.1
+
