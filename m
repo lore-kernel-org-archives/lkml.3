@@ -1,105 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768AbaGFOj5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 10:39:57 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:58534 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751533AbaGFOjn (ORCPT
+	id S1751298AbaGFPMu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 11:12:50 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:45394 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889AbaGFPMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 10:39:43 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-scsi@vger.kernel.org, Venkatesh Srinivas <venkateshs@google.com>
-Subject: [PATCH 2/2] virtio-scsi: Implement change_queue_depth for virtscsi targets
-Date: Sun,  6 Jul 2014 16:39:27 +0200
-Message-Id: <1404657567-17133-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1404657567-17133-1-git-send-email-pbonzini@redhat.com>
-References: <1404657567-17133-1-git-send-email-pbonzini@redhat.com>
+	Sun, 6 Jul 2014 11:12:48 -0400
+Date: Sun, 6 Jul 2014 18:12:42 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Jan Kiszka <jan.kiszka@web.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm <kvm@vger.kernel.org>
+Subject: Re: [PATCH] x86: Make x2APIC support depend on interrupt remapping
+ or guest support
+Message-ID: <20140706151242.GN18167@minantech.com>
+References: <53B7ADAA.9030101@web.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53B7ADAA.9030101@web.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Venkatesh Srinivas <venkateshs@google.com>
+On Sat, Jul 05, 2014 at 09:47:54AM +0200, Jan Kiszka wrote:
+> From: Jan Kiszka <jan.kiszka@siemens.com>
+> 
+> We are able to use x2APIC mode in the absence of interrupt remapping on
+> certain hypervisors. So it if fine to disable IRQ_REMAP without having
+> to give up x2APIC support.
+FWIW I did similar thing back when I added x2apic to KVM:
+http://linux.derkeiler.com/Mailing-Lists/Kernel/2009-06/msg14579.html
+But was advised against it.
 
-change_queue_depth allows changing per-target queue depth via sysfs.
+> 
+> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+> ---
+>  arch/x86/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index a8f749e..30a9987 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -310,7 +310,7 @@ config SMP
+>  
+>  config X86_X2APIC
+>  	bool "Support x2apic"
+> -	depends on X86_LOCAL_APIC && X86_64 && IRQ_REMAP
+> +	depends on X86_LOCAL_APIC && X86_64 && (IRQ_REMAP || HYPERVISOR_GUEST)
+>  	---help---
+>  	  This enables x2apic support on CPUs that have this feature.
+>  
+> 
+> 
 
-It also allows the SCSI midlayer to ramp down the number of concurrent
-inflight requests in response to a SCSI BUSY status response and allows
-the midlayer to ramp the count back up to the device maximum when the
-BUSY condition has resolved.
 
-Signed-off-by: Venkatesh Srinivas <venkateshs@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- drivers/scsi/virtio_scsi.c | 33 +++++++++++++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index f67a872de14b..8fd0b21ce13a 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -27,6 +27,7 @@
- #include <scsi/scsi_host.h>
- #include <scsi/scsi_device.h>
- #include <scsi/scsi_cmnd.h>
-+#include <scsi/scsi_tcq.h>
- #include <linux/seqlock.h>
- 
- #define VIRTIO_SCSI_MEMPOOL_SZ 64
-@@ -654,6 +655,36 @@ static int virtscsi_device_reset(struct scsi_cmnd *sc)
- 	return virtscsi_tmf(vscsi, cmd);
- }
- 
-+/**
-+ * virtscsi_change_queue_depth() - Change a virtscsi target's queue depth
-+ * @sdev:	Virtscsi target whose queue depth to change
-+ * @qdepth:	New queue depth
-+ * @reason:	Reason for the queue depth change.
-+ */
-+static int virtscsi_change_queue_depth(struct scsi_device *sdev,
-+				       int qdepth,
-+				       int reason)
-+{
-+	struct Scsi_Host *shost = sdev->host;
-+	int max_depth = shost->cmd_per_lun;
-+
-+	switch (reason) {
-+	case SCSI_QDEPTH_QFULL: /* Drop qdepth in response to BUSY state */
-+		scsi_track_queue_full(sdev, qdepth);
-+		break;
-+	case SCSI_QDEPTH_RAMP_UP: /* Raise qdepth after BUSY state resolved */
-+	case SCSI_QDEPTH_DEFAULT: /* Manual change via sysfs */
-+		scsi_adjust_queue_depth(sdev,
-+					scsi_get_tag_type(sdev),
-+					min(max_depth, qdepth));
-+		break;
-+	default:
-+		return -EOPNOTSUPP;
-+	}
-+
-+	return sdev->queue_depth;
-+}
-+
- static int virtscsi_abort(struct scsi_cmnd *sc)
- {
- 	struct virtio_scsi *vscsi = shost_priv(sc->device->host);
-@@ -709,6 +740,7 @@ static struct scsi_host_template virtscsi_host_template_single = {
- 	.this_id = -1,
- 	.cmd_size = sizeof(struct virtio_scsi_cmd),
- 	.queuecommand = virtscsi_queuecommand_single,
-+	.change_queue_depth = virtscsi_change_queue_depth,
- 	.eh_abort_handler = virtscsi_abort,
- 	.eh_device_reset_handler = virtscsi_device_reset,
- 
-@@ -726,6 +758,7 @@ static struct scsi_host_template virtscsi_host_template_multi = {
- 	.this_id = -1,
- 	.cmd_size = sizeof(struct virtio_scsi_cmd),
- 	.queuecommand = virtscsi_queuecommand_multi,
-+	.change_queue_depth = virtscsi_change_queue_depth,
- 	.eh_abort_handler = virtscsi_abort,
- 	.eh_device_reset_handler = virtscsi_device_reset,
- 
--- 
-1.8.3.1
-
+--
+			Gleb.
