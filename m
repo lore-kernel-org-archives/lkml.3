@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215AbaGFXip (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 19:38:45 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:36371 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752174AbaGFXic (ORCPT
+	id S1752673AbaGFXkM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 19:40:12 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:64142 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193AbaGFXip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 19:38:32 -0400
+	Sun, 6 Jul 2014 19:38:45 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Wim Van Sebroeck <wim@iguana.be>,
@@ -22,9 +22,9 @@ Cc: Wim Van Sebroeck <wim@iguana.be>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         David Woodhouse <dwmw2@infradead.org>, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v2 1/7] kernel: Add support for restart notifier call chain
-Date: Sun,  6 Jul 2014 16:38:14 -0700
-Message-Id: <1404689900-27421-2-git-send-email-linux@roeck-us.net>
+Subject: [PATCH v2 3/7] arm: Support restart through restart notifier call chain
+Date: Sun,  6 Jul 2014 16:38:16 -0700
+Message-Id: <1404689900-27421-4-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404689900-27421-1-git-send-email-linux@roeck-us.net>
 References: <1404689900-27421-1-git-send-email-linux@roeck-us.net>
@@ -32,127 +32,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Various drivers implement architecture and/or device specific means
-to restart (reset) the system. Various mechanisms have been implemented
-to support those schemes. The best known mechanism is arm_pm_restart,
-which is a function pointer to be set either from platform specific code
-or from drivers. Another mechanism is to use hardware watchdogs to issue
-a reset; this mechanism is used if there is no other method available
-to reset a board or system. Two examples are alim7101_wdt, which currently
-uses the reboot notifier to trigger a reset, and moxart_wdt, which registers
-the arm_pm_restart function.
+The kernel core now supports a notifier call chain for system
+restart functions.
 
-The existing mechanisms have a number of drawbacks. Typically only one scheme
-to restart the system is supported (at least if arm_pm_restart is used).
-At least in theory there can be mutliple means to restart the system, some of
-which may be less desirable (for example one mechanism may only reset the CPU,
-while another may reset the entire system). Using arm_pm_restart can also be
-racy if the function pointer is set from a driver, as the driver may be in
-the process of being unloaded when arm_pm_restart is called.
-Using the reboot notifier is always racy, as it is unknown if and when
-other functions using the reboot notifier have completed execution
-by the time the watchdog fires.
-
-To solve the problem, introduce a system restart notifier. This notifier
-is expected to be called from the architecture specific machine_restart()
-function. Drivers providing system restart functionality (such as the watchdog
-drivers mentioned above) are expected to register with this notifier.
+With this change, the arm_pm_restart callback is now optional,
+so check if it is set before calling it. Only call the notifier
+functions if arm_pm_restart is not set.
 
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
-v2: No change
+v2: Only call notifier call chain if arm_pm_restart is not set
+    Do not include linux/watchdog.h
 
- include/linux/notifier.h |  1 +
- include/linux/reboot.h   |  2 ++
- kernel/notifier.c        |  6 ++++++
- kernel/reboot.c          | 32 ++++++++++++++++++++++++++++++++
- 4 files changed, 41 insertions(+)
+ arch/arm/kernel/process.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-index d14a4c3..3d7d2fc 100644
---- a/include/linux/notifier.h
-+++ b/include/linux/notifier.h
-@@ -210,6 +210,7 @@ static inline int notifier_to_errno(int ret)
- #define KBD_POST_KEYSYM		0x0005 /* Called after keyboard keysym interpretation */
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 81ef686..5108e45 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -230,7 +230,11 @@ void machine_restart(char *cmd)
+ 	local_irq_disable();
+ 	smp_send_stop();
  
- extern struct blocking_notifier_head reboot_notifier_list;
-+extern struct blocking_notifier_head restart_notifier_list;
+-	arm_pm_restart(reboot_mode, cmd);
++	if (arm_pm_restart)
++		arm_pm_restart(reboot_mode, cmd);
++	else
++		blocking_notifier_call_chain(&restart_notifier_list,
++					     reboot_mode, cmd);
  
- #endif /* __KERNEL__ */
- #endif /* _LINUX_NOTIFIER_H */
-diff --git a/include/linux/reboot.h b/include/linux/reboot.h
-index 48bf152..f8e7e0a 100644
---- a/include/linux/reboot.h
-+++ b/include/linux/reboot.h
-@@ -38,6 +38,8 @@ extern int reboot_force;
- extern int register_reboot_notifier(struct notifier_block *);
- extern int unregister_reboot_notifier(struct notifier_block *);
- 
-+extern int register_restart_notifier(struct notifier_block *);
-+extern int unregister_restart_notifier(struct notifier_block *);
- 
- /*
-  * Architecture-specific implementations of sys_reboot commands.
-diff --git a/kernel/notifier.c b/kernel/notifier.c
-index 4803da6..2f2b071 100644
---- a/kernel/notifier.c
-+++ b/kernel/notifier.c
-@@ -14,6 +14,12 @@
- BLOCKING_NOTIFIER_HEAD(reboot_notifier_list);
- 
- /*
-+ *	Notifier list for kernel code which wants to be called
-+ *	to restart the system.
-+ */
-+BLOCKING_NOTIFIER_HEAD(restart_notifier_list);
-+
-+/*
-  *	Notifier chain core routines.  The exported routines below
-  *	are layered on top of these, with appropriate locking added.
-  */
-diff --git a/kernel/reboot.c b/kernel/reboot.c
-index a3a9e24..374896f 100644
---- a/kernel/reboot.c
-+++ b/kernel/reboot.c
-@@ -104,6 +104,38 @@ int unregister_reboot_notifier(struct notifier_block *nb)
- }
- EXPORT_SYMBOL(unregister_reboot_notifier);
- 
-+/**
-+ *	register_restart_notifier - Register function to be called to reset
-+ *				    the system
-+ *	@nb: Info about notifier function to be called
-+ *
-+ *	Registers a function with the list of functions
-+ *	to be called to restart the system.
-+ *
-+ *	Currently always returns zero, as blocking_notifier_chain_register()
-+ *	always returns zero.
-+ */
-+int register_restart_notifier(struct notifier_block *nb)
-+{
-+	return blocking_notifier_chain_register(&restart_notifier_list, nb);
-+}
-+EXPORT_SYMBOL(register_restart_notifier);
-+
-+/**
-+ *	unregister_restart_notifier - Unregister previously registered
-+ *				      restart notifier
-+ *	@nb: Hook to be unregistered
-+ *
-+ *	Unregisters a previously registered restart notifier function.
-+ *
-+ *	Returns zero on success, or %-ENOENT on failure.
-+ */
-+int unregister_restart_notifier(struct notifier_block *nb)
-+{
-+	return blocking_notifier_chain_unregister(&restart_notifier_list, nb);
-+}
-+EXPORT_SYMBOL(unregister_restart_notifier);
-+
- void migrate_to_reboot_cpu(void)
- {
- 	/* The boot cpu is always logical cpu 0 */
+ 	/* Give a grace period for failure to restart of 1s */
+ 	mdelay(1000);
 -- 
 1.9.1
 
