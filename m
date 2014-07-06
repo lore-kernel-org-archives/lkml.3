@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386AbaGFSus (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 14:50:48 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:35729 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664AbaGFSur (ORCPT
+	id S1752380AbaGFSvv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 14:51:51 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:40062 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048AbaGFSvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 14:50:47 -0400
+	Sun, 6 Jul 2014 14:51:49 -0400
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Jyri Sarha <jsarha@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] video: fbdev: omap2: dss: hdmi5_core.c:  Cleaning up variable that is never used
-Date: Sun,  6 Jul 2014 20:52:02 +0200
-Message-Id: <1404672722-19820-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Jingoo Han <jg1.han@samsung.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Archit Taneja <archit@ti.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] video: fbdev: omap2: dss: rfbi.c:  Cleaning up variable that is never used
+Date: Sun,  6 Jul 2014 20:53:04 +0200
+Message-Id: <1404672784-19903-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,47 +29,38 @@ This was found using a static code analysis program called cppcheck
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/video/fbdev/omap2/dss/hdmi5_core.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/video/fbdev/omap2/dss/rfbi.c |   11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
-diff --git a/drivers/video/fbdev/omap2/dss/hdmi5_core.c b/drivers/video/fbdev/omap2/dss/hdmi5_core.c
-index 7528c7a..3975e83 100644
---- a/drivers/video/fbdev/omap2/dss/hdmi5_core.c
-+++ b/drivers/video/fbdev/omap2/dss/hdmi5_core.c
-@@ -142,7 +142,6 @@ static int hdmi_core_ddc_edid(struct hdmi_core_data *core, u8 *pedid, u8 ext)
+diff --git a/drivers/video/fbdev/omap2/dss/rfbi.c b/drivers/video/fbdev/omap2/dss/rfbi.c
+index c8a81a2..6f03bbb 100644
+--- a/drivers/video/fbdev/omap2/dss/rfbi.c
++++ b/drivers/video/fbdev/omap2/dss/rfbi.c
+@@ -574,7 +574,6 @@ static int rfbi_setup_te(enum omap_rfbi_te_mode mode,
  {
- 	void __iomem *base = core->base;
- 	u8 cur_addr;
--	char checksum = 0;
- 	const int retries = 1000;
- 	u8 seg_ptr = ext / 2;
- 	u8 edidbase = ((ext % 2) * 0x80);
-@@ -191,7 +190,6 @@ static int hdmi_core_ddc_edid(struct hdmi_core_data *core, u8 *pedid, u8 ext)
- 		}
+ 	int hs, vs;
+ 	int min;
+-	u32 l;
  
- 		pedid[cur_addr] = REG_GET(base, HDMI_CORE_I2CM_DATAI, 7, 0);
--		checksum += pedid[cur_addr];
- 	}
+ 	hs = ps_to_rfbi_ticks(hs_pulse_time, 1);
+ 	vs = ps_to_rfbi_ticks(vs_pulse_time, 1);
+@@ -595,15 +594,7 @@ static int rfbi_setup_te(enum omap_rfbi_te_mode mode,
+ 	rfbi_write_reg(RFBI_HSYNC_WIDTH, hs);
+ 	rfbi_write_reg(RFBI_VSYNC_WIDTH, vs);
+ 
+-	l = rfbi_read_reg(RFBI_CONFIG(0));
+-	if (hs_pol_inv)
+-		l &= ~(1 << 21);
+-	else
+-		l |= 1 << 21;
+-	if (vs_pol_inv)
+-		l &= ~(1 << 20);
+-	else
+-		l |= 1 << 20;
++	rfbi_read_reg(RFBI_CONFIG(0));
  
  	return 0;
-@@ -810,7 +808,7 @@ int hdmi5_audio_config(struct hdmi_core_data *core, struct hdmi_wp_data *wp,
- 	struct hdmi_audio_format audio_format;
- 	struct hdmi_audio_dma audio_dma;
- 	struct hdmi_core_audio_config core_cfg;
--	int err, n, cts, channel_count;
-+	int n, cts, channel_count;
- 	unsigned int fs_nr;
- 	bool word_length_16b = false;
- 
-@@ -853,7 +851,7 @@ int hdmi5_audio_config(struct hdmi_core_data *core, struct hdmi_wp_data *wp,
- 		return -EINVAL;
- 	}
- 
--	err = hdmi_compute_acr(pclk, fs_nr, &n, &cts);
-+	hdmi_compute_acr(pclk, fs_nr, &n, &cts);
- 	core_cfg.n = n;
- 	core_cfg.cts = cts;
- 
+ }
 -- 
 1.7.10.4
 
