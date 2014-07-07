@@ -1,263 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129AbaGHA3G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:29:06 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:51644 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755038AbaGHA2n (ORCPT
+	id S1755315AbaGHA33 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:29:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55860 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754122AbaGGXyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 20:28:43 -0400
+	Mon, 7 Jul 2014 19:54:51 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 3.14 79/94] clk: qcom: Fix mmcc-8974s PLL configurations
+Date: Mon,  7 Jul 2014 16:58:09 -0700
+Message-Id: <20140707235759.105792569@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
+References: <20140707235756.780319003@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-In-Reply-To: <1404772661-15527-1-git-send-email-andi@firstfloor.org>
-References: <1404772661-15527-1-git-send-email-andi@firstfloor.org>
-Date: Tue, 8 Jul 2014 02:28:43 +0200
-Message-ID: <CABPqkBSXrfPS=jeXDuXQjD1N2r4ru6t2_r+1Yz40GVxGQ5nQ8A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] perf, x86: Revamp PEBS event selection v2
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 8, 2014 at 12:37 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->
-> The basic idea is that it does not make sense to list all PEBS
-> events individually. The list is very long, sometimes outdated
-> and the hardware doesn't need it. If an event does not support
-> PEBS it will just not count, there is no security issue.
->
-> This vastly simplifies the PEBS event selection. It also
-> speeds up the scheduling because the scheduler doesn't
-> have to walk as many constraints.
->
-> Bugs fixed:
-> - We do not allow setting forbidden flags with PEBS anymore
-> (SDM 18.9.4), except for the special cycle event.
-> This is done using a new constraint macro that also
-> matches on the event flags.
-> - We now allow DataLA on all Haswell events, not just
-> a small subset. In general all PEBS events that tag memory
-> accesses support DataLA on Haswell. Otherwise the reported
-> address is just zero. This allows address profiling
-> on vastly more events.
-> - We did not allow all PEBS events on Haswell:
-> We were missing some valid subevents in d1-d2 (MEM_LOAD_UOPS_RETIRED.*,
-> MEM_LOAD_UOPS_RETIRED_L3_HIT_RETIRED.*)
->
-> This includes the changes proposed by Stephane earlier and obsoletes
-> his patchkit (except for some changes on pre Sandy Bridge/Silvermont
-> CPUs)
->
-> I only did Sandy Bridge and Silvermont and later so far, mostly because these
-> are the parts I could directly confirm the hardware behavior with hardware
-> architects. Also I do not believe the older CPUs have any
-> missing events in their PEBS list, so there's no pressing
-> need to change them.
->
-> I did not implement the flag proposed by Peter to allow
-> setting forbidden flags. If really needed this could
-> be implemented on to of this patch.
->
-> Cc: eranian@google.com
-> v2: Fix broken store events on SNB/IVB (Stephane Eranian)
-> Update description.
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/include/asm/perf_event.h         |  8 +++
->  arch/x86/kernel/cpu/perf_event.h          | 18 +++++--
->  arch/x86/kernel/cpu/perf_event_intel_ds.c | 88 +++++++------------------------
->  3 files changed, 39 insertions(+), 75 deletions(-)
->
-> diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-> index 8249df4..8dfc9fd 100644
-> --- a/arch/x86/include/asm/perf_event.h
-> +++ b/arch/x86/include/asm/perf_event.h
-> @@ -51,6 +51,14 @@
->          ARCH_PERFMON_EVENTSEL_EDGE  |  \
->          ARCH_PERFMON_EVENTSEL_INV   |  \
->          ARCH_PERFMON_EVENTSEL_CMASK)
-> +#define X86_ALL_EVENT_FLAGS                    \
-> +       (ARCH_PERFMON_EVENTSEL_EDGE |           \
-> +        ARCH_PERFMON_EVENTSEL_INV |            \
-> +        ARCH_PERFMON_EVENTSEL_CMASK |          \
-> +        ARCH_PERFMON_EVENTSEL_ANY |            \
-> +        ARCH_PERFMON_EVENTSEL_PIN_CONTROL |    \
-> +        HSW_IN_TX |                            \
-> +        HSW_IN_TX_CHECKPOINTED)
->  #define AMD64_RAW_EVENT_MASK           \
->         (X86_RAW_EVENT_MASK          |  \
->          AMD64_EVENTSEL_EVENT)
-> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-> index a22a34e9..70273e8 100644
-> --- a/arch/x86/kernel/cpu/perf_event.h
-> +++ b/arch/x86/kernel/cpu/perf_event.h
-> @@ -262,16 +262,24 @@ struct cpu_hw_events {
->         EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
->
->  #define INTEL_PLD_CONSTRAINT(c, n)     \
-> -       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
-> +       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
->                            HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LDLAT)
->
->  #define INTEL_PST_CONSTRAINT(c, n)     \
-> -       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
-> +       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
->                           HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST)
->
-> -/* DataLA version of store sampling without extra enable bit. */
-> -#define INTEL_PST_HSW_CONSTRAINT(c, n) \
-> -       __EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
-> +/* Event constraint, but match on all event flags too. */
-> +#define INTEL_FLAGS_EVENT_CONSTRAINT(c, n) \
-> +       EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS)
-> +
-> +/* Check only flags, but allow all event/umask */
-> +#define INTEL_ALL_EVENT_CONSTRAINT(flags, n)   \
-> +       EVENT_CONSTRAINT(flags, n, X86_ALL_EVENT_FLAGS)
-> +
-The first argument is not flags but rather 'code'. This is confusing
-otherwise.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-> +/* Same as above, but enable DataLA */
-> +#define INTEL_ALL_EVENT_CONSTRAINT_DATALA(flags, n) \
-> +       __EVENT_CONSTRAINT(flags, n, X86_ALL_EVENT_FLAGS, \
->                           HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST_HSW)
->
->  /*
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> index 980970c..0e22ce6 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> @@ -567,28 +567,10 @@ struct event_constraint intel_atom_pebs_event_constraints[] = {
->  };
->
->  struct event_constraint intel_slm_pebs_event_constraints[] = {
-> -       INTEL_UEVENT_CONSTRAINT(0x0103, 0x1), /* REHABQ.LD_BLOCK_ST_FORWARD_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x0803, 0x1), /* REHABQ.LD_SPLITS_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x0204, 0x1), /* MEM_UOPS_RETIRED.L2_HIT_LOADS_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x0404, 0x1), /* MEM_UOPS_RETIRED.L2_MISS_LOADS_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x0804, 0x1), /* MEM_UOPS_RETIRED.DTLB_MISS_LOADS_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x2004, 0x1), /* MEM_UOPS_RETIRED.HITM_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x00c0, 0x1), /* INST_RETIRED.ANY_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x00c4, 0x1), /* BR_INST_RETIRED.ALL_BRANCHES_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x7ec4, 0x1), /* BR_INST_RETIRED.JCC_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xbfc4, 0x1), /* BR_INST_RETIRED.FAR_BRANCH_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xebc4, 0x1), /* BR_INST_RETIRED.NON_RETURN_IND_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xf7c4, 0x1), /* BR_INST_RETIRED.RETURN_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xf9c4, 0x1), /* BR_INST_RETIRED.CALL_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xfbc4, 0x1), /* BR_INST_RETIRED.IND_CALL_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xfdc4, 0x1), /* BR_INST_RETIRED.REL_CALL_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xfec4, 0x1), /* BR_INST_RETIRED.TAKEN_JCC_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x00c5, 0x1), /* BR_INST_MISP_RETIRED.ALL_BRANCHES_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0x7ec5, 0x1), /* BR_INST_MISP_RETIRED.JCC_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xebc5, 0x1), /* BR_INST_MISP_RETIRED.NON_RETURN_IND_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xf7c5, 0x1), /* BR_INST_MISP_RETIRED.RETURN_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xfbc5, 0x1), /* BR_INST_MISP_RETIRED.IND_CALL_PS */
-> -       INTEL_UEVENT_CONSTRAINT(0xfec5, 0x1), /* BR_INST_MISP_RETIRED.TAKEN_JCC_PS */
-> +       /* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
-> +       INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
-> +       /* Allow all events as PEBS with no flags */
-> +       INTEL_ALL_EVENT_CONSTRAINT(0xffff, 0x1),
+------------------
 
-       ^^^^^ that does not work!
-As I said before, you need to pass 0x0 here to catch all non-pebs events.
+From: Stephen Boyd <sboyd@codeaurora.org>
 
->         EVENT_CONSTRAINT_END
->  };
->
-> @@ -624,68 +606,34 @@ struct event_constraint intel_westmere_pebs_event_constraints[] = {
->
->  struct event_constraint intel_snb_pebs_event_constraints[] = {
->         INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-> -       INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
-> -       INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
-> -       INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-> -       INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
->         INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
->         INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
-> -       INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
-> -       INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
-> -       INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-> -       INTEL_EVENT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
-> -       INTEL_UEVENT_CONSTRAINT(0x02d4, 0xf), /* MEM_LOAD_UOPS_MISC_RETIRED.LLC_MISS */
-> +       /* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
-> +       INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
-> +       /* Allow all events as PEBS with no flags */
-> +       INTEL_ALL_EVENT_CONSTRAINT(0xffff, 0xf),
-Ditto here.
+commit 437ae6a1b8f2eedebfbf0f6572e19ca5c58a3f71 upstream.
 
->         EVENT_CONSTRAINT_END
->  };
->
->  struct event_constraint intel_ivb_pebs_event_constraints[] = {
->          INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-> -        INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
-> -        INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
-> -        INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-> -        INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
->          INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
->         INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
-> -        INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
-> -        INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
-> -        INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-> -        INTEL_EVENT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
-> +       /* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
-> +       INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
-> +       /* Allow all events as PEBS with no flags */
-> +       INTEL_ALL_EVENT_CONSTRAINT(0xffff, 0xf),
-Ditto here.
->          EVENT_CONSTRAINT_END
->  };
->
->  struct event_constraint intel_hsw_pebs_event_constraints[] = {
->         INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-> -       INTEL_PST_HSW_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
-> -       INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
-> -       INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-> -       INTEL_UEVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
-> -       INTEL_UEVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
-> -       INTEL_UEVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.NEAR_TAKEN */
-> -       INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.* */
-> -       /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
-> -       INTEL_UEVENT_CONSTRAINT(0x11d0, 0xf),
-> -       /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
-> -       INTEL_UEVENT_CONSTRAINT(0x12d0, 0xf),
-> -       INTEL_UEVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
-> -       INTEL_UEVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
-> -       /* MEM_UOPS_RETIRED.SPLIT_STORES */
-> -       INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf),
-> -       INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
-> -       INTEL_PST_HSW_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
-> -       INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
-> -       INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
-> -       INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
-> -       /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
-> -       INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf),
-> -       /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
-> -       INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf),
-> -       /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
-> -       INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf),
-> -       /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
-> -       INTEL_UEVENT_CONSTRAINT(0x01d3, 0xf),
-> -       INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
-> -       INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
-> -
-> +       INTEL_PLD_CONSTRAINT(0x01cd, 0xf),    /* MEM_TRANS_RETIRED.* */
-> +       /* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
-> +       INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
-> +       /* Allow all events as PEBS with no flags */
-> +       /* We allow DATALA for all PEBS events, will be 0 if not supported */
-> +       INTEL_ALL_EVENT_CONSTRAINT_DATALA(0, 0xf),
+We forgot to add the status bit for the PLLs and we were using
+the wrong register and masks for configuration, leading to
+unexpected PLL configurations. Fix this.
 
-I think you allow for all events, not just PEBS events.
+Fixes: d8b212014e69 (clk: qcom: Add support for MSM8974's multimedia clock controller (MMCC))
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
->         EVENT_CONSTRAINT_END
->  };
->
-> --
-> 1.9.3
->
+---
+ drivers/clk/qcom/mmcc-msm8974.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+--- a/drivers/clk/qcom/mmcc-msm8974.c
++++ b/drivers/clk/qcom/mmcc-msm8974.c
+@@ -169,6 +169,7 @@ static struct clk_pll mmpll0 = {
+ 	.config_reg = 0x0014,
+ 	.mode_reg = 0x0000,
+ 	.status_reg = 0x001c,
++	.status_bit = 17,
+         .clkr.hw.init = &(struct clk_init_data){
+                 .name = "mmpll0",
+                 .parent_names = (const char *[]){ "xo" },
+@@ -192,9 +193,10 @@ static struct clk_pll mmpll1 = {
+ 	.l_reg = 0x0044,
+ 	.m_reg = 0x0048,
+ 	.n_reg = 0x004c,
+-	.config_reg = 0x0054,
++	.config_reg = 0x0050,
+ 	.mode_reg = 0x0040,
+ 	.status_reg = 0x005c,
++	.status_bit = 17,
+         .clkr.hw.init = &(struct clk_init_data){
+                 .name = "mmpll1",
+                 .parent_names = (const char *[]){ "xo" },
+@@ -218,7 +220,7 @@ static struct clk_pll mmpll2 = {
+ 	.l_reg = 0x4104,
+ 	.m_reg = 0x4108,
+ 	.n_reg = 0x410c,
+-	.config_reg = 0x4114,
++	.config_reg = 0x4110,
+ 	.mode_reg = 0x4100,
+ 	.status_reg = 0x411c,
+         .clkr.hw.init = &(struct clk_init_data){
+@@ -233,9 +235,10 @@ static struct clk_pll mmpll3 = {
+ 	.l_reg = 0x0084,
+ 	.m_reg = 0x0088,
+ 	.n_reg = 0x008c,
+-	.config_reg = 0x0094,
++	.config_reg = 0x0090,
+ 	.mode_reg = 0x0080,
+ 	.status_reg = 0x009c,
++	.status_bit = 17,
+         .clkr.hw.init = &(struct clk_init_data){
+                 .name = "mmpll3",
+                 .parent_names = (const char *[]){ "xo" },
+@@ -2318,7 +2321,7 @@ static const struct pll_config mmpll1_co
+ 	.vco_val = 0x0,
+ 	.vco_mask = 0x3 << 20,
+ 	.pre_div_val = 0x0,
+-	.pre_div_mask = 0x3 << 12,
++	.pre_div_mask = 0x7 << 12,
+ 	.post_div_val = 0x0,
+ 	.post_div_mask = 0x3 << 8,
+ 	.mn_ena_mask = BIT(24),
+@@ -2332,7 +2335,7 @@ static struct pll_config mmpll3_config =
+ 	.vco_val = 0x0,
+ 	.vco_mask = 0x3 << 20,
+ 	.pre_div_val = 0x0,
+-	.pre_div_mask = 0x3 << 12,
++	.pre_div_mask = 0x7 << 12,
+ 	.post_div_val = 0x0,
+ 	.post_div_mask = 0x3 << 8,
+ 	.mn_ena_mask = BIT(24),
+
+
