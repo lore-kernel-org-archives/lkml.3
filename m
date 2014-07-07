@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551AbaGHAke (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:40:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
+	id S1755565AbaGHAkj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:40:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55791 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710AbaGGXyi (ORCPT
+	with ESMTP id S1753898AbaGGXyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:38 -0400
+	Mon, 7 Jul 2014 19:54:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.14 41/94] Bluetooth: Fix check for connection encryption
-Date: Mon,  7 Jul 2014 16:57:31 -0700
-Message-Id: <20140707235757.998649334@linuxfoundation.org>
+        Christopher Friedt <chrisfriedt@gmail.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Jakob Bornecrantz <jakob@vmware.com>
+Subject: [PATCH 3.14 39/94] drm/vmwgfx: Fix incorrect write to read-only register v2:
+Date: Mon,  7 Jul 2014 16:57:29 -0700
+Message-Id: <20140707235757.940388580@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,43 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit e694788d73efe139b24f78b036deb97fe57fa8cb upstream.
+commit 4e578080ed3262ed2c3985868539bc66218d25c0 upstream.
 
-The conn->link_key variable tracks the type of link key in use. It is
-set whenever we respond to a link key request as well as when we get a
-link key notification event.
+Commit "drm/vmwgfx: correct fb_fix_screeninfo.line_length", while fixing a
+vmwgfx fbdev bug, also writes the pitch to a supposedly read-only register:
+SVGA_REG_BYTES_PER_LINE, while it should be (and also in fact is) written to
+SVGA_REG_PITCHLOCK.
 
-These two events do not however always guarantee that encryption is
-enabled: getting a link key request and responding to it may only mean
-that the remote side has requested authentication but not encryption. On
-the other hand, the encrypt change event is a certain guarantee that
-encryption is enabled. The real encryption state is already tracked in
-the conn->link_mode variable through the HCI_LM_ENCRYPT bit.
+This patch is Cc'd stable because of the unknown effects writing to this
+register might have, particularly on older device versions.
 
-This patch fixes a check for encryption in the hci_conn_auth function to
-use the proper conn->link_mode value and thereby eliminates the chance
-of a false positive result.
+v2: Updated log message.
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Cc: Christopher Friedt <chrisfriedt@gmail.com>
+Tested-by: Christopher Friedt <chrisfriedt@gmail.com>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_conn.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_fb.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/net/bluetooth/hci_conn.c
-+++ b/net/bluetooth/hci_conn.c
-@@ -759,7 +759,7 @@ static int hci_conn_auth(struct hci_conn
- 		/* If we're already encrypted set the REAUTH_PEND flag,
- 		 * otherwise set the ENCRYPT_PEND.
- 		 */
--		if (conn->key_type != 0xff)
-+		if (conn->link_mode & HCI_LM_ENCRYPT)
- 			set_bit(HCI_CONN_REAUTH_PEND, &conn->flags);
- 		else
- 			set_bit(HCI_CONN_ENCRYPT_PEND, &conn->flags);
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
+@@ -179,7 +179,6 @@ static int vmw_fb_set_par(struct fb_info
+ 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_POSITION_Y, info->var.yoffset);
+ 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_WIDTH, info->var.xres);
+ 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_HEIGHT, info->var.yres);
+-		vmw_write(vmw_priv, SVGA_REG_BYTES_PER_LINE, info->fix.line_length);
+ 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_ID, SVGA_ID_INVALID);
+ 	}
+ 
 
 
