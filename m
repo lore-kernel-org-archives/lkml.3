@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142AbaGHAck (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:32:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
+	id S932203AbaGHAc4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:32:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55860 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754040AbaGGXyq (ORCPT
+	with ESMTP id S1753716AbaGGXyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Valentine Sinitsyn <valentine.sinitsyn@gmail.com>,
+        Nadav Amit <namit@cs.technion.ac.il>,
         Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.14 67/94] KVM: x86: preserve the high 32-bits of the PAT register
-Date: Mon,  7 Jul 2014 16:57:57 -0700
-Message-Id: <20140707235758.764379189@linuxfoundation.org>
+Subject: [PATCH 3.14 66/94] KVM: x86: Increase the number of fixed MTRR regs to 10
+Date: Mon,  7 Jul 2014 16:57:56 -0700
+Message-Id: <20140707235758.736319281@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,15 +29,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Nadav Amit <namit@cs.technion.ac.il>
 
-commit 7cb060a91c0efc5ff94f83c6df3ed705e143cdb9 upstream.
+commit 682367c494869008eb89ef733f196e99415ae862 upstream.
 
-KVM does not really do much with the PAT, so this went unnoticed for a
-long time.  It is exposed however if you try to do rdmsr on the PAT
-register.
+Recent Intel CPUs have 10 variable range MTRRs. Since operating systems
+sometime make assumptions on CPUs while they ignore capability MSRs, it is
+better for KVM to be consistent with recent CPUs. Reporting more MTRRs than
+actually supported has no functional implications.
 
-Reported-by: Valentine Sinitsyn <valentine.sinitsyn@gmail.com>
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
@@ -47,14 +48,14 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/arch/x86/include/asm/kvm_host.h
 +++ b/arch/x86/include/asm/kvm_host.h
-@@ -462,7 +462,7 @@ struct kvm_vcpu_arch {
- 	bool nmi_injected;    /* Trying to inject an NMI this entry */
+@@ -99,7 +99,7 @@ static inline gfn_t gfn_to_index(gfn_t g
+ #define KVM_REFILL_PAGES 25
+ #define KVM_MAX_CPUID_ENTRIES 80
+ #define KVM_NR_FIXED_MTRR_REGION 88
+-#define KVM_NR_VAR_MTRR 8
++#define KVM_NR_VAR_MTRR 10
  
- 	struct mtrr_state_type mtrr_state;
--	u32 pat;
-+	u64 pat;
+ #define ASYNC_PF_PER_VCPU 64
  
- 	int switch_db_regs;
- 	unsigned long db[KVM_NR_DB_REGS];
 
 
