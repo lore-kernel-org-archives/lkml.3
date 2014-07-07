@@ -1,105 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756518AbaGHBKa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:10:30 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:49610 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756498AbaGHBKZ (ORCPT
+	id S1756533AbaGHBLF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:11:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55237 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656AbaGGXxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 21:10:25 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53BB44FC.7070501@roeck-us.net>
-Date: Mon, 07 Jul 2014 18:10:20 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 7 Jul 2014 19:53:54 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: [PATCH 3.15 043/122] drm/i915: set backlight duty cycle after backlight enable for gen4
+Date: Mon,  7 Jul 2014 16:56:45 -0700
+Message-Id: <20140707235735.540523221@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
+References: <20140707235734.234226883@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/7] kernel: Add support for restart notifier call
- chain
-References: <1404689900-27421-1-git-send-email-linux@roeck-us.net>	<1404689900-27421-2-git-send-email-linux@roeck-us.net> <20140707141454.3ca1e2fc2e6a4c985d7d2f35@linux-foundation.org>
-In-Reply-To: <20140707141454.3ca1e2fc2e6a4c985d7d2f35@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2014 02:14 PM, Andrew Morton wrote:
-> On Sun,  6 Jul 2014 16:38:14 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
->
->> Various drivers implement architecture and/or device specific means
->> to restart (reset) the system. Various mechanisms have been implemented
->> to support those schemes. The best known mechanism is arm_pm_restart,
->> which is a function pointer to be set either from platform specific code
->> or from drivers. Another mechanism is to use hardware watchdogs to issue
->> a reset; this mechanism is used if there is no other method available
->> to reset a board or system. Two examples are alim7101_wdt, which currently
->> uses the reboot notifier to trigger a reset, and moxart_wdt, which registers
->> the arm_pm_restart function.
->>
->> The existing mechanisms have a number of drawbacks. Typically only one scheme
->> to restart the system is supported (at least if arm_pm_restart is used).
->> At least in theory there can be mutliple means to restart the system, some of
->> which may be less desirable (for example one mechanism may only reset the CPU,
->> while another may reset the entire system). Using arm_pm_restart can also be
->> racy if the function pointer is set from a driver, as the driver may be in
->> the process of being unloaded when arm_pm_restart is called.
->> Using the reboot notifier is always racy, as it is unknown if and when
->> other functions using the reboot notifier have completed execution
->> by the time the watchdog fires.
->>
->> To solve the problem, introduce a system restart notifier. This notifier
->> is expected to be called from the architecture specific machine_restart()
->> function. Drivers providing system restart functionality (such as the watchdog
->> drivers mentioned above) are expected to register with this notifier.
->
-> It all looks sane to my unfamiliar eye.
->
->>   /*
->> + *	Notifier list for kernel code which wants to be called
->> + *	to restart the system.
->> + */
->
-> hm, is this all we have to say?
->
->> --- a/kernel/reboot.c
->> +++ b/kernel/reboot.c
->> @@ -104,6 +104,38 @@ int unregister_reboot_notifier(struct notifier_block *nb)
->>   }
->>   EXPORT_SYMBOL(unregister_reboot_notifier);
->>
->> +/**
->> + *	register_restart_notifier - Register function to be called to reset
->> + *				    the system
->> + *	@nb: Info about notifier function to be called
->> + *
->> + *	Registers a function with the list of functions
->> + *	to be called to restart the system.
->> + *
->> + *	Currently always returns zero, as blocking_notifier_chain_register()
->> + *	always returns zero.
->> + */
->
-> This would be a good place to describe what those notifier callbacks
-> actually do.  Why they exist, what their role is, under what
-> circumstances they are called, what values they should return, etc.
->
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
-Makes sense. Done.
+------------------
 
-Guenter
+From: Jani Nikula <jani.nikula@intel.com>
+
+commit 2e7eeeb59a92d09144fdb7d2dc1af77a10a7945b upstream.
+
+For reasons I can't claim to fully understand gen4 seems to require
+backlight duty cycle setting after the backlight has been enabled, or
+else black screen follows. I don't have documentation for the correct
+sequence on gen4 either. Confirmed on Dell Latitude D630 and MacBook4,1.
+
+This fixes a regression introduced by
+commit b35684b8fa94e04f55fd38bf672b737741d2f9e2
+Author: Jani Nikula <jani.nikula@intel.com>
+Date:   Thu Nov 14 12:13:41 2013 +0200
+
+    drm/i915: do full backlight setup at enable time
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=75791
+Reported-and-tested-by: mcy@lm7.fr
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=79423
+Reported-and-tested-by: Marc Milgram <mmilgram@redhat.com>
+Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/i915/intel_panel.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -723,9 +723,6 @@ static void i965_enable_backlight(struct
+ 	ctl = freq << 16;
+ 	I915_WRITE(BLC_PWM_CTL, ctl);
+ 
+-	/* XXX: combine this into above write? */
+-	intel_panel_actually_set_backlight(connector, panel->backlight.level);
+-
+ 	ctl2 = BLM_PIPE(pipe);
+ 	if (panel->backlight.combination_mode)
+ 		ctl2 |= BLM_COMBINATION_MODE;
+@@ -734,6 +731,8 @@ static void i965_enable_backlight(struct
+ 	I915_WRITE(BLC_PWM_CTL2, ctl2);
+ 	POSTING_READ(BLC_PWM_CTL2);
+ 	I915_WRITE(BLC_PWM_CTL2, ctl2 | BLM_PWM_ENABLE);
++
++	intel_panel_actually_set_backlight(connector, panel->backlight.level);
+ }
+ 
+ static void vlv_enable_backlight(struct intel_connector *connector)
 
 
