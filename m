@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920AbaGHBDT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:03:19 -0400
+	id S1755220AbaGHBEz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:04:55 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:55249 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753260AbaGGXyD (ORCPT
+	with ESMTP id S1753225AbaGGXyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:03 -0400
+	Mon, 7 Jul 2014 19:54:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Doug Smythies <dsmythies@telus.net>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.15 068/122] intel_pstate: Correct rounding in busy calculation
-Date: Mon,  7 Jul 2014 16:57:10 -0700
-Message-Id: <20140707235736.306704797@linuxfoundation.org>
+        Marcin Kraglak <marcin.kraglak@tieto.com>,
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.15 062/122] Bluetooth: Allow change security level on ATT_CID in slave role
+Date: Mon,  7 Jul 2014 16:57:04 -0700
+Message-Id: <20140707235736.127836706@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,44 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Doug Smythies <doug.smythies@gmail.com>
+From: Marcin Kraglak <marcin.kraglak@tieto.com>
 
-commit 51d211e9c334b9eca3505f4052afa660c3e0606b upstream.
+commit 92d1372e1a9fec00e146b74e8b9ad7a385b9b37f upstream.
 
-There was a mistake in the actual rounding portion this previous patch:
-f0fe3cd7e12d (intel_pstate: Correct rounding in busy calculation) such that
-the rounding was asymetric and incorrect.
+Kernel supports SMP Security Request so don't block increasing security
+when we are slave.
 
-Severity: Not very serious, but can increase target pstate by one extra value.
-For real world work flows the issue should self correct (but I have no proof).
-It is the equivalent of different PID gains for positive and negative numbers.
-
-Examples:
- -3.000000 used to round to -4, rounds to -3 with this patch.
- -3.503906 used to round to -5, rounds to -4 with this patch.
-
-Fixes: f0fe3cd7e12d (intel_pstate: Correct rounding in busy calculation)
-Signed-off-by: Doug Smythies <dsmythies@telus.net>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Marcin Kraglak <marcin.kraglak@tieto.com>
+Acked-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/intel_pstate.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ net/bluetooth/l2cap_sock.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -200,10 +200,7 @@ static signed int pid_calc(struct _pid *
- 	pid->last_err = fp_error;
+--- a/net/bluetooth/l2cap_sock.c
++++ b/net/bluetooth/l2cap_sock.c
+@@ -787,11 +787,6 @@ static int l2cap_sock_setsockopt(struct
  
- 	result = pterm + mul_fp(pid->integral, pid->i_gain) + dterm;
--	if (result >= 0)
--		result = result + (1 << (FRAC_BITS-1));
--	else
--		result = result - (1 << (FRAC_BITS-1));
-+	result = result + (1 << (FRAC_BITS-1));
- 	return (signed int)fp_toint(result);
- }
- 
+ 		/*change security for LE channels */
+ 		if (chan->scid == L2CAP_CID_ATT) {
+-			if (!conn->hcon->out) {
+-				err = -EINVAL;
+-				break;
+-			}
+-
+ 			if (smp_conn_security(conn->hcon, sec.level))
+ 				break;
+ 			sk->sk_state = BT_CONFIG;
 
 
