@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111AbaGGRkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 13:40:42 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:33397 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbaGGRkl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 13:40:41 -0400
+	id S1751813AbaGGRnk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 13:43:40 -0400
+Received: from www.sr71.net ([198.145.64.142]:54539 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751109AbaGGRni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 13:43:38 -0400
+Message-ID: <53BADC49.6000600@sr71.net>
+Date: Mon, 07 Jul 2014 10:43:37 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140707081456.GH28884@atomide.com>
-References: <1404493320-5606-1-git-send-email-xerofoify@gmail.com>
-	<20140707081456.GH28884@atomide.com>
-Date: Mon, 7 Jul 2014 13:40:40 -0400
-Message-ID: <CAPDOMVjpqWL-BVUPKig+2d7921105A03c1BX6164RkC=vuXBGQ@mail.gmail.com>
-Subject: Re: [PATCH] mach-omap1: Fix call to omap_cfg_reg
-From: Nick Krause <xerofoify@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: balbi@ti.com, Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Mel Gorman <mgorman@suse.de>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
+        ak@linux.intel.com, riel@redhat.com, alex.shi@linaro.org,
+        dave.hansen@linux.intel.com, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 5/6] x86: mm: new tunable for single vs full TLB flush
+References: <20140421182418.81CF7519@viggo.jf.intel.com> <20140421182426.D6DD1E8F@viggo.jf.intel.com> <20140424103727.GT23991@suse.de>
+In-Reply-To: <20140424103727.GT23991@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Tony,
-This seems to be a false positive then.Please reply if it is so I can remove the
-Fix me message.
-Cheers Nick
+On 04/24/2014 03:37 AM, Mel Gorman wrote:
+>> +Despite the fact that a single individual flush on x86 is
+>> > +guaranteed to flush a full 2MB, hugetlbfs always uses the full
+>> > +flushes.  THP is treated exactly the same as normal memory.
+>> > +
+> You are the second person that told me this and I felt the manual was
+> unclear on this subject. I was told that it might be a documentation bug
+> but because this discussion was in a bar I completely failed to follow up
+> on it. 
 
-On Mon, Jul 7, 2014 at 4:14 AM, Tony Lindgren <tony@atomide.com> wrote:
-> * Nicholas Krause <xerofoify@gmail.com> [140704 10:03]:
->> This patch fixes the call to ompa_cfg_reg(USB2_SPEED) in the case
->> that the cpu is a omap16xx and the nwires are not equal to 3.
->
-> This is most likely unsafe to do as the pin is probably
-> shared with some other device and we have to rely for
-> the bootloader to do the right thing for the board.
->
-> Regards,
->
-> Tony
->
->> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
->> ---
->>  arch/arm/mach-omap1/usb.c | 3 +--
->>  1 file changed, 1 insertion(+), 2 deletions(-)
->>
->> diff --git a/arch/arm/mach-omap1/usb.c b/arch/arm/mach-omap1/usb.c
->> index 4118db5..17e3139 100644
->> --- a/arch/arm/mach-omap1/usb.c
->> +++ b/arch/arm/mach-omap1/usb.c
->> @@ -504,8 +504,7 @@ static u32 __init omap1_usb2_init(unsigned nwires, unsigned alt_pingroup)
->>               omap_cfg_reg(W9_USB2_TXEN);
->>               omap_cfg_reg(W5_USB2_SE0);
->>               if (nwires != 3)
->> -                     omap_cfg_reg(Y5_USB2_RCV);
->> -             // FIXME omap_cfg_reg(USB2_SPEED);
->> +                     omap_cfg_reg(USB2_SPEED)
->>       } else {
->>               pr_debug("usb%d cpu unrecognized\n", 1);
->>               return 0;
->> --
->> 1.9.1
->>
+For the record...  There's a new version of the Intel SDM out, and it
+contains some clarifications.  They're the easiest to find in this
+document which highlights the deltas from the last version:
+
+> http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developers-manual.pdf
+
+The documentation for invlpg itself has a new footnote, and there's also
+a little bit of new text in section "4.10.2.3 Details of TLB Use".
+
+The footnotes say:
+
+	If the paging structures map the linear address using a page
+	larger than 4 KBytes and there are multiple TLB entries for
+	that page (see Section 4.10.2.3), the instruction (invlpg)
+	invalidates all of them
+
+I hope that clears up some of the ambiguity over invlpg.
