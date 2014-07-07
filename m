@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870AbaGGOkh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:40:37 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51285 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753533AbaGGOkg (ORCPT
+	id S1753954AbaGGOln (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:41:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50175 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753529AbaGGOlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:40:36 -0400
-Date: Mon, 7 Jul 2014 16:37:01 +0200
-From: Mark Brown <broonie@kernel.org>
-To: Richard Fitzgerald <rf@opensource.wolfsonmicro.com>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com,
-        ckeepax@opensource.wolfsonmicro.com
-Message-ID: <20140707143701.GJ30458@sirena.org.uk>
-References: <20140707121644.GA26105@opensource.wolfsonmicro.com>
+	Mon, 7 Jul 2014 10:41:42 -0400
+Message-ID: <53BAB19C.7080703@infradead.org>
+Date: Mon, 07 Jul 2014 07:41:32 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IA03tywDYuoVKXrw"
-Content-Disposition: inline
-In-Reply-To: <20140707121644.GA26105@opensource.wolfsonmicro.com>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 82.127.83.212
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: add SOC_VALUE_ENUM_EXT
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Kieran Kunhya <kieran@kunhya.com>, axboe@kernel.dk
+CC: akpm@linux-foundation.org, jmoyer@redhat.com, fabf@skynet.be,
+        minchan@kernel.org, linus.walleij@linaro.org, abhansali@stec-inc.com,
+        gnomes@lxorguk.ukuu.org.uk, jkosina@suse.cz,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: Add support for Sony SxS cards Signed-off-by:
+ Kieran Kunhya <kieran@kunhya.com>
+References: <1404726794-8964-1-git-send-email-kieran@kunhya.com> <1404726794-8964-2-git-send-email-kieran@kunhya.com>
+In-Reply-To: <1404726794-8964-2-git-send-email-kieran@kunhya.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/07/2014 02:53 AM, Kieran Kunhya wrote:
 
---IA03tywDYuoVKXrw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: should be here,
+not in the Subject line.
 
-On Mon, Jul 07, 2014 at 01:16:54PM +0100, Richard Fitzgerald wrote:
-> Adds an equivalent of SOC_ENUM_EXT for value enums
+> ---
+>  drivers/block/Kconfig  |    9 +
+>  drivers/block/Makefile |    1 +
+>  drivers/block/sxs.c    |  491 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 501 insertions(+)
+>  create mode 100644 drivers/block/sxs.c
+> 
+> diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+> index 014a1cf..50ed13e 100644
+> --- a/drivers/block/Kconfig
+> +++ b/drivers/block/Kconfig
+> @@ -356,6 +356,15 @@ config BLK_DEV_SX8
+>  
+>  	  Use devices /dev/sx8/$N and /dev/sx8/$Np$M.
+>  
+> +config BLK_DEV_SXS
+> +        tristate "Sony SxS card support"
+> +        depends on PCI
+> +        ---help---
+> +          Saying Y or M here will enable support for reading
+> +          from Sony SxS cards.
+> +
+> +          It creates a device called /dev/sxs
+> +
 
-Applied, thanks.
+Use tab to indent tristate, depends, and help.
+Use tab + 2 spaces to indent the help text.
 
---IA03tywDYuoVKXrw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>  config BLK_DEV_RAM
+>  	tristate "RAM block device support"
+>  	---help---
+> diff --git a/drivers/block/Makefile b/drivers/block/Makefile
+> index 02b688d..1e10fb6 100644
+> --- a/drivers/block/Makefile
+> +++ b/drivers/block/Makefile
+> @@ -33,6 +33,7 @@ obj-$(CONFIG_VIRTIO_BLK)	+= virtio_blk.o
+>  
+>  obj-$(CONFIG_BLK_DEV_SX8)	+= sx8.o
+>  obj-$(CONFIG_BLK_DEV_HD)	+= hd.o
+> +obj-$(CONFIG_BLK_DEV_SXS)       += sxs.o
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Use tab(s) here             ^^^^^^
+not spaces.
 
-iQIcBAEBAgAGBQJTurCJAAoJELSic+t+oim9TdAP/2U4iWex39uQijYkBaMVU5Kg
-QomFIAHqprvjV9txjXWCe+2d35Fw5fcZrowyL1akvc9MXXPbw7N2tjVfN8MReCA/
-Jn6+sLLtQU9rgWrth/fcVxyPO/fV4E8Ry5MduEmweH1JpPNNSVPTZLLoj+XpexFf
-YVAtZbcqWF/zcMtgnxr4q9VPOJnlSBvJB/ZZETTyO3a3YltnEnCt+n05uLWIlI6F
-RhNfC8bMkoyBx1BTFCMBFWqNzIxZTmO+NdJg6vawIbkAbW67Ttm+20tp/n6/LKXu
-CQekRNBfEdREenMaoUx7krxNmRQZ3lARYCWkWpfKLPfT+l9K7FF+gye7yGIeSZ8p
-lE+aCRNtAnW5+Ii1OelBDU951JoxCAWYdR2sF8Odg+TpmY//GwO2FRyGTxlAWQ/6
-Sval+uh7XFBkaCgelTwTSunLPkTLgcXs0+mElZtYklC/RTBVjf5B9mSPQBPLxllP
-F/wSQpxrdNdlWLwAV+K4yRfN8E5a2Bf0M5tNoiCUWVGT9oi4EBm0F4tqPlTY7HzD
-SVVSnh0HsjAw3jRRB3qIQlColW+vgWEh/CbEdNIuE9VJf+V/UkjwvAnT0X3mKOqD
-GjQ6/onK/CckmynROC19nA3aOAyB2KWdyuoOZHXK5iw4aTzh6wirup4/keroG1Yp
-saP8GATPOiqI3JtxbjJd
-=yTip
------END PGP SIGNATURE-----
+>  
+>  obj-$(CONFIG_XEN_BLKDEV_FRONTEND)	+= xen-blkfront.o
+>  obj-$(CONFIG_XEN_BLKDEV_BACKEND)	+= xen-blkback/
 
---IA03tywDYuoVKXrw--
+
+-- 
+~Randy
