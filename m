@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005AbaGHA6M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:58:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55435 "EHLO
+	id S1756143AbaGHA6L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:58:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55440 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753263AbaGGXyJ (ORCPT
+	with ESMTP id S1753411AbaGGXyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:09 -0400
+	Mon, 7 Jul 2014 19:54:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Keerthy <j-keerthy@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.15 087/122] regulator: tps65218: Correct the the config register for LDO1
-Date: Mon,  7 Jul 2014 16:57:29 -0700
-Message-Id: <20140707235736.869841117@linuxfoundation.org>
+        Tom Mingarelli <thomas.mingarelli@hp.com>,
+        Linda Knippers <linda.knippers@hp.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>, Joerg Roedel <jroedel@suse.de>
+Subject: [PATCH 3.15 088/122] iommu/vt-d: fix bug in handling multiple RMRRs for the same PCI device
+Date: Mon,  7 Jul 2014 16:57:30 -0700
+Message-Id: <20140707235736.895820719@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,33 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Keerthy <j-keerthy@ti.com>
+From: Jiang Liu <jiang.liu@linux.intel.com>
 
-commit 0eada6a1fc85a98ce69a199e46925abd6a7001c2 upstream.
+commit 27e249501ca06a3010519c306206cc402b61b5ab upstream.
 
-Correct the the config register for LDO1.
+Function dmar_iommu_notify_scope_dev() makes a wrong assumption that
+there's one RMRR for each PCI device at most, which causes DMA failure
+on some HP platforms. So enhance dmar_iommu_notify_scope_dev() to
+handle multiple RMRRs for the same PCI device.
 
-Fixes: 90e7d5262796 (regulator: tps65218: Add Regulator driver for
-TPS65218 PMIC)
-Signed-off-by: Keerthy <j-keerthy@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Fixbug: https://bugzilla.novell.com/show_bug.cgi?id=879482
+
+Reported-by: Tom Mingarelli <thomas.mingarelli@hp.com>
+Tested-by: Linda Knippers <linda.knippers@hp.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/regulator/tps65218-regulator.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/iommu/intel-iommu.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/drivers/regulator/tps65218-regulator.c
-+++ b/drivers/regulator/tps65218-regulator.c
-@@ -226,7 +226,7 @@ static const struct regulator_desc regul
- 			   1, -1, -1, TPS65218_REG_ENABLE1,
- 			   TPS65218_ENABLE1_DC6_EN, NULL, NULL, 0),
- 	TPS65218_REGULATOR("LDO1", TPS65218_LDO_1, tps65218_ldo1_dcdc34_ops, 64,
--			   TPS65218_REG_CONTROL_DCDC4,
-+			   TPS65218_REG_CONTROL_LDO1,
- 			   TPS65218_CONTROL_LDO1_MASK, TPS65218_REG_ENABLE2,
- 			   TPS65218_ENABLE2_LDO1_EN, NULL, ldo1_dcdc3_ranges,
- 			   2),
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -3799,14 +3799,11 @@ int dmar_iommu_notify_scope_dev(struct d
+ 				((void *)rmrr) + rmrr->header.length,
+ 				rmrr->segment, rmrru->devices,
+ 				rmrru->devices_cnt);
+-			if (ret > 0)
+-				break;
+-			else if(ret < 0)
++			if(ret < 0)
+ 				return ret;
+ 		} else if (info->event == BUS_NOTIFY_DEL_DEVICE) {
+-			if (dmar_remove_dev_scope(info, rmrr->segment,
+-				rmrru->devices, rmrru->devices_cnt))
+-				break;
++			dmar_remove_dev_scope(info, rmrr->segment,
++				rmrru->devices, rmrru->devices_cnt);
+ 		}
+ 	}
+ 
 
 
