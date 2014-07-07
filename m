@@ -1,56 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094AbaGGOu1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:50:27 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:41880 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465AbaGGOuY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:50:24 -0400
-Date: Mon, 7 Jul 2014 15:50:16 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        eshelton@pobox.com, fenghua.yu@intel.com, hpa@zytor.com,
-        ian.campbell@citrix.com, jbeulich@suse.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, matt.fleming@intel.com, mingo@redhat.com,
-        mjg59@srcf.ucam.org, stefano.stabellini@eu.citrix.com,
-        tglx@linutronix.de, Daniel Kiper <daniel.kiper@oracle.com>,
-        tony.luck@intel.com
-Subject: Re: [PATCH v7 01/10] arch/ia64: Define early_memunmap()
-Message-ID: <20140707145016.GB2914@console-pimps.org>
-References: <1404150784-27921-1-git-send-email-daniel.kiper@oracle.com>
- <1404150784-27921-2-git-send-email-daniel.kiper@oracle.com>
+	id S1753246AbaGGOvI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:51:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33500 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751005AbaGGOvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 10:51:05 -0400
+Message-ID: <53BAB3D3.6060603@suse.cz>
+Date: Mon, 07 Jul 2014 16:50:59 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404150784-27921-2-git-send-email-daniel.kiper@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/10] mm/page_alloc: correct to clear guard attribute
+ in DEBUG_PAGEALLOC
+References: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com> <1404460675-24456-3-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1404460675-24456-3-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jun, at 07:52:55PM, Daniel Kiper wrote:
-> This is odd to use early_iounmap() function do tear down mapping
-> created by early_memremap() function, even if it works right now,
-> because they belong to different set of functions. The former is
-> I/O related function and the later is memory related. So, create
-> early_memunmap() macro which in real is early_iounmap(). This
-> thing will help to not confuse code readers longer by mixing
-> functions from different classes.
-> 
-> EFI patches following this patch uses that functionality.
-> 
-> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+On 07/04/2014 09:57 AM, Joonsoo Kim wrote:
+> In __free_one_page(), we check the buddy page if it is guard page.
+> And, if so, we should clear guard attribute on the buddy page. But,
+> currently, we clear original page's order rather than buddy one's.
+> This doesn't have any problem, because resetting buddy's order
+> is useless
+
+Well it might theoretically confuse someone examining a crash dump, to 
+see an unexpected page->private value. So I agree it should be corrected.
+
+> and the original page's order is re-assigned soon.
+> But, it is better to correct code.
+>
+> Additionally, I change (set/clear)_page_guard_flag() to
+> (set/clear)_page_guard() and makes these functions do all works
+> needed for guard page. This may make code more understandable.
+>
+> One more thing, I did in this patch, is that fixing freepage accounting.
+> If we clear guard page and link it onto isolate buddy list, we should
+> not increase freepage count.
+
+OK, since this is under CONFIG_DEBUG_PAGEALLOC, and I don't see other 
+solution in this case, I agree.
+
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+
 > ---
->  arch/ia64/include/asm/io.h |    1 +
->  1 file changed, 1 insertion(+)
+>   mm/page_alloc.c |   29 ++++++++++++++++-------------
+>   1 file changed, 16 insertions(+), 13 deletions(-)
+>
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 0d4cf7a..aeb51d1 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -441,18 +441,28 @@ static int __init debug_guardpage_minorder_setup(char *buf)
+>   }
+>   __setup("debug_guardpage_minorder=", debug_guardpage_minorder_setup);
+>
+> -static inline void set_page_guard_flag(struct page *page)
+> +static inline void set_page_guard(struct zone *zone, struct page *page,
+> +				unsigned int order, int migratetype)
+>   {
+>   	__set_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
+> +	set_page_private(page, order);
+> +	/* Guard pages are not available for any usage */
+> +	__mod_zone_freepage_state(zone, -(1 << order), migratetype);
+>   }
+>
+> -static inline void clear_page_guard_flag(struct page *page)
+> +static inline void clear_page_guard(struct zone *zone, struct page *page,
+> +				unsigned int order, int migratetype)
+>   {
+>   	__clear_bit(PAGE_DEBUG_FLAG_GUARD, &page->debug_flags);
+> +	set_page_private(page, 0);
+> +	if (!is_migrate_isolate(migratetype))
+> +		__mod_zone_freepage_state(zone, (1 << order), migratetype);
+>   }
+>   #else
+> -static inline void set_page_guard_flag(struct page *page) { }
+> -static inline void clear_page_guard_flag(struct page *page) { }
+> +static inline void set_page_guard(struct zone *zone, struct page *page,
+> +				unsigned int order, int migratetype) {}
+> +static inline void clear_page_guard(struct zone *zone, struct page *page,
+> +				unsigned int order, int migratetype) {}
+>   #endif
+>
+>   static inline void set_page_order(struct page *page, unsigned int order)
+> @@ -594,10 +604,7 @@ static inline void __free_one_page(struct page *page,
+>   		 * merge with it and move up one order.
+>   		 */
+>   		if (page_is_guard(buddy)) {
+> -			clear_page_guard_flag(buddy);
+> -			set_page_private(page, 0);
+> -			__mod_zone_freepage_state(zone, 1 << order,
+> -						  migratetype);
+> +			clear_page_guard(zone, buddy, order, migratetype);
+>   		} else {
+>   			list_del(&buddy->lru);
+>   			zone->free_area[order].nr_free--;
+> @@ -919,11 +926,7 @@ static inline void expand(struct zone *zone, struct page *page,
+>   			 * pages will stay not present in virtual address space
+>   			 */
+>   			INIT_LIST_HEAD(&page[size].lru);
+> -			set_page_guard_flag(&page[size]);
+> -			set_page_private(&page[size], high);
+> -			/* Guard pages are not available for any usage */
+> -			__mod_zone_freepage_state(zone, -(1 << high),
+> -						  migratetype);
+> +			set_page_guard(zone, &page[size], high, migratetype);
+>   			continue;
+>   		}
+>   #endif
+>
 
-Tony, this looks pretty straight forward but I'd be much obliged if you
-could give me an Acked-by.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
