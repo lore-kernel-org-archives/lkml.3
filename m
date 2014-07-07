@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591AbaGHBOz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:14:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55249 "EHLO
+	id S1755795AbaGHBOy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:14:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55226 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752768AbaGGXxt (ORCPT
+	with ESMTP id S1752806AbaGGXxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:53:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -13,9 +13,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Brian King <brking@linux.vnet.ibm.com>,
         Nathan Fontenot <nfont@linux.vnet.ibm.com>,
         Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.15 003/122] ibmvscsi: Abort init sequence during error recovery
-Date: Mon,  7 Jul 2014 16:56:05 -0700
-Message-Id: <20140707235734.344064364@linuxfoundation.org>
+Subject: [PATCH 3.15 004/122] ibmvscsi: Add memory barriers for send / receive
+Date: Mon,  7 Jul 2014 16:56:06 -0700
+Message-Id: <20140707235734.372778853@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -32,13 +32,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Brian King <brking@linux.vnet.ibm.com>
 
-commit 9ee755974bea2f9880e517ec985dc9dede1b3a36 upstream.
+commit 7114aae02742d6b5c5a0d39a41deb61d415d3717 upstream.
 
-If a CRQ reset is triggered for some reason while in the middle
-of performing VSCSI adapter initialization, we don't want to
-call the done function for the initialization MAD commands as
-this will only result in two threads attempting initialization
-at the same time, resulting in failures.
+Add a memory barrier prior to sending a new command to the VIOS
+to ensure the VIOS does not receive stale data in the command buffer.
+Also add a memory barrier when processing the CRQ for completed commands.
 
 Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
 Acked-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
@@ -46,20 +44,34 @@ Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/ibmvscsi/ibmvscsi.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/scsi/ibmvscsi/ibmvscsi.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
 --- a/drivers/scsi/ibmvscsi/ibmvscsi.c
 +++ b/drivers/scsi/ibmvscsi/ibmvscsi.c
-@@ -797,7 +797,8 @@ static void purge_requests(struct ibmvsc
- 				       evt->hostdata->dev);
- 			if (evt->cmnd_done)
- 				evt->cmnd_done(evt->cmnd);
--		} else if (evt->done)
-+		} else if (evt->done && evt->crq.format != VIOSRP_MAD_FORMAT &&
-+			   evt->iu.srp.login_req.opcode != SRP_LOGIN_REQ)
- 			evt->done(evt);
- 		free_event_struct(&evt->hostdata->pool, evt);
- 		spin_lock_irqsave(hostdata->host->host_lock, flags);
+@@ -185,6 +185,11 @@ static struct viosrp_crq *crq_queue_next
+ 	if (crq->valid & 0x80) {
+ 		if (++queue->cur == queue->size)
+ 			queue->cur = 0;
++
++		/* Ensure the read of the valid bit occurs before reading any
++		 * other bits of the CRQ entry
++		 */
++		rmb();
+ 	} else
+ 		crq = NULL;
+ 	spin_unlock_irqrestore(&queue->lock, flags);
+@@ -203,6 +208,11 @@ static int ibmvscsi_send_crq(struct ibmv
+ {
+ 	struct vio_dev *vdev = to_vio_dev(hostdata->dev);
+ 
++	/*
++	 * Ensure the command buffer is flushed to memory before handing it
++	 * over to the VIOS to prevent it from fetching any stale data.
++	 */
++	mb();
+ 	return plpar_hcall_norets(H_SEND_CRQ, vdev->unit_address, word1, word2);
+ }
+ 
 
 
