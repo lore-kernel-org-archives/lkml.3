@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752257AbaGGPc0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 11:32:26 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:47327 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119AbaGGPcY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 11:32:24 -0400
+	id S1752456AbaGGPcm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 11:32:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34778 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751119AbaGGPcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 11:32:25 -0400
+Date: Mon, 7 Jul 2014 17:32:23 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Daniel Vetter <daniel@ffwll.ch>
+cc: Thomas Meyer <thomas@m3y3r.de>, Chris Wilson <chris@chris-wilson.co.uk>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Intel-gfx] Linux 3.16-rc2
+In-Reply-To: <20140707151613.GG5821@phenom.ffwll.local>
+Message-ID: <alpine.LNX.2.00.1407071731150.1655@pobox.suse.cz>
+References: <CA+55aFxdAhp-esuGiY4VEugiiwcMJgg1r6fPiR9Fb+HOz_5tLg@mail.gmail.com> <1403564870.3091.6.camel@localhost.localdomain> <871tuea7nz.fsf@intel.com> <20140624115753.GD17674@nuc-i3427.alporthouse.com> <1403612670.3091.10.camel@localhost.localdomain>
+ <20140624122737.GF17674@nuc-i3427.alporthouse.com> <20140630100220.GA4934@xo-6d-61-c0.localdomain> <20140630100925.GA18836@nuc-i3427.alporthouse.com> <1404317921.3910.3.camel@localhost.localdomain> <20140707151613.GG5821@phenom.ffwll.local>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1403711344-17335-1-git-send-email-patrice.chotard@st.com>
-References: <1403711344-17335-1-git-send-email-patrice.chotard@st.com>
-Date: Mon, 7 Jul 2014 17:32:24 +0200
-Message-ID: <CACRpkdY64C0PNEK+E_AVhhxvJMXOiesFHOcvFpRpoTrfb0dtMw@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: st: add IRQCHIP_SKIP_SET_WAKE flag
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Patrice CHOTARD <patrice.chotard@st.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        kernel@stlinux.com, Maxime Coquelin <maxime.coquelin@st.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 5:49 PM, Patrice CHOTARD <patrice.chotard@st.com> wrote:
+On Mon, 7 Jul 2014, Daniel Vetter wrote:
 
-> From: David PARIS <david.paris@st.com>
->
-> no .irq_set_wake API is available for pinctrl-st driver.
-> Add the IRQCHIP_SKIP_SET_WAKE flag to inform irq handler
-> not to call this API.
->
-> Signed-off-by: David Paris <david.paris@st.com>
+> > this patch on top of v3.16-rc3-62-gd92a333 makes the resume from ram
+> > regression go away on my machine:
+> 
+> Hm, we could conditionalize this hack on IS_G4X ... Chris, thoughts?
 
-Patch applied - had to rebase it, strangely the struct is different in
-my tree (check that you're in sync).
+For the record, commenting out the code in stop_ring() the way Thomas did 
+doesn't fix my problem (the one reported in [1]).
 
-Yours,
-Linus Walleij
+[1] https://bugs.freedesktop.org/show_bug.cgi?id=76554
+
+-- 
+Jiri Kosina
+SUSE Labs
