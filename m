@@ -1,101 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753678AbaGGODe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:03:34 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:35260 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753654AbaGGODa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:03:30 -0400
+	id S1753720AbaGGOEp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:04:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60702 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752990AbaGGOEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 10:04:43 -0400
+Date: Mon, 7 Jul 2014 16:04:40 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Randy Dunlap <rdunlap@infradead.org>,
+        linux-i2c@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] i2c: stub: Add support for SMBus block commands
+Message-ID: <20140707160440.042fda11@endymion.delvare>
+In-Reply-To: <53BAA152.9040002@roeck-us.net>
+References: <1404705312-27633-1-git-send-email-linux@roeck-us.net>
+	<20140707102711.1b630fe2@endymion.delvare>
+	<53BAA152.9040002@roeck-us.net>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1404022428-2816-1-git-send-email-borneo.antonio@gmail.com>
-References: <1404022428-2816-1-git-send-email-borneo.antonio@gmail.com>
-Date: Mon, 7 Jul 2014 10:03:29 -0400
-Message-ID: <CAN+gG=GM9FqZJwJF0G41E9oWEjcWDeavd=kfZ9qcXvoAkmUdpA@mail.gmail.com>
-Subject: Re: [PATCH] HID: cp2112: fix gpio value in gpio_direction_output
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Antonio Borneo <borneo.antonio@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
-        David Barksdale <dbarksdale@uplogix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 29, 2014 at 2:13 AM, Antonio Borneo
-<borneo.antonio@gmail.com> wrote:
-> CP2112 does not offer an atomic method to set both gpio
-> direction and value.
-> Also it does not permit to set gpio value before putting
-> gpio in output. In fact, accordingly to Silicon Labs
-> AN495, Rev. 0.2, cpt. 4.4, the HID report to set gpio
-> values "does not affect any pins that are not configured
-> as outputs".
+On Mon, 07 Jul 2014 06:32:02 -0700, Guenter Roeck wrote:
+> On 07/07/2014 01:27 AM, Jean Delvare wrote:
+> > On Sun,  6 Jul 2014 20:55:12 -0700, Guenter Roeck wrote:
+> >>   			chip->words[command] &= 0xff00;
+> >>   			chip->words[command] |= data->byte;
+> >>   			dev_dbg(&adap->dev,
+> >>   				"smbus byte data - addr 0x%02x, wrote 0x%02x at 0x%02x.\n",
+> >>   				addr, data->byte, command);
+> >>   		} else {
+> >> -			data->byte = chip->words[command] & 0xff;
+> >> +			if (b)
+> >> +				data->byte = b->len;
+> >> +			else
+> >> +				data->byte = chip->words[command] & 0xff;
+> >
+> > You could avoid this conditional (and the same below in case
+> > I2C_SMBUS_WORD_DATA) by writing to chip->words at the same time you
+> > write to b->block. Block transfers being rare and reads occurring more
+> > frequently than writes, I think the performance benefit is clear.
 >
-> This is confirmed on evaluation board CP2112-EK.
-> With current driver, after execute:
->         echo in > /sys/class/gpio/gpio248/direction
->         echo low > /sys/class/gpio/gpio248/direction
-> gpio output is still high. Only after a following
->         echo low > /sys/class/gpio/gpio248/direction
-> gpio output gets low.
->
-> Fix driver by changing order of operations; first set
-> direction then set value.
->
-> The drawback of this new sequence is that we can have
-> a pulse on gpio pin when direction is changed from
-> input to output-low, but this cannot be avoided on
-> current CP2112.
+> Makes sense, I'll do that. Great idea.
+> 
+> Question is if I should cover attempts to write a byte or word into block data.
+> I don't think it is worth the effort, as drivers won't usually do that.
+> My take is that we could add it later if really needed.
+> What do you think ?
 
-In this case, does keeping the first cp2112_gpio_set() before setting
-the output direction prevents the pulse?
-If so, then you can just keep the current code, and simply add the
-cp2112_gpio_set() at the end of cp2112_gpio_direction_output().
+I agree. The i2c-stub driver can't possibly cover every use case
+anyway, so let's keep it simple and only emulate behaviors we need for
+real.
 
-In both case, this is:
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-
-Cheers,
-Benjamin
-
->
-> Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
-> ---
->  drivers/hid/hid-cp2112.c | 8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
-> index 56be85a..3952d90 100644
-> --- a/drivers/hid/hid-cp2112.c
-> +++ b/drivers/hid/hid-cp2112.c
-> @@ -240,8 +240,6 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
->         u8 buf[5];
->         int ret;
->
-> -       cp2112_gpio_set(chip, offset, value);
-> -
->         ret = hid_hw_raw_request(hdev, CP2112_GPIO_CONFIG, buf,
->                                        sizeof(buf), HID_FEATURE_REPORT,
->                                        HID_REQ_GET_REPORT);
-> @@ -260,6 +258,12 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
->                 return ret;
->         }
->
-> +       /*
-> +        * Set gpio value when output direction is already set,
-> +        * as specified in AN495, Rev. 0.2, cpt. 4.4
-> +        */
-> +       cp2112_gpio_set(chip, offset, value);
-> +
->         return 0;
->  }
->
-> --
-> 2.0.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jean Delvare
+SUSE L3 Support
