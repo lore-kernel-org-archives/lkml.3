@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851AbaGGHZd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 03:25:33 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:52218 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163AbaGGHZa convert rfc822-to-8bit (ORCPT
+	id S1751953AbaGGH0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 03:26:33 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:30932 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401AbaGGH0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 03:25:30 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: addy ke <addy.ke@rock-chips.com>, grant.likely@linaro.org,
-        robh+dt@kernel.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, olof@lixom.net, hj@rock-chips.com,
-        kever.yang@rock-chips.com, xjq@rock-chips.com, huangtao@rock-chips.com,
-        zyw@rock-chips.com, yzq@rock-chips.com, zhenfu.fang@rock-chips.com,
-        cf@rock-chips.com, zhangqing@rock-chips.com, wei.luo@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH v2 2/2] spi: add driver for Rockchip RK3xxx SoCs integrated SPI
-Date: Mon, 07 Jul 2014 09:26:52 +0200
-Message-ID: <2620380.GejlhFPJDO@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <20140707072140.GB30458@sirena.org.uk>
-References: <1403582852-9751-1-git-send-email-addy.ke@rock-chips.com> <5578791.jcBVzrGadW@diego> <20140707072140.GB30458@sirena.org.uk>
+	Mon, 7 Jul 2014 03:26:30 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18r+KtD8fwhQZiMs4/F8OPo
+Date: Mon, 7 Jul 2014 00:26:21 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Robert Nelson <robertcnelson@gmail.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Felipe Balbi <balbi@ti.com>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH] tty: serial: Add 8250-core based omap driver
+Message-ID: <20140707072621.GE28884@atomide.com>
+References: <1404316809-20637-1-git-send-email-bigeasy@linutronix.de>
+ <20140702160932.GF5541@saruman.home>
+ <20140702190944.GA567@drone.musicnaut.iki.fi>
+ <CAOCHtYgxMeA+Arfe40XeFDEKuCJ8qo1RqNR0hYBGr_Wp6sRfdA@mail.gmail.com>
+ <20140703073411.GX28884@atomide.com>
+ <53B6DB74.2050401@linutronix.de>
+ <CAOCHtYhJODfoB10VXKtGC=_UaB4uVSZOtDwYG-XxL1wvcxi+fA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOCHtYhJODfoB10VXKtGC=_UaB4uVSZOtDwYG-XxL1wvcxi+fA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 7. Juli 2014, 08:21:40 schrieb Mark Brown:
-> On Mon, Jul 07, 2014 at 09:08:41AM +0200, Heiko Stübner wrote:
-> > Am Montag, 7. Juli 2014, 09:42:52 schrieb addy ke:
-> > > > Your DT binding defined some additional compatible strings, please add
-> > > > those to the driver.
-> > 
-> > citing Mark Rutland (one of the dt maintainers):
-> > 
-> > --
-> > 
-> >   That's why I said in addition to the common one. I'd only expect the
-> >   
-> >   driver to look for "rockchip,rk3066-spi", but a DTB could have:
-> >         compatible = "rockchip,rk3188-spi", "rockchip,rk3066-spi";
-> >   
-> >   Seeding the DTBs with the extra strings early makes it more likely that
-> >   we can rely on them later. If we don't happen to need them they only
-> >   clutter some DTBs.
-> > 
-> > --
-> > 
-> > so it looks like the driver is doing the right thing right now
-> 
-> The driver will work but it's better to list the strings that are
-> supported explicitly if only to document that there's nothing specific
-> Linux should be doing for them.
+* Robert Nelson <robertcnelson@gmail.com> [140704 09:59]:
+> On Fri, Jul 4, 2014 at 11:51 AM, Sebastian Andrzej Siewior
+> <bigeasy@linutronix.de> wrote:
+> > On 07/03/2014 09:34 AM, Tony Lindgren wrote:
+> >> Heh. Just to summarize the reason ttyO needs to be a separate name
+> >> and device entry from ttyS is because we also have external 8250
+> >> devices on GPMC and hotplug busses.
+> >
+> > So the GPMC devices will first get a higher minor/device number. The
+> > internal serial ports should show up first. I don't see the problem
+> > (yet).
+> >
+> > If you need a separate major number (and name) like we do have it now
+> > (between ttySx and ttyOx) then one of requirements would be to tell
+> > Kconfig that one driver can be active at a time.
+> >
+> > For me the ttyS vs ttyO thing is purely cosmetic. I personally don't
+> > like that it is different on different platforms like ttymxc, ttySC,
+> > ttyTHS, â€¦
 
-ok, makes sense :-)
+The dev entry had to be different with serial-omap as it was not
+using 8250 code. With the code moving back to using 8250 code
+there are no dev conflicts so ttyS is just fine as the 8250 code
+handles allocating the devices.
+ 
+> Maybe it's time to migrate them all to one name? (ttyS)  Does the end
+> user really care if they have a soc with an omap/imx serial port
+> driver? Or do they just want to access /dev/ttySx and connect to their
+> device?
+
+Yes the 8250 code should always use ttyS. Then maybe we could
+have also ttyO dev entries created by the driver for compability.
+
+Earlier serial-omap could not provide the ttyS compability easily
+because they were separate drivers.
+
+Regards,
+
+Tony
