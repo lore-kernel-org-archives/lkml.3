@@ -1,74 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753168AbaGGMoS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 08:44:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49520 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703AbaGGMoR (ORCPT
+	id S1753235AbaGGMpG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 08:45:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56427 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753157AbaGGMpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 08:44:17 -0400
-Date: Mon, 7 Jul 2014 14:44:09 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mateusz Guzik <mguzik@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] sched: fix possible divide by zero in avg_atom
- calculation
-Message-ID: <20140707124409.GO6758@twins.programming.kicks-ass.net>
-References: <1402750809-31991-1-git-send-email-mguzik@redhat.com>
+	Mon, 7 Jul 2014 08:45:04 -0400
+Date: Mon, 7 Jul 2014 14:41:57 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "andriy.shevchenko@intel.com" <andriy.shevchenko@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "zhuzhenhua@allwinnertech.com" <zhuzhenhua@allwinnertech.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
+        "kevin.z.m.zh@gmail.com" <kevin.z.m.zh@gmail.com>,
+        "sunny@allwinnertech.com" <sunny@allwinnertech.com>,
+        "shuge@allwinnertech.com" <shuge@allwinnertech.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v10 2/2] dmaengine: sun6i: Add driver for the Allwinner
+ A31 DMA controller
+Message-ID: <20140707124157.GA13423@lukather>
+References: <1404134454-25513-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20140701124852.GB6064@leverpostej>
+ <20140704075710.GN31996@lukather>
+ <201407061722.01279.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C+dxB3FEDSxkOkFg"
+	protocol="application/pgp-signature"; boundary="M9NhX3UHpAaciwkO"
 Content-Disposition: inline
-In-Reply-To: <1402750809-31991-1-git-send-email-mguzik@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <201407061722.01279.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---C+dxB3FEDSxkOkFg
+--M9NhX3UHpAaciwkO
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Sat, Jun 14, 2014 at 03:00:09PM +0200, Mateusz Guzik wrote:
-> proc_sched_show_task does:
-> if (nr_switches)
-> 	do_div(avg_atom, nr_switches);
+On Sun, Jul 06, 2014 at 05:22:00PM +0200, Arnd Bergmann wrote:
+> On Friday 04 July 2014, Maxime Ripard wrote:
+> > > > > It feels a little fragile to rely on the organisation of the cloc=
+k tree
+> > > > > and the naming thereof. If the IP block is ever reused on an SoC =
+with a
+> > > > > different clock tree layout then we have to handle things differe=
+ntly.
+> > > >=20
+> > > > What do you suggest then?
+> > >=20
+> > > I will admit that I don't have a better suggestion.
+> > >=20
+> > > Without knowing which particular constraint on the mux parent clock we
+> > > care about it's difficult to suggest anything useful.
+> >=20
+> > Well, I first made it into the mach- directory, and then was told to
+> > move it in the driver itself, so we're kind of running out of options
+> > :)
 >=20
-> nr_switches is unsigned long and do_div truncates it to 32 bits, which
-> means it can test non-zero on e.g. x86-64 and be truncated to zero for
-> division.
->=20
-> Fix the problem by using div64_ul instead.
->=20
-> As a side effect calculations of avg_atom for big nr_switches are now cor=
-rect.
->=20
-> Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
+> How about having a property in the clock provider node that forces a
+> specific value for the mux? I think that's generally the preferred soluti=
+on
+> for any clock settings that go beyond what an OS can be expected to figure
+> out for itself.
 
-Thanks.
+Except that we don't really care about the parenting if the device
+isn't going to be used, so putting this property on the clock provider
+doesn't look that good. Plus, in the case where we have multiple
+clocks defined in a single node, it wouldn't work that great.
 
---C+dxB3FEDSxkOkFg
-Content-Type: application/pgp-signature
+However, I'm not convinced that it should be on the device node
+either, because we could end up having conflicts between devices.
+
+I don't know, some C code seems like the easier and more flexible
+solution here.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--M9NhX3UHpAaciwkO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTupYZAAoJEHZH4aRLwOS6cJ0P/iEs/ZvWRGaS2ucjO4sMHlcW
-Q7VnFvJY6xK5toERaIKZu/VcpsFpp/YHp395/9thkkVRlUbAZ5HxSE6gEuf2HnyJ
-xjG9QtU5oeDnbtM/eGEM6VJ9Z5yumoV418PbiYdns2ZbvBJBszT3sC32e1L3aCRB
-Bre+do2td14HQQLehIYD6maM6Q7nBFyrTXWaUhQm7yhu0IC5yPdljbNuV2BHhcdM
-o4dhuML5rbe203/S/CxnRzb3C1gtbiQG8EkeGAVC+8bcGx0fOlgjvpBrSxg43MiT
-XFe/MJCDkASlN4cbj125bmZpjPkPP1uG0xYRUPIqKqiHru4ew7RytvZWxNUj5D21
-jh68akZ62Mv0vH/gYNulScrlTUodiPx6qItXofdVyAUfC5FpPfKYtzPATWOiWCC5
-3IYrCcYyzyjKEIn6ggHnt3y3fznrJFOY2bZerl/Sttcck1J/SgVJTVGJ2R4xAL0I
-XaBvyMqEAmykywwfsvaEItpH8j1bx5/QvuCS6FoOD0OU3lHANd4U8H2yeW6Y9BOI
-vOgS2lErM72/KF5TRfDj8ZAn+tf48/8acj3abB2WE4Z5ivxE036mgFM/L6aGji3A
-UzEmuEb68dvAsLFYs6AzVft2WxUIojXG6KSgTobz7ynqI0jKCt8rTKpYHhq401zd
-5SePNDZwPgDHdXxo4XSg
-=UYCQ
+iQIcBAEBAgAGBQJTupWVAAoJEBx+YmzsjxAgBL8P/icWVgxZkRDqSMyd4dFTQHtq
+DDkLB2z4cykWaFOKLNsYdbCkixQuJuZmesGMsPXNDLjxsAHQCOgRM4IUKQo9AvVH
+d91KBr4O/lYL1fQY3PHRyYi23dV8a5BLjc4dyWx4OG09SvKSpADdUZK/XvhqClUu
+JY8kUd28lrjDYvS1fwns3//jnGrmPfQ0kWSYhCCVHraVYVUxqj6RMUWP9vhaVsa8
+2u4x4stD5oKDby9wKCqEl8hy8IsEBY978bR5nsg0ldwHgSNGm0LZyw1VRLJEbUvH
+6POGRXKk03nZXvacVsM0ctAEZi0aNcFEWSuO/Jul0Q25i+mON22jbDvaiYI64Uua
+D5GAQ5dOGIPW58+1ZgDgUy1AqwP1ah0nq7OLAZkQaTPMok2KVX3+71dEJBQQSA5J
+v0MREIY0tf/+I9airElB0m4e4Q0F0FMVpHjauokRg9Zws9FfHFzlx5U/hw6wK1Xb
+4O6HGq2PMnXKAgNcuIYHkTfpfIBh+CgW+8WbtV2bP85RwmJAAM2CZIfBXegrpLnF
+1diNQtWBkX25ma2Ga6Q5f0qu4LjEXH+EOqs7NLuFStm6x5sO5mfwOjxlMFuy1rIQ
+4aYCwAW2zqlYX/EikIISQwP7ad5ypOHShTv9Pkudx6jItoFUwC12dAY9XXRC4Ciu
+CL0ydXg3yxNNYD8PXMX2
+=qsS5
 -----END PGP SIGNATURE-----
 
---C+dxB3FEDSxkOkFg--
+--M9NhX3UHpAaciwkO--
