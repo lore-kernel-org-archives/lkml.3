@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606AbaGHBPp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:15:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55225 "EHLO
+	id S1755819AbaGHBQP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:16:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55237 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733AbaGGXxs (ORCPT
+	with ESMTP id S1752672AbaGGXxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:53:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mario Kleiner <mario.kleiner.de@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.15 026/122] drm/nouveau/kms/nv04-nv40: fix pageflip events via special case.
-Date: Mon,  7 Jul 2014 16:56:28 -0700
-Message-Id: <20140707235735.031498653@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.15 024/122] mtd: pxa3xx_nand: make the driver work on big-endian systems
+Date: Mon,  7 Jul 2014 16:56:26 -0700
+Message-Id: <20140707235734.972984784@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,51 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mario Kleiner <mario.kleiner.de@gmail.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit af4870e406126b7ac0ae7c7ce5751f25ebe60f28 upstream.
+commit b7e460624f0f3c31150f3b09e75b0d009e22ba5f upstream.
 
-Cards with nv04 display engine can't reliably use vblank
-counts and timestamps computed via drm_handle_vblank(), as
-the function gets invoked after sending the pageflip events.
+The pxa3xx_nand driver currently uses __raw_writel() and __raw_readl()
+to access I/O registers. However, those functions do not do any
+endianness swapping, which means that they won't work when the CPU
+runs in big-endian but the I/O registers are little endian, which is
+the common situation for ARM systems running big endian.
 
-Fix this by defaulting to the old crtcid = -1 fallback path
-on <= NV-50 cards, and only using the precise path on NV-50
-and later.
+Since __raw_writel() and __raw_readl() do not include any memory
+barriers and the pxa3xx_nand driver can only be compiled for ARM
+platforms, the closest I/o accessors functions that do endianess
+swapping are writel_relaxed() and readl_relaxed().
 
-Signed-off-by: Mario Kleiner <mario.kleiner.de@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+This patch has been verified to work on Armada XP GP: without the
+patch, the NAND is not detected when the kernel runs big endian while
+it is properly detected when the kernel runs little endian. With the
+patch applied, the NAND is properly detected in both situations
+(little and big endian).
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_display.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/mtd/nand/pxa3xx_nand.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nouveau_display.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_display.c
-@@ -798,6 +798,7 @@ nouveau_finish_page_flip(struct nouveau_
- 	struct drm_device *dev = drm->dev;
- 	struct nouveau_page_flip_state *s;
- 	unsigned long flags;
-+	int crtcid = -1;
+--- a/drivers/mtd/nand/pxa3xx_nand.c
++++ b/drivers/mtd/nand/pxa3xx_nand.c
+@@ -127,10 +127,10 @@
  
- 	spin_lock_irqsave(&dev->event_lock, flags);
+ /* macros for registers read/write */
+ #define nand_writel(info, off, val)	\
+-	__raw_writel((val), (info)->mmio_base + (off))
++	writel_relaxed((val), (info)->mmio_base + (off))
  
-@@ -808,8 +809,13 @@ nouveau_finish_page_flip(struct nouveau_
- 	}
+ #define nand_readl(info, off)		\
+-	__raw_readl((info)->mmio_base + (off))
++	readl_relaxed((info)->mmio_base + (off))
  
- 	s = list_first_entry(&fctx->flip, struct nouveau_page_flip_state, head);
--	if (s->event)
--		drm_send_vblank_event(dev, s->crtc, s->event);
-+	if (s->event) {
-+		/* Vblank timestamps/counts are only correct on >= NV-50 */
-+		if (nv_device(drm->device)->card_type >= NV_50)
-+			crtcid = s->crtc;
-+
-+		drm_send_vblank_event(dev, crtcid, s->event);
-+	}
- 
- 	list_del(&s->head);
- 	if (ps)
+ /* error code and state */
+ enum {
 
 
