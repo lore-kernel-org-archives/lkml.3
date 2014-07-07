@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720AbaGGHAZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 03:00:25 -0400
-Received: from lnfm1.sai.msu.ru ([93.180.26.255]:53303 "EHLO lnfm1.sai.msu.ru"
+	id S1751882AbaGGHBe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 03:01:34 -0400
+Received: from lnfm1.sai.msu.ru ([93.180.26.255]:53322 "EHLO lnfm1.sai.msu.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399AbaGGHAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 03:00:23 -0400
-Date: Mon, 7 Jul 2014 10:59:36 +0400 (MSK)
+	id S1751262AbaGGHBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 03:01:32 -0400
+Date: Mon, 7 Jul 2014 11:00:59 +0400 (MSK)
 From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
 To: gregkh@linuxfoundation.org
 cc: linux-kernel@vger.kernel.org, linux-parport@lists.infradead.org,
         hsommer@eso.org, matwey.kornilov@gmail.com
-Subject: [PATCHv3 0/2] parport: parport_pc: Introduce option to disable
- checking for Intel bug
-Message-ID: <alpine.LRH.2.00.1407071056300.3492@lnfm1.sai.msu.ru>
+Subject: [PATCHv3 1/2] Introduce intel_bug_present function.
+Message-ID: <alpine.LRH.2.00.1407071100180.3492@lnfm1.sai.msu.ru>
 User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
@@ -21,58 +20,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
+>From c89138e2c968c07dd11b3c6bfc05a803d0c5434d Mon Sep 17 00:00:00 2001
+From: "Matwey V. Kornilov" <matwey.kornilov@gmail.com>
 Date: Wed, 25 Jun 2014 00:53:54 +0400
-Subject: [PATCHv3 0/2] parport: parport_pc: Introduce option to disable checking for Intel bug
+Subject: [PATCHv3 1/2] Introduce intel_bug_present function.
 
-Hi,
-
-The following patch series is to deal with the issue on false-positives
-of Intel EPP bug check [1].
-
-More than a decade ago, the check was introduced in order to prevent EPP
-operation on the some Intel LPT chipsets. The main issue to defence from
-was CPU hang at EPP operation on broken chipsets. It is mentioned that
-affected chipsets are Intel 82091. However, it is not known whether
-there are others.
-
-The check was implemented in strange manner. Now, there is no explanations
-why. The check itself now leads to the false-positives, disabling EPP on
-many PC-s (Dell OptiPlex series for instance). The latter is an issue.
-
-Given that our knowledge of the initial problem is quite limited now,
-I introduce special option for parport_pc, allowing user to disable check.
-This won't introduce regressions.
-
-The patches organized as following:
-
-1. Introduce-intel_bug_present-function.
-
-The transparent refactoring of the check is performed.
-Make the check be immutable regarding to ECR register.
-
-2. Add force_epp module option for parport_pc.
-
-Additional option for parport_pc is introduced.
-
-
-The behaviour is the following:
-
-modprobe parport_pc             # check is enabled, given there is no defaults
-                                 # in /etc/modprobe.d/*
-modprobe parport_pc force_epp=0 # check is enabled
-modprobe parport_pc force_epp=1 # check is disabled
-
-
-[1] https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=630593
+Put the code to check present of the Intel bug from parport_EPP_supported
+into new intel_bug_present function. The later also return ECR register
+to the state it has before function call.
 
 Tested-by: Heiko Andreas Sommer <hsommer@eso.org>
 Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
-
 ---
-Changes from v2:
-  - The module option has more clear description
+  drivers/parport/parport_pc.c | 38 ++++++++++++++++++++++++++------------
+  1 file changed, 26 insertions(+), 12 deletions(-)
 
-Changes from v1:
-  - Patch 1 fetched from right branch and now compiled
+diff --git a/drivers/parport/parport_pc.c b/drivers/parport/parport_pc.c
+index 76ee775..a6eaafb 100644
+--- a/drivers/parport/parport_pc.c
++++ b/drivers/parport/parport_pc.c
+@@ -1702,6 +1702,30 @@ static int parport_ECP_supported(struct parport *pb)
+  }
+  #endif
+
++static int intel_bug_present(struct parport *pb)
++{
++	const struct parport_pc_private *priv = pb->private_data;
++	int bug_present = 0;
++
++	if (priv->ecr) {
++		/* store value of ECR */
++		unsigned char ecr = inb(ECONTROL(pb));
++		unsigned char i;
++		for (i = 0x00; i < 0x80; i += 0x20) {
++			ECR_WRITE(pb, i);
++			if (clear_epp_timeout(pb)) {
++				/* Phony EPP in ECP. */
++				bug_present = 1;
++				break;
++			}
++		}
++		/* return ECR into the inital state */
++		ECR_WRITE(pb, ecr);
++	}
++
++	return bug_present;
++}
++
+  static int parport_ECPPS2_supported(struct parport *pb)
+  {
+  	const struct parport_pc_private *priv = pb->private_data;
+@@ -1722,8 +1746,6 @@ static int parport_ECPPS2_supported(struct parport *pb)
+
+  static int parport_EPP_supported(struct parport *pb)
+  {
+-	const struct parport_pc_private *priv = pb->private_data;
+-
+  	/*
+  	 * Theory:
+  	 *	Bit 0 of STR is the EPP timeout bit, this bit is 0
+@@ -1742,16 +1764,8 @@ static int parport_EPP_supported(struct parport *pb)
+  		return 0;  /* No way to clear timeout */
+
+  	/* Check for Intel bug. */
+-	if (priv->ecr) {
+-		unsigned char i;
+-		for (i = 0x00; i < 0x80; i += 0x20) {
+-			ECR_WRITE(pb, i);
+-			if (clear_epp_timeout(pb)) {
+-				/* Phony EPP in ECP. */
+-				return 0;
+-			}
+-		}
+-	}
++	if (intel_bug_present(pb))
++		return 0;
+
+  	pb->modes |= PARPORT_MODE_EPP;
+
+-- 
+1.8.1.4
 
