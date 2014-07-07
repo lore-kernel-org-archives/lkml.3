@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818AbaGGSXX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 14:23:23 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48048 "EHLO mail.kernel.org"
+	id S1751901AbaGGSZG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 14:25:06 -0400
+Received: from plane.gmane.org ([80.91.229.3]:55840 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287AbaGGSXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 14:23:21 -0400
-Date: Mon, 7 Jul 2014 15:23:16 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC PATCHES 0/7] Add support for showing headers in the hist
- browser.
-Message-ID: <20140707182316.GA7252@kernel.org>
-References: <1404423780-24026-1-git-send-email-acme@kernel.org>
- <20140703214811.GC11267@kernel.org>
- <878uo94ia9.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <878uo94ia9.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751190AbaGGSZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 14:25:04 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Manuel Reimer <Manuel.Spam@nurfuerspam.de>
+Subject: 3.15.4 runs *significantly* slower than 3.15.3 on iMX233 CPU
+Date: Mon, 07 Jul 2014 20:21:38 +0200
+Message-ID: <lpeofi$1fl$1@ger.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: p5dd560e1.dip0.t-ipconnect.de
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Jul 04, 2014 at 05:53:02PM +0900, Namhyung Kim escreveu:
-> you ;-) ).  But I also think it needs to fix column/header alignment
-> first, hmm...
+Hello,
 
-This one liner should do the trick, i.e. left justify it.
+maybe someone can help me to find the reason for this problem:
 
-- Arnaldo
+If I run my iMX233 development board with an 3.15.3 kernel, then the 
+performance is much better as with an 3.15.4 kernel.
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 1ec57dd82284..14e5a039bc45 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -1215,7 +1215,7 @@ static int __sort__hpp_header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
- 	hse = container_of(fmt, struct hpp_sort_entry, hpp);
- 	len = hists__col_len(&evsel->hists, hse->se->se_width_idx);
- 
--	return scnprintf(hpp->buf, hpp->size, "%*s", len, hse->se->se_header);
-+	return scnprintf(hpp->buf, hpp->size, "%-*s", len, hse->se->se_header);
- }
- 
- static int __sort__hpp_width(struct perf_hpp_fmt *fmt,
+I have the first significant "hanging" here:
+
+[    7.910000] sd 0:0:0:0: [sda] Attached SCSI removable disk
+[   10.810000] random: nonblocking pool is initialized
+[   24.310000] systemd[1]: systemd 214 running in system mode. (+PAM 
+-AUDIT -SELINUX -IMA -SYSVINIT +LIBCRYPTSETUP +GCRYPT +ACL +XZ +SECCOMP 
+-APPARMOR)
+
+After booting up it takes several seconds between entering the username 
+and the password while with version 3.15.3 the password prompt appears 
+almost immediately after entering the username.
+
+Please tell me if some additional information is needed.
+
+Thank you very much in advance.
+
+Greetings,
+
+Manuel
+
