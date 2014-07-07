@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527AbaGGVGK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 17:06:10 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50290 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750929AbaGGVGH (ORCPT
+	id S1752102AbaGGVGY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 17:06:24 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:47794 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660AbaGGVGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 17:06:07 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lv Zheng <lv.zheng@intel.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH v2 6/7] ACPI: Cleanup useless ACPI inclusion.
-Date: Mon, 07 Jul 2014 23:24:11 +0200
-Message-ID: <2868763.c5IhTlySqm@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <cf869ff5e75e0973b065c3d3fe2fa453abcd5c97.1404706299.git.lv.zheng@intel.com>
-References: <cover.1387336613.git.lv.zheng@intel.com> <cover.1404706298.git.lv.zheng@intel.com> <cf869ff5e75e0973b065c3d3fe2fa453abcd5c97.1404706299.git.lv.zheng@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 7 Jul 2014 17:06:20 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Sharvil Nanavati <sharvil@google.com>, stable <stable@vger.kernel.org>
+Subject: [PATCH] alarmtimer: Fix bug where relative alarm timers were treated as absolute
+Date: Mon,  7 Jul 2014 14:06:11 -0700
+Message-Id: <1404767171-6902-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 07, 2014 12:17:40 PM Lv Zheng wrote:
-> The sst-haswell-dsp.c is an ACPI independent file, this patch removes
-> ACPI header files for it.
+Sharvil noticed with the posix timer_settime interface, using the
+CLOCK_REALTIME_ALARM or CLOCK_BOOTTIME_ALARM clockid, if the users
+tried to specify a relative time timer, it would incorrectly be
+treated as absolute regardless of the state of the flags argument.
 
-This appears to be independent of the rest of the series.  Is that correct?
+This patch corrects this, properly checking the absolute/relative flag,
+as well as adds further error checking that no invalid flag bits are set.
 
-> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> Cc: Liam Girdwood <lgirdwood@gmail.com>
-> Cc: Mark Brown <broonie@kernel.org>
-> Cc: alsa-devel@alsa-project.org
-> ---
->  sound/soc/intel/sst-haswell-dsp.c |    3 ---
->  1 file changed, 3 deletions(-)
-> 
-> diff --git a/sound/soc/intel/sst-haswell-dsp.c b/sound/soc/intel/sst-haswell-dsp.c
-> index 535f517..ecc5057 100644
-> --- a/sound/soc/intel/sst-haswell-dsp.c
-> +++ b/sound/soc/intel/sst-haswell-dsp.c
-> @@ -28,9 +28,6 @@
->  #include <linux/firmware.h>
->  #include <linux/pm_runtime.h>
->  
-> -#include <linux/acpi.h>
-> -#include <acpi/acpi_bus.h>
-> -
->  #include "sst-dsp.h"
->  #include "sst-dsp-priv.h"
->  #include "sst-haswell-ipc.h"
-> 
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Sharvil Nanavati <sharvil@google.com>
+Cc: stable <stable@vger.kernel.org> #3.0+
+Reported-by: Sharvil Nanavati <sharvil@google.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
 
+Thomas, Ingo: Please consider for tip/timers/urgent for 3.16
+
+ kernel/time/alarmtimer.c | 20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
+index 88c9c65..fe75444 100644
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -585,9 +585,14 @@ static int alarm_timer_set(struct k_itimer *timr, int flags,
+ 				struct itimerspec *new_setting,
+ 				struct itimerspec *old_setting)
+ {
++	ktime_t exp;
++
+ 	if (!rtcdev)
+ 		return -ENOTSUPP;
+ 
++	if (flags & ~TIMER_ABSTIME)
++		return -EINVAL;
++
+ 	if (old_setting)
+ 		alarm_timer_get(timr, old_setting);
+ 
+@@ -597,8 +602,16 @@ static int alarm_timer_set(struct k_itimer *timr, int flags,
+ 
+ 	/* start the timer */
+ 	timr->it.alarm.interval = timespec_to_ktime(new_setting->it_interval);
+-	alarm_start(&timr->it.alarm.alarmtimer,
+-			timespec_to_ktime(new_setting->it_value));
++	exp = timespec_to_ktime(new_setting->it_value);
++	/* Convert (if necessary) to absolute time */
++	if (flags != TIMER_ABSTIME) {
++		ktime_t now;
++
++		now = alarm_bases[timr->it.alarm.alarmtimer.type].gettime();
++		exp = ktime_add(now, exp);
++	}
++
++	alarm_start(&timr->it.alarm.alarmtimer, exp);
+ 	return 0;
+ }
+ 
+@@ -730,6 +743,9 @@ static int alarm_timer_nsleep(const clockid_t which_clock, int flags,
+ 	if (!alarmtimer_get_rtcdev())
+ 		return -ENOTSUPP;
+ 
++	if (flags & ~TIMER_ABSTIME)
++		return -EINVAL;
++
+ 	if (!capable(CAP_WAKE_ALARM))
+ 		return -EPERM;
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.9.1
+
