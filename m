@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771AbaGGWJX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 18:09:23 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46997 "EHLO mail.skyhub.de"
+	id S1751716AbaGGWPe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 18:15:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40464 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750981AbaGGWJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 18:09:22 -0400
-Date: Tue, 8 Jul 2014 00:09:18 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Max Asbock <masbock@linux.vnet.ibm.com>
-Cc: linux-edac <linux-edac@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v3 3/4] MCE, CE: Wire in the CE collector
-Message-ID: <20140707220918.GE4776@pd.tnic>
-References: <1404242623-10094-1-git-send-email-bp@alien8.de>
- <1404242623-10094-4-git-send-email-bp@alien8.de>
- <1404752411.4484.25.camel@oc3432500282.ibm.com>
+	id S1750976AbaGGWPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 18:15:33 -0400
+Date: Tue, 8 Jul 2014 00:15:31 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+cc: Thomas Meyer <thomas@m3y3r.de>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Intel-gfx] Linux 3.16-rc2
+In-Reply-To: <20140707160402.GA26405@nuc-i3427.alporthouse.com>
+Message-ID: <alpine.LNX.2.00.1407080013030.1655@pobox.suse.cz>
+References: <CA+55aFxdAhp-esuGiY4VEugiiwcMJgg1r6fPiR9Fb+HOz_5tLg@mail.gmail.com> <1403564870.3091.6.camel@localhost.localdomain> <871tuea7nz.fsf@intel.com> <20140624115753.GD17674@nuc-i3427.alporthouse.com> <1403612670.3091.10.camel@localhost.localdomain>
+ <20140624122737.GF17674@nuc-i3427.alporthouse.com> <20140630100220.GA4934@xo-6d-61-c0.localdomain> <20140630100925.GA18836@nuc-i3427.alporthouse.com> <1404317921.3910.3.camel@localhost.localdomain> <20140707151613.GG5821@phenom.ffwll.local>
+ <20140707160402.GA26405@nuc-i3427.alporthouse.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1404752411.4484.25.camel@oc3432500282.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 10:00:11AM -0700, Max Asbock wrote:
-> The above code is a bit convoluted, it amounts to:
+On Mon, 7 Jul 2014, Chris Wilson wrote:
+
+> > > this patch on top of v3.16-rc3-62-gd92a333 makes the resume from ram
+> > > regression go away on my machine:
+> > 
+> > Hm, we could conditionalize this hack on IS_G4X ... Chris, thoughts?
 > 
-> if (we have a corrected dram error && we have an address for it)
-> 	mce_ring_add()
-> else
-> 	mcelog()
-> 
-> Is that the intention?
+> As different machines favour different w/a, I think the issue is mostly
+> timing related. It could be sequence of register writes, but we tried
+> different orders early on. The next experiment I guess would be to
+> insert small delays between each write to see if that helps. Or to write
+> each register twice.
 
-Yes.
+I actually tried to introduce rather large delays between individual 
+I915_WRITE() calls in the ring initialization sequence a couple weeks ago 
+already, but it resulted in complete machine lockup (which is worse than 
+my usual symptoms) during resume. Therefore I probably lack the knowledge 
+of internal workings of the HW that would allow me to guess what the 
+reasonable timeout value should be.
 
-> This might be problematic for downstream consumers of the errors
-> such as the EDAC drivers which keep counts of errors. If errors are
-> silently removed from the stream these counts will be bogus. Somebody
-> might wonder why a page was off-lined while the EDAC driver reports
-> zero corrected DRAM error counts.
-
-This is one of the things that needs discussion. First of all, this
-solution aims to be generic enough, even for boxes which don't have an
-EDAC driver.
-
-Because if you don't have an EDAC driver, you'd still want to have some
-sort of error mitigation.
-
-Granted, most boxes *do* have an EDAC driver but still...
-
-Then, the question is becoming very interesting: how much do we want
-EDAC to get involved in the whole deal? Because if we're doing the error
-collecting, decaying and page offlining in the kernel, I don't see why
-we would need EDAC at all. Or any other agent for that matter.
-
-Maybe for the counters only, if we have to be fair. If, say, people
-would want to monitor error levels or so.
-
-I guess we can add some interface which only increments the error counts
-without the other error handling EDAC normally would do...
+Willing to test any patches.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Jiri Kosina
+SUSE Labs
