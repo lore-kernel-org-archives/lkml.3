@@ -1,91 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751361AbaGGVW2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 17:22:28 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:62754 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868AbaGGVW0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 17:22:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Subject: Re: [PATCH v8 4/9] pci: OF: Fix the conversion of IO ranges into IO resources.
-Date: Mon, 7 Jul 2014 23:22:00 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robherring2@gmail.com>, Sinan Kaya <okaya@codeaurora.org>,
-        "linaro-kernel" <linaro-kernel@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        "linux-pci" <linux-pci@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>, Will Deacon <Will.Deacon@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Kukjin Kim <kgene.kim@samsung.com>, Tanmay Inamdar <tinamdar@apm.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com> <6122131.ozzYjjjRQi@wuerfel> <20140707111133.GP6501@e106497-lin.cambridge.arm.com>
-In-Reply-To: <20140707111133.GP6501@e106497-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201407072322.00990.arnd@arndb.de>
-X-Provags-ID: V02:K0:HYjbeHgGBFRnS787Bx7/dwrYtGIW7YMCRxk/Ivi2TC7
- QoQvBxV9fV6T0fctawk5lQB5uC+J/htcAZoSI+YTj08MPmSGEf
- DgTVcKKeIPw/Qu9K1l5d8tzeARDkjtheRVnn/k/6xKm+MIHfW9
- RqQwl6uPqccix0fsj7pdkL9Hxd1kdmkNpnG/sL2NFsChQfeCDG
- wmxowdhXe4ZYtI9UZDbpyzthVIl/4tbZ6vip3+k2B7m5ROi9Ay
- DddfBXtOmtmO9eUQECkU3HeFIL7lhxyQWauvWxqN5Q4at6H6IX
- Z16QdY4Cyg49Plqy7rO2f7EFBo6q0gRgZyOwwaLKz57C0TAX4v
- LHwsGuO7BhI/PZFzgYvw79EuykR9OCoMiUqcSdJVU
+	id S1751790AbaGGVYG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 17:24:06 -0400
+Received: from mga02.intel.com ([134.134.136.20]:26529 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750929AbaGGVYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 17:24:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,620,1400050800"; 
+   d="scan'208";a="539915107"
+From: kan.liang@intel.com
+To: peterz@infradead.org
+Cc: andi@firstfloor.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Kan Liang <kan.liang@intel.com>
+Subject: [PATCH V3 1/2] perf ignore LBR and offcore_rsp.
+Date: Mon,  7 Jul 2014 06:34:25 -0700
+Message-Id: <1404740066-4374-1-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 07 July 2014, Liviu Dudau wrote:
-> On Sat, Jul 05, 2014 at 09:46:09PM +0100, Arnd Bergmann wrote:
-> > On Saturday 05 July 2014 14:25:52 Rob Herring wrote:
-> > > On Tue, Jul 1, 2014 at 1:43 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > > > The ranges property for a host bridge controller in DT describes
-> > > > the mapping between the PCI bus address and the CPU physical address.
-> > > > The resources framework however expects that the IO resources start
-> > > > at a pseudo "port" address 0 (zero) and have a maximum size of IO_SPACE_LIMIT.
-> > > > The conversion from pci ranges to resources failed to take that into account.
-> > > 
-> > > I don't think this change is right. There are 2 resources: the PCI bus
-> > > addresses and cpu addresses. This function deals with the cpu
-> > > addresses. Returning pci addresses for i/o and cpu addresses for
-> > > memory is going to be error prone. We probably need both cpu and pci
-> > > resources exposed to host controllers.
-> > > 
-> > > Making the new function only deal with i/o bus resources and naming it
-> > > of_pci_range_to_io_resource would be better.
-> > 
-> > I think you are correct that this change by itself is will break existing
-> > drivers that rely on the current behavior of of_pci_range_to_resource,
-> > but there is also something wrong with the existing implementation:
-> 
-> Either I'm very confused or I've managed to confuse everyone else. The I/O
-> resources described using CPU addresses *are* using "pseudo" port based
-> addresses (or at least that is my understanding and my reading of the code).
-> Can you point me to a function that is expecting the IO resource to have
-> the start address at the physical address of the mapped space?
+From: Kan Liang <kan.liang@intel.com>
 
-pci_v3_preinit() in arch/arm/mach-integrator/pci_v3.c for instance takes
-the resource returned by of_pci_range_to_resource and programs the
-start and size into hardware registers that expect a physical address
-as far as I can tell.
+x86, perf: Protect LBR and offcore rsp against KVM lying
 
-> I was trying to fix exactly this issue, that you cannot use the resource
-> structure returned by this function in any call that is expecting an IO
-> resource.
+With -cpu host, KVM reports LBR and offcore support, if the host has support.
+When the guest perf driver tries to access LBR or offcore_rsp MSR,
+it #GPs all MSR accesses,since KVM doesn't handle LBR and offcore support.
+So check the related MSRs access right once at initialization time to avoid the error access at runtime.
 
-I looked at the other drivers briefly, and I think you indeed fix the Tegra
-driver with this but break the integrator driver as mentioned above.
-The other callers of of_pci_range_to_resource() are apparently not
-impacted as they recalculate the values they get.
+For reproducing the issue, please build the kernel with CONFIG_KVM_INTEL = y (for host kernel).
+And CONFIG_PARAVIRT = n and CONFIG_KVM_GUEST = n (for guest kernel).
+Start the guest with -cpu host.
+Run perf record with --branch-any or --branch-filter in guest to trigger LBR #GP.
+Run perf stat offcore events (E.g. LLC-loads/LLC-load-misses ...) in guest to trigger offcore_rsp #GP
 
-	Arnd
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+
+V2: Move the check code to initialization time.
+V3: Add flag for each extra register.
+    Check all LBR MSRs at initialization time.
+---
+ arch/x86/kernel/cpu/perf_event.h           | 30 +++++++++++++++++++++--
+ arch/x86/kernel/cpu/perf_event_intel.c     | 39 +++++++++++++++++++++++++++++-
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |  4 +--
+ 3 files changed, 68 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 3b2f9bd..7e286d7 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -458,12 +458,19 @@ struct x86_pmu {
+ 	u64		lbr_sel_mask;		   /* LBR_SELECT valid bits */
+ 	const int	*lbr_sel_map;		   /* lbr_select mappings */
+ 	bool		lbr_double_abort;	   /* duplicated lbr aborts */
+-
++	bool		lbr_msr_access;		   /* LBR MSR can be accessed */
+ 	/*
+ 	 * Extra registers for events
+ 	 */
+ 	struct extra_reg *extra_regs;
+ 	unsigned int er_flags;
++	/*
++	 * EXTRA REG MSR can be accessed
++	 * The extra offcore registers are completely unrelated to each other.
++	 * So it needs a flag for each extra register.
++	 * The extra offcore MSRs are MSR_OFFCORE_RSP_0 and MSR_OFFCORE_RSP_1.
++	 */
++	bool		extra_msr_access[2];
+ 
+ 	/*
+ 	 * Intel host/guest support (KVM)
+@@ -525,6 +532,21 @@ extern u64 __read_mostly hw_cache_extra_regs
+ 				[PERF_COUNT_HW_CACHE_OP_MAX]
+ 				[PERF_COUNT_HW_CACHE_RESULT_MAX];
+ 
++/*
++ * Under certain circumstances, access certain MSR may cause #GP.
++ * The function tests if the input MSR can be safely accessed.
++ */
++static inline bool check_msr(unsigned long msr)
++{
++	u64 value;
++
++	if (rdmsrl_safe(msr, &value) < 0)
++		return false;
++	if (wrmsrl_safe(msr, value) < 0)
++		return false;
++	return true;
++}
++
+ u64 x86_perf_event_update(struct perf_event *event);
+ 
+ static inline unsigned int x86_pmu_config_addr(int index)
+@@ -555,7 +577,11 @@ static inline void __x86_pmu_enable_event(struct hw_perf_event *hwc,
+ {
+ 	u64 disable_mask = __this_cpu_read(cpu_hw_events.perf_ctr_virt_mask);
+ 
+-	if (hwc->extra_reg.reg)
++	if (hwc->extra_reg.reg &&
++		((hwc->extra_reg.idx == EXTRA_REG_RSP_0) ?
++			x86_pmu.extra_msr_access[0] : true) &&
++		((hwc->extra_reg.idx == EXTRA_REG_RSP_1) ?
++			x86_pmu.extra_msr_access[1] : true))
+ 		wrmsrl(hwc->extra_reg.reg, hwc->extra_reg.config);
+ 	wrmsrl(hwc->config_base, (hwc->config | enable_mask) & ~disable_mask);
+ }
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index adb02aa..3d18765 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2262,7 +2262,7 @@ __init int intel_pmu_init(void)
+ 	union cpuid10_ebx ebx;
+ 	struct event_constraint *c;
+ 	unsigned int unused;
+-	int version;
++	int version, i;
+ 
+ 	if (!cpu_has(&boot_cpu_data, X86_FEATURE_ARCH_PERFMON)) {
+ 		switch (boot_cpu_data.x86) {
+@@ -2565,6 +2565,43 @@ __init int intel_pmu_init(void)
+ 		}
+ 	}
+ 
++	/*
++	 * Access LBR MSR may cause #GP under certain circumstances.
++	 * E.g. KVM doesn't support LBR MSR
++	 * Check all LBT MSR here.
++	 * Disable LBR access if any LBR MSRs can not be accessed.
++	 */
++	if (x86_pmu.lbr_nr) {
++		x86_pmu.lbr_msr_access = check_msr(x86_pmu.lbr_tos);
++		for (i = 0; i < x86_pmu.lbr_nr; i++) {
++			x86_pmu.lbr_msr_access &=
++				check_msr(x86_pmu.lbr_from + i);
++			x86_pmu.lbr_msr_access &=
++				check_msr(x86_pmu.lbr_to + i);
++		}
++	}
++	/*
++	 * Access extra MSR may cause #GP under certain circumstances.
++	 * E.g. KVM doesn't support offcore event
++	 * Check all extra_regs here.
++	 */
++	if (x86_pmu.extra_regs) {
++		x86_pmu.extra_msr_access[0] =
++			check_msr(x86_pmu.extra_regs[EXTRA_REG_RSP_0].msr);
++
++		/* Not all platforms have EXTRA_REG_RSP_1 */
++		if (x86_pmu.extra_regs[EXTRA_REG_RSP_1].idx == EXTRA_REG_RSP_1)
++			x86_pmu.extra_msr_access[1] =
++			check_msr(x86_pmu.extra_regs[EXTRA_REG_RSP_1].msr);
++		/*
++		 * If there is no EXTRA_REG_RSP_1 support,
++		 * just set the flag to be true.
++		 * So it is ignored at the runtime check.
++		 */
++		else
++			x86_pmu.extra_msr_access[1] = true;
++	}
++
+ 	/* Support full width counters using alternative MSR range */
+ 	if (x86_pmu.intel_cap.full_width_write) {
+ 		x86_pmu.max_period = x86_pmu.cntval_mask;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 9dd2459..9508d1e 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -172,7 +172,7 @@ static void intel_pmu_lbr_reset_64(void)
+ 
+ void intel_pmu_lbr_reset(void)
+ {
+-	if (!x86_pmu.lbr_nr)
++	if (!x86_pmu.lbr_nr  || !x86_pmu.lbr_msr_access)
+ 		return;
+ 
+ 	if (x86_pmu.intel_cap.lbr_format == LBR_FORMAT_32)
+@@ -334,7 +334,7 @@ void intel_pmu_lbr_read(void)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+-	if (!cpuc->lbr_users)
++	if (!cpuc->lbr_users || !x86_pmu.lbr_msr_access)
+ 		return;
+ 
+ 	if (x86_pmu.intel_cap.lbr_format == LBR_FORMAT_32)
+-- 
+1.8.3.1
+
