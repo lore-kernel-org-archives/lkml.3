@@ -1,57 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176AbaGFX6h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 19:58:37 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:54304 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751382AbaGFX6g (ORCPT
+	id S1752192AbaGGASL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 20:18:11 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:27227 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751984AbaGGASI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 19:58:36 -0400
-X-Sasl-enc: UH+KM7FJRh4+6zuCmpQLbtXrZYe5k1BOqgo7RWQO3rvJ 1404691114
-Date: Sun, 6 Jul 2014 16:58:18 -0700
-From: Greg KH <greg@kroah.com>
-To: Himangi Saraogi <himangi774@gmail.com>
-Cc: linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
-Subject: Re: [PATCH] thunderbolt: Correct the size argument to devm_kzalloc
-Message-ID: <20140706235818.GA18457@kroah.com>
-References: <20140706161342.GA6267@himangi-Dell>
+	Sun, 6 Jul 2014 20:18:08 -0400
+X-IronPort-AV: E=Sophos;i="5.00,846,1396972800"; 
+   d="scan'208";a="32908610"
+Message-ID: <53B9E778.9070807@cn.fujitsu.com>
+Date: Mon, 7 Jul 2014 08:19:04 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140706161342.GA6267@himangi-Dell>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: <tj@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] workqueue: initialize cpumask of wq_numa_possible_cpumask
+References: <53B98591.5030000@jp.fujitsu.com>
+In-Reply-To: <53B98591.5030000@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 06, 2014 at 09:43:42PM +0530, Himangi Saraogi wrote:
-> nhi->rx_rings does not have type as struct tb_ring *, as it is a
-> double pointer so the elements of the array should have pointer type,
-> not structure type.
+On 07/07/2014 01:21 AM, Yasuaki Ishimatsu wrote:
+> When hot-adding and onlining CPU, kernel panic occurs, showing following
+> call trace.
 > 
-> The Coccinelle semantic patch that makes this change is as follows:
+>  BUG: unable to handle kernel paging request at 0000000000001d08
+>  IP: [<ffffffff8114acfd>] __alloc_pages_nodemask+0x9d/0xb10
+>  PGD 0
+>  Oops: 0000 [#1] SMP
+>  ...
+>  Call Trace:
+>   [<ffffffff812b8745>] ? cpumask_next_and+0x35/0x50
+>   [<ffffffff810a3283>] ? find_busiest_group+0x113/0x8f0
+>   [<ffffffff81193bc9>] ? deactivate_slab+0x349/0x3c0
+>   [<ffffffff811926f1>] new_slab+0x91/0x300
+>   [<ffffffff815de95a>] __slab_alloc+0x2bb/0x482
+>   [<ffffffff8105bc1c>] ? copy_process.part.25+0xfc/0x14c0
+>   [<ffffffff810a3c78>] ? load_balance+0x218/0x890
+>   [<ffffffff8101a679>] ? sched_clock+0x9/0x10
+>   [<ffffffff81105ba9>] ? trace_clock_local+0x9/0x10
+>   [<ffffffff81193d1c>] kmem_cache_alloc_node+0x8c/0x200
+>   [<ffffffff8105bc1c>] copy_process.part.25+0xfc/0x14c0
+>   [<ffffffff81114d0d>] ? trace_buffer_unlock_commit+0x4d/0x60
+>   [<ffffffff81085a80>] ? kthread_create_on_node+0x140/0x140
+>   [<ffffffff8105d0ec>] do_fork+0xbc/0x360
+>   [<ffffffff8105d3b6>] kernel_thread+0x26/0x30
+>   [<ffffffff81086652>] kthreadd+0x2c2/0x300
+>   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
+>   [<ffffffff815f20ec>] ret_from_fork+0x7c/0xb0
+>   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
 > 
-> // <smpl>
-> @disable sizeof_type_expr@
-> type T;
-> T **x;
-> @@
+> In my investigation, I found the root cause is wq_numa_possible_cpumask.
+> All entries of wq_numa_possible_cpumask is allocated by
+> alloc_cpumask_var_node(). And these entries are used without initializing.
+> So these entries have wrong value.
 > 
->   x =
->   <+...sizeof(
-> - T
-> + *x
->   )...+>
-> // </smpl>
+> When hot-adding and onlining CPU, wq_update_unbound_numa() is called.
+> wq_update_unbound_numa() calls alloc_unbound_pwq(). And alloc_unbound_pwq()
+> calls get_unbound_pool(). In get_unbound_pool(), worker_pool->node is set
+> as follow:
 > 
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> #kernel/workqueue.c
+> 3592         /* if cpumask is contained inside a NUMA node, we belong to that node */
+> 3593         if (wq_numa_enabled) {
+> 3594                 for_each_node(node) {
+> 3595                         if (cpumask_subset(pool->attrs->cpumask,
+> 3596                                            wq_numa_possible_cpumask[node])) {
+> 3597                                 pool->node = node;
+> 3598                                 break;
+> 3599                         }
+> 3600                 }
+> 3601         }
+> 
+> But wq_numa_possible_cpumask[node] does not have correct cpumask. So, wrong
+> node is selected. As a result, kernel panic occurs.
+> 
+> By this patch, all entries of wq_numa_possible_cpumask are allocated by
+> zalloc_cpumask_var_node to initialize them. And the panic disappeared.
+> 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+
+Hi, Yasuaki
+
+All cpumasks in the wq_numa_possible_cpumask array are allocated in
+wq_numa_init():
+
+	for_each_node(node)
+		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
+				node_online(node) ? node : NUMA_NO_NODE));
+
+	[snip...]
+
+	wq_numa_possible_cpumask = tbl;
+
+I didn't find out how does this patch make the all entries of
+wq_numa_possible_cpumask zeroed.
+
+Or I misunderstood.
+
+Thanks,
+Lai
+
 > ---
->  drivers/thunderbolt/nhi.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  kernel/workqueue.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 6203d29..b393ded 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -3338,7 +3338,7 @@ struct workqueue_attrs *alloc_workqueue_attrs(gfp_t gfp_mask)
+>  	attrs = kzalloc(sizeof(*attrs), gfp_mask);
+>  	if (!attrs)
+>  		goto fail;
+> -	if (!alloc_cpumask_var(&attrs->cpumask, gfp_mask))
+> +	if (!zalloc_cpumask_var(&attrs->cpumask, gfp_mask))
+>  		goto fail;
+> 
+>  	cpumask_copy(attrs->cpumask, cpu_possible_mask);
+> 
+> .
+> 
 
-Any reason you didn't cc: the developers in charge of this code so they
-see it and can pick it up?  Otherwise it's just going to float around on
-the mailing list, listless and sad.
-
-greg k-h
