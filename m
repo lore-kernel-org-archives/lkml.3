@@ -1,59 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751362AbaGGGFg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 02:05:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64700 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859AbaGGGFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 02:05:33 -0400
-Date: Mon, 7 Jul 2014 11:34:58 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Jason Cooper <jason@lakedaemon.net>,
-        "# 3.4.x" <stable@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] hwrng: fetch randomness only after device init
-Message-ID: <20140707060458.GC27024@grmbl.mre>
-References: <cover.1404538109.git.amit.shah@redhat.com>
- <515a12ecc5fca5452bf0bfda4d54546d8fb5829c.1404538109.git.amit.shah@redhat.com>
- <CAGXu5j+j1LUv_rRpf=03nRfu=Sek5O8TUs8R066JvfbUgT9ZQQ@mail.gmail.com>
- <20140707055352.GB27024@grmbl.mre>
+	id S1751455AbaGGGGb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 02:06:31 -0400
+Received: from mailout.micron.com ([137.201.242.129]:33374 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859AbaGGGG2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 02:06:28 -0400
+From: =?iso-2022-jp?B?QmVhbiBIdW8gGyRCcDlJTElMGyhCIChiZWFuaHVvKQ==?= 
+	<beanhuo@micron.com>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        "b32955@freescale.com" <b32955@freescale.com>
+Subject: [PATCH v3] mtd:nor:timeout:fix do_write_buffer() timeout error
+Thread-Topic: [PATCH v3] mtd:nor:timeout:fix do_write_buffer() timeout error
+Thread-Index: Ac+UONEVkJznG3ZoSA6Lf6Wf2Z1wigFcHnNQ
+Date: Mon, 7 Jul 2014 06:05:12 +0000
+Message-ID: <A765B125120D1346A63912DDE6D8B6315D7C21@NTXXIAMBX02.xacn.micron.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20802.005
+X-TM-AS-Result: No--8.707200-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140707055352.GB27024@grmbl.mre>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Mon) 07 Jul 2014 [11:23:52], Amit Shah wrote:
-> On (Sun) 06 Jul 2014 [21:41:47], Kees Cook wrote:
-> > On Fri, Jul 4, 2014 at 10:34 PM, Amit Shah <amit.shah@redhat.com> wrote:
-> > > Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
-> > > added a call to rng_get_data() from the hwrng_register() function.
-> > > However, some rng devices need initialization before data can be read
-> > > from them.
-> > >
-> > > This commit makes the call to rng_get_data() depend on no init fn
-> > > pointer being registered by the device.  If an init function is
-> > > registered, this call is made after device init.
-> > 
-> > Thanks, this seems pretty reasonable. One side-effect is that cycling
-> > between hwrngs via sysfs (when they have init functions) will cause
-> > them to add more entropy. I don't think this is a problem, but it is
-> > kind of a weird side-effect.
-> 
-> Yes, agreed.  Having a per-device bool that indicates whether the
-> initial randomness is obtained is quite a heavy solution for this
-> side-effect.  But I can put this in the commit log so it's clear..
+The size of the buffer program has been increased from 256 to 512 , 2ms maximum timeout for do_write_buffer can not adapt to all the different vendor's norflash.There maximum timeout information in the CFI area,so the best way is to choose the result calculated according to timeout field of struct cfi_ident that probed from norflash's CFI aera.This is also a standard defined by CFI.
 
-Well actually this feels a little weird, so how about making this the
-default behaviour for all devices, whether they have ->init() or not?
+Without this change, if the size of buffer program is 512 or bigger than 256, due to timeout is the shorter than that the chip required,do_write_buffer sometimes fails.
 
-This also means that if a virtio-rng device is switched, it can
-contribute as its probe would have been over.
+Tested with Micron JS28F512M29EWx and Micron MT28EW512ABA flash devices.
 
-		Amit
+Signed-off-by: bean huo <beanhuo@micron.com>
+---
+changes 
+	v1->v2:Deleted unused parameters in this patch (word_write_time_max and erase_time_max).
+Using usecs_to_jiffies instead of msecs_to_jiffies for convert timeout value into jiffies.
+	v2->v3:Removed unnecessary messages form comments and deleted trailing whitespace.
+
+ drivers/mtd/chips/cfi_cmdset_0002.c |   27 ++++++++++++++++++++++++---
+ 1 file changed, 24 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mtd/chips/cfi_cmdset_0002.c b/drivers/mtd/chips/cfi_cmdset_0002.c
+index e21fde9..f7098d6 100644
+--- a/drivers/mtd/chips/cfi_cmdset_0002.c
++++ b/drivers/mtd/chips/cfi_cmdset_0002.c
+@@ -628,10 +628,24 @@ struct mtd_info *cfi_cmdset_0002(struct map_info *map, int primary)
+ 		cfi->chips[i].word_write_time = 1<<cfi->cfiq->WordWriteTimeoutTyp;
+ 		cfi->chips[i].buffer_write_time = 1<<cfi->cfiq->BufWriteTimeoutTyp;
+ 		cfi->chips[i].erase_time = 1<<cfi->cfiq->BlockEraseTimeoutTyp;
++		/*
++		 * We first calculate the timeout max according to timeout
++		 * field of struct cfi_ident that probed from chip's CFI
++		 * aera,If haven't probed this information,we will specify
++		 * a default value,and the time unit is us.
++		 */
++		if (cfi->cfiq->BufWriteTimeoutTyp &&
++			cfi->cfiq->BufWriteTimeoutMax){
++			cfi->chips[i].buffer_write_time_max =
++				1<<(cfi->cfiq->BufWriteTimeoutTyp +
++					cfi->cfiq->BufWriteTimeoutMax);
++			} else {
++			/* specify maximum timeout for buffer program 2000us */
++				cfi->chips[i].buffer_write_time_max = 2000;
++				}
+ 		cfi->chips[i].ref_point_counter = 0;
+ 		init_waitqueue_head(&(cfi->chips[i].wq));
+ 	}
+-
+ 	map->fldrv = &cfi_amdstd_chipdrv;
+ 
+ 	return cfi_amdstd_setup(mtd);
+@@ -1462,8 +1476,15 @@ static int __xipram do_write_buffer(struct map_info *map, struct flchip *chip,  {
+ 	struct cfi_private *cfi = map->fldrv_priv;
+ 	unsigned long timeo = jiffies + HZ;
+-	/* see comments in do_write_oneword() regarding uWriteTimeo. */
+-	unsigned long uWriteTimeout = ( HZ / 1000 ) + 1;
++	/* There maximum timeout information in the CFI area,so the
++	 * best way is to choose the result calculated according to
++	 * timeout field of struct cfi_ident that probed from
++	 * norflash's CFI aera,see comments in cfi_cmdset_0002().
++	 * uWriteTimeout is used for timeout step,it must be concerted
++	 * into jiffies.
++	 */
++	unsigned long uWriteTimeout =
++				usecs_to_jiffies(chip->buffer_write_time_max);
+ 	int ret = -EIO;
+ 	unsigned long cmd_adr;
+ 	int z, words;
+--
+1.7.9.5
