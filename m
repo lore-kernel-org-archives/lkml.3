@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551AbaGGXzc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:55:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56091 "EHLO
+	id S1754533AbaGGXza (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 19:55:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55989 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281AbaGGXzN (ORCPT
+	with ESMTP id S1754304AbaGGXzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:55:13 -0400
+	Mon, 7 Jul 2014 19:55:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>,
-        Alif Mubarak Ahmad <alive4ever@live.com>,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.10 07/53] USB: option: add device ID for SpeedUp SU9800 usb 3g modem
-Date: Mon,  7 Jul 2014 16:57:52 -0700
-Message-Id: <20140707235829.499661890@linuxfoundation.org>
+        "David R. Piegdon" <lkml@p23q.org>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.10 31/53] ARM: OMAP2+: Fix parser-bug in platform muxing code
+Date: Mon,  7 Jul 2014 16:58:16 -0700
+Message-Id: <20140707235830.227104679@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
 References: <20140707235829.281783607@linuxfoundation.org>
@@ -30,48 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: "David R. Piegdon" <lkml@p23q.org>
 
-commit 1cab4c68e339086cdaff7535848e878e8f261fca upstream.
+commit c021f241f4fab2bb4fc4120a38a828a03dd3f970 upstream.
 
-Reported by Alif Mubarak Ahmad:
+Fix a parser-bug in the omap2 muxing code where muxtable-entries will be
+wrongly selected if the requested muxname is a *prefix* of their
+m0-entry and they have a matching mN-entry. Fix by additionally checking
+that the length of the m0_entry is equal.
 
-This device vendor and product id is 1c9e:9800
-It is working as serial interface with generic usbserial driver.
-I thought it is more suitable to use usbserial option driver, which has
-better capability distinguishing between modem serial interface and
-micro sd storage interface.
+For example muxing of "dss_data2.dss_data2" on omap32xx will fail
+because the prefix "dss_data2" will match the mux-entries "dss_data2" as
+well as "dss_data20", with the suffix "dss_data2" matching m0 (for
+dss_data2) and m4 (for dss_data20). Thus both are recognized as signal
+path candidates:
 
-[ johan: style changes ]
+Relevant muxentries from mux34xx.c:
+        _OMAP3_MUXENTRY(DSS_DATA20, 90,
+                "dss_data20", NULL, "mcspi3_somi", "dss_data2",
+                "gpio_90", NULL, NULL, "safe_mode"),
+        _OMAP3_MUXENTRY(DSS_DATA2, 72,
+                "dss_data2", NULL, NULL, NULL,
+                "gpio_72", NULL, NULL, "safe_mode"),
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Tested-by: Alif Mubarak Ahmad <alive4ever@live.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+This will result in a failure to mux the pin at all:
+
+ _omap_mux_get_by_name: Multiple signal paths (2) for dss_data2.dss_data2
+
+Patch should apply to linus' latest master down to rather old linux-2.6
+trees.
+
+Signed-off-by: David R. Piegdon <lkml@p23q.org>
+Cc: stable@vger.kernel.org
+[tony@atomide.com: updated description to include full description]
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/mach-omap2/mux.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -352,6 +352,9 @@ static void option_instat_callback(struc
- /* Zoom */
- #define ZOOM_PRODUCT_4597			0x9607
+--- a/arch/arm/mach-omap2/mux.c
++++ b/arch/arm/mach-omap2/mux.c
+@@ -183,8 +183,10 @@ static int __init _omap_mux_get_by_name(
+ 		m0_entry = mux->muxnames[0];
  
-+/* SpeedUp SU9800 usb 3g modem */
-+#define SPEEDUP_PRODUCT_SU9800			0x9800
-+
- /* Haier products */
- #define HAIER_VENDOR_ID				0x201e
- #define HAIER_PRODUCT_CE100			0x2009
-@@ -1577,6 +1580,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
-   	  .driver_info = (kernel_ulong_t)&four_g_w14_blacklist
-   	},
-+	{ USB_DEVICE_INTERFACE_CLASS(LONGCHEER_VENDOR_ID, SPEEDUP_PRODUCT_SU9800, 0xff) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, ZOOM_PRODUCT_4597) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, IBALL_3_5G_CONNECT) },
- 	{ USB_DEVICE(HAIER_VENDOR_ID, HAIER_PRODUCT_CE100) },
+ 		/* First check for full name in mode0.muxmode format */
+-		if (mode0_len && strncmp(muxname, m0_entry, mode0_len))
+-			continue;
++		if (mode0_len)
++			if (strncmp(muxname, m0_entry, mode0_len) ||
++			    (strlen(m0_entry) != mode0_len))
++				continue;
+ 
+ 		/* Then check for muxmode only */
+ 		for (i = 0; i < OMAP_MUX_NR_MODES; i++) {
 
 
