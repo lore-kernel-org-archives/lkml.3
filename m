@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaGGGul (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 02:50:41 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55925 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751223AbaGGGso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 02:48:44 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <gregkh@linuxfoundation.org>
-CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/8] phy: sun4i: depend on RESET_CONTROLLER
-Date: Mon, 7 Jul 2014 12:18:18 +0530
-Message-ID: <1404715705-5041-2-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404715705-5041-1-git-send-email-kishon@ti.com>
-References: <1404715705-5041-1-git-send-email-kishon@ti.com>
+	id S1751548AbaGGG5x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 02:57:53 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:39947 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072AbaGGG5v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 02:57:51 -0400
+Message-ID: <53BA44E5.6070604@collabora.co.uk>
+Date: Mon, 07 Jul 2014 08:57:41 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+CC: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 23/24] rtc: Add driver for Maxim 77802 PMIC Real-Time-Clock
+References: <1404505467-26526-1-git-send-email-javier.martinez@collabora.co.uk> <1404505467-26526-24-git-send-email-javier.martinez@collabora.co.uk> <1404713210.4367.0.camel@AMDC1943>
+In-Reply-To: <1404713210.4367.0.camel@AMDC1943>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
+Hello Krzysztof,
 
-The driver depend on the reset framework in a mandatory way. Make sure
-reset_control_get is defined by adding this dependency in Kconfig
+On 07/07/2014 08:06 AM, Krzysztof Kozlowski wrote:
+> On pią, 2014-07-04 at 22:24 +0200, Javier Martinez Canillas wrote:
+>> The MAX7802 PMIC has a Real-Time-Clock (RTC) with two alarms.
+>> This patch adds support for the RTC and is based on a driver
+>> added by Simon Glass to the Chrome OS kernel 3.8 tree.
+>> 
+>> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+>> ---
+>> 
+>> Changes since v6:
+>>  - Remove unused code for SMPL and WTSR. Suggested by Krzysztof Kozlowski.
+>>  - Don't spam the kernel log with unimportant info and just print for debug.
+>>    Suggested by Krzysztof Kozlowski.
+>>  - Use ARRAY_SIZE() instead of constant value. Suggested by Krzysztof Kozlowski.
+>>  - Remove duplicated register setup. Suggested by Krzysztof Kozlowski.
+>>  - Don't free/unregister managed allocated resources.
+>>    Suggested by Krzysztof Kozlowski.
+>> ---
+>>  drivers/rtc/Kconfig        |  10 +
+>>  drivers/rtc/Makefile       |   1 +
+>>  drivers/rtc/rtc-max77802.c | 508 +++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 519 insertions(+)
+>>  create mode 100644 drivers/rtc/rtc-max77802.c
+> 
+> 
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> 
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Reported-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/phy/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+Thanks a lot for the review and for all the feedback you gave me on each version
+of the series.
 
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index 16a2f06..1d8099a 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -112,6 +112,7 @@ config PHY_EXYNOS5250_SATA
- config PHY_SUN4I_USB
- 	tristate "Allwinner sunxi SoC USB PHY driver"
- 	depends on ARCH_SUNXI && HAS_IOMEM && OF
-+	depends on RESET_CONTROLLER
- 	select GENERIC_PHY
- 	help
- 	  Enable this to support the transceiver that is part of Allwinner
--- 
-1.7.9.5
+> Best regards,
+> Krzysztof
+> 
+> 
 
+Best regards,
+Javier
