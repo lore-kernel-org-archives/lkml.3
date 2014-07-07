@@ -1,194 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717AbaGGLNu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 07:13:50 -0400
-Received: from mta-out1.inet.fi ([62.71.2.231]:46365 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752222AbaGGLNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 07:13:47 -0400
-Date: Mon, 7 Jul 2014 14:13:03 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH v10 7/7] mm: Don't split THP page when syscall is called
-Message-ID: <20140707111303.GC23150@node.dhcp.inet.fi>
-References: <1404694438-10272-1-git-send-email-minchan@kernel.org>
- <1404694438-10272-8-git-send-email-minchan@kernel.org>
+	id S1752435AbaGGLVo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 07:21:44 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:51496 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392AbaGGLVm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 07:21:42 -0400
+Message-ID: <53BA82A4.5070104@ti.com>
+Date: Mon, 7 Jul 2014 16:51:08 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404694438-10272-8-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: <nick.dyer@itdev.co.uk>, Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH 00/15] atmel_mxt_ts - device tree, bootloader, etc
+References: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk>
+In-Reply-To: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 09:53:58AM +0900, Minchan Kim wrote:
-> We don't need to split THP page when MADV_FREE syscall is
-> called. It could be done when VM decide really frees it so
-> we could reduce the number of THP split.
+Hi Nick,
+
+On Thursday 03 July 2014 08:31 PM, nick.dyer@itdev.co.uk wrote:
+> Hi Dimitry-
 > 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  include/linux/huge_mm.h |  3 +++
->  mm/huge_memory.c        | 25 +++++++++++++++++++++++++
->  mm/madvise.c            | 19 +++++++++++++++++--
->  mm/rmap.c               |  4 ++++
->  mm/vmscan.c             | 24 ++++++++++++++++--------
->  5 files changed, 65 insertions(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-> index 63579cb8d3dc..f0d37238cf8f 100644
-> --- a/include/linux/huge_mm.h
-> +++ b/include/linux/huge_mm.h
-> @@ -19,6 +19,9 @@ extern struct page *follow_trans_huge_pmd(struct vm_area_struct *vma,
->  					  unsigned long addr,
->  					  pmd_t *pmd,
->  					  unsigned int flags);
-> +extern int madvise_free_pmd(struct mmu_gather *tlb,
-> +			struct vm_area_struct *vma,
-> +			pmd_t *pmd, unsigned long addr);
->  extern int zap_huge_pmd(struct mmu_gather *tlb,
->  			struct vm_area_struct *vma,
->  			pmd_t *pmd, unsigned long addr);
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 5d562a9fe931..2a70069dcfc0 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -1384,6 +1384,31 @@ out:
->  	return 0;
->  }
->  
-> +int madvise_free_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
-> +		 pmd_t *pmd, unsigned long addr)
-> +{
-> +	spinlock_t *ptl;
-> +	int ret = 0;
-> +
-> +	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
-> +		pmd_t orig_pmd;
-> +		struct mm_struct *mm = vma->vm_mm;
-> +
-> +		/* No hugepage in swapcache */
-> +		VM_BUG_ON(PageSwapCache(pmd_page(orig_pmd)));
+> Here is another set of atmel_mxt_ts patches for upstream. There are some
+> really useful new features, but I hope nothing too controversial.
 
-VM_BUG_ON_PAGE() ?
+I was unable to get the touchscreen working on my board after applying 
+just these patches. It does work correctly with your for-next branch so 
+I guess I need to wait for you to post the rest of your patches too.
 
-> +
-> +		orig_pmd = pmdp_get_and_clear(tlb->mm, addr, pmd);
-> +		orig_pmd = pmd_mkold(orig_pmd);
-> +		orig_pmd = pmd_mkclean(orig_pmd);
-> +
-> +		set_pmd_at(mm, addr, pmd, orig_pmd);
-> +		tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
-> +		spin_unlock(ptl);
-> +		ret = 1;
-> +	}
-> +	return ret;
-> +}
-> +
->  int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
->  		 pmd_t *pmd, unsigned long addr)
->  {
-> diff --git a/mm/madvise.c b/mm/madvise.c
-> index 372a25a8ea82..3c99919ee094 100644
-> --- a/mm/madvise.c
-> +++ b/mm/madvise.c
-> @@ -320,8 +320,23 @@ static inline unsigned long madvise_free_pmd_range(struct mmu_gather *tlb,
->  		 * if the range covers.
->  		 */
->  		next = pmd_addr_end(addr, end);
-> -		if (pmd_trans_huge(*pmd))
-> -			split_huge_page_pmd(vma, addr, pmd);
-> +		if (pmd_trans_huge(*pmd)) {
-> +			if (next - addr != HPAGE_PMD_SIZE) {
-> +#ifdef CONFIG_DEBUG_VM
-> +				if (!rwsem_is_locked(&tlb->mm->mmap_sem)) {
-> +					pr_err("%s: mmap_sem is unlocked! addr=0x%lx end=0x%lx vma->vm_start=0x%lx vma->vm_end=0x%lx\n",
-> +						__func__, addr, end,
-> +						vma->vm_start,
-> +						vma->vm_end);
-> +					BUG();
-> +				}
-> +#endif
-> +				split_huge_page_pmd(vma, addr, pmd);
-> +			} else if (madvise_free_pmd(tlb, vma, pmd, addr))
-> +				goto next;
-> +			/* fall through */
-> +		}
-> +
->  		/*
->  		 * Here there can be other concurrent MADV_DONTNEED or
->  		 * trans huge page faults running, and if the pmd is
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index ee495d84c8b3..3c415eb8b6f0 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -702,6 +702,10 @@ static int page_referenced_one(struct page *page, struct vm_area_struct *vma,
->  		/* go ahead even if the pmd is pmd_trans_splitting() */
->  		if (pmdp_clear_flush_young_notify(vma, address, pmd))
->  			referenced++;
-> +
-> +		if (pmd_dirty(*pmd))
-> +			dirty++;
-> +
->  		spin_unlock(ptl);
->  	} else {
->  		pte_t *pte;
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index f7a45600846f..4e15babf4414 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -971,15 +971,23 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  		 * Anonymous process memory has backing store?
->  		 * Try to allocate it some swap space here.
->  		 */
-> -		if (PageAnon(page) && !PageSwapCache(page) && !freeable) {
-> -			if (!(sc->gfp_mask & __GFP_IO))
-> -				goto keep_locked;
-> -			if (!add_to_swap(page, page_list))
-> -				goto activate_locked;
-> -			may_enter_fs = 1;
-> +		if (PageAnon(page) && !PageSwapCache(page)) {
-> +			if (!freeable) {
-> +				if (!(sc->gfp_mask & __GFP_IO))
-> +					goto keep_locked;
-> +				if (!add_to_swap(page, page_list))
-> +					goto activate_locked;
-> +				may_enter_fs = 1;
->  
-> -			/* Adding to swap updated mapping */
-> -			mapping = page_mapping(page);
-> +				/* Adding to swap updated mapping */
-> +				mapping = page_mapping(page);
-> +			} else {
-> +				if (unlikely(PageTransHuge(page))) {
-> +					if (unlikely(split_huge_page_to_list(
-> +						page, page_list)))
-> +						goto keep_locked;
+Here are the relevant messages at boot. Full boot log is available here 
+(in case you want to have a look): http://paste.ubuntu.com/7759703/
 
-Hm. It would be better to free the huge page without splitting. 
-It shouldn't be a big deal: walk over rmap and zap all pmds.
-Or I miss something?
+[    2.315717] atmel_mxt_ts 0-004a: Direct firmware load failed with error -2
+[    2.322949] atmel_mxt_ts 0-004a: Falling back to user helper
+[    5.934924] atmel_mxt_ts 0-004a: Wait for completion timed out.
+[    5.941237] atmel_mxt_ts 0-004a: Warning: Info CRC error - device=0x000000 file=0x8EE45C
+[    7.294769] atmel_mxt_ts 0-004a: Wait for completion timed out.
+[    7.300976] atmel_mxt_ts 0-004a: Resetting chip
+[   10.574729] atmel_mxt_ts 0-004a: Wait for completion timed out.
+[   10.581010] atmel_mxt_ts 0-004a: Error -110 updating config
+[   10.626788] atmel_mxt_ts 0-004a: Family: 128 Variant: 1 Firmware V1.6.AB Objects: 17
 
-> +				}
-> +			}
->  		}
->  
->  		/*
-> -- 
-> 2.0.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-api" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+One key difference is that these patches try to load the config at 
+probe where as with your -next branch that is avoided in the DT case. 
+This is also missing the new update_cfg sysfs interface (which I guess 
+you will post as follow-on patches).
 
--- 
- Kirill A. Shutemov
+The wait_for_completion() times out because the interrupt never 
+arrives. Even later when testing using evtest, I do not see interrupts 
+coming. There are only two interrupts that arrive during boot and it 
+stays that way. There is something going on with the way interrupts are 
+handled. I havent debugged further yet. This problem is not there with 
+your for-next branch.
+
+I used your mxt-app to dump configuration in both cases and its exactly
+the same.
+
+Thanks,
+Sekhar
+
