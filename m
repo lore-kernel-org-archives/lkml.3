@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898AbaGGKtG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 06:49:06 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:47780 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939AbaGGKtD (ORCPT
+	id S1752754AbaGGKun (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 06:50:43 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:44166 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933AbaGGKul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 06:49:03 -0400
+	Mon, 7 Jul 2014 06:50:41 -0400
+Date: Mon, 7 Jul 2014 11:50:35 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
+        Rickard Strandqvist <rickard.strandqvist@sonymobile.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] video: backlight: jornada720_lcd.c:  Cleaning up
+ variable that is never used
+Message-ID: <20140707105035.GC6407@lee--X1>
+References: <1404562325-18471-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
-In-Reply-To: <20140616095256.GN14323@lee--X1>
-References: <1402297417-9338-1-git-send-email-ldewangan@nvidia.com>
-	<20140616095256.GN14323@lee--X1>
-Date: Mon, 7 Jul 2014 12:49:02 +0200
-Message-ID: <CACRpkdYbV5zMoW3eLkYxbLLXEo4SWnqZgdkm+ONpBW-1s5pvYQ@mail.gmail.com>
-Subject: Re: [PATCH] Doc: mfd: as3722: Add details of optional missing property
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Rob Herring <robh+dt@kernel.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1404562325-18471-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 16, 2014 at 11:52 AM, Lee Jones <lee.jones@linaro.org> wrote:
+On Sat, 05 Jul 2014, Rickard Strandqvist wrote:
 
-> CC'ing Linus as he had an opinion.
->
-> On Mon, 09 Jun 2014, Laxman Dewangan wrote:
->> Add details of following properties which are used on driver but
->> not documented on DT binding document.
->> - ams,enable-internal-int-pullup
->> - ams,enable-internal-i2c-pullup
->>
->> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
->> Reported-by: Lee Jones <lee.jones@linaro.org>
+> From: Rickard Strandqvist <rickard.strandqvist@sonymobile.com>
+> 
+> Variable ar assigned a value that is never used.
+> I have also removed all the code that thereby serves no purpose.
+> 
+> This was found using a static code analysis program called cppcheck
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/video/backlight/jornada720_lcd.c |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
 
-I can live with this.
+Is this different from the patch I just NACKed?
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> diff --git a/drivers/video/backlight/jornada720_lcd.c b/drivers/video/backlight/jornada720_lcd.c
+> index da3876c..b304319 100644
+> --- a/drivers/video/backlight/jornada720_lcd.c
+> +++ b/drivers/video/backlight/jornada720_lcd.c
+> @@ -56,12 +56,10 @@ static int jornada_lcd_get_contrast(struct lcd_device *ld)
+>  
+>  static int jornada_lcd_set_contrast(struct lcd_device *ld, int value)
+>  {
+> -	int ret;
+> -
+>  	jornada_ssp_start();
+>  
+>  	/* start by sending our set contrast cmd to mcu */
+> -	ret = jornada_ssp_byte(SETCONTRAST);
+> +	jornada_ssp_byte(SETCONTRAST);
+>  
+>  	/* push the new value */
+>  	if (jornada_ssp_byte(value) != TXDUMMY) {
 
-Yours,
-Linus Walleij
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
