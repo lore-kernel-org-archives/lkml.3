@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680AbaGGX6u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:58:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55989 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754404AbaGGXzR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754408AbaGGXzR (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 7 Jul 2014 19:55:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56097 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754279AbaGGXzF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 19:55:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tim Kryger <tim.kryger@linaro.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Markus Mayer <markus.mayer@linaro.org>, Wang Nan <wangnan0@huawei.com>
-Subject: [PATCH 3.10 46/53] serial: 8250_dw: Report CTS asserted for auto flow
-Date: Mon,  7 Jul 2014 16:58:31 -0700
-Message-Id: <20140707235830.683218399@linuxfoundation.org>
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Lukasz Rymanowski <lukasz.rymanowski@tieto.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.10 23/53] Bluetooth: Fix locking of hdev when calling into SMP code
+Date: Mon,  7 Jul 2014 16:58:08 -0700
+Message-Id: <20140707235829.994330480@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
 References: <20140707235829.281783607@linuxfoundation.org>
@@ -30,106 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tim Kryger <tim.kryger@linaro.org>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 33acbb82695f84e9429c1f7fbdeb4588dea12ffa upstream.
+commit c73f94b8c093a615ce80eabbde0ac6eb9abfe31a upstream.
 
-When a serial port is configured for RTS/CTS flow control, serial core
-will disable the transmitter if it observes CTS is de-asserted. This is
-perfectly reasonable and appropriate when the UART lacks the ability to
-automatically perform CTS flow control.
+The SMP code expects hdev to be unlocked since e.g. crypto functions
+will try to (re)lock it. Therefore, we need to release the lock before
+calling into smp.c from mgmt.c. Without this we risk a deadlock whenever
+the smp_user_confirm_reply() function is called.
 
-However, if the UART hardware can manage flow control automatically, it
-is important that software not get involved.  When the DesignWare UART
-enables 16C750 style auto-RTS/CTS it stops generating interrupts for
-changes in CTS state so software mostly stays out of the way.  However,
-it does report the true state of CTS in the MSR so software may notice
-it is de-asserted and respond by improperly disabling the transmitter.
-Once this happens the transmitter will be blocked forever.
-
-To avoid this situation, we simply lie to the 8250 and serial core by
-reporting that CTS is asserted whenever auto-RTS/CTS mode is enabled.
-
-Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-Reviewed-by: Matt Porter <matt.porter@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-Cc: Wang Nan <wangnan0@huawei.com>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Tested-by: Lukasz Rymanowski <lukasz.rymanowski@tieto.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250_dw.c |   34 ++++++++++++++++++++++++++--------
- 1 file changed, 26 insertions(+), 8 deletions(-)
+ net/bluetooth/mgmt.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -55,10 +55,24 @@
+--- a/net/bluetooth/mgmt.c
++++ b/net/bluetooth/mgmt.c
+@@ -2333,8 +2333,13 @@ static int user_pairing_resp(struct sock
+ 	}
  
- struct dw8250_data {
- 	int		last_lcr;
-+	int		last_mcr;
- 	int		line;
- 	struct clk	*clk;
- };
+ 	if (addr->type == BDADDR_LE_PUBLIC || addr->type == BDADDR_LE_RANDOM) {
+-		/* Continue with pairing via SMP */
++		/* Continue with pairing via SMP. The hdev lock must be
++		 * released as SMP may try to recquire it for crypto
++		 * purposes.
++		 */
++		hci_dev_unlock(hdev);
+ 		err = smp_user_confirm_reply(conn, mgmt_op, passkey);
++		hci_dev_lock(hdev);
  
-+static inline int dw8250_modify_msr(struct uart_port *p, int offset, int value)
-+{
-+	struct dw8250_data *d = p->private_data;
-+
-+	/* If reading MSR, report CTS asserted when auto-CTS/RTS enabled */
-+	if (offset == UART_MSR && d->last_mcr & UART_MCR_AFE) {
-+		value |= UART_MSR_CTS;
-+		value &= ~UART_MSR_DCTS;
-+	}
-+
-+	return value;
-+}
-+
- static void dw8250_serial_out(struct uart_port *p, int offset, int value)
- {
- 	struct dw8250_data *d = p->private_data;
-@@ -66,15 +80,17 @@ static void dw8250_serial_out(struct uar
- 	if (offset == UART_LCR)
- 		d->last_lcr = value;
- 
--	offset <<= p->regshift;
--	writeb(value, p->membase + offset);
-+	if (offset == UART_MCR)
-+		d->last_mcr = value;
-+
-+	writeb(value, p->membase + (offset << p->regshift));
- }
- 
- static unsigned int dw8250_serial_in(struct uart_port *p, int offset)
- {
--	offset <<= p->regshift;
-+	unsigned int value = readb(p->membase + (offset << p->regshift));
- 
--	return readb(p->membase + offset);
-+	return dw8250_modify_msr(p, offset, value);
- }
- 
- static void dw8250_serial_out32(struct uart_port *p, int offset, int value)
-@@ -84,15 +100,17 @@ static void dw8250_serial_out32(struct u
- 	if (offset == UART_LCR)
- 		d->last_lcr = value;
- 
--	offset <<= p->regshift;
--	writel(value, p->membase + offset);
-+	if (offset == UART_MCR)
-+		d->last_mcr = value;
-+
-+	writel(value, p->membase + (offset << p->regshift));
- }
- 
- static unsigned int dw8250_serial_in32(struct uart_port *p, int offset)
- {
--	offset <<= p->regshift;
-+	unsigned int value = readl(p->membase + (offset << p->regshift));
- 
--	return readl(p->membase + offset);
-+	return dw8250_modify_msr(p, offset, value);
- }
- 
- static int dw8250_handle_irq(struct uart_port *p)
+ 		if (!err)
+ 			err = cmd_complete(sk, hdev->id, mgmt_op,
 
 
