@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932218AbaGHAjE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:39:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55776 "EHLO
+	id S1755512AbaGHAj1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:39:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918AbaGGXyj (ORCPT
+	with ESMTP id S1753910AbaGGXyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:39 -0400
+	Mon, 7 Jul 2014 19:54:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcin Kraglak <marcin.kraglak@tieto.com>,
         Johan Hedberg <johan.hedberg@intel.com>,
+        Lukasz Rymanowski <lukasz.rymanowski@tieto.com>,
         Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.14 44/94] Bluetooth: Allow change security level on ATT_CID in slave role
-Date: Mon,  7 Jul 2014 16:57:34 -0700
-Message-Id: <20140707235758.091700301@linuxfoundation.org>
+Subject: [PATCH 3.14 43/94] Bluetooth: Fix locking of hdev when calling into SMP code
+Date: Mon,  7 Jul 2014 16:57:33 -0700
+Message-Id: <20140707235758.063231960@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -30,35 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Kraglak <marcin.kraglak@tieto.com>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 92d1372e1a9fec00e146b74e8b9ad7a385b9b37f upstream.
+commit c73f94b8c093a615ce80eabbde0ac6eb9abfe31a upstream.
 
-Kernel supports SMP Security Request so don't block increasing security
-when we are slave.
+The SMP code expects hdev to be unlocked since e.g. crypto functions
+will try to (re)lock it. Therefore, we need to release the lock before
+calling into smp.c from mgmt.c. Without this we risk a deadlock whenever
+the smp_user_confirm_reply() function is called.
 
-Signed-off-by: Marcin Kraglak <marcin.kraglak@tieto.com>
-Acked-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Tested-by: Lukasz Rymanowski <lukasz.rymanowski@tieto.com>
 Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/l2cap_sock.c |    5 -----
- 1 file changed, 5 deletions(-)
+ net/bluetooth/mgmt.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/net/bluetooth/l2cap_sock.c
-+++ b/net/bluetooth/l2cap_sock.c
-@@ -778,11 +778,6 @@ static int l2cap_sock_setsockopt(struct
+--- a/net/bluetooth/mgmt.c
++++ b/net/bluetooth/mgmt.c
+@@ -2826,8 +2826,13 @@ static int user_pairing_resp(struct sock
+ 	}
  
- 		/*change security for LE channels */
- 		if (chan->scid == L2CAP_CID_ATT) {
--			if (!conn->hcon->out) {
--				err = -EINVAL;
--				break;
--			}
--
- 			if (smp_conn_security(conn->hcon, sec.level))
- 				break;
- 			sk->sk_state = BT_CONFIG;
+ 	if (addr->type == BDADDR_LE_PUBLIC || addr->type == BDADDR_LE_RANDOM) {
+-		/* Continue with pairing via SMP */
++		/* Continue with pairing via SMP. The hdev lock must be
++		 * released as SMP may try to recquire it for crypto
++		 * purposes.
++		 */
++		hci_dev_unlock(hdev);
+ 		err = smp_user_confirm_reply(conn, mgmt_op, passkey);
++		hci_dev_lock(hdev);
+ 
+ 		if (!err)
+ 			err = cmd_complete(sk, hdev->id, mgmt_op,
 
 
