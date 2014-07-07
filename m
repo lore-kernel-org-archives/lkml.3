@@ -1,140 +1,383 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210AbaGGAdy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 20:33:54 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38531 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898AbaGGAdx (ORCPT
+	id S1752244AbaGGAnP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 20:43:15 -0400
+Received: from mga03.intel.com ([143.182.124.21]:8020 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751996AbaGGAnM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 20:33:53 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <53B9EAC8.6080608@jp.fujitsu.com>
-Date: Mon, 7 Jul 2014 09:33:12 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sun, 6 Jul 2014 20:43:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,615,1400050800"; 
+   d="scan'208";a="453825555"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Joe Perches <joe@perches.com>, "Moore, Robert" <robert.moore@intel.com>
+CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "devel@acpica.org" <devel@acpica.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] ACPICA: amlresrc.h: Neaten AML_<FOO> definitions and
+ uses
+Thread-Topic: [PATCH] ACPICA: amlresrc.h: Neaten AML_<FOO> definitions and
+ uses
+Thread-Index: AQHPl3Me/ds5fCT7VUODz3Bvpb9+wJuTyLwA
+Date: Mon, 7 Jul 2014 00:42:57 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E8802632E24@SHSMSX101.ccr.corp.intel.com>
+References: <1399677947.2912.41.camel@joe-AO725>
+ <1404469880.6384.11.camel@joe-AO725>
+In-Reply-To: <1404469880.6384.11.camel@joe-AO725>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: <tj@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] workqueue: initialize cpumask of wq_numa_possible_cpumask
-References: <53B98591.5030000@jp.fujitsu.com> <53B9E778.9070807@cn.fujitsu.com>
-In-Reply-To: <53B9E778.9070807@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
-X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/07/07 9:19), Lai Jiangshan wrote:
-> On 07/07/2014 01:21 AM, Yasuaki Ishimatsu wrote:
->> When hot-adding and onlining CPU, kernel panic occurs, showing following
->> call trace.
->>
->>   BUG: unable to handle kernel paging request at 0000000000001d08
->>   IP: [<ffffffff8114acfd>] __alloc_pages_nodemask+0x9d/0xb10
->>   PGD 0
->>   Oops: 0000 [#1] SMP
->>   ...
->>   Call Trace:
->>    [<ffffffff812b8745>] ? cpumask_next_and+0x35/0x50
->>    [<ffffffff810a3283>] ? find_busiest_group+0x113/0x8f0
->>    [<ffffffff81193bc9>] ? deactivate_slab+0x349/0x3c0
->>    [<ffffffff811926f1>] new_slab+0x91/0x300
->>    [<ffffffff815de95a>] __slab_alloc+0x2bb/0x482
->>    [<ffffffff8105bc1c>] ? copy_process.part.25+0xfc/0x14c0
->>    [<ffffffff810a3c78>] ? load_balance+0x218/0x890
->>    [<ffffffff8101a679>] ? sched_clock+0x9/0x10
->>    [<ffffffff81105ba9>] ? trace_clock_local+0x9/0x10
->>    [<ffffffff81193d1c>] kmem_cache_alloc_node+0x8c/0x200
->>    [<ffffffff8105bc1c>] copy_process.part.25+0xfc/0x14c0
->>    [<ffffffff81114d0d>] ? trace_buffer_unlock_commit+0x4d/0x60
->>    [<ffffffff81085a80>] ? kthread_create_on_node+0x140/0x140
->>    [<ffffffff8105d0ec>] do_fork+0xbc/0x360
->>    [<ffffffff8105d3b6>] kernel_thread+0x26/0x30
->>    [<ffffffff81086652>] kthreadd+0x2c2/0x300
->>    [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
->>    [<ffffffff815f20ec>] ret_from_fork+0x7c/0xb0
->>    [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
->>
->> In my investigation, I found the root cause is wq_numa_possible_cpumask.
->> All entries of wq_numa_possible_cpumask is allocated by
->> alloc_cpumask_var_node(). And these entries are used without initializing.
->> So these entries have wrong value.
->>
->> When hot-adding and onlining CPU, wq_update_unbound_numa() is called.
->> wq_update_unbound_numa() calls alloc_unbound_pwq(). And alloc_unbound_pwq()
->> calls get_unbound_pool(). In get_unbound_pool(), worker_pool->node is set
->> as follow:
->>
->> #kernel/workqueue.c
->> 3592         /* if cpumask is contained inside a NUMA node, we belong to that node */
->> 3593         if (wq_numa_enabled) {
->> 3594                 for_each_node(node) {
->> 3595                         if (cpumask_subset(pool->attrs->cpumask,
->> 3596                                            wq_numa_possible_cpumask[node])) {
->> 3597                                 pool->node = node;
->> 3598                                 break;
->> 3599                         }
->> 3600                 }
->> 3601         }
->>
->> But wq_numa_possible_cpumask[node] does not have correct cpumask. So, wrong
->> node is selected. As a result, kernel panic occurs.
->>
->> By this patch, all entries of wq_numa_possible_cpumask are allocated by
->> zalloc_cpumask_var_node to initialize them. And the panic disappeared.
->>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->
-> Hi, Yasuaki
->
-> All cpumasks in the wq_numa_possible_cpumask array are allocated in
-> wq_numa_init():
->
-> 	for_each_node(node)
-> 		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
-> 				node_online(node) ? node : NUMA_NO_NODE));
->
-> 	[snip...]
->
-> 	wq_numa_possible_cpumask = tbl;
->
-> I didn't find out how does this patch make the all entries of
-> wq_numa_possible_cpumask zeroed.
+Hi,
 
-Sorry. I mistook. I will resend soon.
+This linuxized ACPICA source code is automatically generated by scripts.
+If you fix it without fixing the ACPICA repository, the ACPICA release process will be broken.
 
-Thanks,
-Yasuaki Ishimatsu.
+So please fix this by downloading the latest acpica.org git and fix it there.
+You need to run to following command:
+Generate/linux/gen-patch.sh HEAD
+to confirm whether the generated Linux patch is correct.
 
->
-> Or I misunderstood.
->
-> Thanks,
-> Lai
->
->> ---
->>   kernel/workqueue.c | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
->> index 6203d29..b393ded 100644
->> --- a/kernel/workqueue.c
->> +++ b/kernel/workqueue.c
->> @@ -3338,7 +3338,7 @@ struct workqueue_attrs *alloc_workqueue_attrs(gfp_t gfp_mask)
->>   	attrs = kzalloc(sizeof(*attrs), gfp_mask);
->>   	if (!attrs)
->>   		goto fail;
->> -	if (!alloc_cpumask_var(&attrs->cpumask, gfp_mask))
->> +	if (!zalloc_cpumask_var(&attrs->cpumask, gfp_mask))
->>   		goto fail;
->>
->>   	cpumask_copy(attrs->cpumask, cpu_possible_mask);
->>
->> .
->>
->
+Then please submit the ACPICA fix to the ACPICA mailing list.
 
+Thanks and best regards
+-Lv
+
+> From: Joe Perches [mailto:joe@perches.com]
+> Sent: Friday, July 04, 2014 6:31 PM
+> 
+> ping?
+> 
+> On Fri, 2014-05-09 at 16:25 -0700, Joe Perches wrote:
+> > Use a more normal style for these slightly odd #defines.
+> >
+> > Remove trailing semicolons from #defines
+> > Add semicolon to uses.
+> >
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> > ---
+> >
+> > I think these are unnecessarily obfuscating and the #defines
+> > should be expanded in-place instead.
+> >
+> >  drivers/acpi/acpica/amlresrc.h | 137 +++++++++++++++++++++++++----------------
+> >  1 file changed, 84 insertions(+), 53 deletions(-)
+> >
+> > diff --git a/drivers/acpi/acpica/amlresrc.h b/drivers/acpi/acpica/amlresrc.h
+> > index f3f8344..fb1a1b5 100644
+> > --- a/drivers/acpi/acpica/amlresrc.h
+> > +++ b/drivers/acpi/acpica/amlresrc.h
+> > @@ -133,38 +133,46 @@ struct asl_resource_node {
+> >  /*
+> >   * SMALL descriptors
+> >   */
+> > -#define AML_RESOURCE_SMALL_HEADER_COMMON \
+> > -	u8                              descriptor_type;
+> > +#define AML_RESOURCE_SMALL_HEADER_COMMON	\
+> > +	u8 descriptor_type
+> >
+> >  struct aml_resource_small_header {
+> > -AML_RESOURCE_SMALL_HEADER_COMMON};
+> > +	AML_RESOURCE_SMALL_HEADER_COMMON;
+> > +};
+> >
+> >  struct aml_resource_irq {
+> > -	AML_RESOURCE_SMALL_HEADER_COMMON u16 irq_mask;
+> > +	AML_RESOURCE_SMALL_HEADER_COMMON;
+> > +	u16 irq_mask;
+> >  	u8 flags;
+> >  };
+> >
+> >  struct aml_resource_irq_noflags {
+> > -	AML_RESOURCE_SMALL_HEADER_COMMON u16 irq_mask;
+> > +	AML_RESOURCE_SMALL_HEADER_COMMON;
+> > +	u16 irq_mask;
+> >  };
+> >
+> >  struct aml_resource_dma {
+> > -	AML_RESOURCE_SMALL_HEADER_COMMON u8 dma_channel_mask;
+> > +	AML_RESOURCE_SMALL_HEADER_COMMON;
+> > +	u8 dma_channel_mask;
+> >  	u8 flags;
+> >  };
+> >
+> >  struct aml_resource_start_dependent {
+> > -	AML_RESOURCE_SMALL_HEADER_COMMON u8 flags;
+> > +	AML_RESOURCE_SMALL_HEADER_COMMON;
+> > +	u8 flags;
+> >  };
+> >
+> >  struct aml_resource_start_dependent_noprio {
+> > -AML_RESOURCE_SMALL_HEADER_COMMON};
+> > +	AML_RESOURCE_SMALL_HEADER_COMMON;
+> > +};
+> >
+> >  struct aml_resource_end_dependent {
+> > -AML_RESOURCE_SMALL_HEADER_COMMON};
+> > +	AML_RESOURCE_SMALL_HEADER_COMMON;
+> > +};
+> >
+> >  struct aml_resource_io {
+> > -	AML_RESOURCE_SMALL_HEADER_COMMON u8 flags;
+> > +	AML_RESOURCE_SMALL_HEADER_COMMON;
+> > +	u8 flags;
+> >  	u16 minimum;
+> >  	u16 maximum;
+> >  	u8 alignment;
+> > @@ -172,19 +180,23 @@ struct aml_resource_io {
+> >  };
+> >
+> >  struct aml_resource_fixed_io {
+> > -	AML_RESOURCE_SMALL_HEADER_COMMON u16 address;
+> > +	AML_RESOURCE_SMALL_HEADER_COMMON;
+> > +	u16 address;
+> >  	u8 address_length;
+> >  };
+> >
+> >  struct aml_resource_vendor_small {
+> > -AML_RESOURCE_SMALL_HEADER_COMMON};
+> > +	AML_RESOURCE_SMALL_HEADER_COMMON;
+> > +};
+> >
+> >  struct aml_resource_end_tag {
+> > -	AML_RESOURCE_SMALL_HEADER_COMMON u8 checksum;
+> > +	AML_RESOURCE_SMALL_HEADER_COMMON;
+> > +	u8 checksum;
+> >  };
+> >
+> >  struct aml_resource_fixed_dma {
+> > -	AML_RESOURCE_SMALL_HEADER_COMMON u16 request_lines;
+> > +	AML_RESOURCE_SMALL_HEADER_COMMON;
+> > +	u16 request_lines;
+> >  	u16 channels;
+> >  	u8 width;
+> >  };
+> > @@ -192,12 +204,13 @@ struct aml_resource_fixed_dma {
+> >  /*
+> >   * LARGE descriptors
+> >   */
+> > -#define AML_RESOURCE_LARGE_HEADER_COMMON \
+> > -	u8                              descriptor_type;\
+> > -	u16                             resource_length;
+> > +#define AML_RESOURCE_LARGE_HEADER_COMMON			\
+> > +	u8 descriptor_type;					\
+> > +	u16 resource_length
+> >
+> >  struct aml_resource_large_header {
+> > -AML_RESOURCE_LARGE_HEADER_COMMON};
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +};
+> >
+> >  /* General Flags for address space resource descriptors */
+> >
+> > @@ -206,7 +219,8 @@ AML_RESOURCE_LARGE_HEADER_COMMON};
+> >  #define ACPI_RESOURCE_FLAG_MAF      8
+> >
+> >  struct aml_resource_memory24 {
+> > -	AML_RESOURCE_LARGE_HEADER_COMMON u8 flags;
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +	u8 flags;
+> >  	u16 minimum;
+> >  	u16 maximum;
+> >  	u16 alignment;
+> > @@ -214,10 +228,12 @@ struct aml_resource_memory24 {
+> >  };
+> >
+> >  struct aml_resource_vendor_large {
+> > -AML_RESOURCE_LARGE_HEADER_COMMON};
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +};
+> >
+> >  struct aml_resource_memory32 {
+> > -	AML_RESOURCE_LARGE_HEADER_COMMON u8 flags;
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +	u8 flags;
+> >  	u32 minimum;
+> >  	u32 maximum;
+> >  	u32 alignment;
+> > @@ -225,22 +241,26 @@ struct aml_resource_memory32 {
+> >  };
+> >
+> >  struct aml_resource_fixed_memory32 {
+> > -	AML_RESOURCE_LARGE_HEADER_COMMON u8 flags;
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +	u8 flags;
+> >  	u32 address;
+> >  	u32 address_length;
+> >  };
+> >
+> > -#define AML_RESOURCE_ADDRESS_COMMON \
+> > -	u8                              resource_type; \
+> > -	u8                              flags; \
+> > -	u8                              specific_flags;
+> > +#define AML_RESOURCE_ADDRESS_COMMON			\
+> > +	u8 resource_type;				\
+> > +	u8 flags;					\
+> > +	u8 specific_flags
+> >
+> >  struct aml_resource_address {
+> > -AML_RESOURCE_LARGE_HEADER_COMMON AML_RESOURCE_ADDRESS_COMMON};
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +	AML_RESOURCE_ADDRESS_COMMON;
+> > +};
+> >
+> >  struct aml_resource_extended_address64 {
+> > -	AML_RESOURCE_LARGE_HEADER_COMMON
+> > -	    AML_RESOURCE_ADDRESS_COMMON u8 revision_ID;
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +	AML_RESOURCE_ADDRESS_COMMON;
+> > +	u8 revision_ID;
+> >  	u8 reserved;
+> >  	u64 granularity;
+> >  	u64 minimum;
+> > @@ -253,8 +273,9 @@ struct aml_resource_extended_address64 {
+> >  #define AML_RESOURCE_EXTENDED_ADDRESS_REVISION          1	/* ACPI 3.0 */
+> >
+> >  struct aml_resource_address64 {
+> > -	AML_RESOURCE_LARGE_HEADER_COMMON
+> > -	    AML_RESOURCE_ADDRESS_COMMON u64 granularity;
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +	AML_RESOURCE_ADDRESS_COMMON;
+> > +	u64 granularity;
+> >  	u64 minimum;
+> >  	u64 maximum;
+> >  	u64 translation_offset;
+> > @@ -262,8 +283,9 @@ struct aml_resource_address64 {
+> >  };
+> >
+> >  struct aml_resource_address32 {
+> > -	AML_RESOURCE_LARGE_HEADER_COMMON
+> > -	    AML_RESOURCE_ADDRESS_COMMON u32 granularity;
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +	AML_RESOURCE_ADDRESS_COMMON;
+> > +	u32 granularity;
+> >  	u32 minimum;
+> >  	u32 maximum;
+> >  	u32 translation_offset;
+> > @@ -271,8 +293,9 @@ struct aml_resource_address32 {
+> >  };
+> >
+> >  struct aml_resource_address16 {
+> > -	AML_RESOURCE_LARGE_HEADER_COMMON
+> > -	    AML_RESOURCE_ADDRESS_COMMON u16 granularity;
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +	AML_RESOURCE_ADDRESS_COMMON;
+> > +	u16 granularity;
+> >  	u16 minimum;
+> >  	u16 maximum;
+> >  	u16 translation_offset;
+> > @@ -280,14 +303,16 @@ struct aml_resource_address16 {
+> >  };
+> >
+> >  struct aml_resource_extended_irq {
+> > -	AML_RESOURCE_LARGE_HEADER_COMMON u8 flags;
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +	u8 flags;
+> >  	u8 interrupt_count;
+> >  	u32 interrupts[1];
+> >  	/* res_source_index, res_source optional fields follow */
+> >  };
+> >
+> >  struct aml_resource_generic_register {
+> > -	AML_RESOURCE_LARGE_HEADER_COMMON u8 address_space_id;
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +	u8 address_space_id;
+> >  	u8 bit_width;
+> >  	u8 bit_offset;
+> >  	u8 access_size;		/* ACPI 3.0, was previously Reserved */
+> > @@ -297,7 +322,8 @@ struct aml_resource_generic_register {
+> >  /* Common descriptor for gpio_int and gpio_io (ACPI 5.0) */
+> >
+> >  struct aml_resource_gpio {
+> > -	AML_RESOURCE_LARGE_HEADER_COMMON u8 revision_id;
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +	u8 revision_id;
+> >  	u8 connection_type;
+> >  	u16 flags;
+> >  	u16 int_flags;
+> > @@ -327,14 +353,14 @@ struct aml_resource_gpio {
+> >
+> >  /* Common preamble for all serial descriptors (ACPI 5.0) */
+> >
+> > -#define AML_RESOURCE_SERIAL_COMMON \
+> > -	u8                              revision_id; \
+> > -	u8                              res_source_index; \
+> > -	u8                              type; \
+> > -	u8                              flags; \
+> > -	u16                             type_specific_flags; \
+> > -	u8                              type_revision_id; \
+> > -	u16                             type_data_length; \
+> > +#define AML_RESOURCE_SERIAL_COMMON				\
+> > +	u8 revision_id;						\
+> > +	u8 res_source_index;					\
+> > +	u8 type;						\
+> > +	u8 flags;						\
+> > +	u16 type_specific_flags;				\
+> > +	u8 type_revision_id;					\
+> > +	u16 type_data_length
+> >
+> >  /* Values for the type field above */
+> >
+> > @@ -345,11 +371,14 @@ struct aml_resource_gpio {
+> >  #define AML_RESOURCE_VENDOR_SERIALBUSTYPE       192	/* Vendor defined is 0xC0-0xFF (NOT SUPPORTED) */
+> >
+> >  struct aml_resource_common_serialbus {
+> > -AML_RESOURCE_LARGE_HEADER_COMMON AML_RESOURCE_SERIAL_COMMON};
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +	AML_RESOURCE_SERIAL_COMMON;
+> > +};
+> >
+> >  struct aml_resource_i2c_serialbus {
+> > -	AML_RESOURCE_LARGE_HEADER_COMMON
+> > -	    AML_RESOURCE_SERIAL_COMMON u32 connection_speed;
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +	AML_RESOURCE_SERIAL_COMMON;
+> > +	u32 connection_speed;
+> >  	u16 slave_address;
+> >  	/*
+> >  	 * Optional fields follow immediately:
+> > @@ -363,8 +392,9 @@ struct aml_resource_i2c_serialbus {
+> >  #define AML_RESOURCE_I2C_MIN_DATA_LEN           6
+> >
+> >  struct aml_resource_spi_serialbus {
+> > -	AML_RESOURCE_LARGE_HEADER_COMMON
+> > -	    AML_RESOURCE_SERIAL_COMMON u32 connection_speed;
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +	AML_RESOURCE_SERIAL_COMMON;
+> > +	u32 connection_speed;
+> >  	u8 data_bit_length;
+> >  	u8 clock_phase;
+> >  	u8 clock_polarity;
+> > @@ -381,8 +411,9 @@ struct aml_resource_spi_serialbus {
+> >  #define AML_RESOURCE_SPI_MIN_DATA_LEN           9
+> >
+> >  struct aml_resource_uart_serialbus {
+> > -	AML_RESOURCE_LARGE_HEADER_COMMON
+> > -	    AML_RESOURCE_SERIAL_COMMON u32 default_baud_rate;
+> > +	AML_RESOURCE_LARGE_HEADER_COMMON;
+> > +	AML_RESOURCE_SERIAL_COMMON;
+> > +	u32 default_baud_rate;
+> >  	u16 rx_fifo_size;
+> >  	u16 tx_fifo_size;
+> >  	u8 parity;
+> >
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
