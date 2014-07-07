@@ -1,102 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914AbaGGWoa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 18:44:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20637 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751624AbaGGWo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 18:44:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,621,1400050800"; 
-   d="scan'208";a="539944606"
-Message-ID: <53BB22C6.2020502@intel.com>
-Date: Mon, 07 Jul 2014 15:44:22 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752647AbaGGWon (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 18:44:43 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:53958 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338AbaGGWol (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 18:44:41 -0400
+Date: Mon, 7 Jul 2014 15:44:34 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: [PATCH tip/core/rcu 0/3] Torture updates for 3.17
+Message-ID: <20140707224434.GA9624@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Miller <davem@davemloft.net>,
-        Andres Freund <andres@2ndquadrant.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>,
-        Kees Cook <kees@outflux.net>
-Subject: Re: [PATCH v3 1/3] mm: introduce fincore()
-References: <1404756006-23794-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1404756006-23794-2-git-send-email-n-horiguchi@ah.jp.nec.com> <53BAEE95.50807@intel.com> <20140707202108.GA5031@nhori.bos.redhat.com> <53BB0673.8020604@intel.com> <20140707214820.GA13596@nhori.bos.redhat.com>
-In-Reply-To: <20140707214820.GA13596@nhori.bos.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070722-9332-0000-0000-0000014D74B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2014 02:48 PM, Naoya Horiguchi wrote:
-> On Mon, Jul 07, 2014 at 01:43:31PM -0700, Dave Hansen wrote:
->> The whole FINCORE_PGOFF vs. FINCORE_BMAP issue is something that will
->> come up in practice.  We just don't have the interfaces for an end user
->> to pick which one they want to use.
->>
->>>> Is it really right to say this is going to be 8 bytes?  Would we want it
->>>> to share types with something else, like be an loff_t?
->>>
->>> Could you elaborate it more?
->>
->> We specify file offsets in other system calls, like the lseek family.  I
->> was just thinking that this type should match up with those calls since
->> they are expressing the same data type with the same ranges and limitations.
-> 
-> The 2nd parameter is loff_t, do we already do this?
+Hello!
 
-I mean the fields in the buffer, like:
+This series provides torture-test updates:
 
-> +Any of the following flags are to be set to add an 8 byte field in each entry.
-> +You can set any of these flags at the same time, although you can't set
-> +FINCORE_BMAP combined with these 8 byte field flags.
+1.	Enable old script versions without CFcommon files to operate
+	correctly.
 
+2.	Clean up diagnostics from --buildonly runs.
 
->>>> This would essentially tell userspace where in the kernel's address
->>>> space some user-controlled data will be.
->>>
->>> OK, so this and FINCORE_PAGEFLAGS will be limited for privileged users.
-> 
-> Sorry, this statement of mine might a bit short-sighted, and I'd like
-> to revoke it.
-> I think that some page flags and/or numa info should be useful outside
-> the debugging environment, and safe to expose to userspace. So limiting
-> to bitmap-one for unprivileged users is too strict.
+3.	Avoid format string leak to thead name, courtesy of Kees Cook.
 
-The PFN is not the same as NUMA information, and the PFN is insufficient
-to describe the NUMA node on all systems that Linux supports.
+							Thanx, Paul
 
-Trying to get NUMA information back out is a good goal, but doing it
-with PFNs is a bad idea since they have so many consequences.
+------------------------------------------------------------------------
 
-I'm also bummed exporting NUMA information was a design goal of these
-patches, but they weren't mentioned in any of the patch descriptions.
+ b/kernel/torture.c                                         |    2 -
+ b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh    |    8 ++++
+ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh |    9 ++++-
+ b/tools/testing/selftests/rcutorture/bin/kvm.sh            |   21 +++++++------
+ 4 files changed, 27 insertions(+), 13 deletions(-)
 
->> Then I'd just question their usefulness outside of a debugging
->> environment, especially when you can get at them in other (more
->> roundabout) ways in a debugging environment.
->>
->> This is really looking to me like two system calls.  The bitmap-based
->> one, and another more extensible one.  I don't think there's any harm in
->> having two system calls, especially when they're trying to glue together
->> two disparate interfaces.
-> 
-> I think that if separating syscall into two, one for privileged users
-> and one for unprivileged users migth be fine (rather than bitmap-based
-> one and extensible one.)
-
-The problem as I see it is shoehorning two interfaces in to the same
-syscall.  If there are privileged and unprivileged operations that use
-the same _interfaces_ I think they should share a syscall.
