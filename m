@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaGGROX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 13:14:23 -0400
-Received: from relay.parallels.com ([195.214.232.42]:53277 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbaGGROW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 13:14:22 -0400
-Message-ID: <53BAD567.8060506@parallels.com>
-Date: Mon, 7 Jul 2014 21:14:15 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	id S1751980AbaGGRRW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 13:17:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48400 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751020AbaGGRRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 13:17:21 -0400
+Date: Mon, 7 Jul 2014 19:17:06 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Joseph Schuchart <joseph.schuchart@tu-dresden.de>
+Cc: Namhyung Kim <namhyung@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Ilsche <thomas.ilsche@tu-dresden.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] Add callchain to generic and tracepoint events.
+Message-ID: <20140707171706.GA20752@krava.redhat.com>
+References: <53031D2C.2050009@tu-dresden.de>
+ <20140307141857.GA3153@ghostprotocols.net>
+ <533D2283.3090703@tu-dresden.de>
+ <87wqd5f7j5.fsf@sejong.aot.lge.com>
+ <538F0BF2.1010806@tu-dresden.de>
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: <akpm@linux-foundation.org>, <mhocko@suse.cz>, <cl@linux.com>,
-        <glommer@gmail.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 0/8] memcg: reparent kmem on css offline
-References: <cover.1404733720.git.vdavydov@parallels.com> <20140707142506.GB1149@cmpxchg.org>
-In-Reply-To: <20140707142506.GB1149@cmpxchg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [81.5.110.170]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <538F0BF2.1010806@tu-dresden.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-07.07.2014 18:25, Johannes Weiner:
-> In addition, Tejun made offlined css iterable and split css_tryget()
-> and css_tryget_online(), which would allow memcg to pin the css until
-> the last charge is gone while continuing to iterate and reclaim it on
-> hierarchical pressure, even after it was offlined.
+On Wed, Jun 04, 2014 at 02:07:14PM +0200, Joseph Schuchart wrote:
+> Add callchain to generic and tracepoint events.
+> Since this alters the interface for the python scripts, 
+> also adjust the script generation and the provided scripts.
 
-One more question.
+hi,
+I might be out of track in here, since I wasn't CC-ed,
+but I've got to this patchset as a dependency for perf
+CTF perf script so I need it ;-) however..
 
-With reparenting enabled, the number of cgroups (lruvecs) that must be
-iterated on global reclaim is bound by the number of live containers,
-while w/o reparenting it's practically unbound, isn't it? Won't it be
-the source of latency spikes?
+I just tried to apply it and got some conflicts in patch 2/3.
 
-Thanks.
+Could you please rebase to the latest tip/perf/core and resend
+the whole set? Also prefix your subjects with 'perf script:'
+
+Arnaldo,
+not sure if you are tracking these.. please let me know
+
+thanks,
+jirka
