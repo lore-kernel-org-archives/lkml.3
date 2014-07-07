@@ -1,89 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622AbaGGLM6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 07:12:58 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:52430 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125AbaGGLM4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 07:12:56 -0400
-Date: Mon, 7 Jul 2014 12:12:52 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 0/9] Support for creating generic PCI host bridges
- from DT
-Message-ID: <20140707111252.GQ6501@e106497-lin.cambridge.arm.com>
-References: <1404240214-9804-1-git-send-email-Liviu.Dudau@arm.com>
- <CAL_JsqK_CfagmiFOpOXVYGry22nGnCZL0ZXeJhYxb9zp=P2fsQ@mail.gmail.com>
+	id S1752717AbaGGLNu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 07:13:50 -0400
+Received: from mta-out1.inet.fi ([62.71.2.231]:46365 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752222AbaGGLNr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 07:13:47 -0400
+Date: Mon, 7 Jul 2014 14:13:03 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v10 7/7] mm: Don't split THP page when syscall is called
+Message-ID: <20140707111303.GC23150@node.dhcp.inet.fi>
+References: <1404694438-10272-1-git-send-email-minchan@kernel.org>
+ <1404694438-10272-8-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <CAL_JsqK_CfagmiFOpOXVYGry22nGnCZL0ZXeJhYxb9zp=P2fsQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 07 Jul 2014 11:12:53.0461 (UTC) FILETIME=[65A74050:01CF99D4]
-X-MC-Unique: 114070712125405601
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1404694438-10272-8-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 06, 2014 at 04:23:43PM +0100, Rob Herring wrote:
-> On Tue, Jul 1, 2014 at 1:43 PM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > This is my resurected attempt at adding support for generic PCI host
-> > bridge controllers that make use of device tree information to
-> > configure themselves. I've tagged it as v8 although the patches
-> > have now been reshuffled in order to ease adoption so referring to
-> > the older versions might be a bit of a hoop jumping exercise.
-> >
-> > Changes from v7:
-> >   - Reordered the patches so that fixes and non-controversial patches
-> >     from v7 can be accepted more easily. If agreed I can split the
-> >     series again into patches that can be upstreamed easily and ones
-> >     that still need discussion.
-> >   - Moved the of_create_host_bridge() function to drivers/of/of_pci.c
-> >     to better reflect its target use.
-> >   - Added the function to remap the bus I/O resources that used to be
-> >     provided in my arm64 patch series and (re)named it pci_remap_iospace()
-> >   - Removed error code checking from parsing and mapping of IRQ from DT
-> >     in recognition that some PCI devices will not have legacy IRQ mappings.
-> >
-> > v7 thread here with all the historic information: https://lkml.org/lkml/2014/3/14/279
+On Mon, Jul 07, 2014 at 09:53:58AM +0900, Minchan Kim wrote:
+> We don't need to split THP page when MADV_FREE syscall is
+> called. It could be done when VM decide really frees it so
+> we could reduce the number of THP split.
 > 
-> Can you publish a branch for this series please.
-
-Do you want a branch that has the series as publised (+the one obvious miss
-on the header include) or a branch that has the comments rolled in, but is
-is not published yet as I'm waiting on answers from Bjorn regarding domain
-number handling?
-
-Best regards,
-Liviu
-
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  include/linux/huge_mm.h |  3 +++
+>  mm/huge_memory.c        | 25 +++++++++++++++++++++++++
+>  mm/madvise.c            | 19 +++++++++++++++++--
+>  mm/rmap.c               |  4 ++++
+>  mm/vmscan.c             | 24 ++++++++++++++++--------
+>  5 files changed, 65 insertions(+), 10 deletions(-)
 > 
-> Rob
+> diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+> index 63579cb8d3dc..f0d37238cf8f 100644
+> --- a/include/linux/huge_mm.h
+> +++ b/include/linux/huge_mm.h
+> @@ -19,6 +19,9 @@ extern struct page *follow_trans_huge_pmd(struct vm_area_struct *vma,
+>  					  unsigned long addr,
+>  					  pmd_t *pmd,
+>  					  unsigned int flags);
+> +extern int madvise_free_pmd(struct mmu_gather *tlb,
+> +			struct vm_area_struct *vma,
+> +			pmd_t *pmd, unsigned long addr);
+>  extern int zap_huge_pmd(struct mmu_gather *tlb,
+>  			struct vm_area_struct *vma,
+>  			pmd_t *pmd, unsigned long addr);
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 5d562a9fe931..2a70069dcfc0 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -1384,6 +1384,31 @@ out:
+>  	return 0;
+>  }
+>  
+> +int madvise_free_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+> +		 pmd_t *pmd, unsigned long addr)
+> +{
+> +	spinlock_t *ptl;
+> +	int ret = 0;
+> +
+> +	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+> +		pmd_t orig_pmd;
+> +		struct mm_struct *mm = vma->vm_mm;
+> +
+> +		/* No hugepage in swapcache */
+> +		VM_BUG_ON(PageSwapCache(pmd_page(orig_pmd)));
+
+VM_BUG_ON_PAGE() ?
+
+> +
+> +		orig_pmd = pmdp_get_and_clear(tlb->mm, addr, pmd);
+> +		orig_pmd = pmd_mkold(orig_pmd);
+> +		orig_pmd = pmd_mkclean(orig_pmd);
+> +
+> +		set_pmd_at(mm, addr, pmd, orig_pmd);
+> +		tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
+> +		spin_unlock(ptl);
+> +		ret = 1;
+> +	}
+> +	return ret;
+> +}
+> +
+>  int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+>  		 pmd_t *pmd, unsigned long addr)
+>  {
+> diff --git a/mm/madvise.c b/mm/madvise.c
+> index 372a25a8ea82..3c99919ee094 100644
+> --- a/mm/madvise.c
+> +++ b/mm/madvise.c
+> @@ -320,8 +320,23 @@ static inline unsigned long madvise_free_pmd_range(struct mmu_gather *tlb,
+>  		 * if the range covers.
+>  		 */
+>  		next = pmd_addr_end(addr, end);
+> -		if (pmd_trans_huge(*pmd))
+> -			split_huge_page_pmd(vma, addr, pmd);
+> +		if (pmd_trans_huge(*pmd)) {
+> +			if (next - addr != HPAGE_PMD_SIZE) {
+> +#ifdef CONFIG_DEBUG_VM
+> +				if (!rwsem_is_locked(&tlb->mm->mmap_sem)) {
+> +					pr_err("%s: mmap_sem is unlocked! addr=0x%lx end=0x%lx vma->vm_start=0x%lx vma->vm_end=0x%lx\n",
+> +						__func__, addr, end,
+> +						vma->vm_start,
+> +						vma->vm_end);
+> +					BUG();
+> +				}
+> +#endif
+> +				split_huge_page_pmd(vma, addr, pmd);
+> +			} else if (madvise_free_pmd(tlb, vma, pmd, addr))
+> +				goto next;
+> +			/* fall through */
+> +		}
+> +
+>  		/*
+>  		 * Here there can be other concurrent MADV_DONTNEED or
+>  		 * trans huge page faults running, and if the pmd is
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index ee495d84c8b3..3c415eb8b6f0 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -702,6 +702,10 @@ static int page_referenced_one(struct page *page, struct vm_area_struct *vma,
+>  		/* go ahead even if the pmd is pmd_trans_splitting() */
+>  		if (pmdp_clear_flush_young_notify(vma, address, pmd))
+>  			referenced++;
+> +
+> +		if (pmd_dirty(*pmd))
+> +			dirty++;
+> +
+>  		spin_unlock(ptl);
+>  	} else {
+>  		pte_t *pte;
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index f7a45600846f..4e15babf4414 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -971,15 +971,23 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  		 * Anonymous process memory has backing store?
+>  		 * Try to allocate it some swap space here.
+>  		 */
+> -		if (PageAnon(page) && !PageSwapCache(page) && !freeable) {
+> -			if (!(sc->gfp_mask & __GFP_IO))
+> -				goto keep_locked;
+> -			if (!add_to_swap(page, page_list))
+> -				goto activate_locked;
+> -			may_enter_fs = 1;
+> +		if (PageAnon(page) && !PageSwapCache(page)) {
+> +			if (!freeable) {
+> +				if (!(sc->gfp_mask & __GFP_IO))
+> +					goto keep_locked;
+> +				if (!add_to_swap(page, page_list))
+> +					goto activate_locked;
+> +				may_enter_fs = 1;
+>  
+> -			/* Adding to swap updated mapping */
+> -			mapping = page_mapping(page);
+> +				/* Adding to swap updated mapping */
+> +				mapping = page_mapping(page);
+> +			} else {
+> +				if (unlikely(PageTransHuge(page))) {
+> +					if (unlikely(split_huge_page_to_list(
+> +						page, page_list)))
+> +						goto keep_locked;
+
+Hm. It would be better to free the huge page without splitting. 
+It shouldn't be a big deal: walk over rmap and zap all pmds.
+Or I miss something?
+
+> +				}
+> +			}
+>  		}
+>  
+>  		/*
+> -- 
+> 2.0.0
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-api" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+ Kirill A. Shutemov
