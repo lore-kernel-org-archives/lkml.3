@@ -1,72 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751022AbaGGFm1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 01:42:27 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:35938 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750714AbaGGFm0 (ORCPT
+	id S1751379AbaGGFn3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 01:43:29 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29140 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751223AbaGGFn0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 01:42:26 -0400
-X-Sasl-enc: MTylESLX1sSCzhbuk1K9i5d2c0yGqD7HZrAcmoICv8dp 1404711744
-Date: Sun, 6 Jul 2014 22:42:08 -0700
-From: Greg KH <greg@kroah.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Himangi Saraogi <himangi774@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] thunderbolt: Correct the size argument to devm_kzalloc
-Message-ID: <20140707054208.GA19965@kroah.com>
-References: <20140706161342.GA6267@himangi-Dell>
- <20140706235818.GA18457@kroah.com>
- <alpine.DEB.2.02.1407070629100.2014@localhost6.localdomain6>
+	Mon, 7 Jul 2014 01:43:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,616,1400050800"; 
+   d="scan'208";a="566002123"
+From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>
+CC: "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [patch] iwlwifi: fix Kconfig option continuity
+Thread-Topic: [patch] iwlwifi: fix Kconfig option continuity
+Thread-Index: AQHPmUmfUdNvI518OkqHeVdQ8shaZ5uUGbpw
+Date: Mon, 7 Jul 2014 05:43:15 +0000
+Message-ID: <0BA3FCBA62E2DC44AF3030971E174FB3111FC8F0@hasmsx107.ger.corp.intel.com>
+References: <53B9833D.4000600@lwfinger.net> <53B997D5.1060001@infradead.org>
+In-Reply-To: <53B997D5.1060001@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1407070629100.2014@localhost6.localdomain6>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 06:32:04AM +0200, Julia Lawall wrote:
+> 
+> On 07/06/2014 10:11 AM, Larry Finger wrote:
+> > A problem with configuration of IWLWIFI has been bisected to commit
+> 48e2934, where a new section was added to
+> drivers/net/wireless/iwlwifi/Kconfig with the following code:
+> >
+> > # don't call it _MODULE -- will confuse Kconfig/fixdep/...
+> > config IWLWIFI_OPMODE_MODULAR
+> >         bool
+> >         default y if IWLDVM=m
+> >         default y if IWLMVM=m
+> >
+> > When the above section is present, 'make xconfig' fails to show a
+> "Debugging options" menu' even though 'make menuconfig' displays
+> correctly. despite the incorrect on-screen display, xconfig does not delete
+> the affected info in .config after it was set by menuconfig, thus the bug only
+> seems to affect the display in xconfig.
+> >
+> > Is there anything wrong with that section in iwlwifi's Kconfig, or is it a bug in
+> xconfig?
+> 
+> in menuconfig or nconfig:
+> Notice that 'Debugging options' is not indented under iwlwifi, but listed at
+> the same indent level.  That is a huge clue.
 > 
 > 
-> On Sun, 6 Jul 2014, Greg KH wrote:
+> in xconfig:
+> The 'Debugging options' menu is displayed, but it's not where you expect or
+> want it to be found.  Look under 'Wireless LAN' and immediately under
+> 'Atheros Wireless Cards'
+> and it says 'Debugging options' (on the left panel).  Then the debugging
+> options are displayed in the right hand panel.
 > 
-> > On Sun, Jul 06, 2014 at 09:43:42PM +0530, Himangi Saraogi wrote:
-> > > nhi->rx_rings does not have type as struct tb_ring *, as it is a
-> > > double pointer so the elements of the array should have pointer type,
-> > > not structure type.
-> > > 
-> > > The Coccinelle semantic patch that makes this change is as follows:
-> > > 
-> > > // <smpl>
-> > > @disable sizeof_type_expr@
-> > > type T;
-> > > T **x;
-> > > @@
-> > > 
-> > >   x =
-> > >   <+...sizeof(
-> > > - T
-> > > + *x
-> > >   )...+>
-> > > // </smpl>
-> > > 
-> > > Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> > > Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-> > > ---
-> > >  drivers/thunderbolt/nhi.c | 4 ++--
-> > >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > Any reason you didn't cc: the developers in charge of this code so they
-> > see it and can pick it up?  Otherwise it's just going to float around on
-> > the mailing list, listless and sad.
+> This is a common problem.  I have made Kconfig patches for it several times.
+> Here is another one.  Works for me.
 > 
-> They don't seem to be in the MAINTAINERS file.
+> ---
+> Fix iwlwifi options so that they all depend on IWLWIFI and are displayed
+> under the iwlwifi driver instead of in other unexpected places.
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> Reported-by: Larry Finger <Larry.Finger@lwfinger.net>
+> ---
 
-Ah, good point.  Andreas, care to send me a patch adding yourself to the
-MAINTAINERS file for drivers/thunderbolt/* so that you will get patches
-like this?
+Thanks for the patch. I'll add a commit message and submit it.
 
-thanks,
-
-greg k-h
+>  drivers/net/wireless/iwlwifi/Kconfig |   17 ++++++++---------
+>  1 file changed, 8 insertions(+), 9 deletions(-)
+> 
+> Index: lnx-316-rc3/drivers/net/wireless/iwlwifi/Kconfig
+> ==========================================================
+> =========
+> --- lnx-316-rc3.orig/drivers/net/wireless/iwlwifi/Kconfig
+> +++ lnx-316-rc3/drivers/net/wireless/iwlwifi/Kconfig
+> @@ -39,9 +39,10 @@ config IWLWIFI
+>  	  say M here and read <file:Documentation/kbuild/modules.txt>.
+> The
+>  	  module will be called iwlwifi.
+> 
+> +if IWLWIFI
+> +
+>  config IWLWIFI_LEDS
+>  	bool
+> -	depends on IWLWIFI
+>  	depends on LEDS_CLASS=y || LEDS_CLASS=IWLWIFI
+>  	select LEDS_TRIGGERS
+>  	select MAC80211_LEDS
+> @@ -49,7 +50,6 @@ config IWLWIFI_LEDS
+> 
+>  config IWLDVM
+>  	tristate "Intel Wireless WiFi DVM Firmware support"
+> -	depends on IWLWIFI
+>  	default IWLWIFI
+>  	help
+>  	  This is the driver that supports the DVM firmware which is @@ -58,7
+> +58,6 @@ config IWLDVM
+> 
+>  config IWLMVM
+>  	tristate "Intel Wireless WiFi MVM Firmware support"
+> -	depends on IWLWIFI
+>  	help
+>  	  This is the driver that supports the MVM firmware which is
+>  	  currently only available for 7260 and 3160 devices.
+> @@ -70,7 +69,7 @@ config IWLWIFI_OPMODE_MODULAR
+>  	default y if IWLMVM=m
+> 
+>  comment "WARNING: iwlwifi is useless without IWLDVM or IWLMVM"
+> -	depends on IWLWIFI && IWLDVM=n && IWLMVM=n
+> +	depends on IWLDVM=n && IWLMVM=n
+> 
+>  config IWLWIFI_BCAST_FILTERING
+>  	bool "Enable broadcast filtering"
+> @@ -86,11 +85,9 @@ config IWLWIFI_BCAST_FILTERING
+>  	  expect incoming broadcasts for their normal operations.
+> 
+>  menu "Debugging Options"
+> -	depends on IWLWIFI
+> 
+>  config IWLWIFI_DEBUG
+>  	bool "Enable full debugging output in the iwlwifi driver"
+> -	depends on IWLWIFI
+>  	---help---
+>  	  This option will enable debug tracing output for the iwlwifi drivers
+> 
+> @@ -115,7 +112,7 @@ config IWLWIFI_DEBUG
+> 
+>  config IWLWIFI_DEBUGFS
+>          bool "iwlwifi debugfs support"
+> -        depends on IWLWIFI && MAC80211_DEBUGFS
+> +        depends on MAC80211_DEBUGFS
+>          ---help---
+>  	  Enable creation of debugfs files for the iwlwifi drivers. This
+>  	  is a low-impact option that allows getting insight into the @@ -
+> 123,13 +120,12 @@ config IWLWIFI_DEBUGFS
+> 
+>  config IWLWIFI_DEBUG_EXPERIMENTAL_UCODE
+>          bool "Experimental uCode support"
+> -        depends on IWLWIFI && IWLWIFI_DEBUG
+> +        depends on IWLWIFI_DEBUG
+>          ---help---
+>  	  Enable use of experimental ucode for testing and debugging.
+> 
+>  config IWLWIFI_DEVICE_TRACING
+>  	bool "iwlwifi device access tracing"
+> -	depends on IWLWIFI
+>  	depends on EVENT_TRACING
+>  	help
+>  	  Say Y here to trace all commands, including TX frames and IO @@ -
+> 144,4 +140,7 @@ config IWLWIFI_DEVICE_TRACING
+> 
+>  	  If unsure, say Y so we can help you better when problems
+>  	  occur.
+> +
+>  endmenu
+> +
+> +endif
