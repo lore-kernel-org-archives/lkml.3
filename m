@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141AbaGGI1e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 04:27:34 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:33040 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752089AbaGGI1c convert rfc822-to-8bit (ORCPT
+	id S1752162AbaGGI30 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 04:29:26 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:15001 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751227AbaGGI3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 04:27:32 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Joe Perches'" <joe@perches.com>,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] vsprintf: Remove SPECIAL from pointer types
-Thread-Topic: [PATCH] vsprintf: Remove SPECIAL from pointer types
-Thread-Index: AQHPmJHlxHkyHWSKhk2L64hzwr0mDJuUR2BQ
-Date: Mon, 7 Jul 2014 08:26:06 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1726D4E1@AcuExch.aculab.com>
-References: <alpine.LFD.2.11.1406290246120.15455@eddie.linux-mips.org>
-	 <20140702.182807.1245632778216212860.davem@davemloft.net>
-	 <alpine.LFD.2.11.1407030244230.15455@eddie.linux-mips.org>
-	 <alpine.LFD.2.11.1407030331550.15455@eddie.linux-mips.org>
-	 <1404356734.14741.18.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407030423300.15455@eddie.linux-mips.org>
-	 <1404364565.14741.26.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407030637030.15455@eddie.linux-mips.org>
-	 <1404368746.14741.36.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407051529040.15455@eddie.linux-mips.org>
-	 <1404576420.6384.41.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407051833400.15455@eddie.linux-mips.org>
-	 <1404583739.6384.51.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407051917480.15455@eddie.linux-mips.org>
-	 <1404585099.6384.53.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407052103130.15455@eddie.linux-mips.org>
- <1404593114.6384.72.camel@joe-AO725>
-In-Reply-To: <1404593114.6384.72.camel@joe-AO725>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Mon, 7 Jul 2014 04:29:22 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+AD1bo1yTs8jsDeEA68q1+
+Date: Mon, 7 Jul 2014 01:29:22 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: kishon@ti.com, balbi@ti.com, nsekhar@ti.com, nm@ti.com,
+        george.cherian@ti.com, sergei.shtylyov@cogentembedded.com,
+        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>,
+        Tero Kristo <t-kristo@ti.com>
+Subject: Re: [PATCH v2 1/6] ARM: dts: dra7-evm: Make VDDA_1V8_PHY supply
+ always on
+Message-ID: <20140707082922.GI28884@atomide.com>
+References: <1404467748-12154-1-git-send-email-rogerq@ti.com>
+ <1404467748-12154-2-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404467748-12154-2-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches
-> Because gcc issues a complaint about any pointer format with %#p,
-> remove the use of SPECIAL to prefix 0x to various pointer types.
+* Roger Quadros <rogerq@ti.com> [140704 02:57]:
+> After clarification from the hardware team it was found that
+> this 1.8V PHY supply can't be switched OFF when SoC is Active.
 > 
-> There are no uses in the kernel tree of %#p.
+> Since the PHY IPs don't contain isolation logic built in the design to
+> allow the power rail to be switched off, there is a very high risk
+> of IP reliability and additional leakage paths which can result in
+> additional power consumption.
+> 
+> The only scenario where this rail can be switched off is part of Power on
+> reset sequencing, but it needs to be kept always-on during operation.
+> 
+> This patch is required for proper functionality of USB, SATA
+> and PCIe on DRA7-evm.
+> 
+> CC: Rajendra Nayak <rnayak@ti.com>
+> CC: Tero Kristo <t-kristo@ti.com>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
 
-I know you guys don't really care about them, but there might
-be uses in out of tree drivers.
+Best that you queue this with the series:
 
-With the change what is output for %#p ?
+Acked-by: Tony Lindgren <tony@atomide.com>
 
-I know I've used %#p in some code (possibly userspace) that need
-to run under multiple OS because 0x%p generates 0x0x on one of the OS.
-(We might have removed them because of the gcc warning though.)
-
-	David
-
-
-
+> ---
+>  arch/arm/boot/dts/dra7-evm.dts | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
+> index 4adc280..8308954 100644
+> --- a/arch/arm/boot/dts/dra7-evm.dts
+> +++ b/arch/arm/boot/dts/dra7-evm.dts
+> @@ -240,6 +240,7 @@
+>  					regulator-name = "ldo3";
+>  					regulator-min-microvolt = <1800000>;
+>  					regulator-max-microvolt = <1800000>;
+> +					regulator-always-on;
+>  					regulator-boot-on;
+>  				};
+>  
+> -- 
+> 1.8.3.2
+> 
