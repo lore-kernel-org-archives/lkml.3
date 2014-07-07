@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaGGKvD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 06:51:03 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:11472 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933AbaGGKvA (ORCPT
+	id S1752969AbaGGKvI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 06:51:08 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:33844 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752757AbaGGKvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 06:51:00 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+qGrwsHRvLhYOW53l5i5co
-Date: Mon, 7 Jul 2014 03:51:02 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Guido =?utf-8?B?TWFydMOtbmV6?= <guido@vanguardiasur.com.ar>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org,
-        Ezequiel =?utf-8?Q?Garc=C3=ADa?= <ezequiel@vanguardiasur.com.ar>,
-        pekon@ti.com
-Subject: Re: [PATCH v2] ARM: OMAP2+: Make GPMC skip disabled devices
-Message-ID: <20140707105101.GN28884@atomide.com>
-References: <20980858CB6D3A4BAE95CA194937D5E73EAF8D44@DBDE04.ent.ti.com>
- <1404308118-14843-1-git-send-email-guido@vanguardiasur.com.ar>
+	Mon, 7 Jul 2014 06:51:04 -0400
+Date: Mon, 7 Jul 2014 11:50:58 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
+        Rickard Strandqvist <rickard.strandqvist@sonymobile.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] video: backlight: ili922x.c:  Cleaning up variable that
+ is never used
+Message-ID: <20140707105058.GD6407@lee--X1>
+References: <1404562270-18387-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1404308118-14843-1-git-send-email-guido@vanguardiasur.com.ar>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1404562270-18387-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Guido Martínez <guido@vanguardiasur.com.ar> [140702 06:34]:
-> Currently, child nodes of the gpmc node are iterated and probed
-> regardless of their 'status' property. This means adding 'status =
-> "disabled";' has no effect.
+On Sat, 05 Jul 2014, Rickard Strandqvist wrote:
+
+> From: Rickard Strandqvist <rickard.strandqvist@sonymobile.com>
 > 
-> This patch changes the iteration to only probe nodes marked as
-> available.
+> Variable ar assigned a value that is never used.
+> I have also removed all the code that thereby serves no purpose.
 > 
-> Signed-off-by: Guido Martínez <guido@vanguardiasur.com.ar>
+> This was found using a static code analysis program called cppcheck
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 > ---
-> v2: Make patch title consistent with previous gpmc patches
+>  drivers/video/backlight/ili922x.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 
-Thanks applying into omap-for-v3.16/fixes.
+Is this different from the patch I just applied?
 
-Tony
- 
->  arch/arm/mach-omap2/gpmc.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
-> index 2c0c281..8bc1338 100644
-> --- a/arch/arm/mach-omap2/gpmc.c
-> +++ b/arch/arm/mach-omap2/gpmc.c
-> @@ -1615,7 +1615,7 @@ static int gpmc_probe_dt(struct platform_device *pdev)
->  		return ret;
->  	}
+> diff --git a/drivers/video/backlight/ili922x.c b/drivers/video/backlight/ili922x.c
+> index ea67fe1..06936c8 100644
+> --- a/drivers/video/backlight/ili922x.c
+> +++ b/drivers/video/backlight/ili922x.c
+> @@ -251,7 +251,7 @@ static int ili922x_write(struct spi_device *spi, u8 reg, u16 value)
+>  	struct spi_transfer xfer_regindex, xfer_regvalue;
+>  	unsigned char tbuf[CMD_BUFSIZE];
+>  	unsigned char rbuf[CMD_BUFSIZE];
+> -	int ret, len = 0;
+> +	int ret;
 >  
-> -	for_each_child_of_node(pdev->dev.of_node, child) {
-> +	for_each_available_child_of_node(pdev->dev.of_node, child) {
+>  	memset(&xfer_regindex, 0, sizeof(struct spi_transfer));
+>  	memset(&xfer_regvalue, 0, sizeof(struct spi_transfer));
+> @@ -273,7 +273,6 @@ static int ili922x_write(struct spi_device *spi, u8 reg, u16 value)
+>  	ret = spi_sync(spi, &msg);
 >  
->  		if (!child->name)
->  			continue;
-> -- 
-> 2.0.0
-> 
+>  	spi_message_init(&msg);
+> -	len = 0;
+>  	tbuf[0] = set_tx_byte(START_BYTE(ili922x_id, START_RS_REG,
+>  					 START_RW_WRITE));
+>  	tbuf[1] = set_tx_byte((value & 0xFF00) >> 8);
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
