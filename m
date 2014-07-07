@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503AbaGHAlw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:41:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55767 "EHLO
+	id S1754379AbaGHAlv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:41:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661AbaGGXyf (ORCPT
+	with ESMTP id S1753725AbaGGXyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mario Kleiner <mario.kleiner.de@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.14 35/94] drm/nv50-/mc: fix kms pageflip events by reordering irq handling order.
-Date: Mon,  7 Jul 2014 16:57:25 -0700
-Message-Id: <20140707235757.820687060@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>,
+        Alif Mubarak Ahmad <alive4ever@live.com>,
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.14 09/94] USB: option: add device ID for SpeedUp SU9800 usb 3g modem
+Date: Mon,  7 Jul 2014 16:56:59 -0700
+Message-Id: <20140707235757.051667964@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,96 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mario Kleiner <mario.kleiner.de@gmail.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit dcfb1009df3b4ad8d2e0779dd45b438629d6858a upstream.
+commit 1cab4c68e339086cdaff7535848e878e8f261fca upstream.
 
-Whenever a single nouveau_mc_intr() main gpu irq-handler invocation was
-responsible for calling both, the vblank-irq handler (display engine irq)
-and kms-pageflip completion handler (from fifo irq), the order of
-invocation was wrong. nouveau_finish_flip() was called before
-drm_handle_vblank() for the vblank of pageflip completion, so the
-emitted pageflip event contained stale vblank count and timestamp
-from previous vblank. This caused failure in userspace to timestamp
-properly.
+Reported by Alif Mubarak Ahmad:
 
-Reorder order of invocation of engine irq handlers: Put
-NVDEV_ENGINE_DISP always on top, and thereby before NVDEV_ENGINE_FIFO,
-so that drm_handle_vblank() gets called to update vblank timestamps
-and count before potential pageflip events make use of that
-information.
+This device vendor and product id is 1c9e:9800
+It is working as serial interface with generic usbserial driver.
+I thought it is more suitable to use usbserial option driver, which has
+better capability distinguishing between modem serial interface and
+micro sd storage interface.
 
-This works on nv-50 and later, where kms-pageflip completion triggers
-an irq either after a separate vblank irq, or both pageflip and vblank
-trigger one common irq invocation, but never before vblank irqs.
+[ johan: style changes ]
 
-v2 (Ben):
-- removed mods for nv04-nv40, it doesn't help there anyway
-- this is considered a hack, and a better solution should be found
-
-Signed-off-by: Mario Kleiner <mario.kleiner.de@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Tested-by: Alif Mubarak Ahmad <alive4ever@live.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c |    2 +-
- drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c |    2 +-
- drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/serial/option.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c
-@@ -26,6 +26,7 @@
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -352,6 +352,9 @@ static void option_instat_callback(struc
+ /* Zoom */
+ #define ZOOM_PRODUCT_4597			0x9607
  
- const struct nouveau_mc_intr
- nv50_mc_intr[] = {
-+	{ 0x04000000, NVDEV_ENGINE_DISP },  /* DISP before FIFO, so pageflip-timestamping works! */
- 	{ 0x00000001, NVDEV_ENGINE_MPEG },
- 	{ 0x00000100, NVDEV_ENGINE_FIFO },
- 	{ 0x00001000, NVDEV_ENGINE_GR },
-@@ -34,7 +35,6 @@ nv50_mc_intr[] = {
- 	{ 0x00020000, NVDEV_ENGINE_VP },	/* NV84- */
- 	{ 0x00100000, NVDEV_SUBDEV_TIMER },
- 	{ 0x00200000, NVDEV_SUBDEV_GPIO },
--	{ 0x04000000, NVDEV_ENGINE_DISP },
- 	{ 0x10000000, NVDEV_SUBDEV_BUS },
- 	{ 0x80000000, NVDEV_ENGINE_SW },
- 	{ 0x0002d101, NVDEV_SUBDEV_FB },
---- a/drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c
-@@ -26,6 +26,7 @@
- 
- static const struct nouveau_mc_intr
- nv98_mc_intr[] = {
-+	{ 0x04000000, NVDEV_ENGINE_DISP },  /* DISP first, so pageflip timestamps work */
- 	{ 0x00000001, NVDEV_ENGINE_PPP },
- 	{ 0x00000100, NVDEV_ENGINE_FIFO },
- 	{ 0x00001000, NVDEV_ENGINE_GR },
-@@ -37,7 +38,6 @@ nv98_mc_intr[] = {
- 	{ 0x00100000, NVDEV_SUBDEV_TIMER },
- 	{ 0x00200000, NVDEV_SUBDEV_GPIO },
- 	{ 0x00400000, NVDEV_ENGINE_COPY0 },	/* NVA3-     */
--	{ 0x04000000, NVDEV_ENGINE_DISP },
- 	{ 0x10000000, NVDEV_SUBDEV_BUS },
- 	{ 0x80000000, NVDEV_ENGINE_SW },
- 	{ 0x0042d101, NVDEV_SUBDEV_FB },
---- a/drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c
-+++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c
-@@ -26,6 +26,7 @@
- 
- const struct nouveau_mc_intr
- nvc0_mc_intr[] = {
-+	{ 0x04000000, NVDEV_ENGINE_DISP },  /* DISP first, so pageflip timestamps work. */
- 	{ 0x00000001, NVDEV_ENGINE_PPP },
- 	{ 0x00000020, NVDEV_ENGINE_COPY0 },
- 	{ 0x00000040, NVDEV_ENGINE_COPY1 },
-@@ -40,7 +41,6 @@ nvc0_mc_intr[] = {
- 	{ 0x00200000, NVDEV_SUBDEV_GPIO },
- 	{ 0x01000000, NVDEV_SUBDEV_PWR },
- 	{ 0x02000000, NVDEV_SUBDEV_LTCG },
--	{ 0x04000000, NVDEV_ENGINE_DISP },
- 	{ 0x08000000, NVDEV_SUBDEV_FB },
- 	{ 0x10000000, NVDEV_SUBDEV_BUS },
- 	{ 0x40000000, NVDEV_SUBDEV_IBUS },
++/* SpeedUp SU9800 usb 3g modem */
++#define SPEEDUP_PRODUCT_SU9800			0x9800
++
+ /* Haier products */
+ #define HAIER_VENDOR_ID				0x201e
+ #define HAIER_PRODUCT_CE100			0x2009
+@@ -1577,6 +1580,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
+   	  .driver_info = (kernel_ulong_t)&four_g_w14_blacklist
+   	},
++	{ USB_DEVICE_INTERFACE_CLASS(LONGCHEER_VENDOR_ID, SPEEDUP_PRODUCT_SU9800, 0xff) },
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, ZOOM_PRODUCT_4597) },
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, IBALL_3_5G_CONNECT) },
+ 	{ USB_DEVICE(HAIER_VENDOR_ID, HAIER_PRODUCT_CE100) },
 
 
