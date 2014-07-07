@@ -1,49 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091AbaGGU76 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 16:59:58 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37019 "EHLO mail.skyhub.de"
+	id S1752201AbaGGVBU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 17:01:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20521 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751038AbaGGU74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 16:59:56 -0400
-Date: Mon, 7 Jul 2014 22:59:53 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Jean Pihet <jean.pihet@linaro.org>
-Subject: Re: [PATCH] perf tool: Carve out ctype.h et al
-Message-ID: <20140707205953.GC4776@pd.tnic>
-References: <1403688184-6917-1-git-send-email-bp@alien8.de>
- <20140625192547.GF1153@krava.brq.redhat.com>
- <20140625203836.GD13845@pd.tnic>
- <20140625211757.GD18773@kernel.org>
- <20140626073802.GC1177@krava.brq.redhat.com>
- <20140626103223.GB1284@pd.tnic>
- <20140626121433.GA2600@krava.brq.redhat.com>
- <20140627232819.GB21418@pd.tnic>
- <20140707204752.GA11917@kernel.org>
+	id S1751247AbaGGVBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 17:01:17 -0400
+Date: Mon, 7 Jul 2014 16:59:56 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Miller <davem@davemloft.net>,
+        Andres Freund <andres@2ndquadrant.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v3 3/3] man2/fincore.2: document general description
+ about fincore(2)
+Message-ID: <20140707205956.GB5031@nhori.bos.redhat.com>
+References: <1404756006-23794-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1404756006-23794-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <53BAF01C.8010700@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140707204752.GA11917@kernel.org>
+In-Reply-To: <53BAF01C.8010700@intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 05:47:52PM -0300, Arnaldo Carvalho de Melo wrote:
-> I'll try to fix this up later today, if you haven't done it by then.
+On Mon, Jul 07, 2014 at 12:08:12PM -0700, Dave Hansen wrote:
+> On 07/07/2014 11:00 AM, Naoya Horiguchi wrote:
+> > +.SH RETURN VALUE
+> > +On success,
+> > +.BR fincore ()
+> > +returns 0.
+> > +On error, \-1 is returned, and
+> > +.I errno
+> > +is set appropriately.
+> 
+> Is this accurate?  From reading the syscall itself, it looked like it
+> did this:
+> 
+> > + * Return value is the number of pages whose data is stored in fc->buffer.
+> > + */
+> > +static long do_fincore(struct fincore_control *fc, int nr_pages)
+> 
+> and:
+> 
+> > +SYSCALL_DEFINE6(fincore, int, fd, loff_t, start, long, nr_pages,
+> ...
+> > +	while (fc.nr_pages > 0) {
+> > +		memset(fc.buffer, 0, fc.buffer_size);
+> > +		ret = do_fincore(&fc, min(step, fc.nr_pages));
+> > +		/* Reached the end of the file */
+> > +		if (ret == 0)
+> > +			break;
+> > +		if (ret < 0)
+> > +			break;
+> ...
+> > +	}
+> ...
+> > +	return ret;
+> > +}
+> 
+> Which seems that for a given loop of do_fincore(), you might end up
+> returning the result of that *single* iteration of do_fincore() instead
+> of the aggregate of the entire syscall.
+> 
+> So, it can return <0 on failure, 0 on success, or also an essentially
+> random >0 number on success too.
 
-I won't because it is too late here for me to have a functioning brain
-still, but don't bother - I'll take care of it tomorrow.
+We don't break this while loop if do_fincore() returned a positive value
+unless copy_to_user() fails. And in that case ret is set to -EFAULT.
+So I think sys_fincore() never returns a positive value.
 
-Thanks.
+BTW, we don't have to check "if (ret == 0)" and "if (ret < 0)" separately,
+I'll fix it.
 
--- 
-Regards/Gruss,
-    Boris.
+> Why not just use the return value for something useful instead of
+> hacking in the extras->nr_entries stuff?
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Hmm, I got the opposite complaint previously, where we shouldn't
+interpret the return value differently depending on the flag.
+And I'd like to keep the extra argument for future extensibility.
+For example, if we want to collect pages only with a specific
+set of page flags, this extra argument will be necessary.
+
+>  Oh, and what if that
+> 
+> > +	if (extra)
+> > +		__put_user(nr, &extra->nr_entries);
+> 
+> fails?  It seems like we might silently forget to tell userspace how
+> many entries we filled.
+
+Oh, I forget to check it.
+
+Thanks,
+Naoya Horiguchi
