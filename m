@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003AbaGGUdd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 16:33:33 -0400
-Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:48032 "EHLO
-	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751723AbaGGUdc (ORCPT
+	id S1752382AbaGGUef (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 16:34:35 -0400
+Received: from mail-yh0-f73.google.com ([209.85.213.73]:47400 "EHLO
+	mail-yh0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216AbaGGUed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 16:33:32 -0400
-Date: Mon, 7 Jul 2014 22:33:26 +0200
-From: Josef Gajdusek <atx@atalax.net>
-To: linux-iio@vger.kernel.org
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, jic23@kernel.org,
-        linux-kernel@vger.kernel.org, pmeerw@pmeerw.net
-Subject: [PATCH v2 0/5] staging:iio:hmc5843: Few adjustments and support for
- hmc5983
-Message-ID: <20140707203326.GB10383@dashie>
+	Mon, 7 Jul 2014 16:34:33 -0400
+Date: Mon, 7 Jul 2014 13:34:32 -0700
+From: Loic Prylli <loicp@google.com>
+To: Dan Aloni <dan@kernelim.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, timo.teras@iki.fi,
+        Jiri Pirko <jiri@resnulli.us>
+Subject: Re: [PATCH] net: Fix NETDEV_CHANGE notifier usage causing spurious
+ arp flush
+Message-ID: <20140707203432.GB25441@google.com>
+References: <1404275983-7908-1-git-send-email-loicp@google.com>
+ <20140702070349.GA11943@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140702070349.GA11943@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series modifies the hmc5843 driver to support the hmc5983 i2c and
-spi interfaces.
+On Wed, Jul 02, 2014 at 10:03:49AM +0300, Dan Aloni wrote:
+> On Tue, Jul 01, 2014 at 09:39:43PM -0700, Loic Prylli wrote:
+> > A bug was introduced in NETDEV_CHANGE notifier sequence causing the
+> > arp table to be sometimes spuriously cleared (including manual arp
+> > entries marked permanent), upon network link carrier changes.
+> > 
+> > The changed argument for the notifier was applied only to a single
+> > caller of NETDEV_CHANGE, missing among others netdev_state_change().
+> > So upon net_carrier events induced by the network, which are
+> > triggering a call to netdev_state_change(), arp_netdev_event() would
+> > decide whether to clear or not arp cache based on random/junk stack
+> > values (a kind of read buffer overflow).
+> [..]
+> >  {
+> >  	if (dev->flags & IFF_UP) {
+> > -		call_netdevice_notifiers(NETDEV_CHANGE, dev);
+> > +		struct netdev_notifier_change_info change_info;
+> > +
+> > +		change_info.flags_changed = 0;
+> 
+> I think it would be safer to do:
+> 
+>    struct netdev_notifier_change_info change_info = {};
+> 
+> So that when future fields are added to the struct and this call-site
+> happens to be forgotten, they will get 0 by default rather than
+> random stack values.
 
-Josef Gajdusek (5):
-  staging:iio:hmc5843: Added regmap support
-  staging:iio:hmc5843: Split hmc5843.c to multiple files
-  staging:iio:hmc5843: register <-> value arrays now can have different
-    lengths
-  staging:iio:hmc5843: Add support for i2c hmc5983
-  staging:iio:hmc5843: Add support for spi hmc5983
-
- drivers/staging/iio/magnetometer/Kconfig        |  23 +-
- drivers/staging/iio/magnetometer/Makefile       |   4 +-
- drivers/staging/iio/magnetometer/hmc5843.c      | 652 ------------------------
- drivers/staging/iio/magnetometer/hmc5843.h      |  76 +++
- drivers/staging/iio/magnetometer/hmc5843_core.c | 626 +++++++++++++++++++++++
- drivers/staging/iio/magnetometer/hmc5843_i2c.c  | 107 ++++
- drivers/staging/iio/magnetometer/hmc5843_spi.c  | 105 ++++
- 7 files changed, 937 insertions(+), 656 deletions(-)
- delete mode 100644 drivers/staging/iio/magnetometer/hmc5843.c
- create mode 100644 drivers/staging/iio/magnetometer/hmc5843.h
- create mode 100644 drivers/staging/iio/magnetometer/hmc5843_core.c
- create mode 100644 drivers/staging/iio/magnetometer/hmc5843_i2c.c
- create mode 100644 drivers/staging/iio/magnetometer/hmc5843_spi.c
-
--- 
-1.8.5.5
-
+Thanks for the review. Will take into account suggestion. For the
+record, another (possibly bigger) trap from the preexisting code that
+remains (and caused the bug) is NETDEV_CHANGE being the only netdev
+notifier with a different special calling sequence. Since calls to
+NETDEV_CHANGE notifier have been reduced over time to the two
+instances in net/core/dev.c, it hopefully won't be a problem (and
+fixing that maintainability issue would be out-of-scope of this simple
+low-risk bug fix).
