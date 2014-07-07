@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197AbaGGGaN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 02:30:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11668 "EHLO mga09.intel.com"
+	id S1752235AbaGGGbF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 02:31:05 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11640 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752068AbaGGG30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 02:29:26 -0400
+	id S1751962AbaGGG3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 02:29:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,616,1400050800"; 
-   d="scan'208";a="539565662"
+   d="scan'208";a="539565601"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
         eranian@google.com, andi@firstfloor.org,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH v5 15/16] perf, x86: disable FREEZE_LBRS_ON_PMI when LBR operates in callstack mode
-Date: Mon,  7 Jul 2014 14:28:46 +0800
-Message-Id: <1404714527-18603-18-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH v5 10/16] perf, core: simplify need branch stack check
+Date: Mon,  7 Jul 2014 14:28:41 +0800
+Message-Id: <1404714527-18603-13-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1404714527-18603-1-git-send-email-zheng.z.yan@intel.com>
 References: <1404714527-18603-1-git-send-email-zheng.z.yan@intel.com>
@@ -24,53 +24,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LBR callstack is designed for PEBS, It does not work well with
-FREEZE_LBRS_ON_PMI for non PEBS event. If FREEZE_LBRS_ON_PMI is set for
-non PEBS event, PMIs near call/return instructions may cause superfluous
-increase/decrease of LBR_TOS.
-
-This patch modifies __intel_pmu_lbr_enable() to not enable
-FREEZE_LBRS_ON_PMI when LBR operates in callstack mode. We currently
-don't use LBR callstack to capture kernel space callchain, so disabling
-FREEZE_LBRS_ON_PMI should not be a problem.
+event->attr.branch_sample_type is non-zero no matter branch stack
+is enabled explicitly or is enabled implicitly. we can use it to
+replace intel_pmu_needs_lbr_smpl(). This avoids duplicating code
+that implicitly enables the LBR.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c | 17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c | 20 +++-----------------
+ include/linux/perf_event.h             |  5 +++++
+ kernel/events/core.c                   |  3 +++
+ 3 files changed, 11 insertions(+), 17 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 594dde2..bbbab66 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -131,14 +131,23 @@ static void intel_pmu_lbr_filter(struct cpu_hw_events *cpuc);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index af91bfd..a14489b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1029,20 +1029,6 @@ static __initconst const u64 slm_hw_cache_event_ids
+  },
+ };
  
- static void __intel_pmu_lbr_enable(void)
+-static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
+-{
+-	/* user explicitly requested branch sampling */
+-	if (has_branch_stack(event))
+-		return true;
+-
+-	/* implicit branch sampling to correct PEBS skid */
+-	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
+-	    x86_pmu.intel_cap.pebs_format < 2)
+-		return true;
+-
+-	return false;
+-}
+-
+ static void intel_pmu_disable_all(void)
  {
--	u64 debugctl;
  	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	u64 debugctl, lbr_select = 0;
+@@ -1207,7 +1193,7 @@ static void intel_pmu_disable_event(struct perf_event *event)
+ 	 * must disable before any actual event
+ 	 * because any event may be combined with LBR
+ 	 */
+-	if (intel_pmu_needs_lbr_smpl(event))
++	if (needs_branch_stack(event))
+ 		intel_pmu_lbr_disable(event);
  
--	if (cpuc->lbr_sel)
--		wrmsrl(MSR_LBR_SELECT, cpuc->lbr_sel->config);
-+	if (cpuc->lbr_sel) {
-+		lbr_select = cpuc->lbr_sel->config;
-+		wrmsrl(MSR_LBR_SELECT, lbr_select);
-+	}
+ 	if (unlikely(hwc->config_base == MSR_ARCH_PERFMON_FIXED_CTR_CTRL)) {
+@@ -1268,7 +1254,7 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ 	 * must enabled before any actual event
+ 	 * because any event may be combined with LBR
+ 	 */
+-	if (intel_pmu_needs_lbr_smpl(event))
++	if (needs_branch_stack(event))
+ 		intel_pmu_lbr_enable(event);
  
- 	rdmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
--	debugctl |= (DEBUGCTLMSR_LBR | DEBUGCTLMSR_FREEZE_LBRS_ON_PMI);
-+	debugctl |= DEBUGCTLMSR_LBR;
-+	/*
-+	 * LBR callstack does not work well with FREEZE_LBRS_ON_PMI.
-+	 * If FREEZE_LBRS_ON_PMI is set, PMI near call/return instructions
-+	 * may cause superfluous increase/decrease of LBR_TOS.
-+	 */
-+	if (!(lbr_select & LBR_CALL_STACK))
-+		debugctl |= DEBUGCTLMSR_FREEZE_LBRS_ON_PMI;
- 	wrmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
+ 	if (event->attr.exclude_host)
+@@ -1738,7 +1724,7 @@ static int intel_pmu_hw_config(struct perf_event *event)
+ 	if (event->attr.precise_ip && x86_pmu.pebs_aliases)
+ 		x86_pmu.pebs_aliases(event);
+ 
+-	if (intel_pmu_needs_lbr_smpl(event)) {
++	if (needs_branch_stack(event)) {
+ 		ret = intel_pmu_setup_lbr_filter(event);
+ 		if (ret)
+ 			return ret;
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 123f8d0..4818c26 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -779,6 +779,11 @@ static inline bool has_branch_stack(struct perf_event *event)
+ 	return event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK;
  }
  
++static inline bool needs_branch_stack(struct perf_event *event)
++{
++	return event->attr.branch_sample_type != 0;
++}
++
+ extern int perf_output_begin(struct perf_output_handle *handle,
+ 			     struct perf_event *event, unsigned int size);
+ extern void perf_output_end(struct perf_output_handle *handle);
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index df14a4e..6ca082d 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6862,6 +6862,9 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 	if (attr->inherit && (attr->read_format & PERF_FORMAT_GROUP))
+ 		goto err_ns;
+ 
++	if (!has_branch_stack(event))
++		event->attr.branch_sample_type = 0;
++
+ 	pmu = perf_init_event(event);
+ 	if (!pmu)
+ 		goto err_ns;
 -- 
 1.9.3
 
