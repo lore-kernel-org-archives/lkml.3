@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756293AbaGHBGp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:06:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55226 "EHLO
+	id S1756302AbaGHBHA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:07:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55249 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753142AbaGGXx7 (ORCPT
+	with ESMTP id S1753126AbaGGXx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:53:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hedberg <johan.hedberg@intel.com>,
         Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.15 058/122] Bluetooth: Reuse hci_stop_discovery function when cleaning up HCI state
-Date: Mon,  7 Jul 2014 16:57:00 -0700
-Message-Id: <20140707235736.012456141@linuxfoundation.org>
+Subject: [PATCH 3.15 057/122] Bluetooth: Refactor discovery stopping into its own function
+Date: Mon,  7 Jul 2014 16:56:59 -0700
+Message-Id: <20140707235735.983751838@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -31,34 +31,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit f8680f128b01212895a9afb31032f6ffe91bd771 upstream.
+commit 21a60d307ddc2180cfa542a995d943d1034cf5c5 upstream.
 
-When cleaning up the HCI state as part of the power-off procedure we can
-reuse the hci_stop_discovery() function instead of explicitly sending
-HCI command related to discovery. The added benefit of this is that it
-takes care of canceling name resolving and inquiry which were not
-previously covered by the code.
+We'll need to reuse the same logic for stopping discovery also when
+cleaning up HCI state when powering off. This patch refactors the code
+out to its own function that can later (in a subsequent patch) be used
+also for the power off case.
 
 Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
 Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/mgmt.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ net/bluetooth/mgmt.c |   93 ++++++++++++++++++++++++++-------------------------
+ 1 file changed, 49 insertions(+), 44 deletions(-)
 
 --- a/net/bluetooth/mgmt.c
 +++ b/net/bluetooth/mgmt.c
-@@ -1098,9 +1098,7 @@ static int clean_up_hci_state(struct hci
- 	if (test_bit(HCI_ADVERTISING, &hdev->dev_flags))
- 		disable_advertising(&req);
+@@ -1045,6 +1045,43 @@ static void clean_up_hci_complete(struct
+ 	}
+ }
  
--	if (test_bit(HCI_LE_SCAN, &hdev->dev_flags)) {
--		hci_req_add_le_scan_disable(&req);
--	}
++static void hci_stop_discovery(struct hci_request *req)
++{
++	struct hci_dev *hdev = req->hdev;
++	struct hci_cp_remote_name_req_cancel cp;
++	struct inquiry_entry *e;
++
++	switch (hdev->discovery.state) {
++	case DISCOVERY_FINDING:
++		if (test_bit(HCI_INQUIRY, &hdev->flags)) {
++			hci_req_add(req, HCI_OP_INQUIRY_CANCEL, 0, NULL);
++		} else {
++			cancel_delayed_work(&hdev->le_scan_disable);
++			hci_req_add_le_scan_disable(req);
++		}
++
++		break;
++
++	case DISCOVERY_RESOLVING:
++		e = hci_inquiry_cache_lookup_resolve(hdev, BDADDR_ANY,
++						     NAME_PENDING);
++		if (!e)
++			return;
++
++		bacpy(&cp.bdaddr, &e->data.bdaddr);
++		hci_req_add(req, HCI_OP_REMOTE_NAME_REQ_CANCEL, sizeof(cp),
++			    &cp);
++
++		break;
++
++	default:
++		/* Passive scanning */
++		if (test_bit(HCI_LE_SCAN, &hdev->dev_flags))
++			hci_req_add_le_scan_disable(req);
++		break;
++	}
++}
++
+ static int clean_up_hci_state(struct hci_dev *hdev)
+ {
+ 	struct hci_request req;
+@@ -3570,8 +3607,6 @@ static int stop_discovery(struct sock *s
+ {
+ 	struct mgmt_cp_stop_discovery *mgmt_cp = data;
+ 	struct pending_cmd *cmd;
+-	struct hci_cp_remote_name_req_cancel cp;
+-	struct inquiry_entry *e;
+ 	struct hci_request req;
+ 	int err;
+ 
+@@ -3601,52 +3636,22 @@ static int stop_discovery(struct sock *s
+ 
+ 	hci_req_init(&req, hdev);
+ 
+-	switch (hdev->discovery.state) {
+-	case DISCOVERY_FINDING:
+-		if (test_bit(HCI_INQUIRY, &hdev->flags)) {
+-			hci_req_add(&req, HCI_OP_INQUIRY_CANCEL, 0, NULL);
+-		} else {
+-			cancel_delayed_work(&hdev->le_scan_disable);
+-
+-			hci_req_add_le_scan_disable(&req);
+-		}
+-
+-		break;
+-
+-	case DISCOVERY_RESOLVING:
+-		e = hci_inquiry_cache_lookup_resolve(hdev, BDADDR_ANY,
+-						     NAME_PENDING);
+-		if (!e) {
+-			mgmt_pending_remove(cmd);
+-			err = cmd_complete(sk, hdev->id,
+-					   MGMT_OP_STOP_DISCOVERY, 0,
+-					   &mgmt_cp->type,
+-					   sizeof(mgmt_cp->type));
+-			hci_discovery_set_state(hdev, DISCOVERY_STOPPED);
+-			goto unlock;
+-		}
+-
+-		bacpy(&cp.bdaddr, &e->data.bdaddr);
+-		hci_req_add(&req, HCI_OP_REMOTE_NAME_REQ_CANCEL, sizeof(cp),
+-			    &cp);
+-
+-		break;
 +	hci_stop_discovery(&req);
  
- 	list_for_each_entry(conn, &hdev->conn_hash.list, list) {
- 		struct hci_cp_disconnect dc;
+-	default:
+-		BT_DBG("unknown discovery state %u", hdev->discovery.state);
+-
+-		mgmt_pending_remove(cmd);
+-		err = cmd_complete(sk, hdev->id, MGMT_OP_STOP_DISCOVERY,
+-				   MGMT_STATUS_FAILED, &mgmt_cp->type,
+-				   sizeof(mgmt_cp->type));
++	err = hci_req_run(&req, stop_discovery_complete);
++	if (!err) {
++		hci_discovery_set_state(hdev, DISCOVERY_STOPPING);
+ 		goto unlock;
+ 	}
+ 
+-	err = hci_req_run(&req, stop_discovery_complete);
+-	if (err < 0)
+-		mgmt_pending_remove(cmd);
+-	else
+-		hci_discovery_set_state(hdev, DISCOVERY_STOPPING);
++	mgmt_pending_remove(cmd);
++
++	/* If no HCI commands were sent we're done */
++	if (err == -ENODATA) {
++		err = cmd_complete(sk, hdev->id, MGMT_OP_STOP_DISCOVERY, 0,
++				   &mgmt_cp->type, sizeof(mgmt_cp->type));
++		hci_discovery_set_state(hdev, DISCOVERY_STOPPED);
++	}
+ 
+ unlock:
+ 	hci_dev_unlock(hdev);
 
 
