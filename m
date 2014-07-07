@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983AbaGGUZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 16:25:11 -0400
+	id S1753036AbaGGUZm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 16:25:42 -0400
 Received: from top.free-electrons.com ([176.31.233.9]:60206 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752545AbaGGUYW (ORCPT
+	with ESMTP id S1752689AbaGGUYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 16:24:22 -0400
+	Mon, 7 Jul 2014 16:24:20 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Boris Brezillon <boris.brezillon@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Gregory Hermant <gregory.hermant@calao-systems.com>
-Subject: [PATCHv2 31/32] ARM: at91/dt: tny_a9263: define crystals frequencies
-Date: Mon,  7 Jul 2014 22:23:48 +0200
-Message-Id: <1404764629-29136-32-git-send-email-alexandre.belloni@free-electrons.com>
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 29/32] ARM: at91: move at91sam9263 SoC to the CCF
+Date: Mon,  7 Jul 2014 22:23:46 +0200
+Message-Id: <1404764629-29136-30-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404764629-29136-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1404764629-29136-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -24,33 +23,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define Calao TNY-A9263 main and slow crystals frequencies.
+This patch removes the selection of AT91_USE_OLD_CLK when selecting
+at91sam9263 SoC support. This will automatically enable COMMON_CLK_AT91
+option and add support for at91 common clock implementation.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Gregory Hermant <gregory.hermant@calao-systems.com>
 ---
- arch/arm/boot/dts/tny_a9263.dts | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/arm/mach-at91/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/tny_a9263.dts b/arch/arm/boot/dts/tny_a9263.dts
-index 0751a6a979a8..3043296345b7 100644
---- a/arch/arm/boot/dts/tny_a9263.dts
-+++ b/arch/arm/boot/dts/tny_a9263.dts
-@@ -29,6 +29,14 @@
- 			compatible = "atmel,osc", "fixed-clock";
- 			clock-frequency = <12000000>;
- 		};
-+
-+		slow_xtal {
-+			clock-frequency = <32768>;
-+		};
-+
-+		main_xtal {
-+			clock-frequency = <12000000>;
-+		};
- 	};
+diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+index 461966d0ee4d..6cc6f7aebdae 100644
+--- a/arch/arm/mach-at91/Kconfig
++++ b/arch/arm/mach-at91/Kconfig
+@@ -138,7 +138,6 @@ config SOC_AT91SAM9263
+ 	select HAVE_AT91_DBGU1
+ 	select HAVE_FB_ATMEL
+ 	select SOC_AT91SAM9
+-	select AT91_USE_OLD_CLK
+ 	select HAVE_AT91_USB_CLK
  
- 	ahb {
+ config SOC_AT91SAM9RL
 -- 
 1.9.1
 
