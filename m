@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420AbaGGNWc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 09:22:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59687 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753054AbaGGNWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 09:22:30 -0400
-Date: Mon, 7 Jul 2014 15:22:27 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Oleg Nesterov <oleg@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Seth Jennings <sjenning@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [RFC][PATCH 0/3] ftrace: Add dynamically allocated trampolines
-In-Reply-To: <20140704102142.7d276e4b@gandalf.local.home>
-Message-ID: <alpine.LNX.2.00.1407071520370.1655@pobox.suse.cz>
-References: <20140703200750.648550267@goodmis.org> <53B6AA0C.2080704@hitachi.com> <20140704102142.7d276e4b@gandalf.local.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753454AbaGGNXU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 09:23:20 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:59320 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753077AbaGGNXR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 09:23:17 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <20140702053758.GA7578@kroah.com>
+References: <20140701103432.12718.82795.stgit@patser>
+	<20140702053758.GA7578@kroah.com>
+Date: Mon, 7 Jul 2014 15:23:17 +0200
+X-Google-Sender-Auth: KkbiSprKk9QHc6Ikruh-y7KlA_k
+Message-ID: <CAKMK7uHZQjQ2m7KE22kTRVs-NtGguHREk24pSJiLbN7EoQLZ=g@mail.gmail.com>
+Subject: Re: [PATCH v2 0/9] Updated fence patch series
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        "open list:GENERIC INCLUDE/A..." <linux-arch@vger.kernel.org>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "Clark, Rob" <robdclark@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Colin Cross <ccross@google.com>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Jul 2014, Steven Rostedt wrote:
+On Wed, Jul 2, 2014 at 7:37 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> Android can expose fences to userspace. It's possible to make the new fence
+>> mechanism expose the same fences to userspace by changing sync_fence_create
+>> to take a struct fence instead of a struct sync_pt. No other change is needed,
+>> because only the fence parts of struct sync_pt are used. But because the
+>> userspace fences are a separate problem and I haven't really looked at it yet
+>> I feel it should stay in staging, for now.
+>
+> Ok, that's reasonable.
+>
+> At first glance, this all looks "sane" to me, any objection from anyone
+> if I merge this through my driver-core tree for 3.17?
 
-> Well, I guess the answer to that is what do you consider the trampoline? 
-> I'm currently considering it to be the assembly code that the 
-> mcount/fentry call jumps to. We only have two trampolines (three if you 
-> count the function graph code that will be called directly come 3.17). 
-> Those two are the normal ftrace_caller and the ftrace_regs_caller. 
+Ack from my side fwiw.
 
-BTW, on those archs that support regs saving already, is there really a 
-reson not to kill ftrace_caller and keep just ftrace_regs_caller?
+Just for the record (again) about android syncpts. I think using
+android syncpts stuff as the official userspace interfaces for fences
+for userspace that wants to do explicit syncing is the sane approach -
+after all the (only) big platform using explicit fencing is Android
+since opencl is kinda not yet there really on linux (which would be
+the other guy really interested in explicit fencing).
 
+But before we de-stage android syncpts (and so bake in the userspace
+abi forever) I really want to see a full upstream gpu driver
+implementation using fences and running on both X+DRI userspace
+(implicit syncing) and android (expclicit syncing), including good
+test coverage for corner-cases to make sure we've addressed all warts
+and hidden dragons. i915 looks like the most likely candidate to get
+there first (we have the code for both use-cases out-of-tree after
+all) so I'll keep on pestering people. No promises though ;-)
+
+Cheers, Daniel
 -- 
-Jiri Kosina
-SUSE Labs
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
