@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932279AbaGHAVT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:21:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56091 "EHLO
+	id S1755194AbaGHAVS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:21:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56090 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754254AbaGGXzC (ORCPT
+	with ESMTP id S1754256AbaGGXzC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:55:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.10 15/53] drm/radeon: only apply hdmi bpc pll flags when encoder mode is hdmi
-Date: Mon,  7 Jul 2014 16:58:00 -0700
-Message-Id: <20140707235829.758221963@linuxfoundation.org>
+        Brian Norris <computersforpeace@gmail.com>, Pekon Gupta <pekon@ti.com>
+Subject: [PATCH 3.10 14/53] mtd: nand: omap: fix BCHx ecc.correct to return detected bit-flips in erased-page
+Date: Mon,  7 Jul 2014 16:57:59 -0700
+Message-Id: <20140707235829.729255065@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
 References: <20140707235829.281783607@linuxfoundation.org>
@@ -28,82 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: pekon gupta <pekon@ti.com>
 
-commit 7d5ab3009a8ca777174f6f469277b3922d56fd4b upstream.
+commit f306e8c3b667632952f1a4a74ffb910bbc06255f upstream.
 
-May fix display issues with non-HDMI displays.
+fixes: commit 62116e5171e00f85a8d53f76e45b84423c89ff34
+       mtd: nand: omap2: Support for hardware BCH error correction.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+In omap_elm_correct_data(), if bitflip_count in an erased-page is within the
+correctable limit (< ecc.strength), then it is not indicated back to the caller
+ecc->read_page().
+
+This mis-guides upper layers like MTD and UBIFS layer to assume erased-page as
+perfectly clean and use it for writing even if actual bitflip_count was
+dangerously high (bitflip_count > mtd->bitflip_threshold).
+
+This patch fixes this above issue, by returning 'stats' to caller
+ecc->read_page() under all scenarios.
+
+Reported-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Pekon Gupta <pekon@ti.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c |   48 +++++++++++++++++----------------
- 1 file changed, 26 insertions(+), 22 deletions(-)
+ drivers/mtd/nand/omap2.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ b/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -839,14 +839,16 @@ static void atombios_crtc_program_pll(st
- 			args.v5.ucMiscInfo = 0; /* HDMI depth, etc. */
- 			if (ss_enabled && (ss->type & ATOM_EXTERNAL_SS_MASK))
- 				args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_REF_DIV_SRC;
--			switch (bpc) {
--			case 8:
--			default:
--				args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_24BPP;
--				break;
--			case 10:
--				args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_30BPP;
--				break;
-+			if (encoder_mode == ATOM_ENCODER_MODE_HDMI) {
-+				switch (bpc) {
-+				case 8:
-+				default:
-+					args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_24BPP;
-+					break;
-+				case 10:
-+					args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_30BPP;
-+					break;
-+				}
- 			}
- 			args.v5.ucTransmitterID = encoder_id;
- 			args.v5.ucEncoderMode = encoder_mode;
-@@ -861,20 +863,22 @@ static void atombios_crtc_program_pll(st
- 			args.v6.ucMiscInfo = 0; /* HDMI depth, etc. */
- 			if (ss_enabled && (ss->type & ATOM_EXTERNAL_SS_MASK))
- 				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_REF_DIV_SRC;
--			switch (bpc) {
--			case 8:
--			default:
--				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_24BPP;
--				break;
--			case 10:
--				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_30BPP;
--				break;
--			case 12:
--				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_36BPP;
--				break;
--			case 16:
--				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_48BPP;
--				break;
-+			if (encoder_mode == ATOM_ENCODER_MODE_HDMI) {
-+				switch (bpc) {
-+				case 8:
-+				default:
-+					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_24BPP;
-+					break;
-+				case 10:
-+					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_30BPP;
-+					break;
-+				case 12:
-+					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_36BPP;
-+					break;
-+				case 16:
-+					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_48BPP;
-+					break;
-+				}
- 			}
- 			args.v6.ucTransmitterID = encoder_id;
- 			args.v6.ucEncoderMode = encoder_mode;
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -1463,7 +1463,7 @@ static int omap_elm_correct_data(struct
+ 
+ 	/* Check if any error reported */
+ 	if (!is_error_reported)
+-		return 0;
++		return stat;
+ 
+ 	/* Decode BCH error using ELM module */
+ 	elm_decode_bch_error_page(info->elm_dev, ecc_vec, err_vec);
 
 
