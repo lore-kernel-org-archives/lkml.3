@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302AbaGHBHA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:07:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55249 "EHLO
+	id S1756313AbaGHBH2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:07:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55237 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753126AbaGGXx7 (ORCPT
+	with ESMTP id S1753078AbaGGXx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:53:59 -0400
+	Mon, 7 Jul 2014 19:53:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.15 057/122] Bluetooth: Refactor discovery stopping into its own function
-Date: Mon,  7 Jul 2014 16:56:59 -0700
-Message-Id: <20140707235735.983751838@linuxfoundation.org>
+        Christopher Friedt <chrisfriedt@gmail.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Jakob Bornecrantz <jakob@vmware.com>
+Subject: [PATCH 3.15 051/122] drm/vmwgfx: Fix incorrect write to read-only register v2:
+Date: Mon,  7 Jul 2014 16:56:53 -0700
+Message-Id: <20140707235735.811756506@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,142 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit 21a60d307ddc2180cfa542a995d943d1034cf5c5 upstream.
+commit 4e578080ed3262ed2c3985868539bc66218d25c0 upstream.
 
-We'll need to reuse the same logic for stopping discovery also when
-cleaning up HCI state when powering off. This patch refactors the code
-out to its own function that can later (in a subsequent patch) be used
-also for the power off case.
+Commit "drm/vmwgfx: correct fb_fix_screeninfo.line_length", while fixing a
+vmwgfx fbdev bug, also writes the pitch to a supposedly read-only register:
+SVGA_REG_BYTES_PER_LINE, while it should be (and also in fact is) written to
+SVGA_REG_PITCHLOCK.
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+This patch is Cc'd stable because of the unknown effects writing to this
+register might have, particularly on older device versions.
+
+v2: Updated log message.
+
+Cc: Christopher Friedt <chrisfriedt@gmail.com>
+Tested-by: Christopher Friedt <chrisfriedt@gmail.com>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/mgmt.c |   93 ++++++++++++++++++++++++++-------------------------
- 1 file changed, 49 insertions(+), 44 deletions(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_fb.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/net/bluetooth/mgmt.c
-+++ b/net/bluetooth/mgmt.c
-@@ -1045,6 +1045,43 @@ static void clean_up_hci_complete(struct
- 	}
- }
- 
-+static void hci_stop_discovery(struct hci_request *req)
-+{
-+	struct hci_dev *hdev = req->hdev;
-+	struct hci_cp_remote_name_req_cancel cp;
-+	struct inquiry_entry *e;
-+
-+	switch (hdev->discovery.state) {
-+	case DISCOVERY_FINDING:
-+		if (test_bit(HCI_INQUIRY, &hdev->flags)) {
-+			hci_req_add(req, HCI_OP_INQUIRY_CANCEL, 0, NULL);
-+		} else {
-+			cancel_delayed_work(&hdev->le_scan_disable);
-+			hci_req_add_le_scan_disable(req);
-+		}
-+
-+		break;
-+
-+	case DISCOVERY_RESOLVING:
-+		e = hci_inquiry_cache_lookup_resolve(hdev, BDADDR_ANY,
-+						     NAME_PENDING);
-+		if (!e)
-+			return;
-+
-+		bacpy(&cp.bdaddr, &e->data.bdaddr);
-+		hci_req_add(req, HCI_OP_REMOTE_NAME_REQ_CANCEL, sizeof(cp),
-+			    &cp);
-+
-+		break;
-+
-+	default:
-+		/* Passive scanning */
-+		if (test_bit(HCI_LE_SCAN, &hdev->dev_flags))
-+			hci_req_add_le_scan_disable(req);
-+		break;
-+	}
-+}
-+
- static int clean_up_hci_state(struct hci_dev *hdev)
- {
- 	struct hci_request req;
-@@ -3570,8 +3607,6 @@ static int stop_discovery(struct sock *s
- {
- 	struct mgmt_cp_stop_discovery *mgmt_cp = data;
- 	struct pending_cmd *cmd;
--	struct hci_cp_remote_name_req_cancel cp;
--	struct inquiry_entry *e;
- 	struct hci_request req;
- 	int err;
- 
-@@ -3601,52 +3636,22 @@ static int stop_discovery(struct sock *s
- 
- 	hci_req_init(&req, hdev);
- 
--	switch (hdev->discovery.state) {
--	case DISCOVERY_FINDING:
--		if (test_bit(HCI_INQUIRY, &hdev->flags)) {
--			hci_req_add(&req, HCI_OP_INQUIRY_CANCEL, 0, NULL);
--		} else {
--			cancel_delayed_work(&hdev->le_scan_disable);
--
--			hci_req_add_le_scan_disable(&req);
--		}
--
--		break;
--
--	case DISCOVERY_RESOLVING:
--		e = hci_inquiry_cache_lookup_resolve(hdev, BDADDR_ANY,
--						     NAME_PENDING);
--		if (!e) {
--			mgmt_pending_remove(cmd);
--			err = cmd_complete(sk, hdev->id,
--					   MGMT_OP_STOP_DISCOVERY, 0,
--					   &mgmt_cp->type,
--					   sizeof(mgmt_cp->type));
--			hci_discovery_set_state(hdev, DISCOVERY_STOPPED);
--			goto unlock;
--		}
--
--		bacpy(&cp.bdaddr, &e->data.bdaddr);
--		hci_req_add(&req, HCI_OP_REMOTE_NAME_REQ_CANCEL, sizeof(cp),
--			    &cp);
--
--		break;
-+	hci_stop_discovery(&req);
- 
--	default:
--		BT_DBG("unknown discovery state %u", hdev->discovery.state);
--
--		mgmt_pending_remove(cmd);
--		err = cmd_complete(sk, hdev->id, MGMT_OP_STOP_DISCOVERY,
--				   MGMT_STATUS_FAILED, &mgmt_cp->type,
--				   sizeof(mgmt_cp->type));
-+	err = hci_req_run(&req, stop_discovery_complete);
-+	if (!err) {
-+		hci_discovery_set_state(hdev, DISCOVERY_STOPPING);
- 		goto unlock;
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
+@@ -179,7 +179,6 @@ static int vmw_fb_set_par(struct fb_info
+ 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_POSITION_Y, info->var.yoffset);
+ 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_WIDTH, info->var.xres);
+ 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_HEIGHT, info->var.yres);
+-		vmw_write(vmw_priv, SVGA_REG_BYTES_PER_LINE, info->fix.line_length);
+ 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_ID, SVGA_ID_INVALID);
  	}
  
--	err = hci_req_run(&req, stop_discovery_complete);
--	if (err < 0)
--		mgmt_pending_remove(cmd);
--	else
--		hci_discovery_set_state(hdev, DISCOVERY_STOPPING);
-+	mgmt_pending_remove(cmd);
-+
-+	/* If no HCI commands were sent we're done */
-+	if (err == -ENODATA) {
-+		err = cmd_complete(sk, hdev->id, MGMT_OP_STOP_DISCOVERY, 0,
-+				   &mgmt_cp->type, sizeof(mgmt_cp->type));
-+		hci_discovery_set_state(hdev, DISCOVERY_STOPPED);
-+	}
- 
- unlock:
- 	hci_dev_unlock(hdev);
 
 
