@@ -1,225 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585AbaGGKfV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 06:35:21 -0400
-Received: from mga14.intel.com ([192.55.52.115]:43194 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751939AbaGGKfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 06:35:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,617,1400050800"; 
-   d="scan'208";a="558258042"
-Date: Mon, 7 Jul 2014 18:35:59 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: gleb@kernel.org, mtosatti@redhat.com, kvm@vger.kernel.org,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] kvm, mem-hotplug: Update apic access page when it is
- migrated.
-Message-ID: <20140707103559.GA2867@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1404291637-15048-1-git-send-email-tangchen@cn.fujitsu.com>
- <1404291637-15048-5-git-send-email-tangchen@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404291637-15048-5-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752621AbaGGKgo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 06:36:44 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:64170 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392AbaGGKgl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 06:36:41 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-e9-53ba7835fae8
+Message-id: <53BA7838.7000706@samsung.com>
+Date: Mon, 07 Jul 2014 12:36:40 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
+Cc: "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Grant Likely'" <grant.likely@linaro.org>,
+        "'Tomasz Figa'" <t.figa@samsung.com>,
+        "'Sascha Hauer'" <s.hauer@pengutronix.de>,
+        "'Laura Abbott'" <lauraa@codeaurora.org>,
+        "'Rob Herring'" <robh+dt@kernel.org>,
+        "'Olof Johansson'" <olof@lixom.net>,
+        "'Pawel Moll'" <pawel.moll@arm.com>,
+        "'Mark Rutland'" <mark.rutland@arm.com>,
+        "'Stephen Warren'" <swarren@wwwdotorg.org>,
+        "'Ian Campbell'" <ian.campbell@citrix.com>,
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
+        "'Kumar Gala'" <galak@codeaurora.org>,
+        "'Nishanth Peethambaran'" <nishanth.p@gmail.com>,
+        "'Marc'" <marc.ceeeee@gmail.com>,
+        "'Josh Cartwright'" <joshc@codeaurora.org>,
+        "'Catalin Marinas'" <catalin.marinas@arm.com>,
+        "'Will Deacon'" <will.deacon@arm.com>,
+        "'Paul Mackerras'" <paulus@samba.org>,
+        "'Jon Medhurst'" <tixy@linaro.org>,
+        "'Aneesh Kumar K.V.'" <aneesh.kumar@linux.vnet.ibm.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+Subject: Re: [PATCH 4/4] drivers: dma-contiguous: add initialization from
+ device tree
+References: <1404298132-6050-1-git-send-email-m.szyprowski@samsung.com>
+ <1404298132-6050-5-git-send-email-m.szyprowski@samsung.com>
+ <00b501cf974c$2db1a800$8914f800$@lge.com>
+In-reply-to: <00b501cf974c$2db1a800$8914f800$@lge.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA03SW0jTURzAcc7+t21o/JsaJxGTYS9G5qDLKTSkEP5PZUiGEdrU5YVNbUvz
+	QqSmptu8pIg2ZWpeqLFLOvAyDHUMFRVJXAo1b0mYTueViJyS2158+/wO33POy4+N8X7j/uy0
+	jBciaYZQzCe5+OTx2Ozla7mmmLB6xyXUbNCSaNWuxtFR7SiFdopLMbTdpQSoxTJNoOrNNgIN
+	O/sB+qR4Q6LNynIcDegdAPVVNFLowLrCQj2rcwRqK+vA0aypmUSf10dYqHN+hoVax0oI5GwI
+	RBPz+yTSWtopVNOgw1HpFwuFjvp6cLQxUoYjQ6MdR20tSxTSmJwAre+O45GBjFatBczhv1rA
+	2OtqADNbVcliBlQLFKPcLCGYHk0Fyci3rCzGNjdIMuONhzizbDbijLHjNfPjeBVjrOPFBKN3
+	brCY6qOwaN/H3PBkkTgtRyS9cvspN3X6Ww2VpaNzdctdZCHY85IDDhvSV+G6cZj0+Bz8umg4
+	MZfNozsBtH1XU55hD8Ah9S935U2HQIW+ym2cvgh7m9Ywl0laAOVbcve5H/0ETlXuY57+LPxb
+	t4i7HvKlxwBcLKx2Dxi9QcFDu4blqnzoR/DPQqX7No/uBnDE5jaHvg4N9mXCZezEP0v0mMcX
+	oFG7hdUAWnXqE9WpTHUqawWYBviJspOyZIkpEkGoTCiRZWekhCZlSnqAZzsO+kH76C0zoNmA
+	7+W9Yx2I4RHCHFmexAwgG+P7ejckmGJ43snCvHyRNDNBmi0WycyAxeb4F4JXEe/9PnQ7Ji0P
+	03vzg0wTLwXB97nCgL4mNYdbvbLYKfGP9tHcqNgdFD+bV8XbOmOLUnS8qP0ZMha3RN4dSo96
+	d6a2QDkVqJTTyS1xvgqfgXKHJABK93biih4kxtev3VFE5K0QQTrldn/wvefhtsTij+dzFTep
+	JetbsF/A5+OyVKEgBJPKhP8Bp/34rfsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 02, 2014 at 05:00:37PM +0800, Tang Chen wrote:
->apic access page is pinned in memory, and as a result it cannot be
->migrated/hot-removed.
->
->Actually it doesn't need to be pinned in memory.
->
->This patch introduces a new vcpu request: KVM_REQ_MIGRATE_EPT. This requet
+Hello,
 
-s/KVM_REQ_MIGRATE_EPT/KVM_REQ_MIGRATE_APIC
+On 2014-07-04 07:52, Joonsoo Kim wrote:
+>> -----Original Message-----
+>> From: Marek Szyprowski [mailto:m.szyprowski@samsung.com]
+>> Sent: Wednesday, July 02, 2014 7:49 PM
+>>
+>> Subject: [PATCH 4/4] drivers: dma-contiguous: add initialization from
+>> device tree
+>>
+>> Add a code to create CMA region from reserved memory and add support for
+>> handling 'shared-dma-pool' reserved-memory device tree nodes.
+>>
+>> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+>> ---
+>>   drivers/base/dma-contiguous.c | 67
+>> +++++++++++++++++++++++++++++++++++++++++
+>>   include/linux/cma.h           |  3 ++
+>>   mm/cma.c                      | 69
+> ++++++++++++++++++++++++++++++++-----------
+>>   3 files changed, 122 insertions(+), 17 deletions(-)
+>>
 
->will be made when kvm_mmu_notifier_invalidate_page() is called when the page
->is unmapped from the qemu user space to reset APIC_ACCESS_ADDR pointer in
->each online vcpu to 0. And will also be made when ept violation happens to
->reset APIC_ACCESS_ADDR to the new page phys_addr (host phys_addr).
->---
-> arch/x86/include/asm/kvm_host.h |  2 ++
-> arch/x86/kvm/mmu.c              | 15 +++++++++++++++
-> arch/x86/kvm/vmx.c              |  9 ++++++++-
-> arch/x86/kvm/x86.c              | 20 ++++++++++++++++++++
-> include/linux/kvm_host.h        |  1 +
-> virt/kvm/kvm_main.c             | 15 +++++++++++++++
-> 6 files changed, 61 insertions(+), 1 deletion(-)
+...
+
+>> +/**
+>>    * cma_declare_contiguous() - reserve custom contiguous area
+>>    * @base: Base address of the reserved area optional, use 0 for any
+>>    * @size: Size of the reserved area (in bytes),
+>> @@ -162,18 +210,12 @@ int __init cma_declare_contiguous(phys_addr_t base,
+>>   			phys_addr_t alignment, unsigned int order_per_bit,
+>>   			bool fixed, struct cma **res_cma)
+>>   {
+>> -	struct cma *cma;
+>> -	int ret = 0;
+>> +	int ret;
+>>
+>>   	pr_debug("%s(size %lx, base %08lx, limit %08lx alignment %08lx)\n",
+>>   		__func__, (unsigned long)size, (unsigned long)base,
+>>   		(unsigned long)limit, (unsigned long)alignment);
+>>
+>> -	if (cma_area_count == ARRAY_SIZE(cma_areas)) {
+>> -		pr_err("Not enough slots for CMA reserved regions!\n");
+>> -		return -ENOSPC;
+>> -	}
+>> -
+> Hello, Marek.
 >
->diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
->index 8771c0f..f104b87 100644
->--- a/arch/x86/include/asm/kvm_host.h
->+++ b/arch/x86/include/asm/kvm_host.h
->@@ -575,6 +575,7 @@ struct kvm_arch {
-> 
-> 	unsigned int tss_addr;
-> 	struct page *apic_access_page;
->+	bool apic_access_page_migrated;
-> 
-> 	gpa_t wall_clock;
-> 
->@@ -739,6 +740,7 @@ struct kvm_x86_ops {
-> 	void (*hwapic_isr_update)(struct kvm *kvm, int isr);
-> 	void (*load_eoi_exitmap)(struct kvm_vcpu *vcpu, u64 *eoi_exit_bitmap);
-> 	void (*set_virtual_x2apic_mode)(struct kvm_vcpu *vcpu, bool set);
->+	void (*set_apic_access_page_addr)(struct kvm *kvm, hpa_t hpa);
-> 	void (*deliver_posted_interrupt)(struct kvm_vcpu *vcpu, int vector);
-> 	void (*sync_pir_to_irr)(struct kvm_vcpu *vcpu);
-> 	int (*set_tss_addr)(struct kvm *kvm, unsigned int addr);
->diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->index c0d72f6..a655444 100644
->--- a/arch/x86/kvm/mmu.c
->+++ b/arch/x86/kvm/mmu.c
->@@ -3436,6 +3436,21 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
-> 		kvm_make_request(KVM_REQ_MIGRATE_EPT, vcpu);
-> 	}
-> 
->+	if (gpa == VMX_APIC_ACCESS_PAGE_ADDR &&
->+	    vcpu->kvm->arch.apic_access_page_migrated) {
->+		int i;
->+
->+		vcpu->kvm->arch.apic_access_page_migrated = false;
->+
->+		/*
->+		 * We need update APIC_ACCESS_ADDR pointer in each VMCS of
->+		 * all the online vcpus.
->+		 */
->+		for (i = 0; i < atomic_read(&vcpu->kvm->online_vcpus); i++)
->+			kvm_make_request(KVM_REQ_MIGRATE_APIC,
->+					 vcpu->kvm->vcpus[i]);
->+	}
->+
-> 	spin_unlock(&vcpu->kvm->mmu_lock);
-> 
-> 	return r;
->diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
->index c336cb3..abc152f 100644
->--- a/arch/x86/kvm/vmx.c
->+++ b/arch/x86/kvm/vmx.c
->@@ -3988,7 +3988,7 @@ static int alloc_apic_access_page(struct kvm *kvm)
-> 	if (r)
-> 		goto out;
-> 
->-	page = gfn_to_page(kvm, VMX_APIC_ACCESS_PAGE_ADDR >> PAGE_SHIFT);
->+	page = gfn_to_page_no_pin(kvm, VMX_APIC_ACCESS_PAGE_ADDR >> PAGE_SHIFT);
-> 	if (is_error_page(page)) {
-> 		r = -EFAULT;
-> 		goto out;
->@@ -7075,6 +7075,12 @@ static void vmx_set_virtual_x2apic_mode(struct kvm_vcpu *vcpu, bool set)
-> 	vmx_set_msr_bitmap(vcpu);
-> }
-> 
->+static void vmx_set_apic_access_page_addr(struct kvm *kvm, hpa_t hpa)
->+{
->+	if (vm_need_virtualize_apic_accesses(kvm))
->+		vmcs_write64(APIC_ACCESS_ADDR, hpa);
->+}
->+
-> static void vmx_hwapic_isr_update(struct kvm *kvm, int isr)
-> {
-> 	u16 status;
->@@ -8846,6 +8852,7 @@ static struct kvm_x86_ops vmx_x86_ops = {
-> 	.enable_irq_window = enable_irq_window,
-> 	.update_cr8_intercept = update_cr8_intercept,
-> 	.set_virtual_x2apic_mode = vmx_set_virtual_x2apic_mode,
->+	.set_apic_access_page_addr = vmx_set_apic_access_page_addr,
-> 	.vm_has_apicv = vmx_vm_has_apicv,
-> 	.load_eoi_exitmap = vmx_load_eoi_exitmap,
-> 	.hwapic_irr_update = vmx_hwapic_irr_update,
->diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->index a26524f..14e7174 100644
->--- a/arch/x86/kvm/x86.c
->+++ b/arch/x86/kvm/x86.c
->@@ -5943,6 +5943,24 @@ static void vcpu_migrated_page_update_ept(struct kvm_vcpu *vcpu)
-> 	}
-> }
-> 
->+static void vcpu_migrated_page_update_apic(struct kvm_vcpu *vcpu)
->+{
->+	struct kvm *kvm = vcpu->kvm;
->+
->+	if (kvm->arch.apic_access_page_migrated) {
->+		if (kvm->arch.apic_access_page)
->+			kvm->arch.apic_access_page = pfn_to_page(0);
->+		kvm_x86_ops->set_apic_access_page_addr(kvm, 0x0ull);
->+	} else {
->+		struct page *page;
->+		page = gfn_to_page_no_pin(kvm,
->+				VMX_APIC_ACCESS_PAGE_ADDR >> PAGE_SHIFT);
->+		kvm->arch.apic_access_page = page;
->+		kvm_x86_ops->set_apic_access_page_addr(kvm,
->+						       page_to_phys(page));
->+	}
->+}
->+
-> /*
->  * Returns 1 to let __vcpu_run() continue the guest execution loop without
->  * exiting to the userspace.  Otherwise, the value will be returned to the
->@@ -6005,6 +6023,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
-> 			vcpu_scan_ioapic(vcpu);
-> 		if (kvm_check_request(KVM_REQ_MIGRATE_EPT, vcpu))
-> 			vcpu_migrated_page_update_ept(vcpu);
->+		if (kvm_check_request(KVM_REQ_MIGRATE_APIC, vcpu))
->+			vcpu_migrated_page_update_apic(vcpu);
-> 	}
-> 
-> 	if (kvm_check_request(KVM_REQ_EVENT, vcpu) || req_int_win) {
->diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
->index 4b7e51a..e2ad65e 100644
->--- a/include/linux/kvm_host.h
->+++ b/include/linux/kvm_host.h
->@@ -137,6 +137,7 @@ static inline bool is_error_page(struct page *page)
-> #define KVM_REQ_ENABLE_IBS        23
-> #define KVM_REQ_DISABLE_IBS       24
-> #define KVM_REQ_MIGRATE_EPT       25
->+#define KVM_REQ_MIGRATE_APIC      26
-> 
-> #define KVM_USERSPACE_IRQ_SOURCE_ID		0
-> #define KVM_IRQFD_RESAMPLE_IRQ_SOURCE_ID	1
->diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
->index d271e89..f06438c 100644
->--- a/virt/kvm/kvm_main.c
->+++ b/virt/kvm/kvm_main.c
->@@ -54,6 +54,7 @@
-> #include <asm/io.h>
-> #include <asm/uaccess.h>
-> #include <asm/pgtable.h>
->+#include <asm/vmx.h>
-> 
-> #include "coalesced_mmio.h"
-> #include "async_pf.h"
->@@ -300,6 +301,20 @@ static void kvm_mmu_notifier_invalidate_page(struct mmu_notifier *mn,
-> 		kvm_make_request(KVM_REQ_MIGRATE_EPT, kvm->vcpus[0]);
-> 	}
-> 
->+	if (address ==
->+	    gfn_to_hva(kvm, VMX_APIC_ACCESS_PAGE_ADDR >> PAGE_SHIFT)) {
->+		int i;
->+
->+		kvm->arch.apic_access_page_migrated = true;
->+
->+		/*
->+		 * We need update APIC_ACCESS_ADDR pointer in each VMCS of
->+		 * all the online vcpus.
->+		 */
->+		for (i = 0; i < atomic_read(&kvm->online_vcpus); i++)
->+			kvm_make_request(KVM_REQ_MIGRATE_APIC, kvm->vcpus[i]);
->+	}
->+
-> 	spin_unlock(&kvm->mmu_lock);
-> 	srcu_read_unlock(&kvm->srcu, idx);
-> }
->-- 
->1.8.3.1
->
->--
->To unsubscribe from this list: send the line "unsubscribe kvm" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> After this change, if we have not enough cma_areas, memory will leak.
+> I think that we need separate function to check constraint and this
+> function should be called before reserving memory in
+> cma_declare_contiguous().
+
+Well, I will leave this check to avoid memory leak then.
+
+> BTW, this mail doesn't appear in LKML. What happens? :)
+
+I have no idea, I will send second version then.
+
+Best regards
+-- 
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
+
