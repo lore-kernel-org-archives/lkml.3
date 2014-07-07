@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983AbaGGQCf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 12:02:35 -0400
-Received: from mail-bn1lp0145.outbound.protection.outlook.com ([207.46.163.145]:56265
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751077AbaGGQCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 12:02:33 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "bhelgaas@google.com" <bhelgaas@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "vidyas@nvidia.com" <vidyas@nvidia.com>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "kthota@nvidia.com" <kthota@nvidia.com>,
-        "nagananda.chumbalkar@hp.com" <nagananda.chumbalkar@hp.com>
-Subject: Re: [PATCH v1] PCI: enable ASPM configuration in PCIE POWERSAVE mode
-Thread-Topic: [PATCH v1] PCI: enable ASPM configuration in PCIE POWERSAVE mode
-Thread-Index: AQHPmIMAqTeUUacDIUKmSpwIfKBBfZuR1jCAgALyfQA=
-Date: Mon, 7 Jul 2014 16:02:29 +0000
-Message-ID: <1404748948.9762.29.camel@x230>
-References: <1404198978-26593-1-git-send-email-vidyas@nvidia.com>
-	 <20140705185736.GD28871@google.com> <20140705190203.GE28871@google.com>
-In-Reply-To: <20140705190203.GE28871@google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:
-x-forefront-prvs: 02652BD10A
-x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(35774003)(24454002)(377424004)(51704005)(189002)(199002)(74502001)(99396002)(103116003)(16601075003)(33716001)(33646001)(77982001)(99286002)(46102001)(79102001)(50986999)(77096002)(106116001)(15202345003)(110136001)(95666004)(31966008)(105586002)(106356001)(74662001)(2351001)(107046002)(85306003)(4396001)(87936001)(92566001)(19580395003)(19580405001)(83322001)(83072002)(85852003)(20776003)(21056001)(101416001)(86362001)(76482001)(54356999)(81542001)(2656002)(92726001)(76176999)(64706001)(80022001)(15975445006)(81342001)(3826002)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR05MB424;H:BN1PR05MB423.namprd05.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <51D6E4DAF6B1794AA2E800A287F3ECAE@namprd05.prod.outlook.com>
+	id S1752095AbaGGQEO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 12:04:14 -0400
+Received: from mail.fireflyinternet.com ([87.106.93.118]:54564 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751056AbaGGQEN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 12:04:13 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
+Date: Mon, 7 Jul 2014 17:04:02 +0100
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Thomas Meyer <thomas@m3y3r.de>, jikos@suse.cz,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Intel-gfx] Linux 3.16-rc2
+Message-ID: <20140707160402.GA26405@nuc-i3427.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Thomas Meyer <thomas@m3y3r.de>, jikos@suse.cz,
+	"intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Pavel Machek <pavel@ucw.cz>,
+	Linus Torvalds <torvalds@linux-foundation.org>
+References: <CA+55aFxdAhp-esuGiY4VEugiiwcMJgg1r6fPiR9Fb+HOz_5tLg@mail.gmail.com>
+ <1403564870.3091.6.camel@localhost.localdomain>
+ <871tuea7nz.fsf@intel.com>
+ <20140624115753.GD17674@nuc-i3427.alporthouse.com>
+ <1403612670.3091.10.camel@localhost.localdomain>
+ <20140624122737.GF17674@nuc-i3427.alporthouse.com>
+ <20140630100220.GA4934@xo-6d-61-c0.localdomain>
+ <20140630100925.GA18836@nuc-i3427.alporthouse.com>
+ <1404317921.3910.3.camel@localhost.localdomain>
+ <20140707151613.GG5821@phenom.ffwll.local>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140707151613.GG5821@phenom.ffwll.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s67G2eDn003955
 
-On Sat, 2014-07-05 at 13:02 -0600, Bjorn Helgaas wrote:
-> > Rafael, Matthew, any comments?  We have vacillated on this before and
-> > the web is already pretty tangled.
+On Mon, Jul 07, 2014 at 05:16:13PM +0200, Daniel Vetter wrote:
+> On Wed, Jul 02, 2014 at 06:18:41PM +0200, Thomas Meyer wrote:
+> > Hi,
 > > 
-> > Vidya, can you give more details about the bug fixed by this change?
-> > What's the scenario?  Are we resuming and the device is powered up but
-> > ASPM isn't enabled?  Maybe you could collect more details in a
-> > http://bugzilla.kernel.org report?
+> > this patch on top of v3.16-rc3-62-gd92a333 makes the resume from ram
+> > regression go away on my machine:
+> 
+> Hm, we could conditionalize this hack on IS_G4X ... Chris, thoughts?
 
-I believe that's the case. The proposed change would fix it but isn't
-really terribly clean - I think it would be more readable to split this
-into multiple functions.
+As different machines favour different w/a, I think the issue is mostly
+timing related. It could be sequence of register writes, but we tried
+different orders early on. The next experiment I guess would be to
+insert small delays between each write to see if that helps. Or to write
+each register twice.
+-Chris
 
 -- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Chris Wilson, Intel Open Source Technology Centre
