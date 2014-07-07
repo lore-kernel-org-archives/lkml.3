@@ -1,579 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717AbaGGB6a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 21:58:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42795 "EHLO
+	id S1752755AbaGGCAb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 22:00:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42801 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624AbaGGB61 (ORCPT
+	with ESMTP id S1752136AbaGGCA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 21:58:27 -0400
-Date: Sun, 6 Jul 2014 19:02:49 -0700
+	Sun, 6 Jul 2014 22:00:29 -0400
+Date: Sun, 6 Jul 2014 19:04:51 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.4.97
-Message-ID: <20140707020249.GB24807@kroah.com>
-References: <20140707020235.GA24807@kroah.com>
+Subject: Linux 3.10.47
+Message-ID: <20140707020451.GA24502@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2fHTh5uZTiUOsy+g"
 Content-Disposition: inline
-In-Reply-To: <20140707020235.GA24807@kroah.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-diff --git a/Makefile b/Makefile
-index e4ecdedbfe27..fdd7c32ea1f7 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 4
--SUBLEVEL = 96
-+SUBLEVEL = 97
- EXTRAVERSION =
- NAME = Saber-toothed Squirrel
- 
-diff --git a/arch/mips/kernel/irq-msc01.c b/arch/mips/kernel/irq-msc01.c
-index 14ac52c5ae86..884de3433ad7 100644
---- a/arch/mips/kernel/irq-msc01.c
-+++ b/arch/mips/kernel/irq-msc01.c
-@@ -131,7 +131,7 @@ void __init init_msc_irqs(unsigned long icubase, unsigned int irqbase, msc_irqma
- 
- 	board_bind_eic_interrupt = &msc_bind_eic_interrupt;
- 
--	for (; nirq >= 0; nirq--, imp++) {
-+	for (; nirq > 0; nirq--, imp++) {
- 		int n = imp->im_irq;
- 
- 		switch (imp->im_type) {
-diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index e7dba0b2a170..eb6b72faec0d 100644
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -496,7 +496,7 @@ void timer_interrupt(struct pt_regs * regs)
- 
- 	__get_cpu_var(irq_stat).timer_irqs++;
- 
--#if defined(CONFIG_PPC32) && defined(CONFIG_PMAC)
-+#if defined(CONFIG_PPC32) && defined(CONFIG_PPC_PMAC)
- 	if (atomic_read(&ppc_n_lost_interrupts) != 0)
- 		do_IRQ(regs);
- #endif
-diff --git a/arch/powerpc/lib/sstep.c b/arch/powerpc/lib/sstep.c
-index 9a52349874ee..e3b28e34bd78 100644
---- a/arch/powerpc/lib/sstep.c
-+++ b/arch/powerpc/lib/sstep.c
-@@ -1395,7 +1395,7 @@ int __kprobes emulate_step(struct pt_regs *regs, unsigned int instr)
- 				regs->gpr[rd] = byterev_4(val);
- 			goto ldst_done;
- 
--#ifdef CONFIG_PPC_CPU
-+#ifdef CONFIG_PPC_FPU
- 		case 535:	/* lfsx */
- 		case 567:	/* lfsux */
- 			if (!(regs->msr & MSR_FP))
-diff --git a/arch/powerpc/platforms/pseries/eeh_pseries.c b/arch/powerpc/platforms/pseries/eeh_pseries.c
-index 8a811d98a795..9c9e24512f28 100644
---- a/arch/powerpc/platforms/pseries/eeh_pseries.c
-+++ b/arch/powerpc/platforms/pseries/eeh_pseries.c
-@@ -319,6 +319,7 @@ static int pseries_eeh_get_state(struct device_node *dn, int *state)
- 			} else {
- 				result = EEH_STATE_NOT_SUPPORT;
- 			}
-+			break;
- 		default:
- 			result = EEH_STATE_NOT_SUPPORT;
- 		}
-diff --git a/arch/x86/include/asm/ptrace.h b/arch/x86/include/asm/ptrace.h
-index 19f16ebaf4fa..0b60cd9dcf16 100644
---- a/arch/x86/include/asm/ptrace.h
-+++ b/arch/x86/include/asm/ptrace.h
-@@ -286,6 +286,22 @@ static inline unsigned long regs_get_kernel_stack_nth(struct pt_regs *regs,
- 
- #define ARCH_HAS_USER_SINGLE_STEP_INFO
- 
-+/*
-+ * When hitting ptrace_stop(), we cannot return using SYSRET because
-+ * that does not restore the full CPU state, only a minimal set.  The
-+ * ptracer can change arbitrary register values, which is usually okay
-+ * because the usual ptrace stops run off the signal delivery path which
-+ * forces IRET; however, ptrace_event() stops happen in arbitrary places
-+ * in the kernel and don't force IRET path.
-+ *
-+ * So force IRET path after a ptrace stop.
-+ */
-+#define arch_ptrace_stop_needed(code, info)				\
-+({									\
-+	set_thread_flag(TIF_NOTIFY_RESUME);				\
-+	false;								\
-+})
-+
- struct user_desc;
- extern int do_get_thread_area(struct task_struct *p, int idx,
- 			      struct user_desc __user *info);
-diff --git a/drivers/infiniband/core/user_mad.c b/drivers/infiniband/core/user_mad.c
-index f0d588f8859e..1acb99100556 100644
---- a/drivers/infiniband/core/user_mad.c
-+++ b/drivers/infiniband/core/user_mad.c
-@@ -98,7 +98,7 @@ struct ib_umad_port {
- 
- struct ib_umad_device {
- 	int                  start_port, end_port;
--	struct kref          ref;
-+	struct kobject       kobj;
- 	struct ib_umad_port  port[0];
- };
- 
-@@ -134,14 +134,18 @@ static DECLARE_BITMAP(dev_map, IB_UMAD_MAX_PORTS);
- static void ib_umad_add_one(struct ib_device *device);
- static void ib_umad_remove_one(struct ib_device *device);
- 
--static void ib_umad_release_dev(struct kref *ref)
-+static void ib_umad_release_dev(struct kobject *kobj)
- {
- 	struct ib_umad_device *dev =
--		container_of(ref, struct ib_umad_device, ref);
-+		container_of(kobj, struct ib_umad_device, kobj);
- 
- 	kfree(dev);
- }
- 
-+static struct kobj_type ib_umad_dev_ktype = {
-+	.release = ib_umad_release_dev,
-+};
-+
- static int hdr_size(struct ib_umad_file *file)
- {
- 	return file->use_pkey_index ? sizeof (struct ib_user_mad_hdr) :
-@@ -780,27 +784,19 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
- {
- 	struct ib_umad_port *port;
- 	struct ib_umad_file *file;
--	int ret;
-+	int ret = -ENXIO;
- 
- 	port = container_of(inode->i_cdev, struct ib_umad_port, cdev);
--	if (port)
--		kref_get(&port->umad_dev->ref);
--	else
--		return -ENXIO;
- 
- 	mutex_lock(&port->file_mutex);
- 
--	if (!port->ib_dev) {
--		ret = -ENXIO;
-+	if (!port->ib_dev)
- 		goto out;
--	}
- 
-+	ret = -ENOMEM;
- 	file = kzalloc(sizeof *file, GFP_KERNEL);
--	if (!file) {
--		kref_put(&port->umad_dev->ref, ib_umad_release_dev);
--		ret = -ENOMEM;
-+	if (!file)
- 		goto out;
--	}
- 
- 	mutex_init(&file->mutex);
- 	spin_lock_init(&file->send_lock);
-@@ -814,6 +810,13 @@ static int ib_umad_open(struct inode *inode, struct file *filp)
- 	list_add_tail(&file->port_list, &port->file_list);
- 
- 	ret = nonseekable_open(inode, filp);
-+	if (ret) {
-+		list_del(&file->port_list);
-+		kfree(file);
-+		goto out;
-+	}
-+
-+	kobject_get(&port->umad_dev->kobj);
- 
- out:
- 	mutex_unlock(&port->file_mutex);
-@@ -852,7 +855,7 @@ static int ib_umad_close(struct inode *inode, struct file *filp)
- 	mutex_unlock(&file->port->file_mutex);
- 
- 	kfree(file);
--	kref_put(&dev->ref, ib_umad_release_dev);
-+	kobject_put(&dev->kobj);
- 
- 	return 0;
- }
-@@ -880,10 +883,6 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
- 	int ret;
- 
- 	port = container_of(inode->i_cdev, struct ib_umad_port, sm_cdev);
--	if (port)
--		kref_get(&port->umad_dev->ref);
--	else
--		return -ENXIO;
- 
- 	if (filp->f_flags & O_NONBLOCK) {
- 		if (down_trylock(&port->sm_sem)) {
-@@ -898,17 +897,27 @@ static int ib_umad_sm_open(struct inode *inode, struct file *filp)
- 	}
- 
- 	ret = ib_modify_port(port->ib_dev, port->port_num, 0, &props);
--	if (ret) {
--		up(&port->sm_sem);
--		goto fail;
--	}
-+	if (ret)
-+		goto err_up_sem;
- 
- 	filp->private_data = port;
- 
--	return nonseekable_open(inode, filp);
-+	ret = nonseekable_open(inode, filp);
-+	if (ret)
-+		goto err_clr_sm_cap;
-+
-+	kobject_get(&port->umad_dev->kobj);
-+
-+	return 0;
-+
-+err_clr_sm_cap:
-+	swap(props.set_port_cap_mask, props.clr_port_cap_mask);
-+	ib_modify_port(port->ib_dev, port->port_num, 0, &props);
-+
-+err_up_sem:
-+	up(&port->sm_sem);
- 
- fail:
--	kref_put(&port->umad_dev->ref, ib_umad_release_dev);
- 	return ret;
- }
- 
-@@ -927,7 +936,7 @@ static int ib_umad_sm_close(struct inode *inode, struct file *filp)
- 
- 	up(&port->sm_sem);
- 
--	kref_put(&port->umad_dev->ref, ib_umad_release_dev);
-+	kobject_put(&port->umad_dev->kobj);
- 
- 	return ret;
- }
-@@ -995,6 +1004,7 @@ static int find_overflow_devnum(void)
- }
- 
- static int ib_umad_init_port(struct ib_device *device, int port_num,
-+			     struct ib_umad_device *umad_dev,
- 			     struct ib_umad_port *port)
- {
- 	int devnum;
-@@ -1027,6 +1037,7 @@ static int ib_umad_init_port(struct ib_device *device, int port_num,
- 
- 	cdev_init(&port->cdev, &umad_fops);
- 	port->cdev.owner = THIS_MODULE;
-+	port->cdev.kobj.parent = &umad_dev->kobj;
- 	kobject_set_name(&port->cdev.kobj, "umad%d", port->dev_num);
- 	if (cdev_add(&port->cdev, base, 1))
- 		goto err_cdev;
-@@ -1045,6 +1056,7 @@ static int ib_umad_init_port(struct ib_device *device, int port_num,
- 	base += IB_UMAD_MAX_PORTS;
- 	cdev_init(&port->sm_cdev, &umad_sm_fops);
- 	port->sm_cdev.owner = THIS_MODULE;
-+	port->sm_cdev.kobj.parent = &umad_dev->kobj;
- 	kobject_set_name(&port->sm_cdev.kobj, "issm%d", port->dev_num);
- 	if (cdev_add(&port->sm_cdev, base, 1))
- 		goto err_sm_cdev;
-@@ -1138,7 +1150,7 @@ static void ib_umad_add_one(struct ib_device *device)
- 	if (!umad_dev)
- 		return;
- 
--	kref_init(&umad_dev->ref);
-+	kobject_init(&umad_dev->kobj, &ib_umad_dev_ktype);
- 
- 	umad_dev->start_port = s;
- 	umad_dev->end_port   = e;
-@@ -1146,7 +1158,8 @@ static void ib_umad_add_one(struct ib_device *device)
- 	for (i = s; i <= e; ++i) {
- 		umad_dev->port[i - s].umad_dev = umad_dev;
- 
--		if (ib_umad_init_port(device, i, &umad_dev->port[i - s]))
-+		if (ib_umad_init_port(device, i, umad_dev,
-+				      &umad_dev->port[i - s]))
- 			goto err;
- 	}
- 
-@@ -1158,7 +1171,7 @@ err:
- 	while (--i >= s)
- 		ib_umad_kill_port(&umad_dev->port[i - s]);
- 
--	kref_put(&umad_dev->ref, ib_umad_release_dev);
-+	kobject_put(&umad_dev->kobj);
- }
- 
- static void ib_umad_remove_one(struct ib_device *device)
-@@ -1172,7 +1185,7 @@ static void ib_umad_remove_one(struct ib_device *device)
- 	for (i = 0; i <= umad_dev->end_port - umad_dev->start_port; ++i)
- 		ib_umad_kill_port(&umad_dev->port[i]);
- 
--	kref_put(&umad_dev->ref, ib_umad_release_dev);
-+	kobject_put(&umad_dev->kobj);
- }
- 
- static char *umad_devnode(struct device *dev, umode_t *mode)
-diff --git a/drivers/infiniband/hw/ipath/ipath_diag.c b/drivers/infiniband/hw/ipath/ipath_diag.c
-index e2f9a51f4a38..45802e97332e 100644
---- a/drivers/infiniband/hw/ipath/ipath_diag.c
-+++ b/drivers/infiniband/hw/ipath/ipath_diag.c
-@@ -346,6 +346,10 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
- 			ret = -EFAULT;
- 			goto bail;
- 		}
-+		dp.len = odp.len;
-+		dp.unit = odp.unit;
-+		dp.data = odp.data;
-+		dp.pbc_wd = 0;
- 	} else {
- 		ret = -EINVAL;
- 		goto bail;
-diff --git a/drivers/infiniband/hw/qib/qib_mad.c b/drivers/infiniband/hw/qib/qib_mad.c
-index c4ff788823b5..14f39298cb97 100644
---- a/drivers/infiniband/hw/qib/qib_mad.c
-+++ b/drivers/infiniband/hw/qib/qib_mad.c
-@@ -1005,7 +1005,7 @@ static int set_pkeys(struct qib_devdata *dd, u8 port, u16 *pkeys)
- 
- 		event.event = IB_EVENT_PKEY_CHANGE;
- 		event.device = &dd->verbs_dev.ibdev;
--		event.element.port_num = 1;
-+		event.element.port_num = port;
- 		ib_dispatch_event(&event);
- 	}
- 	return 0;
-diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
-index 922d845f76b0..7fa948d7a867 100644
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -1371,6 +1371,12 @@ err_unmap:
- err_iu:
- 	srp_put_tx_iu(target, iu, SRP_IU_CMD);
- 
-+	/*
-+	 * Avoid that the loops that iterate over the request ring can
-+	 * encounter a dangling SCSI command pointer.
-+	 */
-+	req->scmnd = NULL;
-+
- 	spin_lock_irqsave(&target->lock, flags);
- 	list_add(&req->list, &target->free_reqs);
- 
-diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-index 9bdc3b8597a4..d93ea6417d15 100644
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -472,8 +472,15 @@ static void elantech_report_absolute_v3(struct psmouse *psmouse,
- 	input_report_key(dev, BTN_TOOL_FINGER, fingers == 1);
- 	input_report_key(dev, BTN_TOOL_DOUBLETAP, fingers == 2);
- 	input_report_key(dev, BTN_TOOL_TRIPLETAP, fingers == 3);
--	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
--	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+
-+	/* For clickpads map both buttons to BTN_LEFT */
-+	if (etd->fw_version & 0x001000) {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
-+	} else {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-+		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	}
-+
- 	input_report_abs(dev, ABS_PRESSURE, pres);
- 	input_report_abs(dev, ABS_TOOL_WIDTH, width);
- 
-@@ -483,10 +490,17 @@ static void elantech_report_absolute_v3(struct psmouse *psmouse,
- static void elantech_input_sync_v4(struct psmouse *psmouse)
- {
- 	struct input_dev *dev = psmouse->dev;
-+	struct elantech_data *etd = psmouse->private;
- 	unsigned char *packet = psmouse->packet;
- 
--	input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
--	input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	/* For clickpads map both buttons to BTN_LEFT */
-+	if (etd->fw_version & 0x001000) {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x03);
-+	} else {
-+		input_report_key(dev, BTN_LEFT, packet[0] & 0x01);
-+		input_report_key(dev, BTN_RIGHT, packet[0] & 0x02);
-+	}
-+
- 	input_mt_report_pointer_emulation(dev, true);
- 	input_sync(dev);
- }
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index a7f6dcea0d76..4cdd2bc21403 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -3610,7 +3610,7 @@ int pci_set_vga_state(struct pci_dev *dev, bool decode,
- 	u16 cmd;
- 	int rc;
- 
--	WARN_ON((flags & PCI_VGA_STATE_CHANGE_DECODES) & (command_bits & ~(PCI_COMMAND_IO|PCI_COMMAND_MEMORY)));
-+	WARN_ON((flags & PCI_VGA_STATE_CHANGE_DECODES) && (command_bits & ~(PCI_COMMAND_IO|PCI_COMMAND_MEMORY)));
- 
- 	/* ARCH specific VGA enables */
- 	rc = pci_set_vga_state_arch(dev, decode, command_bits, flags);
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 103c95e300fd..61bc33ed1116 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2921,6 +2921,7 @@ static void __devinit disable_igfx_irq(struct pci_dev *dev)
- }
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0152, disable_igfx_irq);
- 
- static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
- 			  struct pci_fixup *end)
-diff --git a/drivers/watchdog/sp805_wdt.c b/drivers/watchdog/sp805_wdt.c
-index bbb170e50055..a3b97e0c98df 100644
---- a/drivers/watchdog/sp805_wdt.c
-+++ b/drivers/watchdog/sp805_wdt.c
-@@ -62,7 +62,6 @@
-  * @adev: amba device structure of wdt
-  * @status: current status of wdt
-  * @load_val: load value to be set for current timeout
-- * @timeout: current programmed timeout
-  */
- struct sp805_wdt {
- 	spinlock_t			lock;
-@@ -73,7 +72,6 @@ struct sp805_wdt {
- 	#define WDT_BUSY		0
- 	#define WDT_CAN_BE_CLOSED	1
- 	unsigned int			load_val;
--	unsigned int			timeout;
- };
- 
- /* local variables */
-@@ -101,7 +99,7 @@ static void wdt_setload(unsigned int timeout)
- 	spin_lock(&wdt->lock);
- 	wdt->load_val = load;
- 	/* roundup timeout to closest positive integer value */
--	wdt->timeout = div_u64((load + 1) * 2 + (rate / 2), rate);
-+	wdd->timeout = div_u64((load + 1) * 2 + (rate / 2), rate);
- 	spin_unlock(&wdt->lock);
- }
- 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 28e5648c9cc4..a4b87c69fbbb 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -3485,7 +3485,7 @@ nfsd4_free_lock_stateid(struct nfs4_ol_stateid *stp)
- 	 * correspondance, and we have to delete the lockowner when we
- 	 * delete the lock stateid:
- 	 */
--	unhash_lockowner(lo);
-+	release_lockowner(lo);
- 	return nfs_ok;
- }
- 
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index 6eaa2e2335dc..ba7bf4a11855 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -2032,8 +2032,8 @@ nfsd4_encode_fattr(struct svc_fh *fhp, struct svc_export *exp,
- 	err = vfs_getattr(exp->ex_path.mnt, dentry, &stat);
- 	if (err)
- 		goto out_nfserr;
--	if ((bmval0 & (FATTR4_WORD0_FILES_FREE | FATTR4_WORD0_FILES_TOTAL |
--			FATTR4_WORD0_MAXNAME)) ||
-+	if ((bmval0 & (FATTR4_WORD0_FILES_AVAIL | FATTR4_WORD0_FILES_FREE |
-+			FATTR4_WORD0_FILES_TOTAL | FATTR4_WORD0_MAXNAME)) ||
- 	    (bmval1 & (FATTR4_WORD1_SPACE_AVAIL | FATTR4_WORD1_SPACE_FREE |
- 		       FATTR4_WORD1_SPACE_TOTAL))) {
- 		err = vfs_statfs(&path, &statfs);
-diff --git a/fs/ubifs/shrinker.c b/fs/ubifs/shrinker.c
-index 9e1d05666fed..e0a7a764a903 100644
---- a/fs/ubifs/shrinker.c
-+++ b/fs/ubifs/shrinker.c
-@@ -128,7 +128,6 @@ static int shrink_tnc(struct ubifs_info *c, int nr, int age, int *contention)
- 			freed = ubifs_destroy_tnc_subtree(znode);
- 			atomic_long_sub(freed, &ubifs_clean_zn_cnt);
- 			atomic_long_sub(freed, &c->clean_zn_cnt);
--			ubifs_assert(atomic_long_read(&c->clean_zn_cnt) >= 0);
- 			total_freed += freed;
- 			znode = zprev;
- 		}
-diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
-index 5c719627c2aa..ed12724901bc 100644
---- a/include/linux/ptrace.h
-+++ b/include/linux/ptrace.h
-@@ -379,6 +379,9 @@ static inline void user_single_step_siginfo(struct task_struct *tsk,
-  * calling arch_ptrace_stop() when it would be superfluous.  For example,
-  * if the thread has not been back to user mode since the last stop, the
-  * thread state might indicate that nothing needs to be done.
-+ *
-+ * This is guaranteed to be invoked once before a task stops for ptrace and
-+ * may include arch-specific operations necessary prior to a ptrace stop.
-  */
- #define arch_ptrace_stop_needed(code, info)	(0)
- #endif
-diff --git a/include/trace/syscall.h b/include/trace/syscall.h
-index 31966a4fb8cc..51b72d8a8498 100644
---- a/include/trace/syscall.h
-+++ b/include/trace/syscall.h
-@@ -4,6 +4,7 @@
- #include <linux/tracepoint.h>
- #include <linux/unistd.h>
- #include <linux/ftrace_event.h>
-+#include <linux/thread_info.h>
- 
- #include <asm/ptrace.h>
- 
-@@ -54,4 +55,18 @@ int perf_sysexit_enable(struct ftrace_event_call *call);
- void perf_sysexit_disable(struct ftrace_event_call *call);
- #endif
- 
-+#if defined(CONFIG_TRACEPOINTS) && defined(CONFIG_HAVE_SYSCALL_TRACEPOINTS)
-+static inline void syscall_tracepoint_update(struct task_struct *p)
-+{
-+	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
-+		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-+	else
-+		clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-+}
-+#else
-+static inline void syscall_tracepoint_update(struct task_struct *p)
-+{
-+}
-+#endif
-+
- #endif /* _TRACE_SYSCALL_H */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index afac42b8889c..621c547dabb1 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1441,7 +1441,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 
- 	total_forks++;
- 	spin_unlock(&current->sighand->siglock);
-+	syscall_tracepoint_update(p);
- 	write_unlock_irq(&tasklist_lock);
-+
- 	proc_fork_connector(p);
- 	cgroup_post_fork(p);
- 	if (clone_flags & CLONE_THREAD)
-diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
-index 54e35c1e5948..5e29610303b0 100644
---- a/scripts/recordmcount.h
-+++ b/scripts/recordmcount.h
-@@ -163,11 +163,11 @@ static int mcount_adjust = 0;
- 
- static int MIPS_is_fake_mcount(Elf_Rel const *rp)
- {
--	static Elf_Addr old_r_offset;
-+	static Elf_Addr old_r_offset = ~(Elf_Addr)0;
- 	Elf_Addr current_r_offset = _w(rp->r_offset);
- 	int is_fake;
- 
--	is_fake = old_r_offset &&
-+	is_fake = (old_r_offset != ~(Elf_Addr)0) &&
- 		(current_r_offset - old_r_offset == MIPS_FAKEMCOUNT_OFFSET);
- 	old_r_offset = current_r_offset;
- 
+--2fHTh5uZTiUOsy+g
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 3.10.47 kernel.
+
+All users of the 3.10 kernel series must upgrade.
+
+The updated 3.10.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.10.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Documentation/SubmittingPatches              |   22 ++++
+ Makefile                                     |    2=20
+ arch/mips/kernel/irq-msc01.c                 |    2=20
+ arch/mips/kvm/kvm_mips.c                     |   13 --
+ arch/powerpc/include/asm/systbl.h            |    2=20
+ arch/powerpc/include/uapi/asm/cputable.h     |    1=20
+ arch/powerpc/kernel/cputable.c               |    3=20
+ arch/powerpc/kernel/time.c                   |    2=20
+ arch/powerpc/lib/sstep.c                     |    2=20
+ arch/powerpc/platforms/pseries/eeh_pseries.c |    1=20
+ arch/x86/include/asm/ptrace.h                |   16 +++
+ drivers/block/mtip32xx/mtip32xx.c            |  123 +++++++++++++++++++---=
+-----
+ drivers/extcon/extcon-max77693.c             |    4=20
+ drivers/infiniband/core/user_mad.c           |   75 +++++++++-------
+ drivers/infiniband/hw/ipath/ipath_diag.c     |    4=20
+ drivers/infiniband/hw/qib/qib_mad.c          |    2=20
+ drivers/infiniband/ulp/srp/ib_srp.c          |    6 +
+ drivers/input/mouse/elantech.c               |   27 ++++-
+ drivers/misc/mei/hw-me.c                     |   28 ++++--
+ drivers/pci/pci.c                            |    2=20
+ drivers/pci/quirks.c                         |    1=20
+ drivers/target/iscsi/iscsi_target.c          |    2=20
+ drivers/target/iscsi/iscsi_target_util.c     |    2=20
+ drivers/target/target_core_device.c          |    1=20
+ drivers/watchdog/ath79_wdt.c                 |   10 ++
+ drivers/watchdog/sp805_wdt.c                 |    4=20
+ fs/nfs/inode.c                               |   26 +++--
+ fs/nfs/nfs4filelayout.c                      |    2=20
+ fs/nfsd/nfs4state.c                          |    2=20
+ fs/nfsd/nfs4xdr.c                            |    4=20
+ fs/nfsd/nfscache.c                           |   53 ++---------
+ fs/reiserfs/inode.c                          |    8 +
+ fs/ubifs/file.c                              |    3=20
+ fs/ubifs/shrinker.c                          |    1=20
+ include/linux/ptrace.h                       |    3=20
+ include/trace/syscall.h                      |   15 +++
+ kernel/fork.c                                |    2=20
+ kernel/trace/trace.c                         |   13 +-
+ net/ipv4/netfilter/ipt_ULOG.c                |    7 -
+ net/netfilter/ipvs/ip_vs_core.c              |   15 ++-
+ net/sunrpc/svc_xprt.c                        |    2=20
+ scripts/recordmcount.h                       |    4=20
+ 42 files changed, 338 insertions(+), 179 deletions(-)
+
+Alex Smith (1):
+      recordmcount/MIPS: Fix possible incorrect mcount_loc table entries in=
+ modules
+
+Anton Blanchard (1):
+      powerpc: 64bit sendfile is capped at 2GB
+
+Asai Thambi S P (3):
+      mtip32xx: Fix ERO and NoSnoop values in PCIe upstream on AMD systems
+      mtip32xx: Increase timeout for STANDBY IMMEDIATE command
+      mtip32xx: Remove dfs_parent after pci unregister
+
+Bart Van Assche (3):
+      IB/srp: Fix a sporadic crash triggered by cable pulling
+      IB/umad: Fix error handling
+      IB/umad: Fix use-after-free on close
+
+Benjamin Herrenschmidt (1):
+      powerpc: Add AT_HWCAP2 to indicate V.CRYPTO category support
+
+Bjorn Helgaas (1):
+      PCI: Fix incorrect vgaarb conditional in WARN_ON()
+
+Christoph Hellwig (1):
+      nfsd: getattr for FATTR4_WORD0_FILES_AVAIL needs the statfs buffer
+
+Deng-Cheng Zhu (1):
+      MIPS: KVM: Fix memory leak on VCPU
+
+Dennis Dalessandro (1):
+      IB/ipath: Translate legacy diagpkt into newer extended diagpkt
+
+Gabor Juhos (1):
+      watchdog: ath79_wdt: avoid spurious restarts on AR934x
+
+Gavin Shan (1):
+      powerpc/pseries: Fix overwritten PE state
+
+Greg Kroah-Hartman (1):
+      Linux 3.10.47
+
+Hans de Goede (2):
+      Input: elantech - deal with clickpads reporting right button events
+      Input: elantech - don't set bit 1 of reg_10 when the no_hw_res quirk =
+is set
+
+J. Bruce Fields (1):
+      nfsd4: fix FREE_STATEID lockowner leak
+
+Jacob Keller (1):
+      Documentation/SubmittingPatches: describe the Fixes: tag
+
+James Hogan (1):
+      MIPS: KVM: Remove redundant NULL checks before kfree()
+
+Jeff Layton (2):
+      nfsd: don't try to reuse an expired DRC entry off the list
+      nfsd: don't halt scanning the DRC LRU list when there's an RC_INPROG =
+entry
+
+Jeff Mahoney (1):
+      reiserfs: call truncate_setsize under tailpack mutex
+
+Krzysztof Kozlowski (1):
+      extcon: max77693: Fix two NULL pointer exceptions on missing pdata
+
+Markos Chandras (1):
+      MIPS: MSC: Prevent out-of-bounds writes to MIPS SC ioremap'd region
+
+Mathias Krause (1):
+      netfilter: ipt_ULOG: fix info leaks
+
+Mike Marciniszyn (1):
+      IB/qib: Fix port in pkey change event
+
+Nicholas Bellinger (3):
+      target: Fix left-over se_lun->lun_sep pointer OOPs
+      iscsi-target: Avoid rejecting incorrect ITT for Data-Out
+      iscsi-target: Explicily clear login response PDU in exception path
+
+Oleg Nesterov (1):
+      tracing: Fix syscall_*regfunc() vs copy_process() race
+
+Paul Bolle (2):
+      powerpc: fix typo 'CONFIG_PMAC'
+      powerpc: fix typo 'CONFIG_PPC_CPU'
+
+Peter Christensen (1):
+      ipvs: Fix panic due to non-linear skb
+
+Steven Rostedt (Red Hat) (1):
+      tracing: Try again for saved cmdline if failed due to locking
+
+Tejun Heo (1):
+      ptrace,x86: force IRET path after a ptrace_stop()
+
+Thomas Jarosch (1):
+      PCI: Add new ID for Intel GPU "spurious interrupt" quirk
+
+Tomas Winkler (2):
+      mei: me: read H_CSR after asserting reset
+      mei: me: fix hw ready reset flow
+
+Trond Myklebust (3):
+      SUNRPC: Fix a module reference leak in svc_handle_xprt
+      pNFS: Handle allocation errors correctly in filelayout_alloc_layout_h=
+dr()
+      NFS: Don't declare inode uptodate unless all attributes were checked
+
+Viresh Kumar (1):
+      watchdog: sp805: Set watchdog_device->timeout from ->set_timeout()
+
+hujianyang (2):
+      UBIFS: fix an mmap and fsync race condition
+      UBIFS: Remove incorrect assertion in shrink_tnc()
+
+
+--2fHTh5uZTiUOsy+g
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJTugBCAAoJEDjbvchgkmk+TQkQALJWR58RenbEvzWV8hdY/obm
+kwmErN8dAoUzU7HWZswJcDfNM2hak2wLH+9mZDYpa3g4EWw3RWpPzl3izybxVkQX
+i6rrHOFnJ/pwSpwKBs4ttd2xrV2vPW3nLchVIT2fezMPHLvLhl006xbM0KR+wWCm
+4hj727GVQrIJRwwxd/5Ul+5gk0BNCDUbS0SFU9AkNAfY/iz3yaDgg87Ld7Q/Ar2h
+m69jRcJJFV/eX0TRag4T3k/QFnBIhubXV8OPglFMilTc1lks4g629IgiCpNYIu6S
+iEHV3627ZPP0CABlzxg21V7OpfBiOIj0EEDX+n09Hqotu9ornp4qRatxPJzgsskS
+nfAHrUZgrHDVKUA/tOsEkEciFHn01wvB/icGTb53WpPN6fq177w25FUmNw+JYFwQ
+Vo+nkBcx5OJIK89T1Zl71G2nMYKwyC4qNqfHkRY3fDXiuiwm3paPp6NR2yDhZc4D
+x1lAsA2DpRZuV08BvkK5DlpR8omb6t5+TMcdRw1CmtVUX+9zkIsTo7j7vK2BKC22
+ZOGILjAOnXsAmBqvtLORqeTkYqvRjfMai1X/tduVxjstnX4YmhS2IGUzIzDN1XM4
+yyd0miB4W7VxrJA1O5ZV238kGa+zc5IpOLQV3KYXAEQx21uJ7+mY2MU/meUCot0z
+sFDcQwiT6bojRm3L5fhY
+=0K3U
+-----END PGP SIGNATURE-----
+
+--2fHTh5uZTiUOsy+g--
