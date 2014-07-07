@@ -1,107 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440AbaGGUzE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 16:55:04 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50180 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751077AbaGGUzC (ORCPT
+	id S1752545AbaGGUzJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 16:55:09 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:56012 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752359AbaGGUzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 16:55:02 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Tony Luck <tony.luck@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH 3/4] ACPI / processor: Introduce ARCH_HAS_ACPI_PDC
-Date: Mon, 07 Jul 2014 23:13:05 +0200
-Message-ID: <2064691.ZpxCs0gfL8@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1404290847-7671-4-git-send-email-hanjun.guo@linaro.org>
-References: <1404290847-7671-1-git-send-email-hanjun.guo@linaro.org> <1404290847-7671-4-git-send-email-hanjun.guo@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 7 Jul 2014 16:55:05 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        "Chen, Gong" <gong.chen@linux.intel.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] video: fbdev: sis: init.c:  Cleaning up redundant condition is always true
+Date: Mon,  7 Jul 2014 22:56:19 +0200
+Message-Id: <1404766579-25501-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 02, 2014 04:47:25 PM Hanjun Guo wrote:
-> The use of _PDC is deprecated in ACPI 3.0 in favor of _OSC,
-> as ARM platform is supported only in ACPI 5.0 or higher version,
-> _PDC will not be used in ARM platform, so make Make _PDC only for
-> platforms with Intel CPUs.
-> 
-> Introduce ARCH_HAS_ACPI_PDC and move _PDC related code in ACPI
-> processor driver into a single file processor_pdc.c, make x86
-> and ia64 select ARCH_HAS_ACPI_PDC when ACPI is enabled.
-> 
-> This patch also use pr_* to replace printk to fix the checkpatch
-> warning and factor acpi_processor_alloc_pdc() a little bit to
-> avoid duplicate pr_err() code.
-> 
-> Suggested-by: Robert Richter <rric@kernel.org>
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> ---
->  arch/ia64/Kconfig             |    1 +
->  arch/x86/Kconfig              |    1 +
->  drivers/acpi/Kconfig          |   10 ++
->  drivers/acpi/Makefile         |    1 +
->  drivers/acpi/internal.h       |    5 +
->  drivers/acpi/processor_core.c |  198 ---------------------------------------
->  drivers/acpi/processor_pdc.c  |  206 +++++++++++++++++++++++++++++++++++++++++
->  7 files changed, 224 insertions(+), 198 deletions(-)
->  create mode 100644 drivers/acpi/processor_pdc.c
-> 
-> diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-> index f82b352..cde2626 100644
-> --- a/arch/ia64/Kconfig
-> +++ b/arch/ia64/Kconfig
-> @@ -10,6 +10,7 @@ config IA64
->  	select ARCH_MIGHT_HAVE_PC_SERIO
->  	select PCI if (!IA64_HP_SIM)
->  	select ACPI if (!IA64_HP_SIM)
-> +	select ARCH_HAS_ACPI_PDC if ACPI
+Find a redundant condition that is always true, that after
+some discussions prove to be that wrong variable that was checked.
 
-The ARCH_HAS part doesn't seem to be particularly consistent with
-the existing naming.  ARCH_MIGHT_HAVE_ACPI_PDC would be better IMO.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/video/fbdev/sis/init.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
->  	select PM if (!IA64_HP_SIM)
->  	select HAVE_UNSTABLE_SCHED_CLOCK
->  	select HAVE_IDE
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 4865d44..d60cec7 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -21,6 +21,7 @@ config X86_64
->  ### Arch settings
->  config X86
->  	def_bool y
-> +	select ARCH_HAS_ACPI_PDC if ACPI
->  	select ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS
->  	select ARCH_MIGHT_HAVE_PC_PARPORT
->  	select ARCH_MIGHT_HAVE_PC_SERIO
-> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> index 70eaf7a..0e6f72d 100644
-> --- a/drivers/acpi/Kconfig
-> +++ b/drivers/acpi/Kconfig
-> @@ -367,6 +367,16 @@ config ACPI_REDUCED_HARDWARE_ONLY
->  
->  	If you are unsure what to do, do not enable this option.
->  
-> +config ARCH_HAS_ACPI_PDC
-> +	bool
-> +	help
-> +	  The _PDC object provides OSPM a mechanism to convey to the platform
-> +	  the capabilities supported by OSPM for processor power management.
-> +	  This allows the platform to modify the ACPI namespace objects returning
-> +	  configuration information for processor power management based on the
-> +	  level of support provided by OSPM.The use of _PDC is deprecated in
-> +	  ACPI 3.0 in favor of _OSC.
-
-Is the help actually useful?  This doesn't seem to be user-selectable, does it?
-
+diff --git a/drivers/video/fbdev/sis/init.c b/drivers/video/fbdev/sis/init.c
+index bd40f5e..dc9613a 100644
+--- a/drivers/video/fbdev/sis/init.c
++++ b/drivers/video/fbdev/sis/init.c
+@@ -355,12 +355,12 @@ SiS_GetModeID(int VGAEngine, unsigned int VBFlags, int HDisplay, int VDisplay,
+ 		}
+ 		break;
+ 	case 400:
+-		if((!(VBFlags & CRT1_LCDA)) || ((LCDwidth >= 800) && (LCDwidth >= 600))) {
++		if ((!(VBFlags & CRT1_LCDA)) || ((LCDwidth >= 800) && (LCDheight >= 600))) {
+ 			if(VDisplay == 300) ModeIndex = ModeIndex_400x300[Depth];
+ 		}
+ 		break;
+ 	case 512:
+-		if((!(VBFlags & CRT1_LCDA)) || ((LCDwidth >= 1024) && (LCDwidth >= 768))) {
++		if ((!(VBFlags & CRT1_LCDA)) || ((LCDwidth >= 1024) && (LCDheight >= 768))) {
+ 			if(VDisplay == 384) ModeIndex = ModeIndex_512x384[Depth];
+ 		}
+ 		break;
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.10.4
+
