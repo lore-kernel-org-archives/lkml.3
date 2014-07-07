@@ -1,79 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446AbaGGNjT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 09:39:19 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:45849 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563AbaGGNjR (ORCPT
+	id S1753474AbaGGNka (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 09:40:30 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:61607 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753276AbaGGNk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 09:39:17 -0400
-Date: Mon, 7 Jul 2014 15:38:55 +0200
-From: Olivier Sobrie <olivier@sobrie.be>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Jan Dumon <j.dumon@option.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] hso: fix deadlock when receiving bursts of data
-Message-ID: <20140707133855.GA13365@hposo>
-Reply-To: Olivier Sobrie <olivier@sobrie.be>
-References: <1404723967-24245-1-git-send-email-olivier@sobrie.be>
- <1404723967-24245-2-git-send-email-olivier@sobrie.be>
- <063D6719AE5E284EB5DD2968C1650D6D1726D5E9@AcuExch.aculab.com>
- <20140707104220.GA31340@hposo>
- <063D6719AE5E284EB5DD2968C1650D6D1726D772@AcuExch.aculab.com>
+	Mon, 7 Jul 2014 09:40:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1726D772@AcuExch.aculab.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140703175231.GF17372@arm.com>
+References: <1403881067-22690-1-git-send-email-jean.pihet@linaro.org>
+	<1403881067-22690-3-git-send-email-jean.pihet@linaro.org>
+	<20140703175231.GF17372@arm.com>
+Date: Mon, 7 Jul 2014 15:40:27 +0200
+Message-ID: <CAFrcx1=NWiJ4+qe-cp2t+Cx7Q7dexjbzu-q9fE+HVR2JTOn-SQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] ARM: perf: disable the pagefault handler when reading
+ from user space
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Sneha Priya <sneha.cse@hotmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Steve Capper <steve.capper@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 12:55:44PM +0000, David Laight wrote:
-> From: Olivier Sobrie 
-> > Hi David,
-> > 
-> > On Mon, Jul 07, 2014 at 09:13:53AM +0000, David Laight wrote:
-> > > From: Olivier Sobrie
-> > > > When the module sends bursts of data, sometimes a deadlock happens in
-> > > > the hso driver when the tty buffer doesn't get the chance to be flushed
-> > > > quickly enough.
-> > > >
-> > > > To avoid this, first, we remove the endless while loop in
-> > > > put_rx_bufdata() which is the root cause of the deadlock.
-> > > > Secondly, when there is no room anymore in the tty buffer, we set up a
-> > > > timer of 100 msecs to give a chance to the upper layer to flush the tty
-> > > > buffer and make room for new data.
-> > >
-> > > What is the timer for?
-> > > You need to get the sending code woken up by the urb completion.
-> > 
-> > In put_rxbuf_data() (which can be called under irq disabled),
-> > tty_flip_buffer_push() is called and schedules a push of the tty buffer.
-> > When the buffer is full, I give some time to the above layer in order
-> > to flush it.
-> > The timer is used to recall put_rxbuf_data_and_resubmit_bulk_urb()
-> > later in order to read the remaining data stored in
-> > "urb->transfer_buffer" and then to resubmit the urb to receive more data
-> > from the gsm module.
-> > I don't understand what you mean by "getting the sending code woken up".
-> > Calling tty_port_tty_wakeup()?? We are in the receive path...
-> 
-> Sorry, it isn't at all clear from the general description whether you
-> are referring to the transmit or receive path.
-> 
-> 'flush' can mean all sorts of things ...
-> 
-> In either case a 100ms delay to data doesn't seem right at all.
+Hi Will,
 
-An option to avoid the delay, is to replace the timer by a workqueue
-and to schedule work in put_rxbuf_data_and_resubmit_bulk_urb()
-when put_rxbuf_data() returns something greater than 0.
-If you have better ideas, let me know.
+On 3 July 2014 19:52, Will Deacon <will.deacon@arm.com> wrote:
+> Hi Jean,
+>
+> On Fri, Jun 27, 2014 at 03:57:46PM +0100, Jean Pihet wrote:
+>> As done on other architectures (ARM64, x86, Sparc etc.).
+>>
+>> This prevents a deadlock on down_read in do_page_fault when unwinding
+>> using fp and triggering on kernel tracepoints:
+>
+> So is this an issue because you could try setting tracepoints on the
+> pagefault path? If so, the patch is a little brutal as it would break user
+> backtracing as soon as we take any old page fault, no?
+>
+> Or am I missing something obvious?
+The problem is a deadlock between the perf events interrupt and
+copy_from_user, which take the same lock.
+The commit description has been updated to give all the details about it.
 
-Thanks,
+Big thanks to Steve on the debugging!
 
--- 
-Olivier
+A new patch set is on its way.
+
+Jean
+
+>
+> Will
+>
+>>   INFO: task stress:2116 blocked for more than 120 seconds.
+>>         Not tainted 3.15.0-rc4-00364-g3401dfb-dirty #43
+>>   "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>>   stress          D c04b41e8     0  2116   2115 0x00000000
+>>   [<c04b41e8>] (__schedule) from [<c04b46dc>] (schedule+0x40/0x90)
+>>   [<c04b46dc>] (schedule) from [<c04b6ec8>] (__down_read+0xc4/0xfc)
+>>   [<c04b6ec8>] (__down_read) from [<c04b69c0>] (down_read+0x18/0x1c)
+>>   [<c04b69c0>] (down_read) from [<c001d41c>] (do_page_fault+0xac/0x420)
+>>   [<c001d41c>] (do_page_fault) from [<c0008444>] (do_DataAbort+0x44/0xa8)
+>>   [<c0008444>] (do_DataAbort) from [<c00136b8>] (__dabt_svc+0x38/0x60)
+>>   Exception stack(0xecbc3af8 to 0xecbc3b40)
+>>   3ae0:                                                       ecbc3b74 b6d72ff4
+>>   3b00: ffffffec 00000000 b6d72ff4 ec0fc000 00000000 ec0fc000 0000007e 00000000
+>>   3b20: ecbc2000 ecbc3bac 00000014 ecbc3b44 c0019e78 c021ef44 00000013 ffffffff
+>>   [<c00136b8>] (__dabt_svc) from [<c021ef44>] (__copy_from_user+0xa4/0x3a0)
+>>
+>> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+>> Cc: Will Deacon <will.deacon@arm.com>
+>> ---
+>>  arch/arm/kernel/perf_event.c | 9 +++++++--
+>>  1 file changed, 7 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+>> index 6493c4c..f5aeca2 100644
+>> --- a/arch/arm/kernel/perf_event.c
+>> +++ b/arch/arm/kernel/perf_event.c
+>> @@ -560,11 +560,16 @@ user_backtrace(struct frame_tail __user *tail,
+>>              struct perf_callchain_entry *entry)
+>>  {
+>>       struct frame_tail buftail;
+>> +     unsigned long err;
+>>
+>> -     /* Also check accessibility of one struct frame_tail beyond */
+>>       if (!access_ok(VERIFY_READ, tail, sizeof(buftail)))
+>>               return NULL;
+>> -     if (__copy_from_user_inatomic(&buftail, tail, sizeof(buftail)))
+>> +
+>> +     pagefault_disable();
+>> +     err = __copy_from_user_inatomic(&buftail, tail, sizeof(buftail));
+>> +     pagefault_enable();
+>> +
+>> +     if (err)
+>>               return NULL;
+>>
+>>       perf_callchain_store(entry, buftail.lr);
+>> --
+>> 1.8.1.2
+>>
+>>
