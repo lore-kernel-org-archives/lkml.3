@@ -1,74 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017AbaGGPPw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 11:15:52 -0400
-Received: from skprod2.natinst.com ([130.164.80.23]:35014 "EHLO ni.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752992AbaGGPPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 11:15:50 -0400
-X-Greylist: delayed 1532 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Jul 2014 11:15:50 EDT
-From: Nathan Sullivan <nathan.sullivan@ni.com>
-To: balbi@ti.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nathan Sullivan <nathan.sullivan@ni.com>
-Subject: [PATCH] usb: gadget: fix eem_wrap cloned skb logic
-Date: Mon, 7 Jul 2014 09:50:14 -0500
-Message-Id: <1404744614-26354-1-git-send-email-nathan.sullivan@ni.com>
-X-Mailer: git-send-email 1.7.10.4
-X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
- 21, 2013) at 07/07/2014 09:50:15 AM,
-	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
- 21, 2013) at 07/07/2014 09:50:15 AM,
-	Serialize complete at 07/07/2014 09:50:15 AM
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.14,0.0.0000
- definitions=2014-07-07_01:2014-07-07,2014-07-07,1970-01-01 signatures=0
+	id S1754032AbaGGPQM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 11:16:12 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:52266 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753505AbaGGPQJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 11:16:09 -0400
+Date: Mon, 7 Jul 2014 17:16:13 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, jikos@suse.cz,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Intel-gfx] Linux 3.16-rc2
+Message-ID: <20140707151613.GG5821@phenom.ffwll.local>
+Mail-Followup-To: Thomas Meyer <thomas@m3y3r.de>,
+	Chris Wilson <chris@chris-wilson.co.uk>, jikos@suse.cz,
+	"intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Pavel Machek <pavel@ucw.cz>,
+	Linus Torvalds <torvalds@linux-foundation.org>
+References: <CA+55aFxdAhp-esuGiY4VEugiiwcMJgg1r6fPiR9Fb+HOz_5tLg@mail.gmail.com>
+ <1403564870.3091.6.camel@localhost.localdomain>
+ <871tuea7nz.fsf@intel.com>
+ <20140624115753.GD17674@nuc-i3427.alporthouse.com>
+ <1403612670.3091.10.camel@localhost.localdomain>
+ <20140624122737.GF17674@nuc-i3427.alporthouse.com>
+ <20140630100220.GA4934@xo-6d-61-c0.localdomain>
+ <20140630100925.GA18836@nuc-i3427.alporthouse.com>
+ <1404317921.3910.3.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404317921.3910.3.camel@localhost.localdomain>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even if the skb is cloned, we still need a ZLP or USB will stall.
+On Wed, Jul 02, 2014 at 06:18:41PM +0200, Thomas Meyer wrote:
+> Am Montag, den 30.06.2014, 11:09 +0100 schrieb Chris Wilson:
+> > On Mon, Jun 30, 2014 at 12:02:20PM +0200, Pavel Machek wrote:
+> > > On Tue 2014-06-24 13:27:37, Chris Wilson wrote:
+> > > > On Tue, Jun 24, 2014 at 02:24:30PM +0200, Thomas Meyer wrote:
+> > > > > Am Dienstag, den 24.06.2014, 12:57 +0100 schrieb Chris Wilson:
+> > > > > > On Tue, Jun 24, 2014 at 02:06:24PM +0300, Jani Nikula wrote:
+> > > > > > > On Tue, 24 Jun 2014, Thomas Meyer <thomas@m3y3r.de> wrote:
+> > > > > > > > the i915 driver is still broken in 3.16-rc2. Resume from ram crashes the
+> > > > > > > > X server.
+> > > > > > > 
+> > > > > > > This is not new to 3.16-rc2; apparently we've had it since v3.15-rc4
+> > > > > > > [1]. Also related [2].
+> > > > > > > 
+> > > > > > > Chris, any fresh ideas?
+> > > > > > 
+> > > > > > Nope. The bug is https://bugs.freedesktop.org/show_bug.cgi?id=76554
+> > > > > > everything we know and have tried is there. Which is not much more than
+> > > > > > at time of the original incarnation:
+> > > > > > 
+> > > > > > commit 50aa253d820ad4577e2231202f2c8fd89f9dc4e6
+> > > > > > Author: Keith Packard <keithp@keithp.com>
+> > > > > > Date:   Tue Oct 14 17:20:35 2008 -0700
+> > > > > > 
+> > > > > >     i915: Fix up ring initialization to cover G45 oddities
+> > > > > >     
+> > > > > >     G45 appears quite sensitive to ring initialization register writes,
+> > > > > >     sometimes leaving the HEAD register with the START register contents. Check
+> > > > > >     to make sure HEAD is reset correctly when START is written, and fix it up,
+> > > > > >     screaming loudly.
+> > > > > > -Chris
+> > > > > > 
+> > > > > 
+> > > > > Hi,
+> > > > > 
+> > > > > so why not revert 78f2975eec9faff353a6194e854d3d39907bab68 (drm/i915:
+> > > > > Move all ring resets before setting the HWS page) ?
+> > > > 
+> > > > Because that patch was in response to a boot time regression.
+> > > 
+> > > It seems we are in a fairly ugly "fix one board, it breaks another" iterations, right?
+> > > 
+> > > (BTW, if you apply patch to fix this bug, could you Cc me? I have strange feeling
+> > > that it will break my setup... Actually, it probably makes sense to Cc all the people
+> > > who reported problems with ring initialization...
+> > > 
+> > > What patch caused the boot time regression you are talking about? We need to get 
+> > > list of commits involved in this, and revert the original one...
+> > 
+> > commit 9991ae787a0c87fe7c783b4b6f4754c3cdbb6213
+> > Author: Chris Wilson <chris@chris-wilson.co.uk>
+> > Date:   Wed Apr 2 16:36:07 2014 +0100
+> > 
+> >     drm/i915: Move all ring resets before setting the HWS page
+> >     
+> >     In commit a51435a3137ad8ae75c288c39bd2d8b2696bae8f
+> >     Author: Naresh Kumar Kachhi <naresh.kumar.kachhi@intel.com>
+> >     Date:   Wed Mar 12 16:39:40 2014 +0530
+> >     
+> >         drm/i915: disable rings before HW status page setup
+> >     
+> >     we reordered stopping the rings to do so before we set the HWS register.
+> >     However, there is an extra workaround for g45 to reset the rings twice,
+> >     and for consistency we should apply that workaround before setting the
+> >     HWS to be sure that the rings are truly stopped.
+> >     
+> >     Cc: Naresh Kumar Kachhi <naresh.kumar.kachhi@intel.com>
+> >     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+> >     Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+> >     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> > 
+> > 
+> > commit a51435a3137ad8ae75c288c39bd2d8b2696bae8f
+> > Author: Naresh Kumar Kachhi <naresh.kumar.kachhi@intel.com>
+> > Date:   Wed Mar 12 16:39:40 2014 +0530
+> > 
+> >     drm/i915: disable rings before HW status page setup
+> >     
+> >     Rings should be idle before issuing sync_flush
+> >     (in intel_ring_setup_status_page). This patch moves the ring
+> >     disabling before doing the HW status page setup.
+> >     
+> >     Signed-off-by: Naresh Kumar Kachhi <naresh.kumar.kachhi@intel.com>
+> >     Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+> >     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> > 
+> > 
+> 
+> Hi,
+> 
+> this patch on top of v3.16-rc3-62-gd92a333 makes the resume from ram
+> regression go away on my machine:
 
-Signed-off-by: Nathan Sullivan <nathan.sullivan@ni.com>
-Acked-by: Brad Mouring <brad.mouring@ni.com>
----
- drivers/usb/gadget/f_eem.c |   22 ++++++++++------------
- 1 file changed, 10 insertions(+), 12 deletions(-)
+Hm, we could conditionalize this hack on IS_G4X ... Chris, thoughts?
+-Daniel
 
-diff --git a/drivers/usb/gadget/f_eem.c b/drivers/usb/gadget/f_eem.c
-index d61c11d..4d8b236 100644
---- a/drivers/usb/gadget/f_eem.c
-+++ b/drivers/usb/gadget/f_eem.c
-@@ -355,20 +355,18 @@ static struct sk_buff *eem_wrap(struct gether *port, struct sk_buff *skb)
- 	int		padlen = 0;
- 	u16		len = skb->len;
- 
--	if (!skb_cloned(skb)) {
--		int headroom = skb_headroom(skb);
--		int tailroom = skb_tailroom(skb);
-+	int headroom = skb_headroom(skb);
-+	int tailroom = skb_tailroom(skb);
- 
--		/* When (len + EEM_HLEN + ETH_FCS_LEN) % in->maxpacket) is 0,
--		 * stick two bytes of zero-length EEM packet on the end.
--		 */
--		if (((len + EEM_HLEN + ETH_FCS_LEN) % in->maxpacket) == 0)
--			padlen += 2;
-+	/* When (len + EEM_HLEN + ETH_FCS_LEN) % in->maxpacket) is 0,
-+	 * stick two bytes of zero-length EEM packet on the end.
-+	 */
-+	if (((len + EEM_HLEN + ETH_FCS_LEN) % in->maxpacket) == 0)
-+		padlen += 2;
- 
--		if ((tailroom >= (ETH_FCS_LEN + padlen)) &&
--				(headroom >= EEM_HLEN))
--			goto done;
--	}
-+	if ((tailroom >= (ETH_FCS_LEN + padlen)) &&
-+			(headroom >= EEM_HLEN) && !skb_cloned(skb))
-+		goto done;
- 
- 	skb2 = skb_copy_expand(skb, EEM_HLEN, ETH_FCS_LEN + padlen, GFP_ATOMIC);
- 	dev_kfree_skb_any(skb);
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
+> index 279488a..b896ac8 100644
+> --- a/drivers/gpu/drm/i915/intel_ringbuffer.c
+> +++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+> @@ -459,22 +459,25 @@ static bool stop_ring(struct intel_engine_cs *ring)
+>  {
+>  	struct drm_i915_private *dev_priv = to_i915(ring->dev);
+>  
+> -	if (!IS_GEN2(ring->dev)) {
+> -		I915_WRITE_MODE(ring, _MASKED_BIT_ENABLE(STOP_RING));
+> -		if (wait_for_atomic((I915_READ_MODE(ring) & MODE_IDLE) != 0, 1000)) {
+> -			DRM_ERROR("%s :timed out trying to stop ring\n", ring->name);
+> -			return false;
+> -		}
+> -	}
+> -
+> +//	if (!IS_GEN2(ring->dev)) {
+> +//		I915_WRITE_MODE(ring, _MASKED_BIT_ENABLE(STOP_RING));
+> +//		if (wait_for_atomic((I915_READ_MODE(ring) & MODE_IDLE) != 0, 1000)) {
+> +//			DRM_ERROR("%s :timed out trying to stop ring1\n", ring->name);
+> +//			return false;
+> +//		}
+> +//	}
+> +
+> +	/* Stop the ring if it's running. */
+>  	I915_WRITE_CTL(ring, 0);
+>  	I915_WRITE_HEAD(ring, 0);
+>  	ring->write_tail(ring, 0);
+> +	if (wait_for_atomic((I915_READ_MODE(ring) & MODE_IDLE) != 0, 1000))
+> +		DRM_ERROR("%s :timed out trying to stop ring2\n", ring->name);
+>  
+> -	if (!IS_GEN2(ring->dev)) {
+> -		(void)I915_READ_CTL(ring);
+> -		I915_WRITE_MODE(ring, _MASKED_BIT_DISABLE(STOP_RING));
+> -	}
+> +//	if (!IS_GEN2(ring->dev)) {
+> +//		(void)I915_READ_CTL(ring);
+> +//		I915_WRITE_MODE(ring, _MASKED_BIT_DISABLE(STOP_RING));
+> +//	}
+>  
+>  	return (I915_READ_HEAD(ring) & HEAD_ADDR) == 0;
+>  }
+> 
+> Chris, any ideas why explicitly stopping the ring before reset, results
+> in this kind of misbehaviour on my machine on resume from ram?
+> 
+> with kind regards
+> thomas
+> 
+> 
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+
 -- 
-1.7.10.4
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
