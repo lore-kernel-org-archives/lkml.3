@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354AbaGHAbe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:31:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55904 "EHLO
+	id S1754900AbaGHAby (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:31:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55860 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074AbaGGXys (ORCPT
+	with ESMTP id S1754064AbaGGXyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:48 -0400
+	Mon, 7 Jul 2014 19:54:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
+        Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
         Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 70/94] staging: iio/ad7291: fix error code in ad7291_probe()
-Date: Mon,  7 Jul 2014 16:58:00 -0700
-Message-Id: <20140707235758.849805421@linuxfoundation.org>
+Subject: [PATCH 3.14 69/94] iio: of_iio_channel_get_by_name() returns non-null pointers for error legs
+Date: Mon,  7 Jul 2014 16:57:59 -0700
+Message-Id: <20140707235758.821463733@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,43 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
 
-commit b70e19c222a64018d308ebc80333575aff9f4e51 upstream.
+commit a2c12493ed7e63a18cef33a71686d12ffcd6600e upstream.
 
-We should be returning a negative error code instead of success here.
+Currently in the inkern.c code for IIO framework, the function
+of_iio_channel_get_by_name() will return a non-NULL pointer when
+it cannot find a channel using of_iio_channel_get() and when it
+tries to search for 'io-channel-ranges' property and fails. This
+is incorrect behaviour as the function which calls this expects
+a NULL pointer for failure. This patch rectifies the issue.
 
-This would have been detected by GCC, except that the "ret" variable was
-initialized with a bogus value to disable GCC's uninitialized variable
-warnings.  I've cleaned that up, as well.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
 Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/adc/ad7291.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/iio/inkern.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/iio/adc/ad7291.c
-+++ b/drivers/staging/iio/adc/ad7291.c
-@@ -465,7 +465,7 @@ static int ad7291_probe(struct i2c_clien
- 	struct ad7291_platform_data *pdata = client->dev.platform_data;
- 	struct ad7291_chip_info *chip;
- 	struct iio_dev *indio_dev;
--	int ret = 0;
-+	int ret;
+--- a/drivers/iio/inkern.c
++++ b/drivers/iio/inkern.c
+@@ -183,7 +183,7 @@ static struct iio_channel *of_iio_channe
+ 		else if (name && index >= 0) {
+ 			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
+ 				np->full_name, name ? name : "", index);
+-			return chan;
++			return NULL;
+ 		}
  
- 	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*chip));
- 	if (!indio_dev)
-@@ -475,7 +475,7 @@ static int ad7291_probe(struct i2c_clien
- 	if (pdata && pdata->use_external_ref) {
- 		chip->reg = devm_regulator_get(&client->dev, "vref");
- 		if (IS_ERR(chip->reg))
--			return ret;
-+			return PTR_ERR(chip->reg);
+ 		/*
+@@ -193,8 +193,9 @@ static struct iio_channel *of_iio_channe
+ 		 */
+ 		np = np->parent;
+ 		if (np && !of_get_property(np, "io-channel-ranges", NULL))
+-			break;
++			return NULL;
+ 	}
++
+ 	return chan;
+ }
  
- 		ret = regulator_enable(chip->reg);
- 		if (ret)
+@@ -317,6 +318,7 @@ struct iio_channel *iio_channel_get(stru
+ 		if (channel != NULL)
+ 			return channel;
+ 	}
++
+ 	return iio_channel_get_sys(name, channel_name);
+ }
+ EXPORT_SYMBOL_GPL(iio_channel_get);
 
 
