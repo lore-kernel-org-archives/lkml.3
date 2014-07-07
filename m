@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932316AbaGHBOG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:14:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55228 "EHLO
+	id S1756572AbaGHBOE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:14:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55232 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536AbaGGXxu (ORCPT
+	with ESMTP id S1752830AbaGGXxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:53:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.15 005/122] virtio-scsi: avoid cancelling uninitialized work items
-Date: Mon,  7 Jul 2014 16:56:07 -0700
-Message-Id: <20140707235734.401925740@linuxfoundation.org>
+        Ulrich Obergfell <uobergfe@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        "Ewan D. Milne" <emilne@redhat.com>, Hannes Reinecke <hare@suse.de>
+Subject: [PATCH 3.15 006/122] scsi_error: fix invalid setting of host byte
+Date: Mon,  7 Jul 2014 16:56:08 -0700
+Message-Id: <20140707235734.430607605@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,49 +30,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Ulrich Obergfell <uobergfe@redhat.com>
 
-commit cdda0e5acbb78f7b777049f8c27899e5c5bb368f upstream.
+commit 8922a908908ff947f1f211e07e2e97f1169ad3cb upstream.
 
-Calling the workqueue interface on uninitialized work items isn't a
-good idea even if they're zeroed. It's not failing catastrophically only
-through happy accidents.
+After scsi_try_to_abort_cmd returns, the eh_abort_handler may have
+already found that the command has completed in the device, causing
+the host_byte to be nonzero (e.g. it could be DID_ABORT).  When
+this happens, ORing DID_TIME_OUT into the host byte will corrupt
+the result field and initiate an unwanted command retry.
 
+Fix this by using set_host_byte instead, following the model of
+commit 2082ebc45af9c9c648383b8cde0dc1948eadbf31.
+
+Signed-off-by: Ulrich Obergfell <uobergfe@redhat.com>
+[Fix all instances according to review comments. - Paolo]
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Reviewed-by: Stefan Hajnoczi <stefanha@redhat.com>
 Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Ewan D. Milne <emilne@redhat.com>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/virtio_scsi.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/scsi/scsi_error.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -291,6 +291,8 @@ static void virtscsi_ctrl_done(struct vi
- 	virtscsi_vq_done(vscsi, &vscsi->ctrl_vq, virtscsi_complete_free);
- };
- 
-+static void virtscsi_handle_event(struct work_struct *work);
-+
- static int virtscsi_kick_event(struct virtio_scsi *vscsi,
- 			       struct virtio_scsi_event_node *event_node)
- {
-@@ -298,6 +300,7 @@ static int virtscsi_kick_event(struct vi
- 	struct scatterlist sg;
- 	unsigned long flags;
- 
-+	INIT_WORK(&event_node->work, virtscsi_handle_event);
- 	sg_init_one(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
- 
- 	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
-@@ -415,7 +418,6 @@ static void virtscsi_complete_event(stru
- {
- 	struct virtio_scsi_event_node *event_node = buf;
- 
--	INIT_WORK(&event_node->work, virtscsi_handle_event);
- 	schedule_work(&event_node->work);
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -131,7 +131,7 @@ scmd_eh_abort_handler(struct work_struct
+ 				    "aborting command %p\n", scmd));
+ 		rtn = scsi_try_to_abort_cmd(sdev->host->hostt, scmd);
+ 		if (rtn == SUCCESS) {
+-			scmd->result |= DID_TIME_OUT << 16;
++			set_host_byte(scmd, DID_TIME_OUT);
+ 			if (scsi_host_eh_past_deadline(sdev->host)) {
+ 				SCSI_LOG_ERROR_RECOVERY(3,
+ 					scmd_printk(KERN_INFO, scmd,
+@@ -167,7 +167,7 @@ scmd_eh_abort_handler(struct work_struct
+ 			scmd_printk(KERN_WARNING, scmd,
+ 				    "scmd %p terminate "
+ 				    "aborted command\n", scmd));
+-		scmd->result |= DID_TIME_OUT << 16;
++		set_host_byte(scmd, DID_TIME_OUT);
+ 		scsi_finish_command(scmd);
+ 	}
  }
+@@ -291,7 +291,7 @@ enum blk_eh_timer_return scsi_times_out(
+ 		if (scsi_abort_command(scmd) == SUCCESS)
+ 			return BLK_EH_NOT_HANDLED;
  
+-	scmd->result |= DID_TIME_OUT << 16;
++	set_host_byte(scmd, DID_TIME_OUT);
+ 
+ 	if (unlikely(rtn == BLK_EH_NOT_HANDLED &&
+ 		     !scsi_eh_scmd_add(scmd, SCSI_EH_CANCEL_CMD)))
+@@ -1776,7 +1776,7 @@ int scsi_decide_disposition(struct scsi_
+ 		break;
+ 	case DID_ABORT:
+ 		if (scmd->eh_eflags & SCSI_EH_ABORT_SCHEDULED) {
+-			scmd->result |= DID_TIME_OUT << 16;
++			set_host_byte(scmd, DID_TIME_OUT);
+ 			return SUCCESS;
+ 		}
+ 	case DID_NO_CONNECT:
 
 
