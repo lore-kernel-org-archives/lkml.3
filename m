@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521AbaGGXyQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:54:16 -0400
+	id S1755211AbaGHAyw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:54:52 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:55462 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753394AbaGGXyN (ORCPT
+	with ESMTP id S1753477AbaGGXyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:13 -0400
+	Mon, 7 Jul 2014 19:54:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xiaoming Gao <newtongao@ppt.dcoin.co>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.15 096/122] kvm: fix wrong address when writing Hyper-V tsc page
-Date: Mon,  7 Jul 2014 16:57:38 -0700
-Message-Id: <20140707235737.127731344@linuxfoundation.org>
+        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.15 100/122] tools: ffs-test: fix header values endianess
+Date: Mon,  7 Jul 2014 16:57:42 -0700
+Message-Id: <20140707235737.249455086@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,35 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xiaoming Gao <newtongao@tencent.com>
+From: Michal Nazarewicz <mina86@mina86.com>
 
-commit e1fa108d24697b78348fd4e5a531029a50d0d36d upstream.
+commit f35f71244da6e51db4e1f2c7e318581f498ececf upstream.
 
-When kvm_write_guest writes the tsc_ref structure to the guest, or it will lead
-the low HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT bits of the TSC page address
-must be cleared, or the guest can see a non-zero sequence number.
+It appears that no one ever run ffs-test on a big-endian machine,
+since it used cpu-endianess for fs_count and hs_count fields which
+should be in little-endian format.  Fix by wrapping the numbers in
+cpu_to_le32.
 
-Otherwise Windows guests would not be able to get a correct clocksource
-(QueryPerformanceCounter will always return 0) which causes serious chaos.
-
-Signed-off-by: Xiaoming Gao <newtongao@tencnet.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/x86.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/usb/ffs-test.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1912,7 +1912,7 @@ static int set_msr_hyperv_pw(struct kvm_
- 		if (!(data & HV_X64_MSR_TSC_REFERENCE_ENABLE))
- 			break;
- 		gfn = data >> HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT;
--		if (kvm_write_guest(kvm, data,
-+		if (kvm_write_guest(kvm, gfn << HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT,
- 			&tsc_ref, sizeof(tsc_ref)))
- 			return 1;
- 		mark_page_dirty(kvm, gfn);
+--- a/tools/usb/ffs-test.c
++++ b/tools/usb/ffs-test.c
+@@ -116,8 +116,8 @@ static const struct {
+ 	.header = {
+ 		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC),
+ 		.length = cpu_to_le32(sizeof descriptors),
+-		.fs_count = 3,
+-		.hs_count = 3,
++		.fs_count = cpu_to_le32(3),
++		.hs_count = cpu_to_le32(3),
+ 	},
+ 	.fs_descs = {
+ 		.intf = {
 
 
