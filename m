@@ -1,168 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497AbaGGBIX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 21:08:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47634 "EHLO
+	id S1752615AbaGGBKV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 21:10:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47637 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752185AbaGGBIU (ORCPT
+	with ESMTP id S1752001AbaGGBKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 21:08:20 -0400
-Message-ID: <53B9F301.7080202@infradead.org>
-Date: Sun, 06 Jul 2014 18:08:17 -0700
+	Sun, 6 Jul 2014 21:10:19 -0400
+Message-ID: <53B9F377.5070803@infradead.org>
+Date: Sun, 06 Jul 2014 18:10:15 -0700
 From: Randy Dunlap <rdunlap@infradead.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
 To: Masanari Iida <standby24x7@gmail.com>, linux-kernel@vger.kernel.org,
         linux-doc@vger.kernel.org
-Subject: Re: [PATCH] Documentation: Fix typo in DocBook/mtdnand.tmpl
-References: <1404432070-16619-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1404432070-16619-1-git-send-email-standby24x7@gmail.com>
+Subject: Re: [PATCH] Documentation: Fix typo in DocBook files
+References: <1404444245-21906-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1404444245-21906-1-git-send-email-standby24x7@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2014 05:01 PM, Masanari Iida wrote:
-> This patch fixed spelling typo found in DocBook/mtdnand.tmpl.
+On 07/03/2014 08:24 PM, Masanari Iida wrote:
+> This patch fixed spelling typo in various template files
+> within Documentation/Docbook.
 > 
 > Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
 Applied, thanks.
 
 > ---
->  Documentation/DocBook/mtdnand.tmpl | 30 +++++++++++++++---------------
->  1 file changed, 15 insertions(+), 15 deletions(-)
+>  Documentation/DocBook/gadget.tmpl                 | 2 +-
+>  Documentation/DocBook/genericirq.tmpl             | 4 ++--
+>  Documentation/DocBook/kernel-locking.tmpl         | 2 +-
+>  Documentation/DocBook/libata.tmpl                 | 6 +++---
+>  Documentation/DocBook/media_api.tmpl              | 2 +-
+>  Documentation/DocBook/regulator.tmpl              | 2 +-
+>  Documentation/DocBook/uio-howto.tmpl              | 4 ++--
+>  Documentation/DocBook/usb.tmpl                    | 2 +-
+>  Documentation/DocBook/writing-an-alsa-driver.tmpl | 2 +-
+>  9 files changed, 13 insertions(+), 13 deletions(-)
 > 
-> diff --git a/Documentation/DocBook/mtdnand.tmpl b/Documentation/DocBook/mtdnand.tmpl
-> index cd11926..a3b50c1 100644
-> --- a/Documentation/DocBook/mtdnand.tmpl
-> +++ b/Documentation/DocBook/mtdnand.tmpl
-> @@ -91,7 +91,7 @@
->  		<listitem><para>
->  	  	[MTD Interface]</para><para>
->  		These functions provide the interface to the MTD kernel API. 
-> -		They are not replacable and provide functionality
-> +		They are not replaceable and provide functionality
->  		which is complete hardware independent.
->  		</para></listitem>
->  		<listitem><para>
-> @@ -100,14 +100,14 @@
->  		</para></listitem>
->  		<listitem><para>
->  	  	[GENERIC]</para><para>
-> -		Generic functions are not replacable and provide functionality
-> +		Generic functions are not replaceable and provide functionality
->  		which is complete hardware independent.
->  		</para></listitem>
->  		<listitem><para>
->  	  	[DEFAULT]</para><para>
->  		Default functions provide hardware related functionality which is suitable
->  		for most of the implementations. These functions can be replaced by the
-> -		board driver if neccecary. Those functions are called via pointers in the
-> +		board driver if necessary. Those functions are called via pointers in the
->  		NAND chip description structure. The board driver can set the functions which
->  		should be replaced by board dependent functions before calling nand_scan().
->  		If the function pointer is NULL on entry to nand_scan() then the pointer
-> @@ -264,7 +264,7 @@ static void board_hwcontrol(struct mtd_info *mtd, int cmd)
->  			is set up nand_scan() is called. This function tries to
->  			detect and identify then chip. If a chip is found all the
->  			internal data fields are initialized accordingly.
-> -			The structure(s) have to be zeroed out first and then filled with the neccecary 
-> +			The structure(s) have to be zeroed out first and then filled with the necessary 
->  			information about the device.
->  		</para>
->  		<programlisting>
-> @@ -327,7 +327,7 @@ module_init(board_init);
->  	<sect1 id="Exit_function">
->  		<title>Exit function</title>
->  		<para>
-> -			The exit function is only neccecary if the driver is
-> +			The exit function is only necessary if the driver is
->  			compiled as a module. It releases all resources which
->  			are held by the chip driver and unregisters the partitions
->  			in the MTD layer.
-> @@ -494,7 +494,7 @@ static void board_select_chip (struct mtd_info *mtd, int chip)
->  				in this case. See rts_from4.c and diskonchip.c for 
->  				implementation reference. In those cases we must also
->  				use bad block tables on FLASH, because the ECC layout is
-> -				interferring with the bad block marker positions.
-> +				interfering with the bad block marker positions.
->  				See bad block table support for details.
->  			</para>
->  		</sect2>
-> @@ -542,7 +542,7 @@ static void board_select_chip (struct mtd_info *mtd, int chip)
->  		<para>	
->  			nand_scan() calls the function nand_default_bbt(). 
->  			nand_default_bbt() selects appropriate default
-> -			bad block table desriptors depending on the chip information
-> +			bad block table descriptors depending on the chip information
->  			which was retrieved by nand_scan().
->  		</para>
->  		<para>
-> @@ -554,7 +554,7 @@ static void board_select_chip (struct mtd_info *mtd, int chip)
->  		<sect2 id="Flash_based_tables">
->  			<title>Flash based tables</title>
->  			<para>
-> -				It may be desired or neccecary to keep a bad block table in FLASH. 
-> +				It may be desired or necessary to keep a bad block table in FLASH. 
->  				For AG-AND chips this is mandatory, as they have no factory marked
->  				bad blocks. They have factory marked good blocks. The marker pattern
->  				is erased when the block is erased to be reused. So in case of
-> @@ -565,10 +565,10 @@ static void board_select_chip (struct mtd_info *mtd, int chip)
->  				of the blocks.
->  			</para>
->  			<para>
-> -				The blocks in which the tables are stored are procteted against
-> +				The blocks in which the tables are stored are protected against
->  				accidental access by marking them bad in the memory bad block
->  				table. The bad block table management functions are allowed
-> -				to circumvernt this protection.
-> +				to circumvent this protection.
->  			</para>
->  			<para>
->  				The simplest way to activate the FLASH based bad block table support 
-> @@ -592,7 +592,7 @@ static void board_select_chip (struct mtd_info *mtd, int chip)
->  				User defined tables are created by filling out a 
->  				nand_bbt_descr structure and storing the pointer in the
->  				nand_chip structure member bbt_td before calling nand_scan(). 
-> -				If a mirror table is neccecary a second structure must be
-> +				If a mirror table is necessary a second structure must be
->  				created and a pointer to this structure must be stored
->  				in bbt_md inside the nand_chip structure. If the bbt_md 
->  				member is set to NULL then only the main table is used
-> @@ -666,7 +666,7 @@ static void board_select_chip (struct mtd_info *mtd, int chip)
->  				<para>
->  				For automatic placement some blocks must be reserved for
->  				bad block table storage. The number of reserved blocks is defined 
-> -				in the maxblocks member of the babd block table description structure.
-> +				in the maxblocks member of the bad block table description structure.
->  				Reserving 4 blocks for mirrored tables should be a reasonable number. 
->  				This also limits the number of blocks which are scanned for the bad
->  				block table ident pattern.
-> @@ -1068,11 +1068,11 @@ in this page</entry>
->    <chapter id="filesystems">
->       	<title>Filesystem support</title>
+> diff --git a/Documentation/DocBook/gadget.tmpl b/Documentation/DocBook/gadget.tmpl
+> index 4017f14..2c425d7 100644
+> --- a/Documentation/DocBook/gadget.tmpl
+> +++ b/Documentation/DocBook/gadget.tmpl
+> @@ -708,7 +708,7 @@ hardware level details could be very different.
+>  
+>  <para>Systems need specialized hardware support to implement OTG,
+>  notably including a special <emphasis>Mini-AB</emphasis> jack
+> -and associated transciever to support <emphasis>Dual-Role</emphasis>
+> +and associated transceiver to support <emphasis>Dual-Role</emphasis>
+>  operation:
+>  they can act either as a host, using the standard
+>  Linux-USB host side driver stack,
+> diff --git a/Documentation/DocBook/genericirq.tmpl b/Documentation/DocBook/genericirq.tmpl
+> index 46347f6..59fb5c0 100644
+> --- a/Documentation/DocBook/genericirq.tmpl
+> +++ b/Documentation/DocBook/genericirq.tmpl
+> @@ -182,7 +182,7 @@
 >  	<para>
-> -		The NAND driver provides all neccecary functions for a
-> +		The NAND driver provides all necessary functions for a
->  		filesystem via the MTD interface.
+>  	Each interrupt is described by an interrupt descriptor structure
+>  	irq_desc. The interrupt is referenced by an 'unsigned int' numeric
+> -	value which selects the corresponding interrupt decription structure
+> +	value which selects the corresponding interrupt description structure
+>  	in the descriptor structures array.
+>  	The descriptor structure contains status information and pointers
+>  	to the interrupt flow method and the interrupt chip structure
+> @@ -470,7 +470,7 @@ if (desc->irq_data.chip->irq_eoi)
+>       <para>
+>         To avoid copies of identical implementations of IRQ chips the
+>         core provides a configurable generic interrupt chip
+> -       implementation. Developers should check carefuly whether the
+> +       implementation. Developers should check carefully whether the
+>         generic chip fits their needs before implementing the same
+>         functionality slightly differently themselves.
+>       </para>
+> diff --git a/Documentation/DocBook/kernel-locking.tmpl b/Documentation/DocBook/kernel-locking.tmpl
+> index 19f2a5a..e584ee1 100644
+> --- a/Documentation/DocBook/kernel-locking.tmpl
+> +++ b/Documentation/DocBook/kernel-locking.tmpl
+> @@ -1760,7 +1760,7 @@ as it would be on UP.
+>  </para>
+>  
+>  <para>
+> -There is a furthur optimization possible here: remember our original
+> +There is a further optimization possible here: remember our original
+>  cache code, where there were no reference counts and the caller simply
+>  held the lock whenever using the object?  This is still possible: if
+>  you hold the lock, no one can delete the object, so you don't need to
+> diff --git a/Documentation/DocBook/libata.tmpl b/Documentation/DocBook/libata.tmpl
+> index deb71ba..d7fcdc5 100644
+> --- a/Documentation/DocBook/libata.tmpl
+> +++ b/Documentation/DocBook/libata.tmpl
+> @@ -677,7 +677,7 @@ and other resources, etc.
+>  
+>  	<listitem>
+>  	<para>
+> -	ATA_QCFLAG_ACTIVE is clared from qc->flags.
+> +	ATA_QCFLAG_ACTIVE is cleared from qc->flags.
 >  	</para>
+>  	</listitem>
+>  
+> @@ -708,7 +708,7 @@ and other resources, etc.
+>  
+>  	   <listitem>
+>  	   <para>
+> -	   qc->waiting is claread &amp; completed (in that order).
+> +	   qc->waiting is cleared &amp; completed (in that order).
+>  	   </para>
+>  	   </listitem>
+>  
+> @@ -1163,7 +1163,7 @@ and other resources, etc.
+>  
 >  	<para>
-> -		Filesystems must be aware of the NAND pecularities and
-> +		Filesystems must be aware of the NAND peculiarities and
->  		restrictions. One major restrictions of NAND Flash is, that you cannot 
->  		write as often as you want to a page. The consecutive writes to a page, 
->  		before erasing it again, are restricted to 1-3 writes, depending on the 
-> @@ -1222,7 +1222,7 @@ in this page</entry>
->  #define NAND_BBT_VERSION	0x00000100
->  /* Create a bbt if none axists */
->  #define NAND_BBT_CREATE		0x00000200
-> -/* Write bbt if neccecary */
-> +/* Write bbt if necessary */
->  #define NAND_BBT_WRITE		0x00001000
->  /* Read and write back block contents when writing bbt */
->  #define NAND_BBT_SAVECONTENT	0x00002000
+>  	Once sense data is acquired, this type of errors can be
+> -	handled similary to other SCSI errors.  Note that sense data
+> +	handled similarly to other SCSI errors.  Note that sense data
+>  	may indicate ATA bus error (e.g. Sense Key 04h HARDWARE ERROR
+>  	&amp;&amp; ASC/ASCQ 47h/00h SCSI PARITY ERROR).  In such
+>  	cases, the error should be considered as an ATA bus error and
+> diff --git a/Documentation/DocBook/media_api.tmpl b/Documentation/DocBook/media_api.tmpl
+> index 4decb46..03f9a1f 100644
+> --- a/Documentation/DocBook/media_api.tmpl
+> +++ b/Documentation/DocBook/media_api.tmpl
+> @@ -68,7 +68,7 @@
+>  		several digital tv standards. While it is called as DVB API,
+>  		in fact it covers several different video standards including
+>  		DVB-T, DVB-S, DVB-C and ATSC. The API is currently being updated
+> -		to documment support also for DVB-S2, ISDB-T and ISDB-S.</para>
+> +		to document support also for DVB-S2, ISDB-T and ISDB-S.</para>
+>  	<para>The third part covers the Remote Controller API.</para>
+>  	<para>The fourth part covers the Media Controller API.</para>
+>  	<para>For additional information and for the latest development code,
+> diff --git a/Documentation/DocBook/regulator.tmpl b/Documentation/DocBook/regulator.tmpl
+> index 346e552..3b08a08 100644
+> --- a/Documentation/DocBook/regulator.tmpl
+> +++ b/Documentation/DocBook/regulator.tmpl
+> @@ -155,7 +155,7 @@
+>         release regulators.  Functions are
+>         provided to <link linkend='API-regulator-enable'>enable</link>
+>         and <link linkend='API-regulator-disable'>disable</link> the
+> -       reguator and to get and set the runtime parameters of the
+> +       regulator and to get and set the runtime parameters of the
+>         regulator.
+>       </para>
+>       <para>
+> diff --git a/Documentation/DocBook/uio-howto.tmpl b/Documentation/DocBook/uio-howto.tmpl
+> index 9561815..bbe9c1f 100644
+> --- a/Documentation/DocBook/uio-howto.tmpl
+> +++ b/Documentation/DocBook/uio-howto.tmpl
+> @@ -766,10 +766,10 @@ framework to set up sysfs files for this region. Simply leave it alone.
+>  	<para>
+>  	The dynamic memory regions will be allocated when the UIO device file,
+>  	<varname>/dev/uioX</varname> is opened.
+> -	Simiar to static memory resources, the memory region information for
+> +	Similar to static memory resources, the memory region information for
+>  	dynamic regions is then visible via sysfs at
+>  	<varname>/sys/class/uio/uioX/maps/mapY/*</varname>.
+> -	The dynmaic memory regions will be freed when the UIO device file is
+> +	The dynamic memory regions will be freed when the UIO device file is
+>  	closed. When no processes are holding the device file open, the address
+>  	returned to userspace is ~0.
+>  	</para>
+> diff --git a/Documentation/DocBook/usb.tmpl b/Documentation/DocBook/usb.tmpl
+> index 8d57c18..85fc0e2 100644
+> --- a/Documentation/DocBook/usb.tmpl
+> +++ b/Documentation/DocBook/usb.tmpl
+> @@ -153,7 +153,7 @@
+>  
+>  	<listitem><para>The Linux USB API supports synchronous calls for
+>  	control and bulk messages.
+> -	It also supports asynchnous calls for all kinds of data transfer,
+> +	It also supports asynchronous calls for all kinds of data transfer,
+>  	using request structures called "URBs" (USB Request Blocks).
+>  	</para></listitem>
+>  
+> diff --git a/Documentation/DocBook/writing-an-alsa-driver.tmpl b/Documentation/DocBook/writing-an-alsa-driver.tmpl
+> index d0056a4..6f639d9 100644
+> --- a/Documentation/DocBook/writing-an-alsa-driver.tmpl
+> +++ b/Documentation/DocBook/writing-an-alsa-driver.tmpl
+> @@ -5696,7 +5696,7 @@ struct _snd_pcm_runtime {
+>  	suspending the PCM operations via
+>  	<function>snd_pcm_suspend_all()</function> or
+>  	<function>snd_pcm_suspend()</function>.  It means that the PCM
+> -	streams are already stoppped when the register snapshot is
+> +	streams are already stopped when the register snapshot is
+>  	taken.  But, remember that you don't have to restart the PCM
+>  	stream in the resume callback. It'll be restarted via 
+>  	trigger call with <constant>SNDRV_PCM_TRIGGER_RESUME</constant>
 > 
 
 
