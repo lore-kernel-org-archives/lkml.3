@@ -1,160 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030AbaGGR1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 13:27:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10264 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751814AbaGGR1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 13:27:39 -0400
-Message-ID: <1404751280.22000.11.camel@dcbw.local>
-Subject: Re: [PATCH 2/2] hso: fix deadlock when receiving bursts of data
-From: Dan Williams <dcbw@redhat.com>
-To: Olivier Sobrie <olivier@sobrie.be>
-Cc: Jan Dumon <j.dumon@option.com>, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 07 Jul 2014 11:41:20 -0500
-In-Reply-To: <1404723967-24245-2-git-send-email-olivier@sobrie.be>
-References: <1404723967-24245-1-git-send-email-olivier@sobrie.be>
-	 <1404723967-24245-2-git-send-email-olivier@sobrie.be>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752195AbaGGR17 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 13:27:59 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:61782 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814AbaGGR14 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 13:27:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140702053758.GA7578@kroah.com>
+References: <20140701103432.12718.82795.stgit@patser> <20140702053758.GA7578@kroah.com>
+From: Sumit Semwal <sumit.semwal@linaro.org>
+Date: Mon, 7 Jul 2014 22:57:35 +0530
+Message-ID: <CAO_48GGkhB3wQwcW=DpDR4zO7k8-2tm_aynsDxZ5Q72ffwtx=A@mail.gmail.com>
+Subject: Re: [PATCH v2 0/9] Updated fence patch series
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Linaro MM SIG <linaro-mm-sig@lists.linaro.org>,
+        Rob Clark <robdclark@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Colin Cross <ccross@google.com>, Daniel Vetter <daniel@ffwll.ch>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-07 at 11:06 +0200, Olivier Sobrie wrote:
-> When the module sends bursts of data, sometimes a deadlock happens in
-> the hso driver when the tty buffer doesn't get the chance to be flushed
-> quickly enough.
-> 
-> To avoid this, first, we remove the endless while loop in
-> put_rx_bufdata() which is the root cause of the deadlock.
-> Secondly, when there is no room anymore in the tty buffer, we set up a
-> timer of 100 msecs to give a chance to the upper layer to flush the tty
-> buffer and make room for new data.
+Hi Greg,
 
-I assume this problem happens when using PPP for data transfer, instead
-of using the network port that the modules expose?  Or maybe the NMEA
-port?  I can't imagine that AT commands would make this happen...
-
-Dan
-
-> Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
-> ---
->  drivers/net/usb/hso.c |   51 +++++++++++++++++++++++++++++++++----------------
->  1 file changed, 35 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
-> index 9ca2b41..1dff74f 100644
-> --- a/drivers/net/usb/hso.c
-> +++ b/drivers/net/usb/hso.c
-> @@ -106,6 +106,8 @@
->  
->  #define MAX_RX_URBS			2
->  
-> +#define UNTHROTTLE_TIMEOUT		100 /* msecs */
-> +
->  /*****************************************************************************/
->  /* Debugging functions                                                       */
->  /*****************************************************************************/
-> @@ -261,6 +263,7 @@ struct hso_serial {
->  	u16  curr_rx_urb_offset;
->  	u8   rx_urb_filled[MAX_RX_URBS];
->  	struct tasklet_struct unthrottle_tasklet;
-> +	struct timer_list unthrottle_timer;
->  };
->  
->  struct hso_device {
-> @@ -1161,13 +1164,18 @@ static void put_rxbuf_data_and_resubmit_bulk_urb(struct hso_serial *serial)
->  	while (serial->rx_urb_filled[serial->curr_rx_urb_idx]) {
->  		curr_urb = serial->rx_urb[serial->curr_rx_urb_idx];
->  		count = put_rxbuf_data(curr_urb, serial);
-> -		if (count == -1)
-> -			return;
->  		if (count == 0) {
->  			serial->curr_rx_urb_idx++;
->  			if (serial->curr_rx_urb_idx >= serial->num_rx_urbs)
->  				serial->curr_rx_urb_idx = 0;
->  			hso_resubmit_rx_bulk_urb(serial, curr_urb);
-> +		} else if (count > 0) {
-> +			mod_timer(&serial->unthrottle_timer,
-> +				  jiffies
-> +					+ msecs_to_jiffies(UNTHROTTLE_TIMEOUT));
-> +			break;
-> +		} else {
-> +			break;
->  		}
->  	}
->  }
-> @@ -1251,6 +1259,11 @@ static	void hso_unthrottle(struct tty_struct *tty)
->  	tasklet_hi_schedule(&serial->unthrottle_tasklet);
->  }
->  
-> +static void hso_unthrottle_schedule(unsigned long data)
-> +{
-> +	tasklet_schedule((struct tasklet_struct *)data);
-> +}
-> +
->  /* open the requested serial port */
->  static int hso_serial_open(struct tty_struct *tty, struct file *filp)
->  {
-> @@ -1286,6 +1299,10 @@ static int hso_serial_open(struct tty_struct *tty, struct file *filp)
->  		tasklet_init(&serial->unthrottle_tasklet,
->  			     (void (*)(unsigned long))hso_unthrottle_tasklet,
->  			     (unsigned long)serial);
-> +		serial->unthrottle_timer.function = hso_unthrottle_schedule;
-> +		serial->unthrottle_timer.data =
-> +				(unsigned long)&serial->unthrottle_tasklet;
-> +		init_timer(&serial->unthrottle_timer);
->  		result = hso_start_serial_device(serial->parent, GFP_KERNEL);
->  		if (result) {
->  			hso_stop_serial_device(serial->parent);
-> @@ -1333,6 +1350,7 @@ static void hso_serial_close(struct tty_struct *tty, struct file *filp)
->  		tty_port_tty_set(&serial->port, NULL);
->  		if (!usb_gone)
->  			hso_stop_serial_device(serial->parent);
-> +		del_timer_sync(&serial->unthrottle_timer);
->  		tasklet_kill(&serial->unthrottle_tasklet);
->  	}
->  
-> @@ -2012,22 +2030,23 @@ static int put_rxbuf_data(struct urb *urb, struct hso_serial *serial)
->  
->  	tty = tty_port_tty_get(&serial->port);
->  
-> +	if (tty && test_bit(TTY_THROTTLED, &tty->flags)) {
-> +		tty_kref_put(tty);
-> +		return -1;
-> +	}
-> +
->  	/* Push data to tty */
-> -	write_length_remaining = urb->actual_length -
-> -		serial->curr_rx_urb_offset;
->  	D1("data to push to tty");
-> -	while (write_length_remaining) {
-> -		if (tty && test_bit(TTY_THROTTLED, &tty->flags)) {
-> -			tty_kref_put(tty);
-> -			return -1;
-> -		}
-> -		curr_write_len = tty_insert_flip_string(&serial->port,
-> -			urb->transfer_buffer + serial->curr_rx_urb_offset,
-> -			write_length_remaining);
-> -		serial->curr_rx_urb_offset += curr_write_len;
-> -		write_length_remaining -= curr_write_len;
-> -		tty_flip_buffer_push(&serial->port);
-> -	}
-> +	write_length_remaining = urb->actual_length -
-> +					serial->curr_rx_urb_offset;
-> +	curr_write_len =
-> +		tty_insert_flip_string(&serial->port,
-> +				       urb->transfer_buffer
-> +						+ serial->curr_rx_urb_offset,
-> +				       write_length_remaining);
-> +	serial->curr_rx_urb_offset += curr_write_len;
-> +	write_length_remaining -= curr_write_len;
-> +	tty_flip_buffer_push(&serial->port);
->  	tty_kref_put(tty);
->  
->  	if (write_length_remaining == 0) {
-
-
+On 2 July 2014 11:07, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Tue, Jul 01, 2014 at 12:57:02PM +0200, Maarten Lankhorst wrote:
+>> So after some more hacking I've moved dma-buf to its own subdirectory,
+>> drivers/dma-buf and applied the fence patches to its new place. I believe that the
+>> first patch should be applied regardless, and the rest should be ready now.
+>> :-)
+>>
+>> Changes to the fence api:
+>> - release_fence -> fence_release etc.
+>> - __fence_init -> fence_init
+>> - __fence_signal -> fence_signal_locked
+>> - __fence_is_signaled -> fence_is_signaled_locked
+>> - Changing BUG_ON to WARN_ON in fence_later, and return NULL if it triggers.
+>>
+>> Android can expose fences to userspace. It's possible to make the new fence
+>> mechanism expose the same fences to userspace by changing sync_fence_create
+>> to take a struct fence instead of a struct sync_pt. No other change is needed,
+>> because only the fence parts of struct sync_pt are used. But because the
+>> userspace fences are a separate problem and I haven't really looked at it yet
+>> I feel it should stay in staging, for now.
+>
+> Ok, that's reasonable.
+>
+> At first glance, this all looks "sane" to me, any objection from anyone
+> if I merge this through my driver-core tree for 3.17?
+>
+Fwiw, Ack from me as well!
+> thanks,
+>
+> greg k-h
+Best regards,
+~Sumit.
