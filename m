@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897AbaGGPWS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 11:22:18 -0400
-Received: from mga11.intel.com ([192.55.52.93]:54407 "EHLO mga11.intel.com"
+	id S1753742AbaGGPWO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 11:22:14 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52390 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753641AbaGGPWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 11:22:10 -0400
+	id S1753647AbaGGPWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 11:22:11 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,618,1400050800"; 
-   d="scan'208";a="566223805"
+   d="scan'208";a="454061919"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: "John W . Linville" <linville@tuxdriver.com>,
         Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
@@ -17,9 +17,9 @@ To: "John W . Linville" <linville@tuxdriver.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Joe Perches <joe@perches.com>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 04/10] lib/vsprintf: add %*pE[achnops] format specifier
-Date: Mon,  7 Jul 2014 18:21:46 +0300
-Message-Id: <1404746512-12749-5-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v2 05/10] wireless: libertas: print esaped string via %*pE
+Date: Mon,  7 Jul 2014 18:21:47 +0300
+Message-Id: <1404746512-12749-6-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1404746512-12749-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1404746512-12749-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -27,178 +27,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows user to print a given buffer as esaped string. The rules applied
-accordingly to the mix of the flags provided by additional format letters.
-
-For example, if the given buffer:
-
-	1b 62 20 5c 43 07 22 90 0d 5d
-
-The result strings could be:
-	%*pE            "\eb \C\a"\220\r]"
-	%*pEhp          "\x1bb \C\x07"\x90\x0d]"
-	%*pEa           "\e\142\040\\\103\a\042\220\r\135"
-
-Please, read Documentation/printk-formats.txt and lib/string_helpers.c kernel
-documentation to get further information.
+Instead of custom approach this allows to print escaped strings via recently
+added kernel extension: %*pE.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Suggested-by: Joe Perches <joe@perches.com>
 ---
- Documentation/printk-formats.txt | 28 ++++++++++++++++
- lib/vsprintf.c                   | 72 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 100 insertions(+)
+ drivers/net/wireless/libertas/cfg.c  | 8 ++------
+ drivers/net/wireless/libertas/mesh.c | 7 +++----
+ 2 files changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
-index 3b56a99..e2dc566 100644
---- a/Documentation/printk-formats.txt
-+++ b/Documentation/printk-formats.txt
-@@ -70,6 +70,34 @@ DMA addresses types dma_addr_t:
- 	For printing a dma_addr_t type which can vary based on build options,
- 	regardless of the width of the CPU data path. Passed by reference.
+diff --git a/drivers/net/wireless/libertas/cfg.c b/drivers/net/wireless/libertas/cfg.c
+index 47a998d..1188814 100644
+--- a/drivers/net/wireless/libertas/cfg.c
++++ b/drivers/net/wireless/libertas/cfg.c
+@@ -590,7 +590,6 @@ static int lbs_ret_scan(struct lbs_private *priv, unsigned long dummy,
+ 		int chan_no = -1;
+ 		const u8 *ssid = NULL;
+ 		u8 ssid_len = 0;
+-		DECLARE_SSID_BUF(ssid_buf);
  
-+Raw buffer as an escaped string:
-+
-+	%*pE[achnops]
-+
-+	For printing raw buffer as an escaped string. For the following buffer
-+
-+		1b 62 20 5c 43 07 22 90 0d 5d
-+
-+	few examples show how the conversion could be done (the result string
-+	without embraced quotes):
-+
-+		%*pE		"\eb \C\a"\220\r]"
-+		%*pEhp		"\x1bb \C\x07"\x90\x0d]"
-+		%*pEa		"\e\142\040\\\103\a\042\220\r\135"
-+
-+	The converion rules are defined by combination of the following flags
-+	(see string_escape_mem() kernel documentation for the details):
-+		a - ESCAPE_ANY
-+		c - ESCAPE_SPECIAL
-+		h - ESCAPE_HEX
-+		n - ESCAPE_NULL
-+		o - ESCAPE_OCTAL
-+		p - ESCAPE_NP
-+		s - ESCAPE_SPACE
-+	By default ESCAPE_ANY_NP is used.
-+
-+	If field width is ommited the 1 byte only will be escaped.
-+
- Raw buffer as a hex string:
- 	%*ph	00 01 02  ...  3f
- 	%*phC	00:01:02: ... :3f
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 0eced40..6913046 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -33,6 +33,7 @@
- #include <asm/page.h>		/* for PAGE_SIZE */
- #include <asm/sections.h>	/* for dereference_function_descriptor() */
+ 		int len = get_unaligned_le16(pos);
+ 		pos += 2;
+@@ -644,10 +643,8 @@ static int lbs_ret_scan(struct lbs_private *priv, unsigned long dummy,
+ 			struct ieee80211_channel *channel =
+ 				ieee80211_get_channel(wiphy, freq);
  
-+#include <linux/string_helpers.h>
- #include "kstrtox.h"
+-			lbs_deb_scan("scan: %pM, capa %04x, chan %2d, %s, "
+-				     "%d dBm\n",
+-				     bssid, capa, chan_no,
+-				     print_ssid(ssid_buf, ssid, ssid_len),
++			lbs_deb_scan("scan: %pM, capa %04x, chan %2d, %*pE, %d dBm\n",
++				     bssid, capa, chan_no, ssid_len, ssid,
+ 				     LBS_SCAN_RSSI_TO_MBM(rssi)/100);
  
- /**
-@@ -1101,6 +1102,63 @@ char *ip4_addr_string_sa(char *buf, char *end, const struct sockaddr_in *sa,
- }
+ 			if (channel &&
+@@ -1982,7 +1979,6 @@ static int lbs_join_ibss(struct wiphy *wiphy, struct net_device *dev,
+ 	struct lbs_private *priv = wiphy_priv(wiphy);
+ 	int ret = 0;
+ 	struct cfg80211_bss *bss;
+-	DECLARE_SSID_BUF(ssid_buf);
  
- static noinline_for_stack
-+char *escaped_string(char *buf, char *end, u8 *addr, struct printf_spec spec,
-+		     const char *fmt)
-+{
-+	bool found = true;
-+	int count = 1;
-+	unsigned int flags = 0;
-+	int len;
-+
-+	if (spec.field_width == 0)
-+		/* nothing to print */
-+		return buf;
-+
-+	if (ZERO_OR_NULL_PTR(addr))
-+		/* NULL pointer */
-+		return string(buf, end, NULL, spec);
-+
-+	do {
-+		switch (fmt[count++]) {
-+		case 'a':
-+			flags |= ESCAPE_ANY;
-+			break;
-+		case 'c':
-+			flags |= ESCAPE_SPECIAL;
-+			break;
-+		case 'h':
-+			flags |= ESCAPE_HEX;
-+			break;
-+		case 'n':
-+			flags |= ESCAPE_NULL;
-+			break;
-+		case 'o':
-+			flags |= ESCAPE_OCTAL;
-+			break;
-+		case 'p':
-+			flags |= ESCAPE_NP;
-+			break;
-+		case 's':
-+			flags |= ESCAPE_SPACE;
-+			break;
-+		default:
-+			found = false;
-+			break;
-+		}
-+	} while (found);
-+
-+	if (!flags)
-+		flags = ESCAPE_ANY_NP;
-+
-+	len = spec.field_width < 0 ? 1 : spec.field_width;
-+
-+	/* Ignore the error. We print as many characters as we can */
-+	string_escape_mem(addr, len, &buf, end - buf, flags, NULL);
-+
-+	return buf;
-+}
-+
-+static noinline_for_stack
- char *uuid_string(char *buf, char *end, const u8 *addr,
- 		  struct printf_spec spec, const char *fmt)
+ 	if (dev == priv->mesh_dev)
+ 		return -EOPNOTSUPP;
+diff --git a/drivers/net/wireless/libertas/mesh.c b/drivers/net/wireless/libertas/mesh.c
+index 6fef746..b211ff8 100644
+--- a/drivers/net/wireless/libertas/mesh.c
++++ b/drivers/net/wireless/libertas/mesh.c
+@@ -93,7 +93,6 @@ static int lbs_mesh_config(struct lbs_private *priv, uint16_t action,
  {
-@@ -1236,6 +1294,17 @@ int kptr_restrict __read_mostly;
-  * - '[Ii][4S][hnbl]' IPv4 addresses in host, network, big or little endian order
-  * - 'I[6S]c' for IPv6 addresses printed as specified by
-  *       http://tools.ietf.org/html/rfc5952
-+ * - 'E[achnops]' For an escaped buffer, where rules are defined by combination
-+ *                of the following flags (see string_escape_mem() for the
-+ *                details):
-+ *                  a - ESCAPE_ANY
-+ *                  c - ESCAPE_SPECIAL
-+ *                  h - ESCAPE_HEX
-+ *                  n - ESCAPE_NULL
-+ *                  o - ESCAPE_OCTAL
-+ *                  p - ESCAPE_NP
-+ *                  s - ESCAPE_SPACE
-+ *                By default ESCAPE_ANY_NP is used.
-  * - 'U' For a 16 byte UUID/GUID, it prints the UUID/GUID in the form
-  *       "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-  *       Options for %pU are:
-@@ -1337,6 +1406,8 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
- 			}}
- 		}
- 		break;
-+	case 'E':
-+		return escaped_string(buf, end, ptr, spec, fmt);
- 	case 'U':
- 		return uuid_string(buf, end, ptr, spec, fmt);
- 	case 'V':
-@@ -1651,6 +1722,7 @@ qualifier:
-  * %piS depending on sa_family of 'struct sockaddr *' print IPv4/IPv6 address
-  * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
-  *   case.
-+ * %*pE[achnops] print an escaped buffer
-  * %*ph[CDN] a variable-length hex string with a separator (supports up to 64
-  *           bytes of the input)
-  * %n is ignored
+ 	struct cmd_ds_mesh_config cmd;
+ 	struct mrvl_meshie *ie;
+-	DECLARE_SSID_BUF(ssid);
+ 
+ 	memset(&cmd, 0, sizeof(cmd));
+ 	cmd.channel = cpu_to_le16(chan);
+@@ -122,9 +121,9 @@ static int lbs_mesh_config(struct lbs_private *priv, uint16_t action,
+ 	default:
+ 		return -1;
+ 	}
+-	lbs_deb_cmd("mesh config action %d type %x channel %d SSID %s\n",
+-		    action, priv->mesh_tlv, chan,
+-		    print_ssid(ssid, priv->mesh_ssid, priv->mesh_ssid_len));
++	lbs_deb_cmd("mesh config action %d type %x channel %d SSID %*pE\n",
++		    action, priv->mesh_tlv, chan, priv->mesh_ssid_len,
++		    priv->mesh_ssid);
+ 
+ 	return __lbs_mesh_config_send(priv, &cmd, action, priv->mesh_tlv);
+ }
 -- 
 2.0.1
 
