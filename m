@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418AbaGHAac (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:30:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55919 "EHLO
+	id S1755074AbaGHAay (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:30:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55860 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754098AbaGGXyu (ORCPT
+	with ESMTP id S1754089AbaGGXyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:50 -0400
+	Mon, 7 Jul 2014 19:54:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jack Morgenstein <jackm@dev.mellanox.co.il>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.14 77/94] mlx4_core: Fix incorrect FLAGS1 bitmap test in mlx4_QUERY_FUNC_CAP
-Date: Mon,  7 Jul 2014 16:58:07 -0700
-Message-Id: <20140707235759.049193697@linuxfoundation.org>
+        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.14 72/94] tools: ffs-test: fix header values endianess
+Date: Mon,  7 Jul 2014 16:58:02 -0700
+Message-Id: <20140707235758.907309481@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -30,41 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Morgenstein <jackm@dev.mellanox.co.il>
+From: Michal Nazarewicz <mina86@mina86.com>
 
-commit bc82878baa10c2a6a4a6affaf52c152935112142 upstream.
+commit f35f71244da6e51db4e1f2c7e318581f498ececf upstream.
 
-Commit eb17711bc1d6 ("net/mlx4_core: Introduce nic_info new flag in
-QUERY_FUNC_CAP") did:
+It appears that no one ever run ffs-test on a big-endian machine,
+since it used cpu-endianess for fs_count and hs_count fields which
+should be in little-endian format.  Fix by wrapping the numbers in
+cpu_to_le32.
 
-	if (func_cap->flags1 & QUERY_FUNC_CAP_FLAGS1_OFFSET) {
-
-which should be:
-
-	if (func_cap->flags1 & QUERY_FUNC_CAP_FLAGS1_FORCE_VLAN) {
-
-Fix that.
-
-Fixes: eb17711bc1d6 ("net/mlx4_core: Introduce nic_info new flag in QUERY_FUNC_CAP")
-Signed-off-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/mellanox/mlx4/fw.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/usb/ffs-test.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/fw.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/fw.c
-@@ -398,7 +398,7 @@ int mlx4_QUERY_FUNC_CAP(struct mlx4_dev
- 
- 	MLX4_GET(func_cap->flags1, outbox, QUERY_FUNC_CAP_FLAGS1_OFFSET);
- 	if (dev->caps.port_type[gen_or_port] == MLX4_PORT_TYPE_ETH) {
--		if (func_cap->flags1 & QUERY_FUNC_CAP_FLAGS1_OFFSET) {
-+		if (func_cap->flags1 & QUERY_FUNC_CAP_FLAGS1_FORCE_VLAN) {
- 			mlx4_err(dev, "VLAN is enforced on this port\n");
- 			err = -EPROTONOSUPPORT;
- 			goto out;
+--- a/tools/usb/ffs-test.c
++++ b/tools/usb/ffs-test.c
+@@ -116,8 +116,8 @@ static const struct {
+ 	.header = {
+ 		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC),
+ 		.length = cpu_to_le32(sizeof descriptors),
+-		.fs_count = 3,
+-		.hs_count = 3,
++		.fs_count = cpu_to_le32(3),
++		.hs_count = cpu_to_le32(3),
+ 	},
+ 	.fs_descs = {
+ 		.intf = {
 
 
