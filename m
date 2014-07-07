@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520AbaGHAjq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:39:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55776 "EHLO
+	id S1755551AbaGHAke (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:40:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753727AbaGGXyi (ORCPT
+	with ESMTP id S1753710AbaGGXyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hedberg <johan.hedberg@intel.com>,
         Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.14 42/94] Bluetooth: Fix indicating discovery state when canceling inquiry
-Date: Mon,  7 Jul 2014 16:57:32 -0700
-Message-Id: <20140707235758.026997774@linuxfoundation.org>
+Subject: [PATCH 3.14 41/94] Bluetooth: Fix check for connection encryption
+Date: Mon,  7 Jul 2014 16:57:31 -0700
+Message-Id: <20140707235757.998649334@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -31,35 +31,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 50143a433b70e3145bcf8a4a4e54f0c11bdee32b upstream.
+commit e694788d73efe139b24f78b036deb97fe57fa8cb upstream.
 
-When inquiry is canceled through the HCI_Cancel_Inquiry command there is
-no Inquiry Complete event generated. Instead, all we get is the command
-complete for the HCI_Inquiry_Cancel command. This means that we must
-call the hci_discovery_set_state() function from the respective command
-complete handler in order to ensure that user space knows the correct
-discovery state.
+The conn->link_key variable tracks the type of link key in use. It is
+set whenever we respond to a link key request as well as when we get a
+link key notification event.
+
+These two events do not however always guarantee that encryption is
+enabled: getting a link key request and responding to it may only mean
+that the remote side has requested authentication but not encryption. On
+the other hand, the encrypt change event is a certain guarantee that
+encryption is enabled. The real encryption state is already tracked in
+the conn->link_mode variable through the HCI_LM_ENCRYPT bit.
+
+This patch fixes a check for encryption in the hci_conn_auth function to
+use the proper conn->link_mode value and thereby eliminates the chance
+of a false positive result.
 
 Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
 Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_event.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/bluetooth/hci_conn.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -48,6 +48,10 @@ static void hci_cc_inquiry_cancel(struct
- 	smp_mb__after_clear_bit(); /* wake_up_bit advises about this barrier */
- 	wake_up_bit(&hdev->flags, HCI_INQUIRY);
- 
-+	hci_dev_lock(hdev);
-+	hci_discovery_set_state(hdev, DISCOVERY_STOPPED);
-+	hci_dev_unlock(hdev);
-+
- 	hci_conn_check_pending(hdev);
- }
- 
+--- a/net/bluetooth/hci_conn.c
++++ b/net/bluetooth/hci_conn.c
+@@ -759,7 +759,7 @@ static int hci_conn_auth(struct hci_conn
+ 		/* If we're already encrypted set the REAUTH_PEND flag,
+ 		 * otherwise set the ENCRYPT_PEND.
+ 		 */
+-		if (conn->key_type != 0xff)
++		if (conn->link_mode & HCI_LM_ENCRYPT)
+ 			set_bit(HCI_CONN_REAUTH_PEND, &conn->flags);
+ 		else
+ 			set_bit(HCI_CONN_ENCRYPT_PEND, &conn->flags);
 
 
