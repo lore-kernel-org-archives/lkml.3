@@ -1,156 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461AbaGGK7h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 06:59:37 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55894 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751409AbaGGK7d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 06:59:33 -0400
-Date: Mon, 7 Jul 2014 07:58:18 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        Joerg Roedel <joro@8bytes.org>, Hiroshi.DOYU@nokia.com,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Paolo Pisati <p.pisati@gmail.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: 3.16rc3 multiplatform, Armada 370 and IOMMU: unbootable kernel
-Message-ID: <20140707105818.GA1101@arch.cereza>
-References: <20140703135146.GA6898@luxor.wired.org>
- <53B5C61D.2060308@free-electrons.com>
- <53B5CA26.7050405@free-electrons.com>
- <1936558.QaAG1bYMuD@avalon>
- <20140705150308.GA28791@arch.cereza>
- <20140705205951.GB3678@kroah.com>
+	id S1752697AbaGGK7y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 06:59:54 -0400
+Received: from mail001.aei.ca ([206.123.6.130]:49870 "EHLO mail001.aei.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752590AbaGGK7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 06:59:50 -0400
+From: Ed Tomlinson <edt@aei.ca>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Dave Airlie <airlied@linux.ie>
+Subject: Re: [Intel-gfx] [PATCH 5/5] drm/i915: Kick out vga console
+Date: Mon, 07 Jul 2014 06:59:47 -0400
+Message-ID: <3881706.SMQbnEkzkB@grover>
+Organization: me
+User-Agent: KMail/4.13.2 (Linux/3.16.0-1-git; KDE/4.13.2; x86_64; ; )
+In-Reply-To: <20140707084826.GH5821@phenom.ffwll.local>
+References: <1401980308-5116-1-git-send-email-daniel.vetter@ffwll.ch> <20140630065955.GD7687@nuc-i3427.alporthouse.com> <20140707084826.GH5821@phenom.ffwll.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140705205951.GB3678@kroah.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05 Jul 01:59 PM, Greg Kroah-Hartman wrote:
-> On Sat, Jul 05, 2014 at 12:03:08PM -0300, Ezequiel Garcia wrote:
-> > After following Gregory's stacktrace (also reproduced here):
-> > 
-> > [<c02451f8>] (iommu_bus_notifier) from [<c00512e8>] (notifier_call_chain+0x64/0x9c)
-> > [<c00512e8>] (notifier_call_chain) from [<c00514cc>] (__blocking_notifier_call_chain+0x40/0x58)
-> > [<c00514cc>] (__blocking_notifier_call_chain) from [<c00514f8>] (blocking_notifier_call_chain+0x14/0x1c)
-> > [<c00514f8>] (blocking_notifier_call_chain) from [<c01d225c>] (device_add+0x424/0x524)
-> > [<c01d225c>] (device_add) from [<c0186d90>] (pci_device_add+0xec/0x110)
-> > [<c0186d90>] (pci_device_add) from [<c0186e54>] (pci_scan_single_device+0xa0/0xac)
-> > 
-> > I added a few printks and found that the problem is that the iommu_bus_notifier is
-> > called for the 'pci' bus type, which has a null iommu_ops.
-> > 
-> > On 04 Jul 10:47 AM, Laurent Pinchart wrote:
-> > [..]
+Daniel,
+
+Just to be sure.  The intel card here should not be claiming the real console.  It does
+not have an output device and the bios set set so the radeon is the primary device.
+
+Ed
+
+
+On Monday 07 July 2014 10:48:26 Daniel Vetter wrote:
+> On Mon, Jun 30, 2014 at 07:59:55AM +0100, Chris Wilson wrote:
+> > On Sat, Jun 28, 2014 at 11:55:19PM -0400, Ed Tomlinson wrote:
+> > > On Saturday 28 June 2014 15:28:22 Ed Tomlinson wrote:
 > > > 
-> > > We need a quick fix for v3.16, ...
+> > > Resend without html krud which causes list to bounce the message.
+> > > 
+> > > > Hi
+> > > > 
+> > > > This commit ( a4de05268e674e8ed31df6348269e22d6c6a1803 ) hangs my boot with 3.16-git.  Reverting it lets the boot proceed. 
+> > > > 
+> > > > I have an i7 with a built-in i915 and an pcie r7 260x.  The R7 is the primary console.  The i915 is initialized
+> > > > but does not have a physical display attached.
+> > > > 
+> > > > With the patch applied the boot stops at the messages:
+> > > > 
+> > > > [drm] Memory usable by graphics device = 2048M
+> > > > [drm] Replacing VGA console driver
 > > 
-> > Therefore, a quick fix would be to simply check for that:
+> > The issue looks like that we are ripping out the radeon fb_con whilst it
+> > is active and that upsets everyone. In which case, I think the
+> > compromise is:
 > > 
-> > diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-> > index e5555fc..b712cb2 100644
-> > --- a/drivers/iommu/iommu.c
-> > +++ b/drivers/iommu/iommu.c
-> > @@ -536,6 +536,9 @@ static int iommu_bus_notifier(struct notifier_block *nb,
-> >         struct iommu_group *group;
-> >         unsigned long group_action = 0;
+> > 
+> > diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+> > index 5f44581..4915f1d 100644
+> > --- a/drivers/gpu/drm/i915/i915_dma.c
+> > +++ b/drivers/gpu/drm/i915/i915_dma.c
+> > @@ -1439,18 +1439,20 @@ static int i915_kick_out_vgacon(struct drm_i915_private *dev_priv)
+> >  #else
+> >  static int i915_kick_out_vgacon(struct drm_i915_private *dev_priv)
+> >  {
+> > -       int ret;
+> > +       int ret = 0;
 > >  
-> > +       if (!ops)
-> > +               return 0;
+> >         DRM_INFO("Replacing VGA console driver\n");
+> >  
+> >         console_lock();
+> > -       ret = do_take_over_console(&dummy_con, 0, MAX_NR_CONSOLES - 1, 1);
+> > -       if (ret == 0) {
+> > -               ret = do_unregister_con_driver(&vga_con);
+> > -
+> > -               /* Ignore "already unregistered". */
+> > -               if (ret == -ENODEV)
+> > -                       ret = 0;
+> > +       if (con_is_bound(&vga_con)) {
+> > +               ret = do_take_over_console(&dummy_con, 0, MAX_NR_CONSOLES - 1, 1);
+> > +               if (ret == 0) {
+> > +                       ret = do_unregister_con_driver(&vga_con);
+> 
+> Hm, we should only conditionalize the take_over_console - unregistering
+> vga_con is kinda the point to make sure it's gone for real. Ed, can you
+> please retest with the if (con_is_bound) check just for the
+> do_take_over_console call?
+> 
+> Still puzzled wtf is going on here since as David says this should be a
+> no-op.
+> 
+> Thanks, Daniel
 > > +
-> >         /*
-> >          * ADD/DEL call into iommu driver ops if provided, which may
-> >          * result in ADD/DEL notifiers to group->notifier
+> > +                       /* Ignore "already unregistered". */
+> > +                       if (ret == -ENODEV)
+> > +                               ret = 0;
+> > +               }
+> >         }
+> >         console_unlock();
 > > 
-> > This (nasty workaround?) patch makes the problem go away.
+> > -Chris
 > > 
-> > [..]
-> > > > So it also boot well in 3.15 and then failed in 3.16-rc3. I hope it will
-> > > > help the developers of the OMAP IOMMU driver to fix it.
-> > > 
-> > > Thank you. I've had a look at the OMAP IOMMU driver changes between v3.15 and 
-> > > v3.16-rc3, and didn't find at first sight any change that could explain the 
-> > > crash.
-> > > 
-> > > 286f600 iommu/omap: Fix map protection value handling
-> > > 67b779d iommu/omap: Remove comment about supporting single page mappings only
-> > > f7129a0 iommu/omap: Fix 'no page for' debug message in flush_iotlb_page()
-> > > 5acc97d iommu/omap: Move to_iommu definition from omap-iopgtable.h
-> > > 2ac6133 iommu/omap: Remove omap_iommu_domain_has_cap() function
-> > > d760e3e iommu/omap: Correct init value of iotlb_entry valid field
-> > > 
-> > > Could you try reverting those changes and retest ? If the problem doesn't 
-> > > disappear, we'll need to look somewhere else.
-> > > 
-> > 
-> > I reverted the above commits but nothing changed. I'm far from being an expert,
-> > but it sounds odd to have this bus notifier (that got registered for the
-> > platform bus type) called by a pci bus type.
 > 
-> Why wouldn't the PCI bus set this up for its devices?  Are you
-> "assuming" you know the bus type and that's the issue?
 > 
 
-Thanks for looking at this.
-
-I guess I snipped the thread and lost most of the information about the panic.
-Here's the original bug report:
-
-http://www.spinics.net/lists/arm-kernel/msg344059.html
-
-The problem reported involves enabling OMAP IOMMU driver and not any other IOMMU
-driver. Doing some tracing and adding a few prints, we found that
-omap_iommu_init() sets a bus notifier for the platform bus type:
-
-omap_iommu_init -> bus_set_iommu -> iommu_bus_init:
-
-static void iommu_bus_init(struct bus_type *bus, struct iommu_ops *ops)
-{
-        bus_register_notifier(bus, &iommu_bus_nb);
-        bus_for_each_dev(bus, NULL, ops, add_iommu_group);
-}
-
-But the iommu bus notifier gets called for the 'pci' bus type, which
-has the iommu_ops field NULL (since it hasn't been set for iommu).
-
-The panic is here when the NULL field is dereferenced:
-
-static int iommu_bus_notifier(struct notifier_block *nb,
-                              unsigned long action, void *data)
-{
-        struct device *dev = data;
-        struct iommu_ops *ops = dev->bus->iommu_ops;
-
-
-> I see the a number of different places this is being initialized for the
-> pci bus.
-> 
-> Ah, look at drivers/iommu/fsl_pamu_domain.c, odds are, it shouldn't be
-> doing that logic in the pamu_domain_init() code, using the same bus ops
-> for different bus types, that's ripe for major problems...
-> 
-
-Maybe I'm missing something, but since the fsl driver is not enabled it has
-nothing to do. And since the OMAP IOMMU doesn't set the iommu bus notifier
-for the 'pci' bus type, I was wondering if there's a problem with the bus
-notifier itself.
-
-I hope the above makes sense.
-
-Thanks again for helping out,
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
