@@ -1,117 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636AbaGGOBi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:01:38 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:57299 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753050AbaGGOBg (ORCPT
+	id S1753650AbaGGODW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:03:22 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:51582 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752934AbaGGODV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:01:36 -0400
-Date: Mon, 7 Jul 2014 10:01:33 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH wq/for-3.16-fixes] workqueue: zero cpumask of
- wq_numa_possible_cpumask on init
-Message-ID: <20140707140133.GB18550@htj.dyndns.org>
-References: <53B98591.5030000@jp.fujitsu.com>
- <53B9E778.9070807@cn.fujitsu.com>
- <53B9EE20.4060407@jp.fujitsu.com>
+	Mon, 7 Jul 2014 10:03:21 -0400
+Date: Mon, 7 Jul 2014 19:33:14 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: Dominik Brodowski <linux@dominikbrodowski.net>,
+        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] cpupowerutils: Correct use of ! and &
+Message-ID: <20140707140314.GA4148@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53B9EE20.4060407@jp.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied to wq/for-3.16-fixes with slightly updated $SUBJ.
+In commit ae91d60ba88ef0bdb1b5e9b2363bd52fc45d2af7, a bug was fixed that
+involved converting !x & y to !(x & y).  The code below shows the same
+pattern, and thus should perhaps be fixed in the same way.
 
-Thanks.
------- 8< ------
->From 5a6024f1604eef119cf3a6fa413fe0261a81a8f3 Mon Sep 17 00:00:00 2001
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Date: Mon, 7 Jul 2014 09:56:48 -0400
+The Coccinelle semantic patch that makes this change is as follows:
 
-When hot-adding and onlining CPU, kernel panic occurs, showing following
-call trace.
+// <smpl>
+@@ expression E1,E2; @@
+(
+  !E1 & !E2
+|
+- !E1 & E2
++ !(E1 & E2)
+)
+// </smpl>
 
-  BUG: unable to handle kernel paging request at 0000000000001d08
-  IP: [<ffffffff8114acfd>] __alloc_pages_nodemask+0x9d/0xb10
-  PGD 0
-  Oops: 0000 [#1] SMP
-  ...
-  Call Trace:
-   [<ffffffff812b8745>] ? cpumask_next_and+0x35/0x50
-   [<ffffffff810a3283>] ? find_busiest_group+0x113/0x8f0
-   [<ffffffff81193bc9>] ? deactivate_slab+0x349/0x3c0
-   [<ffffffff811926f1>] new_slab+0x91/0x300
-   [<ffffffff815de95a>] __slab_alloc+0x2bb/0x482
-   [<ffffffff8105bc1c>] ? copy_process.part.25+0xfc/0x14c0
-   [<ffffffff810a3c78>] ? load_balance+0x218/0x890
-   [<ffffffff8101a679>] ? sched_clock+0x9/0x10
-   [<ffffffff81105ba9>] ? trace_clock_local+0x9/0x10
-   [<ffffffff81193d1c>] kmem_cache_alloc_node+0x8c/0x200
-   [<ffffffff8105bc1c>] copy_process.part.25+0xfc/0x14c0
-   [<ffffffff81114d0d>] ? trace_buffer_unlock_commit+0x4d/0x60
-   [<ffffffff81085a80>] ? kthread_create_on_node+0x140/0x140
-   [<ffffffff8105d0ec>] do_fork+0xbc/0x360
-   [<ffffffff8105d3b6>] kernel_thread+0x26/0x30
-   [<ffffffff81086652>] kthreadd+0x2c2/0x300
-   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
-   [<ffffffff815f20ec>] ret_from_fork+0x7c/0xb0
-   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
-
-In my investigation, I found the root cause is wq_numa_possible_cpumask.
-All entries of wq_numa_possible_cpumask is allocated by
-alloc_cpumask_var_node(). And these entries are used without initializing.
-So these entries have wrong value.
-
-When hot-adding and onlining CPU, wq_update_unbound_numa() is called.
-wq_update_unbound_numa() calls alloc_unbound_pwq(). And alloc_unbound_pwq()
-calls get_unbound_pool(). In get_unbound_pool(), worker_pool->node is set
-as follow:
-
-3592         /* if cpumask is contained inside a NUMA node, we belong to that node */
-3593         if (wq_numa_enabled) {
-3594                 for_each_node(node) {
-3595                         if (cpumask_subset(pool->attrs->cpumask,
-3596                                            wq_numa_possible_cpumask[node])) {
-3597                                 pool->node = node;
-3598                                 break;
-3599                         }
-3600                 }
-3601         }
-
-But wq_numa_possible_cpumask[node] does not have correct cpumask. So, wrong
-node is selected. As a result, kernel panic occurs.
-
-By this patch, all entries of wq_numa_possible_cpumask are allocated by
-zalloc_cpumask_var_node to initialize them. And the panic disappeared.
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: stable@vger.kernel.org
-Fixes: bce903809ab3 ("workqueue: add wq_numa_tbl_len and wq_numa_possible_cpumask[]")
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- kernel/workqueue.c | 2 +-
+This is not tested and clearly changes the semantics, so it is only
+something to consider.
+ tools/power/cpupower/utils/idle_monitor/mperf_monitor.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 6f5f9c7..35974ac 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4880,7 +4880,7 @@ static void __init wq_numa_init(void)
- 	BUG_ON(!tbl);
+diff --git a/tools/power/cpupower/utils/idle_monitor/mperf_monitor.c b/tools/power/cpupower/utils/idle_monitor/mperf_monitor.c
+index 5650ab5..90a8c4f 100644
+--- a/tools/power/cpupower/utils/idle_monitor/mperf_monitor.c
++++ b/tools/power/cpupower/utils/idle_monitor/mperf_monitor.c
+@@ -237,7 +237,7 @@ static int init_maxfreq_mode(void)
+ 	unsigned long long hwcr;
+ 	unsigned long min;
  
- 	for_each_node(node)
--		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
-+		BUG_ON(!zalloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
- 				node_online(node) ? node : NUMA_NO_NODE));
+-	if (!cpupower_cpu_info.caps & CPUPOWER_CAP_INV_TSC)
++	if (!(cpupower_cpu_info.caps & CPUPOWER_CAP_INV_TSC))
+ 		goto use_sysfs;
  
- 	for_each_possible_cpu(cpu) {
+ 	if (cpupower_cpu_info.vendor == X86_VENDOR_AMD) {
 -- 
-1.9.3
+1.9.1
 
