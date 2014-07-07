@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376AbaGGIxf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 04:53:35 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:41610 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508AbaGGIxd (ORCPT
+	id S1752457AbaGGIyX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 04:54:23 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:47492 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779AbaGGIyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 04:53:33 -0400
+	Mon, 7 Jul 2014 04:54:19 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Mon, 7 Jul 2014 10:53:43 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Peter Senna Tschudin <peter.senna@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Oliver Neukum <oliver@neukum.org>, kernel-janitors@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/11 V2] USB: kl5kusb105: Remove klsi_105_tiocmset
+ function
+Message-ID: <20140707085343.GE29098@localhost>
+References: <1401552180-9445-1-git-send-email-peter.senna@gmail.com>
+ <20140601093117.GC14935@localhost>
 MIME-Version: 1.0
-Date: Mon, 7 Jul 2014 10:53:32 +0200
-Message-ID: <CACRpkdYE2srMs0KwMbHLsOrZaprR3c=QbZhP_mqsWhDOBtTj-g@mail.gmail.com>
-Subject: [GIT PULL] pin control fixes for v3.16, take one
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140601093117.GC14935@localhost>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sun, Jun 01, 2014 at 11:31:17AM +0200, Johan Hovold wrote:
+> On Sat, May 31, 2014 at 01:03:00PM -0300, Peter Senna Tschudin wrote:
+> > This patch remove the function klsi_105_tiocmset which was only
+> > returning -EINVAL. It also removes the function prototype and
+> > the .tiocmset entry in the struct usb_serial_driver.
+> > 
+> > Verified by compilation only.
+> > 
+> > Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+> 
+> Signed-off-by: Johan Hovold <jhovold@gmail.com>
 
-here are two pin control fixes for v3.16. I'm a bit snowed under
-by mail but these have boiled in linux-next and should propagate
-to you.
+It seems this one was never picked up, but I'm applying it to my tree
+now.
 
-Please pull them in!
+Thanks again, Peter.
 
-Yours,
-Linus Walleij
-
-The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
-
-  Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
-tags/pinctrl-v3.16-2
-
-for you to fetch changes up to 1419d8151be990f115c38deac497ad84d26434dd:
-
-  pinctrl: berlin: fix an error code in berlin_pinctrl_probe()
-(2014-07-05 01:15:35 +0200)
-
-----------------------------------------------------------------
-Two fixes for the pin control subsystem, both relating to
-the errorpath in probe().
-
-----------------------------------------------------------------
-Dan Carpenter (1):
-      pinctrl: berlin: fix an error code in berlin_pinctrl_probe()
-
-Sachin Kamat (1):
-      pinctrl: sunxi: Fix potential null pointer dereference
-
- drivers/pinctrl/berlin/berlin.c       | 2 +-
- drivers/pinctrl/sunxi/pinctrl-sunxi.c | 4 ++++
- 2 files changed, 5 insertions(+), 1 deletion(-)
+Johan
