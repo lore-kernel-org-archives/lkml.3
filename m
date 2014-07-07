@@ -1,61 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026AbaGGWeN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 18:34:13 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:39462
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	id S1753124AbaGGWec (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 18:34:32 -0400
+Received: from mga09.intel.com ([134.134.136.24]:18963 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752977AbaGGWeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 18:34:10 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, <stable@vger.kernel.org>
-Subject: [PATCH 1/2] Drivers: hv: vmbus: Fix a bug in the channel callback dispatch code
-Date: Mon,  7 Jul 2014 16:34:24 -0700
-Message-Id: <1404776065-8685-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1404776037-8644-1-git-send-email-kys@microsoft.com>
-References: <1404776037-8644-1-git-send-email-kys@microsoft.com>
+	id S1752977AbaGGWeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 18:34:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,621,1400050800"; 
+   d="scan'208";a="539941493"
+Message-ID: <53BB205E.5080801@intel.com>
+Date: Mon, 07 Jul 2014 15:34:06 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Miller <davem@davemloft.net>,
+        Andres Freund <andres@2ndquadrant.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v3 3/3] man2/fincore.2: document general description about
+ fincore(2)
+References: <1404756006-23794-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1404756006-23794-4-git-send-email-n-horiguchi@ah.jp.nec.com> <53BAF01C.8010700@intel.com> <20140707205956.GB5031@nhori.bos.redhat.com>
+In-Reply-To: <20140707205956.GB5031@nhori.bos.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Starting with Win8, we have implemented several optimizations to improve the
-scalability and performance of the VMBUS transport between the Host and the
-Guest. Some of the non-performance critical services cannot leverage these
-optimization since they only read and process one message at a time.
-Make adjustments to the callback dispatch code to account for the way
-non-performance critical drivers handle reading of the channel.
+On 07/07/2014 01:59 PM, Naoya Horiguchi wrote:
+> On Mon, Jul 07, 2014 at 12:08:12PM -0700, Dave Hansen wrote:
+>> On 07/07/2014 11:00 AM, Naoya Horiguchi wrote:
+>>> +.SH RETURN VALUE
+>>> +On success,
+>>> +.BR fincore ()
+>>> +returns 0.
+>>> +On error, \-1 is returned, and
+>>> +.I errno
+>>> +is set appropriately.
+>>
+>> Is this accurate?  From reading the syscall itself, it looked like it
+>> did this:
+>>
+>>> + * Return value is the number of pages whose data is stored in fc->buffer.
+>>> + */
+>>> +static long do_fincore(struct fincore_control *fc, int nr_pages)
+>>
+>> and:
+>>
+>>> +SYSCALL_DEFINE6(fincore, int, fd, loff_t, start, long, nr_pages,
+>> ...
+>>> +	while (fc.nr_pages > 0) {
+>>> +		memset(fc.buffer, 0, fc.buffer_size);
+>>> +		ret = do_fincore(&fc, min(step, fc.nr_pages));
+>>> +		/* Reached the end of the file */
+>>> +		if (ret == 0)
+>>> +			break;
+>>> +		if (ret < 0)
+>>> +			break;
+>> ...
+>>> +	}
+>> ...
+>>> +	return ret;
+>>> +}
+>>
+>> Which seems that for a given loop of do_fincore(), you might end up
+>> returning the result of that *single* iteration of do_fincore() instead
+>> of the aggregate of the entire syscall.
+>>
+>> So, it can return <0 on failure, 0 on success, or also an essentially
+>> random >0 number on success too.
+> 
+> We don't break this while loop if do_fincore() returned a positive value
+> unless copy_to_user() fails. And in that case ret is set to -EFAULT.
+> So I think sys_fincore() never returns a positive value.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Cc: <stable@vger.kernel.org>
----
- drivers/hv/connection.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+OK, that makes sense as I'm reading it again.
 
-diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
-index e84f452..ae22e3c 100644
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -339,9 +339,13 @@ static void process_chn_event(u32 relid)
- 		 */
- 
- 		do {
--			hv_begin_read(&channel->inbound);
-+			if (read_state)
-+				hv_begin_read(&channel->inbound);
- 			channel->onchannel_callback(arg);
--			bytes_to_read = hv_end_read(&channel->inbound);
-+			if (read_state)
-+				bytes_to_read = hv_end_read(&channel->inbound);
-+			else
-+				bytes_to_read = 0;
- 		} while (read_state && (bytes_to_read != 0));
- 	} else {
- 		pr_err("no channel callback for relid - %u\n", relid);
--- 
-1.7.4.1
+>> Why not just use the return value for something useful instead of
+>> hacking in the extras->nr_entries stuff?
+> 
+> Hmm, I got the opposite complaint previously, where we shouldn't
+> interpret the return value differently depending on the flag.
+> And I'd like to keep the extra argument for future extensibility.
+> For example, if we want to collect pages only with a specific
+> set of page flags, this extra argument will be necessary.
+
+Couldn't it simply be the number of elements that it wrote in to the
+buffer, or even the number of bytes?
 
