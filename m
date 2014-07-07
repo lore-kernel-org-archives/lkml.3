@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751AbaGHAqv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:46:51 -0400
+	id S1753711AbaGGXy0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 19:54:26 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:55564 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753738AbaGGXy3 (ORCPT
+	with ESMTP id S1753653AbaGGXyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:29 -0400
+	Mon, 7 Jul 2014 19:54:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helmut Schaa <helmut.schaa@googlemail.com>, Pekon Gupta <pekon@ti.com>,
-        Scott Wood <scottwood@freescale.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.14 20/94] mtd: eLBC NAND: fix subpage write support
-Date: Mon,  7 Jul 2014 16:57:10 -0700
-Message-Id: <20140707235757.372581931@linuxfoundation.org>
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.15 082/122] net: allwinner: emac: Add missing free_irq
+Date: Mon,  7 Jul 2014 16:57:24 -0700
+Message-Id: <20140707235736.714976531@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
-References: <20140707235756.780319003@linuxfoundation.org>
+In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
+References: <20140707235734.234226883@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,63 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.15-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Pekon Gupta <pekon@ti.com>
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-commit f034d87def51f026b735d1e2877e9387011b2ba3 upstream.
+commit b91113282bf44df46aba374a0b8f88a75bfd4b3f upstream.
 
-As subpage write is enabled by default for all drivers, nand_write_subpage_hwecc
-causes a crash if the driver did not register ecc->hwctl or ecc->calculate.
-This behavior was introduced in
-   commit 837a6ba4f3b6d23026674e6af6b6849a4634fff9
-   "mtd: nand: subpage write support for hardware based ECC schemes".
+If the mdio probe function fails in emac_open, the interrupt we just requested
+isn't freed. If emac_open is called again, for example because we try to set up
+the interface again, the kernel will oops because the interrupt wasn't properly
+released.
 
-This fixes a crash by emulating subpage write support by padding sub-page data
-with 0xff on either sides to make it full page compatible.
-
-Reported-by: Helmut Schaa <helmut.schaa@googlemail.com>
-Tested-by: Helmut Schaa <helmut.schaa@googlemail.com>
-Signed-off-by: Pekon Gupta <pekon@ti.com>
-Reviewed-by: Scott Wood <scottwood@freescale.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/fsl_elbc_nand.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/net/ethernet/allwinner/sun4i-emac.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/mtd/nand/fsl_elbc_nand.c
-+++ b/drivers/mtd/nand/fsl_elbc_nand.c
-@@ -724,6 +724,19 @@ static int fsl_elbc_write_page(struct mt
- 	return 0;
- }
+--- a/drivers/net/ethernet/allwinner/sun4i-emac.c
++++ b/drivers/net/ethernet/allwinner/sun4i-emac.c
+@@ -736,6 +736,7 @@ static int emac_open(struct net_device *
  
-+/* ECC will be calculated automatically, and errors will be detected in
-+ * waitfunc.
-+ */
-+static int fsl_elbc_write_subpage(struct mtd_info *mtd, struct nand_chip *chip,
-+				uint32_t offset, uint32_t data_len,
-+				const uint8_t *buf, int oob_required)
-+{
-+	fsl_elbc_write_buf(mtd, buf, mtd->writesize);
-+	fsl_elbc_write_buf(mtd, chip->oob_poi, mtd->oobsize);
-+
-+	return 0;
-+}
-+
- static int fsl_elbc_chip_init(struct fsl_elbc_mtd *priv)
- {
- 	struct fsl_lbc_ctrl *ctrl = priv->ctrl;
-@@ -762,6 +775,7 @@ static int fsl_elbc_chip_init(struct fsl
- 
- 	chip->ecc.read_page = fsl_elbc_read_page;
- 	chip->ecc.write_page = fsl_elbc_write_page;
-+	chip->ecc.write_subpage = fsl_elbc_write_subpage;
- 
- 	/* If CS Base Register selects full hardware ECC then use it */
- 	if ((in_be32(&lbc->bank[priv->bank].br) & BR_DECC) ==
+ 	ret = emac_mdio_probe(dev);
+ 	if (ret < 0) {
++		free_irq(dev->irq, dev);
+ 		netdev_err(dev, "cannot probe MDIO bus\n");
+ 		return ret;
+ 	}
 
 
