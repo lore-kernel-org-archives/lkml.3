@@ -1,114 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbaGGBZS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 21:25:18 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:44645 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219AbaGGBZP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 21:25:15 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-2d-53b9f6f84800
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
-Cc: "'Changman Lee'" <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <000001cf95b5$eac71ad0$c0555070$@samsung.com>
- <20140705064313.GA35795@jmac.local>
-In-reply-to: <20140705064313.GA35795@jmac.local>
-Subject: RE: [f2fs-dev][PATCH 1/2] f2fs: check name_len of dir entry to prevent
- from deadloop
-Date: Mon, 07 Jul 2014 09:24:05 +0800
-Message-id: <005f01cf9982$4b8920f0$e29b62d0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQKymfVu0+WUXrYrr8JlZT05gEW09QJiWoK9mbg+YsA=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t9jAd2f33YGG8z+wGpxbV8jk8WT9bOY
-	LS4tcrfYs/cki8XlXXPYHFg9Nq3qZPPYveAzk0ffllWMHp83yQWwRHHZpKTmZJalFunbJXBl
-	XLn0hq1gjlDFymkXWRoYl/N1MXJySAiYSMy5+ZoRwhaTuHBvPVsXIxeHkMAiRonrB8+xQjg/
-	GCXaehazgFSxCahILO/4zwRiiwioSfTum8IEUsQsMJlRYlbfXbCEkEC8xO4t89lAbE4BA4mZ
-	05+ArRAGit+Yex/MZhFQldg77RtYPa+ApcSp9unMELagxI/J98CWMQtoSazfeZwJwpaX2Lzm
-	LTPEqQoSO85CnC0iYCWx6cAnVogacYmNR26xTGAUmoVk1Cwko2YhGTULScsCRpZVjKKpBckF
-	xUnpuYZ6xYm5xaV56XrJ+bmbGMER8UxqB+PKBotDjAIcjEo8vAdW7QwWYk0sK67MPcQowcGs
-	JMJ7xg0oxJuSWFmVWpQfX1Sak1p8iFGag0VJnPdAq3WgkEB6YklqdmpqQWoRTJaJg1OqgbF3
-	2QZ2MXau5RNdjD6sb8ytP7dAWOZqTXSUPcuSOHVhZRm34AT2oxlhbV+NYr3eOpY0PDm58/IE
-	4YavvP1/rBzjo5ZsXhZqX53F6xuXsWj5XYaPlzd518il75i1LIDXZdaRk7HbnI4YTPnPY/Lj
-	oRmjLuusSU+UWuu5gj9y9No5ZtbHLWG2VGIpzkg01GIuKk4EALOflrOEAgAA
+	id S1752648AbaGGB3D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 21:29:03 -0400
+Received: from ozlabs.org ([103.22.144.67]:40660 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752246AbaGGB3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jul 2014 21:29:00 -0400
+Date: Mon, 7 Jul 2014 11:28:53 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jason Cooper <jason@lakedaemon.net>, <andrew@lunn.ch>,
+        <gregory.clement@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: linux-next: manual merge of the mvebu tree with the arm tree
+Message-ID: <20140707112853.7f5a9323@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/YglyQG_rdpx5i/S736bT0BN"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jaegeuk,
+--Sig_/YglyQG_rdpx5i/S736bT0BN
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> Sent: Saturday, July 05, 2014 2:43 PM
-> To: Chao Yu
-> Cc: Changman Lee; linux-f2fs-devel@lists.sourceforge.net; linux-fsdevel@vger.kernel.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [f2fs-dev][PATCH 1/2] f2fs: check name_len of dir entry to prevent from deadloop
-> 
-> Hi Chao,
-> 
-> On Wed, Jul 02, 2014 at 01:23:47PM +0800, Chao Yu wrote:
-> > We assume that modification of some special application could result in zeroed
-> > name_len, or it is consciously made by somebody. We will deadloop in
-> > find_in_block when name_len of dir entry is zero.
-> 
-> Could you explain this a little bit more?
-> I'm not sure how it can happen.
+Hi all,
 
-IMO,
-On one hand, programs like mkfs/fsck/img2simg and f2fs could directly operate
-the raw device, so bugs of these software may be triggered to generate the
-corrupt data such as zeroed name_len.
-On the other hand, it' could be treated as a potential security problem, because
-user could crafted such a malicious image include zeroed name_len for hacking purpose.
-Once such special image is being mounted, deadloop could be triggered, finally will
-result in effecting on linux system's running.
+Today's linux-next merge of the mvebu tree got a conflict in
+arch/arm/mach-mvebu/headsmp-a9.S between commit 8a3a9dd50dd9 ("ARM:
+convert all "mov.* pc, reg" to "bx reg" for ARMv6+") from the arm tree
+and commit 0e2be4c1121a ("ARM: mvebu: fix SMP boot for Armada 38x and
+Armada 375 Z1 in big endian") from the mvebu tree.
 
-Thanks,
-Yu
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> I think the zeroed name_len would cause some problems in f2fs_add_link.
-> 
-> Thanks,
-> 
-> >
-> > This patch is added for preventing deadloop in above scenario.
-> >
-> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > ---
-> >  fs/f2fs/dir.c |   10 ++++++++++
-> >  1 file changed, 10 insertions(+)
-> >
-> > diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-> > index be8c7af..4316ec5 100644
-> > --- a/fs/f2fs/dir.c
-> > +++ b/fs/f2fs/dir.c
-> > @@ -121,6 +121,16 @@ static struct f2fs_dir_entry *find_in_block(struct page *dentry_page,
-> >  			}
-> >  		}
-> >
-> > +		/* check name_len to prevent from deadloop here */
-> > +		if (unlikely(de->name_len == 0)) {
-> > +			struct inode *inode = dentry_page->mapping->host;
-> > +
-> > +			f2fs_msg(inode->i_sb, KERN_ERR,
-> > +				"zero-length dir entry, ino = %lu, name = %s",
-> > +				(unsigned long)inode->i_ino, name->name);
-> > +			break;
-> > +		}
-> > +
-> >  		bit_start = bit_pos
-> >  				+ GET_DENTRY_SLOTS(le16_to_cpu(de->name_len));
-> >  	}
-> > --
-> > 1.7.9.5
-> 
-> --
-> Jaegeuk Kim
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc arch/arm/mach-mvebu/headsmp-a9.S
+index 7c91ddb6f1f7,da5bb292b91c..000000000000
+--- a/arch/arm/mach-mvebu/headsmp-a9.S
++++ b/arch/arm/mach-mvebu/headsmp-a9.S
+@@@ -14,8 -14,9 +14,10 @@@
+ =20
+  #include <linux/linkage.h>
+  #include <linux/init.h>
+ +#include <asm/assembler.h>
+ =20
++ #include <asm/assembler.h>
++=20
+  	__CPUINIT
+  #define CPU_RESUME_ADDR_REG 0xf10182d4
+ =20
+@@@ -23,9 -24,13 +25,13 @@@
+  .global armada_375_smp_cpu1_enable_code_end
+ =20
+  armada_375_smp_cpu1_enable_code_start:
+- 	ldr     r0, [pc, #4]
++ ARM_BE8(setend	be)
++ 	adr     r0, 1f
++ 	ldr	r0, [r0]
+  	ldr     r1, [r0]
++ ARM_BE8(rev	r1, r1)
+ -	mov     pc, r1
+ +	ret     r1
++ 1:
+  	.word   CPU_RESUME_ADDR_REG
+  armada_375_smp_cpu1_enable_code_end:
+ =20
+
+--Sig_/YglyQG_rdpx5i/S736bT0BN
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJTuffZAAoJEMDTa8Ir7ZwVOOUQAIDu8vBNmNqB1oDrjKnGutS0
+ffZbYLXpAC5Z/JuxsbuvX1U7XcKZrK26ycZLRYbbzq+GlEfYjL5n1NPfs/gQMKQE
+my/GcFSkeNRSJDTvkb525kqzSC6CTYZ6sFqY3dLn2avHFpJ/yGm9spqNaDjAnK4S
+9NRwOjNCm2afkMByIuo6lW+VNGqcyaIyqaEFtlh/5KhN4S7aAHqPPOSokDQsdhZb
+FoxRgXGWTPYgBfQpdL8xUiJ9uYk5zB3TQPam1nyUBgSWJsWUAzF/+BiIM6reQeNY
+OaI1+wX5i/BOCqJIgWJh8buRegiGYKyjdTLZ2R+eHghgkdjFINeBq4hOGSXdr9U0
+QdvdJbjGJ8rWJ95XShQaIDBNTcSYkFFjvg0ksISQWtGpx6t3pnM6Bo0hDCXLiqTt
+E6AP02v7S+3DM1LgCXFLpA6DN+szLlj/DFaoPsPZg4K8nE7h04KLJ2SMAo4vYzAt
+UvPIvlvdlTxDTmc0Zq0vmyGvm1l4CHYyHfqfQ6itk2OLgIv71BYzEahYGQvuWbA0
+qQtNBqiHRjo+daKd8+6jR0VJ5YVPqxuN81NHd1nh/avPFq8IoK9bE2Xri0CTjfRX
+5AkxLyVWNzVdpCeQ6xUsb4U/MaNUHc/ZdtPhLeoSFnzO0onNmif5+v3ARjw79uNI
+zla3y+0CH335npTKcXXb
+=MzWO
+-----END PGP SIGNATURE-----
+
+--Sig_/YglyQG_rdpx5i/S736bT0BN--
