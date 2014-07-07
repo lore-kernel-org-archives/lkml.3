@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509AbaGGOaI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:30:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57212 "EHLO
+	id S1754007AbaGGOgE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:36:04 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57239 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751243AbaGGOaF (ORCPT
+	with ESMTP id S1751243AbaGGOaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:30:05 -0400
+	Mon, 7 Jul 2014 10:30:09 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -17,9 +17,9 @@ Cc: Boris Brezillon <boris@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v2 01/18] power: reset: Add if statement isntead of multiple depends on
-Date: Mon,  7 Jul 2014 16:25:14 +0200
-Message-Id: <1404743131-24569-2-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 04/18] AT91: Rework ramc mapping code
+Date: Mon,  7 Jul 2014 16:25:17 +0200
+Message-Id: <1404743131-24569-5-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1404743131-24569-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1404743131-24569-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -27,91 +27,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the config option so far are depending on the POWER_RESET symbol
+Adapt the ramc mapping code to handle multiple ram controllers in the DT.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/power/reset/Kconfig | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ arch/arm/mach-at91/setup.c | 26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-index bdcf5173e377..19d546c5edfa 100644
---- a/drivers/power/reset/Kconfig
-+++ b/drivers/power/reset/Kconfig
-@@ -6,15 +6,17 @@ menuconfig POWER_RESET
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index 9c4c7fb323fb..cc520596f23b 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -393,24 +393,26 @@ static void at91_dt_ramc(void)
+ {
+ 	struct device_node *np;
+ 	const struct of_device_id *of_id;
++	int idx = 0;
  
- 	  Say Y here to enable board reset and power off
+-	np = of_find_matching_node(NULL, ramc_ids);
+-	if (!np)
+-		panic(pr_fmt("unable to find compatible ram controller node in dtb\n"));
++	for_each_matching_node(np, ramc_ids) {
++		at91_ramc_base[idx] = of_iomap(np, 0);
++		if (!at91_ramc_base[idx])
++			panic(pr_fmt("unable to map ramc[%d] cpu registers\n"), idx);
  
-+if POWER_RESET
+-	at91_ramc_base[0] = of_iomap(np, 0);
+-	if (!at91_ramc_base[0])
+-		panic(pr_fmt("unable to map ramc[0] cpu registers\n"));
+-	/* the controller may have 2 banks */
+-	at91_ramc_base[1] = of_iomap(np, 1);
++		idx++;
++	}
 +
- config POWER_RESET_AS3722
- 	bool "ams AS3722 power-off driver"
--	depends on MFD_AS3722 && POWER_RESET
-+	depends on MFD_AS3722
- 	help
- 	  This driver supports turning off board via a ams AS3722 power-off.
++	if (!idx)
++		panic(pr_fmt("unable to find compatible ram controller node in dtb\n"));
  
- config POWER_RESET_AXXIA
- 	bool "LSI Axxia reset driver"
--	depends on POWER_RESET && ARCH_AXXIA
-+	depends on ARCH_AXXIA
- 	help
- 	  This driver supports restart for Axxia SoC.
+ 	of_id = of_match_node(ramc_ids, np);
+-	if (!of_id)
++	if (!of_id) {
+ 		pr_warn("ramc no standby function available\n");
+-	else
+-		at91_pm_set_standby(of_id->data);
++		return;
++	}
  
-@@ -22,7 +24,7 @@ config POWER_RESET_AXXIA
+-	of_node_put(np);
++	at91_pm_set_standby(of_id->data);
+ }
  
- config POWER_RESET_GPIO
- 	bool "GPIO power-off driver"
--	depends on OF_GPIO && POWER_RESET
-+	depends on OF_GPIO
- 	help
- 	  This driver supports turning off your board via a GPIO line.
- 	  If your board needs a GPIO high/low to power down, say Y and
-@@ -30,13 +32,13 @@ config POWER_RESET_GPIO
- 
- config POWER_RESET_MSM
- 	bool "Qualcomm MSM power-off driver"
--	depends on POWER_RESET && ARCH_QCOM
-+	depends on ARCH_QCOM
- 	help
- 	  Power off and restart support for Qualcomm boards.
- 
- config POWER_RESET_QNAP
- 	bool "QNAP power-off driver"
--	depends on OF_GPIO && POWER_RESET && PLAT_ORION
-+	depends on OF_GPIO && PLAT_ORION
- 	help
- 	  This driver supports turning off QNAP NAS devices by sending
- 	  commands to the microcontroller which controls the main power.
-@@ -54,14 +56,13 @@ config POWER_RESET_RESTART
- config POWER_RESET_SUN6I
- 	bool "Allwinner A31 SoC reset driver"
- 	depends on ARCH_SUNXI
--	depends on POWER_RESET
- 	help
- 	  Reboot support for the Allwinner A31 SoCs.
- 
- config POWER_RESET_VEXPRESS
- 	bool "ARM Versatile Express power-off and reset driver"
- 	depends on ARM || ARM64
--	depends on POWER_RESET && VEXPRESS_CONFIG
-+	depends on VEXPRESS_CONFIG
- 	help
- 	  Power off and reset support for the ARM Ltd. Versatile
- 	  Express boards.
-@@ -69,7 +70,6 @@ config POWER_RESET_VEXPRESS
- config POWER_RESET_XGENE
- 	bool "APM SoC X-Gene reset driver"
- 	depends on ARM64
--	depends on POWER_RESET
- 	help
- 	  Reboot support for the APM SoC X-Gene Eval boards.
- 
-@@ -80,3 +80,4 @@ config POWER_RESET_KEYSTONE
- 	help
- 	  Reboot support for the KEYSTONE SoCs.
- 
-+endif
+ static struct of_device_id shdwc_ids[] = {
 -- 
 2.0.1
 
