@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195AbaGGMVU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 08:21:20 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:59663 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753011AbaGGMVT (ORCPT
+	id S1753012AbaGGM0w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 08:26:52 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:45799 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752933AbaGGM0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 08:21:19 -0400
-Message-ID: <53BA90A5.1000108@ahsoftware.de>
-Date: Mon, 07 Jul 2014 14:20:53 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 7 Jul 2014 08:26:51 -0400
+Date: Mon, 7 Jul 2014 14:26:54 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Ed Tomlinson <edt@aei.ca>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Dave Airlie <airlied@linux.ie>
+Subject: Re: [Intel-gfx] [PATCH 5/5] drm/i915: Kick out vga console
+Message-ID: <20140707122654.GQ5821@phenom.ffwll.local>
+Mail-Followup-To: Ed Tomlinson <edt@aei.ca>,
+	Chris Wilson <chris@chris-wilson.co.uk>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	David Herrmann <dh.herrmann@gmail.com>,
+	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+	Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	Dave Airlie <airlied@linux.ie>
+References: <1401980308-5116-1-git-send-email-daniel.vetter@ffwll.ch>
+ <20140630065955.GD7687@nuc-i3427.alporthouse.com>
+ <20140707084826.GH5821@phenom.ffwll.local>
+ <1974170.pJAPFfvtjC@grover>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [rtc-linux] [PATCH 1/2] Allow to override the hctosys RTC using
- a kernel parameter
-References: <5132579.sMfE4ssjXf@rfietze>
-In-Reply-To: <5132579.sMfE4ssjXf@rfietze>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1974170.pJAPFfvtjC@grover>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 07.07.2014 13:30, schrieb Roman Fietze:
-> Hello RTC maintainers and list members,
+On Mon, Jul 07, 2014 at 06:45:49AM -0400, Ed Tomlinson wrote:
+> Daniel,
 > 
-> I would like to hear your criticism about the following two small
-> patches.
+> I am not quite sure I understand what you want me to test?
+> Do you want me to try it without:
 > 
-> These patches allow to overwrite the hctosys RTC specified in the
-> kernel config using CONFIG_RTC_HCTOSYS_DEVICE.
-> 
-> The background ist, that we have two almost identical x86 boards from
-> MEN in Nuernberg. The first one buffers the CMOS RTC, the other one
-> buffers an additional Epson RX8581 I2C RTC. We would like to use the
-> same kernel, but the only parameter we could not overwrite when
-> starting the kernel or system was the RTC used to initialize the
-> system clock.
+> > > +               if (ret == 0) {
+> > > +                       ret = do_unregister_con_driver(&vga_con);
 
-You might have a look at a year old thread with working patches which
-does a bit more too:
+Below the diff of what I mean.
+-Daniel
 
-https://lkml.org/lkml/2014/6/13/6
 
-Regards,
-
-Alexander Holler
-
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index 5e583a1838f8..bd8517151479 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1466,12 +1466,13 @@ static int i915_kick_out_vgacon(struct drm_i915_private *dev_priv)
+ #else
+ static int i915_kick_out_vgacon(struct drm_i915_private *dev_priv)
+ {
+-	int ret;
++	int ret = 0;
+ 
+ 	DRM_INFO("Replacing VGA console driver\n");
+ 
+ 	console_lock();
+-	ret = do_take_over_console(&dummy_con, 0, MAX_NR_CONSOLES - 1, 1);
++	if (con_is_bound(&vga_con))
++		ret = do_take_over_console(&dummy_con, 0, MAX_NR_CONSOLES - 1, 1);
+ 	if (ret == 0) {
+ 		ret = do_unregister_con_driver(&vga_con);
+ 
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
