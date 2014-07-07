@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325AbaGHA3n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:29:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55919 "EHLO
+	id S932403AbaGHAaB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:30:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55860 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754117AbaGGXyv (ORCPT
+	with ESMTP id S1754106AbaGGXyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.14 78/94] clk: qcom: Fix clk_rcg2_is_enabled() check
-Date: Mon,  7 Jul 2014 16:58:08 -0700
-Message-Id: <20140707235759.077421906@linuxfoundation.org>
+        Arik Nemtsov <arikx.nemtsov@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.14 51/94] mac80211: dont check netdev state for debugfs read/write
+Date: Mon,  7 Jul 2014 16:57:41 -0700
+Message-Id: <20140707235758.293262833@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,32 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Arik Nemtsov <arik@wizery.com>
 
-commit aa014149ba002155a084ec1e9328e95b70167cbb upstream.
+commit 923eaf367206e01f22c97aee22300e332d071916 upstream.
 
-If the bit is set the clock is off so we should be checking for
-a clear bit, not a set bit. Invert the logic.
+Doing so will lead to an oops for a p2p-dev interface, since it has
+no netdev.
 
-Fixes: bcd61c0f535a (clk: qcom: Add support for root clock generators (RCGs))
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
+Signed-off-by: Arik Nemtsov <arikx.nemtsov@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/qcom/clk-rcg2.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/mac80211/debugfs_netdev.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/drivers/clk/qcom/clk-rcg2.c
-+++ b/drivers/clk/qcom/clk-rcg2.c
-@@ -55,7 +55,7 @@ static int clk_rcg2_is_enabled(struct cl
- 	if (ret)
- 		return ret;
+--- a/net/mac80211/debugfs_netdev.c
++++ b/net/mac80211/debugfs_netdev.c
+@@ -34,8 +34,7 @@ static ssize_t ieee80211_if_read(
+ 	ssize_t ret = -EINVAL;
  
--	return (cmd & CMD_ROOT_OFF) != 0;
-+	return (cmd & CMD_ROOT_OFF) == 0;
- }
+ 	read_lock(&dev_base_lock);
+-	if (sdata->dev->reg_state == NETREG_REGISTERED)
+-		ret = (*format)(sdata, buf, sizeof(buf));
++	ret = (*format)(sdata, buf, sizeof(buf));
+ 	read_unlock(&dev_base_lock);
  
- static u8 clk_rcg2_get_parent(struct clk_hw *hw)
+ 	if (ret >= 0)
+@@ -62,8 +61,7 @@ static ssize_t ieee80211_if_write(
+ 
+ 	ret = -ENODEV;
+ 	rtnl_lock();
+-	if (sdata->dev->reg_state == NETREG_REGISTERED)
+-		ret = (*write)(sdata, buf, count);
++	ret = (*write)(sdata, buf, count);
+ 	rtnl_unlock();
+ 
+ 	return ret;
 
 
