@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012AbaGGM0w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 08:26:52 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:45799 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933AbaGGM0v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 08:26:51 -0400
-Date: Mon, 7 Jul 2014 14:26:54 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Ed Tomlinson <edt@aei.ca>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Dave Airlie <airlied@linux.ie>
-Subject: Re: [Intel-gfx] [PATCH 5/5] drm/i915: Kick out vga console
-Message-ID: <20140707122654.GQ5821@phenom.ffwll.local>
-Mail-Followup-To: Ed Tomlinson <edt@aei.ca>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	David Herrmann <dh.herrmann@gmail.com>,
-	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-	Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	Dave Airlie <airlied@linux.ie>
-References: <1401980308-5116-1-git-send-email-daniel.vetter@ffwll.ch>
- <20140630065955.GD7687@nuc-i3427.alporthouse.com>
- <20140707084826.GH5821@phenom.ffwll.local>
- <1974170.pJAPFfvtjC@grover>
+	id S1753115AbaGGM2I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 08:28:08 -0400
+Received: from mail.kernel.org ([198.145.19.201]:57185 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752652AbaGGM2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 08:28:07 -0400
+Message-ID: <53BA92DA.7070304@kernel.org>
+Date: Mon, 07 Jul 2014 13:30:18 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1974170.pJAPFfvtjC@grover>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Daniel Baluta <daniel.baluta@intel.com>
+CC: srinivas.pandruvada@linux.intel.com, archana.patni@linux.intel.com,
+        subramony.sesha@intel.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] iio: hid-sensors: make hid_sensor_get_reporting_interval
+ static
+References: <1404120584-11795-1-git-send-email-daniel.baluta@intel.com>
+In-Reply-To: <1404120584-11795-1-git-send-email-daniel.baluta@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 06:45:49AM -0400, Ed Tomlinson wrote:
-> Daniel,
-> 
-> I am not quite sure I understand what you want me to test?
-> Do you want me to try it without:
-> 
-> > > +               if (ret == 0) {
-> > > +                       ret = do_unregister_con_driver(&vga_con);
+On 30/06/14 10:29, Daniel Baluta wrote:
+> This fixes the following sparse warning:
+>
+>    CHECK   drivers/iio/common/hid-sensors/hid-sensor-attributes.c
+> drivers/iio/common/hid-sensors/hid-sensor-attributes.c:346:5: warning:
+> symbol 'hid_sensor_get_reporting_interval' was not declared. Should it be static?
+>
+> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+Applied to the togreg branch of iio.git, initially pushed out as testing
+for the autobuilders to play.  Thanks,
 
-Below the diff of what I mean.
--Daniel
+Jonathan
+> ---
+>   drivers/iio/common/hid-sensors/hid-sensor-attributes.c | 1 +
+>   1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/iio/common/hid-sensors/hid-sensor-attributes.c b/drivers/iio/common/hid-sensors/hid-sensor-attributes.c
+> index 403dd3d..8220df1 100644
+> --- a/drivers/iio/common/hid-sensors/hid-sensor-attributes.c
+> +++ b/drivers/iio/common/hid-sensors/hid-sensor-attributes.c
+> @@ -343,6 +343,7 @@ int hid_sensor_format_scale(u32 usage_id,
+>   }
+>   EXPORT_SYMBOL(hid_sensor_format_scale);
+>
+> +static
+>   int hid_sensor_get_reporting_interval(struct hid_sensor_hub_device *hsdev,
+>   					u32 usage_id,
+>   					struct hid_sensor_common *st)
+>
 
-
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index 5e583a1838f8..bd8517151479 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1466,12 +1466,13 @@ static int i915_kick_out_vgacon(struct drm_i915_private *dev_priv)
- #else
- static int i915_kick_out_vgacon(struct drm_i915_private *dev_priv)
- {
--	int ret;
-+	int ret = 0;
- 
- 	DRM_INFO("Replacing VGA console driver\n");
- 
- 	console_lock();
--	ret = do_take_over_console(&dummy_con, 0, MAX_NR_CONSOLES - 1, 1);
-+	if (con_is_bound(&vga_con))
-+		ret = do_take_over_console(&dummy_con, 0, MAX_NR_CONSOLES - 1, 1);
- 	if (ret == 0) {
- 		ret = do_unregister_con_driver(&vga_con);
- 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
