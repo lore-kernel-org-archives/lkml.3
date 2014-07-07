@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751548AbaGGG5x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 02:57:53 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:39947 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072AbaGGG5v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 02:57:51 -0400
-Message-ID: <53BA44E5.6070604@collabora.co.uk>
-Date: Mon, 07 Jul 2014 08:57:41 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1751720AbaGGHAZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 03:00:25 -0400
+Received: from lnfm1.sai.msu.ru ([93.180.26.255]:53303 "EHLO lnfm1.sai.msu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751399AbaGGHAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 03:00:23 -0400
+Date: Mon, 7 Jul 2014 10:59:36 +0400 (MSK)
+From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
+To: gregkh@linuxfoundation.org
+cc: linux-kernel@vger.kernel.org, linux-parport@lists.infradead.org,
+        hsommer@eso.org, matwey.kornilov@gmail.com
+Subject: [PATCHv3 0/2] parport: parport_pc: Introduce option to disable
+ checking for Intel bug
+Message-ID: <alpine.LRH.2.00.1407071056300.3492@lnfm1.sai.msu.ru>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-CC: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        Tushar Behera <trblinux@gmail.com>, Andreas Farber <afaerber@suse.de>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 23/24] rtc: Add driver for Maxim 77802 PMIC Real-Time-Clock
-References: <1404505467-26526-1-git-send-email-javier.martinez@collabora.co.uk> <1404505467-26526-24-git-send-email-javier.martinez@collabora.co.uk> <1404713210.4367.0.camel@AMDC1943>
-In-Reply-To: <1404713210.4367.0.camel@AMDC1943>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Krzysztof,
+From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
+Date: Wed, 25 Jun 2014 00:53:54 +0400
+Subject: [PATCHv3 0/2] parport: parport_pc: Introduce option to disable checking for Intel bug
 
-On 07/07/2014 08:06 AM, Krzysztof Kozlowski wrote:
-> On pią, 2014-07-04 at 22:24 +0200, Javier Martinez Canillas wrote:
->> The MAX7802 PMIC has a Real-Time-Clock (RTC) with two alarms.
->> This patch adds support for the RTC and is based on a driver
->> added by Simon Glass to the Chrome OS kernel 3.8 tree.
->> 
->> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->> ---
->> 
->> Changes since v6:
->>  - Remove unused code for SMPL and WTSR. Suggested by Krzysztof Kozlowski.
->>  - Don't spam the kernel log with unimportant info and just print for debug.
->>    Suggested by Krzysztof Kozlowski.
->>  - Use ARRAY_SIZE() instead of constant value. Suggested by Krzysztof Kozlowski.
->>  - Remove duplicated register setup. Suggested by Krzysztof Kozlowski.
->>  - Don't free/unregister managed allocated resources.
->>    Suggested by Krzysztof Kozlowski.
->> ---
->>  drivers/rtc/Kconfig        |  10 +
->>  drivers/rtc/Makefile       |   1 +
->>  drivers/rtc/rtc-max77802.c | 508 +++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 519 insertions(+)
->>  create mode 100644 drivers/rtc/rtc-max77802.c
-> 
-> 
-> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> 
+Hi,
 
-Thanks a lot for the review and for all the feedback you gave me on each version
-of the series.
+The following patch series is to deal with the issue on false-positives
+of Intel EPP bug check [1].
 
-> Best regards,
-> Krzysztof
-> 
-> 
+More than a decade ago, the check was introduced in order to prevent EPP
+operation on the some Intel LPT chipsets. The main issue to defence from
+was CPU hang at EPP operation on broken chipsets. It is mentioned that
+affected chipsets are Intel 82091. However, it is not known whether
+there are others.
 
-Best regards,
-Javier
+The check was implemented in strange manner. Now, there is no explanations
+why. The check itself now leads to the false-positives, disabling EPP on
+many PC-s (Dell OptiPlex series for instance). The latter is an issue.
+
+Given that our knowledge of the initial problem is quite limited now,
+I introduce special option for parport_pc, allowing user to disable check.
+This won't introduce regressions.
+
+The patches organized as following:
+
+1. Introduce-intel_bug_present-function.
+
+The transparent refactoring of the check is performed.
+Make the check be immutable regarding to ECR register.
+
+2. Add force_epp module option for parport_pc.
+
+Additional option for parport_pc is introduced.
+
+
+The behaviour is the following:
+
+modprobe parport_pc             # check is enabled, given there is no defaults
+                                 # in /etc/modprobe.d/*
+modprobe parport_pc force_epp=0 # check is enabled
+modprobe parport_pc force_epp=1 # check is disabled
+
+
+[1] https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=630593
+
+Tested-by: Heiko Andreas Sommer <hsommer@eso.org>
+Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
+
+---
+Changes from v2:
+  - The module option has more clear description
+
+Changes from v1:
+  - Patch 1 fetched from right branch and now compiled
+
