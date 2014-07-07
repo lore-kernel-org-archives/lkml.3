@@ -1,64 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650AbaGGODW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:03:22 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:51582 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752934AbaGGODV (ORCPT
+	id S1753678AbaGGODe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:03:34 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:35260 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753654AbaGGODa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:03:21 -0400
-Date: Mon, 7 Jul 2014 19:33:14 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] cpupowerutils: Correct use of ! and &
-Message-ID: <20140707140314.GA4148@himangi-Dell>
+	Mon, 7 Jul 2014 10:03:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1404022428-2816-1-git-send-email-borneo.antonio@gmail.com>
+References: <1404022428-2816-1-git-send-email-borneo.antonio@gmail.com>
+Date: Mon, 7 Jul 2014 10:03:29 -0400
+Message-ID: <CAN+gG=GM9FqZJwJF0G41E9oWEjcWDeavd=kfZ9qcXvoAkmUdpA@mail.gmail.com>
+Subject: Re: [PATCH] HID: cp2112: fix gpio value in gpio_direction_output
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Antonio Borneo <borneo.antonio@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
+        David Barksdale <dbarksdale@uplogix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit ae91d60ba88ef0bdb1b5e9b2363bd52fc45d2af7, a bug was fixed that
-involved converting !x & y to !(x & y).  The code below shows the same
-pattern, and thus should perhaps be fixed in the same way.
+On Sun, Jun 29, 2014 at 2:13 AM, Antonio Borneo
+<borneo.antonio@gmail.com> wrote:
+> CP2112 does not offer an atomic method to set both gpio
+> direction and value.
+> Also it does not permit to set gpio value before putting
+> gpio in output. In fact, accordingly to Silicon Labs
+> AN495, Rev. 0.2, cpt. 4.4, the HID report to set gpio
+> values "does not affect any pins that are not configured
+> as outputs".
+>
+> This is confirmed on evaluation board CP2112-EK.
+> With current driver, after execute:
+>         echo in > /sys/class/gpio/gpio248/direction
+>         echo low > /sys/class/gpio/gpio248/direction
+> gpio output is still high. Only after a following
+>         echo low > /sys/class/gpio/gpio248/direction
+> gpio output gets low.
+>
+> Fix driver by changing order of operations; first set
+> direction then set value.
+>
+> The drawback of this new sequence is that we can have
+> a pulse on gpio pin when direction is changed from
+> input to output-low, but this cannot be avoided on
+> current CP2112.
 
-The Coccinelle semantic patch that makes this change is as follows:
+In this case, does keeping the first cp2112_gpio_set() before setting
+the output direction prevents the pulse?
+If so, then you can just keep the current code, and simply add the
+cp2112_gpio_set() at the end of cp2112_gpio_direction_output().
 
-// <smpl>
-@@ expression E1,E2; @@
-(
-  !E1 & !E2
-|
-- !E1 & E2
-+ !(E1 & E2)
-)
-// </smpl>
+In both case, this is:
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
-This is not tested and clearly changes the semantics, so it is only
-something to consider.
- tools/power/cpupower/utils/idle_monitor/mperf_monitor.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Cheers,
+Benjamin
 
-diff --git a/tools/power/cpupower/utils/idle_monitor/mperf_monitor.c b/tools/power/cpupower/utils/idle_monitor/mperf_monitor.c
-index 5650ab5..90a8c4f 100644
---- a/tools/power/cpupower/utils/idle_monitor/mperf_monitor.c
-+++ b/tools/power/cpupower/utils/idle_monitor/mperf_monitor.c
-@@ -237,7 +237,7 @@ static int init_maxfreq_mode(void)
- 	unsigned long long hwcr;
- 	unsigned long min;
- 
--	if (!cpupower_cpu_info.caps & CPUPOWER_CAP_INV_TSC)
-+	if (!(cpupower_cpu_info.caps & CPUPOWER_CAP_INV_TSC))
- 		goto use_sysfs;
- 
- 	if (cpupower_cpu_info.vendor == X86_VENDOR_AMD) {
--- 
-1.9.1
-
+>
+> Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
+> ---
+>  drivers/hid/hid-cp2112.c | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
+> index 56be85a..3952d90 100644
+> --- a/drivers/hid/hid-cp2112.c
+> +++ b/drivers/hid/hid-cp2112.c
+> @@ -240,8 +240,6 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
+>         u8 buf[5];
+>         int ret;
+>
+> -       cp2112_gpio_set(chip, offset, value);
+> -
+>         ret = hid_hw_raw_request(hdev, CP2112_GPIO_CONFIG, buf,
+>                                        sizeof(buf), HID_FEATURE_REPORT,
+>                                        HID_REQ_GET_REPORT);
+> @@ -260,6 +258,12 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
+>                 return ret;
+>         }
+>
+> +       /*
+> +        * Set gpio value when output direction is already set,
+> +        * as specified in AN495, Rev. 0.2, cpt. 4.4
+> +        */
+> +       cp2112_gpio_set(chip, offset, value);
+> +
+>         return 0;
+>  }
+>
+> --
+> 2.0.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
