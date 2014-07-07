@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354AbaGGXyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:54:06 -0400
+	id S932265AbaGHBCD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:02:03 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:55226 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121AbaGGXx7 (ORCPT
+	with ESMTP id S1753315AbaGGXyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:53:59 -0400
+	Mon, 7 Jul 2014 19:54:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.15 056/122] Bluetooth: Fix indicating discovery state when canceling inquiry
-Date: Mon,  7 Jul 2014 16:56:58 -0700
-Message-Id: <20140707235735.955139937@linuxfoundation.org>
+        Steven Miao <realmz6@gmail.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.15 074/122] mm: nommu: per-thread vma cache fix
+Date: Mon,  7 Jul 2014 16:57:16 -0700
+Message-Id: <20140707235736.479829998@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,37 +31,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Steven Miao <realmz6@gmail.com>
 
-commit 50143a433b70e3145bcf8a4a4e54f0c11bdee32b upstream.
+commit e020d5bd8a730757b565b18d620240f71c3e21fe upstream.
 
-When inquiry is canceled through the HCI_Cancel_Inquiry command there is
-no Inquiry Complete event generated. Instead, all we get is the command
-complete for the HCI_Inquiry_Cancel command. This means that we must
-call the hci_discovery_set_state() function from the respective command
-complete handler in order to ensure that user space knows the correct
-discovery state.
+mm could be removed from current task struct, using previous vma->vm_mm
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+It will crash on blackfin after updated to Linux 3.15.  The commit "mm:
+per-thread vma caching" caused the crash.  mm could be removed from
+current task struct before
+
+  mmput()->
+    exit_mmap()->
+      delete_vma_from_mm()
+
+the detailed fault information:
+
+    NULL pointer access
+    Kernel OOPS in progress
+    Deferred Exception context
+    CURRENT PROCESS:
+    COMM=modprobe PID=278  CPU=0
+    invalid mm
+    return address: [0x000531de]; contents of:
+    0x000531b0:  c727  acea  0c42  181d  0000  0000  0000  a0a8
+    0x000531c0:  b090  acaa  0c42  1806  0000  0000  0000  a0e8
+    0x000531d0:  b0d0  e801  0000  05b3  0010  e522  0046 [a090]
+    0x000531e0:  6408  b090  0c00  17cc  3042  e3ff  f37b  2fc8
+
+    CPU: 0 PID: 278 Comm: modprobe Not tainted 3.15.0-ADI-2014R1-pre-00345-gea9f446 #25
+    task: 0572b720 ti: 0569e000 task.ti: 0569e000
+    Compiled for cpu family 0x27fe (Rev 0), but running on:0x0000 (Rev 0)
+    ADSP-BF609-0.0 500(MHz CCLK) 125(MHz SCLK) (mpu off)
+    Linux version 3.15.0-ADI-2014R1-pre-00345-gea9f446 (steven@steven-OptiPlex-390) (gcc version 4.3.5 (ADI-trunk/svn-5962) ) #25 Tue Jun 10 17:47:46 CST 2014
+
+    SEQUENCER STATUS:		Not tainted
+     SEQSTAT: 00000027  IPEND: 8008  IMASK: ffff  SYSCFG: 2806
+      EXCAUSE   : 0x27
+      physical IVG3 asserted : <0xffa00744> { _trap + 0x0 }
+      physical IVG15 asserted : <0xffa00d68> { _evt_system_call + 0x0 }
+      logical irq   6 mapped  : <0xffa003bc> { _bfin_coretmr_interrupt + 0x0 }
+      logical irq   7 mapped  : <0x00008828> { _bfin_fault_routine + 0x0 }
+      logical irq  11 mapped  : <0x00007724> { _l2_ecc_err + 0x0 }
+      logical irq  13 mapped  : <0x00008828> { _bfin_fault_routine + 0x0 }
+      logical irq  39 mapped  : <0x00150788> { _bfin_twi_interrupt_entry + 0x0 }
+      logical irq  40 mapped  : <0x00150788> { _bfin_twi_interrupt_entry + 0x0 }
+     RETE: <0x00000000> /* Maybe null pointer? */
+     RETN: <0x0569fe50> /* kernel dynamic memory (maybe user-space) */
+     RETX: <0x00000480> /* Maybe fixed code section */
+     RETS: <0x00053384> { _exit_mmap + 0x28 }
+     PC  : <0x000531de> { _delete_vma_from_mm + 0x92 }
+    DCPLB_FAULT_ADDR: <0x00000008> /* Maybe null pointer? */
+    ICPLB_FAULT_ADDR: <0x000531de> { _delete_vma_from_mm + 0x92 }
+    PROCESSOR STATE:
+     R0 : 00000004    R1 : 0569e000    R2 : 00bf3db4    R3 : 00000000
+     R4 : 057f9800    R5 : 00000001    R6 : 0569ddd0    R7 : 0572b720
+     P0 : 0572b854    P1 : 00000004    P2 : 00000000    P3 : 0569dda0
+     P4 : 0572b720    P5 : 0566c368    FP : 0569fe5c    SP : 0569fd74
+     LB0: 057f523f    LT0: 057f523e    LC0: 00000000
+     LB1: 0005317c    LT1: 00053172    LC1: 00000002
+     B0 : 00000000    L0 : 00000000    M0 : 0566f5bc    I0 : 00000000
+     B1 : 00000000    L1 : 00000000    M1 : 00000000    I1 : ffffffff
+     B2 : 00000001    L2 : 00000000    M2 : 00000000    I2 : 00000000
+     B3 : 00000000    L3 : 00000000    M3 : 00000000    I3 : 057f8000
+    A0.w: 00000000   A0.x: 00000000   A1.w: 00000000   A1.x: 00000000
+    USP : 056ffcf8  ASTAT: 02003024
+
+    Hardware Trace:
+       0 Target : <0x00003fb8> { _trap_c + 0x0 }
+         Source : <0xffa006d8> { _exception_to_level5 + 0xa0 } JUMP.L
+       1 Target : <0xffa00638> { _exception_to_level5 + 0x0 }
+         Source : <0xffa004f2> { _bfin_return_from_exception + 0x6 } RTX
+       2 Target : <0xffa004ec> { _bfin_return_from_exception + 0x0 }
+         Source : <0xffa00590> { _ex_trap_c + 0x70 } JUMP.S
+       3 Target : <0xffa00520> { _ex_trap_c + 0x0 }
+         Source : <0xffa0076e> { _trap + 0x2a } JUMP (P4)
+       4 Target : <0xffa00744> { _trap + 0x0 }
+          FAULT : <0x000531de> { _delete_vma_from_mm + 0x92 } P0 = W[P2 + 2]
+         Source : <0x000531da> { _delete_vma_from_mm + 0x8e } P2 = [P4 + 0x18]
+       5 Target : <0x000531da> { _delete_vma_from_mm + 0x8e }
+         Source : <0x00053176> { _delete_vma_from_mm + 0x2a } IF CC JUMP pcrel
+       6 Target : <0x0005314c> { _delete_vma_from_mm + 0x0 }
+         Source : <0x00053380> { _exit_mmap + 0x24 } JUMP.L
+       7 Target : <0x00053378> { _exit_mmap + 0x1c }
+         Source : <0x00053394> { _exit_mmap + 0x38 } IF !CC JUMP pcrel (BP)
+       8 Target : <0x00053390> { _exit_mmap + 0x34 }
+         Source : <0xffa020e0> { __cond_resched + 0x20 } RTS
+       9 Target : <0xffa020c0> { __cond_resched + 0x0 }
+         Source : <0x0005338c> { _exit_mmap + 0x30 } JUMP.L
+      10 Target : <0x0005338c> { _exit_mmap + 0x30 }
+         Source : <0x0005333a> { _delete_vma + 0xb2 } RTS
+      11 Target : <0x00053334> { _delete_vma + 0xac }
+         Source : <0x0005507a> { _kmem_cache_free + 0xba } RTS
+      12 Target : <0x00055068> { _kmem_cache_free + 0xa8 }
+         Source : <0x0005505e> { _kmem_cache_free + 0x9e } IF !CC JUMP pcrel (BP)
+      13 Target : <0x00055052> { _kmem_cache_free + 0x92 }
+         Source : <0x0005501a> { _kmem_cache_free + 0x5a } IF CC JUMP pcrel
+      14 Target : <0x00054ff4> { _kmem_cache_free + 0x34 }
+         Source : <0x00054fce> { _kmem_cache_free + 0xe } IF CC JUMP pcrel (BP)
+      15 Target : <0x00054fc0> { _kmem_cache_free + 0x0 }
+         Source : <0x00053330> { _delete_vma + 0xa8 } JUMP.L
+    Kernel Stack
+    Stack info:
+     SP: [0x0569ff24] <0x0569ff24> /* kernel dynamic memory (maybe user-space) */
+     Memory from 0x0569ff20 to 056a0000
+    0569ff20: 00000001 [04e8da5a] 00008000  00000000  00000000  056a0000  04e8da5a  04e8da5a
+    0569ff40: 04eb9eea  ffa00dce  02003025  04ea09c5  057f523f  04ea09c4  057f523e  00000000
+    0569ff60: 00000000  00000000  00000000  00000000  00000000  00000000  00000001  00000000
+    0569ff80: 00000000  00000000  00000000  00000000  00000000  00000000  00000000  00000000
+    0569ffa0: 0566f5bc  057f8000  057f8000  00000001  04ec0170  056ffcf8  056ffd04  057f9800
+    0569ffc0: 04d1d498  057f9800  057f8fe4  057f8ef0  00000001  057f928c  00000001  00000001
+    0569ffe0: 057f9800  00000000  00000008  00000007  00000001  00000001  00000001 <00002806>
+    Return addresses in stack:
+        address : <0x00002806> { _show_cpuinfo + 0x2d2 }
+    Modules linked in:
+    Kernel panic - not syncing: Kernel exception
+    [ end Kernel panic - not syncing: Kernel exception
+
+Signed-off-by: Steven Miao <realmz6@gmail.com>
+Acked-by: Davidlohr Bueso <davidlohr@hp.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_event.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ mm/nommu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -48,6 +48,10 @@ static void hci_cc_inquiry_cancel(struct
- 	smp_mb__after_clear_bit(); /* wake_up_bit advises about this barrier */
- 	wake_up_bit(&hdev->flags, HCI_INQUIRY);
- 
-+	hci_dev_lock(hdev);
-+	hci_discovery_set_state(hdev, DISCOVERY_STOPPED);
-+	hci_dev_unlock(hdev);
-+
- 	hci_conn_check_pending(hdev);
- }
- 
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -783,7 +783,7 @@ static void delete_vma_from_mm(struct vm
+ 	for (i = 0; i < VMACACHE_SIZE; i++) {
+ 		/* if the vma is cached, invalidate the entire cache */
+ 		if (curr->vmacache[i] == vma) {
+-			vmacache_invalidate(curr->mm);
++			vmacache_invalidate(mm);
+ 			break;
+ 		}
+ 	}
 
 
