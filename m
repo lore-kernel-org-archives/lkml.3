@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085AbaGGIjB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 04:39:01 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:54647 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383AbaGGIi7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 04:38:59 -0400
-Date: Mon, 7 Jul 2014 10:39:08 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Pavel Machek <pavel@ucw.cz>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux-pm mailing list <linux-pm@lists.osdl.org>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Subject: Re: 3.15-rc: regression in suspend
-Message-ID: <20140707083908.GE5821@phenom.ffwll.local>
-Mail-Followup-To: Jiri Kosina <jkosina@suse.cz>,
-	Pavel Machek <pavel@ucw.cz>,
-	"Rafael J. Wysocki" <rjw@rjwysocki.net>,
-	Linux-pm mailing list <linux-pm@lists.osdl.org>,
-	kernel list <linux-kernel@vger.kernel.org>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>
-References: <20140514182046.GA13342@amd.pavel.ucw.cz>
- <alpine.LNX.2.00.1405151727380.16459@pobox.suse.cz>
- <CAKMK7uFEjDGSpdB0xDPL09GZ8N7aFrNA530HbRLyfTPx5SkLQw@mail.gmail.com>
- <20140607120614.GB5309@amd.pavel.ucw.cz>
- <20140607231124.GA3611@amd.pavel.ucw.cz>
- <CAKMK7uEALofLiEA3m-QKjygC=YZNjaEtUMfbpbXinMoim1ygkw@mail.gmail.com>
- <20140609102328.GA25332@amd.pavel.ucw.cz>
- <alpine.LNX.2.00.1406091302560.20782@pobox.suse.cz>
- <20140625223522.GA5923@xo-6d-61-c0.localdomain>
- <alpine.LNX.2.00.1406271537000.21386@pobox.suse.cz>
+	id S1752127AbaGGIkQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 04:40:16 -0400
+Received: from 8bytes.org ([85.214.48.195]:44645 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751401AbaGGIkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 04:40:14 -0400
+Date: Mon, 7 Jul 2014 10:40:12 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] iommu: Constify struct iommu_ops
+Message-ID: <20140707084011.GB1958@8bytes.org>
+References: <1403852592-10637-1-git-send-email-thierry.reding@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1406271537000.21386@pobox.suse.cz>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1403852592-10637-1-git-send-email-thierry.reding@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon Jul  7 10:40:13 2014
+X-DSPAM-Confidence: 0.9995
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 53ba5ced20861949219570
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 27, 2014 at 03:37:16PM +0200, Jiri Kosina wrote:
-> On Thu, 26 Jun 2014, Pavel Machek wrote:
+On Fri, Jun 27, 2014 at 09:03:12AM +0200, Thierry Reding wrote:
+> From: Thierry Reding <treding@nvidia.com>
 > 
-> > Ok, so I have set up machines for ktest / autobisect, and found out that 
-> > 3.16-rc1 no longer has that problem. Oh well, bisect would not be fun, 
-> > anyway...
+> This structure is read-only data and should never be modified.
 > 
-> I am still seeing the problem with 3.16-rc2.
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> ---
+> Changes in v2:
+> - add missing hunk from include/device.h
+> 
+>  drivers/iommu/amd_iommu.c       |  4 ++--
+>  drivers/iommu/arm-smmu.c        |  2 +-
+>  drivers/iommu/exynos-iommu.c    |  2 +-
+>  drivers/iommu/fsl_pamu_domain.c |  2 +-
+>  drivers/iommu/intel-iommu.c     |  4 ++--
+>  drivers/iommu/iommu.c           | 19 ++++++++++++++-----
+>  drivers/iommu/ipmmu-vmsa.c      |  2 +-
+>  drivers/iommu/msm_iommu.c       |  2 +-
+>  drivers/iommu/omap-iommu.c      |  2 +-
+>  drivers/iommu/shmobile-iommu.c  |  2 +-
+>  drivers/iommu/tegra-gart.c      |  2 +-
+>  drivers/iommu/tegra-smmu.c      |  2 +-
+>  include/linux/device.h          |  2 +-
+>  include/linux/iommu.h           |  4 ++--
+>  14 files changed, 30 insertions(+), 21 deletions(-)
 
-I'm confused now. Is the bisect result
+Applied, thanks.
 
-commit 773875bfb6737982903c42d1ee88cf60af80089c
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Mon Jan 27 10:00:30 2014 +0100
 
-    drm/i915: Don't set the 8to6 dither flag when not scaling
-
-now the culprit or not? Or do we have 2 different bugs at hand here?
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
