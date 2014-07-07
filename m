@@ -1,179 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627AbaGGAwk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 20:52:40 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:42466 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752556AbaGGAwh (ORCPT
+	id S1752661AbaGGAw6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 20:52:58 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:44009 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540AbaGGAwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 20:52:37 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v10 7/7] mm: Don't split THP page when syscall is called
-Date: Mon,  7 Jul 2014 09:53:58 +0900
-Message-Id: <1404694438-10272-8-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404694438-10272-1-git-send-email-minchan@kernel.org>
-References: <1404694438-10272-1-git-send-email-minchan@kernel.org>
+	Sun, 6 Jul 2014 20:52:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFwd7sKSKu0+pfSOUGUQrbVuCO_ZBAXds=uGYx5=yfV=VA@mail.gmail.com>
+References: <CACxGe6vFHADzsE7_69B+jjT3kwX_3kOdUBzjtSVEYETwR7HY3Q@mail.gmail.com>
+ <CA+55aFwd7sKSKu0+pfSOUGUQrbVuCO_ZBAXds=uGYx5=yfV=VA@mail.gmail.com>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Mon, 7 Jul 2014 01:52:33 +0100
+X-Google-Sender-Auth: BMMUE1ZWX-NpfGYac3aLNwWE-nk
+Message-ID: <CACxGe6sZgjVeCLW8VXAtrYg+mbZYOsUvTySJzuBp9OijiTmNyQ@mail.gmail.com>
+Subject: Re: [GIT PULL] bug fix for devicetree memory parsing
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rob Herring <rob.herring@linaro.org>, Laura Abbott <lauraa@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to split THP page when MADV_FREE syscall is
-called. It could be done when VM decide really frees it so
-we could reduce the number of THP split.
+On Sun, Jul 6, 2014 at 8:24 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sun, Jul 6, 2014 at 2:37 AM, Grant Likely <grant.likely@linaro.org> wrote:
+>>
+>> Can you pull this bug fix into your tree please?
+>
+> I took it, but I think both your explanation and the patch itself is
+> actually crap. It may fix the issue, but it's seriously confused.
+>
+> Your explanation says that it's a 32-bit platform issue. No it's not.
+> Most 32-bit configurations still have a 64-bit phys_addr_t (ie
+> PAE/LPAE etc).
+>
+> And the code is crap, because it uses ULONG_MAX etc in ways that
+> simply make no f*cking sense. And why does it care about sizeof?
+>
+> Why does the code not just do something like
+>
+>   #define MAX_PHYS_ADDR ((phys_addr_t) ~0)
+>
+> and then do
+>
+>   if (base > MAX_PHYS_ADDR || base + size > MAX_PHYS_ADDR)
+>     ...
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- include/linux/huge_mm.h |  3 +++
- mm/huge_memory.c        | 25 +++++++++++++++++++++++++
- mm/madvise.c            | 19 +++++++++++++++++--
- mm/rmap.c               |  4 ++++
- mm/vmscan.c             | 24 ++++++++++++++++--------
- 5 files changed, 65 insertions(+), 10 deletions(-)
+Sure. I'll make sure a cleanup patch gets written and queued up.
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index 63579cb8d3dc..f0d37238cf8f 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -19,6 +19,9 @@ extern struct page *follow_trans_huge_pmd(struct vm_area_struct *vma,
- 					  unsigned long addr,
- 					  pmd_t *pmd,
- 					  unsigned int flags);
-+extern int madvise_free_pmd(struct mmu_gather *tlb,
-+			struct vm_area_struct *vma,
-+			pmd_t *pmd, unsigned long addr);
- extern int zap_huge_pmd(struct mmu_gather *tlb,
- 			struct vm_area_struct *vma,
- 			pmd_t *pmd, unsigned long addr);
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 5d562a9fe931..2a70069dcfc0 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1384,6 +1384,31 @@ out:
- 	return 0;
- }
- 
-+int madvise_free_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
-+		 pmd_t *pmd, unsigned long addr)
-+{
-+	spinlock_t *ptl;
-+	int ret = 0;
-+
-+	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
-+		pmd_t orig_pmd;
-+		struct mm_struct *mm = vma->vm_mm;
-+
-+		/* No hugepage in swapcache */
-+		VM_BUG_ON(PageSwapCache(pmd_page(orig_pmd)));
-+
-+		orig_pmd = pmdp_get_and_clear(tlb->mm, addr, pmd);
-+		orig_pmd = pmd_mkold(orig_pmd);
-+		orig_pmd = pmd_mkclean(orig_pmd);
-+
-+		set_pmd_at(mm, addr, pmd, orig_pmd);
-+		tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
-+		spin_unlock(ptl);
-+		ret = 1;
-+	}
-+	return ret;
-+}
-+
- int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 		 pmd_t *pmd, unsigned long addr)
- {
-diff --git a/mm/madvise.c b/mm/madvise.c
-index 372a25a8ea82..3c99919ee094 100644
---- a/mm/madvise.c
-+++ b/mm/madvise.c
-@@ -320,8 +320,23 @@ static inline unsigned long madvise_free_pmd_range(struct mmu_gather *tlb,
- 		 * if the range covers.
- 		 */
- 		next = pmd_addr_end(addr, end);
--		if (pmd_trans_huge(*pmd))
--			split_huge_page_pmd(vma, addr, pmd);
-+		if (pmd_trans_huge(*pmd)) {
-+			if (next - addr != HPAGE_PMD_SIZE) {
-+#ifdef CONFIG_DEBUG_VM
-+				if (!rwsem_is_locked(&tlb->mm->mmap_sem)) {
-+					pr_err("%s: mmap_sem is unlocked! addr=0x%lx end=0x%lx vma->vm_start=0x%lx vma->vm_end=0x%lx\n",
-+						__func__, addr, end,
-+						vma->vm_start,
-+						vma->vm_end);
-+					BUG();
-+				}
-+#endif
-+				split_huge_page_pmd(vma, addr, pmd);
-+			} else if (madvise_free_pmd(tlb, vma, pmd, addr))
-+				goto next;
-+			/* fall through */
-+		}
-+
- 		/*
- 		 * Here there can be other concurrent MADV_DONTNEED or
- 		 * trans huge page faults running, and if the pmd is
-diff --git a/mm/rmap.c b/mm/rmap.c
-index ee495d84c8b3..3c415eb8b6f0 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -702,6 +702,10 @@ static int page_referenced_one(struct page *page, struct vm_area_struct *vma,
- 		/* go ahead even if the pmd is pmd_trans_splitting() */
- 		if (pmdp_clear_flush_young_notify(vma, address, pmd))
- 			referenced++;
-+
-+		if (pmd_dirty(*pmd))
-+			dirty++;
-+
- 		spin_unlock(ptl);
- 	} else {
- 		pte_t *pte;
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index f7a45600846f..4e15babf4414 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -971,15 +971,23 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		 * Anonymous process memory has backing store?
- 		 * Try to allocate it some swap space here.
- 		 */
--		if (PageAnon(page) && !PageSwapCache(page) && !freeable) {
--			if (!(sc->gfp_mask & __GFP_IO))
--				goto keep_locked;
--			if (!add_to_swap(page, page_list))
--				goto activate_locked;
--			may_enter_fs = 1;
-+		if (PageAnon(page) && !PageSwapCache(page)) {
-+			if (!freeable) {
-+				if (!(sc->gfp_mask & __GFP_IO))
-+					goto keep_locked;
-+				if (!add_to_swap(page, page_list))
-+					goto activate_locked;
-+				may_enter_fs = 1;
- 
--			/* Adding to swap updated mapping */
--			mapping = page_mapping(page);
-+				/* Adding to swap updated mapping */
-+				mapping = page_mapping(page);
-+			} else {
-+				if (unlikely(PageTransHuge(page))) {
-+					if (unlikely(split_huge_page_to_list(
-+						page, page_list)))
-+						goto keep_locked;
-+				}
-+			}
- 		}
- 
- 		/*
--- 
-2.0.0
-
+g.
