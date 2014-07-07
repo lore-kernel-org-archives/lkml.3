@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754AbaGGOFK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:05:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45039 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753505AbaGGOFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:05:07 -0400
-Date: Mon, 7 Jul 2014 10:04:26 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] video: fbdev: aty: atyfb_base.c:  Cleaning up variable
- that is never used
-In-Reply-To: <1404671093-17590-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Message-ID: <alpine.LRH.2.02.1407071004060.9534@file01.intranet.prod.int.rdu2.redhat.com>
-References: <1404671093-17590-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1753791AbaGGOFp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:05:45 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:37365 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075AbaGGOFn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 10:05:43 -0400
+Date: Mon, 7 Jul 2014 19:35:38 +0530
+From: Himangi Saraogi <himangi774@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: julia.lawall@lip6.fr
+Subject: [PATCH] drivers: CCI: Correct use of ! and &
+Message-ID: <20140707140538.GA4204@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In commit ae91d60ba88ef0bdb1b5e9b2363bd52fc45d2af7, a bug was fixed that
+involved converting !x & y to !(x & y).  The code below shows the same
+pattern, and thus should perhaps be fixed in the same way.
 
+The Coccinelle semantic patch that makes this change is as follows:
 
-On Sun, 6 Jul 2014, Rickard Strandqvist wrote:
+// <smpl>
+@@ expression E1,E2; @@
+(
+  !E1 & !E2
+|
+- !E1 & E2
++ !(E1 & E2)
+)
+// </smpl>
 
-> Variable ar assigned a value that is never used.
-> I have also removed all the code that thereby serves no purpose.
-> 
-> This was found using a static code analysis program called cppcheck
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+---
+This is not tested and clearly changes the semantics, so it is only
+something to consider.
+ drivers/bus/arm-cci.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Acked-by: Mikulas Patocka <mpatocka@redhat.com>
+diff --git a/drivers/bus/arm-cci.c b/drivers/bus/arm-cci.c
+index 5a86da9..7af78df 100644
+--- a/drivers/bus/arm-cci.c
++++ b/drivers/bus/arm-cci.c
+@@ -397,7 +397,8 @@ static irqreturn_t pmu_handle_irq(int irq_num, void *dev)
+ 		hw_counter = &event->hw;
+ 
+ 		/* Did this counter overflow? */
+-		if (!pmu_read_register(idx, CCI_PMU_OVRFLW) & CCI_PMU_OVRFLW_FLAG)
++		if (!(pmu_read_register(idx, CCI_PMU_OVRFLW) &
++		      CCI_PMU_OVRFLW_FLAG))
+ 			continue;
+ 
+ 		pmu_write_register(CCI_PMU_OVRFLW_FLAG, idx, CCI_PMU_OVRFLW);
+-- 
+1.9.1
 
-> ---
->  drivers/video/fbdev/aty/atyfb_base.c |    4 ----
->  1 file changed, 4 deletions(-)
-> 
-> diff --git a/drivers/video/fbdev/aty/atyfb_base.c b/drivers/video/fbdev/aty/atyfb_base.c
-> index c3d0074..46188a4 100644
-> --- a/drivers/video/fbdev/aty/atyfb_base.c
-> +++ b/drivers/video/fbdev/aty/atyfb_base.c
-> @@ -3088,7 +3088,6 @@ static int atyfb_setup_sparc(struct pci_dev *pdev, struct fb_info *info,
->  	if (dp == of_console_device) {
->  		struct fb_var_screeninfo *var = &default_var;
->  		unsigned int N, P, Q, M, T, R;
-> -		u32 v_total, h_total;
->  		struct crtc crtc;
->  		u8 pll_regs[16];
->  		u8 clock_cntl;
-> @@ -3104,9 +3103,6 @@ static int atyfb_setup_sparc(struct pci_dev *pdev, struct fb_info *info,
->  		crtc.gen_cntl = aty_ld_le32(CRTC_GEN_CNTL, par);
->  		aty_crtc_to_var(&crtc, var);
->  
-> -		h_total = var->xres + var->right_margin + var->hsync_len + var->left_margin;
-> -		v_total = var->yres + var->lower_margin + var->vsync_len + var->upper_margin;
-> -
->  		/*
->  		 * Read the PLL to figure actual Refresh Rate.
->  		 */
-> -- 
-> 1.7.10.4
-> 
