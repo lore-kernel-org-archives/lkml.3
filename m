@@ -1,40 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077AbaGGTnC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 15:43:02 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:39093 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbaGGTm7 (ORCPT
+	id S1752156AbaGGTn0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 15:43:26 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50396 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751225AbaGGTnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 15:42:59 -0400
+	Mon, 7 Jul 2014 15:43:24 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Imre Deak <imre.deak@intel.com>
+Subject: Re: linux-next: Tree for Jun 19 (drm/i915)
+Date: Mon, 07 Jul 2014 22:01:27 +0200
+Message-ID: <16952236.GFHaOHoKy4@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140707145423.GB5821@phenom.ffwll.local>
+References: <20140619161632.58b442e4@canb.auug.org.au> <9626816.NOau5dZfmB@vostro.rjw.lan> <20140707145423.GB5821@phenom.ffwll.local>
 MIME-Version: 1.0
-In-Reply-To: <1404227754-452-1-git-send-email-k.debski@samsung.com>
-References: <1404227754-452-1-git-send-email-k.debski@samsung.com>
-Date: Mon, 7 Jul 2014 20:42:58 +0100
-Message-ID: <CAD8Lp46Q5my3VMwgArtmWdtowJmXixjndO-+Kcjt1Xj3USKgqA@mail.gmail.com>
-Subject: Re: [PATCH v2] phy: phy-samsung-usb2: Change phy power on/power off sequence
-From: Daniel Drake <drake@endlessm.com>
-To: Kamil Debski <k.debski@samsung.com>
-Cc: linux-kernel@vger.kernel.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-usb@vger.kernel.org, kishon@ti.com,
-        Tomasz Figa <t.figa@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 1, 2014 at 4:15 PM, Kamil Debski <k.debski@samsung.com> wrote:
-> The Exynos4412 USB 2.0 PHY hardware differs from the description provided
-> in the documentation. Some register bits have different function. This
-> patch fixes the defines of register bits and changes the way how phys are
-> powered on and off.
->
-> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+On Monday, July 07, 2014 04:54:23 PM Daniel Vetter wrote:
+> On Wed, Jun 25, 2014 at 01:01:36AM +0200, Rafael J. Wysocki wrote:
+> > On Tuesday, June 24, 2014 02:43:02 PM Jani Nikula wrote:
+> > > On Thu, 19 Jun 2014, Randy Dunlap <rdunlap@infradead.org> wrote:
+> > > > On 06/18/14 23:16, Stephen Rothwell wrote:
+> > > >> Hi all,
+> > > >> 
+> > > >> The powerpc allyesconfig is again broken more than usual.
+> > > >> 
+> > > >> Changes since 20140618:
+> > > >> 
+> > > >
+> > > > on i386:
+> > > >
+> > > > CONFIG_ACPI is not enabled.
+> > > >
+> > > >   CC      drivers/gpu/drm/i915/i915_drv.o
+> > > > ../drivers/gpu/drm/i915/i915_drv.c: In function 'i915_drm_freeze':
+> > > > ../drivers/gpu/drm/i915/i915_drv.c:547:2: error: implicit declaration of function 'acpi_target_system_state' [-Werror=implicit-function-declaration]
+> > > > ../drivers/gpu/drm/i915/i915_drv.c:547:36: error: 'ACPI_STATE_S3' undeclared (first use in this function)
+> > > > ../drivers/gpu/drm/i915/i915_drv.c:547:36: note: each undeclared identifier is reported only once for each function it appears in
+> > > >   CC      net/dccp/qpolicy.o
+> > > > cc1: some warnings being treated as errors
+> > > > make[5]: *** [drivers/gpu/drm/i915/i915_drv.o] Error 1
+> > > 
+> > > Thanks for the report, we'll fix it.
+> > > 
+> > > Can anyone explain why include/linux/acpi_bus.h has #ifdef
+> > > CONFIG_ACPI_SLEEP and conditional build for a dummy inline version of
+> > > acpi_target_system_state(), *but* that does not get included or used if
+> > > CONFIG_ACPI=n? Additionally, the combination of CONFIG_ACPI=y and
+> > > CONFIG_ACPI_SLEEP=n does not seem to work at all.
+> > 
+> > These two things look like bugs to me.  Most likely not tested thoruoughly
+> > enough.
+> > 
+> > > So we'll really have to sprinkle #ifdef CONFIG_ACPI all over, instead of
+> > > neatly using the dummy versions that someone has gone through the
+> > > trouble of adding?
+> > 
+> > No, we don't have to.
+> 
+> Back from my vacation and I didn't see a conclusion to this issue here.
+> Rafael, have you fixed this in your acpi tree or do I need to do something
+> in drm-intel?
 
-Tested on ODROID-U2 with the internal LAN (which is a USB device), and
-an external USB mouse connected via the internal USB hub.
+I was on vacation too. :-)
 
-Tested-by: Daniel Drake <drake@endlessm.com>
+Please have a look if i915 includes acpi/acpi_bus.h directly anywhere.  If so,
+it should include linux/acpi.h instead.  I'll fix up the rest in the ACPI tree.
+
+Rafael
+
