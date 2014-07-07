@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900AbaGHAby (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:31:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55860 "EHLO
+	id S1755368AbaGHAcM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:32:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55898 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064AbaGGXyr (ORCPT
+	with ESMTP id S1753880AbaGGXyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 69/94] iio: of_iio_channel_get_by_name() returns non-null pointers for error legs
-Date: Mon,  7 Jul 2014 16:57:59 -0700
-Message-Id: <20140707235758.821463733@linuxfoundation.org>
+        Xiaoming Gao <newtongao@ppt.dcoin.co>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.14 68/94] kvm: fix wrong address when writing Hyper-V tsc page
+Date: Mon,  7 Jul 2014 16:57:58 -0700
+Message-Id: <20140707235758.792386355@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,54 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+From: Xiaoming Gao <newtongao@tencent.com>
 
-commit a2c12493ed7e63a18cef33a71686d12ffcd6600e upstream.
+commit e1fa108d24697b78348fd4e5a531029a50d0d36d upstream.
 
-Currently in the inkern.c code for IIO framework, the function
-of_iio_channel_get_by_name() will return a non-NULL pointer when
-it cannot find a channel using of_iio_channel_get() and when it
-tries to search for 'io-channel-ranges' property and fails. This
-is incorrect behaviour as the function which calls this expects
-a NULL pointer for failure. This patch rectifies the issue.
+When kvm_write_guest writes the tsc_ref structure to the guest, or it will lead
+the low HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT bits of the TSC page address
+must be cleared, or the guest can see a non-zero sequence number.
 
-Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Otherwise Windows guests would not be able to get a correct clocksource
+(QueryPerformanceCounter will always return 0) which causes serious chaos.
+
+Signed-off-by: Xiaoming Gao <newtongao@tencnet.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/inkern.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/kvm/x86.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/iio/inkern.c
-+++ b/drivers/iio/inkern.c
-@@ -183,7 +183,7 @@ static struct iio_channel *of_iio_channe
- 		else if (name && index >= 0) {
- 			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
- 				np->full_name, name ? name : "", index);
--			return chan;
-+			return NULL;
- 		}
- 
- 		/*
-@@ -193,8 +193,9 @@ static struct iio_channel *of_iio_channe
- 		 */
- 		np = np->parent;
- 		if (np && !of_get_property(np, "io-channel-ranges", NULL))
--			break;
-+			return NULL;
- 	}
-+
- 	return chan;
- }
- 
-@@ -317,6 +318,7 @@ struct iio_channel *iio_channel_get(stru
- 		if (channel != NULL)
- 			return channel;
- 	}
-+
- 	return iio_channel_get_sys(name, channel_name);
- }
- EXPORT_SYMBOL_GPL(iio_channel_get);
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1866,7 +1866,7 @@ static int set_msr_hyperv_pw(struct kvm_
+ 		if (!(data & HV_X64_MSR_TSC_REFERENCE_ENABLE))
+ 			break;
+ 		gfn = data >> HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT;
+-		if (kvm_write_guest(kvm, data,
++		if (kvm_write_guest(kvm, gfn << HV_X64_MSR_TSC_REFERENCE_ADDRESS_SHIFT,
+ 			&tsc_ref, sizeof(tsc_ref)))
+ 			return 1;
+ 		mark_page_dirty(kvm, gfn);
 
 
