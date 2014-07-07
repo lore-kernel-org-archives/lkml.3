@@ -1,141 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055AbaGGIZj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 04:25:39 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39969 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227AbaGGIZh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 04:25:37 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <53BA597E.4000203@lge.com>
-Date: Mon, 07 Jul 2014 17:25:34 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752080AbaGGI1W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 04:27:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54969 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751128AbaGGI1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 04:27:16 -0400
+Date: Mon, 7 Jul 2014 10:27:11 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Randy Dunlap <rdunlap@infradead.org>,
+        linux-i2c@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] i2c: stub: Add support for SMBus block commands
+Message-ID: <20140707102711.1b630fe2@endymion.delvare>
+In-Reply-To: <1404705312-27633-1-git-send-email-linux@roeck-us.net>
+References: <1404705312-27633-1-git-send-email-linux@roeck-us.net>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/10] mm/page_alloc: handle page on pcp correctly if
- it's pageblock is isolated
-References: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com> <1404460675-24456-4-git-send-email-iamjoonsoo.kim@lge.com>
-In-Reply-To: <1404460675-24456-4-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Guenter,
 
-
-2014-07-04 오후 4:57, Joonsoo Kim 쓴 글:
-> If pageblock of page on pcp are isolated now, we should free it to isolate
-> buddy list to prevent future allocation on it. But current code doesn't
-> do this.
-
-I think it is strage that pcp can have isolated page.
-I remember that The purpose of pcp is having frequently used pages (hot for cache),
-but isolated page is not for frequently allocated and freed.
-
-(Above is my guess. It can be wrong. I know CMA and hot-plug features are using isolated pages
-so that I guess isolated pages are not for frequently allocated and freed memory.)
-
-Anyway if isolated page is not good for pcp, what about preventing isolated page from inserting pcp?
-I think fix of free_hot_cold_page() can be one of the preventing ways.
-The free_hot_cold_page() checks migratetype and inserts CMA page into pcp.
-Am I correct?
-
-If I am correct I think inserting CMA page into pcp is harmful for both of CMA and pcp.
-If CMA page is on pcp it will be used frequently and prevent making contiguous memory.
-What about avoiding CMA page for pcp like following?
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 8c9eeec..1cbb816 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1413,13 +1413,8 @@ void free_hot_cold_page(struct page *page, bool cold)
-         * areas back if necessary. Otherwise, we may have to free
-         * excessively into the page allocator
-         */
--       if (migratetype >= MIGRATE_PCPTYPES) {
--               if (unlikely(is_migrate_isolate(migratetype))) {
--                       free_one_page(zone, page, pfn, 0, migratetype);
--                       goto out;
--               }
--               migratetype = MIGRATE_MOVABLE;
--       }
-+       if (migratetype > MIGRATE_PCPTYPES)
-+               goto out;
-
-        pcp = &this_cpu_ptr(zone->pageset)->pcp;
-        if (!cold)
-
-
+On Sun,  6 Jul 2014 20:55:12 -0700, Guenter Roeck wrote:
+> SMBus block commands are different to I2C block commands since
+> the returned data is not normally accessible with byte or word
+> commands on other command offsets. Add linked list of 'block'
+> commands to support those commands.
 > 
-> Moreover, there is a freepage counting problem on current code. Although
-> pageblock of page on pcp are isolated now, it could go normal buddy list,
-> because get_onpcp_migratetype() will return non-isolate migratetype.
+> Access mechanism is quite simple: Block commands must be written
+> before they can be read. The first write selects the block length.
+> Subsequent writes can be partial. Block read commands always return
+> the number of bytes selected with the first write.
 
-I cannot find get_onpcp_migratetype() in v3.16.0-rc3 and also cannot google it.
-Is it typo?
+Very smart, I like it.
 
-> In this case, we should do either adding freepage count or changing
-> migratetype to MIGRATE_ISOLATE, but, current code do neither.
-> 
-> This patch fixes these two problems by handling pageblock migratetype
-> before calling __free_one_page(). And, if we find the page on isolated
-> pageblock, change migratetype to MIGRATE_ISOLATE to prevent future
-> allocation of this page and freepage counting problem.
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 > ---
->   mm/page_alloc.c |   14 ++++++++------
->   1 file changed, 8 insertions(+), 6 deletions(-)
+>  Documentation/i2c/i2c-stub |  7 +++-
+>  drivers/i2c/i2c-stub.c     | 96 ++++++++++++++++++++++++++++++++++++++++++++--
+>  2 files changed, 98 insertions(+), 5 deletions(-)
 > 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index aeb51d1..99c05f7 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -719,15 +719,17 @@ static void free_pcppages_bulk(struct zone *zone, int count,
->   			page = list_entry(list->prev, struct page, lru);
->   			/* must delete as __free_one_page list manipulates */
->   			list_del(&page->lru);
-> -			mt = get_freepage_migratetype(page);
+> diff --git a/Documentation/i2c/i2c-stub b/Documentation/i2c/i2c-stub
+> index fa4b669..8a112cc 100644
+> --- a/Documentation/i2c/i2c-stub
+> +++ b/Documentation/i2c/i2c-stub
+> @@ -2,9 +2,9 @@ MODULE: i2c-stub
+>  
+>  DESCRIPTION:
+>  
+> -This module is a very simple fake I2C/SMBus driver.  It implements five
+> +This module is a very simple fake I2C/SMBus driver.  It implements six
+>  types of SMBus commands: write quick, (r/w) byte, (r/w) byte data, (r/w)
+> -word data, and (r/w) I2C block data.
+> +word data, (r/w) I2C block data, and (r/w) SMBus block data.
+>  
+>  You need to provide chip addresses as a module parameter when loading this
+>  driver, which will then only react to SMBus commands to these addresses.
+> @@ -19,6 +19,9 @@ A pointer register with auto-increment is implemented for all byte
+>  operations.  This allows for continuous byte reads like those supported by
+>  EEPROMs, among others.
+>  
+> +SMBus block commands must be written to configure an SMBus command for
+> +SMBus block operations. The first SMBus block write selects the block length.
+
+I think you should add valuable parts of the patch description here:
+"Subsequent writes can be partial. Block read commands always return
+the number of bytes selected with the first write."
+
 > +
-> +			if (unlikely(is_migrate_isolate_page(page))) {
-> +				mt = MIGRATE_ISOLATE;
-> +			} else {
-> +				mt = get_freepage_migratetype(page);
-> +				__mod_zone_freepage_state(zone, 1, mt);
+>  The typical use-case is like this:
+>  	1. load this module
+>  	2. use i2cset (from the i2c-tools project) to pre-load some data
+> diff --git a/drivers/i2c/i2c-stub.c b/drivers/i2c/i2c-stub.c
+> index 77e4849..e08aa9d 100644
+> --- a/drivers/i2c/i2c-stub.c
+> +++ b/drivers/i2c/i2c-stub.c
+> @@ -27,11 +27,12 @@
+>  #include <linux/slab.h>
+>  #include <linux/errno.h>
+>  #include <linux/i2c.h>
+> +#include <linux/list.h>
+>  
+>  #define MAX_CHIPS 10
+>  #define STUB_FUNC (I2C_FUNC_SMBUS_QUICK | I2C_FUNC_SMBUS_BYTE | \
+>  		   I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA | \
+> -		   I2C_FUNC_SMBUS_I2C_BLOCK)
+> +		   I2C_FUNC_SMBUS_I2C_BLOCK | I2C_FUNC_SMBUS_BLOCK_DATA)
+
+As discussed earlier, I don't think SMBus block support should be
+enabled by default, as it can confuse some device drivers. I think we
+want:
+
+#define STUB_FUNC_DEFAULT \
+	(I2C_FUNC_SMBUS_QUICK | I2C_FUNC_SMBUS_BYTE | \
+	 I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA | \
+	 I2C_FUNC_SMBUS_I2C_BLOCK)
+
+#define STUB_FUNC_ALL \
+	(STUB_FUNC_DEFAULT | I2C_FUNC_SMBUS_BLOCK_DATA)
+
+static unsigned long functionality = STUB_FUNC_DEFAULT;
+
+static u32 stub_func(struct i2c_adapter *adapter)
+{
+	return STUB_FUNC_ALL & functionality;
+}
+
+Would that be OK with you? You'd simply need to load the driver with
+functionality=0xffffffff to get the SMBus block support.
+
+>  
+>  static unsigned short chip_addr[MAX_CHIPS];
+>  module_param_array(chip_addr, ushort, NULL, S_IRUGO);
+> @@ -42,14 +43,44 @@ static unsigned long functionality = STUB_FUNC;
+>  module_param(functionality, ulong, S_IRUGO | S_IWUSR);
+>  MODULE_PARM_DESC(functionality, "Override functionality bitfield");
+>  
+> +struct smbus_block_data {
+> +	struct list_head node;
+> +	u8 command;
+> +	u8 len;
+> +	u8 block[I2C_SMBUS_BLOCK_MAX];
+> +};
+> +
+>  struct stub_chip {
+>  	u8 pointer;
+>  	u16 words[256];		/* Byte operations use the LSB as per SMBus
+>  				   specification */
+> +	struct list_head smbus_blocks;
+>  };
+>  
+>  static struct stub_chip *stub_chips;
+>  
+> +static struct smbus_block_data *stub_find_block(struct device *dev,
+> +						struct stub_chip *chip,
+> +						u8 command, bool create)
+> +{
+> +	struct smbus_block_data *b, *rb = NULL;
+> +
+> +	list_for_each_entry(b, &chip->smbus_blocks, node) {
+> +		if (b->command == command) {
+> +			rb = b;
+> +			break;
+> +		}
+> +	}
+> +	if (rb == NULL && create) {
+> +		rb = devm_kzalloc(dev, sizeof(*b), GFP_KERNEL);
+
+While this is exactly the same, sizeof(*rb) might be more intuitive and
+make static code analyzers happier too.
+
+> +		if (rb == NULL)
+> +			return rb;
+> +		rb->command = command;
+> +		list_add(&rb->node, &chip->smbus_blocks);
+> +	}
+> +	return rb;
+> +}
+> +
+>  /* Return negative errno on error. */
+>  static s32 stub_xfer(struct i2c_adapter *adap, u16 addr, unsigned short flags,
+>  	char read_write, u8 command, int size, union i2c_smbus_data *data)
+> @@ -57,6 +88,7 @@ static s32 stub_xfer(struct i2c_adapter *adap, u16 addr, unsigned short flags,
+>  	s32 ret;
+>  	int i, len;
+>  	struct stub_chip *chip = NULL;
+> +	struct smbus_block_data *b;
+>  
+>  	/* Search for the right chip */
+>  	for (i = 0; i < MAX_CHIPS && chip_addr[i]; i++) {
+> @@ -68,6 +100,8 @@ static s32 stub_xfer(struct i2c_adapter *adap, u16 addr, unsigned short flags,
+>  	if (!chip)
+>  		return -ENODEV;
+>  
+> +	b = stub_find_block(&adap->dev, chip, command, false);
+
+I'm not too happy to see this executed with every command. That's one
+function call plus one list search, this isn't cheap. I would prefer if
+this was only executed for actual SMBus block transfers. I think this
+is possible, see below.
+
+> +
+>  	switch (size) {
+>  
+>  	case I2C_SMBUS_QUICK:
+> @@ -93,13 +127,20 @@ static s32 stub_xfer(struct i2c_adapter *adap, u16 addr, unsigned short flags,
+>  
+>  	case I2C_SMBUS_BYTE_DATA:
+>  		if (read_write == I2C_SMBUS_WRITE) {
+> +			if (b) {
+> +				ret = -EINVAL;
+> +				break;
 > +			}
+
+Is this really necessary? I very much doubt a device driver would do
+that in the first place. And if it did, would a real device actually
+fail?
+
+>  			chip->words[command] &= 0xff00;
+>  			chip->words[command] |= data->byte;
+>  			dev_dbg(&adap->dev,
+>  				"smbus byte data - addr 0x%02x, wrote 0x%02x at 0x%02x.\n",
+>  				addr, data->byte, command);
+>  		} else {
+> -			data->byte = chip->words[command] & 0xff;
+> +			if (b)
+> +				data->byte = b->len;
+> +			else
+> +				data->byte = chip->words[command] & 0xff;
+
+You could avoid this conditional (and the same below in case
+I2C_SMBUS_WORD_DATA) by writing to chip->words at the same time you
+write to b->block. Block transfers being rare and reads occurring more
+frequently than writes, I think the performance benefit is clear.
+
+>  			dev_dbg(&adap->dev,
+>  				"smbus byte data - addr 0x%02x, read  0x%02x at 0x%02x.\n",
+>  				addr, data->byte, command);
+> @@ -111,12 +152,19 @@ static s32 stub_xfer(struct i2c_adapter *adap, u16 addr, unsigned short flags,
+>  
+>  	case I2C_SMBUS_WORD_DATA:
+>  		if (read_write == I2C_SMBUS_WRITE) {
+> +			if (b) {
+> +				ret = -EINVAL;
+> +				break;
+> +			}
+>  			chip->words[command] = data->word;
+>  			dev_dbg(&adap->dev,
+>  				"smbus word data - addr 0x%02x, wrote 0x%04x at 0x%02x.\n",
+>  				addr, data->word, command);
+>  		} else {
+> -			data->word = chip->words[command];
+> +			if (b)
+> +				data->word = (b->block[0] << 8) | b->len;
+> +			else
+> +				data->word = chip->words[command];
+>  			dev_dbg(&adap->dev,
+>  				"smbus word data - addr 0x%02x, read  0x%04x at 0x%02x.\n",
+>  				addr, data->word, command);
+> @@ -148,6 +196,46 @@ static s32 stub_xfer(struct i2c_adapter *adap, u16 addr, unsigned short flags,
+>  		ret = 0;
+>  		break;
+>  
+> +	case I2C_SMBUS_BLOCK_DATA:
+> +		if (read_write == I2C_SMBUS_WRITE) {
+> +			len = data->block[0];
+> +			if (len == 0 || len > I2C_SMBUS_BLOCK_MAX ||
+> +			    (b && len > b->len)) {
+
+A useful debug message in the latter case might be good to have.
+
+> +				ret = -EINVAL;
+> +				break;
+> +			}
+> +			if (b == NULL) {
+> +				b = stub_find_block(&adap->dev, chip, command,
+> +						    true);
+> +				if (b == NULL) {
+> +					ret = -ENOMEM;
+> +					break;
+> +				}
+> +				/* First write sets block length */
+> +				b->len = len;
+> +			}
+> +			for (i = 0; i < len; i++)
+> +				b->block[i] = data->block[i + 1];
+> +			dev_dbg(&adap->dev,
+> +				"smbus block data - addr 0x%02x, wrote %d bytes at 0x%02x.\n",
+> +				addr, len, command);
+> +		} else {
+> +			if (b == NULL) {
+> +				ret = -EINVAL;
+
+I would suggest -EOPNOTSUPP with a useful debug message.
+
+> +				break;
+> +			}
+> +			len = b->len;
+> +			data->block[0] = len;
+> +			for (i = 0; i < len; i++)
+> +				data->block[i + 1] = b->block[i];
+> +			dev_dbg(&adap->dev,
+> +				"smbus block data - addr 0x%02x, read  %d bytes at 0x%02x.\n",
+> +				addr, len, command);
+> +		}
 > +
->   			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
->   			__free_one_page(page, page_to_pfn(page), zone, 0, mt);
->   			trace_mm_page_pcpu_drain(page, 0, mt);
-> -			if (likely(!is_migrate_isolate_page(page))) {
-> -				__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
-> -				if (is_migrate_cma(mt))
-> -					__mod_zone_page_state(zone, NR_FREE_CMA_PAGES, 1);
-> -			}
->   		} while (--to_free && --batch_free && !list_empty(list));
->   	}
->   	spin_unlock(&zone->lock);
-> 
+> +		ret = 0;
+> +		break;
+> +
+>  	default:
+>  		dev_dbg(&adap->dev, "Unsupported I2C/SMBus command\n");
+>  		ret = -EOPNOTSUPP;
+> @@ -199,6 +287,8 @@ static int __init i2c_stub_init(void)
+>  		pr_err("i2c-stub: Out of memory\n");
+>  		return -ENOMEM;
+>  	}
+> +	for (i--; i >= 0; i--)
+> +		INIT_LIST_HEAD(&stub_chips[i].smbus_blocks);
+
+That works but I have to admit it confused me at first, because
+traditionally reverse iterations like that are for cleanups on failure
+paths. I think it might make sense to introduce an additional variable
+to store the actual number of instantiated chips, so that we can use
+the regular iteration direction (which I think modern memory
+controllers can anticipate and optimize.) This would also let us
+optimize the first test in stub_xfer.
+
+But well this can be left as a separate cleanup patch, I'll take care
+of that (unless you object.)
+
+>  
+>  	ret = i2c_add_adapter(&stub_adapter);
+>  	if (ret)
+
+
+-- 
+Jean Delvare
+SUSE L3 Support
