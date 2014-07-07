@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283AbaGHBMt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:12:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55225 "EHLO
+	id S932301AbaGHBNG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:13:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55237 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936AbaGGXxx (ORCPT
+	with ESMTP id S1752929AbaGGXxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:53:53 -0400
+	Mon, 7 Jul 2014 19:53:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.15 032/122] drm/radeon/atom: fix dithering on certain panels
-Date: Mon,  7 Jul 2014 16:56:34 -0700
-Message-Id: <20140707235735.212071888@linuxfoundation.org>
+        Mario Kleiner <mario.kleiner.de@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH 3.15 027/122] drm/nouveau/disp/nv04-nv40: abort scanoutpos query on vga analog.
+Date: Mon,  7 Jul 2014 16:56:29 -0700
+Message-Id: <20140707235735.066963655@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -28,38 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Mario Kleiner <mario.kleiner.de@gmail.com>
 
-commit 642528355c694f5ed68f6bff9ff520326a249f99 upstream.
+commit e291af3f2259e9e105dfd72416fd5796513791a4 upstream.
 
-We need to specify the encoder mode as LVDS for eDP
-when using the Crtc_Source atom table in order to properly
-set up the FMT hardware.
+nv04_disp_scanoutpos() must abort to trigger simple timestamping
+fallback if vtotal/htotal regs return zero. This happens if the
+output isn't a digital output, but a vga analog output, as the
+regs don't get initialized in that case.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=73911
+Fixes timestamping failure on nv-40 and earlier with vga output.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Mario Kleiner <mario.kleiner.de@gmail.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/core/engine/disp/nv04.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -1884,8 +1884,11 @@ atombios_set_encoder_crtc_source(struct
- 					args.v2.ucEncodeMode = ATOM_ENCODER_MODE_CRT;
- 				else
- 					args.v2.ucEncodeMode = atombios_get_encoder_mode(encoder);
--			} else
-+			} else if (radeon_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT)) {
-+				args.v2.ucEncodeMode = ATOM_ENCODER_MODE_LVDS;
-+			} else {
- 				args.v2.ucEncodeMode = atombios_get_encoder_mode(encoder);
-+			}
- 			switch (radeon_encoder->encoder_id) {
- 			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
- 			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
+--- a/drivers/gpu/drm/nouveau/core/engine/disp/nv04.c
++++ b/drivers/gpu/drm/nouveau/core/engine/disp/nv04.c
+@@ -51,6 +51,14 @@ nv04_disp_scanoutpos(struct nouveau_obje
+ 	args->htotal  = nv_rd32(priv, 0x680824 + (head * 0x2000)) & 0xffff;
+ 	args->hblanke = args->htotal - 1;
+ 
++	/*
++	 * If output is vga instead of digital then vtotal/htotal is invalid
++	 * so we have to give up and trigger the timestamping fallback in the
++	 * drm core.
++	 */
++	if (!args->vtotal || !args->htotal)
++		return -ENOTSUPP;
++
+ 	args->time[0] = ktime_to_ns(ktime_get());
+ 	line = nv_rd32(priv, 0x600868 + (head * 0x2000));
+ 	args->time[1] = ktime_to_ns(ktime_get());
 
 
