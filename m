@@ -1,124 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751314AbaGGGZU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 02:25:20 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:34486 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799AbaGGGZR (ORCPT
+	id S1751481AbaGGG2N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 02:28:13 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51104 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383AbaGGG2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 02:25:17 -0400
+	Mon, 7 Jul 2014 02:28:10 -0400
+Date: Mon, 7 Jul 2014 08:27:55 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Roman Pen <r.peniaev@gmail.com>
+Cc: Chris Ball <chris@printf.net>, Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: mxs: fix card detection in case of 'broken-cd' flag
+ set
+Message-ID: <20140707062755.GE23235@pengutronix.de>
+References: <1402412222-18020-1-git-send-email-r.peniaev@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140704164028.GC7106@leverpostej>
-References: <b0dfcba4-7319-4687-a455-bfcddf61b7d1@BN1AFFO11FD028.protection.gbl>
-	<CALHRZup3_eFiw8iSJJmxy0dHDeHLnb2fAfRtKPTW1UQ2U+cEig@mail.gmail.com>
-	<20140704164028.GC7106@leverpostej>
-Date: Mon, 7 Jul 2014 11:55:15 +0530
-Message-ID: <CALHRZupsas7=7NB8PHUub7nB3_Z++yJO0z9RYTU49tx87vSApA@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] usb: doc: udc-xilinx: Add devicetree bindings
-From: sundeep subbaraya <sundeep.lkml@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michal Simek <michals@xilinx.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1402412222-18020-1-git-send-email-r.peniaev@gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:26:42 up 2 days, 17:02, 27 users,  load average: 0.00, 0.03, 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jun 10, 2014 at 11:57:02PM +0900, Roman Pen wrote:
+> In case of reboot my olinuxino imx23 board does not see
+> mmc card any more. mmc_rescan is being called by delayed
+> work in loop, but mxs_mmc_get_cd always returns 0, so we
+> will never pass the card detection check and will not do
+> further card inition.
+> 
+> This patch is just an attempt to partially revert the patch
+> a91fe279ae of Sascha Hauer, where it is claimed that upper
+> layer will handle broken card detection using the polling
+> logic and MMC_CAP_NEEDS_POLL capability, but seems it is not
+> true, because upper logic still expects 1 from 'get_cd'.
+> 
+> So, here we always return 1 (card present) in case of
+> MMC_CAP_NEEDS_POLL capability set.
+> 
+> Signed-off-by: Roman Pen <r.peniaev@gmail.com>
+> CC: Chris Ball <chris@printf.net>
+> CC: Sascha Hauer <s.hauer@pengutronix.de>
+> CC: Fabio Estevam <fabio.estevam@freescale.com>
+> CC: Shawn Guo <shawn.guo@linaro.org>
+> CC: Ulf Hansson <ulf.hansson@linaro.org>
+> CC: linux-mmc@vger.kernel.org
+> CC: linux-kernel@vger.kernel.org
 
-On Fri, Jul 4, 2014 at 10:10 PM, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Tue, Jun 24, 2014 at 07:44:10AM +0100, sundeep subbaraya wrote:
->> Ping
->>
->> Thanks,
->> Sundeep.B.S.
->>
->> On Tue, Jun 10, 2014 at 5:34 PM,  <subbaraya.sundeep.bhatta@xilinx.com> wrote:
->> > From: Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
->> >
->> > Add devicetree bindings for Xilinx axi udc driver.
->> >
->> > Signed-off-by: Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
->> > ---
->> > Changes for v3:
->> >         - None
->> > Changes for v2:
->> >         - replaced xlnx,include-dma with xlnx,has-builtin-dma
->> >
->> >  .../devicetree/bindings/usb/udc-xilinx.txt         |   20 ++++++++++++++++++++
->> >  1 files changed, 20 insertions(+), 0 deletions(-)
->> >  create mode 100644 Documentation/devicetree/bindings/usb/udc-xilinx.txt
->> >
->> > diff --git a/Documentation/devicetree/bindings/usb/udc-xilinx.txt b/Documentation/devicetree/bindings/usb/udc-xilinx.txt
->> > new file mode 100644
->> > index 0000000..7c24fac
->> > --- /dev/null
->> > +++ b/Documentation/devicetree/bindings/usb/udc-xilinx.txt
->> > @@ -0,0 +1,20 @@
->> > +Xilinx AXI USB2 device controller
->> > +
->> > +Required properties:
->> > +- compatible           : Should be "xlnx,axi-usb2-device-4.00.a"
->
-> That's an interesting name. What's the product name? Is the a manual?
+I still didn't find the time to take a proper look at it. Since this
+fixes a bug for you:
 
-Here is the manual for the IP :
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
 
-http://www.xilinx.com/support/documentation/ip_documentation/axi_usb2_device/v5_0/pg137-axi-usb2-device.pdf
+Sascha
 
-This driver works with PLB IP version that's why maybe make more sense
-to use skip axi from compatible string and use just
-xlnx,usb2-device-4.00.a.
+> ---
+>  drivers/mmc/host/mxs-mmc.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
+> index 073e871..9187ce1 100644
+> --- a/drivers/mmc/host/mxs-mmc.c
+> +++ b/drivers/mmc/host/mxs-mmc.c
+> @@ -82,7 +82,8 @@ static int mxs_mmc_get_cd(struct mmc_host *mmc)
+>  	if (ret >= 0)
+>  		return ret;
+>  
+> -	present = !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
+> +	present = mmc->caps & MMC_CAP_NEEDS_POLL ||
+> +		!(readl(ssp->base + HW_SSP_STATUS(ssp)) &
+>  			BM_SSP_STATUS_CARD_DETECT);
+>  
+>  	if (mmc->caps2 & MMC_CAP2_CD_ACTIVE_HIGH)
+> -- 
+> 1.9.1
+> 
+> 
 
->
->> > +- reg                  : Physical base address and size of the Axi USB2
->> > +                         device registers map.
->> > +- interrupts           : Property with a value describing the interrupt
->> > +                         number.
->
-> Describe what this logically is. Everyone knows that this is a property
-> with a value, and everyone knows that an interrupts property describes
-> interrupts.
->
-> The ket point is _which_ interrupts this describes.
-
-Ok
-
->
->> > +- interrupt-parent     : Must be core interrupt controller
->
-> This isn't strictly necessary anyway.
->
->> > +- xlnx,include-dma     : if DMA is included
->
-> You appear to have forgotten to fix this name, judging by the changelog
-> and example.
->
->> > +
->> > +Example:
->> > +               axi-usb2-device@42e00000 {
->> > +                        compatible = "xlnx,axi-usb2-device-4.00.a";
->> > +                        interrupt-parent = <0x1>;
->
-> Huh? Who writes a raw phandle value?
->
->> > +                        interrupts = <0x0 0x39 0x1>;
->> > +                        reg = <0x42e00000 0x10000>;
->> > +                        xlnx,has-builtin-dma;
->
-> As mentioned above, this conflicts with the binding documentation.
-> Please ensure the example is aligned with the documentation.
-
-Thank you for pointing this i sent an old one, will fix this.
-
-Sundeep.B.S.
-
->
-> Thanks,
-> Mark.
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
