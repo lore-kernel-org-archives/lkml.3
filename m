@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247AbaGGUYG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 16:24:06 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60141 "EHLO
+	id S1752682AbaGGUYS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 16:24:18 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60151 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751247AbaGGUYB (ORCPT
+	with ESMTP id S1752545AbaGGUYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 16:24:01 -0400
+	Mon, 7 Jul 2014 16:24:14 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Boris Brezillon <boris.brezillon@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2 02/32] ARM: at91/dt: ariag25: define crystals frequencies
-Date: Mon,  7 Jul 2014 22:23:19 +0200
-Message-Id: <1404764629-29136-3-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 21/32] ARM: at91: prepare common clk transition for sam9g45
+Date: Mon,  7 Jul 2014 22:23:38 +0200
+Message-Id: <1404764629-29136-22-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404764629-29136-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1404764629-29136-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -23,32 +23,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define Acme Systems Aria G25 board main and slow crystals frequencies.
+Enclose the sam9g45 old clk registration in "#if defined(CONFIG_OLD_CLK_AT91)
+ #endif"
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/boot/dts/at91-ariag25.dts | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/arm/mach-at91/at91sam9g45.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/at91-ariag25.dts b/arch/arm/boot/dts/at91-ariag25.dts
-index 55ab6180e350..e9ced30159a7 100644
---- a/arch/arm/boot/dts/at91-ariag25.dts
-+++ b/arch/arm/boot/dts/at91-ariag25.dts
-@@ -42,6 +42,14 @@
- 			compatible = "atmel,osc", "fixed-clock";
- 			clock-frequency = <12000000>;
- 		};
-+
-+		slow_xtal {
-+			clock-frequency = <32768>;
-+		};
-+
-+		main_xtal {
-+			clock-frequency = <12000000>;
-+		};
- 	};
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index 9d3d544ac19c..0d5d85797cd6 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -25,10 +25,11 @@
+ #include "at91_aic.h"
+ #include "soc.h"
+ #include "generic.h"
+-#include "clock.h"
+ #include "sam9_smc.h"
+ #include "pm.h"
  
- 	ahb {
++#if defined(CONFIG_OLD_CLK_AT91)
++#include "clock.h"
+ /* --------------------------------------------------------------------
+  *  Clocks
+  * -------------------------------------------------------------------- */
+@@ -331,6 +332,9 @@ static void __init at91sam9g45_register_clocks(void)
+ 	clk_register(&pck0);
+ 	clk_register(&pck1);
+ }
++#else
++#define at91sam9g45_register_clocks NULL
++#endif
+ 
+ /* --------------------------------------------------------------------
+  *  GPIO
 -- 
 1.9.1
 
