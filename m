@@ -1,100 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648AbaGGB3D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 21:29:03 -0400
-Received: from ozlabs.org ([103.22.144.67]:40660 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752246AbaGGB3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 21:29:00 -0400
-Date: Mon, 7 Jul 2014 11:28:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jason Cooper <jason@lakedaemon.net>, <andrew@lunn.ch>,
-        <gregory.clement@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: linux-next: manual merge of the mvebu tree with the arm tree
-Message-ID: <20140707112853.7f5a9323@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1752652AbaGGB3J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 21:29:09 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:57240 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752131AbaGGB3G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jul 2014 21:29:06 -0400
+Date: Mon, 7 Jul 2014 10:27:54 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com
+Cc: markh@compro.net, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: dgap: removes redundant null check and change
+ paramter for dgap_maxcps_room()
+Message-ID: <20140707012754.GA26042@devel.8.8.4.4>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/YglyQG_rdpx5i/S736bT0BN"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/YglyQG_rdpx5i/S736bT0BN
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Null checks for tty, un and ch are already done by caller,
+so replace parameter "tty" with "ch" and "un".
 
-Hi all,
+And also use a pointer for returning new bytes_available instead of
+return variable.
 
-Today's linux-next merge of the mvebu tree got a conflict in
-arch/arm/mach-mvebu/headsmp-a9.S between commit 8a3a9dd50dd9 ("ARM:
-convert all "mov.* pc, reg" to "bx reg" for ARMv6+") from the arm tree
-and commit 0e2be4c1121a ("ARM: mvebu: fix SMP boot for Armada 38x and
-Armada 375 Z1 in big endian") from the mvebu tree.
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ drivers/staging/dgap/dgap.c |   29 +++++++----------------------
+ 1 files changed, 7 insertions(+), 22 deletions(-)
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index e8d3c99..da11dfb 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -2507,31 +2507,18 @@ static int dgap_wait_for_drain(struct tty_struct *tty)
+  *
+  * Reduces bytes_available to the max number of characters
+  * that can be sent currently given the maxcps value, and
+- * returns the new bytes_available.  This only affects printer
++ * rewrites the new bytes_available.  This only affects printer
+  * output.
+  */
+-static int dgap_maxcps_room(struct tty_struct *tty, int bytes_available)
++static void dgap_maxcps_room(struct channel_t *ch, struct un_t *un,
++			     int *bytes_available)
+ {
+-	struct channel_t *ch;
+-	struct un_t *un;
+-
+-	if (!tty)
+-		return bytes_available;
+-
+-	un = tty->driver_data;
+-	if (!un || un->magic != DGAP_UNIT_MAGIC)
+-		return bytes_available;
+-
+-	ch = un->un_ch;
+-	if (!ch || ch->magic != DGAP_CHANNEL_MAGIC)
+-		return bytes_available;
+-
+ 	/*
+ 	 * If its not the Transparent print device, return
+ 	 * the full data amount.
+ 	 */
+ 	if (un->un_type != DGAP_PRINT)
+-		return bytes_available;
++		return;
+ 
+ 	if (ch->ch_digi.digi_maxcps > 0 && ch->ch_digi.digi_bufsize > 0) {
+ 		int cps_limit = 0;
+@@ -2553,10 +2540,8 @@ static int dgap_maxcps_room(struct tty_struct *tty, int bytes_available)
+ 			cps_limit = 0;
+ 		}
+ 
+-		bytes_available = min(cps_limit, bytes_available);
++		*bytes_available = min(cps_limit, *bytes_available);
+ 	}
+-
+-	return bytes_available;
+ }
+ 
+ static inline void dgap_set_firmware_event(struct un_t *un, unsigned int event)
+@@ -2627,7 +2612,7 @@ static int dgap_tty_write_room(struct tty_struct *tty)
+ 		ret += ch->ch_tsize;
+ 
+ 	/* Limit printer to maxcps */
+-	ret = dgap_maxcps_room(tty, ret);
++	dgap_maxcps_room(ch, un, &ret);
+ 
+ 	/*
+ 	 * If we are printer device, leave space for
+@@ -2732,7 +2717,7 @@ static int dgap_tty_write(struct tty_struct *tty, const unsigned char *buf,
+ 	 * Limit printer output to maxcps overall, with bursts allowed
+ 	 * up to bufsize characters.
+ 	 */
+-	bufcount = dgap_maxcps_room(tty, bufcount);
++	dgap_maxcps_room(ch, un, &bufcount);
+ 
+ 	/*
+ 	 * Take minimum of what the user wants to send, and the
+-- 
+1.7.1
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-mvebu/headsmp-a9.S
-index 7c91ddb6f1f7,da5bb292b91c..000000000000
---- a/arch/arm/mach-mvebu/headsmp-a9.S
-+++ b/arch/arm/mach-mvebu/headsmp-a9.S
-@@@ -14,8 -14,9 +14,10 @@@
- =20
-  #include <linux/linkage.h>
-  #include <linux/init.h>
- +#include <asm/assembler.h>
- =20
-+ #include <asm/assembler.h>
-+=20
-  	__CPUINIT
-  #define CPU_RESUME_ADDR_REG 0xf10182d4
- =20
-@@@ -23,9 -24,13 +25,13 @@@
-  .global armada_375_smp_cpu1_enable_code_end
- =20
-  armada_375_smp_cpu1_enable_code_start:
-- 	ldr     r0, [pc, #4]
-+ ARM_BE8(setend	be)
-+ 	adr     r0, 1f
-+ 	ldr	r0, [r0]
-  	ldr     r1, [r0]
-+ ARM_BE8(rev	r1, r1)
- -	mov     pc, r1
- +	ret     r1
-+ 1:
-  	.word   CPU_RESUME_ADDR_REG
-  armada_375_smp_cpu1_enable_code_end:
- =20
-
---Sig_/YglyQG_rdpx5i/S736bT0BN
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTuffZAAoJEMDTa8Ir7ZwVOOUQAIDu8vBNmNqB1oDrjKnGutS0
-ffZbYLXpAC5Z/JuxsbuvX1U7XcKZrK26ycZLRYbbzq+GlEfYjL5n1NPfs/gQMKQE
-my/GcFSkeNRSJDTvkb525kqzSC6CTYZ6sFqY3dLn2avHFpJ/yGm9spqNaDjAnK4S
-9NRwOjNCm2afkMByIuo6lW+VNGqcyaIyqaEFtlh/5KhN4S7aAHqPPOSokDQsdhZb
-FoxRgXGWTPYgBfQpdL8xUiJ9uYk5zB3TQPam1nyUBgSWJsWUAzF/+BiIM6reQeNY
-OaI1+wX5i/BOCqJIgWJh8buRegiGYKyjdTLZ2R+eHghgkdjFINeBq4hOGSXdr9U0
-QdvdJbjGJ8rWJ95XShQaIDBNTcSYkFFjvg0ksISQWtGpx6t3pnM6Bo0hDCXLiqTt
-E6AP02v7S+3DM1LgCXFLpA6DN+szLlj/DFaoPsPZg4K8nE7h04KLJ2SMAo4vYzAt
-UvPIvlvdlTxDTmc0Zq0vmyGvm1l4CHYyHfqfQ6itk2OLgIv71BYzEahYGQvuWbA0
-qQtNBqiHRjo+daKd8+6jR0VJ5YVPqxuN81NHd1nh/avPFq8IoK9bE2Xri0CTjfRX
-5AkxLyVWNzVdpCeQ6xUsb4U/MaNUHc/ZdtPhLeoSFnzO0onNmif5+v3ARjw79uNI
-zla3y+0CH335npTKcXXb
-=MzWO
------END PGP SIGNATURE-----
-
---Sig_/YglyQG_rdpx5i/S736bT0BN--
