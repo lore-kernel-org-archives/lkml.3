@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763AbaGGO6a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:58:30 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:13807 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751591AbaGGO63 (ORCPT
+	id S1753766AbaGGO7S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:59:18 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:36562 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753263AbaGGO7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:58:29 -0400
-X-IronPort-AV: E=Sophos;i="5.01,618,1400018400"; 
-   d="scan'208";a="83995270"
-Date: Mon, 7 Jul 2014 16:58:24 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Mark Brown <broonie@kernel.org>
-cc: Himangi Saraogi <himangi774@gmail.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
-Subject: Re: [PATCH] ASoC: sgtl5000: Use devm_ functions
-In-Reply-To: <20140707144832.GL30458@sirena.org.uk>
-Message-ID: <alpine.DEB.2.10.1407071655171.4757@hadrien>
-References: <20140706070800.GA2927@himangi-Dell> <20140707144832.GL30458@sirena.org.uk>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 7 Jul 2014 10:59:16 -0400
+Date: Mon, 7 Jul 2014 15:59:10 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, sergei.shtylyov@cogentembedded.com,
+        antoine.tenart@free-electrons.com, kgene.kim@samsung.com,
+        maxime.ripard@free-electrons.com
+Subject: Re: [RFC PATCH 2/2] phy: core: the node pointer of PHY need not be
+ the same as that of PHY provider
+Message-ID: <20140707145910.GK6407@lee--X1>
+References: <1404486474-28312-1-git-send-email-kishon@ti.com>
+ <1404486474-28312-3-git-send-email-kishon@ti.com>
+ <20140707131232.GI6407@lee--X1>
+ <53BAAA19.9050106@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53BAAA19.9050106@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 07 Jul 2014, Kishon Vijay Abraham I wrote:
 
+> Hi,
+> 
+> On Monday 07 July 2014 06:42 PM, Lee Jones wrote:
+> > On Fri, 04 Jul 2014, Kishon Vijay Abraham I wrote:
+> > 
+> >> In case of multi-phy PHY providers, each PHY should be modeled as a sub
+> >> node of the PHY provider. Then each PHY will have a different node pointer
+> >> (node pointer of sub node) than that of PHY provider. Added this provision
+> >> in the PHY core.
+> >> Also fixed all drivers to use the updated API.
+> >>
+> >> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> >> ---
+> >>  Documentation/phy.txt               |   10 ++++++----
+> >>  drivers/phy/phy-bcm-kona-usb2.c     |    2 +-
+> >>  drivers/phy/phy-core.c              |   25 ++++++++++++++++++-------
+> >>  drivers/phy/phy-exynos-dp-video.c   |    2 +-
+> >>  drivers/phy/phy-exynos-mipi-video.c |    2 +-
+> >>  drivers/phy/phy-exynos5-usbdrd.c    |    3 ++-
+> >>  drivers/phy/phy-exynos5250-sata.c   |    2 +-
+> >>  drivers/phy/phy-mvebu-sata.c        |    2 +-
+> >>  drivers/phy/phy-omap-usb2.c         |    2 +-
+> >>  drivers/phy/phy-samsung-usb2.c      |    3 ++-
+> >>  drivers/phy/phy-sun4i-usb.c         |    2 +-
+> >>  drivers/phy/phy-ti-pipe3.c          |    2 +-
+> >>  drivers/phy/phy-twl4030-usb.c       |    2 +-
+> >>  drivers/phy/phy-xgene.c             |    2 +-
+> >>  include/linux/phy/phy.h             |   15 ++++++++++-----
+> >>  15 files changed, 48 insertions(+), 28 deletions(-)
+> > 
+> > I wrote a very similar patch already.  I knew I should have sent it on
+> > Friday. :(
+> 
+> No problem! you can send your patch along with the MiPHY series.
 
-On Mon, 7 Jul 2014, Mark Brown wrote:
+That's okay.  It's silly for us both to submit the same patch and
+yours hit the MLs first & looks good so, the honour is yours.
 
-> On Sun, Jul 06, 2014 at 12:38:00PM +0530, Himangi Saraogi wrote:
->
-> > diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
-> > index 249fadb..0efd6d6 100644
-> > --- a/sound/soc/codecs/sgtl5000.c
-> > +++ b/sound/soc/codecs/sgtl5000.c
-> > @@ -841,14 +841,15 @@ static int ldo_regulator_register(struct snd_soc_codec *codec,
-> >  	struct sgtl5000_priv *sgtl5000 = snd_soc_codec_get_drvdata(codec);
-> >  	struct regulator_config config = { };
-> >
-> > -	ldo = kzalloc(sizeof(struct ldo_regulator), GFP_KERNEL);
-> > +	ldo = devm_kzalloc(codec->dev, sizeof(struct ldo_regulator),
-> > +			   GFP_KERNEL);
->
-> You're using the managed functions within the ASoC level probe functions
-> which doesn't work - devm_ is only usable as part of the driver model
-> binding and unbinding.  All this resource allocation needs to be moved
-> into the device level probe (which is a better thing anyway) before it
-> is converted to devm.
+> > Patch looks good, just a real minor point.
+> > 
+> >>  	phy->dev.class = phy_class;
+> >>  	phy->dev.parent = dev;
+> >> -	phy->dev.of_node = dev->of_node;
+> >> +	phy->dev.of_node = node?node:dev->of_node;
+> > 
+> > There should be spaces either side of the '?' and ':', or you can do
+> > this more succinctly by:
+> > 
+> > phy->dev.of_node = node ?: dev->of_node;
+> > 
+> > Once fixed, feel free to add my:
+> > 
+> > Acked-by: Lee Jones <lee.jones@linaro.org>
+> > 
 
-Nevertheless, there is already a call to devm_regulator_bulk_get in
-sgtl5000_enable_regulators which calls sgtl5000_replace_vddd_with_ldo
-which calls ldo_regulator_register.  That call was introduced by
-
-commit 63e54cd9caa3ce03635810608519e2b37d8bc706
-Author: Fabio Estevam <fabio.estevam@freescale.com>
-Date:   Thu Apr 24 14:13:08 2014 -0300
-
-It seems that that patch should be reverted?
-
-julia
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
