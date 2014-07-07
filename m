@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824AbaGHArV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:47:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55567 "EHLO
+	id S1755808AbaGHArU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:47:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55466 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658AbaGGXyZ (ORCPT
+	with ESMTP id S1753666AbaGGXyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Sunil Pandey <sunil.k.pandey@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org, lwoodman@redhat.com,
-        dave.hansen@intel.com, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.15 122/122] mm/numa: Remove BUG_ON() in __handle_mm_fault()
-Date: Mon,  7 Jul 2014 16:58:04 -0700
-Message-Id: <20140707235737.894790405@linuxfoundation.org>
+        Zhichuang Sun <sunzc522@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Joe Perches <joe@perches.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-fbdev@vger.kernel.org, Xuetao Guan <gxt@mprc.pku.edu.cn>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.15 121/122] drivers/video/fbdev/fb-puv3.c: Add header files for function unifb_mmap
+Date: Mon,  7 Jul 2014 16:58:03 -0700
+Message-Id: <20140707235737.865461900@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -37,51 +35,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rik van Riel <riel@redhat.com>
+From: Zhichuang SUN <sunzc522@gmail.com>
 
-commit 107437febd495a50e2cd09c81bbaa84d30e57b07 upstream.
+commit fbc6c4a13bbfb420eedfdb26a0a859f9c07e8a7b upstream.
 
-Changing PTEs and PMDs to pte_numa & pmd_numa is done with the
-mmap_sem held for reading, which means a pmd can be instantiated
-and turned into a numa one while __handle_mm_fault() is examining
-the value of old_pmd.
+Function unifb_mmap calls functions which are defined in linux/mm.h
+and asm/pgtable.h
 
-If that happens, __handle_mm_fault() should just return and let
-the page fault retry, instead of throwing an oops. This is
-handled by the test for pmd_trans_huge(*pmd) below.
+The related error (for unicore32 with unicore32_defconfig):
+	CC      drivers/video/fbdev/fb-puv3.o
+	drivers/video/fbdev/fb-puv3.c: In function 'unifb_mmap':
+	drivers/video/fbdev/fb-puv3.c:646: error: implicit declaration of
+				      function 'vm_iomap_memory'
+	drivers/video/fbdev/fb-puv3.c:646: error: implicit declaration of
+				      function 'pgprot_noncached'
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reported-by: Sunil Pandey <sunil.k.pandey@intel.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: linux-mm@kvack.org
-Cc: lwoodman@redhat.com
-Cc: dave.hansen@intel.com
-Link: http://lkml.kernel.org/r/20140429153615.2d72098e@annuminas.surriel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Patrick McLean <chutzpah@gentoo.org>
+Signed-off-by: Zhichuang Sun <sunzc522@gmail.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Jingoo Han <jg1.han@samsung.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Joe Perches <joe@perches.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-fbdev@vger.kernel.org
+Acked-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/video/fbdev/fb-puv3.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3920,9 +3920,6 @@ static int __handle_mm_fault(struct mm_s
- 		}
- 	}
+--- a/drivers/video/fbdev/fb-puv3.c
++++ b/drivers/video/fbdev/fb-puv3.c
+@@ -18,8 +18,10 @@
+ #include <linux/fb.h>
+ #include <linux/init.h>
+ #include <linux/console.h>
++#include <linux/mm.h>
  
--	/* THP should already have been handled */
--	BUG_ON(pmd_numa(*pmd));
--
- 	/*
- 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
- 	 * run pte_offset_map on the pmd, if an huge pmd could
+ #include <asm/sizes.h>
++#include <asm/pgtable.h>
+ #include <mach/hardware.h>
+ 
+ /* Platform_data reserved for unifb registers. */
 
 
