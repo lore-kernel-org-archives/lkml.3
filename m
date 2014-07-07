@@ -1,103 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaGGERE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 00:17:04 -0400
-Received: from mga11.intel.com ([192.55.52.93]:39536 "EHLO mga11.intel.com"
+	id S1752966AbaGGERL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 00:17:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:49231 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750799AbaGGEQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 00:16:59 -0400
+	id S1752824AbaGGERG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 00:17:06 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,616,1400050800"; 
-   d="scan'208";a="558140116"
+   d="scan'208";a="558140146"
 From: Lv Zheng <lv.zheng@intel.com>
 To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Len Brown <len.brown@intel.com>
 Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        x86@kernel.org, linux-ia64@vger.kernel.org,
-        sfi-devel@simplefirmware.org, alsa-devel@alsa-project.org
-Subject: [PATCH v2 0/7] ACPICA: Enable ACPICA prototypes for CONFIG_ACPI=n builds.
-Date: Mon,  7 Jul 2014 12:16:36 +0800
-Message-Id: <cover.1404706298.git.lv.zheng@intel.com>
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: [PATCH v2 1/7] ACPICA: Linux: Add stub support for Linux specific variables and functions.
+Date: Mon,  7 Jul 2014 12:17:02 +0800
+Message-Id: <7e45b9fcad00a32dfa7c9ef66d7e53097c96158e.1404706298.git.lv.zheng@intel.com>
 X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1387336613.git.lv.zheng@intel.com>
-References: <cover.1387336613.git.lv.zheng@intel.com>
+In-Reply-To: <cover.1404706298.git.lv.zheng@intel.com>
+References: <cover.1387336613.git.lv.zheng@intel.com> <cover.1404706298.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the last series for ACPICA header inclusion cleanups.
-The whole story can be found below:
-  1. Unsafe inclusions:
-     origin: https://lkml.org/lkml/2013/11/22/510
-     merged: https://lkml.org/lkml/2013/12/6/79
-  2. Header orders:
-     origin: https://lkml.org/lkml/2014/4/8/57
-     merged: https://lkml.org/lkml/2014/5/12/111
-  3. Header stubs:
-     origin: https://lkml.org/lkml/2014/12/18/149
-     merged: https://lkml.org/lkml/2014/4/29/716
+There are global variables and functions not upstreamed to the ACPICA code
+base.  Such symbols still can be referenced by external users as they are
+listed in the acpixf.h.  This patch uses ACPI_GLOBAL and
+ACPI_EXTERNAL_RETURN_STATUS mechanism to add stub support for such symbols.
 
-This patchset contains patches that are parts of the last series sent
-before, so it is marked as v2 belonging to the same thread as this series:
-  https://lkml.org/lkml/2014/12/18/149
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+---
+ drivers/acpi/bus.c    |    3 ---
+ include/acpi/acpixf.h |   28 +++++++++++++++++-----------
+ 2 files changed, 17 insertions(+), 14 deletions(-)
 
-Now we have cleaned up all mis-ordered ACPICA headers and implemented stubs
-for ACPICA prototypes (functions, global variables, macros), we finally can
-enable ACPICA headers for CONFIG_ACPI=n builds so that all ACPICA defined
-types are visible to all kernel source files.
-
-After exposing ACPICA types to all kernel sources, we can also sort the
-final wrong <acpi/acpi.h> inclusion out of <linux/sfi_acpi.h>.
-
-This patchset also includes a rule enforcement patch to avoid future
-inclusion mistakes.
-
-The patch set has passed a build/boot test on the following machines:
-Dell Inspiron Mini 1010 (i386)
-HP Compaq 8200 Elite SFF PC (x86-64)
-With the following kernel configuration items enabled:
-  All drivers/acpi configurations
-  All platform drivers
-  All ACPI drivers
-  4 DRM drivers that implement ACPI opregion
-  All buses with ACPI bindings
-  All cpufreq configurations
-  All xen configurations
-  All ACPI table drivers
-They are tested twice with CONFIG_ACPI enabled/disabled.
-
-Also allyes/allno/allmod tests are done for ARCH=i386 and ARCH=x86_64.
-
-A boot test has been done to ARCH=x86_64 default configuration and it is
-confirmed that the ACPI devices are successfully created under
-/sys/bus/acpi/devices when CONFIG_ACPI is enabled.
-
-Lv Zheng (7):
-  ACPICA: Linux: Add stub support for Linux specific variables and
-    functions.
-  ACPICA: Linux: Add stub implementation of ACPICA 64-bit mathematics.
-  ACPICA: Linux: Add configuration item to indicate the architecture
-    specific support.
-  ACPICA: Linux: Allow ACPICA inclusion for CONFIG_ACPI=n builds.
-  ACPI/SFI: Fix wrong <acpi/acpi.h> inclusion in SFI/ACPI wrapper -
-    table definitions.
-  ACPI: Cleanup useless ACPI inclusion.
-  ACPI: Add support to force header inclusion rules for <acpi/acpi.h>.
-
- arch/ia64/Kconfig                 |    1 +
- arch/x86/Kconfig                  |    1 +
- drivers/acpi/Kconfig              |    4 ++++
- drivers/acpi/acpica/Makefile      |    2 +-
- drivers/acpi/bus.c                |    3 ---
- include/acpi/acpixf.h             |   28 +++++++++++++++++-----------
- include/acpi/platform/aclinux.h   |   12 ++++++++++++
- include/acpi/platform/aclinuxex.h |   22 ++++++++++++++++++++++
- include/linux/acpi.h              |    6 +++---
- include/linux/sfi_acpi.h          |    3 ---
- sound/soc/intel/sst-haswell-dsp.c |    3 ---
- 11 files changed, 61 insertions(+), 24 deletions(-)
-
+diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+index c5bc8cf..8581f5b 100644
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -477,9 +477,6 @@ static int __init acpi_bus_init_irq(void)
+ 	return 0;
+ }
+ 
+-u8 acpi_gbl_permanent_mmap;
+-
+-
+ void __init acpi_early_init(void)
+ {
+ 	acpi_status status;
+diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
+index 35b525c..bdbb145 100644
+--- a/include/acpi/acpixf.h
++++ b/include/acpi/acpixf.h
+@@ -53,8 +53,6 @@
+ #include <acpi/actbl.h>
+ #include <acpi/acbuffer.h>
+ 
+-extern u8 acpi_gbl_permanent_mmap;
+-
+ /*****************************************************************************
+  *
+  * Macros used for ACPICA globals and configuration
+@@ -865,17 +863,25 @@ ACPI_DBG_DEPENDENT_RETURN_VOID(ACPI_PRINTF_LIKE(6)
+ /*
+  * Divergences
+  */
+-acpi_status acpi_get_id(acpi_handle object, acpi_owner_id * out_type);
++ACPI_GLOBAL(u8, acpi_gbl_permanent_mmap);
++
++ACPI_EXTERNAL_RETURN_STATUS(acpi_status
++			    acpi_get_id(acpi_handle object,
++					acpi_owner_id * out_type))
+ 
+-acpi_status acpi_unload_table_id(acpi_owner_id id);
++ACPI_EXTERNAL_RETURN_STATUS(acpi_status acpi_unload_table_id(acpi_owner_id id))
+ 
+-acpi_status
+-acpi_get_table_with_size(acpi_string signature,
+-	       u32 instance, struct acpi_table_header **out_table,
+-	       acpi_size *tbl_size);
++ACPI_EXTERNAL_RETURN_STATUS(acpi_status
++			    acpi_get_table_with_size(acpi_string signature,
++						     u32 instance,
++						     struct acpi_table_header
++						     **out_table,
++						     acpi_size *tbl_size))
+ 
+-acpi_status
+-acpi_get_data_full(acpi_handle object, acpi_object_handler handler, void **data,
+-		   void (*callback)(void *));
++ACPI_EXTERNAL_RETURN_STATUS(acpi_status
++			    acpi_get_data_full(acpi_handle object,
++					       acpi_object_handler handler,
++					       void **data,
++					       void (*callback)(void *)))
+ 
+ #endif				/* __ACXFACE_H__ */
 -- 
 1.7.10
 
