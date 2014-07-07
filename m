@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaGGU6K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 16:58:10 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62209 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750809AbaGGU6H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 16:58:07 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Tony Luck <tony.luck@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH 4/4] ACPI: Make EC debugfs depend on X86 || IA64 in Kconfig
-Date: Mon, 07 Jul 2014 23:16:11 +0200
-Message-ID: <200683000.sgUJl2AyWR@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1404290847-7671-5-git-send-email-hanjun.guo@linaro.org>
-References: <1404290847-7671-1-git-send-email-hanjun.guo@linaro.org> <1404290847-7671-5-git-send-email-hanjun.guo@linaro.org>
+	id S1752091AbaGGU76 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 16:59:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37019 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751038AbaGGU74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 16:59:56 -0400
+Date: Mon, 7 Jul 2014 22:59:53 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Jean Pihet <jean.pihet@linaro.org>
+Subject: Re: [PATCH] perf tool: Carve out ctype.h et al
+Message-ID: <20140707205953.GC4776@pd.tnic>
+References: <1403688184-6917-1-git-send-email-bp@alien8.de>
+ <20140625192547.GF1153@krava.brq.redhat.com>
+ <20140625203836.GD13845@pd.tnic>
+ <20140625211757.GD18773@kernel.org>
+ <20140626073802.GC1177@krava.brq.redhat.com>
+ <20140626103223.GB1284@pd.tnic>
+ <20140626121433.GA2600@krava.brq.redhat.com>
+ <20140627232819.GB21418@pd.tnic>
+ <20140707204752.GA11917@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140707204752.GA11917@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 02, 2014 04:47:26 PM Hanjun Guo wrote:
-> Since EC (Embedded controller) needs SCI for the interupt which
-> is not available on ARM64, make the EC debugfs depend on X86 || IA64
-> only in the Kconfig file.
-> 
-> Reviewed-by: Grant Likely <grant.likely@linaro.org>
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> ---
->  drivers/acpi/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> index 0e6f72d..7de5e3f 100644
-> --- a/drivers/acpi/Kconfig
-> +++ b/drivers/acpi/Kconfig
-> @@ -69,6 +69,7 @@ config ACPI_PROCFS_POWER
->  
->  config ACPI_EC_DEBUGFS
->  	tristate "EC read/write access through /sys/kernel/debug/ec"
-> +	depends on X86 || IA64
+On Mon, Jul 07, 2014 at 05:47:52PM -0300, Arnaldo Carvalho de Melo wrote:
+> I'll try to fix this up later today, if you haven't done it by then.
 
-This is totally inconsistent with the other patches in the series where you
-define per-arch symbols for similar things.  In addition to that, do we need
-to build ec.c on ARM at all?
+I won't because it is too late here for me to have a functioning brain
+still, but don't bother - I'll take care of it tomorrow.
 
->  	default n
->  	help
->  	  Say N to disable Embedded Controller /sys/kernel/debug interface
-> 
+Thanks.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
