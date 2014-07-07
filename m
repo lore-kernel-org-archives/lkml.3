@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927AbaGGObZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:31:25 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57303 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753845AbaGGOa3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753851AbaGGOa3 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 7 Jul 2014 10:30:29 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57292 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753729AbaGGOa0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 10:30:26 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -17,9 +17,9 @@ Cc: Boris Brezillon <boris@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v2 07/18] AT91: DT: Remove the old-style reset probing
-Date: Mon,  7 Jul 2014 16:25:20 +0200
-Message-Id: <1404743131-24569-8-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 14/18] AT91: Register the poweroff driver
+Date: Mon,  7 Jul 2014 16:25:27 +0200
+Message-Id: <1404743131-24569-15-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1404743131-24569-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1404743131-24569-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -27,61 +27,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the reset code is a driver of its own, just let the usual DT probing
-mecanism do its job, and remove the code entirely in this case.
+Register the poweroff driver in the old-style SoC definition so that the driver
+is loaded and provide a shutdown hook.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/mach-at91/setup.c | 29 -----------------------------
- 1 file changed, 29 deletions(-)
+ arch/arm/mach-at91/at91sam9260.c | 15 +++++++++++++++
+ arch/arm/mach-at91/at91sam9261.c | 15 +++++++++++++++
+ arch/arm/mach-at91/at91sam9263.c | 15 +++++++++++++++
+ arch/arm/mach-at91/at91sam9g45.c | 15 +++++++++++++++
+ arch/arm/mach-at91/at91sam9rl.c  | 15 +++++++++++++++
+ 5 files changed, 75 insertions(+)
 
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index cc520596f23b..71003e40f01c 100644
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -354,34 +354,6 @@ void __init at91_ioremap_matrix(u32 base_addr)
+diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
+index feed552c2b5d..f387e831e894 100644
+--- a/arch/arm/mach-at91/at91sam9260.c
++++ b/arch/arm/mach-at91/at91sam9260.c
+@@ -377,9 +377,24 @@ static struct platform_device rstc_device = {
+ 	.num_resources  = ARRAY_SIZE(rstc_resources),
+ };
+ 
++static struct resource shdwc_resources[] = {
++	[0] = {
++		.start  = AT91SAM9260_BASE_SHDWC,
++		.end    = AT91SAM9260_BASE_SHDWC + SZ_16 - 1,
++		.flags  = IORESOURCE_MEM,
++	},
++};
++
++static struct platform_device shdwc_device = {
++	.name           = "at91-poweroff",
++	.resource       = shdwc_resources,
++	.num_resources  = ARRAY_SIZE(shdwc_resources),
++};
++
+ static void __init at91sam9260_register_devices(void)
+ {
+ 	platform_device_register(&rstc_device);
++	platform_device_register(&shdwc_device);
  }
  
- #if defined(CONFIG_OF) && !defined(CONFIG_ARCH_AT91X40)
--static struct of_device_id rstc_ids[] = {
--	{ .compatible = "atmel,at91sam9260-rstc", .data = at91sam9_alt_restart },
--	{ .compatible = "atmel,at91sam9g45-rstc", .data = at91sam9g45_restart },
--	{ /*sentinel*/ }
--};
--
--static void at91_dt_rstc(void)
--{
--	struct device_node *np;
--	const struct of_device_id *of_id;
--
--	np = of_find_matching_node(NULL, rstc_ids);
--	if (!np)
--		panic(pr_fmt("unable to find compatible rstc node in dtb\n"));
--
--	at91_rstc_base = of_iomap(np, 0);
--	if (!at91_rstc_base)
--		panic(pr_fmt("unable to map rstc cpu registers\n"));
--
--	of_id = of_match_node(rstc_ids, np);
--	if (!of_id)
--		panic(pr_fmt("rtsc no restart function available\n"));
--
--	arm_pm_restart = of_id->data;
--
--	of_node_put(np);
--}
--
- static struct of_device_id ramc_ids[] = {
- 	{ .compatible = "atmel,at91rm9200-sdramc", .data = at91rm9200_standby },
- 	{ .compatible = "atmel,at91sam9260-sdramc", .data = at91sam9_sdram_standby },
-@@ -507,7 +479,6 @@ void __init at91rm9200_dt_initialize(void)
+ /* --------------------------------------------------------------------
+diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
+index 43db1bdf885d..5e8ac0d271b8 100644
+--- a/arch/arm/mach-at91/at91sam9261.c
++++ b/arch/arm/mach-at91/at91sam9261.c
+@@ -340,9 +340,24 @@ static struct platform_device rstc_device = {
+ 	.num_resources  = ARRAY_SIZE(rstc_resources),
+ };
  
- void __init at91_dt_initialize(void)
++static struct resource shdwc_resources[] = {
++	[0] = {
++		.start  = AT91SAM9261_BASE_SHDWC,
++		.end    = AT91SAM9261_BASE_SHDWC + SZ_16 - 1,
++		.flags  = IORESOURCE_MEM,
++	},
++};
++
++static struct platform_device shdwc_device = {
++	.name           = "at91-poweroff",
++	.resource       = shdwc_resources,
++	.num_resources  = ARRAY_SIZE(shdwc_resources),
++};
++
+ static void __init at91sam9261_register_devices(void)
  {
--	at91_dt_rstc();
- 	at91_dt_ramc();
- 	at91_dt_shdwc();
+ 	platform_device_register(&rstc_device);
++	platform_device_register(&shdwc_device);
+ }
  
+ /* --------------------------------------------------------------------
+diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
+index 94c0ac997b7f..772485c9e47c 100644
+--- a/arch/arm/mach-at91/at91sam9263.c
++++ b/arch/arm/mach-at91/at91sam9263.c
+@@ -358,9 +358,24 @@ static struct platform_device rstc_device = {
+ 	.num_resources  = ARRAY_SIZE(rstc_resources),
+ };
+ 
++static struct resource shdwc_resources[] = {
++	[0] = {
++		.start  = AT91SAM9263_BASE_SHDWC,
++		.end    = AT91SAM9263_BASE_SHDWC + SZ_16 - 1,
++		.flags  = IORESOURCE_MEM,
++	},
++};
++
++static struct platform_device shdwc_device = {
++	.name           = "at91-poweroff",
++	.resource       = shdwc_resources,
++	.num_resources  = ARRAY_SIZE(shdwc_resources),
++};
++
+ static void __init at91sam9263_register_devices(void)
+ {
+ 	platform_device_register(&rstc_device);
++	platform_device_register(&shdwc_device);
+ }
+ 
+ /* --------------------------------------------------------------------
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index c896b28564ef..d986cc757cfb 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -412,9 +412,24 @@ static struct platform_device rstc_device = {
+ 	.num_resources  = ARRAY_SIZE(rstc_resources),
+ };
+ 
++static struct resource shdwc_resources[] = {
++	[0] = {
++		.start  = AT91SAM9G45_BASE_SHDWC,
++		.end    = AT91SAM9G45_BASE_SHDWC + SZ_16 - 1,
++		.flags  = IORESOURCE_MEM,
++	},
++};
++
++static struct platform_device shdwc_device = {
++	.name           = "at91-poweroff",
++	.resource       = shdwc_resources,
++	.num_resources  = ARRAY_SIZE(shdwc_resources),
++};
++
+ static void __init at91sam9g45_register_devices(void)
+ {
+ 	platform_device_register(&rstc_device);
++	platform_device_register(&shdwc_device);
+ }
+ 
+ /* --------------------------------------------------------------------
+diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
+index 75dbaa10aa26..1fba256502f7 100644
+--- a/arch/arm/mach-at91/at91sam9rl.c
++++ b/arch/arm/mach-at91/at91sam9rl.c
+@@ -350,9 +350,24 @@ static struct platform_device rstc_device = {
+ 	.num_resources  = ARRAY_SIZE(rstc_resources),
+ };
+ 
++static struct resource shdwc_resources[] = {
++	[0] = {
++		.start  = AT91SAM9RL_BASE_SHDWC,
++		.end    = AT91SAM9RL_BASE_SHDWC + SZ_16 - 1,
++		.flags  = IORESOURCE_MEM,
++	},
++};
++
++static struct platform_device shdwc_device = {
++	.name           = "at91-poweroff",
++	.resource       = shdwc_resources,
++	.num_resources  = ARRAY_SIZE(shdwc_resources),
++};
++
+ static void __init at91sam9rl_register_devices(void)
+ {
+ 	platform_device_register(&rstc_device);
++	platform_device_register(&shdwc_device);
+ }
+ 
+ /* --------------------------------------------------------------------
 -- 
 2.0.1
 
