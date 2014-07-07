@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914AbaGGUXM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 16:23:12 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:38113 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868AbaGGUXK (ORCPT
+	id S1752247AbaGGUYG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 16:24:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60141 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751247AbaGGUYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 16:23:10 -0400
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        netdev@vger.kernel.org
-Cc: acme@ghostprotocols.net, davem@davemloft.net, eric.dumazet@gmail.com,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Subject: [PATCH] appletalk: Fix socket referencing in skb
-Date: Mon,  7 Jul 2014 23:22:50 +0300
-Message-Id: <1404764570-24120-1-git-send-email-andrey.krieger.utkin@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Mon, 7 Jul 2014 16:24:01 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 02/32] ARM: at91/dt: ariag25: define crystals frequencies
+Date: Mon,  7 Jul 2014 22:23:19 +0200
+Message-Id: <1404764629-29136-3-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404764629-29136-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1404764629-29136-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setting just skb->sk without taking its reference and setting a
-destructor is invalid. However, in the places where this was done, skb
-is used in a way not requiring skb->sk setting. So dropping the setting
-of skb->sk.
-Thanks to Eric Dumazet <eric.dumazet@gmail.com> for correct solution.
+Define Acme Systems Aria G25 board main and slow crystals frequencies.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79441
-Reported-by: Ed Martin <edman007@edman007.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- net/appletalk/ddp.c | 3 ---
- 1 file changed, 3 deletions(-)
+ arch/arm/boot/dts/at91-ariag25.dts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
-index 01a1082..bfcf6be 100644
---- a/net/appletalk/ddp.c
-+++ b/net/appletalk/ddp.c
-@@ -1489,8 +1489,6 @@ static int atalk_rcv(struct sk_buff *skb, struct net_device *dev,
- 		goto drop;
+diff --git a/arch/arm/boot/dts/at91-ariag25.dts b/arch/arm/boot/dts/at91-ariag25.dts
+index 55ab6180e350..e9ced30159a7 100644
+--- a/arch/arm/boot/dts/at91-ariag25.dts
++++ b/arch/arm/boot/dts/at91-ariag25.dts
+@@ -42,6 +42,14 @@
+ 			compatible = "atmel,osc", "fixed-clock";
+ 			clock-frequency = <12000000>;
+ 		};
++
++		slow_xtal {
++			clock-frequency = <32768>;
++		};
++
++		main_xtal {
++			clock-frequency = <12000000>;
++		};
+ 	};
  
- 	/* Queue packet (standard) */
--	skb->sk = sock;
--
- 	if (sock_queue_rcv_skb(sock, skb) < 0)
- 		goto drop;
- 
-@@ -1644,7 +1642,6 @@ static int atalk_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
- 	if (!skb)
- 		goto out;
- 
--	skb->sk = sk;
- 	skb_reserve(skb, ddp_dl->header_length);
- 	skb_reserve(skb, dev->hard_header_len);
- 	skb->dev = dev;
+ 	ahb {
 -- 
-1.8.3.2
+1.9.1
 
