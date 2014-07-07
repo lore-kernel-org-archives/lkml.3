@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258AbaGHA1M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:27:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55974 "EHLO
+	id S1755281AbaGHA1f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:27:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55860 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754150AbaGGXyy (ORCPT
+	with ESMTP id S1754144AbaGGXyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:54 -0400
+	Mon, 7 Jul 2014 19:54:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Imre Deak <imre.deak@intel.com>,
-        Damien Lespiau <damien.lespiau@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.14 85/94] drm/i915: fix display power sw state reporting
-Date: Mon,  7 Jul 2014 16:58:15 -0700
-Message-Id: <20140707235759.277075415@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.14 83/94] brcmfmac: Fix brcmf_chip_ai_coredisable not applying reset bits to BCMA_IOCTL
+Date: Mon,  7 Jul 2014 16:58:13 -0700
+Message-Id: <20140707235759.219399458@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -32,62 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Imre Deak <imre.deak@intel.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit b8c000d9bf23e7c1155ef421f595d1cbc25262da upstream.
+commit ffa216bb5eecfce0f01b0b2a95d5c320dde90005 upstream.
 
-Atm, we refcount both power domains and power wells and
-intel_display_power_enabled_sw() returns the power domain refcount. What
-the callers are really interested in though is the sw state of the
-underlying power wells. Due to this we will report incorrectly that a
-given power domain is off if its power wells were enabled via another
-power domain, for example POWER_DOMAIN_INIT which enables all power
-wells.
+brcmfmac has been broken on my cubietruck with a BCM43362:
 
-As a fix return instead the state based on the refcount of all power
-wells included in the passed in power domain.
+brcmfmac: brcmf_chip_recognition: found AXI chip: BCM43362, rev=1
+brcmfmac: brcmf_c_preinit_dcmds: Firmware version = wl0:
+        Apr 22 2013 14:50:00 version 5.90.195.89.6 FWID 01-b30a427d
 
-References: https://bugs.freedesktop.org/show_bug.cgi?id=79505
-References: https://bugs.freedesktop.org/show_bug.cgi?id=79038
-Reported-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Imre Deak <imre.deak@intel.com>
-Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Acked-by: Jani Nikula <jani.nikula@intel.com>
+since commit 53036261033: "brcmfmac: update core reset and disable routines".
+
+The problem is that since this commit brcmf_chip_ai_resetcore no longer sets
+BCMA_IOCTL itself before bringing the core out of reset, instead relying on
+brcmf_chip_ai_coredisable to do so. But brcmf_chip_ai_coredisable is a nop
+of the chip is already in reset. This patch modifies brcmf_chip_ai_coredisable
+to always set BCMA_IOCTL even if the core is already in reset.
+
+This fixes brcmfmac hanging in firmware loading on my board.
+
+Cc: stable@vger.kernel.org # v3.14
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Acked-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[arend@broadcom.com: rebase patch on linux-3.14.y branch]
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_pm.c |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ drivers/net/wireless/brcm80211/brcmfmac/sdio_chip.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -5138,10 +5138,25 @@ bool intel_display_power_enabled_sw(stru
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	struct i915_power_domains *power_domains;
-+	struct i915_power_well *power_well;
-+	bool is_enabled;
-+	int i;
-+
-+	if (dev_priv->pm.suspended)
-+		return false;
+--- a/drivers/net/wireless/brcm80211/brcmfmac/sdio_chip.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/sdio_chip.c
+@@ -300,10 +300,10 @@ brcmf_sdio_ai_coredisable(struct brcmf_s
  
- 	power_domains = &dev_priv->power_domains;
-+	is_enabled = true;
-+	for_each_power_well_rev(i, power_well, BIT(domain), power_domains) {
-+		if (power_well->always_on)
-+			continue;
+ 	wrapbase = ci->c_inf[idx].wrapbase;
  
--	return power_domains->domain_use_count[domain];
-+		if (!power_well->count) {
-+			is_enabled = false;
-+			break;
-+		}
-+	}
-+	return is_enabled;
- }
+-	/* if core is already in reset, just return */
++	/* if core is already in reset, skip reset */
+ 	regdata = brcmf_sdiod_regrl(sdiodev, wrapbase + BCMA_RESET_CTL, NULL);
+ 	if ((regdata & BCMA_RESET_CTL_RESET) != 0)
+-		return;
++		goto post_reset_config;
  
- bool intel_display_power_enabled(struct drm_device *dev,
+ 	/* configure reset */
+ 	brcmf_sdiod_regwl(sdiodev, wrapbase + BCMA_IOCTL, pre_resetbits |
+@@ -319,6 +319,7 @@ brcmf_sdio_ai_coredisable(struct brcmf_s
+ 	SPINWAIT(brcmf_sdiod_regrl(sdiodev, wrapbase + BCMA_RESET_CTL, NULL) !=
+ 		 BCMA_RESET_CTL_RESET, 300);
+ 
++post_reset_config:
+ 	/* post reset configure */
+ 	brcmf_sdiod_regwl(sdiodev, wrapbase + BCMA_IOCTL, pre_resetbits |
+ 			  BCMA_IOCTL_FGC | BCMA_IOCTL_CLK, NULL);
 
 
