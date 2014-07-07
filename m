@@ -1,133 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621AbaGGKgo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 06:36:44 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:64170 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392AbaGGKgl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 06:36:41 -0400
-X-AuditID: cbfec7f4-b7fac6d000006cfe-e9-53ba7835fae8
-Message-id: <53BA7838.7000706@samsung.com>
-Date: Mon, 07 Jul 2014 12:36:40 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Cc: "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Grant Likely'" <grant.likely@linaro.org>,
-        "'Tomasz Figa'" <t.figa@samsung.com>,
-        "'Sascha Hauer'" <s.hauer@pengutronix.de>,
-        "'Laura Abbott'" <lauraa@codeaurora.org>,
-        "'Rob Herring'" <robh+dt@kernel.org>,
-        "'Olof Johansson'" <olof@lixom.net>,
-        "'Pawel Moll'" <pawel.moll@arm.com>,
-        "'Mark Rutland'" <mark.rutland@arm.com>,
-        "'Stephen Warren'" <swarren@wwwdotorg.org>,
-        "'Ian Campbell'" <ian.campbell@citrix.com>,
-        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        "'Kumar Gala'" <galak@codeaurora.org>,
-        "'Nishanth Peethambaran'" <nishanth.p@gmail.com>,
-        "'Marc'" <marc.ceeeee@gmail.com>,
-        "'Josh Cartwright'" <joshc@codeaurora.org>,
-        "'Catalin Marinas'" <catalin.marinas@arm.com>,
-        "'Will Deacon'" <will.deacon@arm.com>,
-        "'Paul Mackerras'" <paulus@samba.org>,
-        "'Jon Medhurst'" <tixy@linaro.org>,
-        "'Aneesh Kumar K.V.'" <aneesh.kumar@linux.vnet.ibm.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/4] drivers: dma-contiguous: add initialization from
- device tree
-References: <1404298132-6050-1-git-send-email-m.szyprowski@samsung.com>
- <1404298132-6050-5-git-send-email-m.szyprowski@samsung.com>
- <00b501cf974c$2db1a800$8914f800$@lge.com>
-In-reply-to: <00b501cf974c$2db1a800$8914f800$@lge.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA03SW0jTURzAcc7+t21o/JsaJxGTYS9G5qDLKTSkEP5PZUiGEdrU5YVNbUvz
-	QqSmptu8pIg2ZWpeqLFLOvAyDHUMFRVJXAo1b0mYTueViJyS2158+/wO33POy4+N8X7j/uy0
-	jBciaYZQzCe5+OTx2Ozla7mmmLB6xyXUbNCSaNWuxtFR7SiFdopLMbTdpQSoxTJNoOrNNgIN
-	O/sB+qR4Q6LNynIcDegdAPVVNFLowLrCQj2rcwRqK+vA0aypmUSf10dYqHN+hoVax0oI5GwI
-	RBPz+yTSWtopVNOgw1HpFwuFjvp6cLQxUoYjQ6MdR20tSxTSmJwAre+O45GBjFatBczhv1rA
-	2OtqADNbVcliBlQLFKPcLCGYHk0Fyci3rCzGNjdIMuONhzizbDbijLHjNfPjeBVjrOPFBKN3
-	brCY6qOwaN/H3PBkkTgtRyS9cvspN3X6Ww2VpaNzdctdZCHY85IDDhvSV+G6cZj0+Bz8umg4
-	MZfNozsBtH1XU55hD8Ah9S935U2HQIW+ym2cvgh7m9Ywl0laAOVbcve5H/0ETlXuY57+LPxb
-	t4i7HvKlxwBcLKx2Dxi9QcFDu4blqnzoR/DPQqX7No/uBnDE5jaHvg4N9mXCZezEP0v0mMcX
-	oFG7hdUAWnXqE9WpTHUqawWYBviJspOyZIkpEkGoTCiRZWekhCZlSnqAZzsO+kH76C0zoNmA
-	7+W9Yx2I4RHCHFmexAwgG+P7ejckmGJ43snCvHyRNDNBmi0WycyAxeb4F4JXEe/9PnQ7Ji0P
-	03vzg0wTLwXB97nCgL4mNYdbvbLYKfGP9tHcqNgdFD+bV8XbOmOLUnS8qP0ZMha3RN4dSo96
-	d6a2QDkVqJTTyS1xvgqfgXKHJABK93biih4kxtev3VFE5K0QQTrldn/wvefhtsTij+dzFTep
-	JetbsF/A5+OyVKEgBJPKhP8Bp/34rfsCAAA=
+	id S1752460AbaGGKmT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 06:42:19 -0400
+Received: from mta-out1.inet.fi ([62.71.2.200]:56497 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751769AbaGGKmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 06:42:16 -0400
+Date: Mon, 7 Jul 2014 13:41:37 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v10 1/7] mm: support madvise(MADV_FREE)
+Message-ID: <20140707104137.GA23150@node.dhcp.inet.fi>
+References: <1404694438-10272-1-git-send-email-minchan@kernel.org>
+ <1404694438-10272-2-git-send-email-minchan@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404694438-10272-2-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 2014-07-04 07:52, Joonsoo Kim wrote:
->> -----Original Message-----
->> From: Marek Szyprowski [mailto:m.szyprowski@samsung.com]
->> Sent: Wednesday, July 02, 2014 7:49 PM
->>
->> Subject: [PATCH 4/4] drivers: dma-contiguous: add initialization from
->> device tree
->>
->> Add a code to create CMA region from reserved memory and add support for
->> handling 'shared-dma-pool' reserved-memory device tree nodes.
->>
->> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
->> ---
->>   drivers/base/dma-contiguous.c | 67
->> +++++++++++++++++++++++++++++++++++++++++
->>   include/linux/cma.h           |  3 ++
->>   mm/cma.c                      | 69
-> ++++++++++++++++++++++++++++++++-----------
->>   3 files changed, 122 insertions(+), 17 deletions(-)
->>
+On Mon, Jul 07, 2014 at 09:53:52AM +0900, Minchan Kim wrote:
+> Linux doesn't have an ability to free pages lazy while other OS
+> already have been supported that named by madvise(MADV_FREE).
+> 
+> The gain is clear that kernel can discard freed pages rather than
+> swapping out or OOM if memory pressure happens.
+> 
+> Without memory pressure, freed pages would be reused by userspace
+> without another additional overhead(ex, page fault + allocation
+> + zeroing).
+> 
+> How to work is following as.
+> 
+> When madvise syscall is called, VM clears dirty bit of ptes of
+> the range. If memory pressure happens, VM checks dirty bit of
+> page table and if it found still "clean", it means it's a
+> "lazyfree pages" so VM could discard the page instead of swapping out.
+> Once there was store operation for the page before VM peek a page
+> to reclaim, dirty bit is set so VM can swap out the page instead of
+> discarding.
+> 
+> Firstly, heavy users would be general allocators(ex, jemalloc,
+> tcmalloc and hope glibc supports it) and jemalloc/tcmalloc already
+> have supported the feature for other OS(ex, FreeBSD)
+> 
+> barrios@blaptop:~/benchmark/ebizzy$ lscpu
+> Architecture:          x86_64
+> CPU op-mode(s):        32-bit, 64-bit
+> Byte Order:            Little Endian
+> CPU(s):                4
+> On-line CPU(s) list:   0-3
+> Thread(s) per core:    2
+> Core(s) per socket:    2
+> Socket(s):             1
+> NUMA node(s):          1
+> Vendor ID:             GenuineIntel
+> CPU family:            6
+> Model:                 42
+> Stepping:              7
+> CPU MHz:               2801.000
+> BogoMIPS:              5581.64
+> Virtualization:        VT-x
+> L1d cache:             32K
+> L1i cache:             32K
+> L2 cache:              256K
+> L3 cache:              4096K
+> NUMA node0 CPU(s):     0-3
+> 
+> ebizzy benchmark(./ebizzy -S 10 -n 512)
+> 
+>  vanilla-jemalloc		MADV_free-jemalloc
+> 
+> 1 thread
+> records:  10              records:  10
+> avg:      7682.10         avg:      15306.10
+> std:      62.35(0.81%)    std:      347.99(2.27%)
+> max:      7770.00         max:      15622.00
+> min:      7598.00         min:      14772.00
+> 
+> 2 thread
+> records:  10              records:  10
+> avg:      12747.50        avg:      24171.00
+> std:      792.06(6.21%)   std:      895.18(3.70%)
+> max:      13337.00        max:      26023.00
+> min:      10535.00        min:      23152.00
+> 
+> 4 thread
+> records:  10              records:  10
+> avg:      16474.60        avg:      33717.90
+> std:      1496.45(9.08%)  std:      2008.97(5.96%)
+> max:      17877.00        max:      35958.00
+> min:      12224.00        min:      29565.00
+> 
+> 8 thread
+> records:  10              records:  10
+> avg:      16778.50        avg:      33308.10
+> std:      825.53(4.92%)   std:      1668.30(5.01%)
+> max:      17543.00        max:      36010.00
+> min:      14576.00        min:      29577.00
+> 
+> 16 thread
+> records:  10              records:  10
+> avg:      20614.40        avg:      35516.30
+> std:      602.95(2.92%)   std:      1283.65(3.61%)
+> max:      21753.00        max:      37178.00
+> min:      19605.00        min:      33217.00
+> 
+> 32 thread
+> records:  10              records:  10
+> avg:      22771.70        avg:      36018.50
+> std:      598.94(2.63%)   std:      1046.76(2.91%)
+> max:      24035.00        max:      37266.00
+> min:      22108.00        min:      34149.00
+> 
+> In summary, MADV_FREE is about 2 time faster than MADV_DONTNEED.
+> 
+> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+> Cc: Linux API <linux-api@vger.kernel.org>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Jason Evans <je@fb.com>
+> Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
 
 ...
 
->> +/**
->>    * cma_declare_contiguous() - reserve custom contiguous area
->>    * @base: Base address of the reserved area optional, use 0 for any
->>    * @size: Size of the reserved area (in bytes),
->> @@ -162,18 +210,12 @@ int __init cma_declare_contiguous(phys_addr_t base,
->>   			phys_addr_t alignment, unsigned int order_per_bit,
->>   			bool fixed, struct cma **res_cma)
->>   {
->> -	struct cma *cma;
->> -	int ret = 0;
->> +	int ret;
->>
->>   	pr_debug("%s(size %lx, base %08lx, limit %08lx alignment %08lx)\n",
->>   		__func__, (unsigned long)size, (unsigned long)base,
->>   		(unsigned long)limit, (unsigned long)alignment);
->>
->> -	if (cma_area_count == ARRAY_SIZE(cma_areas)) {
->> -		pr_err("Not enough slots for CMA reserved regions!\n");
->> -		return -ENOSPC;
->> -	}
->> -
-> Hello, Marek.
->
-> After this change, if we have not enough cma_areas, memory will leak.
-> I think that we need separate function to check constraint and this
-> function should be called before reserving memory in
-> cma_declare_contiguous().
+> +static void madvise_free_page_range(struct mmu_gather *tlb,
+> +			     struct vm_area_struct *vma,
+> +			     unsigned long addr, unsigned long end)
+> +{
+> +	pgd_t *pgd;
+> +	unsigned long next;
+> +
+> +	BUG_ON(addr >= end);
+> +	tlb_start_vma(tlb, vma);
+> +	pgd = pgd_offset(vma->vm_mm, addr);
+> +	do {
+> +		next = pgd_addr_end(addr, end);
+> +		if (pgd_none_or_clear_bad(pgd))
+> +			continue;
+> +		next = madvise_free_pud_range(tlb, vma, pgd, addr, next);
+> +	} while (pgd++, addr = next, addr != end);
+> +	tlb_end_vma(tlb, vma);
 
-Well, I will leave this check to avoid memory leak then.
+Any particular reason why pagewalker can't be used here?
 
-> BTW, this mail doesn't appear in LKML. What happens? :)
+> +}
 
-I have no idea, I will send second version then.
+...
 
-Best regards
+> @@ -381,6 +547,13 @@ madvise_vma(struct vm_area_struct *vma, struct vm_area_struct **prev,
+>  		return madvise_remove(vma, prev, start, end);
+>  	case MADV_WILLNEED:
+>  		return madvise_willneed(vma, prev, start, end);
+> +	case MADV_FREE:
+> +		/*
+> +		 * XXX: In this implementation, MADV_FREE works like
+> +		 * MADV_DONTNEED on swapless system or full swap.
+> +		 */
+> +		if (get_nr_swap_pages() > 0)
+> +			return madvise_free(vma, prev, start, end);
+
+Looks racy wrt to full swap. What will happen if we will do madvise_free()
+on full swap?
+
+>  	case MADV_DONTNEED:
+>  		return madvise_dontneed(vma, prev, start, end);
+>  	default:
+
+...
+
+> @@ -1204,6 +1223,16 @@ static int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
+>  			}
+>  			dec_mm_counter(mm, MM_ANONPAGES);
+>  			inc_mm_counter(mm, MM_SWAPENTS);
+> +		} else if (flags & TTU_UNMAP) {
+> +			if (dirty || PageDirty(page)) {
+> +				set_pte_at(mm, address, pte, pteval);
+> +				ret = SWAP_FAIL;
+> +				goto out_unmap;
+
+I don't get this part.
+Looks like it will fail to unmap the page if it's dirty and not backed by
+swapcache. Current code doesn't have such limitation.
+Do we really need this?
+
+> +			} else {
+> +				/* It's a freeable page by madvise_free */
+> +				dec_mm_counter(mm, MM_ANONPAGES);
+> +				goto discard;
+> +			}
+>  		} else if (IS_ENABLED(CONFIG_MIGRATION)) {
+>  			/*
+>  			 * Store the pfn of the page in a special migration
+
 -- 
-Marek Szyprowski, PhD
-Samsung R&D Institute Poland
-
+ Kirill A. Shutemov
