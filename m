@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449AbaGGXzV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:55:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56118 "EHLO
+	id S1754431AbaGGXzU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 19:55:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56108 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754270AbaGGXzF (ORCPT
+	with ESMTP id S1754285AbaGGXzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:55:05 -0400
+	Mon, 7 Jul 2014 19:55:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.10 22/53] Bluetooth: Fix check for connection encryption
-Date: Mon,  7 Jul 2014 16:58:07 -0700
-Message-Id: <20140707235829.965903291@linuxfoundation.org>
+        Fabio Baltieri <fabio.baltieri@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.10 27/53] hwmon: (ina2xx) Cast to s16 on shunt and current regs
+Date: Mon,  7 Jul 2014 16:58:12 -0700
+Message-Id: <20140707235830.110334901@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
 References: <20140707235829.281783607@linuxfoundation.org>
@@ -29,43 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
 
-commit e694788d73efe139b24f78b036deb97fe57fa8cb upstream.
+commit c0214f98943b1fe43f7be61b7782b0c8f0836f28 upstream.
 
-The conn->link_key variable tracks the type of link key in use. It is
-set whenever we respond to a link key request as well as when we get a
-link key notification event.
+All devices supported by ina2xx are bidirectional and report the
+measured shunt voltage and power values as a signed 16 bit, but the
+current driver implementation caches all registers as u16, leading
+to an incorrect sign extension when reporting to userspace in
+ina2xx_get_value().
 
-These two events do not however always guarantee that encryption is
-enabled: getting a link key request and responding to it may only mean
-that the remote side has requested authentication but not encryption. On
-the other hand, the encrypt change event is a certain guarantee that
-encryption is enabled. The real encryption state is already tracked in
-the conn->link_mode variable through the HCI_LM_ENCRYPT bit.
+This patch fixes the problem by casting the signed registers to s16.
+Tested on an INA219.
 
-This patch fixes a check for encryption in the hci_conn_auth function to
-use the proper conn->link_mode value and thereby eliminates the chance
-of a false positive result.
-
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_conn.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hwmon/ina2xx.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/net/bluetooth/hci_conn.c
-+++ b/net/bluetooth/hci_conn.c
-@@ -659,7 +659,7 @@ static int hci_conn_auth(struct hci_conn
- 		/* If we're already encrypted set the REAUTH_PEND flag,
- 		 * otherwise set the ENCRYPT_PEND.
- 		 */
--		if (conn->key_type != 0xff)
-+		if (conn->link_mode & HCI_LM_ENCRYPT)
- 			set_bit(HCI_CONN_REAUTH_PEND, &conn->flags);
- 		else
- 			set_bit(HCI_CONN_ENCRYPT_PEND, &conn->flags);
+--- a/drivers/hwmon/ina2xx.c
++++ b/drivers/hwmon/ina2xx.c
+@@ -147,7 +147,8 @@ static int ina2xx_get_value(struct ina2x
+ 
+ 	switch (reg) {
+ 	case INA2XX_SHUNT_VOLTAGE:
+-		val = DIV_ROUND_CLOSEST(data->regs[reg],
++		/* signed register */
++		val = DIV_ROUND_CLOSEST((s16)data->regs[reg],
+ 					data->config->shunt_div);
+ 		break;
+ 	case INA2XX_BUS_VOLTAGE:
+@@ -159,8 +160,8 @@ static int ina2xx_get_value(struct ina2x
+ 		val = data->regs[reg] * data->config->power_lsb;
+ 		break;
+ 	case INA2XX_CURRENT:
+-		/* LSB=1mA (selected). Is in mA */
+-		val = data->regs[reg];
++		/* signed register, LSB=1mA (selected), in mA */
++		val = (s16)data->regs[reg];
+ 		break;
+ 	default:
+ 		/* programmer goofed */
 
 
