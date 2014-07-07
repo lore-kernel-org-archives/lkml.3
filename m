@@ -1,104 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259AbaGGAsD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 20:48:03 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52255 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116AbaGGAsB (ORCPT
+	id S1752423AbaGGAw2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 20:52:28 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:42226 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001AbaGGAwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 20:48:01 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <53B9EE20.4060407@jp.fujitsu.com>
-Date: Mon, 7 Jul 2014 09:47:28 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>, <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [resend PATCH] workqueue: initialize cpumask of wq_numa_possible_cpumask
-References: <53B98591.5030000@jp.fujitsu.com> <53B9E778.9070807@cn.fujitsu.com>
-In-Reply-To: <53B9E778.9070807@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+	Sun, 6 Jul 2014 20:52:25 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v10 0/7] MADV_FREE support
+Date: Mon,  7 Jul 2014 09:53:51 +0900
+Message-Id: <1404694438-10272-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When hot-adding and onlining CPU, kernel panic occurs, showing following
-call trace.
+This patch enable MADV_FREE hint for madvise syscall, which have
+been supported by other OSes. [PATCH 1] includes the details.
 
-  BUG: unable to handle kernel paging request at 0000000000001d08
-  IP: [<ffffffff8114acfd>] __alloc_pages_nodemask+0x9d/0xb10
-  PGD 0
-  Oops: 0000 [#1] SMP
-  ...
-  Call Trace:
-   [<ffffffff812b8745>] ? cpumask_next_and+0x35/0x50
-   [<ffffffff810a3283>] ? find_busiest_group+0x113/0x8f0
-   [<ffffffff81193bc9>] ? deactivate_slab+0x349/0x3c0
-   [<ffffffff811926f1>] new_slab+0x91/0x300
-   [<ffffffff815de95a>] __slab_alloc+0x2bb/0x482
-   [<ffffffff8105bc1c>] ? copy_process.part.25+0xfc/0x14c0
-   [<ffffffff810a3c78>] ? load_balance+0x218/0x890
-   [<ffffffff8101a679>] ? sched_clock+0x9/0x10
-   [<ffffffff81105ba9>] ? trace_clock_local+0x9/0x10
-   [<ffffffff81193d1c>] kmem_cache_alloc_node+0x8c/0x200
-   [<ffffffff8105bc1c>] copy_process.part.25+0xfc/0x14c0
-   [<ffffffff81114d0d>] ? trace_buffer_unlock_commit+0x4d/0x60
-   [<ffffffff81085a80>] ? kthread_create_on_node+0x140/0x140
-   [<ffffffff8105d0ec>] do_fork+0xbc/0x360
-   [<ffffffff8105d3b6>] kernel_thread+0x26/0x30
-   [<ffffffff81086652>] kthreadd+0x2c2/0x300
-   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
-   [<ffffffff815f20ec>] ret_from_fork+0x7c/0xb0
-   [<ffffffff81086390>] ? kthread_create_on_cpu+0x60/0x60
+[1] support MADVISE_FREE for !THP page so if VM encounter
+THP page in syscall context, it splits THP page.
+[2-6] is to preparing to call madvise syscall without THP plitting
+[7] enable THP page support for MADV_FREE.
 
-In my investigation, I found the root cause is wq_numa_possible_cpumask.
-All entries of wq_numa_possible_cpumask is allocated by
-alloc_cpumask_var_node(). And these entries are used without initializing.
-So these entries have wrong value.
+* From v9
+ * Add Acked-by - Rik
+ * Add THP page support - Kirill
+ * Rebased-on v3.16-rc3-mmotm-2014-07-02-15-07
 
-When hot-adding and onlining CPU, wq_update_unbound_numa() is called.
-wq_update_unbound_numa() calls alloc_unbound_pwq(). And alloc_unbound_pwq()
-calls get_unbound_pool(). In get_unbound_pool(), worker_pool->node is set
-as follow:
+* From v8
+ * Rebased-on v3.16-rc2-mmotm-2014-06-25-16-44
 
-#kernel/workqueue.c
-3592         /* if cpumask is contained inside a NUMA node, we belong to that node */
-3593         if (wq_numa_enabled) {
-3594                 for_each_node(node) {
-3595                         if (cpumask_subset(pool->attrs->cpumask,
-3596                                            wq_numa_possible_cpumask[node])) {
-3597                                 pool->node = node;
-3598                                 break;
-3599                         }
-3600                 }
-3601         }
+* From v7
+ * Rebased-on next-20140613
 
-But wq_numa_possible_cpumask[node] does not have correct cpumask. So, wrong
-node is selected. As a result, kernel panic occurs.
+* From v6
+ * Remove page from swapcache in syscal time
+ * Move utility functions from memory.c to madvise.c - Johannes
+ * Rename untilify functtions - Johannes
+ * Remove unnecessary checks from vmscan.c - Johannes
+ * Rebased-on v3.15-rc5-mmotm-2014-05-16-16-56
+ * Drop Reviewe-by because there was some changes since then.
 
-By this patch, all entries of wq_numa_possible_cpumask are allocated by
-zalloc_cpumask_var_node to initialize them. And the panic disappeared.
+* From v5
+ * Fix PPC problem which don't flush TLB - Rik
+ * Remove unnecessary lazyfree_range stub function - Rik
+ * Rebased on v3.15-rc5
 
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
----
-  kernel/workqueue.c | 2 +-
-  1 file changed, 1 insertion(+), 1 deletion(-)
+* From v4
+ * Add Reviewed-by: Zhang Yanfei
+ * Rebase on v3.15-rc1-mmotm-2014-04-15-16-14
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index b393ded..81e6511 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4879,7 +4879,7 @@ static void __init wq_numa_init(void)
-  	BUG_ON(!tbl);
+* From v3
+ * Add "how to work part" in description - Zhang
+ * Add page_discardable utility function - Zhang
+ * Clean up
 
-  	for_each_node(node)
--		BUG_ON(!alloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
-+		BUG_ON(!zalloc_cpumask_var_node(&tbl[node], GFP_KERNEL,
-  				node_online(node) ? node : NUMA_NO_NODE));
+* From v2
+ * Remove forceful dirty marking of swap-readed page - Johannes
+ * Remove deactivation logic of lazyfreed page
+ * Rebased on 3.14
+ * Remove RFC tag
 
-  	for_each_possible_cpu(cpu) {
+* From v1
+ * Use custom page table walker for madvise_free - Johannes
+ * Remove PG_lazypage flag - Johannes
+ * Do madvise_dontneed instead of madvise_freein swapless system
+
+
+Minchan Kim (7):
+  [1] mm: support madvise(MADV_FREE)
+  [2] x86: add pmd_[dirty|mkclean] for THP
+  [3] sparc: add pmd_[dirty|mkclean] for THP
+  [4] powerpc: add pmd_[dirty|mkclean] for THP
+  [5] s390: add pmd_[dirty|mkclean] for THP
+  [6] ARM: add pmd_[dirty|mkclean] for THP
+  [7] mm: Don't split THP page when syscall is called
+
+ arch/arm64/include/asm/pgtable.h         |   2 +
+ arch/powerpc/include/asm/pgtable-ppc64.h |   2 +
+ arch/s390/include/asm/pgtable.h          |  12 ++
+ arch/sparc/include/asm/pgtable_64.h      |  16 +++
+ arch/x86/include/asm/pgtable.h           |  10 ++
+ include/linux/huge_mm.h                  |   3 +
+ include/linux/rmap.h                     |   8 +-
+ include/linux/vm_event_item.h            |   1 +
+ include/uapi/asm-generic/mman-common.h   |   1 +
+ mm/huge_memory.c                         |  25 ++++
+ mm/madvise.c                             | 189 +++++++++++++++++++++++++++++++
+ mm/rmap.c                                |  38 ++++++-
+ mm/vmscan.c                              |  57 +++++++---
+ mm/vmstat.c                              |   1 +
+ 14 files changed, 348 insertions(+), 17 deletions(-)
+
+-- 
+2.0.0
 
