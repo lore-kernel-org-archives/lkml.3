@@ -1,84 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658AbaGGG2s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 02:28:48 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:53175 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128AbaGGG2p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 02:28:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140702164629.GI5541@saruman.home>
-References: <20140421160802.GA22794@saruman.home>
-	<Pine.LNX.4.44L0.1404211228190.1201-100000@iolanthe.rowland.org>
-	<CALHRZur7+MaYXbWOfbvjggPN7_eYAE+th5VNbcLP=ehvm0HGsA@mail.gmail.com>
-	<20140422144944.GF5524@saruman.home>
-	<CALHRZuoq32qoh70hbb2LtVJNgkwB1j6bvzmYONmxcn3mBnGONQ@mail.gmail.com>
-	<20140430165437.GO23679@saruman.home>
-	<CALHRZur13jLsszV8m_2q1nnBcd00P+2jO60Bvn48aKeu0f7yNQ@mail.gmail.com>
-	<20140702164629.GI5541@saruman.home>
-Date: Mon, 7 Jul 2014 11:58:43 +0530
-Message-ID: <CALHRZurX_-80OP0GngujZE88=SRkEAt+y=nvZcJPc8W8iQJ+8A@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] usb: gadget: Add xilinx axi usb2 device support
-From: sundeep subbaraya <sundeep.lkml@gmail.com>
-To: "balbi@ti.com" <balbi@ti.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michal Simek <michals@xilinx.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751854AbaGGG3B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 02:29:01 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24241 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751717AbaGGG2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 02:28:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,616,1400050800"; 
+   d="scan'208";a="539565418"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
+        eranian@google.com, andi@firstfloor.org,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH v5 00/16] perf, x86: Haswell LBR call stack support
+Date: Mon,  7 Jul 2014 14:28:29 +0800
+Message-Id: <1404714527-18603-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+For many profiling tasks we need the callgraph. For example we often
+need to see the caller of a lock or the caller of a memcpy or other
+library function to actually tune the program. Frame pointer unwinding
+is efficient and works well. But frame pointers are off by default on
+64bit code (and on modern 32bit gccs), so there are many binaries around
+that do not use frame pointers. Profiling unchanged production code is
+very useful in practice. On some CPUs frame pointer also has a high
+cost. Dwarf2 unwinding also does not always work and is extremely slow
+(upto 20% overhead).
 
-On Wed, Jul 2, 2014 at 10:16 PM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Sun, May 25, 2014 at 11:10:30PM +0530, sundeep subbaraya wrote:
->> Hi Felipe,
->>
->> Please take a look at below about how this IP works:
->>
->> IN:
->>       req.buf ---> DMA (transfers from ddr to IP buffer, raise DMA
->> done interrupt and set Buffer ready to transfer data to Host)---->Host
->> PC
->>   buffer sent interrupt
->>
->> OUT:
->>      Host PC--->buffer ready interrupt--->DMA (transfer from IP buffer
->> to DDR,DMA done interrupt, set Buffer ready to receive next data from
->> Host)-->req.buf
->>
->> I written logic to call completion in DMA done handler because it
->> works for both IN and OUT eps. But I see significant performance
->> degradation (by copying a file to mass storage gadget). DMA can handle
->> unaligned address too but it has ep max limit (say 512 for bulk).
->> Hence it is SW job to split packets and to drive DMA till req.length
->> completes. I feel polling for a while is faster than switching between
->> interrupt handler back and forth rapidly. Moreover, DMA may or may not
->> be present in IP based on user configuration at design time.
->>
->> I fixed all other comments expect this one if you do not agree for
->> polling then I may have to create threads and do this stuff. What do
->> you suggest?
->
-> Can you resend your driver so we can review again everything you have
-> fixed ? I guess you have no other way... polling it is.
+Haswell has a new feature that utilizes the existing Last Branch Record
+facility to record call chains. When the feature is enabled, function
+call will be collected as normal, but as return instructions are
+executed the last captured branch record is popped from the on-chip LBR
+registers. The LBR call stack facility provides an alternative to get
+callgraph. It has some limitations too, but should work in most cases
+and is significantly faster than dwarf. Frame pointer unwinding is still
+the best default, but LBR call stack is a good alternative when nothing
+else works.
 
-Sure. I will resend the driver.
+When profiling bc(1) on Fedora 19:
+ echo 'scale=2000; 4*a(1)' > cmd; perf record -g fp bc -l < cmd
 
-Thanks,
-Sundeep.B.S.
+If this feature is enabled, perf report output looks like:
+    50.36%       bc  bc                 [.] bc_divide
+                 |
+                 --- bc_divide
+                     execute
+                     run_code
+                     yyparse
+                     main
+                     __libc_start_main
+                     _start
 
->
-> cheers
->
-> --
-> balbi
+    33.66%       bc  bc                 [.] _one_mult
+                 |
+                 --- _one_mult
+                     bc_divide
+                     execute
+                     run_code
+                     yyparse
+                     main
+                     __libc_start_main
+                     _start
+
+     7.62%       bc  bc                 [.] _bc_do_add
+                 |
+                 --- _bc_do_add
+                    |
+                    |--99.89%-- 0x2000186a8
+                     --0.11%-- [...]
+
+     6.83%       bc  bc                 [.] _bc_do_sub
+                 |
+                 --- _bc_do_sub
+                    |
+                    |--99.94%-- bc_add
+                    |          execute
+                    |          run_code
+                    |          yyparse
+                    |          main
+                    |          __libc_start_main
+                    |          _start
+                     --0.06%-- [...]
+
+     0.46%       bc  libc-2.17.so       [.] __memset_sse2
+                 |
+                 --- __memset_sse2
+                    |
+                    |--54.13%-- bc_new_num
+                    |          |
+                    |          |--51.00%-- bc_divide
+                    |          |          execute
+                    |          |          run_code
+                    |          |          yyparse
+                    |          |          main
+                    |          |          __libc_start_main
+                    |          |          _start
+                    |          |
+                    |          |--30.46%-- _bc_do_sub
+                    |          |          bc_add
+                    |          |          execute
+                    |          |          run_code
+                    |          |          yyparse
+                    |          |          main
+                    |          |          __libc_start_main
+                    |          |          _start
+                    |          |
+                    |           --18.55%-- _bc_do_add
+                    |                     bc_add
+                    |                     execute
+                    |                     run_code
+                    |                     yyparse
+                    |                     main
+                    |                     __libc_start_main
+                    |                     _start
+                    |
+                     --45.87%-- bc_divide
+                               execute
+                               run_code
+                               yyparse
+                               main
+                               __libc_start_main
+                               _start
+
+If this feature is disabled, perf report output looks like:
+    50.49%       bc  bc                 [.] bc_divide
+                 |
+                 --- bc_divide
+
+    33.57%       bc  bc                 [.] _one_mult
+                 |
+                 --- _one_mult
+
+     7.61%       bc  bc                 [.] _bc_do_add
+                 |
+                 --- _bc_do_add
+                     0x2000186a8
+
+     6.88%       bc  bc                 [.] _bc_do_sub
+                 |
+                 --- _bc_do_sub
+
+     0.42%       bc  libc-2.17.so       [.] __memcpy_ssse3_back
+                 |
+                 --- __memcpy_ssse3_back
+
+The LBR call stack has following known limitations
+ - Zero length calls are not filtered out by hardware
+ - Exception handing such as setjmp/longjmp will have calls/returns not
+   match
+ - Pushing different return address onto the stack will have calls/returns
+   not match
+ - If callstack is deeper than the LBR, only the last entries are captured
+
+Changes since v1
+ - split change into more patches
+ - introduce context switch callback and use it to flush LBR
+ - use the context switch callback to save/restore LBR
+ - dynamic allocate memory area for storing LBR stack, always switch the
+   memory area during context switch
+ - disable this feature by default
+ - more description in change logs
+
+Changes since v2
+ - don't use xchg to switch PMU specific data
+ - remove nr_branch_stack from struct perf_event_context
+ - simplify the save/restore LBR stack logical
+ - remove unnecessary 'has_branch_stack -> needs_branch_stack'
+   conversion
+ - more description in change logs
+
+Changes since v3
+ - remove sysfs attribute file that disable this feature
+
+Changes since v4
+ - re-organize code that save/resotre LBR stack
+ - allocate pmu specific data when it's needed
+ - update code comments
+
+These patches are also available at:
+
+These patches are also available at:
+ https://github.com/ukernel/linux.git perf-lbr-callstack
