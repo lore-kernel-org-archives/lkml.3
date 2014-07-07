@@ -1,124 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751146AbaGGF0z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 01:26:55 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:58360 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758AbaGGF0w (ORCPT
+	id S1751022AbaGGFm1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 01:42:27 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:35938 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750714AbaGGFm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 01:26:52 -0400
+	Mon, 7 Jul 2014 01:42:26 -0400
+X-Sasl-enc: MTylESLX1sSCzhbuk1K9i5d2c0yGqD7HZrAcmoICv8dp 1404711744
+Date: Sun, 6 Jul 2014 22:42:08 -0700
+From: Greg KH <greg@kroah.com>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: Himangi Saraogi <himangi774@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] thunderbolt: Correct the size argument to devm_kzalloc
+Message-ID: <20140707054208.GA19965@kroah.com>
+References: <20140706161342.GA6267@himangi-Dell>
+ <20140706235818.GA18457@kroah.com>
+ <alpine.DEB.2.02.1407070629100.2014@localhost6.localdomain6>
 MIME-Version: 1.0
-Date: Mon, 7 Jul 2014 01:26:51 -0400
-Message-ID: <CAPDOMVhTO3t7U-4-VJpYSJ=bJo+3P7ELgonJ+WiBimt5irotqg@mail.gmail.com>
-Subject: Arm Compiler Tests - Part 1 of Compiler Tests
-From: Nick Krause <xerofoify@gmail.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=001a11338e1cf2bc3104fd93b8fa
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1407070629100.2014@localhost6.localdomain6>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11338e1cf2bc3104fd93b8fa
-Content-Type: text/plain; charset=UTF-8
+On Mon, Jul 07, 2014 at 06:32:04AM +0200, Julia Lawall wrote:
+> 
+> 
+> On Sun, 6 Jul 2014, Greg KH wrote:
+> 
+> > On Sun, Jul 06, 2014 at 09:43:42PM +0530, Himangi Saraogi wrote:
+> > > nhi->rx_rings does not have type as struct tb_ring *, as it is a
+> > > double pointer so the elements of the array should have pointer type,
+> > > not structure type.
+> > > 
+> > > The Coccinelle semantic patch that makes this change is as follows:
+> > > 
+> > > // <smpl>
+> > > @disable sizeof_type_expr@
+> > > type T;
+> > > T **x;
+> > > @@
+> > > 
+> > >   x =
+> > >   <+...sizeof(
+> > > - T
+> > > + *x
+> > >   )...+>
+> > > // </smpl>
+> > > 
+> > > Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> > > Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> > > ---
+> > >  drivers/thunderbolt/nhi.c | 4 ++--
+> > >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > Any reason you didn't cc: the developers in charge of this code so they
+> > see it and can pick it up?  Otherwise it's just going to float around on
+> > the mailing list, listless and sad.
+> 
+> They don't seem to be in the MAINTAINERS file.
 
-I am attaching a log that shows my tests with the warnings I get for
-succeeding tests
-at http://kisskb.ellerman.id.au/kisskb/branch/9/. Good news is that at
-least from my
-test the non compiling configs are now compiling. They do have warnings which I
-pasted into the file I am attaching.
-Cheers Nick
+Ah, good point.  Andreas, care to send me a patch adding yourself to the
+MAINTAINERS file for drivers/thunderbolt/* so that you will get patches
+like this?
 
---001a11338e1cf2bc3104fd93b8fa
-Content-Type: application/octet-stream; name=Logs
-Content-Disposition: attachment; filename=Logs
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hxbcjnkt0
+thanks,
 
-TG9ncwoKaW9wMTN4eF9kZWZjb25maWc6IFN1Y2NlZWRzIHdpdGggd2FybmluZ3MKQnVpbGQgV2Fy
-bmluZ3MgIGZvciBpb3AxM3h4CmZzL2RpcmVjdC1pby5jOiBJbiBmdW5jdGlvbiDigJhfX2Jsb2Nr
-ZGV2X2RpcmVjdF9JT+KAmToKZnMvZGlyZWN0LWlvLmM6MTAxMToxMjogd2FybmluZzog4oCYdG/i
-gJkgbWF5IGJlIHVzZWQgdW5pbml0aWFsaXplZCBpbiB0aGlzIGZ1bmN0aW9uIFstV21heWJlLXVu
-aW5pdGlhbGl6ZWRdCiAgICB1ID0gKHRvIC0gZnJvbSkgPj4gYmxrYml0czsKCm1hY2tlcmVsX2Rl
-ZmNvbmZpZyA6IFN1Y2NlZWRzIHdpdGggd2FybmluZ3MKQnVpbGQgV2FybmluZ3MgZm9yIG1hcmtl
-cmVsX2RlZmNvbmZpZwpmcy9kaXJlY3QtaW8uYzogSW4gZnVuY3Rpb24g4oCYX19ibG9ja2Rldl9k
-aXJlY3RfSU/igJk6CmZzL2RpcmVjdC1pby5jOjEwMTE6MTI6IHdhcm5pbmc6IOKAmHRv4oCZIG1h
-eSBiZSB1c2VkIHVuaW5pdGlhbGl6ZWQgaW4gdGhpcyBmdW5jdGlvbiBbLVdtYXliZS11bmluaXRp
-YWxpemVkXQogICAgdSA9ICh0byAtIGZyb20pID4+IGJsa2JpdHM7CiAgICAgICAgICAgIF4KZnMv
-ZGlyZWN0LWlvLmM6OTEzOjE2OiBub3RlOiDigJh0b+KAmSB3YXMgZGVjbGFyZWQgaGVyZQogICBz
-aXplX3QgZnJvbSwgdG87CiAgICAgICAgICAgICAgICBeCmZzL2RpcmVjdC1pby5jOjEwMTE6MTI6
-IHdhcm5pbmc6IOKAmGZyb23igJkgbWF5IGJlIHVzZWQgdW5pbml0aWFsaXplZCBpbiB0aGlzIGZ1
-bmN0aW9uIFstV21heWJlLXVuaW5pdGlhbGl6ZWRdCiAgICB1ID0gKHRvIC0gZnJvbSkgPj4gYmxr
-Yml0czsKICAgICAgICAgICAgXgpmcy9kaXJlY3QtaW8uYzo5MTM6MTA6IG5vdGU6IOKAmGZyb23i
-gJkgd2FzIGRlY2xhcmVkIGhlcmUKICAgc2l6ZV90IGZyb20sIHRvOwoKbWFyemVuX2RlZmNvbmZp
-ZyA6IFN1Y2NlZWRzIHRoZSBidWlsZCAKQnVpbGQgd2FybmluZ3MgZm9yIG1hcnplbl9kZWZjb25m
-aWcKYXJjaC9hcm0va2VybmVsL3JldHVybl9hZGRyZXNzLmM6NjM6Mjogd2FybmluZzogI3dhcm5p
-bmcgIlRPRE86IHJldHVybl9hZGRyZXNzIHNob3VsZCB1c2UgdW53aW5kIHRhYmxlcyIgWy1XY3Bw
-XQogI3dhcm5pbmcgIlRPRE86IHJldHVybl9hZGRyZXNzIHNob3VsZCB1c2UgdW53aW5kIHRhYmxl
-cyIKICBeCmZzL2RpcmVjdC1pby5jOiBJbiBmdW5jdGlvbiDigJhfX2Jsb2NrZGV2X2RpcmVjdF9J
-T+KAmToKZnMvZGlyZWN0LWlvLmM6MTAxMToxMjogd2FybmluZzog4oCYdG/igJkgbWF5IGJlIHVz
-ZWQgdW5pbml0aWFsaXplZCBpbiB0aGlzIGZ1bmN0aW9uIFstV21heWJlLXVuaW5pdGlhbGl6ZWRd
-CiAgICB1ID0gKHRvIC0gZnJvbSkgPj4gYmxrYml0czsKICAgICAgICAgICAgXgpmcy9kaXJlY3Qt
-aW8uYzo5MTM6MTY6IG5vdGU6IOKAmHRv4oCZIHdhcyBkZWNsYXJlZCBoZXJlCiAgIHNpemVfdCBm
-cm9tLCB0bzsKICAgICAgICAgICAgICAgIF4KZnMvZGlyZWN0LWlvLmM6MTAxMToxMjogd2Fybmlu
-Zzog4oCYZnJvbeKAmSBtYXkgYmUgdXNlZCB1bmluaXRpYWxpemVkIGluIHRoaXMgZnVuY3Rpb24g
-Wy1XbWF5YmUtdW5pbml0aWFsaXplZF0KICAgIHUgPSAodG8gLSBmcm9tKSA+PiBibGtiaXRzOwog
-ICAgICAgICAgICBeCmZzL2RpcmVjdC1pby5jOjkxMzoxMDogbm90ZTog4oCYZnJvbeKAmSB3YXMg
-ZGVjbGFyZWQgaGVyZQogICBzaXplX3QgZnJvbSwgdG87CiAgICAgICAgICBeCgpudWM5MTBfZGVm
-Y29uZmlnOiBTdWNjZWVkcyB0aGUgYnVpbGQgCgpCdWlsZCB3YXJuaW5ncyBmb3IgbnVjOTEwX2Rl
-ZmNvbmZpZyAgCmFyY2gvYXJtL2tlcm5lbC9yZXR1cm5fYWRkcmVzcy5jOjYzOjI6IHdhcm5pbmc6
-ICN3YXJuaW5nICJUT0RPOiByZXR1cm5fYWRkcmVzcyBzaG91bGQgdXNlIHVud2luZCB0YWJsZXMi
-IFstV2NwcF0KICN3YXJuaW5nICJUT0RPOiByZXR1cm5fYWRkcmVzcyBzaG91bGQgdXNlIHVud2lu
-ZCB0YWJsZXMiCiAgXgpmcy9kaXJlY3QtaW8uYzogSW4gZnVuY3Rpb24g4oCYX19ibG9ja2Rldl9k
-aXJlY3RfSU/igJk6CmZzL2RpcmVjdC1pby5jOjEwMTE6MTI6IHdhcm5pbmc6IOKAmHRv4oCZIG1h
-eSBiZSB1c2VkIHVuaW5pdGlhbGl6ZWQgaW4gdGhpcyBmdW5jdGlvbiBbLVdtYXliZS11bmluaXRp
-YWxpemVkXQogICAgdSA9ICh0byAtIGZyb20pID4+IGJsa2JpdHM7CiAgICAgICAgICAgIF4KZnMv
-ZGlyZWN0LWlvLmM6OTEzOjE2OiBub3RlOiDigJh0b+KAmSB3YXMgZGVjbGFyZWQgaGVyZQogICBz
-aXplX3QgZnJvbSwgdG87CiAgICAgICAgICAgICAgICBeCmZzL2RpcmVjdC1pby5jOjEwMTE6MTI6
-IHdhcm5pbmc6IOKAmGZyb23igJkgbWF5IGJlIHVzZWQgdW5pbml0aWFsaXplZCBpbiB0aGlzIGZ1
-bmN0aW9uIFstV21heWJlLXVuaW5pdGlhbGl6ZWRdCiAgICB1ID0gKHRvIC0gZnJvbSkgPj4gYmxr
-Yml0czsKICAgICAgICAgICAgXgpmcy9kaXJlY3QtaW8uYzo5MTM6MTA6IG5vdGU6IOKAmGZyb23i
-gJkgd2FzIGRlY2xhcmVkIGhlcmUKICAgc2l6ZV90IGZyb20sIHRvOwogICAgICAgICAgXgpudWM5
-NTBfZGVmY29uZmlnOiBTdWNjZWVkcyB0aGUgYnVpbGQKQnVpbGQgV2FybmluZ3MgZm9yIG51Yzk1
-MF9kZWZjb25maWcKYXJjaC9hcm0va2VybmVsL3JldHVybl9hZGRyZXNzLmM6NjM6Mjogd2Fybmlu
-ZzogI3dhcm5pbmcgIlRPRE86IHJldHVybl9hZGRyZXNzIHNob3VsZCB1c2UgdW53aW5kIHRhYmxl
-cyIgWy1XY3BwXQogI3dhcm5pbmcgIlRPRE86IHJldHVybl9hZGRyZXNzIHNob3VsZCB1c2UgdW53
-aW5kIHRhYmxlcyIKICBeCmZzL2RpcmVjdC1pby5jOiBJbiBmdW5jdGlvbiDigJhfX2Jsb2NrZGV2
-X2RpcmVjdF9JT+KAmToKZnMvZGlyZWN0LWlvLmM6MTAxMToxMjogd2FybmluZzog4oCYdG/igJkg
-bWF5IGJlIHVzZWQgdW5pbml0aWFsaXplZCBpbiB0aGlzIGZ1bmN0aW9uIFstV21heWJlLXVuaW5p
-dGlhbGl6ZWRdCiAgICB1ID0gKHRvIC0gZnJvbSkgPj4gYmxrYml0czsKICAgICAgICAgICAgXgpm
-cy9kaXJlY3QtaW8uYzo5MTM6MTY6IG5vdGU6IOKAmHRv4oCZIHdhcyBkZWNsYXJlZCBoZXJlCiAg
-IHNpemVfdCBmcm9tLCB0bzsKICAgICAgICAgICAgICAgIF4KZnMvZGlyZWN0LWlvLmM6MTAxMTox
-Mjogd2FybmluZzog4oCYZnJvbeKAmSBtYXkgYmUgdXNlZCB1bmluaXRpYWxpemVkIGluIHRoaXMg
-ZnVuY3Rpb24gWy1XbWF5YmUtdW5pbml0aWFsaXplZF0KICAgIHUgPSAodG8gLSBmcm9tKSA+PiBi
-bGtiaXRzOwogICAgICAgICAgICBeCmZzL2RpcmVjdC1pby5jOjkxMzoxMDogbm90ZTog4oCYZnJv
-beKAmSB3YXMgZGVjbGFyZWQgaGVyZQogICBzaXplX3QgZnJvbSwgdG87CiAgICAgICAgICBeCm51
-Yzk2MF9kZWZjb25maWc6IFN1Y2NlZWRzIHRoZSBCdWlsZCAKQnVpbGQgV2FybmluZ3MgZm9yIG51
-Yzk2MF9kZWZjb25maWcKYXJjaC9hcm0va2VybmVsL3JldHVybl9hZGRyZXNzLmM6NjM6Mjogd2Fy
-bmluZzogI3dhcm5pbmcgIlRPRE86IHJldHVybl9hZGRyZXNzIHNob3VsZCB1c2UgdW53aW5kIHRh
-YmxlcyIgWy1XY3BwXQogI3dhcm5pbmcgIlRPRE86IHJldHVybl9hZGRyZXNzIHNob3VsZCB1c2Ug
-dW53aW5kIHRhYmxlcyIKICBeCmZzL2RpcmVjdC1pby5jOiBJbiBmdW5jdGlvbiDigJhfX2Jsb2Nr
-ZGV2X2RpcmVjdF9JT+KAmToKZnMvZGlyZWN0LWlvLmM6MTAxMToxMjogd2FybmluZzog4oCYdG/i
-gJkgbWF5IGJlIHVzZWQgdW5pbml0aWFsaXplZCBpbiB0aGlzIGZ1bmN0aW9uIFstV21heWJlLXVu
-aW5pdGlhbGl6ZWRdCiAgICB1ID0gKHRvIC0gZnJvbSkgPj4gYmxrYml0czsKICAgICAgICAgICAg
-Xgpmcy9kaXJlY3QtaW8uYzo5MTM6MTY6IG5vdGU6IOKAmHRv4oCZIHdhcyBkZWNsYXJlZCBoZXJl
-CiAgIHNpemVfdCBmcm9tLCB0bzsKICAgICAgICAgICAgICAgIF4KZnMvZGlyZWN0LWlvLmM6MTAx
-MToxMjogd2FybmluZzog4oCYZnJvbeKAmSBtYXkgYmUgdXNlZCB1bmluaXRpYWxpemVkIGluIHRo
-aXMgZnVuY3Rpb24gWy1XbWF5YmUtdW5pbml0aWFsaXplZF0KICAgIHUgPSAodG8gLSBmcm9tKSA+
-PiBibGtiaXRzOwogICAgICAgICAgICBeCmZzL2RpcmVjdC1pby5jOjkxMzoxMDogbm90ZTog4oCY
-ZnJvbeKAmSB3YXMgZGVjbGFyZWQgaGVyZQogICBzaXplX3QgZnJvbSwgdG87CiAgICAgICAgICBe
-CiAKczVwNjR4MF9kZWZjb25maWc6IEJ1aWxkIFN1Y2NlZWRzIAoKYXJjaC9hcm0va2VybmVsL3Jl
-dHVybl9hZGRyZXNzLmM6NjM6Mjogd2FybmluZzogI3dhcm5pbmcgIlRPRE86IHJldHVybl9hZGRy
-ZXNzIHNob3VsZCB1c2UgdW53aW5kIHRhYmxlcyIgWy1XY3BwXQogI3dhcm5pbmcgIlRPRE86IHJl
-dHVybl9hZGRyZXNzIHNob3VsZCB1c2UgdW53aW5kIHRhYmxlcyIKICBeCmZzL2RpcmVjdC1pby5j
-OiBJbiBmdW5jdGlvbiDigJhfX2Jsb2NrZGV2X2RpcmVjdF9JT+KAmToKZnMvZGlyZWN0LWlvLmM6
-MTAxMToxMjogd2FybmluZzog4oCYdG/igJkgbWF5IGJlIHVzZWQgdW5pbml0aWFsaXplZCBpbiB0
-aGlzIGZ1bmN0aW9uIFstV21heWJlLXVuaW5pdGlhbGl6ZWRdCiAgICB1ID0gKHRvIC0gZnJvbSkg
-Pj4gYmxrYml0czsKICAgICAgICAgICAgXgpmcy9kaXJlY3QtaW8uYzo5MTM6MTY6IG5vdGU6IOKA
-mHRv4oCZIHdhcyBkZWNsYXJlZCBoZXJlCiAgIHNpemVfdCBmcm9tLCB0bzsKICAgICAgICAgICAg
-ICAgIF4KZnMvZGlyZWN0LWlvLmM6MTAxMToxMjogd2FybmluZzog4oCYZnJvbeKAmSBtYXkgYmUg
-dXNlZCB1bmluaXRpYWxpemVkIGluIHRoaXMgZnVuY3Rpb24gWy1XbWF5YmUtdW5pbml0aWFsaXpl
-ZF0KICAgIHUgPSAodG8gLSBmcm9tKSA+PiBibGtiaXRzOwogICAgICAgICAgICBeCmZzL2RpcmVj
-dC1pby5jOjkxMzoxMDogbm90ZTog4oCYZnJvbeKAmSB3YXMgZGVjbGFyZWQgaGVyZQogICBzaXpl
-X3QgZnJvbSwgdG87CiAgICAgICAgICBeCkVuZCBvZiBsb2dzIAo=
---001a11338e1cf2bc3104fd93b8fa--
+greg k-h
