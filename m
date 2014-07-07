@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643AbaGHAp4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:45:56 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50804 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754837AbaGHApy (ORCPT
+	id S1755701AbaGHAqO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:46:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55466 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753762AbaGGXya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 20:45:54 -0400
-From: Laura Abbott <lauraa@codeaurora.org>
-To: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@linaro.org>
-Cc: Laura Abbott <lauraa@codeaurora.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Nicolas Pitre <nico@linaro.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] of: Use proper types for checking memory overflow
-Date: Mon,  7 Jul 2014 17:45:43 -0700
-Message-Id: <1404780343-32188-1-git-send-email-lauraa@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Mon, 7 Jul 2014 19:54:30 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.14 22/94] mtd: pxa3xx_nand: make the driver work on big-endian systems
+Date: Mon,  7 Jul 2014 16:57:12 -0700
+Message-Id: <20140707235757.429505684@linuxfoundation.org>
+X-Mailer: git-send-email 2.0.0.254.g50f84e3
+In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
+References: <20140707235756.780319003@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit a67a6ed15513541579d38bcbd127e7be170710e5
-(of: Check for phys_addr_t overflows in early_init_dt_add_memory_arch)
-corrected early_init_dt_add_memory_arch to account for overflows
-but did so in an unclean way using ULONG_MAX. There is no
-guarantee that sizeof(unsigned long) == sizeof(phys_addr_t).
-Check against phys_addr_t instead.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+------------------
+
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+
+commit b7e460624f0f3c31150f3b09e75b0d009e22ba5f upstream.
+
+The pxa3xx_nand driver currently uses __raw_writel() and __raw_readl()
+to access I/O registers. However, those functions do not do any
+endianness swapping, which means that they won't work when the CPU
+runs in big-endian but the I/O registers are little endian, which is
+the common situation for ARM systems running big endian.
+
+Since __raw_writel() and __raw_readl() do not include any memory
+barriers and the pxa3xx_nand driver can only be compiled for ARM
+platforms, the closest I/o accessors functions that do endianess
+swapping are writel_relaxed() and readl_relaxed().
+
+This patch has been verified to work on Armada XP GP: without the
+patch, the NAND is not detected when the kernel runs big endian while
+it is properly detected when the kernel runs little endian. With the
+patch applied, the NAND is properly detected in both situations
+(little and big endian).
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/of/fdt.c | 22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ drivers/mtd/nand/pxa3xx_nand.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-index b777d8f..b88a68e 100644
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -875,24 +875,24 @@ int __init early_init_dt_scan_chosen(unsigned long node, const char *uname,
- }
+--- a/drivers/mtd/nand/pxa3xx_nand.c
++++ b/drivers/mtd/nand/pxa3xx_nand.c
+@@ -128,10 +128,10 @@
  
- #ifdef CONFIG_HAVE_MEMBLOCK
-+#define MAX_PHYS_ADDR	((phys_addr_t)~0)
-+
- void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
- {
- 	const u64 phys_offset = __pa(PAGE_OFFSET);
- 	base &= PAGE_MASK;
- 	size &= PAGE_MASK;
+ /* macros for registers read/write */
+ #define nand_writel(info, off, val)	\
+-	__raw_writel((val), (info)->mmio_base + (off))
++	writel_relaxed((val), (info)->mmio_base + (off))
  
--	if (sizeof(phys_addr_t) < sizeof(u64)) {
--		if (base > ULONG_MAX) {
--			pr_warning("Ignoring memory block 0x%llx - 0x%llx\n",
--					base, base + size);
--			return;
--		}
-+	if (base > MAX_PHYS_ADDR) {
-+		pr_warning("Ignoring memory block 0x%llx - 0x%llx\n",
-+				base, base + size);
-+		return;
-+	}
+ #define nand_readl(info, off)		\
+-	__raw_readl((info)->mmio_base + (off))
++	readl_relaxed((info)->mmio_base + (off))
  
--		if (base + size > ULONG_MAX) {
--			pr_warning("Ignoring memory range 0x%lx - 0x%llx\n",
--					ULONG_MAX, base + size);
--			size = ULONG_MAX - base;
--		}
-+	if (base + size > MAX_PHYS_ADDR) {
-+		pr_warning("Ignoring memory range 0x%lx - 0x%llx\n",
-+				ULONG_MAX, base + size);
-+		size = MAX_PHYS_ADDR - base;
- 	}
- 
- 	if (base + size < phys_offset) {
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+ /* error code and state */
+ enum {
+
 
