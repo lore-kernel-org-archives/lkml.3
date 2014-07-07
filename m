@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614AbaGHBQl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:16:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55226 "EHLO
+	id S1756598AbaGHBQj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:16:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55228 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526AbaGGXxr (ORCPT
+	with ESMTP id S1752709AbaGGXxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:53:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <stf_xl@wp.pl>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.15 021/122] rt2x00: fix rfkill regression on rt2500pci
-Date: Mon,  7 Jul 2014 16:56:23 -0700
-Message-Id: <20140707235734.878033178@linuxfoundation.org>
+        Helmut Schaa <helmut.schaa@googlemail.com>, Pekon Gupta <pekon@ti.com>,
+        Scott Wood <scottwood@freescale.com>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.15 022/122] mtd: eLBC NAND: fix subpage write support
+Date: Mon,  7 Jul 2014 16:56:24 -0700
+Message-Id: <20140707235734.913735087@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,118 +30,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <stf_xl@wp.pl>
+From: Pekon Gupta <pekon@ti.com>
 
-commit 616a8394b5df8c88f4dd416f4527439a4e365034 upstream.
+commit f034d87def51f026b735d1e2877e9387011b2ba3 upstream.
 
-As reported by Niels, starting rfkill polling during device probe
-(commit e2bc7c5, generally sane change) broke rfkill on rt2500pci
-device. I considered that bug as some initalization issue, which
-should be fixed on rt2500pci specific code. But after several
-attempts (see bug report for details) we fail to find working solution.
-Hence I decided to revert to old behaviour on rt2500pci to fix
-regression.
+As subpage write is enabled by default for all drivers, nand_write_subpage_hwecc
+causes a crash if the driver did not register ecc->hwctl or ecc->calculate.
+This behavior was introduced in
+   commit 837a6ba4f3b6d23026674e6af6b6849a4634fff9
+   "mtd: nand: subpage write support for hardware based ECC schemes".
 
-Additionally patch also unregister rfkill on device remove instead
-of ifconfig down, what was another issue introduced by bad commit.
+This fixes a crash by emulating subpage write support by padding sub-page data
+with 0xff on either sides to make it full page compatible.
 
-Bug report:
-https://bugzilla.kernel.org/show_bug.cgi?id=73821
-
-Fixes: e2bc7c5f3cb8 ("rt2x00: Fix rfkill_polling register function.")
-Bisected-by: Niels <nille0386@googlemail.com>
-Reported-and-tested-by: Niels <nille0386@googlemail.com>
-Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Tested-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Signed-off-by: Pekon Gupta <pekon@ti.com>
+Reviewed-by: Scott Wood <scottwood@freescale.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2500pci.c |    7 ++++++-
- drivers/net/wireless/rt2x00/rt2x00.h    |    1 +
- drivers/net/wireless/rt2x00/rt2x00dev.c |   24 +++++++++++++++++++++---
- 3 files changed, 28 insertions(+), 4 deletions(-)
+ drivers/mtd/nand/fsl_elbc_nand.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/net/wireless/rt2x00/rt2500pci.c
-+++ b/drivers/net/wireless/rt2x00/rt2500pci.c
-@@ -1681,8 +1681,13 @@ static int rt2500pci_init_eeprom(struct
- 	/*
- 	 * Detect if this device has an hardware controlled radio.
- 	 */
--	if (rt2x00_get_field16(eeprom, EEPROM_ANTENNA_HARDWARE_RADIO))
-+	if (rt2x00_get_field16(eeprom, EEPROM_ANTENNA_HARDWARE_RADIO)) {
- 		__set_bit(CAPABILITY_HW_BUTTON, &rt2x00dev->cap_flags);
-+		/*
-+		 * On this device RFKILL initialized during probe does not work.
-+		 */
-+		__set_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags);
-+	}
- 
- 	/*
- 	 * Check if the BBP tuning should be enabled.
---- a/drivers/net/wireless/rt2x00/rt2x00.h
-+++ b/drivers/net/wireless/rt2x00/rt2x00.h
-@@ -693,6 +693,7 @@ enum rt2x00_capability_flags {
- 	REQUIRE_SW_SEQNO,
- 	REQUIRE_HT_TX_DESC,
- 	REQUIRE_PS_AUTOWAKE,
-+	REQUIRE_DELAYED_RFKILL,
- 
- 	/*
- 	 * Capabilities
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -1126,9 +1126,10 @@ static void rt2x00lib_uninitialize(struc
- 		return;
- 
- 	/*
--	 * Unregister extra components.
-+	 * Stop rfkill polling.
- 	 */
--	rt2x00rfkill_unregister(rt2x00dev);
-+	if (test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
-+		rt2x00rfkill_unregister(rt2x00dev);
- 
- 	/*
- 	 * Allow the HW to uninitialize.
-@@ -1166,6 +1167,12 @@ static int rt2x00lib_initialize(struct r
- 
- 	set_bit(DEVICE_STATE_INITIALIZED, &rt2x00dev->flags);
- 
-+	/*
-+	 * Start rfkill polling.
-+	 */
-+	if (test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
-+		rt2x00rfkill_register(rt2x00dev);
-+
+--- a/drivers/mtd/nand/fsl_elbc_nand.c
++++ b/drivers/mtd/nand/fsl_elbc_nand.c
+@@ -723,6 +723,19 @@ static int fsl_elbc_write_page(struct mt
  	return 0;
  }
  
-@@ -1375,7 +1382,12 @@ int rt2x00lib_probe_dev(struct rt2x00_de
- 	rt2x00link_register(rt2x00dev);
- 	rt2x00leds_register(rt2x00dev);
- 	rt2x00debug_register(rt2x00dev);
--	rt2x00rfkill_register(rt2x00dev);
++/* ECC will be calculated automatically, and errors will be detected in
++ * waitfunc.
++ */
++static int fsl_elbc_write_subpage(struct mtd_info *mtd, struct nand_chip *chip,
++				uint32_t offset, uint32_t data_len,
++				const uint8_t *buf, int oob_required)
++{
++	fsl_elbc_write_buf(mtd, buf, mtd->writesize);
++	fsl_elbc_write_buf(mtd, chip->oob_poi, mtd->oobsize);
 +
-+	/*
-+	 * Start rfkill polling.
-+	 */
-+	if (!test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
-+		rt2x00rfkill_register(rt2x00dev);
- 
- 	return 0;
- 
-@@ -1391,6 +1403,12 @@ void rt2x00lib_remove_dev(struct rt2x00_
- 	clear_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags);
- 
- 	/*
-+	 * Stop rfkill polling.
-+	 */
-+	if (!test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
-+		rt2x00rfkill_unregister(rt2x00dev);
++	return 0;
++}
 +
-+	/*
- 	 * Disable radio.
- 	 */
- 	rt2x00lib_disable_radio(rt2x00dev);
+ static int fsl_elbc_chip_init(struct fsl_elbc_mtd *priv)
+ {
+ 	struct fsl_lbc_ctrl *ctrl = priv->ctrl;
+@@ -761,6 +774,7 @@ static int fsl_elbc_chip_init(struct fsl
+ 
+ 	chip->ecc.read_page = fsl_elbc_read_page;
+ 	chip->ecc.write_page = fsl_elbc_write_page;
++	chip->ecc.write_subpage = fsl_elbc_write_subpage;
+ 
+ 	/* If CS Base Register selects full hardware ECC then use it */
+ 	if ((in_be32(&lbc->bank[priv->bank].br) & BR_DECC) ==
 
 
