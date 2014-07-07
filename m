@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200AbaGHA7u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:59:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55249 "EHLO
+	id S932209AbaGHBA6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:00:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55435 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753301AbaGGXyH (ORCPT
+	with ESMTP id S1753346AbaGGXyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:07 -0400
+	Mon, 7 Jul 2014 19:54:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.15 038/122] drm/gk208/gr: add missing registers to grctx init
-Date: Mon,  7 Jul 2014 16:56:40 -0700
-Message-Id: <20140707235735.391318787@linuxfoundation.org>
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.15 075/122] hugetlb: fix copy_hugetlb_page_range() to handle migration/hwpoisoned entry
+Date: Mon,  7 Jul 2014 16:57:17 -0700
+Message-Id: <20140707235736.506220664@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -28,35 +31,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilia Mirkin <imirkin@alum.mit.edu>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit 255b329ca7f0e9b5fa6da3a68bb713684fe10305 upstream.
+commit 4a705fef986231a3e7a6b1a6d3c37025f021f49f upstream.
 
-This fixes hangs on GK208 which happen instantaneously on trying to use a
-geometry shader.
+There's a race between fork() and hugepage migration, as a result we try
+to "dereference" a swap entry as a normal pte, causing kernel panic.
+The cause of the problem is that copy_hugetlb_page_range() can't handle
+"swap entry" family (migration entry and hwpoisoned entry) so let's fix
+it.
 
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: Christoph Lameter <cl@linux.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/engine/graph/ctxnv108.c |    2 ++
- 1 file changed, 2 insertions(+)
+ mm/hugetlb.c |   71 +++++++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 43 insertions(+), 28 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/core/engine/graph/ctxnv108.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/graph/ctxnv108.c
-@@ -545,10 +545,12 @@ nv108_grctx_generate_mods(struct nvc0_gr
- 	mmio_list(0x408010, 0x80000000,  0, 0);
- 	mmio_list(0x419004, 0x00000000,  8, 1);
- 	mmio_list(0x419008, 0x00000000,  0, 0);
-+	mmio_list(0x4064cc, 0x80000000,  0, 0);
- 	mmio_list(0x408004, 0x00000000,  8, 0);
- 	mmio_list(0x408008, 0x80000030,  0, 0);
- 	mmio_list(0x418808, 0x00000000,  8, 0);
- 	mmio_list(0x41880c, 0x80000030,  0, 0);
-+	mmio_list(0x4064c8, 0x00c20200,  0, 0);
- 	mmio_list(0x418810, 0x80000000, 12, 2);
- 	mmio_list(0x419848, 0x10000000, 12, 2);
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2377,6 +2377,31 @@ static void set_huge_ptep_writable(struc
+ 		update_mmu_cache(vma, address, ptep);
+ }
  
++static int is_hugetlb_entry_migration(pte_t pte)
++{
++	swp_entry_t swp;
++
++	if (huge_pte_none(pte) || pte_present(pte))
++		return 0;
++	swp = pte_to_swp_entry(pte);
++	if (non_swap_entry(swp) && is_migration_entry(swp))
++		return 1;
++	else
++		return 0;
++}
++
++static int is_hugetlb_entry_hwpoisoned(pte_t pte)
++{
++	swp_entry_t swp;
++
++	if (huge_pte_none(pte) || pte_present(pte))
++		return 0;
++	swp = pte_to_swp_entry(pte);
++	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
++		return 1;
++	else
++		return 0;
++}
+ 
+ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+ 			    struct vm_area_struct *vma)
+@@ -2416,10 +2441,26 @@ int copy_hugetlb_page_range(struct mm_st
+ 		dst_ptl = huge_pte_lock(h, dst, dst_pte);
+ 		src_ptl = huge_pte_lockptr(h, src, src_pte);
+ 		spin_lock_nested(src_ptl, SINGLE_DEPTH_NESTING);
+-		if (!huge_pte_none(huge_ptep_get(src_pte))) {
++		entry = huge_ptep_get(src_pte);
++		if (huge_pte_none(entry)) { /* skip none entry */
++			;
++		} else if (unlikely(is_hugetlb_entry_migration(entry) ||
++				    is_hugetlb_entry_hwpoisoned(entry))) {
++			swp_entry_t swp_entry = pte_to_swp_entry(entry);
++
++			if (is_write_migration_entry(swp_entry) && cow) {
++				/*
++				 * COW mappings require pages in both
++				 * parent and child to be set to read.
++				 */
++				make_migration_entry_read(&swp_entry);
++				entry = swp_entry_to_pte(swp_entry);
++				set_huge_pte_at(src, addr, src_pte, entry);
++			}
++			set_huge_pte_at(dst, addr, dst_pte, entry);
++		} else {
+ 			if (cow)
+ 				huge_ptep_set_wrprotect(src, addr, src_pte);
+-			entry = huge_ptep_get(src_pte);
+ 			ptepage = pte_page(entry);
+ 			get_page(ptepage);
+ 			page_dup_rmap(ptepage);
+@@ -2435,32 +2476,6 @@ int copy_hugetlb_page_range(struct mm_st
+ 	return ret;
+ }
+ 
+-static int is_hugetlb_entry_migration(pte_t pte)
+-{
+-	swp_entry_t swp;
+-
+-	if (huge_pte_none(pte) || pte_present(pte))
+-		return 0;
+-	swp = pte_to_swp_entry(pte);
+-	if (non_swap_entry(swp) && is_migration_entry(swp))
+-		return 1;
+-	else
+-		return 0;
+-}
+-
+-static int is_hugetlb_entry_hwpoisoned(pte_t pte)
+-{
+-	swp_entry_t swp;
+-
+-	if (huge_pte_none(pte) || pte_present(pte))
+-		return 0;
+-	swp = pte_to_swp_entry(pte);
+-	if (non_swap_entry(swp) && is_hwpoison_entry(swp))
+-		return 1;
+-	else
+-		return 0;
+-}
+-
+ void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 			    unsigned long start, unsigned long end,
+ 			    struct page *ref_page)
 
 
