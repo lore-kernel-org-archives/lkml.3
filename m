@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116AbaGHA5h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:57:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55249 "EHLO
+	id S1756172AbaGHA6O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:58:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55226 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413AbaGGXyK (ORCPT
+	with ESMTP id S1753403AbaGGXyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:10 -0400
+	Mon, 7 Jul 2014 19:54:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.15 090/122] ext4: Fix buffer double free in ext4_alloc_branch()
-Date: Mon,  7 Jul 2014 16:57:32 -0700
-Message-Id: <20140707235736.954272143@linuxfoundation.org>
+        Keerthy <j-keerthy@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.15 086/122] regulator: tps65218: Add the missing of_node assignment in probe
+Date: Mon,  7 Jul 2014 16:57:28 -0700
+Message-Id: <20140707235736.838120737@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -28,50 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Keerthy <j-keerthy@ti.com>
 
-commit c5c7b8ddfbf8cb3b2291e515a34ab1b8982f5a2d upstream.
+commit d2fa87c3af0df7ed10463afc588affdab954fa92 upstream.
 
-Error recovery in ext4_alloc_branch() calls ext4_forget() even for
-buffer corresponding to indirect block it did not allocate. This leads
-to brelse() being called twice for that buffer (once from ext4_forget()
-and once from cleanup in ext4_ind_map_blocks()) leading to buffer use
-count misaccounting. Eventually (but often much later because there
-are other users of the buffer) we will see messages like:
-VFS: brelse: Trying to free free buffer
+Add the missing of_node assignment in probe.
 
-Another manifestation of this problem is an error:
-JBD2 unexpected failure: jbd2_journal_revoke: !buffer_revoked(bh);
-inconsistent data on disk
-
-The fix is easy - don't forget buffer we did not allocate. Also add an
-explanatory comment because the indexing at ext4_alloc_branch() is
-somewhat subtle.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Fixes: 90e7d5262796 (regulator: tps65218: Add Regulator driver for TPS65218 PMIC)
+Signed-off-by: Keerthy <j-keerthy@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/indirect.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/regulator/tps65218-regulator.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ext4/indirect.c
-+++ b/fs/ext4/indirect.c
-@@ -389,7 +389,13 @@ static int ext4_alloc_branch(handle_t *h
- 	return 0;
- failed:
- 	for (; i >= 0; i--) {
--		if (i != indirect_blks && branch[i].bh)
-+		/*
-+		 * We want to ext4_forget() only freshly allocated indirect
-+		 * blocks.  Buffer for new_blocks[i-1] is at branch[i].bh and
-+		 * buffer at branch[0].bh is indirect block / inode already
-+		 * existing before ext4_alloc_branch() was called.
-+		 */
-+		if (i > 0 && i != indirect_blks && branch[i].bh)
- 			ext4_forget(handle, 1, inode, branch[i].bh,
- 				    branch[i].bh->b_blocknr);
- 		ext4_free_blocks(handle, inode, NULL, new_blocks[i],
+--- a/drivers/regulator/tps65218-regulator.c
++++ b/drivers/regulator/tps65218-regulator.c
+@@ -257,6 +257,7 @@ static int tps65218_regulator_probe(stru
+ 	config.init_data = init_data;
+ 	config.driver_data = tps;
+ 	config.regmap = tps->regmap;
++	config.of_node = pdev->dev.of_node;
+ 
+ 	rdev = devm_regulator_register(&pdev->dev, &regulators[id], &config);
+ 	if (IS_ERR(rdev)) {
 
 
