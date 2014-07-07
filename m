@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943AbaGGTz0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 15:55:26 -0400
-Received: from plane.gmane.org ([80.91.229.3]:59662 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751205AbaGGTzY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 15:55:24 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Manuel Reimer <Manuel.Spam@nurfuerspam.de>
-Subject: Re: 3.15.4 runs *significantly* slower than 3.15.3 on iMX233 CPU
-Date: Mon, 07 Jul 2014 21:55:06 +0200
-Message-ID: <lpetuq$bt8$1@ger.gmane.org>
-References: <lpeofi$1fl$1@ger.gmane.org> <20140707191430.GA23004@roeck-us.net> <lpeseg$lip$1@ger.gmane.org> <20140707194223.GA29819@roeck-us.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: p5dd560e1.dip0.t-ipconnect.de
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-In-Reply-To: <20140707194223.GA29819@roeck-us.net>
+	id S1751356AbaGGT4B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 15:56:01 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60036 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750959AbaGGT4A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 15:56:00 -0400
+Date: Mon, 7 Jul 2014 21:55:56 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/5] ARM: at91/dt: sama5d3: define mpddr clock and ramc
+ clocks
+Message-ID: <20140707195556.GI3113@piout.net>
+References: <1404746355-19988-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1404746355-19988-4-git-send-email-alexandre.belloni@free-electrons.com>
+ <20140707183236.GF9558@ns203013.ovh.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140707183236.GF9558@ns203013.ovh.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2014 09:42 PM, Guenter Roeck wrote:
->> I tracked the problem down to the following patch:
->>
->>
->> diff --git a/arch/arm/boot/dts/imx23-olinuxino.dts
->> b/arch/arm/boot/dts/imx23-olinuxino.dts
->> index d107c4a..993da2e 100644
->> --- a/arch/arm/boot/dts/imx23-olinuxino.dts
->> +++ b/arch/arm/boot/dts/imx23-olinuxino.dts
->> @@ -64,7 +64,14 @@
->>   				compatible = "fsl,imx23-spi";
->>   				pinctrl-names = "default";
->>   				pinctrl-0 = <&spi2_pins_a>;
->> +				clock-frequency = <1000000>;
->
-> If I understand the code correctly, that means you reduce the access speed
-> for SPI flashes from 160 MHz down to 1 MHz.
->
-> If so, and if your system loads anything from a SPI flash, I would not be too
-> surprised that your system is now a bit on the slow side.
+On 07/07/2014 at 20:32:36 +0200, Jean-Christophe PLAGNIOL-VILLARD wrote :
+> > -				compatible = "atmel,at91sam9g45-ddramc";
+> > +				compatible = "atmel,sama5d3-mpddramc", "atmel,at91sam9g45-ddramc";
+> the sama5 ddr controler is not back compitble with 9g45 one the compatible is
+> wrong
 
-The iMX233 has two separate SPI connections. The first one is used to 
-connect to the SD card where the system boots from and the second one is 
-the one I plan to use. The idea was to only set clock frequency for the 
-SPI bus, I want to use to connect to external devices. The "SD SPI" has 
-to run with "full speed". So where is the mistake...
+Keeping atmel,at91sam9g45-ddramc allows to reuse the old code for the
+iomap needed for the PM code without adding a new compatible in the
+ramc_ids[] array.
 
-Thanks in advance.
-
-Greetings,
-
-Manuel
-
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
