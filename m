@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137AbaGHAiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:38:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
+	id S1755494AbaGHAi0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:38:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55825 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947AbaGGXyk (ORCPT
+	with ESMTP id S1753943AbaGGXyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.14 11/94] usb: musb: ux500: dont propagate the OF node
-Date: Mon,  7 Jul 2014 16:57:01 -0700
-Message-Id: <20140707235757.108545948@linuxfoundation.org>
+        Ilya Dryomov <ilya.dryomov@inktank.com>,
+        Josh Durgin <josh.durgin@inktank.com>
+Subject: [PATCH 3.14 47/94] rbd: handle parent_overlap on writes correctly
+Date: Mon,  7 Jul 2014 16:57:37 -0700
+Message-Id: <20140707235758.179337069@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,56 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
 
-commit 82363cf2eeafeea6ba88849f5e2febdc8a05943f upstream.
+commit 9638556a276125553549fdfe349c464481ec2f39 upstream.
 
-There is a regression in the upcoming v3.16-rc1, that is caused
-by a problem that has been around for a while but now finally
-hangs the system. The bootcrawl looks like this:
+The following check in rbd_img_obj_request_submit()
 
-pinctrl-nomadik soc:pinctrl: pin GPIO256_AF28 already
-requested by a03e0000.usb_per5; cannot claim for musb-hdrc.0.auto
-pinctrl-nomadik soc:pinctrl: pin-256 (musb-hdrc.0.auto) status -22
-pinctrl-nomadik soc:pinctrl: could not request pin 256
-(GPIO256_AF28) from group usb_a_1  on device pinctrl-nomadik
-musb-hdrc musb-hdrc.0.auto: Error applying setting, reverse
-things back
-HS USB OTG: no transceiver configured
-musb-hdrc musb-hdrc.0.auto: musb_init_controller failed
-with status -517
-platform musb-hdrc.0.auto: Driver musb-hdrc requests
-probe deferral
-(...)
+    rbd_dev->parent_overlap <= obj_request->img_offset
 
-The ux500 MUSB driver propagates the OF node to the dynamically
-created musb-hdrc device, which is incorrect as it makes the OF
-core believe there are two devices spun from the very same
-DT node, which confuses other parts of the device core, notably
-the pin control subsystem, which will try to apply all the pin
-control settings also to the HDRC device as it gets
-instantiated. (The OMAP2430 for example, does not set the
-of_node member.)
+allows the fall through to the non-layered write case even if both
+parent_overlap and obj_request->img_offset belong to the same RADOS
+object.  This leads to data corruption, because the area to the left of
+parent_overlap ends up unconditionally zero-filled instead of being
+populated with parent data.  Suppose we want to write 1M to offset 6M
+of image bar, which is a clone of foo@snap; object_size is 4M,
+parent_overlap is 5M:
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+    rbd_data.<id>.0000000000000001
+     ---------------------|----------------------|------------
+    | should be copyup'ed | should be zeroed out | write ...
+     ---------------------|----------------------|------------
+   4M                    5M                     6M
+                    parent_overlap    obj_request->img_offset
+
+4..5M should be copyup'ed from foo, yet it is zero-filled, just like
+5..6M is.
+
+Given that the only striping mode kernel client currently supports is
+chunking (i.e. stripe_unit == object_size, stripe_count == 1), round
+parent_overlap up to the next object boundary for the purposes of the
+overlap check.
+
+Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/musb/ux500.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/block/rbd.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/musb/ux500.c
-+++ b/drivers/usb/musb/ux500.c
-@@ -274,7 +274,6 @@ static int ux500_probe(struct platform_d
- 	musb->dev.parent		= &pdev->dev;
- 	musb->dev.dma_mask		= &pdev->dev.coherent_dma_mask;
- 	musb->dev.coherent_dma_mask	= pdev->dev.coherent_dma_mask;
--	musb->dev.of_node		= pdev->dev.of_node;
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -1366,6 +1366,14 @@ static bool obj_request_exists_test(stru
+ 	return test_bit(OBJ_REQ_EXISTS, &obj_request->flags) != 0;
+ }
  
- 	glue->dev			= &pdev->dev;
- 	glue->musb			= musb;
++static bool obj_request_overlaps_parent(struct rbd_obj_request *obj_request)
++{
++	struct rbd_device *rbd_dev = obj_request->img_request->rbd_dev;
++
++	return obj_request->img_offset <
++	    round_up(rbd_dev->parent_overlap, rbd_obj_bytes(&rbd_dev->header));
++}
++
+ static void rbd_obj_request_get(struct rbd_obj_request *obj_request)
+ {
+ 	dout("%s: obj %p (was %d)\n", __func__, obj_request,
+@@ -2656,7 +2664,7 @@ static int rbd_img_obj_request_submit(st
+ 	 */
+ 	if (!img_request_write_test(img_request) ||
+ 		!img_request_layered_test(img_request) ||
+-		rbd_dev->parent_overlap <= obj_request->img_offset ||
++		!obj_request_overlaps_parent(obj_request) ||
+ 		((known = obj_request_known_test(obj_request)) &&
+ 			obj_request_exists_test(obj_request))) {
+ 
 
 
