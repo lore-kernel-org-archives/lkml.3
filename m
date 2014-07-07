@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaGGAw6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 20:52:58 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:44009 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752540AbaGGAwy (ORCPT
+	id S1752701AbaGGAx0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 20:53:26 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:42433 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454AbaGGAwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 20:52:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFwd7sKSKu0+pfSOUGUQrbVuCO_ZBAXds=uGYx5=yfV=VA@mail.gmail.com>
-References: <CACxGe6vFHADzsE7_69B+jjT3kwX_3kOdUBzjtSVEYETwR7HY3Q@mail.gmail.com>
- <CA+55aFwd7sKSKu0+pfSOUGUQrbVuCO_ZBAXds=uGYx5=yfV=VA@mail.gmail.com>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Mon, 7 Jul 2014 01:52:33 +0100
-X-Google-Sender-Auth: BMMUE1ZWX-NpfGYac3aLNwWE-nk
-Message-ID: <CACxGe6sZgjVeCLW8VXAtrYg+mbZYOsUvTySJzuBp9OijiTmNyQ@mail.gmail.com>
-Subject: Re: [GIT PULL] bug fix for devicetree memory parsing
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Rob Herring <rob.herring@linaro.org>, Laura Abbott <lauraa@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 6 Jul 2014 20:52:35 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Minchan Kim <minchan@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Steve Capper <steve.capper@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v10 6/7] ARM: add pmd_[dirty|mkclean] for THP
+Date: Mon,  7 Jul 2014 09:53:57 +0900
+Message-Id: <1404694438-10272-7-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1404694438-10272-1-git-send-email-minchan@kernel.org>
+References: <1404694438-10272-1-git-send-email-minchan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 6, 2014 at 8:24 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sun, Jul 6, 2014 at 2:37 AM, Grant Likely <grant.likely@linaro.org> wrote:
->>
->> Can you pull this bug fix into your tree please?
->
-> I took it, but I think both your explanation and the patch itself is
-> actually crap. It may fix the issue, but it's seriously confused.
->
-> Your explanation says that it's a 32-bit platform issue. No it's not.
-> Most 32-bit configurations still have a 64-bit phys_addr_t (ie
-> PAE/LPAE etc).
->
-> And the code is crap, because it uses ULONG_MAX etc in ways that
-> simply make no f*cking sense. And why does it care about sizeof?
->
-> Why does the code not just do something like
->
->   #define MAX_PHYS_ADDR ((phys_addr_t) ~0)
->
-> and then do
->
->   if (base > MAX_PHYS_ADDR || base + size > MAX_PHYS_ADDR)
->     ...
+MADV_FREE needs pmd_dirty and pmd_mkclean for detecting recent
+overwrite of the contents since MADV_FREE syscall is called for
+THP page.
 
-Sure. I'll make sure a cleanup patch gets written and queued up.
+This patch adds pmd_dirty and pmd_mkclean for THP page MADV_FREE
+support.
 
-g.
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Steve Capper <steve.capper@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ arch/arm64/include/asm/pgtable.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
+index 579702086488..f3ec01cef04f 100644
+--- a/arch/arm64/include/asm/pgtable.h
++++ b/arch/arm64/include/asm/pgtable.h
+@@ -240,10 +240,12 @@ static inline pmd_t pte_pmd(pte_t pte)
+ #endif
+ 
+ #define pmd_young(pmd)		pte_young(pmd_pte(pmd))
++#define pmd_dirty(pmd)		pte_dirty(pmd_pte(pmd))
+ #define pmd_wrprotect(pmd)	pte_pmd(pte_wrprotect(pmd_pte(pmd)))
+ #define pmd_mksplitting(pmd)	pte_pmd(pte_mkspecial(pmd_pte(pmd)))
+ #define pmd_mkold(pmd)		pte_pmd(pte_mkold(pmd_pte(pmd)))
+ #define pmd_mkwrite(pmd)	pte_pmd(pte_mkwrite(pmd_pte(pmd)))
++#define pmd_mkclean(pmd)	pte_pmd(pte_mkclean(pmd_pte(pmd)))
+ #define pmd_mkdirty(pmd)	pte_pmd(pte_mkdirty(pmd_pte(pmd)))
+ #define pmd_mkyoung(pmd)	pte_pmd(pte_mkyoung(pmd_pte(pmd)))
+ #define pmd_mknotpresent(pmd)	(__pmd(pmd_val(pmd) & ~PMD_TYPE_MASK))
+-- 
+2.0.0
+
