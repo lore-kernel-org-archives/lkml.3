@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038AbaGGXyq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:54:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55684 "EHLO
+	id S1755381AbaGHAdP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:33:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716AbaGGXyd (ORCPT
+	with ESMTP id S1754028AbaGGXyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:33 -0400
+	Mon, 7 Jul 2014 19:54:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 29/94] drm/radeon/dp: fix lane/clock setup for dp 1.2 capable devices
-Date: Mon,  7 Jul 2014 16:57:19 -0700
-Message-Id: <20140707235757.652197635@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.14 65/94] ext4: Fix hole punching for files with indirect blocks
+Date: Mon,  7 Jul 2014 16:57:55 -0700
+Message-Id: <20140707235758.707857130@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -28,60 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 3b6d9fd23e015b5397c438fd3cd74147d2c805b6 upstream.
+commit a93cd4cf86466caa49cfe64607bea7f0bde3f916 upstream.
 
-Only DCE5+ asics support DP 1.2.
+Hole punching code for files with indirect blocks wrongly computed
+number of blocks which need to be cleared when traversing the indirect
+block tree. That could result in punching more blocks than actually
+requested and thus effectively cause a data loss. For example:
 
-Noticed by ArtForz on IRC.
+fallocate -n -p 10240000 4096
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+will punch the range 10240000 - 12632064 instead of the range 1024000 -
+10244096. Fix the calculation.
+
+Fixes: 8bad6fc813a3a5300f51369c39d315679fd88c72
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_dp.c |   17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
+ fs/ext4/indirect.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/atombios_dp.c
-+++ b/drivers/gpu/drm/radeon/atombios_dp.c
-@@ -386,6 +386,19 @@ static int dp_get_max_dp_pix_clock(int l
- 
- /***** radeon specific DP functions *****/
- 
-+static int radeon_dp_get_max_link_rate(struct drm_connector *connector,
-+				       u8 dpcd[DP_DPCD_SIZE])
-+{
-+	int max_link_rate;
+--- a/fs/ext4/indirect.c
++++ b/fs/ext4/indirect.c
+@@ -1318,16 +1318,24 @@ static int free_hole_blocks(handle_t *ha
+ 		blk = *i_data;
+ 		if (level > 0) {
+ 			ext4_lblk_t first2;
++			ext4_lblk_t count2;
 +
-+	if (radeon_connector_is_dp12_capable(connector))
-+		max_link_rate = min(drm_dp_max_link_rate(dpcd), 540000);
-+	else
-+		max_link_rate = min(drm_dp_max_link_rate(dpcd), 270000);
-+
-+	return max_link_rate;
-+}
-+
- /* First get the min lane# when low rate is used according to pixel clock
-  * (prefer low rate), second check max lane# supported by DP panel,
-  * if the max lane# < low rate lane# then use max lane# instead.
-@@ -395,7 +408,7 @@ static int radeon_dp_get_dp_lane_number(
- 					int pix_clock)
- {
- 	int bpp = convert_bpc_to_bpp(radeon_get_monitor_bpc(connector));
--	int max_link_rate = drm_dp_max_link_rate(dpcd);
-+	int max_link_rate = radeon_dp_get_max_link_rate(connector, dpcd);
- 	int max_lane_num = drm_dp_max_lane_count(dpcd);
- 	int lane_num;
- 	int max_dp_pix_clock;
-@@ -433,7 +446,7 @@ static int radeon_dp_get_dp_link_clock(s
- 			return 540000;
- 	}
- 
--	return drm_dp_max_link_rate(dpcd);
-+	return radeon_dp_get_max_link_rate(connector, dpcd);
- }
- 
- static u8 radeon_dp_encoder_service(struct radeon_device *rdev,
+ 			bh = sb_bread(inode->i_sb, le32_to_cpu(blk));
+ 			if (!bh) {
+ 				EXT4_ERROR_INODE_BLOCK(inode, le32_to_cpu(blk),
+ 						       "Read failure");
+ 				return -EIO;
+ 			}
+-			first2 = (first > offset) ? first - offset : 0;
++			if (first > offset) {
++				first2 = first - offset;
++				count2 = count;
++			} else {
++				first2 = 0;
++				count2 = count - (offset - first);
++			}
+ 			ret = free_hole_blocks(handle, inode, bh,
+ 					       (__le32 *)bh->b_data, level - 1,
+-					       first2, count - offset,
++					       first2, count2,
+ 					       inode->i_sb->s_blocksize >> 2);
+ 			if (ret) {
+ 				brelse(bh);
 
 
