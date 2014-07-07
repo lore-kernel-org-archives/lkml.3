@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494AbaGHAi0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:38:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55825 "EHLO
+	id S932204AbaGHAip (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:38:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753943AbaGGXyk (ORCPT
+	with ESMTP id S1753926AbaGGXyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:40 -0400
+	Mon, 7 Jul 2014 19:54:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilya Dryomov <ilya.dryomov@inktank.com>,
-        Josh Durgin <josh.durgin@inktank.com>
-Subject: [PATCH 3.14 47/94] rbd: handle parent_overlap on writes correctly
-Date: Mon,  7 Jul 2014 16:57:37 -0700
-Message-Id: <20140707235758.179337069@linuxfoundation.org>
+        Zdenek Kabelac <zkabelac@redhat.com>,
+        Lukas Czerner <lczerner@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.14 45/94] dm thin: update discard_granularity to reflect the thin-pool blocksize
+Date: Mon,  7 Jul 2014 16:57:35 -0700
+Message-Id: <20140707235758.126343706@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,70 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit 9638556a276125553549fdfe349c464481ec2f39 upstream.
+commit 09869de57ed2728ae3c619803932a86cb0e2c4f8 upstream.
 
-The following check in rbd_img_obj_request_submit()
+DM thinp already checks whether the discard_granularity of the data
+device is a factor of the thin-pool block size.  But when using the
+dm-thin-pool's discard passdown support, DM thinp was not selecting the
+max of the underlying data device's discard_granularity and the
+thin-pool's block size.
 
-    rbd_dev->parent_overlap <= obj_request->img_offset
+Update set_discard_limits() to set discard_granularity to the max of
+these values.  This enables blkdev_issue_discard() to properly align the
+discards that are sent to the DM thin device on a full block boundary.
+As such each discard will now cover an entire DM thin-pool block and the
+block will be reclaimed.
 
-allows the fall through to the non-layered write case even if both
-parent_overlap and obj_request->img_offset belong to the same RADOS
-object.  This leads to data corruption, because the area to the left of
-parent_overlap ends up unconditionally zero-filled instead of being
-populated with parent data.  Suppose we want to write 1M to offset 6M
-of image bar, which is a clone of foo@snap; object_size is 4M,
-parent_overlap is 5M:
-
-    rbd_data.<id>.0000000000000001
-     ---------------------|----------------------|------------
-    | should be copyup'ed | should be zeroed out | write ...
-     ---------------------|----------------------|------------
-   4M                    5M                     6M
-                    parent_overlap    obj_request->img_offset
-
-4..5M should be copyup'ed from foo, yet it is zero-filled, just like
-5..6M is.
-
-Given that the only striping mode kernel client currently supports is
-chunking (i.e. stripe_unit == object_size, stripe_count == 1), round
-parent_overlap up to the next object boundary for the purposes of the
-overlap check.
-
-Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
-Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
+Reported-by: Zdenek Kabelac <zkabelac@redhat.com>
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/rbd.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/md/dm-thin.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -1366,6 +1366,14 @@ static bool obj_request_exists_test(stru
- 	return test_bit(OBJ_REQ_EXISTS, &obj_request->flags) != 0;
- }
- 
-+static bool obj_request_overlaps_parent(struct rbd_obj_request *obj_request)
-+{
-+	struct rbd_device *rbd_dev = obj_request->img_request->rbd_dev;
-+
-+	return obj_request->img_offset <
-+	    round_up(rbd_dev->parent_overlap, rbd_obj_bytes(&rbd_dev->header));
-+}
-+
- static void rbd_obj_request_get(struct rbd_obj_request *obj_request)
- {
- 	dout("%s: obj %p (was %d)\n", __func__, obj_request,
-@@ -2656,7 +2664,7 @@ static int rbd_img_obj_request_submit(st
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -2925,7 +2925,8 @@ static void set_discard_limits(struct po
  	 */
- 	if (!img_request_write_test(img_request) ||
- 		!img_request_layered_test(img_request) ||
--		rbd_dev->parent_overlap <= obj_request->img_offset ||
-+		!obj_request_overlaps_parent(obj_request) ||
- 		((known = obj_request_known_test(obj_request)) &&
- 			obj_request_exists_test(obj_request))) {
- 
+ 	if (pt->adjusted_pf.discard_passdown) {
+ 		data_limits = &bdev_get_queue(pt->data_dev->bdev)->limits;
+-		limits->discard_granularity = data_limits->discard_granularity;
++		limits->discard_granularity = max(data_limits->discard_granularity,
++						  pool->sectors_per_block << SECTOR_SHIFT);
+ 	} else
+ 		limits->discard_granularity = pool->sectors_per_block << SECTOR_SHIFT;
+ }
 
 
