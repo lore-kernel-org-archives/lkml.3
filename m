@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665AbaGGOaQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:30:16 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57255 "EHLO
+	id S1754100AbaGGOeI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:34:08 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57257 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753605AbaGGOaN (ORCPT
+	with ESMTP id S1753619AbaGGOaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:30:13 -0400
+	Mon, 7 Jul 2014 10:30:15 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -17,93 +17,142 @@ Cc: Boris Brezillon <boris@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v2 00/18] AT91: cleanup of the reset and poweroff code
-Date: Mon,  7 Jul 2014 16:25:13 +0200
-Message-Id: <1404743131-24569-1-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 17/18] AT91: Remove rstc and shdwnc global base addresses
+Date: Mon,  7 Jul 2014 16:25:30 +0200
+Message-Id: <1404743131-24569-18-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1404743131-24569-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1404743131-24569-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Now that there's no user left for the global variables holding the reset and
+shutdown controllers base address, we can remove these variables and their
+associated mapping function.
 
-This patchset is an attempt to further cleanup mach-at91 by removing
-code that can be put into a driver nowadays.
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/mach-at91/at91sam9260.c |  2 --
+ arch/arm/mach-at91/at91sam9261.c |  2 --
+ arch/arm/mach-at91/at91sam9263.c |  2 --
+ arch/arm/mach-at91/at91sam9g45.c |  2 --
+ arch/arm/mach-at91/at91sam9rl.c  |  2 --
+ arch/arm/mach-at91/generic.h     |  6 ------
+ arch/arm/mach-at91/setup.c       | 18 ------------------
+ 7 files changed, 34 deletions(-)
 
-This time, the target is the reset and poweroff code, that can now be
-put in drivers/power/reset.
-
-Maxime
-
-Changes from v1:
-  - Added the missing copyrights in the new reset and poweroff drivers
-  - Renamed the platform names for the reset driver to match the name
-    of the first SoC that introduced them
-  - Fixed a few typos in the commit logs
-  - Added missing comments in the assembly code in the reset driver
-  - Splitted the reset probe to handle the DT and platform probe in
-    separate functions.
-
-Maxime Ripard (18):
-  power: reset: Add if statement isntead of multiple depends on
-  AT91: setup: Switch to pr_fmt
-  AT91: G45: DT: Declare a second ram controller
-  AT91: Rework ramc mapping code
-  AT91: SAMA5D3: DT: Add shutdown controller
-  power: reset: Add AT91 reset driver
-  AT91: DT: Remove the old-style reset probing
-  AT91: soc: Introduce register_devices callback
-  AT91: Probe the reset driver
-  AT91: Call at91_register_devices in the board files
-  AT91: Remove reset code from the machine code
-  power: reset: Add AT91 poweroff driver
-  AT91: DT: Remove poweroff DT probing
-  AT91: Register the poweroff driver
-  AT91: Remove poweroff code
-  AT91: pm: Remove show_reset_status function
-  AT91: Remove rstc and shdwnc global base addresses
-  AT91: Remove rstc and shdwc headers
-
- arch/arm/boot/dts/at91sam9g45.dtsi      |   8 +-
- arch/arm/boot/dts/sama5d3.dtsi          |   5 +
- arch/arm/mach-at91/Kconfig              |   8 --
- arch/arm/mach-at91/Makefile             |   2 -
- arch/arm/mach-at91/at91_rstc.h          |  53 -------
- arch/arm/mach-at91/at91_shdwc.h         |  50 -------
- arch/arm/mach-at91/at91sam9260.c        |  45 +++++-
- arch/arm/mach-at91/at91sam9261.c        |  45 +++++-
- arch/arm/mach-at91/at91sam9263.c        |  45 +++++-
- arch/arm/mach-at91/at91sam9_alt_reset.S |  40 ------
- arch/arm/mach-at91/at91sam9g45.c        |  49 ++++++-
- arch/arm/mach-at91/at91sam9g45_reset.S  |  45 ------
- arch/arm/mach-at91/at91sam9rl.c         |  45 +++++-
- arch/arm/mach-at91/board-afeb-9260v1.c  |   2 +
- arch/arm/mach-at91/board-cam60.c        |   2 +
- arch/arm/mach-at91/board-cpu9krea.c     |   2 +
- arch/arm/mach-at91/board-flexibity.c    |   2 +
- arch/arm/mach-at91/board-sam9-l9260.c   |   2 +
- arch/arm/mach-at91/board-sam9260ek.c    |   3 +-
- arch/arm/mach-at91/board-sam9261ek.c    |   3 +-
- arch/arm/mach-at91/board-sam9263ek.c    |   3 +-
- arch/arm/mach-at91/board-sam9m10g45ek.c |   3 +-
- arch/arm/mach-at91/board-sam9rlek.c     |   3 +-
- arch/arm/mach-at91/board-snapper9260.c  |   2 +
- arch/arm/mach-at91/generic.h            |  10 +-
- arch/arm/mach-at91/pm.c                 |  72 ----------
- arch/arm/mach-at91/setup.c              | 178 ++++-------------------
- arch/arm/mach-at91/soc.h                |   1 +
- drivers/power/reset/Kconfig             |  31 ++--
- drivers/power/reset/Makefile            |   2 +
- drivers/power/reset/at91-poweroff.c     | 156 ++++++++++++++++++++
- drivers/power/reset/at91-reset.c        | 246 ++++++++++++++++++++++++++++++++
- 32 files changed, 701 insertions(+), 462 deletions(-)
- delete mode 100644 arch/arm/mach-at91/at91_rstc.h
- delete mode 100644 arch/arm/mach-at91/at91_shdwc.h
- delete mode 100644 arch/arm/mach-at91/at91sam9_alt_reset.S
- delete mode 100644 arch/arm/mach-at91/at91sam9g45_reset.S
- create mode 100644 drivers/power/reset/at91-poweroff.c
- create mode 100644 drivers/power/reset/at91-reset.c
-
+diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
+index f387e831e894..60a0d37a8134 100644
+--- a/arch/arm/mach-at91/at91sam9260.c
++++ b/arch/arm/mach-at91/at91sam9260.c
+@@ -339,8 +339,6 @@ static void __init at91sam9260_map_io(void)
+ 
+ static void __init at91sam9260_ioremap_registers(void)
+ {
+-	at91_ioremap_shdwc(AT91SAM9260_BASE_SHDWC);
+-	at91_ioremap_rstc(AT91SAM9260_BASE_RSTC);
+ 	at91_ioremap_ramc(0, AT91SAM9260_BASE_SDRAMC, 512);
+ 	at91sam926x_ioremap_pit(AT91SAM9260_BASE_PIT);
+ 	at91sam9_ioremap_smc(0, AT91SAM9260_BASE_SMC);
+diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
+index 5e8ac0d271b8..80cae8728316 100644
+--- a/arch/arm/mach-at91/at91sam9261.c
++++ b/arch/arm/mach-at91/at91sam9261.c
+@@ -302,8 +302,6 @@ static void __init at91sam9261_map_io(void)
+ 
+ static void __init at91sam9261_ioremap_registers(void)
+ {
+-	at91_ioremap_shdwc(AT91SAM9261_BASE_SHDWC);
+-	at91_ioremap_rstc(AT91SAM9261_BASE_RSTC);
+ 	at91_ioremap_ramc(0, AT91SAM9261_BASE_SDRAMC, 512);
+ 	at91sam926x_ioremap_pit(AT91SAM9261_BASE_PIT);
+ 	at91sam9_ioremap_smc(0, AT91SAM9261_BASE_SMC);
+diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
+index 772485c9e47c..7d4403ed0596 100644
+--- a/arch/arm/mach-at91/at91sam9263.c
++++ b/arch/arm/mach-at91/at91sam9263.c
+@@ -317,8 +317,6 @@ static void __init at91sam9263_map_io(void)
+ 
+ static void __init at91sam9263_ioremap_registers(void)
+ {
+-	at91_ioremap_shdwc(AT91SAM9263_BASE_SHDWC);
+-	at91_ioremap_rstc(AT91SAM9263_BASE_RSTC);
+ 	at91_ioremap_ramc(0, AT91SAM9263_BASE_SDRAMC0, 512);
+ 	at91_ioremap_ramc(1, AT91SAM9263_BASE_SDRAMC1, 512);
+ 	at91sam926x_ioremap_pit(AT91SAM9263_BASE_PIT);
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index d986cc757cfb..c615f1d3d39c 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -367,8 +367,6 @@ static void __init at91sam9g45_map_io(void)
+ 
+ static void __init at91sam9g45_ioremap_registers(void)
+ {
+-	at91_ioremap_shdwc(AT91SAM9G45_BASE_SHDWC);
+-	at91_ioremap_rstc(AT91SAM9G45_BASE_RSTC);
+ 	at91_ioremap_ramc(0, AT91SAM9G45_BASE_DDRSDRC1, 512);
+ 	at91_ioremap_ramc(1, AT91SAM9G45_BASE_DDRSDRC0, 512);
+ 	at91sam926x_ioremap_pit(AT91SAM9G45_BASE_PIT);
+diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
+index 1fba256502f7..79b5bb793692 100644
+--- a/arch/arm/mach-at91/at91sam9rl.c
++++ b/arch/arm/mach-at91/at91sam9rl.c
+@@ -311,8 +311,6 @@ static void __init at91sam9rl_map_io(void)
+ 
+ static void __init at91sam9rl_ioremap_registers(void)
+ {
+-	at91_ioremap_shdwc(AT91SAM9RL_BASE_SHDWC);
+-	at91_ioremap_rstc(AT91SAM9RL_BASE_RSTC);
+ 	at91_ioremap_ramc(0, AT91SAM9RL_BASE_SDRAMC, 512);
+ 	at91sam926x_ioremap_pit(AT91SAM9RL_BASE_PIT);
+ 	at91sam9_ioremap_smc(0, AT91SAM9RL_BASE_SMC);
+diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
+index 5d5e55237c41..f42b0490ad98 100644
+--- a/arch/arm/mach-at91/generic.h
++++ b/arch/arm/mach-at91/generic.h
+@@ -64,12 +64,6 @@ extern void at91_irq_resume(void);
+ /* idle */
+ extern void at91sam9_idle(void);
+ 
+-/* reset */
+-extern void at91_ioremap_rstc(u32 base_addr);
+-
+-/* shutdown */
+-extern void at91_ioremap_shdwc(u32 base_addr);
+-
+ /* Matrix */
+ extern void at91_ioremap_matrix(u32 base_addr);
+ 
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index cdd717a4fa30..eb2b922a4adb 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -319,24 +319,6 @@ void __init at91_map_io(void)
+ 		at91_boot_soc.map_io();
+ }
+ 
+-void __iomem *at91_shdwc_base = NULL;
+-
+-void __init at91_ioremap_shdwc(u32 base_addr)
+-{
+-	at91_shdwc_base = ioremap(base_addr, 16);
+-	if (!at91_shdwc_base)
+-		panic(pr_fmt("Impossible to ioremap at91_shdwc_base\n"));
+-}
+-
+-void __iomem *at91_rstc_base;
+-
+-void __init at91_ioremap_rstc(u32 base_addr)
+-{
+-	at91_rstc_base = ioremap(base_addr, 16);
+-	if (!at91_rstc_base)
+-		panic(pr_fmt("Impossible to ioremap at91_rstc_base\n"));
+-}
+-
+ void __iomem *at91_matrix_base;
+ EXPORT_SYMBOL_GPL(at91_matrix_base);
+ 
 -- 
 2.0.1
 
