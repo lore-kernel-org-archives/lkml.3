@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246AbaGGR4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 13:56:33 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:59524 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751392AbaGGR4b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 13:56:31 -0400
-Date: Mon, 7 Jul 2014 19:56:27 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/5] memory: add a driver for atmel ram controllers
-Message-ID: <20140707175627.GG3113@piout.net>
-References: <1404746355-19988-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1404746355-19988-2-git-send-email-alexandre.belloni@free-electrons.com>
- <20140707174642.65d02082@bbrezillon>
+	id S1752335AbaGGR6w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 13:58:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35837 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751284AbaGGR6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 13:58:49 -0400
+Message-ID: <53BADFC6.9060101@redhat.com>
+Date: Mon, 07 Jul 2014 19:58:30 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140707174642.65d02082@bbrezillon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Chen, Tiejun" <tiejun.chen@intel.com>, jani.nikula@linux.intel.com,
+        airlied@linux.ie, intel-gfx@lists.freedesktop.org,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, qemu-devel@nongnu.org
+Subject: Re: [Intel-gfx] [RFC][PATCH] gpu:drm:i915:intel_detect_pch: back
+ to check devfn instead of check class type
+References: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com> <53A42DAA.80406@redhat.com> <53A692F9.3060200@intel.com> <53AA70C0.2000806@redhat.com> <20140707144917.GZ5821@phenom.ffwll.local> <53BAB569.5000709@redhat.com> <20140707175402.GS5821@phenom.ffwll.local>
+In-Reply-To: <20140707175402.GS5821@phenom.ffwll.local>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Il 07/07/2014 19:54, Daniel Vetter ha scritto:
+> On Mon, Jul 07, 2014 at 04:57:45PM +0200, Paolo Bonzini wrote:
+>> Il 07/07/2014 16:49, Daniel Vetter ha scritto:
+>>> So the correct fix to forward intel gpus to guests is indeed to somehow
+>>> fake the pch pci ids since the driver really needs them. Gross design, but
+>>> that's how the hardware works.
+>>
+>> A way that could work for virtualization is this: if you find the card has a
+>> magic subsystem vendor id, fetch the subsystem device id and use _that_ as
+>> the PCH device id.
+>>
+>> Would that work for you?
+>
+> I guess for quemu it also depends upon what windows does since we can't
+> change that. If we care about that part. Another consideration is
+> supporting older kernels, if that's possible at all.
 
-On 07/07/2014 at 17:46:42 +0200, Boris Brezillon wrote :
-> On Mon,  7 Jul 2014 17:19:11 +0200
-> Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
-> 
-> > Atmel SoCs have one or multiple RAM controllers that need one or multiple clocks
-> > to run.
-> > This driver handle those clocks.
-> > 
-> 
-> Actually this controller is an SDRAM controller which, depending on the
-> SoC, might support SDR SDRAMs, DDR SDRAMs or both.
-> 
-> This is just a nitpick, but if you don't mind I'd rather replace
-> references to RAMC by SDRAMC (ATMEL_RAMC -> ATMEL_SDRAMC) and just state
-> that in some cases (at least this is the case for the DDRSDRC available
-> in at91sam9g45 SoC) it supports both type of SDRAM (DDR and SDR).
-> 
-> The same goes for the source file name (atmel-ramc.c -> atmel-sdramc.c).
-> 
+Yes, but right now it's more important to get something that's not too 
+gross for the future, for both Linux and Windows.  Hacks for existing 
+guests can be done separately, especially since they might differ 
+between Linux (check ISA bridge) and Windows (check 1f.0).
 
-will do.
+Paolo
 
-
-> > diff --git a/Documentation/devicetree/bindings/arm/atmel-at91.txt b/Documentation/devicetree/bindings/arm/atmel-at91.txt
-> > index 16f60b41c147..54dc3aefb12a 100644
-> > --- a/Documentation/devicetree/bindings/arm/atmel-at91.txt
-> > +++ b/Documentation/devicetree/bindings/arm/atmel-at91.txt
-> > @@ -61,6 +61,7 @@ RAMC SDRAM/DDR Controller required properties:
-> >  - compatible: Should be "atmel,at91rm9200-sdramc",
-> >  			"atmel,at91sam9260-sdramc",
-> >  			"atmel,at91sam9g45-ddramc",
-> > +			"atmel,sama5d3-mpddramc",
-> >  - reg: Should contain registers location and length
-> >    For at91sam9263 and at91sam9g45 you must specify 2 entries.
-> 
-> Shouldn't we move the documentation in
-> Documentation/devicetree/bindings/memory-controllers/ (though this
-> should be done in different patch).
-> 
-
-I guess we should move it later, to avoid merge conflicts
-
-
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
