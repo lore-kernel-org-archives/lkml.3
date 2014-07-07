@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383AbaGHA5C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:57:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55462 "EHLO
+	id S932132AbaGHA5E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:57:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55399 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753421AbaGGXyL (ORCPT
+	with ESMTP id S1753415AbaGGXyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>,
-        "Alexander E. Patrakov" <patrakov@gmail.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.15 093/122] zram: revalidate disk after capacity change
-Date: Mon,  7 Jul 2014 16:57:35 -0700
-Message-Id: <20140707235737.041217860@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.15 091/122] ext4: Fix hole punching for files with indirect blocks
+Date: Mon,  7 Jul 2014 16:57:33 -0700
+Message-Id: <20140707235736.982703106@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -33,69 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Minchan Kim <minchan@kernel.org>
+From: Jan Kara <jack@suse.cz>
 
-commit 2e32baea46ce542c561a519414c840295b229c8f upstream.
+commit a93cd4cf86466caa49cfe64607bea7f0bde3f916 upstream.
 
-Alexander reported mkswap on /dev/zram0 is failed if other process is
-opening the block device file.
+Hole punching code for files with indirect blocks wrongly computed
+number of blocks which need to be cleared when traversing the indirect
+block tree. That could result in punching more blocks than actually
+requested and thus effectively cause a data loss. For example:
 
-Step is as follows,
+fallocate -n -p 10240000 4096
 
-0. Reset the unused zram device.
-1. Use a program that opens /dev/zram0 with O_RDWR and sleeps
-   until killed.
-2. While that program sleeps, echo the correct value to
-   /sys/block/zram0/disksize.
-3. Verify (e.g. in /proc/partitions) that the disk size is applied
-   correctly. It is.
-4. While that program still sleeps, attempt to mkswap /dev/zram0.
-   This fails: mkswap: error: swap area needs to be at least 40 KiB
+will punch the range 10240000 - 12632064 instead of the range 1024000 -
+10244096. Fix the calculation.
 
-When I investigated, the size get by ioctl(fd, BLKGETSIZE64, xxx) on
-mkswap to get a size of blockdev was zero although zram0 has right size by
-2.
-
-The reason is zram didn't revalidate disk after changing capacity so that
-size of blockdev's inode is not uptodate until all of file is close.
-
-This patch should fix the BUG.
-
-Signed-off-by: Minchan Kim <minchan@kernel.org>
-Reported-by: Alexander E. Patrakov <patrakov@gmail.com>
-Tested-by: Alexander E. Patrakov <patrakov@gmail.com>
-Reviewed-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: 8bad6fc813a3a5300f51369c39d315679fd88c72
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/zram/zram_drv.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/ext4/indirect.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -622,8 +622,10 @@ static void zram_reset_device(struct zra
- 	memset(&zram->stats, 0, sizeof(zram->stats));
- 
- 	zram->disksize = 0;
--	if (reset_capacity)
-+	if (reset_capacity) {
- 		set_capacity(zram->disk, 0);
-+		revalidate_disk(zram->disk);
-+	}
- 	up_write(&zram->init_lock);
- }
- 
-@@ -664,6 +666,7 @@ static ssize_t disksize_store(struct dev
- 	zram->comp = comp;
- 	zram->disksize = disksize;
- 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-+	revalidate_disk(zram->disk);
- 	up_write(&zram->init_lock);
- 	return len;
- 
+--- a/fs/ext4/indirect.c
++++ b/fs/ext4/indirect.c
+@@ -1318,16 +1318,24 @@ static int free_hole_blocks(handle_t *ha
+ 		blk = *i_data;
+ 		if (level > 0) {
+ 			ext4_lblk_t first2;
++			ext4_lblk_t count2;
++
+ 			bh = sb_bread(inode->i_sb, le32_to_cpu(blk));
+ 			if (!bh) {
+ 				EXT4_ERROR_INODE_BLOCK(inode, le32_to_cpu(blk),
+ 						       "Read failure");
+ 				return -EIO;
+ 			}
+-			first2 = (first > offset) ? first - offset : 0;
++			if (first > offset) {
++				first2 = first - offset;
++				count2 = count;
++			} else {
++				first2 = 0;
++				count2 = count - (offset - first);
++			}
+ 			ret = free_hole_blocks(handle, inode, bh,
+ 					       (__le32 *)bh->b_data, level - 1,
+-					       first2, count - offset,
++					       first2, count2,
+ 					       inode->i_sb->s_blocksize >> 2);
+ 			if (ret) {
+ 				brelse(bh);
 
 
