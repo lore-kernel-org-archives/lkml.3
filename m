@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258AbaGGPfS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 11:35:18 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:65006 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458AbaGGPfR (ORCPT
+	id S1752467AbaGGPfW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 11:35:22 -0400
+Received: from smtp-out-167.synserver.de ([212.40.185.167]:1249 "EHLO
+	smtp-out-166.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751458AbaGGPfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 11:35:17 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-5a-53babe322107
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: EXYNOS: add EXYNOS3250 PMU support
-Date: Mon, 07 Jul 2014 17:34:56 +0200
-Message-id: <1807423.y4ukxv9Bv7@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <2031373.hXVBStNvpj@amdc1032>
-References: <2031373.hXVBStNvpj@amdc1032>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t9jQV2jfbuCDX7eUbG4/uU5q0Xvgqts
-	Fmeb3rBbbHp8jdXi8q45bBYzzu9jsli09Qu7xfoZr1kcODw2L6n36NuyitHj8ya5AOYoLpuU
-	1JzMstQifbsEroxH6ycyF7SwVKydepOpgXEpcxcjJ4eEgInE0TkHGSFsMYkL99azdTFycQgJ
-	TGeUWHT4KCOE08IksX/LUXaQKjYBK4mJ7avAOkQE1CR6Fm8FK2IW6GaS2LP3LitIQljARqJ5
-	VzcLiM0ioCrx/PkXsGZeAU2Ji1d2gK0WFfCU2LF9JRuIzSmgJfHu7hwmEFsIqGbrkQ1sEPWC
-	Ej8m3wObwywgL7Fv/1RWCFtLYv3O40wTGAVmISmbhaRsFpKyBYzMqxhFUwuSC4qT0nON9IoT
-	c4tL89L1kvNzNzGCg/uZ9A7GVQ0WhxgFOBiVeHgPrNoZLMSaWFZcmXuIUYKDWUmEd8XyXcFC
-	vCmJlVWpRfnxRaU5qcWHGKU5WJTEeQ+2WgcKCaQnlqRmp6YWpBbBZJk4OKUaGDkE12s/z3n1
-	5dH5w2pbtC6lxB6dHLfAkvmNUkny6eT17lrMHRsV3nm8SP/H5mbyydBHP9OpZq9p65qZ6xbw
-	+Hja6l/XVbFQTdfuVls5dcN/L5072ud1+8uSTy49d/uPxvpfe+wmihvU5jxrmqyYIKr0U5f9
-	hjff4dl93MdvCkbKnGT9eLC3SYmlOCPRUIu5qDgRAOkl7UpqAgAA
+	Mon, 7 Jul 2014 11:35:20 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 12531
+Message-ID: <53BABDF6.4090400@metafoo.de>
+Date: Mon, 07 Jul 2014 17:34:14 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+MIME-Version: 1.0
+To: Julia Lawall <julia.lawall@lip6.fr>, Fabio Estevam <festevam@gmail.com>
+CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Takashi Iwai <tiwai@suse.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Himangi Saraogi <himangi774@gmail.com>
+Subject: Re: [alsa-devel] [PATCH] ASoC: sgtl5000: Use devm_ functions
+References: <20140706070800.GA2927@himangi-Dell> <20140707144832.GL30458@sirena.org.uk> <alpine.DEB.2.10.1407071655171.4757@hadrien> <CAOMZO5AiFCnfTzo4TyB5e5c+xiHQiHUbhRVY7z=AbjOWZDX3NA@mail.gmail.com> <alpine.DEB.2.10.1407071721270.4757@hadrien>
+In-Reply-To: <alpine.DEB.2.10.1407071721270.4757@hadrien>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/07/2014 05:23 PM, Julia Lawall wrote:
+>
+>
+> On Mon, 7 Jul 2014, Fabio Estevam wrote:
+>
+>> On Mon, Jul 7, 2014 at 11:58 AM, Julia Lawall <julia.lawall@lip6.fr> wrote:
+>>
+>>> Nevertheless, there is already a call to devm_regulator_bulk_get in
+>>> sgtl5000_enable_regulators which calls sgtl5000_replace_vddd_with_ldo
+>>> which calls ldo_regulator_register.  That call was introduced by
+>>>
+>>> commit 63e54cd9caa3ce03635810608519e2b37d8bc706
+>>> Author: Fabio Estevam <fabio.estevam@freescale.com>
+>>> Date:   Thu Apr 24 14:13:08 2014 -0300
+>>>
+>>> It seems that that patch should be reverted?
+>>
+>> I think so. Russell also reported a kernel oops when unbinding this
+>> module, so I will prepare a patch reverting it.
+>
+> There is documentation about what kinds of devm functions exist, but it is
+> too bad that there is no documentation about where they can be used.
+> Often there are several levels of function pointers involved, so it can be
+> hard to figure out whether they can be used just by looking at the code.
+> I have only taken the strategy of using them in kinds of functions where
+> someone else has alreadyy figured out that they can be used.
 
-Hi Kukjin,
+Yes, it is probably a bit underdocumented. The rule of thumb is don't use it 
+anywhere else except for device probe callbacks (and functions that are only 
+called from a device probe function) and only for the device that is being 
+probed. There are probably a couple of instances in the kernel where the 
+manged resource allocators are used in places where they shouldn't be used.
 
-On Monday, June 02, 2014 06:54:07 PM Bartlomiej Zolnierkiewicz wrote:
-> 
-> This is needed for suspend/resume and cpuidle AFTR mode support.
-> 
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> ---
-> against next-20140602
-
-Could this patch be applied for v3.17 please?
-
-[ It still applies fine to next-20140707. ]
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+- Lars
 
