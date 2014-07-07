@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830AbaGGXyd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:54:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55703 "EHLO
+	id S1755206AbaGHAnn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:43:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55684 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716AbaGGXy2 (ORCPT
+	with ESMTP id S1753814AbaGGXyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:28 -0400
+	Mon, 7 Jul 2014 19:54:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        ShiChun Ma <masc2008@qq.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.14 07/94] xhci: correct burst count field for isoc transfers on 1.0 xhci hosts
-Date: Mon,  7 Jul 2014 16:56:57 -0700
-Message-Id: <20140707235756.994697131@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.14 27/94] drm/radeon: only apply hdmi bpc pll flags when encoder mode is hdmi
+Date: Mon,  7 Jul 2014 16:57:17 -0700
+Message-Id: <20140707235757.572981544@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,40 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 3213b151387df0b95f4eada104f68eb1c1409cb3 upstream.
+commit 7d5ab3009a8ca777174f6f469277b3922d56fd4b upstream.
 
-The transfer burst count (TBC) field in xhci 1.0 hosts should be set
-to the number of bursts needed to transfer all packets in a isoc TD.
-Supported values are 0-2 (1 to 3 bursts per service interval).
+May fix display issues with non-HDMI displays.
 
-Formula for TBC calculation is given in xhci spec section 4.11.2.3:
-TBC = roundup( Transfer Descriptor Packet Count / Max Burst Size +1 ) - 1
-
-This patch should be applied to stable kernels since 3.0 that contain
-the commit 5cd43e33b9519143f06f507dd7cbee6b7a621885
-"xhci 1.0: Set transfer burst count field."
-
-Suggested-by: ShiChun Ma <masc2008@qq.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atombios_crtc.c |   48 +++++++++++++++++----------------
+ 1 file changed, 26 insertions(+), 22 deletions(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -3666,7 +3666,7 @@ static unsigned int xhci_get_burst_count
- 		return 0;
- 
- 	max_burst = urb->ep->ss_ep_comp.bMaxBurst;
--	return roundup(total_packet_count, max_burst + 1) - 1;
-+	return DIV_ROUND_UP(total_packet_count, max_burst + 1) - 1;
- }
- 
- /*
+--- a/drivers/gpu/drm/radeon/atombios_crtc.c
++++ b/drivers/gpu/drm/radeon/atombios_crtc.c
+@@ -862,14 +862,16 @@ static void atombios_crtc_program_pll(st
+ 			args.v5.ucMiscInfo = 0; /* HDMI depth, etc. */
+ 			if (ss_enabled && (ss->type & ATOM_EXTERNAL_SS_MASK))
+ 				args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_REF_DIV_SRC;
+-			switch (bpc) {
+-			case 8:
+-			default:
+-				args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_24BPP;
+-				break;
+-			case 10:
+-				args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_30BPP;
+-				break;
++			if (encoder_mode == ATOM_ENCODER_MODE_HDMI) {
++				switch (bpc) {
++				case 8:
++				default:
++					args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_24BPP;
++					break;
++				case 10:
++					args.v5.ucMiscInfo |= PIXEL_CLOCK_V5_MISC_HDMI_30BPP;
++					break;
++				}
+ 			}
+ 			args.v5.ucTransmitterID = encoder_id;
+ 			args.v5.ucEncoderMode = encoder_mode;
+@@ -884,20 +886,22 @@ static void atombios_crtc_program_pll(st
+ 			args.v6.ucMiscInfo = 0; /* HDMI depth, etc. */
+ 			if (ss_enabled && (ss->type & ATOM_EXTERNAL_SS_MASK))
+ 				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_REF_DIV_SRC;
+-			switch (bpc) {
+-			case 8:
+-			default:
+-				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_24BPP;
+-				break;
+-			case 10:
+-				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_30BPP;
+-				break;
+-			case 12:
+-				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_36BPP;
+-				break;
+-			case 16:
+-				args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_48BPP;
+-				break;
++			if (encoder_mode == ATOM_ENCODER_MODE_HDMI) {
++				switch (bpc) {
++				case 8:
++				default:
++					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_24BPP;
++					break;
++				case 10:
++					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_30BPP;
++					break;
++				case 12:
++					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_36BPP;
++					break;
++				case 16:
++					args.v6.ucMiscInfo |= PIXEL_CLOCK_V6_MISC_HDMI_48BPP;
++					break;
++				}
+ 			}
+ 			args.v6.ucTransmitterID = encoder_id;
+ 			args.v6.ucEncoderMode = encoder_mode;
 
 
