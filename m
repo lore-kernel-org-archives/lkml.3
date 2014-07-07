@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876AbaGGKsI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 06:48:08 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:49171 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545AbaGGKsF (ORCPT
+	id S1752898AbaGGKtG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 06:49:06 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:47780 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939AbaGGKtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 06:48:05 -0400
-Date: Mon, 7 Jul 2014 11:48:00 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] video: backlight: ili922x.c:  Cleaning up variable that
- is never used
-Message-ID: <20140707104800.GB6407@lee--X1>
-References: <1404670847-17249-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	Mon, 7 Jul 2014 06:49:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1404670847-17249-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140616095256.GN14323@lee--X1>
+References: <1402297417-9338-1-git-send-email-ldewangan@nvidia.com>
+	<20140616095256.GN14323@lee--X1>
+Date: Mon, 7 Jul 2014 12:49:02 +0200
+Message-ID: <CACRpkdYbV5zMoW3eLkYxbLLXEo4SWnqZgdkm+ONpBW-1s5pvYQ@mail.gmail.com>
+Subject: Re: [PATCH] Doc: mfd: as3722: Add details of optional missing property
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, Rob Herring <robh+dt@kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 06 Jul 2014, Rickard Strandqvist wrote:
+On Mon, Jun 16, 2014 at 11:52 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-> Variable ar assigned a value that is never used.
-> I have also removed all the code that thereby serves no purpose.
-> 
-> This was found using a static code analysis program called cppcheck
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/video/backlight/ili922x.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+> CC'ing Linus as he had an opinion.
+>
+> On Mon, 09 Jun 2014, Laxman Dewangan wrote:
+>> Add details of following properties which are used on driver but
+>> not documented on DT binding document.
+>> - ams,enable-internal-int-pullup
+>> - ams,enable-internal-i2c-pullup
+>>
+>> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+>> Reported-by: Lee Jones <lee.jones@linaro.org>
 
-Applied, thanks.
+I can live with this.
 
-> diff --git a/drivers/video/backlight/ili922x.c b/drivers/video/backlight/ili922x.c
-> index ea67fe1..06936c8 100644
-> --- a/drivers/video/backlight/ili922x.c
-> +++ b/drivers/video/backlight/ili922x.c
-> @@ -251,7 +251,7 @@ static int ili922x_write(struct spi_device *spi, u8 reg, u16 value)
->  	struct spi_transfer xfer_regindex, xfer_regvalue;
->  	unsigned char tbuf[CMD_BUFSIZE];
->  	unsigned char rbuf[CMD_BUFSIZE];
-> -	int ret, len = 0;
-> +	int ret;
->  
->  	memset(&xfer_regindex, 0, sizeof(struct spi_transfer));
->  	memset(&xfer_regvalue, 0, sizeof(struct spi_transfer));
-> @@ -273,7 +273,6 @@ static int ili922x_write(struct spi_device *spi, u8 reg, u16 value)
->  	ret = spi_sync(spi, &msg);
->  
->  	spi_message_init(&msg);
-> -	len = 0;
->  	tbuf[0] = set_tx_byte(START_BYTE(ili922x_id, START_RS_REG,
->  					 START_RW_WRITE));
->  	tbuf[1] = set_tx_byte((value & 0xFF00) >> 8);
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yours,
+Linus Walleij
