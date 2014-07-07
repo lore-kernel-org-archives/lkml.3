@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690AbaGGOKY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:10:24 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:47387 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753543AbaGGOKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:10:21 -0400
-Message-ID: <53BAAA19.9050106@ti.com>
-Date: Mon, 7 Jul 2014 19:39:29 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753837AbaGGOKe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:10:34 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:46315 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753728AbaGGOKd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 10:10:33 -0400
+Message-ID: <53BAAA4F.2090402@de.ibm.com>
+Date: Mon, 07 Jul 2014 16:10:23 +0200
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>,
-        <sergei.shtylyov@cogentembedded.com>,
-        <antoine.tenart@free-electrons.com>, <kgene.kim@samsung.com>,
-        <maxime.ripard@free-electrons.com>
-Subject: Re: [RFC PATCH 2/2] phy: core: the node pointer of PHY need not be
- the same as that of PHY provider
-References: <1404486474-28312-1-git-send-email-kishon@ti.com> <1404486474-28312-3-git-send-email-kishon@ti.com> <20140707131232.GI6407@lee--X1>
-In-Reply-To: <20140707131232.GI6407@lee--X1>
-Content-Type: text/plain; charset="UTF-8"
+To: Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>
+CC: David Ahern <dsahern@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>, linux-kernel@vger.kernel.org,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [PATCH 3/4] perf kvm: Add skip_event() for --duration option
+References: <1404397747-20939-1-git-send-email-yarygin@linux.vnet.ibm.com> <1404397747-20939-4-git-send-email-yarygin@linux.vnet.ibm.com>
+In-Reply-To: <1404397747-20939-4-git-send-email-yarygin@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070714-0342-0000-0000-0000005DAB86
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 03/07/14 16:29, Alexander Yarygin wrote:
+> Current code skips output of the x86 specific HLT event in order to
+> avoid flooding the output with enabled --duration option. The events to
+> be skipped should be architecture dependent, though.
+> 
+> Let's add an architecture specific array of events to be skipped and
+> introduce a skip_event() function checking against that array.
+> 
+> Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+> Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 
-On Monday 07 July 2014 06:42 PM, Lee Jones wrote:
-> On Fri, 04 Jul 2014, Kishon Vijay Abraham I wrote:
-> 
->> In case of multi-phy PHY providers, each PHY should be modeled as a sub
->> node of the PHY provider. Then each PHY will have a different node pointer
->> (node pointer of sub node) than that of PHY provider. Added this provision
->> in the PHY core.
->> Also fixed all drivers to use the updated API.
->>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>  Documentation/phy.txt               |   10 ++++++----
->>  drivers/phy/phy-bcm-kona-usb2.c     |    2 +-
->>  drivers/phy/phy-core.c              |   25 ++++++++++++++++++-------
->>  drivers/phy/phy-exynos-dp-video.c   |    2 +-
->>  drivers/phy/phy-exynos-mipi-video.c |    2 +-
->>  drivers/phy/phy-exynos5-usbdrd.c    |    3 ++-
->>  drivers/phy/phy-exynos5250-sata.c   |    2 +-
->>  drivers/phy/phy-mvebu-sata.c        |    2 +-
->>  drivers/phy/phy-omap-usb2.c         |    2 +-
->>  drivers/phy/phy-samsung-usb2.c      |    3 ++-
->>  drivers/phy/phy-sun4i-usb.c         |    2 +-
->>  drivers/phy/phy-ti-pipe3.c          |    2 +-
->>  drivers/phy/phy-twl4030-usb.c       |    2 +-
->>  drivers/phy/phy-xgene.c             |    2 +-
->>  include/linux/phy/phy.h             |   15 ++++++++++-----
->>  15 files changed, 48 insertions(+), 28 deletions(-)
-> 
-> I wrote a very similar patch already.  I knew I should have sent it on
-> Friday. :(
+Reviewed-by: Christian Borntraeger <borntraeger@de.ibm.com>
 
-No problem! you can send your patch along with the MiPHY series.
+Would be good if Paolo and David could ack the KVM/perf parts.
+Then this should also go into next merge window.
 
-Cheers
-Kishon
+> ---
+>  tools/perf/arch/x86/util/kvm-stat.c |    5 +++++
+>  tools/perf/builtin-kvm.c            |   13 ++++++++++++-
+>  tools/perf/util/kvm-stat.h          |    1 +
+>  3 files changed, 18 insertions(+), 1 deletion(-)
 > 
-> Patch looks good, just a real minor point.
+> diff --git a/tools/perf/arch/x86/util/kvm-stat.c b/tools/perf/arch/x86/util/kvm-stat.c
+> index 2f8d2c1..14e4e66 100644
+> --- a/tools/perf/arch/x86/util/kvm-stat.c
+> +++ b/tools/perf/arch/x86/util/kvm-stat.c
+> @@ -136,6 +136,11 @@ struct kvm_reg_events_ops kvm_reg_events_ops[] = {
+>  	{ NULL, NULL },
+>  };
 > 
->>  	phy->dev.class = phy_class;
->>  	phy->dev.parent = dev;
->> -	phy->dev.of_node = dev->of_node;
->> +	phy->dev.of_node = node?node:dev->of_node;
+> +const char * const kvm_skip_events[] = {
+> +	"HLT",
+> +	NULL,
+> +};
+> +
+>  int cpu_isa_init(struct perf_kvm_stat *kvm, const char *cpuid)
+>  {
+>  	if (strstr(cpuid, "Intel")) {
+> diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+> index 75ee8c1..fc2d63d 100644
+> --- a/tools/perf/builtin-kvm.c
+> +++ b/tools/perf/builtin-kvm.c
+> @@ -261,6 +261,17 @@ static bool update_kvm_event(struct kvm_event *event, int vcpu_id,
+>  	return true;
+>  }
 > 
-> There should be spaces either side of the '?' and ':', or you can do
-> this more succinctly by:
+> +static bool skip_event(const char *event)
+> +{
+> +	const char * const *skip_events;
+> +
+> +	for (skip_events = kvm_skip_events; *skip_events; skip_events++)
+> +		if (!strcmp(event, *skip_events))
+> +			return true;
+> +
+> +	return false;
+> +}
+> +
+>  static bool handle_end_event(struct perf_kvm_stat *kvm,
+>  			     struct vcpu_event_record *vcpu_record,
+>  			     struct event_key *key,
+> @@ -312,7 +323,7 @@ static bool handle_end_event(struct perf_kvm_stat *kvm,
+>  		char decode[DECODE_STR_LEN];
 > 
-> phy->dev.of_node = node ?: dev->of_node;
+>  		kvm->events_ops->decode_key(kvm, &event->key, decode);
+> -		if (strcmp(decode, "HLT")) {
+> +		if (!skip_event(decode)) {
+>  			pr_info("%" PRIu64 " VM %d, vcpu %d: %s event took %" PRIu64 "usec\n",
+>  				 sample->time, sample->pid, vcpu_record->vcpu_id,
+>  				 decode, time_diff/1000);
+> diff --git a/tools/perf/util/kvm-stat.h b/tools/perf/util/kvm-stat.h
+> index d0d9fb1..ba937ca 100644
+> --- a/tools/perf/util/kvm-stat.h
+> +++ b/tools/perf/util/kvm-stat.h
+> @@ -126,5 +126,6 @@ int cpu_isa_init(struct perf_kvm_stat *kvm, const char *cpuid);
 > 
-> Once fixed, feel free to add my:
+>  extern const char * const kvm_events_tp[];
+>  extern struct kvm_reg_events_ops kvm_reg_events_ops[];
+> +extern const char * const kvm_skip_events[];
 > 
-> Acked-by: Lee Jones <lee.jones@linaro.org>
+>  #endif /* __PERF_KVM_STAT_H */
 > 
+
