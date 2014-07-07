@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919AbaGHBDY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:03:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55399 "EHLO
+	id S1755524AbaGHBDX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:03:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55403 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753254AbaGGXyC (ORCPT
+	with ESMTP id S1753109AbaGGXyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:02 -0400
+	Mon, 7 Jul 2014 19:54:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Elder <elder@linaro.org>, Ilya Dryomov <ilya.dryomov@inktank.com>
-Subject: [PATCH 3.15 065/122] rbd: use reference counts for image requests
-Date: Mon,  7 Jul 2014 16:57:07 -0700
-Message-Id: <20140707235736.220868635@linuxfoundation.org>
+        Ilya Dryomov <ilya.dryomov@inktank.com>,
+        Josh Durgin <josh.durgin@inktank.com>
+Subject: [PATCH 3.15 066/122] rbd: handle parent_overlap on writes correctly
+Date: Mon,  7 Jul 2014 16:57:08 -0700
+Message-Id: <20140707235736.249418951@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -28,103 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@linaro.org>
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
 
-commit 0f2d5be792b0466b06797f637cfbb0f64dbb408c upstream.
+commit 9638556a276125553549fdfe349c464481ec2f39 upstream.
 
-Each image request contains a reference count, but to date it has
-not actually been used.  (I think this was just an oversight.) A
-recent report involving rbd failing an assertion shed light on why
-and where we need to use these reference counts.
+The following check in rbd_img_obj_request_submit()
 
-Every OSD request associated with an object request uses
-rbd_osd_req_callback() as its callback function.  That function will
-call a helper function (dependent on the type of OSD request) that
-will set the object request's "done" flag if the object request if
-appropriate.  If that "done" flag is set, the object request is
-passed to rbd_obj_request_complete().
+    rbd_dev->parent_overlap <= obj_request->img_offset
 
-In rbd_obj_request_complete(), requests are processed in sequential
-order.  So if an object request completes before one of its
-predecessors in the image request, the completion is deferred.
-Otherwise, if it's a completing object's "turn" to be completed, it
-is passed to rbd_img_obj_end_request(), which records the result of
-the operation, accumulates transferred bytes, and so on.  Next, the
-successor to this request is checked and if it is marked "done",
-(deferred) completion processing is performed on that request, and
-so on.  If the last object request in an image request is completed,
-rbd_img_request_complete() is called, which (typically) destroys
-the image request.
+allows the fall through to the non-layered write case even if both
+parent_overlap and obj_request->img_offset belong to the same RADOS
+object.  This leads to data corruption, because the area to the left of
+parent_overlap ends up unconditionally zero-filled instead of being
+populated with parent data.  Suppose we want to write 1M to offset 6M
+of image bar, which is a clone of foo@snap; object_size is 4M,
+parent_overlap is 5M:
 
-There is a race here, however.  The instant an object request is
-marked "done" it can be provided (by a thread handling completion of
-one of its predecessor operations) to rbd_img_obj_end_request(),
-which (for the last request) can then lead to the image request
-getting torn down.  And this can happen *before* that object has
-itself entered rbd_img_obj_end_request().  As a result, once it
-*does* enter that function, the image request (and even the object
-request itself) may have been freed and become invalid.
+    rbd_data.<id>.0000000000000001
+     ---------------------|----------------------|------------
+    | should be copyup'ed | should be zeroed out | write ...
+     ---------------------|----------------------|------------
+   4M                    5M                     6M
+                    parent_overlap    obj_request->img_offset
 
-All that's necessary to avoid this is to properly count references
-to the image requests.  We tear down an image request's object
-requests all at once--only when the entire image request has
-completed.  So there's no need for an image request to count
-references for its object requests.  However, we don't want an
-image request to go away until the last of its object requests
-has passed through rbd_img_obj_callback().  In other words,
-we don't want rbd_img_request_complete() to necessarily
-result in the image request being destroyed, because it may
-get called before we've finished processing on all of its
-object requests.
+4..5M should be copyup'ed from foo, yet it is zero-filled, just like
+5..6M is.
 
-So the fix is to add a reference to an image request for
-each of its object requests.  The reference can be viewed
-as representing an object request that has not yet finished
-its call to rbd_img_obj_callback().  That is emphasized by
-getting the reference right after assigning that as the image
-object's callback function.  The corresponding release of that
-reference is done at the end of rbd_img_obj_callback(), which
-every image object request passes through exactly once.
+Given that the only striping mode kernel client currently supports is
+chunking (i.e. stripe_unit == object_size, stripe_count == 1), round
+parent_overlap up to the next object boundary for the purposes of the
+overlap check.
 
-Signed-off-by: Alex Elder <elder@linaro.org>
-Reviewed-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/rbd.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/block/rbd.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
 --- a/drivers/block/rbd.c
 +++ b/drivers/block/rbd.c
-@@ -1382,6 +1382,13 @@ static void rbd_obj_request_put(struct r
- 	kref_put(&obj_request->kref, rbd_obj_request_destroy);
+@@ -1366,6 +1366,14 @@ static bool obj_request_exists_test(stru
+ 	return test_bit(OBJ_REQ_EXISTS, &obj_request->flags) != 0;
  }
  
-+static void rbd_img_request_get(struct rbd_img_request *img_request)
++static bool obj_request_overlaps_parent(struct rbd_obj_request *obj_request)
 +{
-+	dout("%s: img %p (was %d)\n", __func__, img_request,
-+	     atomic_read(&img_request->kref.refcount));
-+	kref_get(&img_request->kref);
++	struct rbd_device *rbd_dev = obj_request->img_request->rbd_dev;
++
++	return obj_request->img_offset <
++	    round_up(rbd_dev->parent_overlap, rbd_obj_bytes(&rbd_dev->header));
 +}
 +
- static bool img_request_child_test(struct rbd_img_request *img_request);
- static void rbd_parent_request_destroy(struct kref *kref);
- static void rbd_img_request_destroy(struct kref *kref);
-@@ -2142,6 +2149,7 @@ static void rbd_img_obj_callback(struct
- 	img_request->next_completion = which;
- out:
- 	spin_unlock_irq(&img_request->completion_lock);
-+	rbd_img_request_put(img_request);
+ static void rbd_obj_request_get(struct rbd_obj_request *obj_request)
+ {
+ 	dout("%s: obj %p (was %d)\n", __func__, obj_request,
+@@ -2683,7 +2691,7 @@ static int rbd_img_obj_request_submit(st
+ 	 */
+ 	if (!img_request_write_test(img_request) ||
+ 		!img_request_layered_test(img_request) ||
+-		rbd_dev->parent_overlap <= obj_request->img_offset ||
++		!obj_request_overlaps_parent(obj_request) ||
+ 		((known = obj_request_known_test(obj_request)) &&
+ 			obj_request_exists_test(obj_request))) {
  
- 	if (!more)
- 		rbd_img_request_complete(img_request);
-@@ -2242,6 +2250,7 @@ static int rbd_img_request_fill(struct r
- 			goto out_unwind;
- 		obj_request->osd_req = osd_req;
- 		obj_request->callback = rbd_img_obj_callback;
-+		rbd_img_request_get(img_request);
- 
- 		if (write_request) {
- 			osd_req_op_alloc_hint_init(osd_req, which,
 
 
