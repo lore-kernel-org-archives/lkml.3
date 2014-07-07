@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915AbaGGOaw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:30:52 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:37202 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691AbaGGOac (ORCPT
+	id S1753927AbaGGObZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:31:25 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57303 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753845AbaGGOa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:30:32 -0400
-Date: Mon, 7 Jul 2014 23:29:57 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: dsterba@suse.cz, Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] btrfs compression: merge inflate and deflate z_streams
-Message-ID: <20140707142957.GB955@swordfish>
-References: <1404142330-1621-1-git-send-email-sergey.senozhatsky@gmail.com>
- <20140701144415.GJ1553@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140701144415.GJ1553@suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 7 Jul 2014 10:30:29 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        dwmw2@infradead.org, dbaryshkov@gmail.com
+Cc: Boris Brezillon <boris@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v2 07/18] AT91: DT: Remove the old-style reset probing
+Date: Mon,  7 Jul 2014 16:25:20 +0200
+Message-Id: <1404743131-24569-8-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1404743131-24569-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1404743131-24569-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (07/01/14 16:44), David Sterba wrote:
-> On Tue, Jul 01, 2014 at 12:32:10AM +0900, Sergey Senozhatsky wrote:
-> > `struct workspace' used for zlib compression contains two zlib
-> > z_stream-s: `def_strm' used in zlib_compress_pages(), and `inf_strm'
-> > used in zlib_decompress/zlib_decompress_biovec(). None of these
-> > functions use `inf_strm' and `def_strm' simultaniously, meaning that
-> > for every compress/decompress operation we need only one z_stream
-> > (out of two available).
-> > 
-> > `inf_strm' and `def_strm' are different in size of ->workspace. For
-> > inflate stream we vmalloc() zlib_inflate_workspacesize() bytes, for
-> > deflate stream - zlib_deflate_workspacesize() bytes. On my system zlib
-> > returns the following workspace sizes, correspondingly: 42312 and 268104
-> > (+ guard pages).
-> > 
-> > Keep only one `z_stream' in `struct workspace' and use it for both
-> > compression and decompression. Hence, instead of vmalloc() of two
-> > z_stream->worskpace-s, allocate only one of size:
-> > 	max(zlib_deflate_workspacesize(), zlib_inflate_workspacesize())
-> > 
-> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> 
-> Reviewed-by: David Sterba <dsterba@suse.cz>
-> 
+Now that the reset code is a driver of its own, just let the usual DT probing
+mecanism do its job, and remove the code entirely in this case.
 
-Hello,
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/mach-at91/setup.c | 29 -----------------------------
+ 1 file changed, 29 deletions(-)
 
-the patch does not apply against linux-next rc4-20140707 due to 130d5b415a091e.
-unhappy hunk is:
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index cc520596f23b..71003e40f01c 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -354,34 +354,6 @@ void __init at91_ioremap_matrix(u32 base_addr)
+ }
+ 
+ #if defined(CONFIG_OF) && !defined(CONFIG_ARCH_AT91X40)
+-static struct of_device_id rstc_ids[] = {
+-	{ .compatible = "atmel,at91sam9260-rstc", .data = at91sam9_alt_restart },
+-	{ .compatible = "atmel,at91sam9g45-rstc", .data = at91sam9g45_restart },
+-	{ /*sentinel*/ }
+-};
+-
+-static void at91_dt_rstc(void)
+-{
+-	struct device_node *np;
+-	const struct of_device_id *of_id;
+-
+-	np = of_find_matching_node(NULL, rstc_ids);
+-	if (!np)
+-		panic(pr_fmt("unable to find compatible rstc node in dtb\n"));
+-
+-	at91_rstc_base = of_iomap(np, 0);
+-	if (!at91_rstc_base)
+-		panic(pr_fmt("unable to map rstc cpu registers\n"));
+-
+-	of_id = of_match_node(rstc_ids, np);
+-	if (!of_id)
+-		panic(pr_fmt("rtsc no restart function available\n"));
+-
+-	arm_pm_restart = of_id->data;
+-
+-	of_node_put(np);
+-}
+-
+ static struct of_device_id ramc_ids[] = {
+ 	{ .compatible = "atmel,at91rm9200-sdramc", .data = at91rm9200_standby },
+ 	{ .compatible = "atmel,at91sam9260-sdramc", .data = at91sam9_sdram_standby },
+@@ -507,7 +479,6 @@ void __init at91rm9200_dt_initialize(void)
+ 
+ void __init at91_dt_initialize(void)
+ {
+-	at91_dt_rstc();
+ 	at91_dt_ramc();
+ 	at91_dt_shdwc();
+ 
+-- 
+2.0.1
 
-+		if (workspace->strm.total_in > 8192 &&
-+		    workspace->strm.total_in <
-+		    workspace->strm.total_out) {
- 			ret = -EIO;
-
-now it should be:
-+		if (workspace->strm.total_in > 8192 &&
-+		    workspace->strm.total_in <
-+		    workspace->strm.total_out) {
- 			ret = -E2BIG;
-
-
-I'll rebase and resend.
-
-	-ss
