@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195AbaGGR17 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 13:27:59 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:61782 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814AbaGGR14 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 13:27:56 -0400
+	id S1751430AbaGGRbW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 13:31:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12950 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750707AbaGGRbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 13:31:20 -0400
+From: Bandan Das <bsd@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@kernel.org>,
+        Hu Robert <robert.hu@intel.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since race
+References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com>
+	<53B3CA6A.4050902@siemens.com> <jpgy4wb9g5t.fsf@redhat.com>
+	<20140704061701.GB3453@kernel> <jpg1ttyhtqw.fsf@redhat.com>
+	<20140707084605.GA2904@kernel> <53BA9A91.7090202@redhat.com>
+Date: Mon, 07 Jul 2014 13:31:09 -0400
+In-Reply-To: <53BA9A91.7090202@redhat.com> (Paolo Bonzini's message of "Mon,
+	07 Jul 2014 15:03:13 +0200")
+Message-ID: <jpg38edt6si.fsf@nelium.bos.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20140702053758.GA7578@kroah.com>
-References: <20140701103432.12718.82795.stgit@patser> <20140702053758.GA7578@kroah.com>
-From: Sumit Semwal <sumit.semwal@linaro.org>
-Date: Mon, 7 Jul 2014 22:57:35 +0530
-Message-ID: <CAO_48GGkhB3wQwcW=DpDR4zO7k8-2tm_aynsDxZ5Q72ffwtx=A@mail.gmail.com>
-Subject: Re: [PATCH v2 0/9] Updated fence patch series
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Linaro MM SIG <linaro-mm-sig@lists.linaro.org>,
-        Rob Clark <robdclark@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Colin Cross <ccross@google.com>, Daniel Vetter <daniel@ffwll.ch>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Paolo Bonzini <pbonzini@redhat.com> writes:
 
-On 2 July 2014 11:07, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Tue, Jul 01, 2014 at 12:57:02PM +0200, Maarten Lankhorst wrote:
->> So after some more hacking I've moved dma-buf to its own subdirectory,
->> drivers/dma-buf and applied the fence patches to its new place. I believe that the
->> first patch should be applied regardless, and the rest should be ready now.
->> :-)
+> Il 07/07/2014 10:46, Wanpeng Li ha scritto:
+>> Hi Paolo,
 >>
->> Changes to the fence api:
->> - release_fence -> fence_release etc.
->> - __fence_init -> fence_init
->> - __fence_signal -> fence_signal_locked
->> - __fence_is_signaled -> fence_is_signaled_locked
->> - Changing BUG_ON to WARN_ON in fence_later, and return NULL if it triggers.
->>
->> Android can expose fences to userspace. It's possible to make the new fence
->> mechanism expose the same fences to userspace by changing sync_fence_create
->> to take a struct fence instead of a struct sync_pt. No other change is needed,
->> because only the fence parts of struct sync_pt are used. But because the
->> userspace fences are a separate problem and I haven't really looked at it yet
->> I feel it should stay in staging, for now.
+>> Is it ok for you to apply this patch and then more effort should be taken
+>> to figure out the other bug which don't have any relationship with the race
+>> that this patch fixed?
 >
-> Ok, that's reasonable.
->
-> At first glance, this all looks "sane" to me, any objection from anyone
-> if I merge this through my driver-core tree for 3.17?
->
-Fwiw, Ack from me as well!
-> thanks,
->
-> greg k-h
-Best regards,
-~Sumit.
+> Which patch?  Yours or Bandan's?
+Why don't we hold off on Wanpeng's patch and instead apply the one I proposed
+to call check_nested_events() when checking for interrupt in inject_pending_event() ?
+
+I think that will take care of https://bugzilla.kernel.org/show_bug.cgi?id=72381 
+too. Once, we figure out what's causing hangs under certain conditions with his 
+patch, we can apply that and revert this change.
+
+
+> Paolo
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
