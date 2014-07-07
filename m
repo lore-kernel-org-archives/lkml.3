@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388AbaGHA0M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:26:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55989 "EHLO
+	id S1754167AbaGGXyy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 19:54:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55927 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754172AbaGGXy4 (ORCPT
+	with ESMTP id S1754091AbaGGXyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:56 -0400
+	Mon, 7 Jul 2014 19:54:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 89/94] ALSA: usb-audio: Prevent printk ratelimiting from spamming kernel log while DEBUG not defined
-Date: Mon,  7 Jul 2014 16:58:19 -0700
-Message-Id: <20140707235759.390587241@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.14 75/94] irqchip: spear_shirq: Fix interrupt offset
+Date: Mon,  7 Jul 2014 16:58:05 -0700
+Message-Id: <20140707235758.992140089@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,49 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sander Eikelenboom <linux@eikelenboom.it>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit b7a7723513dc89f83d6df13206df55d4dc26e825 upstream.
+commit 4f4366033945419b0c52118c29d3057d7c558765 upstream.
 
-This (widely used) construction:
+The ras3 block on spear320 claims to have 3 interrupts. In fact it has
+one and 6 reserved interrupts. Account the 6 reserved to this block so
+it has 7 interrupts total. That matches the datasheet and the device
+tree entries.
 
-if(printk_ratelimit())
-	dev_dbg()
+Broken since commit 80515a5a(ARM: SPEAr3xx: shirq: simplify and move
+the shared irq multiplexor to DT). Testing is overrated....
 
-Causes the ratelimiting to spam the kernel log with the "callbacks suppressed"
-message below, even while the dev_dbg it is supposed to rate limit wouldn't
-print anything because DEBUG is not defined for this device.
-
-[  533.803964] retire_playback_urb: 852 callbacks suppressed
-[  538.807930] retire_playback_urb: 852 callbacks suppressed
-[  543.811897] retire_playback_urb: 852 callbacks suppressed
-[  548.815745] retire_playback_urb: 852 callbacks suppressed
-[  553.819826] retire_playback_urb: 852 callbacks suppressed
-
-So use dev_dbg_ratelimited() instead of this construction.
-
-Signed-off-by: Sander Eikelenboom <linux@eikelenboom.it>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Link: https://lkml.kernel.org/r/20140619212712.872379208@linutronix.de
+Fixes: 80515a5a2e3c ('ARM: SPEAr3xx: shirq: simplify and move the shared irq multiplexor to DT')
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/pcm.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/irqchip/spear-shirq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/usb/pcm.c
-+++ b/sound/usb/pcm.c
-@@ -1487,9 +1487,9 @@ static void retire_playback_urb(struct s
- 	 * The error should be lower than 2ms since the estimate relies
- 	 * on two reads of a counter updated every ms.
- 	 */
--	if (printk_ratelimit() &&
--	    abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
--		snd_printk(KERN_DEBUG "delay: estimated %d, actual %d\n",
-+	if (abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
-+		dev_dbg_ratelimited(&subs->dev->dev,
-+			"delay: estimated %d, actual %d\n",
- 			est_delay, subs->last_delay);
+--- a/drivers/irqchip/spear-shirq.c
++++ b/drivers/irqchip/spear-shirq.c
+@@ -125,7 +125,7 @@ static struct spear_shirq spear320_shirq
+ };
  
- 	if (!subs->running) {
+ static struct spear_shirq spear320_shirq_ras3 = {
+-	.irq_nr = 3,
++	.irq_nr = 7,
+ 	.irq_bit_off = 0,
+ 	.invalid_irq = 1,
+ 	.regs = {
 
 
