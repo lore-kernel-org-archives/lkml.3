@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008AbaGGTm2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 15:42:28 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35061 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbaGGTm1 (ORCPT
+	id S1752077AbaGGTnC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 15:43:02 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:39093 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaGGTm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 15:42:27 -0400
-Date: Mon, 7 Jul 2014 12:42:23 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Manuel Reimer <Manuel.Spam@nurfuerspam.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 3.15.4 runs *significantly* slower than 3.15.3 on iMX233 CPU
-Message-ID: <20140707194223.GA29819@roeck-us.net>
-References: <lpeofi$1fl$1@ger.gmane.org>
- <20140707191430.GA23004@roeck-us.net>
- <lpeseg$lip$1@ger.gmane.org>
+	Mon, 7 Jul 2014 15:42:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <lpeseg$lip$1@ger.gmane.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1404227754-452-1-git-send-email-k.debski@samsung.com>
+References: <1404227754-452-1-git-send-email-k.debski@samsung.com>
+Date: Mon, 7 Jul 2014 20:42:58 +0100
+Message-ID: <CAD8Lp46Q5my3VMwgArtmWdtowJmXixjndO-+Kcjt1Xj3USKgqA@mail.gmail.com>
+Subject: Re: [PATCH v2] phy: phy-samsung-usb2: Change phy power on/power off sequence
+From: Daniel Drake <drake@endlessm.com>
+To: Kamil Debski <k.debski@samsung.com>
+Cc: linux-kernel@vger.kernel.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-usb@vger.kernel.org, kishon@ti.com,
+        Tomasz Figa <t.figa@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 09:29:21PM +0200, Manuel Reimer wrote:
-> On 07/07/2014 09:14 PM, Guenter Roeck wrote:
-> >Are you sure this did not just happen when you booted the new kernel
-> >for the first time ? I have seen similar behavior with some distributions.
-> 
-> I did some more tries and found out that I had disabled some of my
-> patches until I reached 3.15.4 (latest version) where I decided to
-> do needed modifications to get my patches back in.
-> 
-> I tracked the problem down to the following patch:
-> 
-> 
-> diff --git a/arch/arm/boot/dts/imx23-olinuxino.dts
-> b/arch/arm/boot/dts/imx23-olinuxino.dts
-> index d107c4a..993da2e 100644
-> --- a/arch/arm/boot/dts/imx23-olinuxino.dts
-> +++ b/arch/arm/boot/dts/imx23-olinuxino.dts
-> @@ -64,7 +64,14 @@
->  				compatible = "fsl,imx23-spi";
->  				pinctrl-names = "default";
->  				pinctrl-0 = <&spi2_pins_a>;
-> +				clock-frequency = <1000000>;
+On Tue, Jul 1, 2014 at 4:15 PM, Kamil Debski <k.debski@samsung.com> wrote:
+> The Exynos4412 USB 2.0 PHY hardware differs from the description provided
+> in the documentation. Some register bits have different function. This
+> patch fixes the defines of register bits and changes the way how phys are
+> powered on and off.
+>
+> Signed-off-by: Kamil Debski <k.debski@samsung.com>
 
-If I understand the code correctly, that means you reduce the access speed
-for SPI flashes from 160 MHz down to 1 MHz.
+Tested on ODROID-U2 with the internal LAN (which is a USB device), and
+an external USB mouse connected via the internal USB hub.
 
-If so, and if your system loads anything from a SPI flash, I would not be too
-surprised that your system is now a bit on the slow side.
-
-Guenter
+Tested-by: Daniel Drake <drake@endlessm.com>
