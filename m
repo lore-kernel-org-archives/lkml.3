@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063AbaGGXyr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:54:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55776 "EHLO
+	id S1755142AbaGHAck (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:32:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753880AbaGGXyg (ORCPT
+	with ESMTP id S1754040AbaGGXyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:36 -0400
+	Mon, 7 Jul 2014 19:54:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.14 36/94] drm/gk208/gr: add missing registers to grctx init
-Date: Mon,  7 Jul 2014 16:57:26 -0700
-Message-Id: <20140707235757.848576500@linuxfoundation.org>
+        Valentine Sinitsyn <valentine.sinitsyn@gmail.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.14 67/94] KVM: x86: preserve the high 32-bits of the PAT register
+Date: Mon,  7 Jul 2014 16:57:57 -0700
+Message-Id: <20140707235758.764379189@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -28,35 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilia Mirkin <imirkin@alum.mit.edu>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit 255b329ca7f0e9b5fa6da3a68bb713684fe10305 upstream.
+commit 7cb060a91c0efc5ff94f83c6df3ed705e143cdb9 upstream.
 
-This fixes hangs on GK208 which happen instantaneously on trying to use a
-geometry shader.
+KVM does not really do much with the PAT, so this went unnoticed for a
+long time.  It is exposed however if you try to do rdmsr on the PAT
+register.
 
-Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Reported-by: Valentine Sinitsyn <valentine.sinitsyn@gmail.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/engine/graph/ctxnv108.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/include/asm/kvm_host.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/nouveau/core/engine/graph/ctxnv108.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/graph/ctxnv108.c
-@@ -1318,10 +1318,12 @@ nv108_grctx_generate_mods(struct nvc0_gr
- 	mmio_list(0x408010, 0x80000000,  0, 0);
- 	mmio_list(0x419004, 0x00000000,  8, 1);
- 	mmio_list(0x419008, 0x00000000,  0, 0);
-+	mmio_list(0x4064cc, 0x80000000,  0, 0);
- 	mmio_list(0x408004, 0x00000000,  8, 0);
- 	mmio_list(0x408008, 0x80000030,  0, 0);
- 	mmio_list(0x418808, 0x00000000,  8, 0);
- 	mmio_list(0x41880c, 0x80000030,  0, 0);
-+	mmio_list(0x4064c8, 0x00c20200,  0, 0);
- 	mmio_list(0x418810, 0x80000000, 12, 2);
- 	mmio_list(0x419848, 0x10000000, 12, 2);
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -462,7 +462,7 @@ struct kvm_vcpu_arch {
+ 	bool nmi_injected;    /* Trying to inject an NMI this entry */
  
+ 	struct mtrr_state_type mtrr_state;
+-	u32 pat;
++	u64 pat;
+ 
+ 	int switch_db_regs;
+ 	unsigned long db[KVM_NR_DB_REGS];
 
 
