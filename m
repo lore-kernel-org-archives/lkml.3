@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256AbaGGNS2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 09:18:28 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:49382 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703AbaGGNS1 (ORCPT
+	id S1753323AbaGGNVn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 09:21:43 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35838 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953AbaGGNVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 09:18:27 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ASoC: max98090: Fix build warning
-Date: Mon,  7 Jul 2014 15:18:19 +0200
-Message-Id: <1404739099-20717-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.0.1
+	Mon, 7 Jul 2014 09:21:41 -0400
+Date: Mon, 7 Jul 2014 14:20:56 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, mika.westerberg@linux.intel.com
+Subject: Re: [RFC PATCH 3/4] tty: serial: 8250 core: add runtime pm
+Message-ID: <20140707142056.46f61cf9@alan.etchedpixels.co.uk>
+In-Reply-To: <1404491651-1388-3-git-send-email-bigeasy@linutronix.de>
+References: <1404491651-1388-1-git-send-email-bigeasy@linutronix.de>
+	<1404491651-1388-3-git-send-email-bigeasy@linutronix.de>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+On Fri,  4 Jul 2014 18:34:10 +0200
+Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
 
-The max98090_{suspend,resume}() functions are used for system sleep and
-therefore need to be guarded by CONFIG_PM_SLEEP rather than CONFIG_PM.
+> While comparing the OMAP-serial and the 8250 part of this I noticed that
+> the the latter does not use runtime-pm.
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- sound/soc/codecs/max98090.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Yes it does, but 8250 parts (generally - omap presumably is special
+here ?) need to be powered on to transmit/receive not just for register
+access. The core uart layer implements a "pm" operation for this.
 
-diff --git a/sound/soc/codecs/max98090.c b/sound/soc/codecs/max98090.c
-index ca74f502a4cb..e806065d68cc 100644
---- a/sound/soc/codecs/max98090.c
-+++ b/sound/soc/codecs/max98090.c
-@@ -2415,7 +2415,7 @@ static int max98090_runtime_suspend(struct device *dev)
- }
- #endif
- 
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- static int max98090_resume(struct device *dev)
- {
- 	struct max98090_priv *max98090 = dev_get_drvdata(dev);
--- 
-2.0.1
+As 8250_dw uses runtime pm to implement the pm operation it's not as
+simple as assumign it won't get triggered.
+
+I *think* this is ok because the designware and other cases would take a
+reference on open and drop it on close, so avoiding any confusion, but
+for the register accesses on a closed port it would benefit from a
+further double check with Mika especially as the suspend/resume on the
+LPSS block on some Intel devices is a little bit too "interesting" for
+comfort.
+
+Otherwise however I think this is good.
+
+Alan
+
 
