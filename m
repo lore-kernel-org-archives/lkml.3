@@ -1,149 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045AbaGGQy4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 12:54:56 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:53532 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751849AbaGGQyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 12:54:53 -0400
-Message-ID: <53BAD09C.8010505@ti.com>
-Date: Mon, 7 Jul 2014 12:53:48 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Mohit KUMAR DCG <Mohit.KUMAR@st.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Jingoo Han <jg1.han@samsung.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Pratyush ANAND <pratyush.anand@st.com>,
-        Richard Zhu <r65037@freescale.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: Re: [PATCH v3 1/5] PCI: designware: add rd[wr]_other_conf API
-References: <1404164720-11066-1-git-send-email-m-karicheri2@ti.com> <1404164720-11066-2-git-send-email-m-karicheri2@ti.com> <2CC2A0A4A178534D93D5159BF3BCB661A17A3E4282@EAPEX1MAIL1.st.com>
-In-Reply-To: <2CC2A0A4A178534D93D5159BF3BCB661A17A3E4282@EAPEX1MAIL1.st.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+	id S1752240AbaGGQ5X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 12:57:23 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:58738 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424AbaGGQ5V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 12:57:21 -0400
+Message-ID: <1404752219.4501.18.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] appletalk: Set skb with destructor
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        acme@ghostprotocols.net, netdev@vger.kernel.org, davem@davemloft.net
+Date: Mon, 07 Jul 2014 18:56:59 +0200
+In-Reply-To: <CANZNk81UtoCOANXnmUPLx3uCP37BH=Wb54YjD3UQ1BwNc1P2Vw@mail.gmail.com>
+References: <20140705202821.GA25880@mwanda>
+	 <1404647816-7564-1-git-send-email-andrey.krieger.utkin@gmail.com>
+	 <1404682932.4501.6.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <CANZNk81v7YHKpzjZ65KHdUi1BgBiV_ibZO24b8uauuCVZeUv2A@mail.gmail.com>
+	 <1404723456.4501.14.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <1404725217.4501.15.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <CANZNk81UtoCOANXnmUPLx3uCP37BH=Wb54YjD3UQ1BwNc1P2Vw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2014 12:11 AM, Mohit KUMAR DCG wrote:
-> Hello Murali,
->
->> -----Original Message-----
->> From: Murali Karicheri [mailto:m-karicheri2@ti.com]
->> Sent: Tuesday, July 01, 2014 3:15 AM
->> To: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org;
->> devicetree@vger.kernel.org
->> Cc: Murali Karicheri; Santosh Shilimkar; Russell King; Grant Likely; Rob Herring;
->> Mohit KUMAR DCG; Jingoo Han; Bjorn Helgaas; Pratyush ANAND; Richard
->> Zhu; Kishon Vijay Abraham I; Marek Vasut; Arnd Bergmann; Pawel Moll;
->> Mark Rutland; Ian Campbell; Kumar Gala; Randy Dunlap
->> Subject: [PATCH v3 1/5] PCI: designware: add rd[wr]_other_conf API
->>
->> v3.65 version of the designware h/w, requires application space registers to
->> be configured to access the remote EP config space.
->> To support this, add rd[wr]_other_conf API in the pcie_host_opts
->>
->> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
->>
->> CC: Santosh Shilimkar<santosh.shilimkar@ti.com>
->> CC: Russell King<linux@arm.linux.org.uk>
->> CC: Grant Likely<grant.likely@linaro.org>
->> CC: Rob Herring<robh+dt@kernel.org>
->> CC: Mohit Kumar<mohit.kumar@st.com>
->> CC: Jingoo Han<jg1.han@samsung.com>
->> CC: Bjorn Helgaas<bhelgaas@google.com>
->> CC: Pratyush Anand<pratyush.anand@st.com>
->> CC: Richard Zhu<r65037@freescale.com>
->> CC: Kishon Vijay Abraham I<kishon@ti.com>
->> CC: Marek Vasut<marex@denx.de>
->> CC: Arnd Bergmann<arnd@arndb.de>
->> CC: Pawel Moll<pawel.moll@arm.com>
->> CC: Mark Rutland<mark.rutland@arm.com>
->> CC: Ian Campbell<ijc+devicetree@hellion.org.uk>
->> CC: Kumar Gala<galak@codeaurora.org>
->> CC: Randy Dunlap<rdunlap@infradead.org>
->> CC: Grant Likely<grant.likely@linaro.org>
->> ---
->>   drivers/pci/host/pcie-designware.c |   12 ++++++++++--
->>   drivers/pci/host/pcie-designware.h |    4 ++++
->>   2 files changed, 14 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-
->> designware.c
->> index 1eaf4df..d8f3af7 100644
->> --- a/drivers/pci/host/pcie-designware.c
->> +++ b/drivers/pci/host/pcie-designware.c
->> @@ -656,7 +656,11 @@ static int dw_pcie_rd_conf(struct pci_bus *bus, u32
->> devfn, int where,
->>   	}
->>
->>   	if (bus->number != pp->root_bus_nr)
->> -		ret = dw_pcie_rd_other_conf(pp, bus, devfn,
->> +		if (pp->ops->rd_other_conf)
->> +			ret = pp->ops->rd_other_conf(pp, bus, devfn,
->> +						where, size, val);
->> +		else
->> +			ret = dw_pcie_rd_other_conf(pp, bus, devfn,
->>   						where, size, val);
->>   	else
->>   		ret = dw_pcie_rd_own_conf(pp, where, size, val); @@ -
->> 679,7 +683,11 @@ static int dw_pcie_wr_conf(struct pci_bus *bus, u32
->> devfn,
->>   		return PCIBIOS_DEVICE_NOT_FOUND;
->>
->>   	if (bus->number != pp->root_bus_nr)
->> -		ret = dw_pcie_wr_other_conf(pp, bus, devfn,
->> +		if (pp->ops->wr_other_conf)
->> +			ret = pp->ops->wr_other_conf(pp, bus, devfn,
->> +						where, size, val);
->> +		else
->> +			ret = dw_pcie_wr_other_conf(pp, bus, devfn,
->>   						where, size, val);
->>   	else
->>   		ret = dw_pcie_wr_own_conf(pp, where, size, val); diff --git
->> a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
->> index 77f592f..8121901 100644
->> --- a/drivers/pci/host/pcie-designware.h
->> +++ b/drivers/pci/host/pcie-designware.h
->> @@ -61,6 +61,10 @@ struct pcie_host_ops {
->>   			u32 val, void __iomem *dbi_base);
->>   	int (*rd_own_conf)(struct pcie_port *pp, int where, int size, u32
->> *val);
->>   	int (*wr_own_conf)(struct pcie_port *pp, int where, int size, u32
->> val);
->> +	int (*rd_other_conf)(struct pcie_port *pp, struct pci_bus *bus,
->> +			unsigned int devfn, int where, int size, u32 *val);
->> +	int (*wr_other_conf)(struct pcie_port *pp, struct pci_bus *bus,
->> +			unsigned int devfn, int where, int size, u32 val);
->>   	int (*link_up)(struct pcie_port *pp);
->>   	void (*host_init)(struct pcie_port *pp);  };
->
-> - Now it looks good to me.
->
-> Acked-by: Mohit Kumar<mohit.kumar@st.com>
->
-> Regards
-> Mohit
->> --
->> 1.7.9.5
->
-Mohit,
+On Mon, 2014-07-07 at 13:02 +0300, Andrey Utkin wrote:
+> 2014-07-07 12:26 GMT+03:00 Eric Dumazet <eric.dumazet@gmail.com>:
+> > Reading again this code, I think all you need is to remove the 2 buggy
+> > lines.
+> >
+> > No need for setup destructors.
+> 
+> Reviewing the code again, i find you're right and adding a destructor
+> in that place is stupid, and just not setting skb->sk would make bug
+> disappear, assuming skb->sk is previously NULL.
+> And what about the second case, at ddp.c near line 1650? Is destructor
+> needed here?
 
-Thanks.
+Not needed at all.
 
-Jingoo, could you provide your response or Ack?
+There is already a proper destructor set by sock_alloc_send_skb()
 
-Thanks
-Murali
+As I said, all you need is to remove the 2 lines.
+
+Something like :
+
+diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
+index 01a1082e02b3..5563dcb7a1fc 100644
+--- a/net/appletalk/ddp.c
++++ b/net/appletalk/ddp.c
+@@ -1489,7 +1489,6 @@ static int atalk_rcv(struct sk_buff *skb, struct net_device *dev,
+ 		goto drop;
+ 
+ 	/* Queue packet (standard) */
+-	skb->sk = sock;
+ 
+ 	if (sock_queue_rcv_skb(sock, skb) < 0)
+ 		goto drop;
+@@ -1644,7 +1643,6 @@ static int atalk_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
+ 	if (!skb)
+ 		goto out;
+ 
+-	skb->sk = sk;
+ 	skb_reserve(skb, ddp_dl->header_length);
+ 	skb_reserve(skb, dev->hard_header_len);
+ 	skb->dev = dev;
+
+
