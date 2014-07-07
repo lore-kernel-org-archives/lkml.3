@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704AbaGGSmA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 14:42:00 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:46600 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752051AbaGGSl6 (ORCPT
+	id S1750924AbaGGSmK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 14:42:10 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:38109 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321AbaGGSmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 14:41:58 -0400
+	Mon, 7 Jul 2014 14:42:06 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 07/13] staging: rtl8188eu: Remove unused function HalDetectPwrDownMode88E()
-Date: Tue,  8 Jul 2014 00:10:07 +0530
-Message-Id: <1404758413-12859-7-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 08/13] staging: rtl8188eu: rtw_efuse.c: Remove unused functions
+Date: Tue,  8 Jul 2014 00:10:08 +0530
+Message-Id: <1404758413-12859-8-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1404758413-12859-1-git-send-email-navin.patidar@gmail.com>
 References: <1404758413-12859-1-git-send-email-navin.patidar@gmail.com>
@@ -23,53 +23,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c |   19 -------------------
- drivers/staging/rtl8188eu/include/rtl8188e_hal.h  |    2 --
- 2 files changed, 21 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_efuse.c    |   60 -------------------------
+ drivers/staging/rtl8188eu/include/rtw_efuse.h |    2 -
+ 2 files changed, 62 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c b/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
-index 1abf974..161138f 100644
---- a/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
-+++ b/drivers/staging/rtl8188eu/hal/rtl8188e_hal_init.c
-@@ -1079,25 +1079,6 @@ void Hal_ReadThermalMeter_88E(struct adapter *Adapter, u8 *PROMContent, bool Aut
- 	DBG_88E("ThermalMeter = 0x%x\n", pHalData->EEPROMThermalMeter);
+diff --git a/drivers/staging/rtl8188eu/core/rtw_efuse.c b/drivers/staging/rtl8188eu/core/rtw_efuse.c
+index df8d934..5b997b2 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_efuse.c
++++ b/drivers/staging/rtl8188eu/core/rtw_efuse.c
+@@ -983,53 +983,6 @@ void efuse_WordEnableDataRead(u8 word_en, u8 *sourdata, u8 *targetdata)
  }
  
--bool HalDetectPwrDownMode88E(struct adapter *Adapter)
+ /*
+- * Function:   efuse_ShadowRead1Byte
+- *             efuse_ShadowRead2Byte
+- *             efuse_ShadowRead4Byte
+- *
+- * Overview:   Read from efuse init map by one/two/four bytes !!!!!
+- */
+-static void
+-efuse_ShadowRead1Byte(
+-		struct adapter *pAdapter,
+-		u16 Offset,
+-		u8 *Value)
 -{
--	u8 tmpvalue = 0;
--	struct hal_data_8188e *pHalData = GET_HAL_DATA(Adapter);
--	struct pwrctrl_priv *pwrctrlpriv = &Adapter->pwrctrlpriv;
+-	struct eeprom_priv *pEEPROM = GET_EEPROM_EFUSE_PRIV(pAdapter);
 -
--	EFUSE_ShadowRead(Adapter, 1, EEPROM_RF_FEATURE_OPTION_88E, (u32 *)&tmpvalue);
+-	*Value = pEEPROM->efuse_eeprom_data[Offset];
 -
--	/*  2010/08/25 MH INF priority > PDN Efuse value. */
--	if (tmpvalue & BIT(4) && pwrctrlpriv->reg_pdnmode)
--		pHalData->pwrdown = true;
--	else
--		pHalData->pwrdown = false;
+-}
 -
--	DBG_88E("HalDetectPwrDownMode(): PDN =%d\n", pHalData->pwrdown);
+-static void
+-efuse_ShadowRead2Byte(
+-		struct adapter *pAdapter,
+-		u16 Offset,
+-		u16 *Value)
+-{
+-	struct eeprom_priv *pEEPROM = GET_EEPROM_EFUSE_PRIV(pAdapter);
 -
--	return pHalData->pwrdown;
--}	/*  HalDetectPwrDownMode */
+-	*Value = pEEPROM->efuse_eeprom_data[Offset];
+-	*Value |= pEEPROM->efuse_eeprom_data[Offset+1]<<8;
 -
- /*  This function is used only for 92C to set REG_BCN_CTRL(0x550) register. */
- /*  We just reserve the value of the register in variable pHalData->RegBcnCtrlVal and then operate */
- /*  the value of the register via atomic operation. */
-diff --git a/drivers/staging/rtl8188eu/include/rtl8188e_hal.h b/drivers/staging/rtl8188eu/include/rtl8188e_hal.h
-index a0a3ca7..4b7b069 100644
---- a/drivers/staging/rtl8188eu/include/rtl8188e_hal.h
-+++ b/drivers/staging/rtl8188eu/include/rtl8188e_hal.h
-@@ -451,8 +451,6 @@ void Hal_EfuseParseBoardType88E(struct adapter *pAdapter, u8 *hwinfo,
- void Hal_ReadPowerSavingMode88E(struct adapter *pAdapter, u8 *hwinfo,
- 				bool AutoLoadFail);
+-}
+-
+-static void
+-efuse_ShadowRead4Byte(
+-		struct adapter *pAdapter,
+-		u16 Offset,
+-		u32 *Value)
+-{
+-	struct eeprom_priv *pEEPROM = GET_EEPROM_EFUSE_PRIV(pAdapter);
+-
+-	*Value = pEEPROM->efuse_eeprom_data[Offset];
+-	*Value |= pEEPROM->efuse_eeprom_data[Offset+1]<<8;
+-	*Value |= pEEPROM->efuse_eeprom_data[Offset+2]<<16;
+-	*Value |= pEEPROM->efuse_eeprom_data[Offset+3]<<24;
+-
+-}
+-
+-/*
+  * Overview:	Read All Efuse content
+  */
+ static void Efuse_ReadAllMap(struct adapter *pAdapter, u8 efuseType, u8 *Efuse)
+@@ -1062,16 +1015,3 @@ void EFUSE_ShadowMapUpdate(
+ 	else
+ 		Efuse_ReadAllMap(pAdapter, efuseType, pEEPROM->efuse_eeprom_data);
+ }
+-
+-/*
+- * Overview:	Read from efuse init map !!!!!
+- */
+-void EFUSE_ShadowRead(struct adapter *pAdapter, u8 Type, u16 Offset, u32 *Value)
+-{
+-	if (Type == 1)
+-		efuse_ShadowRead1Byte(pAdapter, Offset, (u8 *)Value);
+-	else if (Type == 2)
+-		efuse_ShadowRead2Byte(pAdapter, Offset, (u16 *)Value);
+-	else if (Type == 4)
+-		efuse_ShadowRead4Byte(pAdapter, Offset, (u32 *)Value);
+-}
+diff --git a/drivers/staging/rtl8188eu/include/rtw_efuse.h b/drivers/staging/rtl8188eu/include/rtw_efuse.h
+index adeb501..720f9ea 100644
+--- a/drivers/staging/rtl8188eu/include/rtw_efuse.h
++++ b/drivers/staging/rtl8188eu/include/rtw_efuse.h
+@@ -116,6 +116,4 @@ u8 Efuse_WordEnableDataWrite(struct adapter *adapter, u16 efuse_addr,
+ 			     u8 word_en, u8 *data);
  
--bool HalDetectPwrDownMode88E(struct adapter *Adapter);
+ void EFUSE_ShadowMapUpdate(struct adapter *adapter, u8 efusetype);
+-void EFUSE_ShadowRead(struct adapter *adapt, u8 type, u16 offset, u32 *val);
 -
- void rtl8188e_set_hal_ops(struct hal_ops *pHalFunc);
- 
- /*  register */
+ #endif
 -- 
 1.7.10.4
 
