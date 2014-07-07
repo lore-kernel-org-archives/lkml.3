@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756572AbaGHBOE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:14:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55232 "EHLO
+	id S1755232AbaGHBOC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:14:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55237 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830AbaGGXxu (ORCPT
+	with ESMTP id S1752851AbaGGXxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:53:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ulrich Obergfell <uobergfe@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        "Ewan D. Milne" <emilne@redhat.com>, Hannes Reinecke <hare@suse.de>
-Subject: [PATCH 3.15 006/122] scsi_error: fix invalid setting of host byte
-Date: Mon,  7 Jul 2014 16:56:08 -0700
-Message-Id: <20140707235734.430607605@linuxfoundation.org>
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Venkatesh Srinivas <venkateshs@google.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.15 007/122] virtio-scsi: fix various bad behavior on aborted requests
+Date: Mon,  7 Jul 2014 16:56:09 -0700
+Message-Id: <20140707235734.459613250@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -30,68 +30,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ulrich Obergfell <uobergfe@redhat.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit 8922a908908ff947f1f211e07e2e97f1169ad3cb upstream.
+commit 8faeb529b2dabb9df691d614dda18910a43d05c9 upstream.
 
-After scsi_try_to_abort_cmd returns, the eh_abort_handler may have
-already found that the command has completed in the device, causing
-the host_byte to be nonzero (e.g. it could be DID_ABORT).  When
-this happens, ORing DID_TIME_OUT into the host byte will corrupt
-the result field and initiate an unwanted command retry.
+Even though the virtio-scsi spec guarantees that all requests related
+to the TMF will have been completed by the time the TMF itself completes,
+the request queue's callback might not have run yet.  This causes requests
+to be completed more than once, and as a result triggers a variety of
+BUGs or oopses.
 
-Fix this by using set_host_byte instead, following the model of
-commit 2082ebc45af9c9c648383b8cde0dc1948eadbf31.
-
-Signed-off-by: Ulrich Obergfell <uobergfe@redhat.com>
-[Fix all instances according to review comments. - Paolo]
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Reviewed-by: Venkatesh Srinivas <venkateshs@google.com>
 Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Ewan D. Milne <emilne@redhat.com>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_error.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/scsi/virtio_scsi.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -131,7 +131,7 @@ scmd_eh_abort_handler(struct work_struct
- 				    "aborting command %p\n", scmd));
- 		rtn = scsi_try_to_abort_cmd(sdev->host->hostt, scmd);
- 		if (rtn == SUCCESS) {
--			scmd->result |= DID_TIME_OUT << 16;
-+			set_host_byte(scmd, DID_TIME_OUT);
- 			if (scsi_host_eh_past_deadline(sdev->host)) {
- 				SCSI_LOG_ERROR_RECOVERY(3,
- 					scmd_printk(KERN_INFO, scmd,
-@@ -167,7 +167,7 @@ scmd_eh_abort_handler(struct work_struct
- 			scmd_printk(KERN_WARNING, scmd,
- 				    "scmd %p terminate "
- 				    "aborted command\n", scmd));
--		scmd->result |= DID_TIME_OUT << 16;
-+		set_host_byte(scmd, DID_TIME_OUT);
- 		scsi_finish_command(scmd);
- 	}
- }
-@@ -291,7 +291,7 @@ enum blk_eh_timer_return scsi_times_out(
- 		if (scsi_abort_command(scmd) == SUCCESS)
- 			return BLK_EH_NOT_HANDLED;
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -273,6 +273,16 @@ static void virtscsi_req_done(struct vir
+ 	virtscsi_vq_done(vscsi, req_vq, virtscsi_complete_cmd);
+ };
  
--	scmd->result |= DID_TIME_OUT << 16;
-+	set_host_byte(scmd, DID_TIME_OUT);
++static void virtscsi_poll_requests(struct virtio_scsi *vscsi)
++{
++	int i, num_vqs;
++
++	num_vqs = vscsi->num_queues;
++	for (i = 0; i < num_vqs; i++)
++		virtscsi_vq_done(vscsi, &vscsi->req_vqs[i],
++				 virtscsi_complete_cmd);
++}
++
+ static void virtscsi_complete_free(struct virtio_scsi *vscsi, void *buf)
+ {
+ 	struct virtio_scsi_cmd *cmd = buf;
+@@ -607,6 +617,18 @@ static int virtscsi_tmf(struct virtio_sc
+ 	    cmd->resp.tmf.response == VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
+ 		ret = SUCCESS;
  
- 	if (unlikely(rtn == BLK_EH_NOT_HANDLED &&
- 		     !scsi_eh_scmd_add(scmd, SCSI_EH_CANCEL_CMD)))
-@@ -1776,7 +1776,7 @@ int scsi_decide_disposition(struct scsi_
- 		break;
- 	case DID_ABORT:
- 		if (scmd->eh_eflags & SCSI_EH_ABORT_SCHEDULED) {
--			scmd->result |= DID_TIME_OUT << 16;
-+			set_host_byte(scmd, DID_TIME_OUT);
- 			return SUCCESS;
- 		}
- 	case DID_NO_CONNECT:
++	/*
++	 * The spec guarantees that all requests related to the TMF have
++	 * been completed, but the callback might not have run yet if
++	 * we're using independent interrupts (e.g. MSI).  Poll the
++	 * virtqueues once.
++	 *
++	 * In the abort case, sc->scsi_done will do nothing, because
++	 * the block layer must have detected a timeout and as a result
++	 * REQ_ATOM_COMPLETE has been set.
++	 */
++	virtscsi_poll_requests(vscsi);
++
+ out:
+ 	mempool_free(cmd, virtscsi_cmd_pool);
+ 	return ret;
 
 
