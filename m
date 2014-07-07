@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586AbaGGX5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:57:43 -0400
+	id S1754638AbaGGX6A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 19:58:00 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:56091 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754414AbaGGXzT (ORCPT
+	with ESMTP id S1754409AbaGGXzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:55:19 -0400
+	Mon, 7 Jul 2014 19:55:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.10 41/53] tools: ffs-test: fix header values endianess
-Date: Mon,  7 Jul 2014 16:58:26 -0700
-Message-Id: <20140707235830.531645088@linuxfoundation.org>
+        Tim Kryger <tim.kryger@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Markus Mayer <markus.mayer@linaro.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Wang Nan <wangnan0@huawei.com>
+Subject: [PATCH 3.10 47/53] serial: 8250_dw: Improve unwritable LCR workaround
+Date: Mon,  7 Jul 2014 16:58:32 -0700
+Message-Id: <20140707235830.711863058@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
 References: <20140707235829.281783607@linuxfoundation.org>
@@ -28,35 +32,163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Nazarewicz <mina86@mina86.com>
+From: Tim Kryger <tim.kryger@linaro.org>
 
-commit f35f71244da6e51db4e1f2c7e318581f498ececf upstream.
+commit c49436b657d0a56a6ad90d14a7c3041add7cf64d upstream.
 
-It appears that no one ever run ffs-test on a big-endian machine,
-since it used cpu-endianess for fs_count and hs_count fields which
-should be in little-endian format.  Fix by wrapping the numbers in
-cpu_to_le32.
+When configured with UART_16550_COMPATIBLE=NO or in versions prior to
+the introduction of this option, the Designware UART will ignore writes
+to the LCR if the UART is busy.  The current workaround saves a copy of
+the last written LCR and re-writes it in the ISR for a special interrupt
+that is raised when a write was ignored.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Unfortunately, interrupts are typically disabled prior to performing a
+sequence of register writes that include the LCR so the point at which
+the retry occurs is too late.  An example is serial8250_do_set_termios()
+where an ignored LCR write results in the baud divisor not being set and
+instead a garbage character is sent out the transmitter.
+
+Furthermore, since serial_port_out() offers no way to indicate failure,
+a serious effort must be made to ensure that the LCR is actually updated
+before returning back to the caller.  This is difficult, however, as a
+UART that was busy during the first attempt is likely to still be busy
+when a subsequent attempt is made unless some extra action is taken.
+
+This updated workaround reads back the LCR after each write to confirm
+that the new value was accepted by the hardware.  Should the hardware
+ignore a write, the TX/RX FIFOs are cleared and the receive buffer read
+before attempting to rewrite the LCR out of the hope that doing so will
+force the UART into an idle state.  While this may seem unnecessarily
+aggressive, writes to the LCR are used to change the baud rate, parity,
+stop bit, or data length so the data that may be lost is likely not
+important.  Admittedly, this is far from ideal but it seems to be the
+best that can be done given the hardware limitations.
+
+Lastly, the revised workaround doesn't touch the LCR in the ISR, so it
+avoids the possibility of a "serial8250: too much work for irq" lock up.
+This problem is rare in real situations but can be reproduced easily by
+wiring up two UARTs and running the following commands.
+
+  # stty -F /dev/ttyS1 echo
+  # stty -F /dev/ttyS2 echo
+  # cat /dev/ttyS1 &
+  [1] 375
+  # echo asdf > /dev/ttyS1
+  asdf
+
+  [   27.700000] serial8250: too much work for irq96
+  [   27.700000] serial8250: too much work for irq96
+  [   27.710000] serial8250: too much work for irq96
+  [   27.710000] serial8250: too much work for irq96
+  [   27.720000] serial8250: too much work for irq96
+  [   27.720000] serial8250: too much work for irq96
+  [   27.730000] serial8250: too much work for irq96
+  [   27.730000] serial8250: too much work for irq96
+  [   27.740000] serial8250: too much work for irq96
+
+Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+Reviewed-by: Matt Porter <matt.porter@linaro.org>
+Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+[wangnan: backport to 3.10.43:
+  - adjust context
+  - remove unneeded local var]
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/usb/ffs-test.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/tty/serial/8250/8250_dw.c |   42 ++++++++++++++++++++++++++++----------
+ 1 file changed, 32 insertions(+), 10 deletions(-)
 
---- a/tools/usb/ffs-test.c
-+++ b/tools/usb/ffs-test.c
-@@ -116,8 +116,8 @@ static const struct {
- 	.header = {
- 		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC),
- 		.length = cpu_to_le32(sizeof descriptors),
--		.fs_count = 3,
--		.hs_count = 3,
-+		.fs_count = cpu_to_le32(3),
-+		.hs_count = cpu_to_le32(3),
- 	},
- 	.fs_descs = {
- 		.intf = {
+--- a/drivers/tty/serial/8250/8250_dw.c
++++ b/drivers/tty/serial/8250/8250_dw.c
+@@ -54,7 +54,6 @@
+ 
+ 
+ struct dw8250_data {
+-	int		last_lcr;
+ 	int		last_mcr;
+ 	int		line;
+ 	struct clk	*clk;
+@@ -73,17 +72,33 @@ static inline int dw8250_modify_msr(stru
+ 	return value;
+ }
+ 
++static void dw8250_force_idle(struct uart_port *p)
++{
++	serial8250_clear_and_reinit_fifos(container_of
++					  (p, struct uart_8250_port, port));
++	(void)p->serial_in(p, UART_RX);
++}
++
+ static void dw8250_serial_out(struct uart_port *p, int offset, int value)
+ {
+ 	struct dw8250_data *d = p->private_data;
+ 
+-	if (offset == UART_LCR)
+-		d->last_lcr = value;
+-
+ 	if (offset == UART_MCR)
+ 		d->last_mcr = value;
+ 
+ 	writeb(value, p->membase + (offset << p->regshift));
++
++	/* Make sure LCR write wasn't ignored */
++	if (offset == UART_LCR) {
++		int tries = 1000;
++		while (tries--) {
++			if (value == p->serial_in(p, UART_LCR))
++				return;
++			dw8250_force_idle(p);
++			writeb(value, p->membase + (UART_LCR << p->regshift));
++		}
++		dev_err(p->dev, "Couldn't set LCR to %d\n", value);
++	}
+ }
+ 
+ static unsigned int dw8250_serial_in(struct uart_port *p, int offset)
+@@ -97,13 +112,22 @@ static void dw8250_serial_out32(struct u
+ {
+ 	struct dw8250_data *d = p->private_data;
+ 
+-	if (offset == UART_LCR)
+-		d->last_lcr = value;
+-
+ 	if (offset == UART_MCR)
+ 		d->last_mcr = value;
+ 
+ 	writel(value, p->membase + (offset << p->regshift));
++
++	/* Make sure LCR write wasn't ignored */
++	if (offset == UART_LCR) {
++		int tries = 1000;
++		while (tries--) {
++			if (value == p->serial_in(p, UART_LCR))
++				return;
++			dw8250_force_idle(p);
++			writel(value, p->membase + (UART_LCR << p->regshift));
++		}
++		dev_err(p->dev, "Couldn't set LCR to %d\n", value);
++	}
+ }
+ 
+ static unsigned int dw8250_serial_in32(struct uart_port *p, int offset)
+@@ -115,15 +139,13 @@ static unsigned int dw8250_serial_in32(s
+ 
+ static int dw8250_handle_irq(struct uart_port *p)
+ {
+-	struct dw8250_data *d = p->private_data;
+ 	unsigned int iir = p->serial_in(p, UART_IIR);
+ 
+ 	if (serial8250_handle_irq(p, iir)) {
+ 		return 1;
+ 	} else if ((iir & UART_IIR_BUSY) == UART_IIR_BUSY) {
+-		/* Clear the USR and write the LCR again. */
++		/* Clear the USR */
+ 		(void)p->serial_in(p, DW_UART_USR);
+-		p->serial_out(p, UART_LCR, d->last_lcr);
+ 
+ 		return 1;
+ 	}
 
 
