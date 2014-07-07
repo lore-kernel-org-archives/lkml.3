@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486AbaGHAgs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:36:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55834 "EHLO
+	id S1755471AbaGHAgq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:36:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753953AbaGGXyl (ORCPT
+	with ESMTP id S1753695AbaGGXyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Torben Hohn <torbenh@linutronix.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.14 12/94] usb: musb: Ensure that cppi41 timer gets armed on premature DMA TX irq
-Date: Mon,  7 Jul 2014 16:57:02 -0700
-Message-Id: <20140707235757.138209481@linuxfoundation.org>
+        George Cherian <george.cherian@ti.com>,
+        Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.14 13/94] usb: musb: Fix panic upon musb_am335x module removal
+Date: Mon,  7 Jul 2014 16:57:03 -0700
+Message-Id: <20140707235757.166760184@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,87 +30,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
 
-commit c58d80f523ffc15ef4d062fc7aeb03793fe39701 upstream.
+commit 7adb5c876e9c0677078a1e1094c6eafd29c30b74 upstream.
 
-Some TI chips raise the DMA complete interrupt before the actual
-transfer has been completed. The code tries to busy wait for a few
-microseconds and if that fails it arms an hrtimer to recheck. So far
-so good, but that has the following issue:
+At probe time, the musb_am335x driver register its childs by
+calling of_platform_populate(), which registers all childs in
+the devicetree hierarchy recursively.
 
-CPU 0					CPU1
+On the other side, the driver's remove() function uses of_device_unregister()
+to remove each child of musb_am335x's.
 
-start_next_transfer(RQ1);
+However, when musb_dsps is loaded, its devices are attached to the musb_am335x
+device as musb_am335x childs. Hence, musb_am335x remove() will attempt to
+unregister the devices registered by musb_dsps, which produces a kernel panic.
 
-DMA interrupt
-  if (premature_irq(RQ1))
-    if (!hrtimer_active(timer))
-       hrtimer_start(timer);
+In other words, the childs in the "struct device" hierarchy are not the same
+as the childs in the "devicetree" hierarchy.
 
-hrtimer expires
-  timer->state = CALLBACK_RUNNING;
-  timer->fn()
-    cppi41_recheck_tx_req()
-      complete_request(RQ1);
-      if (requests_pending())
-        start_next_transfer(RQ2);
+Ideally, we should enforce the removal of the devices registered by
+musb_am335x *only*, instead of all its child devices. However, because of the
+recursive nature of of_platform_populate, this doesn't seem possible.
 
-					DMA interrupt
-					  if (premature_irq(RQ2))
-					    if (!hrtimer_active(timer))
-					       hrtimer_start(timer);
-  timer->state = INACTIVE;
+Therefore, as the only solution at hand, this commit disables musb_am335x
+driver removal capability, preventing it from being ever removed. This was
+originally suggested by Sebastian Siewior:
 
-The premature interrupt of request2 on CPU1 does not arm the timer and
-therefor the request completion never happens because it checks for
-!hrtimer_active(). hrtimer_active() evaluates:
+https://www.mail-archive.com/linux-omap@vger.kernel.org/msg104946.html
 
-  timer->state != HRTIMER_STATE_INACTIVE
+And for reference, here's the panic upon module removal:
 
-which of course evaluates to true in the above case as timer->state is
-CALLBACK_RUNNING.
+musb-hdrc musb-hdrc.0.auto: remove, state 4
+usb usb1: USB disconnect, device number 1
+musb-hdrc musb-hdrc.0.auto: USB bus 1 deregistered
+Unable to handle kernel NULL pointer dereference at virtual address 0000008c
+pgd = de11c000
+[0000008c] *pgd=9e174831, *pte=00000000, *ppte=00000000
+Internal error: Oops: 17 [#1] ARM
+Modules linked in: musb_am335x(-) musb_dsps musb_hdrc usbcore usb_common
+CPU: 0 PID: 623 Comm: modprobe Not tainted 3.15.0-rc4-00001-g24efd13 #69
+task: de1b7500 ti: de122000 task.ti: de122000
+PC is at am335x_shutdown+0x10/0x28
+LR is at am335x_shutdown+0xc/0x28
+pc : [<c0327798>]    lr : [<c0327794>]    psr: a0000013
+sp : de123df8  ip : 00000004  fp : 00028f00
+r10: 00000000  r9 : de122000  r8 : c000e6c4
+r7 : de0e3c10  r6 : de0e3800  r5 : de624010  r4 : de1ec750
+r3 : de0e3810  r2 : 00000000  r1 : 00000001  r0 : 00000000
+Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c5387d  Table: 9e11c019  DAC: 00000015
+Process modprobe (pid: 623, stack limit = 0xde122240)
+Stack: (0xde123df8 to 0xde124000)
+3de0:                                                       de0e3810 bf054488
+3e00: bf05444c de624010 60000013 bf043650 000012fc de624010 de0e3810 bf043a20
+3e20: de0e3810 bf04b240 c0635b88 c02ca37c c02ca364 c02c8db0 de1b7500 de0e3844
+3e40: de0e3810 c02c8e28 c0635b88 de02824c de0e3810 c02c884c de0e3800 de0e3810
+3e60: de0e3818 c02c5b20 bf05417c de0e3800 de0e3800 c0635b88 de0f2410 c02ca838
+3e80: bf05417c de0e3800 bf055438 c02ca8cc de0e3c10 bf054194 de0e3c10 c02ca37c
+3ea0: c02ca364 c02c8db0 de1b7500 de0e3c44 de0e3c10 c02c8e28 c0635b88 de02824c
+3ec0: de0e3c10 c02c884c de0e3c10 de0e3c10 de0e3c18 c02c5b20 de0e3c10 de0e3c10
+3ee0: 00000000 bf059000 a0000013 c02c5bc0 00000000 bf05900c de0e3c10 c02c5c48
+3f00: de0dd0c0 de1ec970 de0f2410 bf05929c de0f2444 bf05902c de0f2410 c02ca37c
+3f20: c02ca364 c02c8db0 bf05929c de0f2410 bf05929c c02c94c8 bf05929c 00000000
+3f40: 00000800 c02c8ab4 bf0592e0 c007fc40 c00dd820 6273756d 336d615f 00783533
+3f60: c064a0ac de1b7500 de122000 de1b7500 c000e590 00000001 c000e6c4 c0060160
+3f80: 00028e70 00028e70 00028ea4 00000081 60000010 00028e70 00028e70 00028ea4
+3fa0: 00000081 c000e500 00028e70 00028e70 00028ea4 00000800 becb59f8 00027608
+3fc0: 00028e70 00028e70 00028ea4 00000081 00000001 00000001 00000000 00028f00
+3fe0: b6e6b6f0 becb59d4 000160e8 b6e6b6fc 60000010 00028ea4 00000000 00000000
+[<c0327798>] (am335x_shutdown) from [<bf054488>] (dsps_musb_exit+0x3c/0x4c [musb_dsps])
+[<bf054488>] (dsps_musb_exit [musb_dsps]) from [<bf043650>] (musb_shutdown+0x80/0x90 [musb_hdrc])
+[<bf043650>] (musb_shutdown [musb_hdrc]) from [<bf043a20>] (musb_remove+0x24/0x68 [musb_hdrc])
+[<bf043a20>] (musb_remove [musb_hdrc]) from [<c02ca37c>] (platform_drv_remove+0x18/0x1c)
+[<c02ca37c>] (platform_drv_remove) from [<c02c8db0>] (__device_release_driver+0x70/0xc8)
+[<c02c8db0>] (__device_release_driver) from [<c02c8e28>] (device_release_driver+0x20/0x2c)
+[<c02c8e28>] (device_release_driver) from [<c02c884c>] (bus_remove_device+0xdc/0x10c)
+[<c02c884c>] (bus_remove_device) from [<c02c5b20>] (device_del+0x104/0x198)
+[<c02c5b20>] (device_del) from [<c02ca838>] (platform_device_del+0x14/0x9c)
+[<c02ca838>] (platform_device_del) from [<c02ca8cc>] (platform_device_unregister+0xc/0x20)
+[<c02ca8cc>] (platform_device_unregister) from [<bf054194>] (dsps_remove+0x18/0x38 [musb_dsps])
+[<bf054194>] (dsps_remove [musb_dsps]) from [<c02ca37c>] (platform_drv_remove+0x18/0x1c)
+[<c02ca37c>] (platform_drv_remove) from [<c02c8db0>] (__device_release_driver+0x70/0xc8)
+[<c02c8db0>] (__device_release_driver) from [<c02c8e28>] (device_release_driver+0x20/0x2c)
+[<c02c8e28>] (device_release_driver) from [<c02c884c>] (bus_remove_device+0xdc/0x10c)
+[<c02c884c>] (bus_remove_device) from [<c02c5b20>] (device_del+0x104/0x198)
+[<c02c5b20>] (device_del) from [<c02c5bc0>] (device_unregister+0xc/0x20)
+[<c02c5bc0>] (device_unregister) from [<bf05900c>] (of_remove_populated_child+0xc/0x14 [musb_am335x])
+[<bf05900c>] (of_remove_populated_child [musb_am335x]) from [<c02c5c48>] (device_for_each_child+0x44/0x70)
+[<c02c5c48>] (device_for_each_child) from [<bf05902c>] (am335x_child_remove+0x18/0x30 [musb_am335x])
+[<bf05902c>] (am335x_child_remove [musb_am335x]) from [<c02ca37c>] (platform_drv_remove+0x18/0x1c)
+[<c02ca37c>] (platform_drv_remove) from [<c02c8db0>] (__device_release_driver+0x70/0xc8)
+[<c02c8db0>] (__device_release_driver) from [<c02c94c8>] (driver_detach+0xb4/0xb8)
+[<c02c94c8>] (driver_detach) from [<c02c8ab4>] (bus_remove_driver+0x4c/0xa0)
+[<c02c8ab4>] (bus_remove_driver) from [<c007fc40>] (SyS_delete_module+0x128/0x1cc)
+[<c007fc40>] (SyS_delete_module) from [<c000e500>] (ret_fast_syscall+0x0/0x48)
 
-That's clearly documented:
-
- * A timer is active, when it is enqueued into the rbtree or the
- * callback function is running or it's in the state of being migrated
- * to another cpu.
-
-But that's not what the code wants to check. The code wants to check
-whether the timer is queued, i.e. whether its armed and waiting for
-expiry.
-
-We have a helper function for this: hrtimer_is_queued(). This
-evaluates:
-
-  timer->state & HRTIMER_STATE_QUEUED
-
-So in the above case this evaluates to false and therefor forces the
-DMA interrupt on CPU1 to call hrtimer_start().
-
-Use hrtimer_is_queued() instead of hrtimer_active() and evrything is
-good.
-
-Reported-by: Torben Hohn <torbenh@linutronix.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Fixes: 97238b35d5bb ("usb: musb: dsps: use proper child nodes")
+Acked-by: George Cherian <george.cherian@ti.com>
+Signed-off-by: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/musb/musb_cppi41.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/musb/musb_am335x.c |   23 ++++++-----------------
+ 1 file changed, 6 insertions(+), 17 deletions(-)
 
---- a/drivers/usb/musb/musb_cppi41.c
-+++ b/drivers/usb/musb/musb_cppi41.c
-@@ -266,7 +266,7 @@ static void cppi41_dma_callback(void *pr
- 		}
- 		list_add_tail(&cppi41_channel->tx_check,
- 				&controller->early_tx_list);
--		if (!hrtimer_active(&controller->early_tx)) {
-+		if (!hrtimer_is_queued(&controller->early_tx)) {
- 			hrtimer_start_range_ns(&controller->early_tx,
- 				ktime_set(0, 140 * NSEC_PER_USEC),
- 				40 * NSEC_PER_USEC,
+--- a/drivers/usb/musb/musb_am335x.c
++++ b/drivers/usb/musb/musb_am335x.c
+@@ -19,21 +19,6 @@ err:
+ 	return ret;
+ }
+ 
+-static int of_remove_populated_child(struct device *dev, void *d)
+-{
+-	struct platform_device *pdev = to_platform_device(dev);
+-
+-	of_device_unregister(pdev);
+-	return 0;
+-}
+-
+-static int am335x_child_remove(struct platform_device *pdev)
+-{
+-	device_for_each_child(&pdev->dev, NULL, of_remove_populated_child);
+-	pm_runtime_disable(&pdev->dev);
+-	return 0;
+-}
+-
+ static const struct of_device_id am335x_child_of_match[] = {
+ 	{ .compatible = "ti,am33xx-usb" },
+ 	{  },
+@@ -42,13 +27,17 @@ MODULE_DEVICE_TABLE(of, am335x_child_of_
+ 
+ static struct platform_driver am335x_child_driver = {
+ 	.probe		= am335x_child_probe,
+-	.remove         = am335x_child_remove,
+ 	.driver         = {
+ 		.name   = "am335x-usb-childs",
+ 		.of_match_table	= am335x_child_of_match,
+ 	},
+ };
+ 
+-module_platform_driver(am335x_child_driver);
++static int __init am335x_child_init(void)
++{
++	return platform_driver_register(&am335x_child_driver);
++}
++module_init(am335x_child_init);
++
+ MODULE_DESCRIPTION("AM33xx child devices");
+ MODULE_LICENSE("GPL v2");
 
 
