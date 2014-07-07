@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944AbaGGWz1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 18:55:27 -0400
-Received: from smtprelay0204.hostedemail.com ([216.40.44.204]:55606 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750981AbaGGWz0 (ORCPT
+	id S1752176AbaGGW5E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 18:57:04 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:55437 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077AbaGGW5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 18:55:26 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3622:3876:3877:4250:4
-X-HE-Tag: plant02_692f245041548
-X-Filterd-Recvd-Size: 1425
-Message-ID: <1404773721.932.0.camel@joe-AO725>
-Subject: Re: [PATCH tip/core/rcu 0/3] Maintainership changes for 3.17
-From: Joe Perches <joe@perches.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
-Date: Mon, 07 Jul 2014 15:55:21 -0700
-In-Reply-To: <20140707224146.GA9118@linux.vnet.ibm.com>
-References: <20140707224146.GA9118@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Mon, 7 Jul 2014 18:57:03 -0400
+Message-ID: <53BB25B7.6000500@samsung.com>
+Date: Tue, 08 Jul 2014 07:56:55 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Pankaj Dubey <pankaj.dubey@samsung.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
+        linux@arm.linux.org.uk, naushad@samsung.com, t.figa@samsung.com,
+        joshi@samsung.com, vikas.sajjan@samsung.com, chow.kim@samsung.com
+Subject: Re: [PATCH v6 2/6] ARM: EXYNOS: Move cpufreq and cpuidle device registration
+ to init_machine
+References: <1404705056-11965-1-git-send-email-pankaj.dubey@samsung.com> <1404705056-11965-3-git-send-email-pankaj.dubey@samsung.com>
+In-Reply-To: <1404705056-11965-3-git-send-email-pankaj.dubey@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-07 at 15:41 -0700, Paul E. McKenney wrote:
-> This series updates RCU maintainership as follows:
-> 
-> 1.	Add "R:" designated-reviewers tag as discussed on ksummit-discuss
-> 	email list.
-> 
-> 2.	Add designated reviewers for RCU.
-> 
-> 3.	Update RCU maintainership.
+On 07/07/14 12:50, Pankaj Dubey wrote:
+> As exynos_cpuidle_init and exynos_cpufreq_init function have just one lines
+> of code for registering platform devices. We can move these lines to
+> exynos_dt_machine_init and delete exynos_cpuidle_init and exynos_cpufreq_init
+> function. This will help in reducing lines of code in exynos.c, making it
+> more cleaner.
+>
+> Suggested-by: Tomasz Figa<t.figa@samsung.com>
+> Signed-off-by: Pankaj Dubey<pankaj.dubey@samsung.com>
+> Reviewed-by: Tomasz Figa<t.figa@samsung.com>
+> ---
+>   arch/arm/mach-exynos/exynos.c |   20 ++++----------------
+>   1 file changed, 4 insertions(+), 16 deletions(-)
+>
+> diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+> index ff60b4c..47170eb 100644
+> --- a/arch/arm/mach-exynos/exynos.c
+> +++ b/arch/arm/mach-exynos/exynos.c
+> @@ -171,19 +171,6 @@ static struct platform_device exynos_cpuidle = {
+>   	.id                = -1,
+>   };
+>
+> -void __init exynos_cpuidle_init(void)
+> -{
+> -	if (soc_is_exynos5440())
+> -		return;
+> -
+> -	platform_device_register(&exynos_cpuidle);
+> -}
+> -
+> -void __init exynos_cpufreq_init(void)
+> -{
+> -	platform_device_register_simple("exynos-cpufreq", -1, NULL, 0);
+> -}
+> -
+>   void __iomem *sysram_base_addr;
+>   void __iomem *sysram_ns_base_addr;
+>
+> @@ -300,10 +287,11 @@ static void __init exynos_dt_machine_init(void)
+>   	if (!IS_ENABLED(CONFIG_SMP))
+>   		exynos_sysram_init();
+>
+> -	if (!of_machine_is_compatible("samsung,exynos5420"))
+> -		exynos_cpuidle_init();
+> +	if (!of_machine_is_compatible("samsung,exynos5420") ||
+> +			!of_machine_is_compatible("samsung,exynos5440"))
+> +		platform_device_register(&exynos_cpuidle);
+>
+> -	exynos_cpufreq_init();
+> +	platform_device_register_simple("exynos-cpufreq", -1, NULL, 0);
+>
+>   	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+>   }
 
-Missing
-4. update get_maintainers...
+This cannot be applied in my tree now....
 
-
+- Kukjin
