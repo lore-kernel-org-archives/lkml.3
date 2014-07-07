@@ -1,99 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991AbaGGMcR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 08:32:17 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:53691 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508AbaGGMcQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 08:32:16 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Michael Lentine <mlentine@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] tools: perf: prefer clarity in setup_pager
-In-Reply-To: <CAB1dqC7BqsaDtXVYx24M5R9eaY7ZfpEtu3bxbJHXNHYhAbJETg@mail.gmail.com>
-Organization: http://mina86.com/
-References: <1404668531-31550-1-git-send-email-mina86@mina86.com> <CAB1dqC7BqsaDtXVYx24M5R9eaY7ZfpEtu3bxbJHXNHYhAbJETg@mail.gmail.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140707:linux-kernel@vger.kernel.org::uCZwJUthUS/VQ0/X:00000000000000000000000000000000006iv
-X-Hashcash: 1:20:140707:mlentine@google.com::fvV0IzSSEqDFRzNb:0000000000000000000000000000000000000000004I4M
-X-Hashcash: 1:20:140707:mingo@elte.hu::L5AXLdjGKT26HkR5:00006+mq
-X-Hashcash: 1:20:140707:eranian@google.com::g4pkmzZDoB7pVSEc:0000000000000000000000000000000000000000000H+cf
-Date: Mon, 07 Jul 2014 14:32:08 +0200
-Message-ID: <xa1tmwcl1h9z.fsf@mina86.com>
+	id S1753125AbaGGMcu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 08:32:50 -0400
+Received: from mail.kernel.org ([198.145.19.201]:57570 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752652AbaGGMcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 08:32:48 -0400
+Message-ID: <53BA93F2.2090200@kernel.org>
+Date: Mon, 07 Jul 2014 13:34:58 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Himangi Saraogi <himangi774@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+CC: julia.lawall@lip6.fr, Lars-Peter Clausen <lars@metafoo.de>,
+        Michael Hennerich <hennerich@blackfin.uclinux.org>
+Subject: Re: [PATCH v2] iio:trigger: Introduce the use of devm_kzalloc
+References: <20140701211908.GA23193@himangi-Dell>
+In-Reply-To: <20140701211908.GA23193@himangi-Dell>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 06 2014, Michael Lentine <mlentine@google.com> wrote:
-> Unless I'm missing something this removes defaulting the pager to cat
-> if nothing is found which is very useful for devices/oses without less
-> or pager.
+On 01/07/14 22:19, Himangi Saraogi wrote:
+> This patch introduces the use of the managed version of kzalloc and
+> removes the kfrees in the probe and remove functions. More return
+> paths are added and the labels are renamed to order them.
+>
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+Looks sane, but I'd like an ack or reviewed-by from someone as Analog for this one.
+cc'd Lars and Michael.
 
-The last two conditions are merged together, i.e.
+> ---
+> v2: add more return paths
+> Not compile tested.
+>   drivers/staging/iio/trigger/iio-trig-bfin-timer.c | 31 ++++++++---------------
+>   1 file changed, 11 insertions(+), 20 deletions(-)
+>
+> diff --git a/drivers/staging/iio/trigger/iio-trig-bfin-timer.c b/drivers/staging/iio/trigger/iio-trig-bfin-timer.c
+> index 16f1a06..a21b7c5 100644
+> --- a/drivers/staging/iio/trigger/iio-trig-bfin-timer.c
+> +++ b/drivers/staging/iio/trigger/iio-trig-bfin-timer.c
+> @@ -182,45 +182,40 @@ static int iio_bfin_tmr_trigger_probe(struct platform_device *pdev)
+>   	unsigned int config;
+>   	int ret;
+>
+> -	st = kzalloc(sizeof(*st), GFP_KERNEL);
+> -	if (st == NULL) {
+> -		ret = -ENOMEM;
+> -		goto out;
+> -	}
+> +	st = devm_kzalloc(&pdev->dev, sizeof(*st), GFP_KERNEL);
+> +	if (st == NULL)
+> +		return -ENOMEM;
+>
+>   	st->irq = platform_get_irq(pdev, 0);
+>   	if (!st->irq) {
+>   		dev_err(&pdev->dev, "No IRQs specified");
+> -		ret = -ENODEV;
+> -		goto out1;
+> +		return -ENODEV;
+>   	}
+>
+>   	ret = iio_bfin_tmr_get_number(st->irq);
+>   	if (ret < 0)
+> -		goto out1;
+> +		return ret;
+>
+>   	st->timer_num = ret;
+>   	st->t = &iio_bfin_timer_code[st->timer_num];
+>
+>   	st->trig = iio_trigger_alloc("bfintmr%d", st->timer_num);
+> -	if (!st->trig) {
+> -		ret = -ENOMEM;
+> -		goto out1;
+> -	}
+> +	if (!st->trig)
+> +		return -ENOMEM;
+>
+>   	st->trig->ops = &iio_bfin_tmr_trigger_ops;
+>   	st->trig->dev.groups = iio_bfin_tmr_trigger_attr_groups;
+>   	iio_trigger_set_drvdata(st->trig, st);
+>   	ret = iio_trigger_register(st->trig);
+>   	if (ret)
+> -		goto out2;
+> +		goto out;
+>
+>   	ret = request_irq(st->irq, iio_bfin_tmr_trigger_isr,
+>   			  0, st->trig->name, st);
+>   	if (ret) {
+>   		dev_err(&pdev->dev,
+>   			"request IRQ-%d failed", st->irq);
+> -		goto out4;
+> +		goto out1;
+>   	}
+>
+>   	config = PWM_OUT | PERIOD_CNT | IRQ_ENA;
+> @@ -260,13 +255,10 @@ static int iio_bfin_tmr_trigger_probe(struct platform_device *pdev)
+>   	return 0;
+>   out_free_irq:
+>   	free_irq(st->irq, st);
+> -out4:
+> -	iio_trigger_unregister(st->trig);
+> -out2:
+> -	iio_trigger_put(st->trig);
+>   out1:
+> -	kfree(st);
+> +	iio_trigger_unregister(st->trig);
+>   out:
+> +	iio_trigger_put(st->trig);
+>   	return ret;
+>   }
+>
+> @@ -280,7 +272,6 @@ static int iio_bfin_tmr_trigger_remove(struct platform_device *pdev)
+>   	free_irq(st->irq, st);
+>   	iio_trigger_unregister(st->trig);
+>   	iio_trigger_put(st->trig);
+> -	kfree(st);
+>
+>   	return 0;
+>   }
+>
 
-       if (!pager)
-               pager = "cat";
-       if (!*pager || !strcmp(pager, "cat"))
-               return;
-
-becomes:
-
-       if (!pager || !*pager || !strcmp(pager, "cat"))
-               return;
-
-This also in my opinion simplifies the code since the original is a bit
-convoluted.  If pager is NULL it first assigns "cat" to it and then in
-the very next condition compares pager to "cat".  With this change, it's
-more obvious that if pager is NULL, the function will terminate.
-
-> On Sun, Jul 6, 2014 at 10:42 AM, Michal Nazarewicz <mina86@mina86.com>
-> wrote:
->> “!(pager || access(…))” is indeed pretty smart way to write
->> “!pager && access(…) == 0” but other than being clever it gives
->> no advantages and merely confuses the reader who needs to wonder
->> what is actually going on.
->>
->> As such, replace the checks with much cleaner ones.
->>
->> Also, while at it, merge the lest “!pager” test with the next
->> test that yields true after the “!pager” if's body is executed.
->> ---
->>  tools/perf/util/pager.c | 8 +++-----
->>  1 file changed, 3 insertions(+), 5 deletions(-)
->>
->> diff --git a/tools/perf/util/pager.c b/tools/perf/util/pager.c
->> index 31ee02d..14da1b0 100644
->> --- a/tools/perf/util/pager.c
->> +++ b/tools/perf/util/pager.c
->> @@ -57,13 +57,11 @@ void setup_pager(void)
->>         }
->>         if (!pager)
->>                 pager = getenv("PAGER");
->> -       if (!(pager || access("/usr/bin/pager", X_OK)))
->> +       if (!pager && access("/usr/bin/pager", X_OK) == 0)
->>                 pager = "/usr/bin/pager";
->> -       if (!(pager || access("/usr/bin/less", X_OK)))
->> +       if (!pager && access("/usr/bin/less", X_OK) == 0)
->>                 pager = "/usr/bin/less";
->> -       if (!pager)
->> -               pager = "cat";
->> -       if (!*pager || !strcmp(pager, "cat"))
->> +       if (!pager || !*pager || !strcmp(pager, "cat"))
->>                 return;
->>
->>         spawned_pager = 1; /* means we are emitting to terminal */
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
