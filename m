@@ -1,156 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbaGGQcI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 12:32:08 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:60611 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750917AbaGGQcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 12:32:05 -0400
-Message-ID: <53BACB4A.7080706@cs.wisc.edu>
-Date: Mon, 07 Jul 2014 11:31:06 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130917 Thunderbird/17.0.9
-MIME-Version: 1.0
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        Himangi Saraogi <himangi774@gmail.com>,
-        Vikas Chaudhary <vikas.chaudhary@qlogic.com>,
-        "iscsi-driver@qlogic.com" <iscsi-driver@qlogic.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] qla4xxx: Return -ENOMEM on memory allocation failure
-References: <20140704182756.GA9319@himangi-Dell> <94D0CD8314A33A4D9D801C0FE68B402958B866EB@G9W0745.americas.hpqcorp.net> <alpine.DEB.2.02.1407042235390.1984@localhost6.localdomain6>
-In-Reply-To: <alpine.DEB.2.02.1407042235390.1984@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752488AbaGGQen (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 12:34:43 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:47628 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751020AbaGGQek (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 12:34:40 -0400
+Message-ID: <1404750875.3029.79.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH v3 1/3] ima: use ahash API for file hash calculation
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: linux-ima-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, dmitry.kasatkin@gmail.com
+Date: Mon, 07 Jul 2014 12:34:35 -0400
+In-Reply-To: <53BAC6A6.2010509@samsung.com>
+References: <cover.1404475462.git.d.kasatkin@samsung.com>
+	 <dc5977267c662c98f02cd637dd44c42be850916f.1404475462.git.d.kasatkin@samsung.com>
+	 <1404734207.3029.22.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <53BAA281.7040903@samsung.com>
+	 <1404747894.3029.58.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <53BAC6A6.2010509@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070716-9332-0000-0000-0000014C8375
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2014 03:37 PM, Julia Lawall wrote:
+On Mon, 2014-07-07 at 19:11 +0300, Dmitry Kasatkin wrote: 
+> On 07/07/14 18:44, Mimi Zohar wrote:
+> > On Mon, 2014-07-07 at 16:37 +0300, Dmitry Kasatkin wrote: 
+> >> On 07/07/14 14:56, Mimi Zohar wrote:
+> >>> On Fri, 2014-07-04 at 15:05 +0300, Dmitry Kasatkin wrote: 
+> >>>> +/**
+> >>> This is the kernel-doc delimiter.
+> >>>
+> >>>> + * ima_calc_file_hash - calculae file hash
+> >>>> + *
+> >>> Missing kernel-doc argument descriptions.  Refer to
+> >>> Documentation/kernel-doc-nano-HOWTO.txt.
+> > Not defining the arguments results in a kernel-doc warning.  Providing
+> > kernel-doc is nice, but is unnecessary in this case, as it isn't an
+> > exported loadable module, nor an externally visible function to other
+> > kernel files.  Either remove the extra asterisk, making it a regular
+> > comment, or add the arguments.
+> >
+> >> There is no need to explain arguments as they self-evident.
+> >>
+> >>>> + * if ima_ahash_minsize parameter is non-zero, this function uses
+> >>>> + * ahash for hash caclulation. ahash performance varies for different
+> >>>> + * data sizes on different crypto accelerators. shash performance might
+> >>>> + * be better for small file. 'ima.ahash_minsize' module parameter allows
+> >>>> + * to specify the best value for the system.
+> >>>> + *
+> >>>> + * If ahash fails, it fallbacks to shash.
+> >>>> + */
+> >>>> +int ima_calc_file_hash(struct file *file, struct ima_digest_data *hash)
+> >>>> +{
+> >>>> +	loff_t i_size;
+> >>>> +	int rc;
+> >>>> +
+> >>>> +	i_size = i_size_read(file_inode(file));
+> >>>> +
+> >>>> +	if (ima_ahash_minsize && i_size >= ima_ahash_minsize) {
+> >>>> +		rc = ima_calc_file_ahash(file, hash);
+> >>>> +		if (!rc)
+> >>>> +			return 0;
+> >>>> +	}
+> >>>> +
+> >>>> +	return ima_calc_file_shash(file, hash);
+> >>>> +}
+> >>> If the crypto accelerator fails, it falls back to using shash.  Is their
+> >>> any indication that the HW error is intermittent or persistent?  Should
+> >>> ima_ahash_minsize be reset?
+> >> If hw constantly does not work then it is simply broken.
+> > True
+> >
+> >> You want to be protected from "random" failures.
+> >> For me it is not the case either... If it works then it works...
+> > This discussion isn't about your particular HW environment, but a
+> > general question.  For example, suppose we were discussing a laptop with
+> > a HW crypto accelerator.  If the HW crypto broke, I would at least want
+> > to be able to quiesce the system properly.  I'd most likely want to be
+> > able to continue using my laptop with software crypto.
 > 
+> Driver probing code will detect that HW is not responding and driver
+> will not be enabled...
 > 
-> On Fri, 4 Jul 2014, Elliott, Robert (Server Storage) wrote:
+> IMA will not be able to use it...
 > 
->>
->>
->>> -----Original Message-----
->>> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
->>> owner@vger.kernel.org] On Behalf Of Himangi Saraogi
->>> Sent: Friday, 04 July, 2014 1:28 PM
->>> To: Vikas Chaudhary; iscsi-driver@qlogic.com; James E.J. Bottomley; linux-
->>> scsi@vger.kernel.org; linux-kernel@vger.kernel.org
->>> Cc: julia.lawall@lip6.fr
->>> Subject: [PATCH] qla4xxx: Return -ENOMEM on memory allocation failure
->>>
->>> In this code, 0 is returned on memory allocation failure, even though
->>> other failures return -ENOMEM or other similar values.
->>>
->>> A simplified version of the Coccinelle semantic match that finds this
->>> problem is as follows:
->>>
->>> // <smpl>
->>> @@
->>> expression ret;
->>> expression x,e1,e2,e3;
->>> identifier alloc;
->>> @@
->>>
->>> ret = 0
->>> ... when != ret = e1
->>> *x = alloc(...)
->>> ... when != ret = e2
->>> if (x == NULL) { ... when != ret = e3
->>>   return ret;
->>> }
->>> // </smpl>
->>>
->>> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
->>> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
->>> ---
->>>  drivers/scsi/qla4xxx/ql4_os.c | 1 +
->>>  1 file changed, 1 insertion(+)
->>>
->>> diff --git a/drivers/scsi/qla4xxx/ql4_os.c b/drivers/scsi/qla4xxx/ql4_os.c
->>> index c5d9564..72ba671 100644
->>> --- a/drivers/scsi/qla4xxx/ql4_os.c
->>> +++ b/drivers/scsi/qla4xxx/ql4_os.c
->>> @@ -1050,6 +1050,7 @@ static int qla4xxx_get_host_stats(struct Scsi_Host
->>> *shost, char *buf, int len)
->>>  	if (!ql_iscsi_stats) {
->>>  		ql4_printk(KERN_ERR, ha,
->>>  			   "Unable to allocate memory for iscsi stats\n");
->>> +		ret = -ENOMEM;
->>>  		goto exit_host_stats;
->>>  	}
->>>
->>
->> Also, the only caller of this function doesn't use the return 
->> value - it's overwritten by another function call:
->>
->> drivers/scsi/scsi_transport_iscsi.c:
->>                 err = transport->get_host_stats(shost, buf, host_stats_size);
->>
->>                 actual_size = nlmsg_total_size(sizeof(*ev) + host_stats_size);
->>                 skb_trim(skbhost_stats, NLMSG_ALIGN(actual_size));
->>                 nlhhost_stats->nlmsg_len = actual_size;
->>
->>                 err = iscsi_multicast_skb(skbhost_stats, ISCSI_NL_GRP_ISCSID,
->>                                           GFP_KERNEL);
-> 
-> Maybe that is intentional?
+> It is the same story as with any other HW and driver in the system.
 
-I think it was a mistake. There is also one more issue in
-qla4xxx_get_host_stats where it is returning an internal qlogic
-specific error value. This patch should fix all issues.
+Right, but my concern is not about unloading the kernel module, but
+about the IMA module parameters left initialized.  The existing code
+will continue using ahash (software version), even though the kernel
+module was unloaded, not shash.  My question is about the software
+implementations of ahash vs. shash performance.
 
-
-[PATCH] qla4xxx/iscsi: fix get_host_stats error propagation
-
-This patch fixes 2 bugs.
-
-1. qla4xxx was not always returning -EXYZ error codes when
-qla4xxx_get_host_stats failed.
-
-2. iscsi_get_host_stats was dropping the error code returned
-by drivers like qla4xxx.
-
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
-
-diff --git a/drivers/scsi/qla4xxx/ql4_os.c b/drivers/scsi/qla4xxx/ql4_os.c
-index 459b9f7..e4dc3e0 100644
---- a/drivers/scsi/qla4xxx/ql4_os.c
-+++ b/drivers/scsi/qla4xxx/ql4_os.c
-@@ -1050,6 +1050,7 @@ static int qla4xxx_get_host_stats(struct Scsi_Host *shost, char *buf, int len)
- 	if (!ql_iscsi_stats) {
- 		ql4_printk(KERN_ERR, ha,
- 			   "Unable to allocate memory for iscsi stats\n");
-+		ret = -ENOMEM;
- 		goto exit_host_stats;
- 	}
- 
-@@ -1058,6 +1059,7 @@ static int qla4xxx_get_host_stats(struct Scsi_Host *shost, char *buf, int len)
- 	if (ret != QLA_SUCCESS) {
- 		ql4_printk(KERN_ERR, ha,
- 			   "Unable to retrieve iscsi stats\n");
-+		ret = -EIO;
- 		goto exit_host_stats;
- 	}
- 	host_stats->mactx_frames = le64_to_cpu(ql_iscsi_stats->mac_tx_frames);
-diff --git a/drivers/scsi/scsi_transport_iscsi.c b/drivers/scsi/scsi_transport_iscsi.c
-index 0102a2d..ea2996a 100644
---- a/drivers/scsi/scsi_transport_iscsi.c
-+++ b/drivers/scsi/scsi_transport_iscsi.c
-@@ -3467,6 +3467,10 @@ iscsi_get_host_stats(struct iscsi_transport *transport, struct nlmsghdr *nlh)
- 		memset(buf, 0, host_stats_size);
- 
- 		err = transport->get_host_stats(shost, buf, host_stats_size);
-+		if (err) {
-+			kfree(skbhost_stats);
-+			goto exit_host_stats;
-+		}
- 
- 		actual_size = nlmsg_total_size(sizeof(*ev) + host_stats_size);
- 		skb_trim(skbhost_stats, NLMSG_ALIGN(actual_size));
+Mimi
 
