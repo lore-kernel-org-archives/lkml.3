@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697AbaGGK7y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 06:59:54 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:49870 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752590AbaGGK7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 06:59:50 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Dave Airlie <airlied@linux.ie>
-Subject: Re: [Intel-gfx] [PATCH 5/5] drm/i915: Kick out vga console
-Date: Mon, 07 Jul 2014 06:59:47 -0400
-Message-ID: <3881706.SMQbnEkzkB@grover>
-Organization: me
-User-Agent: KMail/4.13.2 (Linux/3.16.0-1-git; KDE/4.13.2; x86_64; ; )
-In-Reply-To: <20140707084826.GH5821@phenom.ffwll.local>
-References: <1401980308-5116-1-git-send-email-daniel.vetter@ffwll.ch> <20140630065955.GD7687@nuc-i3427.alporthouse.com> <20140707084826.GH5821@phenom.ffwll.local>
+	id S1752767AbaGGLAF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 07:00:05 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64346 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752590AbaGGLAB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 07:00:01 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [UPDATE PATCH v2 0/6] ACPI/EC: Critical race fixes.
+Date: Mon, 07 Jul 2014 13:18:04 +0200
+Message-ID: <39044838.0k25m70bcR@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <cover.1404700569.git.lv.zheng@intel.com>
+References: <cover.1402792240.git.lv.zheng@intel.com> <cover.1404700569.git.lv.zheng@intel.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -30,83 +25,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel,
+On Monday, July 07, 2014 11:09:49 AM Lv Zheng wrote:
+> History:
+> v1:
+>  The collection of bug-fixes from kernel bugzilla bug 70891.
+> v2:
+>  1. Improves the patch descriptions to make the root cause of the 70891 bug
+>     more correct.
+>  2. Improves a race fix to make it more robust.
+> v2 UPDATE:
+>  Added "Reported-by" and "Tested-by" from kernel bugzilla bug 59911/63931
+>  as a result of EC bug triage. Only patch descriptions are updated.
 
-Just to be sure.  The intel card here should not be claiming the real console.  It does
-not have an output device and the bios set set so the radeon is the primary device.
+OK, I've updated the commits in my tree in accordance with this.
 
-Ed
+>  Removed the GPE fix, it is included by another GPE API fix series.
 
+I've applied it separately already, so please don't resend it.
 
-On Monday 07 July 2014 10:48:26 Daniel Vetter wrote:
-> On Mon, Jun 30, 2014 at 07:59:55AM +0100, Chris Wilson wrote:
-> > On Sat, Jun 28, 2014 at 11:55:19PM -0400, Ed Tomlinson wrote:
-> > > On Saturday 28 June 2014 15:28:22 Ed Tomlinson wrote:
-> > > 
-> > > Resend without html krud which causes list to bounce the message.
-> > > 
-> > > > Hi
-> > > > 
-> > > > This commit ( a4de05268e674e8ed31df6348269e22d6c6a1803 ) hangs my boot with 3.16-git.  Reverting it lets the boot proceed. 
-> > > > 
-> > > > I have an i7 with a built-in i915 and an pcie r7 260x.  The R7 is the primary console.  The i915 is initialized
-> > > > but does not have a physical display attached.
-> > > > 
-> > > > With the patch applied the boot stops at the messages:
-> > > > 
-> > > > [drm] Memory usable by graphics device = 2048M
-> > > > [drm] Replacing VGA console driver
-> > 
-> > The issue looks like that we are ripping out the radeon fb_con whilst it
-> > is active and that upsets everyone. In which case, I think the
-> > compromise is:
-> > 
-> > 
-> > diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-> > index 5f44581..4915f1d 100644
-> > --- a/drivers/gpu/drm/i915/i915_dma.c
-> > +++ b/drivers/gpu/drm/i915/i915_dma.c
-> > @@ -1439,18 +1439,20 @@ static int i915_kick_out_vgacon(struct drm_i915_private *dev_priv)
-> >  #else
-> >  static int i915_kick_out_vgacon(struct drm_i915_private *dev_priv)
-> >  {
-> > -       int ret;
-> > +       int ret = 0;
-> >  
-> >         DRM_INFO("Replacing VGA console driver\n");
-> >  
-> >         console_lock();
-> > -       ret = do_take_over_console(&dummy_con, 0, MAX_NR_CONSOLES - 1, 1);
-> > -       if (ret == 0) {
-> > -               ret = do_unregister_con_driver(&vga_con);
-> > -
-> > -               /* Ignore "already unregistered". */
-> > -               if (ret == -ENODEV)
-> > -                       ret = 0;
-> > +       if (con_is_bound(&vga_con)) {
-> > +               ret = do_take_over_console(&dummy_con, 0, MAX_NR_CONSOLES - 1, 1);
-> > +               if (ret == 0) {
-> > +                       ret = do_unregister_con_driver(&vga_con);
-> 
-> Hm, we should only conditionalize the take_over_console - unregistering
-> vga_con is kinda the point to make sure it's gone for real. Ed, can you
-> please retest with the if (con_is_bound) check just for the
-> do_take_over_console call?
-> 
-> Still puzzled wtf is going on here since as David says this should be a
-> no-op.
-> 
-> Thanks, Daniel
-> > +
-> > +                       /* Ignore "already unregistered". */
-> > +                       if (ret == -ENODEV)
-> > +                               ret = 0;
-> > +               }
-> >         }
-> >         console_unlock();
-> > 
-> > -Chris
-> > 
-> 
-> 
+Thanks,
+Rafael
 
