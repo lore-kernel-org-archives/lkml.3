@@ -1,101 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631AbaGGPnj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 11:43:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35069 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751232AbaGGPni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 11:43:38 -0400
-Message-ID: <53BAC023.1070504@suse.cz>
-Date: Mon, 07 Jul 2014 17:43:31 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/10] mm/page_alloc: carefully free the page on isolate
- pageblock
-References: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com> <1404460675-24456-5-git-send-email-iamjoonsoo.kim@lge.com>
-In-Reply-To: <1404460675-24456-5-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752196AbaGGPpE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 11:45:04 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:43170 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640AbaGGPpA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 11:45:00 -0400
+Message-ID: <1404747894.3029.58.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH v3 1/3] ima: use ahash API for file hash calculation
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: linux-ima-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, dmitry.kasatkin@gmail.com
+Date: Mon, 07 Jul 2014 11:44:54 -0400
+In-Reply-To: <53BAA281.7040903@samsung.com>
+References: <cover.1404475462.git.d.kasatkin@samsung.com>
+	 <dc5977267c662c98f02cd637dd44c42be850916f.1404475462.git.d.kasatkin@samsung.com>
+	 <1404734207.3029.22.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <53BAA281.7040903@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070715-0928-0000-0000-0000032E12A6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2014 09:57 AM, Joonsoo Kim wrote:
-> We got migratetype without holding the lock so it could be
-> racy. If some pages go on the isolate migratetype buddy list
-> by this race, we can't allocate this page anymore until next
-> isolation attempt on this pageblock. Below is possible
-> scenario of this race.
->
-> pageblock 1 is isolate migratetype.
->
-> CPU1					CPU2
-> - get_pfnblock_migratetype(pageblock 1),
-> so MIGRATE_ISOLATE is returned
-> - call free_one_page() with MIGRATE_ISOLATE
-> 					- grab the zone lock
-> 					- unisolate pageblock 1
-> 					- release the zone lock
-> - grab the zone lock
-> - call __free_one_page() with MIGRATE_ISOLATE
-> - free page go into isolate buddy list
-> and we can't use it anymore
->
-> To prevent this possibility, re-check migratetype with holding the lock.
+On Mon, 2014-07-07 at 16:37 +0300, Dmitry Kasatkin wrote: 
+> On 07/07/14 14:56, Mimi Zohar wrote:
+> > On Fri, 2014-07-04 at 15:05 +0300, Dmitry Kasatkin wrote: 
 
-This could be also solved similarly to the other races, if during 
-unisolation, CPU2 sent a drain_all_pages() IPI and only then used 
-move_freepages_block(). Again, get_pfnblock_migratetype() on CPU1 would 
-need to be moved under disabled irq's.
+> >>
+> >> +/**
+> > This is the kernel-doc delimiter.
+> >
+> >> + * ima_calc_file_hash - calculae file hash
+> >> + *
+> > Missing kernel-doc argument descriptions.  Refer to
+> > Documentation/kernel-doc-nano-HOWTO.txt.
 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> ---
->   mm/page_alloc.c |   11 +++++++++++
->   1 file changed, 11 insertions(+)
->
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 99c05f7..d8feedc 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -743,6 +743,17 @@ static void free_one_page(struct zone *zone,
->   	spin_lock(&zone->lock);
->   	zone->pages_scanned = 0;
->
-> +	if (unlikely(is_migrate_isolate(migratetype))) {
-> +		/*
-> +		 * We got migratetype without holding the lock so it could be
-> +		 * racy. If some pages go on the isolate migratetype buddy list
-> +		 * by this race, we can't allocate this page anymore until next
-> +		 * isolation attempt on this pageblock. To prevent this
-> +		 * possibility, re-check migratetype with holding the lock.
-> +		 */
-> +		migratetype = get_pfnblock_migratetype(page, pfn);
-> +	}
-> +
->   	__free_one_page(page, pfn, zone, order, migratetype);
->   	if (!is_migrate_isolate(migratetype))
->   		__mod_zone_freepage_state(zone, 1 << order, migratetype);
->
+Not defining the arguments results in a kernel-doc warning.  Providing
+kernel-doc is nice, but is unnecessary in this case, as it isn't an
+exported loadable module, nor an externally visible function to other
+kernel files.  Either remove the extra asterisk, making it a regular
+comment, or add the arguments.
+
+> 
+> There is no need to explain arguments as they self-evident.
+> 
+> >> + * if ima_ahash_minsize parameter is non-zero, this function uses
+> >> + * ahash for hash caclulation. ahash performance varies for different
+> >> + * data sizes on different crypto accelerators. shash performance might
+> >> + * be better for small file. 'ima.ahash_minsize' module parameter allows
+> >> + * to specify the best value for the system.
+> >> + *
+> >> + * If ahash fails, it fallbacks to shash.
+> >> + */
+> >> +int ima_calc_file_hash(struct file *file, struct ima_digest_data *hash)
+> >> +{
+> >> +	loff_t i_size;
+> >> +	int rc;
+> >> +
+> >> +	i_size = i_size_read(file_inode(file));
+> >> +
+> >> +	if (ima_ahash_minsize && i_size >= ima_ahash_minsize) {
+> >> +		rc = ima_calc_file_ahash(file, hash);
+> >> +		if (!rc)
+> >> +			return 0;
+> >> +	}
+> >> +
+> >> +	return ima_calc_file_shash(file, hash);
+> >> +}
+> > If the crypto accelerator fails, it falls back to using shash.  Is their
+> > any indication that the HW error is intermittent or persistent?  Should
+> > ima_ahash_minsize be reset?
+> 
+> If hw constantly does not work then it is simply broken.
+
+True
+
+> You want to be protected from "random" failures.
+
+> For me it is not the case either... If it works then it works...
+
+This discussion isn't about your particular HW environment, but a
+general question.  For example, suppose we were discussing a laptop with
+a HW crypto accelerator.  If the HW crypto broke, I would at least want
+to be able to quiesce the system properly.  I'd most likely want to be
+able to continue using my laptop with software crypto.
+
+> > If the crypto accelerator, built as a kernel module, is removed,
+> > ima_ahash_minsize would still be set.  It would continue to use ahash.
+> > Is this the correct behavior? Or should ima_ahash_minsize be reset?
+> >
+> 
+> It cannot be removed, because it is used and module usage counter
+> protects from removing...
+
+Ok
+
+Mimi
 
