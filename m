@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210AbaGGSB5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 14:01:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9705 "EHLO mx1.redhat.com"
+	id S1752575AbaGGSCS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 14:02:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65047 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809AbaGGSBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 14:01:54 -0400
+	id S1751943AbaGGSB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 14:01:56 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Konstantin Khlebnikov <koct9i@gmail.com>,
@@ -23,683 +23,488 @@ Cc: Konstantin Khlebnikov <koct9i@gmail.com>,
         Michael Kerrisk <mtk.manpages@gmail.com>,
         Linux API <linux-api@vger.kernel.org>,
         Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH v3 2/3] selftests/fincore: add test code for fincore()
-Date: Mon,  7 Jul 2014 14:00:05 -0400
-Message-Id: <1404756006-23794-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH v3 1/3] mm: introduce fincore()
+Date: Mon,  7 Jul 2014 14:00:04 -0400
+Message-Id: <1404756006-23794-2-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1404756006-23794-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1404756006-23794-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds simple test programs for fincore(), which contains the
-following testcase:
-  - test_smallfile_bytemap
-  - test_smallfile_pfn
-  - test_smallfile_multientry
-  - test_smallfile_pfn_skiphole
-  - test_largefile_pfn
-  - test_largefile_pfn_offset
-  - test_largefile_pfn_overrun
-  - test_largefile_pfn_skiphole
-  - test_tmpfs_pfn
-  - test_hugetlb_pfn
-  - test_invalid_start_address
-  - test_invalid_len
-  - test_invalid_mode
-  - test_unaligned_start_address_hugetlb
+This patch provides a new system call fincore(), which extracts mincore()-
+like information from the kernel, i.e. page residency of a given file.
+But unlike mincore(), fincore() has a mode flag which allows us to extract
+more detailed information like pfn and page flag. This kind of information
+is helpful, for example when applications want to know the file cache status
+to control the IO on their own way.
+There was some complaint around current mincore() API, where we have only
+one byte for each page and mincore() is not extensible without breaking
+existing applications, so the mode flag is to avoid the same problem.
+
+The details about the data format being passed to userspace are explained
+in inline comment, but generally in long entry format, we can choose which
+information is extraced flexibly, so you don't have to waste memory by
+extracting unnecessary information. And with FINCORE_PGOFF flag, we can skip
+hole pages (not on memory,) which makes us avoid a flood of meaningless
+zero entries when calling on extremely large (but only few pages of it
+are loaded on memory) file.
+
+Basic testset is added in the next patch on tools/testing/selftests/fincore/.
 
 ChangeLog v3:
-- remove pagecache tag stuff
+- remove pagecache tag things
+- rename include/uapi/linux/pagecache.h to include/uapi/linux/fincore.h
 
 ChangeLog v2:
-- include uapi/linux/pagecache.h
-- add testcase test_invalid_start_address and test_invalid_len
-- other small changes to adjust for the kernel's changes
+- move definition of FINCORE_* to include/uapi/linux/pagecache.h
+- add another parameter fincore_extra to sys_fincore()
+- rename FINCORE_SKIP_HOLE to FINCORE_PGOFF and change bit order.
+- add valid argument check (start should be inside file address range,
+  nr_pages should be positive)
+- add end-of-file check (scan to the end of file even if the last page
+  is a hole)
+- add access_ok(VERIFY_WIRTE) (copied from mincore())
+- update inline comments
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- tools/testing/selftests/Makefile                   |   1 +
- tools/testing/selftests/fincore/Makefile           |  31 ++
- .../selftests/fincore/create_hugetlbfs_file.c      |  49 +++
- tools/testing/selftests/fincore/fincore.c          | 153 +++++++++
- tools/testing/selftests/fincore/run_fincoretests   | 361 +++++++++++++++++++++
- 5 files changed, 595 insertions(+)
- create mode 100644 tools/testing/selftests/fincore/Makefile
- create mode 100644 tools/testing/selftests/fincore/create_hugetlbfs_file.c
- create mode 100644 tools/testing/selftests/fincore/fincore.c
- create mode 100644 tools/testing/selftests/fincore/run_fincoretests
+ arch/x86/syscalls/syscall_64.tbl |   1 +
+ include/linux/syscalls.h         |   4 +
+ include/uapi/linux/fincore.h     |  84 ++++++++++++
+ mm/Makefile                      |   2 +-
+ mm/fincore.c                     | 286 +++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 376 insertions(+), 1 deletion(-)
+ create mode 100644 include/uapi/linux/fincore.h
+ create mode 100644 mm/fincore.c
 
-diff --git v3.16-rc3.orig/tools/testing/selftests/Makefile v3.16-rc3/tools/testing/selftests/Makefile
-index e66e710cc595..91e817b87a9e 100644
---- v3.16-rc3.orig/tools/testing/selftests/Makefile
-+++ v3.16-rc3/tools/testing/selftests/Makefile
-@@ -11,6 +11,7 @@ TARGETS += vm
- TARGETS += powerpc
- TARGETS += user
- TARGETS += sysctl
-+TARGETS += fincore
+diff --git v3.16-rc3.orig/arch/x86/syscalls/syscall_64.tbl v3.16-rc3/arch/x86/syscalls/syscall_64.tbl
+index ec255a1646d2..9d291b7081ca 100644
+--- v3.16-rc3.orig/arch/x86/syscalls/syscall_64.tbl
++++ v3.16-rc3/arch/x86/syscalls/syscall_64.tbl
+@@ -323,6 +323,7 @@
+ 314	common	sched_setattr		sys_sched_setattr
+ 315	common	sched_getattr		sys_sched_getattr
+ 316	common	renameat2		sys_renameat2
++317	common	fincore			sys_fincore
  
- all:
- 	for TARGET in $(TARGETS); do \
-diff --git v3.16-rc3.orig/tools/testing/selftests/fincore/Makefile v3.16-rc3/tools/testing/selftests/fincore/Makefile
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git v3.16-rc3.orig/include/linux/syscalls.h v3.16-rc3/include/linux/syscalls.h
+index b0881a0ed322..60795ee8f9ee 100644
+--- v3.16-rc3.orig/include/linux/syscalls.h
++++ v3.16-rc3/include/linux/syscalls.h
+@@ -65,6 +65,7 @@ struct old_linux_dirent;
+ struct perf_event_attr;
+ struct file_handle;
+ struct sigaltstack;
++struct fincore_extra;
+ 
+ #include <linux/types.h>
+ #include <linux/aio_abi.h>
+@@ -866,4 +867,7 @@ asmlinkage long sys_process_vm_writev(pid_t pid,
+ asmlinkage long sys_kcmp(pid_t pid1, pid_t pid2, int type,
+ 			 unsigned long idx1, unsigned long idx2);
+ asmlinkage long sys_finit_module(int fd, const char __user *uargs, int flags);
++asmlinkage long sys_fincore(int fd, loff_t start, long nr_pages,
++			int mode, unsigned char __user *vec,
++			struct fincore_extra __user *extra);
+ #endif
+diff --git v3.16-rc3.orig/include/uapi/linux/fincore.h v3.16-rc3/include/uapi/linux/fincore.h
 new file mode 100644
-index 000000000000..ab4361c70da5
+index 000000000000..30797e68a8d4
 --- /dev/null
-+++ v3.16-rc3/tools/testing/selftests/fincore/Makefile
-@@ -0,0 +1,31 @@
-+# Makefile for vm selftests
++++ v3.16-rc3/include/uapi/linux/fincore.h
+@@ -0,0 +1,84 @@
++#ifndef _UAPI_LINUX_FINCORE_H
++#define _UAPI_LINUX_FINCORE_H
 +
-+uname_M := $(shell uname -m 2>/dev/null || echo not)
-+ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
-+ifeq ($(ARCH),i386)
-+        ARCH := X86
-+        CFLAGS := -DCONFIG_X86_32 -D__i386__
-+endif
-+ifeq ($(ARCH),x86_64)
-+        ARCH := X86
-+        CFLAGS := -DCONFIG_X86_64 -D__x86_64__
-+endif
-+
-+CC = $(CROSS_COMPILE)gcc
-+CFLAGS = -Wall
-+CFLAGS += -I../../../../arch/x86/include/generated/
-+CFLAGS += -I../../../../include/
-+CFLAGS += -I../../../../usr/include/
-+CFLAGS += -I../../../../arch/x86/include/
-+
-+BINARIES = fincore create_hugetlbfs_file
-+
-+all: $(BINARIES)
-+%: %.c
-+	$(CC) $(CFLAGS) -o $@ $^
-+
-+run_tests: all
-+	@/bin/sh ./run_fincoretests || (echo "fincoretests: [FAIL]"; exit 1)
-+
-+clean:
-+	$(RM) $(BINARIES)
-diff --git v3.16-rc3.orig/tools/testing/selftests/fincore/create_hugetlbfs_file.c v3.16-rc3/tools/testing/selftests/fincore/create_hugetlbfs_file.c
-new file mode 100644
-index 000000000000..a46ccf0af5f2
---- /dev/null
-+++ v3.16-rc3/tools/testing/selftests/fincore/create_hugetlbfs_file.c
-@@ -0,0 +1,49 @@
-+#define _GNU_SOURCE 1
-+#include <stdio.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <fcntl.h>
-+#include <sys/mman.h>
-+#include <string.h>
-+#include <unistd.h>
-+#include <stdlib.h>
-+
-+#define err(x) (perror(x), exit(1))
-+
-+unsigned long default_hugepage_size(void)
-+{
-+	unsigned long hps = 0;
-+	char *line = NULL;
-+	size_t linelen = 0;
-+	FILE *f = fopen("/proc/meminfo", "r");
-+	if (!f)
-+		err("open /proc/meminfo");
-+	while (getline(&line, &linelen, f) > 0) {
-+		if (sscanf(line, "Hugepagesize:	%lu kB", &hps) == 1) {
-+			hps <<= 10;
-+			break;
-+		}
-+	}
-+	free(line);
-+	return hps;
-+}
-+
-+int main(int argc, char **argv)
-+{
-+	int ret;
-+	int fd;
-+	char *p;
-+	unsigned long hpsize = default_hugepage_size();
-+	fd = open(argv[1], O_RDWR|O_CREAT);
-+	if (fd == -1)
-+		err("open");
-+	p = mmap(NULL, 10 * hpsize, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-+	if (p == (void *)-1)
-+		err("mmap");
-+	memset(p, 'a', 3 * hpsize);
-+	memset(p + 7 * hpsize, 'a', 3 * hpsize - 1);
-+	ret = close(fd);
-+	if (ret == -1)
-+		err("close");
-+	return 0;
-+}
-diff --git v3.16-rc3.orig/tools/testing/selftests/fincore/fincore.c v3.16-rc3/tools/testing/selftests/fincore/fincore.c
-new file mode 100644
-index 000000000000..786a985ba5bd
---- /dev/null
-+++ v3.16-rc3/tools/testing/selftests/fincore/fincore.c
-@@ -0,0 +1,153 @@
 +/*
-+ * fincore(2) test program
++ * You can control how the buffer in userspace is filled with this mode
++ * parameters:
++ *
++ * - FINCORE_BMAP:
++ *     the page status is returned in a vector of bytes.
++ *     The least significant bit of each byte is 1 if the referenced page
++ *     is in memory, otherwise it is zero.
++ *
++ * - FINCORE_PGOFF:
++ *     if this flag is set, fincore() doesn't store any information about
++ *     holes. Instead each records per page has the entry of page offset,
++ *     using 8 bytes. This mode is useful if we handle a large file and
++ *     only few pages are on memory.
++ *
++ * - FINCORE_PFN:
++ *     stores pfn, using 8 bytes.
++ *
++ * - FINCORE_PAGEFLAGS:
++ *     stores page flags, using 8 bytes. See definition of KPF_* for
++ *     details of each bit.
++ *
++ * FINCORE_BMAP shouldn't be used combined with any other flags, and returnd
++ * data in this mode is like this:
++ *
++ *   page offset  0   1   2   3   4
++ *              +---+---+---+---+---+
++ *              | 1 | 0 | 0 | 1 | 1 | ...
++ *              +---+---+---+---+---+
++ *               <->
++ *              1 byte
++ *
++ * For FINCORE_PFN, page data is formatted like this:
++ *
++ *   page offset    0       1       2       3       4
++ *              +-------+-------+-------+-------+-------+
++ *              |  pfn  |  pfn  |  pfn  |  pfn  |  pfn  | ...
++ *              +-------+-------+-------+-------+-------+
++ *               <----->
++ *               8 byte
++ *
++ * We can use multiple flags among the flags in FINCORE_LONGENTRY_MASK.
++ * For example, when the mode is FINCORE_PFN|FINCORE_PAGEFLAGS, the per-page
++ * information is stored like this:
++ *
++ *    page offset 0    page offset 1   page offset 2   page offset 3
++ *                                        (hole)
++ *   +-------+-------+-------+-------+-------+-------+-------+-------+
++ *   |  pfn  | flags |  pfn  | flags |   0   |   0   |  pfn  | flags | ...
++ *   +-------+-------+-------+-------+-------+-------+-------+-------+
++ *    <-------------> <-------------> <-------------> <------------->
++ *       16 bytes        16 bytes        16 bytes        16 bytes
++ *
++ * When FINCORE_PGOFF is set, we store page offset entry and ignore holes
++ * For example, the data format of mode FINCORE_PGOFF|FINCORE_PFN|
++ * FINCORE_PAGEFLAGS is like follows:
++ *
++ *   +-------+-------+-------+-------+-------+-------+
++ *   | pgoff |  pfn  | flags | pgoff |  pfn  | flags | ...
++ *   +-------+-------+-------+-------+-------+-------+
++ *    <---------------------> <--------------------->
++ *           24 bytes                24 bytes
++ */
++#define FINCORE_BMAP		0x01	/* bytemap mode */
++#define FINCORE_PGOFF		0x02
++#define FINCORE_PFN		0x04
++#define FINCORE_PAGE_FLAGS	0x08
++
++#define FINCORE_MODE_MASK	0x1f
++#define FINCORE_LONGENTRY_MASK	(FINCORE_PGOFF | FINCORE_PFN | \
++				 FINCORE_PAGE_FLAGS)
++
++struct fincore_extra {
++	/*
++	 * (output) the number of entries with valid data, this is useful
++	 * if you set FINCORE_PGOFF and want to know the end of filled data.
++	 */
++	unsigned long nr_entries;
++};
++
++#endif /* _UAPI_LINUX_FINCORE_H */
+diff --git v3.16-rc3.orig/mm/Makefile v3.16-rc3/mm/Makefile
+index 4064f3ec145e..cc9420221afd 100644
+--- v3.16-rc3.orig/mm/Makefile
++++ v3.16-rc3/mm/Makefile
+@@ -18,7 +18,7 @@ obj-y			:= filemap.o mempool.o oom_kill.o fadvise.o \
+ 			   mm_init.o mmu_context.o percpu.o slab_common.o \
+ 			   compaction.o balloon_compaction.o vmacache.o \
+ 			   interval_tree.o list_lru.o workingset.o \
+-			   iov_iter.o $(mmu-y)
++			   iov_iter.o fincore.o $(mmu-y)
+ 
+ obj-y += init-mm.o
+ 
+diff --git v3.16-rc3.orig/mm/fincore.c v3.16-rc3/mm/fincore.c
+new file mode 100644
+index 000000000000..2f20ac3569df
+--- /dev/null
++++ v3.16-rc3/mm/fincore.c
+@@ -0,0 +1,286 @@
++/*
++ * fincore(2) system call
++ *
++ * Copyright (C) 2014 NEC Corporation, Naoya Horiguchi
 + */
 +
-+#define _GNU_SOURCE 1
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <string.h>
-+#include <unistd.h>
-+#include <getopt.h>
-+#include <assert.h>
-+#include <fcntl.h>
-+#include <sys/mman.h>
-+#include <sys/stat.h>
-+#include <sys/syscall.h>
++#include <linux/syscalls.h>
++#include <linux/pagemap.h>
++#include <linux/file.h>
++#include <linux/fs.h>
++#include <linux/mm.h>
++#include <linux/slab.h>
++#include <linux/hugetlb.h>
 +#include <uapi/linux/fincore.h>
 +
-+#define err(x) (perror(x), exit(1))
++struct fincore_control {
++	int mode;
++	int width;		/* width of each entry (in bytes) */
++	unsigned char *buffer;
++	long buffer_size;
++	void *cursor;		/* current position on the buffer */
++	pgoff_t pgstart;	/* start point of page cache scan in each run
++				 * of the while loop */
++	long nr_pages;		/* number of pages to be copied to userspace
++				 * (decreasing while scan proceeds) */
++	long scanned_offset;	/* page offset of the lastest scanned page */
++	struct address_space *mapping;
++};
 +
-+void usage(char *str)
++#define store_entry(fc, type, data) ({		\
++	*(type *)fc->cursor = (type)data;	\
++	fc->cursor += sizeof(type);		\
++})
++
++/*
++ * Store page cache data to temporal buffer in the specified format depending
++ * on fincore mode.
++ */
++static void __do_fincore(struct fincore_control *fc, struct page *page,
++			 unsigned long index)
 +{
-+	printf(
-+		"Usage: %s [-s start] [-l len] [-m mode] [-p pagesize] file\n"
-+		"  -s: start offset (in bytes)\n"
-+		"  -l: length to scan (in bytes)\n"
-+		"  -m: fincore mode\n"
-+		"  -p: set page size (for hugepage)\n"
-+		"  -h: show this message\n"
-+		, str);
-+	exit(EXIT_SUCCESS);
++	VM_BUG_ON(!page);
++	VM_BUG_ON((unsigned long)fc->cursor - (unsigned long)fc->buffer
++		  >= fc->buffer_size);
++	if (fc->mode & FINCORE_BMAP)
++		store_entry(fc, unsigned char, PageUptodate(page));
++	else if (fc->mode & (FINCORE_LONGENTRY_MASK)) {
++		if (fc->mode & FINCORE_PGOFF)
++			store_entry(fc, unsigned long, index);
++		if (fc->mode & FINCORE_PFN)
++			store_entry(fc, unsigned long, page_to_pfn(page));
++		if (fc->mode & FINCORE_PAGE_FLAGS)
++			store_entry(fc, unsigned long, stable_page_flags(page));
++	}
 +}
 +
-+static void show_fincore_buffer(long start, long nr_pages, int records_per_page,
-+				int mode, unsigned char *buf)
++/*
++ * Traverse page cache tree. It's assumed that temporal buffer are zeroed
++ * in advance. Due to this, we don't have to store zero entry explicitly
++ * one-by-one and we just set fc->cursor to the position of the next
++ * on-memory page.
++ *
++ * Return value is the number of pages whose data is stored in fc->buffer.
++ */
++static long do_fincore(struct fincore_control *fc, int nr_pages)
 +{
-+	int i, j;
-+	unsigned char *curuc = (unsigned char *)buf;
-+	unsigned long *curul = (unsigned long *)buf;
++	pgoff_t pgend = fc->pgstart + nr_pages;
++	struct radix_tree_iter iter;
++	void **slot;
++	long nr = 0;
 +
-+	for (i = 0; i < nr_pages; i++) {
-+		j = 0;
-+		if (mode & FINCORE_BMAP)
-+			printf("buffer: 0x%lx\t%d", start + i, curuc[i + j]);
-+		else if (mode & (FINCORE_LONGENTRY_MASK)) {
-+			if (mode & FINCORE_PGOFF)
-+				printf("buffer: 0x%lx",
-+				       curul[i * records_per_page + (j++)]);
-+			else
-+				printf("buffer: 0x%lx", start + i);
-+			if (mode & FINCORE_PFN)
-+				printf("\t0x%lx",
-+				       curul[i * records_per_page + (j++)]);
-+			if (mode & FINCORE_PAGE_FLAGS)
-+				printf("\t0x%lx",
-+				       curul[i * records_per_page + (j++)]);
++	fc->cursor = fc->buffer;
++
++	rcu_read_lock();
++restart:
++	radix_tree_for_each_slot(slot, &fc->mapping->page_tree, &iter,
++				 fc->pgstart) {
++		long jump;
++		struct page *page;
++
++		fc->scanned_offset = iter.index;
++		/* Handle holes */
++		jump = iter.index - fc->pgstart - nr;
++		if (jump) {
++			if (!(fc->mode & FINCORE_PGOFF)) {
++				if (iter.index < pgend) {
++					fc->cursor += jump * fc->width;
++					nr = iter.index - fc->pgstart;
++				} else {
++					/*
++					 * Fill remaining buffer as hole. Next
++					 * call should start at offset pgend.
++					 */
++					nr = nr_pages;
++					fc->scanned_offset = pgend - 1;
++					break;
++				}
++			}
 +		}
-+		printf("\n");
++repeat:
++		page = radix_tree_deref_slot(slot);
++		if (unlikely(!page))
++			/*
++			 * No need to increment nr and fc->cursor, because next
++			 * iteration should detect hole and update them there.
++			 */
++			continue;
++		else if (radix_tree_exception(page)) {
++			if (radix_tree_deref_retry(page)) {
++				/*
++				 * Transient condition which can only trigger
++				 * when entry at index 0 moves out of or back
++				 * to root: none yet gotten, safe to restart.
++				 */
++				WARN_ON(iter.index);
++				goto restart;
++			}
++			__do_fincore(fc, page, iter.index);
++		} else {
++			if (!page_cache_get_speculative(page))
++				goto repeat;
++
++			/* Has the page moved? */
++			if (unlikely(page != *slot)) {
++				page_cache_release(page);
++				goto repeat;
++			}
++
++			__do_fincore(fc, page, iter.index);
++			page_cache_release(page);
++		}
++
++		if (++nr == nr_pages)
++			break;
 +	}
++
++	if (!(fc->mode & FINCORE_PGOFF)) {
++		nr = nr_pages;
++		fc->scanned_offset = pgend - 1;
++	}
++
++	rcu_read_unlock();
++
++	return nr;
 +}
 +
-+int main(int argc, char *argv[])
++static inline bool fincore_validate_mode(int mode)
 +{
-+	char c;
-+	int fd;
-+	int ret;
-+	int mode = FINCORE_PFN;
-+	int width = sizeof(unsigned char);
-+	int records_per_page = 1;
-+	long pagesize = sysconf(_SC_PAGESIZE);
-+	long nr_pages;
-+	unsigned long start = 0;
-+	int len_not_given = 1;
-+	long len = 0;
-+	long buffer_size = 0;
-+	unsigned char *buf;
-+	struct stat stat;
-+	int extra = 0;
-+	struct fincore_extra fe = {};
++	if (mode & ~FINCORE_MODE_MASK)
++		return false;
++	if (!(!!(mode & FINCORE_BMAP) ^ !!(mode & FINCORE_LONGENTRY_MASK)))
++		return false;
++	return true;
++}
 +
-+	while ((c = getopt(argc, argv, "s:l:m:p:et:b:h")) != -1) {
-+		switch (c) {
-+		case 's':
-+			start = strtoul(optarg, NULL, 0);
-+			break;
-+		case 'l':
-+			len_not_given = 0;
-+			len = strtol(optarg, NULL, 0);
-+			break;
-+		case 'm':
-+			mode = strtoul(optarg, NULL, 0);
-+			break;
-+		case 'p':
-+			pagesize = strtoul(optarg, NULL, 0);
-+			break;
-+		case 'e':
-+			extra = 1;
-+			break;
-+		case 'b':
-+			buffer_size = strtoul(optarg, NULL, 0);
-+			break;
-+		case 'h':
-+		default:
-+			usage(argv[0]);
-+		}
++#define FINCORE_LOOP_STEP	256L
++
++/*
++ * The fincore(2) system call
++ *
++ *  @fd:        file descriptor of the target file
++ *  @start:     starting address offset of the target file (in byte).
++ *              This should be aligned to page cache size.
++ *  @nr_pages:  the number of pages whose data is passed to userspace.
++ *  @mode       fincore mode flags to determine the entry's format
++ *  @vec        pointer of the userspace buffer. The size must be equal to or
++ *              larger than (@nr_pages * width), where width is the size of
++ *              each entry.
++ *  @extra      used to input/output additional information from/to userspace
++ *
++ * fincore() returns the memory residency status and additional info (like
++ * pfn and page flags) of the given file's pages.
++ *
++ * Depending on the fincore mode, caller can receive the different formatted
++ * information. See the comment on definition of FINCORE_*.
++ *
++ * Because the status of a page can change after fincore() checks it once,
++ * the returned vector may contain stale information.
++ *
++ * return values:
++ *  -EBADF:   @fd isn't a valid open file descriptor
++ *  -EFAULT:  @vec points to an illegal address
++ *  -EINVAL:  @start is unaligned to page cache size or is out of file range.
++ *            Or @nr_pages is non-positive. Or @mode is invalid.
++ *  0:        fincore() is successfully done
++ */
++SYSCALL_DEFINE6(fincore, int, fd, loff_t, start, long, nr_pages,
++		int, mode, unsigned char __user *, vec,
++		struct fincore_extra __user *, extra)
++{
++	long ret = 0;
++	long step;
++	long nr = 0;
++	long pages_to_eof;
++	int pc_shift = PAGE_CACHE_SHIFT;
++	struct fd f;
++
++	struct fincore_control fc = {
++		.mode	= mode,
++		.width	= sizeof(unsigned char),
++	};
++
++	if (start < 0 || nr_pages <= 0)
++		return -EINVAL;
++
++	if (!fincore_validate_mode(mode))
++		return -EINVAL;
++
++	f = fdget(fd);
++
++	if (is_file_hugepages(f.file))
++		pc_shift = huge_page_shift(hstate_file(f.file));
++
++	if (!IS_ALIGNED(start, 1 << pc_shift)) {
++		ret = -EINVAL;
++		goto fput;
 +	}
 +
-+	fd = open(argv[optind], O_RDWR);
-+	if (fd == -1)
-+		err("open failed.");
-+
-+	/* scan to the end of file by default */
-+	if (len_not_given) {
-+		ret = fstat(fd, &stat);
-+		if (ret == -1)
-+			err("fstat failed.");
-+		len = stat.st_size - start;
-+	}
-+
-+	if (mode & FINCORE_LONGENTRY_MASK) {
-+		records_per_page = ((mode & FINCORE_PGOFF ? 1 : 0) +
-+				    (mode & FINCORE_PFN ? 1 : 0) +
-+				    (mode & FINCORE_PAGE_FLAGS ? 1 : 0)
-+			);
-+		width = records_per_page * sizeof(unsigned long);
-+	}
-+
-+	nr_pages = ((len + pagesize - 1) & (~(pagesize - 1))) / pagesize;
-+	printf("start:0x%lx, len:%ld, mode:%d, pagesize:0x%lx,\n"
-+	       "buffer_size:0x%lx, nr_pages:0x%lx, width:%d\n",
-+	       start, len, mode, pagesize, buffer_size, nr_pages, width);
-+	buf = malloc(buffer_size > 0 ? buffer_size : nr_pages * width);
-+	if (!buf)
-+		err("malloc");
-+
-+	ret = syscall(__NR_fincore, fd, start, nr_pages, mode, buf,
-+		      extra ? &fe : NULL);
-+	if (ret < 0)
-+		err("fincore");
 +	/*
-+	 * print buffer to stdout, and parse it later for validation check.
-+	 * fincore() returns the number of entries written to the buffer.
++	 * TODO: support /dev/mem, /proc/pid/mem for system/process wide
++	 * page survey, which would obsolete /proc/kpageflags, and
++	 * /proc/pid/pagemap.
 +	 */
-+	show_fincore_buffer(start / pagesize, nr_pages, records_per_page,
-+			    mode, buf);
++	if (!S_ISREG(file_inode(f.file)->i_mode)) {
++		ret = -EBADF;
++		goto fput;
++	}
++
++	fc.pgstart = start >> pc_shift;
++	pages_to_eof = DIV_ROUND_UP(i_size_read(file_inode(f.file)),
++				    1UL << pc_shift) - fc.pgstart;
++	/* start is too large */
++	if (pages_to_eof <= 0) {
++		ret = -EINVAL;
++		goto fput;
++	}
++	/* Never go beyond the end of file */
++	fc.nr_pages = min(pages_to_eof, nr_pages);
++	fc.mapping = f.file->f_mapping;
++	if (mode & FINCORE_LONGENTRY_MASK)
++		fc.width = ((mode & FINCORE_PGOFF ? 1 : 0) +
++			    (mode & FINCORE_PFN ? 1 : 0) +
++			    (mode & FINCORE_PAGE_FLAGS ? 1 : 0)
++			) * sizeof(unsigned long);
++
++	if (!access_ok(VERIFY_WRITE, vec, nr_pages * fc.width)) {
++		ret = -EFAULT;
++		goto fput;
++	}
++
++	step = min(fc.nr_pages, FINCORE_LOOP_STEP);
++
++	fc.buffer_size = step * fc.width;
++	fc.buffer = kmalloc(fc.buffer_size, GFP_TEMPORARY);
++	if (!fc.buffer) {
++		ret = -ENOMEM;
++		goto fput;
++	}
++
++	while (fc.nr_pages > 0) {
++		memset(fc.buffer, 0, fc.buffer_size);
++		ret = do_fincore(&fc, min(step, fc.nr_pages));
++		/* Reached the end of the file */
++		if (ret == 0)
++			break;
++		if (ret < 0)
++			break;
++		if (copy_to_user(vec + nr * fc.width,
++				 fc.buffer, ret * fc.width)) {
++			ret = -EFAULT;
++			break;
++		}
++		fc.nr_pages -= ret;
++		fc.pgstart = fc.scanned_offset + 1;
++		nr += ret;
++	}
++
++	kfree(fc.buffer);
 +
 +	if (extra)
-+		printf("fincore_extra->nr_entries: %ld\n", fe.nr_entries);
++		__put_user(nr, &extra->nr_entries);
 +
-+	ret = close(fd);
-+	if (ret < 0)
-+		err("close");
-+	return 0;
++fput:
++	fdput(f);
++	return ret;
 +}
-diff --git v3.16-rc3.orig/tools/testing/selftests/fincore/run_fincoretests v3.16-rc3/tools/testing/selftests/fincore/run_fincoretests
-new file mode 100644
-index 000000000000..881a1ce1fbee
---- /dev/null
-+++ v3.16-rc3/tools/testing/selftests/fincore/run_fincoretests
-@@ -0,0 +1,361 @@
-+#!/bin/bash
-+
-+WDIR=./fincore_work
-+mkdir $WDIR 2> /dev/null
-+TMPF=`mktemp --tmpdir=$WDIR -d`
-+export LANG=C
-+
-+sysctl -q vm.nr_hugepages=50
-+
-+#
-+# common routines
-+#
-+abort() {
-+    echo "Test abort"
-+    exit 1
-+}
-+
-+create_small_file() {
-+    dd if=/dev/urandom of=$WDIR/smallfile bs=4096 count=4 > /dev/null 2>&1
-+    dd if=/dev/urandom of=$WDIR/smallfile bs=4096 count=4 seek=8> /dev/null 2>&1
-+    date >> $WDIR/smallfile
-+    sync
-+}
-+
-+create_large_file() {
-+    dd if=/dev/urandom of=$WDIR/largefile bs=4096 count=384 > /dev/null 2>&1
-+    dd if=/dev/urandom of=$WDIR/largefile bs=4096 count=384 seek=640> /dev/null 2>&1
-+    sync
-+}
-+
-+create_tmpfs_file() {
-+    dd if=/dev/urandom of=/tmp/tmpfile bs=4096 count=4 > /dev/null 2>&1
-+    dd if=/dev/urandom of=/tmp/tmpfile bs=4096 count=4 seek=8> /dev/null 2>&1
-+    date >> /tmp/tmpfile
-+    sync
-+}
-+
-+create_hugetlb_file() {
-+    if mount | grep $WDIR/hugepages > /dev/null ; then
-+        echo "$WDIR/hugepages already mounted"
-+    else
-+        mkdir -p $WDIR/hugepages 2> /dev/null
-+        mount -t hugetlbfs none $WDIR/hugepages 2> /dev/null
-+        if [ $? -ne 0 ] ; then
-+            echo "Failed to mount hugetlbfs" >&2
-+            return 1
-+        fi
-+    fi
-+    local hptotal=$(grep HugePages_Total: /proc/meminfo | tr -s ' ' | cut -f2 -d' ')
-+    if [ "$hptotal" -lt 10 ] ; then
-+        echo "Hugepage pool size need to be >= 10" >&2
-+        return 1
-+    fi
-+    ./create_hugetlbfs_file $WDIR/hugepages/file
-+    if [ $? -ne 0 ] ; then
-+        echo "Failed to create hugetlb file" >&2
-+        return 1
-+    fi
-+    return 0;
-+}
-+
-+get_buffer() {
-+    cat "$1" | grep '^buffer:' | cut -f 2- -d ' '
-+}
-+
-+get_fincore_extra_nr_entries() {
-+    cat "$1" | grep '^fincore_extra->nr_entries' | cut -f 2 -d ' '
-+}
-+
-+nr_of_exist_should_be() {
-+    if [ "$1" -ne "$2" ] ; then
-+        echo "[FAIL] $3: Number of on-memory pages should be $1, but got $2"
-+        return 1
-+    fi
-+    return 0
-+}
-+
-+nr_of_nonexist_should_be() {
-+    if [ "$1" -ne "$2" ] ; then
-+        echo "[FAIL] $3: Number of hole entries should be $1, but got $2"
-+        return 1
-+    fi
-+    return 0
-+}
-+
-+nr_of_valid_entries_should_be() {
-+    if [ "$1" -ne "$2" ] ; then
-+        echo "[FAIL] $3: Number of valid entries should be $1, but got $2"
-+        return 1
-+    fi
-+    return 0
-+}
-+
-+check_einval() {
-+    grep "fincore: Invalid argument" "$1" > /dev/null
-+}
-+
-+#
-+# Testcases
-+#
-+test_smallfile_bytemap() {
-+    local exist
-+    local nonexist
-+    create_small_file
-+
-+    ./fincore -m 0x1 $WDIR/smallfile > $TMPF/$FUNCNAME 2>&1
-+    exist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep 1 | wc -l)
-+    nonexist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep 0 | wc -l)
-+    nr_of_exist_should_be 9 "$exist" "$FUNCNAME" || return 1
-+    nr_of_nonexist_should_be 4 "$nonexist" "$FUNCNAME" || return 1
-+    echo "[PASS] $FUNCNAME"
-+}
-+
-+test_smallfile_pfn() {
-+    local exist
-+    local nonexist
-+    create_small_file
-+
-+    ./fincore -m 0x4 $WDIR/smallfile > $TMPF/$FUNCNAME 2>&1
-+    exist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep -v 0x0 | wc -l)
-+    nonexist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep 0x0 | wc -l)
-+    nr_of_exist_should_be 9 "$exist" "$FUNCNAME" || return 1
-+    nr_of_nonexist_should_be 4 "$nonexist" "$FUNCNAME" || return 1
-+    echo "[PASS] $FUNCNAME"
-+}
-+
-+test_smallfile_multientry() {
-+    local exist
-+    local nonexist
-+    create_small_file
-+
-+    ./fincore -m 0xc -e $WDIR/smallfile > $TMPF/$FUNCNAME 2>&1
-+    exist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2,3 | grep -vP "0x0\t0x0" | wc -l)
-+    nonexist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2,3 | grep -P "0x0\t0x0" | wc -l)
-+    nr_of_exist_should_be 9 "$exist" "$FUNCNAME" || return 1
-+    nr_of_nonexist_should_be 4 "$nonexist" "$FUNCNAME" || return 1
-+    echo "[PASS] $FUNCNAME"
-+}
-+
-+test_smallfile_pfn_skiphole() {
-+    local exist
-+    local nonexist
-+    local nr_entries
-+    create_small_file
-+
-+    ./fincore -m 0x6 -e $WDIR/smallfile > $TMPF/$FUNCNAME 2>&1
-+    exist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep -v 0x0 | wc -l)
-+    nonexist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep 0x0 | wc -l)
-+    nr_entries=$(get_fincore_extra_nr_entries $TMPF/$FUNCNAME)
-+    nr_of_exist_should_be 9 "$exist" "$FUNCNAME" || return 1
-+    nr_of_nonexist_should_be 4 "$nonexist" "$FUNCNAME" || return 1
-+    nr_of_valid_entries_should_be 9 "$nr_entries" "$FUNCNAME" || return 1
-+    echo "[PASS] $FUNCNAME"
-+}
-+
-+# in-kernel function sys_fincore() repeat copy_to_user() per 256 entries,
-+# so testing for large file is meaningful testcase.
-+test_largefile_pfn() {
-+    local exist
-+    local nonexist
-+    create_large_file
-+
-+    ./fincore -m 0x4 -e $WDIR/largefile > $TMPF/$FUNCNAME 2>&1
-+    exist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep -v 0x0 | wc -l)
-+    nonexist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep 0x0 | wc -l)
-+    nr_of_exist_should_be 768 "$exist" "$FUNCNAME" || return 1
-+    nr_of_nonexist_should_be 256 "$nonexist" "$FUNCNAME" || return 1
-+    echo "[PASS] $FUNCNAME"
-+}
-+
-+test_largefile_pfn_offset() {
-+    local exist
-+    local nonexist
-+    create_large_file
-+
-+    ./fincore -m 0x4 -s 0x80000 $WDIR/largefile > $TMPF/$FUNCNAME 2>&1
-+    exist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep -v 0x0 | wc -l)
-+    nonexist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep 0x0 | wc -l)
-+    nr_of_exist_should_be 640 "$exist" "$FUNCNAME" || return 1
-+    nr_of_nonexist_should_be 256 "$nonexist" "$FUNCNAME" || return 1
-+    echo "[PASS] $FUNCNAME"
-+}
-+
-+test_largefile_pfn_overrun() {
-+    local exist
-+    local nonexist
-+    local nr_entries
-+    create_large_file
-+
-+    ./fincore -m 0x4 -s 0x80000 -l 0x400000 -e $WDIR/largefile > $TMPF/$FUNCNAME 2>&1
-+    exist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep -v 0x0 | wc -l)
-+    nonexist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep 0x0 | wc -l)
-+    nr_entries=$(get_fincore_extra_nr_entries $TMPF/$FUNCNAME)
-+    nr_of_exist_should_be 640 "$exist" "$FUNCNAME" || return 1
-+    nr_of_nonexist_should_be 384 "$nonexist" "$FUNCNAME" || return 1
-+    nr_of_valid_entries_should_be 896 "$nr_entries" "$FUNCNAME" || return 1
-+    echo "[PASS] $FUNCNAME"
-+}
-+
-+test_largefile_pfn_skiphole() {
-+    local exist
-+    local nonexist
-+    create_large_file
-+
-+    ./fincore -m 0x6 -s 0x100000 -l 0x102000 -e $WDIR/largefile > $TMPF/$FUNCNAME 2>&1
-+    exist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep -v 0x0 | wc -l)
-+    nonexist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep 0x0 | wc -l)
-+    nr_entries=$(get_fincore_extra_nr_entries $TMPF/$FUNCNAME)
-+    nr_of_exist_should_be 258 "$exist" "$FUNCNAME" || return 1
-+    nr_of_nonexist_should_be 0 "$nonexist" "$FUNCNAME" || return 1
-+    nr_of_valid_entries_should_be 258 "$nr_entries" "$FUNCNAME" || return 1
-+    echo "[PASS] $FUNCNAME"
-+}
-+
-+test_tmpfs_pfn() {
-+    local exist
-+    local nonexist
-+    create_tmpfs_file
-+
-+    ./fincore -m 0x4 /tmp/tmpfile > $TMPF/$FUNCNAME 2>&1
-+    exist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep -v 0x0 | wc -l)
-+    nonexist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep 0x0 | wc -l)
-+    nr_of_exist_should_be 9 "$exist" "$FUNCNAME" || return 1
-+    nr_of_nonexist_should_be 4 "$nonexist" "$FUNCNAME" || return 1
-+    echo "[PASS] $FUNCNAME"
-+}
-+
-+test_hugetlb_pfn() {
-+    local exist
-+    local nonexist
-+    local exitcode=0
-+    create_hugetlb_file
-+    if [ $? -ne 0 ] ; then
-+        echo "[FAIL] $FUNCNAME: fail to create a file on hugetlbfs"
-+        return 1
-+    fi
-+    local hugepagesize=$[$(cat /proc/meminfo  | grep Hugepagesize: | tr -s ' ' | cut -f2 -d' ') * 1024]
-+    ./fincore -p $hugepagesize -m 0x4 -e $WDIR/hugepages/file > $TMPF/$FUNCNAME 2>&1
-+    exist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep -v 0x0 | wc -l)
-+    nonexist=$(get_buffer $TMPF/$FUNCNAME | cut -f 2 | grep 0x0 | wc -l)
-+    nr_entries=$(get_fincore_extra_nr_entries $TMPF/$FUNCNAME)
-+    nr_of_exist_should_be 6 "$exist" "$FUNCNAME" || return 1
-+    nr_of_nonexist_should_be 4 "$nonexist" "$FUNCNAME" || return 1
-+    nr_of_valid_entries_should_be 10 "$nr_entries" "$FUNCNAME" || return 1
-+    rm -rf $WDIR/hugepages/file
-+    echo "[PASS] $FUNCNAME"
-+}
-+
-+test_invalid_start_address() {
-+    create_small_file
-+    ./fincore -m 0x4 -s -0x4000 -l 1 -e $WDIR/smallfile > $TMPF/$FUNCNAME 2>&1
-+    if [ $? -eq 0 ] || ! check_einval $TMPF/$FUNCNAME ; then
-+        echo "[FAIL] $FUNCNAME: negative start is invalid"
-+        return 1
-+    fi
-+    ./fincore -m 0x4 -s 0x100000 -l 1 -e $WDIR/smallfile > $TMPF/$FUNCNAME 2>&1
-+    if [ $? -eq 0 ] || ! check_einval $TMPF/$FUNCNAME ; then
-+        echo "[FAIL] $FUNCNAME: too large start is invalid"
-+        return 1
-+    fi
-+    ./fincore -m 0x4 -s 0x30 $WDIR/smallfile > $TMPF/$FUNCNAME 2>&1
-+    if [ $? -eq 0 ] || ! check_einval $TMPF/$FUNCNAME ; then
-+        echo "[FAIL] $FUNCNAME: fincore should fail for unaligned start address"
-+        return 1
-+    fi
-+    echo "[PASS] $FUNCNAME"
-+}
-+
-+test_invalid_len() {
-+    create_small_file
-+    ./fincore -m 0x4 -l 0 $WDIR/smallfile > $TMPF/$FUNCNAME 2>&1
-+    if [ $? -eq 0 ] || ! check_einval $TMPF/$FUNCNAME ; then
-+        echo "[FAIL] $FUNCNAME: zero len is invalid"
-+        return 1
-+    fi
-+    ./fincore -m 0x4 -l -10 $WDIR/smallfile > $TMPF/$FUNCNAME 2>&1
-+    if [ $? -eq 0 ] || ! check_einval $TMPF/$FUNCNAME ; then
-+        echo "[FAIL] $FUNCNAME: negative len is invalid"
-+        return 1
-+    fi
-+    echo "[PASS] $FUNCNAME"
-+}
-+
-+test_invalid_mode() {
-+    create_small_file
-+    ./fincore -m 0x0 $WDIR/smallfile > $TMPF/$FUNCNAME 2>&1
-+    if [ $? -eq 0 ] || ! check_einval $TMPF/$FUNCNAME ; then
-+        echo "[FAIL] $FUNCNAME: mode == NULL is invalid mode"
-+        return 1
-+    fi
-+    ./fincore -m 0x5 $WDIR/smallfile > $TMPF/$FUNCNAME 2>&1
-+    if [ $? -eq 0 ] || ! check_einval $TMPF/$FUNCNAME ; then
-+        echo "[FAIL] $FUNCNAME: mode == (FINCORE_BMAP|FINCORE_PFN) is invalid mode"
-+        return 1
-+    fi
-+    ./fincore -m 0x3 $WDIR/smallfile > $TMPF/$FUNCNAME 2>&1
-+    if [ $? -eq 0 ] || ! check_einval $TMPF/$FUNCNAME ; then
-+        echo "[FAIL] $FUNCNAME: mode == (FINCORE_BMAP|FINCORE_PGOFF) is invalid mode"
-+        return 1
-+    fi
-+    ./fincore -m 0x6 $WDIR/smallfile > $TMPF/$FUNCNAME 2>&1
-+    if [ $? -ne 0 ] ; then
-+        echo "[FAIL] $FUNCNAME: mode == (FINCORE_PGOFF|FINCORE_PFN) is valid mode"
-+        return 1
-+    fi
-+    ./fincore -m 0x2 $WDIR/smallfile > $TMPF/$FUNCNAME 2>&1
-+    if [ $? -ne 0 ] ; then
-+        echo "[FAIL] $FUNCNAME: mode == (FINCORE_PGOFF) is valid mode"
-+        return 1
-+    fi
-+    ./fincore -m 0x1004 $WDIR/smallfile > $TMPF/$FUNCNAME 2>&1
-+    if [ $? -eq 0 ] || ! check_einval $TMPF/$FUNCNAME ; then
-+        echo "[FAIL] $FUNCNAME: mode == (Unknown|FINCORE_PFN) is invalid mode"
-+        return 1
-+    fi
-+    echo "[PASS] $FUNCNAME"
-+}
-+
-+test_unaligned_start_address_hugetlb() {
-+    local exist
-+    local nonexist
-+    local exitcode=0
-+    create_hugetlb_file
-+    if [ $? -ne 0 ] ; then
-+        echo "[FAIL] $FUNCNAME: fail to create a file on hugetlbfs"
-+        return 1
-+    fi
-+    local hugepagesize=$[$(cat /proc/meminfo  | grep Hugepagesize: | tr -s ' ' | cut -f2 -d' ') * 1024]
-+    ./fincore -p $hugepagesize -m 0x4 -s 0x1000 $WDIR/hugepages/file > $TMPF/$FUNCNAME 2>&1
-+    if [ $? -eq 0 ] || ! check_einval $TMPF/$FUNCNAME ; then
-+        echo "[FAIL] $FUNCNAME: fincore should fail for page-unaligned start address"
-+        return 1
-+    fi
-+    ./fincore -p $hugepagesize -m 0x4 -s $hugepagesize $WDIR/hugepages/file > $TMPF/$FUNCNAME 2>&1
-+    if [ $? -ne 0 ] ; then
-+        echo "[FAIL] $FUNCNAME: fincore should pass for hugepage-aligned start address"
-+        return 1
-+    fi
-+    echo "[PASS] $FUNCNAME"
-+}
-+
-+test_smallfile_bytemap                 || abort
-+test_smallfile_pfn                     || abort
-+test_smallfile_multientry              || abort
-+test_smallfile_pfn_skiphole            || abort
-+test_largefile_pfn                     || abort
-+test_largefile_pfn_offset              || abort
-+test_largefile_pfn_overrun             || abort
-+test_largefile_pfn_skiphole            || abort
-+test_tmpfs_pfn                         || abort
-+test_hugetlb_pfn                       || abort
-+test_invalid_start_address             || abort
-+test_invalid_len                       || abort
-+test_invalid_mode                      || abort
-+test_unaligned_start_address_hugetlb   || abort
-+
-+# cleanup
-+rm -rf $WDIR/hugepages/file
-+umount $WDIR/hugepages > /dev/null 2>&1
-+
-+exit 0
 -- 
 1.9.3
 
