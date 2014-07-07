@@ -1,96 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766AbaGGO7S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:59:18 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:36562 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753263AbaGGO7Q (ORCPT
+	id S1753810AbaGGO7X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:59:23 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:43464 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753779AbaGGO7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:59:16 -0400
-Date: Mon, 7 Jul 2014 15:59:10 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, sergei.shtylyov@cogentembedded.com,
-        antoine.tenart@free-electrons.com, kgene.kim@samsung.com,
-        maxime.ripard@free-electrons.com
-Subject: Re: [RFC PATCH 2/2] phy: core: the node pointer of PHY need not be
- the same as that of PHY provider
-Message-ID: <20140707145910.GK6407@lee--X1>
-References: <1404486474-28312-1-git-send-email-kishon@ti.com>
- <1404486474-28312-3-git-send-email-kishon@ti.com>
- <20140707131232.GI6407@lee--X1>
- <53BAAA19.9050106@ti.com>
+	Mon, 7 Jul 2014 10:59:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53BAAA19.9050106@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1403264094-16140-1-git-send-email-maxime.coquelin@st.com>
+References: <1403264094-16140-1-git-send-email-maxime.coquelin@st.com>
+Date: Mon, 7 Jul 2014 16:59:19 +0200
+Message-ID: <CACRpkdbB5zniNTdUSgMmmqFQwGjHLAF9p601R5A_DkNdz0q01w@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: st: Fix irqmux handler
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Maxime COQUELIN <maxime.coquelin@st.com>
+Cc: Srinivas Kandagatla <srinivas.kandagatla@linaro.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, kernel@stlinux.com,
+        Patrice CHOTARD <patrice.chotard@st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07 Jul 2014, Kishon Vijay Abraham I wrote:
+On Fri, Jun 20, 2014 at 1:34 PM, Maxime COQUELIN <maxime.coquelin@st.com> wrote:
 
-> Hi,
-> 
-> On Monday 07 July 2014 06:42 PM, Lee Jones wrote:
-> > On Fri, 04 Jul 2014, Kishon Vijay Abraham I wrote:
-> > 
-> >> In case of multi-phy PHY providers, each PHY should be modeled as a sub
-> >> node of the PHY provider. Then each PHY will have a different node pointer
-> >> (node pointer of sub node) than that of PHY provider. Added this provision
-> >> in the PHY core.
-> >> Also fixed all drivers to use the updated API.
-> >>
-> >> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> >> ---
-> >>  Documentation/phy.txt               |   10 ++++++----
-> >>  drivers/phy/phy-bcm-kona-usb2.c     |    2 +-
-> >>  drivers/phy/phy-core.c              |   25 ++++++++++++++++++-------
-> >>  drivers/phy/phy-exynos-dp-video.c   |    2 +-
-> >>  drivers/phy/phy-exynos-mipi-video.c |    2 +-
-> >>  drivers/phy/phy-exynos5-usbdrd.c    |    3 ++-
-> >>  drivers/phy/phy-exynos5250-sata.c   |    2 +-
-> >>  drivers/phy/phy-mvebu-sata.c        |    2 +-
-> >>  drivers/phy/phy-omap-usb2.c         |    2 +-
-> >>  drivers/phy/phy-samsung-usb2.c      |    3 ++-
-> >>  drivers/phy/phy-sun4i-usb.c         |    2 +-
-> >>  drivers/phy/phy-ti-pipe3.c          |    2 +-
-> >>  drivers/phy/phy-twl4030-usb.c       |    2 +-
-> >>  drivers/phy/phy-xgene.c             |    2 +-
-> >>  include/linux/phy/phy.h             |   15 ++++++++++-----
-> >>  15 files changed, 48 insertions(+), 28 deletions(-)
-> > 
-> > I wrote a very similar patch already.  I knew I should have sent it on
-> > Friday. :(
-> 
-> No problem! you can send your patch along with the MiPHY series.
+> st_gpio_irqmux_handler() reads the status register to find out
+> which banks inside the controller have pending IRQs.
+> For each banks having pending IRQs, it calls the corresponding handler.
+>
+> Problem is that current code restricts the number of possible banks inside the
+> controller to ST_GPIO_PINS_PER_BANK. This define represents the number of pins
+> inside a bank, so it shouldn't be used here.
+>
+> On STiH407, PIO_FRONT0 controller has 10 banks, so IRQs pending in the two
+> last banks (PIO18 & PIO19) aren't handled.
+>
+> This patch replace ST_GPIO_PINS_PER_BANK by the number of banks inside the
+> controller.
+>
+> Cc: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: <stable@vger.kernel.org> #v3.15+
+> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
 
-That's okay.  It's silly for us both to submit the same patch and
-yours hit the MLs first & looks good so, the honour is yours.
+Patch applied for fixes with Srinivas ACK.
 
-> > Patch looks good, just a real minor point.
-> > 
-> >>  	phy->dev.class = phy_class;
-> >>  	phy->dev.parent = dev;
-> >> -	phy->dev.of_node = dev->of_node;
-> >> +	phy->dev.of_node = node?node:dev->of_node;
-> > 
-> > There should be spaces either side of the '?' and ':', or you can do
-> > this more succinctly by:
-> > 
-> > phy->dev.of_node = node ?: dev->of_node;
-> > 
-> > Once fixed, feel free to add my:
-> > 
-> > Acked-by: Lee Jones <lee.jones@linaro.org>
-> > 
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks!
+Yours,
+Linus Walleij
