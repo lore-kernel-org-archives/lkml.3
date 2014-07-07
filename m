@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464AbaGHBJJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:09:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55249 "EHLO
+	id S1754879AbaGHBJH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:09:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55226 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752921AbaGGXxz (ORCPT
+	with ESMTP id S1753011AbaGGXxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:53:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sam Jansen <sam.jansen@starleaf.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.15 045/122] drm/i915: Hold the table lock whilst walking the files idr and counting the objects in debugfs
-Date: Mon,  7 Jul 2014 16:56:47 -0700
-Message-Id: <20140707235735.637107933@linuxfoundation.org>
+        Imre Deak <imre.deak@intel.com>, Jani Nikula <jani.nikula@intel.com>
+Subject: [PATCH 3.15 046/122] drm/i915: default to having backlight if VBT not available
+Date: Mon,  7 Jul 2014 16:56:48 -0700
+Message-Id: <20140707235735.673233960@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -31,70 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 5b5ffff0d25060ab0e21fa0f6cd16428e87bf1ea upstream.
+commit 56c4b63aaf4c2cd91966b2a5e69e5367bea60bbe upstream.
 
-Fixes an issue whereby we may race with the table updates (before the
-core takes the struct_mutex) and so risk dereferencing a stale pointer in
-the iterator for /debugfs/.../i915_gem_objects. For example,
+Apparently there are Apple laptops with magic smoke for a VBIOS, which
+we fail to find and use. Default to having and setting up backlight in
+this case.
 
-[ 1524.757545] BUG: unable to handle kernel paging request at f53af748
-[ 1524.757572] IP: [<c1406982>] per_file_stats+0x12/0x100
-[ 1524.757599] *pdpt = 0000000001b13001 *pde = 00000000379fb067 *pte = 80000000353af060
-[ 1524.757621] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-[ 1524.757637] Modules linked in: ctr ccm arc4 ath9k ath9k_common ath9k_hw ath snd_hda_codec_conexant mac80211 snd_hda_codec_generic snd_hda_intel snd_hda_controller snd_hda_codec bnep snd_hwdep rfcomm snd_pcm gpio_ich dell_wmi sparse_keymap snd_seq_midi hid_multitouch uvcvideo snd_seq_midi_event dell_laptop snd_rawmidi dcdbas snd_seq videobuf2_vmalloc videobuf2_memops videobuf2_core usbhid videodev snd_seq_device coretemp snd_timer hid joydev kvm_intel cfg80211 ath3k kvm btusb bluetooth serio_raw snd microcode soundcore lpc_ich wmi mac_hid parport_pc ppdev lp parport psmouse ahci libahci
-[ 1524.757825] CPU: 3 PID: 1911 Comm: intel-gpu-overl Tainted: G        W  OE 3.15.0-rc3+ #96
-[ 1524.757840] Hardware name: Dell Inc. Inspiron 1090/Inspiron 1090, BIOS A06 08/23/2011
-[ 1524.757855] task: f52f36c0 ti: f4cbc000 task.ti: f4cbc000
-[ 1524.757869] EIP: 0060:[<c1406982>] EFLAGS: 00210202 CPU: 3
-[ 1524.757884] EIP is at per_file_stats+0x12/0x100
-[ 1524.757896] EAX: 0000002d EBX: 00000000 ECX: f4cbdefc EDX: f53af700
-[ 1524.757909] ESI: c1406970 EDI: f53af700 EBP: f4cbde6c ESP: f4cbde5c
-[ 1524.757922]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[ 1524.757934] CR0: 80050033 CR2: f53af748 CR3: 356af000 CR4: 000007f0
-[ 1524.757945] Stack:
-[ 1524.757957]  f4cbdefc 00000000 c1406970 f53af700 f4cbdea8 c12e5f15 f4cbdefc c1406970
-[ 1524.757993]  0000ffff f4cbde90 0000002d f5dc5cd0 e4e80438 c1181d59 f4cbded8 f4d89900
-[ 1524.758027]  f5631b40 e5131074 c1903f37 f4cbdf28 c14068e6 f52648a0 c1927748 c1903f37
-[ 1524.758062] Call Trace:
-[ 1524.758084]  [<c1406970>] ? i915_gem_object_info+0x510/0x510
-[ 1524.758106]  [<c12e5f15>] idr_for_each+0xa5/0x100
-[ 1524.758126]  [<c1406970>] ? i915_gem_object_info+0x510/0x510
-[ 1524.758148]  [<c1181d59>] ? seq_vprintf+0x29/0x50
-[ 1524.758168]  [<c14068e6>] i915_gem_object_info+0x486/0x510
-[ 1524.758189]  [<c11823a6>] seq_read+0xd6/0x380
-[ 1524.758208]  [<c116d11d>] ? final_putname+0x1d/0x40
-[ 1524.758227]  [<c11822d0>] ? seq_hlist_next_percpu+0x90/0x90
-[ 1524.758246]  [<c1163e52>] vfs_read+0x82/0x150
-[ 1524.758265]  [<c11645d6>] SyS_read+0x46/0x90
-[ 1524.758285]  [<c16b8d8c>] sysenter_do_call+0x12/0x22
-[ 1524.758298] Code: f5 8f 2a 00 83 c4 6c 31 c0 5b 5e 5f 5d c3 8d 74 26 00 8d bc 27 00 00 00 00 55 89 e5 57 56 53 83 ec 04 3e 8d 74 26 00 83 41 04 01 <8b> 42 48 01 41 08 8b 42 4c 89 d7 85 c0 75 07 8b 42 60 85 c0 74
-[ 1524.758461] EIP: [<c1406982>] per_file_stats+0x12/0x100 SS:ESP 0068:f4cbde5c
-[ 1524.758485] CR2: 00000000f53af748
+This fixes a regression introduced by
+commit c675949ec58ca50d5a3ae3c757892f1560f6e896
+Author: Jani Nikula <jani.nikula@intel.com>
+Date:   Wed Apr 9 11:31:37 2014 +0300
 
-Reported-by: Sam Jansen <sam.jansen@starleaf.com>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Sam Jansen <sam.jansen@starleaf.com>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+    drm/i915: do not setup backlight if not available according to VBT
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=77831
+Reported-and-tested-by: Matteo Cypriani <mcy@lm7.fr>
+Reviewed-by: Imre Deak <imre.deak@intel.com>
 Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_debugfs.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/i915/intel_bios.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_debugfs.c
-+++ b/drivers/gpu/drm/i915/i915_debugfs.c
-@@ -446,7 +446,9 @@ static int i915_gem_object_info(struct s
+--- a/drivers/gpu/drm/i915/intel_bios.c
++++ b/drivers/gpu/drm/i915/intel_bios.c
+@@ -287,9 +287,6 @@ parse_lfp_backlight(struct drm_i915_priv
+ 	const struct bdb_lfp_backlight_data *backlight_data;
+ 	const struct bdb_lfp_backlight_data_entry *entry;
  
- 		memset(&stats, 0, sizeof(stats));
- 		stats.file_priv = file->driver_priv;
-+		spin_lock(&file->table_lock);
- 		idr_for_each(&file->object_idr, per_file_stats, &stats);
-+		spin_unlock(&file->table_lock);
- 		/*
- 		 * Although we have a valid reference on file->pid, that does
- 		 * not guarantee that the task_struct who called get_pid() is
+-	/* Err to enabling backlight if no backlight block. */
+-	dev_priv->vbt.backlight.present = true;
+-
+ 	backlight_data = find_section(bdb, BDB_LVDS_BACKLIGHT);
+ 	if (!backlight_data)
+ 		return;
+@@ -839,6 +836,9 @@ init_vbt_defaults(struct drm_i915_privat
+ 
+ 	dev_priv->vbt.crt_ddc_pin = GMBUS_PORT_VGADDC;
+ 
++	/* Default to having backlight */
++	dev_priv->vbt.backlight.present = true;
++
+ 	/* LFP panel data */
+ 	dev_priv->vbt.lvds_dither = 1;
+ 	dev_priv->vbt.lvds_vbt = 0;
 
 
