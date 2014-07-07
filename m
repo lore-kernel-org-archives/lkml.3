@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720AbaGGOEp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:04:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60702 "EHLO mx2.suse.de"
+	id S1753754AbaGGOFK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:05:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45039 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752990AbaGGOEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:04:43 -0400
-Date: Mon, 7 Jul 2014 16:04:40 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Randy Dunlap <rdunlap@infradead.org>,
-        linux-i2c@vger.kernel.org, linux-doc@vger.kernel.org,
+	id S1753505AbaGGOFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 10:05:07 -0400
+Date: Mon, 7 Jul 2014 10:04:26 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-fbdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] i2c: stub: Add support for SMBus block commands
-Message-ID: <20140707160440.042fda11@endymion.delvare>
-In-Reply-To: <53BAA152.9040002@roeck-us.net>
-References: <1404705312-27633-1-git-send-email-linux@roeck-us.net>
-	<20140707102711.1b630fe2@endymion.delvare>
-	<53BAA152.9040002@roeck-us.net>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Subject: Re: [PATCH] video: fbdev: aty: atyfb_base.c:  Cleaning up variable
+ that is never used
+In-Reply-To: <1404671093-17590-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Message-ID: <alpine.LRH.2.02.1407071004060.9534@file01.intranet.prod.int.rdu2.redhat.com>
+References: <1404671093-17590-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07 Jul 2014 06:32:02 -0700, Guenter Roeck wrote:
-> On 07/07/2014 01:27 AM, Jean Delvare wrote:
-> > On Sun,  6 Jul 2014 20:55:12 -0700, Guenter Roeck wrote:
-> >>   			chip->words[command] &= 0xff00;
-> >>   			chip->words[command] |= data->byte;
-> >>   			dev_dbg(&adap->dev,
-> >>   				"smbus byte data - addr 0x%02x, wrote 0x%02x at 0x%02x.\n",
-> >>   				addr, data->byte, command);
-> >>   		} else {
-> >> -			data->byte = chip->words[command] & 0xff;
-> >> +			if (b)
-> >> +				data->byte = b->len;
-> >> +			else
-> >> +				data->byte = chip->words[command] & 0xff;
-> >
-> > You could avoid this conditional (and the same below in case
-> > I2C_SMBUS_WORD_DATA) by writing to chip->words at the same time you
-> > write to b->block. Block transfers being rare and reads occurring more
-> > frequently than writes, I think the performance benefit is clear.
->
-> Makes sense, I'll do that. Great idea.
+
+
+On Sun, 6 Jul 2014, Rickard Strandqvist wrote:
+
+> Variable ar assigned a value that is never used.
+> I have also removed all the code that thereby serves no purpose.
 > 
-> Question is if I should cover attempts to write a byte or word into block data.
-> I don't think it is worth the effort, as drivers won't usually do that.
-> My take is that we could add it later if really needed.
-> What do you think ?
+> This was found using a static code analysis program called cppcheck
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-I agree. The i2c-stub driver can't possibly cover every use case
-anyway, so let's keep it simple and only emulate behaviors we need for
-real.
+Acked-by: Mikulas Patocka <mpatocka@redhat.com>
 
--- 
-Jean Delvare
-SUSE L3 Support
+> ---
+>  drivers/video/fbdev/aty/atyfb_base.c |    4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/drivers/video/fbdev/aty/atyfb_base.c b/drivers/video/fbdev/aty/atyfb_base.c
+> index c3d0074..46188a4 100644
+> --- a/drivers/video/fbdev/aty/atyfb_base.c
+> +++ b/drivers/video/fbdev/aty/atyfb_base.c
+> @@ -3088,7 +3088,6 @@ static int atyfb_setup_sparc(struct pci_dev *pdev, struct fb_info *info,
+>  	if (dp == of_console_device) {
+>  		struct fb_var_screeninfo *var = &default_var;
+>  		unsigned int N, P, Q, M, T, R;
+> -		u32 v_total, h_total;
+>  		struct crtc crtc;
+>  		u8 pll_regs[16];
+>  		u8 clock_cntl;
+> @@ -3104,9 +3103,6 @@ static int atyfb_setup_sparc(struct pci_dev *pdev, struct fb_info *info,
+>  		crtc.gen_cntl = aty_ld_le32(CRTC_GEN_CNTL, par);
+>  		aty_crtc_to_var(&crtc, var);
+>  
+> -		h_total = var->xres + var->right_margin + var->hsync_len + var->left_margin;
+> -		v_total = var->yres + var->lower_margin + var->vsync_len + var->upper_margin;
+> -
+>  		/*
+>  		 * Read the PLL to figure actual Refresh Rate.
+>  		 */
+> -- 
+> 1.7.10.4
+> 
