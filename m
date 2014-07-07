@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090AbaGGWaF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 18:30:05 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:32962 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656AbaGGWaE (ORCPT
+	id S1752322AbaGGWcE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 18:32:04 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35299 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167AbaGGWcB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 18:30:04 -0400
-Date: Tue, 8 Jul 2014 00:30:01 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: torvalds@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: fallout of 16K stacks
-Message-ID: <20140707223001.GD18735@two.firstfloor.org>
+	Mon, 7 Jul 2014 18:32:01 -0400
+X-Originating-IP: 78.210.48.61
+From: Guillaume Clement <gclement@baobob.org>
+To: Julian Andres Klode <jak@jak-linux.org>, Marc Dietrich <marvin24@gmx.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: ac100@lists.launchpad.net, linux-tegra@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Guillaume Clement <gclement@baobob.org>
+Subject: [PATCH 1/5] staging:nvec: Fix "unnecessary else" coding style warning.
+Date: Tue,  8 Jul 2014 00:31:33 +0200
+Message-Id: <1404772297-6549-2-git-send-email-gclement@baobob.org>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <1404772297-6549-1-git-send-email-gclement@baobob.org>
+References: <1404772297-6549-1-git-send-email-gclement@baobob.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The last else is unnessary as all the if statements end with a return.
 
-Since the 16K stack change I noticed a number of problems with
-my usual stress tests. They have a tendency to bomb out
-because something cannot fork.
+Signed-off-by: Guillaume Clément <gclement@baobob.org>
+---
+ drivers/staging/nvec/nvec.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-- AIM7 on a dual socket socket system now cannot reliably run 
->1000 parallel jobs.
-- LTP stress + memhog stress in parallel to something else
-usually doesn't survive the night.
-
-Do we need to strengthen the memory allocator to try
-harder for 16K?
-
--Andi
-
+diff --git a/drivers/staging/nvec/nvec.c b/drivers/staging/nvec/nvec.c
+index 90f1c4d..8a3dd47 100644
+--- a/drivers/staging/nvec/nvec.c
++++ b/drivers/staging/nvec/nvec.c
+@@ -232,8 +232,7 @@ static size_t nvec_msg_size(struct nvec_msg *msg)
+ 		return 2;
+ 	else if (event_length == NVEC_3BYTES)
+ 		return 3;
+-	else
+-		return 0;
++	return 0;
+ }
+ 
+ /**
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.8.5.5
+
