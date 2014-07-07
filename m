@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbaGGI36 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 04:29:58 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:15908 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751768AbaGGI3z (ORCPT
+	id S1752279AbaGGIaZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 04:30:25 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:45477 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769AbaGGIaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 04:29:55 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/mYA302IRBDuAE0foX7ISX
-Date: Mon, 7 Jul 2014 01:29:56 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: kishon@ti.com, balbi@ti.com, nsekhar@ti.com, nm@ti.com,
-        george.cherian@ti.com, sergei.shtylyov@cogentembedded.com,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 6/6] ARM: dts: dra7-evm: Add regulator information to
- USB2 PHYs
-Message-ID: <20140707082956.GJ28884@atomide.com>
-References: <1404467748-12154-1-git-send-email-rogerq@ti.com>
- <1404467748-12154-7-git-send-email-rogerq@ti.com>
+	Mon, 7 Jul 2014 04:30:20 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Mon, 7 Jul 2014 10:29:45 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Andras@mail.sth.sze.hu, Kovacs@mail.sth.sze.hu
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andras Kovacs <andras@sth.sze.hu>
+Subject: Re: [PATCH 1/1] Add support for Corsair usb dongle
+Message-ID: <20140707082945.GB29098@localhost>
+References: <1403873411-12889-1-git-send-email-andras@sth.sze.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404467748-12154-7-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1403873411-12889-1-git-send-email-andras@sth.sze.hu>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [140704 02:58]:
-> The ldousb_reg regulator provides power to the USB1 and USB2
-> High Speed PHYs.
+On Fri, Jun 27, 2014 at 02:50:11PM +0200, Andras@mail.sth.sze.hu wrote:
+> From: Andras Kovacs <andras@sth.sze.hu>
 > 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Corsair USB Dongles are shipped with Corsair AXi series PSUs.
+> These are cp210x serial usb devices, so make driver detect these.
+> I have a program, that can get information from these PSUs.
+> 
+> Tested with 2 different dongles shipped with Corsair AX860i and
+> AX1200i units.
+> 
+> Signed-off-by: Andras Kovacs <andras@sth.sze.hu>
 
-This too:
+Applied, thanks.
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+Johan
 
 > ---
->  arch/arm/boot/dts/dra7-evm.dts | 8 ++++++++
->  1 file changed, 8 insertions(+)
+>  drivers/usb/serial/cp210x.c |    1 +
+>  1 file changed, 1 insertion(+)
 > 
-> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
-> index 8308954..50f8022 100644
-> --- a/arch/arm/boot/dts/dra7-evm.dts
-> +++ b/arch/arm/boot/dts/dra7-evm.dts
-> @@ -496,3 +496,11 @@
->  		};
->  	};
->  };
-> +
-> +&usb2_phy1 {
-> +	phy-supply = <&ldousb_reg>;
-> +};
-> +
-> +&usb2_phy2 {
-> +	phy-supply = <&ldousb_reg>;
-> +};
-> -- 
-> 1.8.3.2
-> 
+> diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+> index 762e4a5..330df5c 100644
+> --- a/drivers/usb/serial/cp210x.c
+> +++ b/drivers/usb/serial/cp210x.c
+> @@ -153,6 +153,7 @@ static const struct usb_device_id id_table[] = {
+>  	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+>  	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+>  	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
+> +	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
+>  	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+>  	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+>  	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
