@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729AbaGGKoa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 06:44:30 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:47672 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913AbaGGKo2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 06:44:28 -0400
+	id S1752777AbaGGKpE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 06:45:04 -0400
+Received: from mta-out1.inet.fi ([62.71.2.200]:46845 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751968AbaGGKpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 06:45:00 -0400
+Date: Mon, 7 Jul 2014 13:44:07 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: Re: [PATCH v10 2/7] x86: add pmd_[dirty|mkclean] for THP
+Message-ID: <20140707104407.GB23150@node.dhcp.inet.fi>
+References: <1404694438-10272-1-git-send-email-minchan@kernel.org>
+ <1404694438-10272-3-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20140613183157.GA24644@kroah.com>
-References: <1402320115-13171-1-git-send-email-x-linux@infra-silbe.de>
-	<CACRpkdbiob-2d4sTmj8bZxo5GVZ0TvF5CT_W94BDsSNiEfB7kQ@mail.gmail.com>
-	<20140613183157.GA24644@kroah.com>
-Date: Mon, 7 Jul 2014 12:44:28 +0200
-Message-ID: <CACRpkdYRm1gE5ai05TK17T3bVHKSVEkXeL5Qci8G=Lpt+UYsug@mail.gmail.com>
-Subject: Re: [PATCH] USB: ftdi_sio: add GPIO support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sascha Silbe <x-linux@infra-silbe.de>, Johan Hovold <jhovold@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404694438-10272-3-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 13, 2014 at 8:31 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Fri, Jun 13, 2014 at 09:25:07AM +0200, Linus Walleij wrote:
+On Mon, Jul 07, 2014 at 09:53:53AM +0900, Minchan Kim wrote:
+> MADV_FREE needs pmd_dirty and pmd_mkclean for detecting recent
+> overwrite of the contents since MADV_FREE syscall is called for
+> THP page.
+> 
+> This patch adds pmd_dirty and pmd_mkclean for THP page MADV_FREE
+> support.
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: x86@kernel.org
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
 
->> But I also want to bring the device model into question: normally
->> when a mother device spawns children across different subsystems
->> we model them as MFD devices (drivers/mfd) that instantiate
->> children for the different subsystems. So you could spawn a
->> serial and a GPIO device from a USB-based hub device there.
->>
->> I do not know if that is really apropriate in this case. It seems the
->> device is first and foremost FTDI.
->>
->> But it could still spawn a child platform device for the GPIO stuff
->> so that this can live as a separate driver under drivers/gpio/gpio-ftdi.c
->> or similar.
->>
->> You could then use something like:
->>
->> struct platform_device *gdev;
->
-> Ick, no, it's a USB device, do not abuse the platform_device code any
-> more than it currently is (note, I HATE the platform device code,
-> someday I'll delete it entirely...  Well, I can dream...)
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
-Haha yeah :-)
-
-However is the MFD cell approach acceptable?
-
-Now MFD cells are platform_devices mind you, but it's
-in principle just how that got implemented, MFD cells could
-be device-something else.
-
-Yours,
-Linus Walleij
+-- 
+ Kirill A. Shutemov
