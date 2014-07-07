@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149AbaGHASI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:18:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55989 "EHLO
+	id S932133AbaGHASG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:18:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56091 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754332AbaGGXzL (ORCPT
+	with ESMTP id S1754282AbaGGXzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:55:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nadav Amit <namit@cs.technion.ac.il>,
+        Valentine Sinitsyn <valentine.sinitsyn@gmail.com>,
         Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.10 37/53] KVM: x86: Increase the number of fixed MTRR regs to 10
-Date: Mon,  7 Jul 2014 16:58:22 -0700
-Message-Id: <20140707235830.406046435@linuxfoundation.org>
+Subject: [PATCH 3.10 38/53] KVM: x86: preserve the high 32-bits of the PAT register
+Date: Mon,  7 Jul 2014 16:58:23 -0700
+Message-Id: <20140707235830.434692136@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
 References: <20140707235829.281783607@linuxfoundation.org>
@@ -29,16 +29,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nadav Amit <namit@cs.technion.ac.il>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit 682367c494869008eb89ef733f196e99415ae862 upstream.
+commit 7cb060a91c0efc5ff94f83c6df3ed705e143cdb9 upstream.
 
-Recent Intel CPUs have 10 variable range MTRRs. Since operating systems
-sometime make assumptions on CPUs while they ignore capability MSRs, it is
-better for KVM to be consistent with recent CPUs. Reporting more MTRRs than
-actually supported has no functional implications.
+KVM does not really do much with the PAT, so this went unnoticed for a
+long time.  It is exposed however if you try to do rdmsr on the PAT
+register.
 
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+Reported-by: Valentine Sinitsyn <valentine.sinitsyn@gmail.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
@@ -48,14 +47,14 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/arch/x86/include/asm/kvm_host.h
 +++ b/arch/x86/include/asm/kvm_host.h
-@@ -92,7 +92,7 @@
- #define KVM_REFILL_PAGES 25
- #define KVM_MAX_CPUID_ENTRIES 80
- #define KVM_NR_FIXED_MTRR_REGION 88
--#define KVM_NR_VAR_MTRR 8
-+#define KVM_NR_VAR_MTRR 10
+@@ -445,7 +445,7 @@ struct kvm_vcpu_arch {
+ 	bool nmi_injected;    /* Trying to inject an NMI this entry */
  
- #define ASYNC_PF_PER_VCPU 64
+ 	struct mtrr_state_type mtrr_state;
+-	u32 pat;
++	u64 pat;
  
+ 	int switch_db_regs;
+ 	unsigned long db[KVM_NR_DB_REGS];
 
 
