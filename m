@@ -1,72 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347AbaGGMua (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 08:50:30 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57738 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177AbaGGMu2 (ORCPT
+	id S1753281AbaGGMwK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 08:52:10 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:37773 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752990AbaGGMwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 08:50:28 -0400
-Date: Mon, 7 Jul 2014 14:50:12 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        Scott J Norton <scott.norton@hp.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH v5 0/2] lockdep: add support for queued rwlock
-Message-ID: <20140707125012.GP6758@twins.programming.kicks-ass.net>
-References: <1403804351-405-1-git-send-email-Waiman.Long@hp.com>
+	Mon, 7 Jul 2014 08:52:09 -0400
+X-IronPort-AV: E=Sophos;i="5.01,618,1400018400"; 
+   d="scan'208";a="83970513"
+Date: Mon, 7 Jul 2014 14:52:02 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Jonathan Cameron <jic23@kernel.org>
+cc: Himangi Saraogi <himangi774@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michael Hennerich <hennerich@blackfin.uclinux.org>
+Subject: Re: [PATCH v2] iio:trigger: Introduce the use of devm_kzalloc
+In-Reply-To: <53BA93F2.2090200@kernel.org>
+Message-ID: <alpine.DEB.2.10.1407071451420.4757@hadrien>
+References: <20140701211908.GA23193@himangi-Dell> <53BA93F2.2090200@kernel.org>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Vrcq/LprQzvw2eZB"
-Content-Disposition: inline
-In-Reply-To: <1403804351-405-1-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 7 Jul 2014, Jonathan Cameron wrote:
 
---Vrcq/LprQzvw2eZB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On 01/07/14 22:19, Himangi Saraogi wrote:
+> > This patch introduces the use of the managed version of kzalloc and
+> > removes the kfrees in the probe and remove functions. More return
+> > paths are added and the labels are renamed to order them.
+> >
+> > Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Looks sane, but I'd like an ack or reviewed-by from someone as Analog for this
+> one.
+> cc'd Lars and Michael.
 
-On Thu, Jun 26, 2014 at 01:39:09PM -0400, Waiman Long wrote:
-> v4->v5:
->  - Add patch 2 to update the locking selftest code to handle recursive
->    read_lock correctly. Patch 1 has no change.
+Should MAINTAINERS be updated somehow?
 
-I removed all CONFIG_QUEUE_RWLOCK dependencies and made lockdep
-unconditionally assume the stronger constraints.
+julia
 
-Since we want all code 'clean' for the strongest possible
-implementation, everybody should run with those semantics, it doesn't
-make sense to have that configurable.
-
-Eg. someone on (say ARM, which doesn't -- yet -- have QUEUE_RWLOCK)
-could unwittingly introduce faulty code.
-
---Vrcq/LprQzvw2eZB
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTupeEAAoJEHZH4aRLwOS6hKQP/2H6lUxKHSUOtNxGQPX9cwQQ
-3rrXspYRp0iE0Oae8Wg8jBxXahw3nJqZXCuxZLdC+YHv7Libt3etCEJD+aVhjRVi
-mLeJ8BXu/08Xr/azYl0ZhNO/kNB6mA8PN/Y4/JlDOjimgCiCgB/OlzYmLWl9UquD
-98gXT3Ai2j5DymGhvfLJ5KkZVfR7P9oovhpzypgORDDg1wXa/XPR9PgN3F4MNPtL
-b9rZ7plLdg1k3MXoec3QKPj8vrdhzxEPSl5h9FU6z/zl8FidVAQBj5iE9jUQQ+bn
-d/slHl2rlW7pD2XSGXKVjvcqDHry0Po9eMQMABHvsKioAKGyUvHWvCBhd8hL/RPS
-5vh8/McOSae4JTFk/McBAxZsOax3PwKUTXlEVv9W8SRg+o6PbFxVd9gD5v96nWw7
-5xC08FmoJVCEaX20tz2j99VkhZNG4ZAqZ2Z5xSnOSqtQ/yFoOeGKZBHhv/8Swilm
-hn2rYBFt4g/8Wo+XFChXal9XzNV0lDHSTwCZF4imCVlMQKGk9GZ05Tskbu15QTJh
-kGuwu/ISfvJrHxtXKdk1Fi9yfPwA0SQYyvtgjUIW3ClpdC8dl50UjgghK8PcBTKH
-Gs3bKC2nJ2JoH7lvqk+LlzHe6Y1eFo3hml3684rTP2zVSCnhChvIMFOmS4D/Q5AH
-ZtzA8G4TY+IOJCRMaERx
-=+Axx
------END PGP SIGNATURE-----
-
---Vrcq/LprQzvw2eZB--
+>
+> > ---
+> > v2: add more return paths
+> > Not compile tested.
+> >   drivers/staging/iio/trigger/iio-trig-bfin-timer.c | 31
+> > ++++++++---------------
+> >   1 file changed, 11 insertions(+), 20 deletions(-)
+> >
+> > diff --git a/drivers/staging/iio/trigger/iio-trig-bfin-timer.c
+> > b/drivers/staging/iio/trigger/iio-trig-bfin-timer.c
+> > index 16f1a06..a21b7c5 100644
+> > --- a/drivers/staging/iio/trigger/iio-trig-bfin-timer.c
+> > +++ b/drivers/staging/iio/trigger/iio-trig-bfin-timer.c
+> > @@ -182,45 +182,40 @@ static int iio_bfin_tmr_trigger_probe(struct
+> > platform_device *pdev)
+> >   	unsigned int config;
+> >   	int ret;
+> >
+> > -	st = kzalloc(sizeof(*st), GFP_KERNEL);
+> > -	if (st == NULL) {
+> > -		ret = -ENOMEM;
+> > -		goto out;
+> > -	}
+> > +	st = devm_kzalloc(&pdev->dev, sizeof(*st), GFP_KERNEL);
+> > +	if (st == NULL)
+> > +		return -ENOMEM;
+> >
+> >   	st->irq = platform_get_irq(pdev, 0);
+> >   	if (!st->irq) {
+> >   		dev_err(&pdev->dev, "No IRQs specified");
+> > -		ret = -ENODEV;
+> > -		goto out1;
+> > +		return -ENODEV;
+> >   	}
+> >
+> >   	ret = iio_bfin_tmr_get_number(st->irq);
+> >   	if (ret < 0)
+> > -		goto out1;
+> > +		return ret;
+> >
+> >   	st->timer_num = ret;
+> >   	st->t = &iio_bfin_timer_code[st->timer_num];
+> >
+> >   	st->trig = iio_trigger_alloc("bfintmr%d", st->timer_num);
+> > -	if (!st->trig) {
+> > -		ret = -ENOMEM;
+> > -		goto out1;
+> > -	}
+> > +	if (!st->trig)
+> > +		return -ENOMEM;
+> >
+> >   	st->trig->ops = &iio_bfin_tmr_trigger_ops;
+> >   	st->trig->dev.groups = iio_bfin_tmr_trigger_attr_groups;
+> >   	iio_trigger_set_drvdata(st->trig, st);
+> >   	ret = iio_trigger_register(st->trig);
+> >   	if (ret)
+> > -		goto out2;
+> > +		goto out;
+> >
+> >   	ret = request_irq(st->irq, iio_bfin_tmr_trigger_isr,
+> >   			  0, st->trig->name, st);
+> >   	if (ret) {
+> >   		dev_err(&pdev->dev,
+> >   			"request IRQ-%d failed", st->irq);
+> > -		goto out4;
+> > +		goto out1;
+> >   	}
+> >
+> >   	config = PWM_OUT | PERIOD_CNT | IRQ_ENA;
+> > @@ -260,13 +255,10 @@ static int iio_bfin_tmr_trigger_probe(struct
+> > platform_device *pdev)
+> >   	return 0;
+> >   out_free_irq:
+> >   	free_irq(st->irq, st);
+> > -out4:
+> > -	iio_trigger_unregister(st->trig);
+> > -out2:
+> > -	iio_trigger_put(st->trig);
+> >   out1:
+> > -	kfree(st);
+> > +	iio_trigger_unregister(st->trig);
+> >   out:
+> > +	iio_trigger_put(st->trig);
+> >   	return ret;
+> >   }
+> >
+> > @@ -280,7 +272,6 @@ static int iio_bfin_tmr_trigger_remove(struct
+> > platform_device *pdev)
+> >   	free_irq(st->irq, st);
+> >   	iio_trigger_unregister(st->trig);
+> >   	iio_trigger_put(st->trig);
+> > -	kfree(st);
+> >
+> >   	return 0;
+> >   }
+> >
+>
+>
