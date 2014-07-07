@@ -1,72 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497AbaGGNkr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 09:40:47 -0400
-Received: from smtprelay0109.hostedemail.com ([216.40.44.109]:45248 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753221AbaGGNkq (ORCPT
+	id S1753535AbaGGNmN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 09:42:13 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:39605 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753519AbaGGNmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 09:40:46 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2551:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3871:3872:3873:3874:4321:5007:6119:7652:7903:10004:10400:10848:10967:11232:11658:11914:12050:12517:12519:12679:12740:13069:13161:13229:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: use10_407e9c2f4f414
-X-Filterd-Recvd-Size: 2599
-Message-ID: <1404740441.27043.71.camel@joe-AO725>
-Subject: Re: [PATCH v2] declance: Fix 64-bit compilation warnings
-From: Joe Perches <joe@perches.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: "Maciej W. Rozycki" <macro@linux-mips.org>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 07 Jul 2014 06:40:41 -0700
-In-Reply-To: <20140707120152.CF82BC40921@trevor.secretlab.ca>
-References: <alpine.LFD.2.11.1406290246120.15455@eddie.linux-mips.org>
-	 <20140702.182807.1245632778216212860.davem@davemloft.net>
-	 <alpine.LFD.2.11.1407030244230.15455@eddie.linux-mips.org>
-	 <alpine.LFD.2.11.1407030331550.15455@eddie.linux-mips.org>
-	 <1404356734.14741.18.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407030423300.15455@eddie.linux-mips.org>
-	 <1404364565.14741.26.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407030637030.15455@eddie.linux-mips.org>
-	 <1404368746.14741.36.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407051529040.15455@eddie.linux-mips.org>
-	 <1404576420.6384.41.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407051833400.15455@eddie.linux-mips.org>
-	 <1404583739.6384.51.camel@joe-AO725>
-	 <alpine.LFD.2.11.1407051917480.15455@eddie.linux-mips.org>
-	 <1404585099.6384.53.camel@joe-AO725>
-	 <20140707120152.CF82BC40921@trevor.secretlab.ca>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Jul 2014 09:42:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140703175412.GH17372@arm.com>
+References: <1403881067-22690-1-git-send-email-jean.pihet@linaro.org>
+	<1403881067-22690-4-git-send-email-jean.pihet@linaro.org>
+	<20140703175412.GH17372@arm.com>
+Date: Mon, 7 Jul 2014 15:42:08 +0200
+Message-ID: <CAFrcx1koWdZ=jExBkOYmgowa04HrXy21nwsrO_EXe7gEyb2Lhw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ARM: perf: allow tracing with kernel tracepoints events
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Sneha Priya <sneha.cse@hotmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-07 at 13:01 +0100, Grant Likely wrote:
-> On Sat, 05 Jul 2014 11:31:39 -0700, Joe Perches <joe@perches.com> wrote:
-> > On Sat, 2014-07-05 at 19:20 +0100, Maciej W. Rozycki wrote:
-> > > On Sat, 5 Jul 2014, Joe Perches wrote:
-> > > > I don't think %#p is valid so it
-> > > > shouldn't have been set by #.
-> > > 
-> > >  Huh?  As recently as last Wednesday you pointed me at the specific commit 
-> > > from Grant that made it valid (GCC format complaints aside).
-> > 
-> > Those gcc complaints are precisely the thing
-> > that makes it invalid.
-> 
-> That's the most inane reason ever for saying something is invalid. "The
-> tool doesn't recognise it, there for it is invalid?" Seriously?
+Will,
 
-Inane maybe, but practical.
+On 3 July 2014 19:54, Will Deacon <will.deacon@arm.com> wrote:
+> On Fri, Jun 27, 2014 at 03:57:47PM +0100, Jean Pihet wrote:
+>> When tracing with tracepoints events the IP and CPSR are set to 0,
+>> preventing the perf code to resolve the symbols:
+>>
+>> ./perf record -e kmem:kmalloc cal
+>> [ perf record: Woken up 1 times to write data ]
+>> [ perf record: Captured and wrote 0.007 MB perf.data (~321 samples) ]
+>>
+>> ./perf report
+>> Overhead Command Shared Object Symbol
+>> ........ ....... ............. ...........
+>> 40.78%   cal     [unknown]     [.]00000000
+>> 31.6%    cal     [unknown]     [.]00000000
+>>
+>> The examination of the gathered samples (perf report -D) shows the IP
+>> is set to 0 and that the samples are considered as user space samples,
+>> while the IP should be set from the registers and the samples should be
+>> considered as kernel samples.
+>>
+>> The fix is to implement perf_arch_fetch_caller_regs for ARM, which
+>> fills the necessary registers used for the callchain unwinding and
+>> to determine the user/kernel space property of the samples: ip, sp, fp
+>> and cpsr.
+>>
+>> Tested with perf record and tracepoints triggering (-e <tracepoint>), with
+>> unwinding using fp (--call-graph fp) and dwarf info (--call-graph dwarf).
+>>
+>> Reported by Sneha Priya on linaro-dev, cf.
+>> http://lists.linaro.org/pipermail/linaro-dev/2014-May/017151.html
+>>
+>> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+>> Cc: Will Deacon <will.deacon@arm.com>
+>> Reported-by: Sneha Priya <sneha.cse@hotmail.com>
+>> ---
+>>  arch/arm/include/asm/perf_event.h | 19 +++++++++++++++++++
+>>  1 file changed, 19 insertions(+)
+>>
+>> diff --git a/arch/arm/include/asm/perf_event.h b/arch/arm/include/asm/perf_event.h
+>> index 7558775..b02b5d3 100644
+>> --- a/arch/arm/include/asm/perf_event.h
+>> +++ b/arch/arm/include/asm/perf_event.h
+>> @@ -26,6 +26,25 @@ struct pt_regs;
+>>  extern unsigned long perf_instruction_pointer(struct pt_regs *regs);
+>>  extern unsigned long perf_misc_flags(struct pt_regs *regs);
+>>  #define perf_misc_flags(regs)        perf_misc_flags(regs)
+>> +
+>> +/*
+>> + * Take a snapshot of the regs.
+>> + * We only need a few of the regs:
+>> + * - ip for PERF_SAMPLE_IP,
+>> + * - sp & fp for fp & dwarf based callchain unwinding,
+>> + * - cpsr for user_mode() tests.
+>> + */
+>> +#define perf_arch_fetch_caller_regs(regs, __ip) {    \
+>> +     instruction_pointer(regs)= (__ip);              \
+>> +     __asm__ (                                       \
+>> +             "str    sp, %[_ARM_sp]          \n\t"   \
+>> +             "str    fp, %[_ARM_fp]          \n\t"   \
+>> +             "mrs    %[_ARM_cpsr], cpsr      \n\t"   \
+>> +             : [_ARM_sp]   "=m" (regs->ARM_sp),      \
+>> +               [_ARM_fp]   "=m" (regs->ARM_fp),      \
+>> +               [_ARM_cpsr] "=r" (regs->ARM_cpsr)     \
+>> +     );                                              \
+>> +}
+>
+> You don't appear to have addressed my comments from last time. What changed?
+A new patch set it on its way, with the commit description and the
+comments in the code updated.
 
-The tool says "don't do that", so we shouldn't
-or we should fix or quiet the tool.
+Jean
 
-fwiw: I agree with Maciej.
-
-gcc's warning on %#p should be able to be quieted somehow.
-
-
+>
+> Will
