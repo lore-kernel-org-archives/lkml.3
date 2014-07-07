@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314AbaGGJ1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 05:27:13 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:35798 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401AbaGGJ1J (ORCPT
+	id S1752400AbaGGJ2r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 05:28:47 -0400
+Received: from asav22.altibox.net ([109.247.116.9]:55152 "EHLO
+	asav22.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355AbaGGJ2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 05:27:09 -0400
-Message-ID: <1404725217.4501.15.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] appletalk: Set skb with destructor
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        acme@ghostprotocols.net, netdev@vger.kernel.org, davem@davemloft.net
-Date: Mon, 07 Jul 2014 11:26:57 +0200
-In-Reply-To: <1404723456.4501.14.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <20140705202821.GA25880@mwanda>
-	 <1404647816-7564-1-git-send-email-andrey.krieger.utkin@gmail.com>
-	 <1404682932.4501.6.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <CANZNk81v7YHKpzjZ65KHdUi1BgBiV_ibZO24b8uauuCVZeUv2A@mail.gmail.com>
-	 <1404723456.4501.14.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Mon, 7 Jul 2014 05:28:44 -0400
+X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Jul 2014 05:28:43 EDT
+Message-ID: <53BA66F6.9020605@tronnes.org>
+Date: Mon, 07 Jul 2014 11:23:02 +0200
+From: Noralf Tronnes <notro@tronnes.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        "Chen, Gong" <gong.chen@linux.intel.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] video: fbdev: sis: init.c:  Cleaning up redundant condition
+ is always true
+References: <1404422121-11298-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <20140707075709.GI25934@mwanda>
+In-Reply-To: <20140707075709.GI25934@mwanda>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Antivirus: avast! (VPS 140706-1, 06.07.2014), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-07 at 10:57 +0200, Eric Dumazet wrote:
-> On Mon, 2014-07-07 at 11:03 +0300, Andrey Utkin wrote:
-> > 2014-07-07 0:42 GMT+03:00 Eric Dumazet <eric.dumazet@gmail.com>:
-> > >>       /* Queue packet (standard) */
-> > >> +     sock_hold(sock);
-> > >> +     skb->destructor = atalk_skb_destructor;
-> > >>       skb->sk = sock;
-> > >
-> > > This part is not needed : sock_queue_rcv_skb() already does the right
-> > > thing : It calls skb_set_owner_r(skb, sk);
-> > >
-> > > You should therefore remove the "skb->sk = sock;" line
-> > 
-> > If it is so, i think this should be as another patch with its own reasoning.
-> > 
-> 
-> No it is not.
-> 
-> Its illegal to set skb->sk to a socket without taking proper reference.
-> 
-> But it is useless to do this before calling sock_queue_rcv_skb(), as I
-> explained to you.
-> 
-> This is adding two extra atomic operations for nothing: skb_orphan() is
-> called from sock_queue_rcv_skb(), so it is kind of stupid to set a
-> destructor that _will_ be immediately called.
-> 
-> We do not do defensive programming, we try to do logical things, and
-> only logical things.
-> 
-> Please re-spin your patch, by integrating my feedback.
-> 
-> Thanks !
+Den 07.07.2014 09:57, skrev Dan Carpenter:
+> On Thu, Jul 03, 2014 at 11:15:21PM +0200, Rickard Strandqvist wrote:
+>> diff --git a/drivers/video/fbdev/sis/init.c b/drivers/video/fbdev/sis/init.c
+>> index bd40f5e..9e2dd96 100644
+>> --- a/drivers/video/fbdev/sis/init.c
+>> +++ b/drivers/video/fbdev/sis/init.c
+>> @@ -355,12 +355,12 @@ SiS_GetModeID(int VGAEngine, unsigned int VBFlags, int HDisplay, int VDisplay,
+>>   		}
+>>   		break;
+>>   	case 400:
+>> -		if((!(VBFlags & CRT1_LCDA)) || ((LCDwidth >= 800) && (LCDwidth >= 600))) {
+>> +		if ((!(VBFlags & CRT1_LCDA)) || (LCDwidth >= 600)) {
+>
+> It might be that this was supposed to be:
+>
+> 		if((!(VBFlags & CRT1_LCDA)) || ((LCDwidth <= 800) && (LCDwidth >= 600))) {
+>
+> But why would people write a range from high to low?  That's crazy
+> people who write backwards code...
+The numbers 800x600 (1024x768) indicate that LCDheight is meant to be used:
+                  if((!(VBFlags & CRT1_LCDA)) || ((LCDwidth >= 800) && 
+(LCDheight >= 600))) {
 
-Reading again this code, I think all you need is to remove the 2 buggy
-lines.
-
-No need for setup destructors.
-
-
+regards,
+Noralf Tronnes
 
