@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088AbaGGXys (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:54:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55821 "EHLO
+	id S1755329AbaGHAbN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:31:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55909 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753933AbaGGXyk (ORCPT
+	with ESMTP id S1754084AbaGGXys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:40 -0400
+	Mon, 7 Jul 2014 19:54:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Elder <elder@linaro.org>, Ilya Dryomov <ilya.dryomov@inktank.com>
-Subject: [PATCH 3.14 46/94] rbd: use reference counts for image requests
-Date: Mon,  7 Jul 2014 16:57:36 -0700
-Message-Id: <20140707235758.149686887@linuxfoundation.org>
+        Jeff Layton <jlayton@primarydata.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.14 71/94] nfsd: fix rare symlink decoding bug
+Date: Mon,  7 Jul 2014 16:58:01 -0700
+Message-Id: <20140707235758.878012419@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -28,103 +29,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <elder@linaro.org>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 0f2d5be792b0466b06797f637cfbb0f64dbb408c upstream.
+commit 76f47128f9b33af1e96819746550d789054c9664 upstream.
 
-Each image request contains a reference count, but to date it has
-not actually been used.  (I think this was just an oversight.) A
-recent report involving rbd failing an assertion shed light on why
-and where we need to use these reference counts.
+An NFS operation that creates a new symlink includes the symlink data,
+which is xdr-encoded as a length followed by the data plus 0 to 3 bytes
+of zero-padding as required to reach a 4-byte boundary.
 
-Every OSD request associated with an object request uses
-rbd_osd_req_callback() as its callback function.  That function will
-call a helper function (dependent on the type of OSD request) that
-will set the object request's "done" flag if the object request if
-appropriate.  If that "done" flag is set, the object request is
-passed to rbd_obj_request_complete().
+The vfs, on the other hand, wants null-terminated data.
 
-In rbd_obj_request_complete(), requests are processed in sequential
-order.  So if an object request completes before one of its
-predecessors in the image request, the completion is deferred.
-Otherwise, if it's a completing object's "turn" to be completed, it
-is passed to rbd_img_obj_end_request(), which records the result of
-the operation, accumulates transferred bytes, and so on.  Next, the
-successor to this request is checked and if it is marked "done",
-(deferred) completion processing is performed on that request, and
-so on.  If the last object request in an image request is completed,
-rbd_img_request_complete() is called, which (typically) destroys
-the image request.
+The simple way to handle this would be by copying the data into a newly
+allocated buffer with space for the final null.
 
-There is a race here, however.  The instant an object request is
-marked "done" it can be provided (by a thread handling completion of
-one of its predecessor operations) to rbd_img_obj_end_request(),
-which (for the last request) can then lead to the image request
-getting torn down.  And this can happen *before* that object has
-itself entered rbd_img_obj_end_request().  As a result, once it
-*does* enter that function, the image request (and even the object
-request itself) may have been freed and become invalid.
+The current nfsd_symlink code tries to be more clever by skipping that
+step in the (likely) case where the byte following the string is already
+0.
 
-All that's necessary to avoid this is to properly count references
-to the image requests.  We tear down an image request's object
-requests all at once--only when the entire image request has
-completed.  So there's no need for an image request to count
-references for its object requests.  However, we don't want an
-image request to go away until the last of its object requests
-has passed through rbd_img_obj_callback().  In other words,
-we don't want rbd_img_request_complete() to necessarily
-result in the image request being destroyed, because it may
-get called before we've finished processing on all of its
-object requests.
+But that assumes that the byte following the string is ours to look at.
+In fact, it might be the first byte of a page that we can't read, or of
+some object that another task might modify.
 
-So the fix is to add a reference to an image request for
-each of its object requests.  The reference can be viewed
-as representing an object request that has not yet finished
-its call to rbd_img_obj_callback().  That is emphasized by
-getting the reference right after assigning that as the image
-object's callback function.  The corresponding release of that
-reference is done at the end of rbd_img_obj_callback(), which
-every image object request passes through exactly once.
+Worse, the NFSv4 code tries to fix the problem by actually writing to
+that byte.
 
-Signed-off-by: Alex Elder <elder@linaro.org>
-Reviewed-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+In the NFSv2/v3 cases this actually appears to be safe:
+
+	- nfs3svc_decode_symlinkargs explicitly null-terminates the data
+	  (after first checking its length and copying it to a new
+	  page).
+	- NFSv2 limits symlinks to 1k.  The buffer holding the rpc
+	  request is always at least a page, and the link data (and
+	  previous fields) have maximum lengths that prevent the request
+	  from reaching the end of a page.
+
+In the NFSv4 case the CREATE op is potentially just one part of a long
+compound so can end up on the end of a page if you're unlucky.
+
+The minimal fix here is to copy and null-terminate in the NFSv4 case.
+The nfsd_symlink() interface here seems too fragile, though.  It should
+really either do the copy itself every time or just require a
+null-terminated string.
+
+Reported-by: Jeff Layton <jlayton@primarydata.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/rbd.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/nfsd/nfs4proc.c |    9 ---------
+ fs/nfsd/nfs4xdr.c  |   13 ++++++++++++-
+ 2 files changed, 12 insertions(+), 10 deletions(-)
 
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -1382,6 +1382,13 @@ static void rbd_obj_request_put(struct r
- 	kref_put(&obj_request->kref, rbd_obj_request_destroy);
- }
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -618,15 +618,6 @@ nfsd4_create(struct svc_rqst *rqstp, str
  
-+static void rbd_img_request_get(struct rbd_img_request *img_request)
-+{
-+	dout("%s: img %p (was %d)\n", __func__, img_request,
-+	     atomic_read(&img_request->kref.refcount));
-+	kref_get(&img_request->kref);
-+}
-+
- static bool img_request_child_test(struct rbd_img_request *img_request);
- static void rbd_parent_request_destroy(struct kref *kref);
- static void rbd_img_request_destroy(struct kref *kref);
-@@ -2128,6 +2135,7 @@ static void rbd_img_obj_callback(struct
- 	img_request->next_completion = which;
- out:
- 	spin_unlock_irq(&img_request->completion_lock);
-+	rbd_img_request_put(img_request);
- 
- 	if (!more)
- 		rbd_img_request_complete(img_request);
-@@ -2225,6 +2233,7 @@ static int rbd_img_request_fill(struct r
- 			goto out_partial;
- 		obj_request->osd_req = osd_req;
- 		obj_request->callback = rbd_img_obj_callback;
-+		rbd_img_request_get(img_request);
- 
- 		osd_req_op_extent_init(osd_req, 0, opcode, offset, length,
- 						0, 0);
+ 	switch (create->cr_type) {
+ 	case NF4LNK:
+-		/* ugh! we have to null-terminate the linktext, or
+-		 * vfs_symlink() will choke.  it is always safe to
+-		 * null-terminate by brute force, since at worst we
+-		 * will overwrite the first byte of the create namelen
+-		 * in the XDR buffer, which has already been extracted
+-		 * during XDR decode.
+-		 */
+-		create->cr_linkname[create->cr_linklen] = 0;
+-
+ 		status = nfsd_symlink(rqstp, &cstate->current_fh,
+ 				      create->cr_name, create->cr_namelen,
+ 				      create->cr_linkname, create->cr_linklen,
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -602,7 +602,18 @@ nfsd4_decode_create(struct nfsd4_compoun
+ 		READ_BUF(4);
+ 		READ32(create->cr_linklen);
+ 		READ_BUF(create->cr_linklen);
+-		SAVEMEM(create->cr_linkname, create->cr_linklen);
++		/*
++		 * The VFS will want a null-terminated string, and
++		 * null-terminating in place isn't safe since this might
++		 * end on a page boundary:
++		 */
++		create->cr_linkname =
++				kmalloc(create->cr_linklen + 1, GFP_KERNEL);
++		if (!create->cr_linkname)
++			return nfserr_jukebox;
++		memcpy(create->cr_linkname, p, create->cr_linklen);
++		create->cr_linkname[create->cr_linklen] = '\0';
++		defer_free(argp, kfree, create->cr_linkname);
+ 		break;
+ 	case NF4BLK:
+ 	case NF4CHR:
 
 
