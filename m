@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbaGGLoA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 07:44:00 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59858 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001AbaGGLn7 (ORCPT
+	id S1752938AbaGGLpG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 07:45:06 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:54512 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752703AbaGGLpD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 07:43:59 -0400
-Date: Mon, 7 Jul 2014 13:43:46 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 1/1] perf: Prevent race in PERF_SAMPLE_READ group format
- sample output
-Message-ID: <20140707114346.GD19379@twins.programming.kicks-ass.net>
-References: <1403721875-15669-1-git-send-email-jolsa@kernel.org>
- <1403721875-15669-2-git-send-email-jolsa@kernel.org>
- <20140707090428.GG6758@twins.programming.kicks-ass.net>
- <20140707102020.GA22764@krava.redhat.com>
+	Mon, 7 Jul 2014 07:45:03 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] power: generic-adc-battery: use devm_kcalloc for psy->properties
+Date: Mon, 07 Jul 2014 13:46:27 +0200
+Message-ID: <2334092.40gIsm1RaB@diego>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <3453746.GBc4Nvx1gU@phil>
+References: <3453746.GBc4Nvx1gU@phil>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VE1+SxTILTm8udN6"
-Content-Disposition: inline
-In-Reply-To: <20140707102020.GA22764@krava.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Freitag, 16. Mai 2014, 15:12:50 schrieb Heiko Stübner:
+> From: Heiko Stuebner <heiko.stuebner@bq.com>
+> 
+> This reduces the amount of code spent on initialization and cleanup
+> of the properties memory and also simplifies the error handling a bit.
+> 
+> Signed-off-by: Heiko Stuebner <heiko.stuebner@bq.com>
 
---VE1+SxTILTm8udN6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, Jul 07, 2014 at 12:20:20PM +0200, Jiri Olsa wrote:
-> On Mon, Jul 07, 2014 at 11:04:28AM +0200, Peter Zijlstra wrote:
-> > On Wed, Jun 25, 2014 at 08:44:35PM +0200, Jiri Olsa wrote:
-> > > From: Jiri Olsa <jolsa@redhat.com>
-> > >=20
-> > > While iterating siblings in perf_output_read_group we could
-> > > race with addition and removal of sibling in perf_group_attach
-> > > and perf_group_detach respective.
-> >=20
-> > So why would anybody do this?
->=20
-> the test program from 0/1 email hangs up my server
-> but no standard reason AFAICS
->=20
-> I've got soft lockup, sometimes ended up with unkillable perf process
-> also few total server hangs
-
-OK, so that's useful information to have in a Changelog ;-)
-
-Not immediately obvious how that can happen though. I can see the output
-getting scrambled.
+any comments on these two patches?
 
 
+Thanks
+Heiko
 
---VE1+SxTILTm8udN6
-Content-Type: application/pgp-signature
+> ---
+>  drivers/power/generic-adc-battery.c | 14 ++++----------
+>  1 file changed, 4 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/power/generic-adc-battery.c
+> b/drivers/power/generic-adc-battery.c index 59a1421..540d57f 100644
+> --- a/drivers/power/generic-adc-battery.c
+> +++ b/drivers/power/generic-adc-battery.c
+> @@ -267,13 +267,11 @@ static int gab_probe(struct platform_device *pdev)
+>  	 * copying the static properties and allocating extra memory for holding
+>  	 * the extra configurable properties received from platform data.
+>  	 */
+> -	psy->properties = kcalloc(ARRAY_SIZE(gab_props) +
+> +	psy->properties = devm_kcalloc(&pdev->dev, ARRAY_SIZE(gab_props) +
+>  					ARRAY_SIZE(gab_chan_name),
+>  					sizeof(*psy->properties), GFP_KERNEL);
+> -	if (!psy->properties) {
+> -		ret = -ENOMEM;
+> -		goto first_mem_fail;
+> -	}
+> +	if (!psy->properties)
+> +		return -ENOMEM;
+> 
+>  	memcpy(psy->properties, gab_props, sizeof(gab_props));
+>  	properties = (enum power_supply_property *)
+> @@ -301,7 +299,7 @@ static int gab_probe(struct platform_device *pdev)
+>  	/* none of the channels are supported so let's bail out */
+>  	if (index == 0) {
+>  		ret = -ENODEV;
+> -		goto second_mem_fail;
+> +		return ret;
+>  	}
+> 
+>  	/*
+> @@ -348,9 +346,6 @@ err_reg_fail:
+>  		if (adc_bat->channel[chan])
+>  			iio_channel_release(adc_bat->channel[chan]);
+>  	}
+> -second_mem_fail:
+> -	kfree(psy->properties);
+> -first_mem_fail:
+>  	return ret;
+>  }
+> 
+> @@ -372,7 +367,6 @@ static int gab_remove(struct platform_device *pdev)
+>  			iio_channel_release(adc_bat->channel[chan]);
+>  	}
+> 
+> -	kfree(adc_bat->psy.properties);
+>  	cancel_delayed_work(&adc_bat->bat_work);
+>  	return 0;
+>  }
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTuofxAAoJEHZH4aRLwOS6qfQQAJxKVQWWxB0FUbrX4lkz+/WV
-ROLhq/OY2SfXHYdcDaq0UTaKfjUj5NyI/nO8oo9z8euTPPteixjXO4YTLW41DWOj
-eS8Sr754yPeLXRr6dv3yI495RhEQQhfDxLKdukHjWS+thb8kHl5N2ANAIJ/amW1z
-nXczRD26rtIZzyjfUQwooTdviUydsQn10fXtM1xOvAnWfNxRBAugxV9L2R/pRhUW
-M1vo2tTNKIcgbaHJYc6dS7O8YLo8dzrXbwbPSo9nMfZF05WCE3bXq0qll7Vh1sOR
-zbRDt2KfPW3XWgrESa03IDbvC3mYc8ePJTFCxUoEvI9cUfqeQm/mnIwLiEySE7r+
-ff8kVzWNaXqEBbwfHDW5iVqxvUNcMvHSnO1ATdHGCrSJZGpJVRBQBwxm2O4VfiAO
-1Fr0prSt2tXw8fsY8ZOpubfAdgRpbCQON6dJKm/j8AGivjvvK9COomvl2y2vwnfo
-5Rgzo7FA0+ARMuhcSGdRaqHDl0SVyO6Lmx5pCrw8cSyKTtcsQarxXZv5cKbeE5yR
-qNHdxYiie/PGbJHGJv3kk8W1QZ/dyJmxzxCwgy24MnsUy8n+gZ57n+vpaj84/Ubz
-Opw6PkCJOGbgqn3k6xrGzzEn1cWuCSccCaY0STKLzcZ50nCzRtG/NPjZH5XtbtFf
-jiThf6FKg+RYofuGlYV7
-=IG4k
------END PGP SIGNATURE-----
-
---VE1+SxTILTm8udN6--
