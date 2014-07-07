@@ -1,105 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312AbaGGVD5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 17:03:57 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33918 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263AbaGGVDz (ORCPT
+	id S1751527AbaGGVGK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 17:06:10 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50290 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750929AbaGGVGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 17:03:55 -0400
-Date: Mon, 7 Jul 2014 23:03:53 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        sergei.shtylyov@cogentembedded.com, davem@davemloft.net,
-        kernel@pengutronix.de, shawn.guo@freescale.com, plagnioj@jcrosoft.com,
-        nicolas.ferre@atmel.com, linux@maxim.org.za, netdev@vger.kernel.org,
-        dinguyen@altera.com
-Subject: [PATCH] micrel phy: fix typo in define, point people to device tree
-Message-ID: <20140707210353.GA29415@amd.pavel.ucw.cz>
+	Mon, 7 Jul 2014 17:06:07 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH v2 6/7] ACPI: Cleanup useless ACPI inclusion.
+Date: Mon, 07 Jul 2014 23:24:11 +0200
+Message-ID: <2868763.c5IhTlySqm@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <cf869ff5e75e0973b065c3d3fe2fa453abcd5c97.1404706299.git.lv.zheng@intel.com>
+References: <cover.1387336613.git.lv.zheng@intel.com> <cover.1404706298.git.lv.zheng@intel.com> <cf869ff5e75e0973b065c3d3fe2fa453abcd5c97.1404706299.git.lv.zheng@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, July 07, 2014 12:17:40 PM Lv Zheng wrote:
+> The sst-haswell-dsp.c is an ACPI independent file, this patch removes
+> ACPI header files for it.
 
-There's typo "SCEW" in some defines, which made my greps fail and
-confused me a lot. Plus, Dinh Nguyen pointed out that direct phy
-accesses from board files should no longer be needed -- device tree
-should be able to configure skew.
+This appears to be independent of the rest of the series.  Is that correct?
 
-Signed-off-by: Pavel Machek <pavel@denx.de>
-
-diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
-index 075ec05..528d3ce 100644
---- a/arch/arm/mach-at91/board-dt-sama5.c
-+++ b/arch/arm/mach-at91/board-dt-sama5.c
-@@ -50,12 +50,15 @@ static int ksz9021rn_phy_fixup(struct phy_device *phy)
- {
- 	int value;
- 
-+	/* Should probably use dts to configure skew, see 
-+	   micrel-ksz90x1.txt */
-+
- 	/* Set delay values */
--	value = MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SCEW | 0x8000;
-+	value = MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SKEW | 0x8000;
- 	phy_write(phy, MICREL_KSZ9021_EXTREG_CTRL, value);
- 	value = 0xF2F4;
- 	phy_write(phy, MICREL_KSZ9021_EXTREG_DATA_WRITE, value);
--	value = MICREL_KSZ9021_RGMII_RX_DATA_PAD_SCEW | 0x8000;
-+	value = MICREL_KSZ9021_RGMII_RX_DATA_PAD_SKEW | 0x8000;
- 	phy_write(phy, MICREL_KSZ9021_EXTREG_CTRL, value);
- 	value = 0x2222;
- 	phy_write(phy, MICREL_KSZ9021_EXTREG_DATA_WRITE, value);
-diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
-index e60456d..fa6c7ad 100644
---- a/arch/arm/mach-imx/mach-imx6q.c
-+++ b/arch/arm/mach-imx/mach-imx6q.c
-@@ -42,18 +42,19 @@
- /* For imx6q sabrelite board: set KSZ9021RN RGMII pad skew */
- static int ksz9021rn_phy_fixup(struct phy_device *phydev)
- {
-+	/* Should probably use dt to set these, see micrel-ksz90x1.txt */
- 	if (IS_BUILTIN(CONFIG_PHYLIB)) {
- 		/* min rx data delay */
- 		phy_write(phydev, MICREL_KSZ9021_EXTREG_CTRL,
--			0x8000 | MICREL_KSZ9021_RGMII_RX_DATA_PAD_SCEW);
-+			0x8000 | MICREL_KSZ9021_RGMII_RX_DATA_PAD_SKEW);
- 		phy_write(phydev, MICREL_KSZ9021_EXTREG_DATA_WRITE, 0x0000);
- 
- 		/* max rx/tx clock delay, min rx/tx control delay */
- 		phy_write(phydev, MICREL_KSZ9021_EXTREG_CTRL,
--			0x8000 | MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SCEW);
-+			0x8000 | MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SKEW);
- 		phy_write(phydev, MICREL_KSZ9021_EXTREG_DATA_WRITE, 0xf0f0);
- 		phy_write(phydev, MICREL_KSZ9021_EXTREG_CTRL,
--			MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SCEW);
-+			MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SKEW);
- 	}
- 
- 	return 0;
---- a/include/linux/micrel_phy.h
-+++ b/include/linux/micrel_phy.h
-@@ -38,9 +38,12 @@
- /* struct phy_device dev_flags definitions */
- #define MICREL_PHY_50MHZ_CLK	0x00000001
- 
-+/* These probably should not be exported; see micrel-ksz90x1.txt on
-+   how to configure skew from device tree. */
- #define MICREL_KSZ9021_EXTREG_CTRL	0xB
- #define MICREL_KSZ9021_EXTREG_DATA_WRITE	0xC
--#define MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SCEW	0x104
--#define MICREL_KSZ9021_RGMII_RX_DATA_PAD_SCEW	0x105
-+#define MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SKEW	0x104
-+#define MICREL_KSZ9021_RGMII_RX_DATA_PAD_SKEW	0x105
-+#define MICREL_KSZ9021_RGMII_TX_DATA_PAD_SKEW	0x106
- 
- #endif /* _MICREL_PHY_H */
-
+> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> Cc: Liam Girdwood <lgirdwood@gmail.com>
+> Cc: Mark Brown <broonie@kernel.org>
+> Cc: alsa-devel@alsa-project.org
+> ---
+>  sound/soc/intel/sst-haswell-dsp.c |    3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/sound/soc/intel/sst-haswell-dsp.c b/sound/soc/intel/sst-haswell-dsp.c
+> index 535f517..ecc5057 100644
+> --- a/sound/soc/intel/sst-haswell-dsp.c
+> +++ b/sound/soc/intel/sst-haswell-dsp.c
+> @@ -28,9 +28,6 @@
+>  #include <linux/firmware.h>
+>  #include <linux/pm_runtime.h>
+>  
+> -#include <linux/acpi.h>
+> -#include <acpi/acpi_bus.h>
+> -
+>  #include "sst-dsp.h"
+>  #include "sst-dsp-priv.h"
+>  #include "sst-haswell-ipc.h"
+> 
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
