@@ -1,110 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658AbaGGLg6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 07:36:58 -0400
-Received: from coyote.quickmin.net ([217.14.112.24]:56604 "EHLO
-	coyote.quickmin.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001AbaGGLg5 (ORCPT
+	id S1752755AbaGGLi2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 07:38:28 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:62580 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751939AbaGGLiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 07:36:57 -0400
-X-Greylist: delayed 406 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Jul 2014 07:36:56 EDT
-From: Roman Fietze <roman.fietze@telemotive.de>
-To: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: [PATCH 1/2] Allow to override the hctosys RTC using a kernel parameter
-Date: Mon, 07 Jul 2014 13:30:08 +0200
-Message-ID: <5132579.sMfE4ssjXf@rfietze>
-Organization: Telemotive AG
-User-Agent: KMail/4.13.2 (Linux/3.11.10-17-default; KDE/4.13.2; x86_64; ; )
+	Mon, 7 Jul 2014 07:38:24 -0400
+Message-ID: <53BA86AB.8050603@itdev.co.uk>
+Date: Mon, 07 Jul 2014 12:38:19 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-MIMETrack: Itemize by SMTP Server on muc/Telemotive(Release 8.5.3FP6HF107 | January 23, 2014) at
- 07.07.2014 13:30:08,
-	Serialize by Router on muc/Telemotive(Release 8.5.3FP6HF107 | January 23, 2014) at
- 07.07.2014 13:30:08,
-	Serialize complete at 07.07.2014 13:30:08
-X-TNEFEvaluated: 1
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Sekhar Nori <nsekhar@ti.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH 00/15] atmel_mxt_ts - device tree, bootloader, etc
+References: <1404399697-26484-1-git-send-email-nick.dyer@itdev.co.uk> <53BA82A4.5070104@ti.com>
+In-Reply-To: <53BA82A4.5070104@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello RTC maintainers and list members,
+On 07/07/14 12:21, Sekhar Nori wrote:
+> I was unable to get the touchscreen working on my board after applying 
+> just these patches. It does work correctly with your for-next branch so 
+> I guess I need to wait for you to post the rest of your patches too.
+> 
+> Here are the relevant messages at boot. Full boot log is available here 
+> (in case you want to have a look): http://paste.ubuntu.com/7759703/
+> 
+> [    2.315717] atmel_mxt_ts 0-004a: Direct firmware load failed with error -2
+> [    2.322949] atmel_mxt_ts 0-004a: Falling back to user helper
+> [    5.934924] atmel_mxt_ts 0-004a: Wait for completion timed out.
+> [    5.941237] atmel_mxt_ts 0-004a: Warning: Info CRC error - device=0x000000 file=0x8EE45C
+> [    7.294769] atmel_mxt_ts 0-004a: Wait for completion timed out.
+> [    7.300976] atmel_mxt_ts 0-004a: Resetting chip
+> [   10.574729] atmel_mxt_ts 0-004a: Wait for completion timed out.
+> [   10.581010] atmel_mxt_ts 0-004a: Error -110 updating config
+> [   10.626788] atmel_mxt_ts 0-004a: Family: 128 Variant: 1 Firmware V1.6.AB Objects: 17
+> 
+> One key difference is that these patches try to load the config at 
+> probe where as with your -next branch that is avoided in the DT case. 
+> This is also missing the new update_cfg sysfs interface (which I guess 
+> you will post as follow-on patches).
+> 
+> The wait_for_completion() times out because the interrupt never 
+> arrives. Even later when testing using evtest, I do not see interrupts 
+> coming. There are only two interrupts that arrive during boot and it 
+> stays that way. There is something going on with the way interrupts are 
+> handled. I havent debugged further yet. This problem is not there with 
+> your for-next branch.
 
-I would like to hear your criticism about the following two small
-patches.
+Thanks for trying this, apologies that it didn't work.
 
-These patches allow to overwrite the hctosys RTC specified in the
-kernel config using CONFIG_RTC_HCTOSYS_DEVICE.
+Looking at it, I've a feeling that this is the solution for the issue you see:
+https://github.com/ndyer/linux/commit/4e8f8d56361b09a2a
 
-The background ist, that we have two almost identical x86 boards from
-MEN in Nuernberg. The first one buffers the CMOS RTC, the other one
-buffers an additional Epson RX8581 I2C RTC. We would like to use the
-same kernel, but the only parameter we could not overwrite when
-starting the kernel or system was the RTC used to initialize the
-system clock.
+Although, the fact that it says the device is reporting the Info CRC to be
+0x000000 is rather odd, as well.
 
+It would be useful if you could turn on all the debug in the driver and
+re-test (#define DEBUG 1 at the top). However, if you don't have time, I
+will try and reproduce on my test system.
 
->From 1e302072919594da0f5e71b38e7254ebfa4243f7 Mon Sep 17 00:00:00 2001
-From: Roman Fietze <roman.fietze@telemotive.de>
-Date: Thu, 3 Jul 2014 14:20:40 +0200
-Subject: [PATCH 1/2] rtc: define maximum size of RTC device name in rtc.h
+cheers
 
-Signed-off-by: Roman Fietze <roman.fietze@telemotive.de>
----
- drivers/rtc/rtc-proc.c | 10 ++++------
- include/linux/rtc.h    |  1 +
- 2 files changed, 5 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/rtc/rtc-proc.c b/drivers/rtc/rtc-proc.c
-index ffa69e1..a77ca46 100644
---- a/drivers/rtc/rtc-proc.c
-+++ b/drivers/rtc/rtc-proc.c
-@@ -18,19 +18,17 @@
- 
- #include "rtc-core.h"
- 
--#define NAME_SIZE	10
--
- #if defined(CONFIG_RTC_HCTOSYS_DEVICE)
- static bool is_rtc_hctosys(struct rtc_device *rtc)
- {
- 	int size;
--	char name[NAME_SIZE];
-+	char name[RTC_HCTOSYS_DEVICE_SIZE];
- 
--	size = scnprintf(name, NAME_SIZE, "rtc%d", rtc->id);
--	if (size > NAME_SIZE)
-+	size = scnprintf(name, RTC_HCTOSYS_DEVICE_SIZE, "rtc%d", rtc->id);
-+	if (size > RTC_HCTOSYS_DEVICE_SIZE)
- 		return false;
- 
--	return !strncmp(name, CONFIG_RTC_HCTOSYS_DEVICE, NAME_SIZE);
-+	return !strncmp(name, rtc_hctosys_device, RTC_HCTOSYS_DEVICE_SIZE);
- }
- #else
- static bool is_rtc_hctosys(struct rtc_device *rtc)
-diff --git a/include/linux/rtc.h b/include/linux/rtc.h
-index c2c2897..0a115b5 100644
---- a/include/linux/rtc.h
-+++ b/include/linux/rtc.h
-@@ -192,6 +192,7 @@ static inline bool is_leap_year(unsigned int year)
- }
- 
- #ifdef CONFIG_RTC_HCTOSYS_DEVICE
-+#define RTC_HCTOSYS_DEVICE_SIZE	10
- extern int rtc_hctosys_ret;
- #else
- #define rtc_hctosys_ret -ENODEV
--- 
-1.8.4.5
-
-
-
-Roman
-
--- 
-Roman Fietze              Telemotive AG Buero Muehlhausen
-Breitwiesen                             73347 Muehlhausen
-Tel.: +49 7335 18493-45          http://www.telemotive.de
-
+Nick
