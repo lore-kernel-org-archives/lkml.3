@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751284AbaGGTNt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 15:13:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52568 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868AbaGGTNr (ORCPT
+	id S1751616AbaGGTOf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 15:14:35 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:64613 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869AbaGGTOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 15:13:47 -0400
-Date: Mon, 7 Jul 2014 12:13:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH v3 0/3] free reclaimed pages by paging out instantly
-Message-Id: <20140707121346.1487c20e2a9365325e3a81a6@linux-foundation.org>
-In-Reply-To: <20140703005949.GC21751@bbox>
-References: <1404260029-11525-1-git-send-email-minchan@kernel.org>
-	<20140702134215.2bf830dcb904c34bd2e2b9e8@linux-foundation.org>
-	<20140703005949.GC21751@bbox>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Jul 2014 15:14:34 -0400
+Date: Mon, 7 Jul 2014 12:14:30 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Manuel Reimer <Manuel.Spam@nurfuerspam.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 3.15.4 runs *significantly* slower than 3.15.3 on iMX233 CPU
+Message-ID: <20140707191430.GA23004@roeck-us.net>
+References: <lpeofi$1fl$1@ger.gmane.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <lpeofi$1fl$1@ger.gmane.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jul 2014 09:59:49 +0900 Minchan Kim <minchan@kernel.org> wrote:
+On Mon, Jul 07, 2014 at 08:21:38PM +0200, Manuel Reimer wrote:
+> Hello,
+> 
+> maybe someone can help me to find the reason for this problem:
+> 
+> If I run my iMX233 development board with an 3.15.3 kernel, then the
+> performance is much better as with an 3.15.4 kernel.
+> 
+> I have the first significant "hanging" here:
+> 
+> [    7.910000] sd 0:0:0:0: [sda] Attached SCSI removable disk
+> [   10.810000] random: nonblocking pool is initialized
+> [   24.310000] systemd[1]: systemd 214 running in system mode. (+PAM
+> -AUDIT -SELINUX -IMA -SYSVINIT +LIBCRYPTSETUP +GCRYPT +ACL +XZ
+> +SECCOMP -APPARMOR)
+> 
+> After booting up it takes several seconds between entering the
+> username and the password while with version 3.15.3 the password
+> prompt appears almost immediately after entering the username.
+> 
 
-> > > Most of field in vmstat are not changed too much but things I can notice
-> > > is allocstall and pgrotated. We could save allocstall(ie, direct relcaim)
-> > > and pgrotated very much.
-> > > 
-> > > Welcome testing, review and any feedback!
-> > 
-> > Well, it will worsen IRQ latencies and it's all more code for us to
-> > maintain.  I think I'd like to see a better story about the end-user
-> > benefits before proceeding.
-> 
-> The motivation was from per-process reclaim(which was internal feature
-> yet and and I will repost it soon).
-> It's a feature for us to manage memory from platform so that we could
-> avoid reclaim.
-> 
-> Anyway, userspace expect they could see increased free pages in vmstat
-> after they have done per-process reclaim so the logic of userspace
-> will control their next action depending on the number of current
-> free page but it doesn't work with existing rotation logic, expecially
-> anon swap write pages.
-> 
-> When I posted this patchset firstly, Rik was positive and I thought
-> this feature is useful for everyone as well as per-process reclaim
-> and don't want to make noise this patchset with perpcoess reclaim.
-> 
-> https://lkml.org/lkml/2013/5/12/174
-> https://lkml.org/lkml/2013/5/14/484
-> 
-> Could you tell me what should I do to proceed?
+Are you sure this did not just happen when you booted the new kernel
+for the first time ? I have seen similar behavior with some distributions.
 
-Quantify the gains, quantify the losses then demonstrate that the
-benefits of the gains exceeds the cost of the losses plus the cost of
-ongoing maintenance!
+If it happens all the time, ie at subsequent boots as wel, you'll probably
+have to bisect the problem. I have not seen an obvious culprit.
+
+Guenter
