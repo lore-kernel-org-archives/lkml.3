@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059AbaGHBCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:02:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55249 "EHLO
+	id S932274AbaGHBCf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:02:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55403 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753296AbaGGXyF (ORCPT
+	with ESMTP id S1752919AbaGGXyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arik Nemtsov <arikx.nemtsov@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.15 071/122] mac80211: dont check netdev state for debugfs read/write
-Date: Mon,  7 Jul 2014 16:57:13 -0700
-Message-Id: <20140707235736.393197219@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.15 073/122] iwlwifi: pcie: try to get ownership several times
+Date: Mon,  7 Jul 2014 16:57:15 -0700
+Message-Id: <20140707235736.448310856@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -30,43 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arik Nemtsov <arik@wizery.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 923eaf367206e01f22c97aee22300e332d071916 upstream.
+commit 501fd9895c1d7d8161ed56698ae2fccb10ef14f5 upstream.
 
-Doing so will lead to an oops for a p2p-dev interface, since it has
-no netdev.
+Some races with the hardware can happen when we take
+ownership of the device. Don't give up after the first try.
 
-Signed-off-by: Arik Nemtsov <arikx.nemtsov@intel.com>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/debugfs_netdev.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/net/wireless/iwlwifi/pcie/trans.c |   30 ++++++++++++++++++------------
+ 1 file changed, 18 insertions(+), 12 deletions(-)
 
---- a/net/mac80211/debugfs_netdev.c
-+++ b/net/mac80211/debugfs_netdev.c
-@@ -34,8 +34,7 @@ static ssize_t ieee80211_if_read(
- 	ssize_t ret = -EINVAL;
+--- a/drivers/net/wireless/iwlwifi/pcie/trans.c
++++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
+@@ -454,6 +454,7 @@ static int iwl_pcie_prepare_card_hw(stru
+ {
+ 	int ret;
+ 	int t = 0;
++	int iter;
  
- 	read_lock(&dev_base_lock);
--	if (sdata->dev->reg_state == NETREG_REGISTERED)
--		ret = (*format)(sdata, buf, sizeof(buf));
-+	ret = (*format)(sdata, buf, sizeof(buf));
- 	read_unlock(&dev_base_lock);
+ 	IWL_DEBUG_INFO(trans, "iwl_trans_prepare_card_hw enter\n");
  
+@@ -462,18 +463,23 @@ static int iwl_pcie_prepare_card_hw(stru
  	if (ret >= 0)
-@@ -62,8 +61,7 @@ static ssize_t ieee80211_if_write(
+ 		return 0;
  
- 	ret = -ENODEV;
- 	rtnl_lock();
--	if (sdata->dev->reg_state == NETREG_REGISTERED)
--		ret = (*write)(sdata, buf, count);
-+	ret = (*write)(sdata, buf, count);
- 	rtnl_unlock();
+-	/* If HW is not ready, prepare the conditions to check again */
+-	iwl_set_bit(trans, CSR_HW_IF_CONFIG_REG,
+-		    CSR_HW_IF_CONFIG_REG_PREPARE);
+-
+-	do {
+-		ret = iwl_pcie_set_hw_ready(trans);
+-		if (ret >= 0)
+-			return 0;
+-
+-		usleep_range(200, 1000);
+-		t += 200;
+-	} while (t < 150000);
++	for (iter = 0; iter < 10; iter++) {
++		/* If HW is not ready, prepare the conditions to check again */
++		iwl_set_bit(trans, CSR_HW_IF_CONFIG_REG,
++			    CSR_HW_IF_CONFIG_REG_PREPARE);
++
++		do {
++			ret = iwl_pcie_set_hw_ready(trans);
++			if (ret >= 0)
++				return 0;
++
++			usleep_range(200, 1000);
++			t += 200;
++		} while (t < 150000);
++		msleep(25);
++	}
++
++	IWL_DEBUG_INFO(trans, "got NIC after %d iterations\n", iter);
  
  	return ret;
+ }
 
 
