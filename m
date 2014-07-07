@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431AbaGGXzU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:55:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56108 "EHLO
+	id S1754586AbaGGX5n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 19:57:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56091 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754285AbaGGXzH (ORCPT
+	with ESMTP id S1754414AbaGGXzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:55:07 -0400
+	Mon, 7 Jul 2014 19:55:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabio Baltieri <fabio.baltieri@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.10 27/53] hwmon: (ina2xx) Cast to s16 on shunt and current regs
-Date: Mon,  7 Jul 2014 16:58:12 -0700
-Message-Id: <20140707235830.110334901@linuxfoundation.org>
+        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.10 41/53] tools: ffs-test: fix header values endianess
+Date: Mon,  7 Jul 2014 16:58:26 -0700
+Message-Id: <20140707235830.531645088@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
 References: <20140707235829.281783607@linuxfoundation.org>
@@ -29,49 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
+From: Michal Nazarewicz <mina86@mina86.com>
 
-commit c0214f98943b1fe43f7be61b7782b0c8f0836f28 upstream.
+commit f35f71244da6e51db4e1f2c7e318581f498ececf upstream.
 
-All devices supported by ina2xx are bidirectional and report the
-measured shunt voltage and power values as a signed 16 bit, but the
-current driver implementation caches all registers as u16, leading
-to an incorrect sign extension when reporting to userspace in
-ina2xx_get_value().
+It appears that no one ever run ffs-test on a big-endian machine,
+since it used cpu-endianess for fs_count and hs_count fields which
+should be in little-endian format.  Fix by wrapping the numbers in
+cpu_to_le32.
 
-This patch fixes the problem by casting the signed registers to s16.
-Tested on an INA219.
-
-Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/ina2xx.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ tools/usb/ffs-test.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/hwmon/ina2xx.c
-+++ b/drivers/hwmon/ina2xx.c
-@@ -147,7 +147,8 @@ static int ina2xx_get_value(struct ina2x
- 
- 	switch (reg) {
- 	case INA2XX_SHUNT_VOLTAGE:
--		val = DIV_ROUND_CLOSEST(data->regs[reg],
-+		/* signed register */
-+		val = DIV_ROUND_CLOSEST((s16)data->regs[reg],
- 					data->config->shunt_div);
- 		break;
- 	case INA2XX_BUS_VOLTAGE:
-@@ -159,8 +160,8 @@ static int ina2xx_get_value(struct ina2x
- 		val = data->regs[reg] * data->config->power_lsb;
- 		break;
- 	case INA2XX_CURRENT:
--		/* LSB=1mA (selected). Is in mA */
--		val = data->regs[reg];
-+		/* signed register, LSB=1mA (selected), in mA */
-+		val = (s16)data->regs[reg];
- 		break;
- 	default:
- 		/* programmer goofed */
+--- a/tools/usb/ffs-test.c
++++ b/tools/usb/ffs-test.c
+@@ -116,8 +116,8 @@ static const struct {
+ 	.header = {
+ 		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC),
+ 		.length = cpu_to_le32(sizeof descriptors),
+-		.fs_count = 3,
+-		.hs_count = 3,
++		.fs_count = cpu_to_le32(3),
++		.hs_count = cpu_to_le32(3),
+ 	},
+ 	.fs_descs = {
+ 		.intf = {
 
 
