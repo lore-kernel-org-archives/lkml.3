@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631AbaGHBRu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:17:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55228 "EHLO
+	id S1756654AbaGHBSr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:18:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55207 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602AbaGGXxp (ORCPT
+	with ESMTP id S1752555AbaGGXxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:53:45 -0400
+	Mon, 7 Jul 2014 19:53:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Peter Chen <peter.chen@freescale.com>
-Subject: [PATCH 3.15 016/122] usb: chipidea: udc: delete td from reqs td list at ep_dequeue
-Date: Mon,  7 Jul 2014 16:56:18 -0700
-Message-Id: <20140707235734.733467368@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>,
+        Alif Mubarak Ahmad <alive4ever@live.com>,
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.15 011/122] USB: option: add device ID for SpeedUp SU9800 usb 3g modem
+Date: Mon,  7 Jul 2014 16:56:13 -0700
+Message-Id: <20140707235734.589661010@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,102 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Chen <peter.chen@freescale.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit e4adcff09ca39ecbcc4851d40d0f0a5458e7b77a upstream.
+commit 1cab4c68e339086cdaff7535848e878e8f261fca upstream.
 
-We need to delete un-finished td from current request's td list
-at ep_dequeue API, otherwise, this non-user td will be remained
-at td list before this request is freed. So if we do ep_queue->
-ep_dequeue->ep_queue sequence, when the complete interrupt for
-the second ep_queue comes, we search td list for this request,
-the first td (added by the first ep_queue) will be handled, and
-its status is still active, so we will consider the this transfer
-still not be completed, but in fact, it has completed. It causes
-the peripheral side considers it never receives current data for
-this transfer.
+Reported by Alif Mubarak Ahmad:
 
-We met this problem when do "Error Recovery Test - Device Configured"
-test item for USBCV2 MSC test, the host has never received ACK for
-the IN token for CSW due to peripheral considers it does not get this
-CBW, the USBCV test log like belows:
+This device vendor and product id is 1c9e:9800
+It is working as serial interface with generic usbserial driver.
+I thought it is more suitable to use usbserial option driver, which has
+better capability distinguishing between modem serial interface and
+micro sd storage interface.
 
---------------------------------------------------------------------------
-INFO
-Issuing BOT MSC Reset, reset should always succeed
-INFO
-Retrieving status on CBW endpoint
-INFO
-CBW endpoint status = 0x0
-INFO
-Retrieving status on CSW endpoint
-INFO
-CSW endpoint status = 0x0
-INFO
-Issuing required command (Test Unit Ready) to verify device has recovered
-INFO
-Issuing CBW (attempt #1):
-INFO
-|----- CBW LUN                  = 0x0
-INFO
-|----- CBW Flags                = 0x0
-INFO
-|----- CBW Data Transfer Length = 0x0
-INFO
-|----- CBW CDB Length           = 0x6
-INFO
-|----- CBW CDB-00 = 0x0
-INFO
-|----- CBW CDB-01 = 0x0
-INFO
-|----- CBW CDB-02 = 0x0
-INFO
-|----- CBW CDB-03 = 0x0
-INFO
-|----- CBW CDB-04 = 0x0
-INFO
-|----- CBW CDB-05 = 0x0
-INFO
-Issuing CSW : try 1
-INFO
-CSW Bulk Request timed out!
-ERROR
-Failed CSW phase : should have been success or stall
-FAIL
-(5.3.4) The CSW status value must be 0x00, 0x01, or 0x02.
-ERROR
-BOTCommonMSCRequest failed:  error=80004000
+[ johan: style changes ]
 
-Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Tested-by: Alif Mubarak Ahmad <alive4ever@live.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/chipidea/udc.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/serial/option.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/chipidea/udc.c
-+++ b/drivers/usb/chipidea/udc.c
-@@ -1328,6 +1328,7 @@ static int ep_dequeue(struct usb_ep *ep,
- 	struct ci_hw_ep  *hwep  = container_of(ep,  struct ci_hw_ep, ep);
- 	struct ci_hw_req *hwreq = container_of(req, struct ci_hw_req, req);
- 	unsigned long flags;
-+	struct td_node *node, *tmpnode;
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -352,6 +352,9 @@ static void option_instat_callback(struc
+ /* Zoom */
+ #define ZOOM_PRODUCT_4597			0x9607
  
- 	if (ep == NULL || req == NULL || hwreq->req.status != -EALREADY ||
- 		hwep->ep.desc == NULL || list_empty(&hwreq->queue) ||
-@@ -1338,6 +1339,12 @@ static int ep_dequeue(struct usb_ep *ep,
- 
- 	hw_ep_flush(hwep->ci, hwep->num, hwep->dir);
- 
-+	list_for_each_entry_safe(node, tmpnode, &hwreq->tds, td) {
-+		dma_pool_free(hwep->td_pool, node->ptr, node->dma);
-+		list_del(&node->td);
-+		kfree(node);
-+	}
++/* SpeedUp SU9800 usb 3g modem */
++#define SPEEDUP_PRODUCT_SU9800			0x9800
 +
- 	/* pop request */
- 	list_del_init(&hwreq->queue);
- 
+ /* Haier products */
+ #define HAIER_VENDOR_ID				0x201e
+ #define HAIER_PRODUCT_CE100			0x2009
+@@ -1577,6 +1580,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
+   	  .driver_info = (kernel_ulong_t)&four_g_w14_blacklist
+   	},
++	{ USB_DEVICE_INTERFACE_CLASS(LONGCHEER_VENDOR_ID, SPEEDUP_PRODUCT_SU9800, 0xff) },
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, ZOOM_PRODUCT_4597) },
+ 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, IBALL_3_5G_CONNECT) },
+ 	{ USB_DEVICE(HAIER_VENDOR_ID, HAIER_PRODUCT_CE100) },
 
 
