@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465AbaGHBDV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:03:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55226 "EHLO
+	id S1754920AbaGHBDT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:03:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55249 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753259AbaGGXyD (ORCPT
+	with ESMTP id S1753260AbaGGXyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabio Baltieri <fabio.baltieri@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.15 067/122] hwmon: (ina2xx) Cast to s16 on shunt and current regs
-Date: Mon,  7 Jul 2014 16:57:09 -0700
-Message-Id: <20140707235736.277988141@linuxfoundation.org>
+        Doug Smythies <dsmythies@telus.net>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.15 068/122] intel_pstate: Correct rounding in busy calculation
+Date: Mon,  7 Jul 2014 16:57:10 -0700
+Message-Id: <20140707235736.306704797@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,49 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
+From: Doug Smythies <doug.smythies@gmail.com>
 
-commit c0214f98943b1fe43f7be61b7782b0c8f0836f28 upstream.
+commit 51d211e9c334b9eca3505f4052afa660c3e0606b upstream.
 
-All devices supported by ina2xx are bidirectional and report the
-measured shunt voltage and power values as a signed 16 bit, but the
-current driver implementation caches all registers as u16, leading
-to an incorrect sign extension when reporting to userspace in
-ina2xx_get_value().
+There was a mistake in the actual rounding portion this previous patch:
+f0fe3cd7e12d (intel_pstate: Correct rounding in busy calculation) such that
+the rounding was asymetric and incorrect.
 
-This patch fixes the problem by casting the signed registers to s16.
-Tested on an INA219.
+Severity: Not very serious, but can increase target pstate by one extra value.
+For real world work flows the issue should self correct (but I have no proof).
+It is the equivalent of different PID gains for positive and negative numbers.
 
-Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Examples:
+ -3.000000 used to round to -4, rounds to -3 with this patch.
+ -3.503906 used to round to -5, rounds to -4 with this patch.
+
+Fixes: f0fe3cd7e12d (intel_pstate: Correct rounding in busy calculation)
+Signed-off-by: Doug Smythies <dsmythies@telus.net>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/ina2xx.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/cpufreq/intel_pstate.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/drivers/hwmon/ina2xx.c
-+++ b/drivers/hwmon/ina2xx.c
-@@ -148,7 +148,8 @@ static int ina2xx_get_value(struct ina2x
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -200,10 +200,7 @@ static signed int pid_calc(struct _pid *
+ 	pid->last_err = fp_error;
  
- 	switch (reg) {
- 	case INA2XX_SHUNT_VOLTAGE:
--		val = DIV_ROUND_CLOSEST(data->regs[reg],
-+		/* signed register */
-+		val = DIV_ROUND_CLOSEST((s16)data->regs[reg],
- 					data->config->shunt_div);
- 		break;
- 	case INA2XX_BUS_VOLTAGE:
-@@ -160,8 +161,8 @@ static int ina2xx_get_value(struct ina2x
- 		val = data->regs[reg] * data->config->power_lsb;
- 		break;
- 	case INA2XX_CURRENT:
--		/* LSB=1mA (selected). Is in mA */
--		val = data->regs[reg];
-+		/* signed register, LSB=1mA (selected), in mA */
-+		val = (s16)data->regs[reg];
- 		break;
- 	default:
- 		/* programmer goofed */
+ 	result = pterm + mul_fp(pid->integral, pid->i_gain) + dterm;
+-	if (result >= 0)
+-		result = result + (1 << (FRAC_BITS-1));
+-	else
+-		result = result - (1 << (FRAC_BITS-1));
++	result = result + (1 << (FRAC_BITS-1));
+ 	return (signed int)fp_toint(result);
+ }
+ 
 
 
