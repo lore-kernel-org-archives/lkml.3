@@ -1,135 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876AbaGGOac (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:30:32 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57285 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753691AbaGGOaZ (ORCPT
+	id S1753915AbaGGOaw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:30:52 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:37202 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753691AbaGGOac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:30:25 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        dwmw2@infradead.org, dbaryshkov@gmail.com
-Cc: Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v2 13/18] AT91: DT: Remove poweroff DT probing
-Date: Mon,  7 Jul 2014 16:25:26 +0200
-Message-Id: <1404743131-24569-14-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1404743131-24569-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1404743131-24569-1-git-send-email-maxime.ripard@free-electrons.com>
+	Mon, 7 Jul 2014 10:30:32 -0400
+Date: Mon, 7 Jul 2014 23:29:57 +0900
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: dsterba@suse.cz, Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] btrfs compression: merge inflate and deflate z_streams
+Message-ID: <20140707142957.GB955@swordfish>
+References: <1404142330-1621-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <20140701144415.GJ1553@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140701144415.GJ1553@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the poweroff code is a driver of its own, remove the DT probing in
-mach-at91 and let the usual DT code do its job.
+On (07/01/14 16:44), David Sterba wrote:
+> On Tue, Jul 01, 2014 at 12:32:10AM +0900, Sergey Senozhatsky wrote:
+> > `struct workspace' used for zlib compression contains two zlib
+> > z_stream-s: `def_strm' used in zlib_compress_pages(), and `inf_strm'
+> > used in zlib_decompress/zlib_decompress_biovec(). None of these
+> > functions use `inf_strm' and `def_strm' simultaniously, meaning that
+> > for every compress/decompress operation we need only one z_stream
+> > (out of two available).
+> > 
+> > `inf_strm' and `def_strm' are different in size of ->workspace. For
+> > inflate stream we vmalloc() zlib_inflate_workspacesize() bytes, for
+> > deflate stream - zlib_deflate_workspacesize() bytes. On my system zlib
+> > returns the following workspace sizes, correspondingly: 42312 and 268104
+> > (+ guard pages).
+> > 
+> > Keep only one `z_stream' in `struct workspace' and use it for both
+> > compression and decompression. Hence, instead of vmalloc() of two
+> > z_stream->worskpace-s, allocate only one of size:
+> > 	max(zlib_deflate_workspacesize(), zlib_inflate_workspacesize())
+> > 
+> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> 
+> Reviewed-by: David Sterba <dsterba@suse.cz>
+> 
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/mach-at91/setup.c | 77 ----------------------------------------------
- 1 file changed, 77 deletions(-)
+Hello,
 
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index fe0601e0a3c0..ae269291d19d 100644
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -387,82 +387,6 @@ static void at91_dt_ramc(void)
- 	at91_pm_set_standby(of_id->data);
- }
- 
--static struct of_device_id shdwc_ids[] = {
--	{ .compatible = "atmel,at91sam9260-shdwc", },
--	{ .compatible = "atmel,at91sam9rl-shdwc", },
--	{ .compatible = "atmel,at91sam9x5-shdwc", },
--	{ /*sentinel*/ }
--};
--
--static const char *shdwc_wakeup_modes[] = {
--	[AT91_SHDW_WKMODE0_NONE]	= "none",
--	[AT91_SHDW_WKMODE0_HIGH]	= "high",
--	[AT91_SHDW_WKMODE0_LOW]		= "low",
--	[AT91_SHDW_WKMODE0_ANYLEVEL]	= "any",
--};
--
--const int at91_dtget_shdwc_wakeup_mode(struct device_node *np)
--{
--	const char *pm;
--	int err, i;
--
--	err = of_property_read_string(np, "atmel,wakeup-mode", &pm);
--	if (err < 0)
--		return AT91_SHDW_WKMODE0_ANYLEVEL;
--
--	for (i = 0; i < ARRAY_SIZE(shdwc_wakeup_modes); i++)
--		if (!strcasecmp(pm, shdwc_wakeup_modes[i]))
--			return i;
--
--	return -ENODEV;
--}
--
--static void at91_dt_shdwc(void)
--{
--	struct device_node *np;
--	int wakeup_mode;
--	u32 reg;
--	u32 mode = 0;
--
--	np = of_find_matching_node(NULL, shdwc_ids);
--	if (!np) {
--		pr_debug("unable to find compatible shutdown (shdwc) controller node in dtb\n");
--		return;
--	}
--
--	at91_shdwc_base = of_iomap(np, 0);
--	if (!at91_shdwc_base)
--		panic(pr_fmt("unable to map shdwc cpu registers\n"));
--
--	wakeup_mode = at91_dtget_shdwc_wakeup_mode(np);
--	if (wakeup_mode < 0) {
--		pr_warn("shdwc unknown wakeup mode\n");
--		goto end;
--	}
--
--	if (!of_property_read_u32(np, "atmel,wakeup-counter", &reg)) {
--		if (reg > AT91_SHDW_CPTWK0_MAX) {
--			pr_warn("shdwc wakeup counter 0x%x > 0x%x reduce it to 0x%x\n",
--				reg, AT91_SHDW_CPTWK0_MAX, AT91_SHDW_CPTWK0_MAX);
--			reg = AT91_SHDW_CPTWK0_MAX;
--		}
--		mode |= AT91_SHDW_CPTWK0_(reg);
--	}
--
--	if (of_property_read_bool(np, "atmel,wakeup-rtc-timer"))
--			mode |= AT91_SHDW_RTCWKEN;
--
--	if (of_property_read_bool(np, "atmel,wakeup-rtt-timer"))
--			mode |= AT91_SHDW_RTTWKEN;
--
--	at91_shdwc_write(AT91_SHDW_MR, wakeup_mode | mode);
--
--end:
--	pm_power_off = at91sam9_poweroff;
--
--	of_node_put(np);
--}
--
- void __init at91rm9200_dt_initialize(void)
- {
- 	at91_dt_ramc();
-@@ -480,7 +404,6 @@ void __init at91rm9200_dt_initialize(void)
- void __init at91_dt_initialize(void)
- {
- 	at91_dt_ramc();
--	at91_dt_shdwc();
- 
- 	/* Init clock subsystem */
- 	at91_dt_clock_init();
--- 
-2.0.1
+the patch does not apply against linux-next rc4-20140707 due to 130d5b415a091e.
+unhappy hunk is:
 
++		if (workspace->strm.total_in > 8192 &&
++		    workspace->strm.total_in <
++		    workspace->strm.total_out) {
+ 			ret = -EIO;
+
+now it should be:
++		if (workspace->strm.total_in > 8192 &&
++		    workspace->strm.total_in <
++		    workspace->strm.total_out) {
+ 			ret = -E2BIG;
+
+
+I'll rebase and resend.
+
+	-ss
