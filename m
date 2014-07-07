@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751117AbaGGFqq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 01:46:46 -0400
-Received: from mga14.intel.com ([192.55.52.115]:10878 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750714AbaGGFqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 01:46:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,616,1400050800"; 
-   d="scan'208";a="558162193"
-From: Huang Ying <ying.huang@intel.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Huang Ying <ying.huang@intel.com>
-Subject: f2fs: Add f2fs_balance_fs for direct IO
-Date: Mon,  7 Jul 2014 13:46:28 +0800
-Message-Id: <1404711988-18264-1-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 2.0.0
+	id S1751426AbaGGFtL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 01:49:11 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:52632 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299AbaGGFtI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 01:49:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAB1dqC7BqsaDtXVYx24M5R9eaY7ZfpEtu3bxbJHXNHYhAbJETg@mail.gmail.com>
+References: <1404668531-31550-1-git-send-email-mina86@mina86.com>
+	<CAB1dqC7BqsaDtXVYx24M5R9eaY7ZfpEtu3bxbJHXNHYhAbJETg@mail.gmail.com>
+Date: Mon, 7 Jul 2014 07:49:07 +0200
+Message-ID: <CABPqkBTmqiQCMD6rCoyrd5NumvaH11Bi+DUs3-M3608z_+LRDw@mail.gmail.com>
+Subject: Re: [PATCH] tools: perf: prefer clarity in setup_pager
+From: Stephane Eranian <eranian@google.com>
+To: Michael Lentine <mlentine@google.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise, if a large amount of direct IO writes were done, the
-segment allocation may be failed because no enough segments are gced.
+On Mon, Jul 7, 2014 at 2:40 AM, Michael Lentine <mlentine@google.com> wrote:
+> Unless I'm missing something this removes defaulting the pager to cat if
+> nothing is found which is very useful for devices/oses without less or
+> pager.
+>
+>
+I think you are correct Michael.
+I don't quite understand the value of this patch.
+But by oversimplifying, it should not change the logic of the code.
 
-Signed-off-by: Huang, Ying <ying.huang@intel.com>
----
- fs/f2fs/data.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -1038,6 +1038,7 @@ static ssize_t f2fs_direct_IO(int rw, st
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file->f_mapping->host;
-+	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
- 
- 	/* Let buffer I/O handle the inline data case. */
- 	if (f2fs_has_inline_data(inode))
-@@ -1046,8 +1047,11 @@ static ssize_t f2fs_direct_IO(int rw, st
- 	if (check_direct_IO(inode, rw, iter, offset))
- 		return 0;
- 
-+	if (rw == WRITE)
-+		f2fs_balance_fs(sbi);
-+
- 	/* clear fsync mark to recover these blocks */
--	fsync_mark_clear(F2FS_SB(inode->i_sb), inode->i_ino);
-+	fsync_mark_clear(sbi, inode->i_ino);
- 
- 	return blockdev_direct_IO(rw, iocb, inode, iter, offset,
- 				  get_data_block);
+> On Sun, Jul 6, 2014 at 10:42 AM, Michal Nazarewicz <mina86@mina86.com>
+> wrote:
+>>
+>> “!(pager || access(…))” is indeed pretty smart way to write
+>> “!pager && access(…) == 0” but other than being clever it gives
+>> no advantages and merely confuses the reader who needs to wonder
+>> what is actually going on.
+>>
+>> As such, replace the checks with much cleaner ones.
+>>
+>> Also, while at it, merge the lest “!pager” test with the next
+>> test that yields true after the “!pager” if's body is executed.
+>> ---
+>>  tools/perf/util/pager.c | 8 +++-----
+>>  1 file changed, 3 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/tools/perf/util/pager.c b/tools/perf/util/pager.c
+>> index 31ee02d..14da1b0 100644
+>> --- a/tools/perf/util/pager.c
+>> +++ b/tools/perf/util/pager.c
+>> @@ -57,13 +57,11 @@ void setup_pager(void)
+>>         }
+>>         if (!pager)
+>>                 pager = getenv("PAGER");
+>> -       if (!(pager || access("/usr/bin/pager", X_OK)))
+>> +       if (!pager && access("/usr/bin/pager", X_OK) == 0)
+>>                 pager = "/usr/bin/pager";
+>> -       if (!(pager || access("/usr/bin/less", X_OK)))
+>> +       if (!pager && access("/usr/bin/less", X_OK) == 0)
+>>                 pager = "/usr/bin/less";
+>> -       if (!pager)
+>> -               pager = "cat";
+>> -       if (!*pager || !strcmp(pager, "cat"))
+>> +       if (!pager || !*pager || !strcmp(pager, "cat"))
+>>                 return;
+>>
+>>         spawned_pager = 1; /* means we are emitting to terminal */
+>> --
+>> 2.0.0.526.g5318336
+>>
+>
