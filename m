@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187AbaGHATN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:19:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56159 "EHLO
+	id S932227AbaGHATl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:19:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56144 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754322AbaGGXzK (ORCPT
+	with ESMTP id S1754297AbaGGXzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:55:10 -0400
+	Mon, 7 Jul 2014 19:55:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve French <smfrench@gmail.com>, David Disseldorp <ddiss@suse.de>
-Subject: [PATCH 3.10 34/53] CIFS: fix mount failure with broken pathnames when smb3 mount with mapchars option
-Date: Mon,  7 Jul 2014 16:58:19 -0700
-Message-Id: <20140707235830.319276476@linuxfoundation.org>
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Stefan Hajnoczi <stefanha@redhat.com>, Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.10 03/53] virtio-scsi: avoid cancelling uninitialized work items
+Date: Mon,  7 Jul 2014 16:57:48 -0700
+Message-Id: <20140707235829.384809452@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
 References: <20140707235829.281783607@linuxfoundation.org>
@@ -28,57 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve French <smfrench@gmail.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit ce36d9ab3bab06b7b5522f5c8b68fac231b76ffb upstream.
+commit cdda0e5acbb78f7b777049f8c27899e5c5bb368f upstream.
 
-When we SMB3 mounted with mapchars (to allow reserved characters : \ / > < * ?
-via the Unicode Windows to POSIX remap range) empty paths
-(eg when we open "" to query the root of the SMB3 directory on mount) were not
-null terminated so we sent garbarge as a path name on empty paths which caused
-SMB2/SMB2.1/SMB3 mounts to fail when mapchars was specified.  mapchars is
-particularly important since Unix Extensions for SMB3 are not supported (yet)
+Calling the workqueue interface on uninitialized work items isn't a
+good idea even if they're zeroed. It's not failing catastrophically only
+through happy accidents.
 
-Signed-off-by: Steve French <smfrench@gmail.com>
-Reviewed-by: David Disseldorp <ddiss@suse.de>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Reviewed-by: Stefan Hajnoczi <stefanha@redhat.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifs_unicode.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/scsi/virtio_scsi.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/cifs/cifs_unicode.c
-+++ b/fs/cifs/cifs_unicode.c
-@@ -290,7 +290,8 @@ int
- cifsConvertToUTF16(__le16 *target, const char *source, int srclen,
- 		 const struct nls_table *cp, int mapChars)
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -288,6 +288,8 @@ static void virtscsi_ctrl_done(struct vi
+ 	virtscsi_vq_done(vscsi, &vscsi->ctrl_vq, virtscsi_complete_free);
+ };
+ 
++static void virtscsi_handle_event(struct work_struct *work);
++
+ static int virtscsi_kick_event(struct virtio_scsi *vscsi,
+ 			       struct virtio_scsi_event_node *event_node)
  {
--	int i, j, charlen;
-+	int i, charlen;
-+	int j = 0;
- 	char src_char;
- 	__le16 dst_char;
- 	wchar_t tmp;
-@@ -298,12 +299,11 @@ cifsConvertToUTF16(__le16 *target, const
- 	if (!mapChars)
- 		return cifs_strtoUTF16(target, source, PATH_MAX, cp);
+@@ -295,6 +297,7 @@ static int virtscsi_kick_event(struct vi
+ 	struct scatterlist sg;
+ 	unsigned long flags;
  
--	for (i = 0, j = 0; i < srclen; j++) {
-+	for (i = 0; i < srclen; j++) {
- 		src_char = source[i];
- 		charlen = 1;
- 		switch (src_char) {
- 		case 0:
--			put_unaligned(0, &target[j]);
- 			goto ctoUTF16_out;
- 		case ':':
- 			dst_char = cpu_to_le16(UNI_COLON);
-@@ -350,6 +350,7 @@ cifsConvertToUTF16(__le16 *target, const
- 	}
++	INIT_WORK(&event_node->work, virtscsi_handle_event);
+ 	sg_init_one(&sg, &event_node->event, sizeof(struct virtio_scsi_event));
  
- ctoUTF16_out:
-+	put_unaligned(0, &target[j]); /* Null terminate target unicode string */
- 	return j;
+ 	spin_lock_irqsave(&vscsi->event_vq.vq_lock, flags);
+@@ -412,7 +415,6 @@ static void virtscsi_complete_event(stru
+ {
+ 	struct virtio_scsi_event_node *event_node = buf;
+ 
+-	INIT_WORK(&event_node->work, virtscsi_handle_event);
+ 	schedule_work(&event_node->work);
  }
  
 
