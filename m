@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192AbaGGQ00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 12:26:26 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47636 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077AbaGGQ0Y (ORCPT
+	id S1751982AbaGGQaI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 12:30:08 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:60385 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957AbaGGQaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 12:26:24 -0400
-Message-ID: <53BACA23.9010907@oracle.com>
-Date: Mon, 07 Jul 2014 12:26:11 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 7 Jul 2014 12:30:06 -0400
+Date: Mon, 7 Jul 2014 18:30:03 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Sebastien Buisson <sebastien.buisson@bull.net>
+Cc: Andi Kleen <andi@firstfloor.org>, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Allow increasing the buffer-head per-CPU LRU size
+Message-ID: <20140707163003.GA18735@two.firstfloor.org>
+References: <53B667F9.90306@bull.net>
+ <87y4w6sbp7.fsf@tassilo.jf.intel.com>
+ <53BA772C.6040506@bull.net>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: "S. Lockwood-Childs" <sjl@dent.vctlabs.com>,
-        zhangdianfang <zhangdianfang@huawei.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL v2] liblockdep fixes for v3.15
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53BA772C.6040506@bull.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
+> diff --git a/fs/Kconfig b/fs/Kconfig
+> index c229f82..c08844c 100644
+> --- a/fs/Kconfig
+> +++ b/fs/Kconfig
+> @@ -268,4 +268,13 @@ endif # NETWORK_FILESYSTEMS
+>  source "fs/nls/Kconfig"
+>  source "fs/dlm/Kconfig"
+> 
+> +config BH_LRU_SIZE
+> +      int
+> +      range 8 64
+> +      default "16"
 
-  Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
+So who sets it then? 
 
-are available in the git repository at:
+You need it for ext4 and quota right? So this combination
+should set it at least. Something like (unested)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sashal/linux.git liblockdep-fixes
+It would be also good to audit or test other file systems if they need the
+same if that's possible.
 
-for you to fetch changes up to b10827814e9c81c5a14fb73c5a6e06bd85df3f94:
+config BH_LARGE_LRU
+	bool
+	depends on (EXT4_FS && QUOTA)
 
-  tools/liblockdep: Account for bitfield changes in lockdeps lock_acquire (2014-07-07 12:20:16 -0400)
+config BH_LRU_SIZE
+....
+	default "16" if BH_LARGE_LRU
+	default "8" if !BH_LARGE_LRU
 
-----------------------------------------------------------------
-S. Lockwood-Childs (1):
-      tools/liblockdep: Account for bitfield changes in lockdeps lock_acquire
-
-Sasha Levin (1):
-      tools/liblockdep: Remove debug print left over from development
-
-zhangdianfang (1):
-      tools/liblockdep: Fix comparison of a boolean value with a value of 2
-
- tools/lib/lockdep/include/liblockdep/mutex.h  |  4 ++--
- tools/lib/lockdep/include/liblockdep/rwlock.h |  8 ++++----
- tools/lib/lockdep/preload.c                   | 20 +++++++++-----------
- 3 files changed, 15 insertions(+), 17 deletions(-)
+-Andi
