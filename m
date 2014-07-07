@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251AbaGHA0b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:26:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55860 "EHLO
+	id S932392AbaGHA0t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:26:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55979 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754091AbaGGXyz (ORCPT
+	with ESMTP id S1754158AbaGGXyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:55 -0400
+	Mon, 7 Jul 2014 19:54:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Eldad Zack <eldad@fogrefinery.com>, Daniel Mack <zonque@gmail.com>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Tim Gardner <tim.gardner@canonical.com>
-Subject: [PATCH 3.14 88/94] ALSA: usb-audio: Suppress repetitive debug messages from retire_playback_urb()
-Date: Mon,  7 Jul 2014 16:58:18 -0700
-Message-Id: <20140707235759.362657270@linuxfoundation.org>
+        Anatol Pomozov <anatol.pomozov@gmail.com>,
+        Benjamin LaHaise <bcrl@kvack.org>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.14 86/94] aio: block io_destroy() until all context requests are completed
+Date: Mon,  7 Jul 2014 16:58:16 -0700
+Message-Id: <20140707235759.305892948@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -31,44 +29,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tim Gardner <tim.gardner@canonical.com>
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
 
-commit a5065eb6da55b226661456e6a7435f605df98111 upstream.
+commit e02ba72aabfade4c9cd6e3263e9b57bf890ad25c upstream.
 
-BugLink: http://bugs.launchpad.net/bugs/1305133
+deletes aio context and all resources related to. It makes sense that
+no IO operations connected to the context should be running after the context
+is destroyed. As we removed io_context we have no chance to
+get requests status or call io_getevents().
 
-Malfunctioning or slow devices can cause a flood of dmesg SPAM.
+man page for io_destroy says that this function may block until
+all context's requests are completed. Before kernel 3.11 io_destroy()
+blocked indeed, but since aio refactoring in 3.11 it is not true anymore.
 
-I've ignored checkpatch.pl complaints about the use of printk_ratelimit() in favour
-of prior art in sound/usb/pcm.c.
+Here is a pseudo-code that shows a testcase for a race condition discovered
+in 3.11:
 
-WARNING: Prefer printk_ratelimited or pr_<level>_ratelimited to printk_ratelimit
-+	if (printk_ratelimit() &&
+  initialize io_context
+  io_submit(read to buffer)
+  io_destroy()
 
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: Eldad Zack <eldad@fogrefinery.com>
-Cc: Daniel Mack <zonque@gmail.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+  // context is destroyed so we can free the resources
+  free(buffers);
+
+  // if the buffer is allocated by some other user he'll be surprised
+  // to learn that the buffer still filled by an outstanding operation
+  // from the destroyed io_context
+
+The fix is straight-forward - add a completion struct and wait on it
+in io_destroy, complete() should be called when number of in-fligh requests
+reaches zero.
+
+If two or more io_destroy() called for the same context simultaneously then
+only the first one waits for IO completion, other calls behaviour is undefined.
+
+Tested: ran http://pastebin.com/LrPsQ4RL testcase for several hours and
+  do not see the race condition anymore.
+
+Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/pcm.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/aio.c |   36 ++++++++++++++++++++++++++++++++----
+ 1 file changed, 32 insertions(+), 4 deletions(-)
 
---- a/sound/usb/pcm.c
-+++ b/sound/usb/pcm.c
-@@ -1487,7 +1487,8 @@ static void retire_playback_urb(struct s
- 	 * The error should be lower than 2ms since the estimate relies
- 	 * on two reads of a counter updated every ms.
- 	 */
--	if (abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
-+	if (printk_ratelimit() &&
-+	    abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
- 		snd_printk(KERN_DEBUG "delay: estimated %d, actual %d\n",
- 			est_delay, subs->last_delay);
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -112,6 +112,11 @@ struct kioctx {
  
+ 	struct work_struct	free_work;
+ 
++	/*
++	 * signals when all in-flight requests are done
++	 */
++	struct completion *requests_done;
++
+ 	struct {
+ 		/*
+ 		 * This counts the number of available slots in the ringbuffer,
+@@ -508,6 +513,10 @@ static void free_ioctx_reqs(struct percp
+ {
+ 	struct kioctx *ctx = container_of(ref, struct kioctx, reqs);
+ 
++	/* At this point we know that there are no any in-flight requests */
++	if (ctx->requests_done)
++		complete(ctx->requests_done);
++
+ 	INIT_WORK(&ctx->free_work, free_ioctx);
+ 	schedule_work(&ctx->free_work);
+ }
+@@ -718,7 +727,8 @@ err:
+  *	when the processes owning a context have all exited to encourage
+  *	the rapid destruction of the kioctx.
+  */
+-static void kill_ioctx(struct mm_struct *mm, struct kioctx *ctx)
++static void kill_ioctx(struct mm_struct *mm, struct kioctx *ctx,
++		struct completion *requests_done)
+ {
+ 	if (!atomic_xchg(&ctx->dead, 1)) {
+ 		struct kioctx_table *table;
+@@ -747,7 +757,11 @@ static void kill_ioctx(struct mm_struct
+ 		if (ctx->mmap_size)
+ 			vm_munmap(ctx->mmap_base, ctx->mmap_size);
+ 
++		ctx->requests_done = requests_done;
+ 		percpu_ref_kill(&ctx->users);
++	} else {
++		if (requests_done)
++			complete(requests_done);
+ 	}
+ }
+ 
+@@ -809,7 +823,7 @@ void exit_aio(struct mm_struct *mm)
+ 		 */
+ 		ctx->mmap_size = 0;
+ 
+-		kill_ioctx(mm, ctx);
++		kill_ioctx(mm, ctx, NULL);
+ 	}
+ }
+ 
+@@ -1187,7 +1201,7 @@ SYSCALL_DEFINE2(io_setup, unsigned, nr_e
+ 	if (!IS_ERR(ioctx)) {
+ 		ret = put_user(ioctx->user_id, ctxp);
+ 		if (ret)
+-			kill_ioctx(current->mm, ioctx);
++			kill_ioctx(current->mm, ioctx, NULL);
+ 		percpu_ref_put(&ioctx->users);
+ 	}
+ 
+@@ -1205,8 +1219,22 @@ SYSCALL_DEFINE1(io_destroy, aio_context_
+ {
+ 	struct kioctx *ioctx = lookup_ioctx(ctx);
+ 	if (likely(NULL != ioctx)) {
+-		kill_ioctx(current->mm, ioctx);
++		struct completion requests_done =
++			COMPLETION_INITIALIZER_ONSTACK(requests_done);
++
++		/* Pass requests_done to kill_ioctx() where it can be set
++		 * in a thread-safe way. If we try to set it here then we have
++		 * a race condition if two io_destroy() called simultaneously.
++		 */
++		kill_ioctx(current->mm, ioctx, &requests_done);
+ 		percpu_ref_put(&ioctx->users);
++
++		/* Wait until all IO for the context are done. Otherwise kernel
++		 * keep using user-space buffers even if user thinks the context
++		 * is destroyed.
++		 */
++		wait_for_completion(&requests_done);
++
+ 		return 0;
+ 	}
+ 	pr_debug("EINVAL: io_destroy: invalid context id\n");
 
 
