@@ -1,82 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744AbaGGCKf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 22:10:35 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:10397 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752024AbaGGCKe (ORCPT
+	id S1752587AbaGGCmr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 22:42:47 -0400
+Received: from regular1.263xmail.com ([211.150.99.139]:45356 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaGGCmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 22:10:34 -0400
-X-IronPort-AV: E=Sophos;i="5.00,846,1396972800"; 
-   d="scan'208";a="32912112"
-Message-ID: <53B9FED5.80009@cn.fujitsu.com>
-Date: Mon, 7 Jul 2014 09:58:45 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Sun, 6 Jul 2014 22:42:45 -0400
+X-Greylist: delayed 135768 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Jul 2014 22:42:44 EDT
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: addy.ke@rock-chips.com
+X-FST-TO: jh80.chung@samsung.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: addy.ke@rock-chips.com
+X-UNIQUE-TAG: <6092e5863c5f00ea203fbf9c899641fa>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <53BA090A.30509@rock-chips.com>
+Date: Mon, 07 Jul 2014 10:42:18 +0800
+From: addy ke <addy.ke@rock-chips.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Chao Yu <chao2.yu@samsung.com>
-CC: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>,
-        <linux-f2fs-devel@lists.sourceforge.net>,
-        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [f2fs-dev][PATCH] f2fs: avoid to access NULL pointer in issue_flush_thread
-References: <006001cf9984$6b07f490$4117ddb0$@samsung.com>
-In-Reply-To: <006001cf9984$6b07f490$4117ddb0$@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: jh80.chung@samsung.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rdunlap@infradead.org, tgih.jun@samsung.com,
+        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
+        heiko@sntech.de, olof@lixom.net
+CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        hj@rock-chips.com, kever.yang@rock-chips.com, xjq@rock-chips.com,
+        huangtao@rock-chips.com, zyw@rock-chips.com, yzq@rock-chips.com,
+        zhenfu.fang@rock-chips.com, cf@rock-chips.com,
+        zhangqing@rock-chips.com, hl@rock-chips.com, lintao@rock-chips.com,
+        chenfen@rock-chips.com, zyf@rock-chips.com
+Subject: Re: [PATCH] mmc: dw_mmc: add support for RK3288.
+References: <1404565174-2923-1-git-send-email-addy.ke@rock-chips.com> <53BA00CC.2090707@samsung.com>
+In-Reply-To: <53BA00CC.2090707@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yu,
-Thanks for your catch.
-
-Regards,
-Gu
-On 07/07/2014 09:39 AM, Chao Yu wrote:
-
-> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=75861
+> Hi, Addy,
 > 
-> Denis 2014-05-10 11:28:59 UTC reported:
-> "F2FS-fs (mmcblk0p28): mounting..
->  Unable to handle kernel NULL pointer dereference at virtual address 00000018
->  ...
->  [<c0a2f678>] (_raw_spin_lock+0x3c/0x70) from [<c03a0330>] (issue_flush_thread+0x50/0x17c)
->  [<c03a0330>] (issue_flush_thread+0x50/0x17c) from [<c01b4064>] (kthread+0x98/0xa4)
->  [<c01b4064>] (kthread+0x98/0xa4) from [<c0108060>] (kernel_thread_exit+0x0/0x8)"
+> On 07/05/2014 09:59 PM, addy ke wrote:
+>> This patch focuses on clock setting for RK3288 mmc controller.
+>>
+>> In RK3288 mmc controller, CLKDIV register can only be set 0 or 1,
+>> and if DDR 8bit mode, CLKDIV register must be set 1.
+>>
+>> Signed-off-by: addy ke <addy.ke@rock-chips.com>
+>> ---
+>>  .../devicetree/bindings/mmc/rockchip-dw-mshc.txt   |  4 +-
+>>  drivers/mmc/host/dw_mmc-pltfm.c                    | 50 +++++++++++++++++++++-
+>>  2 files changed, 51 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt b/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
+>> index c559f3f..e3f95cd 100644
+>> --- a/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
+>> +++ b/Documentation/devicetree/bindings/mmc/rockchip-dw-mshc.txt
+>> @@ -10,7 +10,9 @@ extensions to the Synopsys Designware Mobile Storage Host Controller.
+>>  Required Properties:
+>>  
+>>  * compatible: should be
+>> -	- "rockchip,rk2928-dw-mshc": for Rockchip RK2928 and following
+>> +	- "rockchip,rk2928-dw-mshc": for Rockchip RK2928 and following,
+>> +							before RK3288
+>> +	- "rockchip,rk3288-dw-mshc": for Rockchip RK3288
+>>  
+>>  Example:
+>>  
+>> diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
+>> index d4a47a9..15d796e 100644
+>> --- a/drivers/mmc/host/dw_mmc-pltfm.c
+>> +++ b/drivers/mmc/host/dw_mmc-pltfm.c
+>> @@ -21,17 +21,61 @@
+>>  #include <linux/mmc/mmc.h>
+>>  #include <linux/mmc/dw_mmc.h>
+>>  #include <linux/of.h>
+>> +#include <linux/clk.h>
+>>  
+>>  #include "dw_mmc.h"
+>>  #include "dw_mmc-pltfm.h"
+>>  
+>> +#define RK3288_CLKGEN_DIV	2
+> "2" is used to the general div value at rockchip?
 > 
-> This patch assign cmd_control_info in sm_info before issue_flush_thread is being
-> created, so this make sure that issue flush thread will have no chance to access
-> invalid info in fcc.
+Yes, In RK3288, the div generated by CLKGEN is 2 and can not be changed by software.
+>> +
+>>  static void dw_mci_pltfm_prepare_command(struct dw_mci *host, u32 *cmdr)
+>>  {
+>>  	*cmdr |= SDMMC_CMD_USE_HOLD_REG;
+>>  }
+>>  
+>> -static const struct dw_mci_drv_data rockchip_drv_data = {
+>> +static int dw_mci_rk3288_setup_clock(struct dw_mci *host)
+>> +{
+>> +	host->bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
+> I knew that you need not to call clk_get_rate(). In dw-mmc.c, it's already called.
+> So you can just use the host->bus_hz.
 > 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-
-Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-
-> ---
->  fs/f2fs/segment.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+> host->bus_hz /= RK3288_CLKGEN_DIV;
 > 
-> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-> index bb5980d..a4f8375 100644
-> --- a/fs/f2fs/segment.c
-> +++ b/fs/f2fs/segment.c
-> @@ -272,14 +272,15 @@ int create_flush_cmd_control(struct f2fs_sb_info *sbi)
->  		return -ENOMEM;
->  	spin_lock_init(&fcc->issue_lock);
->  	init_waitqueue_head(&fcc->flush_wait_queue);
-> +	sbi->sm_info->cmd_control_info = fcc;
->  	fcc->f2fs_issue_flush = kthread_run(issue_flush_thread, sbi,
->  				"f2fs_flush-%u:%u", MAJOR(dev), MINOR(dev));
->  	if (IS_ERR(fcc->f2fs_issue_flush)) {
->  		err = PTR_ERR(fcc->f2fs_issue_flush);
->  		kfree(fcc);
-> +		sbi->sm_info->cmd_control_info = NULL;
->  		return err;
->  	}
-> -	sbi->sm_info->cmd_control_info = fcc;
->  
->  	return err;
->  }
-
+> Best Regards,
+> Jaehoon Chung
+> 
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
+>> +{
+>> +	int ret;
+>> +	unsigned int cclkin;
+>> +
+>> +	/*
+>> +	 * cclkin: source clock of mmc controller.
+>> +	 * bus_hz: card interface clock generated by CLKGEN.
+>> +	 * bus_hz = cclkin / RK3288_CLKGEN_DIV;
+>> +	 * ios->clock = (div == 0) ? bus_hz : (bus_hz / (2 * div))
+>> +	 *
+>> +	 * Note: div can only be 0 or 1
+>> +	 *       if DDR50 8bit mode, div must be set 1
+>> +	 */
+>> +	if ((ios->bus_width == MMC_BUS_WIDTH_8) &&
+>> +	    (ios->timing == MMC_TIMING_UHS_DDR50 ||
+>> +	     ios->timing == MMC_TIMING_MMC_DDR52))
+>> +		cclkin = 2 * ios->clock * RK3288_CLKGEN_DIV;
+>> +	else
+>> +		cclkin = ios->clock * RK3288_CLKGEN_DIV;
+>> +
+>> +	ret = clk_set_rate(host->ciu_clk, cclkin);
+>> +	if (ret)
+>> +		dev_warn(host->dev, "failed to set rate %uHz\n", ios->clock);
+>> +
+>> +	host->bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
+>> +}
+>> +
+>> +static const struct dw_mci_drv_data rk2928_drv_data = {
+>> +	.prepare_command	= dw_mci_pltfm_prepare_command,
+>> +};
+>> +
+>> +static const struct dw_mci_drv_data rk3288_drv_data = {
+>>  	.prepare_command	= dw_mci_pltfm_prepare_command,
+>> +	.set_ios	= dw_mci_rk3288_set_ios,
+>> +	.setup_clock	= dw_mci_rk3288_setup_clock,
+>>  };
+>>  
+>>  static const struct dw_mci_drv_data socfpga_drv_data = {
+>> @@ -95,7 +139,9 @@ EXPORT_SYMBOL_GPL(dw_mci_pltfm_pmops);
+>>  static const struct of_device_id dw_mci_pltfm_match[] = {
+>>  	{ .compatible = "snps,dw-mshc", },
+>>  	{ .compatible = "rockchip,rk2928-dw-mshc",
+>> -		.data = &rockchip_drv_data },
+>> +		.data = &rk2928_drv_data },
+>> +	{ .compatible = "rockchip,rk3288-dw-mshc",
+>> +		.data = &rk3288_drv_data },
+>>  	{ .compatible = "altr,socfpga-dw-mshc",
+>>  		.data = &socfpga_drv_data },
+>>  	{},
+>>
+> 
+> 
+> 
+> 
 
