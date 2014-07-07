@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaGGSwv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 14:52:51 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:54122 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752647AbaGGSwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 14:52:25 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [patch 2/3] mm: memcontrol: rewrite uncharge API fix - double migration
-Date: Mon,  7 Jul 2014 14:52:12 -0400
-Message-Id: <1404759133-29218-3-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404759133-29218-1-git-send-email-hannes@cmpxchg.org>
-References: <1404759133-29218-1-git-send-email-hannes@cmpxchg.org>
+	id S1752285AbaGGSx2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 14:53:28 -0400
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:14493 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751216AbaGGSx1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 14:53:27 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmANAOTrulNXQCU9/2dsb2JhbABZgw6segUBAQEBAQEFAW4BmW2BGxd1hGAjgRo3iEYByV6FcIkyHYQtBYRpA5YKlAyDRTs
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org
+Subject: [RFC 1/1] em28xx: fix configuration warning
+Date: Mon,  7 Jul 2014 20:51:55 +0200
+Message-Id: <1404759115-11029-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh reports:
+This patch tries to solve a problem detected with random configuration.
+warning: (VIDEO_EM28XX_V4L2) selects VIDEO_MT9V011 which has unmet direct dependencies (MEDIA_SUPPORT && I2C && VIDEO_V4L2 && MEDIA_CAMERA_SUPPORT)
 
-VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM))
-mm/memcontrol.c:6680!
-page had count 1 mapcount 0 mapping anon index 0x196
-flags locked uptodate reclaim swapbacked, pcflags 1, memcg not root
-mem_cgroup_migrate < move_to_new_page < migrate_pages < compact_zone <
-compact_zone_order < try_to_compact_pages < __alloc_pages_direct_compact <
-__alloc_pages_nodemask < alloc_pages_vma < do_huge_pmd_anonymous_page <
-handle_mm_fault < __do_page_fault
-
-mem_cgroup_migrate() assumes that a page is only migrated once and
-then freed immediately after.
-
-However, putting the page back on the LRU list and dropping the
-isolation refcount is not done atomically.  This allows a PFN-based
-migrator like compaction to isolate the page, see the expected
-anonymous page refcount of 1, and migrate the page once more.
-
-Catch pages that have already been migrated and abort migration
-gracefully.
-
-Reported-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: linux-media@vger.kernel.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- mm/memcontrol.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/media/usb/em28xx/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 1e3b27f8dc2f..e4afdbdda0a7 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6653,7 +6653,10 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
- 	if (!PageCgroupUsed(pc))
- 		return;
- 
--	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
-+	/* Already migrated */
-+	if (!(pc->flags & PCG_MEM))
-+		return;
-+
- 	VM_BUG_ON_PAGE(do_swap_account && !(pc->flags & PCG_MEMSW), oldpage);
- 	pc->flags &= ~(PCG_MEM | PCG_MEMSW);
- 
+diff --git a/drivers/media/usb/em28xx/Kconfig b/drivers/media/usb/em28xx/Kconfig
+index f5d7198..d42e1de 100644
+--- a/drivers/media/usb/em28xx/Kconfig
++++ b/drivers/media/usb/em28xx/Kconfig
+@@ -7,6 +7,7 @@ config VIDEO_EM28XX
+ config VIDEO_EM28XX_V4L2
+ 	tristate "Empia EM28xx analog TV, video capture and/or webcam support"
+ 	depends on VIDEO_EM28XX
++	depends on MEDIA_CAMERA_SUPPORT
+ 	select VIDEOBUF2_VMALLOC
+ 	select VIDEO_SAA711X if MEDIA_SUBDRV_AUTOSELECT
+ 	select VIDEO_TVP5150 if MEDIA_SUBDRV_AUTOSELECT
 -- 
-2.0.0
+1.8.4.5
 
