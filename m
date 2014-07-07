@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285AbaGGSx2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 14:53:28 -0400
-Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:14493 "EHLO
-	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751216AbaGGSx1 (ORCPT
+	id S1752817AbaGGSxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 14:53:47 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:54033 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868AbaGGSxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 14:53:27 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmANAOTrulNXQCU9/2dsb2JhbABZgw6segUBAQEBAQEFAW4BmW2BGxd1hGAjgRo3iEYByV6FcIkyHYQtBYRpA5YKlAyDRTs
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: [RFC 1/1] em28xx: fix configuration warning
-Date: Mon,  7 Jul 2014 20:51:55 +0200
-Message-Id: <1404759115-11029-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Mon, 7 Jul 2014 14:53:46 -0400
+From: Jason Low <jason.low2@hp.com>
+To: peterz@infradead.org, torvalds@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, mingo@kernel.org, Waiman.Long@hp.com,
+        davidlohr@hp.com, linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, riel@redhat.com, rostedt@goodmis.org,
+        akpm@linux-foundation.org, hpa@zytor.com, tim.c.chen@linux.intel.com,
+        konrad.wilk@oracle.com, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com, jason.low2@hp.com
+Subject: [PATCH 3/4] MCS spinlocks: Micro-optimize osq_unlock()
+Date: Mon,  7 Jul 2014 11:50:18 -0700
+Message-Id: <1404759019-4268-4-git-send-email-jason.low2@hp.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1404759019-4268-1-git-send-email-jason.low2@hp.com>
+References: <1404759019-4268-1-git-send-email-jason.low2@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch tries to solve a problem detected with random configuration.
-warning: (VIDEO_EM28XX_V4L2) selects VIDEO_MT9V011 which has unmet direct dependencies (MEDIA_SUPPORT && I2C && VIDEO_V4L2 && MEDIA_CAMERA_SUPPORT)
+In the unlock function of the cancellable MCS spinlock, the first
+thing we do is to retrive the current CPU's osq node. However, due to
+the changes made in the previous patch, in the common case where the
+lock is not contended, we wouldn't need to access the current CPU's
+osq node anymore.
 
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: linux-media@vger.kernel.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+This patch optimizes this by only retriving this CPU's osq node
+after we attempt the initial cmpxchg to unlock the osq and found
+that its contended.
+
+Signed-off-by: Jason Low <jason.low2@hp.com>
 ---
- drivers/media/usb/em28xx/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/locking/mcs_spinlock.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/usb/em28xx/Kconfig b/drivers/media/usb/em28xx/Kconfig
-index f5d7198..d42e1de 100644
---- a/drivers/media/usb/em28xx/Kconfig
-+++ b/drivers/media/usb/em28xx/Kconfig
-@@ -7,6 +7,7 @@ config VIDEO_EM28XX
- config VIDEO_EM28XX_V4L2
- 	tristate "Empia EM28xx analog TV, video capture and/or webcam support"
- 	depends on VIDEO_EM28XX
-+	depends on MEDIA_CAMERA_SUPPORT
- 	select VIDEOBUF2_VMALLOC
- 	select VIDEO_SAA711X if MEDIA_SUBDRV_AUTOSELECT
- 	select VIDEO_TVP5150 if MEDIA_SUBDRV_AUTOSELECT
+diff --git a/kernel/locking/mcs_spinlock.c b/kernel/locking/mcs_spinlock.c
+index 124a3bb..be7ac24 100644
+--- a/kernel/locking/mcs_spinlock.c
++++ b/kernel/locking/mcs_spinlock.c
+@@ -180,8 +180,7 @@ unqueue:
+ 
+ void osq_unlock(struct optimistic_spin_queue *lock)
+ {
+-	struct optimistic_spin_node *node = this_cpu_ptr(&osq_node);
+-	struct optimistic_spin_node *next;
++	struct optimistic_spin_node *node, *next;
+ 	int curr = encode_cpu(smp_processor_id());
+ 
+ 	/*
+@@ -193,6 +192,7 @@ void osq_unlock(struct optimistic_spin_queue *lock)
+ 	/*
+ 	 * Second most likely case.
+ 	 */
++	node = this_cpu_ptr(&osq_node);
+ 	next = xchg(&node->next, NULL);
+ 	if (next) {
+ 		ACCESS_ONCE(next->locked) = 1;
 -- 
-1.8.4.5
+1.7.1
 
