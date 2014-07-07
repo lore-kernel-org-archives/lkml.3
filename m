@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969AbaGGKvI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 06:51:08 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:33844 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752757AbaGGKvE (ORCPT
+	id S1753005AbaGGKv5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 06:51:57 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:48016 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752536AbaGGKvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 06:51:04 -0400
-Date: Mon, 7 Jul 2014 11:50:58 +0100
+	Mon, 7 Jul 2014 06:51:55 -0400
+Date: Mon, 7 Jul 2014 11:51:49 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
-        Rickard Strandqvist <rickard.strandqvist@sonymobile.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] video: backlight: ili922x.c:  Cleaning up variable that
- is never used
-Message-ID: <20140707105058.GD6407@lee--X1>
-References: <1404562270-18387-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com, patrice.chotard@st.com,
+        srinivas.kandagatla@gmail.com, devicetree@vger.kernel.org,
+        balbi@ti.com, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        peppe.cavallaro@st.com
+Subject: Re: [PATCH v2 3/3] MAINTAINERS: Add dwc3-st.c file to ARCH/STI
+ architecture
+Message-ID: <20140707105149.GE6407@lee--X1>
+References: <1404541530-27856-1-git-send-email-peter.griffin@linaro.org>
+ <1404541530-27856-4-git-send-email-peter.griffin@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1404562270-18387-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1404541530-27856-4-git-send-email-peter.griffin@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 05 Jul 2014, Rickard Strandqvist wrote:
-
-> From: Rickard Strandqvist <rickard.strandqvist@sonymobile.com>
-> 
-> Variable ar assigned a value that is never used.
-> I have also removed all the code that thereby serves no purpose.
-> 
-> This was found using a static code analysis program called cppcheck
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+On Sat, 05 Jul 2014, Peter Griffin wrote:
+> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
 > ---
->  drivers/video/backlight/ili922x.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+>  MAINTAINERS | 1 +
+>  1 file changed, 1 insertion(+)
 
-Is this different from the patch I just applied?
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-> diff --git a/drivers/video/backlight/ili922x.c b/drivers/video/backlight/ili922x.c
-> index ea67fe1..06936c8 100644
-> --- a/drivers/video/backlight/ili922x.c
-> +++ b/drivers/video/backlight/ili922x.c
-> @@ -251,7 +251,7 @@ static int ili922x_write(struct spi_device *spi, u8 reg, u16 value)
->  	struct spi_transfer xfer_regindex, xfer_regvalue;
->  	unsigned char tbuf[CMD_BUFSIZE];
->  	unsigned char rbuf[CMD_BUFSIZE];
-> -	int ret, len = 0;
-> +	int ret;
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 702ca10..269ad3b 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -1325,6 +1325,7 @@ F:	drivers/pinctrl/pinctrl-st.c
+>  F:	drivers/media/rc/st_rc.c
+>  F:	drivers/i2c/busses/i2c-st.c
+>  F:	drivers/tty/serial/st-asc.c
+> +F:	drivers/usb/dwc3/dwc3-st.c
 >  
->  	memset(&xfer_regindex, 0, sizeof(struct spi_transfer));
->  	memset(&xfer_regvalue, 0, sizeof(struct spi_transfer));
-> @@ -273,7 +273,6 @@ static int ili922x_write(struct spi_device *spi, u8 reg, u16 value)
->  	ret = spi_sync(spi, &msg);
->  
->  	spi_message_init(&msg);
-> -	len = 0;
->  	tbuf[0] = set_tx_byte(START_BYTE(ili922x_id, START_RS_REG,
->  					 START_RW_WRITE));
->  	tbuf[1] = set_tx_byte((value & 0xFF00) >> 8);
+>  ARM/TECHNOLOGIC SYSTEMS TS7250 MACHINE SUPPORT
+>  M:	Lennert Buytenhek <kernel@wantstofly.org>
 
 -- 
 Lee Jones
