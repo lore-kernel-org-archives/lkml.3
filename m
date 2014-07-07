@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751012AbaGGFKT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 01:10:19 -0400
-Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:23971
+	id S1751285AbaGGFMv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 01:12:51 -0400
+Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:31865
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750714AbaGGFKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 01:10:15 -0400
+	id S1750714AbaGGFMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 01:12:47 -0400
 From: Ruchika Gupta <ruchika.gupta@freescale.com>
 To: <linux-crypto@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <herbert@gondor.apana.org.au>
 CC: <davem@davemloft.net>, <alexandru.porosanu@freescale.com>,
-        <kim.phillips@freescale.com>, <dan.carpenter@oracle.com>,
-        <horia.geanta@freescale.com>, <marex@denx.de>,
-        Ruchika Gupta <ruchika.gupta@freescale.com>
+        <horia.geanta@freescale.com>, <NiteshNarayanLal@freescale.com>,
+        <vakul@freescale.com>, <marex@denx.de>, <kim.phillips@freescale.com>,
+        <pebolle@tiscali.nl>, Ruchika Gupta <ruchika.gupta@freescale.com>
 Subject: [PATCH][v2] crypto: caam - Check for CAAM block presence before registering with crypto layer
-Date: Mon, 7 Jul 2014 10:39:44 +0530
-Message-ID: <1404709784-19167-1-git-send-email-ruchika.gupta@freescale.com>
+Date: Mon, 7 Jul 2014 10:42:12 +0530
+Message-ID: <1404709932-19242-1-git-send-email-ruchika.gupta@freescale.com>
 X-Mailer: git-send-email 1.8.1.4
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(93916002)(74502001)(83072002)(99396002)(50986999)(85306003)(46102001)(48376002)(62966002)(4396001)(31966008)(85852003)(92726001)(86362001)(50226001)(50466002)(33646001)(77982001)(21056001)(36756003)(104016002)(106466001)(77156001)(84676001)(97736001)(76482001)(88136002)(102836001)(87286001)(87936001)(105606002)(81342001)(104166001)(95666004)(64706001)(47776003)(79102001)(19580395003)(26826002)(2201001)(44976005)(19580405001)(81542001)(92566001)(6806004)(74662001)(20776003)(229853001)(68736004)(80022001)(83322001)(107046002)(89996001)(61793002);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB400;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199002)(85852003)(62966002)(80022001)(83072002)(95666004)(44976005)(26826002)(89996001)(99396002)(97736001)(104016002)(92566001)(79102001)(48376002)(77982001)(102836001)(107046002)(50986999)(50466002)(93916002)(88136002)(86362001)(74662001)(33646001)(68736004)(105606002)(31966008)(85306003)(81542001)(20776003)(47776003)(84676001)(76482001)(46102001)(74502001)(87936001)(83322001)(77156001)(19580405001)(21056001)(50226001)(19580395003)(4396001)(36756003)(106466001)(229853001)(2201001)(6806004)(92726001)(87286001)(64706001)(81342001)(104166001)(61793002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB556;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
