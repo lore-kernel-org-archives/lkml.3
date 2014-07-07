@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932403AbaGHAaB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:30:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55860 "EHLO
+	id S932418AbaGHAac (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:30:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55919 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106AbaGGXyv (ORCPT
+	with ESMTP id S1754098AbaGGXyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:51 -0400
+	Mon, 7 Jul 2014 19:54:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arik Nemtsov <arikx.nemtsov@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.14 51/94] mac80211: dont check netdev state for debugfs read/write
-Date: Mon,  7 Jul 2014 16:57:41 -0700
-Message-Id: <20140707235758.293262833@linuxfoundation.org>
+        Jack Morgenstein <jackm@dev.mellanox.co.il>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.14 77/94] mlx4_core: Fix incorrect FLAGS1 bitmap test in mlx4_QUERY_FUNC_CAP
+Date: Mon,  7 Jul 2014 16:58:07 -0700
+Message-Id: <20140707235759.049193697@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -30,43 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arik Nemtsov <arik@wizery.com>
+From: Jack Morgenstein <jackm@dev.mellanox.co.il>
 
-commit 923eaf367206e01f22c97aee22300e332d071916 upstream.
+commit bc82878baa10c2a6a4a6affaf52c152935112142 upstream.
 
-Doing so will lead to an oops for a p2p-dev interface, since it has
-no netdev.
+Commit eb17711bc1d6 ("net/mlx4_core: Introduce nic_info new flag in
+QUERY_FUNC_CAP") did:
 
-Signed-off-by: Arik Nemtsov <arikx.nemtsov@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+	if (func_cap->flags1 & QUERY_FUNC_CAP_FLAGS1_OFFSET) {
+
+which should be:
+
+	if (func_cap->flags1 & QUERY_FUNC_CAP_FLAGS1_FORCE_VLAN) {
+
+Fix that.
+
+Fixes: eb17711bc1d6 ("net/mlx4_core: Introduce nic_info new flag in QUERY_FUNC_CAP")
+Signed-off-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/debugfs_netdev.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/fw.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/mac80211/debugfs_netdev.c
-+++ b/net/mac80211/debugfs_netdev.c
-@@ -34,8 +34,7 @@ static ssize_t ieee80211_if_read(
- 	ssize_t ret = -EINVAL;
+--- a/drivers/net/ethernet/mellanox/mlx4/fw.c
++++ b/drivers/net/ethernet/mellanox/mlx4/fw.c
+@@ -398,7 +398,7 @@ int mlx4_QUERY_FUNC_CAP(struct mlx4_dev
  
- 	read_lock(&dev_base_lock);
--	if (sdata->dev->reg_state == NETREG_REGISTERED)
--		ret = (*format)(sdata, buf, sizeof(buf));
-+	ret = (*format)(sdata, buf, sizeof(buf));
- 	read_unlock(&dev_base_lock);
- 
- 	if (ret >= 0)
-@@ -62,8 +61,7 @@ static ssize_t ieee80211_if_write(
- 
- 	ret = -ENODEV;
- 	rtnl_lock();
--	if (sdata->dev->reg_state == NETREG_REGISTERED)
--		ret = (*write)(sdata, buf, count);
-+	ret = (*write)(sdata, buf, count);
- 	rtnl_unlock();
- 
- 	return ret;
+ 	MLX4_GET(func_cap->flags1, outbox, QUERY_FUNC_CAP_FLAGS1_OFFSET);
+ 	if (dev->caps.port_type[gen_or_port] == MLX4_PORT_TYPE_ETH) {
+-		if (func_cap->flags1 & QUERY_FUNC_CAP_FLAGS1_OFFSET) {
++		if (func_cap->flags1 & QUERY_FUNC_CAP_FLAGS1_FORCE_VLAN) {
+ 			mlx4_err(dev, "VLAN is enforced on this port\n");
+ 			err = -EPROTONOSUPPORT;
+ 			goto out;
 
 
