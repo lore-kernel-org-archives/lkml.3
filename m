@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756533AbaGHBLF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:11:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55237 "EHLO
+	id S1756498AbaGHBLD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:11:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55225 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656AbaGGXxy (ORCPT
+	with ESMTP id S1752903AbaGGXxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:53:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.15 043/122] drm/i915: set backlight duty cycle after backlight enable for gen4
-Date: Mon,  7 Jul 2014 16:56:45 -0700
-Message-Id: <20140707235735.540523221@linuxfoundation.org>
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.15 044/122] drm/i915, HD-audio: Dont continue probing when nomodeset is given
+Date: Mon,  7 Jul 2014 16:56:46 -0700
+Message-Id: <20140707235735.569073948@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,54 +28,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 2e7eeeb59a92d09144fdb7d2dc1af77a10a7945b upstream.
+commit 74b0c2d75fb4cc89173944e6d8f9eb47aca0c343 upstream.
 
-For reasons I can't claim to fully understand gen4 seems to require
-backlight duty cycle setting after the backlight has been enabled, or
-else black screen follows. I don't have documentation for the correct
-sequence on gen4 either. Confirmed on Dell Latitude D630 and MacBook4,1.
+When a machine is booted with nomodeset option, i915 driver skips the
+whole initialization.  Meanwhile, HD-audio tries to bind wth i915 just
+by request_symbol() without knowing that the initialization was
+skipped, and eventually it hits WARN_ON() in i915_request_power_well()
+and i915_release_power_well() wrongly but still continues probing,
+even though it doesn't work at all.
 
-This fixes a regression introduced by
-commit b35684b8fa94e04f55fd38bf672b737741d2f9e2
-Author: Jani Nikula <jani.nikula@intel.com>
-Date:   Thu Nov 14 12:13:41 2013 +0200
+In this patch, both functions are changed to return an error in case
+of uninitialized state instead of WARN_ON(), so that HD-audio driver
+can give up HDMI controller initialization at the right time.
 
-    drm/i915: do full backlight setup at enable time
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=75791
-Reported-and-tested-by: mcy@lm7.fr
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=79423
-Reported-and-tested-by: Marc Milgram <mmilgram@redhat.com>
 Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_panel.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/intel_pm.c |   14 ++++++++------
+ include/drm/i915_powerwell.h    |    4 ++--
+ sound/pci/hda/hda_i915.c        |   12 ++++++------
+ sound/pci/hda/hda_i915.h        |    4 ++--
+ sound/pci/hda/hda_intel.c       |    7 ++++++-
+ 5 files changed, 24 insertions(+), 17 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -723,9 +723,6 @@ static void i965_enable_backlight(struct
- 	ctl = freq << 16;
- 	I915_WRITE(BLC_PWM_CTL, ctl);
+--- a/drivers/gpu/drm/i915/intel_pm.c
++++ b/drivers/gpu/drm/i915/intel_pm.c
+@@ -5705,30 +5705,32 @@ void intel_display_power_put(struct drm_
+ static struct i915_power_domains *hsw_pwr;
  
--	/* XXX: combine this into above write? */
--	intel_panel_actually_set_backlight(connector, panel->backlight.level);
--
- 	ctl2 = BLM_PIPE(pipe);
- 	if (panel->backlight.combination_mode)
- 		ctl2 |= BLM_COMBINATION_MODE;
-@@ -734,6 +731,8 @@ static void i965_enable_backlight(struct
- 	I915_WRITE(BLC_PWM_CTL2, ctl2);
- 	POSTING_READ(BLC_PWM_CTL2);
- 	I915_WRITE(BLC_PWM_CTL2, ctl2 | BLM_PWM_ENABLE);
-+
-+	intel_panel_actually_set_backlight(connector, panel->backlight.level);
+ /* Display audio driver power well request */
+-void i915_request_power_well(void)
++int i915_request_power_well(void)
+ {
+ 	struct drm_i915_private *dev_priv;
+ 
+-	if (WARN_ON(!hsw_pwr))
+-		return;
++	if (!hsw_pwr)
++		return -ENODEV;
+ 
+ 	dev_priv = container_of(hsw_pwr, struct drm_i915_private,
+ 				power_domains);
+ 	intel_display_power_get(dev_priv, POWER_DOMAIN_AUDIO);
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(i915_request_power_well);
+ 
+ /* Display audio driver power well release */
+-void i915_release_power_well(void)
++int i915_release_power_well(void)
+ {
+ 	struct drm_i915_private *dev_priv;
+ 
+-	if (WARN_ON(!hsw_pwr))
+-		return;
++	if (!hsw_pwr)
++		return -ENODEV;
+ 
+ 	dev_priv = container_of(hsw_pwr, struct drm_i915_private,
+ 				power_domains);
+ 	intel_display_power_put(dev_priv, POWER_DOMAIN_AUDIO);
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(i915_release_power_well);
+ 
+--- a/include/drm/i915_powerwell.h
++++ b/include/drm/i915_powerwell.h
+@@ -30,7 +30,7 @@
+ #define _I915_POWERWELL_H_
+ 
+ /* For use by hda_i915 driver */
+-extern void i915_request_power_well(void);
+-extern void i915_release_power_well(void);
++extern int i915_request_power_well(void);
++extern int i915_release_power_well(void);
+ 
+ #endif				/* _I915_POWERWELL_H_ */
+--- a/sound/pci/hda/hda_i915.c
++++ b/sound/pci/hda/hda_i915.c
+@@ -22,20 +22,20 @@
+ #include <drm/i915_powerwell.h>
+ #include "hda_i915.h"
+ 
+-static void (*get_power)(void);
+-static void (*put_power)(void);
++static int (*get_power)(void);
++static int (*put_power)(void);
+ 
+-void hda_display_power(bool enable)
++int hda_display_power(bool enable)
+ {
+ 	if (!get_power || !put_power)
+-		return;
++		return -ENODEV;
+ 
+ 	pr_debug("HDA display power %s \n",
+ 			enable ? "Enable" : "Disable");
+ 	if (enable)
+-		get_power();
++		return get_power();
+ 	else
+-		put_power();
++		return put_power();
  }
  
- static void vlv_enable_backlight(struct intel_connector *connector)
+ int hda_i915_init(void)
+--- a/sound/pci/hda/hda_i915.h
++++ b/sound/pci/hda/hda_i915.h
+@@ -17,11 +17,11 @@
+ #define __SOUND_HDA_I915_H
+ 
+ #ifdef CONFIG_SND_HDA_I915
+-void hda_display_power(bool enable);
++int hda_display_power(bool enable);
+ int hda_i915_init(void);
+ int hda_i915_exit(void);
+ #else
+-static inline void hda_display_power(bool enable) {}
++static inline int hda_display_power(bool enable) { return 0; }
+ static inline int hda_i915_init(void)
+ {
+ 	return -ENODEV;
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -1707,8 +1707,13 @@ static int azx_probe_continue(struct azx
+ 				"Error request power-well from i915\n");
+ 			goto out_free;
+ 		}
++		err = hda_display_power(true);
++		if (err < 0) {
++			dev_err(chip->card->dev,
++				"Cannot turn on display power on i915\n");
++			goto out_free;
++		}
+ #endif
+-		hda_display_power(true);
+ 	}
+ 
+ 	err = azx_first_init(chip);
 
 
