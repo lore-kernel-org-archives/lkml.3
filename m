@@ -1,26 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559AbaGHAAd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:00:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56091 "EHLO
+	id S1754713AbaGHAAz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:00:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55989 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383AbaGGXzQ (ORCPT
+	with ESMTP id S1754376AbaGGXzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:55:16 -0400
+	Mon, 7 Jul 2014 19:55:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhichuang Sun <sunzc522@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Joe Perches <joe@perches.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-fbdev@vger.kernel.org, Xuetao Guan <gxt@mprc.pku.edu.cn>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.10 52/53] drivers/video/fbdev/fb-puv3.c: Add header files for function unifb_mmap
-Date: Mon,  7 Jul 2014 16:58:37 -0700
-Message-Id: <20140707235830.856569798@linuxfoundation.org>
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        Xuetao Guan <gxt@mprc.pku.edu.cn>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.10 51/53] arch/unicore32/mm/alignment.c: include "asm/pgtable.h" to avoid compiling error
+Date: Mon,  7 Jul 2014 16:58:36 -0700
+Message-Id: <20140707235830.827736415@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
 References: <20140707235829.281783607@linuxfoundation.org>
@@ -35,50 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhichuang SUN <sunzc522@gmail.com>
+From: Chen Gang <gang.chen.5i5j@gmail.com>
 
-commit fbc6c4a13bbfb420eedfdb26a0a859f9c07e8a7b upstream.
+commit 1ff38c56cbd095c4c0dfa581a859ba3557830f78 upstream.
 
-Function unifb_mmap calls functions which are defined in linux/mm.h
-and asm/pgtable.h
+Need include "asm/pgtable.h" to include "asm-generic/pgtable-nopmd.h",
+so can let 'pmd_t' defined. The related error with allmodconfig:
 
-The related error (for unicore32 with unicore32_defconfig):
-	CC      drivers/video/fbdev/fb-puv3.o
-	drivers/video/fbdev/fb-puv3.c: In function 'unifb_mmap':
-	drivers/video/fbdev/fb-puv3.c:646: error: implicit declaration of
-				      function 'vm_iomap_memory'
-	drivers/video/fbdev/fb-puv3.c:646: error: implicit declaration of
-				      function 'pgprot_noncached'
+    CC      arch/unicore32/mm/alignment.o
+  In file included from arch/unicore32/mm/alignment.c:24:
+  arch/unicore32/include/asm/tlbflush.h:135: error: expected .). before .*. token
+  arch/unicore32/include/asm/tlbflush.h:154: error: expected .). before .*. token
+  In file included from arch/unicore32/mm/alignment.c:27:
+  arch/unicore32/mm/mm.h:15: error: expected .=., .,., .;., .sm. or ._attribute__. before .*. token
+  arch/unicore32/mm/mm.h:20: error: expected .=., .,., .;., .sm. or ._attribute__. before .*. token
+  arch/unicore32/mm/mm.h:25: error: expected .=., .,., .;., .sm. or ._attribute__. before .*. token
+  make[1]: *** [arch/unicore32/mm/alignment.o] Error 1
+  make: *** [arch/unicore32/mm] Error 2
 
-Signed-off-by: Zhichuang Sun <sunzc522@gmail.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Joe Perches <joe@perches.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-fbdev@vger.kernel.org
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 Acked-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
 Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/video/fb-puv3.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/unicore32/mm/alignment.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/video/fb-puv3.c
-+++ b/drivers/video/fb-puv3.c
-@@ -18,8 +18,10 @@
- #include <linux/fb.h>
- #include <linux/init.h>
- #include <linux/console.h>
-+#include <linux/mm.h>
+--- a/arch/unicore32/mm/alignment.c
++++ b/arch/unicore32/mm/alignment.c
+@@ -21,6 +21,7 @@
+ #include <linux/sched.h>
+ #include <linux/uaccess.h>
  
- #include <asm/sizes.h>
 +#include <asm/pgtable.h>
- #include <mach/hardware.h>
+ #include <asm/tlbflush.h>
+ #include <asm/unaligned.h>
  
- /* Platform_data reserved for unifb registers. */
 
 
