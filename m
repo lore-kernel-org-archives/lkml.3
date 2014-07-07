@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934AbaGHAnG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:43:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753719AbaGGXyd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753830AbaGGXyd (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 7 Jul 2014 19:54:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55703 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716AbaGGXy2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 19:54:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 30/94] drm/radeon/atom: fix dithering on certain panels
-Date: Mon,  7 Jul 2014 16:57:20 -0700
-Message-Id: <20140707235757.680512880@linuxfoundation.org>
+        ShiChun Ma <masc2008@qq.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.14 07/94] xhci: correct burst count field for isoc transfers on 1.0 xhci hosts
+Date: Mon,  7 Jul 2014 16:56:57 -0700
+Message-Id: <20140707235756.994697131@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -28,38 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 642528355c694f5ed68f6bff9ff520326a249f99 upstream.
+commit 3213b151387df0b95f4eada104f68eb1c1409cb3 upstream.
 
-We need to specify the encoder mode as LVDS for eDP
-when using the Crtc_Source atom table in order to properly
-set up the FMT hardware.
+The transfer burst count (TBC) field in xhci 1.0 hosts should be set
+to the number of bursts needed to transfer all packets in a isoc TD.
+Supported values are 0-2 (1 to 3 bursts per service interval).
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=73911
+Formula for TBC calculation is given in xhci spec section 4.11.2.3:
+TBC = roundup( Transfer Descriptor Packet Count / Max Burst Size +1 ) - 1
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+This patch should be applied to stable kernels since 3.0 that contain
+the commit 5cd43e33b9519143f06f507dd7cbee6b7a621885
+"xhci 1.0: Set transfer burst count field."
+
+Suggested-by: ShiChun Ma <masc2008@qq.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci-ring.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -1898,8 +1898,11 @@ atombios_set_encoder_crtc_source(struct
- 					args.v2.ucEncodeMode = ATOM_ENCODER_MODE_CRT;
- 				else
- 					args.v2.ucEncodeMode = atombios_get_encoder_mode(encoder);
--			} else
-+			} else if (radeon_encoder->devices & (ATOM_DEVICE_LCD_SUPPORT)) {
-+				args.v2.ucEncodeMode = ATOM_ENCODER_MODE_LVDS;
-+			} else {
- 				args.v2.ucEncodeMode = atombios_get_encoder_mode(encoder);
-+			}
- 			switch (radeon_encoder->encoder_id) {
- 			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY:
- 			case ENCODER_OBJECT_ID_INTERNAL_UNIPHY1:
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -3666,7 +3666,7 @@ static unsigned int xhci_get_burst_count
+ 		return 0;
+ 
+ 	max_burst = urb->ep->ss_ep_comp.bMaxBurst;
+-	return roundup(total_packet_count, max_burst + 1) - 1;
++	return DIV_ROUND_UP(total_packet_count, max_burst + 1) - 1;
+ }
+ 
+ /*
 
 
