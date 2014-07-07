@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411AbaGHAfV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:35:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55848 "EHLO
+	id S1755424AbaGHAft (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:35:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55834 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753991AbaGGXyn (ORCPT
+	with ESMTP id S1753975AbaGGXym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:43 -0400
+	Mon, 7 Jul 2014 19:54:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Doug Smythies <dsmythies@telus.net>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 49/94] intel_pstate: Correct rounding in busy calculation
-Date: Mon,  7 Jul 2014 16:57:39 -0700
-Message-Id: <20140707235758.236638761@linuxfoundation.org>
+        Saran Neti <sarannmr@gmail.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.14 06/94] xhci: Use correct SLOT ID when handling a reset device command
+Date: Mon,  7 Jul 2014 16:56:56 -0700
+Message-Id: <20140707235756.966312259@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,44 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Doug Smythies <doug.smythies@gmail.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 51d211e9c334b9eca3505f4052afa660c3e0606b upstream.
+commit 6fcfb0d682a8212d321a6131adc94daf0905992a upstream.
 
-There was a mistake in the actual rounding portion this previous patch:
-f0fe3cd7e12d (intel_pstate: Correct rounding in busy calculation) such that
-the rounding was asymetric and incorrect.
+Command completion events normally include command completion status,
+SLOT_ID, and a pointer to the original command. Reset device command
+completion SLOT_ID may be zero according to xhci specs 4.6.11.
 
-Severity: Not very serious, but can increase target pstate by one extra value.
-For real world work flows the issue should self correct (but I have no proof).
-It is the equivalent of different PID gains for positive and negative numbers.
+VIA controllers set the SLOT_ID to zero, triggering a WARN_ON in the
+command completion handler.
 
-Examples:
- -3.000000 used to round to -4, rounds to -3 with this patch.
- -3.503906 used to round to -5, rounds to -4 with this patch.
+Use the SLOT ID found from the original command instead.
 
-Fixes: f0fe3cd7e12d (intel_pstate: Correct rounding in busy calculation)
-Signed-off-by: Doug Smythies <dsmythies@telus.net>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+This patch should be applied to stable kernels since 3.13 that contain
+the commit 20e7acb13ff48fbc884d5918c3697c27de63922a
+"xhci: use completion event's slot id rather than dig it out of command"
+
+Reported-by: Saran Neti <sarannmr@gmail.com>
+Tested-by: Saran Neti <sarannmr@gmail.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/intel_pstate.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/usb/host/xhci-ring.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -200,10 +200,7 @@ static signed int pid_calc(struct _pid *
- 	pid->last_err = fp_error;
- 
- 	result = pterm + mul_fp(pid->integral, pid->i_gain) + dterm;
--	if (result >= 0)
--		result = result + (1 << (FRAC_BITS-1));
--	else
--		result = result - (1 << (FRAC_BITS-1));
-+	result = result + (1 << (FRAC_BITS-1));
- 	return (signed int)fp_toint(result);
- }
- 
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1578,8 +1578,11 @@ static void handle_cmd_completion(struct
+ 		xhci_handle_cmd_reset_ep(xhci, slot_id, cmd_trb, cmd_comp_code);
+ 		break;
+ 	case TRB_RESET_DEV:
+-		WARN_ON(slot_id != TRB_TO_SLOT_ID(
+-				le32_to_cpu(cmd_trb->generic.field[3])));
++		/* SLOT_ID field in reset device cmd completion event TRB is 0.
++		 * Use the SLOT_ID from the command TRB instead (xhci 4.6.11)
++		 */
++		slot_id = TRB_TO_SLOT_ID(
++				le32_to_cpu(cmd_trb->generic.field[3]));
+ 		xhci_handle_cmd_reset_dev(xhci, slot_id, event);
+ 		break;
+ 	case TRB_NEC_GET_FW:
 
 
