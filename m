@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315AbaGHA33 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:29:29 -0400
+	id S1754119AbaGGXyv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 19:54:51 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:55860 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754122AbaGGXyv (ORCPT
+	with ESMTP id S1753933AbaGGXyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:51 -0400
+	Mon, 7 Jul 2014 19:54:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.14 79/94] clk: qcom: Fix mmcc-8974s PLL configurations
-Date: Mon,  7 Jul 2014 16:58:09 -0700
-Message-Id: <20140707235759.105792569@linuxfoundation.org>
+        Bill <billstuff2001@sbcglobal.net>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.14 74/94] md: flush writes before starting a recovery.
+Date: Mon,  7 Jul 2014 16:58:04 -0700
+Message-Id: <20140707235758.963689555@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,83 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: NeilBrown <neilb@suse.de>
 
-commit 437ae6a1b8f2eedebfbf0f6572e19ca5c58a3f71 upstream.
+commit 133d4527eab8d199a62eee6bd433f0776842df2e upstream.
 
-We forgot to add the status bit for the PLLs and we were using
-the wrong register and masks for configuration, leading to
-unexpected PLL configurations. Fix this.
+When we write to a degraded array which has a bitmap, we
+make sure the relevant bit in the bitmap remains set when
+the write completes (so a 're-add' can quickly rebuilt a
+temporarily-missing device).
 
-Fixes: d8b212014e69 (clk: qcom: Add support for MSM8974's multimedia clock controller (MMCC))
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
+If, immediately after such a write starts, we incorporate a spare,
+commence recovery, and skip over the region where the write is
+happening (because the 'needs recovery' flag isn't set yet),
+then that write will not get to the new device.
+
+Once the recovery finishes the new device will be trusted, but will
+have incorrect data, leading to possible corruption.
+
+We cannot set the 'needs recovery' flag when we start the write as we
+do not know easily if the write will be "degraded" or not.  That
+depends on details of the particular raid level and particular write
+request.
+
+This patch fixes a corruption issue of long standing and so it
+suitable for any -stable kernel.  It applied correctly to 3.0 at
+least and will minor editing to earlier kernels.
+
+Reported-by: Bill <billstuff2001@sbcglobal.net>
+Tested-by: Bill <billstuff2001@sbcglobal.net>
+Link: http://lkml.kernel.org/r/53A518BB.60709@sbcglobal.net
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/qcom/mmcc-msm8974.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/md/md.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/drivers/clk/qcom/mmcc-msm8974.c
-+++ b/drivers/clk/qcom/mmcc-msm8974.c
-@@ -169,6 +169,7 @@ static struct clk_pll mmpll0 = {
- 	.config_reg = 0x0014,
- 	.mode_reg = 0x0000,
- 	.status_reg = 0x001c,
-+	.status_bit = 17,
-         .clkr.hw.init = &(struct clk_init_data){
-                 .name = "mmpll0",
-                 .parent_names = (const char *[]){ "xo" },
-@@ -192,9 +193,10 @@ static struct clk_pll mmpll1 = {
- 	.l_reg = 0x0044,
- 	.m_reg = 0x0048,
- 	.n_reg = 0x004c,
--	.config_reg = 0x0054,
-+	.config_reg = 0x0050,
- 	.mode_reg = 0x0040,
- 	.status_reg = 0x005c,
-+	.status_bit = 17,
-         .clkr.hw.init = &(struct clk_init_data){
-                 .name = "mmpll1",
-                 .parent_names = (const char *[]){ "xo" },
-@@ -218,7 +220,7 @@ static struct clk_pll mmpll2 = {
- 	.l_reg = 0x4104,
- 	.m_reg = 0x4108,
- 	.n_reg = 0x410c,
--	.config_reg = 0x4114,
-+	.config_reg = 0x4110,
- 	.mode_reg = 0x4100,
- 	.status_reg = 0x411c,
-         .clkr.hw.init = &(struct clk_init_data){
-@@ -233,9 +235,10 @@ static struct clk_pll mmpll3 = {
- 	.l_reg = 0x0084,
- 	.m_reg = 0x0088,
- 	.n_reg = 0x008c,
--	.config_reg = 0x0094,
-+	.config_reg = 0x0090,
- 	.mode_reg = 0x0080,
- 	.status_reg = 0x009c,
-+	.status_bit = 17,
-         .clkr.hw.init = &(struct clk_init_data){
-                 .name = "mmpll3",
-                 .parent_names = (const char *[]){ "xo" },
-@@ -2318,7 +2321,7 @@ static const struct pll_config mmpll1_co
- 	.vco_val = 0x0,
- 	.vco_mask = 0x3 << 20,
- 	.pre_div_val = 0x0,
--	.pre_div_mask = 0x3 << 12,
-+	.pre_div_mask = 0x7 << 12,
- 	.post_div_val = 0x0,
- 	.post_div_mask = 0x3 << 8,
- 	.mn_ena_mask = BIT(24),
-@@ -2332,7 +2335,7 @@ static struct pll_config mmpll3_config =
- 	.vco_val = 0x0,
- 	.vco_mask = 0x3 << 20,
- 	.pre_div_val = 0x0,
--	.pre_div_mask = 0x3 << 12,
-+	.pre_div_mask = 0x7 << 12,
- 	.post_div_val = 0x0,
- 	.post_div_mask = 0x3 << 8,
- 	.mn_ena_mask = BIT(24),
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7505,6 +7505,19 @@ void md_do_sync(struct md_thread *thread
+ 			    rdev->recovery_offset < j)
+ 				j = rdev->recovery_offset;
+ 		rcu_read_unlock();
++
++		/* If there is a bitmap, we need to make sure all
++		 * writes that started before we added a spare
++		 * complete before we start doing a recovery.
++		 * Otherwise the write might complete and (via
++		 * bitmap_endwrite) set a bit in the bitmap after the
++		 * recovery has checked that bit and skipped that
++		 * region.
++		 */
++		if (mddev->bitmap) {
++			mddev->pers->quiesce(mddev, 1);
++			mddev->pers->quiesce(mddev, 0);
++		}
+ 	}
+ 
+ 	printk(KERN_INFO "md: %s of RAID array %s\n", desc, mdname(mddev));
 
 
