@@ -1,102 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588AbaGGPm4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 11:42:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50508 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342AbaGGPmj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 11:42:39 -0400
-Date: Mon, 7 Jul 2014 17:42:30 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        "pjt@google.com" <pjt@google.com>
-Subject: Re: [RFCv2 PATCH 00/23] sched: Energy cost model for energy-aware
- scheduling
-Message-ID: <20140707154230.GF19379@twins.programming.kicks-ass.net>
-References: <1404404770-323-1-git-send-email-morten.rasmussen@arm.com>
- <20140704165552.GB30016@arm.com>
- <20140707135915.GA4485@e103687>
+	id S1752631AbaGGPnj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 11:43:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35069 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751232AbaGGPni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 11:43:38 -0400
+Message-ID: <53BAC023.1070504@suse.cz>
+Date: Mon, 07 Jul 2014 17:43:31 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mfP1iJBimQeSOP+4"
-Content-Disposition: inline
-In-Reply-To: <20140707135915.GA4485@e103687>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/10] mm/page_alloc: carefully free the page on isolate
+ pageblock
+References: <1404460675-24456-1-git-send-email-iamjoonsoo.kim@lge.com> <1404460675-24456-5-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1404460675-24456-5-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/04/2014 09:57 AM, Joonsoo Kim wrote:
+> We got migratetype without holding the lock so it could be
+> racy. If some pages go on the isolate migratetype buddy list
+> by this race, we can't allocate this page anymore until next
+> isolation attempt on this pageblock. Below is possible
+> scenario of this race.
+>
+> pageblock 1 is isolate migratetype.
+>
+> CPU1					CPU2
+> - get_pfnblock_migratetype(pageblock 1),
+> so MIGRATE_ISOLATE is returned
+> - call free_one_page() with MIGRATE_ISOLATE
+> 					- grab the zone lock
+> 					- unisolate pageblock 1
+> 					- release the zone lock
+> - grab the zone lock
+> - call __free_one_page() with MIGRATE_ISOLATE
+> - free page go into isolate buddy list
+> and we can't use it anymore
+>
+> To prevent this possibility, re-check migratetype with holding the lock.
 
---mfP1iJBimQeSOP+4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This could be also solved similarly to the other races, if during 
+unisolation, CPU2 sent a drain_all_pages() IPI and only then used 
+move_freepages_block(). Again, get_pfnblock_migratetype() on CPU1 would 
+need to be moved under disabled irq's.
 
-On Mon, Jul 07, 2014 at 03:00:18PM +0100, Morten Rasmussen wrote:
-> > Could this be addressed by making the scheduler more "proactive" and,
-> > rather than just looking at the current energy diff, guesstimate what it
-> > would be if not placing a task at all on the CPU? If for example there
-> > is no other task running on that CPU, could energy_diff_task() take into
-> > account the next deeper C-state rather than just the current one? This
-> > way we may be able to achieve more packing even on fully symmetric
-> > systems and allow CPUs to go into deeper sleep states.
->=20
-> I think it would be possible to bias the choice of cpu either by
-> considering potential energy savings by letting some cpus get into a
-> deeper C-state, or applying a static bias towards some cpus (lower cpuid
-> for example). Since it is in the wakeup path it must not be too complex
-> to figure out though.
->=20
-> I haven't seen the problem in reality yet. When I tried the short tasks
-> test with all cpus using the same energy model I got tasks consolidated
-> on either of the clusters. The consolidation cluster sometimes changed
-> during the test.
->=20
-> There is a lot of tuning to be done, that is for sure. We will have to
-> make similar decisions for the periodic/idle balance path as well.
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> ---
+>   mm/page_alloc.c |   11 +++++++++++
+>   1 file changed, 11 insertions(+)
+>
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 99c05f7..d8feedc 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -743,6 +743,17 @@ static void free_one_page(struct zone *zone,
+>   	spin_lock(&zone->lock);
+>   	zone->pages_scanned = 0;
+>
+> +	if (unlikely(is_migrate_isolate(migratetype))) {
+> +		/*
+> +		 * We got migratetype without holding the lock so it could be
+> +		 * racy. If some pages go on the isolate migratetype buddy list
+> +		 * by this race, we can't allocate this page anymore until next
+> +		 * isolation attempt on this pageblock. To prevent this
+> +		 * possibility, re-check migratetype with holding the lock.
+> +		 */
+> +		migratetype = get_pfnblock_migratetype(page, pfn);
+> +	}
+> +
+>   	__free_one_page(page, pfn, zone, order, migratetype);
+>   	if (!is_migrate_isolate(migratetype))
+>   		__mod_zone_freepage_state(zone, 1 << order, migratetype);
+>
 
-So one of the things I mentioned previously (on IRC, to Morton) is that
-we can use the energy numbers (P and C state) to precompute whether or
-not race-to-idle makes sense for the platform. Or if it benefits from
-packing etc..
-
-So at topology setup time we can statically determine some of these
-policies (maybe with a few parameters) and take it from there.
-
-So if the platform benefits from packing, we can set the appropriate
-topology bits to do so. If it benefits from race-to-idle, it can select
-that, etc.
-
-
---mfP1iJBimQeSOP+4
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTur/mAAoJEHZH4aRLwOS6zOsQAJeoYjIh20uaTZ5T4tvVOS0m
-wfJuQ+1S+o+mu4O9whbs9kFJ5AolUhgtXyupcArDErpG6GLtNy9+kxniRsISK4Bb
-+SbO9AoCms2lqNK8hLK1RgAHR+Orr6iLwDNeyLwW54TxOyL4Zv023HK/EHzLNFUI
-YcySCZHL9+87vCBuwK9mbDqwpagTQs5nP7+6EXjt4rYEZOGg8UCLcu/HR4+UnHXI
-UoK8DXcI0wj0zrKa9rmDItDUSIQ+zZT6RKrlpR7W824cQ9NgLBuhVEBnZWVWRsKy
-j2ozt+w9GMTCLWqCLntb3a4r9F9pfSVnAS0yn+xGEzOHvJFniyyBxSq28sogPkid
-se460U5oDGjYnQzZGN6+QEWRQhbi/QITDirS4GVhbNiwWVY6hnDNIKsYaN7Wc7bZ
-ikUI4Em70KPFYJnX+dXbCfdkd7sZpMhGSafHhzsMDuN0FTHlwuFPxvwwlWYlDDyN
-lB1ncHzBEvC4TCKnBINGkWW+F8Ff0JHlMBNU9OEyd1qbG263TPmgfthv0ASRGCf+
-Y0er3ERGortAA4GWkZYoKLNZ4cx7exy7N4pyDt9VakUQXIN+dfk6HN88tzxgIsrk
-fjxgDo58Rc+O1FoWPBhGEqhIh3BklfkKzj5h+tHoWsLMa01IAAURA97KUo6PBkKR
-Pz51LfWpgFFMovBUXs6x
-=h9Ae
------END PGP SIGNATURE-----
-
---mfP1iJBimQeSOP+4--
