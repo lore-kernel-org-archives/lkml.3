@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429AbaGGNDk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 09:03:40 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35810 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563AbaGGNDh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 09:03:37 -0400
-Date: Mon, 7 Jul 2014 14:03:00 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: gregkh <gregkh@linuxfoundation.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Qualcomm "All Rights Reserved" in Linux staging
-Message-ID: <20140707140300.62db045b@alan.etchedpixels.co.uk>
-In-Reply-To: <1983136768.8892.1404508828693.JavaMail.zimbra@efficios.com>
-References: <1086604719.8856.1404508237223.JavaMail.zimbra@efficios.com>
-	<1983136768.8892.1404508828693.JavaMail.zimbra@efficios.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1753201AbaGGNFy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 09:05:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59297 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752708AbaGGNFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 09:05:53 -0400
+Date: Mon, 7 Jul 2014 15:05:50 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+cc: Nicholas Krause <xerofoify@gmail.com>, jejb@parisc-linux.org,
+        deller@gmx.de, tiwai@suse.de, dave.anglin@bell.net, joe@perches.com,
+        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] parisc: Remove sizeof(frame) from call to get_sigframe
+In-Reply-To: <20140707135554.1c52342c@alan.etchedpixels.co.uk>
+Message-ID: <alpine.LNX.2.00.1407071504380.1655@pobox.suse.cz>
+References: <1404530457-4739-1-git-send-email-xerofoify@gmail.com> <20140707135554.1c52342c@alan.etchedpixels.co.uk>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Jul 2014 21:20:28 +0000 (UTC)
-Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+On Mon, 7 Jul 2014, One Thousand Gnomes wrote:
 
-> Hi Greg,
+> > This removes the sizeof(frame) from the call to get_sigframe on line
+> > 243 in order to fix the call to this function as the sizeof in not
+> > needed to call this function.
 > 
-> Reading this story about Qualcomm lawyers shooting
-> DMCA takedown requests lightly against github projects:
+> If you are going to submit patches then
 > 
-> http://linux.slashdot.org/story/14/07/04/1455200/qualcomm-takes-down-100-github-repositories-with-dmca-notice
-> http://www.phoronix.com/scan.php?page=news_item&px=MTczNDU
-> https://github.com/github/dmca/blob/master/2014-07-02-Qualcomm.md
+> - actually read what you are submitting
 > 
-> It appears to me that the mere presence of those lines
-> in Linux staging:
+> - check it actually compiles
 > 
-> grep -r "Qualcomm" . |grep -i "rights"
-> ./drivers/staging/ft1000/ft1000-usb/ft1000_usb.c: * CopyRight (C) 2007 Qualcomm Inc. All Rights Reserved.
-> ./drivers/staging/ft1000/ft1000-usb/ft1000_download.c:* CopyRight (C) 2007 Qualcomm Inc. All Rights Reserved.
-> ./drivers/staging/ft1000/ft1000-usb/ft1000_hw.c:/* CopyRight (C) 2007 Qualcomm Inc. All Rights Reserved.
+> - run it on the system in question and verify your changed code paths are
+>   used
 > 
-> might be contradicting the Dual MPL/GPL license
-> expressed by MODULE_LICENSE() for those files.
-> Perhaps we should ask some clarification on
-> licensing of those files to Qualcomm ?
+> *then* consider submitting it, otherwise all you are doing is wasting
+> people's time.
 
-Trying to stop idiot DMCA takedowns is pointless. If some random robot
-issues a takedown the kernel.org folks will get another pointless DMCA
-notice and the Linux Foundation will have to go and kick backsides.
+Seconded. Nicholas, this is a third time I've seen patch from you in my 
+mailbox that didn't make any sense whatsoever. Please be more careful, 
+once certain reputation is gained, it's very difficult to escape it.
 
-Qualcomm screwed up massively - the problem is that fake DMCA takedowns
-are never punished. Qualcomm shouldn't just be apologising, they should
-facing an automatic financial penalty for each bogus filing and whoever
-signed the notices should be facing their professional body.
-
-Alan
-
+-- 
+Jiri Kosina
+SUSE Labs
