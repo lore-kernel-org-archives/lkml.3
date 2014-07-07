@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650AbaGHAly (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:41:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55764 "EHLO
+	id S1754503AbaGHAlw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:41:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55767 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875AbaGGXyf (ORCPT
+	with ESMTP id S1753661AbaGGXyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 34/94] drm/radeon/cik: fix typo in EOP packet
-Date: Mon,  7 Jul 2014 16:57:24 -0700
-Message-Id: <20140707235757.792301342@linuxfoundation.org>
+        Mario Kleiner <mario.kleiner.de@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH 3.14 35/94] drm/nv50-/mc: fix kms pageflip events by reordering irq handling order.
+Date: Mon,  7 Jul 2014 16:57:25 -0700
+Message-Id: <20140707235757.820687060@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -28,35 +29,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Mario Kleiner <mario.kleiner.de@gmail.com>
 
-commit b397207b7475afa9df2f94541f978100ff1ea47e upstream.
+commit dcfb1009df3b4ad8d2e0779dd45b438629d6858a upstream.
 
-Volatile bit was in the wrong location.  This bit is
-not used at the moment.
+Whenever a single nouveau_mc_intr() main gpu irq-handler invocation was
+responsible for calling both, the vblank-irq handler (display engine irq)
+and kms-pageflip completion handler (from fifo irq), the order of
+invocation was wrong. nouveau_finish_flip() was called before
+drm_handle_vblank() for the vblank of pageflip completion, so the
+emitted pageflip event contained stale vblank count and timestamp
+from previous vblank. This caused failure in userspace to timestamp
+properly.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reorder order of invocation of engine irq handlers: Put
+NVDEV_ENGINE_DISP always on top, and thereby before NVDEV_ENGINE_FIFO,
+so that drm_handle_vblank() gets called to update vblank timestamps
+and count before potential pageflip events make use of that
+information.
+
+This works on nv-50 and later, where kms-pageflip completion triggers
+an irq either after a separate vblank irq, or both pageflip and vblank
+trigger one common irq invocation, but never before vblank irqs.
+
+v2 (Ben):
+- removed mods for nv04-nv40, it doesn't help there anyway
+- this is considered a hack, and a better solution should be found
+
+Signed-off-by: Mario Kleiner <mario.kleiner.de@gmail.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/cikd.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c |    2 +-
+ drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c |    2 +-
+ drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/cikd.h
-+++ b/drivers/gpu/drm/radeon/cikd.h
-@@ -1745,12 +1745,12 @@
- #define		EOP_TC_WB_ACTION_EN                     (1 << 15) /* L2 */
- #define		EOP_TCL1_ACTION_EN                      (1 << 16)
- #define		EOP_TC_ACTION_EN                        (1 << 17) /* L2 */
-+#define		EOP_TCL2_VOLATILE                       (1 << 24)
- #define		EOP_CACHE_POLICY(x)                     ((x) << 25)
-                 /* 0 - LRU
- 		 * 1 - Stream
- 		 * 2 - Bypass
- 		 */
--#define		EOP_TCL2_VOLATILE                       (1 << 27)
- #define		DATA_SEL(x)                             ((x) << 29)
-                 /* 0 - discard
- 		 * 1 - send low 32bit data
+--- a/drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nv50.c
+@@ -26,6 +26,7 @@
+ 
+ const struct nouveau_mc_intr
+ nv50_mc_intr[] = {
++	{ 0x04000000, NVDEV_ENGINE_DISP },  /* DISP before FIFO, so pageflip-timestamping works! */
+ 	{ 0x00000001, NVDEV_ENGINE_MPEG },
+ 	{ 0x00000100, NVDEV_ENGINE_FIFO },
+ 	{ 0x00001000, NVDEV_ENGINE_GR },
+@@ -34,7 +35,6 @@ nv50_mc_intr[] = {
+ 	{ 0x00020000, NVDEV_ENGINE_VP },	/* NV84- */
+ 	{ 0x00100000, NVDEV_SUBDEV_TIMER },
+ 	{ 0x00200000, NVDEV_SUBDEV_GPIO },
+-	{ 0x04000000, NVDEV_ENGINE_DISP },
+ 	{ 0x10000000, NVDEV_SUBDEV_BUS },
+ 	{ 0x80000000, NVDEV_ENGINE_SW },
+ 	{ 0x0002d101, NVDEV_SUBDEV_FB },
+--- a/drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nv98.c
+@@ -26,6 +26,7 @@
+ 
+ static const struct nouveau_mc_intr
+ nv98_mc_intr[] = {
++	{ 0x04000000, NVDEV_ENGINE_DISP },  /* DISP first, so pageflip timestamps work */
+ 	{ 0x00000001, NVDEV_ENGINE_PPP },
+ 	{ 0x00000100, NVDEV_ENGINE_FIFO },
+ 	{ 0x00001000, NVDEV_ENGINE_GR },
+@@ -37,7 +38,6 @@ nv98_mc_intr[] = {
+ 	{ 0x00100000, NVDEV_SUBDEV_TIMER },
+ 	{ 0x00200000, NVDEV_SUBDEV_GPIO },
+ 	{ 0x00400000, NVDEV_ENGINE_COPY0 },	/* NVA3-     */
+-	{ 0x04000000, NVDEV_ENGINE_DISP },
+ 	{ 0x10000000, NVDEV_SUBDEV_BUS },
+ 	{ 0x80000000, NVDEV_ENGINE_SW },
+ 	{ 0x0042d101, NVDEV_SUBDEV_FB },
+--- a/drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/mc/nvc0.c
+@@ -26,6 +26,7 @@
+ 
+ const struct nouveau_mc_intr
+ nvc0_mc_intr[] = {
++	{ 0x04000000, NVDEV_ENGINE_DISP },  /* DISP first, so pageflip timestamps work. */
+ 	{ 0x00000001, NVDEV_ENGINE_PPP },
+ 	{ 0x00000020, NVDEV_ENGINE_COPY0 },
+ 	{ 0x00000040, NVDEV_ENGINE_COPY1 },
+@@ -40,7 +41,6 @@ nvc0_mc_intr[] = {
+ 	{ 0x00200000, NVDEV_SUBDEV_GPIO },
+ 	{ 0x01000000, NVDEV_SUBDEV_PWR },
+ 	{ 0x02000000, NVDEV_SUBDEV_LTCG },
+-	{ 0x04000000, NVDEV_ENGINE_DISP },
+ 	{ 0x08000000, NVDEV_SUBDEV_FB },
+ 	{ 0x10000000, NVDEV_SUBDEV_BUS },
+ 	{ 0x40000000, NVDEV_SUBDEV_IBUS },
 
 
