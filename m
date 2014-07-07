@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243AbaGHAT4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:19:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56090 "EHLO
+	id S1755068AbaGHAU6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:20:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55989 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754292AbaGGXzH (ORCPT
+	with ESMTP id S1754259AbaGGXzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:55:07 -0400
+	Mon, 7 Jul 2014 19:55:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arik Nemtsov <arikx.nemtsov@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 28/53] mac80211: dont check netdev state for debugfs read/write
-Date: Mon,  7 Jul 2014 16:58:13 -0700
-Message-Id: <20140707235830.138852849@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.10 16/53] drm/radeon: fix typo in radeon_connector_is_dp12_capable()
+Date: Mon,  7 Jul 2014 16:58:01 -0700
+Message-Id: <20140707235829.787820317@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
 References: <20140707235829.281783607@linuxfoundation.org>
@@ -30,43 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arik Nemtsov <arik@wizery.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 923eaf367206e01f22c97aee22300e332d071916 upstream.
+commit af5d36539dfe043f1cf0f8b7334d6bb12cd14e75 upstream.
 
-Doing so will lead to an oops for a p2p-dev interface, since it has
-no netdev.
+We were checking the ext clock rather than the display clock.
 
-Signed-off-by: Arik Nemtsov <arikx.nemtsov@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Noticed by ArtForz on IRC.
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/debugfs_netdev.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/mac80211/debugfs_netdev.c
-+++ b/net/mac80211/debugfs_netdev.c
-@@ -34,8 +34,7 @@ static ssize_t ieee80211_if_read(
- 	ssize_t ret = -EINVAL;
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -1345,7 +1345,7 @@ bool radeon_connector_is_dp12_capable(st
+ 	struct radeon_device *rdev = dev->dev_private;
  
- 	read_lock(&dev_base_lock);
--	if (sdata->dev->reg_state == NETREG_REGISTERED)
--		ret = (*format)(sdata, buf, sizeof(buf));
-+	ret = (*format)(sdata, buf, sizeof(buf));
- 	read_unlock(&dev_base_lock);
- 
- 	if (ret >= 0)
-@@ -62,8 +61,7 @@ static ssize_t ieee80211_if_write(
- 
- 	ret = -ENODEV;
- 	rtnl_lock();
--	if (sdata->dev->reg_state == NETREG_REGISTERED)
--		ret = (*write)(sdata, buf, count);
-+	ret = (*write)(sdata, buf, count);
- 	rtnl_unlock();
- 
- 	return ret;
+ 	if (ASIC_IS_DCE5(rdev) &&
+-	    (rdev->clock.dp_extclk >= 53900) &&
++	    (rdev->clock.default_dispclk >= 53900) &&
+ 	    radeon_connector_encoder_is_hbr2(connector)) {
+ 		return true;
+ 	}
 
 
