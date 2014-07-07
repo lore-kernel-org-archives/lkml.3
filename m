@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620AbaGGO4a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:56:30 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:55002 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752724AbaGGO42 (ORCPT
+	id S1753714AbaGGO5Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:57:25 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57986 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752336AbaGGO5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:56:28 -0400
+	Mon, 7 Jul 2014 10:57:24 -0400
+Date: Mon, 7 Jul 2014 16:57:21 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        dwmw2@infradead.org, dbaryshkov@gmail.com,
+        Boris Brezillon <boris@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 03/18] AT91: G45: DT: Declare a second ram controller
+Message-ID: <20140707145721.GC3113@piout.net>
+References: <1404743131-24569-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1404743131-24569-4-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <20140617150738.GL29841@lee--X1>
-References: <1401773164-30326-1-git-send-email-lejun.zhu@linux.intel.com>
-	<20140617150738.GL29841@lee--X1>
-Date: Mon, 7 Jul 2014 16:56:28 +0200
-Message-ID: <CACRpkdY_5yD_7Yw=8GuW8DP4uXA1a=efQGymFjEMradEJDi7eQ@mail.gmail.com>
-Subject: Re: [GIT PULL] LinusW - Immutable branch between MFD and GPIO
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "Zhu, Lejun" <lejun.zhu@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404743131-24569-4-git-send-email-maxime.ripard@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 17, 2014 at 5:07 PM, Lee Jones <lee.jones@linaro.org> wrote:
+Hi,
 
-> The following changes since commit 7171511eaec5bf23fb06078f59784a3a0626b38f:
->
->   Linux 3.16-rc1 (2014-06-15 17:45:28 -1000)
->
-> are available in the git repository at:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-gpio-v3.17
->
-> for you to fetch changes up to 104fb1d5153c563f453cb9c048fa0a17318a2348:
->
->   gpio: Add support for Intel Crystal Cove PMIC (2014-06-17 15:59:52 +0100)
+On 07/07/2014 at 16:25:16 +0200, Maxime Ripard wrote :
+> The G45 has two identical ram controller, that are defined as a single one,
+> with two reg cells.
+> 
+> The proper way to support such a case is to have two separate DT nodes.
+> 
 
-I think I'll just optimistically assume this will merge nicely for v3.17.
-Less trouble, and does not require MFD to be merged before the GPIO
-tree in the merge window :-)
+This is also the case for the sam9263, please fix it there too.
 
-Yours,
-Linus Walleij
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>  arch/arm/boot/dts/at91sam9g45.dtsi | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
+> index ace6bf197b70..6f648b85b725 100644
+> --- a/arch/arm/boot/dts/at91sam9g45.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+> @@ -75,8 +75,12 @@
+>  
+>  			ramc0: ramc@ffffe400 {
+>  				compatible = "atmel,at91sam9g45-ddramc";
+> -				reg = <0xffffe400 0x200
+> -				       0xffffe600 0x200>;
+> +				reg = <0xffffe400 0x200>;
+> +			};
+> +
+> +			ramc1: ramc@ffffe600 {
+> +				compatible = "atmel,at91sam9g45-ddramc";
+> +				reg = <0xffffe600 0x200>;
+>  			};
+>  
+>  			pmc: pmc@fffffc00 {
+> -- 
+> 2.0.1
+> 
+
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
