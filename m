@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878AbaGHAsl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:48:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55567 "EHLO
+	id S1754737AbaGHAsk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:48:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753629AbaGGXyW (ORCPT
+	with ESMTP id S1753633AbaGGXyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Imre Deak <imre.deak@intel.com>,
-        Damien Lespiau <damien.lespiau@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.15 119/122] drm/i915: fix display power sw state reporting
-Date: Mon,  7 Jul 2014 16:58:01 -0700
-Message-Id: <20140707235737.808270311@linuxfoundation.org>
+        Chen Gang <gang.chen.5i5j@gmail.com>,
+        Xuetao Guan <gxt@mprc.pku.edu.cn>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.15 120/122] arch/unicore32/mm/alignment.c: include "asm/pgtable.h" to avoid compiling error
+Date: Mon,  7 Jul 2014 16:58:02 -0700
+Message-Id: <20140707235737.836998204@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -32,62 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Imre Deak <imre.deak@intel.com>
+From: Chen Gang <gang.chen.5i5j@gmail.com>
 
-commit b8c000d9bf23e7c1155ef421f595d1cbc25262da upstream.
+commit 1ff38c56cbd095c4c0dfa581a859ba3557830f78 upstream.
 
-Atm, we refcount both power domains and power wells and
-intel_display_power_enabled_sw() returns the power domain refcount. What
-the callers are really interested in though is the sw state of the
-underlying power wells. Due to this we will report incorrectly that a
-given power domain is off if its power wells were enabled via another
-power domain, for example POWER_DOMAIN_INIT which enables all power
-wells.
+Need include "asm/pgtable.h" to include "asm-generic/pgtable-nopmd.h",
+so can let 'pmd_t' defined. The related error with allmodconfig:
 
-As a fix return instead the state based on the refcount of all power
-wells included in the passed in power domain.
+    CC      arch/unicore32/mm/alignment.o
+  In file included from arch/unicore32/mm/alignment.c:24:
+  arch/unicore32/include/asm/tlbflush.h:135: error: expected .). before .*. token
+  arch/unicore32/include/asm/tlbflush.h:154: error: expected .). before .*. token
+  In file included from arch/unicore32/mm/alignment.c:27:
+  arch/unicore32/mm/mm.h:15: error: expected .=., .,., .;., .sm. or ._attribute__. before .*. token
+  arch/unicore32/mm/mm.h:20: error: expected .=., .,., .;., .sm. or ._attribute__. before .*. token
+  arch/unicore32/mm/mm.h:25: error: expected .=., .,., .;., .sm. or ._attribute__. before .*. token
+  make[1]: *** [arch/unicore32/mm/alignment.o] Error 1
+  make: *** [arch/unicore32/mm] Error 2
 
-References: https://bugs.freedesktop.org/show_bug.cgi?id=79505
-References: https://bugs.freedesktop.org/show_bug.cgi?id=79038
-Reported-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Imre Deak <imre.deak@intel.com>
-Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Acked-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+Acked-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
+Signed-off-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
+Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_pm.c |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ arch/unicore32/mm/alignment.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -5313,10 +5313,25 @@ bool intel_display_power_enabled_sw(stru
- 				    enum intel_display_power_domain domain)
- {
- 	struct i915_power_domains *power_domains;
-+	struct i915_power_well *power_well;
-+	bool is_enabled;
-+	int i;
-+
-+	if (dev_priv->pm.suspended)
-+		return false;
+--- a/arch/unicore32/mm/alignment.c
++++ b/arch/unicore32/mm/alignment.c
+@@ -21,6 +21,7 @@
+ #include <linux/sched.h>
+ #include <linux/uaccess.h>
  
- 	power_domains = &dev_priv->power_domains;
-+	is_enabled = true;
-+	for_each_power_well_rev(i, power_well, BIT(domain), power_domains) {
-+		if (power_well->always_on)
-+			continue;
++#include <asm/pgtable.h>
+ #include <asm/tlbflush.h>
+ #include <asm/unaligned.h>
  
--	return power_domains->domain_use_count[domain];
-+		if (!power_well->count) {
-+			is_enabled = false;
-+			break;
-+		}
-+	}
-+	return is_enabled;
- }
- 
- bool intel_display_power_enabled(struct drm_i915_private *dev_priv,
 
 
