@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005AbaGGKv5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 06:51:57 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:48016 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536AbaGGKvz (ORCPT
+	id S1752832AbaGGKxP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 06:53:15 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:50744 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065AbaGGKxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 06:51:55 -0400
-Date: Mon, 7 Jul 2014 11:51:49 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Peter Griffin <peter.griffin@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        maxime.coquelin@st.com, patrice.chotard@st.com,
-        srinivas.kandagatla@gmail.com, devicetree@vger.kernel.org,
-        balbi@ti.com, linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        peppe.cavallaro@st.com
-Subject: Re: [PATCH v2 3/3] MAINTAINERS: Add dwc3-st.c file to ARCH/STI
- architecture
-Message-ID: <20140707105149.GE6407@lee--X1>
-References: <1404541530-27856-1-git-send-email-peter.griffin@linaro.org>
- <1404541530-27856-4-git-send-email-peter.griffin@linaro.org>
+	Mon, 7 Jul 2014 06:53:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1404541530-27856-4-git-send-email-peter.griffin@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANLsYky0keX_z0ZggTxst2SfLxB7i1YgcWBOkiV08KHo8mySSw@mail.gmail.com>
+References: <1401457391-12242-1-git-send-email-mathieu.poirier@linaro.org>
+	<1401457391-12242-3-git-send-email-mathieu.poirier@linaro.org>
+	<CACRpkdYnFBP8RbOhePed+sq+tk=syME4Trwtd+PgfAyht+3Zqg@mail.gmail.com>
+	<CANLsYky0keX_z0ZggTxst2SfLxB7i1YgcWBOkiV08KHo8mySSw@mail.gmail.com>
+Date: Mon, 7 Jul 2014 12:53:10 +0200
+Message-ID: <CACRpkdYXD=nxBCZdRKah5xjNRCXtFgXDMRq8WyEtjX09wkeS6A@mail.gmail.com>
+Subject: Re: [RFC PATCH 02/11] coresight: add CoreSight TMC driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mathieu Poirier <mathieu.poirier@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pratik Patel <pratikp@codeaurora.org>,
+        Vikas Varshney <varshney@ti.com>, Al Grant <Al.Grant@arm.com>,
+        Jonas Svennebring <jonas.svennebring@avagotech.com>,
+        James King <james.king@linaro.org>,
+        Panchaxari Prasannamurthy Tumkur 
+	<panchaxari.prasannamurthy@linaro.org>,
+        Arnd Bergmann <arnd@linaro.org>,
+        Marcin Jabrzyk <marcin.jabrzyk@gmail.com>, r.sengupta@samsung.com,
+        Robert Marklund <robbelibobban@gmail.com>,
+        Patch Tracking <patches@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Daniel Thompson <daniel.thompson@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 05 Jul 2014, Peter Griffin wrote:
-> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-> ---
->  MAINTAINERS | 1 +
->  1 file changed, 1 insertion(+)
+On Tue, Jun 17, 2014 at 1:12 AM, Mathieu Poirier
+<mathieu.poirier@linaro.org> wrote:
+> On 3 June 2014 03:09, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> On Fri, May 30, 2014 at 3:43 PM,  <mathieu.poirier@linaro.org> wrote:
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+>>> +       int                     read_count;
+>>
+>> Can this really be negative?
+>
+> It is useful for debugging, as an example see "tmc_release()".  If the
+> count drops below '0' there is obviously a problem.  Do you see a cost
+> in keeping this as an 'int'?  What do you advise here?
 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 702ca10..269ad3b 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1325,6 +1325,7 @@ F:	drivers/pinctrl/pinctrl-st.c
->  F:	drivers/media/rc/st_rc.c
->  F:	drivers/i2c/busses/i2c-st.c
->  F:	drivers/tty/serial/st-asc.c
-> +F:	drivers/usb/dwc3/dwc3-st.c
->  
->  ARM/TECHNOLOGIC SYSTEMS TS7250 MACHINE SUPPORT
->  M:	Lennert Buytenhek <kernel@wantstofly.org>
+No big deal, keep it.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>> This struct overall could use some kerneldoc.
+>
+> Would writing a comment for each field qualify?
+
+Like above the struct, see Documentation/kernel-doc-nano-HOWTO.txt
+
+>>> +       drvdata->base = devm_ioremap(dev, res->start, resource_size(res));
+>>
+>> Use devm_ioremap_resource() instead.
+>
+> I'm working on it.
+
+Bet it's fininshed now ;-)
+
+Yours,
+Linus Walleij
