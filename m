@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703AbaGHAAF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:00:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55989 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754388AbaGGXzQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754387AbaGGXzQ (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 7 Jul 2014 19:55:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56090 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754280AbaGGXzG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 19:55:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 53/53] sym53c8xx_2: Set DID_REQUEUE return code when aborting squeue
-Date: Mon,  7 Jul 2014 16:58:38 -0700
-Message-Id: <20140707235830.885816939@linuxfoundation.org>
+        Zdenek Kabelac <zkabelac@redhat.com>,
+        Lukas Czerner <lczerner@redhat.com>, Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.10 24/53] dm thin: update discard_granularity to reflect the thin-pool blocksize
+Date: Mon,  7 Jul 2014 16:58:09 -0700
+Message-Id: <20140707235830.023994831@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
 References: <20140707235829.281783607@linuxfoundation.org>
@@ -30,56 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit fd1232b214af43a973443aec6a2808f16ee5bf70 upstream.
+commit 09869de57ed2728ae3c619803932a86cb0e2c4f8 upstream.
 
-This patch fixes I/O errors with the sym53c8xx_2 driver when the disk
-returns QUEUE FULL status.
+DM thinp already checks whether the discard_granularity of the data
+device is a factor of the thin-pool block size.  But when using the
+dm-thin-pool's discard passdown support, DM thinp was not selecting the
+max of the underlying data device's discard_granularity and the
+thin-pool's block size.
 
-When the controller encounters an error (including QUEUE FULL or BUSY
-status), it aborts all not yet submitted requests in the function
-sym_dequeue_from_squeue.
+Update set_discard_limits() to set discard_granularity to the max of
+these values.  This enables blkdev_issue_discard() to properly align the
+discards that are sent to the DM thin device on a full block boundary.
+As such each discard will now cover an entire DM thin-pool block and the
+block will be reclaimed.
 
-This function aborts them with DID_SOFT_ERROR.
-
-If the disk has full tag queue, the request that caused the overflow is
-aborted with QUEUE FULL status (and the scsi midlayer properly retries
-it until it is accepted by the disk), but the sym53c8xx_2 driver aborts
-the following requests with DID_SOFT_ERROR --- for them, the midlayer
-does just a few retries and then signals the error up to sd.
-
-The result is that disk returning QUEUE FULL causes request failures.
-
-The error was reproduced on 53c895 with COMPAQ BD03685A24 disk
-(rebranded ST336607LC) with command queue 48 or 64 tags.  The disk has
-64 tags, but under some access patterns it return QUEUE FULL when there
-are less than 64 pending tags.  The SCSI specification allows returning
-QUEUE FULL anytime and it is up to the host to retry.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Cc: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Zdenek Kabelac <zkabelac@redhat.com>
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/sym53c8xx_2/sym_hipd.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/md/dm-thin.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/sym53c8xx_2/sym_hipd.c
-+++ b/drivers/scsi/sym53c8xx_2/sym_hipd.c
-@@ -3000,7 +3000,11 @@ sym_dequeue_from_squeue(struct sym_hcb *
- 		if ((target == -1 || cp->target == target) &&
- 		    (lun    == -1 || cp->lun    == lun)    &&
- 		    (task   == -1 || cp->tag    == task)) {
-+#ifdef SYM_OPT_HANDLE_DEVICE_QUEUEING
- 			sym_set_cam_status(cp->cmd, DID_SOFT_ERROR);
-+#else
-+			sym_set_cam_status(cp->cmd, DID_REQUEUE);
-+#endif
- 			sym_remque(&cp->link_ccbq);
- 			sym_insque_tail(&cp->link_ccbq, &np->comp_ccbq);
- 		}
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -2647,7 +2647,8 @@ static void set_discard_limits(struct po
+ 	 */
+ 	if (pt->adjusted_pf.discard_passdown) {
+ 		data_limits = &bdev_get_queue(pt->data_dev->bdev)->limits;
+-		limits->discard_granularity = data_limits->discard_granularity;
++		limits->discard_granularity = max(data_limits->discard_granularity,
++						  pool->sectors_per_block << SECTOR_SHIFT);
+ 	} else
+ 		limits->discard_granularity = pool->sectors_per_block << SECTOR_SHIFT;
+ }
 
 
