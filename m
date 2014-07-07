@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbaGGKun (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 06:50:43 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:44166 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933AbaGGKul (ORCPT
+	id S1752931AbaGGKvD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 06:51:03 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:11472 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933AbaGGKvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 06:50:41 -0400
-Date: Mon, 7 Jul 2014 11:50:35 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
-        Rickard Strandqvist <rickard.strandqvist@sonymobile.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] video: backlight: jornada720_lcd.c:  Cleaning up
- variable that is never used
-Message-ID: <20140707105035.GC6407@lee--X1>
-References: <1404562325-18471-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	Mon, 7 Jul 2014 06:51:00 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+qGrwsHRvLhYOW53l5i5co
+Date: Mon, 7 Jul 2014 03:51:02 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Guido =?utf-8?B?TWFydMOtbmV6?= <guido@vanguardiasur.com.ar>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org,
+        Ezequiel =?utf-8?Q?Garc=C3=ADa?= <ezequiel@vanguardiasur.com.ar>,
+        pekon@ti.com
+Subject: Re: [PATCH v2] ARM: OMAP2+: Make GPMC skip disabled devices
+Message-ID: <20140707105101.GN28884@atomide.com>
+References: <20980858CB6D3A4BAE95CA194937D5E73EAF8D44@DBDE04.ent.ti.com>
+ <1404308118-14843-1-git-send-email-guido@vanguardiasur.com.ar>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1404562325-18471-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1404308118-14843-1-git-send-email-guido@vanguardiasur.com.ar>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 05 Jul 2014, Rickard Strandqvist wrote:
-
-> From: Rickard Strandqvist <rickard.strandqvist@sonymobile.com>
+* Guido Martínez <guido@vanguardiasur.com.ar> [140702 06:34]:
+> Currently, child nodes of the gpmc node are iterated and probed
+> regardless of their 'status' property. This means adding 'status =
+> "disabled";' has no effect.
 > 
-> Variable ar assigned a value that is never used.
-> I have also removed all the code that thereby serves no purpose.
+> This patch changes the iteration to only probe nodes marked as
+> available.
 > 
-> This was found using a static code analysis program called cppcheck
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> Signed-off-by: Guido Martínez <guido@vanguardiasur.com.ar>
 > ---
->  drivers/video/backlight/jornada720_lcd.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+> v2: Make patch title consistent with previous gpmc patches
 
-Is this different from the patch I just NACKed?
+Thanks applying into omap-for-v3.16/fixes.
 
-> diff --git a/drivers/video/backlight/jornada720_lcd.c b/drivers/video/backlight/jornada720_lcd.c
-> index da3876c..b304319 100644
-> --- a/drivers/video/backlight/jornada720_lcd.c
-> +++ b/drivers/video/backlight/jornada720_lcd.c
-> @@ -56,12 +56,10 @@ static int jornada_lcd_get_contrast(struct lcd_device *ld)
+Tony
+ 
+>  arch/arm/mach-omap2/gpmc.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-omap2/gpmc.c b/arch/arm/mach-omap2/gpmc.c
+> index 2c0c281..8bc1338 100644
+> --- a/arch/arm/mach-omap2/gpmc.c
+> +++ b/arch/arm/mach-omap2/gpmc.c
+> @@ -1615,7 +1615,7 @@ static int gpmc_probe_dt(struct platform_device *pdev)
+>  		return ret;
+>  	}
 >  
->  static int jornada_lcd_set_contrast(struct lcd_device *ld, int value)
->  {
-> -	int ret;
-> -
->  	jornada_ssp_start();
+> -	for_each_child_of_node(pdev->dev.of_node, child) {
+> +	for_each_available_child_of_node(pdev->dev.of_node, child) {
 >  
->  	/* start by sending our set contrast cmd to mcu */
-> -	ret = jornada_ssp_byte(SETCONTRAST);
-> +	jornada_ssp_byte(SETCONTRAST);
->  
->  	/* push the new value */
->  	if (jornada_ssp_byte(value) != TXDUMMY) {
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>  		if (!child->name)
+>  			continue;
+> -- 
+> 2.0.0
+> 
