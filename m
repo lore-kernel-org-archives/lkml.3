@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654AbaGHBSr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:18:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55207 "EHLO
+	id S1755798AbaGHBSq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:18:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55224 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555AbaGGXxn (ORCPT
+	with ESMTP id S1752568AbaGGXxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:53:43 -0400
+	Mon, 7 Jul 2014 19:53:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>,
-        Alif Mubarak Ahmad <alive4ever@live.com>,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.15 011/122] USB: option: add device ID for SpeedUp SU9800 usb 3g modem
-Date: Mon,  7 Jul 2014 16:56:13 -0700
-Message-Id: <20140707235734.589661010@linuxfoundation.org>
+        Arnd Bergmann <arnd@arndb.de>, Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.15 013/122] usb: musb: ux500: dont propagate the OF node
+Date: Mon,  7 Jul 2014 16:56:15 -0700
+Message-Id: <20140707235734.646714109@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -30,48 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit 1cab4c68e339086cdaff7535848e878e8f261fca upstream.
+commit 82363cf2eeafeea6ba88849f5e2febdc8a05943f upstream.
 
-Reported by Alif Mubarak Ahmad:
+There is a regression in the upcoming v3.16-rc1, that is caused
+by a problem that has been around for a while but now finally
+hangs the system. The bootcrawl looks like this:
 
-This device vendor and product id is 1c9e:9800
-It is working as serial interface with generic usbserial driver.
-I thought it is more suitable to use usbserial option driver, which has
-better capability distinguishing between modem serial interface and
-micro sd storage interface.
+pinctrl-nomadik soc:pinctrl: pin GPIO256_AF28 already
+requested by a03e0000.usb_per5; cannot claim for musb-hdrc.0.auto
+pinctrl-nomadik soc:pinctrl: pin-256 (musb-hdrc.0.auto) status -22
+pinctrl-nomadik soc:pinctrl: could not request pin 256
+(GPIO256_AF28) from group usb_a_1  on device pinctrl-nomadik
+musb-hdrc musb-hdrc.0.auto: Error applying setting, reverse
+things back
+HS USB OTG: no transceiver configured
+musb-hdrc musb-hdrc.0.auto: musb_init_controller failed
+with status -517
+platform musb-hdrc.0.auto: Driver musb-hdrc requests
+probe deferral
+(...)
 
-[ johan: style changes ]
+The ux500 MUSB driver propagates the OF node to the dynamically
+created musb-hdrc device, which is incorrect as it makes the OF
+core believe there are two devices spun from the very same
+DT node, which confuses other parts of the device core, notably
+the pin control subsystem, which will try to apply all the pin
+control settings also to the HDRC device as it gets
+instantiated. (The OMAP2430 for example, does not set the
+of_node member.)
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Tested-by: Alif Mubarak Ahmad <alive4ever@live.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/musb/ux500.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -352,6 +352,9 @@ static void option_instat_callback(struc
- /* Zoom */
- #define ZOOM_PRODUCT_4597			0x9607
+--- a/drivers/usb/musb/ux500.c
++++ b/drivers/usb/musb/ux500.c
+@@ -274,7 +274,6 @@ static int ux500_probe(struct platform_d
+ 	musb->dev.parent		= &pdev->dev;
+ 	musb->dev.dma_mask		= &pdev->dev.coherent_dma_mask;
+ 	musb->dev.coherent_dma_mask	= pdev->dev.coherent_dma_mask;
+-	musb->dev.of_node		= pdev->dev.of_node;
  
-+/* SpeedUp SU9800 usb 3g modem */
-+#define SPEEDUP_PRODUCT_SU9800			0x9800
-+
- /* Haier products */
- #define HAIER_VENDOR_ID				0x201e
- #define HAIER_PRODUCT_CE100			0x2009
-@@ -1577,6 +1580,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
-   	  .driver_info = (kernel_ulong_t)&four_g_w14_blacklist
-   	},
-+	{ USB_DEVICE_INTERFACE_CLASS(LONGCHEER_VENDOR_ID, SPEEDUP_PRODUCT_SU9800, 0xff) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, ZOOM_PRODUCT_4597) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, IBALL_3_5G_CONNECT) },
- 	{ USB_DEVICE(HAIER_VENDOR_ID, HAIER_PRODUCT_CE100) },
+ 	glue->dev			= &pdev->dev;
+ 	glue->musb			= musb;
 
 
