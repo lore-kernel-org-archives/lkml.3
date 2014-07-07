@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755798AbaGHBSq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:18:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55224 "EHLO
+	id S932332AbaGHBSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:18:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55225 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568AbaGGXxo (ORCPT
+	with ESMTP id S1752574AbaGGXxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:53:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.15 013/122] usb: musb: ux500: dont propagate the OF node
-Date: Mon,  7 Jul 2014 16:56:15 -0700
-Message-Id: <20140707235734.646714109@linuxfoundation.org>
+        Torben Hohn <torbenh@linutronix.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.15 014/122] usb: musb: Ensure that cppi41 timer gets armed on premature DMA TX irq
+Date: Mon,  7 Jul 2014 16:56:16 -0700
+Message-Id: <20140707235734.675542467@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,56 +29,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 82363cf2eeafeea6ba88849f5e2febdc8a05943f upstream.
+commit c58d80f523ffc15ef4d062fc7aeb03793fe39701 upstream.
 
-There is a regression in the upcoming v3.16-rc1, that is caused
-by a problem that has been around for a while but now finally
-hangs the system. The bootcrawl looks like this:
+Some TI chips raise the DMA complete interrupt before the actual
+transfer has been completed. The code tries to busy wait for a few
+microseconds and if that fails it arms an hrtimer to recheck. So far
+so good, but that has the following issue:
 
-pinctrl-nomadik soc:pinctrl: pin GPIO256_AF28 already
-requested by a03e0000.usb_per5; cannot claim for musb-hdrc.0.auto
-pinctrl-nomadik soc:pinctrl: pin-256 (musb-hdrc.0.auto) status -22
-pinctrl-nomadik soc:pinctrl: could not request pin 256
-(GPIO256_AF28) from group usb_a_1  on device pinctrl-nomadik
-musb-hdrc musb-hdrc.0.auto: Error applying setting, reverse
-things back
-HS USB OTG: no transceiver configured
-musb-hdrc musb-hdrc.0.auto: musb_init_controller failed
-with status -517
-platform musb-hdrc.0.auto: Driver musb-hdrc requests
-probe deferral
-(...)
+CPU 0					CPU1
 
-The ux500 MUSB driver propagates the OF node to the dynamically
-created musb-hdrc device, which is incorrect as it makes the OF
-core believe there are two devices spun from the very same
-DT node, which confuses other parts of the device core, notably
-the pin control subsystem, which will try to apply all the pin
-control settings also to the HDRC device as it gets
-instantiated. (The OMAP2430 for example, does not set the
-of_node member.)
+start_next_transfer(RQ1);
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+DMA interrupt
+  if (premature_irq(RQ1))
+    if (!hrtimer_active(timer))
+       hrtimer_start(timer);
+
+hrtimer expires
+  timer->state = CALLBACK_RUNNING;
+  timer->fn()
+    cppi41_recheck_tx_req()
+      complete_request(RQ1);
+      if (requests_pending())
+        start_next_transfer(RQ2);
+
+					DMA interrupt
+					  if (premature_irq(RQ2))
+					    if (!hrtimer_active(timer))
+					       hrtimer_start(timer);
+  timer->state = INACTIVE;
+
+The premature interrupt of request2 on CPU1 does not arm the timer and
+therefor the request completion never happens because it checks for
+!hrtimer_active(). hrtimer_active() evaluates:
+
+  timer->state != HRTIMER_STATE_INACTIVE
+
+which of course evaluates to true in the above case as timer->state is
+CALLBACK_RUNNING.
+
+That's clearly documented:
+
+ * A timer is active, when it is enqueued into the rbtree or the
+ * callback function is running or it's in the state of being migrated
+ * to another cpu.
+
+But that's not what the code wants to check. The code wants to check
+whether the timer is queued, i.e. whether its armed and waiting for
+expiry.
+
+We have a helper function for this: hrtimer_is_queued(). This
+evaluates:
+
+  timer->state & HRTIMER_STATE_QUEUED
+
+So in the above case this evaluates to false and therefor forces the
+DMA interrupt on CPU1 to call hrtimer_start().
+
+Use hrtimer_is_queued() instead of hrtimer_active() and evrything is
+good.
+
+Reported-by: Torben Hohn <torbenh@linutronix.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/musb/ux500.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/usb/musb/musb_cppi41.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/musb/ux500.c
-+++ b/drivers/usb/musb/ux500.c
-@@ -274,7 +274,6 @@ static int ux500_probe(struct platform_d
- 	musb->dev.parent		= &pdev->dev;
- 	musb->dev.dma_mask		= &pdev->dev.coherent_dma_mask;
- 	musb->dev.coherent_dma_mask	= pdev->dev.coherent_dma_mask;
--	musb->dev.of_node		= pdev->dev.of_node;
- 
- 	glue->dev			= &pdev->dev;
- 	glue->musb			= musb;
+--- a/drivers/usb/musb/musb_cppi41.c
++++ b/drivers/usb/musb/musb_cppi41.c
+@@ -318,7 +318,7 @@ static void cppi41_dma_callback(void *pr
+ 		}
+ 		list_add_tail(&cppi41_channel->tx_check,
+ 				&controller->early_tx_list);
+-		if (!hrtimer_active(&controller->early_tx)) {
++		if (!hrtimer_is_queued(&controller->early_tx)) {
+ 			hrtimer_start_range_ns(&controller->early_tx,
+ 				ktime_set(0, 140 * NSEC_PER_USEC),
+ 				40 * NSEC_PER_USEC,
 
 
