@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649AbaGGXyX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:54:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55539 "EHLO
+	id S1754247AbaGGXzA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 19:55:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55860 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496AbaGGXyP (ORCPT
+	with ESMTP id S1754199AbaGGXy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:15 -0400
+	Mon, 7 Jul 2014 19:54:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.15 102/122] tracing: Remove ftrace_stop/start() from reading the trace file
-Date: Mon,  7 Jul 2014 16:57:44 -0700
-Message-Id: <20140707235737.306447053@linuxfoundation.org>
+        Mark Brown <broonie@linaro.org>,
+        Steve Capper <steve.capper@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.14 56/94] arm64: mm: Make icache synchronisation logic huge page aware
+Date: Mon,  7 Jul 2014 16:57:46 -0700
+Message-Id: <20140707235758.442350765@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
-References: <20140707235734.234226883@linuxfoundation.org>
+In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
+References: <20140707235756.780319003@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,44 +27,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.15-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Steve Capper <steve.capper@linaro.org>
 
-commit 099ed151675cd1d2dbeae1dac697975f6a68716d upstream.
+commit 923b8f5044da753e4985ab15c1374ced2cdf616c upstream.
 
-Disabling reading and writing to the trace file should not be able to
-disable all function tracing callbacks. There's other users today
-(like kprobes and perf). Reading a trace file should not stop those
-from happening.
+The __sync_icache_dcache routine will only flush the dcache for the
+first page of a compound page, potentially leading to stale icache
+data residing further on in a hugetlb page.
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+This patch addresses this issue by taking into consideration the
+order of the page when flushing the dcache.
+
+Reported-by: Mark Brown <broonie@linaro.org>
+Tested-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Steve Capper <steve.capper@linaro.org>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace.c |    2 --
- 1 file changed, 2 deletions(-)
+ arch/arm64/mm/flush.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1367,7 +1367,6 @@ void tracing_start(void)
+--- a/arch/arm64/mm/flush.c
++++ b/arch/arm64/mm/flush.c
+@@ -79,7 +79,8 @@ void __sync_icache_dcache(pte_t pte, uns
+ 		return;
  
- 	arch_spin_unlock(&ftrace_max_lock);
- 
--	ftrace_start();
-  out:
- 	raw_spin_unlock_irqrestore(&global_trace.start_lock, flags);
- }
-@@ -1414,7 +1413,6 @@ void tracing_stop(void)
- 	struct ring_buffer *buffer;
- 	unsigned long flags;
- 
--	ftrace_stop();
- 	raw_spin_lock_irqsave(&global_trace.start_lock, flags);
- 	if (global_trace.stop_count++)
- 		goto out;
+ 	if (!test_and_set_bit(PG_dcache_clean, &page->flags)) {
+-		__flush_dcache_area(page_address(page), PAGE_SIZE);
++		__flush_dcache_area(page_address(page),
++				PAGE_SIZE << compound_order(page));
+ 		__flush_icache_all();
+ 	} else if (icache_is_aivivt()) {
+ 		__flush_icache_all();
 
 
