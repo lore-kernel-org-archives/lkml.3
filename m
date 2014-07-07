@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614AbaGGPY0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 11:24:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61235 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751689AbaGGPWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 11:22:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,618,1400050800"; 
-   d="scan'208";a="539766390"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: "John W . Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 10/10] staging: rtl8192u: use %*pEn to escape buffer
-Date: Mon,  7 Jul 2014 18:21:52 +0300
-Message-Id: <1404746512-12749-11-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1404746512-12749-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1404746512-12749-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1753956AbaGGPYk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 11:24:40 -0400
+Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:60225
+	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751874AbaGGPYi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 11:24:38 -0400
+Date: Mon, 7 Jul 2014 10:24:35 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+cc: akpm@linux-foundation.org, mhocko@suse.cz, hannes@cmpxchg.org,
+        glommer@gmail.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm 2/8] memcg: keep all children of each root cache on
+ a list
+In-Reply-To: <e58c0491eebc594f6e80a91dc0ed6905d65050bd.1404733720.git.vdavydov@parallels.com>
+Message-ID: <alpine.DEB.2.11.1407071022200.22121@gentwo.org>
+References: <cover.1404733720.git.vdavydov@parallels.com> <e58c0491eebc594f6e80a91dc0ed6905d65050bd.1404733720.git.vdavydov@parallels.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let's use kernel's native specifier to escape a buffer.
+On Mon, 7 Jul 2014, Vladimir Davydov wrote:
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/staging/rtl8192u/ieee80211/ieee80211.h | 14 +-------------
- 1 file changed, 1 insertion(+), 13 deletions(-)
+> diff --git a/mm/slab_common.c b/mm/slab_common.c
+> index d31c4bacc6a2..95a8f772b0d1 100644
+> --- a/mm/slab_common.c
+> +++ b/mm/slab_common.c
+> @@ -294,8 +294,12 @@ struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+>  	if (IS_ERR(s)) {
+>  		kfree(cache_name);
+>  		s = NULL;
+> +		goto out_unlock;
+>  	}
+>
+> +	list_add(&s->memcg_params->siblings,
+> +		 &root_cache->memcg_params->children);
+> +
+>  out_unlock:
+>  	mutex_unlock(&slab_mutex);
+>
 
-diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211.h b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
-index 1040bab..1a265f9 100644
---- a/drivers/staging/rtl8192u/ieee80211/ieee80211.h
-+++ b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
-@@ -2576,25 +2576,13 @@ static inline int ieee80211_get_scans(struct ieee80211_device *ieee)
- 
- static inline const char *escape_essid(const char *essid, u8 essid_len) {
- 	static char escaped[IW_ESSID_MAX_SIZE * 2 + 1];
--	const char *s = essid;
--	char *d = escaped;
- 
- 	if (ieee80211_is_empty_essid(essid, essid_len)) {
- 		memcpy(escaped, "<hidden>", sizeof("<hidden>"));
- 		return escaped;
- 	}
- 
--	essid_len = min(essid_len, (u8)IW_ESSID_MAX_SIZE);
--	while (essid_len--) {
--		if (*s == '\0') {
--			*d++ = '\\';
--			*d++ = '0';
--			s++;
--		} else {
--			*d++ = *s++;
--		}
--	}
--	*d = '\0';
-+	snprintf(escaped, sizeof(escaped), "%*pEn", essid_len, essid);
- 	return escaped;
- }
- 
--- 
-2.0.1
-
+If there is an error then s is set to NULL. And then
+the list_add is done dereferencing s?
