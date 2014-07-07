@@ -1,111 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201AbaGGVBU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 17:01:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20521 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751247AbaGGVBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 17:01:17 -0400
-Date: Mon, 7 Jul 2014 16:59:56 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Miller <davem@davemloft.net>,
-        Andres Freund <andres@2ndquadrant.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH v3 3/3] man2/fincore.2: document general description
- about fincore(2)
-Message-ID: <20140707205956.GB5031@nhori.bos.redhat.com>
-References: <1404756006-23794-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1404756006-23794-4-git-send-email-n-horiguchi@ah.jp.nec.com>
- <53BAF01C.8010700@intel.com>
+	id S1752312AbaGGVD5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 17:03:57 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33918 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263AbaGGVDz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 17:03:55 -0400
+Date: Mon, 7 Jul 2014 23:03:53 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        sergei.shtylyov@cogentembedded.com, davem@davemloft.net,
+        kernel@pengutronix.de, shawn.guo@freescale.com, plagnioj@jcrosoft.com,
+        nicolas.ferre@atmel.com, linux@maxim.org.za, netdev@vger.kernel.org,
+        dinguyen@altera.com
+Subject: [PATCH] micrel phy: fix typo in define, point people to device tree
+Message-ID: <20140707210353.GA29415@amd.pavel.ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53BAF01C.8010700@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 12:08:12PM -0700, Dave Hansen wrote:
-> On 07/07/2014 11:00 AM, Naoya Horiguchi wrote:
-> > +.SH RETURN VALUE
-> > +On success,
-> > +.BR fincore ()
-> > +returns 0.
-> > +On error, \-1 is returned, and
-> > +.I errno
-> > +is set appropriately.
-> 
-> Is this accurate?  From reading the syscall itself, it looked like it
-> did this:
-> 
-> > + * Return value is the number of pages whose data is stored in fc->buffer.
-> > + */
-> > +static long do_fincore(struct fincore_control *fc, int nr_pages)
-> 
-> and:
-> 
-> > +SYSCALL_DEFINE6(fincore, int, fd, loff_t, start, long, nr_pages,
-> ...
-> > +	while (fc.nr_pages > 0) {
-> > +		memset(fc.buffer, 0, fc.buffer_size);
-> > +		ret = do_fincore(&fc, min(step, fc.nr_pages));
-> > +		/* Reached the end of the file */
-> > +		if (ret == 0)
-> > +			break;
-> > +		if (ret < 0)
-> > +			break;
-> ...
-> > +	}
-> ...
-> > +	return ret;
-> > +}
-> 
-> Which seems that for a given loop of do_fincore(), you might end up
-> returning the result of that *single* iteration of do_fincore() instead
-> of the aggregate of the entire syscall.
-> 
-> So, it can return <0 on failure, 0 on success, or also an essentially
-> random >0 number on success too.
 
-We don't break this while loop if do_fincore() returned a positive value
-unless copy_to_user() fails. And in that case ret is set to -EFAULT.
-So I think sys_fincore() never returns a positive value.
+There's typo "SCEW" in some defines, which made my greps fail and
+confused me a lot. Plus, Dinh Nguyen pointed out that direct phy
+accesses from board files should no longer be needed -- device tree
+should be able to configure skew.
 
-BTW, we don't have to check "if (ret == 0)" and "if (ret < 0)" separately,
-I'll fix it.
+Signed-off-by: Pavel Machek <pavel@denx.de>
 
-> Why not just use the return value for something useful instead of
-> hacking in the extras->nr_entries stuff?
+diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
+index 075ec05..528d3ce 100644
+--- a/arch/arm/mach-at91/board-dt-sama5.c
++++ b/arch/arm/mach-at91/board-dt-sama5.c
+@@ -50,12 +50,15 @@ static int ksz9021rn_phy_fixup(struct phy_device *phy)
+ {
+ 	int value;
+ 
++	/* Should probably use dts to configure skew, see 
++	   micrel-ksz90x1.txt */
++
+ 	/* Set delay values */
+-	value = MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SCEW | 0x8000;
++	value = MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SKEW | 0x8000;
+ 	phy_write(phy, MICREL_KSZ9021_EXTREG_CTRL, value);
+ 	value = 0xF2F4;
+ 	phy_write(phy, MICREL_KSZ9021_EXTREG_DATA_WRITE, value);
+-	value = MICREL_KSZ9021_RGMII_RX_DATA_PAD_SCEW | 0x8000;
++	value = MICREL_KSZ9021_RGMII_RX_DATA_PAD_SKEW | 0x8000;
+ 	phy_write(phy, MICREL_KSZ9021_EXTREG_CTRL, value);
+ 	value = 0x2222;
+ 	phy_write(phy, MICREL_KSZ9021_EXTREG_DATA_WRITE, value);
+diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
+index e60456d..fa6c7ad 100644
+--- a/arch/arm/mach-imx/mach-imx6q.c
++++ b/arch/arm/mach-imx/mach-imx6q.c
+@@ -42,18 +42,19 @@
+ /* For imx6q sabrelite board: set KSZ9021RN RGMII pad skew */
+ static int ksz9021rn_phy_fixup(struct phy_device *phydev)
+ {
++	/* Should probably use dt to set these, see micrel-ksz90x1.txt */
+ 	if (IS_BUILTIN(CONFIG_PHYLIB)) {
+ 		/* min rx data delay */
+ 		phy_write(phydev, MICREL_KSZ9021_EXTREG_CTRL,
+-			0x8000 | MICREL_KSZ9021_RGMII_RX_DATA_PAD_SCEW);
++			0x8000 | MICREL_KSZ9021_RGMII_RX_DATA_PAD_SKEW);
+ 		phy_write(phydev, MICREL_KSZ9021_EXTREG_DATA_WRITE, 0x0000);
+ 
+ 		/* max rx/tx clock delay, min rx/tx control delay */
+ 		phy_write(phydev, MICREL_KSZ9021_EXTREG_CTRL,
+-			0x8000 | MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SCEW);
++			0x8000 | MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SKEW);
+ 		phy_write(phydev, MICREL_KSZ9021_EXTREG_DATA_WRITE, 0xf0f0);
+ 		phy_write(phydev, MICREL_KSZ9021_EXTREG_CTRL,
+-			MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SCEW);
++			MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SKEW);
+ 	}
+ 
+ 	return 0;
+--- a/include/linux/micrel_phy.h
++++ b/include/linux/micrel_phy.h
+@@ -38,9 +38,12 @@
+ /* struct phy_device dev_flags definitions */
+ #define MICREL_PHY_50MHZ_CLK	0x00000001
+ 
++/* These probably should not be exported; see micrel-ksz90x1.txt on
++   how to configure skew from device tree. */
+ #define MICREL_KSZ9021_EXTREG_CTRL	0xB
+ #define MICREL_KSZ9021_EXTREG_DATA_WRITE	0xC
+-#define MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SCEW	0x104
+-#define MICREL_KSZ9021_RGMII_RX_DATA_PAD_SCEW	0x105
++#define MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SKEW	0x104
++#define MICREL_KSZ9021_RGMII_RX_DATA_PAD_SKEW	0x105
++#define MICREL_KSZ9021_RGMII_TX_DATA_PAD_SKEW	0x106
+ 
+ #endif /* _MICREL_PHY_H */
 
-Hmm, I got the opposite complaint previously, where we shouldn't
-interpret the return value differently depending on the flag.
-And I'd like to keep the extra argument for future extensibility.
-For example, if we want to collect pages only with a specific
-set of page flags, this extra argument will be necessary.
 
->  Oh, and what if that
-> 
-> > +	if (extra)
-> > +		__put_user(nr, &extra->nr_entries);
-> 
-> fails?  It seems like we might silently forget to tell userspace how
-> many entries we filled.
-
-Oh, I forget to check it.
-
-Thanks,
-Naoya Horiguchi
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
