@@ -1,67 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbaGGPby (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 11:31:54 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:33835 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934AbaGGPbw (ORCPT
+	id S1752068AbaGGPcY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 11:32:24 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42269 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaGGPcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 11:31:52 -0400
-Date: Mon, 7 Jul 2014 17:31:43 +0200
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Dominik Dingel <dingel@linux.vnet.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        linux-s390@vger.kernel.org
-Subject: Re: [PATCH v10 5/7] s390: add pmd_[dirty|mkclean] for THP
-Message-ID: <20140707173143.271bbd52@thinkpad>
-In-Reply-To: <1404694438-10272-6-git-send-email-minchan@kernel.org>
-References: <1404694438-10272-1-git-send-email-minchan@kernel.org>
-	<1404694438-10272-6-git-send-email-minchan@kernel.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070715-4966-0000-0000-000000A3219E
+	Mon, 7 Jul 2014 11:32:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAN+gG=G-xqc5J8J8ndfL2d8SY3K4+d80LNQX7cgfUeA3ap=oYA@mail.gmail.com>
+References: <1404022473-2862-1-git-send-email-borneo.antonio@gmail.com>
+	<CAN+gG=G-xqc5J8J8ndfL2d8SY3K4+d80LNQX7cgfUeA3ap=oYA@mail.gmail.com>
+Date: Mon, 7 Jul 2014 23:32:19 +0800
+Message-ID: <CAAj6DX2fEqk-gBeismE2+9hbKE7ofES1p_a78trGKzaBjz_2Ow@mail.gmail.com>
+Subject: Re: [PATCH] HID: cp2112: add I2C mode
+From: Antonio Borneo <borneo.antonio@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input <linux-input@vger.kernel.org>,
+        David Barksdale <dbarksdale@uplogix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  7 Jul 2014 09:53:56 +0900
-Minchan Kim <minchan@kernel.org> wrote:
+On Mon, Jul 7, 2014 at 9:57 PM, Benjamin Tissoires
+<benjamin.tissoires@gmail.com> wrote:
+> Hi Antonio,
+>
+> On Sun, Jun 29, 2014 at 2:14 AM, Antonio Borneo
+> <borneo.antonio@gmail.com> wrote:
+>> cp2112 supports single I2C read/write transactions.
+>> It can't combine I2C transactions.
+>>
+>> Add master_xfer, using similar code flow as for smbus_xfer.
+>
+> Thanks for taking the time to implement it. I wanted to add this
+> functionality, but did not found the time to finalize/submit the
+> patches.
+> So here is a review.
 
-> MADV_FREE needs pmd_dirty and pmd_mkclean for detecting recent
-> overwrite of the contents since MADV_FREE syscall is called for
-> THP page but for s390 pmds only referenced bit is available
-> because there is no free bit left in the pmd entry for the
-> software dirty bit so this patch adds dumb pmd_dirty which
-> returns always true by suggesting by Martin.
-> 
-> They finally find a solution in future.
-> http://marc.info/?l=linux-api&m=140440328820808&w=2
-> 
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-> Cc: Dominik Dingel <dingel@linux.vnet.ibm.com>
-> Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-> Cc: linux-s390@vger.kernel.org
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  arch/s390/include/asm/pgtable.h | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
+Ciao Benjamin,
 
-Acked-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+thanks for the review.
+My comments inline below
 
+>>
+>> Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
+>> ---
+>>  drivers/hid/hid-cp2112.c | 102 ++++++++++++++++++++++++++++++++++++++++++++++-
+>>  1 file changed, 101 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
+>> index 3952d90..1260a8a 100644
+>> --- a/drivers/hid/hid-cp2112.c
+>> +++ b/drivers/hid/hid-cp2112.c
+>> @@ -429,6 +429,104 @@ static int cp2112_write_req(void *buf, u8 slave_address, u8 command, u8 *data,
+>>         return data_length + 4;
+>>  }
+>>
+>> +static int cp2112_i2c_write_req(void *buf, u8 slave_address, u8 *data,
+>> +                               u8 data_length)
+>> +{
+>> +       struct cp2112_write_req_report *report = buf;
+>> +
+>> +       if (data_length > sizeof(report->data))
+>> +               return -EINVAL;
+>> +
+>> +       report->report = CP2112_DATA_WRITE_REQUEST;
+>> +       report->slave_address = slave_address << 1;
+>> +       report->length = data_length;
+>> +       memcpy(report->data, data, data_length);
+>> +       return data_length + 3;
+>> +}
+>> +
+>> +static int cp2112_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
+>> +                          int num)
+>> +{
+>> +       struct cp2112_device *dev = (struct cp2112_device *)adap->algo_data;
+>> +       struct hid_device *hdev = dev->hdev;
+>> +       u8 buf[64];
+>> +       ssize_t count;
+>> +       unsigned int retries;
+>> +       int ret;
+>> +
+>> +       hid_dbg(hdev, "I2C %d messages\n", num);
+>> +
+>> +       if (num != 1) {
+>> +               hid_err(hdev,
+>> +                       "Multi-message I2C transactions not supported\n");
+>
+> This is a shame. You can just externalize the following block (in pseudo code):
+> { - read/write_req
+>   - hid_output
+>   - xfer_status
+>   - read}
+>
+> and then just use a for loop to call this sequence for each incoming message.
+
+The parameter "num" is for sending a "combined I2C transaction" in which
+a series of messages is sent "without" stop-bits between the messages.
+You can get full description searching for "i2c_transfer" in
+  - Documentation/i2c/writing-clients
+  - Documentation/i2c/i2c-protocol
+Since CP2112 does not support this feature, I return EOPNOTSUPP as is done in
+  drivers/i2c/busses/i2c-powermac.c
+
+If I implement the loop, as you suggest, CP2112 will just send a
+sequence of independent messages, each with its own stop bit.
+
+Probably the error message could be more explicit by mentioning the
+word "combined".
+I lazily copied the same message from i2c-powermac think it's clear enough.
+
+>
+>> +               return -EOPNOTSUPP;
+>> +       }
+>> +
+>> +       if (msgs->flags & I2C_M_RD)
+>> +               count = cp2112_read_req(buf, msgs->addr, msgs->len);
+>> +       else
+>> +               count = cp2112_i2c_write_req(buf, msgs->addr, msgs->buf,
+>> +                                            msgs->len);
+>> +
+>> +       if (count < 0)
+>> +               return count;
+>> +
+>> +       ret = hid_hw_power(hdev, PM_HINT_FULLON);
+>> +       if (ret < 0) {
+>> +               hid_err(hdev, "power management error: %d\n", ret);
+>> +               return ret;
+>> +       }
+>> +
+>> +       ret = cp2112_hid_output(hdev, buf, count, HID_OUTPUT_REPORT);
+>> +       if (ret < 0) {
+>> +               hid_warn(hdev, "Error starting transaction: %d\n", ret);
+>> +               goto power_normal;
+>> +       }
+>> +
+>> +       for (retries = 0; retries < XFER_STATUS_RETRIES; ++retries) {
+>> +               ret = cp2112_xfer_status(dev);
+>> +               if (-EBUSY == ret)
+>> +                       continue;
+>> +               if (ret < 0)
+>> +                       goto power_normal;
+>> +               break;
+>> +       }
+>> +
+>> +       if (XFER_STATUS_RETRIES <= retries) {
+>> +               hid_warn(hdev, "Transfer timed out, cancelling.\n");
+>> +               buf[0] = CP2112_CANCEL_TRANSFER;
+>> +               buf[1] = 0x01;
+>> +
+>> +               ret = cp2112_hid_output(hdev, buf, 2, HID_OUTPUT_REPORT);
+>> +               if (ret < 0)
+>> +                       hid_warn(hdev, "Error cancelling transaction: %d\n",
+>> +                                ret);
+>> +
+>> +               ret = -ETIMEDOUT;
+>> +               goto power_normal;
+>> +       }
+>> +
+>> +       if (!(msgs->flags & I2C_M_RD)) {
+>> +               ret = 0;
+>> +               goto power_normal;
+>> +       }
+>> +
+>> +       ret = cp2112_read(dev, msgs->buf, msgs->len);
+>> +       if (ret < 0)
+>> +               goto power_normal;
+>> +       if (ret != msgs->len) {
+>> +               hid_warn(hdev, "short read: %d < %d\n", ret, msgs->len);
+>> +               ret = -EIO;
+>> +               goto power_normal;
+>> +       }
+>> +
+>> +       ret = 0;
+>
+> ret = num;
+>
+>> +power_normal:
+>> +       hid_hw_power(hdev, PM_HINT_NORMAL);
+>> +       hid_dbg(hdev, "I2C transfer finished: %d\n", ret);
+>> +       return (ret) ? ret : 1;
+>
+> and "return ret;"
+
+Not sure I catch what you mean, here. Please confirm my understanding.
+
+>From a comment inside include/linux/i2c.h
+        /* master_xfer should return the number of messages successfully
+           processed, or a negative value on error */
+
+In the code above I set "ret" to an error number or to zero.
+Then return the error number or the number of messages (equal to 1, as
+explained above).
+
+Do you prefer I set "ret" directly to 1 instead of 0?
+
+I can send a V2 for this.
+In this case I would not change the debug message above that prints
+"ret" and I will just print the current value for "ret".
+
+Best Regards,
+Antonio
+
+>
+>> +}
+>> +
+>>  static int cp2112_xfer(struct i2c_adapter *adap, u16 addr,
+>>                        unsigned short flags, char read_write, u8 command,
+>>                        int size, union i2c_smbus_data *data)
+>> @@ -595,7 +693,8 @@ power_normal:
+>>
+>>  static u32 cp2112_functionality(struct i2c_adapter *adap)
+>>  {
+>> -       return I2C_FUNC_SMBUS_BYTE |
+>> +       return I2C_FUNC_I2C |
+>> +               I2C_FUNC_SMBUS_BYTE |
+>>                 I2C_FUNC_SMBUS_BYTE_DATA |
+>>                 I2C_FUNC_SMBUS_WORD_DATA |
+>>                 I2C_FUNC_SMBUS_BLOCK_DATA |
+>> @@ -605,6 +704,7 @@ static u32 cp2112_functionality(struct i2c_adapter *adap)
+>>  }
+>>
+>>  static const struct i2c_algorithm smbus_algorithm = {
+>> +       .master_xfer    = cp2112_i2c_xfer,
+>>         .smbus_xfer     = cp2112_xfer,
+>>         .functionality  = cp2112_functionality,
+>>  };
+>> --
+>> 2.0.1
+>>
+>
+> Cheers,
+> Benjamin
