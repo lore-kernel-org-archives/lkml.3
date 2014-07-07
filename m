@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967AbaGGPOO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 11:14:14 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:39037 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753901AbaGGPOF (ORCPT
+	id S1753869AbaGGPN4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 11:13:56 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:52919 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaGGPNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 11:14:05 -0400
+	Mon, 7 Jul 2014 11:13:52 -0400
 From: Matthias Brugger <matthias.bgg@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -25,9 +25,9 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         u.kleine-koenig@pengutronix.de, gregkh@linuxfoundation.org,
         fabf@skynet.be, rostedt@goodmis.org, devicetree@vger.kernel.org,
         linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v10 5/7] arm: add basic support for Mediatek MT6589 boards
-Date: Mon,  7 Jul 2014 17:13:06 +0200
-Message-Id: <1404745988-32558-6-git-send-email-matthias.bgg@gmail.com>
+Subject: [PATCH v10 1/7] of: Provide function to request and map memory
+Date: Mon,  7 Jul 2014 17:13:02 +0200
+Message-Id: <1404745988-32558-2-git-send-email-matthias.bgg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1404745988-32558-1-git-send-email-matthias.bgg@gmail.com>
 References: <1404745988-32558-1-git-send-email-matthias.bgg@gmail.com>
@@ -35,203 +35,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a generic devicetree board file and a dtsi for boards
-based on MT6589 SoCs from Mediatek.
-
-Apart from the generic parts (gic, clocks) the only component
-currently supported are the timers.
+A call to of_iomap does not request the memory region.
+This patch adds the function of_io_request_and_map which requests
+the memory region before mapping it.
 
 Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Suggested-by: Rob Herring <robh@kernel.org>
 ---
- arch/arm/Kconfig                  |    2 +
- arch/arm/Makefile                 |    1 +
- arch/arm/boot/dts/mt6589.dtsi     |   94 +++++++++++++++++++++++++++++++++++++
- arch/arm/mach-mediatek/Kconfig    |    6 +++
- arch/arm/mach-mediatek/Makefile   |    1 +
- arch/arm/mach-mediatek/mediatek.c |   27 +++++++++++
- 6 files changed, 131 insertions(+)
- create mode 100644 arch/arm/boot/dts/mt6589.dtsi
- create mode 100644 arch/arm/mach-mediatek/Kconfig
- create mode 100644 arch/arm/mach-mediatek/Makefile
- create mode 100644 arch/arm/mach-mediatek/mediatek.c
+ drivers/of/address.c       |   36 ++++++++++++++++++++++++++++++++++++
+ include/linux/io.h         |    2 ++
+ include/linux/of_address.h |   11 +++++++++++
+ lib/devres.c               |    2 --
+ 4 files changed, 49 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 87b63fd..845c12d 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -978,6 +978,8 @@ source "arch/arm/mach-mv78xx0/Kconfig"
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index 5edfcb0..e371825 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -702,6 +702,42 @@ void __iomem *of_iomap(struct device_node *np, int index)
+ }
+ EXPORT_SYMBOL(of_iomap);
  
- source "arch/arm/mach-imx/Kconfig"
- 
-+source "arch/arm/mach-mediatek/Kconfig"
-+
- source "arch/arm/mach-mxs/Kconfig"
- 
- source "arch/arm/mach-netx/Kconfig"
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index 6721fab..1895de2 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -172,6 +172,7 @@ machine-$(CONFIG_ARCH_MSM)		+= msm
- machine-$(CONFIG_ARCH_MV78XX0)		+= mv78xx0
- machine-$(CONFIG_ARCH_MVEBU)		+= mvebu
- machine-$(CONFIG_ARCH_MXC)		+= imx
-+machine-$(CONFIG_ARCH_MEDIATEK)		+= mediatek
- machine-$(CONFIG_ARCH_MXS)		+= mxs
- machine-$(CONFIG_ARCH_NETX)		+= netx
- machine-$(CONFIG_ARCH_NOMADIK)		+= nomadik
-diff --git a/arch/arm/boot/dts/mt6589.dtsi b/arch/arm/boot/dts/mt6589.dtsi
-new file mode 100644
-index 0000000..d0297a0
---- /dev/null
-+++ b/arch/arm/boot/dts/mt6589.dtsi
-@@ -0,0 +1,94 @@
 +/*
-+ * Copyright (c) 2014 MundoReader S.L.
-+ * Author: Matthias Brugger <matthias.bgg@gmail.com>
++ * of_io_request_and_map - Requests a resource and maps the memory mapped IO
++ *			   for a given device_node
++ * @device:	the device whose io range will be mapped
++ * @index:	index of the io range
++ * @name:	name of the resource
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * Returns a pointer to the requested and mapped memory or an ERR_PTR() encoded
++ * error code on failure. Usage example:
 + *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
++ *	base = of_io_request_and_map(node, 0, "foo");
++ *	if (IS_ERR(base))
++ *		return PTR_ERR(base);
 + */
++void __iomem *of_io_request_and_map(struct device_node *np, int index,
++					char *name)
++{
++	struct resource res;
++	void __iomem *mem;
 +
-+#include <dt-bindings/interrupt-controller/irq.h>
-+#include <dt-bindings/interrupt-controller/arm-gic.h>
-+#include "skeleton.dtsi"
++	if (of_address_to_resource(np, index, &res))
++		return IOMEM_ERR_PTR(-EINVAL);
 +
-+/ {
-+	compatible = "mediatek,mt6589";
-+	interrupt-parent = <&gic>;
++	if (!request_mem_region(res.start, resource_size(&res), name))
++		return IOMEM_ERR_PTR(-EBUSY);
 +
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
++	mem = ioremap(res.start, resource_size(&res));
++	if (!mem) {
++		release_mem_region(res.start, resource_size(&res));
++		return IOMEM_ERR_PTR(-ENOMEM);
++	}
 +
-+		cpu@0 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x0>;
-+		};
-+		cpu@1 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x1>;
-+		};
-+		cpu@2 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x2>;
-+		};
-+		cpu@3 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a7";
-+			reg = <0x3>;
-+		};
++	return mem;
++}
++EXPORT_SYMBOL(of_io_request_and_map);
 +
-+	};
+ /**
+  * of_dma_get_range - Get DMA range info
+  * @np:		device node to get DMA range info
+diff --git a/include/linux/io.h b/include/linux/io.h
+index b76e6e5..d5fc9b8 100644
+--- a/include/linux/io.h
++++ b/include/linux/io.h
+@@ -58,6 +58,8 @@ static inline void devm_ioport_unmap(struct device *dev, void __iomem *addr)
+ }
+ #endif
+ 
++#define IOMEM_ERR_PTR(err) (__force void __iomem *)ERR_PTR(err)
 +
-+	clocks {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		compatible = "simple-bus";
-+		ranges;
+ void __iomem *devm_ioremap(struct device *dev, resource_size_t offset,
+ 			    unsigned long size);
+ void __iomem *devm_ioremap_nocache(struct device *dev, resource_size_t offset,
+diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+index c13b878..fb7b722 100644
+--- a/include/linux/of_address.h
++++ b/include/linux/of_address.h
+@@ -109,7 +109,12 @@ static inline bool of_dma_is_coherent(struct device_node *np)
+ extern int of_address_to_resource(struct device_node *dev, int index,
+ 				  struct resource *r);
+ void __iomem *of_iomap(struct device_node *node, int index);
++void __iomem *of_io_request_and_map(struct device_node *device,
++					int index, char *name);
+ #else
 +
-+		system_clk: dummy13m {
-+			compatible = "fixed-clock";
-+			clock-frequency = <13000000>;
-+			#clock-cells = <0>;
-+		};
++#include <linux/io.h>
 +
-+		rtc_clk: dummy32k {
-+			compatible = "fixed-clock";
-+			clock-frequency = <32000>;
-+			#clock-cells = <0>;
-+		};
-+	};
+ static inline int of_address_to_resource(struct device_node *dev, int index,
+ 					 struct resource *r)
+ {
+@@ -120,6 +125,12 @@ static inline void __iomem *of_iomap(struct device_node *device, int index)
+ {
+ 	return NULL;
+ }
 +
-+	soc {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		compatible = "simple-bus";
-+		ranges;
-+
-+		timer: timer@10008000 {
-+			compatible = "mediatek,mt6577-timer";
-+			reg = <0x10008000 0x80>;
-+			interrupts = <GIC_SPI 113 IRQ_TYPE_EDGE_RISING>;
-+			clocks = <&system_clk>, <&rtc_clk>;
-+			clock-names = "system-clk", "rtc-clk";
-+		};
-+
-+		gic: interrupt-controller@10212000 {
-+			compatible = "arm,cortex-a15-gic";
-+			interrupt-controller;
-+			#interrupt-cells = <3>;
-+			reg = <0x10211000 0x1000>,
-+			      <0x10212000 0x1000>,
-+			      <0x10214000 0x2000>,
-+			      <0x10216000 0x2000>;
-+		};
-+	};
-+};
-diff --git a/arch/arm/mach-mediatek/Kconfig b/arch/arm/mach-mediatek/Kconfig
-new file mode 100644
-index 0000000..2c043a2
---- /dev/null
-+++ b/arch/arm/mach-mediatek/Kconfig
-@@ -0,0 +1,6 @@
-+config ARCH_MEDIATEK
-+	bool "Mediatek MT6589 SoC" if ARCH_MULTI_V7
-+	select ARM_GIC
-+	select MTK_TIMER
-+	help
-+	  Support for Mediatek Cortex-A7 Quad-Core-SoC MT6589.
-diff --git a/arch/arm/mach-mediatek/Makefile b/arch/arm/mach-mediatek/Makefile
-new file mode 100644
-index 0000000..43e619f
---- /dev/null
-+++ b/arch/arm/mach-mediatek/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_ARCH_MEDIATEK) += mediatek.o
-diff --git a/arch/arm/mach-mediatek/mediatek.c b/arch/arm/mach-mediatek/mediatek.c
-new file mode 100644
-index 0000000..f2acf07
---- /dev/null
-+++ b/arch/arm/mach-mediatek/mediatek.c
-@@ -0,0 +1,27 @@
-+/*
-+ * Device Tree support for Mediatek SoCs
-+ *
-+ * Copyright (c) 2014 MundoReader S.L.
-+ * Author: Matthias Brugger <matthias.bgg@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+#include <linux/init.h>
-+#include <asm/mach/arch.h>
-+
-+static const char * const mediatek_board_dt_compat[] = {
-+	"mediatek,mt6589",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(MEDIATEK_DT, "Mediatek Cortex-A7 (Device Tree)")
-+	.dt_compat	= mediatek_board_dt_compat,
-+MACHINE_END
++static inline void __iomem *of_io_request_and_map(struct device_node *device,
++					int index, char *name)
++{
++	return IOMEM_ERR_PTR(-EINVAL);
++}
+ #endif
+ 
+ #if defined(CONFIG_OF_ADDRESS) && defined(CONFIG_PCI)
+diff --git a/lib/devres.c b/lib/devres.c
+index f562bf6..bb63248 100644
+--- a/lib/devres.c
++++ b/lib/devres.c
+@@ -86,8 +86,6 @@ void devm_iounmap(struct device *dev, void __iomem *addr)
+ }
+ EXPORT_SYMBOL(devm_iounmap);
+ 
+-#define IOMEM_ERR_PTR(err) (__force void __iomem *)ERR_PTR(err)
+-
+ /**
+  * devm_ioremap_resource() - check, request region, and ioremap resource
+  * @dev: generic device to handle the resource for
 -- 
 1.7.9.5
 
