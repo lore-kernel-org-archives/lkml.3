@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964AbaGHAuL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:50:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
+	id S1755946AbaGHAuJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:50:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55466 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753574AbaGGXyU (ORCPT
+	with ESMTP id S1753591AbaGGXyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ivan <athlon_@mail.ru>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 3.15 114/122] tty: Correct INPCK handling
-Date: Mon,  7 Jul 2014 16:57:56 -0700
-Message-Id: <20140707235737.658045460@linuxfoundation.org>
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 3.15 115/122] netfilter: ctnetlink: fix dumping of dying/unconfirmed conntracks
+Date: Mon,  7 Jul 2014 16:57:57 -0700
+Message-Id: <20140707235737.686700808@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -28,63 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Hurley <peter@hurleysoftware.com>
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-commit 66528f90669691c85c73bea4f0c9f4a5857c4cab upstream.
+commit 266155b2de8fb721ae353688529b2f8bcdde2f90 upstream.
 
-If INPCK is not set, input parity detection should be disabled. This means
-parity errors should not be received from the tty driver, and the data
-received should be treated normally.
+The dumping prematurely stops, it seems the callback argument that
+indicates that all entries have been dumped is set after iterating
+on the first cpu list. The dumping also may stop before the entire
+per-cpu list content is also dumped.
 
-SUS v3, 11.2.2, General Terminal Interface - Input Modes, states:
-  "If INPCK is set, input parity checking shall be enabled. If INPCK is
-   not set, input parity checking shall be disabled, allowing output parity
-   generation without input parity errors. Note that whether input parity
-   checking is enabled or disabled is independent of whether parity detection
-   is enabled or disabled (see Control Modes). If parity detection is enabled
-   but input parity checking is disabled, the hardware to which the terminal
-   is connected shall recognize the parity bit, but the terminal special file
-   shall not check whether or not this bit is correctly set."
+With this patch, conntrack -L dying now shows the dying list content
+again.
 
-Ignore parity errors reported by the tty driver when INPCK is not set, and
-handle the received data normally.
-
-Fixes: Bugzilla #71681, 'Improvement of n_tty_receive_parity_error from n_tty.c'
-Reported-by: Ivan <athlon_@mail.ru>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Fixes: b7779d06 ("netfilter: conntrack: spinlock per cpu to protect special lists.")
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_tty.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ net/netfilter/nf_conntrack_netlink.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1214,15 +1214,16 @@ static void n_tty_receive_parity_error(s
- {
- 	struct n_tty_data *ldata = tty->disc_data;
+--- a/net/netfilter/nf_conntrack_netlink.c
++++ b/net/netfilter/nf_conntrack_netlink.c
+@@ -1163,9 +1163,6 @@ ctnetlink_dump_list(struct sk_buff *skb,
+ 	if (cb->args[2])
+ 		return 0;
  
--	if (I_IGNPAR(tty))
--		return;
--	if (I_PARMRK(tty)) {
--		put_tty_queue('\377', ldata);
--		put_tty_queue('\0', ldata);
--		put_tty_queue(c, ldata);
--	} else	if (I_INPCK(tty))
--		put_tty_queue('\0', ldata);
--	else
-+	if (I_INPCK(tty)) {
-+		if (I_IGNPAR(tty))
-+			return;
-+		if (I_PARMRK(tty)) {
-+			put_tty_queue('\377', ldata);
-+			put_tty_queue('\0', ldata);
-+			put_tty_queue(c, ldata);
-+		} else
-+			put_tty_queue('\0', ldata);
-+	} else
- 		put_tty_queue(c, ldata);
- 	if (waitqueue_active(&tty->read_wait))
- 		wake_up_interruptible(&tty->read_wait);
+-	if (cb->args[0] == nr_cpu_ids)
+-		return 0;
+-
+ 	for (cpu = cb->args[0]; cpu < nr_cpu_ids; cpu++) {
+ 		struct ct_pcpu *pcpu;
+ 
+@@ -1194,6 +1191,7 @@ restart:
+ 			rcu_read_unlock();
+ 			if (res < 0) {
+ 				nf_conntrack_get(&ct->ct_general);
++				cb->args[0] = cpu;
+ 				cb->args[1] = (unsigned long)ct;
+ 				spin_unlock_bh(&pcpu->lock);
+ 				goto out;
+@@ -1202,10 +1200,10 @@ restart:
+ 		if (cb->args[1]) {
+ 			cb->args[1] = 0;
+ 			goto restart;
+-		} else
+-			cb->args[2] = 1;
++		}
+ 		spin_unlock_bh(&pcpu->lock);
+ 	}
++	cb->args[2] = 1;
+ out:
+ 	if (last)
+ 		nf_ct_put(last);
 
 
