@@ -1,78 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515AbaGGUGB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 16:06:01 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51570 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981AbaGGUF7 (ORCPT
+	id S1751647AbaGGUGx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 16:06:53 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:60281 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929AbaGGUGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 16:05:59 -0400
-Date: Mon, 7 Jul 2014 22:05:50 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: sched: spinlock recursion in sched_rr_get_interval
-Message-ID: <20140707200550.GA6758@twins.programming.kicks-ass.net>
-References: <53B98709.3090603@oracle.com>
- <20140707083016.GA19379@twins.programming.kicks-ass.net>
- <53BAA6DF.5060409@oracle.com>
+	Mon, 7 Jul 2014 16:06:51 -0400
+Date: Mon, 7 Jul 2014 22:06:59 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Jani Nikula <jani.nikula@linux.intel.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Imre Deak <imre.deak@intel.com>
+Subject: Re: linux-next: Tree for Jun 19 (drm/i915)
+Message-ID: <20140707200659.GL5821@phenom.ffwll.local>
+Mail-Followup-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	"Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+	linux-kernel@vger.kernel.org,
+	intel-gfx <intel-gfx@lists.freedesktop.org>,
+	dri-devel <dri-devel@lists.freedesktop.org>,
+	Imre Deak <imre.deak@intel.com>
+References: <20140619161632.58b442e4@canb.auug.org.au>
+ <9626816.NOau5dZfmB@vostro.rjw.lan>
+ <20140707145423.GB5821@phenom.ffwll.local>
+ <16952236.GFHaOHoKy4@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C2AE+UNCNp5RBAjn"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53BAA6DF.5060409@oracle.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <16952236.GFHaOHoKy4@vostro.rjw.lan>
+X-Operating-System: Linux phenom 3.15.0-rc3+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 07, 2014 at 10:01:27PM +0200, Rafael J. Wysocki wrote:
+> On Monday, July 07, 2014 04:54:23 PM Daniel Vetter wrote:
+> > On Wed, Jun 25, 2014 at 01:01:36AM +0200, Rafael J. Wysocki wrote:
+> > > On Tuesday, June 24, 2014 02:43:02 PM Jani Nikula wrote:
+> > > > On Thu, 19 Jun 2014, Randy Dunlap <rdunlap@infradead.org> wrote:
+> > > > > On 06/18/14 23:16, Stephen Rothwell wrote:
+> > > > >> Hi all,
+> > > > >> 
+> > > > >> The powerpc allyesconfig is again broken more than usual.
+> > > > >> 
+> > > > >> Changes since 20140618:
+> > > > >> 
+> > > > >
+> > > > > on i386:
+> > > > >
+> > > > > CONFIG_ACPI is not enabled.
+> > > > >
+> > > > >   CC      drivers/gpu/drm/i915/i915_drv.o
+> > > > > ../drivers/gpu/drm/i915/i915_drv.c: In function 'i915_drm_freeze':
+> > > > > ../drivers/gpu/drm/i915/i915_drv.c:547:2: error: implicit declaration of function 'acpi_target_system_state' [-Werror=implicit-function-declaration]
+> > > > > ../drivers/gpu/drm/i915/i915_drv.c:547:36: error: 'ACPI_STATE_S3' undeclared (first use in this function)
+> > > > > ../drivers/gpu/drm/i915/i915_drv.c:547:36: note: each undeclared identifier is reported only once for each function it appears in
+> > > > >   CC      net/dccp/qpolicy.o
+> > > > > cc1: some warnings being treated as errors
+> > > > > make[5]: *** [drivers/gpu/drm/i915/i915_drv.o] Error 1
+> > > > 
+> > > > Thanks for the report, we'll fix it.
+> > > > 
+> > > > Can anyone explain why include/linux/acpi_bus.h has #ifdef
+> > > > CONFIG_ACPI_SLEEP and conditional build for a dummy inline version of
+> > > > acpi_target_system_state(), *but* that does not get included or used if
+> > > > CONFIG_ACPI=n? Additionally, the combination of CONFIG_ACPI=y and
+> > > > CONFIG_ACPI_SLEEP=n does not seem to work at all.
+> > > 
+> > > These two things look like bugs to me.  Most likely not tested thoruoughly
+> > > enough.
+> > > 
+> > > > So we'll really have to sprinkle #ifdef CONFIG_ACPI all over, instead of
+> > > > neatly using the dummy versions that someone has gone through the
+> > > > trouble of adding?
+> > > 
+> > > No, we don't have to.
+> > 
+> > Back from my vacation and I didn't see a conclusion to this issue here.
+> > Rafael, have you fixed this in your acpi tree or do I need to do something
+> > in drm-intel?
+> 
+> I was on vacation too. :-)
+> 
+> Please have a look if i915 includes acpi/acpi_bus.h directly anywhere.  If so,
+> it should include linux/acpi.h instead.  I'll fix up the rest in the ACPI tree.
 
---C2AE+UNCNp5RBAjn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, Jul 07, 2014 at 09:55:43AM -0400, Sasha Levin wrote:
-> I've also had this one, which looks similar:
->=20
-> [10375.005884] BUG: spinlock recursion on CPU#0, modprobe/10965
-> [10375.006573]  lock: 0xffff8803a0fd7740, .magic: dead4ead, .owner: modpr=
-obe/10965, .owner_cpu: 15
-> [10375.007412] CPU: 0 PID: 10965 Comm: modprobe Tainted: G        W      =
-3.16.0-rc3-next-20140704-sasha-00023-g26c0906-dirty #765
-
-Something's fucked; so we have:
-
-debug_spin_lock_before()
-	SPIN_BUG_ON(lock->owner =3D=3D current, "recursion");
-
-Causing that, _HOWEVER_ look at .owner_cpu and the reporting cpu!! How
-can the lock owner, own the lock on cpu 15 and again contend with it on
-CPU 0. That's impossible.
-
-About when-ish did you start seeing things like this? Lemme go stare
-hard at recent changes.
-
---C2AE+UNCNp5RBAjn
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTuv2eAAoJEHZH4aRLwOS6UJkQAKhk6ehFbBtjLp/RkkhsE05A
-RouX/ZdI1cC7l6n2U3CsWF0Vs7t5o3ls8baaJC/gjkJeoTZq67GElzTnbolX1HSH
-mlEuG1uihOlr6gRDYw3RkxXzJfz9WQHAaFS5GDzb/vPHBozjs0HuYC+KL1umPgAZ
-65MTAY3eWx4m8p73XV+pAgpMlGWFCNBffhu3xdEyrm3osIofbqHDLKp24UJCfAHR
-cybHRr+EGFCnaQQOcq8aEnh9UBtgOIg63VLVToXmRp+AXCNpIy0I2esCU31v5ZeV
-yP/KmaCZM2hwZxu0ki1hp1fXJx+i+QeXqcJ/O67/TanyniUGIQCpBAPFLMOEGlJn
-VWgTmatTPKYZFvzd8xvCVU5MpXpLOCdZeY+VgdIqhM1pVilfK06ppxaCd7i4yTHn
-xwTg9HhRGeFi4qiGDlPZOHk47ewM5uN8Xnp5wHBpkNC5OsTz9LzE/vqQKvKPlGwZ
-eOEYAhIn7kRJh8ovYUpdIqRytT8sM+vQVplS1r8x4TzM9Fx0DSf5edlpSppvRQWx
-F/m8lclDjsOAF6t8ho9wHPQrNuR6wWOmEdapF/htPQLCmPdqfcY2bc+htzoehcp9
-3lgJCkIWlfrUXf4f/U9hBrgrqujqWJ2XD21clUukejvz6OTmh1R+m/LyNKaZCtKu
-1RdAOjzYwvJ6bjc9IrTq
-=IQnx
------END PGP SIGNATURE-----
-
---C2AE+UNCNp5RBAjn--
+We seem to only use linux/acpi.h and acpi/(video|button).h, at least
+according to a grep include.*acpi. So I think we're good in i915 land.
+Thanks for taking care of this.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
