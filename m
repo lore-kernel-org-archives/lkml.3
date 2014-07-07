@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541AbaGGSWt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 14:22:49 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:63585 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751284AbaGGSWs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 14:22:48 -0400
-Message-ID: <1404757366.2014.13.camel@x220>
-Subject: Re: Arm Compiler - Part 1 of Compiling Tests
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Nick Krause <xerofoify@gmail.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 07 Jul 2014 20:22:46 +0200
-In-Reply-To: <CAPDOMVjEmVJJEd_LVpCkXC8qR7APTKeHNJQSQ5SFNuWj9BQuLA@mail.gmail.com>
-References: <CAPDOMVieG951+0chzvjmKTdpZf-fEB5mjUL9YK-rgqF3+O537w@mail.gmail.com>
-	 <20140707134637.GA31174@thunk.org>
-	 <CAPDOMVjEmVJJEd_LVpCkXC8qR7APTKeHNJQSQ5SFNuWj9BQuLA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Jul 2014 18:22:46.0079 (UTC) FILETIME=[73406CF0:01CF9A10]
-X-RcptDomain: vger.kernel.org
+	id S1751818AbaGGSXX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 14:23:23 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48048 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751287AbaGGSXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 14:23:21 -0400
+Date: Mon, 7 Jul 2014 15:23:16 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC PATCHES 0/7] Add support for showing headers in the hist
+ browser.
+Message-ID: <20140707182316.GA7252@kernel.org>
+References: <1404423780-24026-1-git-send-email-acme@kernel.org>
+ <20140703214811.GC11267@kernel.org>
+ <878uo94ia9.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878uo94ia9.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-07 at 13:35 -0400, Nick Krause wrote:
-> On the other hand there seems to be too many FIXMEs in the main
-> kernel for one person to fix.
+Em Fri, Jul 04, 2014 at 05:53:02PM +0900, Namhyung Kim escreveu:
+> you ;-) ).  But I also think it needs to fix column/header alignment
+> first, hmm...
 
-A quick grep for FIXMEs (also including the "XXX" pattern, which
-basically means the same thing) triggers over 7000 hits. Even with a
-(rather optimistic) one hour per FIXME that's over three years of work
-(assuming a sane working hours/year metric).
+This one liner should do the trick, i.e. left justify it.
 
-Moreover, you appear to misunderstand the meaning of these FIXMEs. It's
-not a marker for something trivial that somehow never got done. It might
-actually mean all kind of things. In many cases it points at a hard, or
-time consuming, etc., problem that no one has yet found a way, or the
-time, to fix properly.
+- Arnaldo
 
-I would not advise someone new to the kernel to grep for FIXMEs to see
-if they could contribute something. There are many things those people
-could do, but those FIXMEs seem an awkward place to start.
-
-
-Paul Bolle
-
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 1ec57dd82284..14e5a039bc45 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -1215,7 +1215,7 @@ static int __sort__hpp_header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
+ 	hse = container_of(fmt, struct hpp_sort_entry, hpp);
+ 	len = hists__col_len(&evsel->hists, hse->se->se_width_idx);
+ 
+-	return scnprintf(hpp->buf, hpp->size, "%*s", len, hse->se->se_header);
++	return scnprintf(hpp->buf, hpp->size, "%-*s", len, hse->se->se_header);
+ }
+ 
+ static int __sort__hpp_width(struct perf_hpp_fmt *fmt,
