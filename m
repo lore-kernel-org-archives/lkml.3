@@ -1,112 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017AbaGGKxo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 06:53:44 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:48941 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751409AbaGGKxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 06:53:42 -0400
-Date: Mon, 7 Jul 2014 12:53:39 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Michael Matz <matz@suse.de>,
-        linux-kbuild@vger.kernel.org, x86-ml <x86@kernel.org>
-Subject: Re: [PATCH] Kbuild: Move -Wmaybe-uninitialized to W=1
-Message-ID: <20140707105339.GA4776@pd.tnic>
-References: <20140616132045.GE8170@pd.tnic>
- <20140616211405.GA7914@ravnborg.org>
- <20140624213835.GD15068@pd.tnic>
+	id S1753065AbaGGKxz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 06:53:55 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51054 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753032AbaGGKxv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 06:53:51 -0400
+Date: Mon, 7 Jul 2014 12:51:43 +0200
+From: Mark Brown <broonie@kernel.org>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        julia.lawall@lip6.fr
+Message-ID: <20140707105143.GH30458@sirena.org.uk>
+References: <20140706161450.GA6304@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0XhtP95kHFp3KGBe"
 Content-Disposition: inline
-In-Reply-To: <20140624213835.GD15068@pd.tnic>
+In-Reply-To: <20140706161450.GA6304@himangi-Dell>
+X-Cookie: You look tired.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 82.127.83.212
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi/spi-sh: Use devm_ioremap
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, here's a v2 which goes ontop of
 
-http://lkml.kernel.org/r/1404175346-12330-1-git-send-email-behanw@converseincode.com
+--0XhtP95kHFp3KGBe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-After this, all warnings stuff should be back to normal.
+On Sun, Jul 06, 2014 at 09:44:50PM +0530, Himangi Saraogi wrote:
+> This patch introduces the use of devm_ioremap and removes the iounmaps
+> in the probe and remove functions. Also, the labels are renamed to
+> preserve ordering.
 
----
-From: Borislav Petkov <bp@suse.de>
-Subject: [PATCH -v2] Kbuild: Move -Wmaybe-uninitialized to W=1
+Applied, thanks.
 
-This warning is enabled by -Wall or -Wextra, says the gcc manpage. It
-also says that gcc cannot always know whether the warning is issued
-correctly:
+--0XhtP95kHFp3KGBe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-"These warnings are made optional because GCC is not smart enough to see
-all the reasons why the code might be correct in spite of appearing to
-have an error."
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-And, as expected, it fires for perfectly valid use cases, thus making it
-not really useful. Let's move it to the W=1 bunch in case people want to
-enable it with the additional checks.
+iQIcBAEBAgAGBQJTunu3AAoJELSic+t+oim9hHYP/1M3mPSSWkQmOx+zYqwGgI+w
+Ux9B6Iz9N1E7Kw4lB4c+EDzPvnOi41j0Vj5JUsX5fsVm7mfbSL8dNJe1M9cUTkrk
+0lpVL9VwIMFf/7l69W8Kh2t3zPVx2gYhNxZxLCttdLZKtfqMEDp/SDqFHnOkPvNL
+joHdMwCbVqSVvWsEgI/QBrIBClZg3xDqbR9EqIcGCgCE4QWPCeoEOt0OakokI2I3
+Xs62nm2wbjmlwZyt46n7OL2hW2cKKyqQGVSimobsGYmIliwZvrXo06jbmnWWZweb
+760HqHSMAj0Ns0w9c+5c1qkswW8PVtR8+ZyzAlj66Jj/GF7pgefKyoFq7MWwCFqI
+pWZN2cQodVVbaYKf5mkNPQE09geYg1Y64WYau53e7pS6POcu6Y9mpFgOgv+eXWns
+ulyD4PnSien+/6GZg2oDayJ8XLi0hwrKpDFoxxQX/TpgoKG6LRnZCjzGR+oIc04C
+qqP1sgOvEWOXRmomwMFwHUwwyyNDT7ucsPIdwJEFWtjXkJ3YswbHBPgRRdLiVYTB
+XSLcfjGB0y7FuVWSduVjmGqARBisDx2rPTGfdqfatA6klbgSnGPJrgTnjIec+KzR
+1phvUicgfboGvXGtJKTzlYp0w1DrolBVDkUtBmSu05UPraiNUc1KDoD3g1qDEvQU
+dnvFg5u0aequdTxeqIQI
+=+LUV
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- Makefile                   | 5 ++++-
- scripts/Makefile           | 1 +
- scripts/Makefile.extrawarn | 1 +
- 3 files changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/Makefile b/Makefile
-index 4d75b4bceedd..b58c94261960 100644
---- a/Makefile
-+++ b/Makefile
-@@ -613,7 +613,7 @@ include $(srctree)/arch/$(SRCARCH)/Makefile
- KBUILD_CFLAGS	+= $(call cc-option,-fno-delete-null-pointer-checks,)
- 
- ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
--KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
-+KBUILD_CFLAGS	+= -Os
- else
- KBUILD_CFLAGS	+= -O2
- endif
-@@ -742,6 +742,9 @@ KBUILD_CFLAGS   += $(call cc-option,-Werror=date-time)
- # use the deterministic mode of AR if available
- KBUILD_ARFLAGS := $(call ar-option,D)
- 
-+# disable -Wmaybe-uninitialized as too noisy, see Makefile.extrawarn instead
-+KBUILD_CFLAGS   += $(call cc-disable-warning, maybe-uninitialized)
-+
- # check for 'asm goto'
- ifeq ($(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-goto.sh $(CC)), y)
- 	KBUILD_CFLAGS += -DCC_HAVE_ASM_GOTO
-diff --git a/scripts/Makefile b/scripts/Makefile
-index 890df5c6adfb..a483d9988a2e 100644
---- a/scripts/Makefile
-+++ b/scripts/Makefile
-@@ -19,6 +19,7 @@ hostprogs-$(CONFIG_BUILDTIME_EXTABLE_SORT) += sortextable
- hostprogs-$(CONFIG_ASN1)	 += asn1_compiler
- 
- HOSTCFLAGS_sortextable.o = -I$(srctree)/tools/include
-+HOSTCFLAGS_sortextable.o += $(call cc-disable-warning, maybe-uninitialized)
- HOSTCFLAGS_asn1_compiler.o = -I$(srctree)/include
- 
- always		:= $(hostprogs-y) $(hostprogs-m)
-diff --git a/scripts/Makefile.extrawarn b/scripts/Makefile.extrawarn
-index e3501272cd93..9657d5778e06 100644
---- a/scripts/Makefile.extrawarn
-+++ b/scripts/Makefile.extrawarn
-@@ -25,6 +25,7 @@ warning-1 += -Wold-style-definition
- warning-1 += $(call cc-option, -Wmissing-include-dirs)
- warning-1 += $(call cc-option, -Wunused-but-set-variable)
- warning-1 += $(call cc-disable-warning, missing-field-initializers)
-+warning-1 += $(call cc-option, -Wmaybe-uninitialized)
- 
- ifeq ($(COMPILER),clang)
- warning-1 += $(call cc-disable-warning, initializer-overrides)
--- 
-2.0.0
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+--0XhtP95kHFp3KGBe--
