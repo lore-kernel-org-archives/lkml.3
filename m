@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817AbaGGSxr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 14:53:47 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:54033 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868AbaGGSxq (ORCPT
+	id S1752174AbaGGSzr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 14:55:47 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58987 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751798AbaGGSzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 14:53:46 -0400
-From: Jason Low <jason.low2@hp.com>
-To: peterz@infradead.org, torvalds@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, mingo@kernel.org, Waiman.Long@hp.com,
-        davidlohr@hp.com, linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, riel@redhat.com, rostedt@goodmis.org,
-        akpm@linux-foundation.org, hpa@zytor.com, tim.c.chen@linux.intel.com,
-        konrad.wilk@oracle.com, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com, jason.low2@hp.com
-Subject: [PATCH 3/4] MCS spinlocks: Micro-optimize osq_unlock()
-Date: Mon,  7 Jul 2014 11:50:18 -0700
-Message-Id: <1404759019-4268-4-git-send-email-jason.low2@hp.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404759019-4268-1-git-send-email-jason.low2@hp.com>
-References: <1404759019-4268-1-git-send-email-jason.low2@hp.com>
+	Mon, 7 Jul 2014 14:55:45 -0400
+Date: Mon, 7 Jul 2014 20:55:43 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        kernel list <linux-kernel@vger.kernel.org>, adilger.kernel@dilger.ca,
+        linux-ext4@vger.kernel.org
+Subject: Re: ext4: media error but where?
+Message-ID: <20140707185543.GA26056@amd.pavel.ucw.cz>
+References: <20140630134313.GA3753@thunk.org>
+ <20140704102307.GA19252@amd.pavel.ucw.cz>
+ <20140704121119.GB10514@thunk.org>
+ <20140704172104.GA4877@xo-6d-61-c0.localdomain>
+ <20140704185626.GB11103@thunk.org>
+ <20140706133247.GB18204@amd.pavel.ucw.cz>
+ <20140706134325.GA18955@amd.pavel.ucw.cz>
+ <20140706182936.GB471@thunk.org>
+ <20140706213710.GA19847@amd.pavel.ucw.cz>
+ <20140707010002.GD471@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140707010002.GD471@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the unlock function of the cancellable MCS spinlock, the first
-thing we do is to retrive the current CPU's osq node. However, due to
-the changes made in the previous patch, in the common case where the
-lock is not contended, we wouldn't need to access the current CPU's
-osq node anymore.
+On Sun 2014-07-06 21:00:02, Theodore Ts'o wrote:
+> On Sun, Jul 06, 2014 at 11:37:11PM +0200, Pavel Machek wrote:
+> > 
+> > Well, when I got report about hw problems, badblocks -c was my first
+> > instinct. On the usb hdd, the most errors were due to 3.16-rc1 kernel
+> > bug, not real problems.
+> 
+> The problem is with modern disk drives, this is a *wrong* instinct.
+> That's my point.  In general, trying to mess with the bad blocks list
+> in the ext2/3/4 file system is just not the right thing to do with
+> modern disk drives.  That's because with modern disk drives, the hard
+> drives will do bad block remapping.
 
-This patch optimizes this by only retriving this CPU's osq node
-after we attempt the initial cmpxchg to unlock the osq and found
-that its contended.
+Actually... I believe it was the right instinct. 
 
-Signed-off-by: Jason Low <jason.low2@hp.com>
----
- kernel/locking/mcs_spinlock.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+If I wanted to recover the data... remount-r would be the way to
+go. Then back it up using dd_rescue. ... But that way I'd turn bad
+sectors into silent data corruption.
 
-diff --git a/kernel/locking/mcs_spinlock.c b/kernel/locking/mcs_spinlock.c
-index 124a3bb..be7ac24 100644
---- a/kernel/locking/mcs_spinlock.c
-+++ b/kernel/locking/mcs_spinlock.c
-@@ -180,8 +180,7 @@ unqueue:
- 
- void osq_unlock(struct optimistic_spin_queue *lock)
- {
--	struct optimistic_spin_node *node = this_cpu_ptr(&osq_node);
--	struct optimistic_spin_node *next;
-+	struct optimistic_spin_node *node, *next;
- 	int curr = encode_cpu(smp_processor_id());
- 
- 	/*
-@@ -193,6 +192,7 @@ void osq_unlock(struct optimistic_spin_queue *lock)
- 	/*
- 	 * Second most likely case.
- 	 */
-+	node = this_cpu_ptr(&osq_node);
- 	next = xchg(&node->next, NULL);
- 	if (next) {
- 		ACCESS_ONCE(next->locked) = 1;
+If I wanted to recover data from that partition, fsck -c (or
+badblocks, but that's trickier) and then dd_rescue would be the way to go.
+
+> Basically, with modern disks, if the HDD has a hard ECC error, it will
+> return an error --- but if you write to the sector, it will either
+> rewrite onto that location on the platter, or if that part of the
+> platter is truly gone, it will remap to the bad block spare pool.  So
+> telling the disk to never use that block again isn't going to be the
+> right answer.
+
+Actually -- tool to do relocations would be nice. It is not exactly
+easy to do it right by hand.
+
+I know the theory. I had 5 read-error incidents this year.
+
+#1: Seagate refuses to reallocate sectors. Not sure why, I tried
+ pretty much everything.
+
+#2: 3.16-rc1 produces incorrect errors every 4GB, leading to "bad
+sectors" that disappear with other kernels
+
+#3: Some more bad sectors appear on the Seagate
+
+#4: Kernel on thinkpad reports errors in daily check. Which is strange
+ because there's nothing in SMART.
+
+#5: Some old IDE hdd has bad sectors in unused or unimportant areas. 
+
+In #5 the theory might match the reality (I did not check, I trashed
+the disks).
+
+> The badblocks approach to dealing with hardware problems made sense
+> back when we had IDE disks.  But that's been over a decade ago.  These
+> days, it's horribly obsolete.
+
+Forcing reallocation is hard & tricky. You may want to simply mark it
+bad and lose a tiny bit of disk space... And even if you want to force
+reallocation, you want to do fsck -c, first, and restore affected
+files from backup.
+
+									Pavel
+
 -- 
-1.7.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
