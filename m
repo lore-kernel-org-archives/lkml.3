@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452AbaGGPJN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 11:09:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55245 "EHLO mx1.redhat.com"
+	id S1753510AbaGGPMZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 11:12:25 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:35839 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753315AbaGGPJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 11:09:12 -0400
-Message-ID: <53BAB7E1.4010506@redhat.com>
-Date: Mon, 07 Jul 2014 17:08:17 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Waiman.Long@hp.com, tglx@linutronix.de, mingo@kernel.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        paolo.bonzini@gmail.com, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, paulmck@linux.vnet.ibm.com,
-        riel@redhat.com, torvalds@linux-foundation.org,
-        raghavendra.kt@linux.vnet.ibm.com, david.vrabel@citrix.com,
-        oleg@redhat.com, gleb@redhat.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [PATCH 05/11] qspinlock: Optimize for smaller NR_CPUS
-References: <20140615124657.264658593@chello.nl> <20140615130153.483502389@chello.nl> <53A17A88.7090705@redhat.com> <20140707143503.GS6758@twins.programming.kicks-ass.net>
-In-Reply-To: <20140707143503.GS6758@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752336AbaGGPMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 11:12:21 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: [PATCH 4/4] ARM: dts: qcom: Add PM8941 and PM8841 pinctrl nodes
+Date: Mon,  7 Jul 2014 18:11:33 +0300
+Message-Id: <1404745893-6379-5-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1404745893-6379-1-git-send-email-iivanov@mm-sol.com>
+References: <1404745893-6379-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 07/07/2014 16:35, Peter Zijlstra ha scritto:
-> On Wed, Jun 18, 2014 at 01:39:52PM +0200, Paolo Bonzini wrote:
->> Il 15/06/2014 14:47, Peter Zijlstra ha scritto:
->>>
->>> -	for (;;) {
->>> -		new = (val & ~_Q_PENDING_MASK) | _Q_LOCKED_VAL;
->>> -
->>> -		old = atomic_cmpxchg(&lock->val, val, new);
->>> -		if (old == val)
->>> -			break;
->>> -
->>> -		val = old;
->>> -	}
->>> +	clear_pending_set_locked(lock, val);
->>> 	return;
->>
->>
->> Might as well add clear_pending_set_locked already in patch 3.
->
-> Patch 4, if anywhere.
->
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-This code is added in patch 3:
+Add nodes for PM8941 and PM8841 GPIO and MPP subfunctions.
 
-+	/*
-+	 * take ownership and clear the pending bit.
-+	 *
-+	 * *,1,0 -> *,0,1
-+	 */
-+	for (;;) {
-+		new = (val & ~_Q_PENDING_MASK) | _Q_LOCKED_VAL;
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ arch/arm/boot/dts/qcom-msm8974.dtsi | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
+index c7ae7ba..7daca4b 100644
+--- a/arch/arm/boot/dts/qcom-msm8974.dtsi
++++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
+@@ -267,6 +267,14 @@
+ 					reg-names = "rtc", "alarm";
+ 					interrupts = <0x0 0x61 0x1 IRQ_TYPE_EDGE_RISING>;
+ 				};
 +
-+		old = atomic_cmpxchg(&lock->val, val, new);
-+		if (old == val)
-+			break;
++				pm8941_pinctrl: pins@a000 {
++					compatible = "qcom,pm8941-pinctrl";
++					reg = <0xa000>, <0xc000>;
++					gpio-controller;
++					#gpio-cells = <2>;
++					label = "pm8941-pinctrl";
++				};
+ 			};
+ 
+ 			usid1: pm8941@1 {
+@@ -281,6 +289,14 @@
+ 				reg = <0x4 SPMI_USID>;
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
 +
-+		val = old;
-+	}
-+	return;
++				pm8841_pinctrl: pins@a000 {
++					compatible = "qcom,pm8841-pinctrl";
++					reg = <0xa000>;
++					gpio-controller;
++					#gpio-cells = <2>;
++					label = "pm8841-pinctrl";
++				};
+ 			};
+ 
+ 			usid5: pm8841@5 {
+-- 
+1.8.3.2
 
-Unlike the change in patch 4, clear_pending_set_locked doesn't change 
-how qspinlock moves from a state to the next.
-
-Paolo
