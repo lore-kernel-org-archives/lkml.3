@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035AbaGGTtT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 15:49:19 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:53487 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335AbaGGTtR (ORCPT
+	id S1751779AbaGGTv0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 15:51:26 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60276 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750809AbaGGTvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 15:49:17 -0400
-Date: Mon, 7 Jul 2014 20:49:14 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Daniel Kiper <daniel.kiper@oracle.com>
-Cc: linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, andrew.cooper3@citrix.com,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        eshelton@pobox.com, fenghua.yu@intel.com, hpa@zytor.com,
-        ian.campbell@citrix.com, jbeulich@suse.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, matt.fleming@intel.com, mingo@redhat.com,
-        mjg59@srcf.ucam.org, stefano.stabellini@eu.citrix.com,
-        tglx@linutronix.de, tony.luck@intel.com
-Subject: Re: [PATCH v7 00/10] xen: Add EFI support
-Message-ID: <20140707194914.GA27474@console-pimps.org>
-References: <1404150784-27921-1-git-send-email-daniel.kiper@oracle.com>
+	Mon, 7 Jul 2014 15:51:24 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Ruchi Kandoi <kandoiruchi@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        ghackmann@google.com, toddpoynor@google.com,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Subject: Re: [PATCH v4] power: add an API to log wakeup reasons
+Date: Mon, 07 Jul 2014 22:09:28 +0200
+Message-ID: <1513900.gylJAouuZq@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CANcMJZAm+TfX5W_AMSECBTb8tAzts9_YtOjCXGhmy4SgPAjYqg@mail.gmail.com>
+References: <1394730340-3607-1-git-send-email-kandoiruchi@google.com> <CANcMJZAm+TfX5W_AMSECBTb8tAzts9_YtOjCXGhmy4SgPAjYqg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404150784-27921-1-git-send-email-daniel.kiper@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Jun, at 07:52:54PM, Daniel Kiper wrote:
-> Hey,
+On Monday, July 07, 2014 03:02:18 PM John Stultz wrote:
+> On Thu, Mar 13, 2014 at 6:05 PM, Ruchi Kandoi <kandoiruchi@google.com> wrote:
+> > For power management diagnostic purposes, it is often useful to know
+> > what interrupts are frequently waking the system from low power
+> > suspend mode, especially on battery-powered consumer electronics
+> > devices that are expected to spend much of their time in low-power
+> > suspend while not in active use.  For example, reduced battery life on
+> > a mobile phone may be caused in part by frequent wakeups by broadcast
+> > traffic on a busy wireless LAN even while the screen is off and the
+> > phone not in active use.
+> >
+> > Add API log_wakeup_reason() exposes it to userspace via the sysfs path
+> > /sys/kernel/wakeup_reasons/last_resume_reason. This API would be called
+> > from the paltform specific, or from the driver for the interrupt controller,
+> > when the system resumes because of an IRQ. It logs the reasons which caused
+> > the system to wakeup from the low-power mode.
+> >
+> > This information can be collected by userspace as part of the accounting
+> > kept on power consumption.
 > 
-> This patch series adds EFI support for Xen dom0 guests.
-> It is based on Jan Beulich and Tang Liang work. I was
-> trying to take into account all previous comments,
-> however, if I missed something sorry for that.
-> 
-> Daniel
-> 
->  arch/ia64/include/asm/io.h       |    1 +
->  arch/x86/kernel/setup.c          |    4 +-
->  arch/x86/platform/efi/efi.c      |  106 ++++++++++--------------
->  arch/x86/xen/enlighten.c         |   15 ++++
->  drivers/firmware/efi/efi.c       |   25 +++---
->  drivers/xen/Kconfig              |    4 +
->  drivers/xen/Makefile             |    3 +
->  drivers/xen/efi.c                |  368 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/efi.h              |    4 +-
->  include/xen/interface/platform.h |  123 ++++++++++++++++++++++++++++
->  include/xen/xen-ops.h            |   11 +++
->  11 files changed, 587 insertions(+), 77 deletions(-)
-> 
-> Daniel Kiper (10):
->       arch/ia64: Define early_memunmap()
->       efi: Use early_mem*() instead of early_io*()
->       arch/x86: Do not access EFI memory map if it is not available
->       efi: Introduce EFI_PARAVIRT flag
->       arch/x86: Remove redundant set_bit(EFI_SYSTEM_TABLES) call
->       arch/x86: Remove redundant set_bit(EFI_MEMMAP) call
->       xen: Define EFI related stuff
->       xen: Put EFI machinery in place
->       arch/x86: Replace plain strings with constants
->       arch/x86: Remove efi_set_rtc_mmss()
+> Rafael,
+>    I realize its been awhile here, but seeing as discussion on this
+> petered out somewhat ambiguously, I was curious if your thoughts on
+> using wakeup_sources for this was considered a prereq for further
+> discussion or if it was a softer thought experiment?
 
-Thanks Daniel.
+It really was softer at that time, but today that we have the "freeze"
+sleep state where wakeup sources really are used for wakeup it would make
+more sense to used them here too.
 
-I've included Stefano's Acks where they were given and queued this up
-for v3.17 in the EFI 'next' branch at, 
+Rafael
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git
-
--- 
-Matt Fleming, Intel Open Source Technology Center
