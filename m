@@ -1,108 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163AbaGGWwz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 18:52:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54595 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338AbaGGWwx (ORCPT
+	id S1751944AbaGGWz1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 18:55:27 -0400
+Received: from smtprelay0204.hostedemail.com ([216.40.44.204]:55606 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750981AbaGGWz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 18:52:53 -0400
-Date: Mon, 7 Jul 2014 15:52:52 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Gioh Kim <gioh.kim@lge.com>
-Cc: Laura Abbott <lauraa@codeaurora.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Joonsoo Kim <js1304@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?Q?=EC=9D=B4=EA=B1=B4=ED=98=B8?= <gunho.lee@lge.com>,
-        Gi-Oh Kim <gurugio@gmail.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH] [RFC] CMA: clear buffer-head lru before page migration
-Message-Id: <20140707155252.15e81dff6683393ba3590478@linux-foundation.org>
-In-Reply-To: <53B664E5.5060102@lge.com>
-References: <53B664E5.5060102@lge.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Mon, 7 Jul 2014 18:55:26 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1561:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3622:3876:3877:4250:4
+X-HE-Tag: plant02_692f245041548
+X-Filterd-Recvd-Size: 1425
+Message-ID: <1404773721.932.0.camel@joe-AO725>
+Subject: Re: [PATCH tip/core/rcu 0/3] Maintainership changes for 3.17
+From: Joe Perches <joe@perches.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Date: Mon, 07 Jul 2014 15:55:21 -0700
+In-Reply-To: <20140707224146.GA9118@linux.vnet.ibm.com>
+References: <20140707224146.GA9118@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 04 Jul 2014 17:25:09 +0900 Gioh Kim <gioh.kim@lge.com> wrote:
-
-> From: Gioh Kim <gioh.kim@lge.com>
-> Date: Fri, 4 Jul 2014 16:53:22 +0900
-> Subject: [PATCH] [RFC] CMA: clear buffer-head lru before page migration
+On Mon, 2014-07-07 at 15:41 -0700, Paul E. McKenney wrote:
+> This series updates RCU maintainership as follows:
 > 
-> When CMA try to migrate page, some buffer-heads can exist on lru.
-> The bh on lru has non-zero count value so that it cannot be dropped
-> even-if it is not used. We can drop only buffers related to the
-> migrated page, but it can take long time more than dropping all
-> because of searching list. There all buffers in lru are dropped.
+> 1.	Add "R:" designated-reviewers tag as discussed on ksummit-discuss
+> 	email list.
 > 
-> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
-> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-> ---
->  fs/buffer.c |   13 +++++++++++++
->  1 file changed, 13 insertions(+)
+> 2.	Add designated reviewers for RCU.
 > 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index eba6e4f..4f11b7a 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -3233,6 +3233,19 @@ int try_to_free_buffers(struct page *page)
->         if (PageWriteback(page))
->                 return 0;
-> 
-> +#ifdef CONFIG_CMA
-> +       /*
-> +        * When CMA try to migrate page, some buffer-heads can exist on lru.
-> +        * The bh on lru has non-zero count value so that it cannot
-> +        * be dropped even-if it is not used.
-> +        * We can drop only buffers related to the migrated page,
-> +        * but it can take long time more than dropping all
-> +        * because of searching list.
-> +        * There all buffers in lru are dropped first.
-> +        */
-> +       invalidate_bh_lrus();
-> +#endif
+> 3.	Update RCU maintainership.
 
-No, this will be tremendously expensive.
-
-What I proposed is that CMA call invalidate_bh_lrus() right at the
-outset.  Something along the lines of
-
---- a/mm/page_alloc.c~a
-+++ a/mm/page_alloc.c
-@@ -6329,6 +6329,14 @@ int alloc_contig_range(unsigned long sta
- 	};
- 	INIT_LIST_HEAD(&cc.migratepages);
- 
-+#ifdef CONFIG_CMA
-+	/*
-+	 * Comment goes here
-+	 */
-+	if (migratetype == MIGRATE_CMA)
-+		invalidate_bh_lrus();
-+#endif
-+
- 	/*
- 	 * What we do here is we mark all pageblocks in range as
- 	 * MIGRATE_ISOLATE.  Because pageblock and max order pages may
+Missing
+4. update get_maintainers...
 
 
-- I'd have thought that it would make sense to do this for huge pages
-  as well (MIGRATE_MOVABLE) but nobody really seems to know.
-
-- There's a patch floating around ("Allow increasing the buffer-head
-  per-CPU LRU size") which will double the size of the bh lrus, so this
-  all becomes more important.
-
-- alloc_contig_range() does lru_add_drain_all() and drain_all_pages()
-  *after* performing the allocation.  I can't work out why this is the
-  case and of course it is undocumented.  If this is indeed not a bug
-  then probably the invalidate_bh_lrus() should happen in the same
-  place.
