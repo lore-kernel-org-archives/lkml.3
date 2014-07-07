@@ -1,651 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806AbaGGAya (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 20:54:30 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:42250 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207AbaGGAw0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 20:52:26 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v10 1/7] mm: support madvise(MADV_FREE)
-Date: Mon,  7 Jul 2014 09:53:52 +0900
-Message-Id: <1404694438-10272-2-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404694438-10272-1-git-send-email-minchan@kernel.org>
-References: <1404694438-10272-1-git-send-email-minchan@kernel.org>
+	id S1752811AbaGGA4Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 20:56:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16754 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752187AbaGGA4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jul 2014 20:56:22 -0400
+From: Bandan Das <bsd@redhat.com>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>, Hu Robert <robert.hu@intel.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1 since race
+References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com>
+	<53B3CA6A.4050902@siemens.com> <jpgy4wb9g5t.fsf@redhat.com>
+	<20140704061701.GB3453@kernel>
+Date: Sun, 06 Jul 2014 20:56:07 -0400
+In-Reply-To: <20140704061701.GB3453@kernel> (Wanpeng Li's message of "Fri, 4
+	Jul 2014 14:17:01 +0800")
+Message-ID: <jpg1ttyhtqw.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linux doesn't have an ability to free pages lazy while other OS
-already have been supported that named by madvise(MADV_FREE).
+Wanpeng Li <wanpeng.li@linux.intel.com> writes:
 
-The gain is clear that kernel can discard freed pages rather than
-swapping out or OOM if memory pressure happens.
+> On Thu, Jul 03, 2014 at 01:15:26AM -0400, Bandan Das wrote:
+>>Jan Kiszka <jan.kiszka@siemens.com> writes:
+>>
+>>> On 2014-07-02 08:54, Wanpeng Li wrote:
+>>>> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=72381 
+>>>> 
+>>>> If we didn't inject a still-pending event to L1 since nested_run_pending,
+>>>> KVM_REQ_EVENT should be requested after the vmexit in order to inject the 
+>>>> event to L1. However, current log blindly request a KVM_REQ_EVENT even if 
+>>>> there is no still-pending event to L1 which blocked by nested_run_pending. 
+>>>> There is a race which lead to an interrupt will be injected to L2 which 
+>>>> belong to L1 if L0 send an interrupt to L1 during this window. 
+>>>> 
+>>>>                VCPU0                               another thread 
+>>>> 
+>>>> L1 intr not blocked on L2 first entry
+>>>> vmx_vcpu_run req event 
+>>>> kvm check request req event 
+>>>> check_nested_events don't have any intr 
+>>>> not nested exit 
+>>>>                                             intr occur (8254, lapic timer etc)
+>>>> inject_pending_event now have intr 
+>>>> inject interrupt 
+>>>> 
+>>>> This patch fix this race by introduced a l1_events_blocked field in nested_vmx 
+>>>> which indicates there is still-pending event which blocked by nested_run_pending, 
+>>>> and smart request a KVM_REQ_EVENT if there is a still-pending event which blocked 
+>>>> by nested_run_pending.
+>>>
+>>> There are more, unrelated reasons why KVM_REQ_EVENT could be set. Why
+>>> aren't those able to trigger this scenario?
+>>>
+>>> In any case, unconditionally setting KVM_REQ_EVENT seems strange and
+>>> should be changed.
+>>
+>>
+>>Ugh! I think I am hitting another one but this one's probably because 
+>>we are not setting KVM_REQ_EVENT for something we should.
+>>
+>>Before this patch, I was able to hit this bug everytime with 
+>>"modprobe kvm_intel ept=0 nested=1 enable_shadow_vmcs=0" and then booting 
+>>L2. I can verify that I was indeed hitting the race in inject_pending_event.
+>>
+>>After this patch, I believe I am hitting another bug - this happens 
+>>after I boot L2, as above, and then start a Linux kernel compilation
+>>and then wait and watch :) It's a pain to debug because this happens
+>>almost once in three times; it never happens if I run with ept=1, however,
+>>I think that's only because the test completes sooner. But I can confirm
+>>that I don't see it if I always set REQ_EVENT if nested_run_pending is set instead of
+>>the approach this patch takes.
+>>(Any debug hints help appreciated!)
+>>
+>>So, I am not sure if this is the right fix. Rather, I think the safer thing
+>>to do is to have the interrupt pending check for injection into L1 at
+>>the "same site" as the call to kvm_queue_interrupt() just like we had before 
+>>commit b6b8a1451fc40412c57d1. Is there any advantage to having all the 
+>>nested events checks together ?
+>>
+>
+> How about revert commit b6b8a1451 and try if the bug which you mentioned
+> is still there?
 
-Without memory pressure, freed pages would be reused by userspace
-without another additional overhead(ex, page fault + allocation
-+ zeroing).
+Sorry, didn't get time at all to look at this over the weekend but thought of 
+putting down what I have so far..
 
-How to work is following as.
+So, as mentioned in http://www.spinics.net/linux/lists/kvm/msg105316.html,
+I have two tests - one is just booting up L2 with enable_shadow_vmcs=0 and 
+ept=0 and the other is compiling the Linux kernel in L2.
 
-When madvise syscall is called, VM clears dirty bit of ptes of
-the range. If memory pressure happens, VM checks dirty bit of
-page table and if it found still "clean", it means it's a
-"lazyfree pages" so VM could discard the page instead of swapping out.
-Once there was store operation for the page before VM peek a page
-to reclaim, dirty bit is set so VM can swap out the page instead of
-discarding.
+Starting *without* your patch, let's apply this change -
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index f32a025..c28730d 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5887,6 +5887,7 @@ static int inject_pending_event(struct kvm_vcpu *vcpu, bool req_int_win)
+ 			kvm_x86_ops->set_nmi(vcpu);
+ 		}
+ 	} else if (kvm_cpu_has_injectable_intr(vcpu)) {
++		WARN_ON(is_guest_mode(vcpu));
+ 		if (kvm_x86_ops->interrupt_allowed(vcpu)) {
+ 			kvm_queue_interrupt(vcpu, kvm_cpu_get_interrupt(vcpu),
+ 					    false);
 
-Firstly, heavy users would be general allocators(ex, jemalloc,
-tcmalloc and hope glibc supports it) and jemalloc/tcmalloc already
-have supported the feature for other OS(ex, FreeBSD)
+This will trigger a warning if we encounter a race (IIUC). Now, when booting L2,
+sure enough, I encounter the following in L0. Also, L2 hangs, so the next test
+(compiling the kernel) is not applicable anymore.
+[139132.361063] Call Trace:
+[139132.361070]  [<ffffffff816c0d31>] dump_stack+0x45/0x56
+[139132.361075]  [<ffffffff81084a7d>] warn_slowpath_common+0x7d/0xa0
+[139132.361077]  [<ffffffff81084b5a>] warn_slowpath_null+0x1a/0x20
+[139132.361093]  [<ffffffffa0437697>] kvm_arch_vcpu_ioctl_run+0xf77/0x1130 [kvm]
+[139132.361100]  [<ffffffffa04331ee>] ? kvm_arch_vcpu_load+0x4e/0x1e0 [kvm]
+[139132.361106]  [<ffffffffa0421bf2>] kvm_vcpu_ioctl+0x2b2/0x590 [kvm]
+[139132.361109]  [<ffffffff811eca08>] do_vfs_ioctl+0x2d8/0x4b0
+[139132.361111]  [<ffffffff811ecc61>] SyS_ioctl+0x81/0xa0
+[139132.361115]  [<ffffffff81114fd6>] ? __audit_syscall_exit+0x1f6/0x2a0
+[139132.361118]  [<ffffffff816c7ee9>] system_call_fastpath+0x16/0x1b
 
-barrios@blaptop:~/benchmark/ebizzy$ lscpu
-Architecture:          x86_64
-CPU op-mode(s):        32-bit, 64-bit
-Byte Order:            Little Endian
-CPU(s):                4
-On-line CPU(s) list:   0-3
-Thread(s) per core:    2
-Core(s) per socket:    2
-Socket(s):             1
-NUMA node(s):          1
-Vendor ID:             GenuineIntel
-CPU family:            6
-Model:                 42
-Stepping:              7
-CPU MHz:               2801.000
-BogoMIPS:              5581.64
-Virtualization:        VT-x
-L1d cache:             32K
-L1i cache:             32K
-L2 cache:              256K
-L3 cache:              4096K
-NUMA node0 CPU(s):     0-3
-
-ebizzy benchmark(./ebizzy -S 10 -n 512)
-
- vanilla-jemalloc		MADV_free-jemalloc
-
-1 thread
-records:  10              records:  10
-avg:      7682.10         avg:      15306.10
-std:      62.35(0.81%)    std:      347.99(2.27%)
-max:      7770.00         max:      15622.00
-min:      7598.00         min:      14772.00
-
-2 thread
-records:  10              records:  10
-avg:      12747.50        avg:      24171.00
-std:      792.06(6.21%)   std:      895.18(3.70%)
-max:      13337.00        max:      26023.00
-min:      10535.00        min:      23152.00
-
-4 thread
-records:  10              records:  10
-avg:      16474.60        avg:      33717.90
-std:      1496.45(9.08%)  std:      2008.97(5.96%)
-max:      17877.00        max:      35958.00
-min:      12224.00        min:      29565.00
-
-8 thread
-records:  10              records:  10
-avg:      16778.50        avg:      33308.10
-std:      825.53(4.92%)   std:      1668.30(5.01%)
-max:      17543.00        max:      36010.00
-min:      14576.00        min:      29577.00
-
-16 thread
-records:  10              records:  10
-avg:      20614.40        avg:      35516.30
-std:      602.95(2.92%)   std:      1283.65(3.61%)
-max:      21753.00        max:      37178.00
-min:      19605.00        min:      33217.00
-
-32 thread
-records:  10              records:  10
-avg:      22771.70        avg:      36018.50
-std:      598.94(2.63%)   std:      1046.76(2.91%)
-max:      24035.00        max:      37266.00
-min:      22108.00        min:      34149.00
-
-In summary, MADV_FREE is about 2 time faster than MADV_DONTNEED.
-
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Linux API <linux-api@vger.kernel.org>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Jason Evans <je@fb.com>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- include/linux/rmap.h                   |   8 +-
- include/linux/vm_event_item.h          |   1 +
- include/uapi/asm-generic/mman-common.h |   1 +
- mm/madvise.c                           | 174 +++++++++++++++++++++++++++++++++
- mm/rmap.c                              |  34 ++++++-
- mm/vmscan.c                            |  37 +++++--
- mm/vmstat.c                            |   1 +
- 7 files changed, 245 insertions(+), 11 deletions(-)
-
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index be574506e6a9..dea05914f167 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -181,7 +181,8 @@ static inline void page_dup_rmap(struct page *page)
-  * Called from mm/vmscan.c to handle paging out
-  */
- int page_referenced(struct page *, int is_locked,
--			struct mem_cgroup *memcg, unsigned long *vm_flags);
-+			struct mem_cgroup *memcg, unsigned long *vm_flags,
-+			int *is_dirty);
- 
- #define TTU_ACTION(x) ((x) & TTU_ACTION_MASK)
- 
-@@ -260,9 +261,12 @@ int rmap_walk(struct page *page, struct rmap_walk_control *rwc);
- 
- static inline int page_referenced(struct page *page, int is_locked,
- 				  struct mem_cgroup *memcg,
--				  unsigned long *vm_flags)
-+				  unsigned long *vm_flags,
-+				  int *is_pte_dirty)
- {
- 	*vm_flags = 0;
-+	if (is_pte_dirty)
-+		*is_pte_dirty = 0;
- 	return 0;
- }
- 
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index ced92345c963..e2d3fb1e9814 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -25,6 +25,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		FOR_ALL_ZONES(PGALLOC),
- 		PGFREE, PGACTIVATE, PGDEACTIVATE,
- 		PGFAULT, PGMAJFAULT,
-+		PGLAZYFREED,
- 		FOR_ALL_ZONES(PGREFILL),
- 		FOR_ALL_ZONES(PGSTEAL_KSWAPD),
- 		FOR_ALL_ZONES(PGSTEAL_DIRECT),
-diff --git a/include/uapi/asm-generic/mman-common.h b/include/uapi/asm-generic/mman-common.h
-index ddc3b36f1046..7a94102b7a02 100644
---- a/include/uapi/asm-generic/mman-common.h
-+++ b/include/uapi/asm-generic/mman-common.h
-@@ -34,6 +34,7 @@
- #define MADV_SEQUENTIAL	2		/* expect sequential page references */
- #define MADV_WILLNEED	3		/* will need these pages */
- #define MADV_DONTNEED	4		/* don't need these pages */
-+#define MADV_FREE	5		/* free pages only if memory pressure */
- 
- /* common parameters: try to keep these consistent across architectures */
- #define MADV_REMOVE	9		/* remove these pages & resources */
-diff --git a/mm/madvise.c b/mm/madvise.c
-index 0938b30da4ab..372a25a8ea82 100644
---- a/mm/madvise.c
-+++ b/mm/madvise.c
-@@ -19,6 +19,9 @@
- #include <linux/blkdev.h>
- #include <linux/swap.h>
- #include <linux/swapops.h>
-+#include <linux/mmu_notifier.h>
-+
-+#include <asm/tlb.h>
- 
- /*
-  * Any behaviour which results in changes to the vma->vm_flags needs to
-@@ -31,6 +34,7 @@ static int madvise_need_mmap_write(int behavior)
- 	case MADV_REMOVE:
- 	case MADV_WILLNEED:
- 	case MADV_DONTNEED:
-+	case MADV_FREE:
- 		return 0;
- 	default:
- 		/* be safe, default to 1. list exceptions explicitly */
-@@ -251,6 +255,168 @@ static long madvise_willneed(struct vm_area_struct *vma,
- 	return 0;
- }
- 
-+static unsigned long madvise_free_pte_range(struct mmu_gather *tlb,
-+				struct vm_area_struct *vma, pmd_t *pmd,
-+				unsigned long addr, unsigned long end)
-+{
-+	struct mm_struct *mm = tlb->mm;
-+	spinlock_t *ptl;
-+	pte_t *start_pte;
-+	pte_t *pte;
-+	struct page *page;
-+
-+	start_pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
-+	pte = start_pte;
-+	arch_enter_lazy_mmu_mode();
-+	do {
-+		pte_t ptent = *pte;
-+
-+		if (pte_none(ptent))
-+			continue;
-+
-+		if (!pte_present(ptent))
-+			continue;
-+
-+		page = vm_normal_page(vma, addr, ptent);
-+		if (page && PageSwapCache(page)) {
-+			if (trylock_page(page)) {
-+				if (try_to_free_swap(page))
-+					ClearPageDirty(page);
-+				unlock_page(page);
-+			} else
-+				continue;
+The next step is to apply this change -
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index f32a025..432aa25 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5887,6 +5887,12 @@ static int inject_pending_event(struct kvm_vcpu *vcpu, bool req_int_win)
+ 			kvm_x86_ops->set_nmi(vcpu);
+ 		}
+ 	} else if (kvm_cpu_has_injectable_intr(vcpu)) {
++		if (is_guest_mode(vcpu) && kvm_x86_ops->check_nested_events) {
++			r = kvm_x86_ops->check_nested_events(vcpu, req_int_win);
++			if (r != 0)
++				return r;
 +		}
-+
-+		/*
-+		 * Some of architecture(ex, PPC) don't update TLB
-+		 * with set_pte_at and tlb_remove_tlb_entry so for
-+		 * the portability, remap the pte with old|clean
-+		 * after pte clearing.
-+		 */
-+		ptent = ptep_get_and_clear_full(mm, addr, pte,
-+						tlb->fullmm);
-+		ptent = pte_mkold(ptent);
-+		ptent = pte_mkclean(ptent);
-+		set_pte_at(mm, addr, pte, ptent);
-+		tlb_remove_tlb_entry(tlb, pte, addr);
-+	} while (pte++, addr += PAGE_SIZE, addr != end);
-+	arch_leave_lazy_mmu_mode();
-+	pte_unmap_unlock(start_pte, ptl);
-+
-+	return addr;
-+}
-+
-+static inline unsigned long madvise_free_pmd_range(struct mmu_gather *tlb,
-+				struct vm_area_struct *vma, pud_t *pud,
-+				unsigned long addr, unsigned long end)
-+{
-+	pmd_t *pmd;
-+	unsigned long next;
-+
-+	pmd = pmd_offset(pud, addr);
-+	do {
-+		/*
-+		 * XXX: We can optimize with supporting Hugepage free
-+		 * if the range covers.
-+		 */
-+		next = pmd_addr_end(addr, end);
-+		if (pmd_trans_huge(*pmd))
-+			split_huge_page_pmd(vma, addr, pmd);
-+		/*
-+		 * Here there can be other concurrent MADV_DONTNEED or
-+		 * trans huge page faults running, and if the pmd is
-+		 * none or trans huge it can change under us. This is
-+		 * because MADV_LAZYFREE holds the mmap_sem in read
-+		 * mode.
-+		 */
-+		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
-+			goto next;
-+		next = madvise_free_pte_range(tlb, vma, pmd, addr, next);
-+next:
-+		cond_resched();
-+	} while (pmd++, addr = next, addr != end);
-+
-+	return addr;
-+}
-+
-+static inline unsigned long madvise_free_pud_range(struct mmu_gather *tlb,
-+				struct vm_area_struct *vma, pgd_t *pgd,
-+				unsigned long addr, unsigned long end)
-+{
-+	pud_t *pud;
-+	unsigned long next;
-+
-+	pud = pud_offset(pgd, addr);
-+	do {
-+		next = pud_addr_end(addr, end);
-+		if (pud_none_or_clear_bad(pud))
-+			continue;
-+		next = madvise_free_pmd_range(tlb, vma, pud, addr, next);
-+	} while (pud++, addr = next, addr != end);
-+
-+	return addr;
-+}
-+
-+static void madvise_free_page_range(struct mmu_gather *tlb,
-+			     struct vm_area_struct *vma,
-+			     unsigned long addr, unsigned long end)
-+{
-+	pgd_t *pgd;
-+	unsigned long next;
-+
-+	BUG_ON(addr >= end);
-+	tlb_start_vma(tlb, vma);
-+	pgd = pgd_offset(vma->vm_mm, addr);
-+	do {
-+		next = pgd_addr_end(addr, end);
-+		if (pgd_none_or_clear_bad(pgd))
-+			continue;
-+		next = madvise_free_pud_range(tlb, vma, pgd, addr, next);
-+	} while (pgd++, addr = next, addr != end);
-+	tlb_end_vma(tlb, vma);
-+}
-+
-+static int madvise_free_single_vma(struct vm_area_struct *vma,
-+			unsigned long start_addr, unsigned long end_addr)
-+{
-+	unsigned long start, end;
-+	struct mm_struct *mm = vma->vm_mm;
-+	struct mmu_gather tlb;
-+
-+	if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
-+		return -EINVAL;
-+
-+	/* MADV_FREE works for only anon vma at the moment */
-+	if (vma->vm_file)
-+		return -EINVAL;
-+
-+	start = max(vma->vm_start, start_addr);
-+	if (start >= vma->vm_end)
-+		return -EINVAL;
-+	end = min(vma->vm_end, end_addr);
-+	if (end <= vma->vm_start)
-+		return -EINVAL;
-+
-+	lru_add_drain();
-+	tlb_gather_mmu(&tlb, mm, start, end);
-+	update_hiwater_rss(mm);
-+
-+	mmu_notifier_invalidate_range_start(mm, start, end);
-+	madvise_free_page_range(&tlb, vma, start, end);
-+	mmu_notifier_invalidate_range_end(mm, start, end);
-+	tlb_finish_mmu(&tlb, start, end);
-+
-+	return 0;
-+}
-+
-+static long madvise_free(struct vm_area_struct *vma,
-+			     struct vm_area_struct **prev,
-+			     unsigned long start, unsigned long end)
-+{
-+	*prev = vma;
-+	return madvise_free_single_vma(vma, start, end);
-+}
-+
- /*
-  * Application no longer needs these pages.  If the pages are dirty,
-  * it's OK to just throw them away.  The app will be more careful about
-@@ -381,6 +547,13 @@ madvise_vma(struct vm_area_struct *vma, struct vm_area_struct **prev,
- 		return madvise_remove(vma, prev, start, end);
- 	case MADV_WILLNEED:
- 		return madvise_willneed(vma, prev, start, end);
-+	case MADV_FREE:
-+		/*
-+		 * XXX: In this implementation, MADV_FREE works like
-+		 * MADV_DONTNEED on swapless system or full swap.
-+		 */
-+		if (get_nr_swap_pages() > 0)
-+			return madvise_free(vma, prev, start, end);
- 	case MADV_DONTNEED:
- 		return madvise_dontneed(vma, prev, start, end);
- 	default:
-@@ -400,6 +573,7 @@ madvise_behavior_valid(int behavior)
- 	case MADV_REMOVE:
- 	case MADV_WILLNEED:
- 	case MADV_DONTNEED:
-+	case MADV_FREE:
- #ifdef CONFIG_KSM
- 	case MADV_MERGEABLE:
- 	case MADV_UNMERGEABLE:
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 7928ddd91b6e..ee495d84c8b3 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -663,6 +663,7 @@ int page_mapped_in_vma(struct page *page, struct vm_area_struct *vma)
- }
- 
- struct page_referenced_arg {
-+	int dirtied;
- 	int mapcount;
- 	int referenced;
- 	unsigned long vm_flags;
-@@ -677,6 +678,7 @@ static int page_referenced_one(struct page *page, struct vm_area_struct *vma,
- 	struct mm_struct *mm = vma->vm_mm;
- 	spinlock_t *ptl;
- 	int referenced = 0;
-+	int dirty = 0;
- 	struct page_referenced_arg *pra = arg;
- 
- 	if (unlikely(PageTransHuge(page))) {
-@@ -729,6 +731,10 @@ static int page_referenced_one(struct page *page, struct vm_area_struct *vma,
- 			if (likely(!(vma->vm_flags & VM_SEQ_READ)))
- 				referenced++;
- 		}
-+
-+		if (pte_dirty(*pte))
-+			dirty++;
-+
- 		pte_unmap_unlock(pte, ptl);
- 	}
- 
-@@ -737,6 +743,9 @@ static int page_referenced_one(struct page *page, struct vm_area_struct *vma,
- 		pra->vm_flags |= vma->vm_flags;
- 	}
- 
-+	if (dirty)
-+		pra->dirtied++;
-+
- 	pra->mapcount--;
- 	if (!pra->mapcount)
- 		return SWAP_SUCCESS; /* To break the loop */
-@@ -761,6 +770,7 @@ static bool invalid_page_referenced_vma(struct vm_area_struct *vma, void *arg)
-  * @is_locked: caller holds lock on the page
-  * @memcg: target memory cgroup
-  * @vm_flags: collect encountered vma->vm_flags who actually referenced the page
-+ * @is_pte_dirty: ptes which have marked dirty bit - used for lazyfree page
-  *
-  * Quick test_and_clear_referenced for all mappings to a page,
-  * returns the number of ptes which referenced the page.
-@@ -768,7 +778,8 @@ static bool invalid_page_referenced_vma(struct vm_area_struct *vma, void *arg)
- int page_referenced(struct page *page,
- 		    int is_locked,
- 		    struct mem_cgroup *memcg,
--		    unsigned long *vm_flags)
-+		    unsigned long *vm_flags,
-+		    int *is_pte_dirty)
- {
- 	int ret;
- 	int we_locked = 0;
-@@ -783,6 +794,9 @@ int page_referenced(struct page *page,
- 	};
- 
- 	*vm_flags = 0;
-+	if (is_pte_dirty)
-+		*is_pte_dirty = 0;
-+
- 	if (!page_mapped(page))
- 		return 0;
- 
-@@ -810,6 +824,9 @@ int page_referenced(struct page *page,
- 	if (we_locked)
- 		unlock_page(page);
- 
-+	if (is_pte_dirty)
-+		*is_pte_dirty = pra.dirtied;
-+
- 	return pra.referenced;
- }
- 
-@@ -1128,6 +1145,7 @@ static int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
- 	spinlock_t *ptl;
- 	int ret = SWAP_AGAIN;
- 	enum ttu_flags flags = (enum ttu_flags)arg;
-+	int dirty = 0;
- 
- 	pte = page_check_address(page, mm, address, &ptl, 0);
- 	if (!pte)
-@@ -1157,7 +1175,8 @@ static int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
- 	pteval = ptep_clear_flush(vma, address, pte);
- 
- 	/* Move the dirty bit to the physical page now the pte is gone. */
--	if (pte_dirty(pteval))
-+	dirty = pte_dirty(pteval);
-+	if (dirty)
- 		set_page_dirty(page);
- 
- 	/* Update high watermark before we lower rss */
-@@ -1204,6 +1223,16 @@ static int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
- 			}
- 			dec_mm_counter(mm, MM_ANONPAGES);
- 			inc_mm_counter(mm, MM_SWAPENTS);
-+		} else if (flags & TTU_UNMAP) {
-+			if (dirty || PageDirty(page)) {
-+				set_pte_at(mm, address, pte, pteval);
-+				ret = SWAP_FAIL;
-+				goto out_unmap;
-+			} else {
-+				/* It's a freeable page by madvise_free */
-+				dec_mm_counter(mm, MM_ANONPAGES);
-+				goto discard;
-+			}
- 		} else if (IS_ENABLED(CONFIG_MIGRATION)) {
- 			/*
- 			 * Store the pfn of the page in a special migration
-@@ -1227,6 +1256,7 @@ static int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
- 	} else
- 		dec_mm_counter(mm, MM_FILEPAGES);
- 
-+discard:
- 	page_remove_rmap(page);
- 	page_cache_release(page);
- 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 6d24fd63b209..f7a45600846f 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -707,13 +707,17 @@ enum page_references {
- };
- 
- static enum page_references page_check_references(struct page *page,
--						  struct scan_control *sc)
-+						  struct scan_control *sc,
-+						  bool *freeable)
- {
- 	int referenced_ptes, referenced_page;
- 	unsigned long vm_flags;
-+	int pte_dirty;
-+
-+	VM_BUG_ON_PAGE(!PageLocked(page), page);
- 
- 	referenced_ptes = page_referenced(page, 1, sc->target_mem_cgroup,
--					  &vm_flags);
-+					  &vm_flags, &pte_dirty);
- 	referenced_page = TestClearPageReferenced(page);
- 
- 	/*
-@@ -754,6 +758,10 @@ static enum page_references page_check_references(struct page *page,
- 		return PAGEREF_KEEP;
- 	}
- 
-+	if (PageAnon(page) && !pte_dirty && !PageSwapCache(page) &&
-+			!PageDirty(page))
-+		*freeable = true;
-+
- 	/* Reclaim if clean, defer dirty pages to writeback */
- 	if (referenced_page && !PageSwapBacked(page))
- 		return PAGEREF_RECLAIM_CLEAN;
-@@ -823,6 +831,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		int may_enter_fs;
- 		enum page_references references = PAGEREF_RECLAIM_CLEAN;
- 		bool dirty, writeback;
-+		bool freeable = false;
- 
- 		cond_resched();
- 
-@@ -945,7 +954,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		}
- 
- 		if (!force_reclaim)
--			references = page_check_references(page, sc);
-+			references = page_check_references(page, sc,
-+							&freeable);
- 
- 		switch (references) {
- 		case PAGEREF_ACTIVATE:
-@@ -961,7 +971,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		 * Anonymous process memory has backing store?
- 		 * Try to allocate it some swap space here.
- 		 */
--		if (PageAnon(page) && !PageSwapCache(page)) {
-+		if (PageAnon(page) && !PageSwapCache(page) && !freeable) {
- 			if (!(sc->gfp_mask & __GFP_IO))
- 				goto keep_locked;
- 			if (!add_to_swap(page, page_list))
-@@ -976,7 +986,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		 * The page is mapped into the page tables of one or more
- 		 * processes. Try to unmap it here.
- 		 */
--		if (page_mapped(page) && mapping) {
-+		if (page_mapped(page) && (mapping || freeable)) {
- 			switch (try_to_unmap(page, ttu_flags)) {
- 			case SWAP_FAIL:
- 				goto activate_locked;
-@@ -985,7 +995,20 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 			case SWAP_MLOCK:
- 				goto cull_mlocked;
- 			case SWAP_SUCCESS:
--				; /* try to free the page below */
-+				/* try to free the page below */
-+				if (!freeable)
-+					break;
-+				/*
-+				 * Freeable anon page doesn't have mapping
-+				 * due to skipping of swapcache so we free
-+				 * page in here rather than __remove_mapping.
-+				 */
-+				VM_BUG_ON_PAGE(PageSwapCache(page), page);
-+				if (!page_freeze_refs(page, 1))
-+					goto keep_locked;
-+				__clear_page_locked(page);
-+				count_vm_event(PGLAZYFREED);
-+				goto free_it;
- 			}
- 		}
- 
-@@ -1727,7 +1750,7 @@ static void shrink_active_list(unsigned long nr_to_scan,
- 		}
- 
- 		if (page_referenced(page, 0, sc->target_mem_cgroup,
--				    &vm_flags)) {
-+				    &vm_flags, NULL)) {
- 			nr_rotated += hpage_nr_pages(page);
- 			/*
- 			 * Identify referenced, file-backed active pages and
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index eef6321c8470..da18337c6c66 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -794,6 +794,7 @@ const char * const vmstat_text[] = {
- 
- 	"pgfault",
- 	"pgmajfault",
-+	"pglazyfreed",
- 
- 	TEXTS_FOR_ZONES("pgrefill")
- 	TEXTS_FOR_ZONES("pgsteal_kswapd")
--- 
-2.0.0
++		WARN_ON(is_guest_mode(vcpu));
+ 		if (kvm_x86_ops->interrupt_allowed(vcpu)) {
+ 			kvm_queue_interrupt(vcpu, kvm_cpu_get_interrupt(vcpu),
+ 					    false);
 
+This will presumably avoid the race (assuming only interrupts) in all 
+cases.
+
+And, sure enough, booting up L2 comes up fine. The next test compiling the 
+kernel goes fine too.
+
+Finally, let's apply your patch on top of these changes. With your change, L2
+boots up fine, and when compiling the kernel in L2, I finally encounter a 
+hang after some time. (In my last test it took around 22 minutes and I was 
+compiling a kernel with everything enabled). The WARN() that we added doesn't
+get hit, so it doesn't seem like the same race.
+
+The only thing I can think of at this point is that since this patch 
+sets REQ_EVENT only for certain conditions, it's exposing a bug for a certain 
+event which apparently, setting REQ_EVENT for all cases hides. Note that 
+I do think this patch is doing the right thing, but it's just exposing another 
+bug somewhere else :)
+
+Bandan
