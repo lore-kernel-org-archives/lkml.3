@@ -1,158 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100AbaGGOeI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:34:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57257 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753619AbaGGOaP (ORCPT
+	id S1754113AbaGGOe2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:34:28 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52492 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527AbaGGOeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:30:15 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux@maxim.org.za, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        dwmw2@infradead.org, dbaryshkov@gmail.com
-Cc: Boris Brezillon <boris@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v2 17/18] AT91: Remove rstc and shdwnc global base addresses
-Date: Mon,  7 Jul 2014 16:25:30 +0200
-Message-Id: <1404743131-24569-18-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1404743131-24569-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1404743131-24569-1-git-send-email-maxime.ripard@free-electrons.com>
+	Mon, 7 Jul 2014 10:34:24 -0400
+Date: Mon, 7 Jul 2014 16:33:57 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Waiman.Long@hp.com, tglx@linutronix.de, mingo@kernel.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        paolo.bonzini@gmail.com, boris.ostrovsky@oracle.com,
+        paulmck@linux.vnet.ibm.com, riel@redhat.com,
+        torvalds@linux-foundation.org, raghavendra.kt@linux.vnet.ibm.com,
+        david.vrabel@citrix.com, oleg@redhat.com, gleb@redhat.com,
+        scott.norton@hp.com, chegu_vinod@hp.com
+Subject: Re: [PATCH 05/11] qspinlock: Optimize for smaller NR_CPUS
+Message-ID: <20140707143357.GR6758@twins.programming.kicks-ass.net>
+References: <20140615124657.264658593@chello.nl>
+ <20140615130153.483502389@chello.nl>
+ <20140618155730.GA5107@laptop.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AC4h36899OtEuhrO"
+Content-Disposition: inline
+In-Reply-To: <20140618155730.GA5107@laptop.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that there's no user left for the global variables holding the reset and
-shutdown controllers base address, we can remove these variables and their
-associated mapping function.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/mach-at91/at91sam9260.c |  2 --
- arch/arm/mach-at91/at91sam9261.c |  2 --
- arch/arm/mach-at91/at91sam9263.c |  2 --
- arch/arm/mach-at91/at91sam9g45.c |  2 --
- arch/arm/mach-at91/at91sam9rl.c  |  2 --
- arch/arm/mach-at91/generic.h     |  6 ------
- arch/arm/mach-at91/setup.c       | 18 ------------------
- 7 files changed, 34 deletions(-)
+--AC4h36899OtEuhrO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
-index f387e831e894..60a0d37a8134 100644
---- a/arch/arm/mach-at91/at91sam9260.c
-+++ b/arch/arm/mach-at91/at91sam9260.c
-@@ -339,8 +339,6 @@ static void __init at91sam9260_map_io(void)
- 
- static void __init at91sam9260_ioremap_registers(void)
- {
--	at91_ioremap_shdwc(AT91SAM9260_BASE_SHDWC);
--	at91_ioremap_rstc(AT91SAM9260_BASE_RSTC);
- 	at91_ioremap_ramc(0, AT91SAM9260_BASE_SDRAMC, 512);
- 	at91sam926x_ioremap_pit(AT91SAM9260_BASE_PIT);
- 	at91sam9_ioremap_smc(0, AT91SAM9260_BASE_SMC);
-diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
-index 5e8ac0d271b8..80cae8728316 100644
---- a/arch/arm/mach-at91/at91sam9261.c
-+++ b/arch/arm/mach-at91/at91sam9261.c
-@@ -302,8 +302,6 @@ static void __init at91sam9261_map_io(void)
- 
- static void __init at91sam9261_ioremap_registers(void)
- {
--	at91_ioremap_shdwc(AT91SAM9261_BASE_SHDWC);
--	at91_ioremap_rstc(AT91SAM9261_BASE_RSTC);
- 	at91_ioremap_ramc(0, AT91SAM9261_BASE_SDRAMC, 512);
- 	at91sam926x_ioremap_pit(AT91SAM9261_BASE_PIT);
- 	at91sam9_ioremap_smc(0, AT91SAM9261_BASE_SMC);
-diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
-index 772485c9e47c..7d4403ed0596 100644
---- a/arch/arm/mach-at91/at91sam9263.c
-+++ b/arch/arm/mach-at91/at91sam9263.c
-@@ -317,8 +317,6 @@ static void __init at91sam9263_map_io(void)
- 
- static void __init at91sam9263_ioremap_registers(void)
- {
--	at91_ioremap_shdwc(AT91SAM9263_BASE_SHDWC);
--	at91_ioremap_rstc(AT91SAM9263_BASE_RSTC);
- 	at91_ioremap_ramc(0, AT91SAM9263_BASE_SDRAMC0, 512);
- 	at91_ioremap_ramc(1, AT91SAM9263_BASE_SDRAMC1, 512);
- 	at91sam926x_ioremap_pit(AT91SAM9263_BASE_PIT);
-diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
-index d986cc757cfb..c615f1d3d39c 100644
---- a/arch/arm/mach-at91/at91sam9g45.c
-+++ b/arch/arm/mach-at91/at91sam9g45.c
-@@ -367,8 +367,6 @@ static void __init at91sam9g45_map_io(void)
- 
- static void __init at91sam9g45_ioremap_registers(void)
- {
--	at91_ioremap_shdwc(AT91SAM9G45_BASE_SHDWC);
--	at91_ioremap_rstc(AT91SAM9G45_BASE_RSTC);
- 	at91_ioremap_ramc(0, AT91SAM9G45_BASE_DDRSDRC1, 512);
- 	at91_ioremap_ramc(1, AT91SAM9G45_BASE_DDRSDRC0, 512);
- 	at91sam926x_ioremap_pit(AT91SAM9G45_BASE_PIT);
-diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
-index 1fba256502f7..79b5bb793692 100644
---- a/arch/arm/mach-at91/at91sam9rl.c
-+++ b/arch/arm/mach-at91/at91sam9rl.c
-@@ -311,8 +311,6 @@ static void __init at91sam9rl_map_io(void)
- 
- static void __init at91sam9rl_ioremap_registers(void)
- {
--	at91_ioremap_shdwc(AT91SAM9RL_BASE_SHDWC);
--	at91_ioremap_rstc(AT91SAM9RL_BASE_RSTC);
- 	at91_ioremap_ramc(0, AT91SAM9RL_BASE_SDRAMC, 512);
- 	at91sam926x_ioremap_pit(AT91SAM9RL_BASE_PIT);
- 	at91sam9_ioremap_smc(0, AT91SAM9RL_BASE_SMC);
-diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-index 5d5e55237c41..f42b0490ad98 100644
---- a/arch/arm/mach-at91/generic.h
-+++ b/arch/arm/mach-at91/generic.h
-@@ -64,12 +64,6 @@ extern void at91_irq_resume(void);
- /* idle */
- extern void at91sam9_idle(void);
- 
--/* reset */
--extern void at91_ioremap_rstc(u32 base_addr);
--
--/* shutdown */
--extern void at91_ioremap_shdwc(u32 base_addr);
--
- /* Matrix */
- extern void at91_ioremap_matrix(u32 base_addr);
- 
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index cdd717a4fa30..eb2b922a4adb 100644
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -319,24 +319,6 @@ void __init at91_map_io(void)
- 		at91_boot_soc.map_io();
- }
- 
--void __iomem *at91_shdwc_base = NULL;
--
--void __init at91_ioremap_shdwc(u32 base_addr)
--{
--	at91_shdwc_base = ioremap(base_addr, 16);
--	if (!at91_shdwc_base)
--		panic(pr_fmt("Impossible to ioremap at91_shdwc_base\n"));
--}
--
--void __iomem *at91_rstc_base;
--
--void __init at91_ioremap_rstc(u32 base_addr)
--{
--	at91_rstc_base = ioremap(base_addr, 16);
--	if (!at91_rstc_base)
--		panic(pr_fmt("Impossible to ioremap at91_rstc_base\n"));
--}
--
- void __iomem *at91_matrix_base;
- EXPORT_SYMBOL_GPL(at91_matrix_base);
- 
--- 
-2.0.1
+On Wed, Jun 18, 2014 at 11:57:30AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Sun, Jun 15, 2014 at 02:47:02PM +0200, Peter Zijlstra wrote:
+> > From: Peter Zijlstra <peterz@infradead.org>
+> >=20
+> > When we allow for a max NR_CPUS < 2^14 we can optimize the pending
+> > wait-acquire and the xchg_tail() operations.
+> >=20
+> > By growing the pending bit to a byte, we reduce the tail to 16bit.
+> > This means we can use xchg16 for the tail part and do away with all
+> > the repeated compxchg() operations.
+> >=20
+> > This in turn allows us to unconditionally acquire; the locked state
+> > as observed by the wait loops cannot change. And because both locked
+> > and pending are now a full byte we can use simple stores for the
+> > state transition, obviating one atomic operation entirely.
+>=20
+> I have to ask - how much more performance do you get from this?
+>=20
+> Is this extra atomic operation hurting that much?
 
+Its not extra, its a cmpxchg loop vs an unconditional xchg.
+
+And yes, its somewhat tedious to show, but on 4 socket systems you can
+really see it make a difference. I'll try and run some numbers, I need
+to reinstall the box.
+
+(there were numbers in the previous threads, but you're right, I
+should've put some in the Changelog).
+
+> >  /**
+> >   * queue_spin_lock_slowpath - acquire the queue spinlock
+> > @@ -173,8 +259,13 @@ void queue_spin_lock_slowpath(struct qsp
+> >  	 * we're pending, wait for the owner to go away.
+> >  	 *
+> >  	 * *,1,1 -> *,1,0
+> > +	 *
+> > +	 * this wait loop must be a load-acquire such that we match the
+> > +	 * store-release that clears the locked bit and create lock
+> > +	 * sequentiality; this because not all clear_pending_set_locked()
+> > +	 * implementations imply full barriers.
+> >  	 */
+> > -	while ((val =3D atomic_read(&lock->val)) & _Q_LOCKED_MASK)
+> > +	while ((val =3D smp_load_acquire(&lock->val.counter)) & _Q_LOCKED_MAS=
+K)
+>=20
+> lock->val.counter? Ugh, all to deal with the 'int' -> 'u32' (or 'u64')
+
+No, to do atomic_t -> int.
+
+> Could you introduce a macro in atomic.h called 'atomic_read_raw' which
+> would do the this? Like this:
+
+That would be worse I think. It looks like a function returning an
+rvalue whereas we really want an lvalue.
+
+
+
+--AC4h36899OtEuhrO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTuq/VAAoJEHZH4aRLwOS63hwQAIFCSObxs1K7RGi7RHMikHRD
+joavWYubyQmoi8/xhdk2sU10wP82yaLctY4V+gqMdW9e6Tw09yGPcfWRFGVQE/wG
+r/XYr00u6vpxlJggRRSaBjf/S7I44h/TI329UoZ1HeAsETozUU/PNa0H5Y+91SqU
+UrFARlmIdDKQH+stqmlbnJ5kO8fTx5DF8Dfj9wbuVqzK/d1CHrN0k0PWgzkHsdPE
+pHkFPOYe1m6MO4T/6khbOSzLSVWhJrgDAkoroKlp+y41jPcqIKGMJ9kanw9ueuk9
+4rKd2/a+M7ZBnBjDHfyZuvNaeRyeR1SOl7oIb6HWBwhzaY7jdZcRLwCOLkWYgFKY
+3lbSA53qoXgG6zEdfB0J0FMvw/vjHQ6MoRG7kqYVQhwa6fWDWMAx/fSE9P2ERCKH
+Xj9zfMBHNGnLpaWBRrstLKvIe6FHBRxnTmTX+tmjJdv8Amw6aoQwEOw4Es+Iz5Iv
+gwVroYO3EqXesMj4++GaWEEZ8NCtBYjjTnn/N6aZLvA1pyhHdE2/WTUha+xzTTvI
+ZV05O/KREthFoJZdrvFdEZv6LfYv+g+nmz+3acTB71QI14AleTsrJ82optdziWvb
+3dy/G/wgfknZmyZGsS2IdZk27DoOoEhwbB77hqRThiTpVwPRYXQ50Y8TgDxybKZo
+pPt2MpfCQed7ZdrNmgWd
+=qzB6
+-----END PGP SIGNATURE-----
+
+--AC4h36899OtEuhrO--
