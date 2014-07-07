@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297AbaGHAwk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:52:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55564 "EHLO
+	id S1756024AbaGHAxM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:53:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753544AbaGGXyR (ORCPT
+	with ESMTP id S1753531AbaGGXyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Kolesov <akolesov@synopsys.com>,
-        Vineet Gupta <vgupta@synopsys.com>
-Subject: [PATCH 3.15 108/122] ARC: Fix build breakage for !CONFIG_ARC_DW2_UNWIND
-Date: Mon,  7 Jul 2014 16:57:50 -0700
-Message-Id: <20140707235737.477954260@linuxfoundation.org>
+        Bill <billstuff2001@sbcglobal.net>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.15 106/122] md: flush writes before starting a recovery.
+Date: Mon,  7 Jul 2014 16:57:48 -0700
+Message-Id: <20140707235737.423020524@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,31 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vineet Gupta <vgupta@synopsys.com>
+From: NeilBrown <neilb@suse.de>
 
-commit ba25915fb2cd18152cb14b144dbe8bf2f2bd8e45 upstream.
+commit 133d4527eab8d199a62eee6bd433f0776842df2e upstream.
 
-Fixes: ec7ac6afd07b (ARC: switch to generic ENTRY/END assembler annotations)
-Reported-by: Anton Kolesov <akolesov@synopsys.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+When we write to a degraded array which has a bitmap, we
+make sure the relevant bit in the bitmap remains set when
+the write completes (so a 're-add' can quickly rebuilt a
+temporarily-missing device).
+
+If, immediately after such a write starts, we incorporate a spare,
+commence recovery, and skip over the region where the write is
+happening (because the 'needs recovery' flag isn't set yet),
+then that write will not get to the new device.
+
+Once the recovery finishes the new device will be trusted, but will
+have incorrect data, leading to possible corruption.
+
+We cannot set the 'needs recovery' flag when we start the write as we
+do not know easily if the write will be "degraded" or not.  That
+depends on details of the particular raid level and particular write
+request.
+
+This patch fixes a corruption issue of long standing and so it
+suitable for any -stable kernel.  It applied correctly to 3.0 at
+least and will minor editing to earlier kernels.
+
+Reported-by: Bill <billstuff2001@sbcglobal.net>
+Tested-by: Bill <billstuff2001@sbcglobal.net>
+Link: http://lkml.kernel.org/r/53A518BB.60709@sbcglobal.net
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/kernel/ctx_sw_asm.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/md.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/arch/arc/kernel/ctx_sw_asm.S
-+++ b/arch/arc/kernel/ctx_sw_asm.S
-@@ -10,9 +10,9 @@
-  *  -This is the more "natural" hand written assembler
-  */
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7491,6 +7491,19 @@ void md_do_sync(struct md_thread *thread
+ 			    rdev->recovery_offset < j)
+ 				j = rdev->recovery_offset;
+ 		rcu_read_unlock();
++
++		/* If there is a bitmap, we need to make sure all
++		 * writes that started before we added a spare
++		 * complete before we start doing a recovery.
++		 * Otherwise the write might complete and (via
++		 * bitmap_endwrite) set a bit in the bitmap after the
++		 * recovery has checked that bit and skipped that
++		 * region.
++		 */
++		if (mddev->bitmap) {
++			mddev->pers->quiesce(mddev, 1);
++			mddev->pers->quiesce(mddev, 0);
++		}
+ 	}
  
-+#include <linux/linkage.h>
- #include <asm/entry.h>       /* For the SAVE_* macros */
- #include <asm/asm-offsets.h>
--#include <asm/linkage.h>
- 
- #define KSP_WORD_OFF 	((TASK_THREAD + THREAD_KSP) / 4)
- 
+ 	printk(KERN_INFO "md: %s of RAID array %s\n", desc, mdname(mddev));
 
 
