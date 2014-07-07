@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132AbaGHA5E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:57:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55399 "EHLO
+	id S1756132AbaGHA5j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:57:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55444 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415AbaGGXyL (ORCPT
+	with ESMTP id S1753412AbaGGXyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:11 -0400
+	Mon, 7 Jul 2014 19:54:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.15 091/122] ext4: Fix hole punching for files with indirect blocks
-Date: Mon,  7 Jul 2014 16:57:33 -0700
-Message-Id: <20140707235736.982703106@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Joe Lawrence <joe.lawrence@stratus.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.15 089/122] blkcg: fix use-after-free in __blkg_release_rcu() by making blkcg_gq refcnt an atomic_t
+Date: Mon,  7 Jul 2014 16:57:31 -0700
+Message-Id: <20140707235736.924684846@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -28,57 +29,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Tejun Heo <tj@kernel.org>
 
-commit a93cd4cf86466caa49cfe64607bea7f0bde3f916 upstream.
+commit a5049a8ae34950249a7ae94c385d7c5c98914412 upstream.
 
-Hole punching code for files with indirect blocks wrongly computed
-number of blocks which need to be cleared when traversing the indirect
-block tree. That could result in punching more blocks than actually
-requested and thus effectively cause a data loss. For example:
+Hello,
 
-fallocate -n -p 10240000 4096
+So, this patch should do.  Joe, Vivek, can one of you guys please
+verify that the oops goes away with this patch?
 
-will punch the range 10240000 - 12632064 instead of the range 1024000 -
-10244096. Fix the calculation.
+Jens, the original thread can be read at
 
-Fixes: 8bad6fc813a3a5300f51369c39d315679fd88c72
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+  http://thread.gmane.org/gmane.linux.kernel/1720729
+
+The fix converts blkg->refcnt from int to atomic_t.  It does some
+overhead but it should be minute compared to everything else which is
+going on and the involved cacheline bouncing, so I think it's highly
+unlikely to cause any noticeable difference.  Also, the refcnt in
+question should be converted to a perpcu_ref for blk-mq anyway, so the
+atomic_t is likely to go away pretty soon anyway.
+
+Thanks.
+
+------- 8< -------
+__blkg_release_rcu() may be invoked after the associated request_queue
+is released with a RCU grace period inbetween.  As such, the function
+and callbacks invoked from it must not dereference the associated
+request_queue.  This is clearly indicated in the comment above the
+function.
+
+Unfortunately, while trying to fix a different issue, 2a4fd070ee85
+("blkcg: move bulk of blkcg_gq release operations to the RCU
+callback") ignored this and added [un]locking of @blkg->q->queue_lock
+to __blkg_release_rcu().  This of course can cause oops as the
+request_queue may be long gone by the time this code gets executed.
+
+  general protection fault: 0000 [#1] SMP
+  CPU: 21 PID: 30 Comm: rcuos/21 Not tainted 3.15.0 #1
+  Hardware name: Stratus ftServer 6400/G7LAZ, BIOS BIOS Version 6.3:57 12/25/2013
+  task: ffff880854021de0 ti: ffff88085403c000 task.ti: ffff88085403c000
+  RIP: 0010:[<ffffffff8162e9e5>]  [<ffffffff8162e9e5>] _raw_spin_lock_irq+0x15/0x60
+  RSP: 0018:ffff88085403fdf0  EFLAGS: 00010086
+  RAX: 0000000000020000 RBX: 0000000000000010 RCX: 0000000000000000
+  RDX: 000060ef80008248 RSI: 0000000000000286 RDI: 6b6b6b6b6b6b6b6b
+  RBP: ffff88085403fdf0 R08: 0000000000000286 R09: 0000000000009f39
+  R10: 0000000000020001 R11: 0000000000020001 R12: ffff88103c17a130
+  R13: ffff88103c17a080 R14: 0000000000000000 R15: 0000000000000000
+  FS:  0000000000000000(0000) GS:ffff88107fca0000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+  CR2: 00000000006e5ab8 CR3: 000000000193d000 CR4: 00000000000407e0
+  Stack:
+   ffff88085403fe18 ffffffff812cbfc2 ffff88103c17a130 0000000000000000
+   ffff88103c17a130 ffff88085403fec0 ffffffff810d1d28 ffff880854021de0
+   ffff880854021de0 ffff88107fcaec58 ffff88085403fe80 ffff88107fcaec30
+  Call Trace:
+   [<ffffffff812cbfc2>] __blkg_release_rcu+0x72/0x150
+   [<ffffffff810d1d28>] rcu_nocb_kthread+0x1e8/0x300
+   [<ffffffff81091d81>] kthread+0xe1/0x100
+   [<ffffffff8163813c>] ret_from_fork+0x7c/0xb0
+  Code: ff 47 04 48 8b 7d 08 be 00 02 00 00 e8 55 48 a4 ff 5d c3 0f 1f 00 66 66 66 66 90 55 48 89 e5
+  +fa 66 66 90 66 66 90 b8 00 00 02 00 <f0> 0f c1 07 89 c2 c1 ea 10 66 39 c2 75 02 5d c3 83 e2 fe 0f
+  +b7
+  RIP  [<ffffffff8162e9e5>] _raw_spin_lock_irq+0x15/0x60
+   RSP <ffff88085403fdf0>
+
+The request_queue locking was added because blkcg_gq->refcnt is an int
+protected with the queue lock and __blkg_release_rcu() needs to put
+the parent.  Let's fix it by making blkcg_gq->refcnt an atomic_t and
+dropping queue locking in the function.
+
+Given the general heavy weight of the current request_queue and blkcg
+operations, this is unlikely to cause any noticeable overhead.
+Moreover, blkcg_gq->refcnt is likely to be converted to percpu_ref in
+the near future, so whatever (most likely negligible) overhead it may
+add is temporary.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Link: http://lkml.kernel.org/g/alpine.DEB.2.02.1406081816540.17948@jlaw-desktop.mno.stratus.com
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/indirect.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ block/blk-cgroup.c |    7 ++-----
+ block/blk-cgroup.h |   17 +++++++----------
+ 2 files changed, 9 insertions(+), 15 deletions(-)
 
---- a/fs/ext4/indirect.c
-+++ b/fs/ext4/indirect.c
-@@ -1318,16 +1318,24 @@ static int free_hole_blocks(handle_t *ha
- 		blk = *i_data;
- 		if (level > 0) {
- 			ext4_lblk_t first2;
-+			ext4_lblk_t count2;
-+
- 			bh = sb_bread(inode->i_sb, le32_to_cpu(blk));
- 			if (!bh) {
- 				EXT4_ERROR_INODE_BLOCK(inode, le32_to_cpu(blk),
- 						       "Read failure");
- 				return -EIO;
- 			}
--			first2 = (first > offset) ? first - offset : 0;
-+			if (first > offset) {
-+				first2 = first - offset;
-+				count2 = count;
-+			} else {
-+				first2 = 0;
-+				count2 = count - (offset - first);
-+			}
- 			ret = free_hole_blocks(handle, inode, bh,
- 					       (__le32 *)bh->b_data, level - 1,
--					       first2, count - offset,
-+					       first2, count2,
- 					       inode->i_sb->s_blocksize >> 2);
- 			if (ret) {
- 				brelse(bh);
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -80,7 +80,7 @@ static struct blkcg_gq *blkg_alloc(struc
+ 	blkg->q = q;
+ 	INIT_LIST_HEAD(&blkg->q_node);
+ 	blkg->blkcg = blkcg;
+-	blkg->refcnt = 1;
++	atomic_set(&blkg->refcnt, 1);
+ 
+ 	/* root blkg uses @q->root_rl, init rl only for !root blkgs */
+ 	if (blkcg != &blkcg_root) {
+@@ -399,11 +399,8 @@ void __blkg_release_rcu(struct rcu_head
+ 
+ 	/* release the blkcg and parent blkg refs this blkg has been holding */
+ 	css_put(&blkg->blkcg->css);
+-	if (blkg->parent) {
+-		spin_lock_irq(blkg->q->queue_lock);
++	if (blkg->parent)
+ 		blkg_put(blkg->parent);
+-		spin_unlock_irq(blkg->q->queue_lock);
+-	}
+ 
+ 	blkg_free(blkg);
+ }
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -18,6 +18,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/radix-tree.h>
+ #include <linux/blkdev.h>
++#include <linux/atomic.h>
+ 
+ /* Max limits for throttle policy */
+ #define THROTL_IOPS_MAX		UINT_MAX
+@@ -104,7 +105,7 @@ struct blkcg_gq {
+ 	struct request_list		rl;
+ 
+ 	/* reference count */
+-	int				refcnt;
++	atomic_t			refcnt;
+ 
+ 	/* is this blkg online? protected by both blkcg and q locks */
+ 	bool				online;
+@@ -257,13 +258,12 @@ static inline int blkg_path(struct blkcg
+  * blkg_get - get a blkg reference
+  * @blkg: blkg to get
+  *
+- * The caller should be holding queue_lock and an existing reference.
++ * The caller should be holding an existing reference.
+  */
+ static inline void blkg_get(struct blkcg_gq *blkg)
+ {
+-	lockdep_assert_held(blkg->q->queue_lock);
+-	WARN_ON_ONCE(!blkg->refcnt);
+-	blkg->refcnt++;
++	WARN_ON_ONCE(atomic_read(&blkg->refcnt) <= 0);
++	atomic_inc(&blkg->refcnt);
+ }
+ 
+ void __blkg_release_rcu(struct rcu_head *rcu);
+@@ -271,14 +271,11 @@ void __blkg_release_rcu(struct rcu_head
+ /**
+  * blkg_put - put a blkg reference
+  * @blkg: blkg to put
+- *
+- * The caller should be holding queue_lock.
+  */
+ static inline void blkg_put(struct blkcg_gq *blkg)
+ {
+-	lockdep_assert_held(blkg->q->queue_lock);
+-	WARN_ON_ONCE(blkg->refcnt <= 0);
+-	if (!--blkg->refcnt)
++	WARN_ON_ONCE(atomic_read(&blkg->refcnt) <= 0);
++	if (atomic_dec_and_test(&blkg->refcnt))
+ 		call_rcu(&blkg->rcu_head, __blkg_release_rcu);
+ }
+ 
 
 
