@@ -1,47 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264AbaGGMhl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 08:37:41 -0400
-Received: from smtp-out-165.synserver.de ([212.40.185.165]:1089 "EHLO
-	smtp-out-165.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752652AbaGGMhk (ORCPT
+	id S1753295AbaGGMik (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 08:38:40 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:40972 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075AbaGGMii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 08:37:40 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 19965
-Message-ID: <53BA9490.4050903@metafoo.de>
-Date: Mon, 07 Jul 2014 14:37:36 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.6.0
+	Mon, 7 Jul 2014 08:38:38 -0400
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@kernel.org>,
-        Himangi Saraogi <himangi774@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-CC: julia.lawall@lip6.fr, Michael Hennerich <hennerich@blackfin.uclinux.org>
-Subject: Re: [PATCH v2] iio:trigger: Introduce the use of devm_kzalloc
-References: <20140701211908.GA23193@himangi-Dell> <53BA93F2.2090200@kernel.org>
-In-Reply-To: <53BA93F2.2090200@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1403098673-3058-1-git-send-email-houcheng@gmail.com>
+References: <1403098673-3058-1-git-send-email-houcheng@gmail.com>
+Date: Mon, 7 Jul 2014 14:38:37 +0200
+Message-ID: <CACRpkdYkbdbkO7Jff-mQy1ybiq=HV9fJfgGG8QezvX2iJXoUcQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v3] reset: Add a defer reset object to send board
+ specific reset
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Houcheng Lin <houcheng@gmail.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Stephen Gallimore <stephen.gallimore@st.com>,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, sre@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2014 02:34 PM, Jonathan Cameron wrote:
-> On 01/07/14 22:19, Himangi Saraogi wrote:
->> This patch introduces the use of the managed version of kzalloc and
->> removes the kfrees in the probe and remove functions. More return
->> paths are added and the labels are renamed to order them.
->>
->> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Looks sane, but I'd like an ack or reviewed-by from someone as Analog for
-> this one.
-> cc'd Lars and Michael.
+On Wed, Jun 18, 2014 at 3:37 PM, Houcheng Lin <houcheng@gmail.com> wrote:
 
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+(...)
+> +static DEFINE_MUTEX(deferred_reset_mutex);
+> +static LIST_HEAD(deferred_reset_list);
+> +
+> +struct defer_reset_private {
+> +       struct list_head lnode;
+> +       struct device_node *node;  /* defer_reset device */
 
-Thanks.
+Isn't it better if you get the gpio descriptor(s) in probe() and store that
+inside defer_reset_private instead of storing the device_node?
 
+struct gpio_desc *gpiod;
+
+(Then you need not include <linux/of_gpio.h>)
+
+> +};
+
+
+> +static int gdr_issue_reset_line(
+> +       struct device_node *of_node, int index, int val)
+> +{
+> +       enum of_gpio_flags flags = 0;
+> +       struct gpio_desc *gpiod;
+> +       gpiod = of_get_named_gpiod_flags(of_node, "reset-gpios", index, &flags);
+> +       if (IS_ERR(gpiod))
+> +               return -PTR_ERR(gpiod);
+> +       gdr_issue_reset_gpio(gpiod, val, flags);
+
+So here just use the gpiod from the private struct instead
+of looking it up in the last minute.
+
+> +static int gdr_probe(struct platform_device *pdev_gdr)
+> +{
+> +       struct list_head *pos, *n;
+> +
+> +       pr_debug("gpio defer reset probe\n");
+> +
+> +       mutex_lock(&deferred_reset_mutex);
+> +       list_for_each_safe(pos, n, &deferred_reset_list) {
+> +               struct defer_reset_private *pdata;
+> +               struct platform_device *pdev;
+> +               pdata = list_entry(pos, struct defer_reset_private, lnode);
+> +               pdev = of_find_device_by_node(pdata->node->parent);
+
+So in this iteration I would get the gpio descriptor for each one using
+something like:
+
+pdata->gpiod = gpiod_get_index(&pdev->dev, ...);
+
+Yours,
+Linus Walleij
