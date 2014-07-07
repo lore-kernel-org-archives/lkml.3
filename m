@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498AbaGHBLD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:11:03 -0400
+	id S1753002AbaGGXxy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 19:53:54 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:55225 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903AbaGGXxy (ORCPT
+	with ESMTP id S1752903AbaGGXxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:53:54 -0400
+	Mon, 7 Jul 2014 19:53:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.15 044/122] drm/i915, HD-audio: Dont continue probing when nomodeset is given
-Date: Mon,  7 Jul 2014 16:56:46 -0700
-Message-Id: <20140707235735.569073948@linuxfoundation.org>
+        ShiChun Ma <masc2008@qq.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.15 009/122] xhci: correct burst count field for isoc transfers on 1.0 xhci hosts
+Date: Mon,  7 Jul 2014 16:56:11 -0700
+Message-Id: <20140707235734.523980161@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -28,147 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 74b0c2d75fb4cc89173944e6d8f9eb47aca0c343 upstream.
+commit 3213b151387df0b95f4eada104f68eb1c1409cb3 upstream.
 
-When a machine is booted with nomodeset option, i915 driver skips the
-whole initialization.  Meanwhile, HD-audio tries to bind wth i915 just
-by request_symbol() without knowing that the initialization was
-skipped, and eventually it hits WARN_ON() in i915_request_power_well()
-and i915_release_power_well() wrongly but still continues probing,
-even though it doesn't work at all.
+The transfer burst count (TBC) field in xhci 1.0 hosts should be set
+to the number of bursts needed to transfer all packets in a isoc TD.
+Supported values are 0-2 (1 to 3 bursts per service interval).
 
-In this patch, both functions are changed to return an error in case
-of uninitialized state instead of WARN_ON(), so that HD-audio driver
-can give up HDMI controller initialization at the right time.
+Formula for TBC calculation is given in xhci spec section 4.11.2.3:
+TBC = roundup( Transfer Descriptor Packet Count / Max Burst Size +1 ) - 1
 
-Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This patch should be applied to stable kernels since 3.0 that contain
+the commit 5cd43e33b9519143f06f507dd7cbee6b7a621885
+"xhci 1.0: Set transfer burst count field."
+
+Suggested-by: ShiChun Ma <masc2008@qq.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_pm.c |   14 ++++++++------
- include/drm/i915_powerwell.h    |    4 ++--
- sound/pci/hda/hda_i915.c        |   12 ++++++------
- sound/pci/hda/hda_i915.h        |    4 ++--
- sound/pci/hda/hda_intel.c       |    7 ++++++-
- 5 files changed, 24 insertions(+), 17 deletions(-)
+ drivers/usb/host/xhci-ring.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -5705,30 +5705,32 @@ void intel_display_power_put(struct drm_
- static struct i915_power_domains *hsw_pwr;
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -3699,7 +3699,7 @@ static unsigned int xhci_get_burst_count
+ 		return 0;
  
- /* Display audio driver power well request */
--void i915_request_power_well(void)
-+int i915_request_power_well(void)
- {
- 	struct drm_i915_private *dev_priv;
- 
--	if (WARN_ON(!hsw_pwr))
--		return;
-+	if (!hsw_pwr)
-+		return -ENODEV;
- 
- 	dev_priv = container_of(hsw_pwr, struct drm_i915_private,
- 				power_domains);
- 	intel_display_power_get(dev_priv, POWER_DOMAIN_AUDIO);
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(i915_request_power_well);
- 
- /* Display audio driver power well release */
--void i915_release_power_well(void)
-+int i915_release_power_well(void)
- {
- 	struct drm_i915_private *dev_priv;
- 
--	if (WARN_ON(!hsw_pwr))
--		return;
-+	if (!hsw_pwr)
-+		return -ENODEV;
- 
- 	dev_priv = container_of(hsw_pwr, struct drm_i915_private,
- 				power_domains);
- 	intel_display_power_put(dev_priv, POWER_DOMAIN_AUDIO);
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(i915_release_power_well);
- 
---- a/include/drm/i915_powerwell.h
-+++ b/include/drm/i915_powerwell.h
-@@ -30,7 +30,7 @@
- #define _I915_POWERWELL_H_
- 
- /* For use by hda_i915 driver */
--extern void i915_request_power_well(void);
--extern void i915_release_power_well(void);
-+extern int i915_request_power_well(void);
-+extern int i915_release_power_well(void);
- 
- #endif				/* _I915_POWERWELL_H_ */
---- a/sound/pci/hda/hda_i915.c
-+++ b/sound/pci/hda/hda_i915.c
-@@ -22,20 +22,20 @@
- #include <drm/i915_powerwell.h>
- #include "hda_i915.h"
- 
--static void (*get_power)(void);
--static void (*put_power)(void);
-+static int (*get_power)(void);
-+static int (*put_power)(void);
- 
--void hda_display_power(bool enable)
-+int hda_display_power(bool enable)
- {
- 	if (!get_power || !put_power)
--		return;
-+		return -ENODEV;
- 
- 	pr_debug("HDA display power %s \n",
- 			enable ? "Enable" : "Disable");
- 	if (enable)
--		get_power();
-+		return get_power();
- 	else
--		put_power();
-+		return put_power();
+ 	max_burst = urb->ep->ss_ep_comp.bMaxBurst;
+-	return roundup(total_packet_count, max_burst + 1) - 1;
++	return DIV_ROUND_UP(total_packet_count, max_burst + 1) - 1;
  }
  
- int hda_i915_init(void)
---- a/sound/pci/hda/hda_i915.h
-+++ b/sound/pci/hda/hda_i915.h
-@@ -17,11 +17,11 @@
- #define __SOUND_HDA_I915_H
- 
- #ifdef CONFIG_SND_HDA_I915
--void hda_display_power(bool enable);
-+int hda_display_power(bool enable);
- int hda_i915_init(void);
- int hda_i915_exit(void);
- #else
--static inline void hda_display_power(bool enable) {}
-+static inline int hda_display_power(bool enable) { return 0; }
- static inline int hda_i915_init(void)
- {
- 	return -ENODEV;
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -1707,8 +1707,13 @@ static int azx_probe_continue(struct azx
- 				"Error request power-well from i915\n");
- 			goto out_free;
- 		}
-+		err = hda_display_power(true);
-+		if (err < 0) {
-+			dev_err(chip->card->dev,
-+				"Cannot turn on display power on i915\n");
-+			goto out_free;
-+		}
- #endif
--		hda_display_power(true);
- 	}
- 
- 	err = azx_first_init(chip);
+ /*
 
 
