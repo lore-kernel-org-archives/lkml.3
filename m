@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669AbaGGOyR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:54:17 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:53234 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508AbaGGOyP (ORCPT
+	id S1753170AbaGGOy4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:54:56 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:65036 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591AbaGGOyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:54:15 -0400
-Date: Mon, 7 Jul 2014 16:54:23 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Imre Deak <imre.deak@intel.com>
-Subject: Re: linux-next: Tree for Jun 19 (drm/i915)
-Message-ID: <20140707145423.GB5821@phenom.ffwll.local>
-Mail-Followup-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	Randy Dunlap <rdunlap@infradead.org>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	"Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-	linux-kernel@vger.kernel.org,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	dri-devel <dri-devel@lists.freedesktop.org>,
-	Imre Deak <imre.deak@intel.com>
-References: <20140619161632.58b442e4@canb.auug.org.au>
- <53A31CDA.20207@infradead.org>
- <87y4wm8reh.fsf@intel.com>
- <9626816.NOau5dZfmB@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9626816.NOau5dZfmB@vostro.rjw.lan>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 7 Jul 2014 10:54:55 -0400
+Message-ID: <1404744889.4709.83.camel@marge.simpson.net>
+Subject: Re: [ANNOUNCE] 3.4.10-rt7
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sebastian Sewior <bigeasy@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Carsten Emde <cbe@osadl.org>
+Date: Mon, 07 Jul 2014 16:54:49 +0200
+In-Reply-To: <alpine.DEB.2.10.1407071027170.22031@nanos>
+References: <alpine.DEB.2.10.1407071027170.22031@nanos>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 01:01:36AM +0200, Rafael J. Wysocki wrote:
-> On Tuesday, June 24, 2014 02:43:02 PM Jani Nikula wrote:
-> > On Thu, 19 Jun 2014, Randy Dunlap <rdunlap@infradead.org> wrote:
-> > > On 06/18/14 23:16, Stephen Rothwell wrote:
-> > >> Hi all,
-> > >> 
-> > >> The powerpc allyesconfig is again broken more than usual.
-> > >> 
-> > >> Changes since 20140618:
-> > >> 
-> > >
-> > > on i386:
-> > >
-> > > CONFIG_ACPI is not enabled.
-> > >
-> > >   CC      drivers/gpu/drm/i915/i915_drv.o
-> > > ../drivers/gpu/drm/i915/i915_drv.c: In function 'i915_drm_freeze':
-> > > ../drivers/gpu/drm/i915/i915_drv.c:547:2: error: implicit declaration of function 'acpi_target_system_state' [-Werror=implicit-function-declaration]
-> > > ../drivers/gpu/drm/i915/i915_drv.c:547:36: error: 'ACPI_STATE_S3' undeclared (first use in this function)
-> > > ../drivers/gpu/drm/i915/i915_drv.c:547:36: note: each undeclared identifier is reported only once for each function it appears in
-> > >   CC      net/dccp/qpolicy.o
-> > > cc1: some warnings being treated as errors
-> > > make[5]: *** [drivers/gpu/drm/i915/i915_drv.o] Error 1
-> > 
-> > Thanks for the report, we'll fix it.
-> > 
-> > Can anyone explain why include/linux/acpi_bus.h has #ifdef
-> > CONFIG_ACPI_SLEEP and conditional build for a dummy inline version of
-> > acpi_target_system_state(), *but* that does not get included or used if
-> > CONFIG_ACPI=n? Additionally, the combination of CONFIG_ACPI=y and
-> > CONFIG_ACPI_SLEEP=n does not seem to work at all.
+On Mon, 2014-07-07 at 14:47 +0200, Thomas Gleixner wrote: 
+> Dear RT Folks,
 > 
-> These two things look like bugs to me.  Most likely not tested thoruoughly
-> enough.
+> I'm pleased to announce the 3.14.10-rt7 release. 3.14.10-rt6 is a not
+> announced update to 3.14.10 without any RT changes aside of resolving
+> the patch conflicts.
 > 
-> > So we'll really have to sprinkle #ifdef CONFIG_ACPI all over, instead of
-> > neatly using the dummy versions that someone has gone through the
-> > trouble of adding?
+> Changes since 3.14.10-rt6:
 > 
-> No, we don't have to.
+>    * Do not clear PF_NO_SETAFFINITY flag in select_fallback_rq() -
+>      from Steven
+> 
+>    * Prevent workqueue deadlock/stall observed with XFS
+> 
+> 
+> A few words on the status and the future of RT:
+> -----------------------------------------------
+> 
+> The situation since last years RTLWS (https://lwn.net/Articles/572740/)
+> has not improved at all, it's worse than before. 
+> 
+> While shortly after RTLWS quite some people promised to whip up proper
+> funding, nothing has materialized and my personal situation is worse
+> than before.
 
-Back from my vacation and I didn't see a conclusion to this issue here.
-Rafael, have you fixed this in your acpi tree or do I need to do something
-in drm-intel?
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Sorry to hear that funding hasn't as yet happened.
+
+> I'm really tired of all the politics involved, the blantant lies and
+> the marketing bullshit which I have to bear. I learned a few month ago
+> that a certain kernel vendor invented most of RT anyway and is the
+> expert in this field, so the customers dont have to worry about my
+> statements.
+
+Wow, so someone thinks their customers either can't or won't read.  That
+kind of marketing can backfire in a big way.
+
+-Mike
+
+
