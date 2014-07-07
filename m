@@ -1,52 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458AbaGGJPW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 05:15:22 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:34092 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751769AbaGGJPS convert rfc822-to-8bit (ORCPT
+	id S1752130AbaGGJXD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 05:23:03 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:36765 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383AbaGGJXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 05:15:18 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Olivier Sobrie'" <olivier@sobrie.be>, Jan Dumon <j.dumon@option.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/2] hso: fix deadlock when receiving bursts of data
-Thread-Topic: [PATCH 2/2] hso: fix deadlock when receiving bursts of data
-Thread-Index: AQHPmcLSZHvd9YpRyUuWSgEqOO1egZuUU3eA
-Date: Mon, 7 Jul 2014 09:13:53 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1726D5E9@AcuExch.aculab.com>
-References: <1404723967-24245-1-git-send-email-olivier@sobrie.be>
- <1404723967-24245-2-git-send-email-olivier@sobrie.be>
-In-Reply-To: <1404723967-24245-2-git-send-email-olivier@sobrie.be>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Mon, 7 Jul 2014 05:23:00 -0400
+Date: Mon, 7 Jul 2014 10:22:48 +0100
+From: Steve Capper <steve.capper@linaro.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v10 6/7] ARM: add pmd_[dirty|mkclean] for THP
+Message-ID: <20140707092247.GA15168@linaro.org>
+References: <1404694438-10272-1-git-send-email-minchan@kernel.org>
+ <1404694438-10272-7-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404694438-10272-7-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Olivier Sobrie
-> When the module sends bursts of data, sometimes a deadlock happens in
-> the hso driver when the tty buffer doesn't get the chance to be flushed
-> quickly enough.
+On Mon, Jul 07, 2014 at 09:53:57AM +0900, Minchan Kim wrote:
+> MADV_FREE needs pmd_dirty and pmd_mkclean for detecting recent
+> overwrite of the contents since MADV_FREE syscall is called for
+> THP page.
 > 
-> To avoid this, first, we remove the endless while loop in
-> put_rx_bufdata() which is the root cause of the deadlock.
-> Secondly, when there is no room anymore in the tty buffer, we set up a
-> timer of 100 msecs to give a chance to the upper layer to flush the tty
-> buffer and make room for new data.
+> This patch adds pmd_dirty and pmd_mkclean for THP page MADV_FREE
+> support.
+> 
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: Steve Capper <steve.capper@linaro.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  arch/arm64/include/asm/pgtable.h | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
+> index 579702086488..f3ec01cef04f 100644
+> --- a/arch/arm64/include/asm/pgtable.h
+> +++ b/arch/arm64/include/asm/pgtable.h
+> @@ -240,10 +240,12 @@ static inline pmd_t pte_pmd(pte_t pte)
+>  #endif
+>  
+>  #define pmd_young(pmd)		pte_young(pmd_pte(pmd))
+> +#define pmd_dirty(pmd)		pte_dirty(pmd_pte(pmd))
+>  #define pmd_wrprotect(pmd)	pte_pmd(pte_wrprotect(pmd_pte(pmd)))
+>  #define pmd_mksplitting(pmd)	pte_pmd(pte_mkspecial(pmd_pte(pmd)))
+>  #define pmd_mkold(pmd)		pte_pmd(pte_mkold(pmd_pte(pmd)))
+>  #define pmd_mkwrite(pmd)	pte_pmd(pte_mkwrite(pmd_pte(pmd)))
+> +#define pmd_mkclean(pmd)	pte_pmd(pte_mkclean(pmd_pte(pmd)))
+>  #define pmd_mkdirty(pmd)	pte_pmd(pte_mkdirty(pmd_pte(pmd)))
+>  #define pmd_mkyoung(pmd)	pte_pmd(pte_mkyoung(pmd_pte(pmd)))
+>  #define pmd_mknotpresent(pmd)	(__pmd(pmd_val(pmd) & ~PMD_TYPE_MASK))
+> -- 
+> 2.0.0
+>
 
-What is the timer for?
-You need to get the sending code woken up by the urb completion.
+Hi Minchan,
 
-	David
+This looks good to me too.
+As Will said this applies to arm64, we will also need a version for:
+arch/arm/include/asm/pgtable-3level.h.
 
+Is there a testcase we can run to check that this patch set is working
+well for arm/arm64?
 
-
+Cheers,
+-- 
+Steve 
