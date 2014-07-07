@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114AbaGHARa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:17:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56183 "EHLO
+	id S1754421AbaGHARr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:17:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56180 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754341AbaGGXzM (ORCPT
+	with ESMTP id S1754335AbaGGXzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:55:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Venkatesh Srinivas <venkateshs@google.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.10 04/53] virtio-scsi: fix various bad behavior on aborted requests
-Date: Mon,  7 Jul 2014 16:57:49 -0700
-Message-Id: <20140707235829.413560030@linuxfoundation.org>
+        Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.10 39/53] iio: of_iio_channel_get_by_name() returns non-null pointers for error legs
+Date: Mon,  7 Jul 2014 16:58:24 -0700
+Message-Id: <20140707235830.467711676@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
 References: <20140707235829.281783607@linuxfoundation.org>
@@ -30,62 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
 
-commit 8faeb529b2dabb9df691d614dda18910a43d05c9 upstream.
+commit a2c12493ed7e63a18cef33a71686d12ffcd6600e upstream.
 
-Even though the virtio-scsi spec guarantees that all requests related
-to the TMF will have been completed by the time the TMF itself completes,
-the request queue's callback might not have run yet.  This causes requests
-to be completed more than once, and as a result triggers a variety of
-BUGs or oopses.
+Currently in the inkern.c code for IIO framework, the function
+of_iio_channel_get_by_name() will return a non-NULL pointer when
+it cannot find a channel using of_iio_channel_get() and when it
+tries to search for 'io-channel-ranges' property and fails. This
+is incorrect behaviour as the function which calls this expects
+a NULL pointer for failure. This patch rectifies the issue.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Reviewed-by: Venkatesh Srinivas <venkateshs@google.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/virtio_scsi.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ drivers/iio/inkern.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -270,6 +270,16 @@ static void virtscsi_req_done(struct vir
- 	virtscsi_vq_done(vscsi, req_vq, virtscsi_complete_cmd);
- };
+--- a/drivers/iio/inkern.c
++++ b/drivers/iio/inkern.c
+@@ -183,7 +183,7 @@ static struct iio_channel *of_iio_channe
+ 		else if (name && index >= 0) {
+ 			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
+ 				np->full_name, name ? name : "", index);
+-			return chan;
++			return NULL;
+ 		}
  
-+static void virtscsi_poll_requests(struct virtio_scsi *vscsi)
-+{
-+	int i, num_vqs;
+ 		/*
+@@ -193,8 +193,9 @@ static struct iio_channel *of_iio_channe
+ 		 */
+ 		np = np->parent;
+ 		if (np && !of_get_property(np, "io-channel-ranges", NULL))
+-			break;
++			return NULL;
+ 	}
 +
-+	num_vqs = vscsi->num_queues;
-+	for (i = 0; i < num_vqs; i++)
-+		virtscsi_vq_done(vscsi, &vscsi->req_vqs[i],
-+				 virtscsi_complete_cmd);
-+}
-+
- static void virtscsi_complete_free(struct virtio_scsi *vscsi, void *buf)
- {
- 	struct virtio_scsi_cmd *cmd = buf;
-@@ -604,6 +614,18 @@ static int virtscsi_tmf(struct virtio_sc
- 	    cmd->resp.tmf.response == VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
- 		ret = SUCCESS;
+ 	return chan;
+ }
  
-+	/*
-+	 * The spec guarantees that all requests related to the TMF have
-+	 * been completed, but the callback might not have run yet if
-+	 * we're using independent interrupts (e.g. MSI).  Poll the
-+	 * virtqueues once.
-+	 *
-+	 * In the abort case, sc->scsi_done will do nothing, because
-+	 * the block layer must have detected a timeout and as a result
-+	 * REQ_ATOM_COMPLETE has been set.
-+	 */
-+	virtscsi_poll_requests(vscsi);
+@@ -317,6 +318,7 @@ struct iio_channel *iio_channel_get(stru
+ 		if (channel != NULL)
+ 			return channel;
+ 	}
 +
- out:
- 	mempool_free(cmd, virtscsi_cmd_pool);
- 	return ret;
+ 	return iio_channel_get_sys(name, channel_name);
+ }
+ EXPORT_SYMBOL_GPL(iio_channel_get);
 
 
