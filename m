@@ -1,96 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751964AbaGGPkV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 11:40:21 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:45416 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183AbaGGPkT (ORCPT
+	id S1752219AbaGGPk7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 11:40:59 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:58020 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176AbaGGPk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 11:40:19 -0400
-Date: Mon, 7 Jul 2014 19:40:08 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: <akpm@linux-foundation.org>, <mhocko@suse.cz>, <cl@linux.com>,
-        <glommer@gmail.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 0/8] memcg: reparent kmem on css offline
-Message-ID: <20140707154008.GH13827@esperanza>
-References: <cover.1404733720.git.vdavydov@parallels.com>
- <20140707142506.GB1149@cmpxchg.org>
+	Mon, 7 Jul 2014 11:40:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140707142506.GB1149@cmpxchg.org>
+In-Reply-To: <1403782279-10116-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1403782279-10116-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Date: Mon, 7 Jul 2014 17:40:57 +0200
+Message-ID: <CACRpkdbUAnSFAJMM4hewTA7+KsvZ5T_X5mmjzoFtJ9wAZYix2w@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: pinctrl-msm.c: Cleaning up if unsigned is less
+ than zero
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johannes,
+On Thu, Jun 26, 2014 at 1:31 PM, Rickard Strandqvist
+<rickard_strandqvist@spectrumdigital.se> wrote:
 
-On Mon, Jul 07, 2014 at 10:25:06AM -0400, Johannes Weiner wrote:
-> Hi Vladimir,
-> 
-> On Mon, Jul 07, 2014 at 04:00:05PM +0400, Vladimir Davydov wrote:
-> > Hi,
-> > 
-> > This patch set introduces re-parenting of kmem charges on memcg css
-> > offline. The idea lying behind it is very simple - instead of pointing
-> > from kmem objects (kmem caches, non-slab kmem pages) directly to the
-> > memcg which they are charged against, we make them point to a proxy
-> > object, mem_cgroup_kmem_context, which, in turn, points to the memcg
-> > which it belongs to. As a result on memcg offline, it's enough to only
-> > re-parent the memcg's mem_cgroup_kmem_context.
-> 
-> The motivation for this was to clear out all references to a memcg by
-> the time it's offlined, so that the unreachable css can be freed soon.
-> 
-> However, recent cgroup core changes further disconnected the css from
-> the cgroup object itself, so it's no longer as urgent to free the css.
-> 
-> In addition, Tejun made offlined css iterable and split css_tryget()
-> and css_tryget_online(), which would allow memcg to pin the css until
-> the last charge is gone while continuing to iterate and reclaim it on
-> hierarchical pressure, even after it was offlined.
-> 
-> This would obviate the need for reparenting as a whole, not just kmem
-> pages, but even remaining page cache.  Michal already obsoleted the
-> force_empty knob that reparents as a fallback, and whether the cache
-> pages are in the parent or in a ghost css after cgroup deletion does
-> not make a real difference from a user point of view, they still get
-> reclaimed when the parent experiences pressure.
+> Remove checking if a unsigned is less than zero
+>
+> This was found using a static code analysis program called cppcheck.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+(...)
+> -       if (WARN_ON(g->mux_bit < 0))
+> +       if (WARN_ON(g->mux_bit != 0))
 
-So, that means there's no need in a proxy object between kmem objects
-and the memcg which they are charged against (mem_cgroup_kmem_context in
-this patch set), because now it's OK to pin css from kmem allocations.
-Furthermore there will be no need to reparent per memcg list_lrus when
-they are introduced. That's nice!
+Is that correct?
 
-> You could then reap dead slab caches as part of the regular per-memcg
-> slab scanning in reclaim, without having to resort to auxiliary lists,
-> vmpressure events etc.
+If the variable cannot be < 0 should the check not simply be
+deleted, since this is all it checks for?
 
-Do you mean adding a per memcg shrinker that will call kmem_cache_shrink
-for all memcg caches on memcg/global pressure?
-
-Actually I recently made dead caches self-destructive at the cost of
-slowing down kfrees to dead caches (see
-https://www.lwn.net/Articles/602330/, it's already in the mmotm tree) so
-no dead cache reaping is necessary. Do you think if we need it now?
-
-> I think it would save us a lot of code and complexity.  You want
-> per-memcg slab scanning *anyway*, all we'd have to change in the
-> existing code would be to pin the css until the LRUs and kmem caches
-> are truly empty, and switch mem_cgroup_iter() to css_tryget().
-> 
-> Would this make sense to you?
-
-Hmm, interesting. Thank you for such a thorough explanation.
-
-One question. Do we still need to free mem_cgroup->kmemcg_id on css
-offline so that it can be reused by new kmem-active cgroups (currently
-we don't)?
-
-If we won't free it the root_cache->memcg_params->memcg_arrays may
-become really huge due to lots of dead css holding the id.
-
-Thanks.
+Yours,
+Linus Walleij
