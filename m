@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751625AbaGGHHX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 03:07:23 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:52061 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859AbaGGHHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 03:07:20 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: addy ke <addy.ke@rock-chips.com>
-Cc: broonie@kernel.org, grant.likely@linaro.org, robh+dt@kernel.org,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
-        zhangqing@rock-chips.com, wei.luo@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH v2 2/2] spi: add driver for Rockchip RK3xxx SoCs integrated SPI
-Date: Mon, 07 Jul 2014 09:08:41 +0200
-Message-ID: <5578791.jcBVzrGadW@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <53B9FB1C.7080008@rock-chips.com>
-References: <1403582852-9751-1-git-send-email-addy.ke@rock-chips.com> <20140704183249.GC14896@sirena.org.uk> <53B9FB1C.7080008@rock-chips.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1751734AbaGGHKz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 03:10:55 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:63759 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873AbaGGHKy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 03:10:54 -0400
+From: Fabio Falzoi <fabio.falzoi84@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org, joe@perches.com,
+        wei_wang@realsil.com.cn, micky_ching@realsil.com.cn,
+        Fabio Falzoi <fabio.falzoi84@gmail.com>
+Subject: [PATCH v2 0/4] Staging: rts5208: Use standard debug features
+Date: Mon,  7 Jul 2014 09:10:00 +0200
+Message-Id: <1404717004-29540-1-git-send-email-fabio.falzoi84@gmail.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 7. Juli 2014, 09:42:52 schrieb addy ke:
-> > On Tue, Jul 01, 2014 at 09:03:59AM +0800, addy ke wrote:
-> >> +static const struct of_device_id rockchip_spi_dt_match[] = {
-> >> +	{ .compatible = "rockchip,rk3066-spi", },
-> >> +	{ },
-> >> +};
-> >> +MODULE_DEVICE_TABLE(of, rockchip_spi_dt_match);
-> > 
-> > Your DT binding defined some additional compatible strings, please add
-> > those to the driver.
+Use standard debug features instead of relying on the custom
+configuration option CONFIG_RTS5208_DEBUG and a series of home grown
+macros.
 
-citing Mark Rutland (one of the dt maintainers):
+Changes in v2:
+* defined rtsx_hex_dump macro to produce output only if DEBUG is defined
 
---
-  That's why I said in addition to the common one. I'd only expect the
-  driver to look for "rockchip,rk3066-spi", but a DTB could have:
+Fabio Falzoi (4):
+  Staging: rts5208: Replace custom macro with pr_debug
+  Staging: rts5208: Replace custom macro with print_hex_dump_bytes
+  Staging: rts5208: Remove CONFIG_RTS5208_DEBUG option
+  Staging: rts5208: Fix a format specifier for dev_err
 
-        compatible = "rockchip,rk3188-spi", "rockchip,rk3066-spi";
+ drivers/staging/rts5208/Kconfig          |   7 --
+ drivers/staging/rts5208/debug.h          |  43 -------
+ drivers/staging/rts5208/ms.c             | 144 ++++++++++++------------
+ drivers/staging/rts5208/rtsx.c           |   8 +-
+ drivers/staging/rts5208/rtsx.h           |   1 -
+ drivers/staging/rts5208/rtsx_card.c      |  72 ++++++------
+ drivers/staging/rts5208/rtsx_card.h      |   1 -
+ drivers/staging/rts5208/rtsx_chip.c      | 134 +++++++++++-----------
+ drivers/staging/rts5208/rtsx_scsi.c      |  45 ++++----
+ drivers/staging/rts5208/rtsx_transport.c |  45 ++++----
+ drivers/staging/rts5208/sd.c             | 186 +++++++++++++++----------------
+ drivers/staging/rts5208/spi.c            |   8 +-
+ drivers/staging/rts5208/trace.h          |  14 +--
+ drivers/staging/rts5208/xd.c             | 121 ++++++++++----------
+ 14 files changed, 393 insertions(+), 436 deletions(-)
+ delete mode 100644 drivers/staging/rts5208/debug.h
 
-  Seeding the DTBs with the extra strings early makes it more likely that
-  we can rely on them later. If we don't happen to need them they only
-  clutter some DTBs.
---
+-- 
+2.0.0
 
-so it looks like the driver is doing the right thing right now
-
-
-Heiko
