@@ -1,136 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703AbaGGPGE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 11:06:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12296 "EHLO mx1.redhat.com"
+	id S1753031AbaGGPIE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 11:08:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34013 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751465AbaGGPGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 11:06:01 -0400
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mmap_vmcore: skip non-ram pages reported by hypervisors
-Date: Mon,  7 Jul 2014 17:05:49 +0200
-Message-Id: <1404745549-16023-1-git-send-email-vkuznets@redhat.com>
+	id S1752462AbaGGPIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 11:08:02 -0400
+Date: Mon, 7 Jul 2014 17:07:59 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+cc: Antonio Borneo <borneo.antonio@gmail.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        David Barksdale <dbarksdale@uplogix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] HID: cp2112: fix gpio value in gpio_direction_output
+In-Reply-To: <CAN+gG=GM9FqZJwJF0G41E9oWEjcWDeavd=kfZ9qcXvoAkmUdpA@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1407071707490.1655@pobox.suse.cz>
+References: <1404022428-2816-1-git-send-email-borneo.antonio@gmail.com> <CAN+gG=GM9FqZJwJF0G41E9oWEjcWDeavd=kfZ9qcXvoAkmUdpA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-we have a special check in read_vmcore() handler to check if the page was
-reported as ram or not by the hypervisor (pfn_is_ram()). However, when
-vmcore is read with mmap() no such check is performed. That can lead to
-unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
-mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
-enormous load in both DomU and Dom0.
+On Mon, 7 Jul 2014, Benjamin Tissoires wrote:
 
-Fix the issue by mapping each non-ram page to the zero page. Keep direct
-path with remap_oldmem_pfn_range() to avoid looping through all pages on
-bare metal.
+> > CP2112 does not offer an atomic method to set both gpio
+> > direction and value.
+> > Also it does not permit to set gpio value before putting
+> > gpio in output. In fact, accordingly to Silicon Labs
+> > AN495, Rev. 0.2, cpt. 4.4, the HID report to set gpio
+> > values "does not affect any pins that are not configured
+> > as outputs".
+> >
+> > This is confirmed on evaluation board CP2112-EK.
+> > With current driver, after execute:
+> >         echo in > /sys/class/gpio/gpio248/direction
+> >         echo low > /sys/class/gpio/gpio248/direction
+> > gpio output is still high. Only after a following
+> >         echo low > /sys/class/gpio/gpio248/direction
+> > gpio output gets low.
+> >
+> > Fix driver by changing order of operations; first set
+> > direction then set value.
+> >
+> > The drawback of this new sequence is that we can have
+> > a pulse on gpio pin when direction is changed from
+> > input to output-low, but this cannot be avoided on
+> > current CP2112.
+> 
+> In this case, does keeping the first cp2112_gpio_set() before setting
+> the output direction prevents the pulse?
+> If so, then you can just keep the current code, and simply add the
+> cp2112_gpio_set() at the end of cp2112_gpio_direction_output().
+> 
+> In both case, this is:
+> Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-The issue can also be solved by overriding remap_oldmem_pfn_range() in
-xen-specific code, as remap_oldmem_pfn_range() was been designed for.
-That, however, would involve non-obvious xen code path for all x86 builds
-with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
-code on x86 arch from doing the same override.
+I am queuing this for 3.17, thanks.
 
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
----
- fs/proc/vmcore.c | 68 +++++++++++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 62 insertions(+), 6 deletions(-)
-
-diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index 382aa89..2716e19 100644
---- a/fs/proc/vmcore.c
-+++ b/fs/proc/vmcore.c
-@@ -328,6 +328,46 @@ static inline char *alloc_elfnotes_buf(size_t notes_sz)
-  * virtually contiguous user-space in ELF layout.
-  */
- #ifdef CONFIG_MMU
-+static u64 remap_oldmem_pfn_checked(struct vm_area_struct *vma, u64 len,
-+				    unsigned long pfn, unsigned long page_count)
-+{
-+	unsigned long pos;
-+	size_t size;
-+	unsigned long vma_addr;
-+	unsigned long emptypage_pfn = __pa(empty_zero_page) >> PAGE_SHIFT;
-+
-+	for (pos = pfn; (pos - pfn) <= page_count; pos++) {
-+		if (!pfn_is_ram(pos) || (pos - pfn) == page_count) {
-+			/* we hit a page which is not ram or reached the end */
-+			if (pos - pfn > 0) {
-+				/* remapping continuous region */
-+				size = (pos - pfn) << PAGE_SHIFT;
-+				vma_addr = vma->vm_start + len;
-+				if (remap_oldmem_pfn_range(vma, vma_addr,
-+							   pfn, size,
-+							   vma->vm_page_prot))
-+					return len;
-+				len += size;
-+				page_count -= (pos - pfn);
-+			}
-+			if (page_count > 0) {
-+				/* we hit a page which is not ram, replacing
-+				   with an empty one */
-+				vma_addr = vma->vm_start + len;
-+				if (remap_oldmem_pfn_range(vma, vma_addr,
-+							   emptypage_pfn,
-+							   PAGE_SIZE,
-+							   vma->vm_page_prot))
-+					return len;
-+				len += PAGE_SIZE;
-+				pfn = pos + 1;
-+				page_count--;
-+			}
-+		}
-+	}
-+	return len;
-+}
-+
- static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
- {
- 	size_t size = vma->vm_end - vma->vm_start;
-@@ -383,17 +423,33 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
- 
- 	list_for_each_entry(m, &vmcore_list, list) {
- 		if (start < m->offset + m->size) {
--			u64 paddr = 0;
-+			u64 paddr = 0, original_len;
-+			unsigned long pfn, page_count;
- 
- 			tsz = min_t(size_t, m->offset + m->size - start, size);
- 			paddr = m->paddr + start - m->offset;
--			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
--						   paddr >> PAGE_SHIFT, tsz,
--						   vma->vm_page_prot))
--				goto fail;
-+
-+			/* check if oldmem_pfn_is_ram was registered to avoid
-+			   looping over all pages without a reason */
-+			if (oldmem_pfn_is_ram) {
-+				pfn = paddr >> PAGE_SHIFT;
-+				page_count = tsz >> PAGE_SHIFT;
-+				original_len = len;
-+				len = remap_oldmem_pfn_checked(vma, len, pfn,
-+							       page_count);
-+				if (len != original_len + tsz)
-+					goto fail;
-+			} else {
-+				if (remap_oldmem_pfn_range(vma,
-+							   vma->vm_start + len,
-+							   paddr >> PAGE_SHIFT,
-+							   tsz,
-+							   vma->vm_page_prot))
-+					goto fail;
-+				len += tsz;
-+			}
- 			size -= tsz;
- 			start += tsz;
--			len += tsz;
- 
- 			if (size == 0)
- 				return 0;
 -- 
-1.9.3
-
+Jiri Kosina
+SUSE Labs
