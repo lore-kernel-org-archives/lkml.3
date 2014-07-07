@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424AbaGHAft (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:35:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55834 "EHLO
+	id S1755434AbaGHAgK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:36:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753975AbaGGXym (ORCPT
+	with ESMTP id S1753965AbaGGXym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Saran Neti <sarannmr@gmail.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.14 06/94] xhci: Use correct SLOT ID when handling a reset device command
-Date: Mon,  7 Jul 2014 16:56:56 -0700
-Message-Id: <20140707235756.966312259@linuxfoundation.org>
+        Mike Remski <mremski@mutualink.net>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.14 15/94] USB: ftdi_sio: fix null deref at port probe
+Date: Mon,  7 Jul 2014 16:57:05 -0700
+Message-Id: <20140707235757.224234338@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,47 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 6fcfb0d682a8212d321a6131adc94daf0905992a upstream.
+commit aea1ae8760314e072bf1b773521e9de5d5dda10d upstream.
 
-Command completion events normally include command completion status,
-SLOT_ID, and a pointer to the original command. Reset device command
-completion SLOT_ID may be zero according to xhci specs 4.6.11.
+Fix NULL-pointer dereference when probing an interface with no
+endpoints.
 
-VIA controllers set the SLOT_ID to zero, triggering a WARN_ON in the
-command completion handler.
+These devices have two bulk endpoints per interface, but this avoids
+crashing the kernel if a user forces a non-FTDI device to be probed.
 
-Use the SLOT ID found from the original command instead.
+Note that the iterator variable was made unsigned in order to avoid
+a maybe-uninitialized compiler warning for ep_desc after the loop.
 
-This patch should be applied to stable kernels since 3.13 that contain
-the commit 20e7acb13ff48fbc884d5918c3697c27de63922a
-"xhci: use completion event's slot id rather than dig it out of command"
+Fixes: 895f28badce9 ("USB: ftdi_sio: fix hi-speed device packet size
+calculation")
 
-Reported-by: Saran Neti <sarannmr@gmail.com>
-Tested-by: Saran Neti <sarannmr@gmail.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Reported-by: Mike Remski <mremski@mutualink.net>
+Tested-by: Mike Remski <mremski@mutualink.net>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |    7 +++++--
+ drivers/usb/serial/ftdi_sio.c |    7 +++++--
  1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -1578,8 +1578,11 @@ static void handle_cmd_completion(struct
- 		xhci_handle_cmd_reset_ep(xhci, slot_id, cmd_trb, cmd_comp_code);
- 		break;
- 	case TRB_RESET_DEV:
--		WARN_ON(slot_id != TRB_TO_SLOT_ID(
--				le32_to_cpu(cmd_trb->generic.field[3])));
-+		/* SLOT_ID field in reset device cmd completion event TRB is 0.
-+		 * Use the SLOT_ID from the command TRB instead (xhci 4.6.11)
-+		 */
-+		slot_id = TRB_TO_SLOT_ID(
-+				le32_to_cpu(cmd_trb->generic.field[3]));
- 		xhci_handle_cmd_reset_dev(xhci, slot_id, event);
- 		break;
- 	case TRB_NEC_GET_FW:
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -1566,14 +1566,17 @@ static void ftdi_set_max_packet_size(str
+ 	struct usb_device *udev = serial->dev;
+ 
+ 	struct usb_interface *interface = serial->interface;
+-	struct usb_endpoint_descriptor *ep_desc = &interface->cur_altsetting->endpoint[1].desc;
++	struct usb_endpoint_descriptor *ep_desc;
+ 
+ 	unsigned num_endpoints;
+-	int i;
++	unsigned i;
+ 
+ 	num_endpoints = interface->cur_altsetting->desc.bNumEndpoints;
+ 	dev_info(&udev->dev, "Number of endpoints %d\n", num_endpoints);
+ 
++	if (!num_endpoints)
++		return;
++
+ 	/* NOTE: some customers have programmed FT232R/FT245R devices
+ 	 * with an endpoint size of 0 - not good.  In this case, we
+ 	 * want to override the endpoint descriptor setting and use a
 
 
