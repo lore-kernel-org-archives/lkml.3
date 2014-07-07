@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754AbaGGTcp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 15:32:45 -0400
-Received: from ns.pmeerw.net ([87.118.82.44]:57758 "EHLO pmeerw.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750979AbaGGTco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 15:32:44 -0400
-Date: Mon, 7 Jul 2014 21:32:39 +0200 (CEST)
-From: Peter Meerwald <pmeerw@pmeerw.net>
-To: Jonathan Cameron <jic23@kernel.org>
-cc: Josef Gajdusek <atx@atx.name>, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] staging:iio:hmc5843: Added regmap support
-In-Reply-To: <8e31f2b8-25ed-450e-9b70-f9338f8f3c4b@email.android.com>
-Message-ID: <alpine.DEB.2.01.1407072131050.23477@pmeerw.net>
-References: <20140707185013.GA10383@dashie> <8e31f2b8-25ed-450e-9b70-f9338f8f3c4b@email.android.com>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751443AbaGGTj0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 15:39:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52799 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979AbaGGTjZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 15:39:25 -0400
+Date: Mon, 7 Jul 2014 12:39:23 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Hillf Danton <dhillf@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH] rmap: fix pgoff calculation to handle hugepage
+ correctly
+Message-Id: <20140707123923.5e42983d6123ebfd79c8cf4c@linux-foundation.org>
+In-Reply-To: <20140702043057.GA19813@nhori.redhat.com>
+References: <1404225982-22739-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<20140701180739.GA4985@node.dhcp.inet.fi>
+	<20140701185021.GA10356@nhori.bos.redhat.com>
+	<20140701201540.GA5953@node.dhcp.inet.fi>
+	<20140702043057.GA19813@nhori.redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2 Jul 2014 00:30:57 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-> >> > This patch changes hmc5843.c to use regmap. This provides
-> >transparent caching
-> >> > to the code as well as abstraction necessary to add support for
-> >SPI-based
-> >> > hmc5983.
-> >> >
-> >> > Signed-off-by: Josef Gajdusek <atx@atx.name>
-> >> Hi Josef,
-> >> 
-> >> A few little bits and pieces inline.
-> >> Peter, could you also take a look at this series?
-
-I might manage to test the proposed code on a hmc5883l, probably until the 
-weekend; otherwise patches look good
-
-> >strange, I remember this causing issues. Now I am unable to
-> >reproduce them so it was probably something else. Do you want me to
-> >resend or can you apply without these lines swapped?
+> Subject: [PATCH v2] rmap: fix pgoff calculation to handle hugepage correctly
 > 
-> I am feeling lazy plus might not get to this until Saturday so resend.
+> I triggered VM_BUG_ON() in vma_address() when I try to migrate an anonymous
+> hugepage with mbind() in the kernel v3.16-rc3. This is because pgoff's
+> calculation in rmap_walk_anon() fails to consider compound_order() only to
+> have an incorrect value.
+> 
+> This patch introduces page_to_pgoff(), which gets the page's offset in
+> PAGE_CACHE_SIZE. Kirill pointed out that page cache tree should natively
+> handle hugepages, and in order to make hugetlbfs fit it, page->index of
+> hugetlbfs page should be in PAGE_CACHE_SIZE. This is beyond this patch,
+> but page_to_pgoff() contains the point to be fixed in a single function.
+> 
+> ...
+>
+> --- a/include/linux/pagemap.h
+> +++ b/include/linux/pagemap.h
+> @@ -399,6 +399,18 @@ static inline struct page *read_mapping_page(struct address_space *mapping,
+>  }
+>  
+>  /*
+> + * Get the offset in PAGE_SIZE.
+> + * (TODO: hugepage should have ->index in PAGE_SIZE)
+> + */
+> +static inline pgoff_t page_to_pgoff(struct page *page)
+> +{
+> +	if (unlikely(PageHeadHuge(page)))
+> +		return page->index << compound_order(page);
+> +	else
+> +		return page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+> +}
+> +
 
--- 
+This is all a bit of a mess.
 
-Peter Meerwald
-+43-664-2444418 (mobile)
+We have page_offset() which only works for regular pagecache pages and
+not for huge pages.
+
+We have page_file_offset() which works for regular pagecache as well
+as swapcache but not for huge pages.
+
+We have page_index() and page_file_index() which differ in undocumented
+ways which I cannot be bothered working out.  The latter calls
+__page_file_index() which is grossly misnamed.
+
+Now we get a new page_to_pgoff() which in inconsistently named but has
+a similarly crappy level of documentation and which works for hugepages
+and regular pagecache pages but not for swapcache pages.
+
+
+Sigh.
+
+I'll merge this patch because it's a bugfix but could someone please
+drive a truck through all this stuff and see if we can come up with
+something tasteful and sane?
