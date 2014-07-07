@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967AbaGHAve (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:51:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55564 "EHLO
+	id S1753563AbaGGXyS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 19:54:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55435 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459AbaGGXyT (ORCPT
+	with ESMTP id S1753459AbaGGXyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:19 -0400
+	Mon, 7 Jul 2014 19:54:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.15 112/122] clk: qcom: Fix mmcc-8974s PLL configurations
-Date: Mon,  7 Jul 2014 16:57:54 -0700
-Message-Id: <20140707235737.600331000@linuxfoundation.org>
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.15 078/122] ARM: mvebu: Fix the improper use of the compatible string armada38x using a wildcard
+Date: Mon,  7 Jul 2014 16:57:20 -0700
+Message-Id: <20140707235736.598809857@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,83 +29,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-commit 437ae6a1b8f2eedebfbf0f6572e19ca5c58a3f71 upstream.
+commit 8dbdb8e704db34085f5978c335c10256b0fb9629 upstream.
 
-We forgot to add the status bit for the PLLs and we were using
-the wrong register and masks for configuration, leading to
-unexpected PLL configurations. Fix this.
+Wildcards in compatible strings should be avoid. "marvell,armada38x"
+was recently introduced but was not yet used.
 
-Fixes: d8b212014e69 (clk: qcom: Add support for MSM8974's multimedia clock controller (MMCC))
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
+The armada 385 SoC is a superset of the armada 380 SoC (with more CPUs
+and more PCIe slots). So this patch replaces the use of
+"marvell,armada38x" by the "marvell,armada380" string.
+
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Link: https://lkml.kernel.org/r/1403533011-21339-1-git-send-email-gregory.clement@free-electrons.com
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/qcom/mmcc-msm8974.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ Documentation/devicetree/bindings/arm/armada-38x.txt |   14 ++++++++++++--
+ arch/arm/boot/dts/armada-380.dtsi                    |    2 +-
+ arch/arm/boot/dts/armada-385-db.dts                  |    2 +-
+ arch/arm/boot/dts/armada-385-rd.dts                  |    2 +-
+ arch/arm/boot/dts/armada-385.dtsi                    |    2 +-
+ arch/arm/boot/dts/armada-38x.dtsi                    |    2 +-
+ 6 files changed, 17 insertions(+), 7 deletions(-)
 
---- a/drivers/clk/qcom/mmcc-msm8974.c
-+++ b/drivers/clk/qcom/mmcc-msm8974.c
-@@ -169,6 +169,7 @@ static struct clk_pll mmpll0 = {
- 	.config_reg = 0x0014,
- 	.mode_reg = 0x0000,
- 	.status_reg = 0x001c,
-+	.status_bit = 17,
-         .clkr.hw.init = &(struct clk_init_data){
-                 .name = "mmpll0",
-                 .parent_names = (const char *[]){ "xo" },
-@@ -192,9 +193,10 @@ static struct clk_pll mmpll1 = {
- 	.l_reg = 0x0044,
- 	.m_reg = 0x0048,
- 	.n_reg = 0x004c,
--	.config_reg = 0x0054,
-+	.config_reg = 0x0050,
- 	.mode_reg = 0x0040,
- 	.status_reg = 0x005c,
-+	.status_bit = 17,
-         .clkr.hw.init = &(struct clk_init_data){
-                 .name = "mmpll1",
-                 .parent_names = (const char *[]){ "xo" },
-@@ -218,7 +220,7 @@ static struct clk_pll mmpll2 = {
- 	.l_reg = 0x4104,
- 	.m_reg = 0x4108,
- 	.n_reg = 0x410c,
--	.config_reg = 0x4114,
-+	.config_reg = 0x4110,
- 	.mode_reg = 0x4100,
- 	.status_reg = 0x411c,
-         .clkr.hw.init = &(struct clk_init_data){
-@@ -233,9 +235,10 @@ static struct clk_pll mmpll3 = {
- 	.l_reg = 0x0084,
- 	.m_reg = 0x0088,
- 	.n_reg = 0x008c,
--	.config_reg = 0x0094,
-+	.config_reg = 0x0090,
- 	.mode_reg = 0x0080,
- 	.status_reg = 0x009c,
-+	.status_bit = 17,
-         .clkr.hw.init = &(struct clk_init_data){
-                 .name = "mmpll3",
-                 .parent_names = (const char *[]){ "xo" },
-@@ -2318,7 +2321,7 @@ static const struct pll_config mmpll1_co
- 	.vco_val = 0x0,
- 	.vco_mask = 0x3 << 20,
- 	.pre_div_val = 0x0,
--	.pre_div_mask = 0x3 << 12,
-+	.pre_div_mask = 0x7 << 12,
- 	.post_div_val = 0x0,
- 	.post_div_mask = 0x3 << 8,
- 	.mn_ena_mask = BIT(24),
-@@ -2332,7 +2335,7 @@ static struct pll_config mmpll3_config =
- 	.vco_val = 0x0,
- 	.vco_mask = 0x3 << 20,
- 	.pre_div_val = 0x0,
--	.pre_div_mask = 0x3 << 12,
-+	.pre_div_mask = 0x7 << 12,
- 	.post_div_val = 0x0,
- 	.post_div_mask = 0x3 << 8,
- 	.mn_ena_mask = BIT(24),
+--- a/Documentation/devicetree/bindings/arm/armada-38x.txt
++++ b/Documentation/devicetree/bindings/arm/armada-38x.txt
+@@ -6,5 +6,15 @@ following property:
+ 
+ Required root node property:
+ 
+- - compatible: must contain either "marvell,armada380" or
+-   "marvell,armada385" depending on the variant of the SoC being used.
++ - compatible: must contain "marvell,armada380"
++
++In addition, boards using the Marvell Armada 385 SoC shall have the
++following property before the previous one:
++
++Required root node property:
++
++compatible: must contain "marvell,armada385"
++
++Example:
++
++compatible = "marvell,a385-rd", "marvell,armada385", "marvell,armada380";
+--- a/arch/arm/boot/dts/armada-380.dtsi
++++ b/arch/arm/boot/dts/armada-380.dtsi
+@@ -16,7 +16,7 @@
+ 
+ / {
+ 	model = "Marvell Armada 380 family SoC";
+-	compatible = "marvell,armada380", "marvell,armada38x";
++	compatible = "marvell,armada380";
+ 
+ 	cpus {
+ 		#address-cells = <1>;
+--- a/arch/arm/boot/dts/armada-385-db.dts
++++ b/arch/arm/boot/dts/armada-385-db.dts
+@@ -16,7 +16,7 @@
+ 
+ / {
+ 	model = "Marvell Armada 385 Development Board";
+-	compatible = "marvell,a385-db", "marvell,armada385", "marvell,armada38x";
++	compatible = "marvell,a385-db", "marvell,armada385", "marvell,armada380";
+ 
+ 	chosen {
+ 		bootargs = "console=ttyS0,115200 earlyprintk";
+--- a/arch/arm/boot/dts/armada-385-rd.dts
++++ b/arch/arm/boot/dts/armada-385-rd.dts
+@@ -17,7 +17,7 @@
+ 
+ / {
+ 	model = "Marvell Armada 385 Reference Design";
+-	compatible = "marvell,a385-rd", "marvell,armada385", "marvell,armada38x";
++	compatible = "marvell,a385-rd", "marvell,armada385", "marvell,armada380";
+ 
+ 	chosen {
+ 		bootargs = "console=ttyS0,115200 earlyprintk";
+--- a/arch/arm/boot/dts/armada-385.dtsi
++++ b/arch/arm/boot/dts/armada-385.dtsi
+@@ -16,7 +16,7 @@
+ 
+ / {
+ 	model = "Marvell Armada 385 family SoC";
+-	compatible = "marvell,armada385", "marvell,armada38x";
++	compatible = "marvell,armada385", "marvell,armada380";
+ 
+ 	cpus {
+ 		#address-cells = <1>;
+--- a/arch/arm/boot/dts/armada-38x.dtsi
++++ b/arch/arm/boot/dts/armada-38x.dtsi
+@@ -20,7 +20,7 @@
+ 
+ / {
+ 	model = "Marvell Armada 38x family SoC";
+-	compatible = "marvell,armada38x";
++	compatible = "marvell,armada380";
+ 
+ 	aliases {
+ 		gpio0 = &gpio0;
 
 
