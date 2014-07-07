@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaGGGeo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 02:34:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34174 "EHLO mx1.redhat.com"
+	id S1752012AbaGGGhg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 02:37:36 -0400
+Received: from mga02.intel.com ([134.134.136.20]:25529 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750889AbaGGGem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 02:34:42 -0400
-Date: Mon, 7 Jul 2014 12:04:09 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Jason Cooper <jason@lakedaemon.net>,
-        "# 3.4.x" <stable@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] virtio: rng: ensure reads happen after successful
- probe
-Message-ID: <20140707063409.GD27024@grmbl.mre>
-References: <cover.1404538109.git.amit.shah@redhat.com>
- <f64852e0dd8a439193db4c7da1d3022d029cc85d.1404538109.git.amit.shah@redhat.com>
- <CAGXu5jK1wL9DCnH0RcqhantcCvyJhwZfkw+_L7VQi8wfY2Nt_g@mail.gmail.com>
- <20140707055049.GA27024@grmbl.mre>
- <CAGXu5jJ9-b-NycB4ESvVnVgiBXpeQvKAT_hDPoAzhWSpQQKreg@mail.gmail.com>
+	id S1751169AbaGGGhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 02:37:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,616,1400050800"; 
+   d="scan'208";a="539568183"
+Message-ID: <53BA3FF4.2010101@intel.com>
+Date: Mon, 07 Jul 2014 14:36:36 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jJ9-b-NycB4ESvVnVgiBXpeQvKAT_hDPoAzhWSpQQKreg@mail.gmail.com>
+To: linux-kernel@vger.kernel.org
+CC: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
+        eranian@google.com, andi@firstfloor.org
+Subject: Re: [PATCH V4 07/16] perf, x86: track number of events that use LBR
+ callstack
+References: <1404714527-18603-1-git-send-email-zheng.z.yan@intel.com> <1404714527-18603-9-git-send-email-zheng.z.yan@intel.com>
+In-Reply-To: <1404714527-18603-9-git-send-email-zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Sun) 06 Jul 2014 [23:09:49], Kees Cook wrote:
-> On Sun, Jul 6, 2014 at 10:51 PM, Amit Shah <amit.shah@redhat.com> wrote:
-> > On (Sun) 06 Jul 2014 [21:38:36], Kees Cook wrote:
-> >> On Fri, Jul 4, 2014 at 10:34 PM, Amit Shah <amit.shah@redhat.com> wrote:
-> >> > The hwrng core asks for random data in the hwrng_register() call itself
-> >> > from commit d9e7972619.  This doesn't play well with virtio -- the
-> >> > DRIVER_OK bit is only set by virtio core on a successful probe, and
-> >> > we're not yet out of our probe routine when this call is made.  This
-> >> > causes the host to not acknowledge any requests we put in the virtqueue,
-> >> > and the insmod or kernel boot process just waits for data to arrive from
-> >> > the host, which never happens.
-> >>
-> >> Doesn't this mean that virtio-rng won't ever contribute entropy to the system?
-> >
-> > The initial randomness?  Yes.  But it'll start contributing entropy as
-> > soon as it's used as the current source.
+please ignore this patch
+
+On 07/07/2014 02:28 PM, Yan, Zheng wrote:
+> When enabling/disabling an event, check if the event uses the LBR
+> callstack feature, adjust the LBR callstack usage count accordingly.
+> Later patch will use the usage count to decide if LBR stack should
+> be saved/restored.
 > 
-> How does that happen? I don't see an init function defined for it?
+> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel_lbr.c | 15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> index 9a94fff..66969cb 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> @@ -198,9 +198,15 @@ void intel_pmu_lbr_sched_task(struct perf_event_context *ctx, bool sched_in)
+>  	}
+>  }
+>  
+> +static inline bool branch_user_callstack(unsigned br_sel)
+> +{
+> +	return (br_sel & X86_BR_USER) && (br_sel & X86_BR_CALL_STACK);
+> +}
+> +
+>  void intel_pmu_lbr_enable(struct perf_event *event)
+>  {
+>  	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+> +	struct x86_perf_task_context *task_ctx;
+>  
+>  	if (!x86_pmu.lbr_nr)
+>  		return;
+> @@ -214,6 +220,10 @@ void intel_pmu_lbr_enable(struct perf_event *event)
+>  	}
+>  	cpuc->br_sel = event->hw.branch_reg.reg;
+>  
+> +	task_ctx = event->ctx ? event->ctx->task_ctx_data : NULL;
+> +	if (branch_user_callstack(cpuc->br_sel))
+> +		task_ctx->lbr_callstack_users++;
+> +
+>  	cpuc->lbr_users++;
+>  	if (cpuc->lbr_users == 1)
+>  		perf_sched_cb_enable(event->ctx->pmu);
+> @@ -222,10 +232,15 @@ void intel_pmu_lbr_enable(struct perf_event *event)
+>  void intel_pmu_lbr_disable(struct perf_event *event)
+>  {
+>  	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+> +	struct x86_perf_task_context *task_ctx;
+>  
+>  	if (!x86_pmu.lbr_nr)
+>  		return;
+>  
+> +	task_ctx = event->ctx ? event->ctx->task_ctx_data : NULL;
+> +	if (branch_user_callstack(cpuc->br_sel))
+> +		task_ctx->lbr_callstack_users--;
+> +
+>  	cpuc->lbr_users--;
+>  	WARN_ON_ONCE(cpuc->lbr_users < 0);
+>  
+> 
 
-I mean the regular usage; not the initial randomness patch that you
-added.
-
-Initial randomness from virtio-rng currently won't be sourced.  That's
-no different from the way things were before your patch; and I can't
-think of a way to make that happen for now.
-
-virtio's probe() has to finish before communication with the host can
-start.  If a virtio-rng device is the only hwrng in the system (very
-likely in a guest), it's almost guaranteed that hwrng_init() won't be
-called after hwrng_register() completes (as it would have already been
-called and the virtio-rng device will have become the current_rng).
-
-If the VM admin configured two virtio-rng sources, though, or
-hotplugged one later, the early randomness will be obtained for the
-second virtio-rng device.  But this is a scenario I don't expect to
-ever arise -- it's just a theoretical possibility.
-
-
-		Amit
