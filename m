@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754483AbaGGXzZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:55:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56108 "EHLO
+	id S1754467AbaGGXzX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 19:55:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56113 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200AbaGGXzE (ORCPT
+	with ESMTP id S1754278AbaGGXzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:55:04 -0400
+	Mon, 7 Jul 2014 19:55:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher Friedt <chrisfriedt@gmail.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Jakob Bornecrantz <jakob@vmware.com>
-Subject: [PATCH 3.10 20/53] drm/vmwgfx: Fix incorrect write to read-only register v2:
-Date: Mon,  7 Jul 2014 16:58:05 -0700
-Message-Id: <20140707235829.902694582@linuxfoundation.org>
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Szymon Janc <szymon.janc@tieto.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.10 21/53] Bluetooth: Fix SSP acceptor just-works confirmation without MITM
+Date: Mon,  7 Jul 2014 16:58:06 -0700
+Message-Id: <20140707235829.937184255@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
 References: <20140707235829.281783607@linuxfoundation.org>
@@ -30,39 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 4e578080ed3262ed2c3985868539bc66218d25c0 upstream.
+commit ba15a58b179ed76a7e887177f2b06de12c58ec8f upstream.
 
-Commit "drm/vmwgfx: correct fb_fix_screeninfo.line_length", while fixing a
-vmwgfx fbdev bug, also writes the pitch to a supposedly read-only register:
-SVGA_REG_BYTES_PER_LINE, while it should be (and also in fact is) written to
-SVGA_REG_PITCHLOCK.
+>From the Bluetooth Core Specification 4.1 page 1958:
 
-This patch is Cc'd stable because of the unknown effects writing to this
-register might have, particularly on older device versions.
+"if both devices have set the Authentication_Requirements parameter to
+one of the MITM Protection Not Required options, authentication stage 1
+shall function as if both devices set their IO capabilities to
+DisplayOnly (e.g., Numeric comparison with automatic confirmation on
+both devices)"
 
-v2: Updated log message.
+So far our implementation has done user confirmation for all just-works
+cases regardless of the MITM requirements, however following the
+specification to the word means that we should not be doing confirmation
+when neither side has the MITM flag set.
 
-Cc: Christopher Friedt <chrisfriedt@gmail.com>
-Tested-by: Christopher Friedt <chrisfriedt@gmail.com>
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Tested-by: Szymon Janc <szymon.janc@tieto.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_fb.c |    1 -
- 1 file changed, 1 deletion(-)
+ net/bluetooth/hci_event.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
-@@ -179,7 +179,6 @@ static int vmw_fb_set_par(struct fb_info
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_POSITION_Y, info->var.yoffset);
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_WIDTH, info->var.xres);
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_HEIGHT, info->var.yres);
--		vmw_write(vmw_priv, SVGA_REG_BYTES_PER_LINE, info->fix.line_length);
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_ID, SVGA_ID_INVALID);
- 	}
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -3218,8 +3218,11 @@ static void hci_user_confirm_request_evt
  
+ 		/* If we're not the initiators request authorization to
+ 		 * proceed from user space (mgmt_user_confirm with
+-		 * confirm_hint set to 1). */
+-		if (!test_bit(HCI_CONN_AUTH_PEND, &conn->flags)) {
++		 * confirm_hint set to 1). The exception is if neither
++		 * side had MITM in which case we do auto-accept.
++		 */
++		if (!test_bit(HCI_CONN_AUTH_PEND, &conn->flags) &&
++		    (loc_mitm || rem_mitm)) {
+ 			BT_DBG("Confirming auto-accept as acceptor");
+ 			confirm_hint = 1;
+ 			goto confirm;
 
 
