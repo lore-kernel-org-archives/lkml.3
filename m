@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173AbaGGItj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 04:49:39 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:63830 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231AbaGGItg (ORCPT
+	id S1752295AbaGGIt7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 04:49:59 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:41495 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968AbaGGIt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 04:49:36 -0400
-Date: Mon, 7 Jul 2014 01:49:48 -0700
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Alex =?iso-8859-1?Q?Benn=E9e?= <alex.bennee@linaro.org>
-Cc: kvmarm@lists.cs.columbia.edu, linux-arm-kernel@lists.infradead.org,
-        kvm@vger.kernel.org, Marc Zyngier <marc.zyngier@arm.com>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: KVM: allow export and import of generic timer regs
-Message-ID: <20140707084948.GE20451@cbox>
-References: <1404485654-32674-1-git-send-email-alex.bennee@linaro.org>
+	Mon, 7 Jul 2014 04:49:56 -0400
+Message-ID: <53BA5F14.4050708@gmail.com>
+Date: Mon, 07 Jul 2014 16:49:24 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1404485654-32674-1-git-send-email-alex.bennee@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, john.stultz@linaro.org,
+        ccross@android.com, rebecca@android.com,
+        Liqin Chen <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
+CC: devel@driverdev.osuosl.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] drivers: staging: android: ion: Kconfig: Let it also depend
+ on HAS_DMA
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04, 2014 at 03:54:14PM +0100, Alex Bennée wrote:
-> For correct guest suspend/resume behaviour we need to ensure we include
-> the generic timer registers for 64 bit guests. As CONFIG_KVM_ARM_TIMER is
-> always set for arm64 we don't need to worry about null implementations.
-> However I have re-jigged the kvm_arm_timer_set/get_reg declarations to
-> be in the common include/kvm/arm_arch_timer.h headers.
-> 
-> Signed-off-by: Alex Bennée <alex.bennee@linaro.org>
+ION need HAS_DMA (e.g. need DMA_SHARED_BUFFER), so it has to depend on
+HAS_DMA, or can not pass compiling with allmodconfig under score which
+NO_DMA.  And the related error:
 
-Reviewed-by: Christoffer Dall <christoffer.dall@linaro.org>
+    CC      drivers/staging/android/ion/ion_cma_heap.o
+  drivers/staging/android/ion/ion_cma_heap.c: In function 'ion_cma_mmap':
+  drivers/staging/android/ion/ion_cma_heap.c:168:2: error: implicit declaration of function 'dma_mmap_coherent' [-Werror=implicit-function-declaration]
+    return dma_mmap_coherent(dev, vma, info->cpu_addr, info->handle,
+    ^
+  cc1: some warnings being treated as errors
+  make[4]: *** [drivers/staging/android/ion/ion_cma_heap.o] Error 1
+  make[3]: *** [drivers/staging/android/ion] Error 2
+  make[2]: *** [drivers/staging/android] Error 2
+  make[1]: *** [drivers/staging] Error 2
+  make: *** [drivers] Error 2
+
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ drivers/staging/android/ion/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/android/ion/Kconfig b/drivers/staging/android/ion/Kconfig
+index 0f8fec1..0a6e4d0 100644
+--- a/drivers/staging/android/ion/Kconfig
++++ b/drivers/staging/android/ion/Kconfig
+@@ -1,6 +1,6 @@
+ menuconfig ION
+ 	bool "Ion Memory Manager"
+-	depends on HAVE_MEMBLOCK
++	depends on HAVE_MEMBLOCK && HAS_DMA
+ 	select GENERIC_ALLOCATOR
+ 	select DMA_SHARED_BUFFER
+ 	---help---
+-- 
+1.9.2.459.g68773ac
