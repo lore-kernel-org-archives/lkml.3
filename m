@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864AbaGGKSR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 06:18:17 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:29547 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751392AbaGGKSN (ORCPT
+	id S1752839AbaGGKSP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 06:18:15 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55556 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752292AbaGGKQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 06:18:13 -0400
-X-IronPort-AV: E=Sophos;i="5.00,848,1396972800"; 
-   d="scan'208";a="32931972"
-Message-ID: <53BA7124.5070200@cn.fujitsu.com>
-Date: Mon, 7 Jul 2014 18:06:28 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Mon, 7 Jul 2014 06:16:17 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, tj@kernel.org, kishon@ti.com
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v9 2/7] Documentation: bindings: add the Berlin SATA PHY
+Date: Mon,  7 Jul 2014 12:16:08 +0200
+Message-Id: <1404728173-20263-3-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404728173-20263-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1404728173-20263-1-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-To: Jens <axboe@kernel.dk>
-CC: linux-kernel <linux-kernel@vger.kernel.org>, Kent <kmo@daterainc.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] bio-integrity: remove the needless fail handle of bip_slab
- creating
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bip_slab is created with SLAB_PANIC, so the fail handle is needless,
-remove it.
+The Berlin SATA PHY drives the PHY related to the SATA interface. Add
+the corresponding documentation.
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 ---
- block/bio-integrity.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ .../devicetree/bindings/phy/berlin-sata-phy.txt    | 34 ++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
 
-diff --git a/block/bio-integrity.c b/block/bio-integrity.c
-index 9e24106..56754c4 100644
---- a/block/bio-integrity.c
-+++ b/block/bio-integrity.c
-@@ -652,6 +652,4 @@ void __init bio_integrity_init(void)
- 				     sizeof(struct bio_integrity_payload) +
- 				     sizeof(struct bio_vec) * BIP_INLINE_VECS,
- 				     0, SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
--	if (!bip_slab)
--		panic("Failed to create slab\n");
- }
+diff --git a/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt b/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
+new file mode 100644
+index 000000000000..88f8c23384c0
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
+@@ -0,0 +1,34 @@
++Berlin SATA PHY
++---------------
++
++Required properties:
++- compatible: should be "marvell,berlin2q-sata-phy"
++- address-cells: should be 1
++- size-cells: should be 0
++- phy-cells: from the generic PHY bindings, must be 1
++- reg: address and length of the register
++- clocks: reference to the clock entry
++
++Sub-nodes:
++Each PHY should be represented as a sub-node.
++
++Sub-nodes required properties:
++- reg: the PHY number
++
++Example:
++	sata_phy: phy@f7e900a0 {
++		compatible = "marvell,berlin2q-sata-phy";
++		reg = <0xf7e900a0 0x200>;
++		clocks = <&chip CLKID_SATA>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		#phy-cells = <1>;
++
++		sata-phy@0 {
++			reg = <0>;
++		};
++
++		sata-phy@1 {
++			reg = <1>;
++		};
++	};
 -- 
-1.7.7
+1.9.1
 
