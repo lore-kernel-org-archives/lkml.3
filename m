@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148AbaGHAPx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:15:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56387 "EHLO
+	id S1754357AbaGGXzN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 19:55:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56091 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754129AbaGHADO (ORCPT
+	with ESMTP id S1754281AbaGGXzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 20:03:14 -0400
+	Mon, 7 Jul 2014 19:55:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.4 13/44] drm/radeon: fix typo in radeon_connector_is_dp12_capable()
-Date: Mon,  7 Jul 2014 17:07:03 -0700
-Message-Id: <20140707235859.035915499@linuxfoundation.org>
+        Alex Elder <elder@linaro.org>, Ilya Dryomov <ilya.dryomov@inktank.com>
+Subject: [PATCH 3.10 25/53] rbd: use reference counts for image requests
+Date: Mon,  7 Jul 2014 16:58:10 -0700
+Message-Id: <20140707235830.052687604@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140707235858.652771077@linuxfoundation.org>
-References: <20140707235858.652771077@linuxfoundation.org>
+In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
+References: <20140707235829.281783607@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,35 +24,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Alex Elder <elder@linaro.org>
 
-commit af5d36539dfe043f1cf0f8b7334d6bb12cd14e75 upstream.
+commit 0f2d5be792b0466b06797f637cfbb0f64dbb408c upstream.
 
-We were checking the ext clock rather than the display clock.
+Each image request contains a reference count, but to date it has
+not actually been used.  (I think this was just an oversight.) A
+recent report involving rbd failing an assertion shed light on why
+and where we need to use these reference counts.
 
-Noticed by ArtForz on IRC.
+Every OSD request associated with an object request uses
+rbd_osd_req_callback() as its callback function.  That function will
+call a helper function (dependent on the type of OSD request) that
+will set the object request's "done" flag if the object request if
+appropriate.  If that "done" flag is set, the object request is
+passed to rbd_obj_request_complete().
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+In rbd_obj_request_complete(), requests are processed in sequential
+order.  So if an object request completes before one of its
+predecessors in the image request, the completion is deferred.
+Otherwise, if it's a completing object's "turn" to be completed, it
+is passed to rbd_img_obj_end_request(), which records the result of
+the operation, accumulates transferred bytes, and so on.  Next, the
+successor to this request is checked and if it is marked "done",
+(deferred) completion processing is performed on that request, and
+so on.  If the last object request in an image request is completed,
+rbd_img_request_complete() is called, which (typically) destroys
+the image request.
+
+There is a race here, however.  The instant an object request is
+marked "done" it can be provided (by a thread handling completion of
+one of its predecessor operations) to rbd_img_obj_end_request(),
+which (for the last request) can then lead to the image request
+getting torn down.  And this can happen *before* that object has
+itself entered rbd_img_obj_end_request().  As a result, once it
+*does* enter that function, the image request (and even the object
+request itself) may have been freed and become invalid.
+
+All that's necessary to avoid this is to properly count references
+to the image requests.  We tear down an image request's object
+requests all at once--only when the entire image request has
+completed.  So there's no need for an image request to count
+references for its object requests.  However, we don't want an
+image request to go away until the last of its object requests
+has passed through rbd_img_obj_callback().  In other words,
+we don't want rbd_img_request_complete() to necessarily
+result in the image request being destroyed, because it may
+get called before we've finished processing on all of its
+object requests.
+
+So the fix is to add a reference to an image request for
+each of its object requests.  The reference can be viewed
+as representing an object request that has not yet finished
+its call to rbd_img_obj_callback().  That is emphasized by
+getting the reference right after assigning that as the image
+object's callback function.  The corresponding release of that
+reference is done at the end of rbd_img_obj_callback(), which
+every image object request passes through exactly once.
+
+Signed-off-by: Alex Elder <elder@linaro.org>
+Reviewed-by: Ilya Dryomov <ilya.dryomov@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_connectors.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/block/rbd.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -1279,7 +1279,7 @@ bool radeon_connector_is_dp12_capable(st
- 	struct radeon_device *rdev = dev->dev_private;
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -1401,6 +1401,13 @@ static void rbd_obj_request_put(struct r
+ 	kref_put(&obj_request->kref, rbd_obj_request_destroy);
+ }
  
- 	if (ASIC_IS_DCE5(rdev) &&
--	    (rdev->clock.dp_extclk >= 53900) &&
-+	    (rdev->clock.default_dispclk >= 53900) &&
- 	    radeon_connector_encoder_is_hbr2(connector)) {
- 		return true;
- 	}
++static void rbd_img_request_get(struct rbd_img_request *img_request)
++{
++	dout("%s: img %p (was %d)\n", __func__, img_request,
++	     atomic_read(&img_request->kref.refcount));
++	kref_get(&img_request->kref);
++}
++
+ static bool img_request_child_test(struct rbd_img_request *img_request);
+ static void rbd_parent_request_destroy(struct kref *kref);
+ static void rbd_img_request_destroy(struct kref *kref);
+@@ -2154,6 +2161,7 @@ static void rbd_img_obj_callback(struct
+ 	img_request->next_completion = which;
+ out:
+ 	spin_unlock_irq(&img_request->completion_lock);
++	rbd_img_request_put(img_request);
+ 
+ 	if (!more)
+ 		rbd_img_request_complete(img_request);
+@@ -2250,6 +2258,7 @@ static int rbd_img_request_fill(struct r
+ 			goto out_partial;
+ 		obj_request->osd_req = osd_req;
+ 		obj_request->callback = rbd_img_obj_callback;
++		rbd_img_request_get(img_request);
+ 
+ 		osd_req_op_extent_init(osd_req, 0, opcode, offset, length,
+ 						0, 0);
 
 
