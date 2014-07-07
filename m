@@ -1,116 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259AbaGGImB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 04:42:01 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48652 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409AbaGGIl7 (ORCPT
+	id S1752267AbaGGIoU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 04:44:20 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33195 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298AbaGGIoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 04:41:59 -0400
-Date: Mon, 7 Jul 2014 10:41:50 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "xiaofeng.yan" <xiaofeng.yan@huawei.com>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, xiaofeng.yan2012@gmail.com,
-        Juri Lelli <juri.lelli@gmail.com>
-Subject: Re: [PATCH] sched/rt: overrun could happen in start_hrtick_dl
-Message-ID: <20140707084150.GC19379@twins.programming.kicks-ass.net>
-References: <1404475341-22536-1-git-send-email-xiaofeng.yan@huawei.com>
+	Mon, 7 Jul 2014 04:44:18 -0400
+Message-ID: <53BA5DD9.5090307@ti.com>
+Date: Mon, 7 Jul 2014 11:44:09 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QnGs129iAKyuXRcc"
-Content-Disposition: inline
-In-Reply-To: <1404475341-22536-1-git-send-email-xiaofeng.yan@huawei.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Paul Walmsley <paul@pwsan.com>
+CC: <tony@atomide.com>, <rnayak@ti.com>, <kishon@ti.com>,
+        <george.cherian@ti.com>, <balbi@ti.com>, <balajitk@ti.com>,
+        <nsekhar@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] ARM: DRA7: hwmod: Add OCP2SCP3 module
+References: <1404385274-5093-1-git-send-email-rogerq@ti.com> <1404385274-5093-2-git-send-email-rogerq@ti.com> <alpine.DEB.2.02.1407031948110.1515@utopia.booyaka.com> <53B678C1.4000807@ti.com> <alpine.DEB.2.02.1407052355050.23762@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.02.1407052355050.23762@utopia.booyaka.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Paul,
 
---QnGs129iAKyuXRcc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/06/2014 03:23 AM, Paul Walmsley wrote:
+> Hi
+> 
+> On Fri, 4 Jul 2014, Roger Quadros wrote:
+> 
+>> On 07/03/2014 10:48 PM, Paul Walmsley wrote:
+>>> On Thu, 3 Jul 2014, Roger Quadros wrote:
+>>>
+>>>> This module is needed for the SATA and PCIe PHYs.
+>>>>
+>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>>> Reviewed-by: Rajendra Nayak <rnayak@ti.com>
+>>>> Tested-by: Sekhar Nori <nsekhar@ti.com>>
+>>>
+>>> This looks like adding support for a new device, so, after 
+>>> discussing with Tony, queuing for v3.17.
+>>
+>> We should treat it as missing device (bug) rather than new device 
+>> (feature) as the corresponding device tree node is already present.
+>> Without this patch we get the following message in kernel boot log
+>>
+>> [    0.261680] platform 4a090000.ocp2scp: Cannot lookup hwmod 'ocp2scp3'
+>>
+>> I would consider this patch as a fix rather than a new feature.
+> 
+> Just to make sure I'm correctly applying the rules for sequencing -rc 
+> patches vs. merge window patches, could you please confirm my 
+> understanding of the situation:
+> 
+> 1. The OCP2SCP3 device (and the devices that rely on it) never worked on 
+> DRA7xx in earlier kernels
+> 
+> 2. Even with this support added, neither SATA nor PCIe will work in 3.16 
+> on DRA7xx (SATA for unknown reasons, PCIe because the patches are targeted 
+> for 3.17).
 
-On Fri, Jul 04, 2014 at 12:02:21PM +0000, xiaofeng.yan wrote:
-> It could be wrong for the precision of runtime and deadline
-> when the precision is within microsecond level. For example:
-> Task runtime deadline period
->  P1   200us   500us   500us
->=20
-> This case need enbale HRTICK feature by the next command
-> PC#echo "HRTICK" > /sys/kernel/debug/sched_features
-> PC#./schedtool -E -t 200000:500000 -e ./test&
-> PC#trace-cmd record -e sched_switch
+The reason for SATA not working has been identified and the fix is posted here
+https://lkml.org/lkml/2014/7/4/166
+So this hwmod patch is the only missing piece why SATA won't work on 3.16.
 
-Are you actually using HRTICK ?
+> 
+> 3. The warning doesn't prevent the machine from booting and does not 
+> impair any previously working functionality
+> 
+> 4. There are other DRA7xx warning messages on boot in 3.16-rc: for 
+> example, http://paste.ubuntu.com/7701601/ lists:
+> 
+> [    0.009931] omap_hwmod: l3_main_2 using broken dt data from ocp
+> 
+> ...
+> 
+> [    0.291802] platform 4e000000.dmm: Cannot lookup hwmod 'dmm'
+> 
+> 
+> Are these four statements correct?
 
-> Some of runtime and deadline run with millisecond level by
-> reading kernershark.
-> The problem is caused by a conditional judgment "delta > 10000".
-> Because no hrtimer start up to control the runtime when runtime is less t=
-han 10us.
-> So the process will continue to run until tick-period coming.
-> For fixing this problem, Let delta is equal to 10us when it is less than =
-10us.
-> So the hrtimer will start up to control the end of process.
->=20
-> Signed-off-by: xiaofeng.yan <xiaofeng.yan@huawei.com>
+Yes for 1,3 and 4.
 
-Always when sending patches for deadline, also CC Juri.
+> 
+> If so, is there some other reason why we should rush this in for 3.16-rc?  
+> Put differently: how can we justify adding this device in 3.16-rc rather 
+> than 3.17 to Linus Torvalds?
 
-> ---
->  kernel/sched/deadline.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
->=20
-> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index fc4f98b1..dfefa82 100644
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -997,10 +997,8 @@ static void check_preempt_curr_dl(struct rq *rq, str=
-uct task_struct *p,
->  #ifdef CONFIG_SCHED_HRTICK
->  static void start_hrtick_dl(struct rq *rq, struct task_struct *p)
->  {
-> -	s64 delta =3D p->dl.dl_runtime - p->dl.runtime;
-> -
-> -	if (delta > 10000)
-> -		hrtick_start(rq, p->dl.runtime);
-> +	s64 delta =3D p->dl.runtime > 10000 ? p->dl.runtime : 10000;
-> +	hrtick_start(rq, delta);
+Nothing else that I can think of apart from SATA not working on 3.16.
 
-Yeah, that looks funny. And seeing how the only other user does
-something similar:
-
-hrtick_start_fair()
-	delta =3D max(10000ULL, delta)
-	hrtick_start(rq, delta)
-
-
-Does it make sense to move this max() into hrtick_start()?
-
-Also; and I don't think you mentioned that but did fix, the argument to
-hrtick_start() is wrong, it should be the delta, not the absolute
-timeout.
-
---QnGs129iAKyuXRcc
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTul1OAAoJEHZH4aRLwOS6vsIP/jIsExhA7/hrtkutR4D63n8o
-T94B0p+ouoZGLdXNeA9ursbNp4A0Ua480v7eErIU4gkNjQ0Rm5/82ml4HknQ0ItF
-0sbrCIsEiNu5HeMsqwM0RFng96TY+jpGYVeIj5LXy6J/Y24ZSnR/RlCGypq5FcRa
-Cx7GlgGiFCf1K0P9yjvpB+ZydNHGxfHd7H/os1d78yXKFUeh+osgMqLdawaMeGKQ
-qGEzUNq28nJLULx+ounGd8TsVUh88pEzGk0aptqdiyKn/Ndrq+RgoIuvHgtyiW4l
-P+Ewc9Y54J6fl7GnXY9JxMm817d7t3iAmY5s2c/wN+ln3DNQGF53ULuVu/+jfLrd
-ko6cPUtk0lWdIA5Q1tN/8lvVrA6PPUD1+f+7iGnGZCZhpmHtGobU6ZPEpEywzhZo
-Rey4Dtal5Pm6ZUIN18Fc1HIvVnGIOewPwEv9t2qRKX1dzJlOQ0XMlH9NK7teBqQE
-g7RNNsBkII2zm65MeUY0lB0ThtHFltkCi1iXxR1Tl6Vd6NRWDsO6x3L+4yIf9xrB
-0cZOXdM0HNiOW8q652HKJ4XncfnkmGKLvMkbVl4au+lufktAyacLUxsNLWnh7yEB
-lUQnj9NopUjS1OV1M1y0r7Wo10koxgwOO4mRF+9zjatEoJS4lm3n+Pa+ZCcBKAPN
-2IZLJsQgqnnJQ0tz6Ed+
-=y4i4
------END PGP SIGNATURE-----
-
---QnGs129iAKyuXRcc--
+cheers,
+-roger
