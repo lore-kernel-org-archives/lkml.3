@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652AbaGGSoq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 14:44:46 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:55931 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356AbaGGSom (ORCPT
+	id S1752775AbaGGSpq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 14:45:46 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:61057 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750859AbaGGSpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 14:44:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdbUAnSFAJMM4hewTA7+KsvZ5T_X5mmjzoFtJ9wAZYix2w@mail.gmail.com>
-References: <1403782279-10116-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<CACRpkdbUAnSFAJMM4hewTA7+KsvZ5T_X5mmjzoFtJ9wAZYix2w@mail.gmail.com>
-Date: Mon, 7 Jul 2014 20:44:41 +0200
-Message-ID: <CAFo99gYPkd7n=dtMrzJ_be0VbzqNYhbYgtYRV0TcUNKJ=7yM1w@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: pinctrl-msm.c: Cleaning up if unsigned is less
- than zero
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 7 Jul 2014 14:45:45 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmQNAMzpulNXQCU9/2dsb2JhbABZgw6segUBAQEBAQEFAW4BkiiHRYEbF3WECwJTI4ECBxE3iC4DFQHDPQ2FfReFcIcKgigdhC0FmApsggCLTIIshhSDRTsv
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, David Airlie <airlied@linux.ie>,
+        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        dri-devel@lists.freedesktop.org
+Subject: [PATCH 1/1] drm/gma500: replace ALIGN(PAGE_SIZE) by PAGE_ALIGN
+Date: Mon,  7 Jul 2014 20:44:16 +0200
+Message-Id: <1404758656-8615-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-07 17:40 GMT+02:00 Linus Walleij <linus.walleij@linaro.org>:
-> On Thu, Jun 26, 2014 at 1:31 PM, Rickard Strandqvist
-> <rickard_strandqvist@spectrumdigital.se> wrote:
->
->> Remove checking if a unsigned is less than zero
->>
->> This was found using a static code analysis program called cppcheck.
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> (...)
->> -       if (WARN_ON(g->mux_bit < 0))
->> +       if (WARN_ON(g->mux_bit != 0))
->
-> Is that correct?
->
-> If the variable cannot be < 0 should the check not simply be
-> deleted, since this is all it checks for?
+use mm.h definition
 
+Cc: David Airlie <airlied@linux.ie>
+Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: dri-devel@lists.freedesktop.org
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ drivers/gpu/drm/gma500/framebuffer.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Hi Linus!
+diff --git a/drivers/gpu/drm/gma500/framebuffer.c b/drivers/gpu/drm/gma500/framebuffer.c
+index e7fcc14..fc1f4e8 100644
+--- a/drivers/gpu/drm/gma500/framebuffer.c
++++ b/drivers/gpu/drm/gma500/framebuffer.c
+@@ -369,7 +369,7 @@ static int psbfb_create(struct psb_fbdev *fbdev,
+         	mode_cmd.pitches[0] =  ALIGN(mode_cmd.width * ((bpp + 7) / 8), 4096 >> pitch_lines);
+ 
+         	size = mode_cmd.pitches[0] * mode_cmd.height;
+-        	size = ALIGN(size, PAGE_SIZE);
++		size = PAGE_ALIGN(size);
+ 
+ 		/* Allocate the fb in the GTT with stolen page backing */
+ 		backing = psbfb_alloc(dev, size);
+@@ -397,7 +397,7 @@ static int psbfb_create(struct psb_fbdev *fbdev,
+ 		mode_cmd.pitches[0] =  ALIGN(mode_cmd.width * ((bpp + 7) / 8), 64);
+ 
+ 		size = mode_cmd.pitches[0] * mode_cmd.height;
+-		size = ALIGN(size, PAGE_SIZE);
++		size = PAGE_ALIGN(size);
+ 
+ 		/* Allocate the framebuffer in the GTT with stolen page backing */
+ 		backing = psbfb_alloc(dev, size);
+-- 
+1.8.4.5
 
-Yes, it was a bit silly. Do not really know how that happened :-/
-
-I guess I thought it was reasonable. But I should do as I have tried
-to do in all other cases, the smallest possible change. And let you
-check in code, if so, to capture what is missing.
-
-New patch on the way!
-
-
-Kind regards
-Rickard Strandqvist
