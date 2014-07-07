@@ -1,78 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484AbaGGSj6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 14:39:58 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:65483 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859AbaGGSj5 (ORCPT
+	id S1751839AbaGGSkm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 14:40:42 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:46403 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533AbaGGSkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 14:39:57 -0400
-Date: Mon, 7 Jul 2014 20:40:06 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "Chen, Tiejun" <tiejun.chen@intel.com>, jani.nikula@linux.intel.com,
-        airlied@linux.ie, intel-gfx@lists.freedesktop.org,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, qemu-devel@nongnu.org
-Subject: Re: [Intel-gfx] [RFC][PATCH] gpu:drm:i915:intel_detect_pch: back to
- check devfn instead of check class type
-Message-ID: <20140707184006.GU5821@phenom.ffwll.local>
-Mail-Followup-To: Paolo Bonzini <pbonzini@redhat.com>,
-	"Chen, Tiejun" <tiejun.chen@intel.com>, jani.nikula@linux.intel.com,
-	airlied@linux.ie, intel-gfx@lists.freedesktop.org,
-	xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org, qemu-devel@nongnu.org
-References: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com>
- <53A42DAA.80406@redhat.com>
- <53A692F9.3060200@intel.com>
- <53AA70C0.2000806@redhat.com>
- <20140707144917.GZ5821@phenom.ffwll.local>
- <53BAB569.5000709@redhat.com>
- <20140707175402.GS5821@phenom.ffwll.local>
- <53BADFC6.9060101@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53BADFC6.9060101@redhat.com>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 7 Jul 2014 14:40:40 -0400
+From: navin patidar <navin.patidar@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
+Subject: [PATCH 01/13] staging: rtl8188eu: Remove unused function rtw_change_ifname()
+Date: Tue,  8 Jul 2014 00:10:01 +0530
+Message-Id: <1404758413-12859-1-git-send-email-navin.patidar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 07:58:30PM +0200, Paolo Bonzini wrote:
-> Il 07/07/2014 19:54, Daniel Vetter ha scritto:
-> >On Mon, Jul 07, 2014 at 04:57:45PM +0200, Paolo Bonzini wrote:
-> >>Il 07/07/2014 16:49, Daniel Vetter ha scritto:
-> >>>So the correct fix to forward intel gpus to guests is indeed to somehow
-> >>>fake the pch pci ids since the driver really needs them. Gross design, but
-> >>>that's how the hardware works.
-> >>
-> >>A way that could work for virtualization is this: if you find the card has a
-> >>magic subsystem vendor id, fetch the subsystem device id and use _that_ as
-> >>the PCH device id.
-> >>
-> >>Would that work for you?
-> >
-> >I guess for quemu it also depends upon what windows does since we can't
-> >change that. If we care about that part. Another consideration is
-> >supporting older kernels, if that's possible at all.
-> 
-> Yes, but right now it's more important to get something that's not too gross
-> for the future, for both Linux and Windows.  Hacks for existing guests can
-> be done separately, especially since they might differ between Linux (check
-> ISA bridge) and Windows (check 1f.0).
+Signed-off-by: navin patidar <navin.patidar@gmail.com>
+---
+ drivers/staging/rtl8188eu/include/rtw_ioctl_set.h |    1 -
+ drivers/staging/rtl8188eu/os_dep/osdep_service.c  |   55 ---------------------
+ 2 files changed, 56 deletions(-)
 
-Well old Linux also checked 1f.0, so kinda the same really. As long as
-1f.0 is an isa bridge. Wrt Windows I don't really expect them to change
-this (they're probably more focuesed on the windows hypervisor or whatever).
-
-In the end if the approach is ok for quemu and isn't much worse than what
-we currently have I don't mind at all about the i915.ko code. I just want
-to avoid flip-flopping around on the hack du jour like we seem to do just
-now.
--Daniel
+diff --git a/drivers/staging/rtl8188eu/include/rtw_ioctl_set.h b/drivers/staging/rtl8188eu/include/rtw_ioctl_set.h
+index 187fe1f..005ec17 100644
+--- a/drivers/staging/rtl8188eu/include/rtw_ioctl_set.h
++++ b/drivers/staging/rtl8188eu/include/rtw_ioctl_set.h
+@@ -45,6 +45,5 @@ u16 rtw_get_cur_max_rate(struct adapter *adapter);
+ int rtw_set_scan_mode(struct adapter *adapter, enum rt_scan_type scan_mode);
+ int rtw_set_channel_plan(struct adapter *adapter, u8 channel_plan);
+ int rtw_set_country(struct adapter *adapter, const char *country_code);
+-int rtw_change_ifname(struct adapter *padapter, const char *ifname);
+ 
+ #endif
+diff --git a/drivers/staging/rtl8188eu/os_dep/osdep_service.c b/drivers/staging/rtl8188eu/os_dep/osdep_service.c
+index de0efe2..76eddcd 100644
+--- a/drivers/staging/rtl8188eu/os_dep/osdep_service.c
++++ b/drivers/staging/rtl8188eu/os_dep/osdep_service.c
+@@ -153,61 +153,6 @@ RETURN:
+ 	return;
+ }
+ 
+-int rtw_change_ifname(struct adapter *padapter, const char *ifname)
+-{
+-	struct net_device *pnetdev;
+-	struct net_device *cur_pnetdev;
+-	struct rereg_nd_name_data *rereg_priv;
+-	int ret;
+-
+-	if (!padapter)
+-		goto error;
+-
+-	cur_pnetdev = padapter->pnetdev;
+-	rereg_priv = &padapter->rereg_nd_name_priv;
+-
+-	/* free the old_pnetdev */
+-	if (rereg_priv->old_pnetdev) {
+-		free_netdev(rereg_priv->old_pnetdev);
+-		rereg_priv->old_pnetdev = NULL;
+-	}
+-
+-	if (!rtnl_is_locked())
+-		unregister_netdev(cur_pnetdev);
+-	else
+-		unregister_netdevice(cur_pnetdev);
+-
+-	rtw_proc_remove_one(cur_pnetdev);
+-
+-	rereg_priv->old_pnetdev = cur_pnetdev;
+-
+-	pnetdev = rtw_init_netdev(padapter);
+-	if (!pnetdev)  {
+-		ret = -1;
+-		goto error;
+-	}
+-
+-	SET_NETDEV_DEV(pnetdev, dvobj_to_dev(adapter_to_dvobj(padapter)));
+-
+-	rtw_init_netdev_name(pnetdev, ifname);
+-
+-	memcpy(pnetdev->dev_addr, padapter->eeprompriv.mac_addr, ETH_ALEN);
+-
+-	if (!rtnl_is_locked())
+-		ret = register_netdev(pnetdev);
+-	else
+-		ret = register_netdevice(pnetdev);
+-	if (ret != 0) {
+-		RT_TRACE(_module_hci_intfs_c_, _drv_err_,
+-			 ("register_netdev() failed\n"));
+-		goto error;
+-	}
+-	rtw_proc_init_one(pnetdev);
+-	return 0;
+-error:
+-	return -1;
+-}
+-
+ u64 rtw_modular64(u64 x, u64 y)
+ {
+ 	return do_div(x, y);
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.7.10.4
+
