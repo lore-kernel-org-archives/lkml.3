@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013AbaGGGtX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 02:49:23 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55978 "EHLO comal.ext.ti.com"
+	id S1752046AbaGGGts (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 02:49:48 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49133 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751873AbaGGGsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 02:48:55 -0400
+	id S1751747AbaGGGsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 02:48:50 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 8/8] phy: omap-usb2: Balance pm_runtime_enable() on probe failure and remove
-Date: Mon, 7 Jul 2014 12:18:25 +0530
-Message-ID: <1404715705-5041-9-git-send-email-kishon@ti.com>
+Subject: [PATCH 5/8] phy: core: Fix error path in phy_create()
+Date: Mon, 7 Jul 2014 12:18:22 +0530
+Message-ID: <1404715705-5041-6-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1404715705-5041-1-git-send-email-kishon@ti.com>
 References: <1404715705-5041-1-git-send-email-kishon@ti.com>
@@ -23,56 +23,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Roger Quadros <rogerq@ti.com>
 
-If probe fails then we need to call pm_runtime_disable() to balance
-out the previous pm_runtime_enable() call. Else it will cause
-unbalanced pm_runtime_enable() call in the succeding probe call.
-
-This anomaly was observed when the call to devm_phy_create() failed
-with -EPROBE_DEFER.
-
-Balance out the pm_runtime_enable() call in .remove() as well.
+Prevent resources from being freed twice in case device_add() call
+fails within phy_create(). Also use ida_simple_remove() instead of
+ida_remove() as we had used ida_simple_get() to allocate the ida.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/phy/phy-omap-usb2.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/phy/phy-core.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-index 2063d54..34b3961 100644
---- a/drivers/phy/phy-omap-usb2.c
-+++ b/drivers/phy/phy-omap-usb2.c
-@@ -262,7 +262,6 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 	otg->phy		= &phy->phy;
+diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+index c64a2f3..49c4465 100644
+--- a/drivers/phy/phy-core.c
++++ b/drivers/phy/phy-core.c
+@@ -614,8 +614,9 @@ struct phy *phy_create(struct device *dev, const struct phy_ops *ops,
+ 	return phy;
  
- 	platform_set_drvdata(pdev, phy);
--	pm_runtime_enable(phy->dev);
+ put_dev:
+-	put_device(&phy->dev);
+-	ida_remove(&phy_ida, phy->id);
++	put_device(&phy->dev);  /* calls phy_release() which frees resources */
++	return ERR_PTR(ret);
++
+ free_phy:
+ 	kfree(phy);
+ 	return ERR_PTR(ret);
+@@ -799,7 +800,7 @@ static void phy_release(struct device *dev)
  
- 	generic_phy = devm_phy_create(phy->dev, &ops, NULL);
- 	if (IS_ERR(generic_phy))
-@@ -270,10 +269,13 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 
- 	phy_set_drvdata(generic_phy, phy);
- 
-+	pm_runtime_enable(phy->dev);
- 	phy_provider = devm_of_phy_provider_register(phy->dev,
- 			of_phy_simple_xlate);
--	if (IS_ERR(phy_provider))
-+	if (IS_ERR(phy_provider)) {
-+		pm_runtime_disable(phy->dev);
- 		return PTR_ERR(phy_provider);
-+	}
- 
- 	phy->wkupclk = devm_clk_get(phy->dev, "wkupclk");
- 	if (IS_ERR(phy->wkupclk)) {
-@@ -317,6 +319,7 @@ static int omap_usb2_remove(struct platform_device *pdev)
- 	if (!IS_ERR(phy->optclk))
- 		clk_unprepare(phy->optclk);
- 	usb_remove_phy(&phy->phy);
-+	pm_runtime_disable(phy->dev);
- 
- 	return 0;
+ 	phy = to_phy(dev);
+ 	dev_vdbg(dev, "releasing '%s'\n", dev_name(dev));
+-	ida_remove(&phy_ida, phy->id);
++	ida_simple_remove(&phy_ida, phy->id);
+ 	kfree(phy);
  }
+ 
 -- 
 1.7.9.5
 
