@@ -1,74 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752280AbaGGUw2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 16:52:28 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:46742 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834AbaGGUw1 (ORCPT
+	id S1752440AbaGGUzE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 16:55:04 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50180 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751077AbaGGUzC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 16:52:27 -0400
+	Mon, 7 Jul 2014 16:55:02 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Tony Luck <tony.luck@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH 3/4] ACPI / processor: Introduce ARCH_HAS_ACPI_PDC
+Date: Mon, 07 Jul 2014 23:13:05 +0200
+Message-ID: <2064691.ZpxCs0gfL8@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1404290847-7671-4-git-send-email-hanjun.guo@linaro.org>
+References: <1404290847-7671-1-git-send-email-hanjun.guo@linaro.org> <1404290847-7671-4-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdV++wyFLbqmnqEBTrWdgTNKpy=r9-mYFhQGCj7kUUUhKQ@mail.gmail.com>
-References: <1404667555-14675-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<CAMuHMdV++wyFLbqmnqEBTrWdgTNKpy=r9-mYFhQGCj7kUUUhKQ@mail.gmail.com>
-Date: Mon, 7 Jul 2014 22:52:26 +0200
-Message-ID: <CAFo99gaWUTzbxgmA6ahtFhCOBog1iYBx1oSvr9m_rAQgcNq6oA@mail.gmail.com>
-Subject: Re: [PATCH] video: fbdev: core: fbmon.c: Cleaning up useless
- assignment of function parameter
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Rob Clark <robdclark@gmail.com>, David Ung <davidu@nvidia.com>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-07-07 22:43 GMT+02:00 Geert Uytterhoeven <geert@linux-m68k.org>:
-> On Sun, Jul 6, 2014 at 7:25 PM, Rickard Strandqvist
-> <rickard_strandqvist@spectrumdigital.se> wrote:
->> Remove assignment of function parameter, that has no effect outside the function
->>
->> This was found using a static code analysis program called cppcheck
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>  drivers/video/fbdev/core/fbmon.c |    1 -
->>  1 file changed, 1 deletion(-)
->>
->> diff --git a/drivers/video/fbdev/core/fbmon.c b/drivers/video/fbdev/core/fbmon.c
->> index 5b0e313..71ec1ab 100644
->> --- a/drivers/video/fbdev/core/fbmon.c
->> +++ b/drivers/video/fbdev/core/fbmon.c
->> @@ -1481,7 +1481,6 @@ int fb_parse_edid(unsigned char *edid, struct fb_var_screeninfo *var)
->>  }
->>  void fb_edid_to_monspecs(unsigned char *edid, struct fb_monspecs *specs)
->>  {
->> -       specs = NULL;
->
-> I guess the intention was:
->
-> memset(specs, 0, sizeof(struct fb_monspecs));
+On Wednesday, July 02, 2014 04:47:25 PM Hanjun Guo wrote:
+> The use of _PDC is deprecated in ACPI 3.0 in favor of _OSC,
+> as ARM platform is supported only in ACPI 5.0 or higher version,
+> _PDC will not be used in ARM platform, so make Make _PDC only for
+> platforms with Intel CPUs.
+> 
+> Introduce ARCH_HAS_ACPI_PDC and move _PDC related code in ACPI
+> processor driver into a single file processor_pdc.c, make x86
+> and ia64 select ARCH_HAS_ACPI_PDC when ACPI is enabled.
+> 
+> This patch also use pr_* to replace printk to fix the checkpatch
+> warning and factor acpi_processor_alloc_pdc() a little bit to
+> avoid duplicate pr_err() code.
+> 
+> Suggested-by: Robert Richter <rric@kernel.org>
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>  arch/ia64/Kconfig             |    1 +
+>  arch/x86/Kconfig              |    1 +
+>  drivers/acpi/Kconfig          |   10 ++
+>  drivers/acpi/Makefile         |    1 +
+>  drivers/acpi/internal.h       |    5 +
+>  drivers/acpi/processor_core.c |  198 ---------------------------------------
+>  drivers/acpi/processor_pdc.c  |  206 +++++++++++++++++++++++++++++++++++++++++
+>  7 files changed, 224 insertions(+), 198 deletions(-)
+>  create mode 100644 drivers/acpi/processor_pdc.c
+> 
+> diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
+> index f82b352..cde2626 100644
+> --- a/arch/ia64/Kconfig
+> +++ b/arch/ia64/Kconfig
+> @@ -10,6 +10,7 @@ config IA64
+>  	select ARCH_MIGHT_HAVE_PC_SERIO
+>  	select PCI if (!IA64_HP_SIM)
+>  	select ACPI if (!IA64_HP_SIM)
+> +	select ARCH_HAS_ACPI_PDC if ACPI
 
+The ARCH_HAS part doesn't seem to be particularly consistent with
+the existing naming.  ARCH_MIGHT_HAVE_ACPI_PDC would be better IMO.
 
-Hi Geert!
+>  	select PM if (!IA64_HP_SIM)
+>  	select HAVE_UNSTABLE_SCHED_CLOCK
+>  	select HAVE_IDE
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 4865d44..d60cec7 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -21,6 +21,7 @@ config X86_64
+>  ### Arch settings
+>  config X86
+>  	def_bool y
+> +	select ARCH_HAS_ACPI_PDC if ACPI
+>  	select ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS
+>  	select ARCH_MIGHT_HAVE_PC_PARPORT
+>  	select ARCH_MIGHT_HAVE_PC_SERIO
+> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+> index 70eaf7a..0e6f72d 100644
+> --- a/drivers/acpi/Kconfig
+> +++ b/drivers/acpi/Kconfig
+> @@ -367,6 +367,16 @@ config ACPI_REDUCED_HARDWARE_ONLY
+>  
+>  	If you are unsure what to do, do not enable this option.
+>  
+> +config ARCH_HAS_ACPI_PDC
+> +	bool
+> +	help
+> +	  The _PDC object provides OSPM a mechanism to convey to the platform
+> +	  the capabilities supported by OSPM for processor power management.
+> +	  This allows the platform to modify the ACPI namespace objects returning
+> +	  configuration information for processor power management based on the
+> +	  level of support provided by OSPM.The use of _PDC is deprecated in
+> +	  ACPI 3.0 in favor of _OSC.
 
-Yeah, maybe. Just looks to be a little too elementary mistake..?
+Is the help actually useful?  This doesn't seem to be user-selectable, does it?
 
-But do you want me to change it to that?
-
-With a:
-if(specs)
-  memset()
-
-maybe..?
-
-
-Kind regards
-Rickard Strandqvist
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
