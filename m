@@ -1,75 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052AbaGGGh4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 02:37:56 -0400
-Received: from mga02.intel.com ([134.134.136.20]:25552 "EHLO mga02.intel.com"
+	id S1751841AbaGGGka (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 02:40:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57741 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751409AbaGGGhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 02:37:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,616,1400050800"; 
-   d="scan'208";a="539568289"
-Message-ID: <53BA4004.7@intel.com>
-Date: Mon, 07 Jul 2014 14:36:52 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751163AbaGGGk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 02:40:26 -0400
+Date: Mon, 7 Jul 2014 12:09:56 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "# 3.4.x" <stable@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] hwrng: fetch randomness only after device init
+Message-ID: <20140707063956.GE27024@grmbl.mre>
+References: <cover.1404538109.git.amit.shah@redhat.com>
+ <515a12ecc5fca5452bf0bfda4d54546d8fb5829c.1404538109.git.amit.shah@redhat.com>
+ <CAGXu5j+j1LUv_rRpf=03nRfu=Sek5O8TUs8R066JvfbUgT9ZQQ@mail.gmail.com>
+ <20140707055352.GB27024@grmbl.mre>
+ <20140707060458.GC27024@grmbl.mre>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
-        eranian@google.com, andi@firstfloor.org
-Subject: Re: [PATCH V4 08/16] perf, x86: allocate space for storing LBR stack
-References: <1404714527-18603-1-git-send-email-zheng.z.yan@intel.com> <1404714527-18603-10-git-send-email-zheng.z.yan@intel.com>
-In-Reply-To: <1404714527-18603-10-git-send-email-zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140707060458.GC27024@grmbl.mre>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-please ignore this patch
+On (Mon) 07 Jul 2014 [11:34:58], Amit Shah wrote:
+> On (Mon) 07 Jul 2014 [11:23:52], Amit Shah wrote:
+> > On (Sun) 06 Jul 2014 [21:41:47], Kees Cook wrote:
+> > > On Fri, Jul 4, 2014 at 10:34 PM, Amit Shah <amit.shah@redhat.com> wrote:
+> > > > Commit d9e7972619334 "hwrng: add randomness to system from rng sources"
+> > > > added a call to rng_get_data() from the hwrng_register() function.
+> > > > However, some rng devices need initialization before data can be read
+> > > > from them.
+> > > >
+> > > > This commit makes the call to rng_get_data() depend on no init fn
+> > > > pointer being registered by the device.  If an init function is
+> > > > registered, this call is made after device init.
+> > > 
+> > > Thanks, this seems pretty reasonable. One side-effect is that cycling
+> > > between hwrngs via sysfs (when they have init functions) will cause
+> > > them to add more entropy. I don't think this is a problem, but it is
+> > > kind of a weird side-effect.
+> > 
+> > Yes, agreed.  Having a per-device bool that indicates whether the
+> > initial randomness is obtained is quite a heavy solution for this
+> > side-effect.  But I can put this in the commit log so it's clear..
+> 
+> Well actually this feels a little weird, so how about making this the
+> default behaviour for all devices, whether they have ->init() or not?
+> 
+> This also means that if a virtio-rng device is switched, it can
+> contribute as its probe would have been over.
 
-On 07/07/2014 02:28 PM, Yan, Zheng wrote:
-> When the LBR call stack is enabled, it is necessary to save/restore
-> the LBR stack on context switch. We can use pmu specific data to
-> store LBR stack when task is scheduled out. This patch adds code
-> that allocates the pmu specific data.
-> 
-> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-> Reviewed-by: Stephane Eranian <eranian@google.com>
-> ---
->  arch/x86/kernel/cpu/perf_event.c | 1 +
->  arch/x86/kernel/cpu/perf_event.h | 7 +++++++
->  2 files changed, 8 insertions(+)
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index 8868e9b..2008c2a 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -1907,6 +1907,7 @@ static struct pmu pmu = {
->  
->  	.event_idx		= x86_pmu_event_idx,
->  	.sched_task		= x86_pmu_sched_task,
-> +	.task_ctx_size          = sizeof(struct x86_perf_task_context),
->  };
->  
->  void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
-> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-> index cc25819..b0eabca 100644
-> --- a/arch/x86/kernel/cpu/perf_event.h
-> +++ b/arch/x86/kernel/cpu/perf_event.h
-> @@ -472,6 +472,13 @@ struct x86_pmu {
->  	struct perf_guest_switch_msr *(*guest_get_msrs)(int *nr);
->  };
->  
-> +struct x86_perf_task_context {
-> +	u64 lbr_from[MAX_LBR_ENTRIES];
-> +	u64 lbr_to[MAX_LBR_ENTRIES];
-> +	int lbr_callstack_users;
-> +	int lbr_stack_state;
-> +};
-> +
->  enum {
->  	PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT = PERF_SAMPLE_BRANCH_MAX_SHIFT,
->  	PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE,
-> 
+Something like this - untested:
 
+diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
+index 50f5b76..c4419ea 100644
+--- a/drivers/char/hw_random/core.c
++++ b/drivers/char/hw_random/core.c
+@@ -81,17 +81,15 @@ static void add_early_randomness(struct hwrng *rng)
+ 
+ static inline int hwrng_init(struct hwrng *rng)
+ {
+-       int ret;
+-
+-       if (!rng->init)
+-               return 0;
+-
+-       ret =  rng->init(rng);
+-       if (ret)
+-               return ret;
++       if (rng->init) {
++               int ret;
+ 
++               ret =  rng->init(rng);
++               if (ret)
++                       return ret;
++       }
+        add_early_randomness(rng);
+-       return ret;
++       return 0;
+ }
+ 
+ static inline void hwrng_cleanup(struct hwrng *rng)
+@@ -372,8 +370,16 @@ int hwrng_register(struct hwrng *rng)
+        INIT_LIST_HEAD(&rng->list);
+        list_add_tail(&rng->list, &rng_list);
+ 
+-       if (!rng->init)
++       if (old_rng && !rng->init) {
++               /*
++                * Use a new device's input to add some randomness to
++                * the system.  If this rng device isn't going to be
++                * used right away, its init function hasn't been
++                * called yet; so only use the randomness from devices
++                * that don't need an init callback.
++                */
+                add_early_randomness(rng);
++       }
+ 
+ out_unlock:
+        mutex_unlock(&rng_mutex);
+
+
+		Amit
