@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563AbaGGXyS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:54:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55435 "EHLO
+	id S1754726AbaGHAwT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:52:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55567 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459AbaGGXyM (ORCPT
+	with ESMTP id S1753550AbaGGXyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:12 -0400
+	Mon, 7 Jul 2014 19:54:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.15 078/122] ARM: mvebu: Fix the improper use of the compatible string armada38x using a wildcard
-Date: Mon,  7 Jul 2014 16:57:20 -0700
-Message-Id: <20140707235736.598809857@linuxfoundation.org>
+        Jack Morgenstein <jackm@dev.mellanox.co.il>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.15 109/122] mlx4_core: Fix incorrect FLAGS1 bitmap test in mlx4_QUERY_FUNC_CAP
+Date: Mon,  7 Jul 2014 16:57:51 -0700
+Message-Id: <20140707235737.506204514@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,106 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+From: Jack Morgenstein <jackm@dev.mellanox.co.il>
 
-commit 8dbdb8e704db34085f5978c335c10256b0fb9629 upstream.
+commit bc82878baa10c2a6a4a6affaf52c152935112142 upstream.
 
-Wildcards in compatible strings should be avoid. "marvell,armada38x"
-was recently introduced but was not yet used.
+Commit eb17711bc1d6 ("net/mlx4_core: Introduce nic_info new flag in
+QUERY_FUNC_CAP") did:
 
-The armada 385 SoC is a superset of the armada 380 SoC (with more CPUs
-and more PCIe slots). So this patch replaces the use of
-"marvell,armada38x" by the "marvell,armada380" string.
+	if (func_cap->flags1 & QUERY_FUNC_CAP_FLAGS1_OFFSET) {
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Link: https://lkml.kernel.org/r/1403533011-21339-1-git-send-email-gregory.clement@free-electrons.com
-Acked-by: Andrew Lunn <andrew@lunn.ch>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+which should be:
+
+	if (func_cap->flags1 & QUERY_FUNC_CAP_FLAGS1_FORCE_VLAN) {
+
+Fix that.
+
+Fixes: eb17711bc1d6 ("net/mlx4_core: Introduce nic_info new flag in QUERY_FUNC_CAP")
+Signed-off-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/devicetree/bindings/arm/armada-38x.txt |   14 ++++++++++++--
- arch/arm/boot/dts/armada-380.dtsi                    |    2 +-
- arch/arm/boot/dts/armada-385-db.dts                  |    2 +-
- arch/arm/boot/dts/armada-385-rd.dts                  |    2 +-
- arch/arm/boot/dts/armada-385.dtsi                    |    2 +-
- arch/arm/boot/dts/armada-38x.dtsi                    |    2 +-
- 6 files changed, 17 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/fw.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/Documentation/devicetree/bindings/arm/armada-38x.txt
-+++ b/Documentation/devicetree/bindings/arm/armada-38x.txt
-@@ -6,5 +6,15 @@ following property:
+--- a/drivers/net/ethernet/mellanox/mlx4/fw.c
++++ b/drivers/net/ethernet/mellanox/mlx4/fw.c
+@@ -414,7 +414,7 @@ int mlx4_QUERY_FUNC_CAP(struct mlx4_dev
  
- Required root node property:
- 
-- - compatible: must contain either "marvell,armada380" or
--   "marvell,armada385" depending on the variant of the SoC being used.
-+ - compatible: must contain "marvell,armada380"
-+
-+In addition, boards using the Marvell Armada 385 SoC shall have the
-+following property before the previous one:
-+
-+Required root node property:
-+
-+compatible: must contain "marvell,armada385"
-+
-+Example:
-+
-+compatible = "marvell,a385-rd", "marvell,armada385", "marvell,armada380";
---- a/arch/arm/boot/dts/armada-380.dtsi
-+++ b/arch/arm/boot/dts/armada-380.dtsi
-@@ -16,7 +16,7 @@
- 
- / {
- 	model = "Marvell Armada 380 family SoC";
--	compatible = "marvell,armada380", "marvell,armada38x";
-+	compatible = "marvell,armada380";
- 
- 	cpus {
- 		#address-cells = <1>;
---- a/arch/arm/boot/dts/armada-385-db.dts
-+++ b/arch/arm/boot/dts/armada-385-db.dts
-@@ -16,7 +16,7 @@
- 
- / {
- 	model = "Marvell Armada 385 Development Board";
--	compatible = "marvell,a385-db", "marvell,armada385", "marvell,armada38x";
-+	compatible = "marvell,a385-db", "marvell,armada385", "marvell,armada380";
- 
- 	chosen {
- 		bootargs = "console=ttyS0,115200 earlyprintk";
---- a/arch/arm/boot/dts/armada-385-rd.dts
-+++ b/arch/arm/boot/dts/armada-385-rd.dts
-@@ -17,7 +17,7 @@
- 
- / {
- 	model = "Marvell Armada 385 Reference Design";
--	compatible = "marvell,a385-rd", "marvell,armada385", "marvell,armada38x";
-+	compatible = "marvell,a385-rd", "marvell,armada385", "marvell,armada380";
- 
- 	chosen {
- 		bootargs = "console=ttyS0,115200 earlyprintk";
---- a/arch/arm/boot/dts/armada-385.dtsi
-+++ b/arch/arm/boot/dts/armada-385.dtsi
-@@ -16,7 +16,7 @@
- 
- / {
- 	model = "Marvell Armada 385 family SoC";
--	compatible = "marvell,armada385", "marvell,armada38x";
-+	compatible = "marvell,armada385", "marvell,armada380";
- 
- 	cpus {
- 		#address-cells = <1>;
---- a/arch/arm/boot/dts/armada-38x.dtsi
-+++ b/arch/arm/boot/dts/armada-38x.dtsi
-@@ -20,7 +20,7 @@
- 
- / {
- 	model = "Marvell Armada 38x family SoC";
--	compatible = "marvell,armada38x";
-+	compatible = "marvell,armada380";
- 
- 	aliases {
- 		gpio0 = &gpio0;
+ 	MLX4_GET(func_cap->flags1, outbox, QUERY_FUNC_CAP_FLAGS1_OFFSET);
+ 	if (dev->caps.port_type[gen_or_port] == MLX4_PORT_TYPE_ETH) {
+-		if (func_cap->flags1 & QUERY_FUNC_CAP_FLAGS1_OFFSET) {
++		if (func_cap->flags1 & QUERY_FUNC_CAP_FLAGS1_FORCE_VLAN) {
+ 			mlx4_err(dev, "VLAN is enforced on this port\n");
+ 			err = -EPROTONOSUPPORT;
+ 			goto out;
 
 
