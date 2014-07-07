@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996AbaGGHa7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 03:30:59 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:16778 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751163AbaGGHa6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 03:30:58 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Alex =?utf-8?Q?Benn=C3=A9e?= <alex.bennee@linaro.org>
-Cc: "kvmarm\@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kvm\@vger.kernel.org" <kvm@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: KVM: allow export and import of generic timer regs
-In-Reply-To: <1404485654-32674-1-git-send-email-alex.bennee@linaro.org>
- ("Alex
-	\=\?utf-8\?Q\?Benn\=C3\=A9e\=22's\?\= message of "Fri, 4 Jul 2014 15:54:14 +0100")
-Organization: ARM Ltd
-References: <1404485654-32674-1-git-send-email-alex.bennee@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Mon, 07 Jul 2014 08:30:41 +0100
-Message-ID: <87mwclbp7i.fsf@why.wild-wind.fr.eu.org>
+	id S1752016AbaGGHcO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 03:32:14 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:47054 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231AbaGGHcM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 03:32:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <52823C54.9050208@imgtec.com>
+References: <52823C54.9050208@imgtec.com>
+Date: Mon, 7 Jul 2014 11:32:12 +0400
+Message-ID: <CAMo8Bf+jU3oGn4=6HF=MXMqvVEDDSdtD_pa0u3=4fOXeF5pNUA@mail.gmail.com>
+Subject: Re: Release of Linux MTI-3.10-LTS kernel.
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: "Steven J. Hill" <Steven.Hill@imgtec.com>
+Cc: "Linux/MIPS Mailing List" <linux-mips@linux-mips.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 04 2014 at  3:54:14 pm BST, Alex Bennée <alex.bennee@linaro.org> wrote:
-> For correct guest suspend/resume behaviour we need to ensure we include
-> the generic timer registers for 64 bit guests. As CONFIG_KVM_ARM_TIMER is
-> always set for arm64 we don't need to worry about null implementations.
-> However I have re-jigged the kvm_arm_timer_set/get_reg declarations to
-> be in the common include/kvm/arm_arch_timer.h headers.
+Hi,
+
+On Tue, Nov 12, 2013 at 6:33 PM, Steven J. Hill <Steven.Hill@imgtec.com> wrote:
+> Imagination Technologies is pleased to announce the release of its 3.10 LTS
+> (Long-Term Support) MIPS kernel. The changelog below is based off the stable
+> Linux 3.10.14 release done by Greg Kroah-Hartman in commit
+> 8c15abc94c737f9120d3d4a550abbcbb9be121f6 back on October 1st. The code
+> repository is hosted at the Linux/MIPS project GIT:
 >
-> Signed-off-by: Alex Bennée <alex.bennee@linaro.org>
+> http://git.linux-mips.org/?p=linux-mti.git;a=summary
+>
+> We look forward to any comments or feedback.
+>
+>         The Imagination MIPS Kernel Team
+[...]
+> Fixes:
+> * MIPS HIGHMEM fixes for cache aliasing and non-DMA I/O.
 
-Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+I'm adding HIGHMEM support to xtensa cores with aliasing cache, and found
+that the above patch makes generic kmap cache-color aware. Is there a plan
+on upstreaming that patch? I can help with upstreaming of the generic part of
+it if there's no such plan.
 
-	M.
 -- 
-Without deviation from the norm, progress is not possible.
+Thanks.
+-- Max
