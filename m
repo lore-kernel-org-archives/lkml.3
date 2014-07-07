@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328AbaGGXzK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:55:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55989 "EHLO
+	id S932212AbaGHASL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:18:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56164 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754282AbaGGXzG (ORCPT
+	with ESMTP id S1754326AbaGGXzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:55:06 -0400
+	Mon, 7 Jul 2014 19:55:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilya Dryomov <ilya.dryomov@inktank.com>,
-        Josh Durgin <josh.durgin@inktank.com>
-Subject: [PATCH 3.10 26/53] rbd: handle parent_overlap on writes correctly
-Date: Mon,  7 Jul 2014 16:58:11 -0700
-Message-Id: <20140707235830.081357106@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.10 35/53] ext4: Fix buffer double free in ext4_alloc_branch()
+Date: Mon,  7 Jul 2014 16:58:20 -0700
+Message-Id: <20140707235830.348237956@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
 References: <20140707235829.281783607@linuxfoundation.org>
@@ -29,70 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 9638556a276125553549fdfe349c464481ec2f39 upstream.
+commit c5c7b8ddfbf8cb3b2291e515a34ab1b8982f5a2d upstream.
 
-The following check in rbd_img_obj_request_submit()
+Error recovery in ext4_alloc_branch() calls ext4_forget() even for
+buffer corresponding to indirect block it did not allocate. This leads
+to brelse() being called twice for that buffer (once from ext4_forget()
+and once from cleanup in ext4_ind_map_blocks()) leading to buffer use
+count misaccounting. Eventually (but often much later because there
+are other users of the buffer) we will see messages like:
+VFS: brelse: Trying to free free buffer
 
-    rbd_dev->parent_overlap <= obj_request->img_offset
+Another manifestation of this problem is an error:
+JBD2 unexpected failure: jbd2_journal_revoke: !buffer_revoked(bh);
+inconsistent data on disk
 
-allows the fall through to the non-layered write case even if both
-parent_overlap and obj_request->img_offset belong to the same RADOS
-object.  This leads to data corruption, because the area to the left of
-parent_overlap ends up unconditionally zero-filled instead of being
-populated with parent data.  Suppose we want to write 1M to offset 6M
-of image bar, which is a clone of foo@snap; object_size is 4M,
-parent_overlap is 5M:
+The fix is easy - don't forget buffer we did not allocate. Also add an
+explanatory comment because the indexing at ext4_alloc_branch() is
+somewhat subtle.
 
-    rbd_data.<id>.0000000000000001
-     ---------------------|----------------------|------------
-    | should be copyup'ed | should be zeroed out | write ...
-     ---------------------|----------------------|------------
-   4M                    5M                     6M
-                    parent_overlap    obj_request->img_offset
-
-4..5M should be copyup'ed from foo, yet it is zero-filled, just like
-5..6M is.
-
-Given that the only striping mode kernel client currently supports is
-chunking (i.e. stripe_unit == object_size, stripe_count == 1), round
-parent_overlap up to the next object boundary for the purposes of the
-overlap check.
-
-Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
-Reviewed-by: Josh Durgin <josh.durgin@inktank.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/rbd.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ fs/ext4/indirect.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -1385,6 +1385,14 @@ static bool obj_request_exists_test(stru
- 	return test_bit(OBJ_REQ_EXISTS, &obj_request->flags) != 0;
- }
- 
-+static bool obj_request_overlaps_parent(struct rbd_obj_request *obj_request)
-+{
-+	struct rbd_device *rbd_dev = obj_request->img_request->rbd_dev;
-+
-+	return obj_request->img_offset <
-+	    round_up(rbd_dev->parent_overlap, rbd_obj_bytes(&rbd_dev->header));
-+}
-+
- static void rbd_obj_request_get(struct rbd_obj_request *obj_request)
- {
- 	dout("%s: obj %p (was %d)\n", __func__, obj_request,
-@@ -2682,7 +2690,7 @@ static int rbd_img_obj_request_submit(st
- 	 */
- 	if (!img_request_write_test(img_request) ||
- 		!img_request_layered_test(img_request) ||
--		rbd_dev->parent_overlap <= obj_request->img_offset ||
-+		!obj_request_overlaps_parent(obj_request) ||
- 		((known = obj_request_known_test(obj_request)) &&
- 			obj_request_exists_test(obj_request))) {
- 
+--- a/fs/ext4/indirect.c
++++ b/fs/ext4/indirect.c
+@@ -390,7 +390,13 @@ static int ext4_alloc_branch(handle_t *h
+ 	return 0;
+ failed:
+ 	for (; i >= 0; i--) {
+-		if (i != indirect_blks && branch[i].bh)
++		/*
++		 * We want to ext4_forget() only freshly allocated indirect
++		 * blocks.  Buffer for new_blocks[i-1] is at branch[i].bh and
++		 * buffer at branch[0].bh is indirect block / inode already
++		 * existing before ext4_alloc_branch() was called.
++		 */
++		if (i > 0 && i != indirect_blks && branch[i].bh)
+ 			ext4_forget(handle, 1, inode, branch[i].bh,
+ 				    branch[i].bh->b_blocknr);
+ 		ext4_free_blocks(handle, inode, NULL, new_blocks[i],
 
 
