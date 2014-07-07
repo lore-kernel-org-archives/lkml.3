@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775AbaGGSpq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 14:45:46 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:61057 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750859AbaGGSpp (ORCPT
+	id S1752395AbaGGStt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 14:49:49 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42153 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897AbaGGStr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 14:45:45 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmQNAMzpulNXQCU9/2dsb2JhbABZgw6segUBAQEBAQEFAW4BkiiHRYEbF3WECwJTI4ECBxE3iC4DFQHDPQ2FfReFcIcKgigdhC0FmApsggCLTIIshhSDRTsv
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, David Airlie <airlied@linux.ie>,
-        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH 1/1] drm/gma500: replace ALIGN(PAGE_SIZE) by PAGE_ALIGN
-Date: Mon,  7 Jul 2014 20:44:16 +0200
-Message-Id: <1404758656-8615-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Mon, 7 Jul 2014 14:49:47 -0400
+Date: Mon, 7 Jul 2014 20:50:05 +0200
+From: Olivier Sobrie <olivier@sobrie.be>
+To: Dan Williams <dcbw@redhat.com>
+Cc: Jan Dumon <j.dumon@option.com>, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] hso: fix deadlock when receiving bursts of data
+Message-ID: <20140707185005.GA1105@thinkoso.home>
+Reply-To: Olivier Sobrie <olivier@sobrie.be>
+References: <1404723967-24245-1-git-send-email-olivier@sobrie.be>
+ <1404723967-24245-2-git-send-email-olivier@sobrie.be>
+ <1404751280.22000.11.camel@dcbw.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1404751280.22000.11.camel@dcbw.local>
+X-PGP-Key: http://olivier.sobrie.be/pgp/public.key
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use mm.h definition
+Hi Dan,
 
-Cc: David Airlie <airlied@linux.ie>
-Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: dri-devel@lists.freedesktop.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/gpu/drm/gma500/framebuffer.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+On Mon, Jul 07, 2014 at 11:41:20AM -0500, Dan Williams wrote:
+> On Mon, 2014-07-07 at 11:06 +0200, Olivier Sobrie wrote:
+> > When the module sends bursts of data, sometimes a deadlock happens in
+> > the hso driver when the tty buffer doesn't get the chance to be flushed
+> > quickly enough.
+> > 
+> > To avoid this, first, we remove the endless while loop in
+> > put_rx_bufdata() which is the root cause of the deadlock.
+> > Secondly, when there is no room anymore in the tty buffer, we set up a
+> > timer of 100 msecs to give a chance to the upper layer to flush the tty
+> > buffer and make room for new data.
+> 
+> I assume this problem happens when using PPP for data transfer, instead
+> of using the network port that the modules expose?  Or maybe the NMEA
+> port?  I can't imagine that AT commands would make this happen...
 
-diff --git a/drivers/gpu/drm/gma500/framebuffer.c b/drivers/gpu/drm/gma500/framebuffer.c
-index e7fcc14..fc1f4e8 100644
---- a/drivers/gpu/drm/gma500/framebuffer.c
-+++ b/drivers/gpu/drm/gma500/framebuffer.c
-@@ -369,7 +369,7 @@ static int psbfb_create(struct psb_fbdev *fbdev,
-         	mode_cmd.pitches[0] =  ALIGN(mode_cmd.width * ((bpp + 7) / 8), 4096 >> pitch_lines);
- 
-         	size = mode_cmd.pitches[0] * mode_cmd.height;
--        	size = ALIGN(size, PAGE_SIZE);
-+		size = PAGE_ALIGN(size);
- 
- 		/* Allocate the fb in the GTT with stolen page backing */
- 		backing = psbfb_alloc(dev, size);
-@@ -397,7 +397,7 @@ static int psbfb_create(struct psb_fbdev *fbdev,
- 		mode_cmd.pitches[0] =  ALIGN(mode_cmd.width * ((bpp + 7) / 8), 64);
- 
- 		size = mode_cmd.pitches[0] * mode_cmd.height;
--		size = ALIGN(size, PAGE_SIZE);
-+		size = PAGE_ALIGN(size);
- 
- 		/* Allocate the framebuffer in the GTT with stolen page backing */
- 		backing = psbfb_alloc(dev, size);
+Yes it happens when using ppp for data transfer.
+The transfer of a large file sometimes triggers the problem.
+
 -- 
-1.8.4.5
-
+Olivier
