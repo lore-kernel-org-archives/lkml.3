@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281AbaGHA1f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:27:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55860 "EHLO
+	id S1755266AbaGHA1e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:27:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55919 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754144AbaGGXyx (ORCPT
+	with ESMTP id S1752606AbaGGXyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.14 83/94] brcmfmac: Fix brcmf_chip_ai_coredisable not applying reset bits to BCMA_IOCTL
-Date: Mon,  7 Jul 2014 16:58:13 -0700
-Message-Id: <20140707235759.219399458@linuxfoundation.org>
+        Micky Ching <micky_ching@realsil.com.cn>,
+        Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>
+Subject: [PATCH 3.14 84/94] mmc: rtsx: add R1-no-CRC mmc command type handle
+Date: Mon,  7 Jul 2014 16:58:14 -0700
+Message-Id: <20140707235759.248205141@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -30,60 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-commit ffa216bb5eecfce0f01b0b2a95d5c320dde90005 upstream.
+commit 5027251eced6e34315a52bd841279df957f627bb upstream.
 
-brcmfmac has been broken on my cubietruck with a BCM43362:
+a27fbf2f067b0cd ("mmc: add ignorance case for CMD13 CRC error") produced
+a cmd.flags unhandled in realtek pci host driver.  This will make MMC
+card fail to initialize, this patch is used to handle the new cmd.flags
+condition and MMC card can be used.
 
-brcmfmac: brcmf_chip_recognition: found AXI chip: BCM43362, rev=1
-brcmfmac: brcmf_c_preinit_dcmds: Firmware version = wl0:
-        Apr 22 2013 14:50:00 version 5.90.195.89.6 FWID 01-b30a427d
-
-since commit 53036261033: "brcmfmac: update core reset and disable routines".
-
-The problem is that since this commit brcmf_chip_ai_resetcore no longer sets
-BCMA_IOCTL itself before bringing the core out of reset, instead relying on
-brcmf_chip_ai_coredisable to do so. But brcmf_chip_ai_coredisable is a nop
-of the chip is already in reset. This patch modifies brcmf_chip_ai_coredisable
-to always set BCMA_IOCTL even if the core is already in reset.
-
-This fixes brcmfmac hanging in firmware loading on my board.
-
-Cc: stable@vger.kernel.org # v3.14
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Arend van Spriel <arend@broadcom.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[arend@broadcom.com: rebase patch on linux-3.14.y branch]
-Signed-off-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Chris Ball <chris@printf.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/brcm80211/brcmfmac/sdio_chip.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/mmc/host/rtsx_pci_sdmmc.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/wireless/brcm80211/brcmfmac/sdio_chip.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/sdio_chip.c
-@@ -300,10 +300,10 @@ brcmf_sdio_ai_coredisable(struct brcmf_s
- 
- 	wrapbase = ci->c_inf[idx].wrapbase;
- 
--	/* if core is already in reset, just return */
-+	/* if core is already in reset, skip reset */
- 	regdata = brcmf_sdiod_regrl(sdiodev, wrapbase + BCMA_RESET_CTL, NULL);
- 	if ((regdata & BCMA_RESET_CTL_RESET) != 0)
--		return;
-+		goto post_reset_config;
- 
- 	/* configure reset */
- 	brcmf_sdiod_regwl(sdiodev, wrapbase + BCMA_IOCTL, pre_resetbits |
-@@ -319,6 +319,7 @@ brcmf_sdio_ai_coredisable(struct brcmf_s
- 	SPINWAIT(brcmf_sdiod_regrl(sdiodev, wrapbase + BCMA_RESET_CTL, NULL) !=
- 		 BCMA_RESET_CTL_RESET, 300);
- 
-+post_reset_config:
- 	/* post reset configure */
- 	brcmf_sdiod_regwl(sdiodev, wrapbase + BCMA_IOCTL, pre_resetbits |
- 			  BCMA_IOCTL_FGC | BCMA_IOCTL_CLK, NULL);
+--- a/drivers/mmc/host/rtsx_pci_sdmmc.c
++++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+@@ -246,6 +246,9 @@ static void sd_send_cmd_get_rsp(struct r
+ 	case MMC_RSP_R1:
+ 		rsp_type = SD_RSP_TYPE_R1;
+ 		break;
++	case MMC_RSP_R1 & ~MMC_RSP_CRC:
++		rsp_type = SD_RSP_TYPE_R1 | SD_NO_CHECK_CRC7;
++		break;
+ 	case MMC_RSP_R1B:
+ 		rsp_type = SD_RSP_TYPE_R1b;
+ 		break;
 
 
