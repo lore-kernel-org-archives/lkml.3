@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070AbaGGDx5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jul 2014 23:53:57 -0400
+	id S1753041AbaGGDxz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jul 2014 23:53:55 -0400
 Received: from mailout1.samsung.com ([203.254.224.24]:17537 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752857AbaGGDxm (ORCPT
+	with ESMTP id S1752856AbaGGDxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jul 2014 23:53:42 -0400
-X-AuditID: cbfee690-b7fb56d000003439-bb-53ba19c51264
+	Sun, 6 Jul 2014 23:53:41 -0400
+X-AuditID: cbfee68e-b7fb96d000004bfc-b4-53ba19c38f02
 From: Pankaj Dubey <pankaj.dubey@samsung.com>
 To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
         vikas.sajjan@samsung.com, joshi@samsung.com, naushad@samsung.com,
         chow.kim@samsung.com, Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH v6 4/6] ARM: EXYNOS: Remove file path from comment section
-Date: Mon, 07 Jul 2014 09:20:54 +0530
-Message-id: <1404705056-11965-5-git-send-email-pankaj.dubey@samsung.com>
+Subject: [PATCH v6 3/6] ARM: EXYNOS: Move SYSREG definition into sys-reg
+ specific file
+Date: Mon, 07 Jul 2014 09:20:53 +0530
+Message-id: <1404705056-11965-4-git-send-email-pankaj.dubey@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1404705056-11965-1-git-send-email-pankaj.dubey@samsung.com>
 References: <1404705056-11965-1-git-send-email-pankaj.dubey@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42JZI2JSrXtUclewwZe5/BbLJt1ls/i+6wu7
-	Re+Cq2wWmx5fY7W4vGsOm8WM8/uYLG5f5rX4dPQ/q8WirUAV62e8ZrG4+Ww7kwO3R0tzD5vH
-	5iX1Hn1bVjF6fN4kF8ASxWWTkpqTWZZapG+XwJXxZWd+QbNwxeF5RxkbGBsFuhg5OSQETCRm
-	vLzMBGGLSVy4t56ti5GLQ0hgKaPEmVcdrDBF+199ZoFITGeUaOu8AOVMYJKYtfYzO0gVm4Cu
-	xJP3c5lBbBGBbIn+26vBipgFTjFKzN48DaxIWMBLYu+Kx2D7WARUJaatuAkU5+DgFfCQ6JuT
-	DWJKCChIzJlkA1LBKeApseTDJLCRQkAVd88dYgQZKSGwjl3iYMcGFogxAhLfJh9igeiVldh0
-	gBniaEmJgytusExgFF7AyLCKUTS1ILmgOCm9yESvODG3uDQvXS85P3cTIzD8T/97NmEH470D
-	1ocYk4HGTWSWEk3OB8ZPXkm8obGZkYWpiamxkbmlGWnCSuK8ao+SgoQE0hNLUrNTUwtSi+KL
-	SnNSiw8xMnFwSjUwym43FErWeFkmVrPRXe6HiJlI/ozr3J/7LxkVmHseEHy9+vfUfwGVuz+u
-	4M5Zp3AvN0pf9bet4uWyhOIZlvnzw+slqhgyNjV6zLm71eRhXsTdmjT2f+2Pd9+byh9+zSxw
-	1afLb+L/a6ie/+a7U1y78o45c/KhP0IfSqqmeLPkNvx/F+AtmJmqxFKckWioxVxUnAgARvmx
-	DpUCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIIsWRmVeSWpSXmKPExsVy+t9jQd2jkruCDV5e47RYNukum8X3XV/Y
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42JZI2JSp3tYclewQcMiQYtlk+6yWXzf9YXd
+	onfBVTaLTY+vsVpc3jWHzWLG+X1MFrcv81p8Ovqf1WLRVqCK9TNes1jcfLadyYHbo6W5h81j
+	85J6j74tqxg9Pm+SC2CJ4rJJSc3JLEst0rdL4Mro2vmUrWCuWMX8C7+ZGxgnCHUxcnJICJhI
+	LPn1lBHCFpO4cG89WxcjF4eQwFJGiRkPPzDDFH09d4AFIjGdUeLV5RWMEM4EJom/U5vZQKrY
+	BHQlnryfC9YhIpAt0X97NVgHs8ApRonZm6exgySEBSIk2lbdBtvHIqAq8W/PNrA4r4CHxIZb
+	T4FsDqB1ChJzJtmAhDkFPCWWfJgENlMIqOTuuUNgiyUENrFLLNzYwAQxR0Di2+RDLBC9shKb
+	DkBdLSlxcMUNlgmMwgsYGVYxiqYWJBcUJ6UXGekVJ+YWl+al6yXn525iBMbA6X/P+nYw3jxg
+	fYgxGWjcRGYp0eR8YAzllcQbGpsZWZiamBobmVuakSasJM676GFSkJBAemJJanZqakFqUXxR
+	aU5q8SFGJg5OqQZGDp+fNX822t6c9v+5lNPieRHFLlPbP3F/VN1x8OhT+TOL7UwWTN6tUZH+
+	vPesje5tYcGM3CJLl6UPHL6UbVhWHmY/Z9KJzM8XM65/ucacWHDp+1vbX81fIv95h+36EJ8r
+	0t2rIb/j/Mqm5BvbRLkP+u7n/rsuZ9aKl7F7Dac1vX6+w2LeqfcnBZVYijMSDbWYi4oTASkM
+	vTmXAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t9jQd3DkruCDf7v4rBYNukum8X3XV/Y
 	LXoXXGWz2PT4GqvF5V1z2CxmnN/HZHH7Mq/Fp6P/WS0WbQWqWD/jNYvFzWfbmRy4PVqae9g8
 	Ni+p9+jbsorR4/MmuQCWqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE
-	3FRbJRefAF23zBygo5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGV92
-	5hc0C1ccnneUsYGxUaCLkZNDQsBEYv+rzywQtpjEhXvr2boYuTiEBKYzSrR1XmCBcCYwScxa
-	+5kdpIpNQFfiyfu5zCC2iEC2RP/t1WBFzAKnGCVmb54GViQs4CWxd8VjJhCbRUBVYtqKm0Bx
-	Dg5eAQ+JvjnZIKaEgILEnEk2IBWcAp4SSz5MAhspBFRx99whxgmMvAsYGVYxiqYWJBcUJ6Xn
-	GukVJ+YWl+al6yXn525iBEfXM+kdjKsaLA4xCnAwKvHwHli1M1iINbGsuDL3EKMEB7OSCO8Z
-	N6AQb0piZVVqUX58UWlOavEhRlOgmyYyS4km5wMjP68k3tDYxNzU2NTSxMLEzFJJnPdgq3Wg
-	kEB6YklqdmpqQWoRTB8TB6dUA6PngfeXg5dOuFdqX+y5w75Rsjl34Y7VBuXpfnbK1QGVl/2i
-	Pl12keI/33rg2uQj4Q8e5z6ftUhlTu7UBa13dBf/OTXT96WM2alGq8+bOrwaI1eud4z/wrHz
-	fc2pH14iCiGXF8aY2twyWM4x5bKj54M/T5bOjX5sfs9IZ8csEdl3h2xUXzTdfnJPiaU4I9FQ
-	i7moOBEAFtYH88QCAAA=
+	3FRbJRefAF23zBygo5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGV07
+	n7IVzBWrmH/hN3MD4wShLkZODgkBE4mv5w6wQNhiEhfurWfrYuTiEBKYzijx6vIKRghnApPE
+	36nNbCBVbAK6Ek/ez2UGsUUEsiX6b69mASliFjjFKDF78zR2kISwQIRE26rbjCA2i4CqxL89
+	28DivAIeEhtuPQWyOYDWKUjMmWQDEuYU8JRY8mES2EwhoJK75w4xTmDkXcDIsIpRNLUguaA4
+	KT3XUK84Mbe4NC9dLzk/dxMjOMKeSe1gXNlgcYhRgINRiYf3wKqdwUKsiWXFlbmHGCU4mJVE
+	eM+4AYV4UxIrq1KL8uOLSnNSiw8xmgIdNZFZSjQ5Hxj9eSXxhsYm5qbGppYmFiZmlkrivAda
+	rQOFBNITS1KzU1MLUotg+pg4OKUaGC8yVe26OuVAlOnU6vBLZyd9chFPDJHfHSGs6rr1iMZR
+	jaCv7kHxP97W/drlfP/HAn6ZLXmGW2p9pESXBv+csUgyx/z2lbvfVK2+aUzft0CES/zMpIfP
+	prhnNbzd9l5ktYqm6RfD5UsXSIY080tV8fHNlrhrItrMz5sWVNWwap7o+TsfjlsnbFBiKc5I
+	NNRiLipOBADo8idjxgIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,74 +53,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many files under "arm/mach-exynos" are having file path in file
-comment section which is invalid now.
-So for better code maintainability let's remove them.
+While making PMU implementation to be device tree based, there are
+few register offsets related with SYSREG present in regs-pmu.h, so
+let's make a new header file "regs-sys.h" to keep all such SYSREG
+related register offsets and remove them from "regs-pmu.h"
 
 Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
 Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 ---
- arch/arm/mach-exynos/headsmp.S             |    1 -
- arch/arm/mach-exynos/hotplug.c             |    3 +--
- arch/arm/mach-exynos/include/mach/map.h    |    3 +--
- arch/arm/mach-exynos/include/mach/memory.h |    3 +--
- arch/arm/mach-exynos/platsmp.c             |    3 +--
- 5 files changed, 4 insertions(+), 9 deletions(-)
+ arch/arm/mach-exynos/exynos.c   |    1 +
+ arch/arm/mach-exynos/pm.c       |    1 +
+ arch/arm/mach-exynos/regs-pmu.h |    3 ---
+ arch/arm/mach-exynos/regs-sys.h |   22 ++++++++++++++++++++++
+ 4 files changed, 24 insertions(+), 3 deletions(-)
+ create mode 100644 arch/arm/mach-exynos/regs-sys.h
 
-diff --git a/arch/arm/mach-exynos/headsmp.S b/arch/arm/mach-exynos/headsmp.S
-index cdd9d91..b54f970 100644
---- a/arch/arm/mach-exynos/headsmp.S
-+++ b/arch/arm/mach-exynos/headsmp.S
-@@ -1,5 +1,4 @@
- /*
-- *  linux/arch/arm/mach-exynos4/headsmp.S
-  *
-  *  Cloned from linux/arch/arm/mach-realview/headsmp.S
-  *
-diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
-index 8a134d0..572f6b1 100644
---- a/arch/arm/mach-exynos/hotplug.c
-+++ b/arch/arm/mach-exynos/hotplug.c
-@@ -1,5 +1,4 @@
--/* linux arch/arm/mach-exynos4/hotplug.c
-- *
+diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+index 47170eb..186f35d 100644
+--- a/arch/arm/mach-exynos/exynos.c
++++ b/arch/arm/mach-exynos/exynos.c
+@@ -29,6 +29,7 @@
+ #include "common.h"
+ #include "mfc.h"
+ #include "regs-pmu.h"
++#include "regs-sys.h"
+ 
+ static struct map_desc exynos4_iodesc[] __initdata = {
+ 	{
+diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
+index 202ca73..f127c0c 100644
+--- a/arch/arm/mach-exynos/pm.c
++++ b/arch/arm/mach-exynos/pm.c
+@@ -35,6 +35,7 @@
+ 
+ #include "common.h"
+ #include "regs-pmu.h"
++#include "regs-sys.h"
+ 
+ /**
+  * struct exynos_wkup_irq - Exynos GIC to PMU IRQ mapping
+diff --git a/arch/arm/mach-exynos/regs-pmu.h b/arch/arm/mach-exynos/regs-pmu.h
+index e1c06b6..e6fa6cf 100644
+--- a/arch/arm/mach-exynos/regs-pmu.h
++++ b/arch/arm/mach-exynos/regs-pmu.h
+@@ -15,7 +15,6 @@
+ #include <mach/map.h>
+ 
+ #define S5P_PMUREG(x)				(S5P_VA_PMU + (x))
+-#define S5P_SYSREG(x)				(S3C_VA_SYS + (x))
+ 
+ #define S5P_CENTRAL_SEQ_CONFIGURATION		S5P_PMUREG(0x0200)
+ 
+@@ -190,8 +189,6 @@
+ 
+ /* For EXYNOS5 */
+ 
+-#define EXYNOS5_SYS_I2C_CFG					S5P_SYSREG(0x0234)
+-
+ #define EXYNOS5_AUTO_WDTRESET_DISABLE				S5P_PMUREG(0x0408)
+ #define EXYNOS5_MASK_WDTRESET_REQUEST				S5P_PMUREG(0x040C)
+ 
+diff --git a/arch/arm/mach-exynos/regs-sys.h b/arch/arm/mach-exynos/regs-sys.h
+new file mode 100644
+index 0000000..84332b0
+--- /dev/null
++++ b/arch/arm/mach-exynos/regs-sys.h
+@@ -0,0 +1,22 @@
 +/*
-  *  Cloned from linux/arch/arm/mach-realview/hotplug.c
-  *
-  *  Copyright (C) 2002 ARM Ltd.
-diff --git a/arch/arm/mach-exynos/include/mach/map.h b/arch/arm/mach-exynos/include/mach/map.h
-index 548269a..963002f 100644
---- a/arch/arm/mach-exynos/include/mach/map.h
-+++ b/arch/arm/mach-exynos/include/mach/map.h
-@@ -1,5 +1,4 @@
--/* linux/arch/arm/mach-exynos/include/mach/map.h
-- *
-+/*
-  * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
-  *		http://www.samsung.com/
-  *
-diff --git a/arch/arm/mach-exynos/include/mach/memory.h b/arch/arm/mach-exynos/include/mach/memory.h
-index 2a4cdb7..e19df1f 100644
---- a/arch/arm/mach-exynos/include/mach/memory.h
-+++ b/arch/arm/mach-exynos/include/mach/memory.h
-@@ -1,5 +1,4 @@
--/* linux/arch/arm/mach-exynos4/include/mach/memory.h
-- *
-+/*
-  * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
-  *		http://www.samsung.com
-  *
-diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
-index 55ed2e6..cd25a9c 100644
---- a/arch/arm/mach-exynos/platsmp.c
-+++ b/arch/arm/mach-exynos/platsmp.c
-@@ -1,5 +1,4 @@
--/* linux/arch/arm/mach-exynos4/platsmp.c
-- *
-+ /*
-  * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
-  *		http://www.samsung.com
-  *
++ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
++ *             http://www.samsung.com
++ *
++ * EXYNOS - system register definition
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++*/
++
++#ifndef __ASM_ARCH_REGS_SYS_H
++#define __ASM_ARCH_REGS_SYS_H __FILE__
++
++#include <mach/map.h>
++
++#define S5P_SYSREG(x)                          (S3C_VA_SYS + (x))
++
++/* For EXYNOS5 */
++#define EXYNOS5_SYS_I2C_CFG                    S5P_SYSREG(0x0234)
++
++#endif /* __ASM_ARCH_REGS_SYS_H */
 -- 
 1.7.9.5
 
