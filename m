@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550AbaGGSuM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 14:50:12 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:43086 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751356AbaGGSuK (ORCPT
+	id S1752462AbaGGSu2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 14:50:28 -0400
+Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:49287 "EHLO
+	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750957AbaGGSuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 14:50:10 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmQNAPbqulNXQCU9/2dsb2JhbABZgw6segUBAQEBAQEFAW4BkiiHRYEbF3WECwIkLyOBCRE3iEYByUUXhXCJMh2ELQWYCoJsi0yIQINFOw
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: [PATCH 1/1] drm: replace ALIGN(PAGE_SIZE) by PAGE_ALIGN
-Date: Mon,  7 Jul 2014 20:48:48 +0200
-Message-Id: <1404758928-10936-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
+	Mon, 7 Jul 2014 14:50:25 -0400
+Date: Mon, 7 Jul 2014 20:50:15 +0200
+From: Josef Gajdusek <atx@atx.name>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        pmeerw@pmeerw.net
+Subject: Re: [PATCH 1/5] staging:iio:hmc5843: Added regmap support
+Message-ID: <20140707185013.GA10383@dashie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53BAD22D.2010909@kernel.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use mm.h definition
+On Mon, Jul 07, 2014 at 06:00:29PM +0100, Jonathan Cameron wrote:
+> On 02/07/14 14:50, Josef Gajdusek wrote:
+> > This patch changes hmc5843.c to use regmap. This provides transparent caching
+> > to the code as well as abstraction necessary to add support for SPI-based
+> > hmc5983.
+> >
+> > Signed-off-by: Josef Gajdusek <atx@atx.name>
+> Hi Josef,
+> 
+> A few little bits and pieces inline.
+> Peter, could you also take a look at this series?
+> 
+> Thanks,
+> 
+> Jonathan
 
-Cc: Alex Deucher <alexander.deucher@amd.com>
-Cc: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/gpu/drm/radeon/radeon_fb.c     | 2 +-
- drivers/gpu/drm/radeon/radeon_gem.c    | 2 +-
- drivers/gpu/drm/radeon/radeon_object.c | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+Hello,
 
-diff --git a/drivers/gpu/drm/radeon/radeon_fb.c b/drivers/gpu/drm/radeon/radeon_fb.c
-index 665ced3..9f82605 100644
---- a/drivers/gpu/drm/radeon/radeon_fb.c
-+++ b/drivers/gpu/drm/radeon/radeon_fb.c
-@@ -124,7 +124,7 @@ static int radeonfb_create_pinned_object(struct radeon_fbdev *rfbdev,
- 	if (rdev->family >= CHIP_R600)
- 		height = ALIGN(mode_cmd->height, 8);
- 	size = mode_cmd->pitches[0] * height;
--	aligned_size = ALIGN(size, PAGE_SIZE);
-+	aligned_size = PAGE_ALIGN(size);
- 	ret = radeon_gem_object_create(rdev, aligned_size, 0,
- 				       RADEON_GEM_DOMAIN_VRAM,
- 				       false, true,
-diff --git a/drivers/gpu/drm/radeon/radeon_gem.c b/drivers/gpu/drm/radeon/radeon_gem.c
-index d09650c..ae14fa4 100644
---- a/drivers/gpu/drm/radeon/radeon_gem.c
-+++ b/drivers/gpu/drm/radeon/radeon_gem.c
-@@ -569,7 +569,7 @@ int radeon_mode_dumb_create(struct drm_file *file_priv,
- 
- 	args->pitch = radeon_align_pitch(rdev, args->width, args->bpp, 0) * ((args->bpp + 1) / 8);
- 	args->size = args->pitch * args->height;
--	args->size = ALIGN(args->size, PAGE_SIZE);
-+	args->size = PAGE_ALIGN(args->size);
- 
- 	r = radeon_gem_object_create(rdev, args->size, 0,
- 				     RADEON_GEM_DOMAIN_VRAM,
-diff --git a/drivers/gpu/drm/radeon/radeon_object.c b/drivers/gpu/drm/radeon/radeon_object.c
-index 6c717b2..80cb77e 100644
---- a/drivers/gpu/drm/radeon/radeon_object.c
-+++ b/drivers/gpu/drm/radeon/radeon_object.c
-@@ -154,7 +154,7 @@ int radeon_bo_create(struct radeon_device *rdev,
- 	size_t acc_size;
- 	int r;
- 
--	size = ALIGN(size, PAGE_SIZE);
-+	size = PAGE_ALIGN(size);
- 
- 	if (kernel) {
- 		type = ttm_bo_type_kernel;
--- 
-1.8.4.5
+> Whilst minor, we do have a slight change in how this works in the
+> event
+> of an error.  I don't particularly mind it, but perhaps should have
+> been broken out for separate discussion.
 
+It could be changed to use _check version of the regmap function (all
+other update_bits calls then probably should be changed as well). Though
+that would double the amount of data sent and be of any use only on
+defective chip.
+
+> Why move these?  You now have the device going to sleep whilst
+> the userspace interface is still available...
+
+strange, I remember this causing issues. Now I am unable to
+reproduce them so it was probably something else. Do you want me to
+resend or can you apply without these lines swapped?
