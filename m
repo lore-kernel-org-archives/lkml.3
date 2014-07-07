@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133AbaGHASG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:18:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56091 "EHLO
+	id S932187AbaGHATN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:19:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56159 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754282AbaGGXzL (ORCPT
+	with ESMTP id S1754322AbaGGXzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:55:11 -0400
+	Mon, 7 Jul 2014 19:55:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Valentine Sinitsyn <valentine.sinitsyn@gmail.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.10 38/53] KVM: x86: preserve the high 32-bits of the PAT register
-Date: Mon,  7 Jul 2014 16:58:23 -0700
-Message-Id: <20140707235830.434692136@linuxfoundation.org>
+        Steve French <smfrench@gmail.com>, David Disseldorp <ddiss@suse.de>
+Subject: [PATCH 3.10 34/53] CIFS: fix mount failure with broken pathnames when smb3 mount with mapchars option
+Date: Mon,  7 Jul 2014 16:58:19 -0700
+Message-Id: <20140707235830.319276476@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
 References: <20140707235829.281783607@linuxfoundation.org>
@@ -29,32 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paolo Bonzini <pbonzini@redhat.com>
+From: Steve French <smfrench@gmail.com>
 
-commit 7cb060a91c0efc5ff94f83c6df3ed705e143cdb9 upstream.
+commit ce36d9ab3bab06b7b5522f5c8b68fac231b76ffb upstream.
 
-KVM does not really do much with the PAT, so this went unnoticed for a
-long time.  It is exposed however if you try to do rdmsr on the PAT
-register.
+When we SMB3 mounted with mapchars (to allow reserved characters : \ / > < * ?
+via the Unicode Windows to POSIX remap range) empty paths
+(eg when we open "" to query the root of the SMB3 directory on mount) were not
+null terminated so we sent garbarge as a path name on empty paths which caused
+SMB2/SMB2.1/SMB3 mounts to fail when mapchars was specified.  mapchars is
+particularly important since Unix Extensions for SMB3 are not supported (yet)
 
-Reported-by: Valentine Sinitsyn <valentine.sinitsyn@gmail.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
+Reviewed-by: David Disseldorp <ddiss@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/kvm_host.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/cifs_unicode.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -445,7 +445,7 @@ struct kvm_vcpu_arch {
- 	bool nmi_injected;    /* Trying to inject an NMI this entry */
+--- a/fs/cifs/cifs_unicode.c
++++ b/fs/cifs/cifs_unicode.c
+@@ -290,7 +290,8 @@ int
+ cifsConvertToUTF16(__le16 *target, const char *source, int srclen,
+ 		 const struct nls_table *cp, int mapChars)
+ {
+-	int i, j, charlen;
++	int i, charlen;
++	int j = 0;
+ 	char src_char;
+ 	__le16 dst_char;
+ 	wchar_t tmp;
+@@ -298,12 +299,11 @@ cifsConvertToUTF16(__le16 *target, const
+ 	if (!mapChars)
+ 		return cifs_strtoUTF16(target, source, PATH_MAX, cp);
  
- 	struct mtrr_state_type mtrr_state;
--	u32 pat;
-+	u64 pat;
+-	for (i = 0, j = 0; i < srclen; j++) {
++	for (i = 0; i < srclen; j++) {
+ 		src_char = source[i];
+ 		charlen = 1;
+ 		switch (src_char) {
+ 		case 0:
+-			put_unaligned(0, &target[j]);
+ 			goto ctoUTF16_out;
+ 		case ':':
+ 			dst_char = cpu_to_le16(UNI_COLON);
+@@ -350,6 +350,7 @@ cifsConvertToUTF16(__le16 *target, const
+ 	}
  
- 	int switch_db_regs;
- 	unsigned long db[KVM_NR_DB_REGS];
+ ctoUTF16_out:
++	put_unaligned(0, &target[j]); /* Null terminate target unicode string */
+ 	return j;
+ }
+ 
 
 
