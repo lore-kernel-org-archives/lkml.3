@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755211AbaGHAyw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:54:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55462 "EHLO
+	id S1756108AbaGHAzP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:55:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55466 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753477AbaGGXyO (ORCPT
+	with ESMTP id S1753470AbaGGXyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:14 -0400
+	Mon, 7 Jul 2014 19:54:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.15 100/122] tools: ffs-test: fix header values endianess
-Date: Mon,  7 Jul 2014 16:57:42 -0700
-Message-Id: <20140707235737.249455086@linuxfoundation.org>
+        Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.15 097/122] iio: of_iio_channel_get_by_name() returns non-null pointers for error legs
+Date: Mon,  7 Jul 2014 16:57:39 -0700
+Message-Id: <20140707235737.163386130@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -28,35 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Nazarewicz <mina86@mina86.com>
+From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
 
-commit f35f71244da6e51db4e1f2c7e318581f498ececf upstream.
+commit a2c12493ed7e63a18cef33a71686d12ffcd6600e upstream.
 
-It appears that no one ever run ffs-test on a big-endian machine,
-since it used cpu-endianess for fs_count and hs_count fields which
-should be in little-endian format.  Fix by wrapping the numbers in
-cpu_to_le32.
+Currently in the inkern.c code for IIO framework, the function
+of_iio_channel_get_by_name() will return a non-NULL pointer when
+it cannot find a channel using of_iio_channel_get() and when it
+tries to search for 'io-channel-ranges' property and fails. This
+is incorrect behaviour as the function which calls this expects
+a NULL pointer for failure. This patch rectifies the issue.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/usb/ffs-test.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/iio/inkern.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/tools/usb/ffs-test.c
-+++ b/tools/usb/ffs-test.c
-@@ -116,8 +116,8 @@ static const struct {
- 	.header = {
- 		.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC),
- 		.length = cpu_to_le32(sizeof descriptors),
--		.fs_count = 3,
--		.hs_count = 3,
-+		.fs_count = cpu_to_le32(3),
-+		.hs_count = cpu_to_le32(3),
- 	},
- 	.fs_descs = {
- 		.intf = {
+--- a/drivers/iio/inkern.c
++++ b/drivers/iio/inkern.c
+@@ -183,7 +183,7 @@ static struct iio_channel *of_iio_channe
+ 		else if (name && index >= 0) {
+ 			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
+ 				np->full_name, name ? name : "", index);
+-			return chan;
++			return NULL;
+ 		}
+ 
+ 		/*
+@@ -193,8 +193,9 @@ static struct iio_channel *of_iio_channe
+ 		 */
+ 		np = np->parent;
+ 		if (np && !of_get_property(np, "io-channel-ranges", NULL))
+-			break;
++			return NULL;
+ 	}
++
+ 	return chan;
+ }
+ 
+@@ -317,6 +318,7 @@ struct iio_channel *iio_channel_get(stru
+ 		if (channel != NULL)
+ 			return channel;
+ 	}
++
+ 	return iio_channel_get_sys(name, channel_name);
+ }
+ EXPORT_SYMBOL_GPL(iio_channel_get);
 
 
