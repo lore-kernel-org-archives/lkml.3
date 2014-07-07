@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593AbaGGPXV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 11:23:21 -0400
-Received: from guitar.tcltek.co.il ([192.115.133.116]:47561 "EHLO
-	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859AbaGGPXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 11:23:16 -0400
-Date: Mon, 7 Jul 2014 18:23:09 +0300
-From: Baruch Siach <baruch@tkos.co.il>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Harini Katakam <harinik@xilinx.com>, Pawel Moll <pawel.moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Harini Katakam <harinikatakamlinux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Harini Katakam <harini.katakam@xilinx.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 1/2] gpio: Add driver for Zynq GPIO controller
-Message-ID: <20140707152309.GH4939@tarshish>
-References: <1403091577-10232-1-git-send-email-harinik@xilinx.com>
- <5cc8b89b-20ff-4fa9-92dd-bb2f6d3512d8@BY2FFO11FD030.protection.gbl>
- <CACRpkdb1M3-hrSKLKWz21LCJ1sMvsq5E-aqkpmVhy0NwOS5HhA@mail.gmail.com>
+	id S1753834AbaGGPXq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 11:23:46 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:3808 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751995AbaGGPXo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 11:23:44 -0400
+X-IronPort-AV: E=Sophos;i="5.01,618,1400018400"; 
+   d="scan'208";a="84000300"
+Date: Mon, 7 Jul 2014 17:23:39 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Fabio Estevam <festevam@gmail.com>
+cc: Julia Lawall <julia.lawall@lip6.fr>, Mark Brown <broonie@kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Takashi Iwai <tiwai@suse.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Himangi Saraogi <himangi774@gmail.com>
+Subject: Re: [alsa-devel] [PATCH] ASoC: sgtl5000: Use devm_ functions
+In-Reply-To: <CAOMZO5AiFCnfTzo4TyB5e5c+xiHQiHUbhRVY7z=AbjOWZDX3NA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1407071721270.4757@hadrien>
+References: <20140706070800.GA2927@himangi-Dell> <20140707144832.GL30458@sirena.org.uk> <alpine.DEB.2.10.1407071655171.4757@hadrien> <CAOMZO5AiFCnfTzo4TyB5e5c+xiHQiHUbhRVY7z=AbjOWZDX3NA@mail.gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdb1M3-hrSKLKWz21LCJ1sMvsq5E-aqkpmVhy0NwOS5HhA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linux,
 
-On Mon, Jul 07, 2014 at 04:51:56PM +0200, Linus Walleij wrote:
-> On Wed, Jun 18, 2014 at 5:36 PM, Sören Brinkmann <soren.brinkmann@xilinx.com> wrote:
-> > The first is, how is userspace supposed to find the correct offset for a
-> > GPIO pin.
-> 
-> The sysfs interface to GPIO is *NOT* *GOOD* this is universally
-> agreed upon.
-> 
-> This needs someone to step in and provide a replacement, my preferred
-> mechanism would be a /dev/gpiochip0/... hierarchy using char devices.
 
-I really like the ability to control GPIOs from shell, both interactively and 
-scripted. I find it useful for quick hardware level debugging, and for boot 
-time scripting (mainly in initramfs). Do you intend to preserve this 
-capability in the future? Will I need a special utility (or Busybox applet) to 
-do this with char device ioctl?
+On Mon, 7 Jul 2014, Fabio Estevam wrote:
 
-baruch
+> On Mon, Jul 7, 2014 at 11:58 AM, Julia Lawall <julia.lawall@lip6.fr> wrote:
+>
+> > Nevertheless, there is already a call to devm_regulator_bulk_get in
+> > sgtl5000_enable_regulators which calls sgtl5000_replace_vddd_with_ldo
+> > which calls ldo_regulator_register.  That call was introduced by
+> >
+> > commit 63e54cd9caa3ce03635810608519e2b37d8bc706
+> > Author: Fabio Estevam <fabio.estevam@freescale.com>
+> > Date:   Thu Apr 24 14:13:08 2014 -0300
+> >
+> > It seems that that patch should be reverted?
+>
+> I think so. Russell also reported a kernel oops when unbinding this
+> module, so I will prepare a patch reverting it.
 
--- 
-     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+There is documentation about what kinds of devm functions exist, but it is
+too bad that there is no documentation about where they can be used.
+Often there are several levels of function pointers involved, so it can be
+hard to figure out whether they can be used just by looking at the code.
+I have only taken the strategy of using them in kinds of functions where
+someone else has alreadyy figured out that they can be used.
+
+julia
