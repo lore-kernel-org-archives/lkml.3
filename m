@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbaGGIPA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 04:15:00 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:46102 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750855AbaGGIO4 (ORCPT
+	id S1751856AbaGGIWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 04:22:50 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:56883 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750855AbaGGIWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 04:14:56 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19spA49fr6CHA+VicWspjXj
-Date: Mon, 7 Jul 2014 01:14:56 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: balbi@ti.com, linux@arm.linux.org.uk, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mach-omap1: Fix call to omap_cfg_reg
-Message-ID: <20140707081456.GH28884@atomide.com>
-References: <1404493320-5606-1-git-send-email-xerofoify@gmail.com>
+	Mon, 7 Jul 2014 04:22:49 -0400
+Date: Mon, 7 Jul 2014 09:22:36 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jason Cooper <jason@lakedaemon.net>, andrew@lunn.ch,
+        gregory.clement@free-electrons.com,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: linux-next: manual merge of the mvebu tree with the arm tree
+Message-ID: <20140707082236.GX21766@n2100.arm.linux.org.uk>
+References: <20140707112853.7f5a9323@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1404493320-5606-1-git-send-email-xerofoify@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140707112853.7f5a9323@canb.auug.org.au>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nicholas Krause <xerofoify@gmail.com> [140704 10:03]:
-> This patch fixes the call to ompa_cfg_reg(USB2_SPEED) in the case
-> that the cpu is a omap16xx and the nwires are not equal to 3.
+On Mon, Jul 07, 2014 at 11:28:53AM +1000, Stephen Rothwell wrote:
+> diff --cc arch/arm/mach-mvebu/headsmp-a9.S
+> index 7c91ddb6f1f7,da5bb292b91c..000000000000
+> --- a/arch/arm/mach-mvebu/headsmp-a9.S
+> +++ b/arch/arm/mach-mvebu/headsmp-a9.S
+> @@@ -14,8 -14,9 +14,10 @@@
+>   
+>   #include <linux/linkage.h>
+>   #include <linux/init.h>
+>  +#include <asm/assembler.h>
+>   
+> + #include <asm/assembler.h>
+> + 
 
-This is most likely unsafe to do as the pin is probably
-shared with some other device and we have to rely for
-the bootloader to do the right thing for the board.
+Obviously not quite correct - this looks like an automatic merge, something
+that will have to be kept an eye on during the proper merge window.
 
-Regards,
-
-Tony
- 
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->  arch/arm/mach-omap1/usb.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap1/usb.c b/arch/arm/mach-omap1/usb.c
-> index 4118db5..17e3139 100644
-> --- a/arch/arm/mach-omap1/usb.c
-> +++ b/arch/arm/mach-omap1/usb.c
-> @@ -504,8 +504,7 @@ static u32 __init omap1_usb2_init(unsigned nwires, unsigned alt_pingroup)
->  		omap_cfg_reg(W9_USB2_TXEN);
->  		omap_cfg_reg(W5_USB2_SE0);
->  		if (nwires != 3)
-> -			omap_cfg_reg(Y5_USB2_RCV);
-> -		// FIXME omap_cfg_reg(USB2_SPEED);
-> +			omap_cfg_reg(USB2_SPEED)
->  	} else {
->  		pr_debug("usb%d cpu unrecognized\n", 1);
->  		return 0;
-> -- 
-> 1.9.1
-> 
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
