@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913AbaGHAtg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:49:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55614 "EHLO
+	id S1755964AbaGHAuL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:50:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753485AbaGGXyV (ORCPT
+	with ESMTP id S1753574AbaGGXyU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:21 -0400
+	Mon, 7 Jul 2014 19:54:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [PATCH 3.15 117/122] netfilter: ctnetlink: fix refcnt leak in dying/unconfirmed list dumper
-Date: Mon,  7 Jul 2014 16:57:59 -0700
-Message-Id: <20140707235737.744740701@linuxfoundation.org>
+        Ivan <athlon_@mail.ru>, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 3.15 114/122] tty: Correct INPCK handling
+Date: Mon,  7 Jul 2014 16:57:56 -0700
+Message-Id: <20140707235737.658045460@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,63 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit cd5f336f1780cb20e83146cde64d3d5779e175e6 upstream.
+commit 66528f90669691c85c73bea4f0c9f4a5857c4cab upstream.
 
-'last' keeps track of the ct that had its refcnt bumped during previous
-dump cycle.  Thus it must not be overwritten until end-of-function.
+If INPCK is not set, input parity detection should be disabled. This means
+parity errors should not be received from the tty driver, and the data
+received should be treated normally.
 
-Another (unrelated, theoretical) issue: Don't attempt to bump refcnt of a conntrack
-whose reference count is already 0.  Such conntrack is being destroyed
-right now, its memory is freed once we release the percpu dying spinlock.
+SUS v3, 11.2.2, General Terminal Interface - Input Modes, states:
+  "If INPCK is set, input parity checking shall be enabled. If INPCK is
+   not set, input parity checking shall be disabled, allowing output parity
+   generation without input parity errors. Note that whether input parity
+   checking is enabled or disabled is independent of whether parity detection
+   is enabled or disabled (see Control Modes). If parity detection is enabled
+   but input parity checking is disabled, the hardware to which the terminal
+   is connected shall recognize the parity bit, but the terminal special file
+   shall not check whether or not this bit is correctly set."
 
-Fixes: b7779d06 ('netfilter: conntrack: spinlock per cpu to protect special lists.')
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Ignore parity errors reported by the tty driver when INPCK is not set, and
+handle the received data normally.
+
+Fixes: Bugzilla #71681, 'Improvement of n_tty_receive_parity_error from n_tty.c'
+Reported-by: Ivan <athlon_@mail.ru>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/nf_conntrack_netlink.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/tty/n_tty.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
---- a/net/netfilter/nf_conntrack_netlink.c
-+++ b/net/netfilter/nf_conntrack_netlink.c
-@@ -1150,7 +1150,7 @@ static int ctnetlink_done_list(struct ne
- static int
- ctnetlink_dump_list(struct sk_buff *skb, struct netlink_callback *cb, bool dying)
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1214,15 +1214,16 @@ static void n_tty_receive_parity_error(s
  {
--	struct nf_conn *ct, *last = NULL;
-+	struct nf_conn *ct, *last;
- 	struct nf_conntrack_tuple_hash *h;
- 	struct hlist_nulls_node *n;
- 	struct nfgenmsg *nfmsg = nlmsg_data(cb->nlh);
-@@ -1163,6 +1163,8 @@ ctnetlink_dump_list(struct sk_buff *skb,
- 	if (cb->args[2])
- 		return 0;
+ 	struct n_tty_data *ldata = tty->disc_data;
  
-+	last = (struct nf_conn *)cb->args[1];
-+
- 	for (cpu = cb->args[0]; cpu < nr_cpu_ids; cpu++) {
- 		struct ct_pcpu *pcpu;
- 
-@@ -1171,7 +1173,6 @@ ctnetlink_dump_list(struct sk_buff *skb,
- 
- 		pcpu = per_cpu_ptr(net->ct.pcpu_lists, cpu);
- 		spin_lock_bh(&pcpu->lock);
--		last = (struct nf_conn *)cb->args[1];
- 		list = dying ? &pcpu->dying : &pcpu->unconfirmed;
- restart:
- 		hlist_nulls_for_each_entry(h, n, list, hnnode) {
-@@ -1190,7 +1191,8 @@ restart:
- 						  ct);
- 			rcu_read_unlock();
- 			if (res < 0) {
--				nf_conntrack_get(&ct->ct_general);
-+				if (!atomic_inc_not_zero(&ct->ct_general.use))
-+					continue;
- 				cb->args[0] = cpu;
- 				cb->args[1] = (unsigned long)ct;
- 				spin_unlock_bh(&pcpu->lock);
+-	if (I_IGNPAR(tty))
+-		return;
+-	if (I_PARMRK(tty)) {
+-		put_tty_queue('\377', ldata);
+-		put_tty_queue('\0', ldata);
+-		put_tty_queue(c, ldata);
+-	} else	if (I_INPCK(tty))
+-		put_tty_queue('\0', ldata);
+-	else
++	if (I_INPCK(tty)) {
++		if (I_IGNPAR(tty))
++			return;
++		if (I_PARMRK(tty)) {
++			put_tty_queue('\377', ldata);
++			put_tty_queue('\0', ldata);
++			put_tty_queue(c, ldata);
++		} else
++			put_tty_queue('\0', ldata);
++	} else
+ 		put_tty_queue(c, ldata);
+ 	if (waitqueue_active(&tty->read_wait))
+ 		wake_up_interruptible(&tty->read_wait);
 
 
