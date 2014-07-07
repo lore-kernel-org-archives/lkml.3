@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648AbaGHAla (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:41:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55784 "EHLO
+	id S1754650AbaGHAly (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:41:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55764 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753890AbaGGXyh (ORCPT
+	with ESMTP id S1753875AbaGGXyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:37 -0400
+	Mon, 7 Jul 2014 19:54:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.14 38/94] drm/i915: set backlight duty cycle after backlight enable for gen4
-Date: Mon,  7 Jul 2014 16:57:28 -0700
-Message-Id: <20140707235757.912299937@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.14 34/94] drm/radeon/cik: fix typo in EOP packet
+Date: Mon,  7 Jul 2014 16:57:24 -0700
+Message-Id: <20140707235757.792301342@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,54 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 2e7eeeb59a92d09144fdb7d2dc1af77a10a7945b upstream.
+commit b397207b7475afa9df2f94541f978100ff1ea47e upstream.
 
-For reasons I can't claim to fully understand gen4 seems to require
-backlight duty cycle setting after the backlight has been enabled, or
-else black screen follows. I don't have documentation for the correct
-sequence on gen4 either. Confirmed on Dell Latitude D630 and MacBook4,1.
+Volatile bit was in the wrong location.  This bit is
+not used at the moment.
 
-This fixes a regression introduced by
-commit b35684b8fa94e04f55fd38bf672b737741d2f9e2
-Author: Jani Nikula <jani.nikula@intel.com>
-Date:   Thu Nov 14 12:13:41 2013 +0200
-
-    drm/i915: do full backlight setup at enable time
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=75791
-Reported-and-tested-by: mcy@lm7.fr
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=79423
-Reported-and-tested-by: Marc Milgram <mmilgram@redhat.com>
-Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_panel.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/cikd.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -736,9 +736,6 @@ static void i965_enable_backlight(struct
- 	ctl = freq << 16;
- 	I915_WRITE(BLC_PWM_CTL, ctl);
- 
--	/* XXX: combine this into above write? */
--	intel_panel_actually_set_backlight(connector, panel->backlight.level);
--
- 	ctl2 = BLM_PIPE(pipe);
- 	if (panel->backlight.combination_mode)
- 		ctl2 |= BLM_COMBINATION_MODE;
-@@ -747,6 +744,8 @@ static void i965_enable_backlight(struct
- 	I915_WRITE(BLC_PWM_CTL2, ctl2);
- 	POSTING_READ(BLC_PWM_CTL2);
- 	I915_WRITE(BLC_PWM_CTL2, ctl2 | BLM_PWM_ENABLE);
-+
-+	intel_panel_actually_set_backlight(connector, panel->backlight.level);
- }
- 
- static void vlv_enable_backlight(struct intel_connector *connector)
+--- a/drivers/gpu/drm/radeon/cikd.h
++++ b/drivers/gpu/drm/radeon/cikd.h
+@@ -1745,12 +1745,12 @@
+ #define		EOP_TC_WB_ACTION_EN                     (1 << 15) /* L2 */
+ #define		EOP_TCL1_ACTION_EN                      (1 << 16)
+ #define		EOP_TC_ACTION_EN                        (1 << 17) /* L2 */
++#define		EOP_TCL2_VOLATILE                       (1 << 24)
+ #define		EOP_CACHE_POLICY(x)                     ((x) << 25)
+                 /* 0 - LRU
+ 		 * 1 - Stream
+ 		 * 2 - Bypass
+ 		 */
+-#define		EOP_TCL2_VOLATILE                       (1 << 27)
+ #define		DATA_SEL(x)                             ((x) << 29)
+                 /* 0 - discard
+ 		 * 1 - send low 32bit data
 
 
