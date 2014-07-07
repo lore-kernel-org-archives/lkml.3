@@ -1,88 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423AbaGGOvd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 10:51:33 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:44321 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631AbaGGOvO (ORCPT
+	id S1753553AbaGGOwA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 10:52:00 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:41312 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523AbaGGOv5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 10:51:14 -0400
-Date: Mon, 7 Jul 2014 16:51:20 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: "Chen, Tiejun" <tiejun.chen@intel.com>
-Cc: Zhenyu Wang <zhenyuw@linux.intel.com>, daniel.vetter@ffwll.ch,
-        jani.nikula@linux.intel.com, airlied@linux.ie,
-        intel-gfx@lists.freedesktop.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        qemu-devel@nongnu.org
-Subject: Re: [Intel-gfx] [RFC][PATCH] gpu:drm:i915:intel_detect_pch: back to
- check devfn instead of check class type
-Message-ID: <20140707145120.GA5821@phenom.ffwll.local>
-Mail-Followup-To: "Chen, Tiejun" <tiejun.chen@intel.com>,
-	Zhenyu Wang <zhenyuw@linux.intel.com>, jani.nikula@linux.intel.com,
-	airlied@linux.ie, intel-gfx@lists.freedesktop.org,
-	xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org, qemu-devel@nongnu.org
-References: <1403171631-3452-1-git-send-email-tiejun.chen@intel.com>
- <20140624025944.GJ1045@zhen-hp.sh.intel.com>
- <53AA33C5.7060501@intel.com>
+	Mon, 7 Jul 2014 10:51:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53AA33C5.7060501@intel.com>
-X-Operating-System: Linux phenom 3.15.0-rc3+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5cc8b89b-20ff-4fa9-92dd-bb2f6d3512d8@BY2FFO11FD030.protection.gbl>
+References: <1403091577-10232-1-git-send-email-harinik@xilinx.com>
+	<5cc8b89b-20ff-4fa9-92dd-bb2f6d3512d8@BY2FFO11FD030.protection.gbl>
+Date: Mon, 7 Jul 2014 16:51:56 +0200
+Message-ID: <CACRpkdb1M3-hrSKLKWz21LCJ1sMvsq5E-aqkpmVhy0NwOS5HhA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] gpio: Add driver for Zynq GPIO controller
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
+Cc: Harini Katakam <harini.katakam@xilinx.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Harini Katakam <harinikatakamlinux@gmail.com>,
+        Harini Katakam <harinik@xilinx.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 10:28:21AM +0800, Chen, Tiejun wrote:
-> On 2014/6/24 10:59, Zhenyu Wang wrote:
-> >On 2014.06.19 17:53:51 +0800, Tiejun Chen wrote:
-> >>Originally the reason to probe ISA bridge instead of Dev31:Fun0
-> >>is to make graphics device passthrough work easy for VMM, that
-> >>only need to expose ISA bridge to let driver know the real
-> >>hardware underneath. This is a requirement from virtualization
-> >>team. Especially in that virtualized environments, XEN, there
-> >>is irrelevant ISA bridge in the system with that legacy qemu
-> >>version specific to xen, qemu-xen-traditional. So to work
-> >>reliably, we should scan through all the ISA bridge devices
-> >>and check for the first match, instead of only checking the
-> >>first one.
-> >>
-> >>But actually, qemu-xen-traditional, is always enumerated with
-> >>Dev31:Fun0, 00:1f.0 as follows:
-> >>
-> >>hw/pt-graphics.c:
-> >>
-> >>intel_pch_init()
-> >>     |
-> >>     + pci_isa_bridge_init(bus, PCI_DEVFN(0x1f, 0), ...);
-> >>
-> >>so this mean that isa bridge is still represented with Dev31:Func0
-> >>like the native OS. Furthermore, currently we're pushing VGA
-> >>passthrough support into qemu upstream, and with some discussion,
-> >>we wouldn't set the bridge class type and just expose this devfn.
-> >>
-> >>So we just go back to check devfn to make life normal.
-> >>
-> >>Signed-off-by: Tiejun Chen <tiejun.chen@intel.com>
-> >
-> >This was added historically when supporting graphics device passthrough.
-> >Looks qemu upstream can't accept multiple ISA bridge and our PCH is always
-> >on device 31: func0 as far as I know. Looks good to me.
-> >
-> >Reviewed-by: Zhenyu Wang <zhenyuw@linux.intel.com>
-> >
-> 
-> Thanks for your review.
-> 
-> Do you know when this can be applied?
+On Wed, Jun 18, 2014 at 5:36 PM, Sören Brinkmann
+<soren.brinkmann@xilinx.com> wrote:
 
-I'll hold off merging until we have buy-in from upstream quemu on a given
-approach (which should work for both linux and windows).
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> I did some of the changes for this v2 and a few things are not clear to
+> me.
+>
+> The first is, how is userspace supposed to find the correct offset for a
+> GPIO pin.
+
+The sysfs interface to GPIO is *NOT* *GOOD* this is universally
+agreed upon.
+
+This needs someone to step in and provide a replacement, my preferred
+mechanism would be a /dev/gpiochip0/... hierarchy using char devices.
+
+> E.g. let's say GPIO 10 of this SOC-internal GPIO controller is
+> something I want to control. So, I'd export GPIO (chip-base + 10). But
+> this chip-base seems pretty variable. v1 of this patch had it hardcoded
+> to 0, which resulted in a predictable offset, but apparently was utterly
+> wrong. Now I see an offset of 138 for this chip when using my config.
+> And when I use multi_v7_defconfig the offset is somewhere in the 800s,
+> IIRC. The best I found was the 'label' in the gpiochip's sysfs entry,
+> but documentation says that is not necessarily unique, and parsing labes
+> seems sub-optimal too.
+
+You see. It is badly designed and needs to be rewritten.
+
+It was merged into the kernel at a time when the GPIO subsystem
+was unmaintained, sadly.
+
+> The second issue is a stack trace (below) I see when triggering
+> interrupts (e.g. echo rising > edge; and then pushing the connected
+> button). Looking at the stack trace, I don't see an obvious error (I
+> think I pretty much copied the IRQ registration from the gpio-pl061.c
+> driver you mentioned). Is this an issue in this driver or the core code?
+
+Probably.
+
+Using GPIOs for IRQs in userspace is an even worse idea than using
+GPIOs from userspace in general :-D
+
+But before you add any hairy code in userspace, please have a look
+at Documentation/gpio/sysfs.txt:
+
+"Note that standard kernel drivers exist for common "LEDs and Buttons"
+ GPIO tasks:  "leds-gpio" and "gpio_keys", respectively. Use those
+ instead of talking directly to the GPIOs; they integrate with kernel
+ frameworks better than your userspace code could."
+
+So: what is the usecase for these GPIOs?
+
+Yours,
+Linus Walleij
