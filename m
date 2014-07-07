@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203AbaGHAc4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:32:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55860 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716AbaGGXyq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754038AbaGGXyq (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 7 Jul 2014 19:54:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55684 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716AbaGGXyd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 19:54:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nadav Amit <namit@cs.technion.ac.il>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.14 66/94] KVM: x86: Increase the number of fixed MTRR regs to 10
-Date: Mon,  7 Jul 2014 16:57:56 -0700
-Message-Id: <20140707235758.736319281@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.14 29/94] drm/radeon/dp: fix lane/clock setup for dp 1.2 capable devices
+Date: Mon,  7 Jul 2014 16:57:19 -0700
+Message-Id: <20140707235757.652197635@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,33 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nadav Amit <namit@cs.technion.ac.il>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 682367c494869008eb89ef733f196e99415ae862 upstream.
+commit 3b6d9fd23e015b5397c438fd3cd74147d2c805b6 upstream.
 
-Recent Intel CPUs have 10 variable range MTRRs. Since operating systems
-sometime make assumptions on CPUs while they ignore capability MSRs, it is
-better for KVM to be consistent with recent CPUs. Reporting more MTRRs than
-actually supported has no functional implications.
+Only DCE5+ asics support DP 1.2.
 
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Noticed by ArtForz on IRC.
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/kvm_host.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/atombios_dp.c |   17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -99,7 +99,7 @@ static inline gfn_t gfn_to_index(gfn_t g
- #define KVM_REFILL_PAGES 25
- #define KVM_MAX_CPUID_ENTRIES 80
- #define KVM_NR_FIXED_MTRR_REGION 88
--#define KVM_NR_VAR_MTRR 8
-+#define KVM_NR_VAR_MTRR 10
+--- a/drivers/gpu/drm/radeon/atombios_dp.c
++++ b/drivers/gpu/drm/radeon/atombios_dp.c
+@@ -386,6 +386,19 @@ static int dp_get_max_dp_pix_clock(int l
  
- #define ASYNC_PF_PER_VCPU 64
+ /***** radeon specific DP functions *****/
  
++static int radeon_dp_get_max_link_rate(struct drm_connector *connector,
++				       u8 dpcd[DP_DPCD_SIZE])
++{
++	int max_link_rate;
++
++	if (radeon_connector_is_dp12_capable(connector))
++		max_link_rate = min(drm_dp_max_link_rate(dpcd), 540000);
++	else
++		max_link_rate = min(drm_dp_max_link_rate(dpcd), 270000);
++
++	return max_link_rate;
++}
++
+ /* First get the min lane# when low rate is used according to pixel clock
+  * (prefer low rate), second check max lane# supported by DP panel,
+  * if the max lane# < low rate lane# then use max lane# instead.
+@@ -395,7 +408,7 @@ static int radeon_dp_get_dp_lane_number(
+ 					int pix_clock)
+ {
+ 	int bpp = convert_bpc_to_bpp(radeon_get_monitor_bpc(connector));
+-	int max_link_rate = drm_dp_max_link_rate(dpcd);
++	int max_link_rate = radeon_dp_get_max_link_rate(connector, dpcd);
+ 	int max_lane_num = drm_dp_max_lane_count(dpcd);
+ 	int lane_num;
+ 	int max_dp_pix_clock;
+@@ -433,7 +446,7 @@ static int radeon_dp_get_dp_link_clock(s
+ 			return 540000;
+ 	}
+ 
+-	return drm_dp_max_link_rate(dpcd);
++	return radeon_dp_get_max_link_rate(connector, dpcd);
+ }
+ 
+ static u8 radeon_dp_encoder_service(struct radeon_device *rdev,
 
 
