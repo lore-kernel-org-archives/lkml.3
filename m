@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143AbaGGXyx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:54:53 -0400
+	id S1754893AbaGHA2F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:28:05 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:55919 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606AbaGGXyt (ORCPT
+	with ESMTP id S1754132AbaGGXyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:49 -0400
+	Mon, 7 Jul 2014 19:54:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.14 73/94] tracing: Remove ftrace_stop/start() from reading the trace file
-Date: Mon,  7 Jul 2014 16:58:03 -0700
-Message-Id: <20140707235758.936537791@linuxfoundation.org>
+        Samu Kallio <samu.kallio@aberdeencloud.com>,
+        Florian Westphal <fw@strlen.de>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 3.14 82/94] netfilter: nf_nat: fix oops on netns removal
+Date: Mon,  7 Jul 2014 16:58:12 -0700
+Message-Id: <20140707235759.190936126@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,40 +30,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Florian Westphal <fw@strlen.de>
 
-commit 099ed151675cd1d2dbeae1dac697975f6a68716d upstream.
+commit 945b2b2d259d1a4364a2799e80e8ff32f8c6ee6f upstream.
 
-Disabling reading and writing to the trace file should not be able to
-disable all function tracing callbacks. There's other users today
-(like kprobes and perf). Reading a trace file should not stop those
-from happening.
+Quoting Samu Kallio:
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+ Basically what's happening is, during netns cleanup,
+ nf_nat_net_exit gets called before ipv4_net_exit. As I understand
+ it, nf_nat_net_exit is supposed to kill any conntrack entries which
+ have NAT context (through nf_ct_iterate_cleanup), but for some
+ reason this doesn't happen (perhaps something else is still holding
+ refs to those entries?).
+
+ When ipv4_net_exit is called, conntrack entries (including those
+ with NAT context) are cleaned up, but the
+ nat_bysource hashtable is long gone - freed in nf_nat_net_exit. The
+ bug happens when attempting to free a conntrack entry whose NAT hash
+ 'prev' field points to a slot in the freed hash table (head for that
+ bin).
+
+We ignore conntracks with null nat bindings.  But this is wrong,
+as these are in bysource hash table as well.
+
+Restore nat-cleaning for the netns-is-being-removed case.
+
+bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=65191
+
+Fixes: c2d421e1718 ('netfilter: nf_nat: fix race when unloading protocol modules')
+Reported-by: Samu Kallio <samu.kallio@aberdeencloud.com>
+Debugged-by: Samu Kallio <samu.kallio@aberdeencloud.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Tested-by: Samu Kallio <samu.kallio@aberdeencloud.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace.c |    2 --
- 1 file changed, 2 deletions(-)
+ net/netfilter/nf_nat_core.c |   35 ++++++++++++++++++++++++++++++++++-
+ 1 file changed, 34 insertions(+), 1 deletion(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1355,7 +1355,6 @@ void tracing_start(void)
- 
- 	arch_spin_unlock(&ftrace_max_lock);
- 
--	ftrace_start();
-  out:
- 	raw_spin_unlock_irqrestore(&global_trace.start_lock, flags);
+--- a/net/netfilter/nf_nat_core.c
++++ b/net/netfilter/nf_nat_core.c
+@@ -517,6 +517,39 @@ static int nf_nat_proto_remove(struct nf
+ 	return i->status & IPS_NAT_MASK ? 1 : 0;
  }
-@@ -1402,7 +1401,6 @@ void tracing_stop(void)
- 	struct ring_buffer *buffer;
- 	unsigned long flags;
  
--	ftrace_stop();
- 	raw_spin_lock_irqsave(&global_trace.start_lock, flags);
- 	if (global_trace.stop_count++)
- 		goto out;
++static int nf_nat_proto_clean(struct nf_conn *ct, void *data)
++{
++	struct nf_conn_nat *nat = nfct_nat(ct);
++
++	if (nf_nat_proto_remove(ct, data))
++		return 1;
++
++	if (!nat || !nat->ct)
++		return 0;
++
++	/* This netns is being destroyed, and conntrack has nat null binding.
++	 * Remove it from bysource hash, as the table will be freed soon.
++	 *
++	 * Else, when the conntrack is destoyed, nf_nat_cleanup_conntrack()
++	 * will delete entry from already-freed table.
++	 */
++	if (!del_timer(&ct->timeout))
++		return 1;
++
++	spin_lock_bh(&nf_nat_lock);
++	hlist_del_rcu(&nat->bysource);
++	ct->status &= ~IPS_NAT_DONE_MASK;
++	nat->ct = NULL;
++	spin_unlock_bh(&nf_nat_lock);
++
++	add_timer(&ct->timeout);
++
++	/* don't delete conntrack.  Although that would make things a lot
++	 * simpler, we'd end up flushing all conntracks on nat rmmod.
++	 */
++	return 0;
++}
++
+ static void nf_nat_l4proto_clean(u8 l3proto, u8 l4proto)
+ {
+ 	struct nf_nat_proto_clean clean = {
+@@ -787,7 +820,7 @@ static void __net_exit nf_nat_net_exit(s
+ {
+ 	struct nf_nat_proto_clean clean = {};
+ 
+-	nf_ct_iterate_cleanup(net, &nf_nat_proto_remove, &clean, 0, 0);
++	nf_ct_iterate_cleanup(net, nf_nat_proto_clean, &clean, 0, 0);
+ 	synchronize_rcu();
+ 	nf_ct_free_hashtable(net->ct.nat_bysource, net->ct.nat_htable_size);
+ }
 
 
