@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273AbaGGXzE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:55:04 -0400
+	id S1754566AbaGGXze (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 19:55:34 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:55989 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200AbaGGXy6 (ORCPT
+	with ESMTP id S1754411AbaGGXzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:58 -0400
+	Mon, 7 Jul 2014 19:55:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David R. Piegdon" <lkml@p23q.org>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.14 57/94] ARM: OMAP2+: Fix parser-bug in platform muxing code
-Date: Mon,  7 Jul 2014 16:57:47 -0700
-Message-Id: <20140707235758.470589428@linuxfoundation.org>
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 50/53] ALSA: usb-audio: Prevent printk ratelimiting from spamming kernel log while DEBUG not defined
+Date: Mon,  7 Jul 2014 16:58:35 -0700
+Message-Id: <20140707235830.799016540@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
-References: <20140707235756.780319003@linuxfoundation.org>
+In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
+References: <20140707235829.281783607@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,64 +25,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "David R. Piegdon" <lkml@p23q.org>
+From: Sander Eikelenboom <linux@eikelenboom.it>
 
-commit c021f241f4fab2bb4fc4120a38a828a03dd3f970 upstream.
+commit b7a7723513dc89f83d6df13206df55d4dc26e825 upstream.
 
-Fix a parser-bug in the omap2 muxing code where muxtable-entries will be
-wrongly selected if the requested muxname is a *prefix* of their
-m0-entry and they have a matching mN-entry. Fix by additionally checking
-that the length of the m0_entry is equal.
+This (widely used) construction:
 
-For example muxing of "dss_data2.dss_data2" on omap32xx will fail
-because the prefix "dss_data2" will match the mux-entries "dss_data2" as
-well as "dss_data20", with the suffix "dss_data2" matching m0 (for
-dss_data2) and m4 (for dss_data20). Thus both are recognized as signal
-path candidates:
+if(printk_ratelimit())
+	dev_dbg()
 
-Relevant muxentries from mux34xx.c:
-        _OMAP3_MUXENTRY(DSS_DATA20, 90,
-                "dss_data20", NULL, "mcspi3_somi", "dss_data2",
-                "gpio_90", NULL, NULL, "safe_mode"),
-        _OMAP3_MUXENTRY(DSS_DATA2, 72,
-                "dss_data2", NULL, NULL, NULL,
-                "gpio_72", NULL, NULL, "safe_mode"),
+Causes the ratelimiting to spam the kernel log with the "callbacks suppressed"
+message below, even while the dev_dbg it is supposed to rate limit wouldn't
+print anything because DEBUG is not defined for this device.
 
-This will result in a failure to mux the pin at all:
+[  533.803964] retire_playback_urb: 852 callbacks suppressed
+[  538.807930] retire_playback_urb: 852 callbacks suppressed
+[  543.811897] retire_playback_urb: 852 callbacks suppressed
+[  548.815745] retire_playback_urb: 852 callbacks suppressed
+[  553.819826] retire_playback_urb: 852 callbacks suppressed
 
- _omap_mux_get_by_name: Multiple signal paths (2) for dss_data2.dss_data2
+So use dev_dbg_ratelimited() instead of this construction.
 
-Patch should apply to linus' latest master down to rather old linux-2.6
-trees.
-
-Signed-off-by: David R. Piegdon <lkml@p23q.org>
-Cc: stable@vger.kernel.org
-[tony@atomide.com: updated description to include full description]
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Sander Eikelenboom <linux@eikelenboom.it>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/mux.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ sound/usb/pcm.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/arm/mach-omap2/mux.c
-+++ b/arch/arm/mach-omap2/mux.c
-@@ -183,8 +183,10 @@ static int __init _omap_mux_get_by_name(
- 		m0_entry = mux->muxnames[0];
+--- a/sound/usb/pcm.c
++++ b/sound/usb/pcm.c
+@@ -1419,9 +1419,9 @@ static void retire_playback_urb(struct s
+ 	 * The error should be lower than 2ms since the estimate relies
+ 	 * on two reads of a counter updated every ms.
+ 	 */
+-	if (printk_ratelimit() &&
+-	    abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
+-		snd_printk(KERN_DEBUG "delay: estimated %d, actual %d\n",
++	if (abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
++		dev_dbg_ratelimited(&subs->dev->dev,
++			"delay: estimated %d, actual %d\n",
+ 			est_delay, subs->last_delay);
  
- 		/* First check for full name in mode0.muxmode format */
--		if (mode0_len && strncmp(muxname, m0_entry, mode0_len))
--			continue;
-+		if (mode0_len)
-+			if (strncmp(muxname, m0_entry, mode0_len) ||
-+			    (strlen(m0_entry) != mode0_len))
-+				continue;
- 
- 		/* Then check for muxmode only */
- 		for (i = 0; i < OMAP_MUX_NR_MODES; i++) {
+ 	if (!subs->running) {
 
 
