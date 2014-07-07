@@ -1,58 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495AbaGGXhx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:37:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29309 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751450AbaGGXhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:37:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,621,1400050800"; 
-   d="scan'208";a="569652720"
-Date: Tue, 8 Jul 2014 07:38:37 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Bandan Das <bsd@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-        Gleb Natapov <gleb@kernel.org>, Hu Robert <robert.hu@intel.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: nVMX: Fix IRQs inject to L2 which belong to L1
- since race
-Message-ID: <20140707233837.GA6075@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1404284054-51863-1-git-send-email-wanpeng.li@linux.intel.com>
- <53B3CA6A.4050902@siemens.com>
- <jpgy4wb9g5t.fsf@redhat.com>
- <20140704061701.GB3453@kernel>
- <jpg1ttyhtqw.fsf@redhat.com>
- <20140707084605.GA2904@kernel>
- <53BA9A91.7090202@redhat.com>
+	id S1752170AbaGGXiv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 19:38:51 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33214 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751245AbaGGXiu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 19:38:50 -0400
+Date: Mon, 7 Jul 2014 20:37:58 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paolo Pisati <p.pisati@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Joerg Roedel <joro@8bytes.org>, Hiroshi.DOYU@nokia.com,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: 3.16rc3 multiplatform, Armada 370 and IOMMU: unbootable kernel
+Message-ID: <20140707233758.GA1456@arch.cereza>
+References: <20140703135146.GA6898@luxor.wired.org>
+ <53B5C61D.2060308@free-electrons.com>
+ <53B5CA26.7050405@free-electrons.com>
+ <1936558.QaAG1bYMuD@avalon>
+ <20140705150308.GA28791@arch.cereza>
+ <20140705205951.GB3678@kroah.com>
+ <20140707105818.GA1101@arch.cereza>
+ <20140707183002.GA5947@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <53BA9A91.7090202@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140707183002.GA5947@kroah.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 03:03:13PM +0200, Paolo Bonzini wrote:
->Il 07/07/2014 10:46, Wanpeng Li ha scritto:
->>Hi Paolo,
->>
->>Is it ok for you to apply this patch and then more effort should be taken
->>to figure out the other bug which don't have any relationship with the race
->>that this patch fixed?
->
->Which patch?  Yours or Bandan's?
+On 07 Jul 11:30 AM, Greg Kroah-Hartman wrote:
+> On Mon, Jul 07, 2014 at 07:58:18AM -0300, Ezequiel Garcia wrote:
+[..]
+> > 
+> > I guess I snipped the thread and lost most of the information about the panic.
+> > Here's the original bug report:
+> > 
+> > http://www.spinics.net/lists/arm-kernel/msg344059.html
+> > 
+> > The problem reported involves enabling OMAP IOMMU driver and not any other IOMMU
+> > driver. Doing some tracing and adding a few prints, we found that
+> > omap_iommu_init() sets a bus notifier for the platform bus type:
+> > 
+> > omap_iommu_init -> bus_set_iommu -> iommu_bus_init:
+> > 
+> > static void iommu_bus_init(struct bus_type *bus, struct iommu_ops *ops)
+> > {
+> >         bus_register_notifier(bus, &iommu_bus_nb);
+> >         bus_for_each_dev(bus, NULL, ops, add_iommu_group);
+> > }
+> > 
+> > But the iommu bus notifier gets called for the 'pci' bus type, which
+> > has the iommu_ops field NULL (since it hasn't been set for iommu).
+> 
+> So this is what needs to be figured out, how is the notifier being
+> called with a PCI device?  Who else called iommu_bus_init() for the PCI
+> bus?
+> 
 
-Please wait, a patch which fix the hang will be submitted soon.
+Nobody. The only caller of iommu_bus_init() the above OMAP IOMMU.
 
-Regards,
-Wanpeng Li 
+However, I found something interesting. Tried to bisect this without much
+luck; I did two bisects and ended up in the same merge commit:
 
->
->Paolo
->--
->To unsubscribe from this list: send the line "unsubscribe kvm" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+# good: [0f16aa3c24a216d14d7f0587e1cbd2c1b51a38f3] Merge tag 'samsung-dt-3' of git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung into next/dt
+# first bad commit: [755a9ba7bf24a45b6dbf8bb15a5a56c8ed12461a] Merge tag 'dt-for-3.16' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc into next
+
+So, after doing a few diff's between that good and bad and searching for
+"bus_notifier" changes, saw something strange in arch/arm/mach-mvebu/coherency.c.
+
+It seems bus_register_notifier() is been called for platform and pci devices
+with the *same* notifier block. Haven't looked close enough, but you mentioned
+that could cause trouble?
+
+This patch fixes the issue here:
+
+diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
+index 477202f..2bdc323 100644
+--- a/arch/arm/mach-mvebu/coherency.c
++++ b/arch/arm/mach-mvebu/coherency.c
+@@ -292,6 +292,10 @@ static struct notifier_block mvebu_hwcc_nb = {
+ 	.notifier_call = mvebu_hwcc_notifier,
+ };
+ 
++static struct notifier_block mvebu_hwcc_pci_nb = {
++	.notifier_call = mvebu_hwcc_notifier,
++};
++
+ static void __init armada_370_coherency_init(struct device_node *np)
+ {
+ 	struct resource res;
+@@ -427,7 +431,7 @@ static int __init coherency_pci_init(void)
+ {
+ 	if (coherency_available())
+ 		bus_register_notifier(&pci_bus_type,
+-				       &mvebu_hwcc_nb);
++				       &mvebu_hwcc_pci_nb);
+ 	return 0;
+ }
+ 
+Paolo, can you apply it and confirm it fixes the problem?
+
+Greg, can you confirm using the same notifier block pointer
+for two different bus types makes the bus notifier go nuts?
+
+Thanks for the help,
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
