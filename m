@@ -1,96 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873AbaGGPYB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 11:24:01 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50397 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775AbaGGPX6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 11:23:58 -0400
-Date: Mon, 7 Jul 2014 17:23:50 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Waiman.Long@hp.com, tglx@linutronix.de, mingo@kernel.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        paolo.bonzini@gmail.com, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, paulmck@linux.vnet.ibm.com,
-        riel@redhat.com, torvalds@linux-foundation.org,
-        david.vrabel@citrix.com, oleg@redhat.com, gleb@redhat.com,
-        scott.norton@hp.com, chegu_vinod@hp.com
-Subject: Re: [PATCH 11/11] qspinlock, kvm: Add paravirt support
-Message-ID: <20140707152350.GW6758@twins.programming.kicks-ass.net>
-References: <20140615124657.264658593@chello.nl>
- <20140615130154.400698797@chello.nl>
- <53A70602.8020000@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="le3rj4S+jilWgWjH"
-Content-Disposition: inline
-In-Reply-To: <53A70602.8020000@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1753940AbaGGPY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 11:24:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61235 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752201AbaGGPWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 11:22:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,618,1400050800"; 
+   d="scan'208";a="539766380"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: "John W . Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v2 08/10] staging: wlan-ng: use %*pEhp to print SN
+Date: Mon,  7 Jul 2014 18:21:50 +0300
+Message-Id: <1404746512-12749-9-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1404746512-12749-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1404746512-12749-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a generic specifier to print an escaped buffer by given criteria. Let's
+use it instead of custom approach.
 
---le3rj4S+jilWgWjH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/staging/wlan-ng/prism2sta.c | 28 ++--------------------------
+ 1 file changed, 2 insertions(+), 26 deletions(-)
 
-On Sun, Jun 22, 2014 at 10:06:18PM +0530, Raghavendra K T wrote:
-> On 06/15/2014 06:17 PM, Peter Zijlstra wrote:
-> >Signed-off-by: Peter Zijlstra<peterz@infradead.org>
-> >---
-> [...]
-> >+
-> >+void kvm_wait(int *ptr, int val)
-> >+{
-> >+	unsigned long flags;
-> >+
-> >+	if (in_nmi())
-> >+		return;
-> >+
-> >+	/*
-> >+	 * Make sure an interrupt handler can't upset things in a
-> >+	 * partially setup state.
-> >+	 */
->=20
-> I am seeing hang with even 2 cpu guest (with patches on top of 3.15-rc6 ).
-> looking further with gdb I see one cpu is stuck with native_halt with
-> slowpath flag(_Q_LOCKED_SLOW) set when it was called.
+diff --git a/drivers/staging/wlan-ng/prism2sta.c b/drivers/staging/wlan-ng/prism2sta.c
+index 209e4db..688e827 100644
+--- a/drivers/staging/wlan-ng/prism2sta.c
++++ b/drivers/staging/wlan-ng/prism2sta.c
+@@ -60,7 +60,6 @@
+ #include <linux/netdevice.h>
+ #include <linux/workqueue.h>
+ #include <linux/byteorder/generic.h>
+-#include <linux/ctype.h>
+ 
+ #include <linux/io.h>
+ #include <linux/delay.h>
+@@ -81,27 +80,6 @@
+ #include "hfa384x.h"
+ #include "prism2mgmt.h"
+ 
+-/* Create a string of printable chars from something that might not be */
+-/* It's recommended that the str be 4*len + 1 bytes long */
+-#define wlan_mkprintstr(buf, buflen, str, strlen) \
+-{ \
+-	int i = 0; \
+-	int j = 0; \
+-	memset(str, 0, (strlen)); \
+-	for (i = 0; i < (buflen); i++) { \
+-		if (isprint((buf)[i])) { \
+-			(str)[j] = (buf)[i]; \
+-			j++; \
+-		} else { \
+-			(str)[j] = '\\'; \
+-			(str)[j+1] = 'x'; \
+-			(str)[j+2] = hex_asc_hi((buf)[i]); \
+-			(str)[j+3] = hex_asc_lo((buf)[i]); \
+-			j += 4; \
+-		} \
+-	} \
+-}
+-
+ static char *dev_info = "prism2_usb";
+ static wlandevice_t *create_wlan(void);
+ 
+@@ -607,7 +585,6 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
+ 	hfa384x_t *hw = (hfa384x_t *) wlandev->priv;
+ 	u16 temp;
+ 	u8 snum[HFA384x_RID_NICSERIALNUMBER_LEN];
+-	char pstr[(HFA384x_RID_NICSERIALNUMBER_LEN * 4) + 1];
+ 
+ 	/* Collect version and compatibility info */
+ 	/*  Some are critical, some are not */
+@@ -862,9 +839,8 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
+ 	result = hfa384x_drvr_getconfig(hw, HFA384x_RID_NICSERIALNUMBER,
+ 					snum, HFA384x_RID_NICSERIALNUMBER_LEN);
+ 	if (!result) {
+-		wlan_mkprintstr(snum, HFA384x_RID_NICSERIALNUMBER_LEN,
+-				pstr, sizeof(pstr));
+-		netdev_info(wlandev->netdev, "Prism2 card SN: %s\n", pstr);
++		netdev_info(wlandev->netdev, "Prism2 card SN: %*pEhp\n",
++			    HFA384x_RID_NICSERIALNUMBER_LEN, snum);
+ 	} else {
+ 		netdev_err(wlandev->netdev, "Failed to retrieve Prism2 Card SN\n");
+ 		goto failed;
+-- 
+2.0.1
 
-Like said in 0/n I think, I only booted the kernel in kvm, didn't
-actually do anything with it.
-
-It took me most of the day to figure out how to get paravirt working at
-all, didn't feel like spending another many hours trying to figure out
-how to make the crap thing do actual work.
-
-But I'll see what I can do after we can 'conceptually' agree on the
-paravirt patch.
-
---le3rj4S+jilWgWjH
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTuruGAAoJEHZH4aRLwOS67I4QAIcJ86JFQTzlVTnDFdzCM8es
-Xe06S3HLj1KAVhYTDjpIbcI41zKR6NAu5vtnyU6sFTJIfOK9sUaIzQ8KMxEZQxWe
-uuhKhfeVjPSJ1Yxm+Itv1KHCwzIbF91PlvmgB2GIloF3vfJ8AgvdMZlanWrrseC+
-R+zgYDA0Sov39tZ3YGAZydD/tdy9nXABUcFLMngGJpf0QU2VftTMgVPeJYs2dUGf
-nDTSoAfAtRw1HIJsrLiyX2llQjtbQXhk5EC0nzq5ZuLy7x6eNug4bd6AYy16WQO5
-jLKEe0ulTLaGTwZVgnqpSPnqpliwmP++4HlxbT2tMN3sEaNxrjJC3WsZElZJcCMA
-YkArNQaIi144RH1KK6kOaZyxbto983ffBJGs0qp80mhPS27DbqAANvKzNmpqT9tJ
-5hGNIMOO2JI0/gIWEcQynz69yD+X2iAzkNYMwi51g1khE+PSC1S5iQxhVMj6aYNc
-RWtzJrPHKGv1TbdXZG/nDv8KdNZyhJR5u1K2vZK8JcD4+qHyIpM2XF9GhtgTF58X
-1knzEbqG31fk6SbnvqCjG+upb+UkybxmXpGphaT+KPuQ/r24yRuHUV5ZikFbaggR
-Be6ZeyrqLMoC9/NCBNMMx+mOyHRNP3yrjdsAySXuiVD+7OCX+8UtBYbBjV2diL3D
-YGPdmLAD8N5s2iyw5OLJ
-=Q7O/
------END PGP SIGNATURE-----
-
---le3rj4S+jilWgWjH--
