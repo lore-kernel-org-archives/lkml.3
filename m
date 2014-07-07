@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721AbaGHAqf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:46:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55684 "EHLO
+	id S1755751AbaGHAqv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:46:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55564 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753753AbaGGXya (ORCPT
+	with ESMTP id S1753738AbaGGXy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:30 -0400
+	Mon, 7 Jul 2014 19:54:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brian Norris <computersforpeace@gmail.com>, Pekon Gupta <pekon@ti.com>
-Subject: [PATCH 3.14 21/94] mtd: nand: omap: fix BCHx ecc.correct to return detected bit-flips in erased-page
-Date: Mon,  7 Jul 2014 16:57:11 -0700
-Message-Id: <20140707235757.400893037@linuxfoundation.org>
+        Helmut Schaa <helmut.schaa@googlemail.com>, Pekon Gupta <pekon@ti.com>,
+        Scott Wood <scottwood@freescale.com>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.14 20/94] mtd: eLBC NAND: fix subpage write support
+Date: Mon,  7 Jul 2014 16:57:10 -0700
+Message-Id: <20140707235757.372581931@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -28,43 +30,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: pekon gupta <pekon@ti.com>
+From: Pekon Gupta <pekon@ti.com>
 
-commit f306e8c3b667632952f1a4a74ffb910bbc06255f upstream.
+commit f034d87def51f026b735d1e2877e9387011b2ba3 upstream.
 
-fixes: commit 62116e5171e00f85a8d53f76e45b84423c89ff34
-       mtd: nand: omap2: Support for hardware BCH error correction.
+As subpage write is enabled by default for all drivers, nand_write_subpage_hwecc
+causes a crash if the driver did not register ecc->hwctl or ecc->calculate.
+This behavior was introduced in
+   commit 837a6ba4f3b6d23026674e6af6b6849a4634fff9
+   "mtd: nand: subpage write support for hardware based ECC schemes".
 
-In omap_elm_correct_data(), if bitflip_count in an erased-page is within the
-correctable limit (< ecc.strength), then it is not indicated back to the caller
-ecc->read_page().
+This fixes a crash by emulating subpage write support by padding sub-page data
+with 0xff on either sides to make it full page compatible.
 
-This mis-guides upper layers like MTD and UBIFS layer to assume erased-page as
-perfectly clean and use it for writing even if actual bitflip_count was
-dangerously high (bitflip_count > mtd->bitflip_threshold).
-
-This patch fixes this above issue, by returning 'stats' to caller
-ecc->read_page() under all scenarios.
-
-Reported-by: Brian Norris <computersforpeace@gmail.com>
+Reported-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Tested-by: Helmut Schaa <helmut.schaa@googlemail.com>
 Signed-off-by: Pekon Gupta <pekon@ti.com>
+Reviewed-by: Scott Wood <scottwood@freescale.com>
 Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/omap2.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mtd/nand/fsl_elbc_nand.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/mtd/nand/omap2.c
-+++ b/drivers/mtd/nand/omap2.c
-@@ -1451,7 +1451,7 @@ static int omap_elm_correct_data(struct
+--- a/drivers/mtd/nand/fsl_elbc_nand.c
++++ b/drivers/mtd/nand/fsl_elbc_nand.c
+@@ -724,6 +724,19 @@ static int fsl_elbc_write_page(struct mt
+ 	return 0;
+ }
  
- 	/* Check if any error reported */
- 	if (!is_error_reported)
--		return 0;
-+		return stat;
++/* ECC will be calculated automatically, and errors will be detected in
++ * waitfunc.
++ */
++static int fsl_elbc_write_subpage(struct mtd_info *mtd, struct nand_chip *chip,
++				uint32_t offset, uint32_t data_len,
++				const uint8_t *buf, int oob_required)
++{
++	fsl_elbc_write_buf(mtd, buf, mtd->writesize);
++	fsl_elbc_write_buf(mtd, chip->oob_poi, mtd->oobsize);
++
++	return 0;
++}
++
+ static int fsl_elbc_chip_init(struct fsl_elbc_mtd *priv)
+ {
+ 	struct fsl_lbc_ctrl *ctrl = priv->ctrl;
+@@ -762,6 +775,7 @@ static int fsl_elbc_chip_init(struct fsl
  
- 	/* Decode BCH error using ELM module */
- 	elm_decode_bch_error_page(info->elm_dev, ecc_vec, err_vec);
+ 	chip->ecc.read_page = fsl_elbc_read_page;
+ 	chip->ecc.write_page = fsl_elbc_write_page;
++	chip->ecc.write_subpage = fsl_elbc_write_subpage;
+ 
+ 	/* If CS Base Register selects full hardware ECC then use it */
+ 	if ((in_be32(&lbc->bank[priv->bank].br) & BR_DECC) ==
 
 
