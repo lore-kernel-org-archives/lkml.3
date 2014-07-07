@@ -1,94 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753009AbaGGSnM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 14:43:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49343 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752981AbaGGSnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 14:43:08 -0400
-Message-ID: <53BAE9F4.4070605@redhat.com>
-Date: Mon, 07 Jul 2014 20:41:56 +0200
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751809AbaGGSok (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 14:44:40 -0400
+Received: from 8.mo5.mail-out.ovh.net ([178.32.116.78]:58670 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751435AbaGGSoj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 14:44:39 -0400
+X-Greylist: delayed 890 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Jul 2014 14:44:38 EDT
+Date: Mon, 7 Jul 2014 20:42:39 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: linux@maxim.org.za, Nicolas FERRE <nicolas.ferre@atmel.com>,
+        dwmw2@infradead.org, dbaryshkov@gmail.com, devicetree@vger.kernel.org,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-kernel@vger.kernel.org,
+        Boris Brezillon <boris@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 09/18] AT91: Call at91_register_devices in the board files
+Message-ID: <20140707184239.GI9558@ns203013.ovh.net>
+References: <1404396906-25194-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1404396906-25194-15-git-send-email-maxime.ripard@free-electrons.com>
+ <D103F102-4B04-4CC6-8F20-58CEB0EC8E36@jcrosoft.com>
+ <20140703145222.GE31996@lukather>
 MIME-Version: 1.0
-To: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 1/3] uprobes: add comment with insn opcodes, mnemonics
- and why we dont support them
-References: <1404479026-9894-1-git-send-email-dvlasenk@redhat.com> <1404753144.4595.21.camel@oc7886638347.ibm.com.usor.ibm.com>
-In-Reply-To: <1404753144.4595.21.camel@oc7886638347.ibm.com.usor.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140703145222.GE31996@lukather>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 16840929332136291261
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedrvddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejfedrvddtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2014 07:12 PM, Jim Keniston wrote:
-> Also, as noted below, some of the opcodes that were invalid back in
-> 2006-2007 are now valid.  However, arpl, lar, and lsl still look
-> questionable to me.
-
-arpl, lar, and lsl never throw any exceptions
-apart from those which any memory-referencing
-arithmetic insn can throw.
-
-In particular, they don't throw exceptions
-if their operand is an invalid segment selector.
-
-No additional code needed for them to work
-when probed.
-
-Thus I think no harm done enabling them.
-
->> + * Opcodes which can be enabled right away:
->> + * 63 - arpl. This insn has no unusual exceptions (it's basically an arith op).
+On 16:52 Thu 03 Jul     , Maxime Ripard wrote:
+> Hi,
 > 
-> The AMD64 Architecture Programmer's Manual documents arpl as a system
-> instruction ("Adjust Requestor Privilege Level").  Is this really valid
-> for user-space apps?
-
-"arpl r1,r2" does the following:
-
-"If bits 0-1 of r2 are less than same bits of r1,
-set them to bits from r1 and set ZF, else clear ZF.
-
-I doubt anyone uses this insn, but it *is* just a funky
-arith op. It doesn't even check whether register values
-are valid selectors.
-
-The idea was that it helps to perform "lowering"
-of selector privileges when code in comforming
-code segment uses "untrusted" (caller-supplied)
-selector values to access data.
-Example: if CPL-2 caller gave us CPL-0 selector,
-convert it to CPL-2 selector.
-Some misguided guy at Intel thought it's vitally important to save
-a few measly CPU cycles doing this, and created a special insn.
-
-
->> + * 0f 38-3f - 3-byte opcodes (why?? all look safe)
+> On Thu, Jul 03, 2014 at 10:29:58PM +0800, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > no do this at SoC level
 > 
-> My AMD64 reference back then (AMD64 Architecture Programmer's Manual Vol
-> 3, dated September 2003) showed all those opcodes as invalid.
+> Since it has to be done at init_machine, I don't see any other easy
+> way to do this at the SoC level.
 > 
->> + * 0f 78 - vmread
->> + * 0f 79 - vmwrite
->> + * 0f 7a - undefined
->> + * 0f 7b - undefined
->> + * 0f 7c - undefined
->> + * 0f 7d - undefined
->> + * 0f a6 - undefined
->> + * 0f a7 - undefined
->> + * 0f b8 - popcnt (why?? it's an ordinary ALU op)hinhinkyky
-> 
-> Invalid in 2003 AMD64 ref.
->
->> + * 0f d0 - undefined
->> + * 0f f0 - lddqu (why?? it's an ordinary vector load op)
-> 
-> Invalid in 2003 AMD64 ref.
+> What is your suggestion?
 
-Correct. There insns are newer than 2003.
+do it earlier as there is not driver it will not change anything
