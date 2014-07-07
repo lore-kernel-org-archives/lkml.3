@@ -1,110 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbaGGWiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 18:38:04 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:43710 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307AbaGGWiC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 18:38:02 -0400
-Date: Mon, 7 Jul 2014 15:37:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: [PATCH tip/core/rcu 0/17] Miscellaneous fixes for 3.17
-Message-ID: <20140707223756.GA7187@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070722-1344-0000-0000-000002A9C221
+	id S1752654AbaGGWiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 18:38:21 -0400
+Received: from mga11.intel.com ([192.55.52.93]:42666 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751863AbaGGWiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 18:38:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,621,1400050800"; 
+   d="scan'208";a="566404696"
+From: Andi Kleen <andi@firstfloor.org>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 2/2] perf, x86: Don't mark DataLA addresses as store
+Date: Mon,  7 Jul 2014 15:37:41 -0700
+Message-Id: <1404772661-15527-2-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1404772661-15527-1-git-send-email-andi@firstfloor.org>
+References: <1404772661-15527-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: Andi Kleen <ak@linux.intel.com>
 
-This series provides miscellaneous fixes:
+Haswell supports reporting the data address for a range
+of PEBS events, including:
 
-1.	Document deadlock-avoidance information in rcu_read_unlock()'s
-	docbook comment header.
+UOPS_RETIRED.ALL
+MEM_UOPS_RETIRED.STLB_MISS_LOADS
+MEM_UOPS_RETIRED.STLB_MISS_STORES
+MEM_UOPS_RETIRED.LOCK_LOADS
+MEM_UOPS_RETIRED.SPLIT_LOADS
+MEM_UOPS_RETIRED.SPLIT_STORES
+MEM_UOPS_RETIRED.ALL_LOADS
+MEM_UOPS_RETIRED.ALL_STORES
+MEM_LOAD_UOPS_RETIRED.L1_HIT
+MEM_LOAD_UOPS_RETIRED.L2_HIT
+MEM_LOAD_UOPS_RETIRED.L3_HIT
+MEM_LOAD_UOPS_RETIRED.L1_MISS
+MEM_LOAD_UOPS_RETIRED.L2_MISS
+MEM_LOAD_UOPS_RETIRED.L3_MISS
+MEM_LOAD_UOPS_RETIRED.HIT_LFB
+MEM_LOAD_UOPS_L3_HIT_RETIRED.XSNP_MISS
+MEM_LOAD_UOPS_L3_HIT_RETIRED.XSNP_HIT
+MEM_LOAD_UOPS_L3_HIT_RETIRED.XSNP_HITM
+MEM_LOAD_UOPS_L3_HIT_RETIRED.XSNP_NONE
+MEM_LOAD_UOPS_L3_MISS_RETIRED.LOCAL_DRAM
 
-2.	Remove obsolete references to TINY_PREEMPT_RCU.
+This facility was already enabled earlier with the original Haswell
+perf changes.
 
-3.	Add deadlock explanation to local_irq_save() call in
-	__lock_task_sighand().
+However these addresses were always reports as stores by perf, which is wrong,
+as they could be loads too.  The hardware does not distinguish loads and stores
+for these instructions, so there's no (cheap) way for the profiler
+to find out.
 
-4.	Make the rcu_node arrays be static const char * const,
-	courtesy of Fabian Frederick.
+Change the type to PERF_MEM_OP_NA instead.
 
-5.	Remove redundant ACCESS_ONCE() from tick_do_timer_cpu under
-	#ifdef CONFIG_NO_HZ_FULL.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-6.	Eliminate read-modify-write ACCESS_ONCE() calls.
-
-7.	Loosen __call_rcu()'s rcu_head alignment constraint to handle
-	m68k's 16-bit alignment.
-
-8.	Allow post-unlock reference for rt_mutex.
-
-9.	Check both root and current rcu_node structures when setting up
-	future grace periods, courtesy of Pranith Kumar.
-
-10.	Simplify priority boosting by putting rt_mutex in rcu_node
-	structure.
-
-11.	Bind grace-period kthreads to no-NO_HZ_FULL CPUs instead of the
-	timekeeping CPU, at least for CONFIG_NO_HZ_FULL_SYSIDLE=n.
-
-12.	Don't use NMIs to dump other CPUs' stacks.
-
-13.	Use __this_cpu_read() instead of per_cpu_ptr(), courtesy of Shan Wei.
-
-14.	Remove CONFIG_PROVE_RCU_DELAY.
-
-15.	Fix __rcu_reclaim to use true/false instead of 1/0.
-
-16.	Fix sparse warning in rcu_initiate_boost(), courtesy of Pranith
-	Kumar.
-
-17.	Fix sparse warning in rcu_report_unblock_qs_rnp(), again courtesy
-	of Pranith Kumar.
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
- b/include/linux/init_task.h                               |    9 --
- b/include/linux/rcupdate.h                                |   45 ++++++++--
- b/include/linux/sched.h                                   |    6 -
- b/include/linux/tick.h                                    |   19 ++++
- b/init/Kconfig                                            |    2 
- b/kernel/rcu/rcu.h                                        |    8 +
- b/kernel/rcu/srcu.c                                       |    4 
- b/kernel/rcu/tree.c                                       |   59 ++++++--------
- b/kernel/rcu/tree.h                                       |    8 +
- b/kernel/rcu/tree_plugin.h                                |   52 +++++++-----
- b/kernel/rcu/update.c                                     |    3 
- b/kernel/signal.c                                         |    4 
- b/kernel/time/tick-sched.c                                |   10 ++
- b/tools/testing/selftests/rcutorture/configs/rcu/TREE01   |    1 
- b/tools/testing/selftests/rcutorture/configs/rcu/TREE02   |    1 
- b/tools/testing/selftests/rcutorture/configs/rcu/TREE02-T |    1 
- b/tools/testing/selftests/rcutorture/configs/rcu/TREE03   |    1 
- b/tools/testing/selftests/rcutorture/configs/rcu/TREE04   |    1 
- b/tools/testing/selftests/rcutorture/configs/rcu/TREE05   |    1 
- b/tools/testing/selftests/rcutorture/configs/rcu/TREE06   |    1 
- b/tools/testing/selftests/rcutorture/configs/rcu/TREE07   |    1 
- b/tools/testing/selftests/rcutorture/configs/rcu/TREE08   |    1 
- b/tools/testing/selftests/rcutorture/configs/rcu/TREE08-T |    1 
- b/tools/testing/selftests/rcutorture/configs/rcu/TREE09   |    1 
- 24 files changed, 147 insertions(+), 93 deletions(-)
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 0e22ce6..c5d83ab 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -114,7 +114,7 @@ static u64 precise_store_data_hsw(struct perf_event *event, u64 status)
+ 	u64 cfg = event->hw.config & INTEL_ARCH_EVENT_MASK;
+ 
+ 	dse.val = 0;
+-	dse.mem_op = PERF_MEM_OP_STORE;
++	dse.mem_op = PERF_MEM_OP_NA;
+ 	dse.mem_lvl = PERF_MEM_LVL_NA;
+ 
+ 	/*
+-- 
+1.9.3
 
