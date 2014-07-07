@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810AbaGGUYX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 16:24:23 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60151 "EHLO
+	id S1752909AbaGGUYt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 16:24:49 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60161 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752672AbaGGUYS (ORCPT
+	with ESMTP id S1752762AbaGGUYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 16:24:18 -0400
+	Mon, 7 Jul 2014 16:24:22 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Boris Brezillon <boris.brezillon@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Rodolfo Giometti <giometti@linux.it>
-Subject: [PATCHv2 26/32] ARM: at91/dt: cosino define crystals frequencies
-Date: Mon,  7 Jul 2014 22:23:43 +0200
-Message-Id: <1404764629-29136-27-git-send-email-alexandre.belloni@free-electrons.com>
+        Gregory Hermant <gregory.hermant@calao-systems.com>
+Subject: [PATCHv2 32/32] ARM: at91/dt: usb_a9263: define crystals frequencies
+Date: Mon,  7 Jul 2014 22:23:49 +0200
+Message-Id: <1404764629-29136-33-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404764629-29136-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1404764629-29136-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -24,19 +24,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define Cosino boards main and slow crystals frequencies.
+Define Calao USB-A9263 main and slow crystals frequencies.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Rodolfo Giometti <giometti@linux.it>
+Cc: Gregory Hermant <gregory.hermant@calao-systems.com>
 ---
- arch/arm/boot/dts/at91-cosino.dtsi | 8 ++++++++
+ arch/arm/boot/dts/usb_a9263.dts | 8 ++++++++
  1 file changed, 8 insertions(+)
 
-diff --git a/arch/arm/boot/dts/at91-cosino.dtsi b/arch/arm/boot/dts/at91-cosino.dtsi
-index df4b78695695..b6ea3f4a7206 100644
---- a/arch/arm/boot/dts/at91-cosino.dtsi
-+++ b/arch/arm/boot/dts/at91-cosino.dtsi
-@@ -34,6 +34,14 @@
+diff --git a/arch/arm/boot/dts/usb_a9263.dts b/arch/arm/boot/dts/usb_a9263.dts
+index 290e60383baf..68c0de36c339 100644
+--- a/arch/arm/boot/dts/usb_a9263.dts
++++ b/arch/arm/boot/dts/usb_a9263.dts
+@@ -29,6 +29,14 @@
  			compatible = "atmel,osc", "fixed-clock";
  			clock-frequency = <12000000>;
  		};
