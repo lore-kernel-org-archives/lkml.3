@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679AbaGGX7t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:59:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56091 "EHLO
+	id S1754703AbaGHAAF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:00:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55989 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754280AbaGGXzQ (ORCPT
+	with ESMTP id S1754388AbaGGXzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:55:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bill <billstuff2001@sbcglobal.net>, NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.10 43/53] md: flush writes before starting a recovery.
-Date: Mon,  7 Jul 2014 16:58:28 -0700
-Message-Id: <20140707235830.600382447@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 53/53] sym53c8xx_2: Set DID_REQUEUE return code when aborting squeue
+Date: Mon,  7 Jul 2014 16:58:38 -0700
+Message-Id: <20140707235830.885816939@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
 References: <20140707235829.281783607@linuxfoundation.org>
@@ -28,63 +30,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 133d4527eab8d199a62eee6bd433f0776842df2e upstream.
+commit fd1232b214af43a973443aec6a2808f16ee5bf70 upstream.
 
-When we write to a degraded array which has a bitmap, we
-make sure the relevant bit in the bitmap remains set when
-the write completes (so a 're-add' can quickly rebuilt a
-temporarily-missing device).
+This patch fixes I/O errors with the sym53c8xx_2 driver when the disk
+returns QUEUE FULL status.
 
-If, immediately after such a write starts, we incorporate a spare,
-commence recovery, and skip over the region where the write is
-happening (because the 'needs recovery' flag isn't set yet),
-then that write will not get to the new device.
+When the controller encounters an error (including QUEUE FULL or BUSY
+status), it aborts all not yet submitted requests in the function
+sym_dequeue_from_squeue.
 
-Once the recovery finishes the new device will be trusted, but will
-have incorrect data, leading to possible corruption.
+This function aborts them with DID_SOFT_ERROR.
 
-We cannot set the 'needs recovery' flag when we start the write as we
-do not know easily if the write will be "degraded" or not.  That
-depends on details of the particular raid level and particular write
-request.
+If the disk has full tag queue, the request that caused the overflow is
+aborted with QUEUE FULL status (and the scsi midlayer properly retries
+it until it is accepted by the disk), but the sym53c8xx_2 driver aborts
+the following requests with DID_SOFT_ERROR --- for them, the midlayer
+does just a few retries and then signals the error up to sd.
 
-This patch fixes a corruption issue of long standing and so it
-suitable for any -stable kernel.  It applied correctly to 3.0 at
-least and will minor editing to earlier kernels.
+The result is that disk returning QUEUE FULL causes request failures.
 
-Reported-by: Bill <billstuff2001@sbcglobal.net>
-Tested-by: Bill <billstuff2001@sbcglobal.net>
-Link: http://lkml.kernel.org/r/53A518BB.60709@sbcglobal.net
-Signed-off-by: NeilBrown <neilb@suse.de>
+The error was reproduced on 53c895 with COMPAQ BD03685A24 disk
+(rebranded ST336607LC) with command queue 48 or 64 tags.  The disk has
+64 tags, but under some access patterns it return QUEUE FULL when there
+are less than 64 pending tags.  The SCSI specification allows returning
+QUEUE FULL anytime and it is up to the host to retry.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Matthew Wilcox <matthew@wil.cx>
+Cc: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/md.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/scsi/sym53c8xx_2/sym_hipd.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -7447,6 +7447,19 @@ void md_do_sync(struct md_thread *thread
- 			    rdev->recovery_offset < j)
- 				j = rdev->recovery_offset;
- 		rcu_read_unlock();
-+
-+		/* If there is a bitmap, we need to make sure all
-+		 * writes that started before we added a spare
-+		 * complete before we start doing a recovery.
-+		 * Otherwise the write might complete and (via
-+		 * bitmap_endwrite) set a bit in the bitmap after the
-+		 * recovery has checked that bit and skipped that
-+		 * region.
-+		 */
-+		if (mddev->bitmap) {
-+			mddev->pers->quiesce(mddev, 1);
-+			mddev->pers->quiesce(mddev, 0);
-+		}
- 	}
- 
- 	printk(KERN_INFO "md: %s of RAID array %s\n", desc, mdname(mddev));
+--- a/drivers/scsi/sym53c8xx_2/sym_hipd.c
++++ b/drivers/scsi/sym53c8xx_2/sym_hipd.c
+@@ -3000,7 +3000,11 @@ sym_dequeue_from_squeue(struct sym_hcb *
+ 		if ((target == -1 || cp->target == target) &&
+ 		    (lun    == -1 || cp->lun    == lun)    &&
+ 		    (task   == -1 || cp->tag    == task)) {
++#ifdef SYM_OPT_HANDLE_DEVICE_QUEUEING
+ 			sym_set_cam_status(cp->cmd, DID_SOFT_ERROR);
++#else
++			sym_set_cam_status(cp->cmd, DID_REQUEUE);
++#endif
+ 			sym_remque(&cp->link_ccbq);
+ 			sym_insque_tail(&cp->link_ccbq, &np->comp_ccbq);
+ 		}
 
 
