@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279AbaGHAoT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:44:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55571 "EHLO
+	id S1755594AbaGHAoi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:44:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55684 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753803AbaGGXyc (ORCPT
+	with ESMTP id S1753795AbaGGXyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mario Kleiner <mario.kleiner.de@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.14 26/94] drm/nouveau/kms: reference vblank for crtc during pageflip.
-Date: Mon,  7 Jul 2014 16:57:16 -0700
-Message-Id: <20140707235757.542191979@linuxfoundation.org>
+        "Wang, Yu" <yu.y.wang@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.14 08/94] xhci: Fix runtime suspended xhci from blocking system suspend.
+Date: Mon,  7 Jul 2014 16:56:58 -0700
+Message-Id: <20140707235757.023281751@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,52 +30,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mario Kleiner <mario.kleiner.de@gmail.com>
+From: "Wang, Yu" <yu.y.wang@intel.com>
 
-commit ba124a41058b300a5464206d2d33803cc3dc82ec upstream.
+commit d6236f6d1d885aa19d1cd7317346fe795227a3cc upstream.
 
-Need to drm_vblank_get/put() the crtc involved in a
-pending pageflip, or we might not get vblank irqs and
-updates of vblank counts and timestamps for pageflip
-events and flip completion.
+The system suspend flow as following:
+1, Freeze all user processes and kenrel threads.
 
-Signed-off-by: Mario Kleiner <mario.kleiner.de@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+2, Try to suspend all devices.
+
+2.1, If pci device is in RPM suspended state, then pci driver will try
+to resume it to RPM active state in the prepare stage.
+
+2.2, xhci_resume function calls usb_hcd_resume_root_hub to queue two
+workqueue items to resume usb2&usb3 roothub devices.
+
+2.3, Call suspend callbacks of devices.
+
+2.3.1, All suspend callbacks of all hcd's children, including
+roothub devices are called.
+
+2.3.2, Finally, hcd_pci_suspend callback is called.
+
+Due to workqueue threads were already frozen in step 1, the workqueue
+items can't be scheduled, and the roothub devices can't be resumed in
+this flow. The HCD_FLAG_WAKEUP_PENDING flag which is set in
+usb_hcd_resume_root_hub won't be cleared. Finally,
+hcd_pci_suspend will return -EBUSY, and system suspend fails.
+
+The reason why this issue doesn't show up very often is due to that
+choose_wakeup will be called in step 2.3.1. In step 2.3.1, if
+udev->do_remote_wakeup is not equal to device_may_wakeup(&udev->dev), then
+udev will resume to RPM active for changing the wakeup settings. This
+has been a lucky hit which hides this issue.
+
+For some special xHCI controllers which have no USB2 port, then roothub
+will not match hub driver due to probe failed. Then its
+do_remote_wakeup will be set to zero, and we won't be as lucky.
+
+xhci driver doesn't need to resume roothub devices everytime like in
+the above case. It's only needed when there are pending event TRBs.
+
+This patch should be back-ported to kernels as old as 3.2, that
+contains the commit f69e3120df82391a0ee8118e0a156239a06b2afb
+"USB: XHCI: resume root hubs when the controller resumes"
+
+Signed-off-by: Wang, Yu <yu.y.wang@intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+[use readl() instead of removed xhci_readl(), reword commit message -Mathias]
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_display.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/host/xhci.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/nouveau_display.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_display.c
-@@ -734,6 +734,9 @@ nouveau_crtc_page_flip(struct drm_crtc *
- 		  fb->bits_per_pixel, fb->pitches[0], crtc->x, crtc->y,
- 		  new_bo->bo.offset };
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -928,7 +928,7 @@ int xhci_suspend(struct xhci_hcd *xhci)
+  */
+ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+ {
+-	u32			command, temp = 0;
++	u32			command, temp = 0, status;
+ 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
+ 	struct usb_hcd		*secondary_hcd;
+ 	int			retval = 0;
+@@ -1046,8 +1046,12 @@ int xhci_resume(struct xhci_hcd *xhci, b
  
-+	/* Keep vblanks on during flip, for the target crtc of this flip */
-+	drm_vblank_get(dev, nouveau_crtc(crtc)->index);
-+
- 	/* Emit a page flip */
- 	if (nv_device(drm->device)->card_type >= NV_50) {
- 		ret = nv50_display_flip_next(crtc, fb, chan, swap_interval);
-@@ -777,6 +780,7 @@ nouveau_crtc_page_flip(struct drm_crtc *
- 	return 0;
- 
- fail_unreserve:
-+	drm_vblank_put(dev, nouveau_crtc(crtc)->index);
- 	ttm_bo_unreserve(&old_bo->bo);
- fail_unpin:
- 	mutex_unlock(&chan->cli->mutex);
-@@ -815,6 +819,9 @@ nouveau_finish_page_flip(struct nouveau_
- 		drm_send_vblank_event(dev, crtcid, s->event);
+  done:
+ 	if (retval == 0) {
+-		usb_hcd_resume_root_hub(hcd);
+-		usb_hcd_resume_root_hub(xhci->shared_hcd);
++		/* Resume root hubs only when have pending events. */
++		status = readl(&xhci->op_regs->status);
++		if (status & STS_EINT) {
++			usb_hcd_resume_root_hub(hcd);
++			usb_hcd_resume_root_hub(xhci->shared_hcd);
++		}
  	}
  
-+	/* Give up ownership of vblank for page-flipped crtc */
-+	drm_vblank_put(dev, s->crtc);
-+
- 	list_del(&s->head);
- 	if (ps)
- 		*ps = *s;
+ 	/*
 
 
