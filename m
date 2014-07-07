@@ -1,244 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718AbaGGRev (ORCPT <rfc822;w@1wt.eu>);
+	id S1752771AbaGGRez (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 13:34:55 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:37098 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320AbaGGRev (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 13:34:51 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36440 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751320AbaGGRes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 13:34:48 -0400
-Message-ID: <53BADA30.1000808@ti.com>
-Date: Mon, 7 Jul 2014 12:34:40 -0500
-From: Dan Murphy <dmurphy@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: <linux-sound@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v5] ASoC: tas2552: Support TI TAS2552 Amplifier
-References: <1404404675-5948-1-git-send-email-dmurphy@ti.com> <20140707080836.GD30458@sirena.org.uk>
-In-Reply-To: <20140707080836.GD30458@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1719046.4xHmiSoxkE@pcbe13110.cern.ch>
+References: <280883016.9onmf0miLq@pcbe13110.cern.ch> <1807045.P44aWKLMe6@pcbe13110.cern.ch>
+ <20140704212612.GA15618@google.com> <1719046.4xHmiSoxkE@pcbe13110.cern.ch>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 7 Jul 2014 11:34:31 -0600
+Message-ID: <CAErSpo5YbaOjqr4obHwekRNwo1K5j0JbE-PYu48k7U90ZpWM0A@mail.gmail.com>
+Subject: Re: PCIe bus enumeration
+To: Federico Vaga <federico.vaga@gmail.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michel Arruat <michel.arruat@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark
-Thanks for the review
-
-On 07/07/2014 03:08 AM, Mark Brown wrote:
-> On Thu, Jul 03, 2014 at 11:24:35AM -0500, Dan Murphy wrote:
+On Mon, Jul 7, 2014 at 1:29 AM, Federico Vaga <federico.vaga@gmail.com> wrote:
+> On Friday 04 July 2014 15:26:12 Bjorn Helgaas wrote:
+>> On Fri, Jul 04, 2014 at 09:55:20AM +0200, Federico Vaga wrote:
+>> > > I assume these ports don't support hotplug.  If they *did*
+>> > > support
+>> > > hotplug, those ports would have to exist because they handle the
+>> > > hotplug events (presence detect, etc.)
+>> >
+>> > I asked: yes, they do not support hotplug
+>> >
+>> > > If you can collect the complete "lspci -vv" output from your
+>> > > machine (with a device plugged in, so we can see the port
+>> > > leading to it), that will help make this more concrete.  And
+>> > > maybe one with no devices plugged in, so we can see exactly
+>> > > what changes.
+>> >
+>> > I attached two files with the output. I putted a card in slot 10
+>> > and took the output, then moved the card on slot 11 and took the
+>> > output.
+>> >
+>> > As you can see with diff the bridge behind the slot disappear when
+>> > it is empty.
+>>
+>> Perfect, thanks!  For some reason, it really helps me to be able to
+>> stare at the actual data.  Here's the situation with slot 10
+>> occupied:
+>>
+>>   00:01.0 82Q35 Root Port to [bus 05]          PCIe SltCap slot #21
+>>   05:00.0 CERN/ECP/EDU Device                  slot 10
+>>   00:1c.0 82801I Express Port 1 to [bus 04]    PCIe SltCap slot #22
+>>   00:1c.3 (not present at all)
+>>   00:1c.4 82801I Express Port 5 to [bus 03]    PCIe SltCap slot #0
+>>   03:00.0 Realtek NIC
+>>
+>> and here it is with slot 11 occupied:
+>>
+>>   00:01.0 (not present at all)
+>>   00:1c.0 82801I Express Port 1 to [bus 05]    PCIe SltCap slot #22
+>>   00:1c.3 82801I Express Port 4 to [bus 04]    PCIe SltCap slot #25
+>>   04:00.0 CERN/ECP/EDU Device                  slot 11
+>>   00:1c.4 82801I Express Port 5 to [bus 03]    PCIe SltCap slot #0
+>>   03:00.0 Realtek NIC
+>>
+>> I'm pretty sure this is a function of your BIOS.  There are often
+>> device-specific ways to enable or disable individual devices (like
+>> the root ports here), and the BIOS is likely disabling these ports
+>> when there is nothing below them.  I don't know why it would turn
+>> off 00:1c.3 when its slot is empty, but it doesn't turn off
+>> 00:1c.0, which also leads to an empty slot. But I don't think
+>> Linux is involved in this, and if the BIOS disables devices, there
+>> really isn't anything Linux can do about it.
 >
->> +static int tas2552_power(struct tas2552_data *data, u8 power)
->> +{
->> +	int	ret = 0;
->> +
->> +	mutex_lock(&data->mutex);
->> +
->> +	if (power) {
->> +		if (data->enable_gpio)
->> +			gpiod_set_value(data->enable_gpio, 1);
->> +
->> +		data->power_state = 1;
->> +	} else {
->> +		if (data->enable_gpio)
->> +			gpiod_set_value(data->enable_gpio, 0);
->> +
->> +		data->power_state = 0;
->> +	}
->> +
->> +	mutex_unlock(&data->mutex);
->> +	return ret;
->> +}
-> I don't understand this function.  It appears to be the only place where
-> either power_state or mutex is used so it's just adding some wrapping
-> around setting the GPIO value which doesn't seem like it's doing much.
-> Why are we tracking power_state?
-
-This function and mutex are artifacts from the development and probably can be consolidated
-into the runtime PM calls. 
-
+> It seems to happen also on some "classic" PC. I didn't experiment it
+> by myself, some friends reported me this behavior in the recent past.
 >
->> +static void tas2552_sw_shutdown(struct tas2552_data *tas_data, int sw_shutdown)
->> +{
->> +	u8 cfg1_reg = 0x0;
->> +
->> +	if (sw_shutdown)
->> +		cfg1_reg |= TAS2552_SWS_MASK;
->> +	else
->> +		cfg1_reg &= ~TAS2552_SWS_MASK;
->> +
->> +	snd_soc_update_bits(tas_data->codec, TAS2552_CFG_1,
->> +						 TAS2552_SWS_MASK, cfg1_reg);
-> Given that you're using _update_bits() clearing the bits in a register
-> that was just initialised to zero doesn't make a huge amount of sense.
+> So, It looks like that some BIOS disable the bridge when there is
+> nothing behind it. Why? Power save? :/
 
-This was an artifact from RFC in which I was not using the snd_soc functions.
-I can remove the initialization of the variable.
+Could be power savings, or possibly to conserve bus numbers, which are
+a limited resource.
 
+>> If you can get to an EFI shell on this box, you might be able to
+>> confirm this with the "pci" command.  Booting Linux with
+>> "pci=earlydump" is similar in that it dumps PCI config space before
+>> we change anything.
 >
->> +	default:
->> +		dev_vdbg(codec->dev, "Substream sample rate is not found\n");
->> +		return -EINVAL;
->> +	}
-> Better to print the rate.
-
-OK
-
+> yes I confirm, the bridge are not there if I don't plug the card.
 >
->> +	pm_runtime_get_sync(codec->dev);
->> +
->> +	snd_soc_update_bits(codec, TAS2552_CFG_3, TAS2552_WCLK_MASK, wclk_reg);
->> +
->> +	pm_runtime_put(codec->dev);
-> This seems really strange - why is the device being powered up to just
-> set a bit and then potentially powered down immediately?  I'd expect to
-> just update the cache if the device is not active.  You're also not
-> checking that the power up worked.
-
-I wanted to make sure that the device was on.  I totally forgot that
-the device was using regmap and the values are cached when the device
-is not on.
-
-I can remove the get/put around the update calls.
-
+>> To solve this problem, I think you need slot information even when
+>> there's no hotplug.  This has been raised before [1, 2], and I
+>> think it's a good idea, but nobody has implemented it yet.
 >
->> +
->> +static int tas2552_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
->> +{
->> +	u8 serial_format;
->> +	u8 serial_control_mask = 0x00;
->> +	if (fmt & SND_SOC_DAIFMT_FORMAT_MASK)
->> +		serial_control_mask |= TAS2552_DATA_FORMAT_MASK;
->> +	if (serial_control_mask) {
->> +		pm_runtime_get_sync(codec->dev);
->> +
->> +		snd_soc_update_bits(codec, TAS2552_SER_CTRL_1, serial_control_mask,
->> +							serial_format);
->> +
->> +		pm_runtime_put(codec->dev);
->> +	}
-> This seems broken - if the format mask ever gets set then it won't be
-> cleared since we only do an update_bits() if the bit is being set.  Why
-> isn't the driver just doing an _update_bits()?
+> Yes, but if the BIOS disable the bridge there is nothing we can do.
 
-I do not understand what this statement means.
+Well, it's true that it's hard to get constant *bus numbers*, but it's
+never really been a good idea to rely on those, because they're
+assigned at the discretion of the OS, and there are reasons why the OS
+might want to reallocate them, e.g., to accommodate a deep hot-plugged
+hierarchy.  If you shift focus to *slot numbers*, then I think there's
+a lot more we can do.
 
-Are you saying snd_soc_update_bits will not clear the bit if the bit mask
-is set appropriately?
-
+>> Another curious thing is that you refer to "slot 10", but there's no
+>> obvious connection between that and the "slot 21" in the PCIe
+>> capability of the Root Port leading to that slot.  But I guess you
+>> said the slots are in a backplane (they're not an integral part of
+>> the motherboard).  In that case, there's no way for the motherboard
+>> to know what the labels on the backplane are.
 >
-> The comments about runtime PM also apply, they applies throughout the
-> driver.
->
->> +static int tas2552_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
->> +				  unsigned int freq, int dir)
->> +{
->> +	struct snd_soc_codec *codec = dai->codec;
->> +
->> +	/* Fill in the PLL control registers for J & D
->> +	 * PLL_CLK = (.5 * freq * J.D) / 2^p
->> +	 * Need to fill in J and D here based on incoming freq
->> +	 */
->> +	pm_runtime_get_sync(codec->dev);
->> +
->> +	snd_soc_update_bits(codec, TAS2552_CFG_2, TAS2552_PLL_ENABLE, 0);
->> +
->> +	snd_soc_write(codec, TAS2552_PLL_CTRL_1, 0x10);
->> +	snd_soc_write(codec, TAS2552_PLL_CTRL_2, 0x00);
->> +	snd_soc_write(codec, TAS2552_PLL_CTRL_3, 0x00);
->> +
->> +	snd_soc_update_bits(codec, TAS2552_CFG_2, TAS2552_PLL_ENABLE,
->> +						TAS2552_PLL_ENABLE);
->> +
->> +	pm_runtime_put(codec->dev);
-> This makes no sense at all - please look at what other drivers are doing
-> with set_sysclk().  It should be used to get information about how the
-> device is clocked.
->
->> +static int tas2552_startup(struct snd_pcm_substream *substream,
->> +			   struct snd_soc_dai *dai)
->> +{
->> +	struct snd_soc_codec *codec = dai->codec;
->> +
->> +	pm_runtime_get_sync(codec->dev);
->> +
->> +	/* Turn on Class D amplifier */
->> +	snd_soc_update_bits(codec, TAS2552_CFG_2, TAS2552_CLASSD_EN_MASK,
->> +						TAS2552_CLASSD_EN);
-> This should be done using DAPM.
+> It is written on the backplane. I said slot 10 because I'm counting
+> the available slot, but on the backplane they are 22, 25, and other
+> no-consecutive numbers.
 
-You mentioned this before.  Isn't the startup part of the DAPM calls?
+The 22, 25, etc., are in the same range as the slot numbers in the
+PCIe Slot Capabilities registers, so maybe the backplane is
+constructed to make this possible.  The external PCIe chassis I'm
+familiar with have one fast link on a cable leading to the box, with a
+PCIe switch inside the box.  The upstream port is connected to the
+incoming link, and there's a downstream port connected to each slot.
+In this case, the slot numbers in the downstream ports' Slot
+Capabilities registers can be made to match the silkscreen labels on
+the board since everything is fixed by the hardware.
 
->
->> +static int tas2552_codec_probe(struct snd_soc_codec *codec)
->> +{
->> +	struct tas2552_data *tas2552 = snd_soc_codec_get_drvdata(codec);
->> +	int ret;
->> +
->> +	tas2552_power(tas2552, 1);
->> +	tas2552_sw_shutdown(tas2552, 0);
->> +
->> +	pm_runtime_set_active(codec->dev);
->> +	pm_runtime_set_autosuspend_delay(codec->dev, 1000);
->> +	pm_runtime_use_autosuspend(codec->dev);
->> +	pm_runtime_enable(codec->dev);
->> +	pm_runtime_mark_last_busy(codec->dev);
->> +	pm_runtime_put_sync_autosuspend(codec->dev);
-> This should all be done at the device level probe.
+Your backplane sounds a little different (you have Ports on the root
+bus leading directly to slots in the backplane, so I assume those
+Ports are on the motherboard, not the backplane), but maybe the
+motherboard & backplane are designed as a unit so the Port slot
+numbers could match the backplane.
 
-I went back and forth on this in my head whether this should be in the
-device probe of the codec probe.   I can move them to device probe.
+> If I use `biosdecode` I can get that information, but only for the
+> "first level" of bridges. On some backplane I have PCI bridges behind
+> bridges, and in this case biosdecode doesn't help: it just tell me
+> about the bridge on the motherboard.
 
->
->> +	/* 0dB gain */
->> +	snd_soc_write(codec, TAS2552_PGA_GAIN, 0x10);
-> Use the hardware default, your default might not be sensible for some
-> other user.
+What specific biosdecode information are you using?  There's a fair
+amount of stuff in the PCI-to-PCI bridge spec about slot and chassis
+numbering, including some about expansion chassis.  I doubt that Linux
+implements all that, so there's probably room for a lot of
+improvement.  I attached your lspci output to the bugzilla
+(https://bugzilla.kernel.org/show_bug.cgi?id=72681).  Maybe you could
+attach the biosdecode info there, too, and we could see if there's a
+way we can make this easier.
 
-So would other users just patch their own code?
-I can leave it to the default value.  This is just what the hardware
-was tested with.
-
->
->> +	/**
->> +	 * Data sheet indicates to write 0x0c to 0x0d during init but no
->> +	 * additional information is given to what it means.
->> +	 */
->> +	snd_soc_write(codec, TAS2552_LIMIT_LVL_CTRL, 0x0c);
->> +	/**
->> +	 * Data sheet indicates to write 0x20 to 0x0e during init but no
->> +	 * additional information is given to what it means.
->> +	 */
->> +
->> +	snd_soc_write(codec, TAS2552_LIMIT_RATE_HYS, 0x20);
-> Use a regmap patch for these.
-
-OK.  I see that can be used for undocumented registers.
-
->
->> +static int tas2552_suspend(struct snd_soc_codec *codec)
->> +{
->> +	struct tas2552_data *tas2552 = snd_soc_codec_get_drvdata(codec);
->> +	int ret;
->> +
->> +	pm_runtime_put(codec->dev);
-> This won't work.  Let the frameworks worry about this, or check if the
-> device is already runtime suspended and then call your runtime suspend
-> operation directly.
-
-OK will fix
-
->> +static const struct i2c_device_id tas2552_id[] = {
->> +	{ "tas2552-codec", 0 },
->> +	{ }
->> +};
->> +MODULE_DEVICE_TABLE(i2c, tas2552_id);
-> No -codec, look at what other drivers do.
-
-OK will remove.
-
--- 
-------------------
-Dan Murphy
-
+Bjorn
