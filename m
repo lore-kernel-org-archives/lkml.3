@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102AbaGGVGY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 17:06:24 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:47794 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660AbaGGVGU (ORCPT
+	id S1752365AbaGGVHS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 17:07:18 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59289 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751345AbaGGVHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 17:06:20 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Sharvil Nanavati <sharvil@google.com>, stable <stable@vger.kernel.org>
-Subject: [PATCH] alarmtimer: Fix bug where relative alarm timers were treated as absolute
-Date: Mon,  7 Jul 2014 14:06:11 -0700
-Message-Id: <1404767171-6902-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Mon, 7 Jul 2014 17:07:16 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, sfi-devel@simplefirmware.org
+Subject: Re: [PATCH v2 5/7] ACPI/SFI: Fix wrong <acpi/acpi.h> inclusion in SFI/ACPI wrapper - table definitions.
+Date: Mon, 07 Jul 2014 23:25:20 +0200
+Message-ID: <6888009.veyX2bKRlF@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.15.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <aebcb30aa6db54f92fcdf55f94462da15121886d.1404706299.git.lv.zheng@intel.com>
+References: <cover.1387336613.git.lv.zheng@intel.com> <cover.1404706298.git.lv.zheng@intel.com> <aebcb30aa6db54f92fcdf55f94462da15121886d.1404706299.git.lv.zheng@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sharvil noticed with the posix timer_settime interface, using the
-CLOCK_REALTIME_ALARM or CLOCK_BOOTTIME_ALARM clockid, if the users
-tried to specify a relative time timer, it would incorrectly be
-treated as absolute regardless of the state of the flags argument.
+On Monday, July 07, 2014 12:17:28 PM Lv Zheng wrote:
+> This patch removes <acpi/acpi.h> inclusions from <linux/sfi_acpi.h> as
+> <linux/acpi.h> has already included it for CONFIG_ACPI=n builds.
 
-This patch corrects this, properly checking the absolute/relative flag,
-as well as adds further error checking that no invalid flag bits are set.
+So are patches [1-4/5] only needed to fix this particular issue?
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Sharvil Nanavati <sharvil@google.com>
-Cc: stable <stable@vger.kernel.org> #3.0+
-Reported-by: Sharvil Nanavati <sharvil@google.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: sfi-devel@simplefirmware.org
+> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> ---
+>  include/linux/sfi_acpi.h |    3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/include/linux/sfi_acpi.h b/include/linux/sfi_acpi.h
+> index 4723bbf..a6e555c 100644
+> --- a/include/linux/sfi_acpi.h
+> +++ b/include/linux/sfi_acpi.h
+> @@ -63,8 +63,6 @@
+>  #include <linux/sfi.h>
+>  
+>  #ifdef CONFIG_SFI
+> -#include <acpi/acpi.h>	/* FIXME: inclusion should be removed */
+> -
+>  extern int sfi_acpi_table_parse(char *signature, char *oem_id,
+>  				char *oem_table_id,
+>  				int (*handler)(struct acpi_table_header *));
+> @@ -78,7 +76,6 @@ static inline int __init acpi_sfi_table_parse(char *signature,
+>  	return sfi_acpi_table_parse(signature, NULL, NULL, handler);
+>  }
+>  #else /* !CONFIG_SFI */
+> -
+>  static inline int sfi_acpi_table_parse(char *signature, char *oem_id,
+>  				char *oem_table_id,
+>  				int (*handler)(struct acpi_table_header *))
+> 
 
-Thomas, Ingo: Please consider for tip/timers/urgent for 3.16
-
- kernel/time/alarmtimer.c | 20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
-index 88c9c65..fe75444 100644
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -585,9 +585,14 @@ static int alarm_timer_set(struct k_itimer *timr, int flags,
- 				struct itimerspec *new_setting,
- 				struct itimerspec *old_setting)
- {
-+	ktime_t exp;
-+
- 	if (!rtcdev)
- 		return -ENOTSUPP;
- 
-+	if (flags & ~TIMER_ABSTIME)
-+		return -EINVAL;
-+
- 	if (old_setting)
- 		alarm_timer_get(timr, old_setting);
- 
-@@ -597,8 +602,16 @@ static int alarm_timer_set(struct k_itimer *timr, int flags,
- 
- 	/* start the timer */
- 	timr->it.alarm.interval = timespec_to_ktime(new_setting->it_interval);
--	alarm_start(&timr->it.alarm.alarmtimer,
--			timespec_to_ktime(new_setting->it_value));
-+	exp = timespec_to_ktime(new_setting->it_value);
-+	/* Convert (if necessary) to absolute time */
-+	if (flags != TIMER_ABSTIME) {
-+		ktime_t now;
-+
-+		now = alarm_bases[timr->it.alarm.alarmtimer.type].gettime();
-+		exp = ktime_add(now, exp);
-+	}
-+
-+	alarm_start(&timr->it.alarm.alarmtimer, exp);
- 	return 0;
- }
- 
-@@ -730,6 +743,9 @@ static int alarm_timer_nsleep(const clockid_t which_clock, int flags,
- 	if (!alarmtimer_get_rtcdev())
- 		return -ENOTSUPP;
- 
-+	if (flags & ~TIMER_ABSTIME)
-+		return -EINVAL;
-+
- 	if (!capable(CAP_WAKE_ALARM))
- 		return -EPERM;
- 
 -- 
-1.9.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
