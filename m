@@ -1,20 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711AbaGGXy0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 19:54:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55564 "EHLO
+	id S1755824AbaGHArV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:47:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55567 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653AbaGGXyX (ORCPT
+	with ESMTP id S1753658AbaGGXyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:54:23 -0400
+	Mon, 7 Jul 2014 19:54:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.15 082/122] net: allwinner: emac: Add missing free_irq
-Date: Mon,  7 Jul 2014 16:57:24 -0700
-Message-Id: <20140707235736.714976531@linuxfoundation.org>
+        Rik van Riel <riel@redhat.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Sunil Pandey <sunil.k.pandey@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org, lwoodman@redhat.com,
+        dave.hansen@intel.com, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.15 122/122] mm/numa: Remove BUG_ON() in __handle_mm_fault()
+Date: Mon,  7 Jul 2014 16:58:04 -0700
+Message-Id: <20140707235737.894790405@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,32 +37,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
+From: Rik van Riel <riel@redhat.com>
 
-commit b91113282bf44df46aba374a0b8f88a75bfd4b3f upstream.
+commit 107437febd495a50e2cd09c81bbaa84d30e57b07 upstream.
 
-If the mdio probe function fails in emac_open, the interrupt we just requested
-isn't freed. If emac_open is called again, for example because we try to set up
-the interface again, the kernel will oops because the interrupt wasn't properly
-released.
+Changing PTEs and PMDs to pte_numa & pmd_numa is done with the
+mmap_sem held for reading, which means a pmd can be instantiated
+and turned into a numa one while __handle_mm_fault() is examining
+the value of old_pmd.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+If that happens, __handle_mm_fault() should just return and let
+the page fault retry, instead of throwing an oops. This is
+handled by the test for pmd_trans_huge(*pmd) below.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reported-by: Sunil Pandey <sunil.k.pandey@intel.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: linux-mm@kvack.org
+Cc: lwoodman@redhat.com
+Cc: dave.hansen@intel.com
+Link: http://lkml.kernel.org/r/20140429153615.2d72098e@annuminas.surriel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Patrick McLean <chutzpah@gentoo.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/allwinner/sun4i-emac.c |    1 +
- 1 file changed, 1 insertion(+)
+ mm/memory.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/drivers/net/ethernet/allwinner/sun4i-emac.c
-+++ b/drivers/net/ethernet/allwinner/sun4i-emac.c
-@@ -736,6 +736,7 @@ static int emac_open(struct net_device *
- 
- 	ret = emac_mdio_probe(dev);
- 	if (ret < 0) {
-+		free_irq(dev->irq, dev);
- 		netdev_err(dev, "cannot probe MDIO bus\n");
- 		return ret;
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3920,9 +3920,6 @@ static int __handle_mm_fault(struct mm_s
+ 		}
  	}
+ 
+-	/* THP should already have been handled */
+-	BUG_ON(pmd_numa(*pmd));
+-
+ 	/*
+ 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
+ 	 * run pte_offset_map on the pmd, if an huge pmd could
 
 
