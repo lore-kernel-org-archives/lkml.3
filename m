@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932327AbaGHBPq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:15:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55224 "EHLO
+	id S1755606AbaGHBPp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:15:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55225 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722AbaGGXxs (ORCPT
+	with ESMTP id S1752733AbaGGXxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:53:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.15 025/122] vgaswitcheroo: switch the mux to the igp on power down when runpm is enabled
-Date: Mon,  7 Jul 2014 16:56:27 -0700
-Message-Id: <20140707235735.001659499@linuxfoundation.org>
+        Mario Kleiner <mario.kleiner.de@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH 3.15 026/122] drm/nouveau/kms/nv04-nv40: fix pageflip events via special case.
+Date: Mon,  7 Jul 2014 16:56:28 -0700
+Message-Id: <20140707235735.031498653@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -28,33 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Mario Kleiner <mario.kleiner.de@gmail.com>
 
-commit f2bc561610962693be61425cf913778586d8f9c1 upstream.
+commit af4870e406126b7ac0ae7c7ce5751f25ebe60f28 upstream.
 
-Avoids blank screens on muxed systems when runpm is active.
+Cards with nv04 display engine can't reliably use vblank
+counts and timestamps computed via drm_handle_vblank(), as
+the function gets invoked after sending the pageflip events.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=75917
+Fix this by defaulting to the old crtcid = -1 fallback path
+on <= NV-50 cards, and only using the precise path on NV-50
+and later.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Mario Kleiner <mario.kleiner.de@gmail.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/vga/vga_switcheroo.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/nouveau_display.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/vga/vga_switcheroo.c
-+++ b/drivers/gpu/vga/vga_switcheroo.c
-@@ -623,7 +623,8 @@ static int vga_switcheroo_runtime_suspen
- 	ret = dev->bus->pm->runtime_suspend(dev);
- 	if (ret)
- 		return ret;
--
-+	if (vgasr_priv.handler->switchto)
-+		vgasr_priv.handler->switchto(VGA_SWITCHEROO_IGD);
- 	vga_switcheroo_power_switch(pdev, VGA_SWITCHEROO_OFF);
- 	return 0;
- }
+--- a/drivers/gpu/drm/nouveau/nouveau_display.c
++++ b/drivers/gpu/drm/nouveau/nouveau_display.c
+@@ -798,6 +798,7 @@ nouveau_finish_page_flip(struct nouveau_
+ 	struct drm_device *dev = drm->dev;
+ 	struct nouveau_page_flip_state *s;
+ 	unsigned long flags;
++	int crtcid = -1;
+ 
+ 	spin_lock_irqsave(&dev->event_lock, flags);
+ 
+@@ -808,8 +809,13 @@ nouveau_finish_page_flip(struct nouveau_
+ 	}
+ 
+ 	s = list_first_entry(&fctx->flip, struct nouveau_page_flip_state, head);
+-	if (s->event)
+-		drm_send_vblank_event(dev, s->crtc, s->event);
++	if (s->event) {
++		/* Vblank timestamps/counts are only correct on >= NV-50 */
++		if (nv_device(drm->device)->card_type >= NV_50)
++			crtcid = s->crtc;
++
++		drm_send_vblank_event(dev, crtcid, s->event);
++	}
+ 
+ 	list_del(&s->head);
+ 	if (ps)
 
 
