@@ -1,201 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819AbaGGQyp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 12:54:45 -0400
-Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.27]:3265 "EHLO
-	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751112AbaGGQyn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 12:54:43 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Sitsofe Wheeler <sitsofe@gmail.com>
-CC: KY Srinivasan <kys@microsoft.com>, "David S. Miller" <davem@davemloft.net>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [BISECTED][REGRESSION] Loading Hyper-V network drivers is racy
- in 3.14+ on Hyper-V 2012 R2
-Thread-Topic: [BISECTED][REGRESSION] Loading Hyper-V network drivers is racy
- in 3.14+ on Hyper-V 2012 R2
-Thread-Index: AQHPmVd2lonpWupwu0Spl7Lqc9fFbZuU0/7g
-Date: Mon, 7 Jul 2014 16:54:20 +0000
-Message-ID: <941b0055b1a94c66b3a608ae67764d11@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <20140706201800.GA10587@sucs.org>
-In-Reply-To: <20140706201800.GA10587@sucs.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.59.235.233]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752045AbaGGQy4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 12:54:56 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53532 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751849AbaGGQyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 12:54:53 -0400
+Message-ID: <53BAD09C.8010505@ti.com>
+Date: Mon, 7 Jul 2014 12:53:48 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(164054003)(51704005)(189002)(199002)(377454003)(13464003)(1411001)(110136001)(31966008)(15202345003)(46406003)(64706001)(15395725005)(106466001)(81342001)(4396001)(107046002)(46102001)(76482001)(15975445006)(33646001)(77096999)(97736001)(74662001)(54356999)(86612001)(77982001)(84676001)(23726002)(85852003)(83072002)(87936001)(76176999)(2656002)(74502001)(97756001)(2009001)(50986999)(66066001)(80022001)(79102001)(99396002)(92566001)(575784001)(19580395003)(19580405001)(21056001)(68736004)(83322001)(44976005)(6806004)(50466002)(81542001)(106116001)(47776003)(20776003)(108616002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:CH1SR01MB600;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 02652BD10A
-X-OriginatorOrg: msft.ccsctp.net
+To: Mohit KUMAR DCG <Mohit.KUMAR@st.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Jingoo Han <jg1.han@samsung.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        Richard Zhu <r65037@freescale.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, Marek Vasut <marex@denx.de>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH v3 1/5] PCI: designware: add rd[wr]_other_conf API
+References: <1404164720-11066-1-git-send-email-m-karicheri2@ti.com> <1404164720-11066-2-git-send-email-m-karicheri2@ti.com> <2CC2A0A4A178534D93D5159BF3BCB661A17A3E4282@EAPEX1MAIL1.st.com>
+In-Reply-To: <2CC2A0A4A178534D93D5159BF3BCB661A17A3E4282@EAPEX1MAIL1.st.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/07/2014 12:11 AM, Mohit KUMAR DCG wrote:
+> Hello Murali,
+>
+>> -----Original Message-----
+>> From: Murali Karicheri [mailto:m-karicheri2@ti.com]
+>> Sent: Tuesday, July 01, 2014 3:15 AM
+>> To: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org;
+>> devicetree@vger.kernel.org
+>> Cc: Murali Karicheri; Santosh Shilimkar; Russell King; Grant Likely; Rob Herring;
+>> Mohit KUMAR DCG; Jingoo Han; Bjorn Helgaas; Pratyush ANAND; Richard
+>> Zhu; Kishon Vijay Abraham I; Marek Vasut; Arnd Bergmann; Pawel Moll;
+>> Mark Rutland; Ian Campbell; Kumar Gala; Randy Dunlap
+>> Subject: [PATCH v3 1/5] PCI: designware: add rd[wr]_other_conf API
+>>
+>> v3.65 version of the designware h/w, requires application space registers to
+>> be configured to access the remote EP config space.
+>> To support this, add rd[wr]_other_conf API in the pcie_host_opts
+>>
+>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+>>
+>> CC: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>> CC: Russell King<linux@arm.linux.org.uk>
+>> CC: Grant Likely<grant.likely@linaro.org>
+>> CC: Rob Herring<robh+dt@kernel.org>
+>> CC: Mohit Kumar<mohit.kumar@st.com>
+>> CC: Jingoo Han<jg1.han@samsung.com>
+>> CC: Bjorn Helgaas<bhelgaas@google.com>
+>> CC: Pratyush Anand<pratyush.anand@st.com>
+>> CC: Richard Zhu<r65037@freescale.com>
+>> CC: Kishon Vijay Abraham I<kishon@ti.com>
+>> CC: Marek Vasut<marex@denx.de>
+>> CC: Arnd Bergmann<arnd@arndb.de>
+>> CC: Pawel Moll<pawel.moll@arm.com>
+>> CC: Mark Rutland<mark.rutland@arm.com>
+>> CC: Ian Campbell<ijc+devicetree@hellion.org.uk>
+>> CC: Kumar Gala<galak@codeaurora.org>
+>> CC: Randy Dunlap<rdunlap@infradead.org>
+>> CC: Grant Likely<grant.likely@linaro.org>
+>> ---
+>>   drivers/pci/host/pcie-designware.c |   12 ++++++++++--
+>>   drivers/pci/host/pcie-designware.h |    4 ++++
+>>   2 files changed, 14 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-
+>> designware.c
+>> index 1eaf4df..d8f3af7 100644
+>> --- a/drivers/pci/host/pcie-designware.c
+>> +++ b/drivers/pci/host/pcie-designware.c
+>> @@ -656,7 +656,11 @@ static int dw_pcie_rd_conf(struct pci_bus *bus, u32
+>> devfn, int where,
+>>   	}
+>>
+>>   	if (bus->number != pp->root_bus_nr)
+>> -		ret = dw_pcie_rd_other_conf(pp, bus, devfn,
+>> +		if (pp->ops->rd_other_conf)
+>> +			ret = pp->ops->rd_other_conf(pp, bus, devfn,
+>> +						where, size, val);
+>> +		else
+>> +			ret = dw_pcie_rd_other_conf(pp, bus, devfn,
+>>   						where, size, val);
+>>   	else
+>>   		ret = dw_pcie_rd_own_conf(pp, where, size, val); @@ -
+>> 679,7 +683,11 @@ static int dw_pcie_wr_conf(struct pci_bus *bus, u32
+>> devfn,
+>>   		return PCIBIOS_DEVICE_NOT_FOUND;
+>>
+>>   	if (bus->number != pp->root_bus_nr)
+>> -		ret = dw_pcie_wr_other_conf(pp, bus, devfn,
+>> +		if (pp->ops->wr_other_conf)
+>> +			ret = pp->ops->wr_other_conf(pp, bus, devfn,
+>> +						where, size, val);
+>> +		else
+>> +			ret = dw_pcie_wr_other_conf(pp, bus, devfn,
+>>   						where, size, val);
+>>   	else
+>>   		ret = dw_pcie_wr_own_conf(pp, where, size, val); diff --git
+>> a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
+>> index 77f592f..8121901 100644
+>> --- a/drivers/pci/host/pcie-designware.h
+>> +++ b/drivers/pci/host/pcie-designware.h
+>> @@ -61,6 +61,10 @@ struct pcie_host_ops {
+>>   			u32 val, void __iomem *dbi_base);
+>>   	int (*rd_own_conf)(struct pcie_port *pp, int where, int size, u32
+>> *val);
+>>   	int (*wr_own_conf)(struct pcie_port *pp, int where, int size, u32
+>> val);
+>> +	int (*rd_other_conf)(struct pcie_port *pp, struct pci_bus *bus,
+>> +			unsigned int devfn, int where, int size, u32 *val);
+>> +	int (*wr_other_conf)(struct pcie_port *pp, struct pci_bus *bus,
+>> +			unsigned int devfn, int where, int size, u32 val);
+>>   	int (*link_up)(struct pcie_port *pp);
+>>   	void (*host_init)(struct pcie_port *pp);  };
+>
+> - Now it looks good to me.
+>
+> Acked-by: Mohit Kumar<mohit.kumar@st.com>
+>
+> Regards
+> Mohit
+>> --
+>> 1.7.9.5
+>
+Mohit,
 
+Thanks.
 
-> -----Original Message-----
-> From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
-> Sent: Sunday, July 6, 2014 4:18 PM
-> To: Haiyang Zhang
-> Cc: KY Srinivasan; David S. Miller; devel@linuxdriverproject.org; linux-
-> kernel@vger.kernel.org; netdev@vger.kernel.org
-> Subject: [BISECTED][REGRESSION] Loading Hyper-V network drivers is racy in
-> 3.14+ on Hyper-V 2012 R2
-> 
-> With the 3.14 kernel Hyper-V no longer reliably enables its networking devices
-> in time on cloud images leading to network devices permanently remaining
-> offline.
-> 
-> After a painful round of bisection I've narrowed this down to commit
-> b679ef73edc251f6d200a7dd2396e9fef9e36fc3 :
-> 
-> # bad: [455c6fdbd219161bd09b1165f11699d6d73de11c] Linux 3.14 # good:
-> [d8ec26d7f8287f5788a494f56e8814210f0e64be] Linux 3.13 git bisect start
-> 'v3.14' 'v3.13'
-> # good: [82c477669a4665eb4e52030792051e0559ee2a36] Merge branch 'perf-
-> urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> git bisect good 82c477669a4665eb4e52030792051e0559ee2a36
-> # bad: [ca2a650f3dfdc30d71d21bcbb04d2d057779f3f9] Merge branch 'for-
-> linus' of git://git.infradead.org/users/vkoul/slave-dma
-> git bisect bad ca2a650f3dfdc30d71d21bcbb04d2d057779f3f9
-> # bad: [205e2210daa975d92ace485a65a31ccc4077fe1a] iwlwifi: disable TX
-> AMPDU by default for iwldvm git bisect bad
-> 205e2210daa975d92ace485a65a31ccc4077fe1a
-> # bad: [09db30805300e9ed5ad43d4d339115cf1d9c84e1] dccp: re-enable debug
-> macro git bisect bad 09db30805300e9ed5ad43d4d339115cf1d9c84e1
-> # bad: [d9120198ddef2c0b61ca6659ace41b7c1e7c8f08] clk: shmobile: rcar-
-> gen2: Use kick bit to allow Z clock frequency change git bisect bad
-> d9120198ddef2c0b61ca6659ace41b7c1e7c8f08
-> # bad: [1b07da516ee25250f458c76c012ebe4cd677a84f] hyperv: Move state
-> setting for link query git bisect bad
-> 1b07da516ee25250f458c76c012ebe4cd677a84f
-> # bad: [53611c0ce9f6e2fa2e31f9ab4ad8c08c512085ba] Merge
-> git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
-> git bisect bad 53611c0ce9f6e2fa2e31f9ab4ad8c08c512085ba
-> # bad: [a34fe10750ebe524a39f97bd78ab4d232a554edb] parisc: locks: remove
-> redundant arch_*_relax operations git bisect bad
-> a34fe10750ebe524a39f97bd78ab4d232a554edb
-> # bad: [004e5cf743086990e5fc04a14437b3966d7fa9a2] Merge branch 'exynos-
-> drm-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/daeinki/drm-exynos
-> into drm-fixes git bisect bad 004e5cf743086990e5fc04a14437b3966d7fa9a2
-> # bad: [a4ecdf82f8ea49f7d3a072121dcbd0bf3a7cb93a] Merge branch 'x86-
-> urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> git bisect bad a4ecdf82f8ea49f7d3a072121dcbd0bf3a7cb93a
-> # bad: [c60f7d5a8e7c639de5d9dfe07e1e91d302d506e4] Merge branch 'drm-
-> fixes' of git://people.freedesktop.org/~airlied/linux
-> git bisect bad c60f7d5a8e7c639de5d9dfe07e1e91d302d506e4
-> # bad: [bf21d605bf7d18d2b3cdb1c19fc1b2a1549c1f11] Merge branch 'drm-
-> fixes-3.14' of git://people.freedesktop.org/~agd5f/linux into drm-fixes git bisect
-> bad bf21d605bf7d18d2b3cdb1c19fc1b2a1549c1f11
-> # bad: [07ae78c9798b79bad3d3adf983c94ba23fde54d4] drm/radeon/cik: stop
-> the sdma engines in the enable() function git bisect bad
-> 07ae78c9798b79bad3d3adf983c94ba23fde54d4
-> # bad: [7848865914c6a63ead674f0f5604b77df7d3874f] drm/radeon: fix runpm
-> disabling on non-PX harder git bisect bad
-> 7848865914c6a63ead674f0f5604b77df7d3874f
-> # bad: [e9e352e9100b98aed1a5fb9e33355c29fb07d5b1] Merge tag 'for-linus'
-> of git://git.kernel.org/pub/scm/linux/kernel/git/olof/chrome-platform
-> git bisect bad e9e352e9100b98aed1a5fb9e33355c29fb07d5b1
-> # good: [6e1f586d31ad49063da391db12632b31c7b00d76] qlcnic: Fix SR-IOV
-> cleanup code path git bisect good
-> 6e1f586d31ad49063da391db12632b31c7b00d76
-> # good: [562e74fefc36eb57286455c68a60f2776659a7e1] Merge tag 'cris-for-
-> 3.14' of git://jni.nu/cris git bisect good
-> 562e74fefc36eb57286455c68a60f2776659a7e1
-> # good: [f1499382f114231cbd1e3dee7e656b50ce9d8236] Merge tag 'xfs-for-
-> linus-v3.14-rc1-2' of git://oss.sgi.com/xfs/xfs git bisect good
-> f1499382f114231cbd1e3dee7e656b50ce9d8236
-> # good: [0e47c969c65e213421450c31043353ebe3c67e0c] Merge tag 'for-linus-
-> 20140127' of git://git.infradead.org/linux-mtd git bisect good
-> 0e47c969c65e213421450c31043353ebe3c67e0c
-> # bad: [30c867eebfbd1c25310aec9f152578deaf793080] Merge tag 'blackfin-
-> for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/realmz6/blackfin-
-> linux
-> git bisect bad 30c867eebfbd1c25310aec9f152578deaf793080
-> # bad: [c044dc2132d19d8c643cdd340f21afcec177c046] qeth: fix build of s390
-> allmodconfig git bisect bad c044dc2132d19d8c643cdd340f21afcec177c046
-> # bad: [d922e1cb1ea17ac7f0a5c3c2be98d4bd80d055b8] net: Document
-> promote_secondaries git bisect bad
-> d922e1cb1ea17ac7f0a5c3c2be98d4bd80d055b8
-> # good: [f2ebd477f141bc09b10fb8deb612a4d9b8999bba] bonding: restructure
-> locking of bond_ab_arp_probe() git bisect good
-> f2ebd477f141bc09b10fb8deb612a4d9b8999bba
-> # bad: [b679ef73edc251f6d200a7dd2396e9fef9e36fc3] hyperv: Add support for
-> physically discontinuous receive buffer git bisect bad
-> b679ef73edc251f6d200a7dd2396e9fef9e36fc3
-> # good: [a452ce345d63ddf92cd101e4196569f8718ad319] net: Fix memory leak
-> if TPROXY used with TCP early demux git bisect good
-> a452ce345d63ddf92cd101e4196569f8718ad319
-> # good: [731073b9c99d46c6b6c01184f67ee6f75fd7a163] sky2: initialize napi
-> before registering device git bisect good
-> 731073b9c99d46c6b6c01184f67ee6f75fd7a163
-> # first bad commit: [b679ef73edc251f6d200a7dd2396e9fef9e36fc3] hyperv:
-> Add support for physically discontinuous receive buffer
-> 
-> commit b679ef73edc251f6d200a7dd2396e9fef9e36fc3
-> Author: Haiyang Zhang <haiyangz@microsoft.com>
-> Date:   Mon Jan 27 15:03:42 2014 -0800
-> 
->     hyperv: Add support for physically discontinuous receive buffer
-> 
->     This will allow us to use bigger receive buffer, and prevent allocation failure
->     due to fragmented memory.
-> 
->     Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
->     Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
->     Signed-off-by: David S. Miller <davem@davemloft.net>
-> 
-> The problem can be intermittent (sometimes it happens rarely, sometimes it
-> happens seemingly every boot) so I used the following script to perform a
-> check:
-> 
-> #!/bin/bash
-> ok=1
-> pass=0
-> bootcount=$(</root/bootcount)
-> bootcount=$((bootcount + 1))
-> while [[ $ok -ne 0 ]] && [[ $pass -lt 10 ]]; do
->         pass=$((pass + 1))
->         ping -qc 1 kernel.org
->         ok=$?
->         if [[ $ok -eq 0 ]]; then
->                 echo $bootcount > /root/bootcount
->                 sync
->                 reboot
->         fi
->         sleep 1
-> done
-> echo "No network"
-> read
-> 
-> With kernels equal to or after b679ef73edc251f6d200a7dd2396e9fef9e36fc3
-> the system will usually stop rebooting before 20 passes but the most extreme
-> cases were always less than 100. With a pre
-> b679ef73edc251f6d200a7dd2396e9fef9e36fc3 kernel it did over 390 passes
-> before I manually stopped it.
-> 
-> Originally filed on https://bugzilla.redhat.com/show_bug.cgi?id=1095387
-> and then on https://bugzilla.kernel.org/show_bug.cgi?id=78771 but without
-> reply...
-> 
-> Might also be related to
-> http://thread.gmane.org/gmane.linux.kernel/1711873/focus=1733398
-> (Regression in hyperv network driver in 3.14).
-> 
-> --
-> Sitsofe | http://sucs.org/~sits/
+Jingoo, could you provide your response or Ack?
 
-What's the memory size assigned to the Linux guest? And, have you seen any related 
-messages in the dmesg log after this issue?
-
-Thanks,
-- Haiyang
-
+Thanks
+Murali
