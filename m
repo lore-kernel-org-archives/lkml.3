@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301AbaGHBNG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:13:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55237 "EHLO
+	id S1755671AbaGHBN1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:13:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55224 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752929AbaGGXxw (ORCPT
+	with ESMTP id S1752881AbaGGXxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:53:52 -0400
+	Mon, 7 Jul 2014 19:53:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mario Kleiner <mario.kleiner.de@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH 3.15 027/122] drm/nouveau/disp/nv04-nv40: abort scanoutpos query on vga analog.
-Date: Mon,  7 Jul 2014 16:56:29 -0700
-Message-Id: <20140707235735.066963655@linuxfoundation.org>
+        Saran Neti <sarannmr@gmail.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.15 008/122] xhci: Use correct SLOT ID when handling a reset device command
+Date: Mon,  7 Jul 2014 16:56:10 -0700
+Message-Id: <20140707235734.488742694@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -29,41 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mario Kleiner <mario.kleiner.de@gmail.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit e291af3f2259e9e105dfd72416fd5796513791a4 upstream.
+commit 6fcfb0d682a8212d321a6131adc94daf0905992a upstream.
 
-nv04_disp_scanoutpos() must abort to trigger simple timestamping
-fallback if vtotal/htotal regs return zero. This happens if the
-output isn't a digital output, but a vga analog output, as the
-regs don't get initialized in that case.
+Command completion events normally include command completion status,
+SLOT_ID, and a pointer to the original command. Reset device command
+completion SLOT_ID may be zero according to xhci specs 4.6.11.
 
-Fixes timestamping failure on nv-40 and earlier with vga output.
+VIA controllers set the SLOT_ID to zero, triggering a WARN_ON in the
+command completion handler.
 
-Signed-off-by: Mario Kleiner <mario.kleiner.de@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Use the SLOT ID found from the original command instead.
+
+This patch should be applied to stable kernels since 3.13 that contain
+the commit 20e7acb13ff48fbc884d5918c3697c27de63922a
+"xhci: use completion event's slot id rather than dig it out of command"
+
+Reported-by: Saran Neti <sarannmr@gmail.com>
+Tested-by: Saran Neti <sarannmr@gmail.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/engine/disp/nv04.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/host/xhci-ring.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/core/engine/disp/nv04.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/disp/nv04.c
-@@ -51,6 +51,14 @@ nv04_disp_scanoutpos(struct nouveau_obje
- 	args->htotal  = nv_rd32(priv, 0x680824 + (head * 0x2000)) & 0xffff;
- 	args->hblanke = args->htotal - 1;
- 
-+	/*
-+	 * If output is vga instead of digital then vtotal/htotal is invalid
-+	 * so we have to give up and trigger the timestamping fallback in the
-+	 * drm core.
-+	 */
-+	if (!args->vtotal || !args->htotal)
-+		return -ENOTSUPP;
-+
- 	args->time[0] = ktime_to_ns(ktime_get());
- 	line = nv_rd32(priv, 0x600868 + (head * 0x2000));
- 	args->time[1] = ktime_to_ns(ktime_get());
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1611,8 +1611,11 @@ static void handle_cmd_completion(struct
+ 		xhci_handle_cmd_reset_ep(xhci, slot_id, cmd_trb, cmd_comp_code);
+ 		break;
+ 	case TRB_RESET_DEV:
+-		WARN_ON(slot_id != TRB_TO_SLOT_ID(
+-				le32_to_cpu(cmd_trb->generic.field[3])));
++		/* SLOT_ID field in reset device cmd completion event TRB is 0.
++		 * Use the SLOT_ID from the command TRB instead (xhci 4.6.11)
++		 */
++		slot_id = TRB_TO_SLOT_ID(
++				le32_to_cpu(cmd_trb->generic.field[3]));
+ 		xhci_handle_cmd_reset_dev(xhci, slot_id, event);
+ 		break;
+ 	case TRB_NEC_GET_FW:
 
 
