@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701AbaGHAqO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:46:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55466 "EHLO
+	id S1755721AbaGHAqf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:46:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55684 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753762AbaGGXya (ORCPT
+	with ESMTP id S1753753AbaGGXya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jul 2014 19:54:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.14 22/94] mtd: pxa3xx_nand: make the driver work on big-endian systems
-Date: Mon,  7 Jul 2014 16:57:12 -0700
-Message-Id: <20140707235757.429505684@linuxfoundation.org>
+        Brian Norris <computersforpeace@gmail.com>, Pekon Gupta <pekon@ti.com>
+Subject: [PATCH 3.14 21/94] mtd: nand: omap: fix BCHx ecc.correct to return detected bit-flips in erased-page
+Date: Mon,  7 Jul 2014 16:57:11 -0700
+Message-Id: <20140707235757.400893037@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235756.780319003@linuxfoundation.org>
 References: <20140707235756.780319003@linuxfoundation.org>
@@ -29,49 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: pekon gupta <pekon@ti.com>
 
-commit b7e460624f0f3c31150f3b09e75b0d009e22ba5f upstream.
+commit f306e8c3b667632952f1a4a74ffb910bbc06255f upstream.
 
-The pxa3xx_nand driver currently uses __raw_writel() and __raw_readl()
-to access I/O registers. However, those functions do not do any
-endianness swapping, which means that they won't work when the CPU
-runs in big-endian but the I/O registers are little endian, which is
-the common situation for ARM systems running big endian.
+fixes: commit 62116e5171e00f85a8d53f76e45b84423c89ff34
+       mtd: nand: omap2: Support for hardware BCH error correction.
 
-Since __raw_writel() and __raw_readl() do not include any memory
-barriers and the pxa3xx_nand driver can only be compiled for ARM
-platforms, the closest I/o accessors functions that do endianess
-swapping are writel_relaxed() and readl_relaxed().
+In omap_elm_correct_data(), if bitflip_count in an erased-page is within the
+correctable limit (< ecc.strength), then it is not indicated back to the caller
+ecc->read_page().
 
-This patch has been verified to work on Armada XP GP: without the
-patch, the NAND is not detected when the kernel runs big endian while
-it is properly detected when the kernel runs little endian. With the
-patch applied, the NAND is properly detected in both situations
-(little and big endian).
+This mis-guides upper layers like MTD and UBIFS layer to assume erased-page as
+perfectly clean and use it for writing even if actual bitflip_count was
+dangerously high (bitflip_count > mtd->bitflip_threshold).
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+This patch fixes this above issue, by returning 'stats' to caller
+ecc->read_page() under all scenarios.
+
+Reported-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Pekon Gupta <pekon@ti.com>
 Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/pxa3xx_nand.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mtd/nand/omap2.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mtd/nand/pxa3xx_nand.c
-+++ b/drivers/mtd/nand/pxa3xx_nand.c
-@@ -128,10 +128,10 @@
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -1451,7 +1451,7 @@ static int omap_elm_correct_data(struct
  
- /* macros for registers read/write */
- #define nand_writel(info, off, val)	\
--	__raw_writel((val), (info)->mmio_base + (off))
-+	writel_relaxed((val), (info)->mmio_base + (off))
+ 	/* Check if any error reported */
+ 	if (!is_error_reported)
+-		return 0;
++		return stat;
  
- #define nand_readl(info, off)		\
--	__raw_readl((info)->mmio_base + (off))
-+	readl_relaxed((info)->mmio_base + (off))
- 
- /* error code and state */
- enum {
+ 	/* Decode BCH error using ELM module */
+ 	elm_decode_bch_error_page(info->elm_dev, ecc_vec, err_vec);
 
 
