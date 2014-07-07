@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430AbaGGGcg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 02:32:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36667 "EHLO mga09.intel.com"
+	id S1751804AbaGGG26 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 02:28:58 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24261 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751720AbaGGG27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 02:28:59 -0400
+	id S1751720AbaGGG2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 02:28:55 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,616,1400050800"; 
-   d="scan'208";a="539565478"
+   d="scan'208";a="539565440"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
         eranian@google.com, andi@firstfloor.org,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH v5 04/16] perf, x86: Basic Haswell LBR call stack support
-Date: Mon,  7 Jul 2014 14:28:33 +0800
-Message-Id: <1404714527-18603-5-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH v5 01/16] perf, x86: Reduce lbr_sel_map size
+Date: Mon,  7 Jul 2014 14:28:30 +0800
+Message-Id: <1404714527-18603-2-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1404714527-18603-1-git-send-email-zheng.z.yan@intel.com>
 References: <1404714527-18603-1-git-send-email-zheng.z.yan@intel.com>
@@ -24,207 +24,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Haswell has a new feature that utilizes the existing LBR facility to
-record call chains. To enable this feature, bits (JCC, NEAR_IND_JMP,
-NEAR_REL_JMP, FAR_BRANCH, EN_CALLSTACK) in LBR_SELECT must be set to 1,
-bits (NEAR_REL_CALL, NEAR-IND_CALL, NEAR_RET) must be cleared. Due to
-a hardware bug of Haswell, this feature doesn't work well with
-FREEZE_LBRS_ON_PMI.
-
-When the call stack feature is enabled, the LBR stack will capture
-unfiltered call data normally, but as return instructions are executed,
-the last captured branch record is flushed from the on-chip registers
-in a last-in first-out (LIFO) manner. Thus, branch information relative
-to leaf functions will not be captured, while preserving the call stack
-information of the main line execution path.
-
-This patch defines a separate lbr_sel map for Haswell. The map contains
-a new entry for the call stack feature.
+The index of lbr_sel_map is bit value of perf branch_sample_type.
+PERF_SAMPLE_BRANCH_MAX is 1024 at present, so each lbr_sel_map uses
+4096 bytes. By using bit shift as index, we can reduce lbr_sel_map
+size to 40 bytes. This patch defines 'bit shift' for branch types,
+and use 'bit shift' to define lbr_sel_maps.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Reviewed-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event.h           | 13 ++++-
- arch/x86/kernel/cpu/perf_event_intel.c     |  2 +-
- arch/x86/kernel/cpu/perf_event_intel_lbr.c | 91 ++++++++++++++++++++++--------
- 3 files changed, 82 insertions(+), 24 deletions(-)
+ arch/x86/kernel/cpu/perf_event.h           |  4 +++
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 54 ++++++++++++++----------------
+ include/uapi/linux/perf_event.h            | 45 +++++++++++++++++--------
+ 3 files changed, 60 insertions(+), 43 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 8821f9e..cc25819 100644
+index 3b2f9bd..b58c0ba 100644
 --- a/arch/x86/kernel/cpu/perf_event.h
 +++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -473,7 +473,10 @@ struct x86_pmu {
+@@ -471,6 +471,10 @@ struct x86_pmu {
+ 	struct perf_guest_switch_msr *(*guest_get_msrs)(int *nr);
  };
  
- enum {
--	PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE = PERF_SAMPLE_BRANCH_MAX_SHIFT,
-+	PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT = PERF_SAMPLE_BRANCH_MAX_SHIFT,
-+	PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE,
++enum {
++	PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE = PERF_SAMPLE_BRANCH_MAX_SHIFT,
++};
 +
-+	PERF_SAMPLE_BRANCH_CALL_STACK = 1U << PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT,
- };
- 
  #define x86_add_quirk(func_)						\
-@@ -507,6 +510,12 @@ static struct perf_pmu_events_attr event_attr_##v = {			\
- 
- extern struct x86_pmu x86_pmu __read_mostly;
- 
-+static inline bool x86_pmu_has_lbr_callstack(void)
-+{
-+	return  x86_pmu.lbr_sel_map &&
-+		x86_pmu.lbr_sel_map[PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT] > 0;
-+}
-+
- DECLARE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
- 
- int x86_perf_event_set_period(struct perf_event *event);
-@@ -710,6 +719,8 @@ void intel_pmu_lbr_init_atom(void);
- 
- void intel_pmu_lbr_init_snb(void);
- 
-+void intel_pmu_lbr_init_hsw(void);
-+
- int intel_pmu_setup_lbr_filter(struct perf_event *event);
- 
- int p4_pmu_init(void);
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index ef926ee..af91bfd 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2488,7 +2488,7 @@ __init int intel_pmu_init(void)
- 		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids, sizeof(hw_cache_event_ids));
- 		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs, sizeof(hw_cache_extra_regs));
- 
--		intel_pmu_lbr_init_snb();
-+		intel_pmu_lbr_init_hsw();
- 
- 		x86_pmu.event_constraints = intel_hsw_event_constraints;
- 		x86_pmu.pebs_constraints = intel_hsw_pebs_event_constraints;
+ do {									\
+ 	static struct x86_pmu_quirk __quirk __initdata = {		\
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index a0cd371..909f70a 100644
+index 9dd2459..2760868 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -39,6 +39,7 @@ static enum {
- #define LBR_IND_JMP_BIT		6 /* do not capture indirect jumps */
- #define LBR_REL_JMP_BIT		7 /* do not capture relative jumps */
- #define LBR_FAR_BIT		8 /* do not capture far branches */
-+#define LBR_CALL_STACK_BIT	9 /* enable call stack */
+@@ -69,10 +69,6 @@ static enum {
+ #define LBR_FROM_FLAG_IN_TX    (1ULL << 62)
+ #define LBR_FROM_FLAG_ABORT    (1ULL << 61)
  
- #define LBR_KERNEL	(1 << LBR_KERNEL_BIT)
- #define LBR_USER	(1 << LBR_USER_BIT)
-@@ -49,6 +50,7 @@ static enum {
- #define LBR_REL_JMP	(1 << LBR_REL_JMP_BIT)
- #define LBR_IND_JMP	(1 << LBR_IND_JMP_BIT)
- #define LBR_FAR		(1 << LBR_FAR_BIT)
-+#define LBR_CALL_STACK	(1 << LBR_CALL_STACK_BIT)
- 
- #define LBR_PLM (LBR_KERNEL | LBR_USER)
- 
-@@ -74,24 +76,25 @@ static enum {
-  * x86control flow changes include branches, interrupts, traps, faults
-  */
- enum {
--	X86_BR_NONE     = 0,      /* unknown */
+-#define for_each_branch_sample_type(x) \
+-	for ((x) = PERF_SAMPLE_BRANCH_USER; \
+-	     (x) < PERF_SAMPLE_BRANCH_MAX; (x) <<= 1)
 -
--	X86_BR_USER     = 1 << 0, /* branch target is user */
--	X86_BR_KERNEL   = 1 << 1, /* branch target is kernel */
--
--	X86_BR_CALL     = 1 << 2, /* call */
--	X86_BR_RET      = 1 << 3, /* return */
--	X86_BR_SYSCALL  = 1 << 4, /* syscall */
--	X86_BR_SYSRET   = 1 << 5, /* syscall return */
--	X86_BR_INT      = 1 << 6, /* sw interrupt */
--	X86_BR_IRET     = 1 << 7, /* return from interrupt */
--	X86_BR_JCC      = 1 << 8, /* conditional */
--	X86_BR_JMP      = 1 << 9, /* jump */
--	X86_BR_IRQ      = 1 << 10,/* hw interrupt or trap or fault */
--	X86_BR_IND_CALL = 1 << 11,/* indirect calls */
--	X86_BR_ABORT    = 1 << 12,/* transaction abort */
--	X86_BR_IN_TX    = 1 << 13,/* in transaction */
--	X86_BR_NO_TX    = 1 << 14,/* not in transaction */
-+	X86_BR_NONE		= 0,      /* unknown */
-+
-+	X86_BR_USER		= 1 << 0, /* branch target is user */
-+	X86_BR_KERNEL		= 1 << 1, /* branch target is kernel */
-+
-+	X86_BR_CALL		= 1 << 2, /* call */
-+	X86_BR_RET		= 1 << 3, /* return */
-+	X86_BR_SYSCALL		= 1 << 4, /* syscall */
-+	X86_BR_SYSRET		= 1 << 5, /* syscall return */
-+	X86_BR_INT		= 1 << 6, /* sw interrupt */
-+	X86_BR_IRET		= 1 << 7, /* return from interrupt */
-+	X86_BR_JCC		= 1 << 8, /* conditional */
-+	X86_BR_JMP		= 1 << 9, /* jump */
-+	X86_BR_IRQ		= 1 << 10,/* hw interrupt or trap or fault */
-+	X86_BR_IND_CALL		= 1 << 11,/* indirect calls */
-+	X86_BR_ABORT		= 1 << 12,/* transaction abort */
-+	X86_BR_IN_TX		= 1 << 13,/* in transaction */
-+	X86_BR_NO_TX		= 1 << 14,/* not in transaction */
-+	X86_BR_CALL_STACK	= 1 << 15,/* call stack */
- };
- 
- #define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
-@@ -374,7 +377,7 @@ void intel_pmu_lbr_read(void)
-  * - in case there is no HW filter
-  * - in case the HW filter has errata or limitations
-  */
--static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
-+static int intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
- {
- 	u64 br_type = event->attr.branch_sample_type;
- 	int mask = 0;
-@@ -411,11 +414,21 @@ static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
- 	if (br_type & PERF_SAMPLE_BRANCH_COND)
- 		mask |= X86_BR_JCC;
- 
-+	if (br_type & PERF_SAMPLE_BRANCH_CALL_STACK) {
-+		if (!x86_pmu_has_lbr_callstack())
-+			return -EOPNOTSUPP;
-+		if (mask & ~(X86_BR_USER | X86_BR_KERNEL))
-+			return -EINVAL;
-+		mask |= X86_BR_CALL | X86_BR_IND_CALL | X86_BR_RET |
-+			X86_BR_CALL_STACK;
-+	}
-+
- 	/*
- 	 * stash actual user request into reg, it may
- 	 * be used by fixup code for some CPU
- 	 */
- 	event->hw.branch_reg.reg = mask;
-+	return 0;
- }
- 
  /*
-@@ -444,8 +457,12 @@ static int intel_pmu_setup_hw_lbr_filter(struct perf_event *event)
- 	reg = &event->hw.branch_reg;
- 	reg->idx = EXTRA_REG_LBR;
+  * x86control flow change classification
+  * x86control flow changes include branches, interrupts, traps, faults
+@@ -403,14 +399,14 @@ static int intel_pmu_setup_hw_lbr_filter(struct perf_event *event)
+ {
+ 	struct hw_perf_event_extra *reg;
+ 	u64 br_type = event->attr.branch_sample_type;
+-	u64 mask = 0, m;
+-	u64 v;
++	u64 mask = 0, v;
++	int i;
  
--	/* LBR_SELECT operates in suppress mode so invert mask */
--	reg->config = ~mask & x86_pmu.lbr_sel_mask;
-+	/*
-+	 * The first 9 bits (LBR_SEL_MASK) in LBR_SELECT operate
-+	 * in suppress mode. So LBR_SELECT should be set to
-+	 * (~mask & LBR_SEL_MASK) | (mask & ~LBR_SEL_MASK)
-+	 */
-+	reg->config = mask ^ x86_pmu.lbr_sel_mask;
+-	for_each_branch_sample_type(m) {
+-		if (!(br_type & m))
++	for (i = 0; i < PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE; i++) {
++		if (!(br_type & (1ULL << i)))
+ 			continue;
  
- 	return 0;
- }
-@@ -463,7 +480,9 @@ int intel_pmu_setup_lbr_filter(struct perf_event *event)
+-		v = x86_pmu.lbr_sel_map[m];
++		v = x86_pmu.lbr_sel_map[i];
+ 		if (v == LBR_NOT_SUPP)
+ 			return -EOPNOTSUPP;
+ 
+@@ -665,35 +661,35 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
+ /*
+  * Map interface branch filters onto LBR filters
+  */
+-static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
+-	[PERF_SAMPLE_BRANCH_ANY]	= LBR_ANY,
+-	[PERF_SAMPLE_BRANCH_USER]	= LBR_USER,
+-	[PERF_SAMPLE_BRANCH_KERNEL]	= LBR_KERNEL,
+-	[PERF_SAMPLE_BRANCH_HV]		= LBR_IGN,
+-	[PERF_SAMPLE_BRANCH_ANY_RETURN]	= LBR_RETURN | LBR_REL_JMP
+-					| LBR_IND_JMP | LBR_FAR,
++static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
++	[PERF_SAMPLE_BRANCH_ANY_SHIFT]		= LBR_ANY,
++	[PERF_SAMPLE_BRANCH_USER_SHIFT]		= LBR_USER,
++	[PERF_SAMPLE_BRANCH_KERNEL_SHIFT]	= LBR_KERNEL,
++	[PERF_SAMPLE_BRANCH_HV_SHIFT]		= LBR_IGN,
++	[PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT]	= LBR_RETURN | LBR_REL_JMP
++						| LBR_IND_JMP | LBR_FAR,
  	/*
- 	 * setup SW LBR filter
+ 	 * NHM/WSM erratum: must include REL_JMP+IND_JMP to get CALL branches
  	 */
--	intel_pmu_setup_sw_lbr_filter(event);
-+	ret = intel_pmu_setup_sw_lbr_filter(event);
-+	if (ret)
-+		return ret;
- 
+-	[PERF_SAMPLE_BRANCH_ANY_CALL] =
++	[PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT] =
+ 	 LBR_REL_CALL | LBR_IND_CALL | LBR_REL_JMP | LBR_IND_JMP | LBR_FAR,
  	/*
- 	 * setup HW LBR filter, if any
-@@ -720,6 +739,20 @@ static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
- 	[PERF_SAMPLE_BRANCH_COND_SHIFT]		= LBR_JCC,
+ 	 * NHM/WSM erratum: must include IND_JMP to capture IND_CALL
+ 	 */
+-	[PERF_SAMPLE_BRANCH_IND_CALL] = LBR_IND_CALL | LBR_IND_JMP,
+-	[PERF_SAMPLE_BRANCH_COND]     = LBR_JCC,
++	[PERF_SAMPLE_BRANCH_IND_CALL_SHIFT] = LBR_IND_CALL | LBR_IND_JMP,
++	[PERF_SAMPLE_BRANCH_COND_SHIFT]     = LBR_JCC,
  };
  
-+static const int hsw_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
+-static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
+-	[PERF_SAMPLE_BRANCH_ANY]	= LBR_ANY,
+-	[PERF_SAMPLE_BRANCH_USER]	= LBR_USER,
+-	[PERF_SAMPLE_BRANCH_KERNEL]	= LBR_KERNEL,
+-	[PERF_SAMPLE_BRANCH_HV]		= LBR_IGN,
+-	[PERF_SAMPLE_BRANCH_ANY_RETURN]	= LBR_RETURN | LBR_FAR,
+-	[PERF_SAMPLE_BRANCH_ANY_CALL]	= LBR_REL_CALL | LBR_IND_CALL
+-					| LBR_FAR,
+-	[PERF_SAMPLE_BRANCH_IND_CALL]	= LBR_IND_CALL,
+-	[PERF_SAMPLE_BRANCH_COND]       = LBR_JCC,
++static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
 +	[PERF_SAMPLE_BRANCH_ANY_SHIFT]		= LBR_ANY,
 +	[PERF_SAMPLE_BRANCH_USER_SHIFT]		= LBR_USER,
 +	[PERF_SAMPLE_BRANCH_KERNEL_SHIFT]	= LBR_KERNEL,
@@ -234,34 +141,66 @@ index a0cd371..909f70a 100644
 +						| LBR_FAR,
 +	[PERF_SAMPLE_BRANCH_IND_CALL_SHIFT]	= LBR_IND_CALL,
 +	[PERF_SAMPLE_BRANCH_COND_SHIFT]		= LBR_JCC,
-+	[PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT]	= LBR_REL_CALL | LBR_IND_CALL
-+						| LBR_RETURN | LBR_CALL_STACK,
+ };
+ 
+ /* core */
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 9269de2..1c4a26a 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -151,21 +151,38 @@ enum perf_event_sample_format {
+  * The branch types can be combined, however BRANCH_ANY covers all types
+  * of branches and therefore it supersedes all the other types.
+  */
++enum perf_branch_sample_type_shift {
++	PERF_SAMPLE_BRANCH_USER_SHIFT		= 0, /* user branches */
++	PERF_SAMPLE_BRANCH_KERNEL_SHIFT		= 1, /* kernel branches */
++	PERF_SAMPLE_BRANCH_HV_SHIFT		= 2, /* hypervisor branches */
++
++	PERF_SAMPLE_BRANCH_ANY_SHIFT		= 3, /* any branch types */
++	PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT	= 4, /* any call branch */
++	PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT	= 5, /* any return branch */
++	PERF_SAMPLE_BRANCH_IND_CALL_SHIFT	= 6, /* indirect calls */
++	PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT	= 7, /* transaction aborts */
++	PERF_SAMPLE_BRANCH_IN_TX_SHIFT		= 8, /* in transaction */
++	PERF_SAMPLE_BRANCH_NO_TX_SHIFT		= 9, /* not in transaction */
++	PERF_SAMPLE_BRANCH_COND_SHIFT		= 10, /* conditional branches */
++
++	PERF_SAMPLE_BRANCH_MAX_SHIFT		/* non-ABI */
 +};
 +
- /* core */
- void intel_pmu_lbr_init_core(void)
- {
-@@ -776,6 +809,20 @@ void intel_pmu_lbr_init_snb(void)
- 	pr_cont("16-deep LBR, ");
- }
+ enum perf_branch_sample_type {
+-	PERF_SAMPLE_BRANCH_USER		= 1U << 0, /* user branches */
+-	PERF_SAMPLE_BRANCH_KERNEL	= 1U << 1, /* kernel branches */
+-	PERF_SAMPLE_BRANCH_HV		= 1U << 2, /* hypervisor branches */
+-
+-	PERF_SAMPLE_BRANCH_ANY		= 1U << 3, /* any branch types */
+-	PERF_SAMPLE_BRANCH_ANY_CALL	= 1U << 4, /* any call branch */
+-	PERF_SAMPLE_BRANCH_ANY_RETURN	= 1U << 5, /* any return branch */
+-	PERF_SAMPLE_BRANCH_IND_CALL	= 1U << 6, /* indirect calls */
+-	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << 7, /* transaction aborts */
+-	PERF_SAMPLE_BRANCH_IN_TX	= 1U << 8, /* in transaction */
+-	PERF_SAMPLE_BRANCH_NO_TX	= 1U << 9, /* not in transaction */
+-	PERF_SAMPLE_BRANCH_COND		= 1U << 10, /* conditional branches */
+-
+-	PERF_SAMPLE_BRANCH_MAX		= 1U << 11, /* non-ABI */
++	PERF_SAMPLE_BRANCH_USER         = 1U << PERF_SAMPLE_BRANCH_USER_SHIFT,
++	PERF_SAMPLE_BRANCH_KERNEL       = 1U << PERF_SAMPLE_BRANCH_KERNEL_SHIFT,
++	PERF_SAMPLE_BRANCH_HV           = 1U << PERF_SAMPLE_BRANCH_HV_SHIFT,
++
++	PERF_SAMPLE_BRANCH_ANY          = 1U << PERF_SAMPLE_BRANCH_ANY_SHIFT,
++	PERF_SAMPLE_BRANCH_ANY_CALL     = 1U << PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT,
++	PERF_SAMPLE_BRANCH_ANY_RETURN   = 1U << PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT,
++	PERF_SAMPLE_BRANCH_IND_CALL     = 1U << PERF_SAMPLE_BRANCH_IND_CALL_SHIFT,
++	PERF_SAMPLE_BRANCH_ABORT_TX     = 1U << PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT,
++	PERF_SAMPLE_BRANCH_IN_TX        = 1U << PERF_SAMPLE_BRANCH_IN_TX_SHIFT,
++	PERF_SAMPLE_BRANCH_NO_TX        = 1U << PERF_SAMPLE_BRANCH_NO_TX_SHIFT,
++	PERF_SAMPLE_BRANCH_COND		= 1U << PERF_SAMPLE_BRANCH_COND_SHIFT,
++
++	PERF_SAMPLE_BRANCH_MAX          = 1U << PERF_SAMPLE_BRANCH_MAX_SHIFT,
+ };
  
-+/* haswell */
-+void intel_pmu_lbr_init_hsw(void)
-+{
-+	x86_pmu.lbr_nr	 = 16;
-+	x86_pmu.lbr_tos	 = MSR_LBR_TOS;
-+	x86_pmu.lbr_from = MSR_LBR_NHM_FROM;
-+	x86_pmu.lbr_to   = MSR_LBR_NHM_TO;
-+
-+	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
-+	x86_pmu.lbr_sel_map  = hsw_lbr_sel_map;
-+
-+	pr_cont("16-deep LBR, ");
-+}
-+
- /* atom */
- void intel_pmu_lbr_init_atom(void)
- {
+ #define PERF_SAMPLE_BRANCH_PLM_ALL \
 -- 
 1.9.3
 
