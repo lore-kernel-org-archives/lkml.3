@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549AbaGHBFs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:05:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55249 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104AbaGGXyA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753180AbaGGXyA (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 7 Jul 2014 19:54:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55360 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104AbaGGXx6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 19:53:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.15 034/122] drm/radeon/dpm: fix typo in vddci setup for eg/btc
-Date: Mon,  7 Jul 2014 16:56:36 -0700
-Message-Id: <20140707235735.269763982@linuxfoundation.org>
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Szymon Janc <szymon.janc@tieto.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.15 054/122] Bluetooth: Fix SSP acceptor just-works confirmation without MITM
+Date: Mon,  7 Jul 2014 16:56:56 -0700
+Message-Id: <20140707235735.897136322@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235734.234226883@linuxfoundation.org>
 References: <20140707235734.234226883@linuxfoundation.org>
@@ -28,36 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit e07929810f0a19ddd756558290c7d72827cbfcd9 upstream.
+commit ba15a58b179ed76a7e887177f2b06de12c58ec8f upstream.
 
-We were using the vddc mask rather than the vddci mask.
+>From the Bluetooth Core Specification 4.1 page 1958:
 
-Bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=79071
+"if both devices have set the Authentication_Requirements parameter to
+one of the MITM Protection Not Required options, authentication stage 1
+shall function as if both devices set their IO capabilities to
+DisplayOnly (e.g., Numeric comparison with automatic confirmation on
+both devices)"
 
-Possibly also fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=68571
+So far our implementation has done user confirmation for all just-works
+cases regardless of the MITM requirements, however following the
+specification to the word means that we should not be doing confirmation
+when neither side has the MITM flag set.
 
-Noticed-by:  Jonathan Howard <jonathan@unbiased.name>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Tested-by: Szymon Janc <szymon.janc@tieto.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/cypress_dpm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/bluetooth/hci_event.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/cypress_dpm.c
-+++ b/drivers/gpu/drm/radeon/cypress_dpm.c
-@@ -1551,7 +1551,7 @@ int cypress_populate_smc_voltage_tables(
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -3503,8 +3503,11 @@ static void hci_user_confirm_request_evt
  
- 		table->voltageMaskTable.highMask[RV770_SMC_VOLTAGEMASK_VDDCI] = 0;
- 		table->voltageMaskTable.lowMask[RV770_SMC_VOLTAGEMASK_VDDCI] =
--			cpu_to_be32(eg_pi->vddc_voltage_table.mask_low);
-+			cpu_to_be32(eg_pi->vddci_voltage_table.mask_low);
- 	}
- 
- 	return 0;
+ 		/* If we're not the initiators request authorization to
+ 		 * proceed from user space (mgmt_user_confirm with
+-		 * confirm_hint set to 1). */
+-		if (!test_bit(HCI_CONN_AUTH_PEND, &conn->flags)) {
++		 * confirm_hint set to 1). The exception is if neither
++		 * side had MITM in which case we do auto-accept.
++		 */
++		if (!test_bit(HCI_CONN_AUTH_PEND, &conn->flags) &&
++		    (loc_mitm || rem_mitm)) {
+ 			BT_DBG("Confirming auto-accept as acceptor");
+ 			confirm_hint = 1;
+ 			goto confirm;
 
 
