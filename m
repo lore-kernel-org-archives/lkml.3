@@ -1,374 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533AbaGHGFa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 02:05:30 -0400
-Received: from mga14.intel.com ([192.55.52.115]:47515 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752863AbaGHGEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 02:04:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,624,1400050800"; 
-   d="scan'208";a="558669215"
-From: Jenny TC <jenny.tc@intel.com>
-To: linux-kernel@vger.kernel.org, Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Pavel Machek <pavel@ucw.cz>, Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Pallala Ramakrishna <ramakrishna.pallala@intel.com>,
-        Jenny TC <jenny.tc@intel.com>
-Subject: [PATCH 3/4] power_supply: Introduce PSE compliant algorithm
-Date: Tue,  8 Jul 2014 11:34:20 +0530
-Message-Id: <1404799461-26345-4-git-send-email-jenny.tc@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1404799461-26345-1-git-send-email-jenny.tc@intel.com>
-References: <1404799461-26345-1-git-send-email-jenny.tc@intel.com>
+	id S1753629AbaGHGGX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 02:06:23 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:36851 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753177AbaGHGEB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 02:04:01 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v11 7/7] mm: Don't split THP page when syscall is called
+Date: Tue,  8 Jul 2014 15:03:44 +0900
+Message-Id: <1404799424-1120-8-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1404799424-1120-1-git-send-email-minchan@kernel.org>
+References: <1404799424-1120-1-git-send-email-minchan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per Product Safety Engineering (PSE) specification for battery charging, the
-battery characteristics and thereby the charging rates can vary on different
-temperature zones. This patch introduces a PSE compliant charging algorithm with
-maintenance charging support. The algorithm can be selected by the power supply
-charging driver based on the type of the battery charging profile.
+We don't need to split THP page when MADV_FREE syscall is
+called. It could be done when VM decide really frees it so
+we could avoid unnecessary THP split.
 
-Signed-off-by: Jenny TC <jenny.tc@intel.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- drivers/power/Kconfig                      |   15 ++
- drivers/power/Makefile                     |    1 +
- drivers/power/charging_algo_pse.c          |  203 ++++++++++++++++++++++++++++
- include/linux/power/power_supply_charger.h |   66 +++++++++
- 4 files changed, 285 insertions(+)
- create mode 100644 drivers/power/charging_algo_pse.c
+ mm/madvise.c | 20 +++++++++++++++++++-
+ mm/rmap.c    |  7 +++----
+ mm/vmscan.c  | 28 ++++++++++++++++++----------
+ 3 files changed, 40 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index f679f82..54a0321 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -22,6 +22,21 @@ config POWER_SUPPLY_CHARGER
- 	  drivers to keep the charging logic outside and the charger driver
- 	  just need to abstract the charger hardware.
+diff --git a/mm/madvise.c b/mm/madvise.c
+index a6aa7d4c4e02..77f13a99584c 100644
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -272,7 +272,25 @@ static int madvise_free_pte_range(pmd_t *pmd, unsigned long addr,
+ 	pte_t *pte, ptent;
+ 	struct page *page;
  
-+config POWER_SUPPLY_CHARGING_ALGO_PSE
-+	bool "PSE compliant charging algorithm"
-+	depends on POWER_SUPPLY_CHARGER
-+	help
-+	  Say Y here to select Product Safety Engineering (PSE) compliant
-+	  charging algorithm. As per PSE standard the battery characteristics
-+	  and thereby the charging rates can vary on different temperature
-+	  zones. Select this if your charging algorithm need to change the
-+	  charging parameters based on the battery temperature and the battery
-+	  charging profile follows the struct psy_pse_chrg_prof definition.
-+	  This  config will enable PSE compliant charging algorithm with
-+	  maintenance charging support. At runtime the algorithm will be
-+	  selected by the psy charger driver based on the type of the battery
-+	  charging profile.
+-	split_huge_page_pmd(vma, addr, pmd);
++	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
++		struct page *page;
++		pmd_t orig_pmd;
 +
- config PDA_POWER
- 	tristate "Generic PDA/phone power driver"
- 	depends on !S390
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index 405f0f4..77535fd 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -8,6 +8,7 @@ obj-$(CONFIG_POWER_SUPPLY)	+= power_supply.o
- obj-$(CONFIG_GENERIC_ADC_BATTERY)	+= generic-adc-battery.o
- 
- obj-$(CONFIG_POWER_SUPPLY_CHARGER) += power_supply_charger.o
-+obj-$(CONFIG_POWER_SUPPLY_CHARGING_ALGO_PSE) += charging_algo_pse.o
- obj-$(CONFIG_PDA_POWER)		+= pda_power.o
- obj-$(CONFIG_APM_POWER)		+= apm_power.o
- obj-$(CONFIG_MAX8925_POWER)	+= max8925_power.o
-diff --git a/drivers/power/charging_algo_pse.c b/drivers/power/charging_algo_pse.c
-new file mode 100644
-index 0000000..fbc9ea6
---- /dev/null
-+++ b/drivers/power/charging_algo_pse.c
-@@ -0,0 +1,203 @@
-+/*
-+ * Copyright (C) 2012 Intel Corporation
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the GNU
-+ * General Public License for more details.
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ * Author: Jenny TC <jenny.tc@intel.com>
-+ */
++		orig_pmd = pmdp_get_and_clear(mm, addr, pmd);
 +
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/device.h>
-+#include <linux/err.h>
-+#include <linux/power_supply.h>
-+#include <linux/thermal.h>
-+#include "power_supply.h"
-+#include "power_supply_charger.h"
++		/* No hugepage in swapcache */
++		page = pmd_page(orig_pmd);
++		VM_BUG_ON_PAGE(PageSwapCache(page), page);
 +
-+/* 98% of CV is considered as voltage to detect Full */
-+#define FULL_CV_MIN 98
++		orig_pmd = pmd_mkold(orig_pmd);
++		orig_pmd = pmd_mkclean(orig_pmd);
 +
-+/*
-+ * Offset to exit from maintenance charging. In maintenance charging
-+ * if the volatge is less than the (maintenance_lower_threshold -
-+ * MAINT_EXIT_OFFSET) then system can switch to normal charging
-+ */
-+
-+#define MAINT_EXIT_OFFSET 50  /* mV */
-+
-+static int get_tempzone(struct psy_pse_chrg_prof *pse_mod_bprof,
-+		int temp)
-+{
-+	int i = 0;
-+	int temp_range_cnt;
-+
-+	temp_range_cnt =  min_t(u16, pse_mod_bprof->temp_mon_ranges,
-+					BATT_TEMP_NR_RNG);
-+	if ((temp < pse_mod_bprof->temp_min) ||
-+		(temp > pse_mod_bprof->temp_mon_range[0].temp_max))
-+		return -EINVAL;
-+
-+	for (i = 0; i < temp_range_cnt; ++i)
-+		if (temp > pse_mod_bprof->temp_mon_range[i].temp_max)
-+			break;
-+	return i-1;
-+}
-+
-+static inline bool is_charge_terminated(long volt, long cur,
-+				long iterm, unsigned long cv)
-+{
-+	return (cur > 0) && (cur <= iterm) &&
-+				((volt * 100)  >= (FULL_CV_MIN * cv));
-+}
-+
-+static inline bool is_battery_full(struct psy_batt_context *batt_cxt,
-+		struct psy_pse_chrg_prof *pse_mod_bprof, unsigned long cv)
-+{
-+	int i;
-+	struct psy_batt_props batt_props;
-+
-+	batt_props =  batt_cxt->batt_props;
-+
-+	/*
-+	* Software full detection. Check the battery charge current to detect
-+	* battery Full. The voltage also verified to avoid false charge
-+	* full detection.
-+	*/
-+	for (i = (MAX_CUR_VOLT_SAMPLES - 1); i >= 0; --i) {
-+
-+		if (!(is_charge_terminated(batt_cxt->voltage_now_cache[i],
-+				batt_cxt->current_now_cache[i],
-+				pse_mod_bprof->chrg_term_mA, cv)))
-+			return false;
++		set_pmd_at(mm, addr, pmd, orig_pmd);
++		tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
++		spin_unlock(ptl);
++		return 0;
 +	}
 +
-+	return true;
-+}
-+
-+static int  pse_get_bat_thresholds(struct psy_batt_chrg_prof  bprof,
-+			struct psy_batt_thresholds *bat_thresh)
-+{
-+	struct psy_pse_chrg_prof *pse_mod_bprof =
-+			(struct psy_pse_chrg_prof *) bprof.batt_prof;
-+
-+	if ((bprof.chrg_prof_type != PSY_CHRG_PROF_PSE) || (!pse_mod_bprof))
-+		return -EINVAL;
-+
-+	bat_thresh->iterm = pse_mod_bprof->chrg_term_mA;
-+	bat_thresh->temp_min = pse_mod_bprof->temp_min;
-+	bat_thresh->temp_max = pse_mod_bprof->temp_mon_range[0].temp_max;
-+
-+	return 0;
-+}
-+
-+static enum psy_algo_stat pse_get_next_cc_cv(struct psy_batt_context *batt_cxt,
-+	struct psy_batt_chrg_prof  bprof, unsigned long *cc, unsigned long *cv)
-+{
-+	int tzone;
-+	struct psy_pse_chrg_prof *pse_mod_bprof;
-+	struct psy_batt_props batt_props;
-+	enum psy_algo_stat algo_stat;
-+	int maint_exit_volt;
-+
-+	pse_mod_bprof = (struct psy_pse_chrg_prof *) bprof.batt_prof;
-+	algo_stat = batt_cxt->algo_stat;
-+
-+	batt_props = batt_cxt->batt_props;
-+
-+	*cc = *cv = 0;
-+
-+	/*
-+	* If STATUS is discharging, assume that charger is not connected.
-+	* If charger is not connected, no need to take any action.
-+	* If charge profile type is not PSY_CHRG_PROF_PSE or the charge profile
-+	* is not present, no need to take any action.
-+	*/
-+
-+	if (!pse_mod_bprof)
-+		return PSY_ALGO_STAT_NOT_CHARGE;
-+
-+	tzone = get_tempzone(pse_mod_bprof, batt_props.temperature);
-+
-+	if (tzone < 0)
-+		return PSY_ALGO_STAT_NOT_CHARGE;
-+
-+	/*
-+	* Change the algo status to not charging, if battery is
-+	* not really charging or less than maintenance exit threshold.
-+	* This way algorithm can switch to normal charging if current
-+	* status is full/maintenance.
-+	*/
-+	maint_exit_volt = pse_mod_bprof->
-+				temp_mon_range[tzone].maint_chrg_volt_min -
-+				MAINT_EXIT_OFFSET;
-+
-+	if ((batt_props.status == POWER_SUPPLY_STATUS_DISCHARGING) ||
-+		(batt_props.status == POWER_SUPPLY_STATUS_NOT_CHARGING) ||
-+			batt_props.voltage_now < maint_exit_volt) {
-+
-+		algo_stat = PSY_ALGO_STAT_NOT_CHARGE;
-+
-+	}
-+
-+	/* read cc and cv based on temperature and algorithm status */
-+	if (algo_stat == PSY_ALGO_STAT_FULL ||
-+			algo_stat == PSY_ALGO_STAT_MAINT) {
-+
-+		/*
-+		* if status is full and voltage is lower than maintenance lower
-+		* threshold change status to maintenance
-+		*/
-+
-+		if (algo_stat == PSY_ALGO_STAT_FULL &&
-+			(batt_props.voltage_now <=
-+			pse_mod_bprof->temp_mon_range[tzone]
-+						.maint_chrg_volt_min))
-+				algo_stat = PSY_ALGO_STAT_MAINT;
-+
-+		/* Read maintenance CC and CV */
-+		if (algo_stat == PSY_ALGO_STAT_MAINT) {
-+			*cv = pse_mod_bprof->temp_mon_range
-+					[tzone].maint_chrg_volt_max;
-+			*cc = pse_mod_bprof->temp_mon_range
-+					[tzone].maint_chrg_cur;
-+		}
-+	} else {
-+		*cv = pse_mod_bprof->temp_mon_range[tzone].full_chrg_vol;
-+		*cc = pse_mod_bprof->temp_mon_range[tzone].full_chrg_cur;
-+		algo_stat = PSY_ALGO_STAT_CHARGE;
-+	}
-+
-+	if (is_battery_full(batt_cxt, pse_mod_bprof, *cv)) {
-+		*cc = *cv = 0;
-+		algo_stat = PSY_ALGO_STAT_FULL;
-+	}
-+
-+	return algo_stat;
-+}
-+
-+struct psy_charging_algo pse_algo = {
-+	.name = "pse-algo",
-+	.chrg_prof_type = PSY_CHRG_PROF_PSE,
-+	.get_next_cc_cv = pse_get_next_cc_cv,
-+	.get_batt_thresholds = pse_get_bat_thresholds,
-+};
-+static int __init pse_algo_init(void)
-+{
-+	power_supply_register_charging_algo(&pse_algo);
-+	return 0;
-+}
-+
-+module_init(pse_algo_init);
-diff --git a/include/linux/power/power_supply_charger.h b/include/linux/power/power_supply_charger.h
-index 2b59817..6fc90df 100644
---- a/include/linux/power/power_supply_charger.h
-+++ b/include/linux/power/power_supply_charger.h
-@@ -94,8 +94,74 @@ enum battery_events {
+ 	if (pmd_trans_unstable(pmd))
+ 		return 0;
  
- enum psy_batt_chrg_prof_type {
- 	PSY_CHRG_PROF_NONE = 0,
-+	PSY_CHRG_PROF_PSE,
- };
+diff --git a/mm/rmap.c b/mm/rmap.c
+index a8e34596dc97..67e1c1859c1d 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -703,10 +703,9 @@ static int page_referenced_one(struct page *page, struct vm_area_struct *vma,
+ 		if (pmdp_clear_flush_young_notify(vma, address, pmd))
+ 			referenced++;
  
-+/* Product Safety Engineering (PSE) compliant charging profile */
+-		/*
+-		 * In this implmentation, MADV_FREE doesn't support THP free
+-		 */
+-		dirty++;
++		if (pmd_dirty(*pmd))
++			dirty++;
 +
-+/**
-+ * struct psy_ps_temp_chg_table - charging temperature zones definition
-+ * @temp_max: upper temperature limit for each zone in Degree Celsius
-+ * @full_chrg_vol: charge voltage till battery full in mV
-+ * @full_chrg_cur: charge current till battery full in mA
-+ * @maint_chrg_volt_min: voltage at which maintenance charging should
-+ *		start in mV
-+ * @maint_chrg_volt_max: voltage at which maintenance charging should
-+ *	stop in mV. This is the charging voltage in maintenance charging mode
-+ * @maint_chrg_cur: charge current in maintenance charging mode
-+ *
-+ * Charging temperature zone definition to decide the charging parameters on
-+ * each zone. An array of the structure is used to define multiple temperature
-+ * zones
-+ */
-+
-+struct psy_ps_temp_chg_table {
-+	short int temp_max;
-+	short int full_chrg_vol;
-+	short int full_chrg_cur;
-+	short int maint_chrg_volt_min;
-+	short int maint_chrg_volt_max;
-+	short int maint_chrg_cur;
-+} __packed;
-+
-+#define BATTID_STR_LEN		8
-+#define BATT_TEMP_NR_RNG	6
-+
-+/**
-+ * struct psy_pse_chrg_prof - PSE charging profile structure
-+ * @batt_id: battery identifier
-+ * @battery_type: as defined in POWER_SUPPLY_TECHNOLOGY_*
-+ * @capacity: battery capacity in mAh
-+ * @voltage_max: maximum battery volatge in mV
-+ * @chrg_term_ma: charge termination current in mA
-+ * @low_batt_mv: Low battery level voltage in mV
-+ * @disch_temp_max: maximum operating temperature when battery is discharging
-+ *		in degree Celsius
-+ * @disch_temp_min: lowest operating temperature when battery is discharging
-+ *	in degree Celsius
-+ * @temp_mon_ranges: number of temperature zones
-+ * @psy_ps_temp_chg_table: temperature zone table array
-+ * @temp_min: minimum charging temperature
-+ *
-+ * PSE compliant charging profile which can be stored in battery EEPROM
-+ * (if digital battery interface like MIPI BIF/SDQ supported) or in secondary
-+ * storage to support analog battery (with BSI sensing support)
-+ */
-+
-+struct psy_pse_chrg_prof {
-+	char batt_id[BATTID_STR_LEN];
-+	u16 battery_type;
-+	u16 capacity;
-+	u16 voltage_max;
-+	u16 chrg_term_mA;
-+	u16 low_batt_mV;
-+	s8 disch_temp_max;
-+	s8 disch_temp_min;
-+	u16 temp_mon_ranges;
-+	struct psy_ps_temp_chg_table temp_mon_range[BATT_TEMP_NR_RNG];
-+	s8 temp_min;
-+} __packed;
-+
- /**
-  * struct psy_batt_chrg_prof - power supply charging profile structure
-  * @chrg_prof_type: charging profile type
+ 		spin_unlock(ptl);
+ 	} else {
+ 		pte_t *pte;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index d88413ccadcc..6557f0b36321 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -971,17 +971,25 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 		 * Anonymous process memory has backing store?
+ 		 * Try to allocate it some swap space here.
+ 		 */
+-		if (PageAnon(page) && !PageSwapCache(page) && !freeable) {
+-			if (!(sc->gfp_mask & __GFP_IO))
+-				goto keep_locked;
+-			if (!add_to_swap(page, page_list))
+-				goto activate_locked;
+-			may_enter_fs = 1;
+-
+-			/* Adding to swap updated mapping */
+-			mapping = page_mapping(page);
++		if (PageAnon(page) && !PageSwapCache(page)) {
++			if (!freeable) {
++				if (!(sc->gfp_mask & __GFP_IO))
++					goto keep_locked;
++				if (!add_to_swap(page, page_list))
++					goto activate_locked;
++				may_enter_fs = 1;
++				/* Adding to swap updated mapping */
++				mapping = page_mapping(page);
++			} else {
++				if (likely(!PageTransHuge(page)))
++					goto unmap;
++				/* try_to_unmap isn't aware of THP page */
++				if (unlikely(split_huge_page_to_list(page,
++								page_list)))
++					goto keep_locked;
++			}
+ 		}
+-
++unmap:
+ 		/*
+ 		 * The page is mapped into the page tables of one or more
+ 		 * processes. Try to unmap it here.
 -- 
-1.7.9.5
+2.0.0
 
