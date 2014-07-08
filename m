@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018AbaGHWVt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 18:21:49 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:48157 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660AbaGHWVs (ORCPT
+	id S1755320AbaGHWWB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 18:22:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36892 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755293AbaGHWV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 18:21:48 -0400
-Date: Wed, 9 Jul 2014 03:51:41 +0530
-From: Himangi Saraogi <himangi774@gmail.com>
-To: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: julia.lawall@lip6.fr
-Subject: [PATCH] Btrfs: use BUG_ON
-Message-ID: <20140708222141.GA11854@himangi-Dell>
+	Tue, 8 Jul 2014 18:21:59 -0400
+Date: Tue, 8 Jul 2014 15:26:24 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Cc: Ming Lei <ming.lei@canonical.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/1] firmware: read firmware size using i_size_read()
+Message-ID: <20140708222624.GB7745@kroah.com>
+References: <CACVXFVPn4muw+zD+TPAJh2miB5R326iFT4ZBS-Tdehz0XrsyDQ@mail.gmail.com>
+ <cover.1402672110.git.d.kasatkin@samsung.com>
+ <248c69602c96d68aea1ffb4cb75e77ec38b6b75f.1402672110.git.d.kasatkin@samsung.com>
+ <CACVXFVMQYk=k8fONkoHVHo7wELK7TgWVQpKeCMAZaTyXHZgePQ@mail.gmail.com>
+ <CACE9dm8AR_0S9gB13T_tydBcYtJEtXmEOc_GRx_Qtfbw+pKM2w@mail.gmail.com>
+ <CACE9dm9bSLTMuaobgZNF+Xe7GxZZKjqedK91PsTjYrJWafMGiw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACE9dm9bSLTMuaobgZNF+Xe7GxZZKjqedK91PsTjYrJWafMGiw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use BUG_ON(x) rather than if(x) BUG();
+On Wed, Jun 25, 2014 at 07:46:41PM +0300, Dmitry Kasatkin wrote:
+> On 13 June 2014 19:06, Dmitry Kasatkin <dmitry.kasatkin@gmail.com> wrote:
+> > On 13 June 2014 19:03, Ming Lei <ming.lei@canonical.com> wrote:
+> >> On Fri, Jun 13, 2014 at 11:09 PM, Dmitry Kasatkin
+> >> <d.kasatkin@samsung.com> wrote:
+> >>> There is no need to read attr because inode structure contains size
+> >>> of the file. Use i_size_read() instead.
+> >>>
+> >>> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> >>
+> >> Acked-by: Ming Lei <ming.lei@canonical.com>
+> >>
+> 
+> 
+> Hi,
+> 
+> BTW. To what tree it is applied?
 
-The semantic patch that fixes this problem is as follows:
-
-// <smpl>
-@@ identifier x; @@
--if (x) BUG();
-+BUG_ON(x);
-// </smpl>
-
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- fs/btrfs/volumes.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 6104676..63e746e 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -2623,8 +2623,8 @@ again:
- 						   found_key.offset);
- 			if (ret == -ENOSPC)
- 				failed++;
--			else if (ret)
--				BUG();
-+			else
-+				BUG_ON(ret);
- 		}
- 
- 		if (found_key.offset == 0)
--- 
-1.9.1
-
+Mine now, you should get an email soon...
