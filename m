@@ -1,91 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757110AbaGHTvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:51:00 -0400
-Received: from mail.kernel.org ([198.145.19.201]:34551 "EHLO mail.kernel.org"
+	id S1755597AbaGHTy7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:54:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59018 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756339AbaGHTu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:50:57 -0400
-From: konrad@kernel.org
-To: xen-devel@lists.xenproject.org, david.vrabel@citrix.com,
-        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v2] xen: Introduce 'xen_nopv' to disable PV extensions for HVM guests.
-Date: Tue,  8 Jul 2014 16:52:25 -0400
-Message-Id: <1404852745-25187-1-git-send-email-konrad@kernel.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1753908AbaGHTy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 15:54:57 -0400
+Date: Tue, 8 Jul 2014 21:54:53 +0200
+From: Jean Delvare <jdelvare@suse.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Randy Dunlap <rdunlap@infradead.org>,
+        linux-i2c@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] i2c: stub: Add support for SMBus block commands
+Message-ID: <20140708215453.0677d3ed@endymion.delvare>
+In-Reply-To: <1404742983-27303-1-git-send-email-linux@roeck-us.net>
+References: <1404742983-27303-1-git-send-email-linux@roeck-us.net>
+Organization: SUSE Linux
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Hi Guenter,
 
-By default when CONFIG_XEN and CONFIG_XEN_PVHVM kernels are
-run, they will enable the PV extensions (drivers, interrupts, timers,
-etc) - which is perfect.
+On Mon,  7 Jul 2014 07:23:03 -0700, Guenter Roeck wrote:
+> SMBus block commands are different to I2C block commands since
+> the returned data is not normally accessible with byte or word
+> commands on other command offsets. Add linked list of 'block'
+> commands to support those commands.
+> 
+> Access mechanism is quite simple: Block commands must be written
+> before they can be read. The first write selects the block length.
+> Subsequent writes can be partial. Block read commands always return
+> the number of bytes selected with the first write.
+> 
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> v2: Make new functionality only available on request via functionality
+>     module parameter
+>     Add more details about SMBus block mode support to documentation
+>     Use correct sizeof() variable in devm_kzalloc
+>     Use stub_find_block() only in SMBus block command itself.
+>     Store first word of block data in chip->words[].
+>     When writing block data and the written data is longer than
+>     the first write, bail out with debug message indicating the reason
+>     for the error.
 
-However, in some cases (kexec not fully wokring, benchmarking)
-we want to disable Xen PV extensions. As such introduce the
-'xen_nopv' parameter that will do it.
+Looks good, thanks for the quick update.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
-[v2: s/off/xen_nopv/ per Boris Ostrovsky recommendation.]
----
- Documentation/kernel-parameters.txt |    4 ++++
- arch/x86/xen/enlighten.c            |   13 +++++++++++++
- 2 files changed, 17 insertions(+), 0 deletions(-)
+Reviewed-by: Jean Delvare <jdelvare@suse.de>
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index c1b9aa8..5dcfa6e 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -3691,6 +3691,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Disables the ticketlock slowpath using Xen PV
- 			optimizations.
- 
-+	xen_nopv	[X86,XEN]
-+			Disables the PV optimizations forcing the guest to run
-+			as generic HVM guest with no PV drivers.
-+
- 	xirc2ps_cs=	[NET,PCMCIA]
- 			Format:
- 			<irq>,<irq_mask>,<io>,<full_duplex>,<do_sound>,<lockup_hack>[,<irq2>[,<irq3>[,<irq4>]]]
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index e220197..7aa59ef 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1930,10 +1930,21 @@ static void __init xen_hvm_guest_init(void)
- #endif
- }
- 
-+static bool xen_nopv = false;
-+static __init int xen_parse_nopv(char *arg)
-+{
-+       xen_nopv = true;
-+       return 0;
-+}
-+early_param("xen_nopv", xen_parse_nopv);
-+
- static uint32_t __init xen_hvm_platform(void)
- {
- 	uint32_t eax, ebx, ecx, edx, base;
- 
-+	if (xen_nopv)
-+		return 0;
-+
- 	if (xen_pv_domain())
- 		return 0;
- 
-@@ -1953,6 +1964,8 @@ static uint32_t __init xen_hvm_platform(void)
- 
- bool xen_hvm_need_lapic(void)
- {
-+	if (xen_nopv)
-+		return false;
- 	if (xen_pv_domain())
- 		return false;
- 	if (!xen_hvm_domain())
+Just one thing I have been thinking about while reviewing the updated
+code... You decided to make the first SMBus block write select the
+maximum block length, and you always use that for SMBus block reads.
+However you accept partial writes. The fact that the order in which
+writes are performed has an effect on which writes are accepted is
+somewhat unexpected.
+
+Wouldn't it make more sense to accept all SMBus block writes,
+regardless of the size (as long as it is within the limits of the SMBus
+standard, of course)? Then the only thing left to decide is whether
+SMBus block reads use the maximum size or the size of the most recent
+SMBus block write.
+
+I suspect this would mimic the behavior of real chips better. What do
+you think?
+
 -- 
-1.7.7.6
-
+Jean Delvare
+SUSE L3 Support
