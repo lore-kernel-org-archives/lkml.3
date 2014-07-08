@@ -1,96 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261AbaGHD1q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 23:27:46 -0400
-Received: from gate.crashing.org ([63.228.1.57]:35618 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751834AbaGHD1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 23:27:45 -0400
-Message-ID: <1404789011.16156.39.camel@pasglop>
-Subject: Re: [PATCH] powerpc: Disable RELOCATABLE for COMPILE_TEST with PPC64
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Nick <xerofoify@gmail.com>
-Date: Tue, 08 Jul 2014 13:10:11 +1000
-In-Reply-To: <53BB5F9A.2060105@roeck-us.net>
-References: <1404153930-26568-1-git-send-email-linux@roeck-us.net>
-	 <53BB5F9A.2060105@roeck-us.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752607AbaGHD3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 23:29:19 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:54264 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170AbaGHD3S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jul 2014 23:29:18 -0400
+MIME-Version: 1.0
+Date: Mon, 7 Jul 2014 23:29:17 -0400
+Message-ID: <CAPDOMVgTrH3eu2kuNpTFbL=uidiFQGdJYxD-p_mxBjoYoPTdKQ@mail.gmail.com>
+Subject: sh -allyesconfig Fails
+From: Nick Krause <xerofoify@gmail.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-07-07 at 20:03 -0700, Guenter Roeck wrote:
-> ping ...
-> 
-> Ben, I know this is not perfect, but on the other side it is simple
-> and would be easy to backport. With this in place, a complete/clean
-> fix would not be as urgent. Any chance to get it applied ?
-
-Yes, that definitely helps, I'll include it as a band aid.
-
-Cheers,
-Ben.
-
-> Nick, this doesn't fix the allyesconfig build - it still fails with
-> relocation errors. But it does fix the allmodconfig build.
-> 
-> Thanks,
-> Guenter
-> 
-> On 06/30/2014 11:45 AM, Guenter Roeck wrote:
-> > powerpc:allmodconfig has been failing for some time with the following
-> > error.
-> >
-> > arch/powerpc/kernel/exceptions-64s.S: Assembler messages:
-> > arch/powerpc/kernel/exceptions-64s.S:1312: Error: attempt to move .org backwards
-> > make[1]: *** [arch/powerpc/kernel/head_64.o] Error 1
-> >
-> > A number of attempts to fix the problem by moving around code have been
-> > unsuccessful and resulted in failed builds for some configurations and
-> > the discovery of toolchain bugs.
-> >
-> > Fix the problem by disabling RELOCATABLE for COMPILE_TEST builds instead.
-> > While this is less than perfect, it avoids substantial code changes
-> > which would otherwise be necessary just to make COMPILE_TEST builds
-> > happy and might have undesired side effects.
-> >
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > ---
-> >   arch/powerpc/Kconfig | 3 ++-
-> >   1 file changed, 2 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-> > index bd6dd6e..fefe7c8 100644
-> > --- a/arch/powerpc/Kconfig
-> > +++ b/arch/powerpc/Kconfig
-> > @@ -414,7 +414,7 @@ config KEXEC
-> >   config CRASH_DUMP
-> >   	bool "Build a kdump crash kernel"
-> >   	depends on PPC64 || 6xx || FSL_BOOKE || (44x && !SMP)
-> > -	select RELOCATABLE if PPC64 || 44x || FSL_BOOKE
-> > +	select RELOCATABLE if (PPC64 && !COMPILE_TEST) || 44x || FSL_BOOKE
-> >   	help
-> >   	  Build a kernel suitable for use as a kdump capture kernel.
-> >   	  The same kernel binary can be used as production kernel and dump
-> > @@ -1017,6 +1017,7 @@ endmenu
-> >   if PPC64
-> >   config RELOCATABLE
-> >   	bool "Build a relocatable kernel"
-> > +	depends on !COMPILE_TEST
-> >   	select NONSTATIC_KERNEL
-> >   	help
-> >   	  This builds a kernel image that is capable of running anywhere
-> >
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+Hey guys,
+sh    allyesconfig seems to still be failing. Below this message are
+the logs for this failing build.
+Cheers Nick
+scripts/kconfig/conf --silentoldconfig Kconfig
+  CHK     include/config/kernel.release
+  CHK     include/generated/uapi/linux/version.h
+<stdin>:1:0: error: cannot use atomic model soft-imask in user mode
+<stdin>:1:0: error: cannot use atomic model soft-imask in user mode
+./scripts/gcc-version.sh: line 31: printf: #: invalid number
+./scripts/gcc-version.sh: line 31: printf: #: invalid number
+<stdin>:1:0: error: cannot use atomic model soft-imask in user mode
+<stdin>:1:0: error: cannot use atomic model soft-imask in user mode
+./scripts/gcc-version.sh: line 31: printf: #: invalid number
+./scripts/gcc-version.sh: line 31: printf: #: invalid number
+/bin/sh: 1: [: 0001: unexpected operator
+<stdin>:1:0: error: cannot use atomic model soft-imask in user mode
+<stdin>:1:0: error: cannot use atomic model soft-imask in user mode
+./scripts/gcc-version.sh: line 31: printf: #: invalid number
+./scripts/gcc-version.sh: line 31: printf: #: invalid number
+/bin/sh: 1: [: 0001: unexpected operator
+  CHK     include/generated/utsrelease.h
+  CC      scripts/mod/empty.o
+scripts/mod/empty.c:1:0: error: cannot use atomic model soft-imask in user mode
+ /* empty file to figure out endianness / word size */
+ ^
+make[2]: *** [scripts/mod/empty.o] Error 1
+make[1]: *** [scripts/mod] Error 2
+make: *** [scripts] Error 2
+make: *** Waiting for unfinished jobs....
