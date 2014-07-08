@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188AbaGHTDx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:03:53 -0400
-Received: from mail.kernel.org ([198.145.19.201]:58097 "EHLO mail.kernel.org"
+	id S1755489AbaGHTEB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:04:01 -0400
+Received: from mail.kernel.org ([198.145.19.201]:58114 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755475AbaGHTDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:03:50 -0400
+	id S1754969AbaGHTD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 15:03:56 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/16] perf hists browser: Add ui.show-headers config file option
-Date: Tue,  8 Jul 2014 16:02:55 -0300
-Message-Id: <1404846184-20075-8-git-send-email-acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 08/16] perf hists browser: Left justify column headers
+Date: Tue,  8 Jul 2014 16:02:56 -0300
+Message-Id: <1404846184-20075-9-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1404846184-20075-1-git-send-email-acme@kernel.org>
 References: <1404846184-20075-1-git-send-email-acme@kernel.org>
@@ -25,107 +26,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@kernel.org>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Adding ui.show-headers config file option to define if the histogram
-entries headers will start visible or not.
+Looks better and avoids it moving to the end of the screen as the column
+width changes over time in 'perf top'.
 
-Currently columns headers are displayed by default, following
-lines in ~/.perfconfig file will disable that:
-
-  [ui]
-        show-headers = false
-
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1403886418-5556-4-git-send-email-jolsa@kernel.org
-[ renamed symbol_conf.show_headers to .show_hist_headers ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-yc144ai5jye3yl3h5yxw0scd@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/hists.c |  2 +-
- tools/perf/util/config.c       | 13 +++++++++++++
- tools/perf/util/symbol.c       |  1 +
- tools/perf/util/symbol.h       |  3 ++-
- 4 files changed, 17 insertions(+), 2 deletions(-)
+ tools/perf/util/sort.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 5fa2e181ef0c..a94b11fc5e00 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -1284,7 +1284,7 @@ static struct hist_browser *hist_browser__new(struct hists *hists)
- 		browser->b.refresh_dimensions = hist_browser__refresh_dimensions;
- 		browser->b.seek = ui_browser__hists_seek;
- 		browser->b.use_navkeypressed = true;
--		browser->show_headers = true;
-+		browser->show_headers = symbol_conf.show_hist_headers;
- 	}
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 1ec57dd82284..14e5a039bc45 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -1215,7 +1215,7 @@ static int __sort__hpp_header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
+ 	hse = container_of(fmt, struct hpp_sort_entry, hpp);
+ 	len = hists__col_len(&evsel->hists, hse->se->se_width_idx);
  
- 	return browser;
-diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
-index 24519e14ac56..1e5e2e5af6b1 100644
---- a/tools/perf/util/config.c
-+++ b/tools/perf/util/config.c
-@@ -350,6 +350,16 @@ static int perf_default_core_config(const char *var __maybe_unused,
- 	return 0;
+-	return scnprintf(hpp->buf, hpp->size, "%*s", len, hse->se->se_header);
++	return scnprintf(hpp->buf, hpp->size, "%-*s", len, hse->se->se_header);
  }
  
-+static int perf_ui_config(const char *var, const char *value)
-+{
-+	/* Add other config variables here. */
-+	if (!strcmp(var, "ui.show-headers")) {
-+		symbol_conf.show_hist_headers = perf_config_bool(var, value);
-+		return 0;
-+	}
-+	return 0;
-+}
-+
- int perf_default_config(const char *var, const char *value,
- 			void *dummy __maybe_unused)
- {
-@@ -359,6 +369,9 @@ int perf_default_config(const char *var, const char *value,
- 	if (!prefixcmp(var, "hist."))
- 		return perf_hist_config(var, value);
- 
-+	if (!prefixcmp(var, "ui."))
-+		return perf_ui_config(var, value);
-+
- 	/* Add other config variables here. */
- 	return 0;
- }
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 7b9096f29cdb..2e6a2e219eb9 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -34,6 +34,7 @@ struct symbol_conf symbol_conf = {
- 	.annotate_src		= true,
- 	.demangle		= true,
- 	.cumulate_callchain	= true,
-+	.show_hist_headers	= true,
- 	.symfs			= "",
- };
- 
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 615c752dd767..a81877b1dee0 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -118,7 +118,8 @@ struct symbol_conf {
- 			annotate_src,
- 			event_group,
- 			demangle,
--			filter_relative;
-+			filter_relative,
-+			show_hist_headers;
- 	const char	*vmlinux_name,
- 			*kallsyms_name,
- 			*source_prefix,
+ static int __sort__hpp_width(struct perf_hpp_fmt *fmt,
 -- 
 1.9.3
 
