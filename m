@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932069AbaGHADU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:03:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56383 "EHLO
+	id S1754734AbaGHALk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:11:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56387 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664AbaGHADN (ORCPT
+	with ESMTP id S932066AbaGHADU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 20:03:13 -0400
+	Mon, 7 Jul 2014 20:03:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.4 11/44] mtd: pxa3xx_nand: make the driver work on big-endian systems
-Date: Mon,  7 Jul 2014 17:07:01 -0700
-Message-Id: <20140707235858.979368136@linuxfoundation.org>
+        Valentine Sinitsyn <valentine.sinitsyn@gmail.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.4 23/44] KVM: x86: preserve the high 32-bits of the PAT register
+Date: Mon,  7 Jul 2014 17:07:13 -0700
+Message-Id: <20140707235859.343430186@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
 In-Reply-To: <20140707235858.652771077@linuxfoundation.org>
 References: <20140707235858.652771077@linuxfoundation.org>
@@ -29,49 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit b7e460624f0f3c31150f3b09e75b0d009e22ba5f upstream.
+commit 7cb060a91c0efc5ff94f83c6df3ed705e143cdb9 upstream.
 
-The pxa3xx_nand driver currently uses __raw_writel() and __raw_readl()
-to access I/O registers. However, those functions do not do any
-endianness swapping, which means that they won't work when the CPU
-runs in big-endian but the I/O registers are little endian, which is
-the common situation for ARM systems running big endian.
+KVM does not really do much with the PAT, so this went unnoticed for a
+long time.  It is exposed however if you try to do rdmsr on the PAT
+register.
 
-Since __raw_writel() and __raw_readl() do not include any memory
-barriers and the pxa3xx_nand driver can only be compiled for ARM
-platforms, the closest I/o accessors functions that do endianess
-swapping are writel_relaxed() and readl_relaxed().
-
-This patch has been verified to work on Armada XP GP: without the
-patch, the NAND is not detected when the kernel runs big endian while
-it is properly detected when the kernel runs little endian. With the
-patch applied, the NAND is properly detected in both situations
-(little and big endian).
-
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Reported-by: Valentine Sinitsyn <valentine.sinitsyn@gmail.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/pxa3xx_nand.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mtd/nand/pxa3xx_nand.c
-+++ b/drivers/mtd/nand/pxa3xx_nand.c
-@@ -93,10 +93,10 @@
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -436,7 +436,7 @@ struct kvm_vcpu_arch {
+ 	bool nmi_injected;    /* Trying to inject an NMI this entry */
  
- /* macros for registers read/write */
- #define nand_writel(info, off, val)	\
--	__raw_writel((val), (info)->mmio_base + (off))
-+	writel_relaxed((val), (info)->mmio_base + (off))
+ 	struct mtrr_state_type mtrr_state;
+-	u32 pat;
++	u64 pat;
  
- #define nand_readl(info, off)		\
--	__raw_readl((info)->mmio_base + (off))
-+	readl_relaxed((info)->mmio_base + (off))
- 
- /* error code and state */
- enum {
+ 	int switch_db_regs;
+ 	unsigned long db[KVM_NR_DB_REGS];
 
 
