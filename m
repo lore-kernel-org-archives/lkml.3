@@ -1,80 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164AbaGHIcJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:32:09 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:61185 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753926AbaGHIcE (ORCPT
+	id S1754132AbaGHIb4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:31:56 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:16131 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604AbaGHI0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:32:04 -0400
+	Tue, 8 Jul 2014 04:26:35 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 08 Jul 2014 01:19:39 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
+        David Herrmann <dh.herrmann@gmail.com>, Lucas Stach <dev@lynxeye.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>
+CC: <nouveau@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v4 1/6] drm/ttm: expose CPU address of DMA-allocated pages
+Date: Tue, 8 Jul 2014 17:25:56 +0900
+Message-ID: <1404807961-30530-2-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1404807961-30530-1-git-send-email-acourbot@nvidia.com>
+References: <1404807961-30530-1-git-send-email-acourbot@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <53AC0BCC.1010608@samsung.com>
-References: <1403781875-5425-1-git-send-email-t.figa@samsung.com>
-	<20140626113939.GP32514@n2100.arm.linux.org.uk>
-	<53AC0BCC.1010608@samsung.com>
-Date: Tue, 8 Jul 2014 09:32:02 +0100
-Message-ID: <CAD8Lp45MvDLsxehayx8uuGt3w3O0vGskiFjb1vdvtOyOv2nG2w@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Deterministic UART numbering on Samsung SoCs
-From: Daniel Drake <drake@endlessm.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, devicetree@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Tomasz Figa <tomasz.figa@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Pages allocated using the DMA API have a coherent memory mapping. Make
+this mapping visible to drivers so they can decide to use it instead of
+creating their own redundant one.
 
-How can we move forward here?
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ drivers/gpu/drm/ttm/ttm_page_alloc_dma.c | 2 ++
+ drivers/gpu/drm/ttm/ttm_tt.c             | 6 +++++-
+ include/drm/ttm/ttm_bo_driver.h          | 2 ++
+ 3 files changed, 9 insertions(+), 1 deletion(-)
 
-On Thu, Jun 26, 2014 at 1:02 PM, Tomasz Figa <t.figa@samsung.com> wrote:
-> - basically Samsung UART already has its own namespace (ttySAC) and the
-> order inside it is well-defined - instance ID shall be the hardware
-> instance number as specified by documentation. The ports vary in certain
-> aspects and the ID is important knowledge of the driver. The problem
-> here was broken implementation of assigning IDs based on probe order,
-> which worked only because on all Exynos platforms all ports have been
-> always registered (which we want to change now and keep unused ones
-> "disabled" in DT),
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+index fb8259f69839..0301fac5badd 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+@@ -847,6 +847,7 @@ static int ttm_dma_pool_get_pages(struct dma_pool *pool,
+ 	if (count) {
+ 		d_page = list_first_entry(&pool->free_list, struct dma_page, page_list);
+ 		ttm->pages[index] = d_page->p;
++		ttm_dma->cpu_address[index] = d_page->vaddr;
+ 		ttm_dma->dma_address[index] = d_page->dma;
+ 		list_move_tail(&d_page->page_list, &ttm_dma->pages_list);
+ 		r = 0;
+@@ -978,6 +979,7 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
+ 	INIT_LIST_HEAD(&ttm_dma->pages_list);
+ 	for (i = 0; i < ttm->num_pages; i++) {
+ 		ttm->pages[i] = NULL;
++		ttm_dma->cpu_address[i] = 0;
+ 		ttm_dma->dma_address[i] = 0;
+ 	}
+ 
+diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
+index 75f319090043..341594ede596 100644
+--- a/drivers/gpu/drm/ttm/ttm_tt.c
++++ b/drivers/gpu/drm/ttm/ttm_tt.c
+@@ -58,6 +58,8 @@ static void ttm_dma_tt_alloc_page_directory(struct ttm_dma_tt *ttm)
+ 	ttm->ttm.pages = drm_calloc_large(ttm->ttm.num_pages, sizeof(void*));
+ 	ttm->dma_address = drm_calloc_large(ttm->ttm.num_pages,
+ 					    sizeof(*ttm->dma_address));
++	ttm->cpu_address = drm_calloc_large(ttm->ttm.num_pages,
++					    sizeof(*ttm->cpu_address));
+ }
+ 
+ #ifdef CONFIG_X86
+@@ -228,7 +230,7 @@ int ttm_dma_tt_init(struct ttm_dma_tt *ttm_dma, struct ttm_bo_device *bdev,
+ 
+ 	INIT_LIST_HEAD(&ttm_dma->pages_list);
+ 	ttm_dma_tt_alloc_page_directory(ttm_dma);
+-	if (!ttm->pages || !ttm_dma->dma_address) {
++	if (!ttm->pages || !ttm_dma->dma_address || !ttm_dma->cpu_address) {
+ 		ttm_tt_destroy(ttm);
+ 		pr_err("Failed allocating page table\n");
+ 		return -ENOMEM;
+@@ -243,6 +245,8 @@ void ttm_dma_tt_fini(struct ttm_dma_tt *ttm_dma)
+ 
+ 	drm_free_large(ttm->pages);
+ 	ttm->pages = NULL;
++	drm_free_large(ttm_dma->cpu_address);
++	ttm_dma->cpu_address = NULL;
+ 	drm_free_large(ttm_dma->dma_address);
+ 	ttm_dma->dma_address = NULL;
+ }
+diff --git a/include/drm/ttm/ttm_bo_driver.h b/include/drm/ttm/ttm_bo_driver.h
+index a5183da3ef92..7d30f0666d24 100644
+--- a/include/drm/ttm/ttm_bo_driver.h
++++ b/include/drm/ttm/ttm_bo_driver.h
+@@ -133,6 +133,7 @@ struct ttm_tt {
+  * struct ttm_dma_tt
+  *
+  * @ttm: Base ttm_tt struct.
++ * @cpu_address: The CPU address of the pages
+  * @dma_address: The DMA (bus) addresses of the pages
+  * @pages_list: used by some page allocation backend
+  *
+@@ -142,6 +143,7 @@ struct ttm_tt {
+  */
+ struct ttm_dma_tt {
+ 	struct ttm_tt ttm;
++	void **cpu_address;
+ 	dma_addr_t *dma_address;
+ 	struct list_head pages_list;
+ };
+-- 
+2.0.0
 
-Yes, the kernel help text documents this quite well:
-
-config SERIAL_SAMSUNG
-    tristate "Samsung SoC serial support"
-    depends on PLAT_SAMSUNG
-    select SERIAL_CORE
-    help
-      Support for the on-chip UARTs on the Samsung S3C24XX series CPUs,
-      providing /dev/ttySAC0, 1 and 2 (note, some machines may not
-      provide all of these ports, depending on how the serial port
-      pins are configured.
-
-> - we already have a lot of userspace depending on the aforementioned
-> ttySAC namespace and proper ordering of instances there. While I believe
-> the proper solution as of today would be to go back to standard ttyS
-> namespace and make userspace use a smarter way of identifying the
-> instances (e.g. by path or id, as you suggested), I don't think this
-> will make anyone's life easier with current assumptions,
-
-I like the sound of going to the standard ttyS notation and only
-providing ports for ones that exist, but is this userspace-visible
-naming change OK? You could argue that userspace that relies on fixed
-device paths is a bit broken, but that argument would be a bit cloudy
-given the kernel documentation for the ttySAC devices above.
-
-> - correct me if I'm wrong, but I don't think the
-> /dev/serial/by-{path,id} would be handled in kernel's console= parameter.
-
-That's right, that problem is left to the user, but at least we'd be
-consistent with other SoCs (and open to generic solutions to that
-inconvenience).
-
-Daniel
