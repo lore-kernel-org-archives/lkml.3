@@ -1,129 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815AbaGHOse (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 10:48:34 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49808 "EHLO
+	id S1752627AbaGHOwB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 10:52:01 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:51468 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190AbaGHOsd (ORCPT
+	with ESMTP id S1750707AbaGHOv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 10:48:33 -0400
-Date: Tue, 8 Jul 2014 07:48:29 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: scsi-mq V2
-Message-ID: <20140708144829.GA5539@infradead.org>
-References: <1403715121-1201-1-git-send-email-hch@lst.de>
+	Tue, 8 Jul 2014 10:51:59 -0400
+Date: Tue, 8 Jul 2014 16:51:47 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: mm/sched/net: BUG when running simple code
+Message-ID: <20140708145147.GH6758@twins.programming.kicks-ass.net>
+References: <539A6850.4090408@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="D3uGefx/nfj0hkMF"
 Content-Disposition: inline
-In-Reply-To: <1403715121-1201-1-git-send-email-hch@lst.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <539A6850.4090408@oracle.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 06:51:47PM +0200, Christoph Hellwig wrote:
-> Changes from V1:
->  - rebased on top of the core-for-3.17 branch, most notable the
->    scsi logging changes
->  - fixed handling of cmd_list to prevent crashes for some heavy
->    workloads
->  - fixed incorrect handling of !target->can_queue
->  - avoid scheduling a workqueue on I/O completions when no queues
->    are congested
-> 
-> In addition to the patches in this thread there also is a git available at:
-> 
-> 	git://git.infradead.org/users/hch/scsi.git scsi-mq.2
 
+--D3uGefx/nfj0hkMF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I've pushed out a new scsi-mq.3 branch, which has been rebased on the
-latest core-for-3.17 tree + the "RFC: clean up command setup" series
-from June 29th.  Robert Elliot found a problem with not fully zeroed
-out UNMAP CDBs, which is fixed by the saner discard handling in that
-series.
+On Thu, Jun 12, 2014 at 10:56:16PM -0400, Sasha Levin wrote:
+> Hi all,
+>=20
+> Okay, I'm really lost. I got the following when fuzzing, and can't really=
+ explain what's
+> going on. It seems that we get a "unable to handle kernel paging request"=
+ when running
+> rather simple code, and I can't figure out how it would cause it.
+>=20
 
-There is a new patch to factor the code from the above series for
-blk-mq use, which I've attached below.  Besides that the only changes
-are minor merge fixups in the main blk-mq usage patch.
+Are you running on AMD hardware? If so; check out this thread:
 
----
->From f925c317c74849666d599926d8ad8f34ef99d5cf Mon Sep 17 00:00:00 2001
-From: Christoph Hellwig <hch@lst.de>
-Date: Tue, 8 Jul 2014 13:16:17 +0200
-Subject: scsi: add scsi_setup_cmnd helper
+  http://marc.info/?i=3D53B02CEB.7010607@web.de
 
-Factor out command setup code that will be shared with the blk-mq code path.
+--D3uGefx/nfj0hkMF
+Content-Type: application/pgp-signature
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- drivers/scsi/scsi_lib.c |   40 ++++++++++++++++++++++------------------
- 1 file changed, 22 insertions(+), 18 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 116f541..61afae8 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1116,6 +1116,27 @@ static int scsi_setup_fs_cmnd(struct scsi_device *sdev, struct request *req)
- 	return scsi_cmd_to_driver(cmd)->init_command(cmd);
- }
- 
-+static int scsi_setup_cmnd(struct scsi_device *sdev, struct request *req)
-+{
-+	struct scsi_cmnd *cmd = req->special;
-+
-+	if (!blk_rq_bytes(req))
-+		cmd->sc_data_direction = DMA_NONE;
-+	else if (rq_data_dir(req) == WRITE)
-+		cmd->sc_data_direction = DMA_TO_DEVICE;
-+	else
-+		cmd->sc_data_direction = DMA_FROM_DEVICE;
-+
-+	switch (req->cmd_type) {
-+	case REQ_TYPE_FS:
-+		return scsi_setup_fs_cmnd(sdev, req);
-+	case REQ_TYPE_BLOCK_PC:
-+		return scsi_setup_blk_pc_cmnd(sdev, req);
-+	default:
-+		return BLKPREP_KILL;
-+	}
-+}
-+
- static int
- scsi_prep_state_check(struct scsi_device *sdev, struct request *req)
- {
-@@ -1219,24 +1240,7 @@ static int scsi_prep_fn(struct request_queue *q, struct request *req)
- 		goto out;
- 	}
- 
--	if (!blk_rq_bytes(req))
--		cmd->sc_data_direction = DMA_NONE;
--	else if (rq_data_dir(req) == WRITE)
--		cmd->sc_data_direction = DMA_TO_DEVICE;
--	else
--		cmd->sc_data_direction = DMA_FROM_DEVICE;
--
--	switch (req->cmd_type) {
--	case REQ_TYPE_FS:
--		ret = scsi_setup_fs_cmnd(sdev, req);
--		break;
--	case REQ_TYPE_BLOCK_PC:
--		ret = scsi_setup_blk_pc_cmnd(sdev, req);
--		break;
--	default:
--		ret = BLKPREP_KILL;
--	}
--
-+	ret = scsi_setup_cmnd(sdev, req);
- out:
- 	return scsi_prep_return(q, req, ret);
- }
--- 
-1.7.10.4
+iQIcBAEBAgAGBQJTvAWDAAoJEHZH4aRLwOS6VnEP/05c2sj5PFztHzQWIEtZ7xo7
+C9fdGJntcS00lx8pqS8e2wL8j5lk3LJZiJppgtH1xNXVGIKFE03vTgt+K+W6WFtA
+KHZhFlarHk73JEZhFD1aCcqUC9mqfY6vOgy3FuluQg029OnAxSQQ52xDEiiYPODx
+9VugzaxExZmWk0ke13szomqq8adbwjYCc5pWUIPNf1QbdUhj/w5X05ppDoNqz4TP
+mLAgu7aLkYW0HaXgk3Qi0nUKcbHrQ+iBB8qmifWNw3oVMW9dsrJ3DQdYFK74EfE3
+89o8kd9TxjInToggT3dFKYJNHISikolaGVFr5lfVOeOLJkegobA9eCwgVZ8vrjO4
+QNt6Mu9dkYO0ZpyC/7VJZl02uILeMtKEPU3lcn8EKPAlb9UUsBrPEoI2m5e/my7F
+uA6cEATo5wOzUtg9XDn3kLgSkQfXMGWCIArD/NhCiRU7rbUFic5kd22oK+I8CS7v
+O7dp1cyU1Aged1nO4TOwUsj/OcWFbM9CHXUKDqs5on42YrQakagViUi4i8Zi2P9i
+JDxZIaNlLQsEz39imnXM70AMRXoPoOdxgZlIZz2Bxc+R/QT6eYyYC+NK8vjLuNGV
+Jo7vjWlKWQ5UqlIyZQ1z7zl5sDvEXe/URXwXvnyKChsP23IW8H0KG0Wax0TZUU75
+iqT2wd/0IfSQmpBzaX2G
+=yYJn
+-----END PGP SIGNATURE-----
 
+--D3uGefx/nfj0hkMF--
