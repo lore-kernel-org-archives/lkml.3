@@ -1,125 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764AbaGHIHt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:07:49 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:43818 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610AbaGHIHq (ORCPT
+	id S1753345AbaGHIIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:08:35 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:61364 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927AbaGHIIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:07:46 -0400
-Date: Tue, 8 Jul 2014 10:07:40 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Vojtech Pavlik <vojtech@suse.cz>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <jkosina@suse.cz>,
-        Jiri Slaby <jslaby@suse.cz>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] s390: add support for DYNAMIC_FTRACE_WITH_REGS
-Message-ID: <20140708080740.GA4491@osiris>
-References: <20140703120046.GA10664@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140703120046.GA10664@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070808-1948-0000-0000-00000073AA09
+	Tue, 8 Jul 2014 04:08:32 -0400
+X-AuditID: cbfec7f4-b7fac6d000006cfe-ea-53bba6fdeefb
+Message-id: <53BBA6B4.7030705@samsung.com>
+Date: Tue, 08 Jul 2014 11:07:16 +0300
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-ima-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, dmitry.kasatkin@gmail.com
+Subject: Re: [PATCH v3 1/3] ima: use ahash API for file hash calculation
+References: <cover.1404475462.git.d.kasatkin@samsung.com>
+ <dc5977267c662c98f02cd637dd44c42be850916f.1404475462.git.d.kasatkin@samsung.com>
+ <1404734207.3029.22.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <53BAA281.7040903@samsung.com>
+ <1404747894.3029.58.camel@dhcp-9-2-203-236.watson.ibm.com>
+ <53BAC6A6.2010509@samsung.com>
+ <1404750875.3029.79.camel@dhcp-9-2-203-236.watson.ibm.com>
+In-reply-to: <1404750875.3029.79.camel@dhcp-9-2-203-236.watson.ibm.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Originating-IP: [106.122.1.121]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t/xa7p/l+0ONnh9T9ziy9I6i/v3fjJZ
+	vJwxj93i8q45bBYfeh6xWXxaMYnZgc1j56y77B4PDm1m8di94DOTx+dNcgEsUVw2Kak5mWWp
+	Rfp2CVwZ306sZyqYKlVx4sdLtgbGftEuRk4OCQETiTXPXzNB2GISF+6tZ+ti5OIQEljKKHH+
+	1mJ2CKeRSeL84xlQzixGiTUndgOVcXDwCmhJdL5MBulmEVCVWHb1IguIzSagJ7Gh+Qc7iC0q
+	ECFxoO8ZK4jNKyAo8WPyPbAaEQFNiWOtHxlBZjILrGaU2Nf3EKxBWMBD4ubrL8wQy1qZJW49
+	6wVLcAq4S7Rs2g/WzSygLjFp3iJmCFteYvOat2C2ENAV3WvXskH8oyhxevI55gmMwrOQLJ+F
+	pH0WkvYFjMyrGEVTS5MLipPScw31ihNzi0vz0vWS83M3MUKi48sOxsXHrA4xCnAwKvHwatTu
+	DhZiTSwrrsw9xCjBwawkwrthPlCINyWxsiq1KD++qDQntfgQIxMHp1QDo5DUB8bV6hUFR3Jm
+	Vy97fEHvUsnzXeUOwqFveb3XshyUL/pzTvVT6Z7Uvt0Z8R3b5qr/0ZkWuCB9i0roVcEupT+6
+	hrp8v/wdsr2VT1sbFRietONhSHRXehi0bbLeT36z0isem9+aPOHQevWvtJdHwnOxahDfzrl1
+	XJFb82de3uM9f9r/c4+ClViKMxINtZiLihMBORO+gWwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 02:00:46PM +0200, Vojtech Pavlik wrote:
-> Add support for DYNAMIC_FTRACE_WITH_REGS to 64-bit and 31-bit s390
-> architectures. This is required for kGraft and kpatch to work on s390.
-> 
-> It's done by adding a _regs variant of ftrace_caller that preserves
-> registers and puts them on stack in a struct pt_regs layout and
-> allows modification of return address by changing the PSW (instruction
-> pointer) member od struct pt_regs. 
+On 07/07/14 19:34, Mimi Zohar wrote:
+> On Mon, 2014-07-07 at 19:11 +0300, Dmitry Kasatkin wrote: 
+>> On 07/07/14 18:44, Mimi Zohar wrote:
+>>> On Mon, 2014-07-07 at 16:37 +0300, Dmitry Kasatkin wrote: 
+>>>> On 07/07/14 14:56, Mimi Zohar wrote:
+>>>>> On Fri, 2014-07-04 at 15:05 +0300, Dmitry Kasatkin wrote: 
+>>>>>> +/**
+>>>>> This is the kernel-doc delimiter.
+>>>>>
+>>>>>> + * ima_calc_file_hash - calculae file hash
+>>>>>> + *
+>>>>> Missing kernel-doc argument descriptions.  Refer to
+>>>>> Documentation/kernel-doc-nano-HOWTO.txt.
+>>> Not defining the arguments results in a kernel-doc warning.  Providing
+>>> kernel-doc is nice, but is unnecessary in this case, as it isn't an
+>>> exported loadable module, nor an externally visible function to other
+>>> kernel files.  Either remove the extra asterisk, making it a regular
+>>> comment, or add the arguments.
+>>>
+>>>> There is no need to explain arguments as they self-evident.
+>>>>
+>>>>>> + * if ima_ahash_minsize parameter is non-zero, this function uses
+>>>>>> + * ahash for hash caclulation. ahash performance varies for different
+>>>>>> + * data sizes on different crypto accelerators. shash performance might
+>>>>>> + * be better for small file. 'ima.ahash_minsize' module parameter allows
+>>>>>> + * to specify the best value for the system.
+>>>>>> + *
+>>>>>> + * If ahash fails, it fallbacks to shash.
+>>>>>> + */
+>>>>>> +int ima_calc_file_hash(struct file *file, struct ima_digest_data *hash)
+>>>>>> +{
+>>>>>> +	loff_t i_size;
+>>>>>> +	int rc;
+>>>>>> +
+>>>>>> +	i_size = i_size_read(file_inode(file));
+>>>>>> +
+>>>>>> +	if (ima_ahash_minsize && i_size >= ima_ahash_minsize) {
+>>>>>> +		rc = ima_calc_file_ahash(file, hash);
+>>>>>> +		if (!rc)
+>>>>>> +			return 0;
+>>>>>> +	}
+>>>>>> +
+>>>>>> +	return ima_calc_file_shash(file, hash);
+>>>>>> +}
+>>>>> If the crypto accelerator fails, it falls back to using shash.  Is their
+>>>>> any indication that the HW error is intermittent or persistent?  Should
+>>>>> ima_ahash_minsize be reset?
+>>>> If hw constantly does not work then it is simply broken.
+>>> True
+>>>
+>>>> You want to be protected from "random" failures.
+>>>> For me it is not the case either... If it works then it works...
+>>> This discussion isn't about your particular HW environment, but a
+>>> general question.  For example, suppose we were discussing a laptop with
+>>> a HW crypto accelerator.  If the HW crypto broke, I would at least want
+>>> to be able to quiesce the system properly.  I'd most likely want to be
+>>> able to continue using my laptop with software crypto.
+>> Driver probing code will detect that HW is not responding and driver
+>> will not be enabled...
+>>
+>> IMA will not be able to use it...
+>>
+>> It is the same story as with any other HW and driver in the system.
+> Right, but my concern is not about unloading the kernel module, but
+> about the IMA module parameters left initialized.  The existing code
+> will continue using ahash (software version), even though the kernel
+> module was unloaded, not shash.  My question is about the software
+> implementations of ahash vs. shash performance.
 >
-> Signed-off-by: Vojtech Pavlik <vojtech@suse.cz>
-> Reviewed-by: Jiri Kosina <jkosina@suse.cz>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Mimi
 
-So I assume you use the instruction_pointer() macro to access the
-return address then?
+If HW driver will not be available, ahash loads generic driver which is
+using shash.
+Performance of that will be the same as for using shash directly.
 
-All of this seems a bit of a hack to me.. the natural place of the
-return address of a function would be register 14, and not the
-psw member of the pt_regs structure.
+- Dmitry
 
-It's then also inconsistent to only save register r0-r13 to the
-gprs member.. well, you can't save r14, since what should
-happen if both r14 in the gprs member of pt_regs and in the psw
-part would have been changed?
-
-Besides that a couple more comments below.
-
-> diff --git a/arch/s390/kernel/mcount64.S b/arch/s390/kernel/mcount64.S
-> index 1c52eae..bcad958 100644
-> --- a/arch/s390/kernel/mcount64.S
-> +++ b/arch/s390/kernel/mcount64.S
-> @@ -49,6 +49,44 @@ ENTRY(ftrace_graph_caller)
->  	lg	%r14,112(%r15)
->  	br	%r14
-> 
-> +#ifdef CONFIG_DYNAMIC_FTRACE_WITH_REGS
-> +ENTRY(ftrace_regs_caller)
-> +	larl	%r1,function_trace_stop
-> +	icm	%r1,0xf,0(%r1)
-> +	bnzr	%r14
-
-The three lines above should go away, but that's not your problem, since
-Steven is about to remove the function_trace_stop functionality.
-
-> +	lgr	%r1,%r15
-> +	aghi	%r15,-336
-> +	stg	%r1,__SF_BACKCHAIN(%r15)
-> +	stg	%r1,304(%r15)
-> +	stmg	%r0,%r13,184(%r15)
-> +	stg	%r14,176(%r15)
-> +	lgr	%r2,%r14
-> +	aghi	%r2,-MCOUNT_INSN_SIZE
-> +	lg	%r3,344(%r15)
-> +	stg	%r3,296(%r15)
-> +	larl	%r4,function_trace_op
-> +	lg	%r4,0(%r4)
-> +	lgr	%r5, %r15
-> +	aghi	%r5, 160
-> +	larl	%r14,ftrace_trace_function
-> +	lg	%r14,0(%r14)
-> +	basr	%r14,%r14
-> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-> +	lg	%r2,344(%r15)
-> +	lg	%r3,448(%r15)
-> +ENTRY(ftrace_regs_graph_caller)
-> +# The bras instruction gets runtime patched to call prepare_ftrace_return.
-> +# See ftrace_enable_ftrace_graph_caller. The patched instruction is:
-> +#	bras	%r14,prepare_ftrace_return
-> +	bras	%r14,0f
-> +0:	stg	%r2,344(%r15)
-> +#endif
-> +	lmg	%r0,%r13,184(%r15)
-> +	lg	%r14,176(%r15)
-> +	aghi	%r15,336
-> +	br	%r14
-> +#endif
-
-Some objections: this code assumes that sizeof(struct pt_regs) does not
-change, which is not correct. So as soon as we touch struct pt_regs this
-code would be broken. Also the order of the members within struct pt_regs
-is not necessarily static (pt_regs is not ABI).
-
-So using the supplied asm-offsets.c offsets within the pt_regs structure
-would be the way to go.
-
-In addition I don't like the code duplication. This is nearly an identical
-copy of ftrace_caller, except that it (partially) creates a pt_regs structure
-on the stack. I'd rather change the existing ftrace_caller code to do that
-unconditionally.
-
-However, what I _really_ do not like is the odd usage of r14 to create
-a malformed psw member within the pt_regs structure, and thus omitting r14
-from the gprs array.
+>
 
