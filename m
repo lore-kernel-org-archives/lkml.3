@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492AbaGHMrA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 08:47:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51151 "EHLO mx2.suse.de"
+	id S1754624AbaGHMrb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 08:47:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51182 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752912AbaGHMq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 08:46:59 -0400
-Date: Tue, 8 Jul 2014 14:46:57 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-cc: Thomas Meyer <thomas@m3y3r.de>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pavel Machek <pavel@ucw.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [Intel-gfx] Linux 3.16-rc2
-In-Reply-To: <20140708085901.GI26405@nuc-i3427.alporthouse.com>
-Message-ID: <alpine.LNX.2.00.1407081445310.1655@pobox.suse.cz>
-References: <871tuea7nz.fsf@intel.com> <20140624115753.GD17674@nuc-i3427.alporthouse.com> <1403612670.3091.10.camel@localhost.localdomain> <20140624122737.GF17674@nuc-i3427.alporthouse.com> <20140630100220.GA4934@xo-6d-61-c0.localdomain>
- <20140630100925.GA18836@nuc-i3427.alporthouse.com> <1404317921.3910.3.camel@localhost.localdomain> <20140707151613.GG5821@phenom.ffwll.local> <20140707160402.GA26405@nuc-i3427.alporthouse.com> <alpine.LNX.2.00.1407080013030.1655@pobox.suse.cz>
- <20140708085901.GI26405@nuc-i3427.alporthouse.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753322AbaGHMra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 08:47:30 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Ronald <ronald645@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] firmware: Create directories for external firmware
+Date: Tue,  8 Jul 2014 14:47:19 +0200
+Message-Id: <1404823639-6496-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <CAPVoSvSmzRWSJeR9dyBO0qS6-9SWA_d-CjGuQeULGS_MRUY77w@mail.gmail.com>
+References: <CAPVoSvSmzRWSJeR9dyBO0qS6-9SWA_d-CjGuQeULGS_MRUY77w@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Jul 2014, Chris Wilson wrote:
+Commit 5180d5f4 ("firmware: Simplify directory creation") broke
+including firmware specified in CONFIG_EXTRA_FIRMWARE:
 
-> > I actually tried to introduce rather large delays between individual 
-> > I915_WRITE() calls in the ring initialization sequence a couple weeks ago 
-> > already, but it resulted in complete machine lockup (which is worse than 
-> > my usual symptoms) during resume. Therefore I probably lack the knowledge 
-> > of internal workings of the HW that would allow me to guess what the 
-> > reasonable timeout value should be.
-> > 
-> > Willing to test any patches.
-> 
-> Are you using the extra patches on bug 76554? If not, try
+  MK_FW   firmware/amd-ucode/microcode_amd.bin.gen.S
+/bin/sh: firmware/amd-ucode/microcode_amd.bin.gen.S: No such file or directory
+...
+firmware/Makefile:185: recipe for target
+'firmware/amd-ucode/microcode_amd.bin.gen.S' failed
 
-Just for debugging.
+It works with O= builds, because the directory is created by
+Makefile.build. Create the directory in firmware/Makefile in non-O
+builds.
 
-> diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-> index e18ed05dc0d5..48326f9628d4 100644
-> --- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-> +++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-> @@ -526,6 +526,9 @@ static int init_ring_common(struct intel_engine_cs *ring)
->                         ((ringbuf->size - PAGE_SIZE) & RING_NR_PAGES)
->                         | RING_VALID);
->  
-> +       I915_WRITE_HEAD(ring, 0);
-> +       (void)I915_READ_HEAD(ring);
-> +
->         /* If the head is still not zero, the ring is dead */
->         if (wait_for((I915_READ_CTL(ring) & RING_VALID) != 0 &&
->                      I915_READ_START(ring) == i915_gem_obj_ggtt_offset(obj) &&
+Reported-by: Ronald <ronald645@gmail.com>
+Reported-by: Torsten Kaiser <just.for.lkml@googlemail.com>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
 
-Tried on top of current Linus' tree, and no improvement. ring 
-initialization failure upon resume, and window redrawing hosed.
+Can you try this patch?
 
+Ronald, can you tell me your full name for the Reported-by: line?
+
+Thanks.
+---
+
+ firmware/Makefile | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/firmware/Makefile b/firmware/Makefile
+index 5747417..0862d34 100644
+--- a/firmware/Makefile
++++ b/firmware/Makefile
+@@ -219,6 +219,12 @@ $(obj)/%.fw: $(obj)/%.H16 $(ihex2fw_dep)
+ obj-y				 += $(patsubst %,%.gen.o, $(fw-external-y))
+ obj-$(CONFIG_FIRMWARE_IN_KERNEL) += $(patsubst %,%.gen.o, $(fw-shipped-y))
+ 
++ifeq ($(KBUILD_SRC),)
++# Makefile.build only creates subdirectories for O= builds, but external
++# firmware might live outside the kernel source tree
++_dummy := $(foreach d,$(addprefix $(obj)/,$(dir $(fw-external-y))), $(shell [ -d $(d) ] || mkdir -p $(d)))
++endif
++
+ # Remove .S files and binaries created from ihex
+ # (during 'make clean' .config isn't included so they're all in $(fw-shipped-))
+ targets := $(fw-shipped-) $(patsubst $(obj)/%,%, \
 -- 
-Jiri Kosina
-SUSE Labs
+1.8.4.5
+
