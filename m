@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161AbaGHR7L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 13:59:11 -0400
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:34680 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754897AbaGHR7J (ORCPT
+	id S932175AbaGHSBv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 14:01:51 -0400
+Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:6417
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752746AbaGHSBu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 13:59:09 -0400
-X-Originating-IP: 173.246.103.110
-Date: Tue, 8 Jul 2014 10:58:55 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 3/3] rcu: Update RCU maintainership
-Message-ID: <20140708175855.GA2927@jtriplet-mobl1>
-References: <20140707224146.GA9118@linux.vnet.ibm.com>
- <1404772924-9423-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1404772924-9423-3-git-send-email-paulmck@linux.vnet.ibm.com>
+	Tue, 8 Jul 2014 14:01:50 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Richard Weinberger <richard@nod.at>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] hyperv: Add netpoll support
+Thread-Topic: [PATCH] hyperv: Add netpoll support
+Thread-Index: AQHPmo+Sem0p3ifQZUi3cyqbFGXcHpuWd56A
+Date: Tue, 8 Jul 2014 18:01:47 +0000
+Message-ID: <9fb91c2ee32a4a59a2bec54043a6b9fd@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1404811947-5174-1-git-send-email-richard@nod.at>
+In-Reply-To: <1404811947-5174-1-git-send-email-richard@nod.at>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [131.107.160.21]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:
+x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+x-forefront-prvs: 0266491E90
+x-forefront-antispam-report: SFV:NSPM;SFS:(6009001)(51704005)(13464003)(377454003)(199002)(189002)(81542001)(92566001)(76482001)(79102001)(21056001)(76176999)(85852003)(74316001)(19580395003)(99396002)(105586002)(99286002)(86362001)(64706001)(1511001)(46102001)(106356001)(83322001)(19580405001)(83072002)(107046002)(74502001)(31966008)(76576001)(85306003)(4396001)(77982001)(81342001)(50986999)(87936001)(80022001)(54356999)(95666004)(2656002)(101416001)(74662001)(20776003)(33646001)(106116001)(108616002)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB300;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1404772924-9423-3-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 03:42:04PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> 
-> Drop Dipankar Sarma at his request (https://lkml.org/lkml/2014/6/2/628),
-> add Josh Triplett based on long-term review, contributions, and
-> agreement to take on this role (https://lkml.org/lkml/2014/6/2/554).
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-Does it make sense to keep separate entries for each of these, at this
-point, or should we just merge all of them into the main "READ-COPY
-UPDATE (RCU)" entry?
+> -----Original Message-----
+> From: Richard Weinberger [mailto:richard@nod.at]
+> Sent: Tuesday, July 8, 2014 2:32 AM
+> To: KY Srinivasan; Haiyang Zhang
+> Cc: devel@linuxdriverproject.org; netdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org; Richard Weinberger
+> Subject: [PATCH] hyperv: Add netpoll support
+> 
+> In order to have at least a netconsole to debug kernel issues on Windows
+> Azure this patch implements netpoll support.
+> Sending packets is easy, netvsc_start_xmit() does already everything
+> needed.
+> To receive we need to trigger the channel callback which is usally called via
+> tasklet_schedule().
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  drivers/net/hyperv/netvsc_drv.c | 14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+> 
+> diff --git a/drivers/net/hyperv/netvsc_drv.c
+> b/drivers/net/hyperv/netvsc_drv.c index 4fd71b7..367b71e 100644
+> --- a/drivers/net/hyperv/netvsc_drv.c
+> +++ b/drivers/net/hyperv/netvsc_drv.c
+> @@ -736,6 +736,17 @@ static int netvsc_set_mac_addr(struct net_device
+> *ndev, void *p)
+>  	return err;
+>  }
+> 
+> +#ifdef CONFIG_NET_POLL_CONTROLLER
+> +static void netvsc_poll_controller(struct net_device *net) {
+> +	struct net_device_context *net_device_ctx = netdev_priv(net);
+> +	struct hv_device *dev = net_device_ctx->device_ctx;
+> +
+> +	local_bh_disable();
+> +	netvsc_channel_cb(dev->channel);
+> +	local_bh_enable();
+> +}
+> +#endif
 
->  MAINTAINERS | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 92f2bf91eec1..922661d17083 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -7405,6 +7405,7 @@ F:	kernel/rcu/torture.c
->  
->  RCUTORTURE TEST FRAMEWORK
->  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> +M:	Josh Triplett <josh@joshtriplett.org>
->  R:	Steven Rostedt <rostedt@goodmis.org>
->  R:	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
->  R:	Lai Jiangshan <laijs@cn.fujitsu.com>
-> @@ -7430,8 +7431,8 @@ S:	Supported
->  F:	net/rds/
->  
->  READ-COPY UPDATE (RCU)
-> -M:	Dipankar Sarma <dipankar@in.ibm.com>
->  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> +M:	Josh Triplett <josh@joshtriplett.org>
->  R:	Steven Rostedt <rostedt@goodmis.org>
->  R:	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
->  R:	Lai Jiangshan <laijs@cn.fujitsu.com>
-> @@ -8214,6 +8215,7 @@ F:	mm/sl?b.c
->  SLEEPABLE READ-COPY UPDATE (SRCU)
->  M:	Lai Jiangshan <laijs@cn.fujitsu.com>
->  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> +M:	Josh Triplett <josh@joshtriplett.org>
->  R:	Steven Rostedt <rostedt@goodmis.org>
->  R:	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
->  L:	linux-kernel@vger.kernel.org
-> -- 
-> 1.8.1.5
-> 
+Each channel is bound to a specific VCPU in the guest and the channel callback is expected to be delivered on
+the VCPU the channel is bound to. This code is not satisfying that requirement.
+
+Regards,
+
+K. Y
+
