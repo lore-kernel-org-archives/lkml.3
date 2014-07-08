@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730AbaGHBeg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 21:34:36 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:41717 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236AbaGHBef (ORCPT
+	id S1754056AbaGHBkX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 21:40:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56997 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880AbaGHBkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 21:34:35 -0400
-Date: Tue, 8 Jul 2014 09:34:26 +0800
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Wei Yang <weiyang@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: mm: slub: invalid memory access in setup_object
-Message-ID: <20140708013426.GA18392@richard>
-Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-References: <53AAFDF7.2010607@oracle.com>
- <alpine.DEB.2.11.1406251228130.29216@gentwo.org>
- <alpine.DEB.2.02.1406301500410.13545@chino.kir.corp.google.com>
- <alpine.DEB.2.11.1407010956470.5353@gentwo.org>
- <20140702020454.GA6961@richard>
- <alpine.DEB.2.11.1407020918130.17773@gentwo.org>
- <20140703124015.GA17431@richard>
- <alpine.DEB.2.11.1407070850510.21323@gentwo.org>
+	Mon, 7 Jul 2014 21:40:19 -0400
+Date: Mon, 7 Jul 2014 18:44:42 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/8] phy: phy-samsung-usb2: Change phy power on/power off
+ sequence
+Message-ID: <20140708014442.GB13844@kroah.com>
+References: <1404715705-5041-1-git-send-email-kishon@ti.com>
+ <1404715705-5041-4-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1407070850510.21323@gentwo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14070801-9264-0000-0000-0000067E1F7A
+In-Reply-To: <1404715705-5041-4-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 07, 2014 at 08:51:08AM -0500, Christoph Lameter wrote:
->On Thu, 3 Jul 2014, Wei Yang wrote:
->
->> Here is my refined version, hope this is more friendly to the audience.
->
->Acked-by: Christoph Lameter <cl@linux.com>
+On Mon, Jul 07, 2014 at 12:18:20PM +0530, Kishon Vijay Abraham I wrote:
+> From: Kamil Debski <k.debski@samsung.com>
+> 
+> The Exynos4412 USB 2.0 PHY hardware differs from the description provided
+> in the documentation. Some register bits have different function. This
+> patch fixes the defines of register bits and changes the way how phys are
+> powered on and off.
+> 
+> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+> Tested-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> Tested-by: Daniel Drake <drake@endlessm.com>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>  drivers/phy/phy-exynos4x12-usb2.c |  112 +++++++++++++++++++++++++------------
+>  drivers/phy/phy-exynos5250-usb2.c |    2 -
+>  drivers/phy/phy-samsung-usb2.h    |    3 +-
+>  3 files changed, 77 insertions(+), 40 deletions(-)
+> 
 
-Thanks. I am glad to work with you.
+This doesn't look like a regression fix for 3.16-final, it looks like a
+"new feature" to me :(
 
--- 
-Richard Yang
-Help you, Help me
+sorry, I can't take this pull request, want me to pick the individual
+patches instead?
 
+
+thanks,
+
+greg k-h
