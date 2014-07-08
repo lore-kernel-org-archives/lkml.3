@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368AbaGHOjc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 10:39:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33263 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834AbaGHOj3 (ORCPT
+	id S1752253AbaGHOqh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 10:46:37 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:36083 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707AbaGHOqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 10:39:29 -0400
-Date: Tue, 8 Jul 2014 07:39:12 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        "open list:GENERIC INCLUDE/A..." <linux-arch@vger.kernel.org>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "Clark, Rob" <robdclark@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Colin Cross <ccross@google.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Subject: Re: [PATCH v2 0/9] Updated fence patch series
-Message-ID: <20140708143912.GA3436@kroah.com>
-References: <20140701103432.12718.82795.stgit@patser>
- <20140702053758.GA7578@kroah.com>
- <CAKMK7uHZQjQ2m7KE22kTRVs-NtGguHREk24pSJiLbN7EoQLZ=g@mail.gmail.com>
- <20140707173052.GA8693@kroah.com>
- <20140708134427.GG17271@phenom.ffwll.local>
+	Tue, 8 Jul 2014 10:46:35 -0400
+Date: Tue, 8 Jul 2014 10:46:32 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
+        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
+        linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [workqueue] WARNING: CPU: 0 PID: 76 at
+ drivers/block/floppy.c:968 schedule_bh()
+Message-ID: <20140708144632.GF4979@htj.dyndns.org>
+References: <20140708021149.GA12956@localhost>
+ <20140708140430.GE4979@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140708134427.GG17271@phenom.ffwll.local>
+In-Reply-To: <20140708140430.GE4979@htj.dyndns.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 08, 2014 at 03:44:27PM +0200, Daniel Vetter wrote:
-> On Mon, Jul 07, 2014 at 10:30:52AM -0700, Greg KH wrote:
-> > On Mon, Jul 07, 2014 at 03:23:17PM +0200, Daniel Vetter wrote:
-> > > On Wed, Jul 2, 2014 at 7:37 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > > >> Android can expose fences to userspace. It's possible to make the new fence
-> > > >> mechanism expose the same fences to userspace by changing sync_fence_create
-> > > >> to take a struct fence instead of a struct sync_pt. No other change is needed,
-> > > >> because only the fence parts of struct sync_pt are used. But because the
-> > > >> userspace fences are a separate problem and I haven't really looked at it yet
-> > > >> I feel it should stay in staging, for now.
-> > > >
-> > > > Ok, that's reasonable.
-> > > >
-> > > > At first glance, this all looks "sane" to me, any objection from anyone
-> > > > if I merge this through my driver-core tree for 3.17?
-> > > 
-> > > Ack from my side fwiw.
-> > 
-> > Thanks, I'll queue it up later today.
-> 
-> btw should we add you as a (co)maintainer for driver/core/dma-buf since
-> you seem to want to keep a closer tab on what the insane gfx folks are up
-> to in there?
+On Tue, Jul 08, 2014 at 10:04:30AM -0400, Tejun Heo wrote:
+...
+> Hmmm... this is schedule_bh() in floppy.c complaining that the work
+> item is already pending.  The cond_resched() addition by b22ce2785d97
+> doesn't change the semantics around work item execution although it
+> could have exposed an existing problem in the floppy driver.  I'll
+> look into how this could happen.
 
-Sure, why not, what's one more maintainership...
+It doesn't reproduce here and nothing really stands out to me.  It
+probably involves floppy_work requeueing itself and something else
+getting executed inbetween which wouldn't have happend before, but I
+can't figure out what that could be and either can I follow the
+control flow the driver. :)
 
-Oh, does that mean you want me to be the one collecting the patches and
-forwarding them on to Linus?  If so, that's fine, I can easily do that
-as well due to my infrastructure being set up for it.
+Jiri, any ideas?
 
-thanks,
+Thanks.
 
-greg k-h
+-- 
+tejun
