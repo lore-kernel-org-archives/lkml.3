@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041AbaGHUpO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 16:45:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36196 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137AbaGHUpN (ORCPT
+	id S1754677AbaGHUpm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 16:45:42 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:58941 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752269AbaGHUpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 16:45:13 -0400
-Date: Tue, 8 Jul 2014 13:45:11 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [PATCH] mm: Don't forget to set softdirty on file mapped fault
-Message-Id: <20140708134511.4a32b7400a952541a31e9078@linux-foundation.org>
-In-Reply-To: <20140708204017.GG17860@moon.sw.swsoft.com>
-References: <20140708192151.GD17860@moon.sw.swsoft.com>
-	<20140708131920.2a857d573e8cc89780c9fa1c@linux-foundation.org>
-	<20140708204017.GG17860@moon.sw.swsoft.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Jul 2014 16:45:41 -0400
+Date: Tue, 8 Jul 2014 13:45:30 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "Li, Aubrey" <aubrey.li@linux.intel.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] GPIO button wth wakeup attribute is supposed to wake the
+ system up
+Message-ID: <20140708204530.GA23908@core.coreip.homeip.net>
+References: <53A2340D.9030503@linux.intel.com>
+ <13019301.98tkdHyOVf@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <13019301.98tkdHyOVf@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jul 2014 00:40:17 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-
-> On Tue, Jul 08, 2014 at 01:19:20PM -0700, Andrew Morton wrote:
-> > On Tue, 8 Jul 2014 23:21:51 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+On Tue, Jul 08, 2014 at 10:52:52PM +0200, Rafael J. Wysocki wrote:
+> On Thursday, June 19, 2014 08:51:25 AM Li, Aubrey wrote:
+> > When the wakeup attribute is set, the GPIO button is capable of
+> > waking up the system from sleep states, including the "freeze"
+> > sleep state.  For that to work, its driver needs to pass the
+> > IRQF_NO_SUSPEND flag to devm_request_any_context_irq(), or the
+> > interrupt will be disabled by suspend_device_irqs() and the
+> > system won't be woken up by it from the "freeze" sleep state.
 > > 
-> > > Otherwise we may not notice that pte was softdirty because pte_mksoft_dirty
-> > > helper _returns_ new pte but not modifies argument.
+> > The suspend_device_irqs() routine is a workaround for drivers
+> > that mishandle interrupts triggered when the devices handled
+> > by them are suspended, so it is safe to use IRQF_NO_SUSPEND in
+> > all drivers that don't have that problem.
 > > 
-> > When fixing a bug, please describe the end-user visible effects of that
-> > bug.
+> > The affected/tested machines include Dell Venue 11 Pro and Asus T100TA.
 > > 
-> > [for the 12,000th time :(]
+> > Signed-off-by: Aubrey Li <aubrey.li@linux.intel.com>
+> > Reviewed-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> "we may not notice that pte was softdirty" I thought it's enough, because
-> that's the effect user sees -- pte is not dirtified where it should.
+> OK
 > 
-> Really sorry Andrew if I were not clear enough. What about: In case if page
-> fault happend on dirty filemapping the newly created pte may not
-> notice if old one were already softdirtified because pte_mksoft_dirty
-> doesn't modify its argument but rather returns new pte value.
+> Due to the lack of response (ie. no objections) and because the issue
+> addressed by this patch is real, I'm queuing it up as a PM-related fix
+> for 3.17.
 
-The user doesn't know or care about pte bits.
+Please do not. The response is till the same: board code should make sure
+that enable_irq_wake() does the right thing and keeps interrupts enabled.
 
-What actually *happens*?  Does criu migration hang?  Does it lose data?
-Does it take longer?
+It is wrong to patch drivers for this.
 
-IOW, what would an end-user's bug report look like?
+Thanks.
 
-It's important to think this way because a year from now some person
-we've never heard of may be looking at a user's bug report and
-wondering whether backporting this patch will fix it.  Amongst other
-reasons.
+-- 
+Dmitry
