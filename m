@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320AbaGHWWB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 18:22:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36892 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293AbaGHWV7 (ORCPT
+	id S1755332AbaGHWWT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 18:22:19 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:52823 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694AbaGHWWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 18:21:59 -0400
-Date: Tue, 8 Jul 2014 15:26:24 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/1] firmware: read firmware size using i_size_read()
-Message-ID: <20140708222624.GB7745@kroah.com>
-References: <CACVXFVPn4muw+zD+TPAJh2miB5R326iFT4ZBS-Tdehz0XrsyDQ@mail.gmail.com>
- <cover.1402672110.git.d.kasatkin@samsung.com>
- <248c69602c96d68aea1ffb4cb75e77ec38b6b75f.1402672110.git.d.kasatkin@samsung.com>
- <CACVXFVMQYk=k8fONkoHVHo7wELK7TgWVQpKeCMAZaTyXHZgePQ@mail.gmail.com>
- <CACE9dm8AR_0S9gB13T_tydBcYtJEtXmEOc_GRx_Qtfbw+pKM2w@mail.gmail.com>
- <CACE9dm9bSLTMuaobgZNF+Xe7GxZZKjqedK91PsTjYrJWafMGiw@mail.gmail.com>
+	Tue, 8 Jul 2014 18:22:15 -0400
+Date: Tue, 8 Jul 2014 15:22:11 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 1/2] rcu: uninline rcu_lock_acquire() and
+ rcu_lock_release()
+Message-ID: <20140708222211.GE4603@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140630161837.GA15873@redhat.com>
+ <20140630161849.GA15887@redhat.com>
+ <20140701114138.GQ6758@twins.programming.kicks-ass.net>
+ <20140701164002.GA26950@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACE9dm9bSLTMuaobgZNF+Xe7GxZZKjqedK91PsTjYrJWafMGiw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140701164002.GA26950@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14070822-1542-0000-0000-0000032151A3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 25, 2014 at 07:46:41PM +0300, Dmitry Kasatkin wrote:
-> On 13 June 2014 19:06, Dmitry Kasatkin <dmitry.kasatkin@gmail.com> wrote:
-> > On 13 June 2014 19:03, Ming Lei <ming.lei@canonical.com> wrote:
-> >> On Fri, Jun 13, 2014 at 11:09 PM, Dmitry Kasatkin
-> >> <d.kasatkin@samsung.com> wrote:
-> >>> There is no need to read attr because inode structure contains size
-> >>> of the file. Use i_size_read() instead.
-> >>>
-> >>> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> >>
-> >> Acked-by: Ming Lei <ming.lei@canonical.com>
-> >>
+On Tue, Jul 01, 2014 at 06:40:02PM +0200, Oleg Nesterov wrote:
+> On 07/01, Peter Zijlstra wrote:
+> >
+> > On Mon, Jun 30, 2014 at 06:18:49PM +0200, Oleg Nesterov wrote:
+> > > +static inline void __rcu_lock_acquire(struct lockdep_map *map, unsigned long ip)
+> > >  {
+> > > +	lock_acquire(map, 0, 0, 2, 0, NULL, ip);
+> > >  }
+> >
+> > > +extern void rcu_lock_acquire(void);
+> > > +extern void rcu_lock_release(void);
+> > > +extern void rcu_lock_acquire_bh(void);
+> > > +extern void rcu_lock_release_bh(void);
+> > > +extern void rcu_lock_acquire_sched(void);
+> > > +extern void rcu_lock_release_sched(void);
+> >
+> > > diff --git a/include/linux/srcu.h b/include/linux/srcu.h
+> > > index a2783cb..5c06289 100644
+> > > --- a/include/linux/srcu.h
+> > > +++ b/include/linux/srcu.h
+> > > @@ -219,7 +219,7 @@ static inline int srcu_read_lock(struct srcu_struct *sp) __acquires(sp)
+> > >  {
+> > >  	int retval = __srcu_read_lock(sp);
+> > >
+> > > -	rcu_lock_acquire(&(sp)->dep_map);
+> > > +	__rcu_lock_acquire(&(sp)->dep_map, _THIS_IP_);
+> > >  	return retval;
+> > >  }
+> >
+> > Would an srcu_lock_acquire() not make sense here?
+> >
+> > In any case, not wrong per se, just a consistency thing that stood out.
 > 
+> Yes, I looked at this too...
 > 
-> Hi,
-> 
-> BTW. To what tree it is applied?
+> But probably it would be better to just add __rcu_lock_acquire() into
+> __srcu_read_lock(), and kill that inline in srcu.h ?
 
-Mine now, you should get an email soon...
+Makes sense to me!
+
+							Thanx, Paul
+
