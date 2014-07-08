@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061AbaGHGuS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 02:50:18 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:35946 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271AbaGHGuQ (ORCPT
+	id S1752976AbaGHG5L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 02:57:11 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:51077 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927AbaGHG5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 02:50:16 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s686oBpI019331, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net] r8152: wake up the device before dumping the hw counter
-Date: Tue, 8 Jul 2014 14:49:28 +0800
-Message-ID: <1394712342-15778-5-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
+	Tue, 8 Jul 2014 02:57:09 -0400
+Message-ID: <53BB9638.6040803@siemens.com>
+Date: Tue, 08 Jul 2014 08:56:56 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+To: Paolo Bonzini <pbonzini@redhat.com>, Bandan Das <bsd@redhat.com>,
+        kvm@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Gleb Natapov <gleb@kernel.org>
+Subject: Re: [PATCH] KVM: x86: Check for nested events if there is an injectable
+ interrupt
+References: <jpgd2dgfp5s.fsf@redhat.com> <53BB86C2.9040805@redhat.com>
+In-Reply-To: <53BB86C2.9040805@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The device should be waked up from runtime suspend before dumping
-the hw counter.
+On 2014-07-08 07:50, Paolo Bonzini wrote:
+> Il 08/07/2014 06:30, Bandan Das ha scritto:
+>>
+>> With commit b6b8a1451fc40412c57d1 that introduced
+>> vmx_check_nested_events, checks for injectable interrupts happen
+>> at different points in time for L1 and L2 that could potentially
+>> cause a race. The regression occurs because KVM_REQ_EVENT is always
+>> set when nested_run_pending is set even if there's no pending interrupt.
+>> Consequently, there could be a small window when check_nested_events
+>> returns without exiting to L1, but an interrupt comes through soon
+>> after and it incorrectly, gets injected to L2 by inject_pending_event
+>> Fix this by adding a call to check for nested events too when a check
+>> for injectable interrupt returns true
+>>
+>> Signed-off-by: Bandan Das <bsd@redhat.com>
+>> ---
+>>  arch/x86/kvm/x86.c | 13 +++++++++++++
+>>  1 file changed, 13 insertions(+)
+>>
+>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>> index 73537ec..56327a6 100644
+>> --- a/arch/x86/kvm/x86.c
+>> +++ b/arch/x86/kvm/x86.c
+>> @@ -5907,6 +5907,19 @@ static int inject_pending_event(struct kvm_vcpu
+>> *vcpu, bool req_int_win)
+>>              kvm_x86_ops->set_nmi(vcpu);
+>>          }
+>>      } else if (kvm_cpu_has_injectable_intr(vcpu)) {
+>> +        /*
+>> +         * TODO/FIXME: We are calling check_nested_events again
+>> +         * here to avoid a race condition. We should really be
+>> +         * setting KVM_REQ_EVENT only on certain events
+>> +         * and not unconditionally.
+>> +         * See https://lkml.org/lkml/2014/7/2/60 for discussion
+>> +         * about this proposal and current concerns
+>> +         */
+>> +        if (is_guest_mode(vcpu) && kvm_x86_ops->check_nested_events) {
+>> +            r = kvm_x86_ops->check_nested_events(vcpu, req_int_win);
+>> +            if (r != 0)
+>> +                return r;
+>> +        }
+>>          if (kvm_x86_ops->interrupt_allowed(vcpu)) {
+>>              kvm_queue_interrupt(vcpu, kvm_cpu_get_interrupt(vcpu),
+>>                          false);
+>>
+> 
+> I think this should be done for NMI as well.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 5 +++++
- 1 file changed, 5 insertions(+)
+I don't think arch.nmi_pending can flip asynchronously, only in the
+context of the VCPU thread - in contrast to pending IRQ states.
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 2543196..a795ecf 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -3204,8 +3204,13 @@ static void rtl8152_get_ethtool_stats(struct net_device *dev,
- 	struct r8152 *tp = netdev_priv(dev);
- 	struct tally_counter tally;
- 
-+	if (usb_autopm_get_interface(tp->intf) < 0)
-+		return;
-+
- 	generic_ocp_read(tp, PLA_TALLYCNT, sizeof(tally), &tally, MCU_TYPE_PLA);
- 
-+	usb_autopm_put_interface(tp->intf);
-+
- 	data[0] = le64_to_cpu(tally.tx_packets);
- 	data[1] = le64_to_cpu(tally.rx_packets);
- 	data[2] = le64_to_cpu(tally.tx_errors);
+> 
+> Jan, what do you think?  Can you run Jailhouse through this patch?
+
+Jailhouse seems fine with it, and it resolves the lockup of nested KVM
+here as well.
+
+Jan
+
 -- 
-1.9.3
-
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
