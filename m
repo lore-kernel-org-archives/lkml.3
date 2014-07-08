@@ -1,73 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978AbaGHI0y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:26:54 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:12205 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945AbaGHI0v (ORCPT
+	id S1754010AbaGHI1A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:27:00 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:35825 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753945AbaGHI04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:26:51 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 08 Jul 2014 01:19:55 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>,
-        David Herrmann <dh.herrmann@gmail.com>, Lucas Stach <dev@lynxeye.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>
-CC: <nouveau@lists.freedesktop.org>, <dri-devel@lists.freedesktop.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v4 6/6] drm/nouveau: allocate GPFIFOs and fences coherently
-Date: Tue, 8 Jul 2014 17:26:01 +0900
-Message-ID: <1404807961-30530-7-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1404807961-30530-1-git-send-email-acourbot@nvidia.com>
-References: <1404807961-30530-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
+	Tue, 8 Jul 2014 04:26:56 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s688QjFi021983, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <nic_swsd@realtek.com>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net] r8169: disable L23
+Date: Tue, 8 Jul 2014 16:26:10 +0800
+Message-ID: <1394712342-15778-6-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
 MIME-Version: 1.0
 Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Specify TTM_PL_FLAG_UNCACHED when allocating GPFIFOs and fences to
-allow them to be safely accessed by the kernel without being synced
-on non-coherent architectures.
+For RTL8411, RTL8111G, RTL8402, RTL8105, and RTL8106, the nic couldn't
+leave the power saving mode of L23 for certain situation. This causes
+the device lost for the system. Disable the L23 mode to avoid it.
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
- drivers/gpu/drm/nouveau/nouveau_chan.c | 2 +-
- drivers/gpu/drm/nouveau/nv84_fence.c   | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_chan.c b/drivers/gpu/drm/nouveau/nouveau_chan.c
-index ccb6b452d6d0..155b1b192676 100644
---- a/drivers/gpu/drm/nouveau/nouveau_chan.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_chan.c
-@@ -110,7 +110,7 @@ nouveau_channel_prep(struct nouveau_drm *drm, struct nouveau_cli *cli,
- 	chan->handle = handle;
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index be425ad..38144ee 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -538,6 +538,7 @@ enum rtl_register_content {
+ 	MagicPacket	= (1 << 5),	/* Wake up when receives a Magic Packet */
+ 	LinkUp		= (1 << 4),	/* Wake up when the cable connection is re-established */
+ 	Jumbo_En0	= (1 << 2),	/* 8168 only. Reserved in the 8168b */
++	Rdy_to_L23	= (1 << 1),	/* L23 Enable */
+ 	Beacon_en	= (1 << 0),	/* 8168 only. Reserved in the 8168b */
  
- 	/* allocate memory for dma push buffer */
--	target = TTM_PL_FLAG_TT;
-+	target = TTM_PL_FLAG_TT | TTM_PL_FLAG_UNCACHED;
- 	if (nouveau_vram_pushbuf)
- 		target = TTM_PL_FLAG_VRAM;
+ 	/* Config4 register */
+@@ -4897,6 +4898,21 @@ static void rtl_enable_clock_request(struct pci_dev *pdev)
+ 				 PCI_EXP_LNKCTL_CLKREQ_EN);
+ }
  
-diff --git a/drivers/gpu/drm/nouveau/nv84_fence.c b/drivers/gpu/drm/nouveau/nv84_fence.c
-index 9fd475c89820..b5d6737b6b8d 100644
---- a/drivers/gpu/drm/nouveau/nv84_fence.c
-+++ b/drivers/gpu/drm/nouveau/nv84_fence.c
-@@ -257,8 +257,8 @@ nv84_fence_create(struct nouveau_drm *drm)
++static void rtl_l23_enable(struct rtl8169_private *tp, bool enable)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++	u8 data;
++
++	data = RTL_R8(Config3);
++
++	if (enable)
++		data |= Rdy_to_L23;
++	else
++		data &= ~Rdy_to_L23;
++
++	RTL_W8(Config3, data);
++}
++
+ #define R8168_CPCMD_QUIRK_MASK (\
+ 	EnableBist | \
+ 	Mac_dbgo_oe | \
+@@ -5246,6 +5262,7 @@ static void rtl_hw_start_8411(struct rtl8169_private *tp)
+ 	};
  
- 	if (ret == 0)
- 		ret = nouveau_bo_new(drm->dev, 16 * (pfifo->max + 1), 0,
--				     TTM_PL_FLAG_TT, 0, 0, NULL,
--				     &priv->bo_gart);
-+				     TTM_PL_FLAG_TT | TTM_PL_FLAG_UNCACHED, 0,
-+				     0, NULL, &priv->bo_gart);
- 	if (ret == 0) {
- 		ret = nouveau_bo_pin(priv->bo_gart, TTM_PL_FLAG_TT);
- 		if (ret == 0) {
+ 	rtl_hw_start_8168f(tp);
++	rtl_l23_enable(tp, false);
+ 
+ 	rtl_ephy_init(tp, e_info_8168f_1, ARRAY_SIZE(e_info_8168f_1));
+ 
+@@ -5284,6 +5301,8 @@ static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
+ 
+ 	rtl_w1w0_eri(tp, 0x2fc, ERIAR_MASK_0001, 0x01, 0x06, ERIAR_EXGMAC);
+ 	rtl_w1w0_eri(tp, 0x1b0, ERIAR_MASK_0011, 0x0000, 0x1000, ERIAR_EXGMAC);
++
++	rtl_l23_enable(tp, false);
+ }
+ 
+ static void rtl_hw_start_8168g_2(struct rtl8169_private *tp)
+@@ -5536,6 +5555,8 @@ static void rtl_hw_start_8105e_1(struct rtl8169_private *tp)
+ 	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
+ 
+ 	rtl_ephy_init(tp, e_info_8105e_1, ARRAY_SIZE(e_info_8105e_1));
++
++	rtl_l23_enable(tp, false);
+ }
+ 
+ static void rtl_hw_start_8105e_2(struct rtl8169_private *tp)
+@@ -5571,6 +5592,8 @@ static void rtl_hw_start_8402(struct rtl8169_private *tp)
+ 	rtl_eri_write(tp, 0xc0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
+ 	rtl_eri_write(tp, 0xb8, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
+ 	rtl_w1w0_eri(tp, 0x0d4, ERIAR_MASK_0011, 0x0e00, 0xff00, ERIAR_EXGMAC);
++
++	rtl_l23_enable(tp, false);
+ }
+ 
+ static void rtl_hw_start_8106(struct rtl8169_private *tp)
+@@ -5583,6 +5606,8 @@ static void rtl_hw_start_8106(struct rtl8169_private *tp)
+ 	RTL_W32(MISC, (RTL_R32(MISC) | DISABLE_LAN_EN) & ~EARLY_TALLY_EN);
+ 	RTL_W8(MCU, RTL_R8(MCU) | EN_NDP | EN_OOB_RESET);
+ 	RTL_W8(DLLPR, RTL_R8(DLLPR) & ~PFM_EN);
++
++	rtl_l23_enable(tp, false);
+ }
+ 
+ static void rtl_hw_start_8101(struct net_device *dev)
 -- 
-2.0.0
+1.9.3
 
