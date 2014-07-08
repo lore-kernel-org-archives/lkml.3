@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875AbaGHVir (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 17:38:47 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:39564 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958AbaGHVip (ORCPT
+	id S1754020AbaGHVjC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 17:39:02 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:51114 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687AbaGHVi6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 17:38:45 -0400
+	Tue, 8 Jul 2014 17:38:58 -0400
 From: Fabio Falzoi <fabio.falzoi84@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org, joe@perches.com,
         dan.carpenter@oracle.com, wei_wang@realsil.com.cn,
         micky_ching@realsil.com.cn, Fabio Falzoi <fabio.falzoi84@gmail.com>
-Subject: [PATCH v3 0/4] Staging: rts5208: Use standard debug features
-Date: Tue,  8 Jul 2014 23:38:28 +0200
-Message-Id: <1404855512-5864-1-git-send-email-fabio.falzoi84@gmail.com>
+Subject: [PATCH v3 4/4] Staging: rts5208: Fix a format specifier for dev_err
+Date: Tue,  8 Jul 2014 23:38:32 +0200
+Message-Id: <1404855512-5864-5-git-send-email-fabio.falzoi84@gmail.com>
 X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1404855512-5864-1-git-send-email-fabio.falzoi84@gmail.com>
+References: <1404855512-5864-1-git-send-email-fabio.falzoi84@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use standard debug features instead of relying on the custom
-configuration option CONFIG_RTS5208_DEBUG and a series of home grown
-macros.
+Fix an incorrect use of the %d format specifier in dev_err that caused a
+warning.
 
-Changes in v3:
-* defined rtsx_hex_dump as a static inline function to avoid checkpatch errors
+Signed-off-by: Fabio Falzoi <fabio.falzoi84@gmail.com>
+---
+ drivers/staging/rts5208/rtsx.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Changes in v2:
-* defined rtsx_hex_dump macro to produce output only if DEBUG is defined
-
-Fabio Falzoi (4):
-  Staging: rts5208: Replace custom macro with pr_debug
-  Staging: rts5208: Replace custom macro with print_hex_dump_bytes
-  Staging: rts5208: Remove CONFIG_RTS5208_DEBUG option
-  Staging: rts5208: Fix a format specifier for dev_err
-
- drivers/staging/rts5208/Kconfig          |   7 --
- drivers/staging/rts5208/debug.h          |  43 -------
- drivers/staging/rts5208/ms.c             | 144 ++++++++++++------------
- drivers/staging/rts5208/rtsx.c           |   8 +-
- drivers/staging/rts5208/rtsx.h           |   1 -
- drivers/staging/rts5208/rtsx_card.c      |  72 ++++++------
- drivers/staging/rts5208/rtsx_card.h      |   1 -
- drivers/staging/rts5208/rtsx_chip.c      | 134 +++++++++++-----------
- drivers/staging/rts5208/rtsx_scsi.c      |  45 ++++----
- drivers/staging/rts5208/rtsx_transport.c |  45 ++++----
- drivers/staging/rts5208/sd.c             | 186 +++++++++++++++----------------
- drivers/staging/rts5208/spi.c            |   8 +-
- drivers/staging/rts5208/trace.h          |  15 ++-
- drivers/staging/rts5208/xd.c             | 121 ++++++++++----------
- 14 files changed, 393 insertions(+), 437 deletions(-)
- delete mode 100644 drivers/staging/rts5208/debug.h
-
+diff --git a/drivers/staging/rts5208/rtsx.c b/drivers/staging/rts5208/rtsx.c
+index 4f5f7a3..9aae7ac 100644
+--- a/drivers/staging/rts5208/rtsx.c
++++ b/drivers/staging/rts5208/rtsx.c
+@@ -463,14 +463,14 @@ static int rtsx_control_thread(void *__dev)
+ 		 * the maximum known LUN
+ 		 */
+ 		else if (chip->srb->device->id) {
+-			dev_err(&dev->pci->dev, "Bad target number (%d:%d)\n",
++			dev_err(&dev->pci->dev, "Bad target number (%d:%llu)\n",
+ 				chip->srb->device->id,
+ 				chip->srb->device->lun);
+ 			chip->srb->result = DID_BAD_TARGET << 16;
+ 		}
+ 
+ 		else if (chip->srb->device->lun > chip->max_lun) {
+-			dev_err(&dev->pci->dev, "Bad LUN (%d:%d)\n",
++			dev_err(&dev->pci->dev, "Bad LUN (%d:%llu)\n",
+ 				chip->srb->device->id,
+ 				chip->srb->device->lun);
+ 			chip->srb->result = DID_BAD_TARGET << 16;
 -- 
 2.0.0
 
