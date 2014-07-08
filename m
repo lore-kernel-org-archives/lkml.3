@@ -1,80 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184AbaGHOEg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 10:04:36 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:52313 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610AbaGHOEe (ORCPT
+	id S1754261AbaGHOEy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 10:04:54 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:64628 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610AbaGHOEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 10:04:34 -0400
-Date: Tue, 8 Jul 2014 10:04:30 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
-        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
-        linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [workqueue] WARNING: CPU: 0 PID: 76 at
- drivers/block/floppy.c:968 schedule_bh()
-Message-ID: <20140708140430.GE4979@htj.dyndns.org>
-References: <20140708021149.GA12956@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140708021149.GA12956@localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 8 Jul 2014 10:04:52 -0400
+X-AuditID: cbfec7f5-b7f626d000004b39-b5-53bbfa813df1
+Message-id: <53BBFA61.1030602@samsung.com>
+Date: Tue, 08 Jul 2014 16:04:17 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.5.0
+MIME-version: 1.0
+To: Mike Turquette <mturquette@linaro.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
+        "'Rob Herring'" <robh+dt@kernel.org>,
+        "'Mark Rutland'" <mark.rutland@arm.com>,
+        "'Pankaj Dubey'" <pankaj.dubey@samsung.com>,
+        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
+        "'Mark Brown'" <broonie@kernel.org>,
+        "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
+        "'Daniel Drake'" <drake@endlessm.com>,
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>
+Subject: Re: [PATCH v2 0/4] Add support for Exynos clock output configuration
+References: <1403626107-12073-1-git-send-email-t.figa@samsung.com>
+ <026001cf9061$5fef9d00$1fced700$@samsung.com>
+ <20140703001452.7440.8476@quantum>
+In-reply-to: <20140703001452.7440.8476@quantum>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJLMWRmVeSWpSXmKPExsVy+t/xq7qNv3YHG+ybaGgx9eETNotH8x8z
+	W/QuuMpmsenxNVaLy7vmsFnMOL+PyWLtkbvsFkuvX2SyeDrhIpvFoq1f2C2mLDrMatG69wi7
+	xeE37awWq3b9YXTg81gzbw2jx6LvWR47Z91l99i0qpPN4861PWwem5fUe/RtWcXo8XmTXABH
+	FJdNSmpOZllqkb5dAlfG1XXtbAU/hSsm3dzK2MC4nK+LkZNDQsBE4kXXCVYIW0ziwr31bF2M
+	XBxCAksZJQ5fWMgM4XxmlHi6ex8LSBWvgJbE5scPgDo4OFgEVCUmt8uDhNkE1CQ+NzxiA7H5
+	gUrWNF1nASkRFYiQeHxBCKJTUOLH5HtgYRGBYon7X8pBpjMLHGCWeDjxMDNIjbCAr8ShnTNZ
+	INZOZ5TovreJHSTBKaAvsavpPNgJzALqEpPmLWKGsOUlNq95yzyBUXAWkh2zkJTNQlK2gJF5
+	FaNoamlyQXFSeq6RXnFibnFpXrpecn7uJkZIdH3dwbj0mNUhRgEORiUeXoPzu4OFWBPLiitz
+	DzFKcDArifB+OQUU4k1JrKxKLcqPLyrNSS0+xMjEwSnVwMh0iaMz/0/qWo1nF/zFLts6neaZ
+	oZs0oWWPKLfE2z26V9bMr+yK8ew33f3dYfbng62iCvsMnktlPt4Yr9gZqW5SdOP1z74tmXv3
+	3+UwvTMrOotrvbaO1TvF88HftvxysLcWOaa7UvvNs4e3hYQFhfoLfjwusf36Ov3V75qt6rFp
+	PYkB84K7OpVYijMSDbWYi4oTAUnYwReMAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Jiri)
-
-On Tue, Jul 08, 2014 at 10:11:49AM +0800, Fengguang Wu wrote:
-> Greetings,
+On 03.07.2014 02:14, Mike Turquette wrote:
+> Quoting Kukjin Kim (2014-06-25 03:36:51)
+>> Tomasz Figa wrote:
+>>>
+>> Hi Tomasz,
+>>
+>>> On all Exynos SoCs there is a dedicated CLKOUT pin that allows many of
+>>> internal SoC clocks to be output from the SoC. The hardware structure
+>>
+>> Yeah, because the CLKOUT pin is used for measure of the clock for debug on all
+>> of exynos SoCs commonly.
+>>
+>>> of CLKOUT related clocks looks as follows:
+>>>
+>>>       CMU     |---> clock0 ---------> |       PMU     |
+>>>               |                       |               |
+>>>     several   |---> clock1 ---------> |       mux     |
+>>>     muxes     |                       |       +       |---> CLKOUT
+>>>     dividers  |       ...             |       gate    |
+>>>     and gates |                       |               |
+>>>               |---> clockN ---------> |               |
+>>>
+>>> Since the block responsible for handling the pin is PMU, not CMU,
+>>> a separate driver, that binds to PMU node is required and acquires
+>>> all input clocks by standard DT clock look-up. This way we don't need
+>>> any cross-IP block drivers and cross-driver register sharing or
+>>> nodes for fake devices.
+>>>
+>> BTW, upcoming exynos5 SoCs have two muxs for CLKOUT and each mux is controlled
+>> by CMU and PMU, so
+>>
+>> The mux1 for CLKOUT in CMU is used to decide which clock in each sub-domain
+>> will be out and the mux2 in PMU is used to decide which sub-domain will be out
+>> via CLKOUT. So I want you to consider of all of exynos SoCs including upcoming
+>> SoCs.
 > 
-> 0day kernel testing robot got the below dmesg and the first bad commit is
+> clkout for debug is very useful indeed. For SoCs with high speed clocks
+> that I have worked with, I have often observed that the clkout logic
+> introduces buffers or dividers. This is needed so that you can get a
+> (relatively) clean clock signal on your oscilloscope. Otherwise that
+> 2GHz ARM clk is just going to be noise ;-)
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git master
-> commit b22ce2785d97423846206cceec4efee0c4afd980
-> Author:     Tejun Heo <tj@kernel.org>
-> AuthorDate: Wed Aug 28 17:33:37 2013 -0400
-> Commit:     Tejun Heo <tj@kernel.org>
-> CommitDate: Thu Aug 29 09:19:28 2013 -0400
-> 
->     workqueue: cond_resched() after processing each work item
-...
-> [   45.121121] PCI: setting IRQ 11 as level-triggered
-> [   45.407538] e1000 0000:00:03.0: setting latency timer to 64
-> [   45.686040] ------------[ cut here ]------------
-> [   45.975060] WARNING: CPU: 0 PID: 76 at drivers/block/floppy.c:968 schedule_bh+0x47/0x80()
-> [   47.312537] CPU: 0 PID: 76 Comm: kworker/u2:1 Not tainted 3.11.0-rc7-00025-gb22ce27 #8
-> [   47.848171] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
-> [   48.433222] Workqueue: events_unbound async_run_entry_fn
-> [   48.725491]  00000000 d25d7e0c c2745b10 d25d7e3c c105472d c2ff0b10 00000000 0000004c
-> [   49.494639]  c30df57c 000003c8 c1a2fb57 c1a2fb57 00000001 c1a33aa0 c39a0ca0 d25d7e4c
-> [   51.548252]  c1054812 00000009 00000000 d25d7e5c c1a2fb57 00000000 00000000 d25d7e84
-> [   56.319716] Call Trace:
-> [   58.164457]  [<c2745b10>] dump_stack+0x16/0x18
-> [   61.355641]  [<c105472d>] warn_slowpath_common+0x8d/0xb0
-> [   62.920432]  [<c1054812>] warn_slowpath_null+0x22/0x30
-> [   63.411821]  [<c1a2fb57>] schedule_bh+0x47/0x80
-> [   66.271423]  [<c1a33ed5>] wait_til_done+0x15/0x230
-> [   75.990887]  [<c1a348d7>] user_reset_fdc+0xa7/0x110
-> [   78.921153]  [<c384c939>] floppy_async_init+0x9ee/0x1263
-> [   83.512228]  [<c108a0e4>] async_run_entry_fn+0x44/0x1e0
-> [   89.499077]  [<c1075f5b>] process_one_work+0x33b/0x840
-> [   91.634105]  [<c1076874>] worker_thread+0x414/0x890
-> [   92.265965]  [<c1080ba6>] kthread+0xa6/0xb0
-> [   92.658144]  [<c2763f57>] ret_from_kernel_thread+0x1b/0x28
-> [   93.254541] ---[ end trace 857f8343e4eb716b ]---
-> [   93.508601] floppy0: no floppy controllers found
+> These divider values can modeled in the clk framework. Do you know if
+> you have such stuff on your chip?
 
-Hmmm... this is schedule_bh() in floppy.c complaining that the work
-item is already pending.  The cond_resched() addition by b22ce2785d97
-doesn't change the semantics around work item execution although it
-could have exposed an existing problem in the floppy driver.  I'll
-look into how this could happen.
+I believe this is what I have already implemented in my series.
 
-Thanks.
+The final CLKOUT mux and gates are implemented by separate driver,
+because they reside in another IP block, while per-domain CLKOUT
+dividers along with muxes and gates are registered by normal SoC clock
+driver, because they are part of the clock controller. See patch 2/4
+adding the whole hierarchy for Exynos4 SoCs.
 
--- 
-tejun
+I don't have boards to test CLKOUT on Exynos5 SoCs, so they are up to
+interested people.
+
+Best regards,
+Tomasz
