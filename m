@@ -1,210 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547AbaGHIJN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 04:09:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39276 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649AbaGHIJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 04:09:08 -0400
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Vivek Goyal <vgoyal@redhat.com>, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmap_vmcore: skip non-ram pages reported by hypervisors
-References: <1404745549-16023-1-git-send-email-vkuznets@redhat.com>
-	<20140707133301.dfcc078f416efeb1ada72da9@linux-foundation.org>
-Date: Tue, 08 Jul 2014 10:08:58 +0200
-In-Reply-To: <20140707133301.dfcc078f416efeb1ada72da9@linux-foundation.org>
-	(Andrew Morton's message of "Mon, 7 Jul 2014 13:33:01 -0700")
-Message-ID: <87k37o46hx.fsf@vitty.brq.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1753600AbaGHIJV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 04:09:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53484 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753554AbaGHIJR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 04:09:17 -0400
+Date: Tue, 8 Jul 2014 10:09:08 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, dvhart@linux.intel.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu, joe@perches.com
+Subject: Re: [PATCH tip/core/rcu 2/3] rcu: Add designated reviewers for RCU
+Message-ID: <20140708080908.GN19379@twins.programming.kicks-ass.net>
+References: <20140707224146.GA9118@linux.vnet.ibm.com>
+ <1404772924-9423-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1404772924-9423-2-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="n8rALO501tkk3VWH"
+Content-Disposition: inline
+In-Reply-To: <1404772924-9423-2-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
 
-> On Mon,  7 Jul 2014 17:05:49 +0200 Vitaly Kuznetsov <vkuznets@redhat.com> wrote:
->
->> we have a special check in read_vmcore() handler to check if the page was
->> reported as ram or not by the hypervisor (pfn_is_ram()). However, when
->> vmcore is read with mmap() no such check is performed. That can lead to
->> unpredictable results, e.g. when running Xen PVHVM guest memcpy() after
->> mmap() on /proc/vmcore will hang processing HVMMEM_mmio_dm pages creating
->> enormous load in both DomU and Dom0.
->> 
->> Fix the issue by mapping each non-ram page to the zero page. Keep direct
->> path with remap_oldmem_pfn_range() to avoid looping through all pages on
->> bare metal.
->> 
->> The issue can also be solved by overriding remap_oldmem_pfn_range() in
->> xen-specific code, as remap_oldmem_pfn_range() was been designed for.
->> That, however, would involve non-obvious xen code path for all x86 builds
->> with CONFIG_XEN_PVHVM=y and would prevent all other hypervisor-specific
->> code on x86 arch from doing the same override.
->
-> I'd like to get some reviewed-by's and tested-by's on this one please.
->
+--n8rALO501tkk3VWH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch can be tested with Xen PVHVM guest only as it is the only
-platform which registers oldmem_pfn_is_ram atm.
+On Mon, Jul 07, 2014 at 03:42:03PM -0700, Paul E. McKenney wrote:
+>  MAINTAINERS | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+>=20
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 1814075c0e74..92f2bf91eec1 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -7405,6 +7405,9 @@ F:	kernel/rcu/torture.c
+> =20
+>  RCUTORTURE TEST FRAMEWORK
+>  M:	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> +R:	Steven Rostedt <rostedt@goodmis.org>
+> +R:	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> +R:	Lai Jiangshan <laijs@cn.fujitsu.com>
+>  L:	linux-kernel@vger.kernel.org
+>  S:	Supported
+>  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.g=
+it
 
->> --- a/fs/proc/vmcore.c
->> +++ b/fs/proc/vmcore.c
->> @@ -328,6 +328,46 @@ static inline char *alloc_elfnotes_buf(size_t notes_sz)
->>   * virtually contiguous user-space in ELF layout.
->>   */
->>  #ifdef CONFIG_MMU
->> +static u64 remap_oldmem_pfn_checked(struct vm_area_struct *vma, u64 len,
->> +				    unsigned long pfn, unsigned long page_count)
->> +{
->> +	unsigned long pos;
->> +	size_t size;
->> +	unsigned long vma_addr;
->> +	unsigned long emptypage_pfn = __pa(empty_zero_page) >> PAGE_SHIFT;
->
-> That's old-school.  Can we use my_zero_pfn() here?
->
-> Also, "zeropage_pfn" is a better name - let's not introduce the
-> hitherto unknown concept of an "empty page".
->
+OK,.. so if we're going to do this can we talk about the syntax here.
 
-Sure!
+I would like to also use this for SCHED and PERF, but since both are
+rather big I would like to be able to subdivide things. Now I could of
+course go create many MAINTAINER sections, but that feels artificial.
 
->> +	for (pos = pfn; (pos - pfn) <= page_count; pos++) {
->> +		if (!pfn_is_ram(pos) || (pos - pfn) == page_count) {
->> +			/* we hit a page which is not ram or reached the end */
->> +			if (pos - pfn > 0) {
->> +				/* remapping continuous region */
->> +				size = (pos - pfn) << PAGE_SHIFT;
->> +				vma_addr = vma->vm_start + len;
->> +				if (remap_oldmem_pfn_range(vma, vma_addr,
->> +							   pfn, size,
->> +							   vma->vm_page_prot))
->> +					return len;
->> +				len += size;
->> +				page_count -= (pos - pfn);
->> +			}
->> +			if (page_count > 0) {
->> +				/* we hit a page which is not ram, replacing
->> +				   with an empty one */
->
-> I suggest
->
-> 				/*
-> 				 * We hit a page which is not ram.  Replace it
-> 				 * with the zero page.
-> 				 */
->
+So I would like to be able to write:
 
-:-)
+SCHEDULER:
+=2E..
+R:   Steven Rostedt <rostedt@goodmis.org> (kernel/sched/rt.c)
+R:   Juri Lelli <juri.lelli@gmail.com>    (kernel/sched/deadline.c)
 
->> +				vma_addr = vma->vm_start + len;
->> +				if (remap_oldmem_pfn_range(vma, vma_addr,
->> +							   emptypage_pfn,
->> +							   PAGE_SIZE,
->> +							   vma->vm_page_prot))
->> +					return len;
->> +				len += PAGE_SIZE;
->> +				pfn = pos + 1;
->> +				page_count--;
->> +			}
->> +		}
->> +	}
->> +	return len;
->> +}
->
-> Also, this loop seems unnecessarily hard to follow.  It *look* like the
-> `for' statement has an off-by-one because of the "<=", but page_count
-> is mofidied inside the loop!  Despite it being an incoming formal
-> argument.
+or something like that. And here I've already done concessions in that
+the above is machine readable. Ideally I'd be able to say things like:
+'for sched and numa related things' add 'rik and mel'.
 
-There is no off-by-one error here (I believe) as I'm checking two
-possible conditions to remap the continuous region:
-1) We hit a non-ram page
-2) We reached the end
-so we exclude the page pos is pointing us to in both cases.
+Hmm, maybe we can look at the patch subject tag like: sched/numa or
+sched/rt or sched/deadline etc.. instead of the files touched.
 
-I tried to avoid code duplication e.g. having one 'remap continuous
-region' inside the loop to do the remapping when we hit a non-ram page
-and having the other one outside the loop to remap the tail.
+--n8rALO501tkk3VWH
+Content-Type: application/pgp-signature
 
->
-> None of this is made any easier by the function's lack of
-> documentation.  Some description of the incoming args would help, along
-> with an overall description of the function's responsibilities.
->
-> That being said, can't we just do something nice and simple like
->
-> 	pos = pfn;
-> 	while (pos < pfn + page_count) {
-> 		stuff which advances `pos'
-> 	}
->
-> ?
->
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-I completely agree it's possible to make this code easier to
-understand, will do.
+iQIcBAEBAgAGBQJTu6ckAAoJEHZH4aRLwOS6jKQP/3MjOjpPXcHN5MkJe9DuAfRf
+pfp3v5bh8XE2draCzW1SvRQ+q+QkTfg9jpl8pBr3Yhqcm8C5DAs0cticytWG68Wh
+Ly7DHlWyTk4JikGWOVhJ6BxY26U8ZNtB7wNw+QxFrIJxx6k0kXqhFs/h8EdX3i64
+0z5jq/D6grZTp3L8gxrAK5ir13ZdTaLlXPkisPj1KK+Y3r5hlt6xeC57gmrJ0zGP
+FvgVLSBtSVNI3BQ1+4iQSqr1wsxQdngi/4bvHJeWVQCeFWz/cdimHKExKqLheeSA
+WhwM6h4pIHcLDqywSEsvCIeBbAkUl2umDFF7u5HppO32ywftvYLtw0alAjTIhfIM
+/zYmmNelQ+OlmOoKOqot/b495eE6UMTZILYlcY0acbMA8xrnTa1j2eE2fX/R/luR
+TQekCWwSE+46tJ/F/H+OZeCoiMX1toE2VOz8GMJ5OinEKltyXUWxrEcmK/GMCiLK
+65K7c3kC4KBKkh0LpnW5xrsaUhuAhLrWjts2eu6Ws+3jHxjZDIkY+ufXqRBUXbau
+apWIgPJijNeBK4DEI89oz8ZLqPfqzy+WWJPJX/UtZ8fWJu7BGIPhnS3oCPrXNE5l
+uzXB80DgrNxM6DxLR8IE2I5gWqSX3ihZ5s2tj0kRFQcxurat5zEsoxRLT/IVYmyi
+BFd8t1CKC6/fB88uI2Xu
+=f5TK
+-----END PGP SIGNATURE-----
 
->>  static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
->>  {
->>  	size_t size = vma->vm_end - vma->vm_start;
->> @@ -383,17 +423,33 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
->>  
->>  	list_for_each_entry(m, &vmcore_list, list) {
->>  		if (start < m->offset + m->size) {
->> -			u64 paddr = 0;
->> +			u64 paddr = 0, original_len;
->> +			unsigned long pfn, page_count;
->>  
->>  			tsz = min_t(size_t, m->offset + m->size - start, size);
->>  			paddr = m->paddr + start - m->offset;
->> -			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
->> -						   paddr >> PAGE_SHIFT, tsz,
->> -						   vma->vm_page_prot))
->> -				goto fail;
->> +
->> +			/* check if oldmem_pfn_is_ram was registered to avoid
->> +			   looping over all pages without a reason */
->
-> Please lay out the comments in the usual fashion:
->
-> 	/*
-> 	 * ...
-> 	 * ..
-> 	 */
->
-> And sentences start whith upper-case letters!
->
->> +			if (oldmem_pfn_is_ram) {
->> +				pfn = paddr >> PAGE_SHIFT;
->> +				page_count = tsz >> PAGE_SHIFT;
->> +				original_len = len;
->> +				len = remap_oldmem_pfn_checked(vma, len, pfn,
->> +							       page_count);
->> +				if (len != original_len + tsz)
->> +					goto fail;
->> +			} else {
->> +				if (remap_oldmem_pfn_range(vma,
->> +							   vma->vm_start + len,
->> +							   paddr >> PAGE_SHIFT,
->> +							   tsz,
->> +							   vma->vm_page_prot))
->> +					goto fail;
->> +				len += tsz;
->> +			}
->>  			size -= tsz;
->>  			start += tsz;
->> -			len += tsz;
->>  
->>  			if (size == 0)
->>  				return 0;
-
-Thank you very much for your review! I'm working on v2.
-
--- 
-  Vitaly
+--n8rALO501tkk3VWH--
