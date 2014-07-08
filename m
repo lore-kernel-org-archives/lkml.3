@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118AbaGHEDE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 00:03:04 -0400
-Received: from ozlabs.org ([103.22.144.67]:53416 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751641AbaGHEDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 00:03:00 -0400
-Date: Tue, 8 Jul 2014 14:02:46 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: linux-next: build failure after merge of the iommu tree
-Message-ID: <20140708140246.72b72682@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1753222AbaGHEDa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 00:03:30 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:56503 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753141AbaGHED3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jul 2014 00:03:29 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53BB6D8F.70900@roeck-us.net>
+Date: Mon, 07 Jul 2014 21:03:27 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/wYju90pWi_NtUsj2=dqeIY_"; protocol="application/pgp-signature"
+To: Nick Krause <xerofoify@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Compile issues with se7206_defconfig
+References: <CAPDOMVid3nbw0-3n_5d8QF_c5uOosWyYRPtqW29ZUB9Ziz7F+Q@mail.gmail.com>
+In-Reply-To: <CAPDOMVid3nbw0-3n_5d8QF_c5uOosWyYRPtqW29ZUB9Ziz7F+Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/wYju90pWi_NtUsj2=dqeIY_
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 07/07/2014 07:56 PM, Nick Krause wrote:
+> There seems to me a build issue with this config. I will paste my logs
+> for this build below this message.
+> Cheers Nick
+> scripts/mod/empty.c:1:0: error: cannot use atomic model soft-imask in user mode
+>   /* empty file to figure out endianness / word size */
+>   ^
+> make[2]: *** [scripts/mod/empty.o] Error 1
+> make[2]: *** Waiting for unfinished jobs....
+> make[1]: *** [scripts/mod] Error 2
+> make[1]: *** Waiting for unfinished jobs....
+>    CHK     include/generated/utsrelease.h
+>    UPD     include/generated/utsrelease.h
+>    Generating include/generated/machtypes.h
+>    CC      kernel/bounds.s
+> kernel/bounds.c:1:0: error: cannot use atomic model soft-imask in user mode
+>   /*
+>   ^
+> make[1]: *** [kernel/bounds.s] Error 1
+> make: *** [prepare0] Error 2
+> make: *** Waiting for unfinished jobs....
+> make: *** [scripts] Error 2
 
-Hi Joerg,
+What kernel version ? I see a build failure in mainline, but it is different.
 
-After merging the iommu tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+net/built-in.o: In function `__sk_run_filter':
+filter.c:(.text+0x3156c): undefined reference to `__fpscr_values'
+filter.c:(.text+0x31760): undefined reference to `__fpscr_values'
+filter.c:(.text+0x31c8c): undefined reference to `__fpscr_values'
+filter.c:(.text+0x31f00): undefined reference to `__fpscr_values'
+filter.c:(.text+0x323b0): undefined reference to `__fpscr_values'
 
-arch/powerpc/platforms/built-in.o:(.opd+0x29e8): multiple definition of `io=
-mmu_device_destroy'
-arch/powerpc/kernel/built-in.o:(.opd+0x5628): first defined here
-arch/powerpc/platforms/built-in.o: In function `.iommu_device_unlink':
-(.text+0x13240): multiple definition of `.iommu_device_unlink'
-arch/powerpc/kernel/built-in.o:(.text+0x2b240): first defined here
-arch/powerpc/platforms/built-in.o: In function `.iommu_device_create':
-(.text+0x13210): multiple definition of `.iommu_device_create'
-arch/powerpc/kernel/built-in.o:(.text+0x2b210): first defined here
-arch/powerpc/platforms/built-in.o: In function `.iommu_device_destroy':
-(.text+0x13220): multiple definition of `.iommu_device_destroy'
-arch/powerpc/kernel/built-in.o:(.text+0x2b220): first defined here
-arch/powerpc/platforms/built-in.o: In function `.iommu_device_link':
-(.text+0x13230): multiple definition of `.iommu_device_link'
-arch/powerpc/kernel/built-in.o:(.text+0x2b230): first defined here
-arch/powerpc/platforms/built-in.o:(.opd+0x2a00): multiple definition of `io=
-mmu_device_link'
-arch/powerpc/kernel/built-in.o:(.opd+0x5640): first defined here
-arch/powerpc/platforms/built-in.o:(.opd+0x2a18): multiple definition of `io=
-mmu_device_unlink'
-arch/powerpc/kernel/built-in.o:(.opd+0x5658): first defined here
-arch/powerpc/platforms/built-in.o:(.opd+0x29d0): multiple definition of `io=
-mmu_device_create'
-arch/powerpc/kernel/built-in.o:(.opd+0x5610): first defined here
+Guenter
 
-Caused by commit c61959ecbbc6 ("iommu: Add sysfs support for IOMMUs").
-CONFIG_IOMMU_API is not set for this build.  Forgotten "static
-inline"s :-(
-
-I have used the iommu tree from next-20140707 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/wYju90pWi_NtUsj2=dqeIY_
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJTu21sAAoJEMDTa8Ir7ZwVOc8P/30DE2ot+kzjMus4lresXAKD
-/UvSmRb7OvT2WY7felMJ/LRfGUOvYkvxIlVXTAyI51LCjTf5Jow5LqKnBo3gr58s
-Nw842DoWklFP4dmV6FEtqmSpQk6V5k4QaDVG28xnHOaS+vvPpoXJ9Fsk574mTrJ+
-yfZi4kEj+FuzRcNXtWEzEgyanEkey5DqiPeIIrHGzpDq7pficQhNKYpW+5kduYRs
-3LzZjHQ72+3+WnngbRvrxSN3sNJpMgp6NTVGXsI426LJ+xW/klV3ktv8k0qLHfOg
-UW4/9nUu9hzA5eCabSrQUatD26w5wBER5yp2gQMZQglaFP3DabCMwKJkUvq/u0KT
-gp17zEBGvXw143X4pSqoQMv0az5l+/clDzxR3/GMqp1zbpnlR/iXFHjhDlOE9inA
-6Le2181/e34lUxcCMH6RRHQhP+GkRCoAJ5aCAYcVpoRqle6sJeoKWvVOTyFk+ZAt
-EeU2tbxPnUZpaPIh2bfj+o9FQEMo+7h0rkCW0cObp8/Xbj7WwfdljuGyC6lbNgLq
-TzZDGvp5/SVNPAAlqtLipkTJa7VE1MPcTbAjio7D6S2z6bWaSG0n2ssFgWo+M9ox
-oktCKCqhU1tpxkRAYqQZcCIgsXtyh2eBpTudw7WYi6xOfPASkEzGP9YZ2E3HwS/Y
-ohxFNsqe7xFcn/tpTss/
-=pmJJ
------END PGP SIGNATURE-----
-
---Sig_/wYju90pWi_NtUsj2=dqeIY_--
