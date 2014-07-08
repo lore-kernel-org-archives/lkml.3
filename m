@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127AbaGHThy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 15:37:54 -0400
+	id S1755759AbaGHTeP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 15:34:15 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54778 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755592AbaGHTeR (ORCPT
+	by vger.kernel.org with ESMTP id S1755592AbaGHTeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 15:34:17 -0400
+	Tue, 8 Jul 2014 15:34:12 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Xiaoguang Wang" <wangxg.fnst@cn.fujitsu.com>,
-        "Jan Kara" <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>
+CC: akpm@linux-foundation.org, "Daniel Vetter" <daniel.vetter@ffwll.ch>,
+        "Chris Wilson" <chris@chris-wilson.co.uk>
 Date: Tue, 08 Jul 2014 20:01:50 +0100
-Message-ID: <lsq.1404846110.232483747@decadent.org.uk>
+Message-ID: <lsq.1404846110.3628672@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 020/125] ext4: fix zeroing of page during writeback
+Subject: [PATCH 3.2 018/125] drm/i915: Only copy back the modified fields
+ to userspace from execbuffer
 In-Reply-To: <lsq.1404846109.699842714@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,69 +32,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit eeece469dedadf3918bad50ad80f4616a0064e90 upstream.
+commit 9aab8bff7aa3bee567213ad3c1fdfb217bb980a2 upstream.
 
-Tail of a page straddling inode size must be zeroed when being written
-out due to POSIX requirement that modifications of mmaped page beyond
-inode size must not be written to the file. ext4_bio_write_page() did
-this only for blocks fully beyond inode size but didn't properly zero
-blocks partially beyond inode size. Fix this.
+We only want to modifiy a single field in the userspace view of the
+execbuffer command buffer, so explicitly change that rather than copy
+everything back again.
 
-The problem has been uncovered by mmap_11-4 test in openposix test suite
-(part of LTP).
+This serves two purposes:
 
-Reported-by: Xiaoguang Wang <wangxg.fnst@cn.fujitsu.com>
-Fixes: 5a0dc7365c240
-Fixes: bd2d0210cf22f
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-[bwh: Backported to 3.2:
- - Adjust context
- - block_end was used instead of block_start + blocksize]
+1. The single fields are much cheaper to copy (constant size so the
+copy uses special case code) and much smaller than the whole array.
+
+2. We modify the array for internal use that need to be masked from
+the user.
+
+Note: We need this backported since without it the next bugfix will
+blow up when userspace recycles batchbuffers and relocations.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2: to_user_ptr() is open-coded]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/page-io.c | 24 +++++++++++-------------
- 1 file changed, 11 insertions(+), 13 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c | 54 ++++++++++++++++++------------
+ 1 file changed, 32 insertions(+), 22 deletions(-)
 
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -386,24 +386,24 @@ int ext4_bio_write_page(struct ext4_io_s
- 	set_page_writeback(page);
- 	ClearPageError(page);
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -679,9 +679,9 @@ i915_gem_execbuffer_relocate_slow(struct
+ 		 * relocations were valid.
+ 		 */
+ 		for (j = 0; j < exec[i].relocation_count; j++) {
+-			if (copy_to_user(&user_relocs[j].presumed_offset,
+-					 &invalid_offset,
+-					 sizeof(invalid_offset))) {
++			if (__copy_to_user(&user_relocs[j].presumed_offset,
++					   &invalid_offset,
++					   sizeof(invalid_offset))) {
+ 				ret = -EFAULT;
+ 				mutex_lock(&dev->struct_mutex);
+ 				goto err;
+@@ -1325,19 +1325,21 @@ i915_gem_execbuffer(struct drm_device *d
  
-+	/*
-+	 * Comments copied from block_write_full_page_endio:
-+	 *
-+	 * The page straddles i_size.  It must be zeroed out on each and every
-+	 * writepage invocation because it may be mmapped.  "A file is mapped
-+	 * in multiples of the page size.  For a file that is not a multiple of
-+	 * the page size, the remaining memory is zeroed when mapped, and
-+	 * writes to that region are not written out to the file."
-+	 */
-+	if (len < PAGE_CACHE_SIZE)
-+		zero_user_segment(page, len, PAGE_CACHE_SIZE);
+ 	ret = i915_gem_do_execbuffer(dev, data, file, &exec2, exec2_list);
+ 	if (!ret) {
++		struct drm_i915_gem_exec_object __user *user_exec_list =
++			(void __user *)(uintptr_t)args->buffers_ptr;
 +
- 	for (bh = head = page_buffers(page), block_start = 0;
- 	     bh != head || !block_start;
- 	     block_start = block_end, bh = bh->b_this_page) {
+ 		/* Copy the new buffer offsets back to the user's exec list. */
+-		for (i = 0; i < args->buffer_count; i++)
+-			exec_list[i].offset = exec2_list[i].offset;
+-		/* ... and back out to userspace */
+-		ret = copy_to_user((struct drm_i915_relocation_entry __user *)
+-				   (uintptr_t) args->buffers_ptr,
+-				   exec_list,
+-				   sizeof(*exec_list) * args->buffer_count);
+-		if (ret) {
+-			ret = -EFAULT;
+-			DRM_DEBUG("failed to copy %d exec entries "
+-				  "back to user (%d)\n",
+-				  args->buffer_count, ret);
++		for (i = 0; i < args->buffer_count; i++) {
++			ret = __copy_to_user(&user_exec_list[i].offset,
++					     &exec2_list[i].offset,
++					     sizeof(user_exec_list[i].offset));
++			if (ret) {
++				ret = -EFAULT;
++				DRM_DEBUG("failed to copy %d exec entries "
++					  "back to user (%d)\n",
++					  args->buffer_count, ret);
++				break;
++			}
+ 		}
+ 	}
  
- 		block_end = block_start + blocksize;
- 		if (block_start >= len) {
--			/*
--			 * Comments copied from block_write_full_page_endio:
--			 *
--			 * The page straddles i_size.  It must be zeroed out on
--			 * each and every writepage invocation because it may
--			 * be mmapped.  "A file is mapped in multiples of the
--			 * page size.  For a file that is not a multiple of
--			 * the  page size, the remaining memory is zeroed when
--			 * mapped, and writes to that region are not written
--			 * out to the file."
--			 */
--			zero_user_segment(page, block_start, block_end);
- 			clear_buffer_dirty(bh);
- 			set_buffer_uptodate(bh);
- 			continue;
+@@ -1384,15 +1386,21 @@ i915_gem_execbuffer2(struct drm_device *
+ 	ret = i915_gem_do_execbuffer(dev, data, file, args, exec2_list);
+ 	if (!ret) {
+ 		/* Copy the new buffer offsets back to the user's exec list. */
+-		ret = copy_to_user((struct drm_i915_relocation_entry __user *)
+-				   (uintptr_t) args->buffers_ptr,
+-				   exec2_list,
+-				   sizeof(*exec2_list) * args->buffer_count);
+-		if (ret) {
+-			ret = -EFAULT;
+-			DRM_DEBUG("failed to copy %d exec entries "
+-				  "back to user (%d)\n",
+-				  args->buffer_count, ret);
++		struct drm_i915_gem_exec_object2 __user *user_exec_list =
++			(void __user *)(uintptr_t)args->buffers_ptr;
++		int i;
++
++		for (i = 0; i < args->buffer_count; i++) {
++			ret = __copy_to_user(&user_exec_list[i].offset,
++					     &exec2_list[i].offset,
++					     sizeof(user_exec_list[i].offset));
++			if (ret) {
++				ret = -EFAULT;
++				DRM_DEBUG("failed to copy %d exec entries "
++					  "back to user\n",
++					  args->buffer_count);
++				break;
++			}
+ 		}
+ 	}
+ 
 
