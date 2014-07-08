@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767AbaGHACq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jul 2014 20:02:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56091 "EHLO
+	id S1754829AbaGHADT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jul 2014 20:03:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56377 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754366AbaGGXzO (ORCPT
+	with ESMTP id S1752576AbaGHADN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jul 2014 19:55:14 -0400
+	Mon, 7 Jul 2014 20:03:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Remski <mremski@mutualink.net>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.10 09/53] USB: ftdi_sio: fix null deref at port probe
-Date: Mon,  7 Jul 2014 16:57:54 -0700
-Message-Id: <20140707235829.560418770@linuxfoundation.org>
+        Stanislaw Gruszka <stf_xl@wp.pl>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.4 10/44] rt2x00: fix rfkill regression on rt2500pci
+Date: Mon,  7 Jul 2014 17:07:00 -0700
+Message-Id: <20140707235858.951412426@linuxfoundation.org>
 X-Mailer: git-send-email 2.0.0.254.g50f84e3
-In-Reply-To: <20140707235829.281783607@linuxfoundation.org>
-References: <20140707235829.281783607@linuxfoundation.org>
+In-Reply-To: <20140707235858.652771077@linuxfoundation.org>
+References: <20140707235858.652771077@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,56 +25,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Stanislaw Gruszka <stf_xl@wp.pl>
 
-commit aea1ae8760314e072bf1b773521e9de5d5dda10d upstream.
+commit 616a8394b5df8c88f4dd416f4527439a4e365034 upstream.
 
-Fix NULL-pointer dereference when probing an interface with no
-endpoints.
+As reported by Niels, starting rfkill polling during device probe
+(commit e2bc7c5, generally sane change) broke rfkill on rt2500pci
+device. I considered that bug as some initalization issue, which
+should be fixed on rt2500pci specific code. But after several
+attempts (see bug report for details) we fail to find working solution.
+Hence I decided to revert to old behaviour on rt2500pci to fix
+regression.
 
-These devices have two bulk endpoints per interface, but this avoids
-crashing the kernel if a user forces a non-FTDI device to be probed.
+Additionally patch also unregister rfkill on device remove instead
+of ifconfig down, what was another issue introduced by bad commit.
 
-Note that the iterator variable was made unsigned in order to avoid
-a maybe-uninitialized compiler warning for ep_desc after the loop.
+Bug report:
+https://bugzilla.kernel.org/show_bug.cgi?id=73821
 
-Fixes: 895f28badce9 ("USB: ftdi_sio: fix hi-speed device packet size
-calculation")
-
-Reported-by: Mike Remski <mremski@mutualink.net>
-Tested-by: Mike Remski <mremski@mutualink.net>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Fixes: e2bc7c5f3cb8 ("rt2x00: Fix rfkill_polling register function.")
+Bisected-by: Niels <nille0386@googlemail.com>
+Reported-and-tested-by: Niels <nille0386@googlemail.com>
+Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rt2x00/rt2500pci.c |    7 ++++++-
+ drivers/net/wireless/rt2x00/rt2x00.h    |    1 +
+ drivers/net/wireless/rt2x00/rt2x00dev.c |   24 +++++++++++++++++++++---
+ 3 files changed, 28 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -1577,14 +1577,17 @@ static void ftdi_set_max_packet_size(str
- 	struct usb_device *udev = serial->dev;
+--- a/drivers/net/wireless/rt2x00/rt2500pci.c
++++ b/drivers/net/wireless/rt2x00/rt2500pci.c
+@@ -1679,8 +1679,13 @@ static int rt2500pci_init_eeprom(struct
+ 	/*
+ 	 * Detect if this device has an hardware controlled radio.
+ 	 */
+-	if (rt2x00_get_field16(eeprom, EEPROM_ANTENNA_HARDWARE_RADIO))
++	if (rt2x00_get_field16(eeprom, EEPROM_ANTENNA_HARDWARE_RADIO)) {
+ 		__set_bit(CAPABILITY_HW_BUTTON, &rt2x00dev->cap_flags);
++		/*
++		 * On this device RFKILL initialized during probe does not work.
++		 */
++		__set_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags);
++	}
  
- 	struct usb_interface *interface = serial->interface;
--	struct usb_endpoint_descriptor *ep_desc = &interface->cur_altsetting->endpoint[1].desc;
-+	struct usb_endpoint_descriptor *ep_desc;
+ 	/*
+ 	 * Check if the BBP tuning should be enabled.
+--- a/drivers/net/wireless/rt2x00/rt2x00.h
++++ b/drivers/net/wireless/rt2x00/rt2x00.h
+@@ -717,6 +717,7 @@ enum rt2x00_capability_flags {
+ 	REQUIRE_SW_SEQNO,
+ 	REQUIRE_HT_TX_DESC,
+ 	REQUIRE_PS_AUTOWAKE,
++	REQUIRE_DELAYED_RFKILL,
  
- 	unsigned num_endpoints;
--	int i;
-+	unsigned i;
+ 	/*
+ 	 * Capabilities
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -1022,9 +1022,10 @@ static void rt2x00lib_uninitialize(struc
+ 		return;
  
- 	num_endpoints = interface->cur_altsetting->desc.bNumEndpoints;
- 	dev_info(&udev->dev, "Number of endpoints %d\n", num_endpoints);
+ 	/*
+-	 * Unregister extra components.
++	 * Stop rfkill polling.
+ 	 */
+-	rt2x00rfkill_unregister(rt2x00dev);
++	if (test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
++		rt2x00rfkill_unregister(rt2x00dev);
  
-+	if (!num_endpoints)
-+		return;
+ 	/*
+ 	 * Allow the HW to uninitialize.
+@@ -1062,6 +1063,12 @@ static int rt2x00lib_initialize(struct r
+ 
+ 	set_bit(DEVICE_STATE_INITIALIZED, &rt2x00dev->flags);
+ 
++	/*
++	 * Start rfkill polling.
++	 */
++	if (test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
++		rt2x00rfkill_register(rt2x00dev);
 +
- 	/* NOTE: some customers have programmed FT232R/FT245R devices
- 	 * with an endpoint size of 0 - not good.  In this case, we
- 	 * want to override the endpoint descriptor setting and use a
+ 	return 0;
+ }
+ 
+@@ -1207,7 +1214,12 @@ int rt2x00lib_probe_dev(struct rt2x00_de
+ 	rt2x00link_register(rt2x00dev);
+ 	rt2x00leds_register(rt2x00dev);
+ 	rt2x00debug_register(rt2x00dev);
+-	rt2x00rfkill_register(rt2x00dev);
++
++	/*
++	 * Start rfkill polling.
++	 */
++	if (!test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
++		rt2x00rfkill_register(rt2x00dev);
+ 
+ 	return 0;
+ 
+@@ -1223,6 +1235,12 @@ void rt2x00lib_remove_dev(struct rt2x00_
+ 	clear_bit(DEVICE_STATE_PRESENT, &rt2x00dev->flags);
+ 
+ 	/*
++	 * Stop rfkill polling.
++	 */
++	if (!test_bit(REQUIRE_DELAYED_RFKILL, &rt2x00dev->cap_flags))
++		rt2x00rfkill_unregister(rt2x00dev);
++
++	/*
+ 	 * Disable radio.
+ 	 */
+ 	rt2x00lib_disable_radio(rt2x00dev);
 
 
