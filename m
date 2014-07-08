@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402AbaGHUQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 16:16:37 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:64768 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338AbaGHUQf (ORCPT
+	id S932234AbaGHUQm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 16:16:42 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:61294 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754405AbaGHUQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 16:16:35 -0400
+	Tue, 8 Jul 2014 16:16:40 -0400
 From: behanw@converseincode.com
 To: anurag19aggarwal@gmail.com, catalin.marinas@arm.com, charlebm@gmail.com,
         dave.long@linaro.org, k.khlebnikov@samsung.com, linux@arm.linux.org.uk,
@@ -15,10 +15,12 @@ To: anurag19aggarwal@gmail.com, catalin.marinas@arm.com, charlebm@gmail.com,
 Cc: behanw@converseincode.com, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, rabin@rab.in, rostedt@goodmis.org,
         dwmw2@infradead.org
-Subject: [PATCH 0/6] LLVMLinux: Patches to enable the kernel to be compiled with clang/LLVM
-Date: Tue,  8 Jul 2014 13:16:10 -0700
-Message-Id: <1404850576-2006-1-git-send-email-behanw@converseincode.com>
+Subject: [PATCH 1/6] arm: LLVMLinux: Add global named register current_stack_pointer for ARM
+Date: Tue,  8 Jul 2014 13:16:11 -0700
+Message-Id: <1404850576-2006-2-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1404850576-2006-1-git-send-email-behanw@converseincode.com>
+References: <1404850576-2006-1-git-send-email-behanw@converseincode.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -28,31 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Behan Webster <behanw@converseincode.com>
 
-The LLVMLinux project aims to fully build the Linux kernel using both gcc and
-clang (the C front end for the LLVM compiler infrastructure project). 
+Define a global named register for current_stack_pointer. The use of this new
+variable guarantees that both gcc and clang can access this register in C code.
 
-Clang only supports global named registers for non-allocatable registers like
-the stack pointer. By centralizing the definition of current_stack_pointer, the
-use of named registers for ARM remains largely unchanged while working for both
-gcc and clang.
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+Reviewed-by: Jan-Simon Möller <dl9pf@gmx.de>
+Reviewed-by: Mark Charlebois <charlebm@gmail.com>
+---
+ arch/arm/include/asm/thread_info.h | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-Behan Webster (6):
-  arm: LLVMLinux: Add global named register current_stack_pointer for
-    ARM
-  arm: LLVMLinux: Use current_stack_pointer to calculate pt_regs address
-  arm: LLVMLinux: Use current_stack_pointer for return_address
-  arm: LLVMLinux: Use current_stack_pointer in save_stack_trace_tsk
-  arm: LLVMLinux: Calculate current_thread_info from
-    current_stack_pointer
-  arm: LLVMLinux: Use current_stack_pointer in unwind_backtrace
-
- arch/arm/include/asm/ptrace.h      | 5 ++---
- arch/arm/include/asm/thread_info.h | 9 +++++++--
- arch/arm/kernel/return_address.c   | 3 +--
- arch/arm/kernel/stacktrace.c       | 4 +---
- arch/arm/kernel/unwind.c           | 3 +--
- 5 files changed, 12 insertions(+), 12 deletions(-)
-
+diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
+index e4e4208..9cb9c66 100644
+--- a/arch/arm/include/asm/thread_info.h
++++ b/arch/arm/include/asm/thread_info.h
+@@ -100,6 +100,11 @@ struct thread_info {
+ #define init_stack		(init_thread_union.stack)
+ 
+ /*
++ * how to get the current stack pointer in C
++ */
++register unsigned long current_stack_pointer asm ("sp");
++
++/*
+  * how to get the thread information struct from C
+  */
+ static inline struct thread_info *current_thread_info(void) __attribute_const__;
 -- 
 1.9.1
 
