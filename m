@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180AbaGHN1H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 09:27:07 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:42018 "EHLO
+	id S932206AbaGHN2Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 09:28:16 -0400
+Received: from inca-roads.misterjones.org ([213.251.177.50]:40805 "EHLO
 	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932079AbaGHN0B (ORCPT
+	by vger.kernel.org with ESMTP id S1754771AbaGHNZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 09:26:01 -0400
+	Tue, 8 Jul 2014 09:25:32 -0400
 From: Marc Zyngier <marc.zyngier@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Russell King <linux@arm.linux.org.uk>,
@@ -22,9 +22,9 @@ Cc: Russell King <linux@arm.linux.org.uk>,
         Larry Bassel <larry.bassel@linaro.org>,
         Mark Rutland <mark.rutland@arm.com>,
         Sudeep Holla <sudeep.holla@arm.com>
-Subject: [PATCH 04/15] irqchip: armada-370-xp: convert to handle_domain_irq
-Date: Tue,  8 Jul 2014 14:10:27 +0100
-Message-Id: <1404825038-547-5-git-send-email-marc.zyngier@arm.com>
+Subject: [PATCH 14/15] irqchip: vt8500: convert to handle_domain_irq
+Date: Tue,  8 Jul 2014 14:10:37 +0100
+Message-Id: <1404825038-547-15-git-send-email-marc.zyngier@arm.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1404825038-547-1-git-send-email-marc.zyngier@arm.com>
 References: <1404825038-547-1-git-send-email-marc.zyngier@arm.com>
@@ -40,46 +40,31 @@ Use the new handle_domain_irq method to handle interrupts.
 
 Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 ---
- drivers/irqchip/irq-armada-370-xp.c | 19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ drivers/irqchip/irq-vt8500.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/irqchip/irq-armada-370-xp.c b/drivers/irqchip/irq-armada-370-xp.c
-index 574aba0..47144be 100644
---- a/drivers/irqchip/irq-armada-370-xp.c
-+++ b/drivers/irqchip/irq-armada-370-xp.c
-@@ -393,13 +393,15 @@ static void armada_370_xp_handle_msi_irq(struct pt_regs *regs, bool is_chained)
- 		if (!(msimask & BIT(msinr)))
- 			continue;
+diff --git a/drivers/irqchip/irq-vt8500.c b/drivers/irqchip/irq-vt8500.c
+index eb6e91e..b7af816 100644
+--- a/drivers/irqchip/irq-vt8500.c
++++ b/drivers/irqchip/irq-vt8500.c
+@@ -181,7 +181,7 @@ static struct irq_domain_ops vt8500_irq_domain_ops = {
+ static void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
+ {
+ 	u32 stat, i;
+-	int irqnr, virq;
++	int irqnr;
+ 	void __iomem *base;
  
--		irq = irq_find_mapping(armada_370_xp_msi_domain,
--				       msinr - 16);
--
--		if (is_chained)
-+		if (is_chained) {
-+			irq = irq_find_mapping(armada_370_xp_msi_domain,
-+					       msinr - 16);
- 			generic_handle_irq(irq);
--		else
--			handle_IRQ(irq, regs);
-+		} else {
-+			irq = msi - 16;
-+			handle_domain_irq(armada_370_xp_msi_domain,
-+					  irq, regs);
-+		}
+ 	/* Loop through each active controller */
+@@ -198,8 +198,7 @@ static void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
+ 				continue;
+ 		}
+ 
+-		virq = irq_find_mapping(intc[i].domain, irqnr);
+-		handle_IRQ(virq, regs);
++		handle_domain_irq(intc[i].domain, irqnr, regs);
  	}
  }
- #else
-@@ -444,9 +446,8 @@ armada_370_xp_handle_irq(struct pt_regs *regs)
- 			break;
- 
- 		if (irqnr > 1) {
--			irqnr =	irq_find_mapping(armada_370_xp_mpic_domain,
--					irqnr);
--			handle_IRQ(irqnr, regs);
-+			handle_domain_irq(armada_370_xp_mpic_domain,
-+					  irqnr, regs);
- 			continue;
- 		}
  
 -- 
 2.0.0
