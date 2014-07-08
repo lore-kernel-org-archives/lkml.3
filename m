@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976AbaGHQEr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jul 2014 12:04:47 -0400
-Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:49668 "EHLO
-	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754740AbaGHQEA (ORCPT
+	id S1755046AbaGHQFC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jul 2014 12:05:02 -0400
+Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:53805 "EHLO
+	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754722AbaGHQD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jul 2014 12:04:00 -0400
-X-Yandex-Uniq: 3d045346-ea7e-446a-b55d-9500513b310d
+	Tue, 8 Jul 2014 12:03:59 -0400
+X-Yandex-Uniq: d4f4704d-b88d-4566-930d-7256a4fa5699
 Authentication-Results: smtpcorp4.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
 From: Stanislav Fomichev <stfomichev@yandex-team.ru>
 To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
@@ -15,9 +15,9 @@ To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
         artagnon@gmail.com, jolsa@redhat.com, rusty@rustcorp.com.au,
         bp@suse.de
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] perf timechart: add more options to IO mode
-Date: Tue,  8 Jul 2014 20:03:43 +0400
-Message-Id: <1404835423-23098-5-git-send-email-stfomichev@yandex-team.ru>
+Subject: [PATCH 1/4] perf timechart: fix rendering in Firefox
+Date: Tue,  8 Jul 2014 20:03:40 +0400
+Message-Id: <1404835423-23098-2-git-send-email-stfomichev@yandex-team.ru>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1404835423-23098-1-git-send-email-stfomichev@yandex-team.ru>
 References: <1404835423-23098-1-git-send-email-stfomichev@yandex-team.ru>
@@ -25,175 +25,264 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---io-skip-eagain - don't show EAGAIN errors
---io-min-time    - make small io bursts visible
---io-merge-dist  - merge adjacent events
+Firefox doesn't correctly handle cases where we specify number in
+quotes and have some padding around the number, like the following:
+<rect ... height=" 3.1" ...>
+In this case, it doesn't draw the figure. This patch removes 'field width'
+component from fprintf strings to fix it.
 
 Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
 ---
- tools/perf/Documentation/perf-timechart.txt | 13 +++++
- tools/perf/builtin-timechart.c              | 75 ++++++++++++++++++++++++++++-
- 2 files changed, 86 insertions(+), 2 deletions(-)
+ tools/perf/util/svghelper.c | 72 ++++++++++++++++++++++-----------------------
+ 1 file changed, 36 insertions(+), 36 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
-index ec6b46c7bca0..df98d1c82688 100644
---- a/tools/perf/Documentation/perf-timechart.txt
-+++ b/tools/perf/Documentation/perf-timechart.txt
-@@ -64,6 +64,19 @@ TIMECHART OPTIONS
- 	duration or tasks with given name. If number is given it's interpreted
- 	as number of nanoseconds. If non-numeric string is given it's
- 	interpreted as task name.
-+--io-skip-eagain::
-+	Don't draw EAGAIN IO events.
-+--io-min-time=<nsecs>::
-+	Draw small events as if they lasted min-time. Useful when you need
-+	to see very small and fast IO. It's possible to specify ms or us
-+	suffix to specify time in milliseconds or microseconds.
-+	Default value is 1ms.
-+--io-merge-dist=<nsecs>::
-+	Merge events that are merge-dist nanoseconds apart.
-+	Reduces number of figures on the SVG and makes it more render-friendly.
-+	It's possible to specify ms or us suffix to specify time in
-+	milliseconds or microseconds.
-+	Default value is 1us.
+diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
+index 6a0a13d07a28..27caf0f45469 100644
+--- a/tools/perf/util/svghelper.c
++++ b/tools/perf/util/svghelper.c
+@@ -137,7 +137,7 @@ void svg_box(int Yslot, u64 start, u64 end, const char *type)
+ 	if (!svgfile)
+ 		return;
  
- RECORD OPTIONS
- --------------
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 37bf1eb0755f..04c9c53becad 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -62,7 +62,10 @@ struct timechart {
- 				topology;
- 	/* IO related settings */
- 	u64			io_events;
--	bool			io_only;
-+	bool			io_only,
-+				skip_eagain;
-+	u64			min_time,
-+				merge_dist;
- };
- 
- struct per_pidcomm;
-@@ -761,7 +764,7 @@ static int pid_end_io_sample(struct timechart *tchart, int pid, int type,
- {
- 	struct per_pid *p = find_create_pid(tchart, pid);
- 	struct per_pidcomm *c = p->current;
--	struct io_sample *sample;
-+	struct io_sample *sample, *prev;
- 
- 	if (!c) {
- 		pr_warning("Invalid pidcomm!\n");
-@@ -785,6 +788,18 @@ static int pid_end_io_sample(struct timechart *tchart, int pid, int type,
- 	}
- 
- 	sample->end_time = end;
-+	prev = sample->next;
-+
-+	/* we want to be able to see small and fast transfers, so make them
-+	 * at least min_time long, but don't overlap them */
-+	if (sample->end_time - sample->start_time < tchart->min_time)
-+		sample->end_time = sample->start_time + tchart->min_time;
-+	if (prev && sample->start_time < prev->end_time) {
-+		if (prev->err) /* try to make errors more visible */
-+			sample->start_time = prev->end_time;
-+		else
-+			prev->end_time = sample->start_time;
-+	}
- 
- 	if (ret < 0) {
- 		sample->err = ret;
-@@ -799,6 +814,24 @@ static int pid_end_io_sample(struct timechart *tchart, int pid, int type,
- 		sample->bytes = ret;
- 	}
- 
-+	/* merge two requests to make svg smaller and render-friendly */
-+	if (prev &&
-+	    prev->type == sample->type &&
-+	    prev->err == sample->err &&
-+	    prev->fd == sample->fd &&
-+	    prev->end_time + tchart->merge_dist >= sample->start_time) {
-+
-+		sample->bytes += prev->bytes;
-+		sample->merges += prev->merges + 1;
-+
-+		sample->start_time = prev->start_time;
-+		sample->next = prev->next;
-+		free(prev);
-+
-+		if (!sample->err && sample->bytes > c->max_bytes)
-+			c->max_bytes = sample->bytes;
-+	}
-+
- 	tchart->io_events++;
- 
- 	return 0;
-@@ -1119,6 +1152,10 @@ static void draw_io_bars(struct timechart *tchart)
- 			for (sample = c->io_samples; sample; sample = sample->next) {
- 				double h = (double)sample->bytes / c->max_bytes;
- 
-+				if (tchart->skip_eagain &&
-+				    sample->err == -EAGAIN)
-+					continue;
-+
- 				if (sample->err)
- 					h = 1;
- 
-@@ -1849,6 +1886,30 @@ parse_highlight(const struct option *opt __maybe_unused, const char *arg,
- 	return 0;
+-	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"%s\"/>\n",
++	fprintf(svgfile, "<rect x=\"%.8f\" width=\"%.8f\" y=\"%.1f\" height=\"%.1f\" class=\"%s\"/>\n",
+ 		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT, type);
  }
  
-+static int
-+parse_time(const struct option *opt, const char *arg, int __maybe_unused unset)
-+{
-+	char unit = 'n';
-+	u64 *value = opt->value;
-+
-+	if (sscanf(arg, "%" PRIu64 "%cs", value, &unit) > 0) {
-+		switch (unit) {
-+		case 'm':
-+			*value *= 1000000;
-+			break;
-+		case 'u':
-+			*value *= 1000;
-+			break;
-+		case 'n':
-+			break;
-+		default:
-+			return -1;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- int cmd_timechart(int argc, const char **argv,
- 		  const char *prefix __maybe_unused)
- {
-@@ -1861,6 +1922,8 @@ int cmd_timechart(int argc, const char **argv,
- 			.ordered_samples = true,
- 		},
- 		.proc_num = 15,
-+		.min_time = 1000000,
-+		.merge_dist = 1000,
- 	};
- 	const char *output_name = "output.svg";
- 	const struct option timechart_options[] = {
-@@ -1882,6 +1945,14 @@ int cmd_timechart(int argc, const char **argv,
- 		    "min. number of tasks to print"),
- 	OPT_BOOLEAN('t', "topology", &tchart.topology,
- 		    "sort CPUs according to topology"),
-+	OPT_BOOLEAN(0, "io-skip-eagain", &tchart.skip_eagain,
-+		    "skip EAGAIN errors"),
-+	OPT_CALLBACK(0, "io-min-time", &tchart.min_time, "time",
-+		     "all IO faster than min-time will visually appear longer",
-+		     parse_time),
-+	OPT_CALLBACK(0, "io-merge-dist", &tchart.merge_dist, "time",
-+		     "merge events that are merge-dist us apart",
-+		     parse_time),
- 	OPT_END()
- 	};
- 	const char * const timechart_usage[] = {
+@@ -174,7 +174,7 @@ void svg_running(int Yslot, int cpu, u64 start, u64 end, const char *backtrace)
+ 		cpu, time_to_string(end - start));
+ 	if (backtrace)
+ 		fprintf(svgfile, "<desc>Switched because:\n%s</desc>\n", backtrace);
+-	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"%s\"/>\n",
++	fprintf(svgfile, "<rect x=\"%.8f\" width=\"%.8f\" y=\"%.1f\" height=\"%.1f\" class=\"%s\"/>\n",
+ 		time2pixels(start), time2pixels(end)-time2pixels(start), Yslot * SLOT_MULT, SLOT_HEIGHT,
+ 		type);
+ 
+@@ -186,7 +186,7 @@ void svg_running(int Yslot, int cpu, u64 start, u64 end, const char *backtrace)
+ 	text_size = round_text_size(text_size);
+ 
+ 	if (text_size > MIN_TEXT_SIZE)
+-		fprintf(svgfile, "<text x=\"%1.8f\" y=\"%1.8f\" font-size=\"%1.8fpt\">%i</text>\n",
++		fprintf(svgfile, "<text x=\"%.8f\" y=\"%.8f\" font-size=\"%.8fpt\">%i</text>\n",
+ 			time2pixels(start), Yslot *  SLOT_MULT + SLOT_HEIGHT - 1, text_size,  cpu + 1);
+ 
+ 	fprintf(svgfile, "</g>\n");
+@@ -202,10 +202,10 @@ static char *time_to_string(u64 duration)
+ 		return text;
+ 
+ 	if (duration < 1000 * 1000) { /* less than 1 msec */
+-		sprintf(text, "%4.1f us", duration / 1000.0);
++		sprintf(text, "%.1f us", duration / 1000.0);
+ 		return text;
+ 	}
+-	sprintf(text, "%4.1f ms", duration / 1000.0 / 1000);
++	sprintf(text, "%.1f ms", duration / 1000.0 / 1000);
+ 
+ 	return text;
+ }
+@@ -233,14 +233,14 @@ void svg_waiting(int Yslot, int cpu, u64 start, u64 end, const char *backtrace)
+ 
+ 	font_size = round_text_size(font_size);
+ 
+-	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), Yslot * SLOT_MULT);
++	fprintf(svgfile, "<g transform=\"translate(%.8f,%.8f)\">\n", time2pixels(start), Yslot * SLOT_MULT);
+ 	fprintf(svgfile, "<title>#%d waiting %s</title>\n", cpu, time_to_string(end - start));
+ 	if (backtrace)
+ 		fprintf(svgfile, "<desc>Waiting on:\n%s</desc>\n", backtrace);
+-	fprintf(svgfile, "<rect x=\"0\" width=\"%4.8f\" y=\"0\" height=\"%4.1f\" class=\"%s\"/>\n",
++	fprintf(svgfile, "<rect x=\"0\" width=\"%.8f\" y=\"0\" height=\"%.1f\" class=\"%s\"/>\n",
+ 		time2pixels(end)-time2pixels(start), SLOT_HEIGHT, style);
+ 	if (font_size > MIN_TEXT_SIZE)
+-		fprintf(svgfile, "<text transform=\"rotate(90)\" font-size=\"%1.8fpt\"> %s</text>\n",
++		fprintf(svgfile, "<text transform=\"rotate(90)\" font-size=\"%.8fpt\"> %s</text>\n",
+ 			font_size, text);
+ 	fprintf(svgfile, "</g>\n");
+ }
+@@ -289,16 +289,16 @@ void svg_cpu_box(int cpu, u64 __max_freq, u64 __turbo_freq)
+ 
+ 	fprintf(svgfile, "<g>\n");
+ 
+-	fprintf(svgfile, "<rect x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\" class=\"cpu\"/>\n",
++	fprintf(svgfile, "<rect x=\"%.8f\" width=\"%.8f\" y=\"%.1f\" height=\"%.1f\" class=\"cpu\"/>\n",
+ 		time2pixels(first_time),
+ 		time2pixels(last_time)-time2pixels(first_time),
+ 		cpu2y(cpu), SLOT_MULT+SLOT_HEIGHT);
+ 
+ 	sprintf(cpu_string, "CPU %i", (int)cpu);
+-	fprintf(svgfile, "<text x=\"%4.8f\" y=\"%4.8f\">%s</text>\n",
++	fprintf(svgfile, "<text x=\"%.8f\" y=\"%.8f\">%s</text>\n",
+ 		10+time2pixels(first_time), cpu2y(cpu) + SLOT_HEIGHT/2, cpu_string);
+ 
+-	fprintf(svgfile, "<text transform=\"translate(%4.8f,%4.8f)\" font-size=\"1.25pt\">%s</text>\n",
++	fprintf(svgfile, "<text transform=\"translate(%.8f,%.8f)\" font-size=\"1.25pt\">%s</text>\n",
+ 		10+time2pixels(first_time), cpu2y(cpu) + SLOT_MULT + SLOT_HEIGHT - 4, cpu_model());
+ 
+ 	fprintf(svgfile, "</g>\n");
+@@ -319,11 +319,11 @@ void svg_process(int cpu, u64 start, u64 end, int pid, const char *name, const c
+ 	else
+ 		type = "sample";
+ 
+-	fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\">\n", time2pixels(start), cpu2y(cpu));
++	fprintf(svgfile, "<g transform=\"translate(%.8f,%.8f)\">\n", time2pixels(start), cpu2y(cpu));
+ 	fprintf(svgfile, "<title>%d %s running %s</title>\n", pid, name, time_to_string(end - start));
+ 	if (backtrace)
+ 		fprintf(svgfile, "<desc>Switched because:\n%s</desc>\n", backtrace);
+-	fprintf(svgfile, "<rect x=\"0\" width=\"%4.8f\" y=\"0\" height=\"%4.1f\" class=\"%s\"/>\n",
++	fprintf(svgfile, "<rect x=\"0\" width=\"%.8f\" y=\"0\" height=\"%.1f\" class=\"%s\"/>\n",
+ 		time2pixels(end)-time2pixels(start), SLOT_MULT+SLOT_HEIGHT, type);
+ 	width = time2pixels(end)-time2pixels(start);
+ 	if (width > 6)
+@@ -332,7 +332,7 @@ void svg_process(int cpu, u64 start, u64 end, int pid, const char *name, const c
+ 	width = round_text_size(width);
+ 
+ 	if (width > MIN_TEXT_SIZE)
+-		fprintf(svgfile, "<text transform=\"rotate(90)\" font-size=\"%3.8fpt\">%s</text>\n",
++		fprintf(svgfile, "<text transform=\"rotate(90)\" font-size=\"%.8fpt\">%s</text>\n",
+ 			width, name);
+ 
+ 	fprintf(svgfile, "</g>\n");
+@@ -353,7 +353,7 @@ void svg_cstate(int cpu, u64 start, u64 end, int type)
+ 		type = 6;
+ 	sprintf(style, "c%i", type);
+ 
+-	fprintf(svgfile, "<rect class=\"%s\" x=\"%4.8f\" width=\"%4.8f\" y=\"%4.1f\" height=\"%4.1f\"/>\n",
++	fprintf(svgfile, "<rect class=\"%s\" x=\"%.8f\" width=\"%.8f\" y=\"%.1f\" height=\"%.1f\"/>\n",
+ 		style,
+ 		time2pixels(start), time2pixels(end)-time2pixels(start),
+ 		cpu2y(cpu), SLOT_MULT+SLOT_HEIGHT);
+@@ -365,7 +365,7 @@ void svg_cstate(int cpu, u64 start, u64 end, int type)
+ 	width = round_text_size(width);
+ 
+ 	if (width > MIN_TEXT_SIZE)
+-		fprintf(svgfile, "<text x=\"%4.8f\" y=\"%4.8f\" font-size=\"%3.8fpt\">C%i</text>\n",
++		fprintf(svgfile, "<text x=\"%.8f\" y=\"%.8f\" font-size=\"%.8fpt\">C%i</text>\n",
+ 			time2pixels(start), cpu2y(cpu)+width, width, type);
+ 
+ 	fprintf(svgfile, "</g>\n");
+@@ -407,9 +407,9 @@ void svg_pstate(int cpu, u64 start, u64 end, u64 freq)
+ 	if (max_freq)
+ 		height = freq * 1.0 / max_freq * (SLOT_HEIGHT + SLOT_MULT);
+ 	height = 1 + cpu2y(cpu) + SLOT_MULT + SLOT_HEIGHT - height;
+-	fprintf(svgfile, "<line x1=\"%4.8f\" x2=\"%4.8f\" y1=\"%4.1f\" y2=\"%4.1f\" class=\"pstate\"/>\n",
++	fprintf(svgfile, "<line x1=\"%.8f\" x2=\"%.8f\" y1=\"%.1f\" y2=\"%.1f\" class=\"pstate\"/>\n",
+ 		time2pixels(start), time2pixels(end), height, height);
+-	fprintf(svgfile, "<text x=\"%4.8f\" y=\"%4.8f\" font-size=\"0.25pt\">%s</text>\n",
++	fprintf(svgfile, "<text x=\"%.8f\" y=\"%.8f\" font-size=\"0.25pt\">%s</text>\n",
+ 		time2pixels(start), height+0.9, HzToHuman(freq));
+ 
+ 	fprintf(svgfile, "</g>\n");
+@@ -435,32 +435,32 @@ void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, char *desc
+ 
+ 	if (row1 < row2) {
+ 		if (row1) {
+-			fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%4.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
++			fprintf(svgfile, "<line x1=\"%.8f\" y1=\"%.2f\" x2=\"%.8f\" y2=\"%.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
+ 				time2pixels(start), row1 * SLOT_MULT + SLOT_HEIGHT,  time2pixels(start), row1 * SLOT_MULT + SLOT_HEIGHT + SLOT_MULT/32);
+ 			if (desc2)
+-				fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\"><text transform=\"rotate(90)\" font-size=\"0.02pt\">%s &gt;</text></g>\n",
++				fprintf(svgfile, "<g transform=\"translate(%.8f,%.8f)\"><text transform=\"rotate(90)\" font-size=\"0.02pt\">%s &gt;</text></g>\n",
+ 					time2pixels(start), row1 * SLOT_MULT + SLOT_HEIGHT + SLOT_HEIGHT/48, desc2);
+ 		}
+ 		if (row2) {
+-			fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%4.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
++			fprintf(svgfile, "<line x1=\"%.8f\" y1=\"%.2f\" x2=\"%.8f\" y2=\"%.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
+ 				time2pixels(start), row2 * SLOT_MULT - SLOT_MULT/32,  time2pixels(start), row2 * SLOT_MULT);
+ 			if (desc1)
+-				fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\"><text transform=\"rotate(90)\" font-size=\"0.02pt\">%s &gt;</text></g>\n",
++				fprintf(svgfile, "<g transform=\"translate(%.8f,%.8f)\"><text transform=\"rotate(90)\" font-size=\"0.02pt\">%s &gt;</text></g>\n",
+ 					time2pixels(start), row2 * SLOT_MULT - SLOT_MULT/32, desc1);
+ 		}
+ 	} else {
+ 		if (row2) {
+-			fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%4.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
++			fprintf(svgfile, "<line x1=\"%.8f\" y1=\"%.2f\" x2=\"%.8f\" y2=\"%.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
+ 				time2pixels(start), row2 * SLOT_MULT + SLOT_HEIGHT,  time2pixels(start), row2 * SLOT_MULT + SLOT_HEIGHT + SLOT_MULT/32);
+ 			if (desc1)
+-				fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\"><text transform=\"rotate(90)\" font-size=\"0.02pt\">%s &lt;</text></g>\n",
++				fprintf(svgfile, "<g transform=\"translate(%.8f,%.8f)\"><text transform=\"rotate(90)\" font-size=\"0.02pt\">%s &lt;</text></g>\n",
+ 					time2pixels(start), row2 * SLOT_MULT + SLOT_HEIGHT + SLOT_MULT/48, desc1);
+ 		}
+ 		if (row1) {
+-			fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%4.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
++			fprintf(svgfile, "<line x1=\"%.8f\" y1=\"%.2f\" x2=\"%.8f\" y2=\"%.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
+ 				time2pixels(start), row1 * SLOT_MULT - SLOT_MULT/32,  time2pixels(start), row1 * SLOT_MULT);
+ 			if (desc2)
+-				fprintf(svgfile, "<g transform=\"translate(%4.8f,%4.8f)\"><text transform=\"rotate(90)\" font-size=\"0.02pt\">%s &lt;</text></g>\n",
++				fprintf(svgfile, "<g transform=\"translate(%.8f,%.8f)\"><text transform=\"rotate(90)\" font-size=\"0.02pt\">%s &lt;</text></g>\n",
+ 					time2pixels(start), row1 * SLOT_MULT - SLOT_HEIGHT/32, desc2);
+ 		}
+ 	}
+@@ -468,7 +468,7 @@ void svg_partial_wakeline(u64 start, int row1, char *desc1, int row2, char *desc
+ 	if (row2 > row1)
+ 		height += SLOT_HEIGHT;
+ 	if (row1)
+-		fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(32,255,32)\"/>\n",
++		fprintf(svgfile, "<circle  cx=\"%.8f\" cy=\"%.2f\" r = \"0.01\"  style=\"fill:rgb(32,255,32)\"/>\n",
+ 			time2pixels(start), height);
+ 
+ 	fprintf(svgfile, "</g>\n");
+@@ -488,16 +488,16 @@ void svg_wakeline(u64 start, int row1, int row2, const char *backtrace)
+ 		fprintf(svgfile, "<desc>%s</desc>\n", backtrace);
+ 
+ 	if (row1 < row2)
+-		fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%4.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
++		fprintf(svgfile, "<line x1=\"%.8f\" y1=\"%.2f\" x2=\"%.8f\" y2=\"%.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
+ 			time2pixels(start), row1 * SLOT_MULT + SLOT_HEIGHT,  time2pixels(start), row2 * SLOT_MULT);
+ 	else
+-		fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%4.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
++		fprintf(svgfile, "<line x1=\"%.8f\" y1=\"%.2f\" x2=\"%.8f\" y2=\"%.2f\" style=\"stroke:rgb(32,255,32);stroke-width:0.009\"/>\n",
+ 			time2pixels(start), row2 * SLOT_MULT + SLOT_HEIGHT,  time2pixels(start), row1 * SLOT_MULT);
+ 
+ 	height = row1 * SLOT_MULT;
+ 	if (row2 > row1)
+ 		height += SLOT_HEIGHT;
+-	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(32,255,32)\"/>\n",
++	fprintf(svgfile, "<circle  cx=\"%.8f\" cy=\"%.2f\" r = \"0.01\"  style=\"fill:rgb(32,255,32)\"/>\n",
+ 			time2pixels(start), height);
+ 
+ 	fprintf(svgfile, "</g>\n");
+@@ -515,9 +515,9 @@ void svg_interrupt(u64 start, int row, const char *backtrace)
+ 	if (backtrace)
+ 		fprintf(svgfile, "<desc>%s</desc>\n", backtrace);
+ 
+-	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(255,128,128)\"/>\n",
++	fprintf(svgfile, "<circle  cx=\"%.8f\" cy=\"%.2f\" r = \"0.01\"  style=\"fill:rgb(255,128,128)\"/>\n",
+ 			time2pixels(start), row * SLOT_MULT);
+-	fprintf(svgfile, "<circle  cx=\"%4.8f\" cy=\"%4.2f\" r = \"0.01\"  style=\"fill:rgb(255,128,128)\"/>\n",
++	fprintf(svgfile, "<circle  cx=\"%.8f\" cy=\"%.2f\" r = \"0.01\"  style=\"fill:rgb(255,128,128)\"/>\n",
+ 			time2pixels(start), row * SLOT_MULT + SLOT_HEIGHT);
+ 
+ 	fprintf(svgfile, "</g>\n");
+@@ -528,7 +528,7 @@ void svg_text(int Yslot, u64 start, const char *text)
+ 	if (!svgfile)
+ 		return;
+ 
+-	fprintf(svgfile, "<text x=\"%4.8f\" y=\"%4.8f\">%s</text>\n",
++	fprintf(svgfile, "<text x=\"%.8f\" y=\"%.8f\">%s</text>\n",
+ 		time2pixels(start), Yslot * SLOT_MULT+SLOT_HEIGHT/2, text);
+ }
+ 
+@@ -537,9 +537,9 @@ static void svg_legenda_box(int X, const char *text, const char *style)
+ 	double boxsize;
+ 	boxsize = SLOT_HEIGHT / 2;
+ 
+-	fprintf(svgfile, "<rect x=\"%i\" width=\"%4.8f\" y=\"0\" height=\"%4.1f\" class=\"%s\"/>\n",
++	fprintf(svgfile, "<rect x=\"%i\" width=\"%.8f\" y=\"0\" height=\"%.1f\" class=\"%s\"/>\n",
+ 		X, boxsize, boxsize, style);
+-	fprintf(svgfile, "<text transform=\"translate(%4.8f, %4.8f)\" font-size=\"%4.8fpt\">%s</text>\n",
++	fprintf(svgfile, "<text transform=\"translate(%.8f, %.8f)\" font-size=\"%.8fpt\">%s</text>\n",
+ 		X + boxsize + 5, boxsize, 0.8 * boxsize, text);
+ }
+ 
+@@ -579,7 +579,7 @@ void svg_time_grid(void)
+ 			color = 128;
+ 		}
+ 
+-		fprintf(svgfile, "<line x1=\"%4.8f\" y1=\"%4.2f\" x2=\"%4.8f\" y2=\"%" PRIu64 "\" style=\"stroke:rgb(%i,%i,%i);stroke-width:%1.3f\"/>\n",
++		fprintf(svgfile, "<line x1=\"%.8f\" y1=\"%.2f\" x2=\"%.8f\" y2=\"%" PRIu64 "\" style=\"stroke:rgb(%i,%i,%i);stroke-width:%.3f\"/>\n",
+ 			time2pixels(i), SLOT_MULT/2, time2pixels(i), total_height, color, color, color, thickness);
+ 
+ 		i += 10000000;
 -- 
 1.9.1
 
